@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(22);
+select plan(26);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -57,11 +57,16 @@ select results_eq(
 select is((select diff -> 'nickname' from property_audit where household_id = :'a' limit 1),
   '{"old": "Nhà phố Q7", "new": "Nhà phố Q7 Demo"}'::jsonb, 'the rename diff holds both nicknames');
 
+select is_empty(
+  format($$ delete from public.properties where household_id = %L returning 1 $$, :'a'),
+  'a member DELETE touches no property, since properties are soft-deleted');
 select lives_ok(
-  format($$ delete from public.properties where household_id = %L $$, :'a'),
-  'a member deletes its own property');
-select is((select action from property_audit where household_id = :'a' limit 1), 'delete',
-  'the delete writes an audit row');
+  format($$ update public.properties set deleted_at = '2026-10-07T02:00:00Z' where household_id = %L $$, :'a'),
+  'a member soft-deletes its own property by setting deleted_at');
+select is((select deleted_at from public.properties where household_id = :'a'), '2026-10-07T02:00:00Z'::timestamptz,
+  'the soft-deleted property keeps its row');
+select ok(exists(select 1 from property_audit where household_id = :'a' and action = 'update' and diff ? 'deleted_at'),
+  'the soft delete writes an update audit row');
 
 reset role;
 insert into public.properties (household_id, nickname, code, kind, use_mode)
@@ -69,6 +74,9 @@ values (:'a', 'Đất Bảo Lộc', 'BAOLOC', 'residential_land', 'held');
 
 select tests.act_as('viewer.a@test.esta.test');
 select tests.sees_household('public.properties', :'a', true);
+select is_empty(
+  format($$ update public.properties set deleted_at = '2026-10-07T02:00:00Z' where household_id = %L returning 1 $$, :'a'),
+  'a viewer cannot soft-delete a property');
 select tests.cannot_write('public.properties', :'a',
   format($$ insert into public.properties (household_id, nickname, code, kind, use_mode)
             values (%L, 'Của viewer', 'V1', 'townhouse', 'rental') $$, :'a'));
@@ -81,5 +89,8 @@ select lives_ok(
   'another household may reuse a code');
 
 reset role;
+select throws_ok($$ select private.enable_soft_delete('public.household_settings') $$, 'P0001',
+  'public.household_settings has no deleted_at column', 'soft delete needs a deleted_at column');
+
 select * from finish();
 rollback;
