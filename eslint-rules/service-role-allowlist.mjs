@@ -17,18 +17,17 @@ function constInit(scope, name) {
   return null;
 }
 
-/** Concatenates the parts of a string expression known without running it; unknown parts read as ''. */
-function staticText(node, scope, seen = new Set()) {
+function knownText(node, scope, seen = new Set()) {
   if (!node || seen.has(node)) return '';
   seen.add(node);
   if (node.type === 'Literal') return typeof node.value === 'string' ? node.value : '';
-  if (isConcat(node)) return staticText(node.left, scope, seen) + staticText(node.right, scope, seen);
+  if (isConcat(node)) return knownText(node.left, scope, seen) + knownText(node.right, scope, seen);
   if (node.type === 'TemplateLiteral') {
     return node.quasis
-      .map((quasi, i) => (quasi.value.cooked ?? '') + staticText(node.expressions[i], scope, seen))
+      .map((quasi, i) => (quasi.value.cooked ?? '') + knownText(node.expressions[i], scope, seen))
       .join('');
   }
-  if (node.type === 'Identifier') return staticText(constInit(scope, node.name), scope, seen);
+  if (node.type === 'Identifier') return knownText(constInit(scope, node.name), scope, seen);
   return '';
 }
 
@@ -52,7 +51,7 @@ export default {
     };
     const checkOutermostString = (node) => {
       if (isConcat(node.parent) || node.parent.type === 'TemplateLiteral') return;
-      check(node, staticText(node, context.sourceCode.getScope(node)));
+      check(node, knownText(node, context.sourceCode.getScope(node)));
     };
     return {
       Identifier(node) {

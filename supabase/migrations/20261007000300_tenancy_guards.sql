@@ -87,7 +87,6 @@ $$;
 revoke all on function private.lacks_claimed_admin(uuid) from public;
 grant execute on function private.lacks_claimed_admin(uuid) to authenticated;
 
--- Guards on household_members bind user sessions only; the service role and direct connections pass.
 create function private.guard_last_admin()
 returns trigger
 language plpgsql
