@@ -63,7 +63,7 @@ $S/b.sh click 'role=button[name="Tạo gia đình"]'
 - `sign-in.sh <email>` drops any earlier session (`sign-out.sh`), clears that address's mail, fills `/sign-in`, reads the newest code with `node scripts/inbucket-code.ts <email>`, submits it and waits until the browser leaves `/sign-in`. It prints the landing path, `/` for a member and `/onboarding` for an address with no household. It takes about 3 s.
 - `set-locale.sh <vi|en>` sets the `NEXT_LOCALE` cookie and reloads. A signed-in member's saved locale wins over the cookie, so when `<html lang>` does not change it presses the in-app language switch (`button[lang="en"]`), which saves the member's choice. It fails unless `<html lang>` ends at the requested locale.
 - `set-theme.sh <light|dark>` sets the `esta_theme` cookie and `data-theme` on `<html>` of the open page. Until P0-11 makes the app read the cookie and ships dark tokens, a navigation or reload drops the attribute and a dark screenshot looks the same as a light one, so run `set-theme.sh` after the last navigation and before the screenshot, and do not judge dark styling before P0-11.
-- `sign-out.sh` clears the `sb-` session cookies and opens `/sign-in`. It does not test the app's sign-out button.
+- `sign-out.sh` leaves the browser signed out on `/sign-in`. When `/sign-in` redirects to `/`, it presses the app's `Đăng xuất` or `Sign out` button.
 
 Selectors accept CSS and Playwright engines. Prefer form names, `role=` with an accessible name, and `@e` refs from a fresh `snapshot`:
 
@@ -124,7 +124,7 @@ Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pa
 | `doctor.sh` | Six read-only `OK`/`FAIL` checks with fixes |
 | `b.sh <command> [args]` | One gstack browse command on the lane's daemon |
 | `sign-in.sh <email>` | Sign in through `/sign-in` with the mailbox code |
-| `sign-out.sh` | Drop the session cookies and open `/sign-in` |
+| `sign-out.sh` | Sign out through the app and open `/sign-in` |
 | `set-locale.sh <vi\|en>` | Switch the UI language |
 | `set-theme.sh <light\|dark>` | Set the theme cookie and `data-theme` |
 | `evidence.sh <pr-id> <slug>` | Screenshot and accessibility tree under `/tmp/swarm-<pr-id>/` |

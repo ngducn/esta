@@ -25,7 +25,7 @@ Preconditions:
 
 - **Member.** Sign in as lane `n`'s mother. Run `$S/sign-in.sh me.lane<n>@demo.esta.test`. It prints `browser on /`. `$S/b.sh js 'document.querySelector("h1").textContent'` prints `Gia đình Demo <n>`, and `$S/b.sh text` contains `Bạn đang đăng nhập với tên Nguyễn Thị Demo.` and `Quyền: Quản trị`.
 - **Mail.** Check the mail the sign-in sent. Run `curl -s "http://127.0.0.1:$((54324 + 100 * ESTA_SLOT))/api/v1/search?query=to:%22me.lane<n>@demo.esta.test%22"`. One message has the subject `Mã đăng nhập Esta`. Its body holds one 6-digit code and no `http` link.
-- **Wrong code.** Run `$S/sign-out.sh`, then `$S/b.sh fill 'input[name="email"]' me.lane<n>@demo.esta.test`, `$S/b.sh click 'button[value="send"]'`, `$S/b.sh wait 'input[name="code"]'`, `$S/b.sh fill 'input[name="code"]' 000000`, and `$S/b.sh click 'button[value="verify"]'`. Then `$S/b.sh wait '#code-error >> text=Mã không đúng'` succeeds, the error reads `Mã không đúng hoặc đã hết hạn. Gửi lại mã.`, the URL stays `/sign-in`, the code field still holds `000000`, and `$S/b.sh js 'document.cookie.includes("sb-")'` prints `false`.
+- **Wrong code.** Run `$S/sign-out.sh`, then `$S/b.sh fill 'input[name="email"]' me.lane<n>@demo.esta.test`, `$S/b.sh click 'button[value="send"]'`, `$S/b.sh wait 'input[name="code"]'`, `$S/b.sh fill 'input[name="code"]' 000000`, and `$S/b.sh click 'button[value="verify"]'`. Then `$S/b.sh wait '#code-error >> text=Mã không đúng'` succeeds, the error reads `Mã không đúng hoặc đã hết hạn. Gửi lại mã.`, the URL stays `/sign-in`, the code field still holds `000000`, and `$S/b.sh cookies | grep -c '"name": "sb-'` prints `0`.
 - **Invite claim.** Run `$S/sign-in.sh invitee.lane<n>@demo.esta.test`. It prints `browser on /`. The heading is `Gia đình Demo <n>`, the page reads `Quyền: Chỉ xem`, and the `Mời người trong gia đình` link is absent. Confirm with `docker exec supabase_db_esta-$ESTA_SLOT psql -U postgres -tAc "select h.name, m.role, m.user_id is not null from household_members m join households h on h.id = m.household_id where m.invited_email = 'invitee.lane<n>@demo.esta.test'"`, which prints `Gia đình Demo <n>|viewer|t`.
 - **Language.** Run `$S/sign-out.sh`, then `$S/set-locale.sh en`. The heading reads `Sign in` and the button reads `Send code`. Run `$S/set-locale.sh vi` to return.
 - **Signed-in redirect.** After a member sign-in, run `$S/b.sh goto http://localhost:$((3000 + 100 * ESTA_SLOT))/sign-in`. `$S/b.sh url` ends in `/`.
@@ -34,6 +34,7 @@ Preconditions:
 ## Gotchas
 
 - `/sign-in` sends a signed-in visitor to `/`. `sign-in.sh` signs out first; a hand-driven recipe runs `sign-out.sh` first.
+- The session cookies are httpOnly, so `document.cookie` never shows them. Read them with `$S/b.sh cookies`.
 - Session cookies are per host, not per port, so two slots in one browser overwrite each other's session. Keep one browser daemon per slot, which is the default.
 - A code works once and expires in an hour. `sign-in.sh` clears the address's mail before it asks for a code, so an older code never wins.
 - After a send, the resend button stays disabled for 60 s.

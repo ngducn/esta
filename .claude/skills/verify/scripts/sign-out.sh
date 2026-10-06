@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> sign-out.sh
-# Drops the lane browser's Supabase session cookies and opens /sign-in. It proves nothing about the
-# app's sign-out button; drive that button when sign-out itself is under test.
+# Leaves the lane browser signed out on /sign-in. A signed-in visitor to /sign-in lands on / instead,
+# so this presses the app's sign-out button there; the session cookies are httpOnly.
 source "$(dirname "$0")/env.sh"
 
-ensure_on_app
-"$B" js "document.cookie.split(';').map((c) => c.split('=')[0].trim()).filter((n) => n.startsWith('sb-')).forEach((n) => { document.cookie = n + '=; Max-Age=0; path=/'; })" >/dev/null
 "$B" goto "$WEB_URL/sign-in" >/dev/null
 if [[ "$(current_path)" != /sign-in ]]; then
-  echo "Still signed in after clearing the sb- cookies: the browser is on $(current_path)" >&2
+  "$B" click 'role=button[name=/^(Đăng xuất|Sign out)$/]' >/dev/null
+  for _ in $(seq 1 50); do
+    [[ "$(current_path)" == /sign-in ]] && break
+    sleep 0.2
+  done
+fi
+if [[ "$(current_path)" != /sign-in ]]; then
+  echo "Still signed in: the browser is on $(current_path)" >&2
   exit 1
 fi
 echo "Signed out; browser on /sign-in"
