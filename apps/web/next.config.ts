@@ -1,5 +1,5 @@
 import type { NextConfig } from 'next';
-import { parseEnv } from './src/server/env';
+import { parseEnv } from './src/server/env-schema';
 
 parseEnv(process.env);
 

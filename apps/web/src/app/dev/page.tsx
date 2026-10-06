@@ -9,7 +9,7 @@ const devPages: readonly { href: string; title: string }[] = [];
 
 export default function DevIndexPage() {
   return (
-    <main lang="en">
+    <main>
       <h1>Dev pages</h1>
       {devPages.length === 0 ? (
         <p>No dev pages yet.</p>

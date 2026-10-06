@@ -20,9 +20,9 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `POR
 
 | Command | Does |
 | --- | --- |
-| `pnpm env:init` | Copy `.env.example` to `apps/web/.env.local` when that file is missing; `pnpm dev` and `pnpm build` run it |
+| `pnpm env:init` | Copy `.env.example` to `apps/web/.env.local` when that file is missing; only `pnpm dev` runs it |
 | `pnpm dev` | Web app on localhost:3000 against local Supabase |
-| `pnpm build` / `pnpm start` | Production build and server for `apps/web`; `ESTA_ENV=production` hides `/dev/*` |
+| `pnpm build` / `pnpm start` | Production build and server for `apps/web`; build fails on a missing variable; `ESTA_ENV=production` at start hides `/dev/*` |
 | `pnpm dev:lan` | Same, reachable over HTTPS from a phone on the same network (SPEC D13) |
 | `pnpm agent:dev` | Agent worker against local Supabase |
 | `pnpm agent:record` | Run golden agent cases live and refresh replay recordings |
@@ -34,7 +34,9 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `POR
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |
 | `pnpm check` | Typecheck, lint and unit tests in every workspace; i18n key parity joins with P0-05 |
 | `pnpm e2e` | Playwright suite; `pnpm e2e:northstar` runs SPEC §1.2 |
-| `pnpm design:detect` | Impeccable detector over `apps/web` with JSON output |
+| `pnpm e2e:prod` | Builds, starts with `ESTA_ENV=production` and checks `/dev/*` returns 404 |
+| `pnpm check:build-env` | Builds a clean copy without `CRON_SECRET` and checks it fails with the zod message |
+| `pnpm design:detect` | Impeccable detector over `apps/web/src` with JSON output |
 | `pnpm glyphs:check` | Font coverage for the Vietnamese glyph test string |
 
 Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Never configure a real mail sender in development.

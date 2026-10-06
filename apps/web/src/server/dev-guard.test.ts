@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { isDevSurfaceEnabled } from './dev-guard';
-import type { EstaEnv } from './env';
+import type { EstaEnv } from './env-schema';
 
 const expected: Record<EstaEnv, boolean> = {
   development: true,
