@@ -10,19 +10,19 @@ async function setLocaleCookie(page: Page, baseURL: string | undefined, value: s
   await page.context().addCookies([{ name: 'NEXT_LOCALE', value, url: baseURL ?? '' }]);
 }
 
-test('/ renders Vietnamese by default', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esta');
+test('/sign-in renders Vietnamese by default', async ({ page }) => {
+  await page.goto('/sign-in');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đăng nhập');
   await expect(page.getByText('Sổ cái nhà đất của gia đình')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
   await expect(page.getByTestId('date-line')).toHaveText(/^(Thứ (Hai|Ba|Tư|Năm|Sáu|Bảy)|Chủ Nhật), \d{2}\/\d{2}\/\d{4}$/);
-  await expect(page).toHaveTitle('Esta');
+  await expect(page).toHaveTitle('Đăng nhập');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('/ renders English with the NEXT_LOCALE=en cookie', async ({ page, baseURL }) => {
+test('/sign-in renders English with the NEXT_LOCALE=en cookie', async ({ page, baseURL }) => {
   await setLocaleCookie(page, baseURL, 'en');
-  await page.goto('/');
+  await page.goto('/sign-in');
   await expect(page.getByText("The family's property ledger")).toBeVisible();
   await expect(page.getByText('Sổ cái nhà đất của gia đình')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -30,15 +30,15 @@ test('/ renders English with the NEXT_LOCALE=en cookie', async ({ page, baseURL 
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('/ falls back to Vietnamese for an unknown NEXT_LOCALE value', async ({ page, baseURL }) => {
+test('/sign-in falls back to Vietnamese for an unknown NEXT_LOCALE value', async ({ page, baseURL }) => {
   await setLocaleCookie(page, baseURL, 'fr');
-  await page.goto('/');
+  await page.goto('/sign-in');
   await expect(page.getByText('Sổ cái nhà đất của gia đình')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
 });
 
 test('the server HTML is already in the cookie locale', async ({ request }) => {
-  const response = await request.get('/', { headers: { cookie: 'NEXT_LOCALE=en' } });
+  const response = await request.get('/sign-in', { headers: { cookie: 'NEXT_LOCALE=en' } });
   const html = (await response.text()).replaceAll('&#x27;', "'");
   expect(html).toContain('<html lang="en"');
   expect(html).toContain("<p>The family's property ledger</p>");
