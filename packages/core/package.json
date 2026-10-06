@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./auth": "./src/auth/otp.ts",
     "./date": "./src/date/iso-date.ts",
     "./date/calendar": "./src/date/calendar.ts",
     "./format": "./src/format/index.ts",
