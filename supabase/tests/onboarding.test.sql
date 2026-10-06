@@ -111,12 +111,16 @@ select throws_ok($$ select public.create_household('Gia đình Mới Demo', 'Dem
   'submitting onboarding twice creates no second household');
 reset role;
 
+select md5(string_agg(id::text || locale, ',' order by id)) as others_before
+from public.household_members where user_id is distinct from :'fresh_user' \gset
 select tests.act_as('fresh@test.esta.test');
 select public.set_my_locale('en');
 select is((select locale from public.household_members where user_id = :'fresh_user'), 'en', 'a member sets its own locale');
 select throws_ok($$ select public.set_my_locale('fr') $$, '23514', null, 'an unknown locale is refused');
 reset role;
-select is((select count(*)::int from public.household_members where locale = 'en'), 1, 'set_my_locale touches only the caller''s rows');
+select is(
+  (select md5(string_agg(id::text || locale, ',' order by id)) from public.household_members where user_id is distinct from :'fresh_user'),
+  :'others_before', 'set_my_locale touches only the caller''s rows');
 
 select tests.act_as('admin.a@test.esta.test');
 select throws_ok(

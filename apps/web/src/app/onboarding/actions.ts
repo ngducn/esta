@@ -3,10 +3,11 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { carryCookieLocaleToMember } from '@/server/locale';
+import { NAME_MAX_LENGTH } from './limits';
 import { getCurrentMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 
-const NAME_MAX = 120;
+const UNIQUE_VIOLATION = '23505';
 
 type NameError = 'required' | 'too-long';
 
@@ -31,7 +32,7 @@ function text(formData: FormData, name: string): string {
 
 function nameError(value: string): NameError | undefined {
   if (value === '') return 'required';
-  if (value.length > NAME_MAX) return 'too-long';
+  if (value.length > NAME_MAX_LENGTH) return 'too-long';
   return undefined;
 }
 
@@ -43,7 +44,7 @@ export async function createHousehold(_previous: CreateHouseholdState, formData:
 
   const supabase = await createSessionClient();
   const { error } = await supabase.rpc('create_household', { p_name: householdName, p_display_name: displayName });
-  if (error && error.code !== '23505') return { householdName, displayName, errors: { form: 'failed' } };
+  if (error && error.code !== UNIQUE_VIOLATION) return { householdName, displayName, errors: { form: 'failed' } };
   await carryCookieLocaleToMember();
   redirect('/onboarding');
 }
@@ -57,6 +58,6 @@ export async function inviteMember(_previous: InviteState, formData: FormData): 
   if (member === null) redirect('/onboarding');
   const supabase = await createSessionClient();
   const { error } = await supabase.rpc('invite_member', { p_household_id: member.household.id, p_email: email, p_role: role });
-  if (error) return { status: 'error', email, role, error: error.code === '23505' ? 'already-invited' : 'failed' };
+  if (error) return { status: 'error', email, role, error: error.code === UNIQUE_VIOLATION ? 'already-invited' : 'failed' };
   return { status: 'invited', email, role };
 }

@@ -15,7 +15,7 @@
     "sending": "Đang gửi mã…",
     "invalidEmail": "Email chưa đúng. Kiểm tra lại rồi thử lại.",
     "sendFailed": "Chưa gửi được mã. Kiểm tra kết nối mạng rồi thử lại.",
-    "codeSent": "Đã gửi mã đến {email}. Mã nằm trong email có tiêu đề “Mã đăng nhập Esta”.",
+    "codeSent": "Đã gửi mã đến {email}. Mã nằm trong email có tiêu đề “Mã đăng nhập Esta” và dùng được trong một giờ. Không thấy email thì xem thư mục Spam.",
     "codeLabel": "Mã 6 chữ số",
     "verify": "Đăng nhập",
     "verifying": "Đang kiểm tra…",
@@ -25,7 +25,8 @@
     "changeEmail": "Đổi email",
     "or": "hoặc",
     "google": "Đăng nhập bằng Google",
-    "googleFailed": "Chưa đăng nhập được bằng Google. Thử lại hoặc dùng mã qua email."
+    "googleFailed": "Chưa đăng nhập được bằng Google. Thử lại hoặc dùng mã qua email.",
+    "rateLimited": "Esta đã gửi nhiều mã trong giờ qua. Dùng mã mới nhất trong email, hoặc đợi ít phút rồi thử lại."
   },
   "onboarding": {
     "title": "Tạo gia đình",
@@ -52,7 +53,7 @@
     "roleHints": {
       "admin": "Xem, sửa và mời người khác.",
       "member": "Xem và sửa dữ liệu.",
-      "viewer": "Chỉ xem, không sửa được."
+      "viewer": "Xem mọi thông tin, không sửa và không mời được."
     },
     "invalidEmail": "Email chưa đúng. Kiểm tra lại rồi thử lại.",
     "invite": "Mời",
@@ -60,7 +61,9 @@
     "invited": "Đã mời {email} với quyền {role}.",
     "alreadyInvited": "Email này đã được mời hoặc đã là thành viên.",
     "inviteFailed": "Chưa mời được. Kiểm tra kết nối mạng rồi thử lại.",
-    "done": "Xong"
+    "done": "Xong",
+    "invitedElsewhere": "Nếu bạn được mời vào một gia đình, hãy đăng xuất và đăng nhập bằng đúng email đã được mời.",
+    "signedInEmail": "Bạn đang dùng {email}."
   },
   "home": {
     "role": "Quyền: {role}",

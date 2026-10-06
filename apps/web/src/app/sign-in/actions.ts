@@ -8,9 +8,11 @@ import { env } from '@/server/env';
 import { finishSignIn } from '@/server/sign-in';
 import { createCodeSender, createSessionClient } from '@/server/supabase/server';
 
+type SendFailure = 'send-failed' | 'rate-limited';
+
 export type SignInState =
-  | { step: 'email'; email: string; error: 'invalid-email' | 'send-failed' | null }
-  | { step: 'code'; email: string; error: 'wrong-code' | 'send-failed' | null; sentCount: number };
+  | { step: 'email'; email: string; error: 'invalid-email' | SendFailure | null }
+  | { step: 'code'; email: string; code: string; error: 'wrong-code' | SendFailure | null; sentCount: number };
 
 const emailSchema = z.email().transform((email) => email.toLowerCase());
 
@@ -21,9 +23,10 @@ function field(formData: FormData, name: string): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-async function sendCode(email: string): Promise<boolean> {
+async function sendCode(email: string): Promise<SendFailure | null> {
   const { error } = await createCodeSender().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-  return error === null;
+  if (error === null) return null;
+  return error.status === 429 ? 'rate-limited' : 'send-failed';
 }
 
 export async function signIn(previous: SignInState, formData: FormData): Promise<SignInState> {
@@ -38,19 +41,22 @@ export async function signIn(previous: SignInState, formData: FormData): Promise
   const sentCount = previous.step === 'code' ? previous.sentCount : 0;
 
   if (intent === 'send' || intent === 'resend') {
-    if (!(await sendCode(email))) {
+    const failure = await sendCode(email);
+    if (failure !== null) {
       return intent === 'send'
-        ? { step: 'email', email, error: 'send-failed' }
-        : { step: 'code', email, error: 'send-failed', sentCount };
+        ? { step: 'email', email, error: failure }
+        : { step: 'code', email, code: '', error: failure, sentCount };
     }
-    return { step: 'code', email, error: null, sentCount: sentCount + 1 };
+    return { step: 'code', email, code: '', error: null, sentCount: sentCount + 1 };
   }
 
-  const code = parseOtpInput(field(formData, 'code'));
-  if (!code.ok) return { step: 'code', email, error: 'wrong-code', sentCount };
+  const typed = field(formData, 'code');
+  const wrong: SignInState = { step: 'code', email, code: typed, error: 'wrong-code', sentCount };
+  const code = parseOtpInput(typed);
+  if (!code.ok) return wrong;
   const supabase = await createSessionClient();
   const { error } = await supabase.auth.verifyOtp({ email, token: code.value, type: 'email' });
-  if (error) return { step: 'code', email, error: 'wrong-code', sentCount };
+  if (error) return wrong;
   redirect(await finishSignIn());
 }
 

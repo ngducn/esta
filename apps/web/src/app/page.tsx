@@ -31,7 +31,7 @@ export default async function HomePage() {
         </Link>
       )}
       <form action={signOut}>
-        <button type="submit" className="min-h-11 rounded-md border-2 border-current px-4 font-semibold">
+        <button type="submit" className="min-h-11 underline underline-offset-4">
           {t('signOut')}
         </button>
       </form>

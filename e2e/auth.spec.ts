@@ -89,6 +89,7 @@ test('a wrong code shows the error and creates no session', async ({ page }) => 
   await page.getByLabel('Mã 6 chữ số').fill('000000');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await expect(page.getByRole('main').getByRole('alert')).toHaveText('Mã không đúng hoặc đã hết hạn. Gửi lại mã.');
+  await expect(page.getByLabel('Mã 6 chữ số'), 'the typed digits stay so a typo can be fixed').toHaveValue('000000');
   await expect(page.getByRole('button', { name: /^Gửi lại mã sau \d+ giây$/ })).toBeDisabled();
   const cookies = await page.context().cookies();
   expect(cookies.filter((cookie) => cookie.name.startsWith('sb-'))).toEqual([]);

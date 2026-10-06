@@ -51,9 +51,12 @@ function phone(text: string): Phone {
 }
 
 async function suggested(text: string): Promise<string> {
-  const rows = await suggestCurrentUnit(text).catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
-  if (typeof rows === 'string') return rows;
-  return rows.map((row) => `${row.commune_code} ${row.commune_name} (${row.province_code})`).join(' · ');
+  try {
+    const rows = await suggestCurrentUnit(text);
+    return rows.map((row) => `${row.commune_code} ${row.commune_name} (${row.province_code})`).join(' · ');
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
 }
 
 const ADDRESS_LOOKUPS: readonly [string, string][] = [

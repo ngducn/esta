@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
 import { createHousehold, inviteMember, type CreateHouseholdState, type InviteState, type Role } from './actions';
+import { NAME_MAX_LENGTH } from './limits';
 
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
 
@@ -48,7 +49,7 @@ function TextField({
         autoComplete={autoComplete}
         defaultValue={defaultValue}
         required
-        maxLength={200}
+        maxLength={NAME_MAX_LENGTH}
         aria-invalid={error !== null}
         aria-describedby={error === null ? hintId : `${hintId} ${errorId}`}
         className={fieldClass}

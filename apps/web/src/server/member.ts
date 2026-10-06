@@ -13,20 +13,22 @@ export type Member = {
   household: { id: string; name: string };
 };
 
-export const getSessionUserId = cache(async (): Promise<string | null> => {
+export type SessionUser = { id: string; email: string | null };
+
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createSessionClient();
   const { data } = await supabase.auth.getClaims();
-  return data?.claims.sub ?? null;
+  return data === null ? null : { id: data.claims.sub, email: data.claims.email ?? null };
 });
 
 export const getCurrentMember = cache(async (): Promise<Member | null> => {
-  const userId = await getSessionUserId();
-  if (userId === null) return null;
+  const user = await getSessionUser();
+  if (user === null) return null;
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('household_members')
     .select('id, role, is_operator, display_name, locale, household:households!inner(id, name)')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .order('created_at')
     .limit(1)
     .maybeSingle();

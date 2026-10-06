@@ -15,17 +15,18 @@
     "sending": "Sending the code…",
     "invalidEmail": "That email does not look right. Check it and try again.",
     "sendFailed": "The code was not sent. Check your connection and try again.",
-    "codeSent": "We sent a code to {email}. Look for the email titled “Mã đăng nhập Esta”.",
+    "codeSent": "Esta sent a code to {email}. Look for the email titled “Mã đăng nhập Esta”. The code works for one hour. If you cannot find it, check your spam folder.",
     "codeLabel": "6-digit code",
     "verify": "Sign in",
     "verifying": "Checking…",
     "wrongCode": "The code is wrong or has expired. Send a new code.",
     "resend": "Send a new code",
-    "resendIn": "Send a new code in {seconds} s",
+    "resendIn": "Send a new code in {seconds} seconds",
     "changeEmail": "Use another email",
     "or": "or",
     "google": "Sign in with Google",
-    "googleFailed": "Google sign-in did not work. Try again or use an email code."
+    "googleFailed": "Google sign-in did not work. Try again or use an email code.",
+    "rateLimited": "Esta sent several codes in the last hour. Use the newest code in your email, or wait a few minutes and try again."
   },
   "onboarding": {
     "title": "Create your household",
@@ -52,7 +53,7 @@
     "roleHints": {
       "admin": "Views, edits and invites others.",
       "member": "Views and edits records.",
-      "viewer": "Views only and cannot edit."
+      "viewer": "Sees everything but cannot edit or invite."
     },
     "invalidEmail": "That email does not look right. Check it and try again.",
     "invite": "Invite",
@@ -60,7 +61,9 @@
     "invited": "Invited {email} as {role}.",
     "alreadyInvited": "This email is already invited or a member.",
     "inviteFailed": "The invite was not saved. Check your connection and try again.",
-    "done": "Done"
+    "done": "Done",
+    "invitedElsewhere": "If someone invited you to a household, sign out and sign in with the exact email they invited.",
+    "signedInEmail": "You are using {email}."
   },
   "home": {
     "role": "Access: {role}",

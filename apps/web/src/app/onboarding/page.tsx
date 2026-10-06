@@ -3,8 +3,9 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getCurrentMember } from '@/server/member';
+import { getCurrentMember, getSessionUser } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
+import { signOut } from '../home-actions';
 import { LanguageSwitch } from '../language-switch';
 import { CreateHouseholdForm, InviteForm } from './forms';
 
@@ -13,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title') };
 }
 
-async function claimedLateInvite(): Promise<boolean> {
+async function claimLateInvites(): Promise<boolean> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase.rpc('claim_pending_invites');
   if (error) throw new Error(`claim_pending_invites failed: ${error.message}`);
@@ -21,8 +22,14 @@ async function claimedLateInvite(): Promise<boolean> {
 }
 
 export default async function OnboardingPage() {
-  const [t, messages, member] = await Promise.all([getTranslations('onboarding'), getMessages(), getCurrentMember()]);
-  if (member === null && (await claimedLateInvite())) redirect('/');
+  const [t, home, messages, member, user] = await Promise.all([
+    getTranslations('onboarding'),
+    getTranslations('home'),
+    getMessages(),
+    getCurrentMember(),
+    getSessionUser(),
+  ]);
+  if (member === null && (await claimLateInvites())) redirect('/');
   if (member !== null && member.role !== 'admin') redirect('/');
 
   return (
@@ -38,6 +45,15 @@ export default async function OnboardingPage() {
               <p>{t('intro')}</p>
             </div>
             <CreateHouseholdForm />
+            <div className="flex flex-col gap-2">
+              {user?.email && <p className="break-all">{t('signedInEmail', { email: user.email })}</p>}
+              <p>{t('invitedElsewhere')}</p>
+              <form action={signOut}>
+                <button type="submit" className="min-h-11 underline underline-offset-4">
+                  {home('signOut')}
+                </button>
+              </form>
+            </div>
           </>
         ) : (
           <>
