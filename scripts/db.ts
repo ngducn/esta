@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { authDrifts, parseSlot, writeSlotWorkdir } from './slot.ts';
+import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
+import { authDrifts, parseSlot, slotPorts, writeSlotWorkdir } from './slot.ts';
 
 const COMMANDS: Record<string, string[]> = {
   start: ['start'],
@@ -85,6 +86,10 @@ const result = spawnSync('supabase', [...args, '--workdir', workdir, ...extra], 
   env: supabaseEnv,
 });
 if (result.error) throw result.error;
+if (result.status === 0 && command === 'start') {
+  const warning = bindingWarning(exposedListeners(listListeners(), slotPorts(slot)), slot);
+  if (warning !== undefined) console.error(`\n${warning}\n`);
+}
 if (result.status === 0 && capture) {
   writeFileSync(join(repoRoot, 'packages', 'db', 'src', 'database.types.ts'), result.stdout);
 }

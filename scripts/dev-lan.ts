@@ -4,6 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, wr
 import { connect } from 'node:net';
 import { homedir, networkInterfaces } from 'node:os';
 import { join } from 'node:path';
+import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
 import { renderCaddyfile } from './caddyfile.ts';
 import { devCaDir, trustInstructions } from './dev-ca.ts';
 import { commandOf, liveState, type State } from './dev-lan-state.ts';
@@ -178,3 +179,5 @@ if (!ready) {
   shutdown(1);
 }
 printUrls(lan);
+const warning = bindingWarning(exposedListeners(listListeners(), ports, lan), slot);
+if (warning !== undefined) console.error(`${warning}\n`);
