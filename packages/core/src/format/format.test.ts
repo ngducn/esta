@@ -3,7 +3,7 @@ import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import { formatArea, formatDate, formatDateLong, formatRelativeDue, formatVnd, formatVndCompact } from './index';
 
-const NBSP = ' ';
+const NBSP = '\u00a0';
 
 describe('formatVnd', () => {
   it('matches DOMAIN-VN §9 with the NBSP before ₫', () => {

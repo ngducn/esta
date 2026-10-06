@@ -4,7 +4,7 @@ import type { Vnd } from '../money/vnd';
 
 export type Locale = 'vi' | 'en';
 
-const NBSP = ' ';
+const NBSP = '\u00a0';
 
 const vndCurrency = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
 const enInteger = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
