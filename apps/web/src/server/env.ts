@@ -23,8 +23,8 @@ export type Env = z.infer<typeof schema>;
 export type EstaEnv = Env['ESTA_ENV'];
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
-  const set = Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ''));
-  const result = schema.safeParse(set);
+  const nonEmpty = Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ''));
+  const result = schema.safeParse(nonEmpty);
   if (!result.success) {
     throw new Error(`Invalid environment variables:\n${z.prettifyError(result.error)}`);
   }

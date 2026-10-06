@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
+import { parseEnv } from './src/server/env';
 
-// Parsing here makes a bad variable stop `next dev`, `next build` and `next start` before anything serves.
-import './src/server/env';
+parseEnv(process.env);
 
 const nextConfig: NextConfig = {};
 

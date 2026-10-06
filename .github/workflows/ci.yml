@@ -48,6 +48,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      # The committed Impeccable engine is darwin-arm64 only; this installs the Linux one.
-      - run: npx impeccable install --providers=claude --scope=project -y
+      - name: Install the Impeccable engine for Linux
+        run: npx impeccable install --providers=claude --scope=project -y
       - run: pnpm design:detect
