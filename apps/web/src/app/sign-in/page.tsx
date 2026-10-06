@@ -32,6 +32,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     verify: t('verify'),
     verifying: t('verifying'),
     wrongCode: t('wrongCode'),
+    missingCode: t('missingCode'),
     resend: t('resend'),
     resendIn: around(t('resendIn', { seconds: SLOT })),
     changeEmail: t('changeEmail'),

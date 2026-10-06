@@ -12,7 +12,9 @@ type SendFailure = 'send-failed' | 'rate-limited';
 
 export type SignInState =
   | { step: 'email'; email: string; error: 'invalid-email' | SendFailure | null }
-  | { step: 'code'; email: string; code: string; error: 'wrong-code' | SendFailure | null; sentCount: number };
+  | { step: 'code'; email: string; code: string; error: 'missing-code' | 'wrong-code' | SendFailure | null; sentCount: number };
+
+export type SignInError = NonNullable<SignInState['error']>;
 
 const emailSchema = z.email().transform((email) => email.toLowerCase());
 
@@ -51,6 +53,7 @@ export async function signIn(previous: SignInState, formData: FormData): Promise
   }
 
   const typed = field(formData, 'code');
+  if (typed === '') return { step: 'code', email, code: typed, error: 'missing-code', sentCount };
   const wrong: SignInState = { step: 'code', email, code: typed, error: 'wrong-code', sentCount };
   const code = parseOtpInput(typed);
   if (!code.ok) return wrong;

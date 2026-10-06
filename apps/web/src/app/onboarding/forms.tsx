@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef, type RefObject } from 'react';
 import { createHousehold, inviteMember, type CreateHouseholdState, type InviteState, type Role } from './actions';
 import { NAME_MAX_LENGTH } from './limits';
 
@@ -18,6 +18,14 @@ const INVITE_ERRORS = {
   'already-invited': 'alreadyInvited',
   failed: 'inviteFailed',
 } as const;
+
+function useFocusFirstInvalid(state: object): RefObject<HTMLFormElement | null> {
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [state]);
+  return form;
+}
 
 function TextField({
   name,
@@ -66,10 +74,11 @@ function TextField({
 export function CreateHouseholdForm() {
   const t = useTranslations('onboarding');
   const [state, action, pending] = useActionState(createHousehold, initialCreate);
+  const form = useFocusFirstInvalid(state);
   const message = (error: 'required' | 'too-long' | undefined, required: string) =>
     error === 'required' ? required : error === 'too-long' ? t('tooLong') : null;
   return (
-    <form action={action} className="flex flex-col gap-6" noValidate>
+    <form ref={form} action={action} className="flex flex-col gap-6" noValidate>
       <TextField
         name="householdName"
         label={t('householdName')}
@@ -101,10 +110,11 @@ export function CreateHouseholdForm() {
 export function InviteForm() {
   const t = useTranslations('onboarding');
   const [state, action, pending] = useActionState(inviteMember, initialInvite);
+  const form = useFocusFirstInvalid(state);
   const failed = state.status === 'error' ? state : null;
   const error = failed === null ? null : t(INVITE_ERRORS[failed.error]);
   return (
-    <form action={action} className="flex flex-col gap-6" noValidate>
+    <form ref={form} action={action} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-2">
         <label htmlFor="email" className="font-semibold">
           {t('inviteEmail')}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
-import { signIn, type SignInState } from './actions';
+import { signIn, type SignInError, type SignInState } from './actions';
 
 const RESEND_WAIT_SECONDS = 60;
 
@@ -21,6 +21,7 @@ export type SignInCopy = {
   verify: string;
   verifying: string;
   wrongCode: string;
+  missingCode: string;
   resend: string;
   resendIn: Around;
   changeEmail: string;
@@ -46,24 +47,23 @@ function ResendButton({ copy, pending }: { copy: SignInCopy; pending: boolean })
   );
 }
 
-function sendError(copy: SignInCopy, error: 'invalid-email' | 'send-failed' | 'rate-limited' | 'wrong-code' | null) {
-  if (error === null) return null;
-  return {
-    'invalid-email': copy.invalidEmail,
-    'send-failed': copy.sendFailed,
-    'rate-limited': copy.rateLimited,
-    'wrong-code': copy.wrongCode,
-  }[error];
-}
+const ERRORS = {
+  'invalid-email': { copy: 'invalidEmail', aboutValue: true },
+  'missing-code': { copy: 'missingCode', aboutValue: true },
+  'wrong-code': { copy: 'wrongCode', aboutValue: true },
+  'send-failed': { copy: 'sendFailed', aboutValue: false },
+  'rate-limited': { copy: 'rateLimited', aboutValue: false },
+} as const satisfies Record<SignInError, { copy: keyof SignInCopy; aboutValue: boolean }>;
 
 export function SignInForm({ copy }: { copy: SignInCopy }) {
   const [state, action, pending] = useActionState(signIn, initialState);
   const codeInput = useRef<HTMLInputElement>(null);
-  const error = sendError(copy, state.error);
+  const error = state.error === null ? null : copy[ERRORS[state.error].copy];
+  const invalid = state.error !== null && ERRORS[state.error].aboutValue;
 
   useEffect(() => {
-    if (state.step === 'code' && state.error === 'wrong-code') codeInput.current?.select();
-  }, [state]);
+    if (state.step === 'code' && invalid) codeInput.current?.select();
+  }, [state, invalid]);
 
   if (state.step === 'email') {
     return (
@@ -83,7 +83,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
             spellCheck={false}
             required
             defaultValue={state.email}
-            aria-invalid={error !== null}
+            aria-invalid={invalid}
             aria-describedby={error === null ? undefined : 'email-error'}
             className={fieldClass}
           />
@@ -99,11 +99,11 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
   }
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} className="flex flex-col gap-4" noValidate>
       <input type="hidden" name="email" value={state.email} />
       <p id="code-sent">
         {copy.codeSent[0]}
-        <strong className="break-all">{state.email}</strong>
+        <strong className="wrap-anywhere">{state.email}</strong>
         {copy.codeSent[1]}
       </p>
       <div className="flex flex-col gap-2">
@@ -122,7 +122,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
           required
           maxLength={12}
           defaultValue={state.code}
-          aria-invalid={error !== null}
+          aria-invalid={invalid}
           aria-describedby={error === null ? 'code-sent' : 'code-sent code-error'}
           className={`${fieldClass} text-2xl tracking-widest tabular-nums`}
         />

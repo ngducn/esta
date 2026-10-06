@@ -20,6 +20,7 @@
     "verify": "Đăng nhập",
     "verifying": "Đang kiểm tra…",
     "wrongCode": "Mã không đúng hoặc đã hết hạn. Gửi lại mã.",
+    "missingCode": "Nhập mã 6 chữ số trong email.",
     "resend": "Gửi lại mã",
     "resendIn": "Gửi lại mã sau {seconds} giây",
     "changeEmail": "Đổi email",

@@ -5,6 +5,7 @@ import { authApi } from './helpers/auth-api';
 import { latestMail, requestCode, signIn } from './helpers/inbucket';
 
 async function seriousAxeViolations(page: Page): Promise<string[]> {
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
 }
@@ -49,6 +50,7 @@ test('FND-1: a new email reads its code from Inbucket, signs in and creates a ho
 
   await page.getByRole('button', { name: 'Tạo gia đình' }).click();
   await expect(page.getByText('Nhập tên gia đình.')).toBeVisible();
+  await expect(page.getByLabel('Tên gia đình'), 'a blank submit moves focus to the first error').toBeFocused();
 
   await createHousehold(page, 'Gia đình Mới Demo', 'Demo Mới');
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -130,6 +132,37 @@ test('a wrong code shows the error and creates no session', async ({ page }) => 
   const cookies = await page.context().cookies();
   expect(cookies.filter((cookie) => cookie.name.startsWith('sb-'))).toEqual([]);
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('an empty code gets app copy, not the browser bubble', async ({ page }) => {
+  await requestCode(page, uniqueEmail('empty'));
+  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText('Nhập mã 6 chữ số trong email.');
+  await expect(page.getByLabel('Mã 6 chữ số')).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('a send that is refused is not blamed on the email', async ({ page }) => {
+  const email = uniqueEmail('refused');
+  await requestCode(page, email);
+  await page.getByRole('button', { name: 'Đổi email' }).click();
+  await page.getByLabel('Email').fill(email);
+  await page.getByRole('button', { name: 'Gửi mã' }).click();
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    'Esta đã gửi nhiều mã trong giờ qua. Dùng mã mới nhất trong email, hoặc đợi ít phút rồi thử lại.',
+  );
+  await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'false');
+});
+
+test('the address on the code step wraps only where it has to', async ({ page }) => {
+  const lines = () => page.locator('#code-sent strong').evaluate((email) => email.getClientRects().length);
+  await requestCode(page, uniqueEmail('nguyen.demo'));
+  expect(await lines(), 'an address that fits on a line stays whole').toBe(1);
+
+  await requestCode(page, `${'nguyen.thi.demo.very.long.address'.repeat(2)}.${randomUUID().slice(0, 8)}@demo.esta.test`);
+  expect(
+    await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth),
+    'a longer address wraps instead of scrolling the page sideways',
+  ).toBe(true);
 });
 
 test('sign-out ends the session', async ({ page }) => {

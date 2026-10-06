@@ -20,6 +20,7 @@
     "verify": "Sign in",
     "verifying": "Checking…",
     "wrongCode": "The code is wrong or has expired. Send a new code.",
+    "missingCode": "Enter the 6-digit code from the email.",
     "resend": "Send a new code",
     "resendIn": "Send a new code in {seconds} seconds",
     "changeEmail": "Use another email",
