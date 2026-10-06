@@ -63,7 +63,6 @@ describe('slotConfig', () => {
     expect(toml).toMatch(new RegExp(`\\[inbucket\\][^[]*\\nport = ${ports.inbucket}\\n`));
     expect(toml).toContain(`site_url = "http://127.0.0.1:${ports.web}"`);
     expect(toml).toContain(`additional_redirect_urls = ["https://127.0.0.1:${ports.web}"]`);
-    expect(toml).toContain(`external_url = "http://127.0.0.1:${ports.api}"`);
     expect(boundPorts(toml)).toEqual(boundPorts(baseToml).map((port) => port + slot * 100));
   });
 
@@ -76,7 +75,7 @@ describe('slotConfig', () => {
     const toml = slotConfig(baseToml, 13, '192.168.1.7');
     expect(toml).toContain('site_url = "https://192.168.1.7:4743"');
     expect(toml).toContain('additional_redirect_urls = ["https://127.0.0.1:4300", "https://192.168.1.7:4743/**"]');
-    expect(toml).toContain('external_url = "https://192.168.1.7:9743"');
+    expect(toml).not.toContain('external_url');
     expect(toml).not.toContain('*.*');
   });
 
@@ -114,8 +113,11 @@ describe('writeSlotWorkdir', () => {
 
 describe('authDrifts', () => {
   const lanToml = slotConfig(baseToml, 13, '192.168.1.7');
-  const localEnv = ['GOTRUE_SITE_URL=http://127.0.0.1:4300', 'API_EXTERNAL_URL=http://127.0.0.1:55621', 'PATH=/bin'];
-  const lanEnv = ['GOTRUE_SITE_URL=https://192.168.1.7:4743', 'API_EXTERNAL_URL=https://192.168.1.7:9743'];
+  const localEnv = ['GOTRUE_SITE_URL=http://127.0.0.1:4300', 'GOTRUE_URI_ALLOW_LIST=https://127.0.0.1:4300', 'PATH=/bin'];
+  const lanEnv = [
+    'GOTRUE_SITE_URL=https://192.168.1.7:4743',
+    'GOTRUE_URI_ALLOW_LIST=https://127.0.0.1:4300,https://192.168.1.7:4743/**',
+  ];
 
   it('reports drift when the running auth service has the other origins', () => {
     expect(authDrifts(lanToml, localEnv)).toBe(true);

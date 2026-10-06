@@ -59,9 +59,7 @@ export function slotConfig(baseToml: string, slot: number, lan?: string): string
       const header = /^\[([^\]]+)\]/.exec(line);
       if (header?.[1] !== undefined) {
         section = header[1];
-        if (section !== 'api') return line;
-        const externalUrl = lan === undefined ? `http://127.0.0.1:${ports.api}` : `https://${lan}:${ports.apiLan}`;
-        return `${line}\nexternal_url = "${externalUrl}"`;
+        return line;
       }
       if (section === '' && line.startsWith('project_id =')) return `project_id = "esta-${slot}"`;
       if (lan !== undefined && line.startsWith('site_url =')) return `site_url = "https://${lan}:${ports.webLan}"`;
@@ -78,15 +76,16 @@ export function slotConfig(baseToml: string, slot: number, lan?: string): string
     .join('\n');
 }
 
-function tomlString(toml: string, key: string): string | undefined {
-  return new RegExp(`^${key} = "([^"]*)"$`, 'm').exec(toml)?.[1];
+function tomlStrings(toml: string, key: string): string {
+  const line = new RegExp(`^${key} = (.*)$`, 'm').exec(toml)?.[1] ?? '';
+  return [...line.matchAll(/"([^"]*)"/g)].map((match) => match[1]).join(',');
 }
 
 export function authDrifts(slotToml: string, runningEnv: readonly string[]): boolean {
   const running = new Map(runningEnv.map((entry) => [entry.slice(0, entry.indexOf('=')), entry.slice(entry.indexOf('=') + 1)]));
   return (
-    running.get('GOTRUE_SITE_URL') !== tomlString(slotToml, 'site_url') ||
-    running.get('API_EXTERNAL_URL') !== tomlString(slotToml, 'external_url')
+    running.get('GOTRUE_SITE_URL') !== tomlStrings(slotToml, 'site_url') ||
+    running.get('GOTRUE_URI_ALLOW_LIST') !== tomlStrings(slotToml, 'additional_redirect_urls')
   );
 }
 

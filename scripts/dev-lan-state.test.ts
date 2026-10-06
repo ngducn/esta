@@ -16,6 +16,14 @@ describe('liveState', () => {
     expect(liveState(raw, () => '/Applications/Safari.app/Contents/MacOS/Safari')).toBeUndefined();
   });
 
+  it('ignores a shell whose command line only mentions dev-lan', () => {
+    expect(liveState(raw, () => "/bin/zsh -c 'ESTA_SLOT=13 node scripts/dev-lan.ts'")).toBeUndefined();
+  });
+
+  it('accepts dev-lan started by node with an absolute path', () => {
+    expect(liveState(raw, () => '/opt/homebrew/bin/node /repo/scripts/dev-lan.ts')).toBeDefined();
+  });
+
   it('ignores a missing or unreadable state file', () => {
     expect(liveState(undefined, () => 'node scripts/dev-lan.ts')).toBeUndefined();
     expect(liveState('{"pid":"x"}', () => 'node scripts/dev-lan.ts')).toBeUndefined();

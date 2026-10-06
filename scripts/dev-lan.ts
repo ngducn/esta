@@ -152,7 +152,7 @@ function shutdown(code: number): never {
     }
   }
   rmSync(stateFile, { force: true });
-  console.error(`Supabase auth on ESTA_SLOT=${slot} still sends LAN links. \`pnpm db:start\` switches it back to localhost.`);
+  console.error(`Supabase auth on ESTA_SLOT=${slot} still uses the LAN site URL. \`pnpm db:start\` switches it back to localhost.`);
   process.exit(code);
 }
 
