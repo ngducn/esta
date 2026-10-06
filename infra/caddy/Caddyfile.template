@@ -24,7 +24,13 @@ https://{{LAN}}:{{WEB_LAN_PORT}} {
 
 https://{{LAN}}:{{API_LAN_PORT}} {
 	import lan
-	reverse_proxy 127.0.0.1:{{API_PORT}}
+	@public path /auth/v1/* /rest/v1/* /storage/v1/* /realtime/v1/* /functions/v1/*
+	handle @public {
+		reverse_proxy 127.0.0.1:{{API_PORT}}
+	}
+	handle {
+		respond 404
+	}
 }
 
 https://{{LAN}}:{{INBUCKET_LAN_PORT}} {

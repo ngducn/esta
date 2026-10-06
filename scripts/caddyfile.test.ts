@@ -20,6 +20,13 @@ function siteAddresses(caddyfile: string): string[] {
   return [...caddyfile.matchAll(/^(\S+) \{$/gm)].map((match) => match[1] ?? '').filter((address) => address.includes('://'));
 }
 
+function siteBlock(caddyfile: string, address: string): string {
+  const start = caddyfile.indexOf(`${address} {\n`);
+  const end = caddyfile.indexOf('\n}\n', start);
+  if (start === -1 || end === -1) throw new Error(`no site block for ${address}`);
+  return caddyfile.slice(start, end);
+}
+
 function upstreams(caddyfile: string): string[] {
   return [...caddyfile.matchAll(/reverse_proxy (\S+)/g)].map((match) => match[1] ?? '');
 }
@@ -41,6 +48,13 @@ describe('renderCaddyfile', () => {
     expect(caddyfile.match(/^\s*import lan$/gm)).toHaveLength(siteAddresses(caddyfile).length);
     expect(caddyfile).not.toContain('0.0.0.0');
     expect(caddyfile).not.toMatch(/^:\d+|^https?:\/\/:|\[::\]/m);
+  });
+
+  it('proxies only the public Supabase API paths and answers 404 for the rest', () => {
+    const apiSite = siteBlock(render(0), `https://${LAN}:8443`);
+    expect(apiSite).toMatch(/^\s*@public path \/auth\/v1\/\* \/rest\/v1\/\* \/storage\/v1\/\* \/realtime\/v1\/\* \/functions\/v1\/\*$/m);
+    expect([...apiSite.matchAll(/^\s*handle(.*)\{$/gm)].map((match) => match[1]?.trim())).toEqual(['@public', '']);
+    expect(apiSite).toMatch(/handle @public \{\s*reverse_proxy 127\.0\.0\.1:54321\s*\}\s*handle \{\s*respond 404\s*\}/);
   });
 
   it('turns off automatic HTTPS, the admin API and trust store installs', () => {
