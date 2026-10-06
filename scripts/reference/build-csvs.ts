@@ -16,7 +16,6 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 const dataDir = join(import.meta.dirname, 'data');
 const seedDir = join(repoRoot, 'supabase', 'seed', 'reference');
 
-/** Every current unit has existed in this form since the two-tier reform took effect. */
 const REFORM_DATE = '2025-07-01';
 
 const LEGACY_COLUMNS = [

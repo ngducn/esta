@@ -1,11 +1,9 @@
--- Shared reference data. No household owns these rows; only migrations write them.
-
 create type public.admin_unit_kind as enum ('province', 'city', 'ward', 'commune', 'special_zone');
 create type public.admin_merge_kind as enum ('whole', 'partial');
 create type public.land_group as enum ('agricultural', 'non_agricultural', 'unused');
 create type public.tax_rule_kind as enum ('vn_rental_individual');
 
-create function private.admin_name_fold(p_text text)
+create function public.admin_name_fold(p_text text)
 returns text
 language sql
 immutable
@@ -22,7 +20,6 @@ as $$
     '\s+', ' ', 'g'));
 $$;
 
--- One unit prefix is stripped, so "Phường Xã Đàn" keys as "xa dan" and "Quận 7" as "7".
 create function public.admin_name_key(p_text text)
 returns text
 language sql
@@ -32,11 +29,11 @@ parallel safe
 set search_path = ''
 as $$
   select regexp_replace(
-    private.admin_name_fold(p_text),
+    public.admin_name_fold(p_text),
     '^(thanh pho|tinh|quan|huyen|thi xa|thi tran|phuong|xa|dac khu) ', '');
 $$;
 
-grant execute on function private.admin_name_fold(text) to authenticated, service_role;
+grant execute on function public.admin_name_fold(text) to anon, authenticated, service_role;
 grant execute on function public.admin_name_key(text) to anon, authenticated, service_role;
 
 create table public.admin_units (
@@ -118,14 +115,11 @@ begin
 end;
 $$;
 
--- Suggests current communes for an old address such as "Phường 1, Thành phố Vũng Tàu, Tỉnh Bà Rịa–Vũng Tàu".
--- The words are cut into at most three runs (commune, district, province, in that order), and commas
--- must fall between runs. A run's own prefix ("Phường", "Quận", "Tỉnh") limits its level. A numeric
--- commune name needs its district. Leading words that match nothing, such as a street, are skipped,
--- and only the longest matching tail of the address counts. Every candidate of a split unit is listed.
--- merge_kind is 'whole' when the matched old unit went entirely into that one commune.
--- Security definer so the pre-sign-in /dev/core playground can call it with the anon key; it reads
--- only the public reference tables above.
+-- Admin units and their legacy names are public law, and the address lookup runs before sign-in.
+grant select on table public.admin_units, public.admin_unit_legacy_map to anon;
+create policy admin_units_public_read on public.admin_units for select to anon using (true);
+create policy admin_unit_legacy_map_public_read on public.admin_unit_legacy_map for select to anon using (true);
+
 create function public.suggest_current_unit(p_text text)
 returns table (
   commune_code text,
@@ -139,14 +133,13 @@ returns table (
 )
 language sql
 stable
-security definer
 set search_path = ''
 as $$
   with recursive
   tokens as (
     select t.token, t.ord, lag(t.token) over (order by t.ord) as previous
     from unnest(regexp_split_to_array(
-      private.admin_name_fold(replace(right(p_text, 120), ',', ' , ')), ' ')) with ordinality as t (token, ord)
+      public.admin_name_fold(replace(right(p_text, 120), ',', ' , ')), ' ')) with ordinality as t (token, ord)
   ),
   words as (
     select row_number() over (order by ord)::integer as i, token as word, coalesce(previous = ',', false) as after_comma
@@ -169,27 +162,21 @@ as $$
     from (select i, j, phrase, public.admin_name_key(phrase) as key from spans) as s
     where key <> ''
   ),
+  prefix_levels (prefix, level) as (
+    values ('', 1), ('', 2), ('', 3),
+      ('phuong', 1), ('xa', 1), ('thi tran', 1),
+      ('quan', 2), ('huyen', 2), ('thi xa', 2), ('thanh pho', 2),
+      ('thanh pho', 3), ('tinh', 3)
+  ),
   span_levels as (
     select k.i, k.j, k.key, l.level
     from keyed k
-    cross join (values (1), (2), (3)) as l (level)
-    where case k.prefix
-        when '' then true
-        when 'tinh' then l.level = 3
-        when 'thanh pho' then l.level in (2, 3)
-        when 'quan' then l.level = 2
-        when 'huyen' then l.level = 2
-        when 'thi xa' then l.level = 2
-        when 'phuong' then l.level = 1
-        when 'xa' then l.level = 1
-        when 'thi tran' then l.level = 1
-        else false
-      end
-      and case l.level
-        when 1 then exists (select 1 from public.admin_unit_legacy_map m where m.old_commune_key = k.key)
-        when 2 then exists (select 1 from public.admin_unit_legacy_map m where m.old_district_key = k.key)
-        else exists (select 1 from public.admin_unit_legacy_map m where m.old_province_key = k.key)
-      end
+    join prefix_levels l using (prefix)
+    where case l.level
+      when 1 then exists (select 1 from public.admin_unit_legacy_map m where m.old_commune_key = k.key)
+      when 2 then exists (select 1 from public.admin_unit_legacy_map m where m.old_district_key = k.key)
+      else exists (select 1 from public.admin_unit_legacy_map m where m.old_province_key = k.key)
+    end
   ),
   chains (start_i, level, c_key, d_key, p_key) as (
     select s.i, s.level,

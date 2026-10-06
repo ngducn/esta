@@ -59,7 +59,6 @@ function entryText(entries: Map<string, Buffer>, name: string): string {
 
 export type SheetRow = (string | null)[];
 
-/** Cells of the sheet at `sheetIndex` in workbook order, as text, with null for empty cells. */
 export function readXlsxSheet(file: Buffer, sheetIndex: number): SheetRow[] {
   const entries = readZip(file);
   const sheetIds = [...entryText(entries, 'xl/workbook.xml').matchAll(/<sheet\b([^>]*)\/>/g)].map((m) =>
@@ -103,7 +102,6 @@ export function readXlsxSheet(file: Buffer, sheetIndex: number): SheetRow[] {
 
 export type SoapRecord = Record<string, string>;
 
-/** The `TABLE` records of an NSO DMDVHC SOAP response, one field per child element. */
 export function readSoapTable(xml: string): SoapRecord[] {
   return [...xml.matchAll(/<TABLE\b[^>]*>([\s\S]*?)<\/TABLE>/g)].map((table) =>
     Object.fromEntries(

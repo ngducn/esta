@@ -497,6 +497,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
       esta_unaccent: { Args: { p_text: string }; Returns: string }
       suggest_current_unit: {

@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Downloads the NSO admin unit sources into data/ and checks them against data/SHA256SUMS.
-#   fetch.sh            download, then verify
-#   fetch.sh --verify   verify the committed files only, with no network
-#   fetch.sh --update   download, then rewrite SHA256SUMS after a deliberate refresh
 # DEN_NGAY pins the catalog date (dd/MM/yyyy). The NAPAS BIN snapshot is refreshed by hand,
 # never fetched: the portal's terms bar automated collection.
 set -euo pipefail

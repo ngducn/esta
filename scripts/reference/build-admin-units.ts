@@ -22,10 +22,6 @@ export type LegacyLink = {
   source: string;
 };
 
-/**
- * A hand-checked change to the conversion table. `add` appends a link the table lacks.
- * `recode` replaces the one table link printed with `tableOldCommuneCode`.
- */
 export type CuratedLink =
   | { fix: 'add'; link: LegacyLink }
   | { fix: 'recode'; tableOldCommuneCode: string; link: LegacyLink };
@@ -171,7 +167,6 @@ function readConversion(rows: readonly SheetRow[]): ConversionLine[] {
     });
 }
 
-/** For each key, the value most of its pairs carry; the first one seen wins a tie. */
 function majority(pairs: Iterable<readonly [string, string]>): Map<string, string> {
   const tallies = new Map<string, Map<string, number>>();
   for (const [key, value] of pairs) {
@@ -185,9 +180,8 @@ function majority(pairs: Iterable<readonly [string, string]>): Map<string, strin
 }
 
 /**
- * The old province of each old district. A few rows name the wrong province or spell its name
- * differently, so the district takes the province most of its rows name, and the province takes
- * the name most rows give it.
+ * A few NSO table rows name the wrong province or spell its name differently, so the district
+ * takes the province most of its rows name, and the province takes the name most rows give it.
  */
 function provinceByDistrict(lines: readonly ConversionLine[]): Map<string, { name: string; code: string }> {
   const provinceCodes = majority(lines.map((line) => [line.district.code, line.province.code]));
