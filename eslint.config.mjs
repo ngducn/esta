@@ -3,6 +3,7 @@ import nextPlugin from '@next/eslint-plugin-next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import noJsxLiterals from './eslint-rules/no-jsx-literals.mjs';
 import serviceRoleAllowlist from './eslint-rules/service-role-allowlist.mjs';
 
 export default defineConfig(
@@ -29,7 +30,11 @@ export default defineConfig(
   },
   {
     ignores: ['eslint-rules/**'],
-    plugins: { esta: { rules: { 'service-role-allowlist': serviceRoleAllowlist } } },
+    plugins: { esta: { rules: { 'service-role-allowlist': serviceRoleAllowlist, 'no-jsx-literals': noJsxLiterals } } },
     rules: { 'esta/service-role-allowlist': 'error' },
+  },
+  {
+    files: ['apps/web/**/*.tsx'],
+    rules: { 'esta/no-jsx-literals': 'error' },
   },
 );
