@@ -22,6 +22,9 @@ You own one PR of the Esta v1 stack from build to STACK-READY. You never merge, 
 
 ## Rules
 
+- Name every new migration `supabase/migrations/20261007<P><NN><S>00_<name>.sql`, where `<P>` is the phase digit, `<NN>` the two-digit PR number and `<S>` a sequence digit within the PR (for example P1-02's second migration is `20261007102100_...`). Versions must increase in stack order so migrations apply in the same order when PRs merge one at a time. This rule overrides the placeholder timestamps in the plan's Files boxes. P0-02 keeps its existing `0001xx` to `0004xx` versions.
+- Many agents share this machine. Stop only processes you started, by the PID you recorded when you started them (`kill <pid>`). Never use `pkill`, `killall` or `kill` by name or pattern, which kills other agents' servers.
+- Docker has 8 GB shared with another project's containers (`ekh-*`, never touch them), and each local Supabase stack takes about 1 GB. Run at most the one stack your brief names, stop it with `ESTA_SLOT=<slot> pnpm db:stop` when you are not actively testing, and never stop a slot you did not start. Port 3000 is taken; never use it.
 - Real family data, `.env*` files, tokens and `fixtures-private/` never enter a commit, screenshot, log or PR body. Seed data names contain "Demo". Never print `apps/agent/.env.local`.
 - Never create or change a cloud project, deploy, send real email, add a paid service or a new external data source. Stop and report instead.
 - Money is integer VND. No `new Date()` in domain code. No `any`. Every user-facing string goes through next-intl. Design tokens only.

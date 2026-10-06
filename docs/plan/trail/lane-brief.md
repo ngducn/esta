@@ -12,6 +12,8 @@ You are one independent verifier lane for one PR of the Esta v1 stack (github.co
 
 ## Rules
 
+- Many agents share this machine. Stop only processes you started, by the PID you recorded when you started them (`kill <pid>`). Never use `pkill`, `killall` or `kill` by name or pattern, which kills other agents' servers.
+- Docker has 8 GB shared with another project's containers (`ekh-*`, never touch them), and each local Supabase stack takes about 1 GB. Run at most the one stack your brief names, stop it with `ESTA_SLOT=<slot> pnpm db:stop` when you are not actively testing, and never stop a slot you did not start. Port 3000 is taken; never use it.
 - Never print or copy `apps/agent/.env.local` or any token. No real family data. Never touch cloud services.
 - Use read-only diagnostics only (console, snapshot, SELECT queries, logs).
 - Stop every process you started (dev server, browse daemon, local stack on your slot) before you return. Leave evidence files in place.
