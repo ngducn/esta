@@ -24,7 +24,7 @@ export function LiveParse() {
         onChange={(event) => setText(event.target.value)}
         inputMode="text"
         autoComplete="off"
-        className="max-w-xs rounded border px-3 py-2 text-base"
+        className="min-h-11 max-w-xs rounded border px-3 py-2 text-base"
       />
       <output htmlFor={inputId} data-testid="live-parse-output" aria-live="polite" className="tabular-nums">
         {result.ok ? formatVnd(result.value, 'vi') : `rejected: ${result.reason}`}

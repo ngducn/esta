@@ -6,15 +6,32 @@ export const metadata: Metadata = {
   title: 'Core playground',
 };
 
-type Column = { label: string; cell?: string; value: (row: CheckedRow) => string; className?: string };
+const NBSP = String.fromCharCode(160);
+
+// A mismatch caused by a plain space where an NBSP belongs would otherwise look identical.
+function visibleSpaces(text: string, row: CheckedRow): string {
+  return row.matches ? text : text.replaceAll(NBSP, '⍽');
+}
+
+type Column = {
+  label: string;
+  cell?: string;
+  value: (row: CheckedRow) => string;
+  className?: (row: CheckedRow) => string;
+};
 
 const COLUMNS: readonly Column[] = [
-  { label: 'Function', value: (row) => row.fn, className: 'font-mono' },
+  { label: 'Function', value: (row) => row.fn, className: () => 'font-mono' },
   { label: 'Input', value: (row) => row.input },
   { label: 'Locale', value: (row) => row.locale ?? '' },
-  { label: 'Expected', cell: 'expected', value: (row) => row.expected },
-  { label: 'Actual', cell: 'actual', value: (row) => row.actual },
-  { label: 'Result', cell: 'result', value: (row) => (row.matches ? 'OK' : 'MISMATCH'), className: 'font-semibold' },
+  { label: 'Expected', cell: 'expected', value: (row) => visibleSpaces(row.expected, row) },
+  { label: 'Actual', cell: 'actual', value: (row) => visibleSpaces(row.actual, row) },
+  {
+    label: 'Result',
+    cell: 'result',
+    value: (row) => (row.matches ? 'OK' : 'MISMATCH'),
+    className: (row) => (row.matches ? '' : 'font-bold underline'),
+  },
 ];
 
 export default function DevCorePage() {
@@ -57,17 +74,20 @@ export default function DevCorePage() {
                   data-input={row.input}
                   data-locale={row.locale}
                 >
-                  {COLUMNS.map((column) => (
-                    <td
-                      key={column.label}
-                      className={`py-1 pr-4 wrap-anywhere max-sm:contents ${column.className ?? ''}`}
-                    >
-                      <span aria-hidden="true" className="font-sans font-normal text-xs sm:hidden">
-                        {column.label}
-                      </span>
-                      <span data-cell={column.cell}>{column.value(row)}</span>
-                    </td>
-                  ))}
+                  {COLUMNS.map((column) => {
+                    const value = column.value(row);
+                    return (
+                      <td
+                        key={column.label}
+                        className={`py-1 pr-4 wrap-anywhere ${value === '' ? 'max-sm:hidden' : 'max-sm:contents'} ${column.className?.(row) ?? ''}`}
+                      >
+                        <span aria-hidden="true" className="font-sans font-normal text-xs sm:hidden">
+                          {column.label}
+                        </span>
+                        <span data-cell={column.cell}>{value}</span>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

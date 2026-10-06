@@ -39,7 +39,6 @@ export function parseDecimal(text: string): Decimal | null {
   return { digits: BigInt(integerGroups.join('') + fraction), scale: fraction.length };
 }
 
-/** `decimal * multiplier` as a whole number of đồng. */
 export function toWholeDong(decimal: Decimal, multiplier: bigint): Result<bigint, AmountReason> {
   const divisor = 10n ** BigInt(decimal.scale);
   const scaled = decimal.digits * multiplier;
