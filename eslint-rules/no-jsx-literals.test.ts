@@ -18,6 +18,7 @@ const text = [{ messageId: 'text' }];
 const attribute = (name: string) => [{ messageId: 'attribute', data: { name } }];
 const metadata = (name: string) => [{ messageId: 'metadata', data: { name } }];
 const layout = join(repoRoot, 'apps/web/src/app/layout.tsx');
+const component = join(repoRoot, 'apps/web/src/components/chart.tsx');
 
 ruleTester.run('esta/no-jsx-literals', rule, {
   valid: [
@@ -40,6 +41,22 @@ ruleTester.run('esta/no-jsx-literals', rule, {
     { filename: page, code: 'const a = <p>{count + 1}</p>;' },
     { filename: page, code: 'const L = t("late");\nconst a = <p>{L}</p>;' },
     { filename: page, code: 'let L = "Quá hạn";\nL = t("late");\nconst a = <p>{L}</p>;' },
+    { filename: component, code: 'const a = <Popover containerClassName="flex gap-2" labelClassName="text-ink font-semibold" />;' },
+    { filename: component, code: 'const a = <Tabs classNames="tab tab-active" tabClassNames="px-2 py-1" />;' },
+    { filename: component, code: 'const a = <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24" />;' },
+    { filename: component, code: 'const a = <meta name="viewport" content="width=device-width, initial-scale=1" />;' },
+    { filename: component, code: 'const a = <meta property="og:site_name" content="Sổ cái nhà đất" />;' },
+    { filename: component, code: 'const a = <link rel="icon" media="(prefers-color-scheme: dark)" href="/icon-dark.png" />;' },
+    { filename: component, code: 'const a = <source srcSet="/a.png 1x, /b.png 2x" sizes="(max-width: 600px) 100vw, 50vw" media="(min-width: 40em)" />;' },
+    { filename: component, code: 'const a = <text fontFamily="Be Vietnam Pro, sans-serif" font-family="Be Vietnam Pro" textAnchor="middle">{t("x")}</text>;' },
+    { filename: component, code: 'const a = <Chart fontFamily="Be Vietnam Pro, sans-serif" />;' },
+    { filename: component, code: 'const a = <path strokeDasharray="4 2" stroke-linecap="round" fill="url(#a b)" transform="translate(1 2) rotate(45)" />;' },
+    { filename: component, code: 'const a = <animate attributeName="fill" values="red; blue" calcMode="spline" keySplines="0.5 0 0.5 1" />;' },
+    { filename: component, code: 'const a = <Legend style="color: red" labelStyle="font-weight: 600" />;' },
+    { filename: component, code: 'const a = <input pattern="[A-Z]{2} [0-9]{3}" inputMode="numeric" autoComplete="street-address line1" accept="image/png, image/jpeg" />;' },
+    { filename: component, code: 'const a = <iframe sandbox="allow-scripts allow-forms" allow="camera; microphone" referrerPolicy="no-referrer" />;' },
+    { filename: component, code: 'const a = <td headers="col-a col-b" itemType="https://schema.org/Place https://schema.org/Offer" />;' },
+    { filename: component, code: 'const a = <use xlinkHref="#icon a" xlink:href="#icon b" />;' },
     { filename: page, code: 'export const metadata = { title: t("x") };' },
     { filename: join(repoRoot, 'apps/web/src/components/meta.tsx'), code: 'export const metadata = { title: "Esta" };' },
     { filename: layout, code: 'const metadata = { title: "Esta" };' },
@@ -80,6 +97,8 @@ ruleTester.run('esta/no-jsx-literals', rule, {
     { filename: page, code: 'const L = "Quá hạn";\nconst a = <p>{L}</p>;', errors: text },
     { filename: page, code: 'const L = `Quá hạn`;\nfunction A() { return <p>{L}</p>; }', errors: text },
     { filename: page, code: 'const L = "Quá hạn";\nconst a = <Btn label={L} />;', errors: attribute('label') },
+    { filename: component, code: 'const a = <Popover content="Xóa tài sản này?" />;', errors: attribute('content') },
+    { filename: component, code: 'const a = <Chart emptyState="Chưa có dữ liệu" />;', errors: attribute('emptyState') },
     { filename: layout, code: 'export const metadata = { title: "Esta" };', errors: metadata('title') },
     {
       filename: page,
