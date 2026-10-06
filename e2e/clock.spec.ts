@@ -23,11 +23,11 @@ test('the date line follows the test clock across a day without a restart', asyn
   try {
     await setClock(request, '2026-10-07T23:59:00+07:00');
     await page.goto('/');
-    await expect(page.getByTestId('date-line')).toHaveText('2026-10-07');
+    await expect(page.getByTestId('date-line')).toHaveText('Thứ Tư, 07/10/2026');
 
     await setClock(request, '2026-10-08T00:00:00+07:00');
     await page.reload();
-    await expect(page.getByTestId('date-line')).toHaveText('2026-10-08');
+    await expect(page.getByTestId('date-line')).toHaveText('Thứ Năm, 08/10/2026');
 
     const { violations } = await new AxeBuilder({ page }).analyze();
     expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
