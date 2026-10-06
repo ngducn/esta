@@ -39,6 +39,7 @@ test('the server HTML is already in the cookie locale', async ({ request }) => {
   const response = await request.get('/', { headers: { cookie: 'NEXT_LOCALE=en' } });
   const html = (await response.text()).replaceAll('&#x27;', "'");
   expect(html).toContain('<html lang="en"');
-  expect(html).toContain("The family's property ledger");
+  expect(html).toContain("<p>The family's property ledger</p>");
+  expect(html).toContain(`<meta name="description" content="The family's property ledger"/>`);
   expect(html).not.toContain('Sổ cái nhà đất của gia đình');
 });

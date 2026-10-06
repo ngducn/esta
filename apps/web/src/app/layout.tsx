@@ -7,7 +7,7 @@ import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('app');
-  return { title: t('name') };
+  return { title: t('name'), description: t('tagline') };
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
