@@ -51,7 +51,7 @@ select tests.cannot_write('public.notification_preferences', :'b',
 
 select throws_ok(
   format($$ update public.parties set household_id = %L where household_id = %L $$, :'b', :'a'),
-  '42501', null,
+  '23514', 'parties rows cannot move to another household',
   'an admin cannot move its own row into another household'
 );
 

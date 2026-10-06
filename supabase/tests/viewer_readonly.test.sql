@@ -28,9 +28,18 @@ select tests.cannot_write('public.parties', :'a',
   format($$ insert into public.parties (household_id, kind, full_name) values (%L, 'individual', 'Tenant') $$, :'a'));
 
 select tests.sees_household('public.notification_preferences', :'a', true);
-select tests.cannot_write('public.notification_preferences', :'a',
+select throws_ok(
   format($$ insert into public.notification_preferences (household_id, member_id, channel)
-            values (%L, %L, 'email') $$, :'a', :'a_admin'));
+            values (%L, %L, 'email') $$, :'a', :'a_admin'),
+  '42501', null, 'notification_preferences: insert for another member refused');
+select is_empty(
+  $$ update public.notification_preferences set daily_cap = 1
+     where member_id not in (select id from public.household_members where user_id = (select auth.uid())) returning 1 $$,
+  'notification_preferences: update touches no row of another member');
+select is_empty(
+  $$ delete from public.notification_preferences
+     where member_id not in (select id from public.household_members where user_id = (select auth.uid())) returning 1 $$,
+  'notification_preferences: delete touches no row of another member');
 
 reset role;
 select * from finish();
