@@ -13,8 +13,10 @@
     "start": "pnpm --filter @esta/web start",
     "check": "pnpm -r --include-workspace-root run typecheck && pnpm -r --include-workspace-root run lint && pnpm -r run test",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint e2e playwright.config.ts eslint.config.mjs",
+    "lint": "eslint e2e playwright.config.ts playwright.prod.config.ts eslint.config.mjs",
     "e2e": "playwright test",
+    "e2e:prod": "playwright test --config playwright.prod.config.ts",
+    "check:build-env": "scripts/check-build-env.sh",
     "design:detect": ".claude/skills/impeccable/scripts/impeccable detect --json apps/web/src"
   },
   "devDependencies": {
