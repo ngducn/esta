@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(12);
 
 select is(public.esta_unaccent('Đường Dĩ An'), 'duong di an', 'folds đ, tones and case');
 select is(public.esta_unaccent('ĐẶNG THỊ HƯỜNG'), 'dang thi huong', 'folds stacked marks and uppercase');
@@ -11,6 +11,7 @@ select is(
   'folds every vowel in the glyph test string'
 );
 select is(public.esta_unaccent(normalize('Hợp đồng', NFD)), 'hop dong', 'folds decomposed input like precomposed');
+select is(public.esta_unaccent('Ðoàn ðình'), 'doan dinh', 'folds the look-alike eth letters Ð and ð to d');
 select is(public.esta_unaccent(null), null, 'passes null through');
 
 select ok(public.esta_unaccent('Dĩ An') ilike '%' || public.esta_unaccent('di an') || '%', 'di an finds Dĩ An');

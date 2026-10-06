@@ -1,7 +1,7 @@
 export function foldVietnamese(text: string): string {
   return text
     .toLowerCase()
-    .replaceAll('đ', 'd')
+    .replace(/[đð]/g, 'd')
     .normalize('NFD')
     .replace(/\p{M}/gu, '');
 }
