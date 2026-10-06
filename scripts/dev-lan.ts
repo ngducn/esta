@@ -4,12 +4,12 @@ import { connect } from 'node:net';
 import { networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 import { renderCaddyfile } from './caddyfile.ts';
+import { commandOf, liveState, type State } from './dev-lan-state.ts';
 import { lanAddress } from './lan-address.ts';
 import { parseSlot, slotPorts } from './slot.ts';
 
-type State = { pid: number; lan: string };
-
 const READY_TIMEOUT_MS = 60_000;
+const PARENT_POLL_MS = 1_000;
 
 const repoRoot = join(import.meta.dirname, '..');
 const certsDir = join(repoRoot, '.certs');
@@ -32,17 +32,6 @@ function requireTools(): void {
       ].join('\n'),
     );
     process.exit(1);
-  }
-}
-
-function liveState(): State | undefined {
-  if (!existsSync(stateFile)) return undefined;
-  const state = JSON.parse(readFileSync(stateFile, 'utf8')) as State;
-  try {
-    process.kill(state.pid, 0);
-    return state;
-  } catch {
-    return undefined;
   }
 }
 
@@ -112,7 +101,7 @@ async function waitUntilListening(targets: readonly [string, number][]): Promise
 }
 
 requireTools();
-const running = liveState();
+const running = liveState(existsSync(stateFile) ? readFileSync(stateFile, 'utf8') : undefined, commandOf);
 if (running !== undefined) {
   console.log(`pnpm dev:lan is already running for ESTA_SLOT=${slot} (pid ${running.pid}).`);
   printUrls(running.lan);
@@ -162,7 +151,11 @@ function shutdown(code: number): never {
   process.exit(code);
 }
 
-for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => shutdown(0));
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) process.on(signal, () => shutdown(0));
+const parent = process.ppid;
+setInterval(() => {
+  if (process.ppid !== parent) shutdown(0);
+}, PARENT_POLL_MS).unref();
 for (const [index, child] of children.entries()) {
   child.on('exit', (code) => {
     if (index === 0) console.error(`Caddy stopped with code ${code}. Its log is ${caddyLog}.`);
