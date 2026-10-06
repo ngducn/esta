@@ -47,7 +47,7 @@ const SVG_CODE_ATTRIBUTES = [
 const CODE_ATTRIBUTES = new Set([...HTML_CODE_ATTRIBUTES, ...SVG_CODE_ATTRIBUTES]);
 const CODE_NAME_PATTERN = /(?:classNames?|style)$/i;
 const CODE_PREFIXES = ['data-', 'aria-'];
-const ELEMENT_CODE_ATTRIBUTES = { meta: new Set(['content']) };
+const ELEMENT_CODE_ATTRIBUTES = new Map([['meta', new Set(['content'])]]);
 const METADATA_TEXT_KEYS = new Set(['title', 'description']);
 const EXEMPT_ROOTS = ['apps/web/src/app/dev/'];
 const APP_ROOT = 'apps/web/src/app/';
@@ -64,7 +64,7 @@ function attributeKind(name, element) {
     CODE_PREFIXES.some((prefix) => name.startsWith(prefix)) ||
     CODE_NAME_PATTERN.test(name) ||
     CODE_ATTRIBUTES.has(camelCase(name)) ||
-    ELEMENT_CODE_ATTRIBUTES[element]?.has(name)
+    ELEMENT_CODE_ATTRIBUTES.get(element)?.has(name)
   ) {
     return 'code';
   }
