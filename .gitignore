@@ -6,7 +6,3 @@ fixtures-private/
 coverage/
 playwright-report/
 test-results/
-.DS_Store
-.claude/settings.local.json
-.impeccable/config.local.json
-.claude/skills/impeccable/scripts/bin/
