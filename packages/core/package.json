@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./date": "./src/date/iso-date.ts",
+    "./money": "./src/money/vnd.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
