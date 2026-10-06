@@ -1,3 +1,4 @@
+import eslintComments from '@eslint-community/eslint-plugin-eslint-comments';
 import js from '@eslint/js';
 import nextPlugin from '@next/eslint-plugin-next';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -40,6 +41,10 @@ export default defineConfig(
   {
     files: ['apps/web/**'],
     ignores: ['apps/web/src/app/dev/**'],
-    linterOptions: { noInlineConfig: true },
+    plugins: { '@eslint-community/eslint-comments': eslintComments },
+    rules: {
+      '@eslint-community/eslint-comments/no-restricted-disable': ['error', 'esta/*'],
+      '@eslint-community/eslint-comments/no-unlimited-disable': 'error',
+    },
   },
 );
