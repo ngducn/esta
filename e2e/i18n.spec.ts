@@ -45,3 +45,11 @@ test('the server HTML is already in the cookie locale', async ({ request }) => {
   expect(html).toContain(`<meta name="description" content="The family's property ledger"/>`);
   expect(html).not.toContain('Sổ cái nhà đất của gia đình');
 });
+
+test('client components read the app messages in the request locale', async ({ page, baseURL }) => {
+  await page.goto('/dev/i18n');
+  await expect(page.getByTestId('client-tagline')).toHaveText('Sổ cái nhà đất của gia đình');
+  await setLocaleCookie(page, baseURL, 'en');
+  await page.reload();
+  await expect(page.getByTestId('client-tagline')).toHaveText("The family's property ledger");
+});
