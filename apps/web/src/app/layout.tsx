@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale}>
       <body>
-        <p data-testid="date-line">{formatDateLong(clock.today(), 'vi')}</p>
+        <p data-testid="date-line">{formatDateLong(clock.today(), locale)}</p>
         {children}
       </body>
     </html>
