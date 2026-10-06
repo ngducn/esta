@@ -7,11 +7,24 @@ export type SlotPorts = {
   db: number;
   studio: number;
   inbucket: number;
+  webLan: number;
+  apiLan: number;
+  inbucketLan: number;
+};
+
+const BASE_PORTS: SlotPorts = {
+  web: 3000,
+  api: 54321,
+  db: 54322,
+  studio: 54323,
+  inbucket: 54324,
+  webLan: 3443,
+  apiLan: 8443,
+  inbucketLan: 9443,
 };
 
 const SLOT_STRIDE = 100;
 const MAX_SLOT = 99;
-const BASE_PORTS: SlotPorts = { web: 3000, api: 54321, db: 54322, studio: 54323, inbucket: 54324 };
 const SHARED_DIRS = ['migrations', 'seed', 'tests'] as const;
 
 export function parseSlot(raw: string | undefined): number {
@@ -30,12 +43,15 @@ export function slotPorts(slot: number): SlotPorts {
     db: BASE_PORTS.db + offset,
     studio: BASE_PORTS.studio + offset,
     inbucket: BASE_PORTS.inbucket + offset,
+    webLan: BASE_PORTS.webLan + offset,
+    apiLan: BASE_PORTS.apiLan + offset,
+    inbucketLan: BASE_PORTS.inbucketLan + offset,
   };
 }
 
 export function slotConfig(baseToml: string, slot: number): string {
   const offset = slot * SLOT_STRIDE;
-  const webOrigin = `127.0.0.1:${slotPorts(slot).web}`;
+  const ports = slotPorts(slot);
   let section = '';
   return baseToml
     .split('\n')
@@ -47,7 +63,9 @@ export function slotConfig(baseToml: string, slot: number): string {
       }
       if (section === '' && line.startsWith('project_id =')) return `project_id = "esta-${slot}"`;
       if (/^(site_url|additional_redirect_urls) =/.test(line)) {
-        return line.replaceAll(`127.0.0.1:${BASE_PORTS.web}`, webOrigin);
+        return line
+          .replaceAll(`127.0.0.1:${BASE_PORTS.web}`, `127.0.0.1:${ports.web}`)
+          .replaceAll(`:${BASE_PORTS.webLan}/`, `:${ports.webLan}/`);
       }
       const portsNameRemoteServers = section.startsWith('auth');
       if (portsNameRemoteServers) return line;

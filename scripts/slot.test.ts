@@ -21,12 +21,22 @@ function boundPorts(toml: string): number[] {
 
 describe('slotPorts', () => {
   it('returns the Supabase and Next.js defaults for slot 0', () => {
-    expect(slotPorts(0)).toEqual({ web: 3000, api: 54321, db: 54322, studio: 54323, inbucket: 54324 });
+    expect(slotPorts(0)).toEqual({
+      web: 3000,
+      api: 54321,
+      db: 54322,
+      studio: 54323,
+      inbucket: 54324,
+      webLan: 3443,
+      apiLan: 8443,
+      inbucketLan: 9443,
+    });
   });
 
   it('adds 100 per slot', () => {
-    expect(slotPorts(1)).toEqual({ web: 3100, api: 54421, db: 54422, studio: 54423, inbucket: 54424 });
-    expect(slotPorts(10)).toEqual({ web: 4000, api: 55321, db: 55322, studio: 55323, inbucket: 55324 });
+    expect(slotPorts(1)).toMatchObject({ web: 3100, api: 54421, db: 54422, studio: 54423, inbucket: 54424 });
+    expect(slotPorts(7)).toMatchObject({ webLan: 4143, apiLan: 9143, inbucketLan: 10143 });
+    expect(slotPorts(10)).toMatchObject({ web: 4000, api: 55321, db: 55322, studio: 55323, inbucket: 55324 });
   });
 });
 
@@ -52,6 +62,8 @@ describe('slotConfig', () => {
     expect(toml).toMatch(new RegExp(`\\[studio\\][^[]*\\nport = ${ports.studio}\\n`));
     expect(toml).toMatch(new RegExp(`\\[inbucket\\][^[]*\\nport = ${ports.inbucket}\\n`));
     expect(toml).toContain(`site_url = "http://127.0.0.1:${ports.web}"`);
+    expect(toml).toContain(`"https://192.168.*.*:${ports.webLan}/**"`);
+    expect(toml).not.toMatch(slot === 0 ? /:3543\// : /:3443\//);
     expect(boundPorts(toml)).toEqual(boundPorts(baseToml).map((port) => port + slot * 100));
   });
 
