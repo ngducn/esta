@@ -131,10 +131,12 @@ const logFd = openSync(caddyLog, 'w');
 const children: ChildProcess[] = [
   spawn('caddy', ['run', '--adapter', 'caddyfile', '--config', caddyfile], {
     stdio: ['ignore', logFd, logFd],
+    detached: true,
     env: { ...process.env, XDG_DATA_HOME: join(runDir, 'caddy-data'), XDG_CONFIG_HOME: join(runDir, 'caddy-config') },
   }),
   spawn(process.execPath, [join(repoRoot, 'scripts', 'web.ts'), 'dev', '--hostname', '127.0.0.1'], {
     stdio: 'inherit',
+    detached: true,
     env: {
       ...process.env,
       NEXT_PUBLIC_SUPABASE_URL: `https://${lan}:${ports.apiLan}`,
@@ -146,8 +148,16 @@ const children: ChildProcess[] = [
 ];
 writeFileSync(stateFile, JSON.stringify({ pid: process.pid, lan } satisfies State));
 
+// pnpm does not forward SIGTERM to next, so each child leads its own process group and the whole group is stopped.
 function shutdown(code: number): never {
-  for (const child of children) if (child.exitCode === null) child.kill('SIGTERM');
+  for (const child of children) {
+    if (child.pid === undefined) continue;
+    try {
+      process.kill(-child.pid, 'SIGTERM');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
+    }
+  }
   rmSync(stateFile, { force: true });
   process.exit(code);
 }
