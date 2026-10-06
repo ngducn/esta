@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, cpSync, existsSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -13,7 +13,7 @@ function boundPorts(toml: string): number[] {
   for (const line of toml.split('\n')) {
     const header = /^\[([^\]]+)\]/.exec(line);
     if (header?.[1] !== undefined) section = header[1];
-    const port = /^\w*port = (\d+)/.exec(line);
+    const port = /^\w*port\s*=\s*(\d+)/.exec(line);
     if (port?.[1] !== undefined && !section.startsWith('auth')) ports.push(Number(port[1]));
   }
   return ports;
@@ -60,6 +60,10 @@ describe('slotConfig', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
+  it('offsets a port line with other spacing or a trailing comment', () => {
+    expect(slotConfig('[db]\nport=54322 # host\n', 1)).toBe('[db]\nport = 54422 # host\n');
+  });
+
   it('leaves the remote SMTP port in [auth.email.smtp] alone', () => {
     const toml = slotConfig('[auth.email.smtp]\nport = 587\n[db]\nport = 54322\n', 2);
     expect(toml).toBe('[auth.email.smtp]\nport = 587\n[db]\nport = 54522\n');
@@ -79,5 +83,6 @@ describe('writeSlotWorkdir', () => {
     for (const dir of ['migrations', 'seed', 'tests']) {
       expect(existsSync(join(workdir, 'supabase', dir))).toBe(true);
     }
+    rmSync(root, { recursive: true });
   });
 });

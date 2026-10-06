@@ -152,6 +152,7 @@ declare
 begin
   execute format('alter table %s enable row level security', p_table);
   execute format('revoke all on table %s from anon, authenticated', p_table);
+  execute format('revoke truncate on table %s from service_role', p_table);
   execute format('grant select, insert, update, delete on table %s to authenticated', p_table);
   execute format('create policy %I on %s for select to authenticated using (%s)',
     v_name || '_select', p_table, v_read);

@@ -28,6 +28,8 @@ const capture = command === 'types';
 const result = spawnSync('supabase', [...args, '--workdir', workdir, ...extra], {
   stdio: ['inherit', capture ? 'pipe' : 'inherit', 'inherit'],
   encoding: 'utf8',
+  // The CLI waits about 6 s on its telemetry upload before exiting.
+  env: { ...process.env, SUPABASE_TELEMETRY_DISABLED: '1' },
 });
 if (result.error) throw result.error;
 if (result.status === 0 && capture) {

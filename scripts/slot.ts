@@ -51,9 +51,9 @@ export function slotConfig(baseToml: string, slot: number): string {
       }
       const portsNameRemoteServers = section.startsWith('auth');
       if (portsNameRemoteServers) return line;
-      const port = /^(\w*port) = (\d+)\s*$/.exec(line);
+      const port = /^(\w*port)\s*=\s*(\d+)(.*)$/.exec(line);
       if (port?.[1] === undefined || port[2] === undefined) return line;
-      return `${port[1]} = ${Number(port[2]) + offset}`;
+      return `${port[1]} = ${Number(port[2]) + offset}${port[3] ?? ''}`;
     })
     .join('\n');
 }

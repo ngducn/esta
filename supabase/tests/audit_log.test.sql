@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(21);
+select plan(27);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as admin_a \gset
@@ -21,7 +21,22 @@ select is((select diff -> 'full_name' from newest_audit), '{"old": "Owner a", "n
 select tests.act_as('admin.a@test.esta.test');
 update public.households set name = 'Test a renamed' where id = :'a';
 reset role;
-select is((select household_id from newest_audit), :'a'::uuid, 'a households row uses its own id as household_id');
+select is((select table_name || ':' || household_id from newest_audit), 'households:' || :'a',
+  'a households row uses its own id as household_id');
+select ok(not (select diff ? 'updated_at' from newest_audit), 'updated_at is left out of the diff');
+
+select count(*) as audit_rows from public.audit_log \gset
+select tests.act_as('admin.a@test.esta.test');
+update public.households set name = 'Test a renamed' where id = :'a';
+reset role;
+select is((select count(*) from public.audit_log), :audit_rows::bigint, 'an update that changes nothing writes no audit row');
+
+select tests.act_as('admin.a@test.esta.test');
+update public.household_settings set agent = '{"cap": null}' where household_id = :'a';
+update public.household_settings set agent = '{}' where household_id = :'a';
+reset role;
+select is((select diff -> 'agent' from newest_audit), '{"old": {"cap": null}, "new": {}}'::jsonb,
+  'a null inside a jsonb value is kept in the diff');
 
 select tests.act_as_service('{"x-esta-actor": "system:cron"}');
 update public.parties set notes = 'cron' where household_id = :'a';
@@ -47,7 +62,20 @@ select is((select actor_kind || ':' || actor_id from newest_audit), 'system:back
 
 select set_config('esta.actor', '', true);
 update public.parties set notes = 'studio' where household_id = :'a';
-select is((select actor_kind || ':' || actor_id from newest_audit), 'system:postgres', 'a direct connection without esta.actor records the session user');
+select is((select actor_kind || ':' || actor_id from newest_audit), 'system:' || session_user,
+  'a direct connection without esta.actor records the session user');
+
+select set_config('request.jwt.claims', '{"role": "anon"}', true);
+select throws_ok($$ update public.parties set notes = 'anon' $$, '42501', null,
+  'an API write by another role without esta.actor fails');
+select set_config('esta.actor', 'system:invoice-link', true);
+update public.parties set notes = 'anon via function' where household_id = :'a';
+select is((select actor_kind || ':' || actor_id from newest_audit), 'system:invoice-link',
+  'an API write by another role uses esta.actor');
+select tests.clear_request();
+select set_config('esta.actor', '', true);
+select throws_ok($$ select private.enable_audit('public.audit_log', 'household') $$, 'P0001', null,
+  'enable_audit refuses a table without the household column');
 
 select tests.act_as_service();
 select throws_ok($$ update public.parties set notes = 'anonymous' $$, '42501', null,

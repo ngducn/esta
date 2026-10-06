@@ -25,16 +25,16 @@ stable
 set search_path = ''
 as $$
 declare
-  v_role text := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role';
+  v_claims jsonb := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
   v_claimed text;
 begin
-  if v_role = 'authenticated' and auth.uid() is not null then
+  if v_claims ->> 'role' = 'authenticated' and auth.uid() is not null then
     actor_kind := 'user';
     actor_id := auth.uid()::text;
     return;
   end if;
 
-  if v_role = 'service_role' then
+  if v_claims ->> 'role' = 'service_role' then
     v_claimed := nullif(current_setting('request.headers', true), '')::jsonb ->> 'x-esta-actor';
     if v_claimed is null then
       raise exception 'service_role writes must send the x-esta-actor header'
@@ -42,6 +42,10 @@ begin
     end if;
   else
     v_claimed := nullif(current_setting('esta.actor', true), '');
+    if v_claimed is null and v_claims is not null then
+      raise exception 'an API write as % must name its actor with esta.actor', coalesce(v_claims ->> 'role', 'an unknown role')
+        using errcode = '42501';
+    end if;
   end if;
 
   if v_claimed is null then
@@ -66,8 +70,8 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_old jsonb := case when tg_op <> 'INSERT' then jsonb_strip_nulls(to_jsonb(old)) end;
-  v_new jsonb := case when tg_op <> 'DELETE' then jsonb_strip_nulls(to_jsonb(new)) end;
+  v_old jsonb := case when tg_op <> 'INSERT' then to_jsonb(old) - 'updated_at' end;
+  v_new jsonb := case when tg_op <> 'DELETE' then to_jsonb(new) - 'updated_at' end;
   v_row jsonb := coalesce(to_jsonb(new), to_jsonb(old));
   v_household_column text := tg_argv[0];
   v_actor record;
@@ -78,7 +82,11 @@ begin
   select coalesce(jsonb_object_agg(k.key, jsonb_build_object('old', v_old -> k.key, 'new', v_new -> k.key)), '{}')
   into v_diff
   from jsonb_object_keys(coalesce(v_old, '{}') || coalesce(v_new, '{}')) as k (key)
-  where (v_old -> k.key) is distinct from (v_new -> k.key);
+  where coalesce(v_old -> k.key, 'null') is distinct from coalesce(v_new -> k.key, 'null');
+
+  if tg_op = 'UPDATE' and v_diff = '{}' then
+    return null;
+  end if;
 
   insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
   values (
@@ -103,6 +111,10 @@ language plpgsql
 set search_path = ''
 as $$
 begin
+  if not exists (select 1 from pg_catalog.pg_attribute a where a.attrelid = p_table and a.attname = 'id' and not a.attisdropped)
+     or not exists (select 1 from pg_catalog.pg_attribute a where a.attrelid = p_table and a.attname = p_household_column and not a.attisdropped) then
+    raise exception '% needs an id column and a % column for the audit trigger', p_table, p_household_column;
+  end if;
   execute format(
     'create trigger audit_row after insert or update or delete on %s for each row execute function private.audit_row(%L)',
     p_table, p_household_column);

@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(31);
+select plan(36);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select id as b_member from public.household_members where household_id = :'b' and role = 'admin' \gset
@@ -11,6 +11,14 @@ select is_empty(
      where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' and not c.relrowsecurity $$,
   'every table in public has RLS enabled'
 );
+select is_empty(
+  $$ select c.relname from pg_class c
+     where c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
+       and not exists (select 1 from pg_policy p where p.polrelid = c.oid) $$,
+  'every table in public has at least one policy'
+);
+
+update public.household_members set is_operator = true where invited_email = 'admin.a@test.esta.test';
 
 select tests.act_as('admin.a@test.esta.test');
 
@@ -47,8 +55,18 @@ select throws_ok(
   'an admin cannot move its own row into another household'
 );
 
+select ok(private.is_operator(:'a'), 'an operator member is an operator of its household');
+select ok(not private.is_operator(:'b'), 'an operator of A is not an operator of B');
+
 reset role;
 select tests.act_as('member.a@test.esta.test');
+
+select ok(not private.is_operator(:'a'), 'a member without the flag is not an operator');
+select is_empty(
+  $$ update public.household_members set role = 'admin', is_operator = true
+     where user_id = (select auth.uid()) returning 1 $$,
+  'a member cannot promote itself'
+);
 
 select isnt_empty(
   format($$ update public.parties set notes = 'ok' where household_id = %L returning 1 $$, :'a'),
