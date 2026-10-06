@@ -1,4 +1,4 @@
-# Vietnam domain reference for Asta
+# Vietnam domain reference for Esta
 
 Facts the code depends on. Tags: `[verified]` was checked against sources in October 2026. `[verify]` is background knowledge that must be confirmed in the spike that touches it before it drives user-facing logic. `[app rule]` is a product decision, not a legal fact.
 
@@ -251,7 +251,7 @@ Bank statements (fixtures for three layouts):
 
 - Amounts appear as `1.500.000`, `1,500,000`, `1500000.00`, with `+`/`-` signs, or in separate credit and debit columns. Parse to integer VND; reject fractional đồng.
 - Dates appear as `dd/MM/yyyy`, `dd/MM/yyyy HH:mm:ss`, or `yyyy-MM-dd`.
-- Descriptions are usually uppercase ASCII without diacritics. Banks prepend and append their own references and sometimes delete spaces, so the memo `ASTA 7K2QX9MP` may arrive as `MBVCB.1234567.ASTA7K2QX9MP.CT TU 0903...`. Match by normalizing (uppercase, strip non-alphanumerics) and searching for `ASTA` followed by the 8-character code.
+- Descriptions are usually uppercase ASCII without diacritics. Banks prepend and append their own references and sometimes delete spaces, so the memo `ESTA 7K2QX9MP` may arrive as `MBVCB.1234567.ESTA7K2QX9MP.CT TU 0903...`. Match by normalizing (uppercase, strip non-alphanumerics) and searching for `ESTA` followed by the 8-character code.
 
 Google Maps links (PRP-5). Prefer the place coordinates over the viewport center.
 
@@ -277,7 +277,7 @@ Warn when the point falls outside Vietnam's rough bounds (lat 8 to 24, lng 102 t
 | 53 | Currency | `704` |
 | 54 | Amount | Integer đồng |
 | 58 | Country | `VN` |
-| 62 | Additional data | sub-tag 08 purpose: `ASTA {memo_code}` |
+| 62 | Additional data | sub-tag 08 purpose: `ESTA {memo_code}` |
 | 63 | CRC | CRC-16/CCITT-FALSE over the whole payload including `6304` |
 
 Each field is `tag + 2-digit length + value`. The memo stays ASCII uppercase and short (≤ 25 characters recommended `[verify]`). Bank BINs come from the NAPAS list, seeded into `bank_bins` with its source.

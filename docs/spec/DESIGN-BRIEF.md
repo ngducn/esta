@@ -1,12 +1,12 @@
-# Asta design brief
+# Esta design brief
 
 This brief is the input to `/impeccable init` (which writes `PRODUCT.md`) and to every `/impeccable shape` call. Sections 1 to 4 are durable product truth. Sections 5 onward are the visual and interaction direction that Phase 0 turns into tokens and that `/impeccable document` records in `DESIGN.md`.
 
-The bar: someone opening Asta should assume a small, serious studio designed it for this family. Nothing should look like a template, a crypto dashboard, or an "AI app".
+The bar: someone opening Esta should assume a small, serious studio designed it for this family. Nothing should look like a template, a crypto dashboard, or an "AI app".
 
 ## 1. Product truth
 
-Asta is the family's ledger for its land and houses. It replaces a drawer of certificates, a rent notebook, and a chat thread of bank screenshots. It must be exact about money, calm about problems, and fast for the three things people do most: see what needs doing today, record a payment, find a document.
+Esta is the family's ledger for its land and houses. It replaces a drawer of certificates, a rent notebook, and a chat thread of bank screenshots. It must be exact about money, calm about problems, and fast for the three things people do most: see what needs doing today, record a payment, find a document.
 
 ## 2. Audience and operating context
 

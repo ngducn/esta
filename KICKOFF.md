@@ -1,6 +1,6 @@
-# Asta build kit: setup and kickoff
+# Esta build kit: setup and kickoff
 
-This kit turns Claude Code with poteto-mode into the builder for Asta v1. You set up once, paste one planning prompt, review the plan, paste one execution prompt, then come back at review gates.
+This kit turns Claude Code with poteto-mode into the builder for Esta v1. You set up once, paste one planning prompt, review the plan, paste one execution prompt, then come back at review gates.
 
 | File | Goes to | Purpose |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ Change them in SPEC §3 now if you disagree. Mid-run changes cost far more.
 ### 1.1 Repo
 
 ```bash
-mkdir asta && cd asta && git init
+mkdir esta && cd esta && git init
 # copy CLAUDE.md to the root and docs/spec/* into docs/spec/
 mkdir -p docs/plan fixtures fixtures-private apps/agent
 cat > .gitignore <<'EOF'
@@ -43,8 +43,8 @@ coverage/
 playwright-report/
 test-results/
 EOF
-git add . && git commit -m "Asta spec kit"
-gh repo create asta --private --source=. --push
+git add . && git commit -m "Esta spec kit"
+gh repo create esta --private --source=. --push
 ```
 
 ### 1.2 Prerequisites
@@ -109,11 +109,11 @@ Paste into Claude Code at the repo root:
 ```text
 Use poteto-mode.
 
-Goal: plan the complete v1 build of Asta from the spec kit in this repo. Planning only; do not implement.
+Goal: plan the complete v1 build of Esta from the spec kit in this repo. Planning only; do not implement.
 
 Read in full, in order: CLAUDE.md, docs/spec/SPEC.md, docs/spec/DOMAIN-VN.md, docs/spec/DESIGN-BRIEF.md, docs/spec/AGENT.md, PRODUCT.md.
 
-Run the Multi-phase or multi-PR plan playbook and write the plan to docs/plan/asta-v1-plan.md.
+Run the Multi-phase or multi-PR plan playbook and write the plan to docs/plan/esta-v1-plan.md.
 
 Standing constraints for the plan:
 - Follow the phase order, exit predicates and review gates in SPEC §10. Split each phase into PRs that are each one verifiable unit.
@@ -144,7 +144,7 @@ If something is wrong, say so in the same session and let it revise before you s
 ```text
 Use poteto-mode.
 
-Go on docs/plan/asta-v1-plan.md under the execution playbook it names. Run until done. I am stepping away and will come back for the review gates.
+Go on docs/plan/esta-v1-plan.md under the execution playbook it names. Run until done. I am stepping away and will come back for the review gates.
 
 Exit condition: every box in the plan is checked with its evidence, pnpm e2e:northstar passes on a local production build against local Supabase, and docs/plan/STATUS.md lists every slipped P1 or P2 item with its reason.
 
@@ -172,13 +172,13 @@ Phone checks use `pnpm dev:lan`, which Phase 0 builds so your phone can reach th
 ### Resume after a pause
 
 ```text
-Use poteto-mode. Session pickup: resume docs/plan/asta-v1-plan.md from docs/plan/RESUME.md and docs/plan/trail/. Same standing orders as the original Go prompt.
+Use poteto-mode. Session pickup: resume docs/plan/esta-v1-plan.md from docs/plan/RESUME.md and docs/plan/trail/. Same standing orders as the original Go prompt.
 ```
 
 ### Change something mid-run
 
 ```text
-Use poteto-mode. Change request for Asta: <what you want>. Update docs/plan/asta-v1-plan.md and the affected spec file first, show me the diff, then continue the run.
+Use poteto-mode. Change request for Esta: <what you want>. Update docs/plan/esta-v1-plan.md and the affected spec file first, show me the diff, then continue the run.
 ```
 
 ## 6. After v1

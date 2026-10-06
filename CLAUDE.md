@@ -1,4 +1,4 @@
-# Asta
+# Esta
 
 Private web app for a Vietnamese family to manage its real estate: properties and certificates, documents, leases and rent, money and tax, and an AI assistant (Trợ lý) that watches the portfolio and researches the market. Users are Ryan (admin and operator, engineer) and his mother Mẹ (admin, phone-first, Vietnamese only).
 
@@ -40,10 +40,10 @@ Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Ne
 - TypeScript strict. No `any`. Parse external data with zod at boundaries; trust internal types.
 - Domain logic lives in `packages/core` as pure functions with no IO: money, formatting and parsing, schedule, allocation, matching, tax, completeness, watch rules, VietQR, proposals. Web, cron routes and agent all import it.
 - Money is integer VND. Postgres `bigint`; TypeScript branded `Vnd` (a safe integer `number`). Rates are basis points. Never floats for money.
-- Time comes from one injected `Clock` that, outside `ASTA_ENV=production`, reads the `test_clock` row or `ASTA_FROZEN_NOW` (SPEC FND-9). Business dates are `IsoDate` strings (`YYYY-MM-DD`) in Asia/Ho_Chi_Minh. No `new Date()` in domain code. Business SQL takes `p_as_of` parameters and never calls `now()` or `current_date`.
+- Time comes from one injected `Clock` that, outside `ESTA_ENV=production`, reads the `test_clock` row or `ESTA_FROZEN_NOW` (SPEC FND-9). Business dates are `IsoDate` strings (`YYYY-MM-DD`) in Asia/Ho_Chi_Minh. No `new Date()` in domain code. Business SQL takes `p_as_of` parameters and never calls `now()` or `current_date`.
 - Encode domain rules as data or registries (tax rules, land use codes, completeness checks, watch rules, proposal types), not scattered conditionals.
 - Database changes only through new Supabase migrations. Every new table ships with RLS policies and pgTAP tests in the same PR. Never edit an applied migration. Seed ids are UUIDv5 from stable seed keys.
-- The web app uses the user's session client. The service role key is allowed only in `apps/agent`, `scripts/` and `apps/web/src/server/cron/**`; a lint rule enforces the allowlist. Service-role clients send the `x-asta-actor` header for the audit trigger (SPEC §5.7).
+- The web app uses the user's session client. The service role key is allowed only in `apps/agent`, `scripts/` and `apps/web/src/server/cron/**`; a lint rule enforces the allowlist. Service-role clients send the `x-esta-actor` header for the audit trigger (SPEC §5.7).
 - Uploads go from the browser to Storage with signed upload URLs, never through a server function body.
 - Every user-facing string goes through next-intl message files (vi and en). Styling uses design tokens only; no raw colors or ad hoc pixel values in components. Model output renders as sanitized Markdown.
 - UI work follows `PRODUCT.md`, `DESIGN.md` and the brief. Run `/impeccable shape` before building a new core screen and the design QA in DESIGN-BRIEF §9 before calling it done.
@@ -75,7 +75,7 @@ Everything else that is reversible: proceed, show evidence, let Ryan course-corr
 
 ## Status files
 
-- `docs/plan/asta-v1-plan.md`: the plan.
+- `docs/plan/esta-v1-plan.md`: the plan.
 - `docs/plan/STATUS.md`: what shipped, what slipped and why, items needing professional confirmation, dates when terms were re-checked.
 - `docs/plan/RESUME.md`: written by Pause safely; read by Session pickup.
 - `docs/plan/DEPLOY.md`: the deploy runbook (Phase 6).

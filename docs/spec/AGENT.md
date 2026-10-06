@@ -1,4 +1,4 @@
-# Asta assistant (Trợ lý): agent spec
+# Esta assistant (Trợ lý): agent spec
 
 The assistant watches the portfolio, reads documents, researches the market, and answers questions. It runs as a worker on a machine Ryan controls, using the Claude Agent SDK on Ryan's Claude subscription.
 
@@ -24,7 +24,7 @@ main loop
   └─ runner: claim job → build tools for that household and job kind → query() → validate → guard → write → finish
 ```
 
-Time comes from the shared `Clock` (SPEC FND-9), read at the start of every scheduler tick and every job, so tests can advance it without restarting the worker. Claiming uses a SQL function `claim_agent_job(worker_id, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`. A claimed job whose `locked_at` is older than its kind's timeout plus 2 minutes may be reclaimed. Every write a job makes is keyed by `job_id` plus a dedupe key, so a re-run after a crash does not duplicate output. Retries use exponential backoff (1, 5, 25 minutes), up to 3 attempts. The worker's Supabase client sends `x-asta-actor: agent:{worker_id}` on every request so the audit trigger attributes its writes (SPEC §5.7).
+Time comes from the shared `Clock` (SPEC FND-9), read at the start of every scheduler tick and every job, so tests can advance it without restarting the worker. Claiming uses a SQL function `claim_agent_job(worker_id, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`. A claimed job whose `locked_at` is older than its kind's timeout plus 2 minutes may be reclaimed. Every write a job makes is keyed by `job_id` plus a dedupe key, so a re-run after a crash does not duplicate output. Retries use exponential backoff (1, 5, 25 minutes), up to 3 attempts. The worker's Supabase client sends `x-esta-actor: agent:{worker_id}` on every request so the audit trigger attributes its writes (SPEC §5.7).
 
 Deterministic daily work (invoice generation and auto-issue, lease status transitions, keep-alive) does not run here. It runs on Vercel Cron (SPEC §8) so it never depends on Ryan's machine.
 
@@ -33,12 +33,12 @@ Deterministic daily work (invoice generation and auto-issue, lease status transi
 Confirm exact option names against the current TypeScript SDK docs in spike S1. The intended shape:
 
 - `query({ prompt, options })` per job.
-- Custom tools through an in-process MCP server named `asta` (`createSdkMcpServer` with `tool(name, description, zodSchema, handler)`), so tools appear as `mcp__asta__<name>`.
+- Custom tools through an in-process MCP server named `esta` (`createSdkMcpServer` with `tool(name, description, zodSchema, handler)`), so tools appear as `mcp__esta__<name>`.
 - `settingSources: []` so the worker never loads Ryan's personal or project Claude Code settings, skills, plugins, hooks or CLAUDE.md. The runtime agent must not inherit the build-time stack.
 - Tool access is enforced twice. `allowedTools` lists the job kind's tools (§3) so they run without prompts, and `canUseTool` denies every tool not on that list and every `Read` outside the job's directory. Bash, Write, Edit, NotebookEdit and subagent tools are also listed in `disallowedTools`.
-- `cwd` is the job's directory under `ASTA_AGENT_HOME`: a temp dir per job, deleted afterwards, except Ask, which uses a stable `conversations/{conversation_id}` dir so SDK sessions can be resumed.
-- `env` passed to the SDK contains only the credential for the active `ASTA_AUTH_MODE` (§2.3), never both.
-- `model` from `ASTA_MODEL_ROUTINE` or `ASTA_MODEL_DEEP`; never hardcoded.
+- `cwd` is the job's directory under `ESTA_AGENT_HOME`: a temp dir per job, deleted afterwards, except Ask, which uses a stable `conversations/{conversation_id}` dir so SDK sessions can be resumed.
+- `env` passed to the SDK contains only the credential for the active `ESTA_AUTH_MODE` (§2.3), never both.
+- `model` from `ESTA_MODEL_ROUTINE` or `ESTA_MODEL_DEEP`; never hardcoded.
 - `maxTurns` and a wall-clock timeout per kind (§3).
 - Ask stores the SDK `session_id` on the conversation and resumes it for follow-ups.
 - Record the final result message's usage, turn count, cost estimate and session id in `agent_runs`.
@@ -47,20 +47,20 @@ If S1 shows the SDK cannot run on subscription auth on this machine, fall back t
 
 ### 2.3 Authentication
 
-- `ASTA_AUTH_MODE=subscription` (default): run `claude setup-token` once and put the token in `apps/agent/.env.local` as `CLAUDE_CODE_OAUTH_TOKEN`.
-- `ASTA_AUTH_MODE=api_key`: uses `ANTHROPIC_API_KEY`.
+- `ESTA_AUTH_MODE=subscription` (default): run `claude setup-token` once and put the token in `apps/agent/.env.local` as `CLAUDE_CODE_OAUTH_TOKEN`.
+- `ESTA_AUTH_MODE=api_key`: uses `ANTHROPIC_API_KEY`.
 - In `live` mode the worker refuses to start if the variable for the chosen mode is missing, passes only that credential to the SDK, and writes the mode to its heartbeat. Settings shows it to operators.
 - In `replay` mode (§8) no credential is needed or read, so CI starts the worker without secrets.
 
 ### 2.4 Where it runs
 
-- **Ryan's Mac.** A launchd agent (`~/Library/LaunchAgents/vn.asta.agent.plist`, RunAtLoad, KeepAlive, logs to `~/Library/Logs/asta-agent.log`). The Mac must not sleep for scheduled jobs to run on time; document the Energy settings and `caffeinate -s`. Jobs missed while asleep run on wake; the scheduler backfills only today's daily jobs.
+- **Ryan's Mac.** A launchd agent (`~/Library/LaunchAgents/vn.esta.agent.plist`, RunAtLoad, KeepAlive, logs to `~/Library/Logs/esta-agent.log`). The Mac must not sleep for scheduled jobs to run on time; document the Energy settings and `caffeinate -s`. Jobs missed while asleep run on wake; the scheduler backfills only today's daily jobs.
 - **Always-on box.** A small home server or VPS using the provided Dockerfile. Same env vars.
 - **No always-on machine (P2 alternative).** Daily research can run as a Claude scheduled task in Claude's cloud writing `research_items` through the Supabase connector. Not the default because it bypasses the tool layer's guards.
 
 ### 2.5 Terms and usage
 
-As of October 2026, Anthropic's help center states that Claude Agent SDK usage in your own projects and `claude -p` draw from the subscription's usage limits (a planned separate SDK credit was paused on 15 June 2026). The SDK docs say third-party developers may not offer claude.ai login to their users. Asta is Ryan's own project run for his household, so subscription auth is the intended use. Consequences:
+As of October 2026, Anthropic's help center states that Claude Agent SDK usage in your own projects and `claude -p` draw from the subscription's usage limits (a planned separate SDK credit was paused on 15 June 2026). The SDK docs say third-party developers may not offer claude.ai login to their users. Esta is Ryan's own project run for his household, so subscription auth is the intended use. Consequences:
 
 1. Keep the worker under Ryan's account and for this household only. Do not add other families on this auth.
 2. If Mẹ uses Ask heavily, either she uses her own Claude plan or the worker switches to `api_key`.
@@ -184,7 +184,7 @@ Every Sunday 08:00 with the deep model: last week's collections against expected
 
 1. The web app inserts the user message and enqueues `ask`.
 2. The worker resumes the conversation's SDK session if one exists.
-3. The assistant answers with read tools only, may create a proposal, and links records with `asta://{type}/{id}` URIs that the web app renders as in-app links.
+3. The assistant answers with read tools only, may create a proposal, and links records with `esta://{type}/{id}` URIs that the web app renders as in-app links.
 4. Partial text streams into the `messages` row; the web app subscribes via Realtime.
 5. If the tools cannot answer, it says what is missing. It never estimates figures.
 
@@ -195,7 +195,7 @@ Target: first visible text within 10 seconds when the worker is online.
 ### 6.1 System prompt skeleton (shared)
 
 ```text
-Bạn là Trợ lý của ứng dụng Asta, giúp một gia đình quản lý bất động sản ở Việt Nam.
+Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.
 You may only use the tools provided. Every number you write must appear in a tool result from this run.
 Do not calculate totals, differences or ratios yourself; call the tool that returns them.
 Never invent amounts, dates, names or sources. If information is missing, say so plainly.
@@ -269,7 +269,7 @@ Run every job kind once in `live` mode locally on the `full` seed with the froze
 
 ## 8. Replay mode
 
-`ASTA_AGENT_MODE=replay` replaces model calls with recordings stored in `fixtures/agent-replay/{job_kind}/{input_hash}.json`. Before hashing, the input (prompt, tool results, schema version) is canonicalized: UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps are taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Tools, validation, the number guard and all writes run for real. A missing recording fails the test with the hash and a hint to record it. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
+`ESTA_AGENT_MODE=replay` replaces model calls with recordings stored in `fixtures/agent-replay/{job_kind}/{input_hash}.json`. Before hashing, the input (prompt, tool results, schema version) is canonicalized: UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps are taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Tools, validation, the number guard and all writes run for real. A missing recording fails the test with the hash and a hint to record it. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
 
 ## 9. Limits, failures and UX
 

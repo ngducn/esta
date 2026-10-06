@@ -1,6 +1,6 @@
-# Asta v1 product spec
+# Esta v1 product spec
 
-Asta is a private web app for a Vietnamese family to run its real estate: record every house and parcel properly, keep the paperwork in one safe place, collect rent without a notebook, and have an AI assistant watch the portfolio and the market every morning.
+Esta is a private web app for a Vietnamese family to run its real estate: record every house and parcel properly, keep the paperwork in one safe place, collect rent without a notebook, and have an AI assistant watch the portfolio and the market every morning.
 
 v1 is built for one household (Ryan and his mother). The data model is multi-household from day one so the same codebase can later serve other families.
 
@@ -71,7 +71,7 @@ These are defaults chosen so the build never blocks on them. Change them here be
 | D5 | AI runtime | A worker process (`apps/agent`) on a machine Ryan controls, using the Claude Agent SDK authenticated with Ryan's Claude subscription. Switchable to an Anthropic API key by env var | See AGENT.md §2 |
 | D6 | Language | Vietnamese default UI, English toggle. Every string through i18n | Mẹ first |
 | D7 | Money | Integer VND (`bigint`), never floats. Rates in basis points | Exactness |
-| D8 | Auth | Email one-time code (6 digits), 30-day sessions. Google sign-in built behind `ASTA_GOOGLE_AUTH`, enabled at the Phase 6 gate once Ryan creates the OAuth client | Codes work better than magic links on phones; Google needs an external account step |
+| D8 | Auth | Email one-time code (6 digits), 30-day sessions. Google sign-in built behind `ESTA_GOOGLE_AUTH`, enabled at the Phase 6 gate once Ryan creates the OAuth client | Codes work better than magic links on phones; Google needs an external account step |
 | D9 | Notifications | In-app inbox (P0). Email (P1) through an SMTP transport that targets the local Inbucket mailbox in dev; the production sender is configured at the Phase 6 gate. Web push and Telegram P2. Zalo integration out of scope; use copy-and-open-Zalo | Zalo Official Account messaging needs a verified business account |
 | D10 | Maps | MapLibre GL with OpenFreeMap vector tiles, lazy-loaded. Manual pin, polygon drawing, and paste-a-Google-Maps-link | No API keys or billing; Vietnamese geocoding is unreliable anyway |
 | D11 | Personal ID numbers | Never stored as structured fields. Store ID card scans as sensitive documents and only the last 4 digits as text | Data minimization under the 2026 personal data law |
@@ -114,7 +114,7 @@ Name the data shape before writing code. These tables live in Supabase Postgres.
 - `admin_unit_legacy_map`: pre-July-2025 province, district and commune names and codes mapped to current codes.
 - `land_use_codes`: code, name_vi, name_en, group. Seed in DOMAIN-VN §3.
 - `bank_bins`: NAPAS BIN, bank short name, full name. Source recorded.
-- `test_clock`: at most one row (frozen_now). Read by the `Clock` only when `ASTA_ENV` is not `production` (FND-9).
+- `test_clock`: at most one row (frozen_now). Read by the `Clock` only when `ESTA_ENV` is not `production` (FND-9).
 - `tax_rules`: versioned rule sets. kind `vn_rental_individual`, effective_from, effective_to, params jsonb, source_citation, note. Read only by `packages/core/tax`.
 
 ### 5.3 Property
@@ -165,7 +165,7 @@ Owned by AGENT.md §10, listed here so migrations are planned together: `agent_j
 
 ### 5.7 Audit
 
-`audit_log`: table_name, row_id, action (`insert | update | delete`), actor_kind (`user | agent | system`), actor_id, diff jsonb, at. Written by triggers on every business and agent table. Triggers take the actor from `auth.uid()` for user sessions. For service-role requests through the Supabase API, the worker and cron clients send an `x-asta-actor` header (`agent:{worker_id}` or `system:cron`); the trigger reads it from PostgREST's `request.headers` setting and trusts it only when the request role is `service_role`. Direct database connections (backup, scripts) set `asta.actor` with `set_config` instead. No insert, update or delete policy exists for authenticated users on `audit_log`.
+`audit_log`: table_name, row_id, action (`insert | update | delete`), actor_kind (`user | agent | system`), actor_id, diff jsonb, at. Written by triggers on every business and agent table. Triggers take the actor from `auth.uid()` for user sessions. For service-role requests through the Supabase API, the worker and cron clients send an `x-esta-actor` header (`agent:{worker_id}` or `system:cron`); the trigger reads it from PostgREST's `request.headers` setting and trusts it only when the request role is `service_role`. Direct database connections (backup, scripts) set `esta.actor` with `set_config` instead. No insert, update or delete policy exists for authenticated users on `audit_log`.
 
 ## 6. Feature specs and acceptance checks
 
@@ -181,7 +181,7 @@ Each check is a predicate a test or a live lane can prove. IDs are referenced by
 - FND-6 Admin units imported with legacy mapping. Check: 34 province-level units; the commune-level count equals 3,321 or the plan records the official source for a different number; the five lookups in DOMAIN-VN §4 resolve to the expected provinces.
 - FND-7 Deterministic seed generator. Ids are UUIDv5 derived from stable seed keys (e.g. `seed:lease:thu-duc`), timestamps come from the frozen clock, and randomness uses a fixed RNG seed. Each phase extends the generator with its tables. Check: `pnpm db:reset` twice produces identical checksums over all business columns (excluding `created_at`, `updated_at`) for the tables that exist in that phase.
 - FND-8 Text scale and density settings applied app-wide. Check: at text_scale 130, no text overflows or truncates without an affordance on Home, Properties list, Property detail, Collections and Documents at 390 px width.
-- FND-9 Test clock. Outside production, the shared `Clock` reads the `test_clock` table if it has a row, else `ASTA_FROZEN_NOW`, else system time. Tests set and advance it through `pnpm clock:set <iso>` or a web route that exists only when `ASTA_ENV` is not `production`. Web, cron routes and the worker read it per request or per job, so it can move without restarts; SQL receives the as-of date as a parameter. Web and worker refuse to start when `ASTA_ENV=production` and a frozen clock is configured; a local production build (`NODE_ENV=production`, `ASTA_ENV=test`) is allowed. Check: an integration test sets the clock, observes it in the Home header, a cron route and a worker job, advances it one day, and observes the change without restarting anything.
+- FND-9 Test clock. Outside production, the shared `Clock` reads the `test_clock` table if it has a row, else `ESTA_FROZEN_NOW`, else system time. Tests set and advance it through `pnpm clock:set <iso>` or a web route that exists only when `ESTA_ENV` is not `production`. Web, cron routes and the worker read it per request or per job, so it can move without restarts; SQL receives the as-of date as a parameter. Web and worker refuse to start when `ESTA_ENV=production` and a frozen clock is configured; a local production build (`NODE_ENV=production`, `ESTA_ENV=test`) is allowed. Check: an integration test sets the clock, observes it in the Home header, a cron route and a worker job, advances it one day, and observes the change without restarting anything.
 
 ### 6.2 Properties (PRP)
 
@@ -199,7 +199,7 @@ Each check is a predicate a test or a live lane can prove. IDs are referenced by
 - DOC-1 Upload from file picker, drag and drop, and mobile camera. Files go from the browser straight to Storage with a signed upload URL issued by a server action after an RLS check, never through a server function body. Images and PDFs up to 25 MB. SHA-256 dedupe warns on duplicates. Check: e2e upload of a 20 MB fixture at 390 px with camera input simulated.
 - DOC-2 Multi-page capture combines photos into one PDF in the browser before upload (P1). Check: three images produce a 3-page PDF in order.
 - DOC-3 Vault views by property, category and expiring soon; full-text search over title, tags and OCR text, accent-insensitive. Check: "hop dong" finds "Hợp đồng thuê"; "bao loc so" finds "Sổ hồng Bảo Lộc".
-- DOC-4 Private bucket; access only through signed URLs created server-side after an RLS check, TTL `ASTA_SIGNED_URL_TTL_SECONDS` (default 300); every view and download logged. Check: with TTL 2, the URL fails after 3 s; an access log row exists for each open.
+- DOC-4 Private bucket; access only through signed URLs created server-side after an RLS check, TTL `ESTA_SIGNED_URL_TTL_SECONDS` (default 300); every view and download logged. Check: with TTL 2, the URL fails after 3 s; an access log row exists for each open.
 - DOC-5 Sensitive documents (ID cards and certificates by default) show blurred thumbnails until tapped and reach the agent only through the extraction job that targets them. Check: e2e plus a tool-layer unit test.
 - DOC-6 Extraction (P1): uploading a certificate, lease or utility bill queues `extract_document`; the review screen shows the image beside fields with low-confidence fields marked; accepting writes business tables under the user's session and marks the extraction `accepted`. Check: north-star step 2; accuracy target in AGENT.md §7.
 - DOC-7 Expiry tracking: documents with expires_on feed watch rule W5. Check: AGENT.md §7 golden set.
@@ -210,7 +210,7 @@ Each check is a predicate a test or a live lane can prove. IDs are referenced by
 - LSE-2 Lease create, activate (asking "Đã thu tiền đến hết ngày" to set paid_through_date), amend (money terms from a future period start), terminate with reason, renew. Check: state machine tests cover every transition and reject illegal ones; amendment tests prove past invoices never change.
 - LSE-3 Schedule generation in `packages/core/schedule`: a pure function from lease terms, amendments and an as-of date to periods with amounts, handling cycles of 1, 3, 6, 12 months, both anchors, proration, escalation with rounding, paid_through_date, and end dates mid-cycle. Generation and issuance follow §5.4 and insert idempotently (unique lease_id plus period_start). Check: activating a lease on 2026-10-07 with paid_through_date 2026-09-30 and a calendar-month anchor immediately yields an issued October invoice due 2026-10-01; fast-check property tests prove no gaps or overlaps, totals equal rent × months adjusted for proration, escalation and amendments, and regeneration is a no-op.
 - LSE-4 Utilities: monthly meter entry per rooming house (all rooms on one screen, numeric keypad, previous reading shown, warning above 3× the 6-month median). Consumption of month M is billed on the invoice whose period starts in month M+1; readings entered after that invoice is issued become an adjustment on the following invoice. Check: unit and e2e.
-- LSE-5 Invoices: auto-issue per §5.4, manual issue, void with reason, print or share. Each issued invoice has a VietQR (P1) from `packages/core/vietqr` for the default receiving account, amount outstanding, memo `ASTA {memo_code}`. Check: round-trip test decodes payload fields and CRC; two banking apps scan it at the Phase 3 gate.
+- LSE-5 Invoices: auto-issue per §5.4, manual issue, void with reason, print or share. Each issued invoice has a VietQR (P1) from `packages/core/vietqr` for the default receiving account, amount outstanding, memo `ESTA {memo_code}`. Check: round-trip test decodes payload fields and CRC; two banking apps scan it at the Phase 3 gate.
 - LSE-6 Receipts (P1): A5 "Biên nhận tiền thuê" PDF and a PNG sized for Zalo, Vietnamese fonts embedded. Check: text extracted from the PDF contains the tenant name with correct diacritics.
 - LSE-7 Payments: record manually (amount defaults to outstanding; cash or transfer), allocate oldest-due first with manual override, partial and over-payments, deposit application. Check: allocation property tests; payment status derivation tests.
 - LSE-8 Statement import (P1): upload CSV or XLSX, map columns once per bank (saved preset), parse amounts and dates (DOMAIN-VN §9). Rows whose normalized description contains a household memo code are `memo_match`; rows matching the outstanding amount of exactly one issued invoice of a tenant whose name appears in the description within ±10 days are `suggested`; the rest are `unmatched`. Committing the import posts every `memo_match` row as a payment; `suggested` rows post only when confirmed individually or by bulk selection. Re-importing the same file posts nothing new. Check: three bank-format fixtures with golden match results; idempotency test.
@@ -243,7 +243,7 @@ Full behavior in AGENT.md. Acceptance summary:
 
 - PLT-1 Settings: household, members and invites, receiving bank accounts, notification preferences, research topics (read-only list in v1), agent status and last runs (operators), language, text scale, density.
 - PLT-2 Data export: one action produces a ZIP with every table as JSON and CSV plus all files, delivered as a signed link. Check: re-import into an empty local database reproduces row counts.
-- PLT-3 Nightly backup job (P1) writes the same export to `ASTA_BACKUP_DIR` on the worker machine and keeps 30 days.
+- PLT-3 Nightly backup job (P1) writes the same export to `ESTA_BACKUP_DIR` on the worker machine and keeps 30 days.
 - PLT-4 Email notifications (P1) for the morning brief and every `action` item, honoring notification preferences and daily caps. Dev transport is SMTP to Inbucket. Check: the brief email for 2026-10-07 arrives in Inbucket and renders Vietnamese correctly.
 
 ## 7. Cross-cutting requirements
@@ -253,7 +253,7 @@ Full behavior in AGENT.md. Acceptance summary:
 - RLS on every table. Policies use a single `is_member(household_id, min_role)` SQL function. pgTAP tests for every table (`pnpm db:test`).
 - The browser never sees the service role key. Server actions use the user's session client. The service role key is allowed only in `apps/agent`, `scripts/`, and `apps/web/src/server/cron/**` (server-only modules behind `CRON_SECRET`); a lint rule enforces this allowlist.
 - Storage: private bucket, path `{household_id}/{document_id}/{filename}`, storage policies mirror table RLS.
-- Agent and model output is rendered as sanitized Markdown: no raw HTML; links only `https:` and `asta://`.
+- Agent and model output is rendered as sanitized Markdown: no raw HTML; links only `https:` and `esta://`.
 - Personal data minimization per DOMAIN-VN §8.
 - Real family data never enters the repository. `fixtures-private/` and `.env*` are gitignored. Seed data is synthetic.
 - Security headers and a CSP allowing only the app origin, Supabase, the tile host and fonts.
@@ -278,7 +278,7 @@ Every write path that can be retried is idempotent: invoice generation, statemen
 ## 8. Architecture
 
 ```text
-asta/
+esta/
   CLAUDE.md  PRODUCT.md  DESIGN.md
   docs/spec/  docs/plan/
   apps/web/          Next.js app (UI, server actions, route handlers, src/server/cron)
@@ -314,19 +314,19 @@ Environment variables (names are part of the contract; `.env.example` lists them
 | `SUPABASE_SERVICE_ROLE_KEY` | agent, scripts, web cron routes only | Lint allowlist (§7.1) |
 | `SUPABASE_DB_URL` | agent backup, scripts | |
 | `CRON_SECRET` | web | Authorizes cron routes |
-| `ASTA_AUTH_MODE` | agent | `subscription` (default) or `api_key` |
+| `ESTA_AUTH_MODE` | agent | `subscription` (default) or `api_key` |
 | `CLAUDE_CODE_OAUTH_TOKEN` | agent | From `claude setup-token`; used when mode is `subscription` |
 | `ANTHROPIC_API_KEY` | agent | Used when mode is `api_key` |
-| `ASTA_MODEL_ROUTINE`, `ASTA_MODEL_DEEP` | agent | Model ids from config, never hardcoded |
-| `ASTA_AGENT_MODE` | agent | `live` (default) or `replay` (recorded responses, CI and north-star) |
-| `ASTA_AGENT_HOME` | agent | Working root for job temp dirs and per-conversation session dirs |
-| `ASTA_BACKUP_DIR` | agent | Nightly backup target |
-| `EMAIL_TRANSPORT`, `SMTP_URL`, `ASTA_EMAIL_FROM` | web, agent | `smtp` to Inbucket in dev; production sender set at the Phase 6 gate |
-| `ASTA_SIGNED_URL_TTL_SECONDS` | web | Default 300 |
-| `ASTA_GOOGLE_AUTH` | web | `off` until the Phase 6 gate |
-| `ASTA_ENV` | all | `development` (default), `test`, `preview`, `production`. Test-only routes and frozen clocks are disabled in `production` |
-| `ASTA_FROZEN_NOW` | all | Initial test clock (FND-9); refused when `ASTA_ENV=production` |
-| `ASTA_TIMEZONE` | all | Default `Asia/Ho_Chi_Minh` |
+| `ESTA_MODEL_ROUTINE`, `ESTA_MODEL_DEEP` | agent | Model ids from config, never hardcoded |
+| `ESTA_AGENT_MODE` | agent | `live` (default) or `replay` (recorded responses, CI and north-star) |
+| `ESTA_AGENT_HOME` | agent | Working root for job temp dirs and per-conversation session dirs |
+| `ESTA_BACKUP_DIR` | agent | Nightly backup target |
+| `EMAIL_TRANSPORT`, `SMTP_URL`, `ESTA_EMAIL_FROM` | web, agent | `smtp` to Inbucket in dev; production sender set at the Phase 6 gate |
+| `ESTA_SIGNED_URL_TTL_SECONDS` | web | Default 300 |
+| `ESTA_GOOGLE_AUTH` | web | `off` until the Phase 6 gate |
+| `ESTA_ENV` | all | `development` (default), `test`, `preview`, `production`. Test-only routes and frozen clocks are disabled in `production` |
+| `ESTA_FROZEN_NOW` | all | Initial test clock (FND-9); refused when `ESTA_ENV=production` |
+| `ESTA_TIMEZONE` | all | Default `Asia/Ho_Chi_Minh` |
 
 ## 9. Quality gates and verification
 
@@ -405,7 +405,7 @@ Ryan hands his phone (via `pnpm dev:lan`) to Mẹ with seeded data and watches w
 | --- | --- |
 | Usage limits hit mid-build | Pause safely and resume from `docs/plan/RESUME.md`; cheaper model for verification workers |
 | Worker machine asleep or offline | Jobs queue; heartbeat banner; always-on options in AGENT.md §2.4 |
-| Subscription terms for SDK use change | Switch `ASTA_AUTH_MODE`; worker logs auth mode |
+| Subscription terms for SDK use change | Switch `ESTA_AUTH_MODE`; worker logs auth mode |
 | Extraction errors on handwritten annotations or worn certificates | Review is mandatory before any extracted value reaches business tables |
 | Tax and land rules change | Rules are versioned data; estimates carry a disclaimer and the rule's source |
 | Supabase free tier pauses or storage cap | Cron keep-alive; the deploy runbook states when to move to a paid plan |
