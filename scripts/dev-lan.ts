@@ -1,9 +1,11 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { X509Certificate } from 'node:crypto';
+import { copyFileSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { connect } from 'node:net';
-import { networkInterfaces } from 'node:os';
+import { homedir, networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 import { renderCaddyfile } from './caddyfile.ts';
+import { devCaDir, trustInstructions } from './dev-ca.ts';
 import { commandOf, liveState, type State } from './dev-lan-state.ts';
 import { lanAddress } from './lan-address.ts';
 import { parseSlot, slotPorts } from './slot.ts';
@@ -13,7 +15,7 @@ const PARENT_POLL_MS = 1_000;
 
 const repoRoot = join(import.meta.dirname, '..');
 const certsDir = join(repoRoot, '.certs');
-const caRoot = process.env.CAROOT || join(certsDir, 'ca');
+const caRoot = devCaDir(process.env, homedir());
 const caFile = join(caRoot, 'rootCA.pem');
 const publicDir = join(certsDir, 'public');
 const slot = parseSlot(process.env.ESTA_SLOT);
@@ -39,9 +41,12 @@ function ensureCertificates(lan: string): { certFile: string; keyFile: string } 
   const certFile = join(certsDir, `lan-${lan}.pem`);
   const keyFile = join(certsDir, `lan-${lan}-key.pem`);
   const reusable =
-    existsSync(certFile) && existsSync(keyFile) && existsSync(caFile) && statSync(certFile).mtimeMs >= statSync(caFile).mtimeMs;
+    existsSync(certFile) &&
+    existsSync(keyFile) &&
+    existsSync(caFile) &&
+    new X509Certificate(readFileSync(certFile)).verify(new X509Certificate(readFileSync(caFile)).publicKey);
   if (!reusable) {
-    mkdirSync(caRoot, { recursive: true });
+    mkdirSync(caRoot, { recursive: true, mode: 0o700 });
     const result = spawnSync('mkcert', ['-cert-file', certFile, '-key-file', keyFile, lan, 'localhost', '127.0.0.1'], {
       env: { ...process.env, CAROOT: caRoot },
       encoding: 'utf8',
@@ -58,22 +63,15 @@ function ensureCertificates(lan: string): { certFile: string; keyFile: string } 
 
 function printUrls(lan: string): void {
   const web = `https://${lan}:${ports.webLan}`;
+  const fingerprint = new X509Certificate(readFileSync(caFile)).fingerprint256;
   console.log(
     [
       '',
       `Esta LAN: ${web}`,
       `Supabase API: https://${lan}:${ports.apiLan}`,
       `Inbucket: https://${lan}:${ports.inbucketLan}`,
-      `Root CA: ${caFile}`,
       '',
-      'Trust the root CA once on each device:',
-      `  Mac      CAROOT="${caRoot}" mkcert -install  (asks for your login password)`,
-      `  iPhone   In Safari open ${web}/esta-dev-ca.crt, tap through the warning and allow the download.`,
-      '           Settings > General > VPN & Device Management > the mkcert profile > Install.',
-      '           Settings > General > About > Certificate Trust Settings > turn on the mkcert root.',
-      '  Android  In Chrome open the same address, tap through the warning and download the file.',
-      '           Settings > Security & privacy > More security settings > Encryption & credentials >',
-      '           Install a certificate > CA certificate, then pick esta-dev-ca.crt.',
+      trustInstructions({ web, caDir: caRoot, fingerprint }),
       '',
     ].join('\n'),
   );
