@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(31);
+select plan(40);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as admin_a, tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -25,7 +25,7 @@ select throws_ok(
 );
 select throws_ok(
   format($$ update public.household_members set user_id = null where id = %L $$, :'admin_a_member'),
-  '23514', 'a household keeps at least one admin who has signed in',
+  '42501', 'only the service role or a claim function links a member row to a user',
   'the last claimed admin cannot unclaim its row'
 );
 
@@ -89,6 +89,51 @@ select throws_ok(
 );
 update public.household_members set role = 'member' where id = :'member_a_member';
 reset role;
+
+select tests.create_user('outsider@test.esta.test') as outsider \gset
+select id as pending_a_member from public.household_members where invited_email = 'pending.a@test.esta.test' \gset
+update public.household_members set role = 'admin' where id = :'member_a_member';
+
+select tests.act_as('member.a@test.esta.test');
+select throws_ok(
+  format($$ update public.household_members set user_id = %L where id = %L $$, :'outsider', :'admin_a_member'),
+  '42501', 'only the service role or a claim function links a member row to a user',
+  'a non-operator admin cannot hand the operator row to another user'
+);
+select throws_ok(
+  format($$ update public.household_members set user_id = %L where id = %L $$, :'outsider', :'viewer_a_member'),
+  '42501', 'only the service role or a claim function links a member row to a user',
+  'an admin cannot reassign a claimed member row'
+);
+select throws_ok(
+  format($$ update public.household_members set user_id = %L where id = %L $$, :'outsider', :'pending_a_member'),
+  '42501', 'only the service role or a claim function links a member row to a user',
+  'an admin cannot claim an invite for a user'
+);
+select throws_ok(
+  format($$ insert into public.household_members (household_id, user_id, invited_email, role)
+            values (%L, %L, 'outsider@test.esta.test', 'admin') $$, :'a', :'outsider'),
+  '42501', 'only the service role or a claim function links a member row to a user',
+  'an admin cannot add a member row already linked to a user'
+);
+select throws_ok(
+  format($$ update public.household_members set invited_email = 'outsider@test.esta.test' where id = %L $$, :'viewer_a_member'),
+  '42501', 'a claimed member row keeps its invited email',
+  'an admin cannot change the invited email of a claimed row'
+);
+select lives_ok(
+  format($$ update public.household_members set invited_email = 'pending2.a@test.esta.test' where id = %L $$, :'pending_a_member'),
+  'an admin corrects the invited email of an unclaimed invite'
+);
+reset role;
+
+select tests.act_as_service('{"x-esta-actor": "system:test"}');
+select lives_ok(
+  format($$ update public.household_members set user_id = %L where id = %L $$, :'outsider', :'pending_a_member'),
+  'the service role claims an invite'
+);
+reset role;
+update public.household_members set role = 'member' where id = :'member_a_member';
 
 select tests.act_as('member.a@test.esta.test');
 select isnt_empty(
@@ -194,9 +239,18 @@ select is_empty(
 );
 
 select tests.act_as('admin.b@test.esta.test');
+select is_empty(
+  format($$ delete from public.households where id = %L returning 1 $$, :'b'),
+  'an admin cannot delete its household'
+);
+reset role;
+select isnt_empty(format($$ select 1 from public.households where id = %L $$, :'b'),
+  'the household survives an admin delete');
+
+select tests.act_as_service('{"x-esta-actor": "system:test"}');
 select isnt_empty(
   format($$ delete from public.households where id = %L returning 1 $$, :'b'),
-  'an admin deletes its household with its last admin'
+  'the service role deletes a household'
 );
 reset role;
 select is_empty(format($$ select 1 from public.household_members where household_id = %L $$, :'b'),
