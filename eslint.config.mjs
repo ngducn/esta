@@ -3,6 +3,7 @@ import nextPlugin from '@next/eslint-plugin-next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import serviceRoleAllowlist from './eslint-rules/service-role-allowlist.mjs';
 
 export default defineConfig(
   globalIgnores([
@@ -11,6 +12,7 @@ export default defineConfig(
     '.claude/',
     'playwright-report/',
     'test-results/',
+    'supabase/.slots/',
   ]),
   js.configs.recommended,
   tseslint.configs.strict,
@@ -24,5 +26,10 @@ export default defineConfig(
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: [nextPlugin.configs['core-web-vitals'], reactHooks.configs.flat.recommended],
     rules: { '@next/next/no-html-link-for-pages': 'off' },
+  },
+  {
+    ignores: ['eslint-rules/**'],
+    plugins: { esta: { rules: { 'service-role-allowlist': serviceRoleAllowlist } } },
+    rules: { 'esta/service-role-allowlist': 'error' },
   },
 );

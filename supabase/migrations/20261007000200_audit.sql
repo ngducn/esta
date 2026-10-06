@@ -1,0 +1,124 @@
+-- audit_log and its trigger (SPEC §5.7). Members read their household's rows; no role writes
+-- through the API. Rows are written only by private.audit_row(), which runs as the table owner.
+
+create table public.audit_log (
+  id bigint generated always as identity primary key,
+  household_id uuid not null,
+  table_name text not null,
+  row_id uuid not null,
+  action text not null check (action in ('insert', 'update', 'delete')),
+  actor_kind text not null check (actor_kind in ('user', 'agent', 'system')),
+  actor_id text not null,
+  diff jsonb not null,
+  at timestamptz not null default now()
+);
+create index audit_log_household_at_idx on public.audit_log (household_id, at desc);
+create index audit_log_row_idx on public.audit_log (table_name, row_id, at desc);
+
+alter table public.audit_log enable row level security;
+revoke all on table public.audit_log from anon, authenticated, service_role;
+grant select on table public.audit_log to authenticated, service_role;
+create policy audit_log_select on public.audit_log
+  for select to authenticated
+  using (private.is_member(household_id, 'viewer'));
+
+-- Precedence: a signed-in user is always the actor, so a user cannot claim another identity
+-- with a header. Only service_role requests may name an actor through x-esta-actor, and they
+-- must, so an unattributed worker or cron write fails instead of landing as "system".
+-- Direct connections (seed, backup, Studio) name themselves with esta.actor.
+create function private.audit_actor(out actor_kind text, out actor_id text)
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_role text := nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role';
+  v_claimed text;
+begin
+  if v_role = 'authenticated' and auth.uid() is not null then
+    actor_kind := 'user';
+    actor_id := auth.uid()::text;
+    return;
+  end if;
+
+  if v_role = 'service_role' then
+    v_claimed := nullif(current_setting('request.headers', true), '')::jsonb ->> 'x-esta-actor';
+    if v_claimed is null then
+      raise exception 'service_role writes must send the x-esta-actor header'
+        using errcode = '42501';
+    end if;
+  else
+    v_claimed := nullif(current_setting('esta.actor', true), '');
+  end if;
+
+  if v_claimed is null then
+    actor_kind := 'system';
+    actor_id := session_user;
+    return;
+  end if;
+
+  if v_claimed !~ '^(agent|system):[A-Za-z0-9._-]+$' then
+    raise exception 'audit actor must look like agent:<id> or system:<name>, got %', v_claimed
+      using errcode = '22023';
+  end if;
+  actor_kind := split_part(v_claimed, ':', 1);
+  actor_id := substr(v_claimed, length(actor_kind) + 2);
+end;
+$$;
+
+-- TG_ARGV[0] names the column holding the household id; households pass 'id'.
+create function private.audit_row()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_old jsonb := case when tg_op <> 'INSERT' then jsonb_strip_nulls(to_jsonb(old)) end;
+  v_new jsonb := case when tg_op <> 'DELETE' then jsonb_strip_nulls(to_jsonb(new)) end;
+  v_row jsonb := coalesce(to_jsonb(new), to_jsonb(old));
+  v_actor record;
+  v_diff jsonb;
+begin
+  select * into v_actor from private.audit_actor();
+
+  select coalesce(jsonb_object_agg(k.key, jsonb_build_object('old', v_old -> k.key, 'new', v_new -> k.key)), '{}')
+  into v_diff
+  from jsonb_object_keys(coalesce(v_old, '{}') || coalesce(v_new, '{}')) as k (key)
+  where (v_old -> k.key) is distinct from (v_new -> k.key);
+
+  insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
+  values (
+    (v_row ->> coalesce(tg_argv[0], 'household_id'))::uuid,
+    tg_table_name,
+    (v_row ->> 'id')::uuid,
+    lower(tg_op),
+    v_actor.actor_kind,
+    v_actor.actor_id,
+    v_diff
+  );
+  return null;
+end;
+$$;
+
+revoke all on function private.audit_actor() from public;
+revoke all on function private.audit_row() from public;
+
+create function private.enable_audit(p_table regclass, p_household_column name default 'household_id')
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  execute format(
+    'create trigger audit_row after insert or update or delete on %s for each row execute function private.audit_row(%L)',
+    p_table, p_household_column);
+end;
+$$;
+revoke all on function private.enable_audit(regclass, name) from public;
+
+select private.enable_audit('public.households', 'id');
+select private.enable_audit('public.household_members');
+select private.enable_audit('public.household_settings');
+select private.enable_audit('public.parties');
+select private.enable_audit('public.notification_preferences');
