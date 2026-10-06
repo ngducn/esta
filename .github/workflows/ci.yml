@@ -85,6 +85,9 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
-      - name: Install the Impeccable engine pinned in scripts/VERSION
-        run: test "$(.claude/skills/impeccable/scripts/impeccable engine-probe)" = "impeccable-engine $(cat .claude/skills/impeccable/scripts/VERSION)"
+      - name: Install the Impeccable engine at the digest in .github/impeccable-engine.sha256
+        run: |
+          bin=$(scripts/install-impeccable-engine.sh "$RUNNER_TEMP/impeccable")
+          echo "IMPECCABLE_BIN=$bin" >> "$GITHUB_ENV"
+      - run: test "$(.claude/skills/impeccable/scripts/impeccable engine-probe)" = "impeccable-engine $(cat .claude/skills/impeccable/scripts/VERSION)"
       - run: pnpm design:detect
