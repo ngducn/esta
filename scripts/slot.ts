@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 export type SlotPorts = {
   web: number;
+  webProd: number;
   api: number;
   db: number;
   studio: number;
@@ -14,6 +15,7 @@ export type SlotPorts = {
 
 const BASE_PORTS: SlotPorts = {
   web: 3000,
+  webProd: 3917,
   api: 54321,
   db: 54322,
   studio: 54323,
@@ -39,6 +41,7 @@ export function slotPorts(slot: number): SlotPorts {
   const offset = slot * SLOT_STRIDE;
   return {
     web: BASE_PORTS.web + offset,
+    webProd: BASE_PORTS.webProd + offset,
     api: BASE_PORTS.api + offset,
     db: BASE_PORTS.db + offset,
     studio: BASE_PORTS.studio + offset,
