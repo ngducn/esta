@@ -26,6 +26,7 @@
     "db:types": "node scripts/db.ts types",
     "db:test": "node scripts/db.ts test",
     "clock:set": "tsx scripts/clock-set.ts",
+    "reference:build": "node scripts/reference/build-csvs.ts && node scripts/reference/build-migration.ts",
     "cron:run": "node scripts/cron-run.ts"
   },
   "devDependencies": {
