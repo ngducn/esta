@@ -2,6 +2,7 @@
 import type {} from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
+import { getCurrentMember } from '@/server/member';
 import en from '../../messages/en.json';
 import vi from '../../messages/vi.json';
 import { localeCookie, resolveLocale, type Locale } from './locale';
@@ -16,7 +17,10 @@ declare module 'next-intl' {
 }
 
 export default getRequestConfig(async () => {
-  const cookieStore = await cookies();
-  const locale = resolveLocale({ memberLocale: null, cookieLocale: cookieStore.get(localeCookie)?.value });
+  const [cookieStore, member] = await Promise.all([cookies(), getCurrentMember()]);
+  const locale = resolveLocale({
+    memberLocale: member?.locale ?? null,
+    cookieLocale: cookieStore.get(localeCookie)?.value,
+  });
   return { locale, messages: messages[locale] };
 });

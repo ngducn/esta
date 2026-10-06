@@ -2,5 +2,70 @@
   "app": {
     "name": "Esta",
     "tagline": "The family's property ledger"
+  },
+  "language": {
+    "label": "Language",
+    "switchTo": "Tiếng Việt"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "emailIntro": "Enter your email. Esta will send you a 6-digit code.",
+    "emailLabel": "Email",
+    "sendCode": "Send code",
+    "sending": "Sending the code…",
+    "invalidEmail": "That email does not look right. Check it and try again.",
+    "sendFailed": "The code was not sent. Check your connection and try again.",
+    "codeSent": "We sent a code to {email}. Look for the email titled “Mã đăng nhập Esta”.",
+    "codeLabel": "6-digit code",
+    "verify": "Sign in",
+    "verifying": "Checking…",
+    "wrongCode": "The code is wrong or has expired. Send a new code.",
+    "resend": "Send a new code",
+    "resendIn": "Send a new code in {seconds} s",
+    "changeEmail": "Use another email",
+    "or": "or",
+    "google": "Sign in with Google",
+    "googleFailed": "Google sign-in did not work. Try again or use an email code."
+  },
+  "onboarding": {
+    "title": "Create your household",
+    "intro": "Name the household and tell us your name. You will be its admin.",
+    "householdName": "Household name",
+    "householdNameHint": "For example: The Nguyen family",
+    "displayName": "Your name",
+    "displayNameHint": "Others in the household see this name.",
+    "create": "Create household",
+    "creating": "Creating…",
+    "householdNameRequired": "Enter a household name.",
+    "displayNameRequired": "Enter your name.",
+    "tooLong": "The name is longer than 120 characters. Shorten it and try again.",
+    "createFailed": "The household was not created. Check your connection and try again.",
+    "inviteTitle": "Invite someone in the family",
+    "inviteIntro": "The person you invite signs in with this exact email and goes straight to {household}. Esta does not send an invite email yet, so let them know.",
+    "inviteEmail": "Their email",
+    "role": "Access",
+    "roles": {
+      "admin": "Admin",
+      "member": "Member",
+      "viewer": "View only"
+    },
+    "roleHints": {
+      "admin": "Views, edits and invites others.",
+      "member": "Views and edits records.",
+      "viewer": "Views only and cannot edit."
+    },
+    "invalidEmail": "That email does not look right. Check it and try again.",
+    "invite": "Invite",
+    "inviting": "Inviting…",
+    "invited": "Invited {email} as {role}.",
+    "alreadyInvited": "This email is already invited or a member.",
+    "inviteFailed": "The invite was not saved. Check your connection and try again.",
+    "done": "Done"
+  },
+  "home": {
+    "role": "Access: {role}",
+    "signedInAs": "You are signed in as {name}.",
+    "signedIn": "You are signed in.",
+    "signOut": "Sign out"
   }
 }

@@ -2,5 +2,70 @@
   "app": {
     "name": "Esta",
     "tagline": "Sổ cái nhà đất của gia đình"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "switchTo": "English"
+  },
+  "signIn": {
+    "title": "Đăng nhập",
+    "emailIntro": "Nhập email của bạn. Esta sẽ gửi một mã gồm 6 chữ số.",
+    "emailLabel": "Email",
+    "sendCode": "Gửi mã",
+    "sending": "Đang gửi mã…",
+    "invalidEmail": "Email chưa đúng. Kiểm tra lại rồi thử lại.",
+    "sendFailed": "Chưa gửi được mã. Kiểm tra kết nối mạng rồi thử lại.",
+    "codeSent": "Đã gửi mã đến {email}. Mã nằm trong email có tiêu đề “Mã đăng nhập Esta”.",
+    "codeLabel": "Mã 6 chữ số",
+    "verify": "Đăng nhập",
+    "verifying": "Đang kiểm tra…",
+    "wrongCode": "Mã không đúng hoặc đã hết hạn. Gửi lại mã.",
+    "resend": "Gửi lại mã",
+    "resendIn": "Gửi lại mã sau {seconds} giây",
+    "changeEmail": "Đổi email",
+    "or": "hoặc",
+    "google": "Đăng nhập bằng Google",
+    "googleFailed": "Chưa đăng nhập được bằng Google. Thử lại hoặc dùng mã qua email."
+  },
+  "onboarding": {
+    "title": "Tạo gia đình",
+    "intro": "Đặt tên cho gia đình và cho biết tên của bạn. Bạn sẽ là người quản trị.",
+    "householdName": "Tên gia đình",
+    "householdNameHint": "Ví dụ: Gia đình Nguyễn",
+    "displayName": "Tên của bạn",
+    "displayNameHint": "Người khác trong gia đình sẽ thấy tên này.",
+    "create": "Tạo gia đình",
+    "creating": "Đang tạo…",
+    "householdNameRequired": "Nhập tên gia đình.",
+    "displayNameRequired": "Nhập tên của bạn.",
+    "tooLong": "Tên dài quá 120 ký tự. Rút ngắn rồi thử lại.",
+    "createFailed": "Chưa tạo được gia đình. Kiểm tra kết nối mạng rồi thử lại.",
+    "inviteTitle": "Mời người trong gia đình",
+    "inviteIntro": "Người được mời đăng nhập bằng đúng email này và vào thẳng {household}. Esta chưa tự gửi email mời, nên hãy báo cho họ biết.",
+    "inviteEmail": "Email người được mời",
+    "role": "Quyền",
+    "roles": {
+      "admin": "Quản trị",
+      "member": "Thành viên",
+      "viewer": "Chỉ xem"
+    },
+    "roleHints": {
+      "admin": "Xem, sửa và mời người khác.",
+      "member": "Xem và sửa dữ liệu.",
+      "viewer": "Chỉ xem, không sửa được."
+    },
+    "invalidEmail": "Email chưa đúng. Kiểm tra lại rồi thử lại.",
+    "invite": "Mời",
+    "inviting": "Đang mời…",
+    "invited": "Đã mời {email} với quyền {role}.",
+    "alreadyInvited": "Email này đã được mời hoặc đã là thành viên.",
+    "inviteFailed": "Chưa mời được. Kiểm tra kết nối mạng rồi thử lại.",
+    "done": "Xong"
+  },
+  "home": {
+    "role": "Quyền: {role}",
+    "signedInAs": "Bạn đang đăng nhập với tên {name}.",
+    "signedIn": "Bạn đã đăng nhập.",
+    "signOut": "Đăng xuất"
   }
 }

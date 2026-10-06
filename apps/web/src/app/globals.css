@@ -1,1 +1,6 @@
 @import 'tailwindcss';
+
+/* Until the P0-11 tokens land, system colors follow the device theme. */
+:root {
+  color-scheme: light dark;
+}
