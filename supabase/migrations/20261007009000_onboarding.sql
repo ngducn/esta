@@ -1,8 +1,3 @@
--- The household_members guards fire only for `authenticated`, and these functions run as their
--- owner, so each one enforces the SPEC §5.1 rules it could otherwise bypass: it links rows only to
--- the caller, never grants operator except to the creator of a new household, and never removes
--- or demotes an admin.
-
 create function private.session_email()
 returns text
 language sql
@@ -75,7 +70,6 @@ begin
 
   insert into public.households (name) values (v_name) returning id into v_household;
   insert into public.household_settings (household_id) values (v_household);
-  -- [app rule] The person who creates a household operates it (SPEC §5.1, listed in STATUS.md).
   insert into public.household_members (household_id, user_id, invited_email, role, is_operator, display_name)
   values (v_household, v_user, v_email, 'admin', true, v_display_name);
   return v_household;
@@ -141,9 +135,6 @@ grant execute on function public.create_household(text, text) to authenticated;
 grant execute on function public.invite_member(uuid, text, public.member_role) to authenticated;
 grant execute on function public.set_my_locale(text) to authenticated;
 
--- An operator row, claimed or not, is changed or removed only by an operator of the household
--- (#8, #9). Without this a non-operator admin could delete the operator or point an unclaimed
--- operator invite at its own address.
 create function private.guard_operator_row()
 returns trigger
 language plpgsql
@@ -163,7 +154,6 @@ create trigger guard_operator_row
   before update or delete on public.household_members
   for each row execute function private.guard_operator_row();
 
--- Sign-in exists now, so the address lookup no longer needs a signed-out caller (#16).
 revoke select on table public.admin_units, public.admin_unit_legacy_map from anon;
 revoke all on function public.suggest_current_unit(text) from anon;
 revoke all on sequence public.admin_unit_legacy_map_id_seq from anon, authenticated;

@@ -13,7 +13,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title') };
 }
 
-/** An invite sent after this user signed in is claimed here instead of creating a second household. */
 async function claimedLateInvite(): Promise<boolean> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase.rpc('claim_pending_invites');

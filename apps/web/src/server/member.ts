@@ -19,7 +19,6 @@ export const getSessionUserId = cache(async (): Promise<string | null> => {
   return data?.claims.sub ?? null;
 });
 
-/** The signed-in user's earliest membership. Phase 0 has one household per user. */
 export const getCurrentMember = cache(async (): Promise<Member | null> => {
   const userId = await getSessionUserId();
   if (userId === null) return null;

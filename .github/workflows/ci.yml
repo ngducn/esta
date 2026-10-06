@@ -52,7 +52,6 @@ jobs:
           version: 2.90.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      # Mailpit stays up: the sign-in specs read the code from the local mailbox.
       - run: pnpm db:start -x studio,imgproxy,realtime,storage-api,postgres-meta
       - run: pnpm db:reset
       - run: pnpm e2e

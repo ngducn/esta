@@ -19,8 +19,6 @@ reset role;
 select id as op_row from public.household_members where invited_email = 'op.a@test.esta.test' \gset
 select id as pending_op_row from public.household_members where invited_email = 'pending.op.a@test.esta.test' \gset
 
--- invite_member
-
 select tests.act_as('member.a@test.esta.test');
 select throws_ok(
   format($$ select public.invite_member(%L, 'x@test.esta.test', 'viewer') $$, :'a'),
@@ -59,8 +57,6 @@ select lives_ok(
   'an admin invites a second address');
 reset role;
 
--- claim_pending_invites
-
 select tests.act_as('new.user@test.esta.test');
 select is(public.claim_pending_invites(), 1, 'the first claim links one invite');
 select is((select user_id from public.household_members where id = :'invite'), :'new_user'::uuid,
@@ -91,8 +87,6 @@ select throws_ok(
   '42501', null, 'a user session still cannot link a row to a user directly');
 reset role;
 
--- create_household
-
 select tests.act_as('new.user@test.esta.test');
 select throws_ok($$ select public.create_household('Gia đình Thứ Hai', 'Demo') $$, '23505', null,
   'a user who already belongs to a household cannot create another');
@@ -117,16 +111,12 @@ select throws_ok($$ select public.create_household('Gia đình Mới Demo', 'Dem
   'submitting onboarding twice creates no second household');
 reset role;
 
--- set_my_locale
-
 select tests.act_as('fresh@test.esta.test');
 select public.set_my_locale('en');
 select is((select locale from public.household_members where user_id = :'fresh_user'), 'en', 'a member sets its own locale');
 select throws_ok($$ select public.set_my_locale('fr') $$, '23514', null, 'an unknown locale is refused');
 reset role;
 select is((select count(*)::int from public.household_members where locale = 'en'), 1, 'set_my_locale touches only the caller''s rows');
-
--- issue #8 and #9: operator rows
 
 select tests.act_as('admin.a@test.esta.test');
 select throws_ok(
@@ -154,8 +144,6 @@ select lives_ok(
   format($$ delete from public.household_members where id = %L $$, :'pending_op_row'),
   'an operator removes an operator invite');
 reset role;
-
--- issue #16: reference data is for signed-in users only
 
 set local role anon;
 select throws_ok($$ select 1 from public.admin_units limit 1 $$, '42501', null, 'anon cannot read admin_units');

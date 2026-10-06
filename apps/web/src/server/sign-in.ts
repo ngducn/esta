@@ -2,7 +2,6 @@ import 'server-only';
 import { carryCookieLocaleToMember } from '@/server/locale';
 import { createSessionClient } from '@/server/supabase/server';
 
-/** Runs after any sign-in method: claim invites for this email, then pick the landing page. */
 export async function finishSignIn(): Promise<'/' | '/onboarding'> {
   const supabase = await createSessionClient();
   const { error } = await supabase.rpc('claim_pending_invites');

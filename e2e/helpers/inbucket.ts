@@ -13,7 +13,6 @@ function query(email: string): string {
   return new URLSearchParams({ query: `to:"${email}"` }).toString();
 }
 
-/** Clears the address's mail so the next code read cannot pick up a stale one. */
 export async function clearMailbox(email: string): Promise<void> {
   const response = await fetch(`${mailbox}/search?${query(email)}`, { method: 'DELETE' });
   expect(response.ok, `clearing mail for ${email}`).toBe(true);
@@ -41,7 +40,6 @@ export async function latestCode(email: string): Promise<string> {
   return codes[0] ?? '';
 }
 
-/** Requests a code on /sign-in and leaves the page on the code step. */
 export async function requestCode(page: Page, email: string): Promise<void> {
   await clearMailbox(email);
   await page.goto('/sign-in');
@@ -50,7 +48,6 @@ export async function requestCode(page: Page, email: string): Promise<void> {
   await expect(page.locator('input[name="code"]')).toBeVisible();
 }
 
-/** Signs in through the UI in either language. `typeCode` lets a test enter the code as a person would. */
 export async function signIn(page: Page, email: string, typeCode = (code: string) => code): Promise<void> {
   await requestCode(page, email);
   await page.locator('input[name="code"]').fill(typeCode(await latestCode(email)));

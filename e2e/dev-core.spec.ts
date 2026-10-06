@@ -6,7 +6,6 @@ import { signIn } from './helpers/inbucket';
 const NBSP = String.fromCharCode(160);
 const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address'];
 
-// The address lookup reads admin units, which only a signed-in user may read (#16).
 test.beforeEach(async ({ page }) => {
   await signIn(page, `dev-core.${randomUUID().slice(0, 8)}@demo.esta.test`);
 });

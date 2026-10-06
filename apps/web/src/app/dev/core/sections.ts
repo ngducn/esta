@@ -50,7 +50,6 @@ function phone(text: string): Phone {
   return result.value;
 }
 
-// Admin units are readable only with a session (#16), so a signed-out visit shows the reason per row.
 async function suggested(text: string): Promise<string> {
   const rows = await suggestCurrentUnit(text).catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
   if (typeof rows === 'string') return rows;

@@ -43,7 +43,6 @@ export async function createHousehold(_previous: CreateHouseholdState, formData:
 
   const supabase = await createSessionClient();
   const { error } = await supabase.rpc('create_household', { p_name: householdName, p_display_name: displayName });
-  // 23505: this user already has a household, as after a double submit; the first one stands.
   if (error && error.code !== '23505') return { householdName, displayName, errors: { form: 'failed' } };
   await carryCookieLocaleToMember();
   redirect('/onboarding');
