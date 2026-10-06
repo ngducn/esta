@@ -1,0 +1,29 @@
+| font                                                | cps | missing | tnum | lnum feat | lining digits | tnum digits uniform | default digits proportional | result |
+|-----------------------------------------------------|-----|---------|------|-----------|---------------|---------------------|-----------------------------|--------|
+| BeVietnamPro-Regular.ttf                            | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| BeVietnamPro-Medium.ttf                             | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| BeVietnamPro-SemiBold.ttf                           | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| BeVietnamPro-Bold.ttf                               | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| Newsreader[opsz,wght].ttf@wght=400,opsz=16          | 68  | 0       | yes  | NO        | yes           | yes                 | no                          | PASS   |
+| Newsreader[opsz,wght].ttf@wght=500,opsz=16          | 68  | 0       | yes  | NO        | yes           | yes                 | no                          | PASS   |
+| Newsreader[opsz,wght].ttf@wght=600,opsz=16          | 68  | 0       | yes  | NO        | yes           | yes                 | no                          | PASS   |
+| Newsreader[opsz,wght].ttf@wght=400,opsz=72          | 68  | 0       | yes  | NO        | yes           | yes                 | no                          | PASS   |
+| Newsreader[opsz,wght].ttf@wght=600,opsz=72          | 68  | 0       | yes  | NO        | yes           | yes                 | no                          | PASS   |
+| SourceSerif4[opsz,wght].ttf@wght=400,opsz=16        | 68  | 0       | yes  | yes       | yes           | yes                 | no                          | PASS   |
+| SourceSerif4[opsz,wght].ttf@wght=500,opsz=16        | 68  | 0       | yes  | yes       | yes           | yes                 | no                          | PASS   |
+| SourceSerif4[opsz,wght].ttf@wght=600,opsz=16        | 68  | 0       | yes  | yes       | yes           | yes                 | no                          | PASS   |
+| SourceSerif4[opsz,wght].ttf@wght=400,opsz=60        | 68  | 0       | yes  | yes       | yes           | yes                 | no                          | PASS   |
+| SourceSerif4[opsz,wght].ttf@wght=600,opsz=60        | 68  | 0       | yes  | yes       | yes           | yes                 | no                          | PASS   |
+| Fraunces[SOFT,WONK,opsz,wght].ttf@wght=400,opsz=14  | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| Fraunces[SOFT,WONK,opsz,wght].ttf@wght=500,opsz=14  | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| Fraunces[SOFT,WONK,opsz,wght].ttf@wght=600,opsz=14  | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| Fraunces[SOFT,WONK,opsz,wght].ttf@wght=400,opsz=144 | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| Fraunces[SOFT,WONK,opsz,wght].ttf@wght=600,opsz=144 | 68  | 0       | NO   | NO        | yes           | NO                  | yes                         | FAIL   |
+| SourceSans3[wght].ttf@wght=400                      | 68  | 0       | NO   | NO        | yes           | yes                 | no                          | PASS   |
+| SourceSans3[wght].ttf@wght=500                      | 68  | 0       | NO   | NO        | yes           | yes                 | no                          | PASS   |
+| SourceSans3[wght].ttf@wght=600                      | 68  | 0       | NO   | NO        | yes           | yes                 | no                          | PASS   |
+| SourceSans3[wght].ttf@wght=700                      | 68  | 0       | NO   | NO        | yes           | yes                 | no                          | PASS   |
+| PublicSans[wght].ttf@wght=400                       | 68  | 0       | yes  | yes       | yes           | yes                 | yes                         | PASS   |
+| PublicSans[wght].ttf@wght=500                       | 68  | 0       | yes  | yes       | yes           | yes                 | yes                         | PASS   |
+| PublicSans[wght].ttf@wght=600                       | 68  | 0       | yes  | yes       | yes           | yes                 | yes                         | PASS   |
+| PublicSans[wght].ttf@wght=700                       | 68  | 0       | yes  | yes       | yes           | yes                 | yes                         | PASS   |

@@ -1,0 +1,13 @@
+{
+  "name": "s2-fonts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "coverage": "node coverage.mjs",
+    "shots": "node shots.mjs"
+  },
+  "dependencies": {
+    "fontkit": "^2.0.4",
+    "playwright": "^1.63.0"
+  }
+}
