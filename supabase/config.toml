@@ -70,8 +70,7 @@ max_indexes = 5
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:3000"
-# `*` matches one dotted label.
-additional_redirect_urls = ["https://127.0.0.1:3000", "https://10.*.*.*:3443/**", "https://172.{16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31}.*.*:3443/**", "https://192.168.*.*:3443/**"]
+additional_redirect_urls = ["https://127.0.0.1:3000"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10

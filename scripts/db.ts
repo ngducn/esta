@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseSlot, writeSlotWorkdir } from './slot.ts';
+import { authDrifts, parseSlot, writeSlotWorkdir } from './slot.ts';
 
 const COMMANDS: Record<string, string[]> = {
   start: ['start'],
@@ -42,8 +42,28 @@ if (!seeds && seedFlags.length > 0) {
 }
 
 const slot = parseSlot(process.env.ESTA_SLOT);
-const workdir = writeSlotWorkdir(repoRoot, slot);
+const lan = command === 'start' ? process.env.ESTA_LAN_HOST || undefined : undefined;
+const workdir = writeSlotWorkdir(repoRoot, slot, lan);
 console.error(`ESTA_SLOT=${slot} workdir=${workdir}`);
+// The CLI waits about 6 s on its telemetry upload before exiting.
+const supabaseEnv = { ...process.env, SUPABASE_TELEMETRY_DISABLED: '1' };
+
+function runningAuthEnv(): string[] | undefined {
+  const inspect = spawnSync('docker', ['inspect', '--format', '{{json .Config.Env}}', `supabase_auth_esta-${slot}`], {
+    encoding: 'utf8',
+  });
+  return inspect.status === 0 ? (JSON.parse(inspect.stdout) as string[]) : undefined;
+}
+
+if (command === 'start') {
+  const running = runningAuthEnv();
+  const slotToml = readFileSync(join(workdir, 'supabase', 'config.toml'), 'utf8');
+  if (running !== undefined && authDrifts(slotToml, running)) {
+    console.error(`ESTA_SLOT=${slot}: auth runs with ${lan === undefined ? 'LAN' : 'localhost'} URLs, restarting the stack to switch`);
+    const stop = spawnSync('supabase', ['stop', '--workdir', workdir], { stdio: 'inherit', env: supabaseEnv });
+    if (stop.status !== 0) process.exit(stop.status ?? 1);
+  }
+}
 
 if (seeds) {
   const seedPath = /^sql_paths = \["\.\/([^"]+)"\]$/m.exec(readFileSync(join(repoRoot, 'supabase', 'config.toml'), 'utf8'))?.[1];
@@ -62,8 +82,7 @@ const capture = command === 'types';
 const result = spawnSync('supabase', [...args, '--workdir', workdir, ...extra], {
   stdio: ['inherit', capture ? 'pipe' : 'inherit', 'inherit'],
   encoding: 'utf8',
-  // The CLI waits about 6 s on its telemetry upload before exiting.
-  env: { ...process.env, SUPABASE_TELEMETRY_DISABLED: '1' },
+  env: supabaseEnv,
 });
 if (result.error) throw result.error;
 if (result.status === 0 && capture) {

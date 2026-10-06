@@ -2,7 +2,7 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
+import { authDrifts, parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const baseToml = readFileSync(join(repoRoot, 'supabase', 'config.toml'), 'utf8');
@@ -62,9 +62,22 @@ describe('slotConfig', () => {
     expect(toml).toMatch(new RegExp(`\\[studio\\][^[]*\\nport = ${ports.studio}\\n`));
     expect(toml).toMatch(new RegExp(`\\[inbucket\\][^[]*\\nport = ${ports.inbucket}\\n`));
     expect(toml).toContain(`site_url = "http://127.0.0.1:${ports.web}"`);
-    expect(toml).toContain(`"https://192.168.*.*:${ports.webLan}/**"`);
-    expect(toml).not.toMatch(slot === 0 ? /:3543\// : /:3443\//);
+    expect(toml).toContain(`additional_redirect_urls = ["https://127.0.0.1:${ports.web}"]`);
+    expect(toml).toContain(`external_url = "http://127.0.0.1:${ports.api}"`);
     expect(boundPorts(toml)).toEqual(boundPorts(baseToml).map((port) => port + slot * 100));
+  });
+
+  it('keeps LAN origins out of the base config', () => {
+    expect(baseToml).not.toMatch(/https:\/\/(10|172|192)\./);
+    expect(slotConfig(baseToml, 13)).not.toMatch(/https:\/\/(10|172|192)\./);
+  });
+
+  it('points auth at the LAN origins only for a dev:lan run', () => {
+    const toml = slotConfig(baseToml, 13, '192.168.1.7');
+    expect(toml).toContain('site_url = "https://192.168.1.7:4743"');
+    expect(toml).toContain('additional_redirect_urls = ["https://127.0.0.1:4300", "https://192.168.1.7:4743/**"]');
+    expect(toml).toContain('external_url = "https://192.168.1.7:9743"');
+    expect(toml).not.toContain('*.*');
   });
 
   it('keeps slots 0, 1 and 10 on disjoint ports', () => {
@@ -96,5 +109,21 @@ describe('writeSlotWorkdir', () => {
       expect(existsSync(join(workdir, 'supabase', dir))).toBe(true);
     }
     rmSync(root, { recursive: true });
+  });
+});
+
+describe('authDrifts', () => {
+  const lanToml = slotConfig(baseToml, 13, '192.168.1.7');
+  const localEnv = ['GOTRUE_SITE_URL=http://127.0.0.1:4300', 'API_EXTERNAL_URL=http://127.0.0.1:55621', 'PATH=/bin'];
+  const lanEnv = ['GOTRUE_SITE_URL=https://192.168.1.7:4743', 'API_EXTERNAL_URL=https://192.168.1.7:9743'];
+
+  it('reports drift when the running auth service has the other origins', () => {
+    expect(authDrifts(lanToml, localEnv)).toBe(true);
+    expect(authDrifts(slotConfig(baseToml, 13), lanEnv)).toBe(true);
+  });
+
+  it('reports no drift when the running auth service matches', () => {
+    expect(authDrifts(lanToml, lanEnv)).toBe(false);
+    expect(authDrifts(slotConfig(baseToml, 13), localEnv)).toBe(false);
   });
 });

@@ -49,7 +49,7 @@ export function slotPorts(slot: number): SlotPorts {
   };
 }
 
-export function slotConfig(baseToml: string, slot: number): string {
+export function slotConfig(baseToml: string, slot: number, lan?: string): string {
   const offset = slot * SLOT_STRIDE;
   const ports = slotPorts(slot);
   let section = '';
@@ -59,13 +59,15 @@ export function slotConfig(baseToml: string, slot: number): string {
       const header = /^\[([^\]]+)\]/.exec(line);
       if (header?.[1] !== undefined) {
         section = header[1];
-        return line;
+        if (section !== 'api') return line;
+        const externalUrl = lan === undefined ? `http://127.0.0.1:${ports.api}` : `https://${lan}:${ports.apiLan}`;
+        return `${line}\nexternal_url = "${externalUrl}"`;
       }
       if (section === '' && line.startsWith('project_id =')) return `project_id = "esta-${slot}"`;
+      if (lan !== undefined && line.startsWith('site_url =')) return `site_url = "https://${lan}:${ports.webLan}"`;
       if (/^(site_url|additional_redirect_urls) =/.test(line)) {
-        return line
-          .replaceAll(`127.0.0.1:${BASE_PORTS.web}`, `127.0.0.1:${ports.web}`)
-          .replaceAll(`:${BASE_PORTS.webLan}/`, `:${ports.webLan}/`);
+        const local = line.replaceAll(`127.0.0.1:${BASE_PORTS.web}`, `127.0.0.1:${ports.web}`);
+        return lan === undefined ? local : local.replace(/\]$/, `, "https://${lan}:${ports.webLan}/**"]`);
       }
       const portsNameRemoteServers = section.startsWith('auth');
       if (portsNameRemoteServers) return line;
@@ -76,17 +78,29 @@ export function slotConfig(baseToml: string, slot: number): string {
     .join('\n');
 }
 
+function tomlString(toml: string, key: string): string | undefined {
+  return new RegExp(`^${key} = "([^"]*)"$`, 'm').exec(toml)?.[1];
+}
+
+export function authDrifts(slotToml: string, runningEnv: readonly string[]): boolean {
+  const running = new Map(runningEnv.map((entry) => [entry.slice(0, entry.indexOf('=')), entry.slice(entry.indexOf('=') + 1)]));
+  return (
+    running.get('GOTRUE_SITE_URL') !== tomlString(slotToml, 'site_url') ||
+    running.get('API_EXTERNAL_URL') !== tomlString(slotToml, 'external_url')
+  );
+}
+
 export function slotWorkdir(repoRoot: string, slot: number): string {
   return join(repoRoot, 'supabase', '.slots', String(slot));
 }
 
-export function writeSlotWorkdir(repoRoot: string, slot: number): string {
+export function writeSlotWorkdir(repoRoot: string, slot: number, lan?: string): string {
   const workdir = slotWorkdir(repoRoot, slot);
   const source = join(repoRoot, 'supabase');
   const target = join(workdir, 'supabase');
   mkdirSync(target, { recursive: true });
   const baseToml = readFileSync(join(source, 'config.toml'), 'utf8');
-  writeFileSync(join(target, 'config.toml'), slotConfig(baseToml, slot));
+  writeFileSync(join(target, 'config.toml'), slotConfig(baseToml, slot, lan));
   for (const dir of SHARED_DIRS) {
     rmSync(join(target, dir), { recursive: true, force: true });
     cpSync(join(source, dir), join(target, dir), { recursive: true });

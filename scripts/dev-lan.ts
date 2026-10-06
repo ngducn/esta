@@ -107,6 +107,11 @@ if (running !== undefined) {
 }
 
 const lan = lanAddress(networkInterfaces());
+const db = spawnSync(process.execPath, [join(repoRoot, 'scripts', 'db.ts'), 'start'], {
+  stdio: 'inherit',
+  env: { ...process.env, ESTA_LAN_HOST: lan },
+});
+if (db.status !== 0) process.exit(db.status ?? 1);
 const { certFile, keyFile } = ensureCertificates(lan);
 mkdirSync(runDir, { recursive: true });
 const caddyfile = join(runDir, 'Caddyfile');
@@ -146,6 +151,7 @@ function shutdown(code: number): never {
     }
   }
   rmSync(stateFile, { force: true });
+  console.error(`Supabase auth on ESTA_SLOT=${slot} still sends LAN links. \`pnpm db:start\` switches it back to localhost.`);
   process.exit(code);
 }
 
