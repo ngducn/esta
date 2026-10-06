@@ -16,9 +16,13 @@ Locked decisions are in SPEC §3. Do not change them; raise a conflict instead.
 
 Phase 0 makes every command below real. Keep this list accurate as the repo evolves.
 
+Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `PORT` moves the web port.
+
 | Command | Does |
 | --- | --- |
+| `pnpm env:init` | Copy `.env.example` to `apps/web/.env.local` when that file is missing; `pnpm dev` and `pnpm build` run it |
 | `pnpm dev` | Web app on localhost:3000 against local Supabase |
+| `pnpm build` / `pnpm start` | Production build and server for `apps/web`; `ESTA_ENV=production` hides `/dev/*` |
 | `pnpm dev:lan` | Same, reachable over HTTPS from a phone on the same network (SPEC D13) |
 | `pnpm agent:dev` | Agent worker against local Supabase |
 | `pnpm agent:record` | Run golden agent cases live and refresh replay recordings |
@@ -28,7 +32,7 @@ Phase 0 makes every command below real. Keep this list accurate as the repo evol
 | `pnpm db:reset` | Apply migrations and the `full` seed; `pnpm db:reset:northstar` for the north-star variant |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |
-| `pnpm check` | Typecheck, lint, unit tests, i18n key parity |
+| `pnpm check` | Typecheck, lint and unit tests in every workspace; i18n key parity joins with P0-05 |
 | `pnpm e2e` | Playwright suite; `pnpm e2e:northstar` runs SPEC §1.2 |
 | `pnpm design:detect` | Impeccable detector over `apps/web` with JSON output |
 | `pnpm glyphs:check` | Font coverage for the Vietnamese glyph test string |
