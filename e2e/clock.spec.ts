@@ -4,12 +4,13 @@ import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 
-// The test clock is one row per stack, so one project owns it to keep runs from racing.
-test.skip(({ viewport }) => viewport?.width !== 390, 'the test clock row is shared per slot');
-
 function authorization(): { authorization: string } {
   const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false });
   return { authorization: `Bearer ${env.CRON_SECRET}` };
+}
+
+function ownTheClockRow() {
+  test.skip(test.info().project.name !== 'mobile', 'the test clock row is shared per slot');
 }
 
 async function setClock(request: APIRequestContext, frozenNow: string) {
@@ -18,6 +19,7 @@ async function setClock(request: APIRequestContext, frozenNow: string) {
 }
 
 test('the date line follows the test clock across a day without a restart', async ({ page, request }) => {
+  ownTheClockRow();
   try {
     await setClock(request, '2026-10-07T23:59:00+07:00');
     await page.goto('/');
@@ -35,6 +37,7 @@ test('the date line follows the test clock across a day without a restart', asyn
 });
 
 test('the test clock route refuses a request without the cron secret', async ({ request }) => {
+  ownTheClockRow();
   const response = await request.post('/api/test/clock', { data: { frozen_now: '2026-10-10T09:00:00+07:00' } });
   expect(response.status()).toBe(401);
 });

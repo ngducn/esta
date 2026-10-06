@@ -40,7 +40,6 @@ export function resolveClockSource({ estaEnv, testClockRow, frozenNowEnv, system
   return { kind: 'system', now: systemNow };
 }
 
-/** One request or job reads one instant, so every date it derives agrees. */
 export function clockAt(source: ClockSource, timezone: string): Clock {
   const today = businessDate(source.now, timezone);
   return { source: source.kind, now: () => source.now, today: () => today };

@@ -1,4 +1,4 @@
-import { businessDate, parseInstant } from '@esta/core';
+import { businessDate, parseInstant, type Instant } from '@esta/core';
 import { z } from 'zod';
 import { requireCronSecret } from '@/server/cron/auth';
 import { cronClient } from '@/server/cron/supabase';
@@ -16,7 +16,7 @@ function guard(request: Request): Response | null {
 export async function POST(request: Request): Promise<Response> {
   const denied = guard(request);
   if (denied) return denied;
-  let frozenNow;
+  let frozenNow: Instant;
   try {
     frozenNow = parseInstant(body.parse(await request.json()).frozen_now);
   } catch {

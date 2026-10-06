@@ -27,11 +27,6 @@ function statusKeys(repoRoot: string, slot: number): Env {
   );
 }
 
-/**
- * The environment a local web process or script sees on a slot. The shell wins, then the slot's
- * ports and keys, then apps/web/.env.local, so one .env.local serves every slot. Reading the keys
- * asks `supabase status`, which costs most of a second, so callers that need none skip it.
- */
 export function slotEnv(repoRoot: string, slot: number, { withKeys = true } = {}): Env {
   const ports = slotPorts(slot);
   const apiUrl = `http://127.0.0.1:${ports.api}`;

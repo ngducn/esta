@@ -1,7 +1,3 @@
--- The test clock (SPEC FND-9). A row means "now is frozen_now"; no row means the Clock falls back
--- to ESTA_FROZEN_NOW, then system time. Production never reads it. Only the service role writes it,
--- through the test clock route and `pnpm clock:set`.
-
 create table public.test_clock (
   id boolean primary key default true check (id),
   frozen_now timestamptz not null

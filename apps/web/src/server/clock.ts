@@ -10,13 +10,12 @@ import type { Env } from './env-schema';
 type TestClockRow = { frozen_now: string };
 export type ReadTestClockRow = () => Promise<TestClockRow | null>;
 
-// test_clock is readable by anon, so a cookieless client serves every request, signed in or not.
-const anon = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+const cookielessAnonClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
 async function readTestClockRow(): Promise<TestClockRow | null> {
-  const { data, error } = await anon.from('test_clock').select('frozen_now').maybeSingle();
+  const { data, error } = await cookielessAnonClient.from('test_clock').select('frozen_now').maybeSingle();
   if (error) throw new Error(`Reading test_clock failed: ${error.message}`);
   return data;
 }
@@ -35,7 +34,6 @@ export async function readClock(
   return clockAt(source, config.ESTA_TIMEZONE);
 }
 
-/** The request's clock. React's cache scopes the read to one request, so it never outlives it. */
 export const getClock = cache(async (): Promise<Clock> => {
   await connection();
   return readClock(env, readTestClockRow);
