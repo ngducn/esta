@@ -6,3 +6,5 @@ fixtures-private/
 coverage/
 playwright-report/
 test-results/
+next-env.d.ts
+*.tsbuildinfo
