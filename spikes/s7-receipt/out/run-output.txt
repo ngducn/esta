@@ -1,0 +1,25 @@
+satori+resvg PNG cold: 95 ms
+satori+resvg PNG warm: 45 ms
+a-reactpdf PDF cold: 74 ms
+a-reactpdf PDF warm: 28 ms
+a-reactpdf: 39280 bytes, pages=1, view=419.528015x595.276001pt
+a-reactpdf extracted: "Gia đình Demo   Số BN-2026-10-003  Biên nhận tiền thuê  Người thuê   Đặng Thị Hường Căn thuê   Dãy trọ Dĩ An, Phòng 3 Kỳ   01/10/2026 đến 31/10/2026 Tiền thuê phòng   3.500.000 ₫  Tiền điện (250 kWh)   250.000 ₫  Tiền nước   50.000 ₫  Tổng cộng   3.800.000 ₫  Bằng chữ: Ba triệu tám trăm nghìn đồng  Quét mã VietQR để chuyển khoản  Nội dung: ESTA 7K2QX9MP"
+  PASS contains "Đặng Thị Hường"
+  PASS contains "Gia đình Demo"
+  PASS contains "Dãy trọ Dĩ An"
+  PASS contains "Biên nhận tiền thuê"
+  PASS contains "Ba triệu tám trăm nghìn đồng"
+  PASS contains "ESTA 7K2QX9MP"
+  PASS contains "3.500.000 ₫"
+b-pdflib PDF cold: 75 ms
+b-pdflib PDF warm: 42 ms
+b-pdflib: 31719 bytes, pages=1, view=419.528x595.276pt
+b-pdflib extracted: "Gia đình Demo   Số BN-2026-10-003  Biên nhận tiền thuê  Người thuê   Đặng Thị Hường Căn thuê   Dãy trọ Dĩ An, Phòng 3 Kỳ   01/10/2026 đến 31/10/2026 Tiền thuê phòng   3.500.000 ₫  Tiền điện (250 kWh)   250.000 ₫  Tiền nước   50.000 ₫  Tổng cộng   3.800.000 ₫  Bằng chữ: Ba triệu tám trăm nghìn đồng  Quét mã VietQR để chuyển khoản  Nội dung: ESTA 7K2QX9MP"
+  PASS contains "Đặng Thị Hường"
+  PASS contains "Gia đình Demo"
+  PASS contains "Dãy trọ Dĩ An"
+  PASS contains "Biên nhận tiền thuê"
+  PASS contains "Ba triệu tám trăm nghìn đồng"
+  PASS contains "ESTA 7K2QX9MP"
+  PASS contains "3.500.000 ₫"
+qr payload 00020101021238540010A00000072701240006970422011001234567890208QRIBFTTA5303704540738000005802VN62170813ESTA 7K2QX9MP6304FCF0 | Ba triệu tám trăm nghìn đồng

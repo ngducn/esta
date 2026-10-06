@@ -1,0 +1,2 @@
+out/next-route.pdf: PASS tenant name in extracted text
+out/next-route-reactpdf.pdf: PASS tenant name in extracted text
