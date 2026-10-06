@@ -1,13 +1,15 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { X509Certificate } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { connect } from 'node:net';
 import { homedir, networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
 import { renderCaddyfile } from './caddyfile.ts';
 import { devCaDir, trustInstructions } from './dev-ca.ts';
+import { ensureCertificates } from './dev-certs.ts';
 import { commandOf, liveState, type State } from './dev-lan-state.ts';
+import { stopWhenOrphaned } from './dev-lan-stop.ts';
 import { lanAddress } from './lan-address.ts';
 import { parseSlot, slotPorts } from './slot.ts';
 
@@ -18,7 +20,6 @@ const repoRoot = join(import.meta.dirname, '..');
 const certsDir = join(repoRoot, '.certs');
 const caRoot = devCaDir(process.env, homedir());
 const caFile = join(caRoot, 'rootCA.pem');
-const publicDir = join(certsDir, 'public');
 const slot = parseSlot(process.env.ESTA_SLOT);
 const ports = slotPorts(slot);
 const runDir = join(repoRoot, '.dev-lan', `slot-${slot}`);
@@ -36,30 +37,6 @@ function requireTools(): void {
     );
     process.exit(1);
   }
-}
-
-function ensureCertificates(lan: string): { certFile: string; keyFile: string } {
-  const certFile = join(certsDir, `lan-${lan}.pem`);
-  const keyFile = join(certsDir, `lan-${lan}-key.pem`);
-  const reusable =
-    existsSync(certFile) &&
-    existsSync(keyFile) &&
-    existsSync(caFile) &&
-    new X509Certificate(readFileSync(certFile)).verify(new X509Certificate(readFileSync(caFile)).publicKey);
-  if (!reusable) {
-    mkdirSync(caRoot, { recursive: true, mode: 0o700 });
-    const result = spawnSync('mkcert', ['-cert-file', certFile, '-key-file', keyFile, lan, 'localhost', '127.0.0.1'], {
-      env: { ...process.env, CAROOT: caRoot },
-      encoding: 'utf8',
-    });
-    if (result.status !== 0) {
-      console.error(result.stderr);
-      process.exit(1);
-    }
-  }
-  mkdirSync(publicDir, { recursive: true });
-  copyFileSync(caFile, join(publicDir, 'esta-dev-ca.crt'));
-  return { certFile, keyFile };
 }
 
 function printUrls(lan: string): void {
@@ -113,7 +90,7 @@ const db = spawnSync(process.execPath, [join(repoRoot, 'scripts', 'db.ts'), 'sta
   env: { ...process.env, ESTA_LAN_HOST: lan },
 });
 if (db.status !== 0) process.exit(db.status ?? 1);
-const { certFile, keyFile } = ensureCertificates(lan);
+const { certFile, keyFile, publicDir } = ensureCertificates({ lan, certsDir, caRoot });
 mkdirSync(runDir, { recursive: true });
 const caddyfile = join(runDir, 'Caddyfile');
 const caddyLog = join(runDir, 'caddy.log');
@@ -156,11 +133,7 @@ function shutdown(code: number): never {
   process.exit(code);
 }
 
-for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) process.on(signal, () => shutdown(0));
-const parent = process.ppid;
-setInterval(() => {
-  if (process.ppid !== parent) shutdown(0);
-}, PARENT_POLL_MS).unref();
+stopWhenOrphaned(process, () => shutdown(0), PARENT_POLL_MS);
 for (const [index, child] of children.entries()) {
   child.on('exit', (code) => {
     if (index === 0) console.error(`Caddy stopped with code ${code}. Its log is ${caddyLog}.`);
