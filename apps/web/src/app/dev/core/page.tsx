@@ -8,8 +8,7 @@ export const metadata: Metadata = {
 
 const NBSP = String.fromCharCode(160);
 
-// A mismatch caused by a plain space where an NBSP belongs would otherwise look identical.
-function visibleSpaces(text: string, row: CheckedRow): string {
+function showNbspOnMismatch(text: string, row: CheckedRow): string {
   return row.matches ? text : text.replaceAll(NBSP, '⍽');
 }
 
@@ -24,8 +23,8 @@ const COLUMNS: readonly Column[] = [
   { label: 'Function', value: (row) => row.fn, className: () => 'font-mono' },
   { label: 'Input', value: (row) => row.input },
   { label: 'Locale', value: (row) => row.locale ?? '' },
-  { label: 'Expected', cell: 'expected', value: (row) => visibleSpaces(row.expected, row) },
-  { label: 'Actual', cell: 'actual', value: (row) => visibleSpaces(row.actual, row) },
+  { label: 'Expected', cell: 'expected', value: (row) => showNbspOnMismatch(row.expected, row) },
+  { label: 'Actual', cell: 'actual', value: (row) => showNbspOnMismatch(row.actual, row) },
   {
     label: 'Result',
     cell: 'result',

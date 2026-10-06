@@ -1,4 +1,3 @@
-/** Mirrors `esta_unaccent` in Postgres so client and server searches agree. */
 export function foldVietnamese(text: string): string {
   return text
     .toLowerCase()

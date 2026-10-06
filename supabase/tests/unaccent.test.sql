@@ -1,9 +1,15 @@
 begin;
 
-select plan(9);
+select plan(11);
 
 select is(public.esta_unaccent('Đường Dĩ An'), 'duong di an', 'folds đ, tones and case');
 select is(public.esta_unaccent('ĐẶNG THỊ HƯỜNG'), 'dang thi huong', 'folds stacked marks and uppercase');
+select is(public.esta_unaccent('Sổ hồng Bảo Lộc'), 'so hong bao loc', 'folds a certificate title');
+select is(
+  public.esta_unaccent('ẫ ặ ữ ỡ ự ể ộ ổ ỗ ờ ở ợ ụ ủ ứ ừ ử ỳ ỷ ỹ Ỵ'),
+  'a a u o u e o o o o o o u u u u u y y y y',
+  'folds every vowel in the glyph test string'
+);
 select is(public.esta_unaccent(normalize('Hợp đồng', NFD)), 'hop dong', 'folds decomposed input like precomposed');
 select is(public.esta_unaccent(null), null, 'passes null through');
 

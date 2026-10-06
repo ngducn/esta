@@ -6,16 +6,23 @@ export function dateParts(date: IsoDate): DateParts {
   return { year: Number(date.slice(0, 4)), month: Number(date.slice(5, 7)), day: Number(date.slice(8, 10)) };
 }
 
-// Days since 1970-01-01 in the proleptic Gregorian calendar (Hinnant's days_from_civil).
-// Pure arithmetic, so the result never depends on the host time zone.
+const YEARS_PER_ERA = 400;
+const DAYS_PER_ERA = 146_097;
+const DAYS_FROM_MARCH_YEAR_0_TO_UNIX_EPOCH = 719_468;
+
+function daysBeforeMonthInMarchYear(month: number): number {
+  const monthsSinceMarch = (month + 9) % 12;
+  return Math.floor((153 * monthsSinceMarch + 2) / 5);
+}
+
 export function epochDay(date: IsoDate): number {
   const { year, month, day } = dateParts(date);
-  const y = month <= 2 ? year - 1 : year;
-  const era = Math.floor(y / 400);
-  const yearOfEra = y - era * 400;
-  const dayOfYear = Math.floor((153 * (month + (month > 2 ? -3 : 9)) + 2) / 5) + day - 1;
+  const marchYear = month <= 2 ? year - 1 : year;
+  const era = Math.floor(marchYear / YEARS_PER_ERA);
+  const yearOfEra = marchYear - era * YEARS_PER_ERA;
+  const dayOfYear = daysBeforeMonthInMarchYear(month) + day - 1;
   const dayOfEra = yearOfEra * 365 + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100) + dayOfYear;
-  return era * 146_097 + dayOfEra - 719_468;
+  return era * DAYS_PER_ERA + dayOfEra - DAYS_FROM_MARCH_YEAR_0_TO_UNIX_EPOCH;
 }
 
 export function daysBetween(from: IsoDate, to: IsoDate): number {

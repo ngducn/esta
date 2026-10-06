@@ -1,5 +1,3 @@
--- Accent- and case-insensitive search (DOMAIN-VN §9), matching foldVietnamese in packages/core.
-
 create extension if not exists unaccent with schema extensions;
 
 -- unaccent() is only stable because its dictionary is looked up by name; pinning the

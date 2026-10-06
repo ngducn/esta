@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import unaccentTest from '../../../../supabase/tests/unaccent.test.sql?raw';
 import { foldVietnamese, matchesSearch } from './fold';
 
+const SQL_FOLD_CASE = /is\(\s*public\.esta_unaccent\('([^']+)'\),\s*'([^']+)'/g;
+const sqlFoldCases = [...unaccentTest.matchAll(SQL_FOLD_CASE)].map(([, text = '', folded = '']) => [text, folded]);
+
 describe('foldVietnamese', () => {
-  it.each([
-    ['Đường Dĩ An', 'duong di an'],
-    ['Hợp đồng', 'hop dong'],
-    ['Sổ hồng Bảo Lộc', 'so hong bao loc'],
-    ['ĐẶNG THỊ HƯỜNG', 'dang thi huong'],
-    ['ẫ ặ ữ ỡ ự ể ộ ổ ỗ ờ ở ợ ụ ủ ứ ừ ử ỳ ỷ ỹ Ỵ', 'a a u o u e o o o o o o u u u u u y y y y'],
-    ['DUONG', 'duong'],
-  ])('folds %s', (text, folded) => {
+  it('has the esta_unaccent cases from supabase/tests/unaccent.test.sql to agree with', () => {
+    expect(sqlFoldCases.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each(sqlFoldCases)('folds %s as esta_unaccent does', (text, folded) => {
     expect(foldVietnamese(text)).toBe(folded);
+  });
+
+  it('lowercases ASCII', () => {
+    expect(foldVietnamese('DUONG')).toBe('duong');
   });
 
   it('folds decomposed input the same as precomposed input', () => {
