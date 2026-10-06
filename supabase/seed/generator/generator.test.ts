@@ -80,6 +80,13 @@ describe('PROPERTY_SEEDS', () => {
     const codes = PROPERTY_SEEDS.map((seed) => seed.key.replaceAll('-', '').toUpperCase());
     expect(new Set(codes).size).toBe(codes.length);
   });
+
+  it('marks every house number and certificate address as Demo, so no seeded address is a real home', () => {
+    for (const seed of PROPERTY_SEEDS) {
+      if ('house_no' in seed.address) expect(seed.address.house_no).toMatch(/^\S+ Demo$/);
+      expect(seed.certificate_address_text).toMatch(/(Số|số|Lô|Thửa đất số) \S+ Demo, /);
+    }
+  });
 });
 
 describe('renderSeed', () => {
