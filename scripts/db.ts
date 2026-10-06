@@ -46,7 +46,6 @@ const slot = parseSlot(process.env.ESTA_SLOT);
 const lan = command === 'start' ? process.env.ESTA_LAN_HOST || undefined : undefined;
 const workdir = writeSlotWorkdir(repoRoot, slot, lan);
 console.error(`ESTA_SLOT=${slot} workdir=${workdir}`);
-// The CLI waits about 6 s on its telemetry upload before exiting.
 const supabaseEnv = { ...process.env, SUPABASE_TELEMETRY_DISABLED: '1' };
 
 function runningAuthEnv(): string[] | undefined {
