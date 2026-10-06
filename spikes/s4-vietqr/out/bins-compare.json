@@ -1,0 +1,203 @@
+{
+  "fetchedAt": "2026-10-06T16:15:57.869Z",
+  "manifest": [
+    {
+      "file": "bank-bins.vietqr-io.json",
+      "source": "https://api.vietqr.io/v2/banks",
+      "publisher": "VietQR.io (Casso)",
+      "fetchedAt": "2026-10-06T16:15:57.869Z",
+      "count": 65,
+      "sha256": "d814bc37c832dca4f697de393112837a1c80ae5307d9e42a9a11e5b8a9f7277d"
+    },
+    {
+      "file": "bank-bins.napas-vietqr-net.json",
+      "source": "https://vietqr.net/portal-service/v1/info/banks",
+      "publisher": "NAPAS (vietqr.net portal)",
+      "fetchedAt": "2026-10-06T16:15:57.869Z",
+      "count": 74,
+      "sha256": "ef2c3816d5fa8efc59df40f5a782aaefc751f81949238402f684447b1fe35104"
+    }
+  ],
+  "counts": {
+    "vietqrIo": 65,
+    "napas": 74,
+    "shared": 64
+  },
+  "allBinsSixDigits": true,
+  "onlyInVietqrIo": [
+    "971025 momo"
+  ],
+  "onlyInNapas": [
+    "963686 ESUN",
+    "963688 BOCHK",
+    "970465 BSP",
+    "555666 BIDC",
+    "963326 TNEX",
+    "963669 ICBC",
+    "971032 MVAS",
+    "168999 CUBHCM",
+    "963666 BNP HCM",
+    "963668 BNP HN"
+  ],
+  "codeMismatches": [
+    {
+      "bin": "970403",
+      "vietqrIo": "STB",
+      "napas": "SACOMBANK"
+    },
+    {
+      "bin": "971133",
+      "vietqrIo": "PVDB",
+      "napas": "PVCB Pay"
+    },
+    {
+      "bin": "970425",
+      "vietqrIo": "ABB",
+      "napas": "ABBank"
+    },
+    {
+      "bin": "970430",
+      "vietqrIo": "PGB",
+      "napas": "PGBank"
+    },
+    {
+      "bin": "970449",
+      "vietqrIo": "LPB",
+      "napas": "LPBANK"
+    },
+    {
+      "bin": "970444",
+      "vietqrIo": "CBB",
+      "napas": "VCBNeo"
+    },
+    {
+      "bin": "970406",
+      "vietqrIo": "Vikki",
+      "napas": "DOB"
+    }
+  ],
+  "nameMismatches": [
+    {
+      "bin": "970403",
+      "vietqrIo": "Ngân hàng TMCP Sài Gòn Thương Tín",
+      "napas": "Ngân hàng TMCP Sài Gòn Tài Lộc"
+    },
+    {
+      "bin": "970426",
+      "vietqrIo": "Ngân hàng TMCP Hàng Hải Việt Nam",
+      "napas": "Ngân hàng TMCP Hàng Hải"
+    },
+    {
+      "bin": "971011",
+      "vietqrIo": "VNPT Money",
+      "napas": "Trung tâm dịch vụ tài chính số VNPT- Chi nhánh Tổng công ty truyền thông (VNPT Fintech)"
+    },
+    {
+      "bin": "971133",
+      "vietqrIo": "Ngân hàng TMCP Đại Chúng Việt Nam Ngân hàng số",
+      "napas": "Ngân hàng số PVcomBank"
+    },
+    {
+      "bin": "970444",
+      "vietqrIo": "Ngân hàng Thương mại TNHH MTV Xây dựng Việt Nam",
+      "napas": "Ngân hàng Thương mại trách nhiệm hữu hạn một thành viên Ngoại thương Công nghệ số (Vietcombank Neo Limited)"
+    },
+    {
+      "bin": "970406",
+      "vietqrIo": "Ngân hàng TNHH MTV Số Vikki",
+      "napas": "Ngân hàng TNHH Một thành viên số Vikki"
+    }
+  ],
+  "isTransfer": {
+    "vietqrIo": {
+      "0": 23,
+      "1": 42
+    },
+    "napas": {
+      "0": 28,
+      "1": 46
+    }
+  },
+  "napasNotTransfer": [
+    "963686 ESUN",
+    "963688 BOCHK",
+    "970465 BSP",
+    "555666 BIDC",
+    "963326 TNEX",
+    "963669 ICBC",
+    "168999 CUBHCM",
+    "963666 BNP HCM",
+    "963668 BNP HN",
+    "533948 CITIBANK",
+    "977777 MAFC",
+    "999888 VBSP",
+    "970467 KEBHANAHN",
+    "970466 KEBHANAHCM",
+    "971005 VTLMONEY",
+    "971011 VNPTMONEY",
+    "970421 VRB",
+    "970458 UOB",
+    "970410 SCVN",
+    "970439 PBVN",
+    "801011 NHB HN",
+    "970456 IBK - HCM",
+    "970455 IBK - HN",
+    "458761 HSBC",
+    "970442 HLBVN",
+    "970408 GPB",
+    "970406 DOB",
+    "796500 DBS"
+  ],
+  "sample": [
+    {
+      "bin": "970436",
+      "vietqrIo": "VCB | Vietcombank | Ngân hàng TMCP Ngoại Thương Việt Nam",
+      "napas": "VCB | Ngân hàng TMCP Ngoại Thương Việt Nam"
+    },
+    {
+      "bin": "970415",
+      "vietqrIo": "ICB | VietinBank | Ngân hàng TMCP Công thương Việt Nam",
+      "napas": "ICB | Ngân hàng TMCP Công thương Việt Nam"
+    },
+    {
+      "bin": "970418",
+      "vietqrIo": "BIDV | BIDV | Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
+      "napas": "BIDV | Ngân hàng TMCP Đầu tư và Phát triển Việt Nam"
+    },
+    {
+      "bin": "970405",
+      "vietqrIo": "VBA | Agribank | Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam",
+      "napas": "VBA | Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam"
+    },
+    {
+      "bin": "970422",
+      "vietqrIo": "MB | MBBank | Ngân hàng TMCP Quân đội",
+      "napas": "MB | Ngân hàng TMCP Quân đội"
+    },
+    {
+      "bin": "970407",
+      "vietqrIo": "TCB | Techcombank | Ngân hàng TMCP Kỹ thương Việt Nam",
+      "napas": "TCB | Ngân hàng TMCP Kỹ thương Việt Nam"
+    },
+    {
+      "bin": "970416",
+      "vietqrIo": "ACB | ACB | Ngân hàng TMCP Á Châu",
+      "napas": "ACB | Ngân hàng TMCP Á Châu"
+    },
+    {
+      "bin": "970423",
+      "vietqrIo": "TPB | TPBank | Ngân hàng TMCP Tiên Phong",
+      "napas": "TPB | Ngân hàng TMCP Tiên Phong"
+    },
+    {
+      "bin": "970432",
+      "vietqrIo": "VPB | VPBank | Ngân hàng TMCP Việt Nam Thịnh Vượng",
+      "napas": "VPB | Ngân hàng TMCP Việt Nam Thịnh Vượng"
+    },
+    {
+      "bin": "970403",
+      "vietqrIo": "STB | Sacombank | Ngân hàng TMCP Sài Gòn Thương Tín",
+      "napas": "SACOMBANK | Ngân hàng TMCP Sài Gòn Tài Lộc"
+    }
+  ]
+}

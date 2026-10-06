@@ -1,0 +1,24 @@
+{
+  "name": "s4-vietqr",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "roundtrip": "tsx scripts/roundtrip-png.ts",
+    "bins": "NODE_EXTRA_CA_CERTS=scripts/globalsign-gcc-r46-ov-tls-ca-2025.pem tsx scripts/bins.ts"
+  },
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "@types/node": "^24.0.0",
+    "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.5",
+    "crypto-js": "^4.2.0",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0",
+    "vietnam-qr-pay": "1.5.1"
+  }
+}

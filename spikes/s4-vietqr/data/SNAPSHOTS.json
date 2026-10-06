@@ -1,0 +1,18 @@
+[
+  {
+    "file": "bank-bins.vietqr-io.json",
+    "source": "https://api.vietqr.io/v2/banks",
+    "publisher": "VietQR.io (Casso)",
+    "fetchedAt": "2026-10-06T16:15:57.869Z",
+    "count": 65,
+    "sha256": "d814bc37c832dca4f697de393112837a1c80ae5307d9e42a9a11e5b8a9f7277d"
+  },
+  {
+    "file": "bank-bins.napas-vietqr-net.json",
+    "source": "https://vietqr.net/portal-service/v1/info/banks",
+    "publisher": "NAPAS (vietqr.net portal)",
+    "fetchedAt": "2026-10-06T16:15:57.869Z",
+    "count": 74,
+    "sha256": "ef2c3816d5fa8efc59df40f5a782aaefc751f81949238402f684447b1fe35104"
+  }
+]

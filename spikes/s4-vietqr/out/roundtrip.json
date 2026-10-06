@@ -1,0 +1,26 @@
+{
+  "payload": "00020101021238540010A00000072701240006970436011001234567890208QRIBFTTA53037045408150000005802VN62170813ESTA 7K2QX9MP6304BB90",
+  "payloadLength": 124,
+  "qrVersion": 5,
+  "png": {
+    "path": "out/roundtrip.png",
+    "width": 360,
+    "height": 360,
+    "bytes": 2992
+  },
+  "scannedEqualsPayload": true,
+  "decoded": {
+    "ok": true,
+    "value": {
+      "initiation": "dynamic",
+      "bin": "970436",
+      "accountNo": "0123456789",
+      "service": "QRIBFTTA",
+      "currency": "704",
+      "country": "VN",
+      "amountVnd": 15000000,
+      "purpose": "ESTA 7K2QX9MP"
+    }
+  },
+  "accountNameEncoded": false
+}
