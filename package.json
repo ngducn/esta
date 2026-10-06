@@ -1,0 +1,34 @@
+{
+  "name": "esta",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "env:init": "node -e \"require('node:fs').cpSync('.env.example', 'apps/web/.env.local', { force: false })\"",
+    "dev": "pnpm env:init && pnpm --filter @esta/web dev",
+    "build": "pnpm --filter @esta/web build",
+    "start": "pnpm --filter @esta/web start",
+    "check": "pnpm -r --include-workspace-root run typecheck && pnpm -r --include-workspace-root run lint && pnpm -r run test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint e2e playwright.config.ts playwright.prod.config.ts eslint.config.mjs",
+    "e2e": "playwright test",
+    "e2e:prod": "playwright test --config playwright.prod.config.ts",
+    "check:build-env": "scripts/check-build-env.sh",
+    "design:detect": ".claude/skills/impeccable/scripts/impeccable detect --json apps/web/src"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.3.8",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}

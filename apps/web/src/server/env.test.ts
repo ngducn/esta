@@ -1,0 +1,42 @@
+import { describe, expect, test } from 'vitest';
+import { parseEnv } from './env-schema';
+
+const required = {
+  NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key',
+  CRON_SECRET: 'cron-secret',
+};
+
+describe('parseEnv', () => {
+  test('defaults ESTA_ENV to development and fills the documented defaults', () => {
+    expect(parseEnv(required)).toEqual({
+      ...required,
+      EMAIL_TRANSPORT: 'smtp',
+      ESTA_SIGNED_URL_TTL_SECONDS: 300,
+      ESTA_GOOGLE_AUTH: 'off',
+      ESTA_ENV: 'development',
+      ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh',
+    });
+  });
+
+  test('treats an empty value as unset', () => {
+    expect(parseEnv({ ...required, ESTA_ENV: '' }).ESTA_ENV).toBe('development');
+  });
+
+  test('rejects a missing required variable and names it', () => {
+    const { NEXT_PUBLIC_SUPABASE_URL: _omitted, ...rest } = required;
+    expect(() => parseEnv(rest)).toThrow(/NEXT_PUBLIC_SUPABASE_URL/);
+  });
+
+  test('rejects an unknown ESTA_ENV and lists the allowed values', () => {
+    expect(() => parseEnv({ ...required, ESTA_ENV: 'staging' })).toThrow(
+      /"development"\|"test"\|"preview"\|"production"[\s\S]*ESTA_ENV/,
+    );
+  });
+
+  test('refuses ESTA_FROZEN_NOW in production', () => {
+    const frozen = { ...required, ESTA_FROZEN_NOW: '2026-10-07T09:00:00+07:00' };
+    expect(parseEnv({ ...frozen, ESTA_ENV: 'test' }).ESTA_FROZEN_NOW).toBe(frozen.ESTA_FROZEN_NOW);
+    expect(() => parseEnv({ ...frozen, ESTA_ENV: 'production' })).toThrow(/ESTA_FROZEN_NOW/);
+  });
+});

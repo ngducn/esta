@@ -16,9 +16,13 @@ Locked decisions are in SPEC §3. Do not change them; raise a conflict instead.
 
 Phase 0 makes every command below real. Keep this list accurate as the repo evolves.
 
+Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `PORT` moves the web port.
+
 | Command | Does |
 | --- | --- |
+| `pnpm env:init` | Copy `.env.example` to `apps/web/.env.local` when that file is missing; only `pnpm dev` runs it |
 | `pnpm dev` | Web app on localhost:3000 against local Supabase |
+| `pnpm build` / `pnpm start` | Production build and server for `apps/web`; build fails on a missing variable; `ESTA_ENV=production` at start hides `/dev/*` |
 | `pnpm dev:lan` | Same, reachable over HTTPS from a phone on the same network (SPEC D13) |
 | `pnpm agent:dev` | Agent worker against local Supabase |
 | `pnpm agent:record` | Run golden agent cases live and refresh replay recordings |
@@ -28,9 +32,11 @@ Phase 0 makes every command below real. Keep this list accurate as the repo evol
 | `pnpm db:reset` | Apply migrations and the `full` seed; `pnpm db:reset:northstar` for the north-star variant |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |
-| `pnpm check` | Typecheck, lint, unit tests, i18n key parity |
+| `pnpm check` | Typecheck, lint and unit tests in every workspace; i18n key parity joins with P0-05 |
 | `pnpm e2e` | Playwright suite; `pnpm e2e:northstar` runs SPEC §1.2 |
-| `pnpm design:detect` | Impeccable detector over `apps/web` with JSON output |
+| `pnpm e2e:prod` | Builds, starts with `ESTA_ENV=production` and checks `/dev/*` returns 404 |
+| `pnpm check:build-env` | Builds a clean copy without `CRON_SECRET` and checks it fails with the zod message |
+| `pnpm design:detect` | Impeccable detector over `apps/web/src` with JSON output |
 | `pnpm glyphs:check` | Font coverage for the Vietnamese glyph test string |
 
 Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Never configure a real mail sender in development.
