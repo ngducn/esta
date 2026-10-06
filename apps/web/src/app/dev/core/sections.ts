@@ -16,23 +16,24 @@ import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { formatPhone, normalizePhone, phoneForZaloLink, type Phone } from '@esta/core/phone';
 import type { Result } from '@esta/core/result';
 import { foldVietnamese, matchesSearch } from '@esta/core/search';
+import { suggestCurrentUnit } from './suggest';
 
 export type CoreRow = {
   fn: string;
   input: string;
   locale?: Locale;
   expected: string;
-  run: () => string;
+  run: () => string | Promise<string>;
 };
 
 export type CoreSection = { id: string; title: string; rows: readonly CoreRow[] };
 
 export type CheckedRow = Omit<CoreRow, 'run'> & { actual: string; matches: boolean };
 
-export function checkRow({ run, ...row }: CoreRow): CheckedRow {
+export async function checkRow({ run, ...row }: CoreRow): Promise<CheckedRow> {
   let actual: string;
   try {
-    actual = run();
+    actual = await run();
   } catch (error) {
     actual = `throws ${error instanceof Error ? error.name : 'error'}`;
   }
@@ -48,6 +49,24 @@ function phone(text: string): Phone {
   if (!result.ok) throw new TypeError(`Not a phone: ${text}`);
   return result.value;
 }
+
+async function suggested(text: string): Promise<string> {
+  const rows = await suggestCurrentUnit(text);
+  return rows.map((row) => `${row.commune_code} ${row.commune_name} (${row.province_code})`).join(' · ');
+}
+
+const ADDRESS_LOOKUPS: readonly [string, string][] = [
+  ['Phường Dĩ An, Thành phố Dĩ An, Tỉnh Bình Dương', '25942 Phường Dĩ An (79)'],
+  ['Phường 1, Thành phố Vũng Tàu, Tỉnh Bà Rịa–Vũng Tàu', '26506 Phường Vũng Tàu (79)'],
+  ['Phường 2, Thành phố Tân An, Tỉnh Long An', '27694 Phường Long An (80)'],
+  ['Phường Tân Phong, Thành phố Biên Hòa, Tỉnh Đồng Nai', '26188 Phường Tân Triều (75)'],
+  ['Phường 1, Thành phố Bảo Lộc, Tỉnh Lâm Đồng', '24823 Phường 1 Bảo Lộc (68)'],
+  ['Dĩ An, Bình Dương', '25942 Phường Dĩ An (79) · 25945 Phường Tân Đông Hiệp (79) · 25951 Phường Đông Hòa (79)'],
+  [
+    'Quận 7',
+    '27475 Phường Tân Hưng (79) · 27478 Phường Tân Thuận (79) · 27484 Phường Phú Thuận (79) · 27487 Phường Tân Mỹ (79)',
+  ],
+];
 
 const NBSP = '\u00a0';
 const TODAY = isoDate('2026-10-07');
@@ -271,5 +290,15 @@ export const sections: readonly CoreSection[] = [
         run: () => String(matchesSearch(query, text)),
       })),
     ],
+  },
+  {
+    id: 'address',
+    title: 'Address lookup',
+    rows: ADDRESS_LOOKUPS.map(([text, expected]) => ({
+      fn: 'suggest_current_unit',
+      input: text,
+      expected,
+      run: () => suggested(text),
+    })),
   },
 ];
