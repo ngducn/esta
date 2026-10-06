@@ -32,8 +32,15 @@ test('the live box previews parsed amounts and names the reason for bad input', 
   const output = page.getByTestId('live-parse-output');
 
   await expect(output).toHaveText('rejected: empty');
+  // A cold dev compile can hydrate after the first fill. React then keeps the typed text as its
+  // tracked value, so refilling the same text fires no change; clear first on every retry.
+  await expect(async () => {
+    await input.fill('');
+    await input.fill('3tr5');
+    await expect(output).toHaveText(`3.500.000${NBSP}₫`, { timeout: 500 });
+  }).toPass();
+
   for (const [text, shown] of [
-    ['3tr5', `3.500.000${NBSP}₫`],
     ['1ty2', `1.200.000.000${NBSP}₫`],
     ['850k', `850.000${NBSP}₫`],
     ['abc', 'rejected: invalid'],
