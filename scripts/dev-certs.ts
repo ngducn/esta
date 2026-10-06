@@ -5,11 +5,7 @@ import { join } from 'node:path';
 
 export type Mkcert = (args: readonly string[], caRoot: string) => { status: number | null; stderr: string };
 
-export type LanCertificates = { certFile: string; keyFile: string; publicDir: string };
-
-export function runMkcert(args: readonly string[], caRoot: string): { status: number | null; stderr: string } {
-  return spawnSync('mkcert', args, { env: { ...process.env, CAROOT: caRoot }, encoding: 'utf8' });
-}
+const runMkcert: Mkcert = (args, caRoot) => spawnSync('mkcert', args, { env: { ...process.env, CAROOT: caRoot }, encoding: 'utf8' });
 
 export function ensureCertificates({
   lan,
@@ -21,7 +17,7 @@ export function ensureCertificates({
   certsDir: string;
   caRoot: string;
   mkcert?: Mkcert;
-}): LanCertificates {
+}): { certFile: string; keyFile: string; publicDir: string } {
   const caFile = join(caRoot, 'rootCA.pem');
   const certFile = join(certsDir, `lan-${lan}.pem`);
   const keyFile = join(certsDir, `lan-${lan}-key.pem`);
