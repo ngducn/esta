@@ -37,4 +37,9 @@ export default defineConfig(
     files: ['apps/web/**/*.tsx'],
     rules: { 'esta/no-jsx-literals': 'error' },
   },
+  {
+    files: ['apps/web/**'],
+    ignores: ['apps/web/src/app/dev/**'],
+    linterOptions: { noInlineConfig: true },
+  },
 );
