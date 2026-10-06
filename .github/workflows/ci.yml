@@ -40,6 +40,19 @@ jobs:
             playwright-report/
             test-results/
 
+  prod-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm e2e:prod
+      - run: pnpm check:build-env
+
   design:
     runs-on: ubuntu-latest
     steps:

@@ -7,9 +7,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "env:init": "node -e \"process.env.VERCEL || require('node:fs').cpSync('.env.example', 'apps/web/.env.local', { force: false })\"",
+    "env:init": "node -e \"require('node:fs').cpSync('.env.example', 'apps/web/.env.local', { force: false })\"",
     "dev": "pnpm env:init && pnpm --filter @esta/web dev",
-    "build": "pnpm env:init && pnpm --filter @esta/web build",
+    "build": "pnpm --filter @esta/web build",
     "start": "pnpm --filter @esta/web start",
     "check": "pnpm -r --include-workspace-root run typecheck && pnpm -r --include-workspace-root run lint && pnpm -r run test",
     "typecheck": "tsc --noEmit",
