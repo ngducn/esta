@@ -1,0 +1,44 @@
+[s1] mode=mock read_gate=allowlist model=claude-sonnet-5-5
+[s1] auth mode: subscription (CLAUDE_CODE_OAUTH_TOKEN dummy)
+[s1] env keys passed to SDK: ANTHROPIC_BASE_URL, CLAUDE_AGENT_SDK_CLIENT_APP, CLAUDE_CODE_OAUTH_TOKEN, CLAUDE_CONFIG_DIR, HOME, LANG, PATH, TMPDIR
+[s1] job dir: /private/var/folders/zf/b04789ms3w904xmqjt_gkhwm0000gn/T/esta-s1-job-iUCvUR
+[s1] config dir (fresh, empty): /private/var/folders/zf/b04789ms3w904xmqjt_gkhwm0000gn/T/esta-s1-config-VC8cdx
+(node:68112) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__esta__household_info, Read. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[s1] init: apiKeySource=none model=claude-sonnet-5-5 permissionMode=default
+[s1] init: tools=[Read, mcp__esta__household_info]
+[s1] init: mcp_servers=[{"name":"esta","status":"connected","source":"sdk"}]
+[s1] tool_use mcp__esta__household_info {}
+[s1] tool_result mcp__esta__household_info: {"name":"Gia đình Demo","member_count":2,"property_count":7,"locale":"vi"}
+[s1] tool_use Read {"file_path":"/private/var/folders/zf/b04789ms3w904xmqjt_gkhwm0000gn/T/esta-s1-job-iUCvUR/image.png"}
+[s1] tool_result Read: [image]
+[s1] tool_use Read {"file_path":"/etc/hosts"}
+[s1] tool_result Read: 1	##
+2	# Host Database
+3	#
+4	# localhost is used to configure the loopback interface
+5	# when the system is booting.  Do not change this entry.
+6	##
+7	127.0.0.1	localhost
+8	255.255.255.255	broadcasthost
+9	::1             localhost
+10	
+[s1] tool_use Bash {"command":"ls","description":"list files"}
+[s1] tool_result Bash (error): <tool_use_error>Error: No such tool available: Bash. Bash is disabled for this session, in subagents as well as here.</tool_use_error>
+[s1] assistant: MOCK DONE
+[s1] result: subtype=success is_error=false num_turns=5
+[s1] result: session_id=ad2f536e-0b22-4e3e-b562-b1cf6b5ea7f6 total_cost_usd=0.00042000000000000007
+[s1] result: usage={"input_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":25,"output_tokens_details":{"thinking_tokens":0},"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard","fallback_credit":null}
+[s1] result: permission_denials=[]
+[s1] transcription: (no TRANSCRIPTION line)
+[s1] expected:      TRANSCRIPTION: Thửa đất số 1234, tờ bản đồ số 56, Nguyễn Văn Demo
+[s1] elapsed_ms=3432
+[s1] permission callback calls (0):
+[s1] denials (0):
+[s1] mock API log:
+  HEAD /api/hello auth=none -> 404
+  POST /v1/messages auth=bearer step=0 tools=[Read,mcp__esta__household_info]
+  POST /v1/messages auth=bearer step=1 tools=[Read,mcp__esta__household_info]
+  POST /v1/messages auth=bearer step=2 tools=[Read,mcp__esta__household_info]
+  POST /v1/messages auth=bearer step=3 tools=[Read,mcp__esta__household_info]
+  POST /v1/messages auth=bearer step=4 tools=[Read,mcp__esta__household_info]
