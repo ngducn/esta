@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { authApi } from './helpers/auth-api';
 import { latestMail, requestCode, signIn } from './helpers/inbucket';
 
 async function seriousAxeViolations(page: Page): Promise<string[]> {
@@ -82,6 +83,41 @@ test('FND-1: an invited email lands in the inviting household with the invited r
   await expect(inviteePage.getByText('Quyền: Chỉ xem')).toBeVisible();
   await expect(inviteePage.getByRole('link', { name: 'Mời người trong gia đình' })).toHaveCount(0);
   await inviteeContext.close();
+});
+
+test('a password signup for an invited address gets no session, and the password never signs in', async ({
+  page,
+  browser,
+  request,
+}) => {
+  const household = `Gia đình Chiếm Demo ${randomUUID().slice(0, 4)}`;
+  const invitee = uniqueEmail('takeover');
+  const password = `Demo-${randomUUID()}`;
+  await signIn(page, uniqueEmail('admin'));
+  await createHousehold(page, household, 'Demo Quản Trị');
+  await page.getByLabel('Email người được mời').fill(invitee);
+  await page.getByLabel(/^Quản trị/).check();
+  await page.getByRole('button', { name: 'Mời', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText(`Đã mời ${invitee} với quyền Quản trị.`);
+
+  const signup = await request.post(`${authApi.url}/signup`, {
+    headers: authApi.headers,
+    data: { email: invitee.toUpperCase(), password },
+  });
+  expect(await signup.json(), 'a password signup never yields a session').not.toHaveProperty('access_token');
+
+  const inviteeContext = await browser.newContext();
+  const inviteePage = await inviteeContext.newPage();
+  await expect(async () => signIn(inviteePage, invitee)).toPass({ timeout: 15_000 });
+  await expect(inviteePage.getByRole('heading', { level: 1 })).toHaveText(household);
+  await expect(inviteePage.getByText('Quyền: Quản trị')).toBeVisible();
+  await inviteeContext.close();
+
+  const grant = await request.post(`${authApi.url}/token?grant_type=password`, {
+    headers: authApi.headers,
+    data: { email: invitee, password },
+  });
+  expect(grant.status(), 'the password set before the owner confirmed never signs in').toBe(400);
 });
 
 test('a wrong code shows the error and creates no session', async ({ page }) => {
