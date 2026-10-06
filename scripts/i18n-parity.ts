@@ -20,11 +20,12 @@ type Flattened = { shapes: Map<string, string[] | null>; problems: string[] };
 const isExactMatch = (option: string) => option.startsWith('=');
 
 function pluralCategoryProblems(element: PluralElement, catalog: Catalog, path: string, label: string): string[] {
-  const expected = new Intl.PluralRules(catalog.locale, { type: element.pluralType }).resolvedOptions().pluralCategories;
+  const expected: readonly string[] = new Intl.PluralRules(catalog.locale, { type: element.pluralType }).resolvedOptions()
+    .pluralCategories;
   const used = Object.keys(element.options).filter((option) => !isExactMatch(option));
   return [
     ...used
-      .filter((category) => !expected.includes(category as Intl.LDMLPluralRule))
+      .filter((category) => !expected.includes(category))
       .map((category) => `${catalog.file}: ${path} ${label} has category ${category}, which ${catalog.locale} never selects`),
     ...expected
       .filter((category) => !used.includes(category))
