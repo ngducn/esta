@@ -5,7 +5,15 @@ import { parseSlot, slotWorkdir } from './slot.ts';
 export type TableChecksum = { table: string; rows: number; md5: string };
 
 const NON_BUSINESS_TABLES = ['audit_log'];
-const NON_BUSINESS_COLUMNS = ['created_at', 'updated_at'];
+export const NON_BUSINESS_COLUMNS = ['created_at', 'updated_at'];
+
+export const SEEDED_AUTH_COLUMNS: Record<string, readonly string[]> = {
+  'auth.users': [
+    'instance_id', 'id', 'aud', 'role', 'email', 'encrypted_password', 'email_confirmed_at', 'raw_app_meta_data',
+    'raw_user_meta_data', 'confirmation_token', 'recovery_token', 'email_change_token_new', 'email_change',
+  ],
+  'auth.identities': ['id', 'provider_id', 'user_id', 'identity_data', 'provider'],
+};
 
 function query<Row>(workdir: string, sql: string): Row[] {
   const result = spawnSync('supabase', ['db', 'query', '--workdir', workdir, '--agent=no', '-o', 'json', sql], {
@@ -22,9 +30,9 @@ function literal(text: string): string {
 }
 
 export function businessChecksums(workdir: string): TableChecksum[] {
-  const tables = query<{ table_name: string; ident: string; columns: string }>(
+  const publicTables = query<{ table: string; relation: string; columns: string }>(
     workdir,
-    `select c.table_name, format('%I', c.table_name) as ident,
+    `select c.table_name as table, format('public.%I', c.table_name) as relation,
             string_agg(format('%I', c.column_name), ', ' order by c.ordinal_position) as columns
      from information_schema.columns c
      join information_schema.tables t using (table_schema, table_name)
@@ -34,12 +42,16 @@ export function businessChecksums(workdir: string): TableChecksum[] {
      group by c.table_name
      order by c.table_name`,
   );
-  if (tables.length === 0) return [];
-  const selects = tables.map(
-    ({ table_name, ident, columns }) =>
-      `select ${literal(table_name)} as table, count(*)::int as rows,
+  const authTables = Object.entries(SEEDED_AUTH_COLUMNS).map(([table, columns]) => ({
+    table,
+    relation: table,
+    columns: columns.join(', '),
+  }));
+  const selects = [...publicTables, ...authTables].map(
+    ({ table, relation, columns }) =>
+      `select ${literal(table)} as table, count(*)::int as rows,
               md5(coalesce(string_agg(r::text, E'\\n' order by r::text), '')) as md5
-       from (select ${columns} from public.${ident}) r`,
+       from (select ${columns} from ${relation}) r`,
   );
   return query<TableChecksum>(workdir, `${selects.join('\nunion all\n')}\norder by 1`);
 }

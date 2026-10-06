@@ -29,7 +29,7 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm clock:set <iso>` | Set or advance the test clock to an ISO date-time with a required offset, such as `2026-10-07T09:00:00+07:00` (`pnpm clock:set off` clears it); writes only to a Supabase on 127.0.0.1 or localhost |
 | `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Local Supabase (Docker) for the slot |
 | `pnpm db:reset` | Apply migrations and the generated `full` seed with 10 lane households; `pnpm db:reset:northstar` for the north-star variant; takes `--households N`, `--as-of <iso>` and `--variant` (`supabase/seed/README.md`) |
-| `pnpm db:checksum` / `pnpm db:seed:check` | One md5 per public table; reset twice and fail on any checksum difference (FND-7) |
+| `pnpm db:checksum` / `pnpm db:seed:check` | One md5 per public table and per seeded auth table; reset twice and fail on any checksum difference (FND-7) |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |
 | `pnpm check` | i18n parity, then typecheck, lint and unit tests in every workspace |

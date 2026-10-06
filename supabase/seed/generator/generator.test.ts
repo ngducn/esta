@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseInstant } from '../../../packages/core/src/index.ts';
+import { NON_BUSINESS_COLUMNS, SEEDED_AUTH_COLUMNS } from '../../../scripts/db-checksum.ts';
 import { seedId } from './ids.ts';
 import { DEFAULT_OPTIONS, generate, parseOptions } from './index.ts';
 import { PROPERTY_SEEDS } from './properties.ts';
@@ -65,6 +66,16 @@ describe('generate', () => {
       for (const row of statement.split('\n').filter((line) => line.startsWith('  ('))) {
         expect(row).toMatch(/'2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\),?$/);
       }
+    }
+  });
+});
+
+describe('db:checksum', () => {
+  it('covers every auth column the seed writes except the timestamps', () => {
+    const sql = generate(DEFAULT_OPTIONS);
+    for (const [table, columns] of Object.entries(SEEDED_AUTH_COLUMNS)) {
+      const written = new RegExp(`insert into ${table} \\(([^)]+)\\)`).exec(sql)?.[1]?.split(', ');
+      expect(written?.filter((column) => !NON_BUSINESS_COLUMNS.includes(column)), table).toEqual(columns);
     }
   });
 });
