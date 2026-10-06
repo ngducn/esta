@@ -5,12 +5,10 @@ import { businessDate, parseInstant, type Instant } from '../../../packages/core
 import type { Emitter } from './context.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { parties } from './parties.ts';
-import { properties } from './properties.ts';
-import { rngFor } from './rng.ts';
+import { properties, PROPERTY_SEEDS } from './properties.ts';
 import { renderSeed } from './sql.ts';
 import { isVariantName, VARIANTS, type VariantName } from './variants.ts';
 
-/** Every seeded table, in foreign key order. A schema PR adds its emitter here. */
 const EMITTERS: readonly Emitter[] = [...HOUSEHOLD_EMITTERS, parties, properties];
 
 const TIMEZONE = 'Asia/Ho_Chi_Minh';
@@ -27,11 +25,11 @@ export const DEFAULT_OPTIONS: GenerateOptions = {
 export function generate({ lanes, asOf, variant }: GenerateOptions): string {
   const households = householdSeeds(lanes);
   const today = businessDate(asOf, TIMEZONE);
+  const omitted: readonly string[] = VARIANTS[variant].omitProperties;
+  const properties = PROPERTY_SEEDS.filter((seed) => !omitted.includes(seed.key));
   const tables = EMITTERS.map(({ table, rows }) => ({
     table,
-    rows: households.flatMap((household) =>
-      rows({ household, variant: VARIANTS[variant], asOf, today, rng: rngFor }),
-    ),
+    rows: households.flatMap((household) => rows({ household, properties, asOf, today })),
   }));
   return renderSeed(tables, asOf);
 }
@@ -39,7 +37,6 @@ export function generate({ lanes, asOf, variant }: GenerateOptions): string {
 export const USAGE =
   'Usage: tsx supabase/seed/generator/index.ts [--households N] [--as-of <iso with offset>] [--variant full|northstar] [--out <file>]';
 
-/** Parses generator flags; `--households N` is the number of lane households beside `Gia đình Demo`. */
 export function parseOptions(args: readonly string[]): GenerateOptions & { readonly out: string | undefined } {
   const { values } = parseArgs({
     args: [...args],

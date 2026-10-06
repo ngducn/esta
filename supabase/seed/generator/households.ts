@@ -1,4 +1,4 @@
-import { publicTable, type Emitter, type HouseholdSeed, type SeedContext } from './context.ts';
+import { publicTable, type Emitter, type HouseholdSeed } from './context.ts';
 import { seedId } from './ids.ts';
 
 export const PEOPLE = [
@@ -39,7 +39,7 @@ function email(person: Person, household: HouseholdSeed): string {
 
 const authUsers: Emitter = {
   table: 'auth.users',
-  rows: ({ household, asOf }: SeedContext) =>
+  rows: ({ household, asOf }) =>
     PEOPLE.map(({ person }) => ({
       instance_id: '00000000-0000-0000-0000-000000000000',
       id: userId(person, household),
@@ -59,7 +59,7 @@ const authUsers: Emitter = {
 
 const authIdentities: Emitter = {
   table: 'auth.identities',
-  rows: ({ household }: SeedContext) =>
+  rows: ({ household }) =>
     PEOPLE.map(({ person }) => {
       const user = userId(person, household);
       return {
@@ -101,7 +101,6 @@ const notificationPreferences = publicTable('notification_preferences', ({ house
   })),
 );
 
-/** In foreign key order. */
 export const HOUSEHOLD_EMITTERS: readonly Emitter[] = [
   authUsers,
   authIdentities,

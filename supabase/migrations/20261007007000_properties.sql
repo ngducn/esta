@@ -13,7 +13,6 @@ create table public.properties (
     'rental', 'owner_occupied', 'family_use', 'own_business', 'held', 'under_renovation')),
   legal_status text not null default 'unknown' check (legal_status in (
     'certified', 'certificate_pending', 'paper_only', 'shared_certificate', 'in_dispute', 'unknown')),
-  -- Codes are admin_units codes; the foreign key waits until admin_units exists on this branch's base.
   current_address jsonb check (
     jsonb_typeof(current_address) = 'object'
     and coalesce(current_address ->> 'commune_code', '00000') ~ '^[0-9]{5}$'

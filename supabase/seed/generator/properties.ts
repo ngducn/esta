@@ -1,4 +1,4 @@
-import { publicTable, type SeedRow } from './context.ts';
+import { publicTable } from './context.ts';
 import { householdId } from './households.ts';
 import { seedId } from './ids.ts';
 
@@ -9,7 +9,7 @@ type CurrentAddress = {
   province_code: string;
 };
 
-type PropertySeed = {
+type PropertySeedShape = {
   key: string;
   nickname: string;
   kind: string;
@@ -17,13 +17,11 @@ type PropertySeed = {
   use_mode: string;
   legal_status: string;
   address: CurrentAddress;
-  /** Verbatim from the certificate, in the names of its era. */
   certificate_address_text: string;
   lat: number;
   lng: number;
 };
 
-// SPEC §9.3. Commune and province codes are admin_units codes (spike S3).
 export const PROPERTY_SEEDS = [
   {
     key: 'q7',
@@ -116,11 +114,11 @@ export const PROPERTY_SEEDS = [
     lat: 11.547,
     lng: 107.808,
   },
-] as const satisfies readonly PropertySeed[];
+] as const satisfies readonly PropertySeedShape[];
 
-export type PropertySeedKey = (typeof PROPERTY_SEEDS)[number]['key'];
+export type PropertySeed = (typeof PROPERTY_SEEDS)[number];
+export type PropertySeedKey = PropertySeed['key'];
 
-/** The code invoice numbers carry: the seed key in uppercase without hyphens. */
 export function propertyCode(key: PropertySeedKey): string {
   return key.replaceAll('-', '').toUpperCase();
 }
@@ -130,20 +128,18 @@ function currentAddress({ house_no, street, commune_code, province_code }: Curre
   return { ...(house_no === undefined ? {} : { house_no }), street, commune_code, province_code, line };
 }
 
-export const properties = publicTable('properties', ({ household, variant }) =>
-  PROPERTY_SEEDS.filter((seed) => !variant.omitProperties.includes(seed.key)).map(
-    (seed): SeedRow<'properties'> => ({
-      id: seedId(`seed:property:${household.key}:${seed.key}`),
-      household_id: householdId(household),
-      nickname: seed.nickname,
-      code: propertyCode(seed.key),
-      kind: seed.kind,
-      kind_details: seed.kind_details,
-      use_mode: seed.use_mode,
-      legal_status: seed.legal_status,
-      current_address: currentAddress(seed.address),
-      certificate_address_text: seed.certificate_address_text,
-      location: `SRID=4326;POINT(${seed.lng} ${seed.lat})`,
-    }),
-  ),
+export const properties = publicTable('properties', ({ household, properties }) =>
+  properties.map((seed) => ({
+    id: seedId(`seed:property:${household.key}:${seed.key}`),
+    household_id: householdId(household),
+    nickname: seed.nickname,
+    code: propertyCode(seed.key),
+    kind: seed.kind,
+    kind_details: seed.kind_details,
+    use_mode: seed.use_mode,
+    legal_status: seed.legal_status,
+    current_address: currentAddress(seed.address),
+    certificate_address_text: seed.certificate_address_text,
+    location: `SRID=4326;POINT(${seed.lng} ${seed.lat})`,
+  })),
 );

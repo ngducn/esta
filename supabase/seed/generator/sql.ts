@@ -50,11 +50,6 @@ function insert({ table, rows }: TableRows, stamp: Instant): string {
   return `insert into ${table} (${[...columns, ...stamped].join(', ')}) values\n${values.join(',\n')};\n`;
 }
 
-/**
- * Renders one insert per table in the given order. A top-level array becomes a Postgres array literal and an
- * object becomes jsonb, so pass a jsonb array as its JSON text. Every row gets `created_at` and `updated_at`
- * from `stamp` unless it sets them.
- */
 export function renderSeed(tables: readonly TableRows[], stamp: Instant): string {
   const statements = tables.filter((table) => table.rows.length > 0).map((table) => insert(table, stamp));
   return [

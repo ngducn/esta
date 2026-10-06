@@ -1,9 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tableChecksums, type TableChecksum } from './db-checksum.ts';
+import { businessChecksums, type TableChecksum } from './db-checksum.ts';
 import { parseSlot, slotWorkdir } from './slot.ts';
 
-// FND-7: two resets with the same arguments must leave identical business data.
 const repoRoot = join(import.meta.dirname, '..');
 const resetArgs = process.argv.slice(2);
 const workdir = slotWorkdir(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -14,7 +13,7 @@ function resetAndChecksum(): TableChecksum[] {
   });
   if (reset.error) throw reset.error;
   if (reset.status !== 0) process.exit(reset.status ?? 1);
-  return tableChecksums(workdir);
+  return businessChecksums(workdir);
 }
 
 const first = resetAndChecksum();

@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseSlot, writeSlotWorkdir } from './slot.ts';
 
@@ -12,7 +12,6 @@ const COMMANDS: Record<string, string[]> = {
   types: ['gen', 'types', 'typescript', '--local'],
 };
 
-// Flags for the seed generator; everything else goes to the Supabase CLI.
 const SEED_FLAGS = new Set(['--households', '--as-of', '--variant']);
 
 function splitSeedFlags(args: readonly string[]): { seed: string[]; rest: string[] } {
@@ -47,9 +46,9 @@ const workdir = writeSlotWorkdir(repoRoot, slot);
 console.error(`ESTA_SLOT=${slot} workdir=${workdir}`);
 
 if (seeds) {
-  // Inside the slot, outside the directories writeSlotWorkdir re-copies, so slots never share or clobber a seed.
-  // `[db.seed] sql_paths` in supabase/config.toml names the same file.
-  const out = join(workdir, 'supabase', 'generated', 'seed.sql');
+  const seedPath = /^sql_paths = \["\.\/([^"]+)"\]$/m.exec(readFileSync(join(repoRoot, 'supabase', 'config.toml'), 'utf8'))?.[1];
+  if (seedPath === undefined) throw new Error('supabase/config.toml must name exactly one [db.seed] sql_paths file');
+  const out = join(workdir, 'supabase', seedPath);
   const generator = spawnSync(
     join(repoRoot, 'node_modules', '.bin', 'tsx'),
     [join(repoRoot, 'supabase', 'seed', 'generator', 'index.ts'), ...seedFlags, '--out', out],

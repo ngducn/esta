@@ -110,7 +110,7 @@ describe('parseOptions', () => {
 
 describe('rng', () => {
   it('replays the same sequence for the same seed or scope', () => {
-    const draws = (rng: ReturnType<typeof createRng>) => Array.from({ length: 5 }, () => rng.int(1, 6));
+    const draws = (rng: ReturnType<typeof createRng>) => Array.from({ length: 5 }, () => rng.intInclusive(1, 6));
     expect(draws(createRng(42))).toEqual(draws(createRng(42)));
     expect(draws(rngFor('payments'))).toEqual(draws(rngFor('payments')));
     expect(draws(rngFor('payments'))).not.toEqual(draws(rngFor('invoices')));
