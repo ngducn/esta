@@ -152,6 +152,25 @@ test('a session cookie lasts 30 days', async ({ page }) => {
   expect(days).toBeLessThanOrEqual(30);
 });
 
+test('session cookies are httpOnly, and Secure only when the request came over https', async ({ page, browser }) => {
+  await signIn(page, uniqueEmail('cookie.http'));
+  const overHttp = (await page.context().cookies()).filter((cookie) => cookie.name.startsWith('sb-'));
+  expect(overHttp.length).toBeGreaterThan(0);
+  expect(overHttp.map(({ httpOnly, secure }) => ({ httpOnly, secure }))).toEqual(
+    overHttp.map(() => ({ httpOnly: true, secure: false })),
+  );
+
+  const httpsContext = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-proto': 'https' } });
+  const httpsPage = await httpsContext.newPage();
+  await signIn(httpsPage, uniqueEmail('cookie.https'));
+  const overHttps = (await httpsContext.cookies()).filter((cookie) => cookie.name.startsWith('sb-'));
+  expect(overHttps.length).toBeGreaterThan(0);
+  expect(overHttps.map(({ httpOnly, secure }) => ({ httpOnly, secure }))).toEqual(
+    overHttps.map(() => ({ httpOnly: true, secure: true })),
+  );
+  await httpsContext.close();
+});
+
 test('a language chosen on sign-in carries into the member and the English chrome', async ({ page, baseURL }) => {
   await page.context().addCookies([{ name: 'NEXT_LOCALE', value: 'en', url: baseURL ?? '' }]);
   await page.goto('/sign-in');
