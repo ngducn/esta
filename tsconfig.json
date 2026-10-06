@@ -3,7 +3,8 @@
   "compilerOptions": {
     "types": ["node"],
     "allowImportingTsExtensions": true,
-    "erasableSyntaxOnly": true
+    "erasableSyntaxOnly": true,
+    "allowJs": true
   },
   "include": ["e2e", "playwright.config.ts", "playwright.prod.config.ts", "scripts", "eslint-rules"]
 }
