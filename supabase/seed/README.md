@@ -80,7 +80,7 @@ Spikes S3 (`spike/s3-admin-units`, 1945c64) and S4 (`spike/s4-vietqr`, a7c9e76) 
 | `pnpm db:checksum` | One md5 per public table over every column except `created_at` and `updated_at`; skips `audit_log` |
 | `pnpm db:seed:check` | Resets twice, compares the checksums and exits 1 on any difference (FND-7) |
 
-Every row gets `created_at` and `updated_at` from `--as-of`, and the seed runs with `esta.actor` set to `system:seed`, so its audit rows read `system` and `seed`. Random draws come from `rngFor(scope)`, a fixed stream per scope string; ESLint bans `Math.random`, `Date.now` and `new Date()` in the generator.
+Every row gets `created_at` and `updated_at` from `--as-of`, and the seed runs with `esta.actor` set to `system:seed`, so its audit rows read `system` and `seed`. Random draws come from `rngFor(scope)`, a fixed stream per scope string; ESLint bans `Math.random`, `Date.now`, `Date()` and `new Date()` without arguments, `performance.now`, and the random functions of `crypto` in the generator.
 
 Keys added by the generator:
 
