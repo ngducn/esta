@@ -11,7 +11,7 @@ test('/dev/core shows every core section with zero MISMATCH rows', async ({ page
   for (const id of SECTIONS) {
     await expect(page.locator(`section[data-section="${id}"] tbody tr`).first()).toBeVisible();
   }
-  const results = page.locator('td[data-cell="result"]');
+  const results = page.locator('[data-cell="result"]');
   expect(await results.count()).toBeGreaterThan(40);
   await expect(results.filter({ hasText: 'MISMATCH' })).toHaveCount(0);
   await expect(page.getByTestId('core-summary')).toContainText(', 0 mismatches');
@@ -22,7 +22,7 @@ test('/dev/core shows every core section with zero MISMATCH rows', async ({ page
 
 test('formatVnd separates the amount from ₫ with a no-break space', async ({ page }) => {
   await page.goto('/dev/core');
-  const actual = page.locator('tr[data-fn="formatVnd"][data-input="15000000"][data-locale="vi"] td[data-cell="actual"]');
+  const actual = page.locator('tr[data-fn="formatVnd"][data-input="15000000"][data-locale="vi"] [data-cell="actual"]');
   expect(await actual.textContent()).toBe(`15.000.000${NBSP}₫`);
 });
 
