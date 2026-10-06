@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> set-theme.sh <light|dark>
-# Sets the esta_theme cookie, which the app reads from P0-11 on, and data-theme on the open page.
 source "$(dirname "$0")/env.sh"
 
 theme="${1:-}"

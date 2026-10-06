@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> cleanup.sh
-# Stops what launch.sh started on this slot, by recorded pid only, clears the test clock, stops the
-# lane's browser and the slot's Supabase stack. Evidence under /tmp/swarm-* is never touched.
 source "$(dirname "$0")/env.sh"
 cd "$REPO_ROOT"
 

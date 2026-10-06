@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> doctor.sh
-# Read-only. Prints one OK or FAIL line per check, each FAIL with the command that fixes it.
 source "$(dirname "$0")/env.sh"
 set +e
 

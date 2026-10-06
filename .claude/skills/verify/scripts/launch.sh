@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> launch.sh [--variant northstar] [--clock <iso>]
-# Starts the slot's Supabase stack, reseeds it, sets the test clock and serves the web app.
 source "$(dirname "$0")/env.sh"
 
 variant=full

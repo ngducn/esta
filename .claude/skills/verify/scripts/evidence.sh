@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> [ESTA_WORKER=<w>] evidence.sh <pr-id> <slug>
-# Saves the open page as <dir>/<slug>.png with its accessibility tree in <dir>/<slug>.aria.txt.
-# <dir> is /tmp/swarm-<pr-id>, or /tmp/swarm-<pr-id>/worker-<w> when ESTA_WORKER is set.
 source "$(dirname "$0")/env.sh"
 
 pr="${1:-}"

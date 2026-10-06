@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> sign-out.sh
-# Leaves the lane browser signed out on /sign-in. A signed-in visitor to /sign-in lands on / instead,
-# so this presses the app's sign-out button there; the session cookies are httpOnly.
 source "$(dirname "$0")/env.sh"
 
 "$B" goto "$WEB_URL/sign-in" >/dev/null

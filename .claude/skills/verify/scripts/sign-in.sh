@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> sign-in.sh <email>
-# Signs the lane's browser in through /sign-in with the code from the slot's mailbox.
-# Prints the path the app lands on: / for a member, /onboarding for an email with no household yet.
 source "$(dirname "$0")/env.sh"
 
 email="${1:?Usage: ESTA_SLOT=<n> sign-in.sh <email>}"

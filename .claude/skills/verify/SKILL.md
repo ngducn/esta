@@ -34,7 +34,9 @@ $S/launch.sh --clock 2026-11-01T09:00:00+07:00
 
 Launch runs `pnpm db:start`, `pnpm db:reset` (or `db:reset:northstar`), `pnpm clock:set` and then `node scripts/web.ts dev`, which is what `pnpm dev` runs. It starts the web server without pnpm because pnpm moves its script into another process group and forwards no signal, so the recorded pid could not stop it. Launch records the pid in `/tmp/esta-verify/slot-<n>/web.pid` and the server log in `web.log` beside it.
 
-Ready means `http://localhost:<web port>/sign-in` answers 200, and Launch prints `Ready: ... after <s> s`. From a stopped slot this takes about 65 s, most of it Supabase start and reset. Running Launch again on a live slot reseeds the database and reuses the running server.
+Ready means `http://localhost:<web port>/sign-in` answers 200, and Launch prints `Ready: ... after <s> s`. From a stopped slot this takes about 56 s, most of it Supabase start (about 22 s) and reset (about 28 s). Running Launch again on a live slot reseeds the database and reuses the running server.
+
+A reset does not reload auth settings. After any change to `supabase/config.toml`, such as a merge or a rebase that touches it, run `$S/cleanup.sh` and then `$S/launch.sh`, so the stack stops and starts with the new config.
 
 Launch refuses a web port held by a process it did not start. Pick another slot instead of driving someone else's server.
 
@@ -60,10 +62,11 @@ $S/b.sh snapshot -i               # interactive elements with @e refs
 $S/b.sh click 'role=button[name="Tạo gia đình"]'
 ```
 
-- `sign-in.sh <email>` drops any earlier session (`sign-out.sh`), clears that address's mail, fills `/sign-in`, reads the newest code with `node scripts/inbucket-code.ts <email>`, submits it and waits until the browser leaves `/sign-in`. It prints the landing path, `/` for a member and `/onboarding` for an address with no household. It takes about 3 s.
+- `sign-in.sh <email>` drops any earlier session (`sign-out.sh`), clears that address's mail, fills `/sign-in`, reads the newest code with `node scripts/inbucket-code.ts <email>`, submits it and waits until the browser leaves `/sign-in`. It prints the landing path, `/` for a member and `/onboarding` for an address with no household. It takes about 2 s. Sign-in is code-only: email confirmations are on and seeded users have no password, so there is no password path to drive.
 - `set-locale.sh <vi|en>` sets the `NEXT_LOCALE` cookie and reloads. A signed-in member's saved locale wins over the cookie, so when `<html lang>` does not change it presses the in-app language switch (`button[lang="en"]`), which saves the member's choice. It fails unless `<html lang>` ends at the requested locale.
 - `set-theme.sh <light|dark>` sets the `esta_theme` cookie and `data-theme` on `<html>` of the open page. Until P0-11 makes the app read the cookie and ships dark tokens, a navigation or reload drops the attribute and a dark screenshot looks the same as a light one, so run `set-theme.sh` after the last navigation and before the screenshot, and do not judge dark styling before P0-11.
 - `sign-out.sh` leaves the browser signed out on `/sign-in`. When `/sign-in` redirects to `/`, it presses the app's `Đăng xuất` or `Sign out` button.
+- The `sb-` session cookies are httpOnly, so `document.cookie` never shows them. Read cookies with `$S/b.sh cookies`, which prints names and flags and redacts values.
 
 Selectors accept CSS and Playwright engines. Prefer form names, `role=` with an accessible name, and `@e` refs from a fresh `snapshot`:
 

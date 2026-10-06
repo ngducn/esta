@@ -1,4 +1,3 @@
-# Sourced by every verify script. Derives one lane's ports, run directory and browser from ESTA_SLOT.
 set -euo pipefail
 
 if [[ ! "${ESTA_SLOT:-}" =~ ^[1-9][0-9]?$ ]]; then
@@ -28,7 +27,6 @@ listener_pid() {
   { lsof -t -iTCP:"$1" -sTCP:LISTEN 2>/dev/null || true; } | head -1
 }
 
-# True when pid $1 is the recorded web.ts process or one of its descendants.
 started_by_us() {
   local pid="$1" ours
   ours="$(cat "$WEB_PID_FILE" 2>/dev/null || true)"

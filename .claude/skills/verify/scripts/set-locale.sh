@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ESTA_SLOT=<n> set-locale.sh <vi|en>
-# Sets NEXT_LOCALE and reloads. A signed-in member's saved locale wins over the cookie, so when the page
-# keeps the old language this presses the in-app language switch, which saves the member's choice.
 source "$(dirname "$0")/env.sh"
 
 locale="${1:-}"
