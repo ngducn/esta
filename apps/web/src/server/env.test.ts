@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { FROZEN_CLOCK_REFUSAL } from '@esta/core';
 import { parseEnv } from './env-schema';
 
 const required = {
@@ -34,9 +35,13 @@ describe('parseEnv', () => {
     );
   });
 
+  test('rejects an unknown ESTA_TIMEZONE', () => {
+    expect(() => parseEnv({ ...required, ESTA_TIMEZONE: 'Mars/Olympus' })).toThrow(/ESTA_TIMEZONE/);
+  });
+
   test('refuses ESTA_FROZEN_NOW in production', () => {
     const frozen = { ...required, ESTA_FROZEN_NOW: '2026-10-07T09:00:00+07:00' };
     expect(parseEnv({ ...frozen, ESTA_ENV: 'test' }).ESTA_FROZEN_NOW).toBe(frozen.ESTA_FROZEN_NOW);
-    expect(() => parseEnv({ ...frozen, ESTA_ENV: 'production' })).toThrow(/ESTA_FROZEN_NOW/);
+    expect(() => parseEnv({ ...frozen, ESTA_ENV: 'production' })).toThrow(FROZEN_CLOCK_REFUSAL);
   });
 });

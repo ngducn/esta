@@ -88,8 +88,7 @@ describe('assertClockAllowed', () => {
   });
 
   test('allows a local production build with ESTA_ENV=test', () => {
-    const localProductionBuild: Record<string, string> ={ ...frozen, NODE_ENV: 'production', ESTA_ENV: 'test' };
-    expect(() => assertClockAllowed(localProductionBuild)).not.toThrow();
+    expect(() => assertClockAllowed({ ...frozen, NODE_ENV: 'production', ESTA_ENV: 'test' })).not.toThrow();
   });
 
   test.each([undefined, ''])('allows production without a frozen clock (ESTA_FROZEN_NOW=%j)', (value) => {

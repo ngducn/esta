@@ -46,7 +46,7 @@ export function clockAt(source: ClockSource, timezone: string): Clock {
   return { source: source.kind, now: () => source.now, today: () => today };
 }
 
-export function assertClockAllowed(env: { ESTA_ENV?: string | undefined; ESTA_FROZEN_NOW?: string | undefined }): void {
+export function assertClockAllowed(env: Readonly<Record<string, string | undefined>>): void {
   if (env.ESTA_ENV === 'production' && env.ESTA_FROZEN_NOW !== undefined && env.ESTA_FROZEN_NOW !== '') {
     throw new Error(FROZEN_CLOCK_REFUSAL);
   }
