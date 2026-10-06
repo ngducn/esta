@@ -28,7 +28,7 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `POR
 | `pnpm agent:record` | Run golden agent cases live and refresh replay recordings |
 | `pnpm cron:run` | Call the cron routes locally (invoices, lease status, keep-alive) |
 | `pnpm clock:set <iso>` | Set or advance the test clock (`pnpm clock:set off` clears it) |
-| `pnpm db:start` / `pnpm db:stop` | Local Supabase (Docker) |
+| `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Local Supabase (Docker). Every `db:*` command honors `ESTA_SLOT=k`, which adds 100·k to each port so stacks run side by side |
 | `pnpm db:reset` | Apply migrations and the `full` seed; `pnpm db:reset:northstar` for the north-star variant |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |

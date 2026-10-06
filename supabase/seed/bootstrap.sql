@@ -1,7 +1,3 @@
--- Bootstrap seed: Gia đình Demo plus lane households Gia đình Demo 1..10, each with two
--- confirmed admins and two owner parties. P0-07 replaces this file with the generator.
--- Ids are UUIDv5 over seed keys in the URL namespace, for example 'seed:household:lane-4'.
-
 -- One DO block because the CLI sends the seed as a single prepared batch.
 do $seed$
 begin

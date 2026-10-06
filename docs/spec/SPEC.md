@@ -165,7 +165,7 @@ Owned by AGENT.md §10, listed here so migrations are planned together: `agent_j
 
 ### 5.7 Audit
 
-`audit_log`: table_name, row_id, action (`insert | update | delete`), actor_kind (`user | agent | system`), actor_id, diff jsonb, at. Written by triggers on every business and agent table. Triggers take the actor from `auth.uid()` for user sessions. For service-role requests through the Supabase API, the worker and cron clients send an `x-esta-actor` header (`agent:{worker_id}` or `system:cron`); the trigger reads it from PostgREST's `request.headers` setting and trusts it only when the request role is `service_role`. Direct database connections (backup, scripts) set `esta.actor` with `set_config` instead. No insert, update or delete policy exists for authenticated users on `audit_log`.
+`audit_log`: household_id, table_name, row_id, action (`insert | update | delete`), actor_kind (`user | agent | system`), actor_id, diff jsonb, at. Written by triggers on every business and agent table. The trigger copies `household_id` from the audited row (the row's own `id` for `households`), so members read their household's history through `is_member(household_id, 'viewer')`. The diff maps each changed column to `{old, new}`. Triggers take the actor from `auth.uid()` for user sessions, and a user session never takes an actor from a header. For service-role requests through the Supabase API, the worker and cron clients send an `x-esta-actor` header (`agent:{worker_id}` or `system:{name}`, such as `system:cron`); the trigger reads it from PostgREST's `request.headers` setting and trusts it only when the request role is `service_role`. A service-role write without the header, or with a value of another shape, fails. Direct database connections (seed, backup, scripts) set `esta.actor` with `set_config` instead; without it the actor is `system` with the database session user. Nobody writes `audit_log` directly: insert, update, delete and truncate are revoked from `anon`, `authenticated` and `service_role`, and the security definer trigger is the only writer.
 
 ## 6. Feature specs and acceptance checks
 
@@ -250,7 +250,7 @@ Full behavior in AGENT.md. Acceptance summary:
 
 ### 7.1 Security and privacy
 
-- RLS on every table. Policies use a single `is_member(household_id, min_role)` SQL function. pgTAP tests for every table (`pnpm db:test`).
+- RLS on every table. Policies use a single `private.is_member(household_id, min_role)` SQL function; `private.enable_household_rls` and `private.enable_audit` attach the standard policies and the audit trigger to a new table. pgTAP tests for every table (`pnpm db:test`).
 - The browser never sees the service role key. Server actions use the user's session client. The service role key is allowed only in `apps/agent`, `scripts/`, and `apps/web/src/server/cron/**` (server-only modules behind `CRON_SECRET`); a lint rule enforces this allowlist.
 - Storage: private bucket, path `{household_id}/{document_id}/{filename}`, storage policies mirror table RLS.
 - Agent and model output is rendered as sanitized Markdown: no raw HTML; links only `https:` and `esta://`.

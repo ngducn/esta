@@ -33,9 +33,6 @@ export function slotPorts(slot: number): SlotPorts {
   };
 }
 
-// Every uncommented `*port = N` outside [auth*] binds a host port, so offsetting all of them
-// keeps slots disjoint even when a CLI upgrade adds a port key. [auth.email.smtp] port names a
-// remote server and must stay as written.
 export function slotConfig(baseToml: string, slot: number): string {
   const offset = slot * SLOT_STRIDE;
   const webOrigin = `127.0.0.1:${slotPorts(slot).web}`;
@@ -49,11 +46,11 @@ export function slotConfig(baseToml: string, slot: number): string {
         return line;
       }
       if (section === '' && line.startsWith('project_id =')) return `project_id = "esta-${slot}"`;
-      if (section.startsWith('auth')) {
-        return /^(site_url|additional_redirect_urls) =/.test(line)
-          ? line.replaceAll(`127.0.0.1:${BASE_PORTS.web}`, webOrigin)
-          : line;
+      if (/^(site_url|additional_redirect_urls) =/.test(line)) {
+        return line.replaceAll(`127.0.0.1:${BASE_PORTS.web}`, webOrigin);
       }
+      const portsNameRemoteServers = section.startsWith('auth');
+      if (portsNameRemoteServers) return line;
       const port = /^(\w*port) = (\d+)\s*$/.exec(line);
       if (port?.[1] === undefined || port[2] === undefined) return line;
       return `${port[1]} = ${Number(port[2]) + offset}`;

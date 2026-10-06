@@ -1,7 +1,3 @@
--- RLS harness for pgTAP files. Include it right after `begin;` with `\ir _harness.psql`;
--- everything it creates rolls back with the test. Switch identity with tests.act_as*,
--- and run `reset role;` before switching again or before reading as postgres.
-
 create schema tests;
 grant usage on schema tests to authenticated, service_role;
 
@@ -24,8 +20,6 @@ as $$
   returning id;
 $$;
 
--- A household named p_key with one admin, member and viewer (emails <role>.<key>@test.esta.test),
--- its settings row, one owner party linked to the admin and one notification preference.
 create function tests.create_household(p_key text)
 returns uuid
 language plpgsql
@@ -92,8 +86,6 @@ begin
 end;
 $$;
 
--- Three assertions: inserting p_insert_sql fails with 42501, and update and delete of
--- p_household's rows in p_table touch nothing.
 create function tests.cannot_write(p_table regclass, p_household uuid, p_insert_sql text, p_household_column name default 'household_id')
 returns setof text
 language plpgsql
@@ -109,7 +101,6 @@ begin
 end;
 $$;
 
--- One assertion: p_household has at least one row in p_table that the current role can (or cannot) see.
 create function tests.sees_household(p_table regclass, p_household uuid, p_expected boolean, p_household_column name default 'household_id')
 returns text
 language plpgsql

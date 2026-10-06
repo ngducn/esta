@@ -1,6 +1,3 @@
--- audit_log and its trigger (SPEC §5.7). Members read their household's rows; no role writes
--- through the API. Rows are written only by private.audit_row(), which runs as the table owner.
-
 create table public.audit_log (
   id bigint generated always as identity primary key,
   household_id uuid not null,
@@ -22,10 +19,6 @@ create policy audit_log_select on public.audit_log
   for select to authenticated
   using (private.is_member(household_id, 'viewer'));
 
--- Precedence: a signed-in user is always the actor, so a user cannot claim another identity
--- with a header. Only service_role requests may name an actor through x-esta-actor, and they
--- must, so an unattributed worker or cron write fails instead of landing as "system".
--- Direct connections (seed, backup, Studio) name themselves with esta.actor.
 create function private.audit_actor(out actor_kind text, out actor_id text)
 language plpgsql
 stable
@@ -66,7 +59,6 @@ begin
 end;
 $$;
 
--- TG_ARGV[0] names the column holding the household id; households pass 'id'.
 create function private.audit_row()
 returns trigger
 language plpgsql
@@ -77,6 +69,7 @@ declare
   v_old jsonb := case when tg_op <> 'INSERT' then jsonb_strip_nulls(to_jsonb(old)) end;
   v_new jsonb := case when tg_op <> 'DELETE' then jsonb_strip_nulls(to_jsonb(new)) end;
   v_row jsonb := coalesce(to_jsonb(new), to_jsonb(old));
+  v_household_column text := tg_argv[0];
   v_actor record;
   v_diff jsonb;
 begin
@@ -89,7 +82,7 @@ begin
 
   insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
   values (
-    (v_row ->> coalesce(tg_argv[0], 'household_id'))::uuid,
+    (v_row ->> v_household_column)::uuid,
     tg_table_name,
     (v_row ->> 'id')::uuid,
     lower(tg_op),

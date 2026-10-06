@@ -1,6 +1,3 @@
--- Households, members, settings, parties and notification preferences (SPEC §5.1),
--- with the is_member RLS pattern every household-scoped table reuses.
-
 create schema private;
 revoke all on schema private from public;
 grant usage on schema private to authenticated, service_role;
@@ -139,8 +136,6 @@ revoke all on function private.is_operator(uuid) from public;
 grant execute on function private.is_member(uuid, public.member_role) to authenticated, service_role;
 grant execute on function private.is_operator(uuid) to authenticated, service_role;
 
--- The standard household-scoped access pattern: members of at least `viewer` read,
--- members of at least p_write_role insert, update and delete, anon gets nothing.
 create function private.enable_household_rls(
   p_table regclass,
   p_write_role public.member_role,

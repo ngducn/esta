@@ -9,7 +9,6 @@ select tests.user_id('admin.a@test.esta.test') as admin_a \gset
 create temporary view newest_audit as
   select * from public.audit_log order by id desc limit 1;
 
--- A user session is the actor.
 select tests.act_as('admin.a@test.esta.test');
 update public.parties set full_name = 'Owner a renamed' where household_id = :'a';
 reset role;
@@ -24,7 +23,6 @@ update public.households set name = 'Test a renamed' where id = :'a';
 reset role;
 select is((select household_id from newest_audit), :'a'::uuid, 'a households row uses its own id as household_id');
 
--- Service-role requests name the actor with x-esta-actor.
 select tests.act_as_service('{"x-esta-actor": "system:cron"}');
 update public.parties set notes = 'cron' where household_id = :'a';
 reset role;
@@ -35,7 +33,6 @@ update public.parties set notes = 'agent' where household_id = :'a';
 reset role;
 select is((select actor_kind || ':' || actor_id from newest_audit), 'agent:worker-1', 'service role with x-esta-actor agent:worker-1');
 
--- A user cannot claim another actor through the header.
 select tests.act_as('admin.a@test.esta.test');
 select set_config('request.headers', '{"x-esta-actor": "agent:spoof"}', true);
 update public.parties set notes = 'spoof' where household_id = :'a';
@@ -43,7 +40,6 @@ reset role;
 select is((select actor_kind || ':' || actor_id from newest_audit), 'user:' || :'admin_a', 'a spoofed header from a user session is ignored');
 select is_empty($$ select 1 from public.audit_log where actor_id = 'spoof' $$, 'no audit row names the spoofed actor');
 
--- Direct connections name themselves with esta.actor.
 select tests.clear_request();
 select set_config('esta.actor', 'system:backup', true);
 update public.parties set notes = 'backup' where household_id = :'a';
@@ -62,7 +58,6 @@ select throws_ok($$ update public.parties set notes = 'bad' $$, '22023', null,
   'a service-role write with a malformed actor fails');
 reset role;
 
--- Insert and delete are recorded too.
 select tests.act_as('member.a@test.esta.test');
 insert into public.parties (household_id, kind, full_name) values (:'a', 'individual', 'Tenant a');
 reset role;
@@ -75,7 +70,6 @@ reset role;
 select is((select action || ':' || (diff -> 'channel' ->> 'old') from newest_audit), 'delete:inapp',
   'a delete is recorded with the old values');
 
--- Members read only their household's history, and nobody writes it.
 select tests.act_as('admin.a@test.esta.test');
 select isnt_empty(format($$ select 1 from public.audit_log where household_id = %L $$, :'a'),
   'a member reads its household''s audit rows');
