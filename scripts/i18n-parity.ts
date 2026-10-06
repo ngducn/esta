@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  isLiteralElement,
   isPluralElement,
+  isPoundElement,
   isSelectElement,
   isTagElement,
-  isLiteralElement,
-  isPoundElement,
   parse,
   type MessageFormatElement,
 } from '@formatjs/icu-messageformat-parser';
@@ -39,7 +39,7 @@ function flatten({ file, messages }: Catalog): Flattened {
         placeholders.set(path, [...placeholderNames(parse(node), new Set())].sort());
       } catch (error) {
         placeholders.set(path, null);
-        problems.push(`${file}: ${path} is not a valid ICU message (${(error as Error).message})`);
+        problems.push(`${file}: ${path} is not a valid ICU message (${String(error)})`);
       }
     } else if (typeof node === 'object' && node !== null && !Array.isArray(node)) {
       for (const [key, child] of Object.entries(node)) walk(child, path ? `${path}.${key}` : key);
