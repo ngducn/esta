@@ -1,7 +1,7 @@
 import { vnd, type Vnd } from '../money/vnd';
 import type { Result } from '../result';
 import { foldVietnamese } from '../search/fold';
-import { parseDecimal, toSafeNumber, toWholeDong, type AmountReason } from './decimal';
+import { parseDecimal, toSafeNumber, toWholeDong, type AmountReason, type Decimal } from './decimal';
 
 export type VndInputReason = AmountReason;
 
@@ -20,7 +20,16 @@ const CURRENCY_SUFFIX = /\s*(?:₫|đ|d|dong|vnd)$/;
 const SPACE_GROUPED = /(\d)\s+(?=\d{3}(?!\d))/g;
 const TOKEN = /\d+(?:[.,]\d+)*|[a-z]+|\S/g;
 
+const LONE_DECIMAL_COMMA = /^(\d+),(\d+)$/;
+
 const invalid = { ok: false, reason: 'invalid' } as const;
+
+function parseCommaAsDecimalMark(text: string): Decimal | null {
+  const match = LONE_DECIMAL_COMMA.exec(text);
+  if (match === null) return parseDecimal(text);
+  const [, integer = '', fraction = ''] = match;
+  return { digits: BigInt(integer + fraction), scale: fraction.length };
+}
 
 /**
  * Reads what people type for an amount: `3.500.000`, `850k`, `15 triệu`, `3,5tr`, and the
@@ -45,7 +54,7 @@ export function parseVndInput(text: string): Result<Vnd, VndInputReason> {
       break;
     }
 
-    const amount = parseDecimal(token);
+    const amount = unit === undefined ? parseDecimal(token) : parseCommaAsDecimalMark(token);
     if (amount === null) return invalid;
     if (unit === undefined) {
       if (tokens.length !== 1) return invalid;
