@@ -34,6 +34,94 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_unit_legacy_map: {
+        Row: {
+          id: number
+          merge_kind: Database["public"]["Enums"]["admin_merge_kind"]
+          new_commune_code: string
+          old_commune_code: string | null
+          old_commune_key: string | null
+          old_commune_name: string | null
+          old_district_code: string
+          old_district_key: string
+          old_district_name: string
+          old_province_code: string
+          old_province_key: string
+          old_province_name: string
+          source: string
+        }
+        Insert: {
+          id?: never
+          merge_kind: Database["public"]["Enums"]["admin_merge_kind"]
+          new_commune_code: string
+          old_commune_code?: string | null
+          old_commune_key?: string | null
+          old_commune_name?: string | null
+          old_district_code: string
+          old_district_key?: string
+          old_district_name: string
+          old_province_code: string
+          old_province_key?: string
+          old_province_name: string
+          source: string
+        }
+        Update: {
+          id?: never
+          merge_kind?: Database["public"]["Enums"]["admin_merge_kind"]
+          new_commune_code?: string
+          old_commune_code?: string | null
+          old_commune_key?: string | null
+          old_commune_name?: string | null
+          old_district_code?: string
+          old_district_key?: string
+          old_district_name?: string
+          old_province_code?: string
+          old_province_key?: string
+          old_province_name?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_unit_legacy_map_new_commune_code_fkey"
+            columns: ["new_commune_code"]
+            isOneToOne: false
+            referencedRelation: "admin_units"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      admin_units: {
+        Row: {
+          code: string
+          effective_from: string
+          kind: Database["public"]["Enums"]["admin_unit_kind"]
+          name: string
+          parent_code: string | null
+        }
+        Insert: {
+          code: string
+          effective_from: string
+          kind: Database["public"]["Enums"]["admin_unit_kind"]
+          name: string
+          parent_code?: string | null
+        }
+        Update: {
+          code?: string
+          effective_from?: string
+          kind?: Database["public"]["Enums"]["admin_unit_kind"]
+          name?: string
+          parent_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_units_parent_code_fkey"
+            columns: ["parent_code"]
+            isOneToOne: false
+            referencedRelation: "admin_units"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -67,6 +155,27 @@ export type Database = {
           id?: never
           row_id?: string
           table_name?: string
+        }
+        Relationships: []
+      }
+      bank_bins: {
+        Row: {
+          bin: string
+          name: string
+          napas_code: string
+          short_name: string | null
+        }
+        Insert: {
+          bin: string
+          name: string
+          napas_code: string
+          short_name?: string | null
+        }
+        Update: {
+          bin?: string
+          name?: string
+          napas_code?: string
+          short_name?: string | null
         }
         Relationships: []
       }
@@ -191,6 +300,27 @@ export type Database = {
           name?: string
           timezone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      land_use_codes: {
+        Row: {
+          code: string
+          land_group: Database["public"]["Enums"]["land_group"]
+          name_en: string
+          name_vi: string
+        }
+        Insert: {
+          code: string
+          land_group: Database["public"]["Enums"]["land_group"]
+          name_en: string
+          name_vi: string
+        }
+        Update: {
+          code?: string
+          land_group?: Database["public"]["Enums"]["land_group"]
+          name_en?: string
+          name_vi?: string
         }
         Relationships: []
       }
@@ -382,6 +512,33 @@ export type Database = {
           },
         ]
       }
+      tax_rules: {
+        Row: {
+          effective_from: string
+          effective_to: string | null
+          kind: Database["public"]["Enums"]["tax_rule_kind"]
+          note: string | null
+          params: Json
+          source_citation: string
+        }
+        Insert: {
+          effective_from: string
+          effective_to?: string | null
+          kind: Database["public"]["Enums"]["tax_rule_kind"]
+          note?: string | null
+          params: Json
+          source_citation: string
+        }
+        Update: {
+          effective_from?: string
+          effective_to?: string | null
+          kind?: Database["public"]["Enums"]["tax_rule_kind"]
+          note?: string | null
+          params?: Json
+          source_citation?: string
+        }
+        Relationships: []
+      }
       test_clock: {
         Row: {
           frozen_now: string
@@ -402,10 +559,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_name_fold: { Args: { p_text: string }; Returns: string }
+      admin_name_key: { Args: { p_text: string }; Returns: string }
       esta_unaccent: { Args: { p_text: string }; Returns: string }
+      suggest_current_unit: {
+        Args: { p_text: string }
+        Returns: {
+          commune_code: string
+          commune_name: string
+          matched_legacy_name: string
+          merge_kind: Database["public"]["Enums"]["admin_merge_kind"]
+          province_code: string
+          province_name: string
+          rank: number
+          source: string
+        }[]
+      }
     }
     Enums: {
+      admin_merge_kind: "whole" | "partial"
+      admin_unit_kind: "province" | "city" | "ward" | "commune" | "special_zone"
+      land_group: "agricultural" | "non_agricultural" | "unused"
       member_role: "viewer" | "member" | "admin"
+      tax_rule_kind: "vn_rental_individual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -536,7 +712,11 @@ export const Constants = {
   },
   public: {
     Enums: {
+      admin_merge_kind: ["whole", "partial"],
+      admin_unit_kind: ["province", "city", "ward", "commune", "special_zone"],
+      land_group: ["agricultural", "non_agricultural", "unused"],
       member_role: ["viewer", "member", "admin"],
+      tax_rule_kind: ["vn_rental_individual"],
     },
   },
 } as const
