@@ -16,3 +16,10 @@ export function createRng(seed: number): Rng {
   };
   return { next, int: (min, max) => min + Math.floor(next() * (max - min + 1)) };
 }
+
+/** A stream seeded from a string (FNV-1a), so each scope draws its own fixed sequence. */
+export function rngFor(scope: string): Rng {
+  let hash = 0x811c9dc5;
+  for (const byte of Buffer.from(scope, 'utf8')) hash = Math.imul(hash ^ byte, 0x01000193);
+  return createRng(hash);
+}

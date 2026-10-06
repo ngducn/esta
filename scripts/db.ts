@@ -12,17 +12,52 @@ const COMMANDS: Record<string, string[]> = {
   types: ['gen', 'types', 'typescript', '--local'],
 };
 
+// Flags for the seed generator; everything else goes to the Supabase CLI.
+const SEED_FLAGS = new Set(['--households', '--as-of', '--variant']);
+
+function splitSeedFlags(args: readonly string[]): { seed: string[]; rest: string[] } {
+  const seed: string[] = [];
+  const rest: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i] ?? '';
+    if (!SEED_FLAGS.has(arg.split('=')[0] ?? '')) rest.push(arg);
+    else if (arg.includes('=')) seed.push(arg);
+    else seed.push(arg, args[++i] ?? '');
+  }
+  return { seed, rest };
+}
+
 const repoRoot = join(import.meta.dirname, '..');
-const [command, ...extra] = process.argv.slice(2);
+const [command, ...flags] = process.argv.slice(2);
 const args = command === undefined ? undefined : COMMANDS[command];
 if (args === undefined) {
-  console.error(`Usage: node scripts/db.ts <${Object.keys(COMMANDS).join('|')}> [supabase flags]`);
+  console.error(`Usage: node scripts/db.ts <${Object.keys(COMMANDS).join('|')}> [seed flags] [supabase flags]`);
+  process.exit(2);
+}
+const { seed: seedFlags, rest: extra } = splitSeedFlags(flags);
+// `start` seeds a fresh database too.
+const seeds = command === 'reset' || command === 'start';
+if (!seeds && seedFlags.length > 0) {
+  console.error(`${[...SEED_FLAGS].join(', ')} apply only to reset and start`);
   process.exit(2);
 }
 
 const slot = parseSlot(process.env.ESTA_SLOT);
 const workdir = writeSlotWorkdir(repoRoot, slot);
 console.error(`ESTA_SLOT=${slot} workdir=${workdir}`);
+
+if (seeds) {
+  // Inside the slot, outside the directories writeSlotWorkdir re-copies, so slots never share or clobber a seed.
+  // `[db.seed] sql_paths` in supabase/config.toml names the same file.
+  const out = join(workdir, 'supabase', 'generated', 'seed.sql');
+  const generator = spawnSync(
+    join(repoRoot, 'node_modules', '.bin', 'tsx'),
+    [join(repoRoot, 'supabase', 'seed', 'generator', 'index.ts'), ...seedFlags, '--out', out],
+    { stdio: 'inherit' },
+  );
+  if (generator.error) throw generator.error;
+  if (generator.status !== 0) process.exit(generator.status ?? 1);
+}
 
 const capture = command === 'types';
 const result = spawnSync('supabase', [...args, '--workdir', workdir, ...extra], {

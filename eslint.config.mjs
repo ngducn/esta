@@ -39,6 +39,20 @@ export default defineConfig(
     rules: { 'esta/no-jsx-literals': 'error' },
   },
   {
+    files: ['supabase/seed/generator/**'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        { object: 'Math', property: 'random', message: 'Seed data is deterministic: draw from rngFor(scope).' },
+        { object: 'Date', property: 'now', message: 'Seed timestamps come from --as-of (ctx.asOf).' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'NewExpression[callee.name="Date"][arguments.length=0]', message: 'Seed timestamps come from --as-of (ctx.asOf).' },
+      ],
+    },
+  },
+  {
     files: ['apps/web/**'],
     ignores: ['apps/web/src/app/dev/**'],
     plugins: { '@eslint-community/eslint-comments': eslintComments },

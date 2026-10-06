@@ -34,7 +34,7 @@ jobs:
         with:
           version: 2.90.0
       - run: pnpm db:start -x studio,imgproxy,realtime,storage-api,mailpit,postgres-meta
-      - run: pnpm db:reset
+      - run: pnpm db:seed:check
       - run: pnpm db:test
       - run: pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
 

@@ -29,7 +29,7 @@ schema_paths = []
 
 [db.seed]
 enabled = true
-sql_paths = ["./seed/bootstrap.sql"]
+sql_paths = ["./generated/seed.sql"]
 
 [db.network_restrictions]
 enabled = false
