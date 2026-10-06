@@ -103,6 +103,11 @@ describe('parseOptions', () => {
       out: undefined,
     });
     expect(() => parseOptions(['--households', '-1'])).toThrow(/--households/);
+    expect(() => parseOptions(['--households', '100'])).toThrow(/--households/);
+    expect(() => parseOptions(['--households'])).toThrow(/--households/);
+    for (const value of ['', ' ', 'three', '1e1', '0x3', '3.0']) {
+      expect(() => parseOptions(['--households', value]), `--households "${value}"`).toThrow(/--households/);
+    }
     expect(() => parseOptions(['--variant', 'tiny'])).toThrow(/--variant/);
     expect(() => parseOptions(['--as-of', '2026-10-07'])).toThrow(/offset/);
   });

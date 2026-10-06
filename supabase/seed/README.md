@@ -9,7 +9,7 @@ Seed rows use fixed ids so tests, screenshots and lanes can name them. Each id i
 | `household_members` row | `seed:member:<person>-<household>` | `seed:member:me-demo` |
 | Owner party | `seed:party:<person>-<household>` | `seed:party:me-lane-10` |
 
-`<household>` is `demo` for slot 0's household `Gia đình Demo`, and `lane-<n>` for the lane households `Gia đình Demo <n>`, where n is 1 to 10. `<person>` is `me` or `ryan`.
+`<household>` is `demo` for slot 0's household `Gia đình Demo`, and `lane-<n>` for the lane households `Gia đình Demo <n>`, where n runs from 1 to the `--households` value: 10 by default, at most 99, and 0 for `Gia đình Demo` alone. `<person>` is `me` or `ryan`.
 
 Emails follow the same split. In `Gia đình Demo` they are `me@demo.esta.test` and `ryan@demo.esta.test`. In lane n they are `me.lane<n>@demo.esta.test` and `ryan.lane<n>@demo.esta.test`.
 

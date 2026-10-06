@@ -48,8 +48,9 @@ export function parseOptions(args: readonly string[]): GenerateOptions & { reado
     },
     strict: true,
   });
-  const lanes = values.households === undefined ? DEFAULT_OPTIONS.lanes : Number(values.households);
-  if (!Number.isInteger(lanes) || lanes < 0 || lanes > MAX_LANES) {
+  const households = values.households ?? String(DEFAULT_OPTIONS.lanes);
+  const lanes = Number(households);
+  if (!/^\d+$/.test(households) || lanes > MAX_LANES) {
     throw new Error(`--households must be an integer from 0 to ${MAX_LANES}, got "${values.households}"`);
   }
   const variant = values.variant ?? DEFAULT_OPTIONS.variant;
