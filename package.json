@@ -7,7 +7,6 @@
     "node": ">=24"
   },
   "scripts": {
-    "env:init": "node -e \"require('node:fs').cpSync('.env.example', 'apps/web/.env.local', { force: false })\"",
     "dev": "node scripts/web.ts dev",
     "build": "pnpm --filter @esta/web build",
     "start": "node scripts/web.ts start",

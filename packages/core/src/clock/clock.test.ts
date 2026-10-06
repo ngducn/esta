@@ -63,7 +63,7 @@ describe('parseInstant', () => {
     expect(parseInstant('2026-10-07T02:00:00.123456+00:00')).toBe('2026-10-07T02:00:00.123Z');
   });
 
-  test.each(['2026-10-07T09:00:00', '2026-10-07', '2026-02-30T09:00:00Z', '2026-10-07T24:00:00Z', 'soon'])(
+  test.each(['2026-10-07T09:00:00', '2026-10-07', '2026-02-30T09:00:00Z', '2026-10-07T24:00:00Z', '2026-10-07T09:00:00+99:99', 'soon'])(
     'rejects %j',
     (text) => {
       expect(() => parseInstant(text)).toThrow(/Not an ISO date-time with an offset/);

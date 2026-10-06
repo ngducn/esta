@@ -8,10 +8,11 @@ const OFFSET_DATE_TIME = /^(\d{4}-\d{2}-\d{2})T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(
 
 export function parseInstant(text: string): Instant {
   const match = OFFSET_DATE_TIME.exec(text);
-  if (match?.[1] === undefined || !isIsoDate(match[1])) {
+  const epochMs = Date.parse(text);
+  if (match?.[1] === undefined || !isIsoDate(match[1]) || Number.isNaN(epochMs)) {
     throw new Error(`Not an ISO date-time with an offset: "${text}"`);
   }
-  return new Date(Date.parse(text)).toISOString() as Instant;
+  return new Date(epochMs).toISOString() as Instant;
 }
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
