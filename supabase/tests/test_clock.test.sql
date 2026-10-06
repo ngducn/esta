@@ -1,6 +1,8 @@
 begin;
 \ir _harness.psql
 
+delete from public.test_clock;
+
 select plan(10);
 
 select tests.create_household('a') as a \gset
