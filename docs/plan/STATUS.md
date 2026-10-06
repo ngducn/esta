@@ -7,6 +7,7 @@
 - Approve the license reading for that source: public legal documents excluded from copyright under IP Law Article 15, an engineer's reading rather than a lawyer's (`supabase/seed/README.md`).
 - Approve the NAPAS BIN snapshot for `bank_bins`: 74 banks taken by hand from the NAPAS VietQR portal, whose terms allow personal non-commercial use with the source cited and bar automated collection.
 - Review the curated admin unit rows in `supabase/seed/reference/legacy_curated.csv` and the bank short names in `bank_short_names.csv`, both `[app rule]`.
+- Trust the `pnpm dev:lan` CA once before phone testing (from P0-08). The script creates its own mkcert CA in `.certs/ca/` and never runs `mkcert -install`, because that asks for your login password. On the Mac, run `CAROOT="$PWD/.certs/ca" mkcert -install` from the repo root. On the phone, open `https://<lan>:3443/esta-dev-ca.crt`, install the profile, then turn it on under Settings > General > About > Certificate Trust Settings. `pnpm dev:lan` prints these steps with the real paths. Until then, browsers show a certificate warning on the LAN URLs.
 
 ## Needs professional confirmation
 
