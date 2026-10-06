@@ -98,6 +98,19 @@ max_frequency = "1s"
 otp_length = 6
 otp_expiry = 3600
 
+# A code sign-in sends the magic_link template to a known address and the confirmation template
+# to a new one, so both carry the same code-only Vietnamese email. Mail goes only to Inbucket.
+[auth.email.template.magic_link]
+subject = "Mã đăng nhập Esta"
+content_path = "./supabase/templates/otp.html"
+
+[auth.email.template.confirmation]
+subject = "Mã đăng nhập Esta"
+content_path = "./supabase/templates/otp.html"
+
+[auth.sessions]
+timebox = "720h"
+
 [auth.sms]
 enable_signup = false
 enable_confirmations = false
@@ -123,6 +136,14 @@ verify_enabled = false
 otp_length = 6
 template = "Your code is {{ .Code }}"
 max_frequency = "5s"
+
+# Off until the Phase 6 gate, when Ryan creates the OAuth client (SPEC D8). The web app hides its
+# button unless ESTA_GOOGLE_AUTH=on.
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = false
 
 [auth.external.apple]
 enabled = false
