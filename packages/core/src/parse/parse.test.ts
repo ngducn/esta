@@ -45,6 +45,8 @@ describe('parseVndInput', () => {
     ['0,5tr', 500_000],
     ['1,500k', 1_500],
     ['1.500tr', 1_500_000_000],
+    ['1.500,5tr', 1_500_500_000],
+    ['1.500ty2', 1_500_200_000_000],
     ['850 nghìn', 850_000],
     ['850 ngàn', 850_000],
     ['850K', 850_000],
@@ -69,6 +71,16 @@ describe('parseVndInput', () => {
     ['1500000.50', 'fractional'],
     ['1,2345k', 'fractional'],
     ['99999999999 tỷ', 'too_large'],
+    ['3,500.000', 'ambiguous_separators'],
+    ['3.500,000', 'ambiguous_separators'],
+    ['1.500.000,00', 'ambiguous_separators'],
+    ['1,500,000.00', 'ambiguous_separators'],
+    ['1,500.5tr', 'ambiguous_separators'],
+    ['1,5ty2', 'ambiguous_shorthand'],
+    ['1,25tỷ5', 'ambiguous_shorthand'],
+    ['3.5tr5', 'ambiguous_shorthand'],
+    ['1,0tr5', 'ambiguous_shorthand'],
+    ['1,5 tỷ rưỡi', 'ambiguous_shorthand'],
   ])('rejects %s as %s', (text, reason) => {
     expect(parseVndInput(text)).toEqual({ ok: false, reason });
   });

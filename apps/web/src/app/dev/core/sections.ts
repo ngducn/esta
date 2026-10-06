@@ -176,6 +176,8 @@ export const sections: readonly CoreSection[] = [
           ['1,250 tỷ', '1250000000'],
           ['3,500tr', '3500000'],
           ['3,5', 'rejected: fractional'],
+          ['3,500.000', 'rejected: ambiguous_separators'],
+          ['1,5ty2', 'rejected: ambiguous_shorthand'],
         ] as const
       ).map(([input, expected]) => ({ fn: 'parseVndInput', input, expected, run: () => shown(parseVndInput(input)) })),
       ...(
