@@ -9,3 +9,6 @@ test-results/
 next-env.d.ts
 *.tsbuildinfo
 .gstack/
+supabase/.slots/
+supabase/.branches/
+supabase/.temp/

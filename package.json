@@ -11,13 +11,20 @@
     "dev": "pnpm env:init && pnpm --filter @esta/web dev",
     "build": "pnpm --filter @esta/web build",
     "start": "pnpm --filter @esta/web start",
-    "check": "pnpm -r --include-workspace-root run typecheck && pnpm -r --include-workspace-root run lint && pnpm -r run test",
+    "check": "pnpm -r --include-workspace-root run typecheck && pnpm lint && pnpm -r --include-workspace-root run test",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint e2e playwright.config.ts playwright.prod.config.ts eslint.config.mjs",
+    "test": "vitest run scripts eslint-rules",
+    "lint": "eslint .",
     "e2e": "playwright test",
     "e2e:prod": "playwright test --config playwright.prod.config.ts",
     "check:build-env": "scripts/check-build-env.sh",
-    "design:detect": ".claude/skills/impeccable/scripts/impeccable detect --json apps/web/src"
+    "design:detect": ".claude/skills/impeccable/scripts/impeccable detect --json apps/web/src",
+    "db:start": "node scripts/db.ts start",
+    "db:stop": "node scripts/db.ts stop",
+    "db:status": "node scripts/db.ts status",
+    "db:reset": "node scripts/db.ts reset",
+    "db:types": "node scripts/db.ts types",
+    "db:test": "node scripts/db.ts test"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
