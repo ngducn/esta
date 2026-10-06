@@ -119,12 +119,26 @@ export default {
       else if (node.type === 'BinaryExpression' && node.operator === '+') {
         yield* literalStrings(node.left);
         yield* literalStrings(node.right);
-      } else if (node.type === 'Identifier') {
-        const init = constInit(node);
-        if (init?.type === 'Literal' || init?.type === 'TemplateLiteral') {
-          for (const literal of literalStrings(init)) yield { node, text: literal.text };
-        }
+      } else if (node.type === 'Identifier') yield* joined(node, [constInit(node)]);
+      else if (node.type === 'MemberExpression' && node.object.type === 'Identifier') {
+        const init = unwrap(constInit(node.object));
+        if (init?.type !== 'ObjectExpression') return;
+        const key = node.computed ? (node.property.type === 'Literal' ? node.property.value : null) : node.property.name;
+        const properties = init.properties.filter((p) => p.type === 'Property' && (key === null || propertyName(p) === key));
+        yield* joined(node, properties.map((p) => unwrap(p.value)));
+      } else if (
+        node.type === 'CallExpression' &&
+        node.callee.type === 'MemberExpression' &&
+        node.callee.object.type === 'ArrayExpression' &&
+        node.callee.property.name === 'join'
+      ) {
+        yield* joined(node, node.callee.object.elements);
       }
+    }
+
+    function* joined(node, parts) {
+      const texts = parts.flatMap((part) => [...literalStrings(part)].map((literal) => literal.text));
+      if (texts.length > 0) yield { node, text: texts.join('') };
     }
 
     function* metadataTexts(object) {
@@ -138,6 +152,14 @@ export default {
         } else if (value.type === 'ObjectExpression') yield* metadataTexts(value);
       }
     }
+
+    const reportMetadata = (node) => {
+      const object = unwrap(node);
+      if (!file.startsWith(APP_ROOT) || object?.type !== 'ObjectExpression') return;
+      for (const literal of metadataTexts(object)) {
+        if (hasWords(literal.text)) context.report({ node: literal.node, messageId: 'metadata', data: { name: literal.name } });
+      }
+    };
 
     return {
       JSXText(node) {
@@ -159,13 +181,14 @@ export default {
           if (isText(literal.text)) context.report({ node: literal.node, messageId: 'attribute', data: { name } });
         }
       },
-      'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator'(node) {
-        if (!file.startsWith(APP_ROOT) || node.id.type !== 'Identifier' || node.id.name !== 'metadata') return;
-        const init = unwrap(node.init);
-        if (init?.type !== 'ObjectExpression') return;
-        for (const literal of metadataTexts(init)) {
-          if (hasWords(literal.text)) context.report({ node: literal.node, messageId: 'metadata', data: { name: literal.name } });
-        }
+      'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name="metadata"]'(node) {
+        reportMetadata(node.init);
+      },
+      ':matches(FunctionDeclaration, VariableDeclarator)[id.name="generateMetadata"] ReturnStatement'(node) {
+        reportMetadata(node.argument);
+      },
+      'VariableDeclarator[id.name="generateMetadata"] > ArrowFunctionExpression[expression=true]'(node) {
+        reportMetadata(node.body);
       },
     };
   },
