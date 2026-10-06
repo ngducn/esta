@@ -21,6 +21,14 @@ describe('formatVnd', () => {
   });
 });
 
+describe('negative zero', () => {
+  it('formats as zero with no minus sign', () => {
+    expect(formatVnd(vnd(-0), 'vi')).toBe(`0${NBSP}₫`);
+    expect(formatVndCompact(vnd(-0), 'vi')).toBe(formatVndCompact(vnd(0), 'vi'));
+    expect(formatVndCompact(vnd(-0), 'vi')).not.toContain('-');
+  });
+});
+
 describe('formatVndCompact', () => {
   it.each([
     [3_200_000_000, '3,2 tỷ', '3.2B ₫'],

@@ -9,6 +9,10 @@ describe('vnd', () => {
     expect(vnd(Number.MAX_SAFE_INTEGER)).toBe(Number.MAX_SAFE_INTEGER);
   });
 
+  it('stores negative zero as zero', () => {
+    expect(Object.is(vnd(-0), 0)).toBe(true);
+  });
+
   it.each([1.5, 2 ** 53, -(2 ** 53), Number.NaN, Number.POSITIVE_INFINITY])('throws on %s', (n) => {
     expect(() => vnd(n)).toThrow(RangeError);
   });
