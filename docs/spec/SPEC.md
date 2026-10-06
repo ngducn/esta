@@ -103,9 +103,9 @@ Name the data shape before writing code. These tables live in Supabase Postgres.
 ### 5.1 Tenancy, people and settings
 
 - `households` (name, locale default `vi`, timezone default `Asia/Ho_Chi_Minh`).
-- `household_members` (user_id nullable until claimed, invited_email, role `admin | member | viewer`, is_operator boolean, display_name, locale, density `comfortable | compact`, text_scale `100 | 115 | 130`). An admin adds a member by email; the row is claimed when that email first signs in. `is_operator` marks Ryan: operator-audience items and diagnostics are visible only to operators.
+- `household_members` (user_id nullable until claimed, invited_email, role `admin | member | viewer`, is_operator boolean, display_name, locale, density `comfortable | compact`, text_scale `100 | 115 | 130`). An admin adds a member by email; the row is claimed when that email first signs in. `is_operator` marks Ryan: operator-audience items and diagnostics are visible only to operators. `[app rule]` Only an operator of the household, or the service role, grants or revokes `is_operator`. A household keeps at least one claimed admin: a user session cannot delete, demote or unclaim the last one.
 - `household_settings`: one row per household with jsonb `agent` (daily caps per job kind, research budget, schedule overrides) and `invoicing` (auto-issue on, receipt header text).
-- `notification_preferences`: member_id, channel (`inapp | email | push`), kinds (array of agent item kinds and severities), daily_cap.
+- `notification_preferences`: member_id, channel (`inapp | email | push`), kinds (array of agent item kinds and severities), daily_cap. Written only by the member who owns the row or a household admin.
 - `parties`: any person or organization the household deals with. Fields: kind `individual | organization`, full_name, short_name, phone, zalo_phone, email, id_last4, tax_code (organizations), address_text, notes, tags (`owner`, `tenant`, `caretaker`, `broker`, `contractor`, `bank`, `other`). Family members who own property are parties with the `owner` tag and an optional link to a `household_members` row.
 
 ### 5.2 Reference data
@@ -250,7 +250,7 @@ Full behavior in AGENT.md. Acceptance summary:
 
 ### 7.1 Security and privacy
 
-- RLS on every table. Policies use a single `private.is_member(household_id, min_role)` SQL function; `private.enable_household_rls` and `private.enable_audit` attach the standard policies and the audit trigger to a new table. pgTAP tests for every table (`pnpm db:test`).
+- RLS on every table. Policies use a single `private.is_member(household_id, min_role)` SQL function; `private.enable_household_rls` and `private.enable_audit` attach the standard policies and the audit trigger to a new table. A row never moves to another household, and `created_by` comes from the session user, never from the client. pgTAP tests for every table (`pnpm db:test`).
 - The browser never sees the service role key. Server actions use the user's session client. The service role key is allowed only in `apps/agent`, `scripts/`, and `apps/web/src/server/cron/**` (server-only modules behind `CRON_SECRET`); a lint rule enforces this allowlist.
 - Storage: private bucket, path `{household_id}/{document_id}/{filename}`, storage policies mirror table RLS.
 - Agent and model output is rendered as sanitized Markdown: no raw HTML; links only `https:` and `esta://`.
