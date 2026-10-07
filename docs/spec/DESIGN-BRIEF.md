@@ -60,7 +60,7 @@ Principles:
 
 - Decided in spike S2 (branch `spike/s2-fonts`, 31dd4a6): **Source Sans 3** is the UI sans and **Source Serif 4** is the figure and display face for amounts and page titles. Both are OFL, cover every code point of the glyph test string at every weight used, and give uniform-width lining digits. `DESIGN.md` Typography records the full reasoning.
 - Be Vietnam Pro, the first candidate, failed the tabular figures check: its digits are proportional and it has no `tnum` feature, so amounts would not align in a column. Fraunces failed the same check (no `tnum` or `lnum`). Newsreader and Public Sans passed but lost on look next to the chosen pair.
-- Both faces are self-hosted from `apps/web/src/fonts/`, subset to latin and vietnamese. `pnpm glyphs:check` guards the shipped files.
+- Both faces are self-hosted from `apps/web/src/fonts/`, subset to Vietnamese and basic Latin. `pnpm glyphs:check` guards the shipped files.
 - Never Inter, Arial, Roboto or system defaults as the identity face.
 - Glyph test string for `/dev/glyphs` and the coverage script:
   `Đặng Thị Hường, Nguyễn Văn Ước, Phường Dĩ An, Thửa đất số 1234, tờ bản đồ số 56. ẫ ặ ữ ỡ ự ể ộ ổ ỗ ờ ở ợ ụ ủ ứ ừ ử ữ ỳ ỷ ỹ Ỵ. 0123456789 ₫ m² ½`

@@ -132,12 +132,12 @@ Warm, low-chroma neutrals at hue 60 to 85, one lacquer red, and four status hues
 
 ## Typography
 
-**Figure and display font:** Source Serif 4 (variable, weights 400 to 600, optical size axis), with a metric-matched Times New Roman fallback.
-**UI font:** Source Sans 3 (variable, weights 400 to 700), with a metric-matched Arial fallback.
+**Figure and display font:** Source Serif 4 (variable, weights 400 to 600, optical sizes 20 to 60), with a metric-matched Times New Roman fallback.
+**UI font:** Source Sans 3 (variable, weights 400 to 600), with a metric-matched Arial fallback.
 
 **Character:** the serif carries the personality and the numbers. The sans is plain and steady. Both come from the same Adobe lineage, so x-heights and color match at body size.
 
-Both are SIL OFL 1.1, self-hosted from `apps/web/src/fonts/` through `next/font/local`, and subset to the latin and vietnamese ranges by `pnpm fonts:build` from google/fonts commit `7085eb89`. The two files together are 197 KB.
+Both are SIL OFL 1.1, self-hosted from `apps/web/src/fonts/` through `next/font/local`, and built by `pnpm fonts:build` from google/fonts commit `7085eb89`. The subset keeps basic Latin, the Latin-1 letters Vietnamese uses, the Vietnamese block, ₫ and common punctuation, plus the text layout features and, for the serif, the figure features. A letter outside that set, such as ü in a foreign name, falls back glyph by glyph to the metric-matched fallback. The sans is 20 KB and preloaded. The serif is 49 KB, loads with `font-display: swap` when a page first uses it, and is kept off `/sign-in`, whose title is set in the sans so the sign-in page stays within its LCP budget.
 
 ### Why these two
 
