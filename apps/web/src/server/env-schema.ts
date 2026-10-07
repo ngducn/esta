@@ -23,6 +23,7 @@ const base = z.object({
   ESTA_GOOGLE_AUTH: z.enum(['on', 'off']).default('off'),
   ESTA_FROZEN_NOW: z.iso.datetime({ offset: true }).optional(),
   ESTA_TIMEZONE: z.string().refine(isTimeZone, 'must be an IANA time zone').default('Asia/Ho_Chi_Minh'),
+  ESTA_LAN_HOST: z.ipv4().optional(),
 });
 
 const developmentSchema = base.extend({ ESTA_ENV: z.enum(ESTA_ENVS).default('development') });
