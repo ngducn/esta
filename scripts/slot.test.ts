@@ -1,8 +1,9 @@
+import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { authDrifts, parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
+import { authDrifts, LIVE_TEST_SLOTS, parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const baseToml = readFileSync(join(repoRoot, 'supabase', 'config.toml'), 'utf8');
@@ -139,5 +140,20 @@ describe('authDrifts', () => {
   it('reports no drift when the running auth service matches', () => {
     expect(authDrifts(lanToml, lanEnv)).toBe(false);
     expect(authDrifts(slotConfig(baseToml, 13), localEnv)).toBe(false);
+  });
+});
+
+describe('LIVE_TEST_SLOTS', () => {
+  const envSh = join(repoRoot, '.claude', 'skills', 'verify', 'scripts', 'env.sh');
+  const source = (slot: number) =>
+    spawnSync('bash', ['-c', `source "${envSh}"`], { env: { ...process.env, ESTA_SLOT: String(slot) }, encoding: 'utf8' });
+
+  it('are refused by the verify skill, so a lane never launches a slot pnpm test:live runs', () => {
+    for (const slot of LIVE_TEST_SLOTS) {
+      const result = source(slot);
+      expect(result.status, `env.sh with ESTA_SLOT=${slot}`).toBe(2);
+      expect(result.stderr).toContain('pnpm test:live');
+    }
+    expect(source(97).status).toBe(0);
   });
 });

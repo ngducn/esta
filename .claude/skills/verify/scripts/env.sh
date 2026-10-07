@@ -1,7 +1,11 @@
 set -euo pipefail
 
 if [[ ! "${ESTA_SLOT:-}" =~ ^[1-9][0-9]?$ ]]; then
-  echo "Set ESTA_SLOT to your lane's slot, 1 to 99. Slot 0 uses port 3000, which another app holds." >&2
+  echo "Set ESTA_SLOT to your lane's slot, 1 to 97. Slot 0 uses port 3000, which another app holds." >&2
+  exit 2
+fi
+if [[ "$ESTA_SLOT" == 98 || "$ESTA_SLOT" == 99 ]]; then
+  echo "Slots 98 and 99 belong to pnpm test:live. Pick another ESTA_SLOT." >&2
   exit 2
 fi
 

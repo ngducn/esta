@@ -26,6 +26,7 @@ const BASE_PORTS: SlotPorts = {
 };
 
 const SLOT_STRIDE = 100;
+export const LIVE_TEST_SLOTS = [98, 99] as const;
 const MAX_SLOT = 99;
 const SHARED_DIRS = ['migrations', 'seed', 'templates', 'tests'] as const;
 

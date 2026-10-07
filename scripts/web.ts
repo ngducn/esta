@@ -21,9 +21,16 @@ const slot = parseSlot(process.env.ESTA_SLOT);
 const env = slotEnv(repoRoot, slot);
 console.error(`ESTA_SLOT=${slot} web=http://localhost:${env.PORT} api=${env.NEXT_PUBLIC_SUPABASE_URL}`);
 
+// Next allows one `next dev` per dist directory, so each slot builds into its own and slots share a checkout.
+const distDir = command === 'dev' && slot !== 0 ? { ESTA_NEXT_DIST_DIR: `.next/slot-${slot}` } : {};
+
 // pnpm runs a package script in a process group of its own and forwards no signal to it, so stopping a
 // `pnpm --filter` child leaves next-server running. Next runs as the direct child instead.
 const nextBin = createRequire(join(webDir, 'package.json')).resolve('next/dist/bin/next');
-const child = spawn(process.execPath, [nextBin, command, ...extra], { cwd: webDir, stdio: 'inherit', env });
+const child = spawn(process.execPath, [nextBin, command, ...extra], {
+  cwd: webDir,
+  stdio: 'inherit',
+  env: { ...distDir, ...env },
+});
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) process.on(signal, () => child.kill(signal));
 child.on('exit', (code, signal) => process.exit(code ?? (signal ? 1 : 0)));

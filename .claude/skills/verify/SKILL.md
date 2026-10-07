@@ -10,7 +10,7 @@ The surface is the web app in `apps/web`, served by `next dev` against one local
 All helpers live in `.claude/skills/verify/scripts/` and run from the repo root. Export your slot once per shell:
 
 ```bash
-export ESTA_SLOT=13            # the slot your brief names, 1 to 99
+export ESTA_SLOT=13            # the slot your brief names, 1 to 97
 S=.claude/skills/verify/scripts
 ```
 
@@ -24,7 +24,7 @@ Run at most the one stack your brief names. Docker has room for only a few Supab
 | Mailbox (Mailpit, Inbucket API) | `54324 + 100n` |
 | Browser daemon | `47000 + n`, state in `/tmp/esta-verify/slot-<n>/browse.json` |
 
-Slot 0 is refused because port 3000 belongs to another app. Override the browser with `BROWSE_STATE_FILE` and `BROWSE_PORT` when your brief gives them, for example `BROWSE_STATE_FILE=/tmp/swarm-<pr>/worker-<w>/browse.json`.
+Slot 0 is refused because port 3000 belongs to another app, and slots 98 and 99 because `pnpm test:live` uses them. Override the browser with `BROWSE_STATE_FILE` and `BROWSE_PORT` when your brief gives them, for example `BROWSE_STATE_FILE=/tmp/swarm-<pr>/worker-<w>/browse.json`.
 
 ## Launch
 
@@ -34,7 +34,7 @@ $S/launch.sh --variant northstar  # north-star seed
 $S/launch.sh --clock 2026-11-01T09:00:00+07:00
 ```
 
-Launch runs `pnpm db:start`, `pnpm db:reset` (or `db:reset:northstar`), `pnpm clock:set` and then `node scripts/web.ts dev`, which is what `pnpm dev` runs. It starts the web server without pnpm because pnpm moves its script into another process group and forwards no signal, so the recorded pid could not stop it. Launch records the pid in `/tmp/esta-verify/slot-<n>/web.pid` and the server log in `web.log` beside it.
+Launch runs `pnpm db:start`, `pnpm db:reset` (or `db:reset:northstar`), `pnpm clock:set` and then `node scripts/web.ts dev`, which is what `pnpm dev` runs. It starts the web server without pnpm because pnpm moves its script into another process group and forwards no signal, so the recorded pid could not stop it. Each slot's server builds into `apps/web/.next/slot-<n>`, because Next allows one `next dev` per build directory, so one checkout can serve several slots at once. Launch records the pid in `/tmp/esta-verify/slot-<n>/web.pid` and the server log in `web.log` beside it.
 
 State lives per slot in `/tmp/esta-verify/slot-<n>/`, one directory that every checkout shares for that slot:
 
