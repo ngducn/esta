@@ -15,6 +15,7 @@ WEB_URL="http://localhost:${WEB_PORT}"
 DB_CONTAINER="supabase_db_esta-${ESTA_SLOT}"
 RUN_DIR="/tmp/esta-verify/slot-${ESTA_SLOT}"
 WEB_PID_FILE="${RUN_DIR}/web.pid"
+STACK_MARKER="${RUN_DIR}/stack"
 DEFAULT_CLOCK="2026-10-07T09:00:00+07:00"
 
 export BROWSE_STATE_FILE="${BROWSE_STATE_FILE:-${RUN_DIR}/browse.json}"
@@ -27,15 +28,50 @@ listener_pid() {
   { lsof -t -iTCP:"$1" -sTCP:LISTEN 2>/dev/null || true; } | head -1
 }
 
+our_web_pid() {
+  local pid
+  pid="$(cat "$WEB_PID_FILE" 2>/dev/null || true)"
+  [[ -n "$pid" && "$(ps -o command= -p "$pid" 2>/dev/null)" == *scripts/web.ts* ]] && echo "$pid"
+}
+
 started_by_us() {
   local pid="$1" ours
-  ours="$(cat "$WEB_PID_FILE" 2>/dev/null || true)"
-  [[ -n "$ours" ]] || return 1
+  ours="$(our_web_pid)" || return 1
   while [[ -n "$pid" && "$pid" != "1" && "$pid" != "0" ]]; do
     [[ "$pid" == "$ours" ]] && return 0
     pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')"
   done
   return 1
+}
+
+stop_web() {
+  local pid
+  if pid="$(our_web_pid)"; then
+    kill "$pid"
+    for _ in $(seq 1 50); do
+      kill -0 "$pid" 2>/dev/null || break
+      sleep 0.2
+    done
+    echo "Stopped web pid $pid"
+  fi
+  rm -f "$WEB_PID_FILE"
+}
+
+stack_running() {
+  docker inspect -f '{{.State.Running}}' "$DB_CONTAINER" 2>/dev/null | grep -q true
+}
+
+# The stack serves auth settings and email templates from the checkout that started it, and
+# `pnpm db:reset` reloads neither, so Launch compares this against the marker it wrote.
+stack_fingerprint() {
+  (
+    cd "$REPO_ROOT"
+    printf 'checkout=%s\nconfig=%s\n' "$REPO_ROOT" "$(shasum -a 256 supabase/config.toml supabase/templates/* | shasum -a 256 | cut -d' ' -f1)"
+  )
+}
+
+marker_checkout() {
+  sed -n 's/^checkout=//p' "$STACK_MARKER" 2>/dev/null || true
 }
 
 current_path() {

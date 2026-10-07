@@ -21,6 +21,30 @@ if [[ -n "$holder" ]] && ! started_by_us "$holder"; then
   exit 1
 fi
 
+fingerprint="$(stack_fingerprint)"
+if [[ -f "$STACK_MARKER" ]]; then
+  if [[ "$(cat "$STACK_MARKER")" != "$fingerprint" ]]; then
+    if [[ "$(marker_checkout)" != "$REPO_ROOT" ]]; then
+      reason="it was launched from $(marker_checkout)"
+    else
+      reason="supabase/config.toml or supabase/templates changed since it started"
+    fi
+    echo "Restarting slot $ESTA_SLOT because $reason. A reset reloads neither auth settings nor templates, so Launch stops the web server and the stack, then starts both from $REPO_ROOT."
+    stop_web
+    if stack_running; then
+      pnpm --silent db:stop >"$RUN_DIR/db-stop.log" 2>&1 || { tail -20 "$RUN_DIR/db-stop.log" >&2; exit 1; }
+    fi
+    holder=""
+  fi
+elif stack_running; then
+  echo "The Supabase stack on slot $ESTA_SLOT is running, but launch.sh did not start it ($STACK_MARKER is missing). Pick another ESTA_SLOT." >&2
+  exit 1
+else
+  stop_web
+  holder=""
+fi
+echo "$fingerprint" >"$STACK_MARKER"
+
 pnpm --silent db:start >"$RUN_DIR/db-start.log" 2>&1 || { tail -20 "$RUN_DIR/db-start.log" >&2; exit 1; }
 echo "db:start done at $((SECONDS - started)) s"
 if [[ "$variant" == northstar ]]; then
