@@ -146,3 +146,4 @@ ts	phase	decision	why	evidence	result
 2026-10-07T01:23:05Z	P0-12	told owner to rebase onto main from 893d81a and open a new PR (old #26 merged early as WIP); scope adds #27	P0-11 landed on main	SendMessage	open
 2026-10-07T01:24:00Z	P0-12	rebased onto main, new PR #29 (57d80cb, base main), still building; P0-13 waits for P0-12 code-ready	composites build on base components; avoid churn and pace usage	PR #29	open
 2026-10-07T01:24:36Z	pause	paused on operator order: stopped P0-11 lane worker, told P0-12 owner to push WIP and stop, stopped stacks on slots 1 and 14, cancelled the hourly loop, rewrote RESUME.md	Claude usage running out	docs/plan/RESUME.md	done
+2026-10-07T01:25:31Z	pause	P0-12 owner paused at pushed head d774bfa; nothing left running	pause order	PR #29	done

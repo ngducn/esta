@@ -5,7 +5,7 @@ Paused 2026-10-07 about 08:50 +07 on the operator's order (Claude usage running 
 ## Where the stack is
 
 - `main` holds P0-01 to P0-11, one squash commit per PR, each built from its verified head (P0-11's verified head 893d81a is byte-identical outside `docs/plan/`). Tip after the trail commit is `a468970` or later.
-- P0-12 (base components) is PR #29, base `main`, branch `esta/p0-12-base-components`, work in progress. Its owner was told to push a WIP commit and stop. Scope includes issues #14, #22 and #27. Worktree `.claude/worktrees/agent-ad05b1a4586edfa13`, slot 16.
+- P0-12 (base components) is PR #29, base `main`, branch `esta/p0-12-base-components`, paused at pushed head `d774bfa`. Done: lint fixes for #14 and #22, all base components, restyled primitives, the /dev/components registry, typecheck, 11 MoneyInput tests. Left: tests for DateInput, StatusMark, AddressBlock, DataTable, UndoToast; the six #27 token items with red tests; e2e/dev-components.spec.ts with axe; verify-skill lanes on slot 16; then design:detect, critique, perf, deslop, no-comments and ci-local. Worktree `.claude/worktrees/agent-ad05b1a4586edfa13`, trail `decisions.tsv` there (copy at /tmp/owner-p0-12/decisions.tsv).
 - P0-11's round 1 swarm was stopped mid-run. Its design audit findings are filed as #27 (for P0-12) and #28 (for P0-14). Its lane worker did not finish; nothing else is pending for P0-11.
 - Next PRs in order: finish P0-12, then P0-13 (domain composites), P0-14 (app shell), P0-15 (agent worker skeleton, uses spike S1), P0-16 (Phase 0 exit).
 
