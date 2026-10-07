@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font-size",
+        "value": "2rem",
+        "files": [
+          "apps/web/src/app/dev/glyphs/page.tsx"
+        ],
+        "createdAt": "2026-10-07T00:10:37.461Z",
+        "reason": "32 px specimen size from spike S2 and the P0-11 plan; /dev/glyphs is a font proof page, not UI"
+      }
+    ]
+  }
+}

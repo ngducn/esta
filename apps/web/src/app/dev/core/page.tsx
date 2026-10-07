@@ -21,7 +21,7 @@ type Column = {
 };
 
 const COLUMNS: readonly Column[] = [
-  { label: 'Function', value: (row) => row.fn, className: () => 'font-mono' },
+  { label: 'Function', value: (row) => row.fn },
   { label: 'Input', value: (row) => row.input },
   { label: 'Locale', value: (row) => row.locale ?? '' },
   { label: 'Expected', cell: 'expected', value: (row) => showNbspOnMismatch(row.expected, row) },
@@ -30,7 +30,7 @@ const COLUMNS: readonly Column[] = [
     label: 'Result',
     cell: 'result',
     value: (row) => (row.matches ? 'OK' : 'MISMATCH'),
-    className: (row) => (row.matches ? '' : 'font-bold underline'),
+    className: (row) => (row.matches ? '' : 'font-semibold underline'),
   },
 ];
 
@@ -44,7 +44,7 @@ export default async function DevCorePage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 p-4">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Core playground</h1>
+        <h1 className="text-h2 font-semibold">Core playground</h1>
         <p data-testid="core-summary">
           {rows.length} checks, {mismatches} {mismatches === 1 ? 'mismatch' : 'mismatches'}
         </p>
@@ -55,10 +55,10 @@ export default async function DevCorePage() {
 
       {checked.map((section) => (
         <section key={section.id} aria-labelledby={`${section.id}-heading`} data-section={section.id}>
-          <h2 id={`${section.id}-heading`} className="mb-2 text-lg font-semibold">
+          <h2 id={`${section.id}-heading`} className="mb-2 text-lead font-semibold">
             {section.title}
           </h2>
-          <table className="w-full text-left text-sm max-sm:block">
+          <table className="w-full text-left text-small max-sm:block">
             <thead className="max-sm:sr-only">
               <tr className="border-b">
                 {COLUMNS.map((column) => (
@@ -84,7 +84,7 @@ export default async function DevCorePage() {
                         key={column.label}
                         className={`py-1 pr-4 wrap-anywhere ${value === '' ? 'max-sm:hidden' : 'max-sm:contents'} ${column.className?.(row) ?? ''}`}
                       >
-                        <span aria-hidden="true" className="font-sans font-normal text-xs sm:hidden">
+                        <span aria-hidden="true" className="font-sans font-normal text-meta sm:hidden">
                           {column.label}
                         </span>
                         <span data-cell={column.cell}>{value}</span>
