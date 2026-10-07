@@ -14,6 +14,8 @@ export ESTA_SLOT=13            # the slot your brief names, 1 to 99
 S=.claude/skills/verify/scripts
 ```
 
+Run at most the one stack your brief names. Docker has room for only a few Supabase stacks beside the other apps on this machine, and a second slot is only for a brief that names two.
+
 | Slot `n` | Port |
 | --- | --- |
 | Web app | `3000 + 100n` (slot 13 is `http://localhost:4300`) |
@@ -34,11 +36,20 @@ $S/launch.sh --clock 2026-11-01T09:00:00+07:00
 
 Launch runs `pnpm db:start`, `pnpm db:reset` (or `db:reset:northstar`), `pnpm clock:set` and then `node scripts/web.ts dev`, which is what `pnpm dev` runs. It starts the web server without pnpm because pnpm moves its script into another process group and forwards no signal, so the recorded pid could not stop it. Launch records the pid in `/tmp/esta-verify/slot-<n>/web.pid` and the server log in `web.log` beside it.
 
+State lives per slot in `/tmp/esta-verify/slot-<n>/`, one directory that every checkout shares for that slot:
+
+| File | Holds |
+| --- | --- |
+| `stack` | The marker Launch writes before it starts the stack: the checkout path and a hash of `supabase/config.toml` and `supabase/templates/*` |
+| `web.pid`, `web.log` | The web server Launch started and its output |
+| `browse.json` | The slot's browser daemon, unless `BROWSE_STATE_FILE` overrides it |
+| `db-start.log`, `db-reset.log`, `db-stop.log` | The last output of each stack command |
+
 Ready means `http://localhost:<web port>/sign-in` answers 200, and Launch prints `Ready: ... after <s> s`. From a stopped slot this takes about 56 s, most of it Supabase start (about 22 s) and reset (about 28 s). Running Launch again on a live slot reseeds the database and reuses the running server.
 
-A reset does not reload auth settings. After any change to `supabase/config.toml`, such as a merge or a rebase that touches it, run `$S/cleanup.sh` and then `$S/launch.sh`, so the stack stops and starts with the new config.
+A reset reloads neither auth settings nor email templates, and Kong serves the templates from the checkout that started the stack. So a slot needs a full stop and start when you switch it to another checkout or worktree, and after any edit to `supabase/config.toml` or `supabase/templates/*`, including a merge or rebase that touches them. Launch does this itself. When the `stack` marker names another checkout or another hash, it prints `Restarting slot <n> because ...`, stops the web server and the stack, and starts both from the current checkout.
 
-Launch refuses a web port held by a process it did not start. Pick another slot instead of driving someone else's server.
+Launch refuses a web port held by a process it did not start, and a running stack with no `stack` marker. Pick another slot instead of driving someone else's stack.
 
 ## Doctor
 
@@ -115,7 +126,7 @@ Proof standards:
 $S/cleanup.sh
 ```
 
-Cleanup stops the web server by its recorded pid, clears the test clock while the stack is still up, stops the slot's Supabase stack and the lane's browser daemon, then checks that nothing listens on the slot's web, API, database, Studio, mailbox and browser ports. It prints `OK` or one `FAIL` line per port still held, and exits 1 on any. It never touches `/tmp/swarm-*`, so evidence survives.
+Cleanup acts only on a slot that Launch started from this checkout, which means the `stack` marker exists and names this checkout. Otherwise it prints why and leaves the stack and web server running. It stops the web server by its recorded pid only when that pid's command line runs `scripts/web.ts`, clears the test clock while the stack is still up, stops the slot's Supabase stack and removes the marker. It always stops the lane's browser daemon. Then it checks that nothing listens on the slot's web, API, database, Studio, mailbox and browser ports, prints `OK` or one `FAIL` line per port still held, and exits 1 on any. It never touches `/tmp/swarm-*`, so evidence survives.
 
 Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pattern, never stop a slot you did not launch, and never touch the `ekh-*` containers. Docker has about 8 GB for every stack on the machine, so run Cleanup as soon as you stop testing.
 
