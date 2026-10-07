@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-07T07:30:00+07:00",
+  "title": "Design System: Esta",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Ledger Paper", "canonical": "oklch(98.5% 0.006 85)" },
+      "surface": { "role": "neutral", "displayName": "Sheet", "canonical": "oklch(99.6% 0.003 85)" },
+      "ink": { "role": "neutral", "displayName": "Ledger Ink", "canonical": "oklch(24% 0.02 60)" },
+      "ink-muted": { "role": "neutral", "displayName": "Faded Ink", "canonical": "oklch(48% 0.015 60)" },
+      "rule": { "role": "neutral", "displayName": "Hairline", "canonical": "oklch(90% 0.01 80)" },
+      "lacquer": { "role": "primary", "displayName": "Sơn Mài Red", "canonical": "oklch(42% 0.11 35)" },
+      "paid": { "role": "status", "displayName": "Jade", "canonical": "oklch(52% 0.09 165)" },
+      "due": { "role": "status", "displayName": "Ochre", "canonical": "oklch(64% 0.13 75)" },
+      "overdue": { "role": "status", "displayName": "Vermilion", "canonical": "oklch(56% 0.19 28)" },
+      "vacant": { "role": "status", "displayName": "Slate", "canonical": "oklch(60% 0.03 250)" }
+    },
+    "typographyMeta": {
+      "hero": { "displayName": "Hero figure", "purpose": "The one or two amounts a screen exists to show, in tabular lining digits." },
+      "h1": { "displayName": "Page title", "purpose": "Page titles in the figure serif." },
+      "body": { "displayName": "Body", "purpose": "All running text, 16 px at text scale 1." },
+      "meta": { "displayName": "Meta", "purpose": "Timestamps and captions only." }
+    },
+    "motion": [
+      { "name": "duration-fast", "value": "150ms", "purpose": "Small confirmations such as a toggled state." },
+      { "name": "duration-base", "value": "180ms", "purpose": "List insertions and the undo toast." },
+      { "name": "duration-slow", "value": "220ms", "purpose": "Sheet entry and a number changing after a payment." },
+      { "name": "ease-standard", "value": "cubic-bezier(0.2, 0, 0, 1)", "purpose": "Every transition; reduced motion turns them off." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Status mark",
+      "kind": "custom",
+      "description": "Status as shape, then word in its -ink token, then color.",
+      "html": "<span class=\"ds-status\"><svg viewBox=\"0 0 24 24\" class=\"ds-status-shape\" aria-hidden=\"true\"><path d=\"M12 2.5L21.5 12L12 21.5L2.5 12z\" fill=\"currentColor\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linejoin=\"round\"/></svg><span class=\"ds-status-word\">Quá hạn 5 ngày</span></span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 0.5rem; font-family: 'Source Sans 3', sans-serif; font-weight: 600; } .ds-status-shape { width: 1.5rem; height: 1.5rem; color: var(--overdue, oklch(56% 0.19 28)); } .ds-status-word { color: var(--overdue-ink, oklch(48% 0.17 28)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Lacquer and Ledger",
+    "overview": "Esta looks like a well-kept paper ledger set beside a piece of Vietnamese lacquerware (sơn mài). Warm paper, deep ink, one restrained lacquer red, generous margins. Type, rule lines and whitespace carry the structure that boxes and shadows carry in a SaaS dashboard. The reference is a private bank statement.",
+    "keyCharacteristics": [
+      "Ink on paper on most screens. One accent, used rarely.",
+      "A serif for figures and page titles, a sans for everything else.",
+      "Hairline rules instead of cards. No card inside a card, no shadow stacks.",
+      "Status as shape plus word plus color.",
+      "Light and dark themes from one token source, chosen per member and rendered by the server."
+    ],
+    "rules": [
+      { "name": "The Proven Pair Rule", "body": "Every foreground and background pair the UI draws is listed in text-pairs.ts and measured by pnpm contrast:check in both themes.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "Lacquer appears on a small fraction of any screen. Primary buttons are ink, not accent.", "section": "colors" },
+      { "name": "The Figures Rule", "body": "Amounts use the figure face with the figures utility and sit right-aligned in tables.", "section": "typography" },
+      { "name": "The Full Coverage Rule", "body": "pnpm glyphs:check reads every shipped font file at every weight in typefaces and fails on any miss.", "section": "typography" },
+      { "name": "The Leading Rule", "body": "Line height stays at 1.3 or more, so Vietnamese stacked marks clear the line above. The leading tokens replace Tailwind's scale and pnpm check fails on any below 1.3.", "section": "typography" },
+      { "name": "The Self-Hosted Rule", "body": "Never Inter, Arial, Roboto or a system face as the identity face, and never a font CDN.", "section": "typography" }
+    ],
+    "dos": [
+      "Do set every color from a token (bg-paper, text-ink, var(--due-ink)), and add a new pairing to text-pairs.ts before it ships.",
+      "Do put amounts in Source Serif 4 with figures, right-aligned.",
+      "Do show status as shape, word in its -ink token, then color.",
+      "Do read the theme from the esta_theme cookie on the server, so the first byte is already in the right theme.",
+      "Do run pnpm tokens:build after editing tokens.ts and commit the generated tokens.css."
+    ],
+    "donts": [
+      "Don't use pure black, pure white, gradients, glass or neon.",
+      "Don't nest cards, stack shadows, or put icon tiles above headings.",
+      "Don't set gray text on a colored background, or a status word in its shape color.",
+      "Don't use more than one accent, or lacquer as a status.",
+      "Don't use uppercase letter-spaced labels, centered body text, hover-only actions, or icon-only buttons on mobile.",
+      "Don't use emoji, sparkle or magic-wand icons for the assistant."
+    ]
+  }
+}
