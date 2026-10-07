@@ -1,8 +1,9 @@
+import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { authDrifts, parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
+import { authDrifts, LIVE_TEST_SLOTS, parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const baseToml = readFileSync(join(repoRoot, 'supabase', 'config.toml'), 'utf8');
@@ -23,6 +24,7 @@ describe('slotPorts', () => {
   it('returns the Supabase and Next.js defaults for slot 0', () => {
     expect(slotPorts(0)).toEqual({
       web: 3000,
+      webProd: 3917,
       api: 54321,
       db: 54322,
       studio: 54323,
@@ -36,7 +38,18 @@ describe('slotPorts', () => {
   it('adds 100 per slot', () => {
     expect(slotPorts(1)).toMatchObject({ web: 3100, api: 54421, db: 54422, studio: 54423, inbucket: 54424 });
     expect(slotPorts(7)).toMatchObject({ webLan: 4143, apiLan: 9143, inbucketLan: 10143 });
+    expect(slotPorts(13)).toMatchObject({ web: 4300, webProd: 5217 });
     expect(slotPorts(10)).toMatchObject({ web: 4000, api: 55321, db: 55322, studio: 55323, inbucket: 55324 });
+  });
+});
+
+describe('webProd', () => {
+  it('never collides with another port of any slot, so e2e:prod runs beside a lane dev server', () => {
+    const slots = Array.from({ length: 100 }, (_, slot) => slotPorts(slot));
+    const prod = new Set(slots.map((ports) => ports.webProd));
+    const others = slots.flatMap(({ webProd: _, ...rest }) => Object.values(rest));
+    expect(prod.size).toBe(100);
+    expect(others.filter((port) => prod.has(port))).toEqual([]);
   });
 });
 
@@ -127,5 +140,20 @@ describe('authDrifts', () => {
   it('reports no drift when the running auth service matches', () => {
     expect(authDrifts(lanToml, lanEnv)).toBe(false);
     expect(authDrifts(slotConfig(baseToml, 13), localEnv)).toBe(false);
+  });
+});
+
+describe('LIVE_TEST_SLOTS', () => {
+  const envSh = join(repoRoot, '.claude', 'skills', 'verify', 'scripts', 'env.sh');
+  const source = (slot: number) =>
+    spawnSync('bash', ['-c', `source "${envSh}"`], { env: { ...process.env, ESTA_SLOT: String(slot) }, encoding: 'utf8' });
+
+  it('are refused by the verify skill, so a lane never launches a slot pnpm test:live runs', () => {
+    for (const slot of LIVE_TEST_SLOTS) {
+      const result = source(slot);
+      expect(result.status, `env.sh with ESTA_SLOT=${slot}`).toBe(2);
+      expect(result.stderr).toContain('pnpm test:live');
+    }
+    expect(source(97).status).toBe(0);
   });
 });
