@@ -43,6 +43,9 @@ export const typeScale = {
   'hero-xl': { px: 56, leading: leading.tight },
 } as const satisfies Record<string, { px: number; leading: number }>;
 
+/** The weights both variable fonts ship; Tailwind offers no other `font-*` weight. */
+export const fontWeight = { normal: 400, medium: 500, semibold: 600 } as const;
+
 export const spacing = { unitPx: 4, touchPx: 44 } as const;
 
 export const motion = {
@@ -54,14 +57,14 @@ export const typefaces = {
   sans: {
     family: 'Source Sans 3',
     file: 'SourceSans3-Variable.woff2',
-    weights: [400, 500, 600],
+    weights: Object.values(fontWeight),
     opticalSize: false,
     requiredFeatures: [],
   },
   figure: {
     family: 'Source Serif 4',
     file: 'SourceSerif4-Variable.woff2',
-    weights: [400, 500, 600],
+    weights: Object.values(fontWeight),
     opticalSize: true,
     requiredFeatures: ['tnum', 'lnum'],
   },

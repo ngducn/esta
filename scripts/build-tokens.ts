@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { colors, leading, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
+import { colors, fontWeight, leading, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
 
 const tokensCssPath = fileURLToPath(new URL('../apps/web/src/styles/tokens.css', import.meta.url));
 
@@ -9,6 +9,9 @@ const rem = (px: number) => (px === 0 ? '0' : `${px / ROOT_PX}rem`);
 const oklch = ([l, c, h]: Oklch) => `oklch(${l}% ${c} ${h})`;
 const block = (selector: string, lines: string[], indent = '') =>
   [`${indent}${selector} {`, ...lines.map((line) => `${indent}  ${line}`), `${indent}}`].join('\n');
+
+const chosenDark = '[data-theme="dark"]';
+const systemDark = ':root:not([data-theme="light"])';
 
 const colorVars = (theme: Theme) => Object.entries(colors).map(([name, value]) => `--${name}: ${oklch(value[theme])};`);
 
@@ -32,6 +35,8 @@ function renderTokensCss(): string {
     `--spacing-touch: ${rem(spacing.touchPx)};`,
     '--ease-*: initial;',
     `--ease-standard: ${motion.ease};`,
+    '--font-weight-*: initial;',
+    ...Object.entries(fontWeight).map(([name, value]) => `--font-weight-${name}: ${value};`),
     '--font-serif: initial;',
     '--font-mono: initial;',
     '--font-sans: var(--font-source-sans-3);',
@@ -42,11 +47,23 @@ function renderTokensCss(): string {
     '',
     block(':root', [...root, 'color-scheme: light;']),
     '',
-    block('[data-theme="dark"]', [...colorVars('dark'), 'color-scheme: dark;']),
+    block(chosenDark, [...colorVars('dark'), 'color-scheme: dark;']),
     '',
     '@media (prefers-color-scheme: dark) {',
-    block(':root:not([data-theme="light"])', [...colorVars('dark'), 'color-scheme: dark;'], '  '),
+    block(systemDark, [...colorVars('dark'), 'color-scheme: dark;'], '  '),
     '}',
+    '',
+    '/* dark: follows the same two selectors as the dark palette, so it obeys the esta_theme cookie. */',
+    block('@custom-variant dark', [
+      `&:where(${chosenDark}, ${chosenDark} *) {`,
+      '  @slot;',
+      '}',
+      '@media (prefers-color-scheme: dark) {',
+      `  &:where(${systemDark}, ${systemDark} *) {`,
+      '    @slot;',
+      '  }',
+      '}',
+    ]),
     '',
     block('@theme inline', theme),
     '',
