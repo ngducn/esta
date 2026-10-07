@@ -9,7 +9,7 @@ Seed rows use fixed ids so tests, screenshots and lanes can name them. Each id i
 | `household_members` row | `seed:member:<person>-<household>` | `seed:member:me-demo` |
 | Owner party | `seed:party:<person>-<household>` | `seed:party:me-lane-10` |
 
-`<household>` is `demo` for slot 0's household `Gia đình Demo`, and `lane-<n>` for the lane households `Gia đình Demo <n>`, where n is 1 to 10. `<person>` is `me` or `ryan`.
+`<household>` is `demo` for slot 0's household `Gia đình Demo`, and `lane-<n>` for the lane households `Gia đình Demo <n>`, where n runs from 1 to the `--households` value: 10 by default, at most 99, and 0 for `Gia đình Demo` alone. `<person>` is `me` or `ryan`.
 
 Emails follow the same split. In `Gia đình Demo` they are `me@demo.esta.test` and `ryan@demo.esta.test`. In lane n they are `me.lane<n>@demo.esta.test` and `ryan.lane<n>@demo.esta.test`.
 
@@ -65,3 +65,32 @@ Spikes S3 (`spike/s3-admin-units`, 1945c64) and S4 (`spike/s4-vietqr`, a7c9e76) 
 - Names have their whitespace collapsed. The catalog has 40 names with stray spaces or newlines.
 - A merge note containing "một phần" or "phần còn lại" is `partial`; every other note is `whole`.
 - The build fails when a link targets a unit missing from the catalog, when a current unit has no link, or when the table's header changes.
+
+# Seed generator
+
+`supabase/seed/generator/` writes the seed as SQL. `pnpm db:reset` runs it before `supabase db reset` and writes the file into the slot, at `supabase/.slots/<slot>/supabase/generated/seed.sql`, which `[db.seed] sql_paths` names. Each slot gets its own file, so stacks that reset at the same time with different flags never share one.
+
+| Command | Seed |
+| --- | --- |
+| `pnpm db:reset` | Variant `full`, `Gia đình Demo` plus lane households 1 to 10, as of `2026-10-07T09:00:00+07:00` |
+| `pnpm db:reset:northstar` | Variant `northstar`: the same without `Dãy trọ Dĩ An` (SPEC §9.3) |
+| `pnpm db:reset --households 3 --as-of <iso> --variant full` | Any mix of the generator flags |
+| `tsx supabase/seed/generator/index.ts [flags]` | Prints the SQL without touching a database |
+| `tsx supabase/seed/generator/ids.ts <key>` | Prints the id of a seed key |
+| `pnpm db:checksum` | One md5 per public table over every column except `created_at` and `updated_at`, skipping `audit_log`, plus `auth.users` and `auth.identities` over the columns the seed writes (`SEEDED_AUTH_COLUMNS` in `scripts/db-checksum.ts`) |
+| `pnpm db:seed:check` | Resets twice, compares the checksums and exits 1 on any difference (FND-7) |
+
+Every row gets `created_at` and `updated_at` from `--as-of`, and the seed runs with `esta.actor` set to `system:seed`, so its audit rows read `system` and `seed`. Random draws come from `rngFor(scope)`, a fixed stream per scope string; ESLint bans `Math.random`, `Date.now`, `Date()` and `new Date()` without arguments, `performance.now`, and the random functions of `crypto` in the generator.
+
+Keys added by the generator:
+
+| Row | Key | Example |
+| --- | --- | --- |
+| `household_settings` row | `seed:household-settings:<household>` | `seed:household-settings:lane-3` |
+| `notification_preferences` row | `seed:notification-preference:<person>-<household>:<channel>` | `seed:notification-preference:me-demo:inapp` |
+| `auth.identities` row | `seed:identity:<person>-<household>` | `seed:identity:ryan-lane-2` |
+| Property | `seed:property:<household>:<property>` | `seed:property:lane-3:di-an` |
+
+`<property>` is a SPEC §9.3 seed key: `q7`, `thu-duc`, `di-an`, `q1`, `bien-hoa`, `long-an` or `bao-loc`. A property's `code` is that key in uppercase without hyphens, such as `DIAN`.
+
+To seed a new table, add an emitter with `publicTable('<table>', (ctx) => rows)` in a module beside the others, give every row an id from `seedId(<key>)`, add the key shape to the table above, and insert the emitter into `EMITTERS` in `index.ts` after the tables it references. `SeedRow<'<table>'>` checks each row against the generated types in `packages/db`, including misspelled columns, so run `pnpm db:types` after the migration. A JavaScript array becomes a Postgres array and an object becomes jsonb, so pass a jsonb array as its JSON text. Rows must be the same in every household, so key random streams by what they draw, never by household. Rows that hang off a property iterate `ctx.properties`, which already leaves out the variant's omitted properties (`variants.ts`).

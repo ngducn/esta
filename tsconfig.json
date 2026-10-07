@@ -6,5 +6,5 @@
     "erasableSyntaxOnly": true,
     "allowJs": true
   },
-  "include": ["e2e", "playwright.config.ts", "playwright.prod.config.ts", "scripts", "eslint-rules"]
+  "include": ["e2e", "playwright.config.ts", "playwright.prod.config.ts", "scripts", "eslint-rules", "supabase/seed/generator"]
 }
