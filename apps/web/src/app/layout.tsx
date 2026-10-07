@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { formatDateLong } from '@esta/core/format';
 import { getClock } from '@/server/clock';
 import './globals.css';
 
@@ -12,7 +13,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="vi">
       <body>
-        <p data-testid="date-line">{clock.today()}</p>
+        <p data-testid="date-line">{formatDateLong(clock.today(), 'vi')}</p>
         {children}
       </body>
     </html>
