@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import wawoff2 from 'wawoff2';
+import { vietnameseLetters } from '../apps/web/src/design/glyph-test-string.ts';
 import { typeScale, typefaces } from '../apps/web/src/design/tokens.ts';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
@@ -10,6 +11,7 @@ const fontDir = join(repo, 'apps/web/src/fonts');
 const DIGITS = '0123456789';
 
 const USAGE = `Usage: node scripts/glyphs-check.mjs [font.woff2 ...] [--text <string> | --text-file <path>]
+Every Vietnamese letter is checked on top of the text.
 With no fonts, checks every file in apps/web/src/fonts and fails when a typeface in tokens.ts has no file.`;
 
 function parseArgs(argv) {
@@ -61,7 +63,7 @@ function checkInstance(base, axes, codePoints, requiredFeatures) {
 
 const { text, fonts, checkAllShipped } = parseArgs(process.argv.slice(2));
 const shipped = new Set(fonts.map((f) => basename(f)));
-const codePoints = [...new Set([...text.normalize('NFC')].map((c) => c.codePointAt(0)))].sort((a, b) => a - b);
+const codePoints = [...new Set([...text.normalize('NFC'), ...vietnameseLetters].map((c) => c.codePointAt(0)))].sort((a, b) => a - b);
 const byFile = new Map(Object.values(typefaces).map((face) => [face.file, face]));
 
 let failed = false;
