@@ -5,7 +5,9 @@ export const metadata: Metadata = {
   title: 'Dev pages',
 };
 
-const devPages: readonly { href: string; title: string }[] = [];
+const devPages: readonly { href: string; title: string }[] = [
+  { href: '/dev/core', title: 'Core formatting and parsing' },
+];
 
 export default function DevIndexPage() {
   return (

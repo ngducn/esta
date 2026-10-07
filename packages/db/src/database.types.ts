@@ -340,7 +340,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      esta_unaccent: { Args: { p_text: string }; Returns: string }
     }
     Enums: {
       member_role: "viewer" | "member" | "admin"

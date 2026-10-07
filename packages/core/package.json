@@ -3,11 +3,23 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./date": "./src/date/iso-date.ts",
+    "./date/calendar": "./src/date/calendar.ts",
+    "./format": "./src/format/index.ts",
+    "./money": "./src/money/vnd.ts",
+    "./names": "./src/names/index.ts",
+    "./parse/*": "./src/parse/*.ts",
+    "./phone": "./src/phone/index.ts",
+    "./result": "./src/result.ts",
+    "./search": "./src/search/fold.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "fast-check": "^4.10.2"
   }
 }
