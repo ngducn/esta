@@ -450,6 +450,68 @@ export type Database = {
           },
         ]
       }
+      properties: {
+        Row: {
+          certificate_address_text: string | null
+          code: string
+          created_at: string
+          created_by: string | null
+          current_address: Json | null
+          deleted_at: string | null
+          household_id: string
+          id: string
+          kind: string
+          kind_details: Json
+          legal_status: string
+          location: unknown
+          nickname: string
+          updated_at: string
+          use_mode: string
+        }
+        Insert: {
+          certificate_address_text?: string | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_address?: Json | null
+          deleted_at?: string | null
+          household_id: string
+          id?: string
+          kind: string
+          kind_details?: Json
+          legal_status?: string
+          location?: unknown
+          nickname: string
+          updated_at?: string
+          use_mode: string
+        }
+        Update: {
+          certificate_address_text?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_address?: Json | null
+          deleted_at?: string | null
+          household_id?: string
+          id?: string
+          kind?: string
+          kind_details?: Json
+          legal_status?: string
+          location?: unknown
+          nickname?: string
+          updated_at?: string
+          use_mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_rules: {
         Row: {
           effective_from: string
