@@ -320,6 +320,21 @@ export type Database = {
           },
         ]
       }
+      test_clock: {
+        Row: {
+          frozen_now: string
+          id: boolean
+        }
+        Insert: {
+          frozen_now: string
+          id?: boolean
+        }
+        Update: {
+          frozen_now?: string
+          id?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { parseSlot, slotPorts } from './scripts/slot.ts';
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? slotPorts(parseSlot(process.env.ESTA_SLOT)).web);
 const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({

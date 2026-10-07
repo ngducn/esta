@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { FROZEN_CLOCK_REFUSAL } from '@esta/core';
 import { parseEnv } from './env-schema';
 
 const required = {
@@ -8,7 +9,7 @@ const required = {
 };
 
 describe('parseEnv', () => {
-  test('defaults ESTA_ENV to development and fills the documented defaults', () => {
+  test('outside NODE_ENV=production, defaults ESTA_ENV to development and fills the documented defaults', () => {
     expect(parseEnv(required)).toEqual({
       ...required,
       EMAIL_TRANSPORT: 'smtp',
@@ -23,6 +24,19 @@ describe('parseEnv', () => {
     expect(parseEnv({ ...required, ESTA_ENV: '' }).ESTA_ENV).toBe('development');
   });
 
+  test.each([undefined, ''])('requires ESTA_ENV when NODE_ENV=production (ESTA_ENV=%j)', (estaEnv) => {
+    expect(() => parseEnv({ ...required, NODE_ENV: 'production', ESTA_ENV: estaEnv })).toThrow(
+      /ESTA_ENV[\s\S]*NODE_ENV=production/,
+    );
+  });
+
+  test.each(['development', 'test', 'preview', 'production'])(
+    'accepts an explicit ESTA_ENV=%s when NODE_ENV=production',
+    (estaEnv) => {
+      expect(parseEnv({ ...required, NODE_ENV: 'production', ESTA_ENV: estaEnv }).ESTA_ENV).toBe(estaEnv);
+    },
+  );
+
   test('rejects a missing required variable and names it', () => {
     const { NEXT_PUBLIC_SUPABASE_URL: _omitted, ...rest } = required;
     expect(() => parseEnv(rest)).toThrow(/NEXT_PUBLIC_SUPABASE_URL/);
@@ -34,9 +48,13 @@ describe('parseEnv', () => {
     );
   });
 
+  test('rejects an unknown ESTA_TIMEZONE', () => {
+    expect(() => parseEnv({ ...required, ESTA_TIMEZONE: 'Mars/Olympus' })).toThrow(/ESTA_TIMEZONE/);
+  });
+
   test('refuses ESTA_FROZEN_NOW in production', () => {
     const frozen = { ...required, ESTA_FROZEN_NOW: '2026-10-07T09:00:00+07:00' };
     expect(parseEnv({ ...frozen, ESTA_ENV: 'test' }).ESTA_FROZEN_NOW).toBe(frozen.ESTA_FROZEN_NOW);
-    expect(() => parseEnv({ ...frozen, ESTA_ENV: 'production' })).toThrow(/ESTA_FROZEN_NOW/);
+    expect(() => parseEnv({ ...frozen, ESTA_ENV: 'production' })).toThrow(FROZEN_CLOCK_REFUSAL);
   });
 });

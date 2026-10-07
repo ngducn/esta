@@ -9,7 +9,7 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 test('/ shows the Esta placeholder in Vietnamese', async ({ page }) => {
   const response = await page.goto('/');
   expect(response?.status()).toBe(200);
-  await expect(page.locator('body')).toHaveText('Esta');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esta');
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
