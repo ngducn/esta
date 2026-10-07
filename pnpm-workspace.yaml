@@ -4,3 +4,5 @@ packages:
 
 allowBuilds:
   esbuild: false
+  '@parcel/watcher': false
+  '@swc/core': false
