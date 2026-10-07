@@ -58,8 +58,9 @@ Principles:
 
 ### 5.1 Typography
 
-- UI sans with complete Vietnamese support. Candidate to test first: Be Vietnam Pro (drawn for Vietnamese). Alternatives to compare in S2 only if it fails the checks.
-- A figure and display face for amounts and page titles: a serif with full Vietnamese coverage and tabular lining figures. Candidates for S2: Newsreader, Source Serif 4, Fraunces. Pick by the coverage script, tabular figures support, and how "3.500.000 ₫" and "Đặng Thị Hường" look at 32 px.
+- Decided in spike S2 (branch `spike/s2-fonts`, 31dd4a6): **Source Sans 3** is the UI sans and **Source Serif 4** is the figure and display face for amounts and page titles. Both are OFL, cover every code point of the glyph test string at every weight used, and give uniform-width lining digits. `DESIGN.md` Typography records the full reasoning.
+- Be Vietnam Pro, the first candidate, failed the tabular figures check: its digits are proportional and it has no `tnum` feature, so amounts would not align in a column. Fraunces failed the same check (no `tnum` or `lnum`). Newsreader and Public Sans passed but lost on look next to the chosen pair.
+- Both faces are self-hosted from `apps/web/src/fonts/`, subset to Vietnamese and basic Latin. `pnpm glyphs:check` guards the shipped files.
 - Never Inter, Arial, Roboto or system defaults as the identity face.
 - Glyph test string for `/dev/glyphs` and the coverage script:
   `Đặng Thị Hường, Nguyễn Văn Ước, Phường Dĩ An, Thửa đất số 1234, tờ bản đồ số 56. ẫ ặ ữ ỡ ự ể ộ ổ ỗ ờ ở ợ ụ ủ ứ ừ ử ữ ỳ ỷ ỹ Ỵ. 0123456789 ₫ m² ½`
@@ -67,7 +68,7 @@ Principles:
 
 ### 5.2 Color
 
-Define tokens in OKLCH with light and dark sets. Starting values to tune in Phase 0, each pair checked for AA contrast:
+Define tokens in OKLCH with light and dark sets. Starting values to tune in Phase 0, each pair checked for AA contrast. The tuned light and dark values live in `apps/web/src/design/tokens.ts` and `DESIGN.md`; P0-11 lowered light `due` to 64% lightness to reach 3:1.
 
 | Token | Light | Use |
 | --- | --- | --- |

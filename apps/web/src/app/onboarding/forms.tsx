@@ -7,8 +7,8 @@ import { NAME_MAX_LENGTH } from './limits';
 
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
 
-const fieldClass = 'min-h-11 w-full rounded-md border border-current px-3 text-base';
-const primaryClass = 'min-h-11 w-full rounded-md border-2 border-current px-4 font-semibold disabled:opacity-60';
+const fieldClass = 'min-h-touch w-full rounded-md border border-current px-3 text-body';
+const primaryClass = 'min-h-touch w-full rounded-md bg-ink px-4 font-semibold text-paper disabled:opacity-60';
 
 const initialCreate: CreateHouseholdState = { householdName: '', displayName: '', errors: {} };
 const initialInvite: InviteState = { status: 'idle' };
@@ -137,7 +137,7 @@ export function InviteForm() {
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 font-semibold">{t('role')}</legend>
         {ROLES.map((role) => (
-          <label key={role} className="flex min-h-11 items-start gap-3 py-1">
+          <label key={role} className="flex min-h-touch items-start gap-3 py-1">
             <input
               type="radio"
               name="role"

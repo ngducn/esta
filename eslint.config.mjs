@@ -25,6 +25,10 @@ export default defineConfig(
     },
   },
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { Buffer: 'readonly', URL: 'readonly', console: 'readonly', process: 'readonly' } },
+  },
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: [nextPlugin.configs['core-web-vitals'], reactHooks.configs.flat.recommended],
     rules: { '@next/next/no-html-link-for-pages': 'off' },

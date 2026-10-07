@@ -41,7 +41,7 @@ export default async function OnboardingPage() {
         {member === null ? (
           <>
             <div className="flex flex-col gap-2">
-              <h1 className="text-3xl font-semibold">{t('title')}</h1>
+              <h1 className="text-h1 font-semibold">{t('title')}</h1>
               <p>{t('intro')}</p>
             </div>
             <CreateHouseholdForm />
@@ -49,7 +49,7 @@ export default async function OnboardingPage() {
               {user?.email && <p className="break-all">{t('signedInEmail', { email: user.email })}</p>}
               <p>{t('invitedElsewhere')}</p>
               <form action={signOut}>
-                <button type="submit" className="min-h-11 underline underline-offset-4">
+                <button type="submit" className="min-h-touch underline underline-offset-4">
                   {home('signOut')}
                 </button>
               </form>
@@ -58,12 +58,12 @@ export default async function OnboardingPage() {
         ) : (
           <>
             <div className="flex flex-col gap-2">
-              <p className="text-xl font-semibold">{member.household.name}</p>
-              <h1 className="text-3xl font-semibold">{t('inviteTitle')}</h1>
+              <p className="text-h3 font-semibold">{member.household.name}</p>
+              <h1 className="text-h1 font-semibold">{t('inviteTitle')}</h1>
               <p>{t('inviteIntro', { household: member.household.name })}</p>
             </div>
             <InviteForm />
-            <Link href="/" className="flex min-h-11 items-center justify-center underline underline-offset-4">
+            <Link href="/" className="flex min-h-touch items-center justify-center underline underline-offset-4">
               {t('done')}
             </Link>
           </>
