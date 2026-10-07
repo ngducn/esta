@@ -1,5 +1,58 @@
 @import 'tailwindcss';
+@import '../styles/tokens.css';
 
-:root {
-  color-scheme: light dark;
+@layer base {
+  html {
+    font-size: calc(100% * var(--text-scale));
+    font-family: var(--font-source-sans-3);
+    background-color: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    background-color: var(--paper);
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--lacquer) 22%, var(--paper));
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea {
+    caret-color: var(--lacquer);
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-source-serif-4);
+    font-weight: 600;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0s !important;
+      animation-duration: 0s !important;
+    }
+  }
+}
+
+@utility figures {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings:
+    'tnum',
+    'lnum';
 }

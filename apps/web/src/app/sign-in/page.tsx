@@ -42,12 +42,12 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <main className="mx-auto flex w-full max-w-sm flex-col gap-6 px-4 py-8">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xl font-semibold">{app('name')}</p>
+          <p className="text-h3 font-semibold">{app('name')}</p>
           <p>{app('tagline')}</p>
         </div>
         <LanguageSwitch />
       </header>
-      <h1 className="text-3xl font-semibold">{t('title')}</h1>
+      <h1 className="text-h1 font-semibold">{t('title')}</h1>
       {google && error === 'google' && (
         <p role="alert" className="font-semibold">
           {t('googleFailed')}

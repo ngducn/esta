@@ -16,7 +16,7 @@
     "tokens:build": "node scripts/build-tokens.ts",
     "tokens:check": "node scripts/build-tokens.ts --check",
     "glyphs:check": "node scripts/glyphs-check.mjs",
-    "contrast:check": "node scripts/contrast-check.ts",
+    "contrast:check": "tsx scripts/contrast-check.ts",
     "fonts:build": "scripts/fonts-build.sh",
     "typecheck": "tsc --noEmit",
     "test": "vitest run scripts eslint-rules supabase/seed/generator --exclude 'supabase/.slots/**' --exclude '**/*.live.test.ts'",

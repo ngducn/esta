@@ -26,7 +26,9 @@ export const colors = {
 
 export type ColorToken = keyof typeof colors;
 
-export const statuses = ['paid', 'due', 'overdue', 'vacant'] as const;
+export const statuses = ['paid', 'due', 'overdue', 'vacant'] as const satisfies readonly ColorToken[];
+
+export type Status = (typeof statuses)[number];
 
 /** DESIGN-BRIEF §5.1, in px at text scale 1. Leading stays at 1.3 or more so stacked marks clear the line above. */
 export const typeScale = {
@@ -44,22 +46,11 @@ export const typeScale = {
 /** User text scale (PRODUCT.md): 100, 115 and 130 percent of the root size. */
 export const textScales = [1, 1.15, 1.3] as const;
 
-/** In px at text scale 1; `touch` is the 44 px minimum target. */
-export const space = {
-  '0': 0,
-  '1': 4,
-  '2': 8,
-  '3': 12,
-  '4': 16,
-  '5': 20,
-  '6': 24,
-  '8': 32,
-  '10': 40,
-  '12': 48,
-  '16': 64,
-  '24': 96,
-  touch: 44,
-} as const satisfies Record<string, number>;
+/**
+ * In px at text scale 1. Spacing steps are multiples of `unit` (Tailwind `p-4` is 16 px); `touch` is
+ * the 44 px minimum target (`min-h-touch`).
+ */
+export const spacing = { unit: 4, touch: 44 } as const;
 
 export const motion = {
   duration: { fast: 150, base: 180, slow: 220 },

@@ -7,7 +7,7 @@ import { NAME_MAX_LENGTH } from './limits';
 
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
 
-const fieldClass = 'min-h-11 w-full rounded-md border border-current px-3 text-base';
+const fieldClass = 'min-h-11 w-full rounded-md border border-current px-3 text-body';
 const primaryClass = 'min-h-11 w-full rounded-md border-2 border-current px-4 font-semibold disabled:opacity-60';
 
 const initialCreate: CreateHouseholdState = { householdName: '', displayName: '', errors: {} };

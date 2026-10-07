@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { colors, motion, space, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
+import { colors, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
 
 const tokensCssPath = fileURLToPath(new URL('../apps/web/src/styles/tokens.css', import.meta.url));
 
@@ -26,11 +26,12 @@ function renderTokensCss(): string {
       `--text-${name}: ${rem(size)};`,
       `--text-${name}--line-height: ${leading};`,
     ]),
-    '--spacing-*: initial;',
-    ...Object.entries(space).map(([name, px]) => `--spacing-${name}: ${rem(px)};`),
+    `--spacing: ${rem(spacing.unit)};`,
+    `--spacing-touch: ${rem(spacing.touch)};`,
     '--ease-*: initial;',
     `--ease-standard: ${motion.ease};`,
-    '--font-*: initial;',
+    '--font-serif: initial;',
+    '--font-mono: initial;',
     '--font-sans: var(--font-source-sans-3);',
     '--font-figure: var(--font-source-serif-4);',
   ];

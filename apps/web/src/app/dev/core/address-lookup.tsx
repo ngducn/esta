@@ -28,10 +28,10 @@ export function AddressLookup() {
 
   return (
     <section aria-labelledby={`${inputId}-heading`} className="flex flex-col gap-2" data-testid="address-lookup">
-      <h2 id={`${inputId}-heading`} className="text-lg font-semibold">
+      <h2 id={`${inputId}-heading`} className="text-lead font-semibold">
         Live suggest_current_unit
       </h2>
-      <label htmlFor={inputId} className="text-sm">
+      <label htmlFor={inputId} className="text-small">
         Old address
       </label>
       <input
@@ -40,7 +40,7 @@ export function AddressLookup() {
         value={text}
         onChange={(event) => search(event.target.value)}
         autoComplete="off"
-        className="min-h-11 max-w-xl rounded border px-3 py-2 text-base"
+        className="min-h-11 max-w-xl rounded border px-3 py-2 text-body"
       />
       <div aria-live="polite" aria-busy={pending} data-testid="address-lookup-output" data-for={lookup?.text ?? ''}>
         {lookup === null || lookup.text === '' ? null : 'failed' in lookup ? (
@@ -64,8 +64,8 @@ export function AddressLookup() {
                 <p>
                   {row.province_name} ({row.province_code}) · {row.merge_kind}
                 </p>
-                <p className="text-sm">Matched {row.matched_legacy_name}</p>
-                <p className="text-sm wrap-anywhere" data-testid="address-suggestion-source">
+                <p className="text-small">Matched {row.matched_legacy_name}</p>
+                <p className="text-small wrap-anywhere" data-testid="address-suggestion-source">
                   Source {row.source}
                 </p>
               </li>
