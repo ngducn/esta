@@ -47,7 +47,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         </div>
         <LanguageSwitch />
       </header>
-      <h1 className="text-h1 font-semibold">{t('title')}</h1>
+      <h1 className="font-sans text-h1 font-semibold">{t('title')}</h1>
       {google && error === 'google' && (
         <p role="alert" className="font-semibold">
           {t('googleFailed')}

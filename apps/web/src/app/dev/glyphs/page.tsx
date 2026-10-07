@@ -15,7 +15,6 @@ const WEIGHT_CLASS: Record<number, string> = {
   400: 'font-normal',
   500: 'font-medium',
   600: 'font-semibold',
-  700: 'font-bold',
 };
 const FACE_CLASS = { sans: 'font-sans', figure: 'font-figure' } as const;
 const SPECIMEN_SIZES = [

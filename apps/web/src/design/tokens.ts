@@ -54,7 +54,7 @@ export const typefaces = {
   sans: {
     family: 'Source Sans 3',
     file: 'SourceSans3-Variable.woff2',
-    weights: [400, 500, 600, 700],
+    weights: [400, 500, 600],
     opticalSize: false,
     requiredFeatures: [],
   },
