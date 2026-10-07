@@ -31,7 +31,8 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm db:reset` | Apply migrations and the `full` seed; `pnpm db:reset:northstar` for the north-star variant |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |
-| `pnpm check` | Typecheck, lint and unit tests in every workspace; i18n key parity joins with P0-05 |
+| `pnpm check` | i18n parity, then typecheck, lint and unit tests in every workspace |
+| `pnpm i18n:parity` | Compares `apps/web/messages/vi.json` and `en.json` (see Translations) |
 | `pnpm e2e` | Playwright suite; `pnpm e2e:northstar` runs SPEC §1.2 |
 | `pnpm e2e:prod` | Builds, starts with `ESTA_ENV=production` and checks `/dev/*` returns 404 |
 | `pnpm check:build-env` | Builds a clean copy without `CRON_SECRET` and checks it fails with the zod message |
@@ -52,8 +53,17 @@ Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Ne
 - The web app uses the user's session client. The service role key is allowed only in `apps/agent`, `scripts/` and `apps/web/src/server/cron/**`; a lint rule enforces the allowlist. Service-role clients send the `x-esta-actor` header for the audit trigger (SPEC §5.7).
 - Uploads go from the browser to Storage with signed upload URLs, never through a server function body.
 - Every user-facing string goes through next-intl message files (vi and en). Styling uses design tokens only; no raw colors or ad hoc pixel values in components. Model output renders as sanitized Markdown.
+- Dependencies with install scripts run them only when `allowBuilds` in `pnpm-workspace.yaml` says so. `@parcel/watcher` and `@swc/core` are set to `false`: next-intl pulls them in only for its message extractor, which Esta does not use, and their prebuilt platform binaries install without the scripts.
 - UI work follows `PRODUCT.md`, `DESIGN.md` and the brief. Run `/impeccable shape` before building a new core screen and the design QA in DESIGN-BRIEF §9 before calling it done.
 - CI and automated tests run the agent in `replay` mode. Live model calls happen only in spikes, `pnpm agent:record`, gate demos, and the Phase 5 live run.
+
+## Translations
+
+- Messages live in `apps/web/messages/vi.json` and `en.json`, with the same keys in both. Each top-level key is a namespace for one area of the app (`app` holds the app name and tagline). Keys are camelCase without dots, because next-intl reads a dot as nesting. Values are ICU messages in NFC.
+- Translate on the server. Server components call `getTranslations('<namespace>')` and pass the strings they need to client components as props. The root layout has no `NextIntlClientProvider`, so no route ships the next-intl client runtime (about 12 KB gzipped) unless it asks for it. When a client island truly needs `useTranslations`, wrap only that island in `NextIntlClientProvider` with only its namespaces, as `apps/web/src/app/dev/i18n/page.tsx` does. `e2e/prod/bundle.spec.ts` fails when `/` loads the runtime or its initial JS reaches 200,000 bytes gzipped.
+- `pnpm i18n:parity` fails when the two files differ in key paths, argument names or types, select options or exact plural matches. It also fails on a dotted or empty key, an empty message, an empty group, a value that is not NFC, or plural categories that do not match the locale's CLDR rules (vi uses `other` only; en uses `one` and `other`).
+- `esta/no-jsx-literals` (`eslint-rules/no-jsx-literals.mjs`) fails on text in `apps/web/**/*.tsx` that does not come from the message files. It covers JSX text; string literals, `+` concatenations and array `.join()` calls rendered as children; local `const` strings and `const` object maps (`LABELS.late`, `LABELS[status]`) rendered as children or props; text-like props (`label`, `title`, `description`, `placeholder`, `alt`, `caption`, `heading`, `message`, `text`, `helperText`, and text-carrying `aria-*` such as `aria-label`); any other prop whose literal value has a space or a non-ASCII letter; and literal `title` or `description` in an exported `metadata` or returned from `generateMetadata` under `apps/web/src/app`. Code-valued props are not checked: `data-*`, the remaining `aria-*`, any prop ending in `className`, `classNames` or `style` (any case), `content` on `<meta>`, and the HTML and SVG attributes listed in the rule, such as `href`, `src`, `srcSet`, `sizes`, `media`, `pattern`, `viewBox`, `preserveAspectRatio`, `fontFamily` and `strokeDasharray`. A single ASCII token such as `variant="primary"` passes.
+- `apps/web/src/app/dev/**` is exempt, because those routes are developer-only and return 404 in production. Everywhere else in `apps/web`, `@eslint-community/eslint-comments` rejects an inline disable of any `esta/*` rule and a bare `eslint-disable` with no rule names. Disable another rule inline only with its name and a reason after `--`, for example `// eslint-disable-next-line react-hooks/purity -- <why>`. `eslint-rules/inline-config.test.ts` also fails on any `/* eslint <rule>: ... */` config comment there, because such a comment can switch off the rules that would catch it. Put any exception to an `esta/*` rule in `eslint.config.mjs`, where review sees it.
 
 ## Definition of done
 
