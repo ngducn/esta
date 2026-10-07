@@ -35,14 +35,17 @@ function ratio(pair: Pick<ColorPair, 'foreground' | 'background'>, theme: Theme)
 function Ratios({ pair, minimum }: { pair: Pick<ColorPair, 'foreground' | 'background'>; minimum: number }) {
   return (
     <dl className="figures grid grid-cols-[auto_auto] justify-end gap-x-3 text-small text-ink-muted">
-      {THEMES.map((theme) => (
-        <div key={theme} className="contents" data-theme-ratio={theme}>
-          <dt>{theme}</dt>
-          <dd className="text-right text-ink" data-ratio={ratio(pair, theme).toFixed(2)}>
-            {ratio(pair, theme).toFixed(2)}:1
-          </dd>
-        </div>
-      ))}
+      {THEMES.map((theme) => {
+        const shown = ratio(pair, theme).toFixed(2);
+        return (
+          <div key={theme} className="contents" data-theme-ratio={theme}>
+            <dt>{theme}</dt>
+            <dd className="text-right text-ink" data-ratio={shown}>
+              {shown}:1
+            </dd>
+          </div>
+        );
+      })}
       <dt>min</dt>
       <dd className="text-right">{minimum.toFixed(1)}:1</dd>
     </dl>
