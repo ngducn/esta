@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AddressLookup } from './address-lookup';
 import { LiveParse } from './live-parse';
 import { checkRow, sections, type CheckedRow } from './sections';
 
@@ -33,8 +34,10 @@ const COLUMNS: readonly Column[] = [
   },
 ];
 
-export default function DevCorePage() {
-  const checked = sections.map((section) => ({ ...section, rows: section.rows.map(checkRow) }));
+export default async function DevCorePage() {
+  const checked = await Promise.all(
+    sections.map(async (section) => ({ ...section, rows: await Promise.all(section.rows.map(checkRow)) })),
+  );
   const rows = checked.flatMap((section) => section.rows);
   const mismatches = rows.filter((row) => !row.matches).length;
 
@@ -48,6 +51,7 @@ export default function DevCorePage() {
       </header>
 
       <LiveParse />
+      <AddressLookup />
 
       {checked.map((section) => (
         <section key={section.id} aria-labelledby={`${section.id}-heading`} data-section={section.id}>

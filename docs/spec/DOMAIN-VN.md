@@ -110,7 +110,8 @@ Seed for `land_use_codes`. Common codes seen on existing certificates. `[verify]
 
 - From 1 July 2025 Vietnam runs a two-tier local government: province level and commune level. The district tier (quận, huyện, thị xã, thành phố thuộc tỉnh) is abolished.
 - Province-level units went from 63 to 34: 28 provinces and 6 centrally run cities. Resolution 202/2025/QH15 (12 June 2025) merged the provinces; Law 72/2025/QH15 organizes local government.
-- Commune-level units were merged as well (about 3,321 `[verify]` the exact count from the chosen dataset).
+- Since then three provinces became centrally run cities without code or boundary changes: Đồng Nai (30/2026/QH16, from 30 April 2026), Quảng Ninh (36/2026/QH16, from 1 September 2026) and Bắc Ninh (39/2026/QH16, from 20 September 2026). As of 6 October 2026 the 34 are 25 provinces and 9 cities. Source: NSO `DMDVHC.asmx` `DanhMucTinh` at 06/10/2026 (spike S3).
+- Commune-level units were merged as well: 3,321 units, the count in Decision 19/2025/QĐ-TTg and unchanged since. As of 6 October 2026: 709 phường, 2,599 xã, 13 đặc khu. `[verified]` Source: NSO `DMDVHC.asmx` `DanhMucPhuongXa` at 06/10/2026 (spike S3, `spikes/s3-admin-units/REPORT.md` on branch `spike/s3-admin-units`).
 - TP. Hồ Chí Minh now includes former Bình Dương and Bà Rịa–Vũng Tàu.
 - Addresses now read house number, street, ward or commune, province. People, agents and older documents will keep using old names for years.
 
@@ -121,15 +122,17 @@ Consequences for the app:
 3. Search must match old names: "Dĩ An", "Bình Dương", "Quận 7" all find the right properties through `admin_unit_legacy_map`.
 4. Show both addresses on the property header when they differ, labelled "Theo sổ" and "Hiện nay".
 
-Legacy lookup test cases for FND-6. The expected province is the check; the expected ward or commune is filled from the dataset during spike S3 and then frozen in the test.
+Legacy lookup test cases for FND-6. The expected province is the check; the expected ward or commune comes from the NSO conversion table (`danhmuchanhchinh.nso.gov.vn/TAPTIN/BangChuyendoiĐVHCmoi_cu_final.xlsx`, spike S3) and is frozen in the test.
 
-| Old address | Expected current province |
-| --- | --- |
-| Phường Dĩ An, Thành phố Dĩ An, Tỉnh Bình Dương | TP. Hồ Chí Minh `[verified]` |
-| Phường 1, Thành phố Vũng Tàu, Tỉnh Bà Rịa–Vũng Tàu | TP. Hồ Chí Minh `[verified]` |
-| Phường 2, Thành phố Tân An, Tỉnh Long An | Tây Ninh `[verify]` |
-| Phường Tân Phong, Thành phố Biên Hòa, Tỉnh Đồng Nai | Đồng Nai `[verify]` |
-| Phường 1, Thành phố Bảo Lộc, Tỉnh Lâm Đồng | Lâm Đồng `[verify]` |
+| Old address | Expected current province | Expected current ward or commune |
+| --- | --- | --- |
+| Phường Dĩ An, Thành phố Dĩ An, Tỉnh Bình Dương | TP. Hồ Chí Minh (79) `[verified]` | Phường Dĩ An (25942) |
+| Phường 1, Thành phố Vũng Tàu, Tỉnh Bà Rịa–Vũng Tàu | TP. Hồ Chí Minh (79) `[verified]` | Phường Vũng Tàu (26506) |
+| Phường 2, Thành phố Tân An, Tỉnh Long An | Tây Ninh (80) `[verified]` | Phường Long An (27694), through one pre-reform hop: Phường 2 (27688) merged into Phường 1 (27694) on 1 December 2024 |
+| Phường Tân Phong, Thành phố Biên Hòa, Tỉnh Đồng Nai | TP. Đồng Nai (75) `[verified]` | Phường Tân Triều (26188) |
+| Phường 1, Thành phố Bảo Lộc, Tỉnh Lâm Đồng | Lâm Đồng (68) `[verified]` | Phường 1 Bảo Lộc (24823) |
+
+Sources: NSO conversion table and NSO `DMDVHC.asmx` (current units at 06/10/2026; Phường 2 Tân An present at 30/11/2024 and absent at 01/12/2024). The Phường 2 merger is in the Standing Committee resolution of 24 October 2024 on Long An's commune units, effective 1 December 2024 (<https://daibieunhandan.vn/print/10350856.html>). The conversion table omits it, so the import adds it as a curated row in `supabase/seed/reference/legacy_curated.csv`, next to three rows whose old commune code the table misprints. Cross-checked against `tranngocminhhieu/vietnamadminunits` @ `7fac8c4`, which agrees on all five.
 
 ## 5. Rental income tax for individuals, 2026
 
