@@ -7,10 +7,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "env:init": "node -e \"require('node:fs').cpSync('.env.example', 'apps/web/.env.local', { force: false })\"",
-    "dev": "pnpm env:init && pnpm --filter @esta/web dev",
+    "dev": "node scripts/web.ts dev",
     "build": "pnpm --filter @esta/web build",
-    "start": "pnpm --filter @esta/web start",
+    "start": "node scripts/web.ts start",
     "check": "pnpm -r --include-workspace-root run typecheck && pnpm lint && pnpm -r --include-workspace-root run test",
     "typecheck": "tsc --noEmit",
     "test": "vitest run scripts eslint-rules",
@@ -24,7 +23,9 @@
     "db:status": "node scripts/db.ts status",
     "db:reset": "node scripts/db.ts reset",
     "db:types": "node scripts/db.ts types",
-    "db:test": "node scripts/db.ts test"
+    "db:test": "node scripts/db.ts test",
+    "clock:set": "tsx scripts/clock-set.ts",
+    "cron:run": "node scripts/cron-run.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -34,6 +35,7 @@
     "@types/node": "^24.0.0",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3"

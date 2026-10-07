@@ -16,19 +16,18 @@ Locked decisions are in SPEC §3. Do not change them; raise a conflict instead.
 
 Phase 0 makes every command below real. Keep this list accurate as the repo evolves.
 
-Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `PORT` moves the web port.
+Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `ESTA_SLOT=k` (default 0) adds 100·k to every port so stacks run side by side; `pnpm dev`, `pnpm start`, `pnpm clock:set`, `pnpm cron:run`, `pnpm e2e` and every `db:*` command honor it. `PORT` overrides the web port.
 
 | Command | Does |
 | --- | --- |
-| `pnpm env:init` | Copy `.env.example` to `apps/web/.env.local` when that file is missing; only `pnpm dev` runs it |
-| `pnpm dev` | Web app on localhost:3000 against local Supabase |
-| `pnpm build` / `pnpm start` | Production build and server for `apps/web`; build fails on a missing variable; `ESTA_ENV=production` at start hides `/dev/*` |
+| `pnpm dev` | Web app on localhost:3000 + 100·ESTA_SLOT against that slot's local Supabase; copies `.env.example` to `apps/web/.env.local` when that file is missing |
+| `pnpm build` / `pnpm start` | Production build and server for `apps/web`; both fail on a missing variable, including an unset `ESTA_ENV` (required whenever `NODE_ENV=production`); `ESTA_ENV=production` at start hides `/dev/*` and `/api/test/*` |
 | `pnpm dev:lan` | Same, reachable over HTTPS from a phone on the same network (SPEC D13) |
 | `pnpm agent:dev` | Agent worker against local Supabase |
 | `pnpm agent:record` | Run golden agent cases live and refresh replay recordings |
 | `pnpm cron:run` | Call the cron routes locally (invoices, lease status, keep-alive) |
-| `pnpm clock:set <iso>` | Set or advance the test clock (`pnpm clock:set off` clears it) |
-| `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Local Supabase (Docker). Every `db:*` command honors `ESTA_SLOT=k`, which adds 100·k to each port so stacks run side by side |
+| `pnpm clock:set <iso>` | Set or advance the test clock to an ISO date-time with a required offset, such as `2026-10-07T09:00:00+07:00` (`pnpm clock:set off` clears it); writes only to a Supabase on 127.0.0.1 or localhost |
+| `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Local Supabase (Docker) for the slot |
 | `pnpm db:reset` | Apply migrations and the `full` seed; `pnpm db:reset:northstar` for the north-star variant |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |
