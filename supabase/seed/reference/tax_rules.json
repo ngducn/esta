@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "vn_rental_individual",
+    "effective_from": "2026-01-01",
+    "effective_to": null,
+    "params": {
+      "threshold_vnd": 500000000,
+      "threshold_scope": "all_business_revenue_of_person",
+      "vat_rate_bp": 500,
+      "vat_base": "total_rental_revenue_when_over_threshold",
+      "pit_rate_bp": 500,
+      "pit_base": "revenue_above_threshold"
+    },
+    "source_citation": "Luật Thuế TNCN 109/2025/QH15; Luật sửa đổi Luật Thuế GTGT; Nghị định 68/2026/NĐ-CP",
+    "note": "Các nguồn chưa thống nhất phần thuế TNCN áp dụng từ 01/01/2026 hay 01/07/2026. Cần xác minh."
+  }
+]

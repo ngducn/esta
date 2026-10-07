@@ -1,0 +1,599 @@
+{
+  "items": [
+    {
+      "id": 74,
+      "name": "Ngân hàng Thương mại TNHH E.SUN – Chi nhánh Đồng Nai (ESUNBANK)",
+      "code": "ESUN",
+      "bin": "963686",
+      "isTransfer": 0,
+      "filePath": "/icons/ESUN.png"
+    },
+    {
+      "id": 73,
+      "name": "Ngân hàng Bank of China (Hong Kong) Limited – Chi nhánh Hồ Chí Minh",
+      "code": "BOCHK",
+      "bin": "963688",
+      "isTransfer": 0,
+      "filePath": "/icons/BOCHK.png"
+    },
+    {
+      "id": 72,
+      "name": "Ngân hàng SinoPac - Chi nhánh Thành phố Hồ Chí Minh",
+      "code": "BSP",
+      "bin": "970465",
+      "isTransfer": 0,
+      "filePath": "/icons/BSP.png"
+    },
+    {
+      "id": 71,
+      "name": "Ngân hàng Đầu Tư Và Phát Triển Campuchia - Chi nhánh Hà Nội",
+      "code": "BIDC",
+      "bin": "555666",
+      "isTransfer": 0,
+      "filePath": "/icons/BIDC.png"
+    },
+    {
+      "id": 70,
+      "name": "TNEX by MSB",
+      "code": "TNEX",
+      "bin": "963326",
+      "isTransfer": 0,
+      "filePath": "/icons/TNEX.png"
+    },
+    {
+      "id": 69,
+      "name": "Ngân hàng Công thương Trung Quốc – Chi nhánh thành phố Hà Nội",
+      "code": "ICBC",
+      "bin": "963669",
+      "isTransfer": 0,
+      "filePath": "/icons/ICBC.png"
+    },
+    {
+      "id": 68,
+      "name": "Ngân hàng số PVcomBank",
+      "code": "PVCB Pay",
+      "bin": "971133",
+      "isTransfer": 1,
+      "filePath": "/icons/PVCB%20Pay.png"
+    },
+    {
+      "id": 67,
+      "name": "Trung tâm Dịch vụ số Mobifone – Chi nhánh Tổng Công ty viễn thông Mobifone",
+      "code": "MVAS",
+      "bin": "971032",
+      "isTransfer": 1,
+      "filePath": "/icons/MVAS.png"
+    },
+    {
+      "id": 66,
+      "name": "Ngân hàng Cathay United Bank – Chi nhánh Hồ Chí Minh",
+      "code": "CUBHCM",
+      "bin": "168999",
+      "isTransfer": 0,
+      "filePath": "/icons/CUB.png"
+    },
+    {
+      "id": 65,
+      "name": "Ngân hàng BNP Paribas – Chi nhánh Thành phố Hồ Chí Minh",
+      "code": "BNP HCM",
+      "bin": "963666",
+      "isTransfer": 0,
+      "filePath": "/icons/BNP.png"
+    },
+    {
+      "id": 64,
+      "name": "Ngân hàng BNP Paribas – Chi nhánh Hà Nội",
+      "code": "BNP HN",
+      "bin": "963668",
+      "isTransfer": 0,
+      "filePath": "/icons/BNP.png"
+    },
+    {
+      "id": 63,
+      "name": "Ngân hàng Citibank, N.A. - Chi nhánh Hà Nội",
+      "code": "CITIBANK",
+      "bin": "533948",
+      "isTransfer": 0,
+      "filePath": "/icons/CITIBANK.png"
+    },
+    {
+      "id": 62,
+      "name": "Công ty Tài chính TNHH MTV Mirae Asset (Việt Nam) ",
+      "code": "MAFC",
+      "bin": "977777",
+      "isTransfer": 0,
+      "filePath": "/icons/MAFC.png"
+    },
+    {
+      "id": 61,
+      "name": "Ngân hàng Chính sách Xã hội",
+      "code": "VBSP",
+      "bin": "999888",
+      "isTransfer": 0,
+      "filePath": "/icons/VBSP.png"
+    },
+    {
+      "id": 60,
+      "name": "Ngân hàng KEB Hana – Chi nhánh Hà Nội",
+      "code": "KEBHANAHN",
+      "bin": "970467",
+      "isTransfer": 0,
+      "filePath": "/icons/KEBHANAHN.png"
+    },
+    {
+      "id": 59,
+      "name": "Ngân hàng KEB Hana – Chi nhánh Thành phố Hồ Chí Minh",
+      "code": "KEBHANAHCM",
+      "bin": "970466",
+      "isTransfer": 0,
+      "filePath": "/icons/KEBHANAHCM.png"
+    },
+    {
+      "id": 58,
+      "name": "Ngân hàng số Timo by Ban Viet Bank (Timo by Ban Viet Bank)",
+      "code": "TIMO",
+      "bin": "963388",
+      "isTransfer": 1,
+      "filePath": "/icons/TIMO.png"
+    },
+    {
+      "id": 57,
+      "name": "Tổng Công ty Dịch vụ số Viettel - Chi nhánh tập đoàn công nghiệp viễn thông Quân Đội",
+      "code": "VTLMONEY",
+      "bin": "971005",
+      "isTransfer": 0,
+      "filePath": "/icons/VTLMONEY.png"
+    },
+    {
+      "id": 56,
+      "name": "Trung tâm dịch vụ tài chính số VNPT- Chi nhánh Tổng công ty truyền thông (VNPT Fintech)",
+      "code": "VNPTMONEY",
+      "bin": "971011",
+      "isTransfer": 0,
+      "filePath": "/icons/VNPTMONEY.png"
+    },
+    {
+      "id": 55,
+      "name": "Ngân hàng Đại chúng TNHH Kasikornbank",
+      "code": "KBank",
+      "bin": "668888",
+      "isTransfer": 1,
+      "filePath": "/icons/KBank.png"
+    },
+    {
+      "id": 54,
+      "name": "TMCP Việt Nam Thịnh Vượng - Ngân hàng số Ubank by VPBank",
+      "code": "Ubank",
+      "bin": "546035",
+      "isTransfer": 1,
+      "filePath": "/icons/Ubank.png"
+    },
+    {
+      "id": 53,
+      "name": "TMCP Việt Nam Thịnh Vượng - Ngân hàng số CAKE by VPBank",
+      "code": "CAKE",
+      "bin": "546034",
+      "isTransfer": 1,
+      "filePath": "/icons/CAKE.png"
+    },
+    {
+      "id": 52,
+      "name": "Ngân hàng Hợp tác xã Việt Nam",
+      "code": "COOPBANK",
+      "bin": "970446",
+      "isTransfer": 1,
+      "filePath": "/icons/COOPBANK.png"
+    },
+    {
+      "id": 51,
+      "name": "Ngân hàng Kookmin - Chi nhánh Thành phố Hồ Chí Minh",
+      "code": "KBHCM",
+      "bin": "970463",
+      "isTransfer": 1,
+      "filePath": "/icons/KB.png"
+    },
+    {
+      "id": 50,
+      "name": "Ngân hàng Kookmin - Chi nhánh Hà Nội",
+      "code": "KBHN",
+      "bin": "970462",
+      "isTransfer": 1,
+      "filePath": "/icons/KB.png"
+    },
+    {
+      "id": 49,
+      "name": "Ngân hàng TNHH MTV Woori Việt Nam",
+      "code": "WVN",
+      "bin": "970457",
+      "isTransfer": 1,
+      "filePath": "/icons/WVN.png"
+    },
+    {
+      "id": 48,
+      "name": "Ngân hàng Liên doanh Việt - Nga",
+      "code": "VRB",
+      "bin": "970421",
+      "isTransfer": 0,
+      "filePath": "/icons/VRB.png"
+    },
+    {
+      "id": 47,
+      "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng",
+      "code": "VPB",
+      "bin": "970432",
+      "isTransfer": 1,
+      "filePath": "/icons/VPB.png"
+    },
+    {
+      "id": 46,
+      "name": "Ngân hàng TMCP Việt Nam Thương Tín",
+      "code": "VIETBANK",
+      "bin": "970433",
+      "isTransfer": 1,
+      "filePath": "/icons/VIETBANK.png"
+    },
+    {
+      "id": 45,
+      "name": "Ngân hàng TMCP Quốc tế Việt Nam",
+      "code": "VIB",
+      "bin": "970441",
+      "isTransfer": 1,
+      "filePath": "/icons/VIB.png"
+    },
+    {
+      "id": 44,
+      "name": "Ngân hàng TMCP Bản Việt",
+      "code": "VCCB",
+      "bin": "970454",
+      "isTransfer": 1,
+      "filePath": "/icons/VCCB.png"
+    },
+    {
+      "id": 43,
+      "name": "Ngân hàng TMCP Ngoại Thương Việt Nam",
+      "code": "VCB",
+      "bin": "970436",
+      "isTransfer": 1,
+      "filePath": "/icons/VCB.png"
+    },
+    {
+      "id": 42,
+      "name": "Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam",
+      "code": "VBA",
+      "bin": "970405",
+      "isTransfer": 1,
+      "filePath": "/icons/VBA.png"
+    },
+    {
+      "id": 41,
+      "name": "Ngân hàng TMCP Việt Á",
+      "code": "VAB",
+      "bin": "970427",
+      "isTransfer": 1,
+      "filePath": "/icons/VAB.png"
+    },
+    {
+      "id": 40,
+      "name": "Ngân hàng United Overseas - Chi nhánh TP. Hồ Chí Minh",
+      "code": "UOB",
+      "bin": "970458",
+      "isTransfer": 0,
+      "filePath": "/icons/UOB.png"
+    },
+    {
+      "id": 39,
+      "name": "Ngân hàng TMCP Tiên Phong",
+      "code": "TPB",
+      "bin": "970423",
+      "isTransfer": 1,
+      "filePath": "/icons/TPB.png"
+    },
+    {
+      "id": 38,
+      "name": "Ngân hàng TMCP Kỹ thương Việt Nam",
+      "code": "TCB",
+      "bin": "970407",
+      "isTransfer": 1,
+      "filePath": "/icons/TCB.png"
+    },
+    {
+      "id": 37,
+      "name": "Ngân hàng TNHH MTV Shinhan Việt Nam",
+      "code": "SHBVN",
+      "bin": "970424",
+      "isTransfer": 1,
+      "filePath": "/icons/SHBVN.png"
+    },
+    {
+      "id": 36,
+      "name": "Ngân hàng TMCP Sài Gòn Tài Lộc",
+      "code": "SACOMBANK",
+      "bin": "970403",
+      "isTransfer": 1,
+      "filePath": "/icons/SACOMBANK.png"
+    },
+    {
+      "id": 35,
+      "name": "Ngân hàng TMCP Sài Gòn - Hà Nội",
+      "code": "SHB",
+      "bin": "970443",
+      "isTransfer": 1,
+      "filePath": "/icons/SHB.png"
+    },
+    {
+      "id": 34,
+      "name": "Ngân hàng TMCP Sài Gòn Công Thương",
+      "code": "SGICB",
+      "bin": "970400",
+      "isTransfer": 1,
+      "filePath": "/icons/SGICB.png"
+    },
+    {
+      "id": 33,
+      "name": "Ngân hàng TMCP Đông Nam Á",
+      "code": "SEAB",
+      "bin": "970440",
+      "isTransfer": 1,
+      "filePath": "/icons/SEAB.png"
+    },
+    {
+      "id": 32,
+      "name": "Ngân hàng TNHH MTV Standard Chartered Bank Việt Nam",
+      "code": "SCVN",
+      "bin": "970410",
+      "isTransfer": 0,
+      "filePath": "/icons/SCVN.png"
+    },
+    {
+      "id": 31,
+      "name": "Ngân hàng TMCP Sài Gòn",
+      "code": "SCB",
+      "bin": "970429",
+      "isTransfer": 1,
+      "filePath": "/icons/SCB.png"
+    },
+    {
+      "id": 30,
+      "name": "Ngân hàng TMCP Đại Chúng Việt Nam",
+      "code": "PVCB",
+      "bin": "970412",
+      "isTransfer": 1,
+      "filePath": "/icons/PVCB.png"
+    },
+    {
+      "id": 29,
+      "name": "Ngân hàng TMCP Thịnh vượng và Phát triển",
+      "code": "PGBank",
+      "bin": "970430",
+      "isTransfer": 1,
+      "filePath": "/icons/PGB.png"
+    },
+    {
+      "id": 28,
+      "name": "Ngân hàng TNHH MTV Public Việt Nam",
+      "code": "PBVN",
+      "bin": "970439",
+      "isTransfer": 0,
+      "filePath": "/icons/PBVN.png"
+    },
+    {
+      "id": 27,
+      "name": "Ngân hàng TNHH MTV Việt Nam Hiện Đại",
+      "code": "MBV",
+      "bin": "970414",
+      "isTransfer": 1,
+      "filePath": "/icons/MBV.png"
+    },
+    {
+      "id": 26,
+      "name": "Ngân hàng TMCP Phương Đông",
+      "code": "OCB",
+      "bin": "970448",
+      "isTransfer": 1,
+      "filePath": "/icons/OCB.png"
+    },
+    {
+      "id": 25,
+      "name": "Ngân hàng Nonghyup - Chi nhánh Hà Nội",
+      "code": "NHB HN",
+      "bin": "801011",
+      "isTransfer": 0,
+      "filePath": "/icons/NHB%20HN.png"
+    },
+    {
+      "id": 24,
+      "name": "Ngân hàng TMCP Quốc Dân",
+      "code": "NCB",
+      "bin": "970419",
+      "isTransfer": 1,
+      "filePath": "/icons/NCB.png"
+    },
+    {
+      "id": 23,
+      "name": "Ngân hàng TMCP Nam Á",
+      "code": "NAB",
+      "bin": "970428",
+      "isTransfer": 1,
+      "filePath": "/icons/NAB.png"
+    },
+    {
+      "id": 22,
+      "name": "Ngân hàng TMCP Hàng Hải",
+      "code": "MSB",
+      "bin": "970426",
+      "isTransfer": 1,
+      "filePath": "/icons/MSB.png"
+    },
+    {
+      "id": 21,
+      "name": "Ngân hàng TMCP Quân đội",
+      "code": "MB",
+      "bin": "970422",
+      "isTransfer": 1,
+      "filePath": "/icons/MB.png"
+    },
+    {
+      "id": 20,
+      "name": "Ngân hàng TMCP Lộc Phát Việt Nam",
+      "code": "LPBANK",
+      "bin": "970449",
+      "isTransfer": 1,
+      "filePath": "/icons/LPBANK.png"
+    },
+    {
+      "id": 19,
+      "name": "Ngân hàng TMCP Kiên Long",
+      "code": "KLB",
+      "bin": "970452",
+      "isTransfer": 1,
+      "filePath": "/icons/KLB.png"
+    },
+    {
+      "id": 18,
+      "name": "Ngân hàng TNHH Indovina",
+      "code": "IVB",
+      "bin": "970434",
+      "isTransfer": 1,
+      "filePath": "/icons/IVB.png"
+    },
+    {
+      "id": 17,
+      "name": "Ngân hàng TMCP Công thương Việt Nam",
+      "code": "ICB",
+      "bin": "970415",
+      "isTransfer": 1,
+      "filePath": "/icons/ICB.png"
+    },
+    {
+      "id": 16,
+      "name": "Ngân hàng Công nghiệp Hàn Quốc - Chi nhánh TP. Hồ Chí Minh",
+      "code": "IBK - HCM",
+      "bin": "970456",
+      "isTransfer": 0,
+      "filePath": "/icons/IBK.png"
+    },
+    {
+      "id": 15,
+      "name": "Ngân hàng Công nghiệp Hàn Quốc - Chi nhánh Hà Nội",
+      "code": "IBK - HN",
+      "bin": "970455",
+      "isTransfer": 0,
+      "filePath": "/icons/IBK.png"
+    },
+    {
+      "id": 14,
+      "name": "Ngân hàng TNHH MTV HSBC (Việt Nam)",
+      "code": "HSBC",
+      "bin": "458761",
+      "isTransfer": 0,
+      "filePath": "/icons/HSBC.png"
+    },
+    {
+      "id": 13,
+      "name": "Ngân hàng TNHH MTV Hong Leong Việt Nam",
+      "code": "HLBVN",
+      "bin": "970442",
+      "isTransfer": 0,
+      "filePath": "/icons/HLBVN.png"
+    },
+    {
+      "id": 12,
+      "name": "Ngân hàng TMCP Phát triển Thành phố Hồ Chí Minh",
+      "code": "HDB",
+      "bin": "970437",
+      "isTransfer": 1,
+      "filePath": "/icons/HDB.png"
+    },
+    {
+      "id": 11,
+      "name": "Ngân hàng Thương mại TNHH MTV Dầu Khí Toàn Cầu",
+      "code": "GPB",
+      "bin": "970408",
+      "isTransfer": 0,
+      "filePath": "/icons/GPB.png"
+    },
+    {
+      "id": 10,
+      "name": "Ngân hàng TMCP Xuất Nhập khẩu Việt Nam",
+      "code": "EIB",
+      "bin": "970431",
+      "isTransfer": 1,
+      "filePath": "/icons/EIB.png"
+    },
+    {
+      "id": 9,
+      "name": "Ngân hàng TNHH Một thành viên số Vikki",
+      "code": "DOB",
+      "bin": "970406",
+      "isTransfer": 0,
+      "filePath": "/icons/DOB.png"
+    },
+    {
+      "id": 8,
+      "name": "DBS Bank Ltd - Chi nhánh Thành phố Hồ Chí Minh",
+      "code": "DBS",
+      "bin": "796500",
+      "isTransfer": 0,
+      "filePath": "/icons/DBS.png"
+    },
+    {
+      "id": 7,
+      "name": "Ngân hàng TNHH MTV CIMB Việt Nam",
+      "code": "CIMB",
+      "bin": "422589",
+      "isTransfer": 1,
+      "filePath": "/icons/CIMB.png"
+    },
+    {
+      "id": 6,
+      "name": "Ngân hàng Thương mại trách nhiệm hữu hạn một thành viên Ngoại thương Công nghệ số (Vietcombank Neo Limited)",
+      "code": "VCBNeo",
+      "bin": "970444",
+      "isTransfer": 1,
+      "filePath": "/icons/VCBNeo.png"
+    },
+    {
+      "id": 5,
+      "name": "Ngân hàng TMCP Bảo Việt",
+      "code": "BVB",
+      "bin": "970438",
+      "isTransfer": 1,
+      "filePath": "/icons/BVB.png"
+    },
+    {
+      "id": 4,
+      "name": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
+      "code": "BIDV",
+      "bin": "970418",
+      "isTransfer": 1,
+      "filePath": "/icons/BIDV.png"
+    },
+    {
+      "id": 3,
+      "name": "Ngân hàng TMCP Bắc Á",
+      "code": "BAB",
+      "bin": "970409",
+      "isTransfer": 1,
+      "filePath": "/icons/BAB.png"
+    },
+    {
+      "id": 2,
+      "name": "Ngân hàng TMCP Á Châu",
+      "code": "ACB",
+      "bin": "970416",
+      "isTransfer": 1,
+      "filePath": "/icons/ACB.png"
+    },
+    {
+      "id": 1,
+      "name": "Ngân hàng TMCP An Bình",
+      "code": "ABBank",
+      "bin": "970425",
+      "isTransfer": 1,
+      "filePath": "/icons/ABB.png"
+    }
+  ],
+  "currentPage": 0,
+  "totalItems": 74,
+  "totalPages": 1
+}
