@@ -25,7 +25,7 @@ const BASE_PORTS: SlotPorts = {
 
 const SLOT_STRIDE = 100;
 const MAX_SLOT = 99;
-const SHARED_DIRS = ['migrations', 'seed', 'tests'] as const;
+const SHARED_DIRS = ['migrations', 'seed', 'templates', 'tests'] as const;
 
 export function parseSlot(raw: string | undefined): number {
   if (raw === undefined || raw === '') return 0;

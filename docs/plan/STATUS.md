@@ -13,9 +13,3 @@
 ## Needs professional confirmation
 
 - Whether the 2026 rental PIT applies from 1 January or 1 July 2026 (DOMAIN-VN §5). The `tax_rules` row from P0-06 uses 1 January and carries a note that says so.
-
-## Carry-forward notes
-
-- P0-09: once a session client exists, move the `/dev/core` address lookup (`apps/web/src/app/dev/core/suggest.ts`) from the anon key to the user's session client. P0-06 lets `anon` read `admin_units` and `admin_unit_legacy_map` only because the lookup runs before sign-in; drop that grant if no signed-out surface needs it.
-
-- P0-09: once members have a locale, the language switch must write the member's locale as well as the `NEXT_LOCALE` cookie, because `resolveLocale` prefers the member locale over the cookie (from the P0-05 review).
