@@ -71,5 +71,148 @@
     "signedInAs": "You are signed in as {name}.",
     "signedIn": "You are signed in.",
     "signOut": "Sign out"
+  },
+  "components": {
+    "loading": "Loading",
+    "money": {
+      "examples": "For example: 3tr5, 850k or 3.500.000",
+      "invalid": "The amount is not right.",
+      "reasons": {
+        "invalid": "Write the amount like 3.500.000, 3tr5 or 850k.",
+        "fractional": "Đồng have no fractions. Drop the decimal part and try again.",
+        "too_large": "This is more than Esta can record.",
+        "ambiguous_separators": "Use dots to group thousands, for example 1.500.000.",
+        "ambiguous_shorthand": "Write 3tr5 or 3,5tr, not both at once."
+      }
+    },
+    "date": {
+      "examples": "Enter day/month/year, for example 07/10/2026",
+      "placeholder": "dd/mm/yyyy",
+      "pick": "Pick a date",
+      "invalid": "The date is not right.",
+      "reasons": {
+        "invalid": "Use day/month/year, for example 07/10/2026.",
+        "impossible": "This day is not on the calendar."
+      }
+    },
+    "status": {
+      "paid": "Paid",
+      "due": "Due",
+      "overdue": "{days, plural, one {# day} other {# days}} overdue",
+      "vacant": "Vacant",
+      "draft": "Draft",
+      "ended": "Ended"
+    },
+    "completeness": {
+      "missing": "{count, plural, =0 {Complete} one {# item missing} other {# items missing}}",
+      "percent": "{percent}% complete."
+    },
+    "address": {
+      "current": "Current",
+      "legal": "On the certificate",
+      "same": "On the certificate and current",
+      "none": "No address yet"
+    },
+    "table": {
+      "selectAll": "Select all",
+      "selected": "{count} selected",
+      "selectRow": "Select {name}",
+      "selectColumn": "Select row"
+    },
+    "toast": {
+      "undo": "Undo"
+    },
+    "confirm": {
+      "cancel": "Go back"
+    }
+  },
+  "devComponents": {
+    "title": "Interface components",
+    "intro": "Every component in every state. This page exists only in development.",
+    "names": {
+      "button": "Button",
+      "input": "Input",
+      "checkbox": "Checkbox",
+      "moneyDisplay": "Amount",
+      "moneyInput": "Amount input",
+      "dateInput": "Date input",
+      "statusMark": "Status",
+      "completenessRing": "Completeness",
+      "addressBlock": "Address",
+      "dataTable": "Table",
+      "undoToast": "Toast with undo",
+      "confirmDialog": "Confirm dialog",
+      "sheet": "Sheet",
+      "emptyState": "Empty state"
+    },
+    "states": {
+      "default": "Default",
+      "focus": "Focused",
+      "disabled": "Disabled",
+      "error": "Error",
+      "loading": "Loading",
+      "empty": "Empty",
+      "long": "Long text",
+      "filled": "Filled",
+      "checked": "Checked",
+      "compact": "Compact",
+      "signed": "Signed",
+      "large": "Large",
+      "same": "Both addresses match",
+      "complete": "Complete"
+    },
+    "samples": {
+      "record": "Record payment",
+      "viewLease": "View lease",
+      "skip": "Skip",
+      "saving": "Saving…",
+      "longAction": "Record October rent for Room 3, Nhà trọ Demo Dĩ An",
+      "nicknameLabel": "Nickname",
+      "nickname": "Nhà trọ Demo Dĩ An",
+      "nicknameMissing": "Enter a nickname for the property.",
+      "longNickname": "Nhà phố Demo số 128/45/12 Hẻm Nguyễn Văn Ước, Khu phố Đông Hòa, Phường Dĩ An",
+      "remind": "Remind on Zalo",
+      "longRemind": "Remind tenants on Zalo three days before rent is due, every month, for every room",
+      "amountLabel": "Amount received",
+      "longAmountLabel": "October rent for Room 12, Nhà trọ Demo Dĩ An, including electricity and water",
+      "emitted": "Value emitted: {value}",
+      "emittedNone": "Value emitted: none",
+      "dateLabel": "Lease start date",
+      "longDateLabel": "The day the tenant moves into Room 12, Nhà trọ Demo Dĩ An under the new lease",
+      "currentAddress": "Số 12 Đường Demo, Phường Dĩ An, Thành phố Hồ Chí Minh",
+      "legalAddress": "Số 12 Đường Demo, Phường Dĩ An, Thị xã Dĩ An, Tỉnh Bình Dương",
+      "longCurrentAddress": "Số 128/45/12 Hẻm Demo Nguyễn Văn Ước, Khu phố Đông Hòa, Phường Dĩ An, Thành phố Hồ Chí Minh",
+      "longLegalAddress": "Thửa đất số 1234, tờ bản đồ số 56, Số 128/45/12 Hẻm Demo Nguyễn Văn Ước, Khu phố Đông Hòa, Phường Dĩ An, Thị xã Dĩ An, Tỉnh Bình Dương",
+      "tableCaption": "October rent",
+      "unitHeader": "Room",
+      "tenantHeader": "Tenant",
+      "statusHeader": "Status",
+      "amountHeader": "Amount",
+      "unit": "Room {n}",
+      "tableEmptyTitle": "No rent is due in October yet.",
+      "tableEmptyBody": "Once a lease is active, the month's rent shows here.",
+      "tableEmptyAction": "Add a lease",
+      "recordFrom": "Record {amount} from {unit}",
+      "recorded": "Recorded {amount} from {unit}.",
+      "longRecorded": "Recorded {amount} from Nguyễn Thị Demo Hường, Room 12, Nhà trọ Demo Dĩ An, for October rent and electricity.",
+      "unpaidLine": "{unit}: not paid",
+      "paidLine": "{unit}: paid {amount}",
+      "endLease": "End lease",
+      "endLeaseTitle": "End the lease for {unit} from {date}?",
+      "endLeaseBody": "The room is vacant from this day. Esta keeps the lease and every payment.",
+      "longEndLeaseTitle": "End the lease for Room 12, Nhà trọ Demo Dĩ An with Nguyễn Thị Demo Hường from {date}?",
+      "leaseActive": "Lease for {unit}: active",
+      "leaseEnded": "Lease for {unit}: ended",
+      "openSheet": "Open the record sheet",
+      "sheetTitle": "Record payment",
+      "sheetBody": "Room 3, October rent.",
+      "close": "Close",
+      "emptyTitle": "No properties yet.",
+      "emptyBody": "Add the first property from a certificate photo or by hand.",
+      "emptyAction": "Add a property",
+      "longEmptyTitle": "No documents yet for Nhà phố Demo số 128/45/12 Hẻm Nguyễn Văn Ước.",
+      "longEmptyBody": "Photograph a certificate, a lease or a tax receipt with your phone. Esta reads it and suggests details for you to check.",
+      "longEmptyAction": "Photograph the first document"
+    }
   }
 }

@@ -71,5 +71,148 @@
     "signedInAs": "Bạn đang đăng nhập với tên {name}.",
     "signedIn": "Bạn đã đăng nhập.",
     "signOut": "Đăng xuất"
+  },
+  "components": {
+    "loading": "Đang tải",
+    "money": {
+      "examples": "Ví dụ: 3tr5, 850k hoặc 3.500.000",
+      "invalid": "Số tiền chưa đúng.",
+      "reasons": {
+        "invalid": "Viết số tiền như 3.500.000, 3tr5 hoặc 850k.",
+        "fractional": "Tiền đồng không có số lẻ. Bỏ phần lẻ rồi nhập lại.",
+        "too_large": "Số này lớn hơn mức Esta ghi được.",
+        "ambiguous_separators": "Dùng dấu chấm để tách hàng nghìn, ví dụ 1.500.000.",
+        "ambiguous_shorthand": "Viết 3tr5 hoặc 3,5tr, không dùng cả hai cách cùng lúc."
+      }
+    },
+    "date": {
+      "examples": "Nhập ngày/tháng/năm, ví dụ 07/10/2026",
+      "placeholder": "dd/mm/yyyy",
+      "pick": "Chọn ngày",
+      "invalid": "Ngày chưa đúng.",
+      "reasons": {
+        "invalid": "Nhập theo dạng ngày/tháng/năm, ví dụ 07/10/2026.",
+        "impossible": "Ngày này không có trên lịch."
+      }
+    },
+    "status": {
+      "paid": "Đã thu",
+      "due": "Đến hạn",
+      "overdue": "Quá hạn {days, plural, other {# ngày}}",
+      "vacant": "Phòng trống",
+      "draft": "Bản nháp",
+      "ended": "Đã kết thúc"
+    },
+    "completeness": {
+      "missing": "{count, plural, =0 {Đủ thông tin} other {Thiếu # mục}}",
+      "percent": "Đầy đủ {percent}%."
+    },
+    "address": {
+      "current": "Hiện nay",
+      "legal": "Theo sổ",
+      "same": "Theo sổ và hiện nay",
+      "none": "Chưa có địa chỉ"
+    },
+    "table": {
+      "selectAll": "Chọn tất cả",
+      "selected": "Đã chọn {count}",
+      "selectRow": "Chọn {name}",
+      "selectColumn": "Chọn dòng"
+    },
+    "toast": {
+      "undo": "Hoàn tác"
+    },
+    "confirm": {
+      "cancel": "Quay lại"
+    }
+  },
+  "devComponents": {
+    "title": "Thành phần giao diện",
+    "intro": "Mỗi thành phần ở mọi trạng thái. Trang này chỉ có khi phát triển.",
+    "names": {
+      "button": "Nút",
+      "input": "Ô nhập",
+      "checkbox": "Ô chọn",
+      "moneyDisplay": "Số tiền",
+      "moneyInput": "Ô nhập số tiền",
+      "dateInput": "Ô nhập ngày",
+      "statusMark": "Trạng thái",
+      "completenessRing": "Mức đầy đủ",
+      "addressBlock": "Địa chỉ",
+      "dataTable": "Bảng",
+      "undoToast": "Thông báo có hoàn tác",
+      "confirmDialog": "Hộp xác nhận",
+      "sheet": "Bảng trượt",
+      "emptyState": "Khi chưa có gì"
+    },
+    "states": {
+      "default": "Mặc định",
+      "focus": "Đang chọn",
+      "disabled": "Không dùng được",
+      "error": "Có lỗi",
+      "loading": "Đang tải",
+      "empty": "Trống",
+      "long": "Chữ dài",
+      "filled": "Đã nhập",
+      "checked": "Đã đánh dấu",
+      "compact": "Rút gọn",
+      "signed": "Có dấu",
+      "large": "Số lớn",
+      "same": "Hai địa chỉ trùng nhau",
+      "complete": "Đủ thông tin"
+    },
+    "samples": {
+      "record": "Ghi nhận thanh toán",
+      "viewLease": "Xem hợp đồng",
+      "skip": "Bỏ qua",
+      "saving": "Đang lưu…",
+      "longAction": "Ghi nhận tiền thuê tháng 10 của Phòng 3, Nhà trọ Demo Dĩ An",
+      "nicknameLabel": "Tên gợi nhớ",
+      "nickname": "Nhà trọ Demo Dĩ An",
+      "nicknameMissing": "Nhập tên gợi nhớ cho tài sản.",
+      "longNickname": "Nhà phố Demo số 128/45/12 Hẻm Nguyễn Văn Ước, Khu phố Đông Hòa, Phường Dĩ An",
+      "remind": "Nhắc qua Zalo",
+      "longRemind": "Nhắc người thuê qua Zalo ba ngày trước hạn đóng tiền, mỗi tháng, cho tất cả các phòng",
+      "amountLabel": "Số tiền đã nhận",
+      "longAmountLabel": "Số tiền thuê tháng 10 của Phòng 12, Nhà trọ Demo Dĩ An, gồm điện và nước",
+      "emitted": "Giá trị nhận được: {value}",
+      "emittedNone": "Giá trị nhận được: chưa có",
+      "dateLabel": "Ngày bắt đầu hợp đồng",
+      "longDateLabel": "Ngày người thuê dọn đến Phòng 12, Nhà trọ Demo Dĩ An theo hợp đồng mới",
+      "currentAddress": "Số 12 Đường Demo, Phường Dĩ An, Thành phố Hồ Chí Minh",
+      "legalAddress": "Số 12 Đường Demo, Phường Dĩ An, Thị xã Dĩ An, Tỉnh Bình Dương",
+      "longCurrentAddress": "Số 128/45/12 Hẻm Demo Nguyễn Văn Ước, Khu phố Đông Hòa, Phường Dĩ An, Thành phố Hồ Chí Minh",
+      "longLegalAddress": "Thửa đất số 1234, tờ bản đồ số 56, Số 128/45/12 Hẻm Demo Nguyễn Văn Ước, Khu phố Đông Hòa, Phường Dĩ An, Thị xã Dĩ An, Tỉnh Bình Dương",
+      "tableCaption": "Tiền thuê tháng 10",
+      "unitHeader": "Phòng",
+      "tenantHeader": "Người thuê",
+      "statusHeader": "Trạng thái",
+      "amountHeader": "Số tiền",
+      "unit": "Phòng {n}",
+      "tableEmptyTitle": "Chưa có khoản thu nào trong tháng 10.",
+      "tableEmptyBody": "Khi có hợp đồng đang cho thuê, các khoản thu của tháng sẽ hiện ở đây.",
+      "tableEmptyAction": "Thêm hợp đồng",
+      "recordFrom": "Ghi nhận {amount} từ {unit}",
+      "recorded": "Đã ghi nhận {amount} từ {unit}.",
+      "longRecorded": "Đã ghi nhận {amount} từ Nguyễn Thị Demo Hường, Phòng 12, Nhà trọ Demo Dĩ An, tiền thuê tháng 10 và tiền điện.",
+      "unpaidLine": "{unit}: chưa thu",
+      "paidLine": "{unit}: đã thu {amount}",
+      "endLease": "Kết thúc hợp đồng",
+      "endLeaseTitle": "Kết thúc hợp đồng {unit} từ ngày {date}?",
+      "endLeaseBody": "Phòng sẽ trống từ ngày này. Esta vẫn giữ hợp đồng và các khoản đã thu.",
+      "longEndLeaseTitle": "Kết thúc hợp đồng Phòng 12, Nhà trọ Demo Dĩ An với Nguyễn Thị Demo Hường từ ngày {date}?",
+      "leaseActive": "Hợp đồng {unit}: đang thuê",
+      "leaseEnded": "Hợp đồng {unit}: đã kết thúc",
+      "openSheet": "Mở bảng ghi nhận",
+      "sheetTitle": "Ghi nhận thanh toán",
+      "sheetBody": "Phòng 3, tiền thuê tháng 10.",
+      "close": "Đóng",
+      "emptyTitle": "Chưa có tài sản nào.",
+      "emptyBody": "Thêm tài sản đầu tiên bằng ảnh sổ hoặc nhập tay.",
+      "emptyAction": "Thêm tài sản",
+      "longEmptyTitle": "Chưa có giấy tờ nào cho Nhà phố Demo số 128/45/12 Hẻm Nguyễn Văn Ước.",
+      "longEmptyBody": "Chụp sổ hồng, hợp đồng thuê hoặc biên lai thuế bằng điện thoại. Esta đọc giấy tờ và đề xuất thông tin để bạn kiểm tra lại.",
+      "longEmptyAction": "Chụp giấy tờ đầu tiên"
+    }
   }
 }
