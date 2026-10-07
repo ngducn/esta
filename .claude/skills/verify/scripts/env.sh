@@ -65,8 +65,6 @@ stack_running() {
   docker inspect -f '{{.State.Running}}' "$DB_CONTAINER" 2>/dev/null | grep -q true
 }
 
-# The stack serves auth settings and email templates from the checkout that started it, and
-# `pnpm db:reset` reloads neither, so Launch compares this against the marker it wrote.
 stack_fingerprint() {
   (
     cd "$REPO_ROOT"

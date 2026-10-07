@@ -47,7 +47,7 @@ State lives per slot in `/tmp/esta-verify/slot-<n>/`, one directory that every c
 
 Ready means `http://localhost:<web port>/sign-in` answers 200, and Launch prints `Ready: ... after <s> s`. From a stopped slot this takes about 56 s, most of it Supabase start (about 22 s) and reset (about 28 s). Running Launch again on a live slot reseeds the database and reuses the running server.
 
-A reset reloads neither auth settings nor email templates, and Kong serves the templates from the checkout that started the stack. So a slot needs a full stop and start when you switch it to another checkout or worktree, and after any edit to `supabase/config.toml` or `supabase/templates/*`, including a merge or rebase that touches them. Launch does this itself. When the `stack` marker names another checkout or another hash, it prints `Restarting slot <n> because ...`, stops the web server and the stack, and starts both from the current checkout.
+Auth reads `supabase/config.toml` only when the stack starts, and Kong serves the email templates from the slot directory of the checkout that started it. Whether Docker shows a template edited in place depends on the platform. So a slot needs a full stop and start when you switch it to another checkout or worktree, and after any edit to `supabase/config.toml` or `supabase/templates/*`, including a merge or rebase that touches them. Launch does this itself. When the `stack` marker names another checkout or another hash, it prints `Restarting slot <n> because ...`, stops the web server and the stack, and starts both from the current checkout.
 
 Launch refuses a web port held by a process it did not start, and a running stack with no `stack` marker. Pick another slot instead of driving someone else's stack.
 

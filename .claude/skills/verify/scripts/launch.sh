@@ -29,7 +29,7 @@ if [[ -f "$STACK_MARKER" ]]; then
     else
       reason="supabase/config.toml or supabase/templates changed since it started"
     fi
-    echo "Restarting slot $ESTA_SLOT because $reason. A reset reloads neither auth settings nor templates, so Launch stops the web server and the stack, then starts both from $REPO_ROOT."
+    echo "Restarting slot $ESTA_SLOT because $reason. Auth reads config.toml only at start and Kong serves the templates of the checkout that started it, so Launch stops the web server and the stack, then starts both from $REPO_ROOT."
     stop_web
     if stack_running; then
       pnpm --silent db:stop >"$RUN_DIR/db-stop.log" 2>&1 || { tail -20 "$RUN_DIR/db-stop.log" >&2; exit 1; }
