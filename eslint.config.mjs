@@ -53,6 +53,8 @@ export default defineConfig(
   },
   {
     files: ['apps/web/**/*.tsx'],
+    // Tests pass fixture text such as an address or a label as props; it never reaches a user.
+    ignores: ['apps/web/**/*.test.tsx'],
     rules: { 'esta/no-jsx-literals': 'error' },
   },
   {
