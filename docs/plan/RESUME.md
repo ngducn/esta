@@ -1,36 +1,30 @@
 # Resume notes for the Esta v1 run
 
-Updated 2026-10-07 05:05 +07 by the root. Read `docs/plan/trail/standing-orders.md`, `owner-brief.md`, `lane-brief.md` and the tail of `decisions.tsv` before acting. Resume with `skills/poteto-mode/playbooks/session-pickup.md`.
+Paused 2026-10-07 about 08:50 +07 on the operator's order (Claude usage running out). Resume with `skills/poteto-mode/playbooks/session-pickup.md`. Read `docs/plan/trail/standing-orders.md` (including its 08:40 update), `owner-brief.md`, `lane-brief.md` and the tail of `decisions.tsv` first.
 
-## Stack state
+## Where the stack is
 
-| PR | Branch head | Base | Verdict | Merge state |
-| --- | --- | --- | --- | --- |
-| P0-01 #1 | merged as 08b3559 | main | clean | merged |
-| P0-02 #2 | 4a74549 | main | clean after 2 fix-forwards and round 3 | held for Ryan (security PR) |
-| P0-03 #5 | 5abe703 | esta/p0-02 | clean after 1 fix-forward | waits for P0-02 |
-| P0-04 #6 | 6e7545f | esta/p0-03 | clean after 2 fix-forwards | waits for P0-02 |
-| P0-05 #7 | 4e6bc1d | esta/p0-04 | clean after 2 fix-forwards | waits for P0-02 |
-| P0-06 #13 | f883131 | esta/p0-05 (4e6bc1d) | round 1 in progress (both audits PASS, live and gates relaunched) | held for Ryan's data approval |
-| P0-07 #12 | deff0eb | esta/p0-05 (4e6bc1d) | round 1: live 9/10 PASS (lane 6 needs P0-06 underneath), gates PASS, parity PASS, data-safety audit relaunched | needs restack onto P0-06, then rerun lane 6 |
-| P0-08 | e2e33ad plus uncommitted work in worktree agent-ad0957a43d04dec53 | esta/p0-07 | owner relaunched after usage limit | building |
+- `main` holds P0-01 to P0-11, one squash commit per PR, each built from its verified head (P0-11's verified head 893d81a is byte-identical outside `docs/plan/`). Tip after the trail commit is `a468970` or later.
+- P0-12 (base components) is PR #29, base `main`, branch `esta/p0-12-base-components`, work in progress. Its owner was told to push a WIP commit and stop. Scope includes issues #14, #22 and #27. Worktree `.claude/worktrees/agent-ad05b1a4586edfa13`, slot 16.
+- P0-11's round 1 swarm was stopped mid-run. Its design audit findings are filed as #27 (for P0-12) and #28 (for P0-14). Its lane worker did not finish; nothing else is pending for P0-11.
+- Next PRs in order: finish P0-12, then P0-13 (domain composites), P0-14 (app shell), P0-15 (agent worker skeleton, uses spike S1), P0-16 (Phase 0 exit).
 
-## Next steps
+## How to work now
 
-1. Collect P0-06 live and gates results, then fix-forward or clean verdict.
-2. Restack P0-07 onto P0-06's final head (conflicts: seed README, keep both sections; regenerate `packages/db/src/database.types.ts`), then rerun P0-07 lane 6 and its data-safety audit result.
-3. Restack P0-08 onto P0-07 when P0-07 settles. Then P0-09 (sign-in, gated) and P0-10 (verify skill).
-4. Owners never run more than three PRs ahead of the lowest unverified PR.
+- GitHub Actions is disabled for the repo. CI is `tools/ci-local.sh <worktree> <pr> <slot>`, which posts `local-ci/*` statuses and a summary comment. Re-enable Actions with `gh api -X PUT repos/ngducn/esta/actions/permissions -F enabled=true` when minutes allow.
+- Every new PR targets `main` once its parent is on `main`. The operator merges only PRs whose base is `main`.
+- Round 1 per PR is one Sonnet worker (lanes, local CI, perf) plus one audit lane (Opus for security, money and data PRs). Later rounds are one Sonnet lane.
+- Open follow-up issues carry the owning PR id in the title (`gh issue list --state open`).
 
 ## Rules learned during the run
 
-- Migration versions: `20261007<phase><two-digit PR><seq>00`, increasing in stack order.
-- Docker has 8 GB shared with the `ekh-*` project; about 1 GB per Supabase stack; at most four esta stacks at once; never touch `ekh-*`.
-- Never `pkill` by pattern; stop only PIDs you started.
-- Isolated gstack browse per lane with `BROWSE_STATE_FILE` and `BROWSE_PORT`.
-- Follow-up issues carry the owning PR id in the title; owners pull them into scope at start.
-- The session hit its usage limit at about 03:00 and reset at 05:00. Watch for it; keep owners pushing after each unit.
+- Migration versions `20261007<phase><two-digit PR><seq>00`, increasing in stack order.
+- Docker has 8 GB shared with the `ekh-*` project; about 1 GB per Supabase stack; never touch `ekh-*`.
+- Stop processes by recorded PID only, never `pkill` by pattern.
+- Isolated gstack browse per lane via `BROWSE_STATE_FILE` and `BROWSE_PORT`.
+- After a `supabase/config.toml` or `supabase/templates` change, or when switching a slot between checkouts, do a full `db:stop` then `db:start`.
+- Temporary files go under `/tmp/owner-<pr>/`, not a shared scratchpad.
 
 ## Waiting for Ryan
 
-See `docs/plan/STATUS.md` on the P0-02 to P0-06 branches: operator-only grant rule, NSO and NAPAS data approval and license reading, curated legacy rows, dev:lan CA trust (P0-08), the 500,000,000 VND transfer cap, the `Sổ cái` tagline wording, and review of every held or gated PR.
+See `docs/plan/STATUS.md` on `main`: the Supabase LAN exposure (security; macOS firewall recommended), the 500,000,000 VND transfer cap, the `Sổ cái` tagline wording, trusting the dev:lan CA on Mac and phone, and the PIT effective date that needs a professional.
