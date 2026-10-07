@@ -1,12 +1,7 @@
-/** OKLCH as [lightness in percent, chroma, hue in degrees]. */
-export type Oklch = readonly [lightness: number, chroma: number, hue: number];
+export type Oklch = readonly [lightnessPercent: number, chroma: number, hueDegrees: number];
 
 export type Theme = 'light' | 'dark';
 
-/**
- * DESIGN-BRIEF §5.2. Status hues are for shapes, fills and borders (3:1); each `-ink` variant keeps
- * the hue and is the only form of that status used for text (4.5:1).
- */
 export const colors = {
   paper: { light: [98.5, 0.006, 85], dark: [19, 0.01, 60] },
   surface: { light: [99.6, 0.003, 85], dark: [23, 0.011, 60] },
@@ -30,37 +25,31 @@ export const statuses = ['paid', 'due', 'overdue', 'vacant'] as const satisfies 
 
 export type Status = (typeof statuses)[number];
 
-/** DESIGN-BRIEF §5.1, in px at text scale 1. Leading stays at 1.3 or more so stacked marks clear the line above. */
+/** Every line height the UI may use. pnpm check rejects any below `minimumLeading`. */
+export const leading = { tight: 1.3, snug: 1.35, normal: 1.45, relaxed: 1.5 } as const;
+
+/** Vietnamese stacked marks (ặ, ữ, Ướ) collide with the line above below this. */
+export const minimumLeading = 1.3;
+
 export const typeScale = {
-  meta: { size: 13, leading: 1.45 },
-  small: { size: 15, leading: 1.45 },
-  body: { size: 16, leading: 1.5 },
-  lead: { size: 18, leading: 1.45 },
-  h3: { size: 22, leading: 1.35 },
-  h2: { size: 28, leading: 1.3 },
-  h1: { size: 36, leading: 1.3 },
-  hero: { size: 44, leading: 1.3 },
-  'hero-xl': { size: 56, leading: 1.3 },
-} as const satisfies Record<string, { size: number; leading: number }>;
+  meta: { px: 13, leading: leading.normal },
+  small: { px: 15, leading: leading.normal },
+  body: { px: 16, leading: leading.relaxed },
+  lead: { px: 18, leading: leading.normal },
+  h3: { px: 22, leading: leading.snug },
+  h2: { px: 28, leading: leading.tight },
+  h1: { px: 36, leading: leading.tight },
+  hero: { px: 44, leading: leading.tight },
+  'hero-xl': { px: 56, leading: leading.tight },
+} as const satisfies Record<string, { px: number; leading: number }>;
 
-/** User text scale (PRODUCT.md): 100, 115 and 130 percent of the root size. */
-export const textScales = [1, 1.15, 1.3] as const;
-
-/**
- * In px at text scale 1. Spacing steps are multiples of `unit` (Tailwind `p-4` is 16 px); `touch` is
- * the 44 px minimum target (`min-h-touch`).
- */
-export const spacing = { unit: 4, touch: 44 } as const;
+export const spacing = { unitPx: 4, touchPx: 44 } as const;
 
 export const motion = {
   duration: { fast: 150, base: 180, slow: 220 },
   ease: 'cubic-bezier(0.2, 0, 0, 1)',
 } as const;
 
-/**
- * Every face and weight the UI uses. `pnpm glyphs:check` tests each file at these weights, at the
- * smallest and largest type size on its optical size axis, and for its required OpenType features.
- */
 export const typefaces = {
   sans: {
     family: 'Source Sans 3',

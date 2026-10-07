@@ -40,7 +40,7 @@ export function AddressLookup() {
         value={text}
         onChange={(event) => search(event.target.value)}
         autoComplete="off"
-        className="min-h-11 max-w-xl rounded border px-3 py-2 text-body"
+        className="min-h-touch max-w-xl rounded border px-3 py-2 text-body"
       />
       <div aria-live="polite" aria-busy={pending} data-testid="address-lookup-output" data-for={lookup?.text ?? ''}>
         {lookup === null || lookup.text === '' ? null : 'failed' in lookup ? (

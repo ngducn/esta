@@ -18,7 +18,6 @@ const WEIGHT_CLASS: Record<number, string> = {
   700: 'font-bold',
 };
 const FACE_CLASS = { sans: 'font-sans', figure: 'font-figure' } as const;
-// The S2 decision compared faces at these two sizes; they are specimen measurements, not UI sizes.
 const SPECIMEN_SIZES = [
   { px: 16, rem: '1rem' },
   { px: 32, rem: '2rem' },
@@ -56,13 +55,18 @@ const sectionClass = 'flex flex-col gap-4 border-t border-rule pt-6';
 const headingClass = 'font-sans text-h3 font-semibold';
 
 export default function DevGlyphsPage() {
+  const checks = colorPairs.flatMap((pair) => THEMES.map((theme) => ratio(pair, theme) >= minimumRatio[pair.kind]));
+  const passing = checks.filter(Boolean).length;
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8">
+    <main lang="en" className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8">
       <header className="flex flex-col gap-2">
         <h1 className="text-h1">Glyphs and tokens</h1>
         <p className="max-w-prose text-ink-muted">
           The DESIGN-BRIEF §5.1 glyph string in every face and weight the tokens use, the figure column, and every color
           pair with its contrast ratio in both themes.
+        </p>
+        <p className="figures font-semibold" data-testid="contrast-summary">
+          {passing}/{checks.length} pair checks pass across light and dark
         </p>
       </header>
 

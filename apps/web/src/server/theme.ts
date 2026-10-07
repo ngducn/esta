@@ -5,7 +5,6 @@ export const themeCookie = 'esta_theme';
 
 const themePreferences = ['light', 'dark', 'system'] as const;
 
-/** `system` leaves the choice to `prefers-color-scheme` in tokens.css. */
 export type ThemePreference = (typeof themePreferences)[number];
 
 export function parseThemePreference(value: string | undefined): ThemePreference {

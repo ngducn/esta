@@ -29,9 +29,9 @@ export type SignInCopy = {
 
 const initialState: SignInState = { step: 'email', email: '', error: null };
 
-const fieldClass = 'min-h-11 w-full rounded-md border border-current px-3 text-body';
-const primaryClass = 'min-h-11 w-full rounded-md border-2 border-current px-4 font-semibold disabled:opacity-60';
-const secondaryClass = 'min-h-11 px-2 underline underline-offset-4 disabled:no-underline disabled:opacity-60';
+const fieldClass = 'min-h-touch w-full rounded-md border border-current px-3 text-body';
+const primaryClass = 'min-h-touch w-full rounded-md bg-ink px-4 font-semibold text-paper disabled:opacity-60';
+const secondaryClass = 'min-h-touch px-2 underline underline-offset-4 disabled:no-underline disabled:opacity-60';
 
 function ResendButton({ copy, pending }: { copy: SignInCopy; pending: boolean }) {
   const [seconds, setSeconds] = useState(RESEND_WAIT_SECONDS);

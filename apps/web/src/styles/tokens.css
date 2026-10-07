@@ -95,6 +95,11 @@
   --text-hero--line-height: 1.3;
   --text-hero-xl: 3.5rem;
   --text-hero-xl--line-height: 1.3;
+  --leading-*: initial;
+  --leading-tight: 1.3;
+  --leading-snug: 1.35;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.5;
   --spacing: 0.25rem;
   --spacing-touch: 2.75rem;
   --ease-*: initial;

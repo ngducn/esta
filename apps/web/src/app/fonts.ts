@@ -1,8 +1,7 @@
 import localFont from 'next/font/local';
 
-// File names and weight ranges match `typefaces` in src/design/tokens.ts, which pnpm glyphs:check reads.
-// next/font names each family after its export (sourceSans3, sourceSerif4); a custom font-family
-// declaration would rename the @font-face but not the CSS variable, so the face would never apply.
+// next/font names each family after its export. A font-family in `declarations` renames the
+// @font-face but not the CSS variable, so the face would never apply.
 export const sourceSans3 = localFont({
   src: '../fonts/SourceSans3-Variable.woff2',
   weight: '400 700',

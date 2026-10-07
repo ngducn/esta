@@ -1,8 +1,3 @@
-// Usage: node scripts/glyphs-check.mjs [font.woff2 ...] [--text <string> | --text-file <path>]
-// With no fonts, checks every file in apps/web/src/fonts. Each file is checked at every weight the
-// tokens give its typeface, and at the smallest and largest type size on an optical size axis.
-// Exits 1 on any missing code point, on a required feature the font lacks, or on a font file the
-// tokens do not name.
 import { create } from 'fontkit';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -14,15 +9,25 @@ const repo = fileURLToPath(new URL('..', import.meta.url));
 const fontDir = join(repo, 'apps/web/src/fonts');
 const DIGITS = '0123456789';
 
+const USAGE = `Usage: node scripts/glyphs-check.mjs [font.woff2 ...] [--text <string> | --text-file <path>]
+With no fonts, checks every file in apps/web/src/fonts and fails when a typeface in tokens.ts has no file.`;
+
 function parseArgs(argv) {
-  const out = { text: undefined, fonts: [] };
+  const out = { text: undefined, fonts: [], checkAllShipped: false };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--text') out.text = argv[++i];
-    else if (argv[i] === '--text-file') out.text = readFileSync(argv[++i], 'utf8').trim();
-    else out.fonts.push(argv[i]);
+    const arg = argv[i];
+    if (arg === '--text') out.text = argv[++i];
+    else if (arg === '--text-file') out.text = readFileSync(argv[++i], 'utf8').trim();
+    else if (arg.startsWith('-')) {
+      console.error(`${arg === '--help' ? '' : `unknown flag ${arg}\n`}${USAGE}`);
+      process.exit(arg === '--help' ? 0 : 2);
+    } else out.fonts.push(arg);
   }
   out.text ??= readFileSync(join(repo, 'fixtures/glyph-test-string.txt'), 'utf8').trim();
-  if (out.fonts.length === 0) out.fonts = readdirSync(fontDir).filter((f) => f.endsWith('.woff2')).map((f) => join(fontDir, f));
+  if (out.fonts.length === 0) {
+    out.checkAllShipped = true;
+    out.fonts = readdirSync(fontDir).filter((f) => f.endsWith('.woff2')).map((f) => join(fontDir, f));
+  }
   return out;
 }
 
@@ -32,7 +37,7 @@ async function load(path) {
 }
 
 function instancesOf(font, face) {
-  const sizes = Object.values(typeScale).map((s) => s.size);
+  const sizes = Object.values(typeScale).map((s) => s.px);
   const axis = font.variationAxes.opsz;
   const opszValues =
     face.opticalSize && axis ? [Math.min(...sizes), Math.max(...sizes)].map((s) => Math.min(axis.max, Math.max(axis.min, s))) : [undefined];
@@ -54,13 +59,13 @@ function checkInstance(base, axes, codePoints, requiredFeatures) {
   return { missing, features, failures };
 }
 
-const { text, fonts } = parseArgs(process.argv.slice(2));
+const { text, fonts, checkAllShipped } = parseArgs(process.argv.slice(2));
 const shipped = new Set(fonts.map((f) => basename(f)));
 const codePoints = [...new Set([...text.normalize('NFC')].map((c) => c.codePointAt(0)))].sort((a, b) => a - b);
 const byFile = new Map(Object.values(typefaces).map((face) => [face.file, face]));
 
 let failed = false;
-if (process.argv.length === 2) {
+if (checkAllShipped) {
   for (const face of Object.values(typefaces)) {
     if (shipped.has(face.file)) continue;
     console.log(`FAIL ${face.family}: ${face.file} is not in apps/web/src/fonts`);

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Usage: ESTA_SLOT=<n> set-theme.sh <light|dark|system>
 source "$(dirname "$0")/env.sh"
 
 theme="${1:-}"

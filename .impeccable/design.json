@@ -52,7 +52,7 @@
       { "name": "The One Accent Rule", "body": "Lacquer appears on a small fraction of any screen. Primary buttons are ink, not accent.", "section": "colors" },
       { "name": "The Figures Rule", "body": "Amounts use the figure face with the figures utility and sit right-aligned in tables.", "section": "typography" },
       { "name": "The Full Coverage Rule", "body": "pnpm glyphs:check reads every shipped font file at every weight in typefaces and fails on any miss.", "section": "typography" },
-      { "name": "The Leading Rule", "body": "Line height stays at 1.3 or more, so Vietnamese stacked marks clear the line above.", "section": "typography" },
+      { "name": "The Leading Rule", "body": "Line height stays at 1.3 or more, so Vietnamese stacked marks clear the line above. The leading tokens replace Tailwind's scale and pnpm check fails on any below 1.3.", "section": "typography" },
       { "name": "The Self-Hosted Rule", "body": "Never Inter, Arial, Roboto or a system face as the identity face, and never a font CDN.", "section": "typography" }
     ],
     "dos": [

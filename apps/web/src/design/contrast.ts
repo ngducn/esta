@@ -25,7 +25,6 @@ export function inSrgbGamut(color: Oklch): boolean {
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const encode = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
 
-/** sRGB channels in 0..255, rounded the way a browser reports a computed color. */
 export function oklchToSrgb255(color: Oklch): Rgb {
   const [r, g, b] = oklchToLinearSrgb(color);
   const to255 = (v: number) => Math.round(encode(clamp01(v)) * 255);
@@ -37,7 +36,6 @@ function relativeLuminance(color: Oklch): number {
   return 0.2126 * clamp01(r) + 0.7152 * clamp01(g) + 0.0722 * clamp01(b);
 }
 
-/** WCAG 2.2 contrast ratio, from 1 to 21. */
 export function contrastRatio(foreground: Oklch, background: Oklch): number {
   const a = relativeLuminance(foreground);
   const b = relativeLuminance(background);

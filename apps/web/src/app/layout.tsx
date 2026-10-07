@@ -17,7 +17,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale} data-theme={theme} className={`${sourceSans3.variable} ${sourceSerif4.variable}`}>
       <body>
-        <p data-testid="date-line">{formatDateLong(clock.today(), locale)}</p>
+        <p data-testid="date-line" className="px-4 pt-2 text-small text-ink-muted">{formatDateLong(clock.today(), locale)}</p>
         {children}
       </body>
     </html>

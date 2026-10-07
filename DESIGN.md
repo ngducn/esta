@@ -114,7 +114,7 @@ Warm, low-chroma neutrals at hue 60 to 85, one lacquer red, and four status hues
 ### Neutral
 
 - **Paper** (`paper`): the page background, a warm off-white in light and a warm near-black in dark.
-- **Surface** (`surface`): raised areas such as sheets and the samples on `/dev/glyphs`. One step off paper, never a card stack.
+- **Surface** (`surface`): raised areas such as sheets. In light mode it sits about one percent of lightness off paper, too close to read as a separate plane in sunlight, so a surface always carries a `rule` hairline or the sheet shadow. Never a card stack.
 - **Ink** (`ink`): text and primary buttons.
 - **Ink Muted** (`ink-muted`): secondary text on paper or surface only, never on a colored fill.
 - **Rule** (`rule`): hairlines and dividers. Decorative, so it carries no contrast requirement.
@@ -165,7 +165,7 @@ Spike S2 tested Be Vietnam Pro, Public Sans and Source Sans 3 for the UI, and Ne
 
 **The Full Coverage Rule.** `pnpm glyphs:check` (part of `pnpm check`) reads every shipped font file at every weight in `typefaces`, and at the smallest and largest type size on an optical size axis. It fails on a missing code point, on a missing `tnum` or `lnum` for the figure face, and on a font file the tokens do not name.
 
-**The Leading Rule.** Line height stays at 1.3 or more, so Vietnamese stacked marks (ặ, ữ, ỡ, Ướ) clear the line above.
+**The Leading Rule.** Line height stays at 1.3 or more, so Vietnamese stacked marks (ặ, ữ, ỡ, Ướ) clear the line above. Tailwind's own `leading-*` scale is replaced by `leading-tight` (1.3), `leading-snug` (1.35), `leading-normal` (1.45) and `leading-relaxed` (1.5), and `pnpm check` fails on any token below 1.3.
 
 **The Self-Hosted Rule.** Never Inter, Arial, Roboto or a system face as the identity face, and never a font CDN.
 

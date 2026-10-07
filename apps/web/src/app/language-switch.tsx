@@ -7,7 +7,7 @@ export async function LanguageSwitch() {
   return (
     <form action={switchLanguage}>
       <input type="hidden" name="locale" value={next} />
-      <button type="submit" lang={next} className="min-h-11 px-2 underline underline-offset-4">
+      <button type="submit" lang={next} className="min-h-touch px-2 underline underline-offset-4">
         {t('switchTo')}
       </button>
     </form>

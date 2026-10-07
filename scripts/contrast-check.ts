@@ -19,8 +19,7 @@ export function checkPairs(palette: Palette, pairs: readonly ColorPair[]): PairR
   );
 }
 
-/** Tokens a browser would clip or that render as pure black or white, which DESIGN-BRIEF §5.2 bans. */
-export function checkTokens(palette: Palette): string[] {
+export function findBannedTokenColors(palette: Palette): string[] {
   return Object.entries(palette).flatMap(([token, byTheme]) =>
     themes.flatMap((theme) => {
       const color = byTheme[theme];
@@ -50,7 +49,7 @@ function main(): void {
   console.log(line(header));
   for (const row of rows) console.log(line(row));
 
-  const tokenProblems = checkTokens(colors);
+  const tokenProblems = findBannedTokenColors(colors);
   for (const problem of tokenProblems) console.log(`FAIL ${problem}`);
   const failed = results.filter((r) => !r.ok).length;
   console.log(`contrast: ${results.length - failed}/${results.length} pairs pass, ${tokenProblems.length} token problems`);

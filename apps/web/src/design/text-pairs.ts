@@ -4,17 +4,16 @@ import { statuses, type ColorToken, type Status } from './tokens';
 export const minimumRatio = { text: 4.5, shape: 3 } as const;
 
 export type ColorPair =
-  | { kind: 'text'; foreground: ColorToken; background: ColorToken }
+  | { kind: 'text'; foreground: Exclude<ColorToken, Status>; background: ColorToken }
   | { kind: 'shape'; foreground: Status; background: ColorToken };
 
 const grounds = ['paper', 'surface'] as const satisfies readonly ColorToken[];
 
-const textOnGrounds = (foreground: ColorToken): ColorPair[] =>
+const textOnGrounds = (foreground: Exclude<ColorToken, Status>): ColorPair[] =>
   grounds.map((background) => ({ kind: 'text', foreground, background }));
 const shapeOnGrounds = (foreground: Status): ColorPair[] =>
   grounds.map((background) => ({ kind: 'shape', foreground, background }));
 
-/** Every foreground and background pair the UI draws. A new pairing is added here before it ships. */
 export const colorPairs: readonly ColorPair[] = [
   ...(['ink', 'ink-muted', 'lacquer', 'paid-ink', 'due-ink', 'overdue-ink', 'vacant-ink'] as const).flatMap(textOnGrounds),
   { kind: 'text', foreground: 'paper', background: 'ink' },

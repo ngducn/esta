@@ -26,12 +26,12 @@ export default async function HomePage() {
         <p>{t('role', { role: onboarding(`roles.${member.role}`) })}</p>
       </div>
       {member.role === 'admin' && (
-        <Link href="/onboarding" className="flex min-h-11 items-center underline underline-offset-4">
+        <Link href="/onboarding" className="flex min-h-touch items-center underline underline-offset-4">
           {onboarding('inviteTitle')}
         </Link>
       )}
       <form action={signOut}>
-        <button type="submit" className="min-h-11 underline underline-offset-4">
+        <button type="submit" className="min-h-touch underline underline-offset-4">
           {t('signOut')}
         </button>
       </form>

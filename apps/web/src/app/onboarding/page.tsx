@@ -49,7 +49,7 @@ export default async function OnboardingPage() {
               {user?.email && <p className="break-all">{t('signedInEmail', { email: user.email })}</p>}
               <p>{t('invitedElsewhere')}</p>
               <form action={signOut}>
-                <button type="submit" className="min-h-11 underline underline-offset-4">
+                <button type="submit" className="min-h-touch underline underline-offset-4">
                   {home('signOut')}
                 </button>
               </form>
@@ -63,7 +63,7 @@ export default async function OnboardingPage() {
               <p>{t('inviteIntro', { household: member.household.name })}</p>
             </div>
             <InviteForm />
-            <Link href="/" className="flex min-h-11 items-center justify-center underline underline-offset-4">
+            <Link href="/" className="flex min-h-touch items-center justify-center underline underline-offset-4">
               {t('done')}
             </Link>
           </>

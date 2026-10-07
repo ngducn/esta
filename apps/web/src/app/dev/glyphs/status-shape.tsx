@@ -7,7 +7,6 @@ const PATHS: Record<Status, { d: string; filled: boolean }> = {
   vacant: { d: 'M4.5 4.5h15v15h-15z', filled: false },
 };
 
-/** DESIGN-BRIEF §5.2 status shapes, drawn in the status color for the 3:1 shape check. */
 export function StatusShape({ status }: { status: Status }) {
   const { d, filled } = PATHS[status];
   return (

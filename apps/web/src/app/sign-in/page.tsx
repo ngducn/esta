@@ -57,7 +57,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       {google && (
         <form action={signInWithGoogle} className="flex flex-col gap-4">
           <p className="text-center">{t('or')}</p>
-          <button type="submit" className="min-h-11 w-full rounded-md border border-current px-4">
+          <button type="submit" className="min-h-touch w-full rounded-md border border-current px-4">
             {t('google')}
           </button>
         </form>

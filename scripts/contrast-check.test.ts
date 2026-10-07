@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { contrastRatio, oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
 import { colorPairs } from '../apps/web/src/design/text-pairs.ts';
 import { colors } from '../apps/web/src/design/tokens.ts';
-import { checkPairs, checkTokens, type Palette } from './contrast-check.ts';
+import { checkPairs, findBannedTokenColors, type Palette } from './contrast-check.ts';
 
-// Reference values from culori 4 (formatRgb, wcagContrast), an independent OKLCH implementation.
-describe('OKLCH conversion', () => {
+describe('OKLCH conversion against culori 4 formatRgb and wcagContrast', () => {
   it('converts light ink oklch(24% 0.02 60) to rgb(38, 29, 22)', () => {
     expect(oklchToSrgb255([24, 0.02, 60])).toEqual([38, 29, 22]);
   });
@@ -34,18 +33,18 @@ describe('checkPairs', () => {
   });
 });
 
-describe('checkTokens', () => {
+describe('findBannedTokenColors', () => {
   it('names a token that renders as pure white', () => {
     const palette: Palette = { ...colors, surface: { ...colors.surface, light: [100, 0, 0] } };
-    expect(checkTokens(palette)).toEqual(['surface (light) renders as rgb(255, 255, 255)']);
+    expect(findBannedTokenColors(palette)).toEqual(['surface (light) renders as rgb(255, 255, 255)']);
   });
 
   it('names a token outside sRGB', () => {
     const palette: Palette = { ...colors, lacquer: { ...colors.lacquer, dark: [70, 0.3, 35] } };
-    expect(checkTokens(palette)).toEqual(['lacquer (dark) is outside sRGB']);
+    expect(findBannedTokenColors(palette)).toEqual(['lacquer (dark) is outside sRGB']);
   });
 
   it('accepts the shipped tokens', () => {
-    expect(checkTokens(colors)).toEqual([]);
+    expect(findBannedTokenColors(colors)).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { colors, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
+import { colors, leading, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
 
 const tokensCssPath = fileURLToPath(new URL('../apps/web/src/styles/tokens.css', import.meta.url));
 
@@ -22,12 +22,14 @@ function renderTokensCss(): string {
     '--color-*: initial;',
     ...Object.keys(colors).map((name) => `--color-${name}: var(--${name});`),
     '--text-*: initial;',
-    ...Object.entries(typeScale).flatMap(([name, { size, leading }]) => [
-      `--text-${name}: ${rem(size)};`,
-      `--text-${name}--line-height: ${leading};`,
+    ...Object.entries(typeScale).flatMap(([name, step]) => [
+      `--text-${name}: ${rem(step.px)};`,
+      `--text-${name}--line-height: ${step.leading};`,
     ]),
-    `--spacing: ${rem(spacing.unit)};`,
-    `--spacing-touch: ${rem(spacing.touch)};`,
+    '--leading-*: initial;',
+    ...Object.entries(leading).map(([name, value]) => `--leading-${name}: ${value};`),
+    `--spacing: ${rem(spacing.unitPx)};`,
+    `--spacing-touch: ${rem(spacing.touchPx)};`,
     '--ease-*: initial;',
     `--ease-standard: ${motion.ease};`,
     '--font-serif: initial;',
