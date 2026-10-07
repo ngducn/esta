@@ -12,3 +12,5 @@ next-env.d.ts
 supabase/.slots/
 supabase/.branches/
 supabase/.temp/
+.certs/
+.dev-lan/

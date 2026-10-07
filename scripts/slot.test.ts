@@ -2,7 +2,7 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
+import { authDrifts, parseSlot, slotConfig, slotPorts, writeSlotWorkdir } from './slot.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const baseToml = readFileSync(join(repoRoot, 'supabase', 'config.toml'), 'utf8');
@@ -21,12 +21,22 @@ function boundPorts(toml: string): number[] {
 
 describe('slotPorts', () => {
   it('returns the Supabase and Next.js defaults for slot 0', () => {
-    expect(slotPorts(0)).toEqual({ web: 3000, api: 54321, db: 54322, studio: 54323, inbucket: 54324 });
+    expect(slotPorts(0)).toEqual({
+      web: 3000,
+      api: 54321,
+      db: 54322,
+      studio: 54323,
+      inbucket: 54324,
+      webLan: 3443,
+      apiLan: 8443,
+      inbucketLan: 9443,
+    });
   });
 
   it('adds 100 per slot', () => {
-    expect(slotPorts(1)).toEqual({ web: 3100, api: 54421, db: 54422, studio: 54423, inbucket: 54424 });
-    expect(slotPorts(10)).toEqual({ web: 4000, api: 55321, db: 55322, studio: 55323, inbucket: 55324 });
+    expect(slotPorts(1)).toMatchObject({ web: 3100, api: 54421, db: 54422, studio: 54423, inbucket: 54424 });
+    expect(slotPorts(7)).toMatchObject({ webLan: 4143, apiLan: 9143, inbucketLan: 10143 });
+    expect(slotPorts(10)).toMatchObject({ web: 4000, api: 55321, db: 55322, studio: 55323, inbucket: 55324 });
   });
 });
 
@@ -52,7 +62,21 @@ describe('slotConfig', () => {
     expect(toml).toMatch(new RegExp(`\\[studio\\][^[]*\\nport = ${ports.studio}\\n`));
     expect(toml).toMatch(new RegExp(`\\[inbucket\\][^[]*\\nport = ${ports.inbucket}\\n`));
     expect(toml).toContain(`site_url = "http://127.0.0.1:${ports.web}"`);
+    expect(toml).toContain(`additional_redirect_urls = ["https://127.0.0.1:${ports.web}"]`);
     expect(boundPorts(toml)).toEqual(boundPorts(baseToml).map((port) => port + slot * 100));
+  });
+
+  it('keeps LAN origins out of the base config', () => {
+    expect(baseToml).not.toMatch(/https:\/\/(10|172|192)\./);
+    expect(slotConfig(baseToml, 13)).not.toMatch(/https:\/\/(10|172|192)\./);
+  });
+
+  it('points auth at the LAN origins only for a dev:lan run', () => {
+    const toml = slotConfig(baseToml, 13, '192.168.1.7');
+    expect(toml).toContain('site_url = "https://192.168.1.7:4743"');
+    expect(toml).toContain('additional_redirect_urls = ["https://127.0.0.1:4300", "https://192.168.1.7:4743/**"]');
+    expect(toml).not.toContain('external_url');
+    expect(toml).not.toContain('*.*');
   });
 
   it('keeps slots 0, 1 and 10 on disjoint ports', () => {
@@ -84,5 +108,24 @@ describe('writeSlotWorkdir', () => {
       expect(existsSync(join(workdir, 'supabase', dir))).toBe(true);
     }
     rmSync(root, { recursive: true });
+  });
+});
+
+describe('authDrifts', () => {
+  const lanToml = slotConfig(baseToml, 13, '192.168.1.7');
+  const localEnv = ['GOTRUE_SITE_URL=http://127.0.0.1:4300', 'GOTRUE_URI_ALLOW_LIST=https://127.0.0.1:4300', 'PATH=/bin'];
+  const lanEnv = [
+    'GOTRUE_SITE_URL=https://192.168.1.7:4743',
+    'GOTRUE_URI_ALLOW_LIST=https://127.0.0.1:4300,https://192.168.1.7:4743/**',
+  ];
+
+  it('reports drift when the running auth service has the other origins', () => {
+    expect(authDrifts(lanToml, localEnv)).toBe(true);
+    expect(authDrifts(slotConfig(baseToml, 13), lanEnv)).toBe(true);
+  });
+
+  it('reports no drift when the running auth service matches', () => {
+    expect(authDrifts(lanToml, lanEnv)).toBe(false);
+    expect(authDrifts(slotConfig(baseToml, 13), localEnv)).toBe(false);
   });
 });

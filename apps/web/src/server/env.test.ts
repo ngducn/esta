@@ -20,6 +20,11 @@ describe('parseEnv', () => {
     });
   });
 
+  test('accepts the dev:lan host as an IPv4 address only', () => {
+    expect(parseEnv({ ...required, ESTA_LAN_HOST: '192.168.1.7' }).ESTA_LAN_HOST).toBe('192.168.1.7');
+    expect(() => parseEnv({ ...required, ESTA_LAN_HOST: 'evil.example' })).toThrow(/ESTA_LAN_HOST/);
+  });
+
   test('treats an empty value as unset', () => {
     expect(parseEnv({ ...required, ESTA_ENV: '' }).ESTA_ENV).toBe('development');
   });
