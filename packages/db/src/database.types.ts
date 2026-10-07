@@ -561,7 +561,21 @@ export type Database = {
     Functions: {
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
+      claim_pending_invites: { Args: never; Returns: number }
+      create_household: {
+        Args: { p_display_name: string; p_name: string }
+        Returns: string
+      }
       esta_unaccent: { Args: { p_text: string }; Returns: string }
+      invite_member: {
+        Args: {
+          p_email: string
+          p_household_id: string
+          p_role: Database["public"]["Enums"]["member_role"]
+        }
+        Returns: string
+      }
+      set_my_locale: { Args: { p_locale: string }; Returns: undefined }
       suggest_current_unit: {
         Args: { p_text: string }
         Returns: {

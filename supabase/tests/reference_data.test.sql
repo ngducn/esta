@@ -78,13 +78,13 @@ select throws_ok($$ update public.land_use_codes set name_en = 'x' $$, '42501', 
 reset role;
 
 set local role anon;
-select is((select count(*) from public.admin_units), 3355::bigint, 'anon reads admin_units, which are public law');
+select throws_ok($$ select 1 from public.admin_units $$, '42501', null, 'anon cannot read admin_units now that sign-in exists');
 select throws_ok($$ insert into public.admin_units (code, name, kind, effective_from) values ('98', 'Tỉnh Demo', 'province', '2026-01-01') $$,
   '42501', null, 'anon cannot insert an admin unit');
 select throws_ok($$ select 1 from public.bank_bins $$, '42501', null, 'anon cannot read bank_bins');
-select is((select commune_code from public.suggest_current_unit('Dĩ An, Bình Dương') where rank = 1), '25942',
-  'anon can call suggest_current_unit');
 reset role;
+select ok(not has_function_privilege('anon', 'public.suggest_current_unit(text)', 'execute'),
+  'anon cannot call suggest_current_unit');
 
 select tests.act_as_service();
 select throws_ok($$ insert into public.land_use_codes values ('ZZZ', 'Demo', 'Demo', 'unused') $$,

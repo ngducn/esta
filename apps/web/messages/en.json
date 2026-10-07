@@ -2,5 +2,74 @@
   "app": {
     "name": "Esta",
     "tagline": "The family's property ledger"
+  },
+  "language": {
+    "label": "Language",
+    "switchTo": "Tiếng Việt"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "emailIntro": "Enter your email. Esta will send you a 6-digit code.",
+    "emailLabel": "Email",
+    "sendCode": "Send code",
+    "sending": "Sending the code…",
+    "invalidEmail": "That email does not look right. Check it and try again.",
+    "sendFailed": "The code was not sent. Check your connection and try again.",
+    "codeSent": "Esta sent a code to {email}. Look for the email titled “Mã đăng nhập Esta”. The code works for one hour. If you cannot find it, check your spam folder.",
+    "codeLabel": "6-digit code",
+    "verify": "Sign in",
+    "verifying": "Checking…",
+    "wrongCode": "The code is wrong or has expired. Send a new code.",
+    "missingCode": "Enter the 6-digit code from the email.",
+    "resend": "Send a new code",
+    "resendIn": "Send a new code in {seconds} seconds",
+    "changeEmail": "Use another email",
+    "or": "or",
+    "google": "Sign in with Google",
+    "googleFailed": "Google sign-in did not work. Try again or use an email code.",
+    "rateLimited": "Esta sent several codes in the last hour. Use the newest code in your email, or wait a few minutes and try again."
+  },
+  "onboarding": {
+    "title": "Create your household",
+    "intro": "Name the household and tell us your name. You will be its admin.",
+    "householdName": "Household name",
+    "householdNameHint": "For example: The Nguyen family",
+    "displayName": "Your name",
+    "displayNameHint": "Others in the household see this name.",
+    "create": "Create household",
+    "creating": "Creating…",
+    "householdNameRequired": "Enter a household name.",
+    "displayNameRequired": "Enter your name.",
+    "tooLong": "The name is longer than 120 characters. Shorten it and try again.",
+    "createFailed": "The household was not created. Check your connection and try again.",
+    "inviteTitle": "Invite someone in the family",
+    "inviteIntro": "The person you invite signs in with this exact email and goes straight to {household}. Esta does not send an invite email yet, so let them know.",
+    "inviteEmail": "Their email",
+    "role": "Access",
+    "roles": {
+      "admin": "Admin",
+      "member": "Member",
+      "viewer": "View only"
+    },
+    "roleHints": {
+      "admin": "Views, edits and invites others.",
+      "member": "Views and edits records.",
+      "viewer": "Sees everything but cannot edit or invite."
+    },
+    "invalidEmail": "That email does not look right. Check it and try again.",
+    "invite": "Invite",
+    "inviting": "Inviting…",
+    "invited": "Invited {email} as {role}.",
+    "alreadyInvited": "This email is already invited or a member.",
+    "inviteFailed": "The invite was not saved. Check your connection and try again.",
+    "done": "Done",
+    "invitedElsewhere": "If someone invited you to a household, sign out and sign in with the exact email they invited.",
+    "signedInEmail": "You are using {email}."
+  },
+  "home": {
+    "role": "Access: {role}",
+    "signedInAs": "You are signed in as {name}.",
+    "signedIn": "You are signed in.",
+    "signOut": "Sign out"
   }
 }

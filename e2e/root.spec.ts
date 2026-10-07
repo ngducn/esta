@@ -6,10 +6,11 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
 }
 
-test('/ shows the Esta placeholder in Vietnamese', async ({ page }) => {
+test('/ lands a signed-out visitor on the Vietnamese sign-in page', async ({ page }) => {
   const response = await page.goto('/');
   expect(response?.status()).toBe(200);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esta');
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByText('Esta', { exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
