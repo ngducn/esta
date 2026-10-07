@@ -20,7 +20,6 @@ async function build(candidates: string[]): Promise<string> {
   return compiler.build(candidates);
 }
 
-/** Every rule body generated for one class, each from its selector to the next closing brace. */
 const rulesFor = (css: string, className: string) => {
   const selector = `.${className.replace(':', '\\:')}`;
   return css

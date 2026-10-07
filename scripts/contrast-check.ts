@@ -39,7 +39,7 @@ export function checkSelection(palette: Palette, selection: Selection = readSele
   return themes.map((theme) => {
     const ground = mixOklch(palette[selection.mix][theme], palette[selection.into][theme], selection.percent / 100);
     const ratio = contrastRatio(palette[selection.foreground][theme], ground);
-    return { theme, ratio, minimum: minimumRatio.text, ok: ratio >= minimumRatio.text };
+    return { theme, ratio, ok: ratio >= minimumRatio.text };
   });
 }
 
