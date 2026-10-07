@@ -19,3 +19,10 @@ Model use. Owners run on opus. Live and gates lanes run on sonnet. Audit lanes r
 Done when every box in the plan is checked with its evidence, `pnpm e2e:northstar` passes on a local production build against local Supabase, docs/plan/STATUS.md lists every slipped P1 or P2 item with its reason, and P6-07 is merge-ready with the operator. Until the operator returns, the reachable end state is the stack built and verified as far as held PRs and human gates allow.
 
 The decision trail lives in docs/plan/trail/decisions.tsv.
+
+## Update 2026-10-07 08:40
+
+- The operator merged P0-02 to P0-11 on GitHub, which approves every held item in them, including the NSO and NAPAS data in P0-06. GitHub merged stacked PRs into their parent branches, so the root landed each verified head on `main` as one squash commit in stack order (`main` at `edff19d`). The held list is empty.
+- Merge mechanics from now on. A PR targets `main` as soon as its parent is on `main`; the root retargets it. Only a PR whose base is `main` is ready for the operator's merge click. A stacked PR whose base is another branch is never merged on GitHub; the root lands it after its parent.
+- GitHub Actions is disabled for the repo to save minutes. CI runs locally with `tools/ci-local.sh <worktree> <pr> <slot>`, which mirrors `.github/workflows/ci.yml` and posts `local-ci/<job>` commit statuses plus one summary comment. Owners run it once at code-ready; the gates lane runs it at the verdict head.
+- Claude usage. Round 1 per PR is one Sonnet worker (ten lanes, local CI, perf) plus one audit lane, Opus for security, money and data PRs and Sonnet otherwise. Later rounds are one Sonnet lane. Owners do not babysit CI.

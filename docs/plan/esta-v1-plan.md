@@ -447,7 +447,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Create `scripts/reference/fetch.sh`, `scripts/reference/build-admin-units.ts`, `scripts/reference/build-admin-units.test.ts` and `scripts/reference/build-migration.ts`.
 - [ ] Create `supabase/seed/reference/admin_units.csv`, `supabase/seed/reference/admin_unit_legacy_map.csv`, `supabase/seed/reference/legacy_curated.csv`, `supabase/seed/reference/land_use_codes.csv`, `supabase/seed/reference/napas_bins.csv` and `supabase/seed/reference/bank_short_names.csv`.
 - [ ] Create `supabase/seed/README.md`.
-- [ ] Create `supabase/migrations/20261007000500_reference_tables.sql` and the generated `supabase/migrations/20261007000600_reference_data.sql`.
+- [ ] Create `supabase/migrations/20261007000500_reference_tables.sql` and the generated `supabase/migrations/20261007006100_reference_data.sql`.
 - [ ] Create `supabase/tests/reference_data.test.sql` and `supabase/tests/suggest_current_unit.test.sql`.
 - [ ] Edit `apps/web/src/app/dev/core/sections.ts`, `apps/web/src/app/dev/core/page.tsx`, `e2e/dev-core.spec.ts` and `docs/spec/DOMAIN-VN.md`.
 
@@ -456,7 +456,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Port `fetch.sh` from branch `spike/s3-admin-units` (1945c64) to `scripts/reference/fetch.sh`. It calls the NSO SOAP catalog (`DanhMucTinh`, `DanhMucPhuongXa`, `DenNgay` 06/10/2026) and downloads `BangChuyendoiĐVHCmoi_cu_final.xlsx`, and it fails when any SHA-256 differs from the pinned value.
 - [ ] Add `buildAdminUnits(raw)` in `scripts/reference/build-admin-units.ts`. It applies these S3 cleanups. It derives the old province from the old district code, collapses whitespace in names, takes province-level `kind` from the catalog, joins on the 5-digit commune code, and appends the cited rows in `legacy_curated.csv` (Phường 2 Tân An merged on 1 Dec 2024, the two code typos).
 - [ ] Copy the NAPAS BIN snapshot from branch `spike/s4-vietqr` (a7c9e76) to `supabase/seed/reference/napas_bins.csv` (74 rows of `bin`, `name`, `code`). Add `bank_short_names.csv`, a small curated map from BIN to display short name labelled `[app rule]`. Nothing in the app or the scripts fetches the NAPAS portal; a person refreshes the snapshot by hand.
-- [ ] Add `scripts/reference/build-migration.ts`, which writes `20261007000600_reference_data.sql` from the CSVs in sorted order, so a rerun produces a byte-identical file. Reference data lives in a migration because production runs no seed.
+- [ ] Add `scripts/reference/build-migration.ts`, which writes `20261007006100_reference_data.sql` from the CSVs in sorted order, so a rerun produces a byte-identical file. Reference data lives in a migration because production runs no seed.
 - [ ] Create `admin_units`, `admin_unit_legacy_map` (the S3 shape with `merge_kind whole | partial` and `source`), `land_use_codes`, `bank_bins` (`bin`, `name`, `napas_code`, `short_name`) and `tax_rules` in `20261007000500_reference_tables.sql`. They have no `household_id`. RLS allows select for `authenticated` and has no write policy.
 - [ ] Add `admin_name_key(text)`, an immutable SQL function with the S3 matching rules. It applies `esta_unaccent`, maps a curly apostrophe to straight, every dash alike, `TP.` expanded, one unit prefix stripped.
 - [ ] Add `suggest_current_unit(p_text text)` returning `commune_code`, `commune_name`, `province_code`, `province_name`, `merge_kind`, `matched_legacy_name` and `rank`. It splits the input on commas, scopes numeric names such as `Phường 1` by their parent, never keys on a name alone, and lists every candidate of a split commune.
@@ -494,7 +494,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Lane 7. At 1440x900, dark, type `Quận 7`. Save `p0-06-quan-7.png`. Pass when exactly four wards show, each with `merge_kind` `partial`.
 - [ ] Lane 8. At 390x844, dark, type `di an binh duong`, then `Dĩ An – Bình Dương` with an en dash. Save `p0-06-folding.png` after the second. Pass when both list the same three rows as lane 6.
 - [ ] Lane 9. As `ryan.lane9@demo.esta.test` in Studio at 1440x900, light, insert a row into `bank_bins`, then select `count(*)` from `bank_bins` and the `params` of `tax_rules`. Save `p0-06-readonly.png`. Pass when the insert fails with the RLS error, the count is 74, and `params->>'threshold_vnd'` is `500000000`.
-- [ ] Lane 10. Run `scripts/reference/fetch.sh --verify`, then `tsx scripts/reference/build-migration.ts` and `git diff --exit-code supabase/migrations/20261007000600_reference_data.sql`, and render the output at 390x844, light. Save `p0-06-determinism.png`. Pass when every checksum prints `OK` and `git diff` exits 0.
+- [ ] Lane 10. Run `scripts/reference/fetch.sh --verify`, then `tsx scripts/reference/build-migration.ts` and `git diff --exit-code supabase/migrations/20261007006100_reference_data.sql`, and render the output at 390x844, light. Save `p0-06-determinism.png`. Pass when every checksum prints `OK` and `git diff` exits 0.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 

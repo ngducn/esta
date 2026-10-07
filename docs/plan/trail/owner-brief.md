@@ -23,6 +23,8 @@ You own one PR of the Esta v1 stack from build to STACK-READY. You never merge, 
 
 ## Rules
 
+- GitHub Actions is off. CI is `/Users/ngducn/Workplace/esta/tools/ci-local.sh <worktree> <pr> <slot>`, which posts `local-ci/*` statuses and a summary comment; `gh pr checks` shows them. Run it once at code-ready (owners) or at the verdict head (gates lane), never in a loop.
+- Write temporary files (PR bodies, logs, probes) under `/tmp/owner-<pr id>/`, never in a shared scratchpad, so parallel owners never overwrite each other.
 - Name every new migration `supabase/migrations/20261007<P><NN><S>00_<name>.sql`, where `<P>` is the phase digit, `<NN>` the two-digit PR number and `<S>` a sequence digit within the PR (for example P1-02's second migration is `20261007102100_...`). Versions must increase in stack order so migrations apply in the same order when PRs merge one at a time. This rule overrides the placeholder timestamps in the plan's Files boxes. P0-02 keeps its existing `0001xx` to `0004xx` versions.
 - Many agents share this machine. Stop only processes you started, by the PID you recorded when you started them (`kill <pid>`). Never use `pkill`, `killall` or `kill` by name or pattern, which kills other agents' servers.
 - Docker has 8 GB shared with another project's containers (`ekh-*`, never touch them), and each local Supabase stack takes about 1 GB. Run at most the one stack your brief names, stop it with `ESTA_SLOT=<slot> pnpm db:stop` when you are not actively testing, and never stop a slot you did not start. Port 3000 is taken; never use it.
