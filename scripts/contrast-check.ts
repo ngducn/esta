@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { contrastRatio, inSrgbGamut, oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
+import { contrastRatio, inSrgbGamut, mixOklch, oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
 import { colorPairs, minimumRatio, type ColorPair } from '../apps/web/src/design/text-pairs.ts';
 import { colors, type ColorToken, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
+import { findUnlistedPairs } from './used-color-pairs.ts';
 
 export type Palette = Record<ColorToken, Record<Theme, Oklch>>;
 
@@ -17,6 +19,28 @@ export function checkPairs(palette: Palette, pairs: readonly ColorPair[]): PairR
       return { ...pair, theme, ratio, minimum, ok: ratio >= minimum };
     }),
   );
+}
+
+export type Selection = { foreground: ColorToken; mix: ColorToken; percent: number; into: ColorToken };
+
+const selectionRule =
+  /::selection\s*\{\s*background-color:\s*color-mix\(in oklch, var\(--([\w-]+)\) (\d+)%, var\(--([\w-]+)\)\);\s*color:\s*var\(--([\w-]+)\);/;
+
+export function readSelection(css = readFileSync(new URL('../apps/web/src/app/globals.css', import.meta.url), 'utf8')): Selection {
+  const [, mix = '', percent = '', into = '', foreground = ''] = selectionRule.exec(css) ?? [];
+  const token = (name: string): ColorToken => {
+    if (name in colors) return name as ColorToken;
+    throw new Error('globals.css ::selection must set color-mix(in oklch, var(--<token>) N%, var(--<token>)) and color: var(--<token>)');
+  };
+  return { mix: token(mix), percent: Number(percent), into: token(into), foreground: token(foreground) };
+}
+
+export function checkSelection(palette: Palette, selection: Selection = readSelection()) {
+  return themes.map((theme) => {
+    const ground = mixOklch(palette[selection.mix][theme], palette[selection.into][theme], selection.percent / 100);
+    const ratio = contrastRatio(palette[selection.foreground][theme], ground);
+    return { theme, ratio, minimum: minimumRatio.text, ok: ratio >= minimumRatio.text };
+  });
 }
 
 export function findBannedTokenColors(palette: Palette): string[] {
@@ -49,11 +73,18 @@ function main(): void {
   console.log(line(header));
   for (const row of rows) console.log(line(row));
 
+  const selection = checkSelection(colors);
+  for (const r of selection) console.log(`${r.ok ? 'PASS' : 'FAIL'} ::selection (${r.theme}) ${r.ratio.toFixed(2)}`);
   const tokenProblems = findBannedTokenColors(colors);
   for (const problem of tokenProblems) console.log(`FAIL ${problem}`);
+  const unlisted = findUnlistedPairs();
+  for (const pair of unlisted) console.log(`FAIL ${pair} is drawn but not listed in text-pairs.ts`);
   const failed = results.filter((r) => !r.ok).length;
-  console.log(`contrast: ${results.length - failed}/${results.length} pairs pass, ${tokenProblems.length} token problems`);
-  if (failed > 0 || tokenProblems.length > 0) process.exit(1);
+  const selectionFailed = selection.some((r) => !r.ok);
+  console.log(
+    `contrast: ${results.length - failed}/${results.length} pairs pass, ${tokenProblems.length} token problems, ${unlisted.length} unlisted pairs`,
+  );
+  if (failed > 0 || selectionFailed || tokenProblems.length > 0 || unlisted.length > 0) process.exit(1);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();

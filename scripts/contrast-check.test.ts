@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { contrastRatio, oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
 import { colorPairs } from '../apps/web/src/design/text-pairs.ts';
 import { colors } from '../apps/web/src/design/tokens.ts';
-import { checkPairs, findBannedTokenColors, type Palette } from './contrast-check.ts';
+import { checkPairs, checkSelection, findBannedTokenColors, type Palette } from './contrast-check.ts';
 
 describe('OKLCH conversion against culori 4 formatRgb and wcagContrast', () => {
   it('converts light ink oklch(24% 0.02 60) to rgb(38, 29, 22)', () => {
@@ -46,5 +46,18 @@ describe('findBannedTokenColors', () => {
 
   it('accepts the shipped tokens', () => {
     expect(findBannedTokenColors(colors)).toEqual([]);
+  });
+});
+
+describe('::selection', () => {
+  it('checks the selection colors globals.css declares, in both themes', () => {
+    const results = checkSelection(colors);
+    expect(results.map((r) => r.theme)).toEqual(['light', 'dark']);
+    expect(results.filter((r) => !r.ok)).toEqual([]);
+  });
+
+  it('fails a selection ground too close to the ink', () => {
+    const palette: Palette = { ...colors, lacquer: { ...colors.lacquer, light: [24, 0.02, 60] } };
+    expect(checkSelection(palette, { mix: 'lacquer', percent: 90, into: 'paper', foreground: 'ink' })[0]?.ok).toBe(false);
   });
 });

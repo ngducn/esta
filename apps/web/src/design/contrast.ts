@@ -41,3 +41,9 @@ export function contrastRatio(foreground: Oklch, background: Oklch): number {
   const b = relativeLuminance(background);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
+
+/** `color-mix(in oklch, a <share>, b)` for opaque colors: hue takes the shorter arc. */
+export function mixOklch(a: Oklch, b: Oklch, share: number): Oklch {
+  const hueStep = ((((a[2] - b[2]) % 360) + 540) % 360) - 180;
+  return [b[0] + (a[0] - b[0]) * share, b[1] + (a[1] - b[1]) * share, (b[2] + hueStep * share + 360) % 360];
+}

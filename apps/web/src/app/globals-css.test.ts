@@ -42,7 +42,7 @@ describe('globals.css', () => {
   });
 
   it('offers only the font weights the typefaces ship', async () => {
-    const shipped = Object.values(typefaces).flatMap((face) => face.weights);
+    const shipped: readonly number[] = Object.values(typefaces).flatMap((face) => face.weights);
     const all = ['font-thin', 'font-light', 'font-normal', 'font-medium', 'font-semibold', 'font-bold', 'font-black'];
     const css = await build(all);
     const offered = all.flatMap((name) => [...rulesFor(css, name).join('').matchAll(/(?<!-)font-weight:\s*(\d+)/g)].map((m) => [name, Number(m[1])]));
