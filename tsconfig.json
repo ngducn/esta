@@ -1,7 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "allowJs": true
   },
-  "include": ["e2e", "playwright.config.ts", "playwright.prod.config.ts"]
+  "include": ["e2e", "playwright.config.ts", "playwright.prod.config.ts", "scripts", "eslint-rules"]
 }

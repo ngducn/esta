@@ -1,0 +1,118 @@
+create schema tests;
+grant usage on schema tests to authenticated, service_role;
+
+create function tests.user_id(p_email text)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select id from auth.users where email = p_email;
+$$;
+
+create function tests.create_user(p_email text)
+returns uuid
+language sql
+as $$
+  insert into auth.users (instance_id, id, aud, role, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', p_email, now(), '{}', '{}', now(), now())
+  returning id;
+$$;
+
+create function tests.create_household(p_key text)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_household uuid;
+  v_role public.member_role;
+  v_member uuid;
+begin
+  perform set_config('esta.actor', 'system:test', true);
+  insert into public.households (name) values ('Test ' || p_key) returning id into v_household;
+  insert into public.household_settings (household_id) values (v_household);
+  foreach v_role in array enum_range(null::public.member_role) loop
+    insert into public.household_members (household_id, user_id, invited_email, role)
+    values (v_household, tests.create_user(v_role || '.' || p_key || '@test.esta.test'),
+            v_role || '.' || p_key || '@test.esta.test', v_role)
+    returning id into v_member;
+    insert into public.notification_preferences (household_id, member_id, channel)
+    values (v_household, v_member, 'inapp');
+    if v_role = 'admin' then
+      insert into public.parties (household_id, kind, full_name, tags, member_id)
+      values (v_household, 'individual', 'Owner ' || p_key, array['owner'], v_member);
+    end if;
+  end loop;
+  return v_household;
+end;
+$$;
+
+create function tests.act_as(p_email text)
+returns void
+language plpgsql
+as $$
+declare
+  v_user uuid := tests.user_id(p_email);
+begin
+  if v_user is null then
+    raise exception 'tests.act_as: no auth.users row for %', p_email;
+  end if;
+  perform set_config('request.jwt.claims',
+    jsonb_build_object('sub', v_user, 'role', 'authenticated', 'email', p_email)::text, true);
+  perform set_config('request.headers', '{}', true);
+  perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+create function tests.act_as_service(p_headers jsonb default '{}')
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims', '{"role": "service_role"}', true);
+  perform set_config('request.headers', p_headers::text, true);
+  perform set_config('role', 'service_role', true);
+end;
+$$;
+
+create function tests.clear_request()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.headers', '', true);
+end;
+$$;
+
+create function tests.cannot_write(p_table regclass, p_household uuid, p_insert_sql text, p_household_column name default 'household_id')
+returns setof text
+language plpgsql
+as $$
+begin
+  return next throws_ok(p_insert_sql, '42501', null, format('%s: insert refused', p_table));
+  return next is_empty(
+    format('update %s set %I = %I where %I = %L returning 1', p_table, p_household_column, p_household_column, p_household_column, p_household),
+    format('%s: update touches no row', p_table));
+  return next is_empty(
+    format('delete from %s where %I = %L returning 1', p_table, p_household_column, p_household),
+    format('%s: delete touches no row', p_table));
+end;
+$$;
+
+create function tests.sees_household(p_table regclass, p_household uuid, p_expected boolean, p_household_column name default 'household_id')
+returns text
+language plpgsql
+as $$
+declare
+  v_query text := format('select 1 from %s where %I = %L', p_table, p_household_column, p_household);
+begin
+  if p_expected then
+    return isnt_empty(v_query, format('%s: sees the household rows', p_table));
+  end if;
+  return is_empty(v_query, format('%s: sees no row of the other household', p_table));
+end;
+$$;
+
+grant execute on all functions in schema tests to authenticated, service_role;

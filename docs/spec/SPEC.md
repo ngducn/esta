@@ -102,10 +102,10 @@ Name the data shape before writing code. These tables live in Supabase Postgres.
 
 ### 5.1 Tenancy, people and settings
 
-- `households` (name, locale default `vi`, timezone default `Asia/Ho_Chi_Minh`).
-- `household_members` (user_id nullable until claimed, invited_email, role `admin | member | viewer`, is_operator boolean, display_name, locale, density `comfortable | compact`, text_scale `100 | 115 | 130`). An admin adds a member by email; the row is claimed when that email first signs in. `is_operator` marks Ryan: operator-audience items and diagnostics are visible only to operators.
+- `households` (name, locale default `vi`, timezone default `Asia/Ho_Chi_Minh`). Deleting a household is an operator action through the service role. No user session can delete one, admins included.
+- `household_members` (user_id nullable until claimed, invited_email, role `admin | member | viewer`, is_operator boolean, display_name, locale, density `comfortable | compact`, text_scale `100 | 115 | 130`). An admin adds a member by email; the row is claimed when that email first signs in. `is_operator` marks Ryan: operator-audience items and diagnostics are visible only to operators. `[app rule]` Only an operator of the household, or the service role, grants or revokes `is_operator`. A household keeps at least one claimed admin: a user session cannot delete, demote or unclaim the last one. `[app rule]` A user session never sets or changes `user_id`, and never changes `invited_email` once the row is claimed. Claiming happens only through the service role or a security definer claim function (P0-09).
 - `household_settings`: one row per household with jsonb `agent` (daily caps per job kind, research budget, schedule overrides) and `invoicing` (auto-issue on, receipt header text).
-- `notification_preferences`: member_id, channel (`inapp | email | push`), kinds (array of agent item kinds and severities), daily_cap.
+- `notification_preferences`: member_id, channel (`inapp | email | push`), kinds (array of agent item kinds and severities), daily_cap. Written only by the member who owns the row or a household admin. A viewer may write its own rows: own notification preferences are the one exception to viewer read-only, joined in P0-14 by its own display settings.
 - `parties`: any person or organization the household deals with. Fields: kind `individual | organization`, full_name, short_name, phone, zalo_phone, email, id_last4, tax_code (organizations), address_text, notes, tags (`owner`, `tenant`, `caretaker`, `broker`, `contractor`, `bank`, `other`). Family members who own property are parties with the `owner` tag and an optional link to a `household_members` row.
 
 ### 5.2 Reference data
@@ -165,7 +165,7 @@ Owned by AGENT.md §10, listed here so migrations are planned together: `agent_j
 
 ### 5.7 Audit
 
-`audit_log`: table_name, row_id, action (`insert | update | delete`), actor_kind (`user | agent | system`), actor_id, diff jsonb, at. Written by triggers on every business and agent table. Triggers take the actor from `auth.uid()` for user sessions. For service-role requests through the Supabase API, the worker and cron clients send an `x-esta-actor` header (`agent:{worker_id}` or `system:cron`); the trigger reads it from PostgREST's `request.headers` setting and trusts it only when the request role is `service_role`. Direct database connections (backup, scripts) set `esta.actor` with `set_config` instead. No insert, update or delete policy exists for authenticated users on `audit_log`.
+`audit_log`: household_id, table_name, row_id, action (`insert | update | delete`), actor_kind (`user | agent | system`), actor_id, diff jsonb, at. Written by triggers on every business and agent table. The trigger copies `household_id` from the audited row (the row's own `id` for `households`), so members read their household's history through `is_member(household_id, 'viewer')`. The diff maps each changed column to `{old, new}`. Triggers take the actor from `auth.uid()` for user sessions, and a user session never takes an actor from a header. For service-role requests through the Supabase API, the worker and cron clients send an `x-esta-actor` header (`agent:{worker_id}` or `system:{name}`, such as `system:cron`); the trigger reads it from PostgREST's `request.headers` setting and trusts it only when the request role is `service_role`. A service-role write without the header, or with a value of another shape, fails. Direct database connections (seed, backup, scripts) set `esta.actor` with `set_config` instead; without it the actor is `system` with the database session user. Nobody writes `audit_log` directly: insert, update, delete and truncate are revoked from `anon`, `authenticated` and `service_role`, and the security definer trigger is the only writer.
 
 ## 6. Feature specs and acceptance checks
 
@@ -174,7 +174,7 @@ Each check is a predicate a test or a live lane can prove. IDs are referenced by
 ### 6.1 Foundation (FND)
 
 - FND-1 Sign-in by email code. Check: a new email receives a code in the local Inbucket mailbox, signs in, and lands on onboarding to create a household; an email invited by an admin lands directly in that household with the invited role.
-- FND-2 Household and roles. Check: pgTAP suite proves a member of household A cannot select, insert, update or delete any row of household B in every table, including storage objects; a viewer cannot write anything; only operators see operator-audience items.
+- FND-2 Household and roles. Check: pgTAP suite proves a member of household A cannot select, insert, update or delete any row of household B in every table, including storage objects; a viewer cannot write anything except its own notification preferences (and, from P0-14, its own display settings); only operators see operator-audience items.
 - FND-3 i18n. Check: lint fails on any user-facing string literal in JSX outside message files; vi and en message files have identical keys.
 - FND-4 Formatting and parsing core in `packages/core`. Check: unit tests with every example in DOMAIN-VN §9 and DESIGN-BRIEF §7 (`parseVndInput`).
 - FND-5 Design system: tokens, fonts, base components restyled per DESIGN-BRIEF. Check: `pnpm glyphs:check` proves every code point of the glyph test string exists in each font file at each weight used; a contrast script proves every token pair used for text meets 4.5:1 and every status shape meets 3:1 against its background; `/dev/components` shows every component in every state, light and dark.
@@ -250,7 +250,7 @@ Full behavior in AGENT.md. Acceptance summary:
 
 ### 7.1 Security and privacy
 
-- RLS on every table. Policies use a single `is_member(household_id, min_role)` SQL function. pgTAP tests for every table (`pnpm db:test`).
+- RLS on every table. Policies use a single `private.is_member(household_id, min_role)` SQL function; `private.enable_household_rls` and `private.enable_audit` attach the standard policies and the audit trigger to a new table. A row never moves to another household, and `created_by` comes from the session user, never from the client. pgTAP tests for every table (`pnpm db:test`).
 - The browser never sees the service role key. Server actions use the user's session client. The service role key is allowed only in `apps/agent`, `scripts/`, and `apps/web/src/server/cron/**` (server-only modules behind `CRON_SECRET`); a lint rule enforces this allowlist.
 - Storage: private bucket, path `{household_id}/{document_id}/{filename}`, storage policies mirror table RLS.
 - Agent and model output is rendered as sanitized Markdown: no raw HTML; links only `https:` and `esta://`.
