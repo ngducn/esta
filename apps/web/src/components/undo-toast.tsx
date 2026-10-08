@@ -22,11 +22,19 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
   return (
     <ShowUndoContext value={show}>
       {children}
-      {request === null ? null : (
-        <Suspense fallback={null}>
-          <Toaster request={request} />
-        </Suspense>
-      )}
+      {/* The live region is in the first paint so screen readers already watch it when the lazy toast lands inside. */}
+      <div
+        role="region"
+        aria-live="polite"
+        aria-label={t('region')}
+        className="fixed inset-x-4 bottom-4 mx-auto max-w-lg"
+      >
+        {request === null ? null : (
+          <Suspense fallback={null}>
+            <Toaster request={request} />
+          </Suspense>
+        )}
+      </div>
     </ShowUndoContext>
   );
 }

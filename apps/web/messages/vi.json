@@ -120,6 +120,7 @@
       "selectColumn": "Chọn dòng"
     },
     "toast": {
+      "region": "Thông báo",
       "undo": "Hoàn tác"
     },
     "confirm": {

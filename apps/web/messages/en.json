@@ -120,6 +120,7 @@
       "selectColumn": "Select row"
     },
     "toast": {
+      "region": "Notifications",
       "undo": "Undo"
     },
     "confirm": {

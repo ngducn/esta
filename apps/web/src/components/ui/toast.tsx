@@ -28,11 +28,10 @@ export default function Toaster({ request }: { request: ToastRequest }) {
   }, [request]);
   return (
     <ToastPrimitive.Provider toastManager={manager} limit={1}>
-      <ToastPrimitive.Portal>
-        <ToastPrimitive.Viewport className="fixed inset-x-4 bottom-4 mx-auto max-w-lg outline-none">
-          <ToastList />
-        </ToastPrimitive.Viewport>
-      </ToastPrimitive.Portal>
+      {/* UndoToastProvider's region announces; a second live region here would read each toast twice. */}
+      <ToastPrimitive.Viewport role={undefined} aria-live={undefined} aria-label={undefined} className="outline-none">
+        <ToastList />
+      </ToastPrimitive.Viewport>
     </ToastPrimitive.Provider>
   );
 }
