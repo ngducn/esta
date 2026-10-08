@@ -6,7 +6,7 @@ import { vnd, type Vnd } from '@esta/core/money';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataTable, type DataColumn } from '@/components/data-table';
 import { DateInput } from '@/components/date-input';
@@ -15,8 +15,11 @@ import { MoneyDisplay } from '@/components/money/money-display';
 import { MoneyInput } from '@/components/money/money-input';
 import { StatusMark, type StatusMarkProps } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useUndoToast } from '@/components/undo-toast';
+import { useDeferredDialog } from '@/components/use-deferred-dialog';
+
+const loadSheetPopup = () => import('./sheet-demo-popup');
+const SheetDemoPopup = lazy(loadSheetPopup);
 
 function Emitted({ testId, value }: { testId: string; value: string | number | null }) {
   const t = useTranslations('devComponents.samples');
@@ -154,20 +157,17 @@ export function ConfirmDialogDemo({ long = false }: { long?: boolean }) {
 
 export function SheetDemo() {
   const t = useTranslations('devComponents.samples');
+  const dialog = useDeferredDialog(loadSheetPopup);
   return (
-    <Sheet>
-      <SheetTrigger render={<Button variant="secondary" />}>{t('openSheet')}</SheetTrigger>
-      <SheetContent>
-        <div className="flex flex-col gap-1">
-          <SheetTitle>{t('sheetTitle')}</SheetTitle>
-          <SheetDescription>{t('sheetBody')}</SheetDescription>
-        </div>
-        <MoneyInput label={t('amountLabel')} defaultText="3tr5" />
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <SheetClose render={<Button variant="secondary" />}>{t('close')}</SheetClose>
-          <SheetClose render={<Button />}>{t('record')}</SheetClose>
-        </div>
-      </SheetContent>
-    </Sheet>
+    <>
+      <Button variant="secondary" {...dialog.triggerProps}>
+        {t('openSheet')}
+      </Button>
+      {dialog.open === null ? null : (
+        <Suspense fallback={null}>
+          <SheetDemoPopup open={dialog.open} onOpenChange={dialog.setOpen} finalFocus={dialog.triggerProps.ref} />
+        </Suspense>
+      )}
+    </>
   );
 }

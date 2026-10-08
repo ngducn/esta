@@ -1,10 +1,5 @@
-import { createCn } from 'cn/config';
-import { typeScale } from '@/design/tokens';
+import { createCn } from 'cn/engine';
+import tables from './cn-tables';
 
-/** Without the token type scale, merging reads `text-small` as a color and drops it beside `text-ink`. */
-export const cn = createCn({
-  extend: {
-    classGroups: { 'font-size': [{ text: Object.keys(typeScale) }] },
-    theme: { spacing: ['touch'] },
-  },
-});
+/** `pnpm tokens:build` compiles the tables from tokens.css, so merging reads `text-small` as a size beside `text-ink`. */
+export const cn = createCn(tables);

@@ -12,7 +12,7 @@ function Trigger({ onUndo }: { onUndo: () => void }) {
   );
 }
 
-function setup() {
+async function setup() {
   const onUndo = vi.fn();
   renderInLocale(
     <UndoToastProvider>
@@ -20,22 +20,23 @@ function setup() {
     </UndoToastProvider>,
   );
   fireEvent.click(screen.getByRole('button', { name: 'trigger' }));
+  await screen.findByRole('button', { name: 'Hoàn tác' });
   return { onUndo };
 }
 
 describe('UndoToast', () => {
-  beforeEach(() => vi.useFakeTimers());
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
   afterEach(() => vi.useRealTimers());
 
-  it('names what happened and calls the undo handler once on Hoàn tác', () => {
-    const { onUndo } = setup();
+  it('names what happened and calls the undo handler once on Hoàn tác', async () => {
+    const { onUndo } = await setup();
     expect(screen.getByText('Đã ghi nhận 3.500.000 ₫ từ Phòng 3.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Hoàn tác' }));
     expect(onUndo).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves after 6 seconds without undoing', () => {
-    const { onUndo } = setup();
+  it('leaves after 6 seconds without undoing', async () => {
+    const { onUndo } = await setup();
     act(() => vi.advanceTimersByTime(UNDO_MS + 1000));
     expect(screen.queryByRole('button', { name: 'Hoàn tác' })).toBeNull();
     expect(onUndo).not.toHaveBeenCalled();

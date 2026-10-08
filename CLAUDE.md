@@ -40,7 +40,7 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm design:detect` | Impeccable detector over `apps/web/src` with JSON output |
 | `pnpm glyphs:check` | Font coverage for the Vietnamese glyph test string |
 | `pnpm contrast:check` | Contrast of every token pair in `text-pairs.ts`, both themes |
-| `pnpm tokens:build` | Regenerate `apps/web/src/styles/tokens.css` from `tokens.ts` (`pnpm check` fails when stale) |
+| `pnpm tokens:build` | Regenerate `apps/web/src/styles/tokens.css` from `tokens.ts` and `apps/web/src/lib/cn-tables.ts` from `tokens.css` (`pnpm check` fails when either is stale) |
 | `pnpm fonts:build` | Rebuild the subset WOFF2 fonts from the pinned google/fonts commit (needs `uv`) |
 
 Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Never configure a real mail sender in development.

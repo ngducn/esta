@@ -16,6 +16,7 @@ export default defineConfig(
     'playwright-report/',
     'test-results/',
     'supabase/.slots/',
+    'apps/web/src/lib/cn-tables.ts',
   ]),
   js.configs.recommended,
   tseslint.configs.strict,

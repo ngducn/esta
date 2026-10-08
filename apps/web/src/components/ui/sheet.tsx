@@ -4,7 +4,6 @@ import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
 import { cn } from '@/lib/utils';
 
 const Sheet = SheetPrimitive.Root;
-const SheetTrigger = SheetPrimitive.Trigger;
 const SheetClose = SheetPrimitive.Close;
 
 /** Slides up from the bottom on a phone and in from the right on a wide screen. */
@@ -39,4 +38,4 @@ function SheetDescription({ className, ...props }: SheetPrimitive.Description.Pr
   return <SheetPrimitive.Description className={cn('text-body text-ink-muted', className)} {...props} />;
 }
 
-export { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger };
+export { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle };

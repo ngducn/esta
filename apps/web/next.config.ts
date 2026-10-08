@@ -9,4 +9,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: env.ESTA_LAN_HOST === undefined ? [] : [env.ESTA_LAN_HOST],
 };
 
-export default createNextIntlPlugin('./src/i18n/request.ts')(nextConfig);
+export default createNextIntlPlugin({
+  requestConfig: './src/i18n/request.ts',
+  experimental: { messages: { path: './messages', format: 'json', locales: ['vi', 'en'], precompile: true } },
+})(nextConfig);

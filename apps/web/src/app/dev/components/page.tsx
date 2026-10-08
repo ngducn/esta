@@ -25,7 +25,7 @@ export default async function DevComponentsPage() {
               <ul className="flex flex-wrap gap-x-1">
                 {registry.map(({ component }) => (
                   <li key={component}>
-                    <a href={`#${anchor(component)}`} className="inline-flex min-h-touch items-center px-2 text-body text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
+                    <a href={`#${anchor(component)}`} className="inline-flex min-h-touch min-w-touch items-center justify-center px-2 text-body text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
                       {t(`names.${component}`)}
                     </a>
                   </li>

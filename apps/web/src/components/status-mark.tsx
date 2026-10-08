@@ -57,7 +57,7 @@ export function StatusMark(props: StatusMarkProps) {
   const t = useTranslations('components.status');
   const word = props.status === 'overdue' ? t('overdue', { days: props.days }) : t(props.status);
   return (
-    <span data-status={props.status} className="inline-flex items-center gap-2">
+    <span data-status={props.status} className="inline-flex items-center gap-2 align-top">
       <StatusShape status={props.status} />
       <span className={cn('font-semibold', statusMarks[props.status].wordClass)}>{word}</span>
     </span>

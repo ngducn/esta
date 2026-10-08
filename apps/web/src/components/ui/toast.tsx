@@ -1,13 +1,33 @@
 'use client';
 
 import { Toast as ToastPrimitive } from '@base-ui/react/toast';
-import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 
-/** One toast at a time: a second action replaces the first, so the visible undo always belongs to the latest action. */
-function Toaster({ children }: { children: ReactNode }) {
+export type ToastRequest = { message: string; timeout: number; action: { label: string; onClick: () => void } };
+
+const manager = ToastPrimitive.createToastManager();
+
+/**
+ * Loaded on the first request, so a screen pays for Base UI Toast only once someone acts.
+ * One toast at a time: a new request closes the previous one, so the visible undo always belongs to the latest action.
+ */
+export default function Toaster({ request }: { request: ToastRequest }) {
+  useEffect(() => {
+    const id = manager.add({
+      title: request.message,
+      timeout: request.timeout,
+      actionProps: {
+        children: request.action.label,
+        onClick: () => {
+          request.action.onClick();
+          manager.close(id);
+        },
+      },
+    });
+    return () => manager.close(id);
+  }, [request]);
   return (
-    <ToastPrimitive.Provider limit={1}>
-      {children}
+    <ToastPrimitive.Provider toastManager={manager} limit={1}>
       <ToastPrimitive.Portal>
         <ToastPrimitive.Viewport className="fixed inset-x-4 bottom-4 mx-auto max-w-lg outline-none">
           <ToastList />
@@ -33,7 +53,3 @@ function ToastList() {
     </ToastPrimitive.Root>
   ));
 }
-
-const useToastManager = ToastPrimitive.useToastManager;
-
-export { Toaster, useToastManager };

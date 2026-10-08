@@ -4,7 +4,6 @@ import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog
 import { cn } from '@/lib/utils';
 
 const AlertDialog = AlertDialogPrimitive.Root;
-const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
 const AlertDialogClose = AlertDialogPrimitive.Close;
 
 function AlertDialogContent({ className, children, ...props }: AlertDialogPrimitive.Popup.Props) {
@@ -49,4 +48,4 @@ function AlertDialogDescription({ className, ...props }: AlertDialogPrimitive.De
   );
 }
 
-export { AlertDialog, AlertDialogClose, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger };
+export { AlertDialog, AlertDialogClose, AlertDialogContent, AlertDialogDescription, AlertDialogTitle };
