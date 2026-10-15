@@ -1,10 +1,9 @@
 # Esta v1 build plan
 
 This plan builds Esta v1, the private web app Mẹ and Ryan use to run the family's houses, land, leases, rent, money and the Trợ lý assistant, as specified in `docs/spec/`.
-It runs as one linear stack of 73 PRs in seven phases, in the order of SPEC §10.
-Every PR proves itself with unit tests, ten live lanes on seeded data in Vietnamese at 390x844 and 1440x900, and a dual-sided perf check before it can merge.
-Phase 0 runs P0-01 to P0-16, Phase 1 runs P1-01 to P1-09, Phase 2 runs P2-01 to P2-08, and Phase 3 runs P3-01 to P3-17.
-Phase 4 runs P4-01 to P4-06, Phase 5 runs P5-01 to P5-10, and Phase 6 runs P6-01 to P6-07.
+It runs as 72 PRs in seven phases, in the order of SPEC §10, cut into vertical slices on 2026-10-15 (`docs/plan/trail/slice-matrix.md`).
+`docs/plan/trail/pr-inventory.md` gives each PR's delivery order (`Seq`), user outcome, scope and proof. Ids stay stable when a PR moves, so ids are not in delivery order, and the sections below follow delivery order for Phases 0 and 1.
+The 2026-10-15 update in `docs/plan/trail/standing-orders.md` overrides this plan where they conflict. It runs Autopilot-full with every PR off `main`, encodes lane rules as Playwright assertions, uses one Sonnet verifier lane and no review video, and applies Lighthouse budgets to user routes only.
 Spikes S1, S2, S3, S4 and S7 are settled with evidence in Appendix A. S6 is P1-01 and S5 is P2-01.
 
 ## How to read this
@@ -50,9 +49,9 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
   - [ ] Every later PR branches from the PR directly before it in id order, from P0-02 through P6-07, and its PR targets that parent's branch.
   - [ ] Owners may build up to three PRs ahead of the lowest unverified PR at once, each on its parent's current tip. The root restacks them per `references/merge-safety.md` when a parent changes.
   - [ ] A phase starts its gated PRs only after that phase's non-gated PRs reach a clean verdict, so the root can merge the non-gated run first.
-- [ ] Name every migration `20261007<phase digit><two-digit PR number><sequence digit>00_<name>.sql`, so versions increase in stack order and apply in the same order when PRs merge one at a time. This rule overrides the placeholder timestamps in the Files boxes below. P0-02 keeps its `0001xx` to `0004xx` versions.
+- [ ] Name every migration `20261007<phase digit><two-digit Seq><sequence digit>00_<name>.sql`, where Seq is the PR's delivery position in `docs/plan/trail/pr-inventory.md`, so versions increase in delivery order. `docs/plan/trail/owner-brief.md` says what to do when PRs merge out of Seq order. This rule overrides the placeholder timestamps in the Files boxes below. P0-02 keeps its `0001xx` to `0004xx` versions.
 - [ ] Hold the file boundaries. Each PR touches only the files its **Files.** block lists, plus regenerated types in `packages/db/src/database.types.ts` and new keys in `apps/web/messages/vi.json` and `apps/web/messages/en.json`. Only migration PRs add files under `supabase/migrations/`, and no PR edits an applied migration.
-- [ ] Hold the review gate. P0-09, P0-11 to P0-16, P1-04 to P1-09, P2-04 to P2-08, P3-07 to P3-17, P4-02 to P4-06, P5-04 to P5-10 and P6-01 to P6-04, P6-06 and P6-07 change an interaction. They wait for the operator's review in chat with screenshots and a video before merge.
+- [ ] Hold the review gate. The PRs marked `G` in `docs/plan/trail/pr-inventory.md` change an interaction. The operator reviews their screenshots in the PR body before merge. No review video (2026-10-15 update).
 - [ ] Hold the human gates. The operator approves the S3 admin units source at this plan review, scans the VietQR code with two banking apps at the Phase 3 gate, runs the Mom test after Phase 3 and again in P6-06, and performs every P6-07 step.
 
 ### PR mechanics, for every PR
@@ -1780,6 +1779,8 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
+Phase 2. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict. The P2-04 section stays as reference for P2-02, which absorbs it.
+
 ## Measure certificate extraction quality on synthetic fixtures (P2-01)
 
 **Depends on.** P0-06, P0-15, P1-09.
@@ -2378,6 +2379,8 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Bugbot triage done.
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+Phase 3. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict. The P3-01 section stays as reference for the PRs that take its tables.
 
 ## Add the leasing, invoicing, payment and statement schema (P3-01)
 
@@ -3518,6 +3521,8 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
+Phase 4. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict.
+
 ## Compute the owner tax position from versioned rules (P4-01)
 
 **Depends on.** P0-06, P3-02, P3-17.
@@ -3961,6 +3966,8 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Bugbot triage done.
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+Phase 5. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict. The P5-01 section stays as reference for the PRs that take its tables and tools.
 
 ## Add the remaining agent tables and the household-bound read tools (P5-01)
 
@@ -4673,6 +4680,8 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Bugbot triage done.
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+Phase 6. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict.
 
 ## Build settings for household, members, bank accounts, notifications and the assistant (P6-01)
 
