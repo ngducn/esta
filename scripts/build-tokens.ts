@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { colors, fontWeight, leading, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
+import { colors, densities, fontWeight, leading, motion, shell, spacing, textScales, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
 
 const tokensCssPath = fileURLToPath(new URL('../apps/web/src/styles/tokens.css', import.meta.url));
 const webRoot = fileURLToPath(new URL('../apps/web/', import.meta.url));
@@ -36,8 +36,9 @@ function renderTokensCss(): string {
     ]),
     '--leading-*: initial;',
     ...Object.entries(leading).map(([name, value]) => `--leading-${name}: ${value};`),
-    `--spacing: ${rem(spacing.unitPx)};`,
     `--spacing-touch: ${rem(spacing.touchPx)};`,
+    `--spacing-sidebar: ${rem(shell.sidebarPx)};`,
+    `--container-content: ${rem(shell.contentPx)};`,
     '--ease-*: initial;',
     `--ease-standard: ${motion.ease};`,
     '--font-weight-*: initial;',
@@ -71,6 +72,17 @@ function renderTokensCss(): string {
     ]),
     '',
     block('@theme inline', theme),
+    '',
+    '/* Not inline, so utilities read var(--spacing) and data-density can retune every one of them. */',
+    block('@theme', [`--spacing: ${rem(spacing.unitPx)};`]),
+    '',
+    ...Object.entries(densities)
+      .filter(([, density]) => density.unitPx !== spacing.unitPx)
+      .map(([name, density]) => block(`:root[data-density="${name}"]`, [`--spacing: ${rem(density.unitPx)};`])),
+    '',
+    ...textScales
+      .filter((scale) => scale !== 100)
+      .map((scale) => block(`:root[data-text-scale="${scale}"]`, [`--text-scale: ${scale / 100};`])),
     '',
   ].join('\n');
 }
