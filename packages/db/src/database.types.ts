@@ -589,6 +589,10 @@ export type Database = {
           source: string
         }[]
       }
+      update_my_display_settings: {
+        Args: { p_density: string; p_locale: string; p_text_scale: number }
+        Returns: undefined
+      }
     }
     Enums: {
       admin_merge_kind: "whole" | "partial"
