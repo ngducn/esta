@@ -7,6 +7,7 @@ export const sourceSans3 = localFont({
   weight: '400 600',
   display: 'swap',
   variable: '--font-source-sans-3',
+  fallback: ['sans-serif'],
 });
 
 export const sourceSerif4 = localFont({
@@ -15,5 +16,6 @@ export const sourceSerif4 = localFont({
   display: 'swap',
   preload: false,
   variable: '--font-source-serif-4',
+  fallback: ['serif'],
   adjustFontFallback: 'Times New Roman',
 });

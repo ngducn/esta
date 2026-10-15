@@ -1,0 +1,61 @@
+import { act, fireEvent, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderInLocale } from '@/test/render';
+import { UNDO_MS, UndoToastProvider, useUndoToast } from './undo-toast';
+
+function Trigger({ onUndo }: { onUndo: () => void }) {
+  const show = useUndoToast();
+  return (
+    <button type="button" onClick={() => show('Đã ghi nhận 3.500.000 ₫ từ Phòng 3.', onUndo)}>
+      trigger
+    </button>
+  );
+}
+
+async function setup() {
+  const onUndo = vi.fn();
+  renderInLocale(
+    <UndoToastProvider>
+      <Trigger onUndo={onUndo} />
+    </UndoToastProvider>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'trigger' }));
+  await screen.findByRole('button', { name: 'Hoàn tác' });
+  return { onUndo };
+}
+
+describe('UndoToast', () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
+  afterEach(() => vi.useRealTimers());
+
+  it('names what happened and calls the undo handler once on Hoàn tác', async () => {
+    const { onUndo } = await setup();
+    expect(screen.getByText('Đã ghi nhận 3.500.000 ₫ từ Phòng 3.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Hoàn tác' }));
+    expect(onUndo).toHaveBeenCalledTimes(1);
+  });
+
+  it('announces through one translated live region that exists before the first toast', async () => {
+    renderInLocale(
+      <UndoToastProvider>
+        <Trigger onUndo={vi.fn()} />
+      </UndoToastProvider>,
+    );
+    const region = screen.getByRole('region', { name: 'Thông báo' });
+    expect(region.getAttribute('aria-live')).toBe('polite');
+    expect(region.textContent).toBe('');
+
+    fireEvent.click(screen.getByRole('button', { name: 'trigger' }));
+    await screen.findByRole('button', { name: 'Hoàn tác' });
+    expect(screen.getByRole('region', { name: 'Thông báo' })).toBe(region);
+    expect(region.contains(screen.getByText('Đã ghi nhận 3.500.000 ₫ từ Phòng 3.'))).toBe(true);
+    expect(document.querySelectorAll('[aria-live]:not([aria-live="off"]), [role="status"], [role="alert"]')).toHaveLength(1);
+  });
+
+  it('leaves after 6 seconds without undoing', async () => {
+    const { onUndo } = await setup();
+    act(() => vi.advanceTimersByTime(UNDO_MS + 1000));
+    expect(screen.queryByRole('button', { name: 'Hoàn tác' })).toBeNull();
+    expect(onUndo).not.toHaveBeenCalled();
+  });
+});

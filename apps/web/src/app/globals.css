@@ -1,6 +1,11 @@
 @import 'tailwindcss';
 @import '../styles/tokens.css';
 
+@theme inline {
+  --shadow-*: initial;
+  --shadow-sheet: 0 -0.25rem 1.5rem color-mix(in oklch, var(--ink) 14%, transparent);
+}
+
 @layer base {
   html {
     font-size: calc(100% * var(--text-scale));

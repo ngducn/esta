@@ -1,14 +1,22 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { colors, leading, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
+import { colors, fontWeight, leading, motion, spacing, typeScale, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
 
 const tokensCssPath = fileURLToPath(new URL('../apps/web/src/styles/tokens.css', import.meta.url));
+const webRoot = fileURLToPath(new URL('../apps/web/', import.meta.url));
+const cnTablesPath = join(webRoot, 'src/lib/cn-tables.ts');
 
 const ROOT_PX = 16;
 const rem = (px: number) => (px === 0 ? '0' : `${px / ROOT_PX}rem`);
 const oklch = ([l, c, h]: Oklch) => `oklch(${l}% ${c} ${h})`;
 const block = (selector: string, lines: string[], indent = '') =>
   [`${indent}${selector} {`, ...lines.map((line) => `${indent}  ${line}`), `${indent}}`].join('\n');
+
+const chosenDark = '[data-theme="dark"]';
+const systemDark = ':root:not([data-theme="light"])';
 
 const colorVars = (theme: Theme) => Object.entries(colors).map(([name, value]) => `--${name}: ${oklch(value[theme])};`);
 
@@ -32,6 +40,8 @@ function renderTokensCss(): string {
     `--spacing-touch: ${rem(spacing.touchPx)};`,
     '--ease-*: initial;',
     `--ease-standard: ${motion.ease};`,
+    '--font-weight-*: initial;',
+    ...Object.entries(fontWeight).map(([name, value]) => `--font-weight-${name}: ${value};`),
     '--font-serif: initial;',
     '--font-mono: initial;',
     '--font-sans: var(--font-source-sans-3);',
@@ -42,30 +52,57 @@ function renderTokensCss(): string {
     '',
     block(':root', [...root, 'color-scheme: light;']),
     '',
-    block('[data-theme="dark"]', [...colorVars('dark'), 'color-scheme: dark;']),
+    block(chosenDark, [...colorVars('dark'), 'color-scheme: dark;']),
     '',
     '@media (prefers-color-scheme: dark) {',
-    block(':root:not([data-theme="light"])', [...colorVars('dark'), 'color-scheme: dark;'], '  '),
+    block(systemDark, [...colorVars('dark'), 'color-scheme: dark;'], '  '),
     '}',
+    '',
+    '/* dark: follows the same two selectors as the dark palette, so it obeys the esta_theme cookie. */',
+    block('@custom-variant dark', [
+      `&:where(${chosenDark}, ${chosenDark} *) {`,
+      '  @slot;',
+      '}',
+      '@media (prefers-color-scheme: dark) {',
+      `  &:where(${systemDark}, ${systemDark} *) {`,
+      '    @slot;',
+      '  }',
+      '}',
+    ]),
     '',
     block('@theme inline', theme),
     '',
   ].join('\n');
 }
 
-function main(): void {
+/** Precompiled tables let the browser ship `cn/engine` instead of `cn/config`'s runtime compiler. */
+async function renderCnTables(): Promise<string> {
+  const require = createRequire(join(webRoot, 'package.json'));
+  const { build } = (await import(pathToFileURL(require.resolve('cn/build')).href)) as {
+    build: (options: { cwd: string; css: string; full: true; out: string }) => Promise<{ source: string }>;
+  };
+  const out = join(mkdtempSync(join(tmpdir(), 'esta-cn-')), 'cn-tables.ts');
+  const { source } = await build({ cwd: webRoot, css: 'src/app/globals.css', full: true, out });
+  return source;
+}
+
+function isStale(path: string, expected: string): boolean {
+  return (existsSync(path) ? readFileSync(path, 'utf8') : '') !== expected;
+}
+
+async function main(): Promise<void> {
   const css = renderTokensCss();
   if (process.argv.includes('--check')) {
-    const current = existsSync(tokensCssPath) ? readFileSync(tokensCssPath, 'utf8') : '';
-    if (current !== css) {
-      console.error('tokens.css is stale. Run pnpm tokens:build and commit the result.');
+    if (isStale(tokensCssPath, css) || isStale(cnTablesPath, await renderCnTables())) {
+      console.error('tokens.css or cn-tables.ts is stale. Run pnpm tokens:build and commit the result.');
       process.exit(1);
     }
-    console.log('tokens.css matches tokens.ts');
+    console.log('tokens.css and cn-tables.ts match tokens.ts');
     return;
   }
   writeFileSync(tokensCssPath, css);
-  console.log(`wrote ${tokensCssPath}`);
+  writeFileSync(cnTablesPath, await renderCnTables());
+  console.log(`wrote ${tokensCssPath} and ${cnTablesPath}`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) await main();

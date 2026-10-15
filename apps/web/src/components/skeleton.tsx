@@ -1,0 +1,105 @@
+import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
+
+function Block({ className }: { className: string }) {
+  return <span aria-hidden="true" className={cn('block animate-pulse rounded-sm bg-rule', className)} />;
+}
+
+/** One status region per loading area, so a screen reader hears "Đang tải" once rather than per block. */
+function Loading({ children, className }: { children: ReactNode; className?: string }) {
+  const t = useTranslations('components');
+  return (
+    <div role="status" data-slot="skeleton" className={className}>
+      <span className="sr-only">{t('loading')}</span>
+      {children}
+    </div>
+  );
+}
+
+export function SkeletonMoney({ large = false }: { large?: boolean }) {
+  return (
+    <Loading>
+      <Block className={large ? 'h-12 w-72 max-w-full' : 'h-6 w-32'} />
+    </Loading>
+  );
+}
+
+export function SkeletonField() {
+  return (
+    <Loading className="flex flex-col gap-2">
+      <Block className="h-5 w-28" />
+      <Block className="h-4 w-48" />
+      <Block className="h-touch w-full" />
+      <Block className="h-5 w-32" />
+    </Loading>
+  );
+}
+
+export function SkeletonStatus() {
+  return (
+    <Loading className="flex items-center gap-2">
+      <Block className="size-5 rounded-full" />
+      <Block className="h-5 w-20" />
+    </Loading>
+  );
+}
+
+export function SkeletonRing() {
+  return (
+    <Loading className="flex items-center gap-2">
+      <Block className="size-6 rounded-full" />
+      <Block className="h-5 w-24" />
+    </Loading>
+  );
+}
+
+export function SkeletonAddress() {
+  return (
+    <Loading className="flex flex-col gap-2">
+      <Block className="h-4 w-20" />
+      <Block className="h-5 w-full max-w-md" />
+      <Block className="h-4 w-16" />
+      <Block className="h-5 w-4/5 max-w-sm" />
+    </Loading>
+  );
+}
+
+export function SkeletonTable({ rows = 4 }: { rows?: number }) {
+  return (
+    <Loading className="flex flex-col">
+      <div className="flex items-center justify-between border-b border-rule py-3">
+        <Block className="h-6 w-36" />
+        <Block className="h-5 w-20" />
+      </div>
+      {Array.from({ length: rows }, (_, row) => (
+        <div key={row} className="flex items-center gap-3 border-b border-rule py-3">
+          <Block className="size-6" />
+          <div className="flex flex-1 flex-col gap-2">
+            <Block className="h-5 w-32" />
+            <Block className="h-4 w-48 max-w-full" />
+          </div>
+          <Block className="h-5 w-24" />
+        </div>
+      ))}
+    </Loading>
+  );
+}
+
+export function SkeletonEmptyState() {
+  return (
+    <Loading className="flex flex-col gap-3 border-t border-rule pt-6">
+      <Block className="h-7 w-64 max-w-full" />
+      <Block className="h-5 w-full max-w-prose" />
+      <Block className="mt-2 h-touch w-44" />
+    </Loading>
+  );
+}
+
+export function SkeletonButton() {
+  return (
+    <Loading>
+      <Block className="h-touch w-32" />
+    </Loading>
+  );
+}

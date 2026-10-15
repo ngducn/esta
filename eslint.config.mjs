@@ -4,6 +4,7 @@ import nextPlugin from '@next/eslint-plugin-next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import noBrowserSupabaseClient from './eslint-rules/no-browser-supabase-client.mjs';
 import noJsxLiterals from './eslint-rules/no-jsx-literals.mjs';
 import serviceRoleAllowlist from './eslint-rules/service-role-allowlist.mjs';
 
@@ -15,6 +16,7 @@ export default defineConfig(
     'playwright-report/',
     'test-results/',
     'supabase/.slots/',
+    'apps/web/src/lib/cn-tables.ts',
   ]),
   js.configs.recommended,
   tseslint.configs.strict,
@@ -35,11 +37,25 @@ export default defineConfig(
   },
   {
     ignores: ['eslint-rules/**'],
-    plugins: { esta: { rules: { 'service-role-allowlist': serviceRoleAllowlist, 'no-jsx-literals': noJsxLiterals } } },
+    plugins: {
+      esta: {
+        rules: {
+          'service-role-allowlist': serviceRoleAllowlist,
+          'no-jsx-literals': noJsxLiterals,
+          'no-browser-supabase-client': noBrowserSupabaseClient,
+        },
+      },
+    },
     rules: { 'esta/service-role-allowlist': 'error' },
   },
   {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    rules: { 'esta/no-browser-supabase-client': 'error' },
+  },
+  {
     files: ['apps/web/**/*.tsx'],
+    // Tests pass fixture text such as an address or a label as props; it never reaches a user.
+    ignores: ['apps/web/**/*.test.tsx'],
     rules: { 'esta/no-jsx-literals': 'error' },
   },
   {
@@ -73,8 +89,9 @@ export default defineConfig(
     ignores: ['apps/web/src/app/dev/**'],
     plugins: { '@eslint-community/eslint-comments': eslintComments },
     rules: {
-      '@eslint-community/eslint-comments/no-restricted-disable': ['error', 'esta/*'],
+      '@eslint-community/eslint-comments/no-restricted-disable': ['error', 'esta/*', '@eslint-community/eslint-comments/*'],
       '@eslint-community/eslint-comments/no-unlimited-disable': 'error',
+      '@eslint-community/eslint-comments/require-description': 'error',
     },
   },
 );

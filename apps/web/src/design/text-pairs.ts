@@ -17,5 +17,6 @@ const shapeOnGrounds = (foreground: Status): ColorPair[] =>
 export const colorPairs: readonly ColorPair[] = [
   ...(['ink', 'ink-muted', 'lacquer', 'paid-ink', 'due-ink', 'overdue-ink', 'vacant-ink'] as const).flatMap(textOnGrounds),
   { kind: 'text', foreground: 'paper', background: 'ink' },
+  { kind: 'text', foreground: 'ink', background: 'rule' },
   ...statuses.flatMap(shapeOnGrounds),
 ];
