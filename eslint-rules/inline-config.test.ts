@@ -17,13 +17,6 @@ const webSources = () =>
     exclude: ['**/node_modules/**', '**/.next/**', 'apps/web/src/app/dev/**'],
   });
 
-const DISABLE_DIRECTIVE = /eslint-disable(?:-next-line|-line)?\s([^\n]*?)(?:\*\/|$)/gm;
-
-const disablesCommentGuard = (source: string) =>
-  [...source.matchAll(DISABLE_DIRECTIVE)].some(([, rules = '']) =>
-    rules.split('--')[0]?.includes('eslint-comments/'),
-  );
-
 const impureRender = (disable: string) =>
   `export function Roll() {\n  ${disable}\n  const n = Math.random();\n  return <p>{n}</p>;\n}\n`;
 
@@ -51,19 +44,46 @@ describe('inline eslint config in apps/web', () => {
     });
   });
 
+  const guardOffAndEstaOff = (disableGuard: string) =>
+    `${disableGuard}\n// eslint-disable-next-line esta/no-jsx-literals -- bypass\nexport const a = <p>Xin chào</p>;\n`;
+
   it.each([
-    ['/* eslint-disable @eslint-community/eslint-comments/no-restricted-disable -- bypass */', true],
-    ['// eslint-disable-line @eslint-community/eslint-comments/require-description', true],
-    ['/* eslint-disable react-hooks/purity, @eslint-community/eslint-comments/no-unlimited-disable */', true],
-    ['// eslint-disable-next-line react-hooks/purity -- the roll changes on purpose', false],
-  ])('finds a directive that names an eslint-comments rule: %s', (comment, found) => {
-    expect(disablesCommentGuard(comment)).toBe(found);
+    ['one-line block', guardOffAndEstaOff('/* eslint-disable @eslint-community/eslint-comments/no-restricted-disable -- bypass */')],
+    [
+      'block with the rule on a later line',
+      guardOffAndEstaOff('/* eslint-disable\n\n  @eslint-community/eslint-comments/no-restricted-disable -- bypass */'),
+    ],
+    [
+      'block whose rule list continues on the next line',
+      guardOffAndEstaOff('/* eslint-disable react-hooks/purity,\n  @eslint-community/eslint-comments/no-restricted-disable -- bypass */'),
+    ],
+    [
+      'same-line directive that also names the esta rule',
+      'export const a = <p>Xin chào</p>; // eslint-disable-line esta/no-jsx-literals, @eslint-community/eslint-comments/no-restricted-disable -- bypass\n',
+    ],
+  ])('fails lint on a directive that names an eslint-comments rule, since it silences the guard that would report it: %s', async (_, code) => {
+    expect(await lint('apps/web/src/components/scratch.tsx', code)).toContainEqual({
+      ruleId: 'esta/no-guard-disable',
+      severity: 2,
+    });
   });
 
-  it('has no directive outside /dev that switches off an eslint-comments guard, since a disable that covers its own line silences the guard that would report it', () => {
-    const files = webSources();
-    expect(files.length).toBeGreaterThan(0);
-    expect(files.filter((path) => disablesCommentGuard(readFileSync(join(repoRoot, path), 'utf8')))).toEqual([]);
+  const lintedExtensions = ['ts', 'mts', 'cts', 'js', 'mjs', 'cjs'];
+
+  it.each(lintedExtensions)('fails lint on a directive that names an eslint-comments rule in a .%s file', async (ext) => {
+    const code = '/* eslint-disable @eslint-community/eslint-comments/no-restricted-disable -- bypass */\nconst a = 1;\n';
+    expect(await lint(`apps/web/src/lib/scratch.${ext}`, code)).toContainEqual({
+      ruleId: 'esta/no-guard-disable',
+      severity: 2,
+    });
+  });
+
+  it.each(lintedExtensions)('bans the browser Supabase client in a .%s file', async (ext) => {
+    const code = "const ssr = require('@supabase/ssr');\nconst c = ssr.createBrowserClient;\n";
+    expect(await lint(`apps/web/src/lib/scratch.${ext}`, code)).toContainEqual({
+      ruleId: 'esta/no-browser-supabase-client',
+      severity: 2,
+    });
   });
 
   it('cannot switch off the browser Supabase client ban', async () => {
