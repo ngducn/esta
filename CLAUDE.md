@@ -32,8 +32,9 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm db:checksum` / `pnpm db:seed:check` | One md5 per public table and per seeded auth table; reset twice and fail on any checksum difference (FND-7) |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints) |
-| `pnpm check` | i18n parity, then typecheck, lint and unit tests in every workspace |
+| `pnpm check` | i18n parity and plan coverage, then typecheck, lint and unit tests in every workspace |
 | `pnpm i18n:parity` | Compares `apps/web/messages/vi.json` and `en.json` (see Translations) |
+| `pnpm plan:coverage` | Maps every SPEC §6 acceptance id, north-star step, phase exit and Mom test to the PRs in `docs/plan/trail/pr-inventory.md`; fails on an unmapped requirement or an id SPEC does not define (`--inventory <path>` checks another copy) |
 | `pnpm e2e` | Playwright suite; `pnpm e2e:northstar` runs SPEC §1.2 |
 | `pnpm e2e:prod` | Builds, starts with `ESTA_ENV=production` and checks `/dev/*` returns 404 |
 | `pnpm check:build-env` | Builds a clean copy without `CRON_SECRET` and checks it fails with the zod message |
