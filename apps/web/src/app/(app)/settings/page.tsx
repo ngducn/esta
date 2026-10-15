@@ -1,8 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { redirect } from 'next/navigation';
 import { DisplaySettingsForm, type SaveStatus } from '@/components/shell/display-settings-form';
 import { sectionMetadata } from '@/components/shell/section-page';
-import { getCurrentMember } from '@/server/member';
+import { requireMember } from '@/server/member';
 import { getThemePreference } from '@/server/theme';
 
 export const generateMetadata = () => sectionMetadata('settings');
@@ -15,12 +14,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const [nav, sections, member, locale, theme, { status }] = await Promise.all([
     getTranslations('nav'),
     getTranslations('sections'),
-    getCurrentMember(),
+    requireMember(),
     getLocale(),
     getThemePreference(),
     searchParams,
   ]);
-  if (member === null) redirect('/onboarding');
 
   return (
     <div className="flex flex-col gap-8">

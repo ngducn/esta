@@ -1,15 +1,13 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { getCurrentMember } from '@/server/member';
+import { requireMember } from '@/server/member';
 
 export default async function HomePage() {
   const [t, onboarding, member] = await Promise.all([
     getTranslations('home'),
     getTranslations('onboarding'),
-    getCurrentMember(),
+    requireMember(),
   ]);
-  if (member === null) redirect('/onboarding');
 
   return (
     <div className="flex flex-col gap-6">

@@ -1,5 +1,4 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { formatDateLong } from '@esta/core/format';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
@@ -7,7 +6,7 @@ import { accountSections, primarySections, type NavItem } from '@/components/she
 import { Sidebar } from '@/components/shell/sidebar';
 import { TabBar } from '@/components/shell/tab-bar';
 import { getClock } from '@/server/clock';
-import { getCurrentMember } from '@/server/member';
+import { requireMember } from '@/server/member';
 
 /** Vietnamese names put the given name last, so the monogram takes its first letter. */
 function monogram(displayName: string | null): string | null {
@@ -17,7 +16,7 @@ function monogram(displayName: string | null): string | null {
 
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
   const [member, clock, locale, nav, shell, language, onboarding, app] = await Promise.all([
-    getCurrentMember(),
+    requireMember(),
     getClock(),
     getLocale(),
     getTranslations('nav'),
@@ -26,7 +25,6 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     getTranslations('onboarding'),
     getTranslations('app'),
   ]);
-  if (member === null) redirect('/onboarding');
 
   const items: NavItem[] = primarySections.map(({ key, href, icon }) => ({ key, href, icon, label: nav(key) }));
   const name = member.displayName ?? shell('account');

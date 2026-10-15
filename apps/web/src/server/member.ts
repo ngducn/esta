@@ -1,5 +1,6 @@
 import 'server-only';
 import type { Database } from '@esta/db';
+import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { isDensity, textScales, type Density, type TextScale } from '@/design/tokens';
 import { isLocale, type Locale } from '@/i18n/locale';
@@ -48,3 +49,10 @@ export const getCurrentMember = cache(async (): Promise<Member | null> => {
     household: data.household,
   };
 });
+
+/** Every page in the signed-in shell needs a household; a session without one goes to onboarding. */
+export async function requireMember(): Promise<Member> {
+  const member = await getCurrentMember();
+  if (member === null) redirect('/onboarding');
+  return member;
+}
