@@ -1,6 +1,6 @@
 # Owner brief, shared by every PR owner
 
-You own one PR of the Esta v1 stack from build to STACK-READY. You never merge, never arm auto-merge, never close a PR, never force-push a branch other than your own, and never touch topology beyond your own branch. The root owns topology and merges.
+You own one PR of Esta v1 from build to merge-ready (see the 2026-10-15 update in standing-orders.md, which overrides this brief where they conflict). You never merge, never arm auto-merge, never close a PR, never force-push a branch other than your own, and never touch topology beyond your own branch. The root owns topology and merges.
 
 ## Read first
 
@@ -18,8 +18,8 @@ You own one PR of the Esta v1 stack from build to STACK-READY. You never merge, 
 3. Build every Files and Build box of your section. Name the data shape first. Push after every verifiable unit with hooks on.
 4. Self-prove on the real artifact. Run every Verify, unit box. Drive the You see boxes yourself on the real surface (gstack browse before P0-10 merges, the project verify skill after). Save evidence under `/tmp/owner-<pr id>/`.
 5. Run `/deslop`, then `/no-comments`, then `pnpm check` (and `pnpm db:test` when SQL changed) on the committed head. Report the code-ready head SHA to the root with a SendMessage to `main` when the shipped code is final.
-6. Babysit CI to green per babysit.md. Triage review-bot comments per bugbot-triage.md. Fix what the root sends back in one fix-forward per round; at most two fix-forwards.
-7. Report STACK-READY to the root with the exact head SHA, the evidence paths, your decisions.tsv path, and every box of your section you could not check with the reason.
+6. Babysit CI to green per babysit.md. Triage review-bot comments per bugbot-triage.md. Fix what the root sends back in one fix-forward; one is the maximum.
+7. Report merge-ready to the root with the exact head SHA, the evidence paths, your decisions.tsv path, and every box of your section you could not check with the reason.
 
 ## Rules
 

@@ -26,3 +26,20 @@ The decision trail lives in docs/plan/trail/decisions.tsv.
 - Merge mechanics from now on. A PR targets `main` as soon as its parent is on `main`; the root retargets it. Only a PR whose base is `main` is ready for the operator's merge click. A stacked PR whose base is another branch is never merged on GitHub; the root lands it after its parent.
 - GitHub Actions is disabled for the repo to save minutes. CI runs locally with `tools/ci-local.sh <worktree> <pr> <slot>`, which mirrors `.github/workflows/ci.yml` and posts `local-ci/<job>` commit statuses plus one summary comment. Owners run it once at code-ready; the gates lane runs it at the verdict head.
 - Claude usage. Round 1 per PR is one Sonnet worker (ten lanes, local CI, perf) plus one audit lane, Opus for security, money and data PRs and Sonnet otherwise. Later rounds are one Sonnet lane. Owners do not babysit CI.
+
+## Update 2026-10-15 23:40 +07
+
+Operator's words, 2026-10-15: "yeah please do apply what you suggested, but at this stage, evaluate and merge everything for me please", "add to your memory a skill that plan and architect features more vertically", and on the stated plan "yeah do it, 50% is ok by me, please go do it".
+
+Tonight's objective. #29 merged. Agent worktrees cleaned and open issues triaged. A vertical re-slice of the plan merged with its acceptance-coverage check green. P0-14 merged on a clean verdict or parked with its reason. A lint PR for #14 and #22 merged or parked. Pause safely run, with RESUME.md and a morning brief in STATUS.md. All of it inside 50% of the block that started 2026-10-15T16:00Z. Stop spawning at 35%, pause at 45%. Do not continue into the next block.
+
+Rules from this update. They override the earlier sections and the plan's per-PR boxes where they conflict.
+
+1. Playbook is Autopilot-full. Every PR branches off `main`. Sequenced work is merge-then-branch. No stacks.
+2. Landing authority for Phase 0 and the plan docs is granted. The root squash-merges with `gh pr merge --squash --match-head-commit <sha>` only on its clean verdict at that exact SHA. Owners stop at merge-ready and never merge.
+3. Still the operator's: deploys, cloud Supabase, real email, paid services, deleting anything outside the local dev stack, SPEC §3, the Mac's firewall or Docker settings, the VietQR banking-app scan and the Mom test.
+4. Verification per PR. The owner encodes each live lane's pass rule as a Playwright assertion where it is deterministic, runs local CI once at code-ready, and puts verify-skill screenshots (390x844 and 1440x900, Vietnamese, light and dark) in the PR body. One Sonnet verifier lane at the head SHA re-runs local CI, drives the load-bearing behavior live through `.claude/skills/verify`, and audits the diff against the PR body. An Opus audit lane runs only on security, money and data PRs. No review video.
+5. Perf budgets (Lighthouse LCP, TBT, CLS) apply to user routes only. `/dev/*` routes check initial JS only.
+6. One fix-forward per PR. A blocking finding that survives it parks the PR with its evidence.
+7. Plan vertically with the `vertical-slice-matrix` skill (`~/.claude/skills/vertical-slice-matrix/SKILL.md`). Build each shared capability inside the first slice that consumes it. P0-13 is removed; its composites move to their first consuming PRs. P0-14 depends on P0-12.
+8. Concurrency. At most two owners with a local stack plus one verifier. Owners use slots 2 and 3, the verifier slot 14. Never touch `esta-1` or `ekh-*`.
