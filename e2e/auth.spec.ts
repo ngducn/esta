@@ -141,11 +141,12 @@ test('an empty code gets app copy, not the browser bubble', async ({ page }) => 
   await expect(page.getByLabel('Mã 6 chữ số')).toHaveAttribute('aria-invalid', 'true');
 });
 
-test('a send that is refused is not blamed on the email', async ({ page }) => {
+test('a send that is refused is not blamed on the email', async ({ page, request }) => {
   const email = uniqueEmail('refused');
-  await requestCode(page, email);
-  await page.getByRole('button', { name: 'Đổi email' }).click();
+  await page.goto('/sign-in');
   await page.getByLabel('Email').fill(email);
+  const first = await request.post(`${authApi.url}/otp`, { headers: authApi.headers, data: { email, create_user: true } });
+  expect(first.ok(), 'the first send lands just before the form sends, inside the 1 s max_frequency window').toBe(true);
   await page.getByRole('button', { name: 'Gửi mã' }).click();
   await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     'Esta đã gửi nhiều mã trong giờ qua. Dùng mã mới nhất trong email, hoặc đợi ít phút rồi thử lại.',
