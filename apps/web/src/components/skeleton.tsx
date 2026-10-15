@@ -17,7 +17,6 @@ function Loading({ children, className }: { children: ReactNode; className?: str
   );
 }
 
-/** A section page while its data loads: the title and the line under it. */
 export function SkeletonPage() {
   return (
     <Loading className="flex flex-col gap-3">

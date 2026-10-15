@@ -9,7 +9,7 @@ export async function sectionMetadata(section: LaterSection): Promise<Metadata> 
   return { title: nav(section) };
 }
 
-/** A section that later phases fill. It names the section and says what arrives, never that it is empty. */
+/** Lane households already hold seeded data, so a placeholder says what arrives and never that the section is empty. */
 export async function SectionPage({ section }: { section: LaterSection }) {
   const [nav, sections] = await Promise.all([getTranslations('nav'), getTranslations('sections')]);
   return (

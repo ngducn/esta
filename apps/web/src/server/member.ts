@@ -50,7 +50,6 @@ export const getCurrentMember = cache(async (): Promise<Member | null> => {
   };
 });
 
-/** Every page in the signed-in shell needs a household; a session without one goes to onboarding. */
 export async function requireMember(): Promise<Member> {
   const member = await getCurrentMember();
   if (member === null) redirect('/onboarding');

@@ -59,7 +59,7 @@ export function AvatarMenu({ name, household, role, links, switchLanguage: langu
           </form>
         </li>
       </ul>
-      <form action={signOut} className="border-t border-rule pt-2">
+      <form action={signOut} className="mt-4 border-t border-rule pt-4">
         <button type="submit" className={itemClass}>
           {signOutLabel}
         </button>

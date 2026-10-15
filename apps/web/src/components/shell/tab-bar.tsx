@@ -21,7 +21,6 @@ export function SectionIcon({ d }: { d: string }) {
   );
 }
 
-/** The lacquer marker: a red-ink underline under the active label, as a ledger keeper marks a line. */
 export const activeLabel =
   'decoration-lacquer decoration-2 underline-offset-4 group-aria-[current=page]:text-ink group-aria-[current=page]:underline';
 

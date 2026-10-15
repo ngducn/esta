@@ -18,7 +18,7 @@ function Choice({ legend, hint, children, wide }: { legend: string; hint?: strin
     <fieldset className="flex flex-col gap-3">
       <legend className="mb-1 text-lead font-semibold">{legend}</legend>
       {hint && <p className="-mt-2 text-small text-ink-muted">{hint}</p>}
-      <div className={wide ? 'grid gap-2 sm:grid-cols-2' : 'grid grid-cols-3 gap-2'}>{children}</div>
+      <div className={wide ? 'grid gap-2 sm:grid-cols-2' : 'grid gap-2 sm:grid-cols-3'}>{children}</div>
     </fieldset>
   );
 }
@@ -44,6 +44,16 @@ export async function DisplaySettingsForm({ settings, status }: { settings: Disp
           {t('display')}
         </h2>
         <p className="text-ink-muted">{t('displayIntro')}</p>
+        {status === 'saved' && (
+          <p role="status" className="font-semibold">
+            {t('saved')}
+          </p>
+        )}
+        {status === 'failed' && (
+          <p role="alert" className="font-semibold text-overdue-ink">
+            {t('saveFailed')}
+          </p>
+        )}
       </div>
       <Choice legend={t('language')} wide>
         {locales.map((locale) => (
@@ -79,17 +89,9 @@ export async function DisplaySettingsForm({ settings, status }: { settings: Disp
           <Option key={theme} name="theme" value={theme} checked={settings.theme === theme} label={t(`themes.${theme}`)} />
         ))}
       </Choice>
-      <div className="flex flex-wrap items-center gap-4">
-        <button type="submit" className={buttonVariants()}>
-          {t('save')}
-        </button>
-        {status === 'saved' && <p role="status">{t('saved')}</p>}
-        {status === 'failed' && (
-          <p role="alert" className="text-overdue-ink">
-            {t('saveFailed')}
-          </p>
-        )}
-      </div>
+      <button type="submit" className={buttonVariants({ className: 'self-start' })}>
+        {t('save')}
+      </button>
     </form>
   );
 }

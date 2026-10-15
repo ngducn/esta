@@ -57,7 +57,6 @@ export const densityNames = Object.keys(densities) as Density[];
 
 export const isDensity = (value: unknown): value is Density => densityNames.some((name) => name === value);
 
-/** The member's text scale in percent; the root font size is 16 px times it (SPEC household_members.text_scale). */
 export const textScales = [100, 115, 130] as const;
 
 export type TextScale = (typeof textScales)[number];
