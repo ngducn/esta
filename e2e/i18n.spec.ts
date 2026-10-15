@@ -15,7 +15,6 @@ test('/sign-in renders Vietnamese by default', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đăng nhập');
   await expect(page.getByText('Sổ cái nhà đất của gia đình')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
-  await expect(page.getByTestId('date-line')).toHaveText(/^(Thứ (Hai|Ba|Tư|Năm|Sáu|Bảy)|Chủ Nhật), \d{2}\/\d{2}\/\d{4}$/);
   await expect(page).toHaveTitle('Đăng nhập');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
@@ -26,7 +25,6 @@ test('/sign-in renders English with the NEXT_LOCALE=en cookie', async ({ page, b
   await expect(page.getByText("The family's property ledger")).toBeVisible();
   await expect(page.getByText('Sổ cái nhà đất của gia đình')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.getByTestId('date-line')).toHaveText(/^(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day, \d{2}\/\d{2}\/\d{4}$/);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 

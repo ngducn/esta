@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
+import { signIn } from './helpers/inbucket';
 
 function authorization(): { authorization: string } {
   const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false });
@@ -22,7 +23,7 @@ test('the date line follows the test clock across a day without a restart', asyn
   ownTheClockRow();
   try {
     await setClock(request, '2026-10-07T23:59:00+07:00');
-    await page.goto('/');
+    await signIn(page, 'me.lane4@demo.esta.test');
     await expect(page.getByTestId('date-line')).toHaveText('Thứ Tư, 07/10/2026');
 
     await setClock(request, '2026-10-08T00:00:00+07:00');

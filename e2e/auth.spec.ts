@@ -169,6 +169,7 @@ test('sign-out ends the session', async ({ page }) => {
   await signIn(page, uniqueEmail('signout'));
   await createHousehold(page, 'Gia đình Đăng Xuất Demo', 'Demo');
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tài khoản' }).click();
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await page.goto('/');
@@ -215,12 +216,14 @@ test('a language chosen on sign-in carries into the member and the English chrom
   await page.getByLabel('Your name').fill('Demo');
   await page.getByRole('button', { name: 'Create household' }).click();
   await page.getByRole('link', { name: 'Done' }).click();
+  await page.getByRole('button', { name: 'Account' }).click();
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Tiếng Việt' }).click();
   await expect(page.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
   await page.context().clearCookies({ name: 'NEXT_LOCALE' });
   await page.reload();
+  await page.getByRole('button', { name: 'Tài khoản' }).click();
   await expect(page.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
 });

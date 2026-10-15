@@ -16,7 +16,7 @@ const optionClass =
 function Choice({ legend, hint, children, wide }: { legend: string; hint?: string; children: ReactNode; wide?: boolean }) {
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-1 text-h3 font-semibold">{legend}</legend>
+      <legend className="mb-1 text-lead font-semibold">{legend}</legend>
       {hint && <p className="-mt-2 text-small text-ink-muted">{hint}</p>}
       <div className={wide ? 'grid gap-2 sm:grid-cols-2' : 'grid grid-cols-3 gap-2'}>{children}</div>
     </fieldset>

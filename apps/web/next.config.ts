@@ -7,6 +7,8 @@ const env = parseEnv(process.env);
 const nextConfig: NextConfig = {
   distDir: process.env.ESTA_NEXT_DIST_DIR ?? '.next',
   allowedDevOrigins: env.ESTA_LAN_HOST === undefined ? [] : [env.ESTA_LAN_HOST],
+  // The tab bar and the sidebar footer fill the bottom corners, where the indicator would cover a control.
+  devIndicators: false,
 };
 
 export default createNextIntlPlugin({
