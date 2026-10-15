@@ -232,7 +232,7 @@ test('lane 9: a viewer switches its own language to English and the admin keeps 
   await expect(tabBar(page).getByRole('link')).toHaveText(sections.map((section) => section.vi));
 });
 
-test('lane 10: English, 130% and dark on Collections keep every tab label inside its box', async ({ page, baseURL }) => {
+test('lane 10: English, 130% and dark on Collections keep every tab label inside its box', async ({ page }) => {
   onlyOn('mobile');
   await newHousehold(page);
   await saveDisplaySettings(page, { language: 'English', textScale: '130%', theme: 'Tối' });

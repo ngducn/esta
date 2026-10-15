@@ -35,7 +35,7 @@ export function AvatarMenu({ name, household, role, links, switchLanguage: langu
       ref={menu}
       id={menuId}
       popover="auto"
-      className="inset-auto inset-x-0 bottom-0 m-0 w-auto max-w-none translate-y-8 flex-col gap-2 rounded-t-md border-t border-rule bg-surface p-4 pb-[max(--spacing(4),env(safe-area-inset-bottom))] text-ink opacity-0 shadow-sheet transition-[translate,opacity,display,overlay] transition-discrete duration-(--duration-slow) ease-standard open:flex open:translate-y-0 open:opacity-100 starting:open:translate-y-8 starting:open:opacity-0 backdrop:bg-ink/20 lg:right-auto lg:bottom-3 lg:left-sidebar lg:w-sidebar lg:translate-y-0 lg:rounded-md lg:border lg:backdrop:bg-transparent"
+      className="inset-auto inset-x-0 bottom-0 m-0 w-auto max-w-none translate-y-8 flex-col gap-2 rounded-t-md border-t border-rule bg-surface p-4 pb-[max(--spacing(4),env(safe-area-inset-bottom))] text-ink opacity-0 shadow-sheet transition-[translate,opacity,display,overlay] transition-discrete duration-(--duration-slow) ease-standard open:flex open:translate-y-0 open:opacity-100 starting:open:translate-y-8 starting:open:opacity-0 backdrop:bg-paper/85 lg:right-auto lg:bottom-3 lg:left-sidebar lg:w-sidebar lg:translate-y-0 lg:rounded-md lg:border lg:backdrop:bg-transparent"
     >
       <div className="flex flex-col gap-1 border-b border-rule px-3 pb-3">
         <p className="text-lead font-semibold break-words">{name}</p>
