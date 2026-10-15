@@ -991,91 +991,84 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
-## Run the agent worker skeleton and complete a ping on subscription auth (P0-15)
+## Run the worker and show its status and a connection check on the Trợ lý page (P0-15)
 
 **Depends on.** P0-14.
 
 **Files.**
 
-- [ ] Create `apps/agent/src/main.ts`, `env.ts`, `clock.ts`, `supabase.ts`, `heartbeat.ts`, `scheduler.ts` and `runner.ts` under `apps/agent/src/`.
-- [ ] Create `apps/agent/src/jobs/registry.ts` and `apps/agent/src/jobs/ping.ts`.
-- [ ] Create `apps/agent/src/sdk/options.ts`, `apps/agent/src/sdk/path-policy.ts` and `apps/agent/src/sdk/result.ts`.
-- [ ] Create `apps/agent/src/tools/server.ts` and `apps/agent/src/tools/household-info.ts`.
-- [ ] Create `apps/agent/src/replay/canonicalize.ts` and `apps/agent/src/replay/store.ts`, and `fixtures/agent-replay/ping/<hash>.json`.
-- [ ] Create `*.test.ts` beside each module above.
-- [ ] Create `supabase/migrations/20261007001000_agent_core.sql`, `supabase/tests/agent_core.test.sql` and `supabase/seed/generator/agent.ts`.
-- [ ] Create `apps/web/src/app/dev/agent/page.tsx` and `apps/web/src/app/dev/agent/actions.ts`, and `e2e/dev-agent.spec.ts`.
-- [ ] Create `scripts/agent-record.ts`. Edit the root `package.json` and `docs/spec/AGENT.md`.
+- [ ] Create `main.ts`, `env.ts`, `clock.ts`, `supabase.ts`, `heartbeat.ts` and `runner.ts` under `apps/agent/src/`, `registry.ts` and `ping.ts` under `apps/agent/src/jobs/`, `options.ts`, `path-policy.ts` and `result.ts` under `apps/agent/src/sdk/`, `server.ts` and `household-info.ts` under `apps/agent/src/tools/`, `canonicalize.ts` and `store.ts` under `apps/agent/src/replay/`, a `*.test.ts` beside each, and `fixtures/agent-replay/ping/<hash>.json`.
+- [ ] Create `packages/core/src/agent/worker-status.ts` and its test, `supabase/migrations/20261007015000_agent_core.sql`, `supabase/tests/agent_core.test.sql` and `supabase/seed/generator/agent.ts`. Regenerate `packages/db/src/database.types.ts`.
+- [ ] Create `apps/web/src/components/assistant/worker-status-line.tsx` and `apps/web/src/components/markdown/safe-markdown.tsx` with a `*.test.tsx` beside each, `apps/web/src/server/assistant.ts`, and `actions.ts` and `connection-check.tsx` under `apps/web/src/app/(app)/assistant/`. Edit `apps/web/src/app/(app)/assistant/page.tsx` and the message files.
+- [ ] Create `e2e/assistant-status.spec.ts`, `e2e/helpers/agent-worker.ts`, `.claude/skills/verify/scripts/worker.sh` and `.claude/skills/verify/features/assistant.md`.
+- [ ] Create `scripts/agent-record.ts`. Edit the root `package.json`, `apps/agent/package.json`, `apps/web/package.json`, `.env.example`, `docs/spec/AGENT.md` and `docs/spec/SPEC.md`.
 
 **Build.**
 
-- [ ] Create `agent_jobs`, `agent_runs` and `worker_heartbeats` per AGENT.md §10, plus `agent_jobs.result jsonb` for a job's final output. Members select their household's jobs and runs. Admins may insert only `ping` jobs, with `requested_by = auth.uid()`. Heartbeats are readable by `authenticated`. Attach the audit trigger to `agent_jobs` and `agent_runs`.
-- [ ] Add `claim_agent_job(worker_id text, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`, reclaiming a job whose `locked_at` is older than its kind's timeout plus 2 minutes. It never reads `now()`.
-- [ ] Parse the worker env with zod in `apps/agent/src/env.ts`. `assertStartAllowed(env)` refuses `live` mode without the credential for `ESTA_AUTH_MODE`, and refuses a frozen clock under `ESTA_ENV=production`. `replay` mode reads no credential.
-- [ ] Read the Clock from `test_clock` at every scheduler tick and every job in `apps/agent/src/clock.ts`, reusing `resolveClockSource` (FND-9 worker part).
-- [ ] Send `x-esta-actor: agent:<worker_id>` from the service client in `apps/agent/src/supabase.ts`.
-- [ ] Define the job kinds as data in `apps/agent/src/jobs/registry.ts` (built-in tools, MCP tools, `maxTurns`, timeout, model role, handler). `ping` has built-in tools `[]`, MCP tool `household_info`, 3 turns and 1 minute.
-- [ ] Build SDK options in `apps/agent/src/sdk/options.ts` per branch `spike/s1-agent-sdk` (83c56e0). They set `tools` per kind, `permissionMode: 'default'`, `strictMcpConfig: true`, `settingSources: []`, a job temp dir as `cwd`, the model from `ESTA_MODEL_ROUTINE`, and `env` holding only the active credential plus `CLAUDE_CONFIG_DIR` set to an empty per-worker dir under `ESTA_AGENT_HOME`.
-- [ ] Add the `PreToolUse` hook in `apps/agent/src/sdk/path-policy.ts`. It denies any tool outside the kind's list and any `Read` outside the job dir.
-- [ ] Add the in-process MCP server `esta` with `createSdkMcpServer` and `alwaysLoad: true`, and `household_info` returning the household name, member count, property count and locale for the household bound in the job's closure.
-- [ ] Handle results in `apps/agent/src/sdk/result.ts`. A result with `is_error: true` fails the job, and a 401 records `auth_error`. Write `num_turns`, `session_id`, `total_cost_usd`, `usage`, `modelUsage` and `permission_denials` to `agent_runs`.
-- [ ] Run the heartbeat every 60 s with `auth_mode` and `agent_mode`, the scheduler skeleton that inserts scheduled jobs by idempotency key (no schedules exist in Phase 0), and retries with backoff of 1, 5 and 25 minutes up to 3 attempts.
-- [ ] Add replay mode per AGENT.md §8. It canonicalizes ids, memo codes and timestamps, hashes the input, reads `fixtures/agent-replay/ping/<hash>.json`, and fails a missing recording with the hash and the hint `pnpm agent:record`.
-- [ ] Add `pnpm agent:dev` (worker on the slot's local Supabase) and `pnpm agent:record` (runs the ping case live and rewrites its recording).
-- [ ] Build `/dev/agent` with a household picker, an `Enqueue ping` button, the jobs table with status and result, the runs table with auth mode, agent mode, model, turns, cost and tool calls, and the latest heartbeat.
-- [ ] Extend the seed generator for the new tables in every household with one `done` ping job and its run, using fixed ids and the frozen clock (FND-7).
-- [ ] Rewrite AGENT.md §2.2 with the S1 corrections (`tools` per kind instead of `allowedTools`, the `PreToolUse` hook, `is_error`, `CLAUDE_CONFIG_DIR`, `alwaysLoad`), add `agent_jobs.result` to §10, and add a `ping` case to §7.
-- [ ] Live model calls happen only in the gate demo lane and in `pnpm agent:record`. CI runs replay.
+- [ ] Create `agent_jobs` and `agent_runs` per AGENT.md §10, plus `agent_jobs.result jsonb` and `agent_runs.household_id`, through `private.enable_household_rls` and `private.enable_audit`. Then replace both select policies with `private.is_operator(household_id)`, replace the `agent_jobs` insert policy with one that also requires `kind = 'ping'` and `requested_by = auth.uid()`, and drop every other user write policy. Every later write comes from the worker's service client.
+- [ ] Create `worker_heartbeats` per AGENT.md §10 with RLS and no audit trigger, because it holds no household data and changes every 60 s. `authenticated` may select only `worker_id` and `last_seen_at`, and only the service role writes. Add `claim_agent_job(worker_id text, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`, reclaiming a job whose `locked_at` is older than its kind's timeout plus 2 minutes. It never reads `now()`, and only `service_role` may execute it.
+- [ ] Parse the worker env with zod in `apps/agent/src/env.ts`. `assertStartAllowed(env)` refuses `live` mode without the credential for `ESTA_AUTH_MODE` and calls `assertClockAllowed` to refuse a frozen clock under `ESTA_ENV=production`. `replay` mode reads no credential. `apps/agent/src/clock.ts` reads the Clock through `resolveClockSource` at every heartbeat and every job (FND-9 worker part), and `apps/agent/src/supabase.ts` sends `x-esta-actor: agent:<worker_id>`.
+- [ ] Define the job kinds as data in `apps/agent/src/jobs/registry.ts` (built-in tools, MCP tools, `maxTurns`, timeout, model role, handler). `ping` has built-in tools `[]`, MCP tool `household_info`, 3 turns and 1 minute. Add the in-process MCP server `esta` with `createSdkMcpServer` and `alwaysLoad: true`, and `household_info` returning the household name, member count, property count and locale for the household bound in the job's closure.
+- [ ] Build SDK options in `apps/agent/src/sdk/options.ts` per branch `spike/s1-agent-sdk` (83c56e0). They set `tools` per kind, `permissionMode: 'default'`, `strictMcpConfig: true`, `settingSources: []`, a job temp dir as `cwd`, the model from `ESTA_MODEL_ROUTINE`, and `env` holding only the active credential plus `CLAUDE_CONFIG_DIR` set to an empty per-worker dir under `ESTA_AGENT_HOME`. The `PreToolUse` hook in `path-policy.ts` denies any tool outside the kind's list and any `Read` outside the job dir.
+- [ ] Handle results in `apps/agent/src/sdk/result.ts`. A result with `is_error: true` fails the job, and a 401 records `auth_error`. Write `auth_mode` (`none` in replay), `agent_mode`, `model`, `num_turns`, `session_id`, `total_cost_usd` as `cost_estimate_usd`, `usage` with `modelUsage` and `permission_denials`, and `tool_calls` as names and counts to `agent_runs`, and the reply text to `agent_jobs.result`.
+- [ ] `heartbeat.ts` writes a row at start and every 60 s with `worker_id`, `host_label`, `version`, `auth_mode`, `agent_mode` and `last_seen_at` from the Clock. `nextAttempt(job, failure, asOf)` in `runner.ts` requeues a failed job 1, 5 and then 25 minutes after `asOf`, so `max_attempts` defaults to 4, and marks it `failed` after the last retry. A missing recording or an `auth_error` fails the job at once, because a retry cannot fix either (AGT-1).
+- [ ] Add replay mode per AGENT.md §8 in `apps/agent/src/replay/`. `canonicalize` maps ids, memo codes, timestamps and the household name to placeholders before hashing. `store` reads `<ESTA_REPLAY_DIR>/<kind>/<hash>.json`, with `fixtures/agent-replay` as the default. A missing recording throws `MissingRecordingError` naming the hash and `pnpm agent:record`. The ping prompt and `household_info` carry no date, so one recording replays at any clock and for every lane household.
+- [ ] Add `pnpm agent:dev` (worker on the slot's local Supabase) and `pnpm agent:record` (`scripts/agent-record.ts` runs the ping case live for `Gia đình Demo` and rewrites its recording). Add `worker.sh start replay|live` and `worker.sh stop` to the verify skill, with the pid in `/tmp/esta-verify/slot-<n>/worker.pid`. Live model calls happen only in the verifier lane's gate demo and in `pnpm agent:record`. CI and e2e run replay.
+- [ ] Add `workerStatus(lastSeenAt, now)` in `packages/core/src/agent/worker-status.ts`. It returns `online`, `offline` when the heartbeat is older than 5 minutes (AGENT.md §9), or `never` with no row. `WorkerStatusLine` renders `Trợ lý đang hoạt động. Cập nhật lúc 09:00.`, `Trợ lý ngoại tuyến từ 21:30. Việc mới sẽ chạy khi máy hoạt động lại.` and `Trợ lý chưa kết nối. Việc mới sẽ chạy khi máy hoạt động lại.` with the heartbeat time in Asia/Ho_Chi_Minh. It adds the date when the heartbeat falls on an earlier business date, as in `từ 21:30 06/10/2026`.
+- [ ] Add `SafeMarkdown`, built on `react-markdown`, in `apps/web/src/components/markdown/safe-markdown.tsx`. It escapes raw HTML so it renders as text, renders a link whose URL is not `https:` or `esta:` as plain text with no `href`, and opens `https:` links in a new tab with `rel="noopener noreferrer"` (SPEC §7.1). It has no client hooks, so it renders on the server here.
+- [ ] In `apps/web/src/app/(app)/assistant/page.tsx`, render `WorkerStatusLine` under the `Trợ lý` title for every member from `getWorkerHeartbeat()` in `apps/web/src/server/assistant.ts`. The page reads jobs and runs and renders the `Kiểm tra kết nối` section only when `member.isOperator` is true, so Mẹ's HTML carries no diagnostics (PLT-1 operator status part).
+- [ ] The section has a `Chạy kiểm tra` button, the newest ping with its status (`Đang chờ`, `Đang chạy`, `Xong` or `Lỗi`) and its reply through `SafeMarkdown` or its error, and `Lần chạy gần đây`, the last 10 runs newest first (by `started_at`, then `created_at`) in the P0-12 table with time as `07/10/2026 09:00`, auth mode, agent mode, model, turns, cost and tool calls. `runConnectionCheck()` in `actions.ts` inserts the `ping` through the session client with `requested_by` set to the user and `run_after` from the Clock. `connection-check.tsx` refreshes the route every 2 s while the newest ping is queued or running.
+- [ ] Extend the seed generator in `supabase/seed/generator/agent.ts` with one `done` ping job and its run in every household, keyed `seed:agent-job:ping-<household>` and `seed:agent-run:ping-<household>`, with timestamps from the frozen clock (FND-7). It seeds no heartbeat, so a fresh reset shows the `never` line until a worker starts.
+- [ ] Rewrite AGENT.md §2.2 with the S1 corrections (`tools` per kind instead of `allowedTools`, the `PreToolUse` hook, `is_error`, `CLAUDE_CONFIG_DIR`, `alwaysLoad`). Change §2.1 to up to 3 retries after 1, 5 and 25 minutes. Add the household-name placeholder and `ESTA_REPLAY_DIR` to §8, `agent_jobs.result`, `agent_runs.household_id` and auth mode `none` to §10, and a `ping` case to §7. Add `ESTA_REPLAY_DIR` to SPEC §8 and `.env.example`.
+- [ ] Run `/impeccable harden` on `/assistant` for the offline and `never` lines, a long reply, a failed ping, an empty run table and 130% text scale. The `Trợ lý` shape and its tabs stay with P5-03.
 
 **You see.**
 
-- [ ] On `/dev/agent`, `Enqueue ping` for `Gia đình Demo 1` produces a `done` job whose result names `Gia đình Demo 1`.
-- [ ] The runs table shows one `mcp__esta__household_info` call.
-- [ ] The heartbeat row shows the worker's auth mode and agent mode, updated within 60 s.
+- [ ] With a replay worker running, every member sees `Trợ lý đang hoạt động. Cập nhật lúc 09:00.` under the `Trợ lý` title on `/assistant`. Six minutes after the worker stops, the line reads `Trợ lý ngoại tuyến từ 09:00. Việc mới sẽ chạy khi máy hoạt động lại.`
+- [ ] As Ryan, `Chạy kiểm tra` returns a reply naming his household, and `Lần chạy gần đây` shows the run. Mẹ's page has no `Kiểm tra kết nối` section.
+- [ ] `pnpm agent:dev` with `ESTA_AGENT_MODE=live ESTA_AUTH_MODE=api_key` and no `ANTHROPIC_API_KEY` exits 1 with a message naming both variables.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] The worker tests cover `assertStartAllowed` for each mode, `buildSdkEnv` holding exactly one credential, the path policy denying `/etc/hosts` and a sibling job dir, `household_info` for household A returning zero data from household B, `is_error` handling, canonicalization stability, and the missing-recording error.
-- [ ] `supabase/tests/agent_core.test.sql` covers household isolation, viewer read-only, a member unable to insert jobs, an admin able to insert only `ping`, two concurrent claims getting different jobs, and stale reclaim at a later `p_as_of` (AGT-1 groundwork).
-- [ ] Golden tests in AGENT.md §7 for `ping` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
-- [ ] `e2e/dev-agent.spec.ts` enqueues a ping and waits for `done` with a replay worker. Run `pnpm e2e e2e/dev-agent.spec.ts`.
-- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check`.
+- [ ] The worker tests cover `assertStartAllowed` for each mode, `buildSdkEnv` holding exactly one credential, the path policy denying `/etc/hosts` and a sibling job dir, `household_info` for household A returning zero data from household B, `is_error` and 401 handling, canonicalization stability with the household-name placeholder, the missing-recording error, and `nextAttempt` at each backoff step and for a permanent failure (AGT-1). Golden tests in AGENT.md §7 for `ping` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [ ] `supabase/tests/agent_core.test.sql` covers household isolation on `agent_jobs` and `agent_runs`, a viewer and a non-operator admin reading zero jobs and runs and inserting none, an operator inserting a `ping` for itself but no other kind and no other `requested_by`, `authenticated` reading only `worker_id` and `last_seen_at` from `worker_heartbeats` and unable to call `claim_agent_job`, two claims getting different jobs, and stale reclaim at a later `p_as_of` (FND-2, AGT-1).
+- [ ] `worker-status.test.ts` covers online at exactly 5 minutes, offline at 5 minutes and 1 second, `never` with no row, and a heartbeat on an earlier business date. `worker-status-line.test.tsx` renders the three lines exactly. `safe-markdown.test.tsx` covers a `<script>` tag rendered as text, a `javascript:` link and an `http:` link dropped, and an `https:` link and an `esta://property/<id>` link kept (SPEC §7.1).
+- [ ] `e2e/assistant-status.spec.ts` runs serially in one project with a worker from `e2e/helpers/agent-worker.ts`, because the worker and the test clock are shared per slot. It resets the clock to `2026-10-07T09:00:00+07:00` and restarts the worker before each rule. Run `pnpm e2e e2e/assistant-status.spec.ts`.
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-agent.spec.ts`.
+- [ ] axe reports zero serious or critical issues on `/assistant` for Mẹ and for Ryan in `e2e/assistant-status.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk has no worker, so the lane checks the trunk shell still loads at head and gates the ping. Start `pnpm agent:dev` in replay mode, sign in as `ryan.lane1@demo.esta.test` through the verify skill, and enqueue a ping on `/dev/agent` at 1440x900, light. Save `p0-15-ping-replay.png`. Pass when the job reads `done`, its result contains `Gia đình Demo 1`, and the run's tool calls read `{"mcp__esta__household_info":1}`.
-- [ ] Lane 2. Gate demo on subscription auth. Start the worker with `ESTA_AGENT_MODE=live` and `ESTA_AUTH_MODE=subscription`, reading `CLAUDE_CODE_OAUTH_TOKEN` from the main checkout's `apps/agent/.env.local`, and enqueue a ping for `Gia đình Demo 2` at 1440x900, dark. Save `p0-15-ping-live.png`. Pass when the run row reads `subscription` and `live`, the cost is above 0, the result contains `Gia đình Demo 2`, and the screenshot shows no token.
-- [ ] Lane 3. At 390x844, light, read the heartbeat on `/dev/agent`. Save `p0-15-heartbeat.png`. Pass when `last_seen_at` is within 60 s of the test clock plus elapsed time and the row reads `replay`.
-- [ ] Lane 4. Start the worker with `ESTA_AGENT_MODE=live ESTA_AUTH_MODE=api_key` and no `ANTHROPIC_API_KEY`, and render stderr at 1440x900, light. Save `p0-15-refuse-auth.png`. Pass when it exits 1 and the message names `ESTA_AUTH_MODE=api_key` and `ANTHROPIC_API_KEY`.
-- [ ] Lane 5. Start the worker with `ESTA_ENV=production ESTA_FROZEN_NOW=2026-10-07T09:00:00+07:00` and render stderr at 390x844, dark. Save `p0-15-refuse-clock.png`. Pass when it exits 1 with the frozen clock refusal.
-- [ ] Lane 6. Enqueue a ping for `Gia đình Demo 6` at 390x844, light, and compare its result with Studio counts for household 6. Save `p0-15-household-info.png`. Pass when the result's property count is 7 and its member count is 2, matching Studio.
-- [ ] Lane 7. Render `tsx apps/agent/src/sdk/path-policy.ts --probe /etc/hosts` and `--probe <job dir>/page.png` at 1440x900, dark. Save `p0-15-path-policy.png`. Pass when the first prints `deny` and the second prints `allow`.
-- [ ] Lane 8. Move the ping recording aside, enqueue a ping at 390x844, dark, then restore it. Save `p0-15-missing-recording.png`. Pass when the job reads `failed` and its error shows the input hash and `pnpm agent:record`.
-- [ ] Lane 9. On its own slot (`ESTA_SLOT=9`), kill the worker with SIGKILL right after it claims a ping, restart it, advance the clock by 3 minutes, and view `/dev/agent` at 1440x900, light. Save `p0-15-reclaim.png`. Pass when the job ends `done` with exactly one run row.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted to the worker. As `ryan.lane10@demo.esta.test` in English, 130% and dark at 390x844, enqueue a ping, then read the newest `audit_log` rows for `agent_jobs` in Studio. Save `p0-15-seed10.png`. Pass when the job ends `done`, `/dev/agent` has no page-level horizontal overflow, and the worker's update row reads `actor_kind = 'agent'` with the worker id.
+- [ ] Rule 1. With a replay worker running at `2026-10-07T09:00:00+07:00`, `me.lane1@demo.esta.test` opens `/assistant` at 390x844, light. Pass when the status line reads `Trợ lý đang hoạt động. Cập nhật lúc 09:00.` and no `Kiểm tra kết nối` section renders. Asserted in `e2e/assistant-status.spec.ts`.
+- [ ] Rule 2. The spec stops the worker and sets the clock to `2026-10-07T09:06:00+07:00`, and `me.lane2@demo.esta.test` reloads `/assistant` at 390x844, dark. The spec then starts the worker again. Pass when the line reads `Trợ lý ngoại tuyến từ 09:00. Việc mới sẽ chạy khi máy hoạt động lại.` while the worker is stopped, and `Trợ lý đang hoạt động. Cập nhật lúc 09:06.` within 10 s of the restart. Asserted in `e2e/assistant-status.spec.ts`.
+- [ ] Rule 3. `me.lane3@demo.esta.test` opens `/assistant` at 1440x900, light, and her session tries to insert a `ping` job through the Supabase API. Pass when the server HTML contains no `Kiểm tra kết nối`, no run table and no auth mode, the insert fails with an RLS error, and her select on `agent_runs` returns zero rows. Asserted in `e2e/assistant-status.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` taps `Chạy kiểm tra` on `/assistant` at 1440x900, dark. Pass when the newest ping reads `Xong` within 10 s, its reply contains `Gia đình Demo 4`, and the newest run row reads `none`, `replay`, the routine model and one `mcp__esta__household_info` call. Asserted in `e2e/assistant-status.spec.ts`.
+- [ ] Rule 5. The spec restarts the worker with `ESTA_REPLAY_DIR` set to an empty directory, and `ryan.lane5@demo.esta.test` taps `Chạy kiểm tra` at 390x844, light. Pass when the ping reads `Lỗi` after one attempt with no retry queued, and its error shows a 64-character input hash and `pnpm agent:record`. Asserted in `e2e/assistant-status.spec.ts`.
+- [ ] Rule 6. SPEC §9.4 seed 10 adapted to the page. `ryan.lane10@demo.esta.test` switches to English, 130% and dark, opens `/assistant` at 390x844 and runs the check. Pass when the line reads `Assistant is online. Updated at 09:00.`, the reply contains `Gia đình Demo 10`, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/assistant-status.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots of `/assistant` at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P0-15/`, and puts them in the PR body. Each state gets four files named by viewport and theme. Save `p0-15-me-online-390-light.png` and its three siblings, `p0-15-me-offline-<viewport>-<theme>.png`, `p0-15-ryan-ping-done-<viewport>-<theme>.png` and `p0-15-ryan-ping-failed-<viewport>-<theme>.png`.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, then runs the gate demo through `.claude/skills/verify` on slot 14. It starts the worker with `ESTA_AGENT_MODE=live` and `ESTA_AUTH_MODE=subscription`, reading `CLAUDE_CODE_OAUTH_TOKEN` from the main checkout's `apps/agent/.env.local`, signs in as `ryan.lane6@demo.esta.test` at 1440x900, dark, and taps `Chạy kiểm tra` once. It posts the redacted run row (auth mode, agent mode, model, turns, cost, tool calls) in the PR body as the S1 evidence for P0-16, and audits the diff against the PR body. Save `p0-15-live-ping.png`. Pass when the run reads `subscription` and `live` with a cost above 0 and one `mcp__esta__household_info` call, the reply contains `Gia đình Demo 6`, and neither the screenshot nor the worker log contains the token.
+- [ ] Audit lane. One Opus lane audits the diff for credentials in the worker env and logs, the `PreToolUse` path policy, the service role allowlist, RLS on `agent_jobs`, `agent_runs` and `worker_heartbeats`, and operator-only diagnostics in both RLS and the page HTML. Pass when it files no blocking finding.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Ping wall time from enqueue to `done` in replay and in live mode, `claim_agent_job` time with 1,000 queued jobs from `EXPLAIN (ANALYZE)`, and idle worker CPU.
-- [ ] Probe. 5 replay pings and 1 live ping (the gate demo). 5 claims at head. Idle CPU averaged over 60 s with `ps`.
-- [ ] Baseline. Trunk has no worker, so every metric takes an absolute budget. `pnpm db:reset` compares trunk against head for the new seed rows.
-- [ ] Rule. Fail when a replay ping exceeds 3 s, the live ping exceeds 60 s, a claim exceeds 5 ms, idle CPU exceeds 2%, or `pnpm db:reset` exceeds trunk by more than 5 s.
+- [ ] Metric. Lighthouse mobile LCP, TBT and CLS and initial route JS gzipped for `/assistant` as Mẹ and as Ryan on a production build with the full seed. Replay ping wall time from tap to `Xong`. `claim_agent_job` time with 1,000 queued jobs from `EXPLAIN (ANALYZE)`. Idle worker CPU.
+- [ ] Probe. 5 interleaved Lighthouse runs per side as `me.lane1@demo.esta.test` and as `ryan.lane1@demo.esta.test`. 5 replay pings and 5 claims at head. Idle CPU averaged over 60 s with `ps`.
+- [ ] Baseline. Trunk serves `/assistant` as the P0-14 placeholder, and the status line and the connection check are new content at head, so `/assistant` takes the SPEC §7.2 absolute budgets. Trunk has no worker, so the ping, claim and CPU metrics take absolute budgets too.
+- [ ] Rule. Fail when `/assistant` misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS for either member, a replay ping exceeds 3 s, a claim exceeds 5 ms, or idle worker CPU exceeds 2%.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-15 landing grant lets the root merge Phase 0 on its clean verdict without waiting for that review. No review video.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P0-15/P0-15-review-<slug>.png`, one file per screenshot.
-- [ ] Record a 30 to 60 second video of `/dev/agent` enqueuing a live ping on subscription auth and the run row appearing, saved as `~/.claude/orchestrate/esta/media/P0-15/P0-15-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live**, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` under the 2026-10-15 landing grant for Phase 0.
 
 ## Prove the Phase 0 exit across web, cron and worker (P0-16)
 
@@ -1084,270 +1077,68 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 **Files.**
 
 - [ ] Create `e2e/fnd9-integration.spec.ts`.
-- [ ] Create `scripts/phase-exit.ts` and `scripts/table-coverage.ts`. Edit the root `package.json`.
-- [ ] Create `docs/plan/STATUS.md`.
-- [ ] Create `docs/plan/trail/phase-0/s1-ping-run.json` (redacted run record).
-- [ ] Edit `docs/spec/DOMAIN-VN.md`, `docs/spec/SPEC.md` and `DESIGN.md`.
+- [ ] Create `scripts/phase-exit.ts`, `scripts/phase-exit.test.ts` and `scripts/table-coverage.ts`. Edit `scripts/db.ts` and the root `package.json`.
+- [ ] Create `docs/plan/trail/phase-0/s1-ping-run.json` (redacted run record). Edit `docs/plan/STATUS.md`.
+- [ ] Edit `docs/spec/DOMAIN-VN.md`, `docs/spec/SPEC.md`, `DESIGN.md` and Appendix C of `docs/plan/esta-v1-plan.md`.
 
 **Build.**
 
-- [ ] Write `e2e/fnd9-integration.spec.ts` for FND-9. It sets the clock to `2026-10-07T09:00:00+07:00`, signs in, and reads the shell header (`Thứ Tư, 07/10/2026`), `/api/cron/keep-alive` (`as_of` `2026-10-07`) and a replay ping's `agent_runs.started_at` (business date `2026-10-07`). It then sets `2026-10-08T09:00:00+07:00`, reads all three again (`Thứ Năm, 08/10/2026`, `2026-10-08`, `2026-10-08`), and asserts the web and worker PIDs did not change.
-- [ ] Add `pnpm phase:check 0` in `scripts/phase-exit.ts`. It runs the check for each of FND-1 (`e2e/auth.spec.ts`), FND-2 (`pnpm db:test`), FND-3 (lint and parity), FND-4 (core tests), FND-5 (`pnpm glyphs:check`, the contrast script, `e2e/dev-components.spec.ts`), FND-6 (the reference tests), FND-7 (`pnpm db:seed:check`) and FND-9 (`e2e/fnd9-integration.spec.ts`), prints one `PASS` or `FAIL` row each, and exits 1 on any `FAIL`.
-- [ ] Add `scripts/table-coverage.ts`, which fails when a public table has no RLS or no pgTAP file naming it, and run it in `pnpm db:test`.
+- [ ] Write `e2e/fnd9-integration.spec.ts` for FND-9 with a replay worker from `e2e/helpers/agent-worker.ts`. At `2026-10-07T09:00:00+07:00` it reads the shell header (`Thứ Tư, 07/10/2026`), `/api/cron/keep-alive` (`as_of` `2026-10-07`) and a ping that an operator runs from the `Trợ lý` page (`agent_runs.started_at` on business date `2026-10-07`). It then sets `2026-10-08T09:00:00+07:00`, reads all three again (`Thứ Năm, 08/10/2026`, `2026-10-08`, `2026-10-08`), asserts the web and worker PIDs did not change, and restores the clock in `afterAll`.
+- [ ] Add `pnpm phase:check <n>` in `scripts/phase-exit.ts`, with the checks as data in `PHASE_CHECKS` keyed by phase so each phase-final PR adds its rows. Phase 0 runs FND-1 (`e2e/auth.spec.ts`), FND-2 (`pnpm db:test` with table coverage), FND-3 (lint and `pnpm i18n:parity`), FND-4 (the `packages/core` tests), FND-5 (`pnpm glyphs:check`, `pnpm contrast:check` and `e2e/dev-components.spec.ts`), FND-6 (the reference data and `suggest_current_unit` pgTAP files), FND-7 (`pnpm db:seed:check`) and FND-9 (`e2e/fnd9-integration.spec.ts`).
+- [ ] Add an `S1` row that reads `docs/plan/trail/phase-0/s1-ping-run.json` and passes when it records `subscription`, `live` and one `mcp__esta__household_info` call. `pnpm phase:check` prints one `PASS` or `FAIL` row per id and exits 1 on any `FAIL`.
+- [ ] Add `scripts/table-coverage.ts`, which fails when a public table has no RLS or no pgTAP file naming it, and run it in `pnpm db:test` through `scripts/db.ts`.
 - [ ] Fold the S4 DOMAIN-VN §10 corrections and the §9 known-codes memo matching rule from branch `spike/s4-vietqr` (a7c9e76) into `docs/spec/DOMAIN-VN.md`. Tag 01 `12` with an amount and `11` without becomes an `[app rule]`. Memo purpose is capped at 25 characters. Amounts at or above 500,000,000 VND drop tag 54 as an `[app rule]` pending Ryan. Each fact gets its source.
-- [ ] Confirm `DESIGN.md` carries the S2 typography decision, and that AGENT.md §2.2 and DOMAIN-VN §4 carry the S1 and S3 results with sources. Record each contradiction resolved in Phase 0 in the plan's risks appendix (SPEC §0).
-- [ ] Create `docs/plan/STATUS.md` with the shipped PRs, slipped items (none expected), a spike table (S1, S2, S3, S4, S7, each with branch, SHA and result), the date the AGENT.md §2.5 terms were last checked, and "Needs professional confirmation" listing the DOMAIN-VN §5 VAT and PIT interaction, co-owner attribution and PIT effective date, the §8 household exemption, the NAPAS amount cap default, and the operator-on-create rule from P0-09.
-- [ ] Save the redacted record of the P0-15 live ping (auth mode, agent mode, model, turns, cost, tool calls, no token or session id) to `docs/plan/trail/phase-0/s1-ping-run.json`.
-- [ ] Assemble the Phase 0 gate package. It holds the tokens (`/dev/glyphs` swatches), the glyph page, the components page, and the S1 evidence.
+- [ ] Confirm `DESIGN.md` carries the S2 typography decision, and that AGENT.md §2.2 and DOMAIN-VN §4 carry the S1 and S3 results with sources. Record each contradiction resolved in Phase 0 in Appendix C of the plan (SPEC §0).
+- [ ] Edit `docs/plan/STATUS.md`. Add a Phase 0 line with the merged PRs and slipped items, a spike table (S1, S2, S3, S4 and S7, each with branch, SHA and result), and the date the owner re-checked the AGENT.md §2.5 help center article.
+- [ ] Under `Needs professional confirmation` in `docs/plan/STATUS.md`, add the DOMAIN-VN §5 VAT and PIT interaction, co-owner attribution, the §8 household exemption and the 500,000,000 VND single-transfer cap from S4, beside the PIT effective date already there. Under `Waiting for Ryan`, add the operator-on-create `[app rule]` from P0-09.
+- [ ] Copy the redacted run record that the P0-15 verifier lane posted in its PR body (auth mode, agent mode, model, turns, cost, tool calls, no token or session id) to `docs/plan/trail/phase-0/s1-ping-run.json`.
+- [ ] Put the Phase 0 gate package in the PR body. It holds the tokens (`/dev/glyphs` swatches), the glyph page, the components page and the S1 evidence (the P0-15 live ping screenshot and the record above).
 
 **You see.**
 
-- [ ] `pnpm phase:check 0` prints `PASS` for FND-1 to FND-7 and FND-9 and exits 0.
-- [ ] The FND-9 run shows the header, the cron route and the worker all moving from 07/10 to 08/10 with no restart.
-- [ ] `docs/plan/STATUS.md` lists every spike as resolved, with no `pending` row.
+- [ ] `pnpm phase:check 0` prints `PASS` for FND-1 to FND-7, FND-9 and S1 and exits 0.
+- [ ] After `pnpm clock:set 2026-10-08T09:00:00+07:00`, the header reads `Thứ Năm, 08/10/2026`, `pnpm cron:run` prints `"as_of":"2026-10-08"`, and the next ping's row on `/assistant` reads `08/10/2026 09:00`, with no restart.
+- [ ] `docs/plan/STATUS.md` lists S1, S2, S3, S4 and S7 as resolved with SHAs `83c56e0`, `31dd4a6`, `1945c64`, `a7c9e76` and `8548686`, and has no `pending` row.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
 - [ ] `e2e/fnd9-integration.spec.ts` passes (FND-9). Run `pnpm e2e e2e/fnd9-integration.spec.ts`.
-- [ ] Run `pnpm phase:check 0`, which covers FND-1 to FND-7 and FND-9 for every existing table.
+- [ ] `scripts/phase-exit.test.ts` covers a failing check printing `FAIL` and exiting 1, an unknown phase refused, and an `S1` record with `api_key` or `replay` failing. A fixture table with no RLS and one with no pgTAP file each fail `scripts/table-coverage.ts` (FND-2).
+- [ ] Run `pnpm phase:check 0`, which covers FND-1 to FND-7 and FND-9 for every existing table and the S1 record.
 - [ ] Golden tests in AGENT.md §7 for `ping` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e`.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/fnd9-integration.spec.ts`, `e2e/shell.spec.ts` and `e2e/dev-components.spec.ts`.
+- [ ] axe reports zero serious or critical issues on `/` and `/assistant` at both clocks in `e2e/fnd9-integration.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk has every FND-9 part but no integration run. On its own slot (`ESTA_SLOT=1`), sign in as `me.lane1@demo.esta.test` through the verify skill at 390x844, light, at clock `2026-10-07T09:00:00+07:00`, then run `pnpm clock:set 2026-10-08T09:00:00+07:00` and reload. Save `p0-16-header-advance.png` after the reload. Pass when the header reads `Thứ Tư, 07/10/2026` before and `Thứ Năm, 08/10/2026` after with unchanged `pnpm dev` PID, on trunk and head alike.
-- [ ] Lane 2. On slot 2, run `pnpm cron:run` at the two clocks of lane 1 with no restart, rendering both at 1440x900, dark. Save `p0-16-cron-advance.png`. Pass when `as_of` reads `2026-10-07` and then `2026-10-08`.
-- [ ] Lane 3. On slot 3 with a replay worker, enqueue a ping on `/dev/agent` at each clock of lane 1 at 390x844, dark. Save `p0-16-worker-advance.png`. Pass when the two runs' `started_at` fall on business dates `2026-10-07` and `2026-10-08` and the worker PID is unchanged.
-- [ ] Lane 4. Render `pnpm phase:check 0` at 1440x900, light. Save `p0-16-phase-check.png`. Pass when every FND row reads `PASS` and the exit code is 0.
-- [ ] Lane 5. Through `features/onboarding.md` and `features/sign-in.md`, run a new address and an invite claim for lane 5 at 390x844, light. Save `p0-16-fnd1.png`. Pass when the new address lands on onboarding and `invitee.lane5@demo.esta.test` lands in `Gia đình Demo 5` with the invited role (FND-1).
-- [ ] Lane 6. Render `pnpm db:test` including `scripts/table-coverage.ts` at 1440x900, dark. Save `p0-16-fnd2.png`. Pass when every public table appears as covered and the run ends `Result: PASS`.
-- [ ] Lane 7. Open `/dev/glyphs` at 390x844, dark, and `/dev/components` at 1440x900, light. Save `p0-16-fnd5.png` from `/dev/components`. Pass when the glyph and contrast checks exit 0, the component state count equals the registry size, and `$B console` has no errors on either page.
-- [ ] Lane 8. On slot 8, run `pnpm db:seed:check`, then select the admin unit counts in Studio at 390x844, light. Save `p0-16-fnd6-fnd7.png`. Pass when the checksums match on every line and the counts are 34 and 3,321.
-- [ ] Lane 9. Gate demo. Enqueue one live ping on subscription auth for `Gia đình Demo 9` at 1440x900, dark, then render `docs/plan/STATUS.md` as HTML. Save `p0-16-s1-evidence.png`. Pass when the run reads `subscription`, `live` and `done` with a `household_info` call, and the STATUS spike table lists S1, S2, S3, S4 and S7 as resolved with SHAs `83c56e0`, `31dd4a6`, `1945c64`, `a7c9e76` and `8548686`.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted to the exit. As `me.lane10@demo.esta.test` on slot 10 in English, 130% and dark at 390x844, advance the clock from `2026-10-07T09:00:00+07:00` to `2026-10-08T09:00:00+07:00`. Save `p0-16-seed10.png`. Pass when the header reads `Wednesday, 07/10/2026` and then `Thursday, 08/10/2026` with no horizontal overflow.
+- [ ] Rule 1. `me.lane1@demo.esta.test` opens `/` at 390x844, light, at `2026-10-07T09:00:00+07:00`, and the spec sets `2026-10-08T09:00:00+07:00` and reloads. Pass when the header reads `Thứ Tư, 07/10/2026` and then `Thứ Năm, 08/10/2026`, and the web server PID is unchanged. Asserted in `e2e/fnd9-integration.spec.ts`.
+- [ ] Rule 2. With `ryan.lane2@demo.esta.test` signed in at 1440x900, dark, the spec calls `/api/cron/keep-alive` with `CRON_SECRET` at `2026-10-07T09:00:00+07:00` and again at `2026-10-08T09:00:00+07:00`. Pass when `as_of` reads `2026-10-07` and then `2026-10-08` with the same web server PID. Asserted in `e2e/fnd9-integration.spec.ts`.
+- [ ] Rule 3. `ryan.lane3@demo.esta.test` taps `Chạy kiểm tra` on `/assistant` at 390x844, dark, at `2026-10-07T09:00:00+07:00` and again at `2026-10-08T09:00:00+07:00`. Pass when both pings read `Xong`, the two newest rows of `Lần chạy gần đây` read `08/10/2026 09:00` and then `07/10/2026 09:00`, and the worker PID is unchanged. Asserted in `e2e/fnd9-integration.spec.ts`.
+- [ ] Rule 4. With the worker running, the spec advances the clock to `2026-10-08T09:00:00+07:00`, and `me.lane4@demo.esta.test` opens `/assistant` at 1440x900, light. Pass when the status line reads `Trợ lý đang hoạt động. Cập nhật lúc 09:00.` within 70 s, after the worker's next heartbeat, with the worker PID unchanged. Asserted in `e2e/fnd9-integration.spec.ts`.
+- [ ] Rule 5. SPEC §9.4 seed 10 adapted to the exit. `me.lane10@demo.esta.test` switches to English, 130% and dark at 390x844, and the spec advances the clock from `2026-10-07T09:00:00+07:00` to `2026-10-08T09:00:00+07:00`. Pass when the header reads `Wednesday, 07/10/2026` and then `Thursday, 08/10/2026`, and `document.documentElement.scrollWidth` is at most its `clientWidth` at both clocks. Asserted in `e2e/fnd9-integration.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P0-16/`, and puts them in the PR body. Each state gets four files named by viewport and theme. Save `p0-16-header-0710-390-light.png` and its three siblings, `p0-16-header-0810-<viewport>-<theme>.png` for `/` after the advance, `p0-16-assistant-two-days-<viewport>-<theme>.png` for `/assistant` with both runs, `p0-16-dev-glyphs-<viewport>-<theme>.png` and `p0-16-dev-components-<viewport>-<theme>.png`.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh` and `pnpm phase:check 0`. On slot 14, with the web app and a replay worker started through `.claude/skills/verify`, it signs in as `ryan.lane9@demo.esta.test` at 390x844, light. At `2026-10-07T09:00:00+07:00` it reads the header, runs `pnpm cron:run` and taps `Chạy kiểm tra`. It then runs `pnpm clock:set 2026-10-08T09:00:00+07:00`, repeats all three without restarting anything, and audits the diff against the PR body. Save `p0-16-clock-advance.png` after the second ping. Pass when the header reads `Thứ Năm, 08/10/2026`, `pnpm cron:run` prints `"as_of":"2026-10-08"`, the newest run row reads `08/10/2026 09:00`, the pids in `web.pid` and `worker.pid` under `/tmp/esta-verify/slot-14/` are unchanged, and `pnpm phase:check 0` exits 0.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Wall time of `pnpm phase:check 0`, and Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for signed-in `/` on a production build with the full seed.
-- [ ] Probe. 3 runs of `pnpm phase:check 0` at head. 5 interleaved Lighthouse runs per side.
+- [ ] Metric. Wall time of `pnpm phase:check 0`, and Lighthouse mobile LCP, TBT and CLS and initial route JS gzipped for signed-in `/` on a production build with the full seed.
+- [ ] Probe. 3 runs of `pnpm phase:check 0` at head. 5 interleaved Lighthouse runs per side as `me.lane1@demo.esta.test`.
 - [ ] Baseline. Trunk has no `phase:check`, so it takes an absolute budget. `/` exists on both sides and compares directly.
-- [ ] Rule. Fail when `pnpm phase:check 0` exceeds 10 minutes, or `/` misses the SPEC §7.2 budgets or exceeds trunk initial JS by more than 2 KB.
+- [ ] Rule. Fail when `pnpm phase:check 0` exceeds 10 minutes, or `/` misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, or exceeds trunk initial JS by more than 2 KB.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-15 landing grant lets the root merge Phase 0 on its clean verdict without waiting for that review. No review video.
 
-- [ ] Copy the lane screenshots and the gate package (tokens, glyph page, components page, S1 evidence) to `~/.claude/orchestrate/esta/media/P0-16/P0-16-review-<slug>.png`, one file per screenshot.
-- [ ] Record a 30 to 60 second video of the clock advancing one day and the header, the cron route and the worker following it, then `pnpm phase:check 0` passing, saved as `~/.claude/orchestrate/esta/media/P0-16/P0-16-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click on the Phase 0 gate.
+- [ ] The PR body carries every screenshot named under **Verify, live** and the Phase 0 gate package (tokens, glyph page, components page, S1 evidence), and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` under the 2026-10-15 landing grant for Phase 0.
 
-## Parse Google Maps links and resolve short links behind SSRF guards (P1-01)
-
-**Depends on.** P0-16.
-
-**Files.**
-
-- [ ] Create `packages/core/src/maps/parseMapsUrl.ts`, `packages/core/src/maps/bounds.ts`, `packages/core/src/maps/index.ts`, `packages/core/src/maps/parseMapsUrl.test.ts`, `packages/core/src/maps/parseMapsUrl.bench.ts`.
-- [ ] Create `apps/web/src/server/maps/resolveShortMapsLink.ts`, `apps/web/src/server/maps/addressPolicy.ts`, `apps/web/src/server/maps/actions.ts`, `apps/web/src/server/maps/resolveShortMapsLink.test.ts`.
-- [ ] Create `fixtures/maps/links.json` with the canonical long links, short link shapes and refusal inputs, each with its expected result.
-- [ ] Create `apps/web/src/app/dev/core/MapsSection.tsx`. Edit `apps/web/src/app/dev/core/page.tsx`, `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `apps/web/package.json` (add `ipaddr.js`), `e2e/dev-core.spec.ts`, `docs/spec/DOMAIN-VN.md` §9 and `docs/spec/SPEC.md` §6.2 PRP-5.
-
-**Build.**
-
-- [ ] Define `MapsLinkParse` in `packages/core/src/maps/parseMapsUrl.ts` as a discriminated union. `{ kind: 'point', point: LatLng, source: 'place' | 'viewport' | 'query' | 'll', outsideVietnam: boolean }`, `{ kind: 'short_link', url: URL }` and `{ kind: 'invalid', reason: 'not_a_url' | 'not_maps' | 'no_coordinates' | 'out_of_range' }`. `LatLng` is a branded pair that only `toLatLng(lat, lng)` constructs, with lat in [-90, 90] and lng in [-180, 180].
-- [ ] Implement `parseMapsUrl(input: string): MapsLinkParse` as an ordered pattern registry `MAPS_PATTERNS`, one entry per DOMAIN-VN §9 row (`!3d`/`!4d`, `@lat,lng`, `q`, `ll`, short hosts). Place coordinates win over the viewport center. Parsing accepts `google.com`, `www.google.com`, `maps.google.com` and the `google.com.vn` variants, because parsing never fetches. The function is pure and trims surrounding text so a pasted share message still parses.
-- [ ] Implement `isInVietnam(point: LatLng): boolean` in `packages/core/src/maps/bounds.ts` with the DOMAIN-VN §9 box (lat 8 to 24, lng 102 to 110). `parseMapsUrl` sets `outsideVietnam` from it.
-- [ ] Implement `vetAddress(ip: string): 'public' | 'refused'` in `apps/web/src/server/maps/addressPolicy.ts` with `ipaddr.js`. Refuse every range that is not `unicast`, including loopback, private, link-local, unique local, carrier-grade NAT, multicast, unspecified and IPv4-mapped IPv6 forms of those.
-- [ ] Implement `resolveShortMapsLink(url: URL, deps: ResolveDeps): Promise<Result<MapsLinkParse, ResolveError>>` in `apps/web/src/server/maps/resolveShortMapsLink.ts` behind `import 'server-only'`. It fetches only `https` URLs on `maps.app.goo.gl` or `goo.gl` with a path under `/maps`, on the default port, without userinfo. It uses `redirect: 'manual'` and an undici `Agent` whose `connect.lookup` resolves every address, refuses the hop when any answer fails `vetAddress`, and pins the socket to the vetted address so a DNS rebind cannot swap it. A `Location` on a short host is followed and counts toward a limit of 5. A `Location` on `google.com` or `www.google.com` with a path at or under `/maps` is terminal and goes to `parseMapsUrl` without being fetched. Any other target is refused. One `AbortSignal.timeout(3000)` covers the whole chain. `ResolveError` is `'host_not_allowed' | 'not_https' | 'private_address' | 'redirect_not_allowed' | 'too_many_redirects' | 'no_redirect' | 'timeout'`. `ResolveDeps` carries `dispatcher` and `lookup` so tests inject fakes.
-- [ ] Add the server action `resolveMapsLink(input: string)` in `apps/web/src/server/maps/actions.ts`. It refuses callers without a session from the session client, parses input with zod, returns the long-link parse directly, and calls `resolveShortMapsLink` only for `short_link`. It logs one line per hop as `maps.resolve hop=<n> host=<host> status=<code>` and one outcome line `maps.resolve result=<ok|error code>`.
-- [ ] Add `MapsSection` to `/dev/core`. It renders every row of `fixtures/maps/links.json` with expected and computed values side by side and `khớp` or `lệch`, a refusal table computed live through `resolveMapsLink`, and a paste box that shows the parse, the hop log and the elapsed milliseconds.
-- [ ] Run spike S6 in this PR. Capture the hop chain of three fresh short links (a named place, a dropped pin, and a `goo.gl/maps` link if one still resolves) and record each chain with the date in DOMAIN-VN §9. Amend the PRP-5 wording in SPEC §6.2 to state the follow-short-hosts, terminate-on-google-maps rule above, with the evidence in the PR body.
-
-**You see.**
-
-- [ ] `/dev/core` shows a `Google Maps` section where every canonical row reads `khớp`, including `10.7769, 106.7009` from the `!3d`/`!4d` link that also carries a different `@` viewport.
-- [ ] Pasting a fresh `https://maps.app.goo.gl/...` link for Chợ Bến Thành shows a point near `10.772, 106.698`, a hop log of at most 5 lines, and an elapsed time under 3000 ms.
-- [ ] Pasting `https://maps.app.goo.gl@127.0.0.1/x` shows `host_not_allowed` and the server log has no `maps.resolve hop=` line for it.
-
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] `packages/core/src/maps/parseMapsUrl.test.ts` gains one case per DOMAIN-VN §9 pattern, `!3d`/`!4d` preferred over `@`, `q` with a place name and no coordinates (`no_coordinates`), `google.com.vn` links, a share message with text around the URL, a non-Google host (`not_maps`), latitude 91 (`out_of_range`), and the Vietnam bounds warning for `@48.8584,2.2945` (PRP-5).
-- [ ] `apps/web/src/server/maps/resolveShortMapsLink.test.ts` gains one case per SSRF refusal with a fake dispatcher and lookup. Lookalike hosts (`maps.app.goo.gl.evil.test`, `evilgoo.gl`), userinfo (`https://maps.app.goo.gl@127.0.0.1/`), an explicit port, `http:`, IP literals (`169.254.169.254`, `[::1]`), DNS answers of `10.0.0.1`, `127.0.0.1`, `169.254.169.254`, `fc00::1`, `fe80::1` and `::ffff:127.0.0.1`, a mixed answer with one private address, a redirect to a non-Google host, a redirect to `www.google.com/url?q=`, a sixth redirect, a 200 with no `Location`, a relative `Location` resolved then vetted, and the 3 s timeout under fake timers. Each refusal case also asserts the dispatcher saw no connection to a refused address (PRP-5).
-- [ ] Run `pnpm check`.
-- [ ] Run `pnpm e2e e2e/dev-core.spec.ts` with a new case asserting every maps row reads `khớp`.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-core.spec.ts`.
-
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
-
-- [ ] Lane 1. Regression lane against trunk. Sign in as `ryan.lane1@demo.esta.test` and open `/dev/core` at 1440x900 light at trunk and at head. Trunk has no maps section, so the lane gates that every section present at trunk still reads as expected at head and that the head adds the maps section. Save `p1-01-dev-core-regression.png`. Pass when every pre-existing section shows the same expected values on both sides and every head maps row reads `khớp`.
-- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 light. Paste a `/maps/place/` link that carries `!3d10.7769!4d106.7009` and a different `@` viewport into the maps paste box. Save `p1-01-place-wins.png`. Pass when the result reads `10.7769, 106.7009` with source `place` and no hop log.
-- [ ] Lane 3. Sign in as `ryan.lane3@demo.esta.test` at 1440x900 dark. Paste `https://www.google.com/maps?q=10.7769,106.7009`, then `https://maps.google.com/?ll=10.7769,106.7009`. Save `p1-01-query-ll.png`. Pass when both parse to `10.7769, 106.7009` with sources `query` and `ll`.
-- [ ] Lane 4. Sign in as `ryan.lane4@demo.esta.test` at 1440x900 light. In the browse session open Google Maps, search Chợ Bến Thành, copy the Share short link and paste it into the maps paste box. Save `p1-01-short-link-live.png`. Pass when the point is within 0.005 degrees of `10.772, 106.698`, the hop log shows at most 5 hops on allowed hosts, elapsed is under 3000 ms, and the chain is recorded in DOMAIN-VN §9.
-- [ ] Lane 5. Sign in as `me.lane5@demo.esta.test` at 390x844 dark. Paste `https://maps.app.goo.gl@127.0.0.1/x`, `https://maps.app.goo.gl:8443/x` and `http://maps.app.goo.gl/x`. Save `p1-01-refused-shapes.png`. Pass when they show `host_not_allowed`, `host_not_allowed` and `not_https`, and the server log has no `maps.resolve hop=` line for any of them.
-- [ ] Lane 6. Sign in as `ryan.lane6@demo.esta.test` at 1440x900 dark. Read the refusal table and paste `https://169.254.169.254/maps` and `https://[::1]/maps`. Save `p1-01-refusal-table.png`. Pass when every refusal row reads `khớp` and both pasted IP literals show `host_not_allowed` with no hop line.
-- [ ] Lane 7. Sign in as `me.lane7@demo.esta.test` at 390x844 light. Paste `https://www.google.com/maps/@48.8584,2.2945,17z`. Save `p1-01-outside-vietnam.png`. Pass when the result shows the point with the warning `Điểm này nằm ngoài Việt Nam.`
-- [ ] Lane 8. Sign in as `ryan.lane8@demo.esta.test` at 1440x900 dark. Paste `https://maps.app.goo.gl/` followed by a random 17-character id that Google does not know. Save `p1-01-unknown-short.png`. Pass when the result is `no_redirect` or `redirect_not_allowed`, the hop log has at most 5 lines, and elapsed is under 3000 ms.
-- [ ] Lane 9. Build with `ESTA_ENV=production pnpm build && pnpm start` and open `/dev/core` at 1440x900 light, then grep `.next/static` for `resolveShortMapsLink` and `ipaddr`. Save `p1-01-prod-dev-404.png`. Pass when `/dev/core` returns 404 and the grep finds nothing in client chunks.
-- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 2 on the maps section. Save `p1-01-english-130-dark.png`. Pass when labels are English, the result reads `10.7769, 106.7009`, and no label is cut off without a way to read it.
-
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] Metric. Mean time per call of `parseMapsUrl` over `fixtures/maps/links.json` from `parseMapsUrl.bench.ts`, time to refuse a private DNS answer with the fake lookup, and server time of `/dev/core` on a production-mode build with `ESTA_ENV=test`.
-- [ ] Probe. Run `pnpm vitest bench packages/core/src/maps` and 20 timed requests to `/dev/core`, 5 times per side, interleaved trunk and head.
-- [ ] Baseline. Trunk has no parser or resolver, so record that and take head bench values as the first baseline. Trunk and head both serve `/dev/core`, so its server time is compared directly.
-- [ ] Rule. Fail when `parseMapsUrl` mean exceeds 20 µs, a refusal exceeds 5 ms, any real resolve in lane 4 or 8 exceeds 3000 ms, or `/dev/core` median server time on head exceeds trunk by more than 20%.
-
-**Review gate.** None. P1-01 is not review-gated.
-
-**Merge.**
-
-- [ ] Root's clean verdict at the exact head SHA.
-- [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
-
-## Add the property, parcel, certificate, ownership, unit and utility schema (P1-02)
-
-**Depends on.** P0-06, P0-07.
-
-**Files.**
-
-- [ ] Create `supabase/migrations/20261007010200_portfolio_schema.sql`.
-- [ ] Create `supabase/tests/portfolio_rls.test.sql` and `supabase/tests/portfolio_constraints.test.sql`.
-- [ ] Create `packages/core/src/schemas/property.ts` and `packages/core/src/schemas/property.test.ts`.
-- [ ] Create `supabase/seed/generator/portfolio.ts` and `supabase/seed/generator/data/portfolio.ts`. Edit `supabase/seed/generator/index.ts` and `supabase/seed/README.md`.
-- [ ] Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
-
-**Build.**
-
-- [ ] In the migration, add to `properties` the SPEC §5.3 columns P0-07 left out (`kind_details`, `boundary geometry(Polygon, 4326)`, `acquired_on`, `acquisition_kind`, `acquisition_price_vnd bigint`, `certificate_address_text`, `notes`) and a unique `(household_id, id)` so children can reference both.
-- [ ] Create `parcels`, `structures`, `certificates`, `ownership_shares`, `utility_accounts`, `units` and `valuations` with the SPEC §5.3 columns, `deleted_at`, and a composite foreign key `(household_id, property_id)` to `properties (household_id, id)`, so a child row can never point at another household's property. Areas are `numeric(12,2)` above 0. `share_bp` is between 1 and 10000. `valuations.value_vnd` and `acquisition_price_vnd` are non-negative `bigint`. `units` has a partial unique index on `(property_id, label)` where `deleted_at is null`.
-- [ ] Add `validate_kind_details(kind, details jsonb)` and a check constraint `properties_kind_details_valid` that admits exactly the SPEC §5.3 keys per kind (apartment, rooming house, land kinds, others empty).
-- [ ] Add trigger `assert_same_household()` on `certificates` and `ownership_shares` so every id in `holder_party_ids`, `ownership_shares.party_id` and `mortgage->>'bank_party_id'` is a party of the row's household.
-- [ ] Add trigger `ensure_whole_unit()`. After a property insert it creates one `whole` unit labelled `Toàn bộ` whose id is `uuid_generate_v5(property id, 'unit:whole')`, so seeds stay deterministic. When the first live unit of another kind is inserted, it soft-deletes that auto unit. The invariant is that a property has either one live `whole` unit or one or more live units of other kinds.
-- [ ] Leave `certificates.document_id` and `certificates.extraction_id` as nullable `uuid` without a foreign key. P2-02 and P2-03 add the keys when those tables exist.
-- [ ] Enable RLS on every new table with policies through `private.is_member(household_id, 'viewer')` for select and `private.is_member(household_id, 'member')` for insert, update and delete. Attach the P0-02 audit trigger to every new table. Index `(household_id, property_id)` on every child table.
-- [ ] Export zod schemas in `packages/core/src/schemas/property.ts`. `PropertyKind`, `UseMode`, `LegalStatus`, a `KindDetails` discriminated union on kind, `Parcel` with `purposes` as an array of `{ land_use_code, area_m2, term }`, `Certificate` with `form` from DOMAIN-VN §2 and `Mortgage` with `amount_vnd: Vnd`, `OwnershipShare` with `share_bp`, `Unit`, `UtilityAccount`, `Valuation`.
-- [ ] Extend the seed generator in `supabase/seed/generator/portfolio.ts` for every household per SPEC §9.3. Addresses use real current codes from the FND-6 lookups (Phường Dĩ An 25942 for `di-an`, Phường Tân Triều 26188 for `bien-hoa`, Phường Long An 27694 for `long-an`, Phường 1 Bảo Lộc 24823 for `bao-loc`, a Quận 7 successor ward for `q7`) and verbatim pre-2025 certificate addresses. Certificate forms cover all five DOMAIN-VN §2 values (`long-an` is `paper_only`). `bao-loc` has two parcels and a `mortgaged` certificate with a seeded bank party. Ownership follows §9.3. Units are 8 rooms for `di-an` (Phòng 8 `available_from` 2026-08-01), one shop for `q1`, one lot each for `long-an` and `bao-loc`, and the auto whole unit elsewhere. Every property has a valuation. `long-an` has no pin, no parcel number and no acquisition, so it lands below 60% in P1-03.
-
-**You see.**
-
-- [ ] `pnpm db:reset` prints, for each of the 11 households, `properties 7, parcels 8, certificates 7, ownership_shares 9, units live 14, valuations 7`.
-- [ ] Supabase Studio shows `Đất Bảo Lộc` with two parcels and a certificate whose status is `mortgaged` and whose mortgage names the seeded bank party.
-- [ ] `pnpm db:test` ends with every `portfolio_rls` and `portfolio_constraints` test `ok`.
-
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] `supabase/tests/portfolio_rls.test.sql` proves for each of the seven new tables and the altered `properties` that a household A member cannot select, insert, update or delete household B rows, and that a viewer reads but cannot write (FND-2).
-- [ ] `supabase/tests/portfolio_constraints.test.sql` gains cases for a child row pointing at another household's property, a foreign holder or bank party, `share_bp` 0 and 10001, apartment `kind_details` carrying `room_count`, the auto whole unit and its deterministic id, soft deletion of the auto unit when a room is added, a duplicate live unit label, and an audit row with actor kind `user` after an update.
-- [ ] `packages/core/src/schemas/property.test.ts` gains one accepting and one rejecting case per kind for `KindDetails`, a mortgage amount that is not a safe integer, and an unknown certificate form.
-- [ ] The seed checksum script reports identical checksums for two consecutive `pnpm db:reset` runs over every new table (FND-7).
-- [ ] Run `pnpm check`.
-- [ ] Run `pnpm db:test`.
-
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
-
-- [ ] Lane 1. Regression lane against trunk. Run `pnpm db:reset` at trunk and at head and open `properties` for `Gia đình Demo 1` in Supabase Studio at 1440x900 light. Save `p1-02-properties-regression.png`. Pass when both sides list the same 7 property ids and the checksum over the columns trunk already had is equal.
-- [ ] Lane 2. In Studio at 1440x900 dark, query live units per property for `Gia đình Demo 2`. Save `p1-02-units-per-property.png`. Pass when `di-an` has 8 `room` units, `q1` one `shop`, `long-an` and `bao-loc` one `lot` each, and the other three one `whole` unit labelled `Toàn bộ`.
-- [ ] Lane 3. In the Studio SQL editor at 1440x900 light, set role `authenticated` with the claims of `me.lane3@demo.esta.test`, insert a townhouse, then insert a `room` unit for it. Save `p1-02-whole-unit-trigger.png`. Pass when the first insert yields one live `whole` unit and the second leaves only the room live.
-- [ ] Lane 4. In Studio at 1440x900 dark, sum `share_bp` per property for `Gia đình Demo 4` with owner names. Save `p1-02-ownership.png`. Pass when every sum is 10000, `thu-duc` and `bien-hoa` split 5000 and 5000 between Nguyễn Thị Demo and Trần Minh Demo, and `long-an` belongs to Trần Minh Demo.
-- [ ] Lane 5. In Studio at 1440x900 light, list certificate forms and statuses for `Gia đình Demo 5`. Save `p1-02-certificates.png`. Pass when the five distinct forms appear and only `bao-loc` is `mortgaged`.
-- [ ] Lane 6. In the Studio SQL editor at 1440x900 dark, act as `ryan.lane6@demo.esta.test` and select `parcels` of `Gia đình Demo 7`, then insert a parcel for a lane 7 property. Save `p1-02-isolation.png`. Pass when the select returns 0 rows and the insert fails with `42501`.
-- [ ] Lane 7. In Studio at 1440x900 light, add a viewer member for `viewer.lane7@demo.esta.test` to `Gia đình Demo 7`, then act as that viewer and select and update `units`. Save `p1-02-viewer.png`. Pass when the select returns the 14 live units and the update changes 0 rows or fails with `42501`.
-- [ ] Lane 8. In the Studio SQL editor at 1440x900 dark, act as `me.lane8@demo.esta.test`, set `kind_details` of `thu-duc` to `{"room_count": 4}`, then rename `q7`. Save `p1-02-kind-details-audit.png`. Pass when the first update fails on `properties_kind_details_valid` and `audit_log` gains one `update` row for `q7` with actor kind `user`.
-- [ ] Lane 9. Run `pnpm db:reset` twice and the seed checksum script, then open the output in the browse session at 1440x900 light. Save `p1-02-checksum.png`. Pass when both runs print the same checksum for every Phase 1 table.
-- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and open the Properties section of the app shell. Save `p1-02-shell-english-130-dark.png`. Pass when the page renders its Phase 0 content with English labels and the console has no errors.
-
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] Metric. `pnpm db:reset` wall time with 10 lane households, and `EXPLAIN (ANALYZE)` time and plan for loading one property with all its children as a lane member.
-- [ ] Probe. Run `pnpm db:reset` 5 times per side, interleaved trunk and head, and run the child-load query 20 times on head.
-- [ ] Baseline. Trunk resets the P0-07 seed, so its median is the baseline. Trunk has no child tables, so record that and take the head child-load median as the first baseline.
-- [ ] Rule. Fail when the head reset median exceeds trunk by more than 25% or 90 s absolute, or when the child-load plan uses a sequential scan on a child table or exceeds 5 ms.
-
-**Review gate.** None. P1-02 is not review-gated.
-
-**Merge.**
-
-- [ ] Root's clean verdict at the exact head SHA.
-- [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
-
-## Score property completeness with a weighted registry (P1-03)
-
-**Depends on.** P1-02.
-
-**Files.**
-
-- [ ] Create `packages/core/src/completeness/types.ts`, `packages/core/src/completeness/registry.ts`, `packages/core/src/completeness/score.ts`, `packages/core/src/completeness/index.ts`.
-- [ ] Create `packages/core/src/completeness/registry.test.ts`, `packages/core/src/completeness/score.test.ts`, `packages/core/src/completeness/score.bench.ts`.
-- [ ] Create `packages/db/src/queries/completenessInput.ts` and `packages/db/src/queries/completenessInput.int.test.ts`.
-- [ ] Create `apps/web/src/app/dev/core/CompletenessSection.tsx`. Edit `apps/web/src/app/dev/core/page.tsx`, `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `e2e/dev-core.spec.ts`.
-
-**Build.**
-
-- [ ] Define `CompletenessInput` in `types.ts` as the facts a check reads (kind, use mode, kind details, current address codes, location present, acquisition fields, parcels with identifiers and areas, ownership share total in bp, certificate document count, photo count, active leases with and without a lease document, utility account count). Define `CompletenessCheck` as `{ id: CheckId, weight: number, kinds: readonly PropertyKind[] | 'all', applies?: (input) => boolean, passes: (input) => boolean, field: { tab: PropertyTab, anchor: string } }`.
-- [ ] Write `COMPLETENESS_CHECKS` in `registry.ts` with the PRP-6 checks (certificate document, parcel identifiers, area, owners summing to 10000 bp, current address, pin, acquisition, photos, active lease document when rented, utility accounts) plus `kind_details` for apartments and rooming houses. Weights are integers. Parcel checks apply to land kinds, houses and rooming houses. The lease check applies only when the input has active leases.
-- [ ] Implement `scoreProperty(input: CompletenessInput): CompletenessResult` in `score.ts`. The score is an integer percent of passing weight over applicable weight, rounded half up. `failing` lists failing checks ordered by weight, then registry order, and `nextMissing(result, 3)` takes the first three.
-- [ ] Implement `fieldHref(propertyId, check)` returning `/properties/{id}/{tab}#{anchor}`. P1-06 and P1-07 make those anchors focus real fields.
-- [ ] Implement `loadCompletenessInputs(client, householdId)` in `packages/db/src/queries/completenessInput.ts` with one query per child table. Tables that do not exist yet in Phase 1 (documents, leases) contribute empty facts, so certificate document and photo checks fail for every property until Phase 2.
-- [ ] Add `CompletenessSection` to `/dev/core`. It shows each seed property of the signed-in household with its score, failing checks and links, beside the expected bands (`long-an` below 60, the rest at least 60), plus two canonical inputs that must score 100 and 0.
-
-**You see.**
-
-- [ ] `/dev/core` shows a `Mức đầy đủ` section where `Đất vườn Long An` scores below 60 and the six other properties score 60 or more, each row marked `khớp`.
-- [ ] Each failing check shows an href such as `/properties/<id>/legal#parcel-no`.
-
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] `packages/core/src/completeness/registry.test.ts` gains cases proving every check id is unique, every kind's applicable weights are positive, every check has a field anchor, and the lease check does not apply without active leases (PRP-6).
-- [ ] `packages/core/src/completeness/score.test.ts` gains cases for all-pass 100, none-pass 0, rounding, ownership at 9000 bp failing the owners check and lowering the score (PRP-3), next three ordered by weight, and kind-specific checks for an apartment and agricultural land (PRP-6).
-- [ ] `packages/db/src/queries/completenessInput.int.test.ts` runs against local Supabase on the `full` seed and asserts `long-an` below 60 and every other property at least 60 (PRP-6).
-- [ ] Run `pnpm check`.
-- [ ] Run `pnpm e2e e2e/dev-core.spec.ts` with a new case asserting the completeness rows read `khớp`.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-core.spec.ts`.
-
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
-
-- [ ] Lane 1. Regression lane against trunk. Sign in as `ryan.lane1@demo.esta.test` and open `/dev/core` at 1440x900 light at trunk and at head. Trunk has no completeness section, so the lane gates that every section present at trunk still matches at head and that the head adds the completeness section. Save `p1-03-dev-core-regression.png`. Pass when every pre-existing row reads `khớp` on both sides and every completeness row reads `khớp` on head.
-- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 light and read the `Đất vườn Long An` row. Save `p1-03-long-an.png`. Pass when its score is below 60 and its failing checks include pin, parcel identifiers and acquisition.
-- [ ] Lane 3. Sign in as `ryan.lane3@demo.esta.test` at 1440x900 dark and read all seven rows. Save `p1-03-all-scores.png`. Pass when the six properties other than `long-an` show 60 or more.
-- [ ] Lane 4. Sign in as `ryan.lane4@demo.esta.test` at 1440x900 light. In Studio set Trần Minh Demo's `thu-duc` share to 4000 bp, then reload `/dev/core`. Save `p1-03-owners-drop.png`. Pass when the `Căn hộ Thủ Đức` score drops and its failing checks include the owners check with an href ending `#ownership`.
-- [ ] Lane 5. Sign in as `me.lane5@demo.esta.test` at 390x844 dark. In Studio clear `location` on `q7`, then reload. Save `p1-03-pin-missing.png`. Pass when `Nhà phố Q7` lists the pin check as failing with an href ending `#location`.
-- [ ] Lane 6. Sign in as `ryan.lane6@demo.esta.test` at 1440x900 dark and compare the checklists of `Căn hộ Thủ Đức` and `Đất vườn Long An`. Save `p1-03-kind-checks.png`. Pass when the apartment row lists the building and unit check and the agricultural land row does not.
-- [ ] Lane 7. Sign in as `me.lane7@demo.esta.test` at 390x844 light and read the next three missing items for `Đất vườn Long An`. Save `p1-03-next-three.png`. Pass when exactly three items show, ordered by weight, each with an href under `/properties/`.
-- [ ] Lane 8. Sign in as `ryan.lane8@demo.esta.test` at 1440x900 light. In Studio give `long-an` a parcel number, map sheet and pin, then reload. Save `p1-03-long-an-rises.png`. Pass when the `long-an` score rises by the weights of those checks and the rows for other properties are unchanged.
-- [ ] Lane 9. Sign in as `me.lane9@demo.esta.test` at 390x844 dark and read the two canonical rows. Save `p1-03-canonical.png`. Pass when they read 100 and 0 and both are marked `khớp`.
-- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 2. Save `p1-03-english-130-dark.png`. Pass when the section labels are English, `Đất vườn Long An` stays in Vietnamese as data, its score is below 60, and no text is cut off without a way to read it.
-
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] Metric. Time to score 1,000 generated inputs with `scoreProperty` from `score.bench.ts`, and `loadCompletenessInputs` wall time for one household.
-- [ ] Probe. Run `pnpm vitest bench packages/core/src/completeness` and the loader 20 times, 5 rounds on head.
-- [ ] Baseline. Trunk has no completeness module, so record that and take the head medians as the first baseline.
-- [ ] Rule. Fail when scoring 1,000 inputs exceeds 10 ms or the loader median exceeds 50 ms for a 7-property household.
-
-**Review gate.** None. P1-03 is not review-gated.
-
-**Merge.**
-
-- [ ] Root's clean verdict at the exact head SHA.
-- [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
+Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/trail/pr-inventory.md`), so ids are not in numeric order. The sections for P1-04, P1-01, P1-09, P1-06 and P1-05 (Seq 01 to 05) are still the 2026-10-06 versions, and the deleted P1-02 section stays as reference for the PRs that take its tables, until they are re-cut. `docs/plan/trail/pr-inventory.md` wins where they conflict. The sections for P1-07, P1-10, P1-08 and P1-03 (Seq 06 to 09) are re-cut.
 
 ## Build the properties list with filters and accent-insensitive search (P1-04)
 
@@ -1426,68 +1217,136 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
-## Create, edit and archive properties with kind-aware forms and the address picker (P1-05)
+## Parse Google Maps links and resolve short links behind SSRF guards (P1-01)
 
-**Depends on.** P0-06, P1-04.
+**Depends on.** P0-16.
 
 **Files.**
 
-- [ ] Create `packages/core/src/property/formFields.ts`, `packages/core/src/property/code.ts`, `packages/core/src/address/formatCurrent.ts` and their `.test.ts` files.
-- [ ] Create `apps/web/src/app/(app)/properties/new/page.tsx`, `apps/web/src/app/(app)/properties/[propertyId]/edit/page.tsx`, `apps/web/src/app/(app)/properties/actions.ts`.
-- [ ] Create `apps/web/src/app/(app)/properties/_components/PropertyForm.tsx`, `KindFields.tsx`, `AddressPicker.tsx`, `LegacyAddressSuggest.tsx`, `ArchiveButton.tsx`.
-- [ ] Create `apps/web/src/server/address/suggest.ts` and `e2e/property-form.spec.ts`. Edit `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `apps/web/src/app/(app)/properties/page.tsx` (add action and archived filter).
+- [ ] Create `packages/core/src/maps/parseMapsUrl.ts`, `packages/core/src/maps/bounds.ts`, `packages/core/src/maps/index.ts`, `packages/core/src/maps/parseMapsUrl.test.ts`, `packages/core/src/maps/parseMapsUrl.bench.ts`.
+- [ ] Create `apps/web/src/server/maps/resolveShortMapsLink.ts`, `apps/web/src/server/maps/addressPolicy.ts`, `apps/web/src/server/maps/actions.ts`, `apps/web/src/server/maps/resolveShortMapsLink.test.ts`.
+- [ ] Create `fixtures/maps/links.json` with the canonical long links, short link shapes and refusal inputs, each with its expected result.
+- [ ] Create `apps/web/src/app/dev/core/MapsSection.tsx`. Edit `apps/web/src/app/dev/core/page.tsx`, `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `apps/web/package.json` (add `ipaddr.js`), `e2e/dev-core.spec.ts`, `docs/spec/DOMAIN-VN.md` §9 and `docs/spec/SPEC.md` §6.2 PRP-5.
 
 **Build.**
 
-- [ ] Write `KIND_FIELDS: Record<PropertyKind, readonly FieldId[]>` in `packages/core/src/property/formFields.ts` so the form renders fields from data. Apartments get building, block, floor, unit number and management fee. Rooming houses get room count. Land kinds get frontage and road width. Others get none.
-- [ ] Implement `suggestPropertyCode(nickname, existingCodes)` in `packages/core/src/property/code.ts` returning uppercase ASCII of at most 8 characters, unique within the household, with a numeric suffix on collision (`Nhà phố Q7` gives `Q7`).
-- [ ] Implement `formatCurrentAddress({ houseNo, street, commune, province })` in `packages/core/src/address/formatCurrent.ts` producing the `line` stored in `current_address`.
-- [ ] Build `AddressPicker`. Province select over the 34 province-level units, then a ward or commune combobox filtered by `parent_code` with accent-insensitive matching through the core unaccent helper, then house number and street. Every option has a visible label and a 44 px target.
-- [ ] Build `LegacyAddressSuggest` on the certificate address field. It calls `suggest_current_unit(text)` through `apps/web/src/server/address/suggest.ts` after 300 ms, lists every candidate with its current province and `Một phần` for partial merges, and fills the picker when the user taps one. The certificate address text is stored verbatim and never rewritten (PRP-4, DOMAIN-VN §4).
-- [ ] Write server actions `createProperty`, `updateProperty`, `archiveProperty` and `restoreProperty` in `actions.ts` on the session client, parsing input with the P1-02 zod schemas. Map a unique-code violation to `Mã Q7 đã dùng cho Nhà phố Q7.` and network failure to `Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.`
-- [ ] Archive sets `deleted_at` with no confirm dialog and shows the toast `Đã lưu trữ Kho Biên Hòa. Hoàn tác`. `Hoàn tác` calls `restoreProperty`. An `Đã lưu trữ` filter on the list shows archived properties with a restore action.
-- [ ] After create, navigate to `/properties` with the new row highlighted and a toast naming it. P1-06 redirects to the detail page instead.
+- [ ] Define `MapsLinkParse` in `packages/core/src/maps/parseMapsUrl.ts` as a discriminated union. `{ kind: 'point', point: LatLng, source: 'place' | 'viewport' | 'query' | 'll', outsideVietnam: boolean }`, `{ kind: 'short_link', url: URL }` and `{ kind: 'invalid', reason: 'not_a_url' | 'not_maps' | 'no_coordinates' | 'out_of_range' }`. `LatLng` is a branded pair that only `toLatLng(lat, lng)` constructs, with lat in [-90, 90] and lng in [-180, 180].
+- [ ] Implement `parseMapsUrl(input: string): MapsLinkParse` as an ordered pattern registry `MAPS_PATTERNS`, one entry per DOMAIN-VN §9 row (`!3d`/`!4d`, `@lat,lng`, `q`, `ll`, short hosts). Place coordinates win over the viewport center. Parsing accepts `google.com`, `www.google.com`, `maps.google.com` and the `google.com.vn` variants, because parsing never fetches. The function is pure and trims surrounding text so a pasted share message still parses.
+- [ ] Implement `isInVietnam(point: LatLng): boolean` in `packages/core/src/maps/bounds.ts` with the DOMAIN-VN §9 box (lat 8 to 24, lng 102 to 110). `parseMapsUrl` sets `outsideVietnam` from it.
+- [ ] Implement `vetAddress(ip: string): 'public' | 'refused'` in `apps/web/src/server/maps/addressPolicy.ts` with `ipaddr.js`. Refuse every range that is not `unicast`, including loopback, private, link-local, unique local, carrier-grade NAT, multicast, unspecified and IPv4-mapped IPv6 forms of those.
+- [ ] Implement `resolveShortMapsLink(url: URL, deps: ResolveDeps): Promise<Result<MapsLinkParse, ResolveError>>` in `apps/web/src/server/maps/resolveShortMapsLink.ts` behind `import 'server-only'`. It fetches only `https` URLs on `maps.app.goo.gl` or `goo.gl` with a path under `/maps`, on the default port, without userinfo. It uses `redirect: 'manual'` and an undici `Agent` whose `connect.lookup` resolves every address, refuses the hop when any answer fails `vetAddress`, and pins the socket to the vetted address so a DNS rebind cannot swap it. A `Location` on a short host is followed and counts toward a limit of 5. A `Location` on `google.com` or `www.google.com` with a path at or under `/maps` is terminal and goes to `parseMapsUrl` without being fetched. Any other target is refused. One `AbortSignal.timeout(3000)` covers the whole chain. `ResolveError` is `'host_not_allowed' | 'not_https' | 'private_address' | 'redirect_not_allowed' | 'too_many_redirects' | 'no_redirect' | 'timeout'`. `ResolveDeps` carries `dispatcher` and `lookup` so tests inject fakes.
+- [ ] Add the server action `resolveMapsLink(input: string)` in `apps/web/src/server/maps/actions.ts`. It refuses callers without a session from the session client, parses input with zod, returns the long-link parse directly, and calls `resolveShortMapsLink` only for `short_link`. It logs one line per hop as `maps.resolve hop=<n> host=<host> status=<code>` and one outcome line `maps.resolve result=<ok|error code>`.
+- [ ] Add `MapsSection` to `/dev/core`. It renders every row of `fixtures/maps/links.json` with expected and computed values side by side and `khớp` or `lệch`, a refusal table computed live through `resolveMapsLink`, and a paste box that shows the parse, the hop log and the elapsed milliseconds.
+- [ ] Run spike S6 in this PR. Capture the hop chain of three fresh short links (a named place, a dropped pin, and a `goo.gl/maps` link if one still resolves) and record each chain with the date in DOMAIN-VN §9. Amend the PRP-5 wording in SPEC §6.2 to state the follow-short-hosts, terminate-on-google-maps rule above, with the evidence in the PR body.
 
 **You see.**
 
-- [ ] `/properties/new` with kind `Căn hộ` shows building, block, floor, unit number and a management fee input that previews `1tr2` as `1.200.000 ₫`.
-- [ ] Typing `Dĩ An, Bình Dương` in the certificate address lists `Phường Dĩ An` first under `TP. Hồ Chí Minh`, then `Phường Tân Đông Hiệp` and `Phường Đông Hòa`.
-- [ ] Archiving `Kho Biên Hòa` shows `Đã lưu trữ Kho Biên Hòa. Hoàn tác`, and `Hoàn tác` puts it back in the list.
+- [ ] `/dev/core` shows a `Google Maps` section where every canonical row reads `khớp`, including `10.7769, 106.7009` from the `!3d`/`!4d` link that also carries a different `@` viewport.
+- [ ] Pasting a fresh `https://maps.app.goo.gl/...` link for Chợ Bến Thành shows a point near `10.772, 106.698`, a hop log of at most 5 lines, and an elapsed time under 3000 ms.
+- [ ] Pasting `https://maps.app.goo.gl@127.0.0.1/x` shows `host_not_allowed` and the server log has no `maps.resolve hop=` line for it.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/property/formFields.test.ts` gains one case per kind listing its fields (PRP-1). `code.test.ts` gains cases for diacritics, collisions and length. `formatCurrent.test.ts` gains cases with and without a house number.
-- [ ] `e2e/property-form.spec.ts` creates one property of each of the 10 kinds and asserts the kind-specific fields, edits one, archives and restores one (PRP-1), and asserts the `Dĩ An, Bình Dương` and `Quận 7` suggestions (PRP-4). Run `pnpm e2e e2e/property-form.spec.ts`.
+- [ ] `packages/core/src/maps/parseMapsUrl.test.ts` gains one case per DOMAIN-VN §9 pattern, `!3d`/`!4d` preferred over `@`, `q` with a place name and no coordinates (`no_coordinates`), `google.com.vn` links, a share message with text around the URL, a non-Google host (`not_maps`), latitude 91 (`out_of_range`), and the Vietnam bounds warning for `@48.8584,2.2945` (PRP-5).
+- [ ] `apps/web/src/server/maps/resolveShortMapsLink.test.ts` gains one case per SSRF refusal with a fake dispatcher and lookup. Lookalike hosts (`maps.app.goo.gl.evil.test`, `evilgoo.gl`), userinfo (`https://maps.app.goo.gl@127.0.0.1/`), an explicit port, `http:`, IP literals (`169.254.169.254`, `[::1]`), DNS answers of `10.0.0.1`, `127.0.0.1`, `169.254.169.254`, `fc00::1`, `fe80::1` and `::ffff:127.0.0.1`, a mixed answer with one private address, a redirect to a non-Google host, a redirect to `www.google.com/url?q=`, a sixth redirect, a 200 with no `Location`, a relative `Location` resolved then vetted, and the 3 s timeout under fake timers. Each refusal case also asserts the dispatcher saw no connection to a refused address (PRP-5).
 - [ ] Run `pnpm check`.
+- [ ] Run `pnpm e2e e2e/dev-core.spec.ts` with a new case asserting every maps row reads `khớp`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-form.spec.ts`.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-core.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Sign in as `me.lane1@demo.esta.test` at 390x844 light, open `Tài sản` at trunk and at head, and at head create townhouse `Nhà Demo Thảo Điền`. Trunk has no create action, so the lane gates that the list still shows its 7 rows on both sides and that the head adds the new row. Save `p1-05-create-regression.png`. Pass when trunk and head both list the 7 seed rows and head shows `Nhà Demo Thảo Điền` with the code suggested by `suggestPropertyCode`.
-- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 dark. Create an apartment with building `Demo Tower`, floor 12, unit `12.05` and management fee `1tr2`. Save `p1-05-apartment.png`. Pass when the fee preview reads `1.200.000 ₫` and the saved row shows kind `Căn hộ`.
-- [ ] Lane 3. Sign in as `ryan.lane3@demo.esta.test` at 1440x900 light. Start a property, pick `Đất nông nghiệp`, then switch to `Nhà phố`. Save `p1-05-kind-switch.png`. Pass when land shows `Mặt tiền` and `Lộ giới` and hides building fields, and the townhouse shows neither.
-- [ ] Lane 4. Sign in as `me.lane4@demo.esta.test` at 390x844 light. Create a rooming house with room count `8`. Save `p1-05-rooming-house.png`. Pass when the form shows `Số phòng`, saves, and the edit page shows `8`.
-- [ ] Lane 5. Sign in as `me.lane5@demo.esta.test` at 390x844 dark. Type `Dĩ An, Bình Dương` in the certificate address and tap the first suggestion. Save `p1-05-legacy-di-an.png`. Pass when `Phường Dĩ An` is first under `TP. Hồ Chí Minh` followed by `Phường Tân Đông Hiệp` and `Phường Đông Hòa`, the picker fills with Phường Dĩ An, and the certificate address keeps the typed text (PRP-4).
-- [ ] Lane 6. Sign in as `ryan.lane6@demo.esta.test` at 1440x900 dark. Type `Quận 7, TP. Hồ Chí Minh` in the certificate address. Save `p1-05-split-quan-7.png`. Pass when four wards are listed, none is preselected, and tapping one fills the picker with it.
-- [ ] Lane 7. Sign in as `ryan.lane7@demo.esta.test` at 1440x900 light. Pick province `Đồng Nai` and type `tan trieu` in the ward box. Save `p1-05-picker-accentless.png`. Pass when `Phường Tân Triều` is offered and selecting it produces an address line ending `Phường Tân Triều, Đồng Nai`.
-- [ ] Lane 8. Sign in as `me.lane8@demo.esta.test` at 390x844 light. Archive `Kho Biên Hòa`, tap `Hoàn tác`, archive it again, then open the `Đã lưu trữ` filter. Save `p1-05-archive-undo.png`. Pass when the toast reads `Đã lưu trữ Kho Biên Hòa. Hoàn tác`, undo restores the row, and the archived filter shows it after the second archive.
-- [ ] Lane 9. Sign in as `ryan.lane9@demo.esta.test` at 1440x900 dark. Create a property with code `Q7`, then go offline and save an edit. Save `p1-05-errors.png`. Pass when the first shows `Mã Q7 đã dùng cho Nhà phố Q7.` inline and the second shows `Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.` with the typed values kept.
-- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 5. Save `p1-05-english-130-dark.png`. Pass when labels are English, the Dĩ An suggestions match lane 5, and the long ward names wrap without clipping.
+- [ ] Lane 1. Regression lane against trunk. Sign in as `ryan.lane1@demo.esta.test` and open `/dev/core` at 1440x900 light at trunk and at head. Trunk has no maps section, so the lane gates that every section present at trunk still reads as expected at head and that the head adds the maps section. Save `p1-01-dev-core-regression.png`. Pass when every pre-existing section shows the same expected values on both sides and every head maps row reads `khớp`.
+- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 light. Paste a `/maps/place/` link that carries `!3d10.7769!4d106.7009` and a different `@` viewport into the maps paste box. Save `p1-01-place-wins.png`. Pass when the result reads `10.7769, 106.7009` with source `place` and no hop log.
+- [ ] Lane 3. Sign in as `ryan.lane3@demo.esta.test` at 1440x900 dark. Paste `https://www.google.com/maps?q=10.7769,106.7009`, then `https://maps.google.com/?ll=10.7769,106.7009`. Save `p1-01-query-ll.png`. Pass when both parse to `10.7769, 106.7009` with sources `query` and `ll`.
+- [ ] Lane 4. Sign in as `ryan.lane4@demo.esta.test` at 1440x900 light. In the browse session open Google Maps, search Chợ Bến Thành, copy the Share short link and paste it into the maps paste box. Save `p1-01-short-link-live.png`. Pass when the point is within 0.005 degrees of `10.772, 106.698`, the hop log shows at most 5 hops on allowed hosts, elapsed is under 3000 ms, and the chain is recorded in DOMAIN-VN §9.
+- [ ] Lane 5. Sign in as `me.lane5@demo.esta.test` at 390x844 dark. Paste `https://maps.app.goo.gl@127.0.0.1/x`, `https://maps.app.goo.gl:8443/x` and `http://maps.app.goo.gl/x`. Save `p1-01-refused-shapes.png`. Pass when they show `host_not_allowed`, `host_not_allowed` and `not_https`, and the server log has no `maps.resolve hop=` line for any of them.
+- [ ] Lane 6. Sign in as `ryan.lane6@demo.esta.test` at 1440x900 dark. Read the refusal table and paste `https://169.254.169.254/maps` and `https://[::1]/maps`. Save `p1-01-refusal-table.png`. Pass when every refusal row reads `khớp` and both pasted IP literals show `host_not_allowed` with no hop line.
+- [ ] Lane 7. Sign in as `me.lane7@demo.esta.test` at 390x844 light. Paste `https://www.google.com/maps/@48.8584,2.2945,17z`. Save `p1-01-outside-vietnam.png`. Pass when the result shows the point with the warning `Điểm này nằm ngoài Việt Nam.`
+- [ ] Lane 8. Sign in as `ryan.lane8@demo.esta.test` at 1440x900 dark. Paste `https://maps.app.goo.gl/` followed by a random 17-character id that Google does not know. Save `p1-01-unknown-short.png`. Pass when the result is `no_redirect` or `redirect_not_allowed`, the hop log has at most 5 lines, and elapsed is under 3000 ms.
+- [ ] Lane 9. Build with `ESTA_ENV=production pnpm build && pnpm start` and open `/dev/core` at 1440x900 light, then grep `.next/static` for `resolveShortMapsLink` and `ipaddr`. Save `p1-01-prod-dev-404.png`. Pass when `/dev/core` returns 404 and the grep finds nothing in client chunks.
+- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 2 on the maps section. Save `p1-01-english-130-dark.png`. Pass when labels are English, the result reads `10.7769, 106.7009`, and no label is cut off without a way to read it.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Lighthouse mobile LCP, TBT as the INP proxy, CLS and initial route JS gzipped for `/properties` and `/properties/new` on a production build (`pnpm build && pnpm start`) with the full seed, plus the `suggest_current_unit` round trip from keystroke to rendered list.
-- [ ] Probe. Run `scripts/perf/lighthouse.ts` on both routes 5 times per side, interleaved trunk and head, and time 20 suggestion round trips on head.
-- [ ] Baseline. Trunk serves `/properties`, so its medians are that route's baseline. Trunk has no `/properties/new` or suggestion call, so record that and apply the absolute budgets below.
-- [ ] Rule. Fail when `/properties` regresses by more than 10% on any metric against trunk, when either route exceeds SPEC §7.2 (LCP 2.5 s, TBT 200 ms, CLS 0.05, initial JS 200 KB gzipped), or when the suggestion round trip median exceeds 300 ms after the debounce.
+- [ ] Metric. Mean time per call of `parseMapsUrl` over `fixtures/maps/links.json` from `parseMapsUrl.bench.ts`, time to refuse a private DNS answer with the fake lookup, and server time of `/dev/core` on a production-mode build with `ESTA_ENV=test`.
+- [ ] Probe. Run `pnpm vitest bench packages/core/src/maps` and 20 timed requests to `/dev/core`, 5 times per side, interleaved trunk and head.
+- [ ] Baseline. Trunk has no parser or resolver, so record that and take head bench values as the first baseline. Trunk and head both serve `/dev/core`, so its server time is compared directly.
+- [ ] Rule. Fail when `parseMapsUrl` mean exceeds 20 µs, a refusal exceeds 5 ms, any real resolve in lane 4 or 8 exceeds 3000 ms, or `/dev/core` median server time on head exceeds trunk by more than 20%.
+
+**Review gate.** None. P1-01 is not review-gated.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
+
+## Show properties on a map, set pins and polygons, and paste Google Maps links (P1-09)
+
+**Depends on.** P1-01, P1-07, P1-08.
+
+**Files.**
+
+- [ ] Create `apps/web/src/components/map/MapCanvas.tsx`, `apps/web/src/components/map/mapStyle.ts`, `apps/web/src/components/map/PropertyPins.tsx`, `apps/web/src/components/map/PinEditor.tsx`, `apps/web/src/components/map/PolygonEditor.tsx`, `apps/web/src/components/map/PasteMapsLink.tsx`.
+- [ ] Create `apps/web/src/app/(app)/properties/_components/PropertyMapView.tsx`, `apps/web/src/app/(app)/properties/[propertyId]/_components/LocationSection.tsx`, `apps/web/src/app/(app)/properties/[propertyId]/locationActions.ts`.
+- [ ] Create `packages/core/src/maps/polygon.ts` and `packages/core/src/maps/polygon.test.ts`.
+- [ ] Create `e2e/property-map.spec.ts`. Edit `apps/web/package.json` (add `maplibre-gl`, `terra-draw`, `terra-draw-maplibre-gl-adapter`, `@turf/area`, `@turf/kinks`), `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `apps/web/src/app/(app)/properties/page.tsx`, `docs/plan/STATUS.md`.
+
+**Build.**
+
+- [ ] Load MapLibre GL only through `next/dynamic` with `ssr: false` from `MapCanvas`, so it is a separate chunk fetched only when the map view or the `Vị trí` section is shown (SPEC §7.2). `mapStyle.ts` picks the OpenFreeMap `positron` style in light and an OpenFreeMap dark style in dark, confirmed against openfreemap.org in this PR, falling back to `positron` if none is published. Attribution stays visible.
+- [ ] Add the `Danh sách` and `Bản đồ` toggle to `/properties` writing `?view=map`, with filters and search applying to both views. `PropertyPins` draws one pin per located property with its status shape. Tapping or pressing Enter on a pin opens a card with the nickname, address and a link to the detail page. Properties without a location are counted in a line `2 tài sản chưa có vị trí` that filters the list to them.
+- [ ] Build `LocationSection` on `Tổng quan` that mounts the map when scrolled into view. `PinEditor` places or drags the pin, and latitude and longitude inputs move it from the keyboard. `PolygonEditor` uses terra-draw to draw and edit a boundary, shows its area from `@turf/area` labelled `Ước tính`, and refuses a self-intersecting ring through `@turf/kinks`.
+- [ ] Build `PasteMapsLink`. It parses long links in the browser with `parseMapsUrl` and sends short links to the P1-01 `resolveMapsLink` action. It shows a preview pin, then `Dùng vị trí này` saves it. A point outside Vietnam shows `Điểm này nằm ngoài Việt Nam. Kiểm tra lại liên kết.` and needs a second tap on `Vẫn lưu`. Each `ResolveError` maps to a Vietnamese message that suggests pasting the long link.
+- [ ] Implement `normalizeRing(points)` and `isValidBoundary(ring)` in `packages/core/src/maps/polygon.ts` (closed ring, at least 3 distinct vertices, inside the lat and lng ranges).
+- [ ] Write `setPropertyLocation(id, point)` and `setPropertyBoundary(id, ring | null)` in `locationActions.ts` on the session client with zod parsing, writing PostGIS values through `ST_SetSRID(ST_MakePoint(lng, lat), 4326)` and `ST_GeomFromGeoJSON`. Both show an undo toast.
+- [ ] Carry the Phase 1 exit (SPEC §10). Run every Phase 1 e2e spec, `pnpm db:test` and Lighthouse on Properties, and record in `docs/plan/STATUS.md` that PRP-1 to PRP-6 and PRP-8 passed with evidence links, PRP-7 moves to P2-08, and the S6 result.
+
+**You see.**
+
+- [ ] `/properties?view=map` shows a pin for every located seed property and the line `1 tài sản chưa có vị trí` for `Đất vườn Long An`.
+- [ ] Pasting a fresh `https://maps.app.goo.gl/...` link on `Đất vườn Long An` previews a pin, `Dùng vị trí này` saves it, and the header score rises.
+- [ ] `pnpm e2e e2e/properties-list.spec.ts e2e/property-form.spec.ts e2e/property-detail.spec.ts e2e/property-legal.spec.ts e2e/property-units.spec.ts e2e/property-map.spec.ts` passes, `pnpm db:test` passes with every Phase 1 table covered, and the Lighthouse medians for `/properties` and `/properties/<id>` are within SPEC §7.2. This is the Phase 1 exit.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `packages/core/src/maps/polygon.test.ts` gains cases for an open ring closed automatically, two distinct vertices refused, duplicate consecutive vertices removed, and an out-of-range vertex refused (PRP-5).
+- [ ] `e2e/property-map.spec.ts` covers the map toggle and pin card, pin drag and keyboard coordinates, drawing and clearing a polygon, pasting a long link, pasting a short link against a fake resolver bound only in the test server, the outside-Vietnam confirmation, and a network assertion that `/properties` in list view requests no MapLibre chunk (PRP-5). Run `pnpm e2e e2e/property-map.spec.ts`.
+- [ ] Phase 1 exit. Run `pnpm e2e e2e/properties-list.spec.ts e2e/property-form.spec.ts e2e/property-detail.spec.ts e2e/property-legal.spec.ts e2e/property-units.spec.ts e2e/property-map.spec.ts` and confirm it covers PRP-1 to PRP-6 and PRP-8.
+- [ ] Run `pnpm check`.
+- [ ] Run `pnpm db:test` and confirm RLS tests exist for every table added in Phase 1.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-map.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+
+- [ ] Lane 1. Regression lane against trunk. Sign in as `ryan.lane1@demo.esta.test` at 1440x900 light and open `/properties`, search `di an`, then clear it, at trunk and at head. Trunk has no map, so the lane gates that the list behaves the same and that the head map view shows the located properties. Save `p1-09-map-regression.png`. Pass when the list results match on both sides and head `Bản đồ` shows 6 pins and the line `1 tài sản chưa có vị trí`.
+- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 light. Switch to `Bản đồ` and tap the `Dãy trọ Dĩ An` pin. Save `p1-09-pin-card.png`. Pass when the card shows the nickname, the current address and a link that opens the detail page.
+- [ ] Lane 3. Sign in as `me.lane3@demo.esta.test` at 390x844 dark. On `Đất vườn Long An` paste a long `/maps/place/` link with `!3d`/`!4d` for a point near Tân An and tap `Dùng vị trí này`. Save `p1-09-paste-long.png`. Pass when the pin lands on the `!3d`/`!4d` point, the toast offers `Hoàn tác`, and the pin check leaves the missing items.
+- [ ] Lane 4. Sign in as `ryan.lane4@demo.esta.test` at 1440x900 light. Copy a Google Maps Share short link for Chợ Bến Thành in the browse session and paste it on a new property. Save `p1-09-paste-short.png`. Pass when the preview pin is within 0.005 degrees of `10.772, 106.698` within 3 s and saving persists it after reload.
+- [ ] Lane 5. Sign in as `me.lane5@demo.esta.test` at 390x844 light. Paste `https://www.google.com/maps/@48.8584,2.2945,17z` on a property. Save `p1-09-outside-vietnam.png`. Pass when `Điểm này nằm ngoài Việt Nam. Kiểm tra lại liên kết.` shows and nothing saves until `Vẫn lưu` is tapped.
+- [ ] Lane 6. Sign in as `ryan.lane6@demo.esta.test` at 1440x900 dark. On `Kho Biên Hòa` drag the pin, then set latitude and longitude by keyboard only. Save `p1-09-pin-drag-keyboard.png`. Pass when both moves persist after reload and the coordinates shown match the pin.
+- [ ] Lane 7. Sign in as `ryan.lane7@demo.esta.test` at 1440x900 light. On `Đất Bảo Lộc` draw a 4-vertex boundary and save, then try a self-crossing ring. Save `p1-09-polygon.png`. Pass when the first saves with an area labelled `Ước tính` and the second is refused with a message and nothing saved.
+- [ ] Lane 8. Sign in as `me.lane8@demo.esta.test` at 390x844 dark. Open `/properties` in list view with the network panel recording, then switch to `Bản đồ`. Save `p1-09-lazy-maplibre.png`. Pass when no request for the MapLibre chunk or tiles happens before the switch and both load after it.
+- [ ] Lane 9. Phase 1 exit. Run the six Phase 1 e2e specs, `pnpm db:test` and `scripts/perf/lighthouse.ts` for `/properties` and `/properties/<di-an id>`, then open the Playwright HTML report at 1440x900 dark. Save `p1-09-phase1-exit.png`. Pass when every spec passes, `pnpm db:test` reports no failures with Phase 1 tables covered, and every Lighthouse median is within SPEC §7.2.
+- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 2 and lane 5. Save `p1-09-english-130-dark.png`. Pass when the toggle, card and warning read in English, the dark map style is in use, and nothing clips at 130%.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. Lighthouse mobile LCP, TBT as the INP proxy, CLS and initial route JS gzipped for `/properties`, `/properties?view=map` and `/properties/<di-an id>` on a production build (`pnpm build && pnpm start`) with the full seed, plus whether the MapLibre chunk is in the initial JS of the list and detail routes.
+- [ ] Probe. Run `scripts/perf/lighthouse.ts` on the three routes 5 times per side, interleaved trunk and head, and read the `next build` route table on each side.
+- [ ] Baseline. Trunk serves `/properties` and the detail page without a map, so those medians are the baseline. Trunk has no map view, so record that and apply the absolute budgets below to it.
+- [ ] Rule. Fail when any route exceeds SPEC §7.2 (LCP 2.5 s, TBT 200 ms, CLS 0.05, initial JS 200 KB gzipped), when list or detail initial JS grows by more than 10 KB gzipped against trunk, or when the MapLibre chunk appears in their initial JS. This is the Phase 1 Lighthouse exit on Properties.
 
 **Review gate.** The operator reviews before merge.
 
-- [ ] Copy every lane screenshot to `~/.claude/orchestrate/esta/media/P1-05/P1-05-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of creating a rooming house from a `Dĩ An, Bình Dương` certificate address, then archiving and undoing at 390x844, saved as `~/.claude/orchestrate/esta/media/P1-05/P1-05-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+- [ ] Copy every lane screenshot to `~/.claude/orchestrate/esta/media/P1-09/P1-09-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of the map view, pasting a short link on `Đất vườn Long An`, the score rising, and drawing a boundary at 390x844, saved as `~/.claude/orchestrate/esta/media/P1-09/P1-09-review.mp4`.
+- [ ] Post the screenshots, the video and the Phase 1 exit evidence in chat, stop at merge-ready, and wait for the operator's click.
 
 **Merge.**
 
@@ -1570,214 +1429,430 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
-## Edit parcels, structures, certificates and ownership on the legal tab (P1-07)
+## Create, edit and archive properties with kind-aware forms and the address picker (P1-05)
 
-**Depends on.** P1-06.
+**Depends on.** P0-06, P1-04.
 
 **Files.**
 
-- [ ] Create `packages/core/src/property/area.ts`, `packages/core/src/property/ownership.ts` and their `.test.ts` files.
-- [ ] Create `apps/web/src/app/(app)/properties/[propertyId]/legal/actions.ts` and edit `legal/page.tsx`.
-- [ ] Create `apps/web/src/app/(app)/properties/[propertyId]/legal/_components/ParcelList.tsx`, `ParcelForm.tsx`, `PurposeRows.tsx`, `LandUseCodePicker.tsx`, `StructureForm.tsx`, `CertificateForm.tsx`, `MortgageFields.tsx`, `AnnotationList.tsx`, `OwnershipEditor.tsx`, `OwnershipWarning.tsx`, `PartyPicker.tsx`.
-- [ ] Create `e2e/property-legal.spec.ts`. Edit `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `apps/web/src/app/(app)/properties/[propertyId]/_components/PropertyHeader.tsx` (ownership warning).
+- [ ] Create `packages/core/src/property/formFields.ts`, `packages/core/src/property/code.ts`, `packages/core/src/address/formatCurrent.ts` and their `.test.ts` files.
+- [ ] Create `apps/web/src/app/(app)/properties/new/page.tsx`, `apps/web/src/app/(app)/properties/[propertyId]/edit/page.tsx`, `apps/web/src/app/(app)/properties/actions.ts`.
+- [ ] Create `apps/web/src/app/(app)/properties/_components/PropertyForm.tsx`, `KindFields.tsx`, `AddressPicker.tsx`, `LegacyAddressSuggest.tsx`, `ArchiveButton.tsx`.
+- [ ] Create `apps/web/src/server/address/suggest.ts` and `e2e/property-form.spec.ts`. Edit `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `apps/web/src/app/(app)/properties/page.tsx` (add action and archived filter).
 
 **Build.**
 
-- [ ] Implement `sumLandArea(parcels)` and `purposesMismatch(parcel)` in `packages/core/src/property/area.ts`. Sums run in integer hundredths of a square meter so `120,5 + 80,25` is exactly `200,75 m²`.
-- [ ] Implement `percentToBp(input)` and `ownershipStatus(shares)` in `packages/core/src/property/ownership.ts`. `percentToBp('33,33')` is 3333, and the status is `{ totalBp, state: 'complete' | 'under' | 'over' }`.
-- [ ] Build the `Thửa đất` section with one card per parcel (number, map sheet, area, use form, origin) and a total line from `sumLandArea`. `PurposeRows` edits purposes with `LandUseCodePicker` over `land_use_codes`. An unknown code is kept as text with the hint `mã chưa có trong danh mục`, and a purposes total that differs from the parcel area shows `Tổng diện tích theo mục đích khác diện tích thửa.` with both numbers kept (DOMAIN-VN §2.1).
-- [ ] Build `StructureForm` for kind, footprint, floor area, floors, structure text, completed year and ownership term.
-- [ ] Build `CertificateForm` with form from DOMAIN-VN §2, serial, book entry number, issue date and issuer, holders from `PartyPicker`, status, `MortgageFields` (bank party, amount through the money input, registered and released dates) and `AnnotationList`. `PartyPicker` sorts with `sortKeyVietnameseName` and quick-adds an individual party with full name and optional last 4 ID digits only (D11).
-- [ ] Build `OwnershipEditor` with one row per share (party, percent through `percentToBp`, `Có tên trên sổ`, since date). Saving shares that do not total 10000 bp succeeds and shows `OwnershipWarning` with `Tỷ lệ sở hữu cộng lại 90%, chưa đủ 100%.` on the legal tab and in the header until fixed (PRP-3).
-- [ ] Write server actions in `legal/actions.ts` for each entity on the session client with the P1-02 zod schemas. Removing a parcel, structure or share is a soft delete with an undo toast that names it.
-- [ ] Give each field the anchor id the completeness registry uses, so P1-06 missing-item links focus the exact field.
+- [ ] Write `KIND_FIELDS: Record<PropertyKind, readonly FieldId[]>` in `packages/core/src/property/formFields.ts` so the form renders fields from data. Apartments get building, block, floor, unit number and management fee. Rooming houses get room count. Land kinds get frontage and road width. Others get none.
+- [ ] Implement `suggestPropertyCode(nickname, existingCodes)` in `packages/core/src/property/code.ts` returning uppercase ASCII of at most 8 characters, unique within the household, with a numeric suffix on collision (`Nhà phố Q7` gives `Q7`).
+- [ ] Implement `formatCurrentAddress({ houseNo, street, commune, province })` in `packages/core/src/address/formatCurrent.ts` producing the `line` stored in `current_address`.
+- [ ] Build `AddressPicker`. Province select over the 34 province-level units, then a ward or commune combobox filtered by `parent_code` with accent-insensitive matching through the core unaccent helper, then house number and street. Every option has a visible label and a 44 px target.
+- [ ] Build `LegacyAddressSuggest` on the certificate address field. It calls `suggest_current_unit(text)` through `apps/web/src/server/address/suggest.ts` after 300 ms, lists every candidate with its current province and `Một phần` for partial merges, and fills the picker when the user taps one. The certificate address text is stored verbatim and never rewritten (PRP-4, DOMAIN-VN §4).
+- [ ] Write server actions `createProperty`, `updateProperty`, `archiveProperty` and `restoreProperty` in `actions.ts` on the session client, parsing input with the P1-02 zod schemas. Map a unique-code violation to `Mã Q7 đã dùng cho Nhà phố Q7.` and network failure to `Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.`
+- [ ] Archive sets `deleted_at` with no confirm dialog and shows the toast `Đã lưu trữ Kho Biên Hòa. Hoàn tác`. `Hoàn tác` calls `restoreProperty`. An `Đã lưu trữ` filter on the list shows archived properties with a restore action.
+- [ ] After create, navigate to `/properties` with the new row highlighted and a toast naming it. P1-06 redirects to the detail page instead.
 
 **You see.**
 
-- [ ] `Pháp lý` for `Đất Bảo Lộc` shows two parcels with their total land area and the certificate `Đang thế chấp` with the bank name and amount.
-- [ ] Setting `Căn hộ Thủ Đức` shares to 50% and 40% saves and shows `Tỷ lệ sở hữu cộng lại 90%, chưa đủ 100%.` on the tab and in the header, and the score drops.
+- [ ] `/properties/new` with kind `Căn hộ` shows building, block, floor, unit number and a management fee input that previews `1tr2` as `1.200.000 ₫`.
+- [ ] Typing `Dĩ An, Bình Dương` in the certificate address lists `Phường Dĩ An` first under `TP. Hồ Chí Minh`, then `Phường Tân Đông Hiệp` and `Phường Đông Hòa`.
+- [ ] Archiving `Kho Biên Hòa` shows `Đã lưu trữ Kho Biên Hòa. Hoàn tác`, and `Hoàn tác` puts it back in the list.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/property/area.test.ts` gains cases for two parcels summing exactly, three decimal-comma inputs, an empty list, and a purposes mismatch (PRP-2).
-- [ ] `packages/core/src/property/ownership.test.ts` gains cases for `percentToBp` with commas, dots and over 100, and each ownership state (PRP-3).
-- [ ] `e2e/property-legal.spec.ts` adds a second parcel and asserts the total, adds an unknown code, edits a certificate with a mortgage, saves shares summing to 90% and asserts the persistent warning after reload and the lower score, and follows a missing-item link to a focused parcel field (PRP-2, PRP-3). Run `pnpm e2e e2e/property-legal.spec.ts`.
+- [ ] `packages/core/src/property/formFields.test.ts` gains one case per kind listing its fields (PRP-1). `code.test.ts` gains cases for diacritics, collisions and length. `formatCurrent.test.ts` gains cases with and without a house number.
+- [ ] `e2e/property-form.spec.ts` creates one property of each of the 10 kinds and asserts the kind-specific fields, edits one, archives and restores one (PRP-1), and asserts the `Dĩ An, Bình Dương` and `Quận 7` suggestions (PRP-4). Run `pnpm e2e e2e/property-form.spec.ts`.
 - [ ] Run `pnpm check`.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-form.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+
+- [ ] Lane 1. Regression lane against trunk. Sign in as `me.lane1@demo.esta.test` at 390x844 light, open `Tài sản` at trunk and at head, and at head create townhouse `Nhà Demo Thảo Điền`. Trunk has no create action, so the lane gates that the list still shows its 7 rows on both sides and that the head adds the new row. Save `p1-05-create-regression.png`. Pass when trunk and head both list the 7 seed rows and head shows `Nhà Demo Thảo Điền` with the code suggested by `suggestPropertyCode`.
+- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 dark. Create an apartment with building `Demo Tower`, floor 12, unit `12.05` and management fee `1tr2`. Save `p1-05-apartment.png`. Pass when the fee preview reads `1.200.000 ₫` and the saved row shows kind `Căn hộ`.
+- [ ] Lane 3. Sign in as `ryan.lane3@demo.esta.test` at 1440x900 light. Start a property, pick `Đất nông nghiệp`, then switch to `Nhà phố`. Save `p1-05-kind-switch.png`. Pass when land shows `Mặt tiền` and `Lộ giới` and hides building fields, and the townhouse shows neither.
+- [ ] Lane 4. Sign in as `me.lane4@demo.esta.test` at 390x844 light. Create a rooming house with room count `8`. Save `p1-05-rooming-house.png`. Pass when the form shows `Số phòng`, saves, and the edit page shows `8`.
+- [ ] Lane 5. Sign in as `me.lane5@demo.esta.test` at 390x844 dark. Type `Dĩ An, Bình Dương` in the certificate address and tap the first suggestion. Save `p1-05-legacy-di-an.png`. Pass when `Phường Dĩ An` is first under `TP. Hồ Chí Minh` followed by `Phường Tân Đông Hiệp` and `Phường Đông Hòa`, the picker fills with Phường Dĩ An, and the certificate address keeps the typed text (PRP-4).
+- [ ] Lane 6. Sign in as `ryan.lane6@demo.esta.test` at 1440x900 dark. Type `Quận 7, TP. Hồ Chí Minh` in the certificate address. Save `p1-05-split-quan-7.png`. Pass when four wards are listed, none is preselected, and tapping one fills the picker with it.
+- [ ] Lane 7. Sign in as `ryan.lane7@demo.esta.test` at 1440x900 light. Pick province `Đồng Nai` and type `tan trieu` in the ward box. Save `p1-05-picker-accentless.png`. Pass when `Phường Tân Triều` is offered and selecting it produces an address line ending `Phường Tân Triều, Đồng Nai`.
+- [ ] Lane 8. Sign in as `me.lane8@demo.esta.test` at 390x844 light. Archive `Kho Biên Hòa`, tap `Hoàn tác`, archive it again, then open the `Đã lưu trữ` filter. Save `p1-05-archive-undo.png`. Pass when the toast reads `Đã lưu trữ Kho Biên Hòa. Hoàn tác`, undo restores the row, and the archived filter shows it after the second archive.
+- [ ] Lane 9. Sign in as `ryan.lane9@demo.esta.test` at 1440x900 dark. Create a property with code `Q7`, then go offline and save an edit. Save `p1-05-errors.png`. Pass when the first shows `Mã Q7 đã dùng cho Nhà phố Q7.` inline and the second shows `Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.` with the typed values kept.
+- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 5. Save `p1-05-english-130-dark.png`. Pass when labels are English, the Dĩ An suggestions match lane 5, and the long ward names wrap without clipping.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. Lighthouse mobile LCP, TBT as the INP proxy, CLS and initial route JS gzipped for `/properties` and `/properties/new` on a production build (`pnpm build && pnpm start`) with the full seed, plus the `suggest_current_unit` round trip from keystroke to rendered list.
+- [ ] Probe. Run `scripts/perf/lighthouse.ts` on both routes 5 times per side, interleaved trunk and head, and time 20 suggestion round trips on head.
+- [ ] Baseline. Trunk serves `/properties`, so its medians are that route's baseline. Trunk has no `/properties/new` or suggestion call, so record that and apply the absolute budgets below.
+- [ ] Rule. Fail when `/properties` regresses by more than 10% on any metric against trunk, when either route exceeds SPEC §7.2 (LCP 2.5 s, TBT 200 ms, CLS 0.05, initial JS 200 KB gzipped), or when the suggestion round trip median exceeds 300 ms after the debounce.
+
+**Review gate.** The operator reviews before merge.
+
+- [ ] Copy every lane screenshot to `~/.claude/orchestrate/esta/media/P1-05/P1-05-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of creating a rooming house from a `Dĩ An, Bình Dương` certificate address, then archiving and undoing at 390x844, saved as `~/.claude/orchestrate/esta/media/P1-05/P1-05-review.mp4`.
+- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+## Add the property, parcel, certificate, ownership, unit and utility schema (P1-02)
+
+**Depends on.** P0-06, P0-07.
+
+**Files.**
+
+- [ ] Create `supabase/migrations/20261007010200_portfolio_schema.sql`.
+- [ ] Create `supabase/tests/portfolio_rls.test.sql` and `supabase/tests/portfolio_constraints.test.sql`.
+- [ ] Create `packages/core/src/schemas/property.ts` and `packages/core/src/schemas/property.test.ts`.
+- [ ] Create `supabase/seed/generator/portfolio.ts` and `supabase/seed/generator/data/portfolio.ts`. Edit `supabase/seed/generator/index.ts` and `supabase/seed/README.md`.
+- [ ] Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+
+**Build.**
+
+- [ ] In the migration, add to `properties` the SPEC §5.3 columns P0-07 left out (`kind_details`, `boundary geometry(Polygon, 4326)`, `acquired_on`, `acquisition_kind`, `acquisition_price_vnd bigint`, `certificate_address_text`, `notes`) and a unique `(household_id, id)` so children can reference both.
+- [ ] Create `parcels`, `structures`, `certificates`, `ownership_shares`, `utility_accounts`, `units` and `valuations` with the SPEC §5.3 columns, `deleted_at`, and a composite foreign key `(household_id, property_id)` to `properties (household_id, id)`, so a child row can never point at another household's property. Areas are `numeric(12,2)` above 0. `share_bp` is between 1 and 10000. `valuations.value_vnd` and `acquisition_price_vnd` are non-negative `bigint`. `units` has a partial unique index on `(property_id, label)` where `deleted_at is null`.
+- [ ] Add `validate_kind_details(kind, details jsonb)` and a check constraint `properties_kind_details_valid` that admits exactly the SPEC §5.3 keys per kind (apartment, rooming house, land kinds, others empty).
+- [ ] Add trigger `assert_same_household()` on `certificates` and `ownership_shares` so every id in `holder_party_ids`, `ownership_shares.party_id` and `mortgage->>'bank_party_id'` is a party of the row's household.
+- [ ] Add trigger `ensure_whole_unit()`. After a property insert it creates one `whole` unit labelled `Toàn bộ` whose id is `uuid_generate_v5(property id, 'unit:whole')`, so seeds stay deterministic. When the first live unit of another kind is inserted, it soft-deletes that auto unit. The invariant is that a property has either one live `whole` unit or one or more live units of other kinds.
+- [ ] Leave `certificates.document_id` and `certificates.extraction_id` as nullable `uuid` without a foreign key. P2-02 and P2-03 add the keys when those tables exist.
+- [ ] Enable RLS on every new table with policies through `private.is_member(household_id, 'viewer')` for select and `private.is_member(household_id, 'member')` for insert, update and delete. Attach the P0-02 audit trigger to every new table. Index `(household_id, property_id)` on every child table.
+- [ ] Export zod schemas in `packages/core/src/schemas/property.ts`. `PropertyKind`, `UseMode`, `LegalStatus`, a `KindDetails` discriminated union on kind, `Parcel` with `purposes` as an array of `{ land_use_code, area_m2, term }`, `Certificate` with `form` from DOMAIN-VN §2 and `Mortgage` with `amount_vnd: Vnd`, `OwnershipShare` with `share_bp`, `Unit`, `UtilityAccount`, `Valuation`.
+- [ ] Extend the seed generator in `supabase/seed/generator/portfolio.ts` for every household per SPEC §9.3. Addresses use real current codes from the FND-6 lookups (Phường Dĩ An 25942 for `di-an`, Phường Tân Triều 26188 for `bien-hoa`, Phường Long An 27694 for `long-an`, Phường 1 Bảo Lộc 24823 for `bao-loc`, a Quận 7 successor ward for `q7`) and verbatim pre-2025 certificate addresses. Certificate forms cover all five DOMAIN-VN §2 values (`long-an` is `paper_only`). `bao-loc` has two parcels and a `mortgaged` certificate with a seeded bank party. Ownership follows §9.3. Units are 8 rooms for `di-an` (Phòng 8 `available_from` 2026-08-01), one shop for `q1`, one lot each for `long-an` and `bao-loc`, and the auto whole unit elsewhere. Every property has a valuation. `long-an` has no pin, no parcel number and no acquisition, so it lands below 60% in P1-03.
+
+**You see.**
+
+- [ ] `pnpm db:reset` prints, for each of the 11 households, `properties 7, parcels 8, certificates 7, ownership_shares 9, units live 14, valuations 7`.
+- [ ] Supabase Studio shows `Đất Bảo Lộc` with two parcels and a certificate whose status is `mortgaged` and whose mortgage names the seeded bank party.
+- [ ] `pnpm db:test` ends with every `portfolio_rls` and `portfolio_constraints` test `ok`.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `supabase/tests/portfolio_rls.test.sql` proves for each of the seven new tables and the altered `properties` that a household A member cannot select, insert, update or delete household B rows, and that a viewer reads but cannot write (FND-2).
+- [ ] `supabase/tests/portfolio_constraints.test.sql` gains cases for a child row pointing at another household's property, a foreign holder or bank party, `share_bp` 0 and 10001, apartment `kind_details` carrying `room_count`, the auto whole unit and its deterministic id, soft deletion of the auto unit when a room is added, a duplicate live unit label, and an audit row with actor kind `user` after an update.
+- [ ] `packages/core/src/schemas/property.test.ts` gains one accepting and one rejecting case per kind for `KindDetails`, a mortgage amount that is not a safe integer, and an unknown certificate form.
+- [ ] The seed checksum script reports identical checksums for two consecutive `pnpm db:reset` runs over every new table (FND-7).
+- [ ] Run `pnpm check`.
+- [ ] Run `pnpm db:test`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+
+- [ ] Lane 1. Regression lane against trunk. Run `pnpm db:reset` at trunk and at head and open `properties` for `Gia đình Demo 1` in Supabase Studio at 1440x900 light. Save `p1-02-properties-regression.png`. Pass when both sides list the same 7 property ids and the checksum over the columns trunk already had is equal.
+- [ ] Lane 2. In Studio at 1440x900 dark, query live units per property for `Gia đình Demo 2`. Save `p1-02-units-per-property.png`. Pass when `di-an` has 8 `room` units, `q1` one `shop`, `long-an` and `bao-loc` one `lot` each, and the other three one `whole` unit labelled `Toàn bộ`.
+- [ ] Lane 3. In the Studio SQL editor at 1440x900 light, set role `authenticated` with the claims of `me.lane3@demo.esta.test`, insert a townhouse, then insert a `room` unit for it. Save `p1-02-whole-unit-trigger.png`. Pass when the first insert yields one live `whole` unit and the second leaves only the room live.
+- [ ] Lane 4. In Studio at 1440x900 dark, sum `share_bp` per property for `Gia đình Demo 4` with owner names. Save `p1-02-ownership.png`. Pass when every sum is 10000, `thu-duc` and `bien-hoa` split 5000 and 5000 between Nguyễn Thị Demo and Trần Minh Demo, and `long-an` belongs to Trần Minh Demo.
+- [ ] Lane 5. In Studio at 1440x900 light, list certificate forms and statuses for `Gia đình Demo 5`. Save `p1-02-certificates.png`. Pass when the five distinct forms appear and only `bao-loc` is `mortgaged`.
+- [ ] Lane 6. In the Studio SQL editor at 1440x900 dark, act as `ryan.lane6@demo.esta.test` and select `parcels` of `Gia đình Demo 7`, then insert a parcel for a lane 7 property. Save `p1-02-isolation.png`. Pass when the select returns 0 rows and the insert fails with `42501`.
+- [ ] Lane 7. In Studio at 1440x900 light, add a viewer member for `viewer.lane7@demo.esta.test` to `Gia đình Demo 7`, then act as that viewer and select and update `units`. Save `p1-02-viewer.png`. Pass when the select returns the 14 live units and the update changes 0 rows or fails with `42501`.
+- [ ] Lane 8. In the Studio SQL editor at 1440x900 dark, act as `me.lane8@demo.esta.test`, set `kind_details` of `thu-duc` to `{"room_count": 4}`, then rename `q7`. Save `p1-02-kind-details-audit.png`. Pass when the first update fails on `properties_kind_details_valid` and `audit_log` gains one `update` row for `q7` with actor kind `user`.
+- [ ] Lane 9. Run `pnpm db:reset` twice and the seed checksum script, then open the output in the browse session at 1440x900 light. Save `p1-02-checksum.png`. Pass when both runs print the same checksum for every Phase 1 table.
+- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and open the Properties section of the app shell. Save `p1-02-shell-english-130-dark.png`. Pass when the page renders its Phase 0 content with English labels and the console has no errors.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. `pnpm db:reset` wall time with 10 lane households, and `EXPLAIN (ANALYZE)` time and plan for loading one property with all its children as a lane member.
+- [ ] Probe. Run `pnpm db:reset` 5 times per side, interleaved trunk and head, and run the child-load query 20 times on head.
+- [ ] Baseline. Trunk resets the P0-07 seed, so its median is the baseline. Trunk has no child tables, so record that and take the head child-load median as the first baseline.
+- [ ] Rule. Fail when the head reset median exceeds trunk by more than 25% or 90 s absolute, or when the child-load plan uses a sequential scan on a child table or exceeds 5 ms.
+
+**Review gate.** None. P1-02 is not review-gated.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
+
+## Record parcels, structures and certificates on the Pháp lý tab (P1-07)
+
+**Depends on.** P1-05.
+
+**Files.**
+
+- [ ] Create `supabase/migrations/20261007106000_property_legal.sql` and `supabase/tests/property_legal.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Create `packages/core/src/schemas/legal.ts` and `packages/core/src/properties/area.ts` with a `.test.ts` beside each.
+- [ ] Create `supabase/seed/generator/legal.ts`. Edit `index.ts`, `parties.ts` and `properties.ts` in `supabase/seed/generator/`, and `supabase/seed/README.md`.
+- [ ] Create `page.tsx`, `[kind]/[itemId]/page.tsx` and `actions.ts` under `apps/web/src/app/(app)/properties/[id]/legal/`, and `apps/web/src/server/properties/legal.ts`. Create `parcel-list.tsx`, `parcel-form.tsx`, `purpose-rows.tsx`, `land-use-code-picker.tsx`, `structure-form.tsx`, `certificate-card.tsx`, `certificate-form.tsx`, `mortgage-fields.tsx`, `annotation-list.tsx` and `party-picker.tsx` in `apps/web/src/components/legal/`.
+- [ ] Create `e2e/property-legal.spec.ts`. Edit `apps/web/src/components/properties/property-tabs.ts` and the message files.
+
+**Build.**
+
+- [ ] Close #18, which was tagged `p1-02`, with a red test for the seed generator nondeterminism gap it names.
+- [ ] Create `parcels`, `structures` and `certificates` with the SPEC §5.3 columns and the CLAUDE.md household table recipe, through `private.enable_household_rls(table, 'member')` and `private.enable_audit(table)`. SPEC §5 marks only `properties` as soft delete, so these tables have no `deleted_at` and a delete removes the row. `certificates.document_id` and `extraction_id` stay nullable `uuid` without a key until P2-02 and P2-03 add their tables.
+- [ ] Tie each row to its property with `foreign key (household_id, property_id) references properties (household_id, id) on delete cascade`, and index `(household_id, property_id)`. Parcels and structures link only to a certificate of the same property through `(household_id, property_id, certificate_id)` with `on delete set null (certificate_id)`. Areas are nullable `numeric(12,2)` above 0.
+- [ ] Check the jsonb columns with `private.valid_purposes(jsonb)`, `private.valid_mortgage(jsonb)` and `private.valid_annotations(jsonb)`, with `mortgage.amount_vnd` a non-negative integer. A check makes `status = 'mortgaged'` true exactly when a mortgage without `released_on` is present. Trigger `private.check_certificate_parties()` refuses, with `23503`, a holder or bank party id outside the row's household.
+- [ ] Export `Parcel`, `Purpose`, `Structure`, `CertificateForm`, `Mortgage` and `Certificate` from `packages/core/src/schemas/legal.ts`. `Certificate` is a union on `status`, so a `mortgaged` value always carries a `Mortgage` with `amount_vnd: Vnd`. A purpose's `land_use_code` is any non-empty text, so an unknown code parses.
+- [ ] Implement `parseAreaInput(text)`, `sumLandArea(parcels)` and `purposesMismatch(parcel)` in `packages/core/src/properties/area.ts`. Areas run in integer hundredths of a square meter, so `120,5 + 80,25` is exactly `200,75 m²`.
+- [ ] Add the `legal` tab (`Pháp lý`, `/properties/[id]/legal`) to `property-tabs.ts` between `overview` and `activity`. `legal/page.tsx` reads `loadPropertyLegal(propertyId)` from `apps/web/src/server/properties/legal.ts` on the session client and shows `Giấy chứng nhận`, `Thửa đất` with `Tổng diện tích đất` from `sumLandArea`, and `Tài sản gắn liền với đất`, each with an empty state and one action. A viewer sees no add or edit action.
+- [ ] Serve each form as a full page at `legal/[kind]/[itemId]`, because each has more than five fields (DESIGN-BRIEF §5.3). Zod parses `kind` as `parcels`, `structures` or `certificates` and `itemId` as a uuid or `new`, and anything else calls `notFound()`. The parcel number and area inputs carry the ids `parcel-no` and `parcel-area`, and the structure floor area input `floor-area`.
+- [ ] `PurposeRows` picks codes with `LandUseCodePicker` over `land_use_codes`, showing `ODT` beside `Đất ở tại đô thị`. An unknown code saves as typed with the hint `mã chưa có trong danh mục`. When purposes do not sum to the parcel area, the form shows `Tổng diện tích theo mục đích khác diện tích thửa.` with both totals and keeps both (DOMAIN-VN §2.1).
+- [ ] `CertificateForm` has `Mẫu sổ` over the five DOMAIN-VN §2 forms (`Sổ đỏ (trước 2009)`, `Sổ hồng (trước 2009)`, `Giấy chứng nhận 2009 đến 2024`, `Giấy chứng nhận từ 01/08/2024`, `Giấy tay, chưa có sổ`), serial and book entry numbers, issue date and issuer, holders, status, `MortgageFields` (bank party, amount through the money input, registered and released dates) and `AnnotationList`. `PartyPicker` sorts with `sortKeyVietnameseName` and quick-adds a party with a full name and, for an individual, optional last 4 ID digits only (D11). `CertificateCard` shows `Đang thế chấp` with the bank and the amount through `formatVnd`.
+- [ ] Write `saveLegalItem`, `deleteLegalItem` and `restoreLegalItem` in `legal/actions.ts` over a registry keyed by `kind` that holds each table and its zod schema. Delete returns the row and, for a certificate, the parcel and structure ids it unlinked. The toast `Đã xóa thửa đất số 125. Hoàn tác` calls restore, which inserts with `on conflict (id) do nothing` and re-links, so a second tap changes nothing.
+- [ ] Seed `legal.ts` for every SPEC §9.3 property in every household, with holders following the §9.3 ownership. Forms cover all five values. `q7` is `so_hong_pre2009`, `bien-hoa` `so_do_pre2009`, `di-an` `gcn_2024`, `thu-duc`, `q1` and `bao-loc` `gcn_2009_2024`, and `long-an` `paper_only`. `bao-loc` has one 150 m² `ODT` parcel and a `mortgaged` certificate for 2.000.000.000 VND to the organization `Ngân hàng Demo` (key `seed:party:bank-<household>`, tag `bank`). The `long-an` parcel has no parcel number, map sheet number or area, and its `legal_status` becomes `paper_only` in `properties.ts`.
+- [ ] Run `/impeccable harden` on the `Pháp lý` tab and its forms for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
+
+**You see.**
+
+- [ ] `/properties/<bao-loc id>` shows the tabs `Tổng quan`, `Pháp lý` and `Hoạt động`, and `Pháp lý` shows the certificate `Đang thế chấp` with `Ngân hàng Demo` and `2.000.000.000 ₫`.
+- [ ] After Mẹ adds a 350,5 m² parcel to `Đất Bảo Lộc`, `Thửa đất` lists two parcels under `Tổng diện tích đất 500,5 m²`.
+- [ ] `Đất vườn Long An` shows `Giấy tay, chưa có sổ` and one parcel card with no number and no area.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `supabase/tests/property_legal.test.sql` includes `_harness.psql` and proves for each table that household A cannot read or write household B rows (`tests.sees_household`, `tests.cannot_write`) and that a viewer reads but cannot write. It refuses a row on another household's property, a parcel linked to another property's certificate, a foreign holder or bank party with `23503`, and `mortgaged` without a mortgage, and a delete writes one `delete` audit row with actor kind `user` (FND-2, PRP-2).
+- [ ] `packages/core/src/properties/area.test.ts` gains `120,5 + 80,25` summing to `200,75`, three decimals refused, an empty list summing to 0, and a purposes mismatch (PRP-2). `packages/core/src/schemas/legal.test.ts` gains one accepting case per form, a mortgage amount that is not a safe integer, `mortgaged` without a mortgage, and an unknown land use code accepted.
+- [ ] Run `pnpm db:seed:check`, which compares two resets over the three new tables (FND-7).
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-legal.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-legal.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Sign in as `me.lane1@demo.esta.test` at 390x844 light and open `Pháp lý` on `Dãy trọ Dĩ An` at trunk and at head. Trunk shows the P1-06 empty state, so the lane gates the head sections and that the header is unchanged. Save `p1-07-legal-regression.png`. Pass when both sides show the same header and score, and head shows the parcel, certificate and ownership of Dĩ An.
-- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 light. On `Đất Bảo Lộc` add a third parcel with area `120,5`. Save `p1-07-parcel-sum.png`. Pass when the total land area rises by exactly `120,5 m²` and is shown as `formatArea` output (PRP-2).
-- [ ] Lane 3. Sign in as `ryan.lane3@demo.esta.test` at 1440x900 dark. On a parcel of `Nhà phố Q7` set purposes `ODT` 50 m² and `CLN` 20,5 m² against a different parcel area. Save `p1-07-purposes.png`. Pass when both codes show their Vietnamese names and the mismatch line shows both totals.
-- [ ] Lane 4. Sign in as `me.lane4@demo.esta.test` at 390x844 dark. Add purpose code `XYZ`. Save `p1-07-unknown-code.png`. Pass when it saves as text with the hint `mã chưa có trong danh mục`.
-- [ ] Lane 5. Sign in as `ryan.lane5@demo.esta.test` at 1440x900 light. Open the `Đất Bảo Lộc` certificate, enter amount `2ty5` in the mortgage, and add an annotation. Save `p1-07-certificate-mortgage.png`. Pass when the amount previews `2.500.000.000 ₫`, the bank party name shows, and the annotation lists with its date.
-- [ ] Lane 6. Sign in as `me.lane6@demo.esta.test` at 390x844 light. On `Căn hộ Thủ Đức` set the shares to 50% and 40%, save, and reload. Save `p1-07-ownership-warning.png`. Pass when the save succeeds, `Tỷ lệ sở hữu cộng lại 90%, chưa đủ 100%.` shows on the tab and in the header after reload, and the score is lower than before (PRP-3).
-- [ ] Lane 7. Sign in as `ryan.lane7@demo.esta.test` at 1440x900 dark. Quick-add holder `Lê Văn Demo` with last digits `1234` and toggle `Có tên trên sổ` on his share. Save `p1-07-party-quick-add.png`. Pass when the party appears in the holder list sorted by given name and Studio shows `id_last4` `1234` with no other ID field.
-- [ ] Lane 8. Sign in as `me.lane8@demo.esta.test` at 390x844 dark. Add a 3-floor structure to `Nhà phố Q7`, then remove it and tap `Hoàn tác`. Save `p1-07-structure-undo.png`. Pass when the toast names the structure and undo brings it back.
-- [ ] Lane 9. Sign in as `ryan.lane9@demo.esta.test` at 1440x900 light. Open `Đất vườn Long An` and tap the missing item for the parcel number. Save `p1-07-missing-link-focus.png`. Pass when `Pháp lý` opens with the parcel number field focused, and filling it raises the header score.
-- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 6. Save `p1-07-english-130-dark.png`. Pass when labels are English, the warning reads in English with `90%`, and the share rows wrap without clipping.
+- [ ] Rule 1. `me.lane1@demo.esta.test` at 390x844, light, opens `Pháp lý` on `Đất Bảo Lộc` and adds parcel `412` on map sheet `18` with area `350,5` and purpose `CLN`. Pass when, after a reload, `Thửa đất` lists two parcels and reads `Tổng diện tích đất 500,5 m²` (PRP-2). Asserted in `e2e/property-legal.spec.ts`.
+- [ ] Rule 2. SPEC §9.4 seed 4 adapted to Phase 1. `ryan.lane2@demo.esta.test` at 1440x900, dark, types `bao loc` on `Tài sản`, opens `Đất Bảo Lộc` and taps `Pháp lý`. Pass when the certificate card reads `Đang thế chấp`, `Ngân hàng Demo` and `2.000.000.000 ₫`. Asserted in `e2e/property-legal.spec.ts`.
+- [ ] Rule 3. `me.lane3@demo.esta.test` at 390x844, dark, adds purposes `CLN` 20,5 m² and `XYZ` 10 m² to the 80 m² `ODT` parcel of `Nhà phố Q7`. Pass when `CLN` shows `Đất trồng cây lâu năm`, `XYZ` shows `mã chưa có trong danh mục`, and the mismatch line shows `110,5 m²` and `80 m²` after a reload. Asserted in `e2e/property-legal.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` at 1440x900, light, sets the `Kho Biên Hòa` certificate to `Đang thế chấp` with bank `Ngân hàng Demo` and amount `1ty2`, and quick-adds holder `Lê Văn Demo` with last digits `1234`. Pass when the amount previews `1.200.000.000 ₫` and the saved card reads `Đang thế chấp` and lists `Lê Văn Demo`. Asserted in `e2e/property-legal.spec.ts`.
+- [ ] Rule 5. `me.lane5@demo.esta.test` at 390x844, light, deletes the structure of `Nhà phố Q7` and taps `Hoàn tác`. Pass when the toast names the structure and its card is back after a reload. Asserted in `e2e/property-legal.spec.ts`.
+- [ ] Rule 6. SPEC §9.4 seed 10 adapted to the tab. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and opens `Pháp lý` on `Đất Bảo Lộc`. Pass when the headings and the status read in English, `Đất Bảo Lộc` stays Vietnamese as data, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/property-legal.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P1-07/`, and puts them in the PR body. Each state gets four files named by viewport and theme. Save `p1-07-legal-bao-loc-<viewport>-<theme>.png` for `/properties/<bao-loc id>/legal`, `p1-07-parcel-form-<viewport>-<theme>.png` with the purposes mismatch line, and `p1-07-certificate-form-<viewport>-<theme>.png` with the mortgage fields.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 and Rule 2 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, and audits the diff against the PR body. Save `p1-07-verifier-bao-loc.png`. Pass when local CI is green, the total reads `500,5 m²`, the certificate reads `Đang thế chấp` with the bank and amount, and the PR body matches the diff.
+- [ ] Audit lane. One Opus lane audits the diff for RLS and household isolation on the three tables, the composite keys and the party trigger, money as integer VND in `mortgage.amount_vnd`, the restore action staying inside the household and converging on a retry, and seed determinism. Pass when it files no blocking finding.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Lighthouse mobile LCP, TBT as the INP proxy, CLS and initial route JS gzipped for `/properties/<bao-loc id>/legal` on a production build (`pnpm build && pnpm start`) with the full seed, plus server action time for saving a parcel.
-- [ ] Probe. Run `scripts/perf/lighthouse.ts` 5 times per side, interleaved trunk and head, and time 20 parcel saves on head.
-- [ ] Baseline. Trunk serves the empty `legal` tab from P1-06, so its medians are the route baseline. Trunk has no save action, so record that and apply the absolute budget below.
-- [ ] Rule. Fail when the head route exceeds SPEC §7.2 (LCP 2.5 s, TBT 200 ms, CLS 0.05, initial JS 200 KB gzipped), when head LCP exceeds trunk by more than 300 ms, or when the parcel save median exceeds 300 ms.
+- [ ] Metric. Lighthouse mobile LCP, TBT and CLS and initial route JS gzipped for `/properties/<bao-loc id>/legal` and `/properties/<bao-loc id>` on a production build (`pnpm build && pnpm start`) with the full seed.
+- [ ] Probe. 5 interleaved Lighthouse runs per side on each route as `me.lane1@demo.esta.test`.
+- [ ] Baseline. Trunk serves `/properties/<bao-loc id>` without the `Pháp lý` tab, so its medians are that route's baseline. `/legal` is new at head and takes the SPEC §7.2 absolute budgets.
+- [ ] Rule. Fail when `/legal` misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, or when the detail route's head LCP exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots before the merge click. No review video.
 
-- [ ] Copy every lane screenshot to `~/.claude/orchestrate/esta/media/P1-07/P1-07-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of adding a parcel on `Đất Bảo Lộc` and saving 50% and 40% shares on `Căn hộ Thủ Đức` at 390x844, saved as `~/.claude/orchestrate/esta/media/P1-07/P1-07-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live**, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The operator clicks merge at the verified head. The root merges a Phase 1 PR only under a landing grant that names it.
 
-## Manage units and utility accounts on the property (P1-08)
+## Record owners and shares and warn when shares do not reach 100% (P1-10)
 
-**Depends on.** P1-06.
+**Depends on.** P1-07.
 
 **Files.**
 
-- [ ] Create `packages/core/src/property/units.ts` and `packages/core/src/property/units.test.ts`.
-- [ ] Create `apps/web/src/app/(app)/properties/[propertyId]/rent/actions.ts` and edit `rent/page.tsx`.
-- [ ] Create `apps/web/src/app/(app)/properties/[propertyId]/rent/_components/UnitList.tsx`, `UnitForm.tsx`, `AddRoomsSheet.tsx`, `UtilityAccountList.tsx`, `UtilityAccountForm.tsx`.
-- [ ] Create `e2e/property-units.spec.ts`. Edit `apps/web/messages/vi.json`, `apps/web/messages/en.json`.
+- [ ] Create `supabase/migrations/20261007107000_ownership_shares.sql` and `supabase/tests/ownership_shares.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Create `packages/core/src/properties/ownership.ts` and `packages/core/src/schemas/ownership.ts` with a `.test.ts` beside each. Edit `packages/core/src/properties/filters.ts` and its test.
+- [ ] Create `supabase/seed/generator/ownership.ts`. Edit `supabase/seed/generator/index.ts` and `supabase/seed/README.md`.
+- [ ] Create `owners-section.tsx`, `ownership-sheet.tsx` and `ownership-warning.tsx` in `apps/web/src/components/legal/`. Edit `page.tsx` and `actions.ts` under `apps/web/src/app/(app)/properties/[id]/legal/`, `apps/web/src/server/properties/legal.ts`, `apps/web/src/server/properties/list.ts`, `apps/web/src/components/properties/filter-chips.tsx` and the message files.
+- [ ] Create `e2e/property-owners.spec.ts`.
 
 **Build.**
 
-- [ ] Implement `nextRoomLabels(existingLabels, count)` and `moveUnit(units, unitId, direction)` in `packages/core/src/property/units.ts`. Labels continue the highest `Phòng n`. `moveUnit` returns the two changed `sort_order` values.
-- [ ] Build `UnitList` on `Cho thuê` with label, kind, area, list rent through the money display, `available_from` through `formatDate`, and `Lên` and `Xuống` text buttons for order. Leases render as an empty state until Phase 3.
-- [ ] Build `UnitForm` as a bottom sheet on mobile and a side panel on desktop, with list rent through the money input (`2tr8` previews `2.800.000 ₫`) and `available_from` through the date input.
-- [ ] Build `AddRoomsSheet` for rooming houses that creates `count` rooms with `nextRoomLabels` and a shared list rent. The P1-02 unique live label makes a retried submit converge on the same rooms. When `kind_details.room_count` differs from the live room count, show `Theo khai báo 10 phòng, đã nhập 8 phòng.`
-- [ ] Build `UtilityAccountList` and `UtilityAccountForm` for kind, provider, customer code, holder name and note, attached to the property or to one unit.
-- [ ] Write server actions in `rent/actions.ts` on the session client with the P1-02 zod schemas. Removing a unit or account is a soft delete with an undo toast naming it. Removing the last non-whole unit lets `ensure_whole_unit()` restore the `Toàn bộ` unit.
+- [ ] Create `ownership_shares` (`property_id`, `party_id`, `share_bp`, `named_on_certificate`, `since`) with the household table recipe, `private.enable_household_rls(table, 'member')` and `private.enable_audit(table)`, and no soft delete (SPEC §5.3). Composite keys tie `(household_id, property_id)` to `properties` and `(household_id, party_id)` to `parties`. `share_bp` is between 1 and 10000 and `(property_id, party_id)` is unique. No constraint sums the shares, because PRP-3 saves an incomplete set and warns.
+- [ ] Add `set_ownership_shares(p_property_id uuid, p_shares jsonb)` as a security invoker function. It replaces a property's shares in one transaction, deleting the parties absent from `p_shares` and upserting the rest on `(property_id, party_id)`, so a second call with the same input leaves the same rows.
+- [ ] Replace `public.property_list_rows` with `create or replace view`, keeping the P1-04 columns in order and `security_invoker`, and append `owner_party_ids uuid[]`.
+- [ ] Implement `percentToBp(text)` and `ownershipStatus(shares)` in `packages/core/src/properties/ownership.ts`. `percentToBp('33,33')` is 3333, more than two decimals or more than 100 is refused, and the status is `{ totalBp, state: 'complete' | 'under' | 'over' }`. Export `OwnershipShare` from `packages/core/src/schemas/ownership.ts`.
+- [ ] Register `owner` in the filter registry of `packages/core/src/properties/filters.ts`, so `parsePropertyFilters` accepts `owner=<party id>`. `listProperties` keeps rows whose `owner_party_ids` contains it. `filter-chips.tsx` adds `Chủ sở hữu` with every party that holds a share, sorted with `sortKeyVietnameseName`, each with its row count.
+- [ ] Add the `Chủ sở hữu` section with the id `owners` to `Pháp lý`. Each row shows the party, the percent, `Có tên trên sổ` and the since date. `OwnershipSheet` edits every row at once and adds an owner through the P1-07 `PartyPicker`, and `saveOwnershipShares` in `legal/actions.ts` calls `set_ownership_shares` on the session client.
+- [ ] Show `OwnershipWarning` while `ownershipStatus` is not `complete`, reading `Tỷ lệ sở hữu cộng lại 90%, chưa đủ 100%.` or `Tỷ lệ sở hữu cộng lại 110%, vượt quá 100%.`. It is derived from the saved rows, so it stays until the shares change. A property with no shares shows `Chưa có chủ sở hữu.` with `Thêm chủ sở hữu`.
+- [ ] Seed `ownership.ts` per SPEC §9.3 in every household. Nguyễn Thị Demo holds 10000 bp of `q7`, `di-an`, `q1` and `bao-loc`. `thu-duc` and `bien-hoa` split 5000 and 5000 with Trần Minh Demo, who holds 10000 bp of `long-an`. `named_on_certificate` matches the P1-07 holders.
 
 **You see.**
 
-- [ ] `Cho thuê` on `Dãy trọ Dĩ An` lists `Phòng 1` to `Phòng 8` in order, with `Phòng 8` available from `01/08/2026`.
-- [ ] Adding 4 rooms to a new rooming house creates `Phòng 1` to `Phòng 4` and the `Toàn bộ` unit no longer shows.
-- [ ] Adding an electricity account to `Phòng 2` shows it under that room with its provider and customer code.
+- [ ] `Pháp lý` on `Căn hộ Thủ Đức` lists Nguyễn Thị Demo and Trần Minh Demo at `50%` each, both `Có tên trên sổ`, with no warning.
+- [ ] After Mẹ saves `60%` and `30%`, the section reads `Tỷ lệ sở hữu cộng lại 90%, chưa đủ 100%.` and still does after a reload. P1-03 makes the same state lower the completeness score (PRP-3).
+- [ ] `/properties?owner=<Trần Minh Demo party id>` lists `Căn hộ Thủ Đức`, `Kho Biên Hòa` and `Đất vườn Long An`.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/property/units.test.ts` gains cases for labels after gaps, non-numeric labels, count zero, moving the first unit up, and moving the last unit down.
-- [ ] `e2e/property-units.spec.ts` adds and edits a unit, bulk-adds rooms and retries the submit, reorders by keyboard, removes and undoes, and adds utility accounts at property and unit level. Run `pnpm e2e e2e/property-units.spec.ts`.
-- [ ] Run `pnpm check`.
+- [ ] `supabase/tests/ownership_shares.test.sql` proves household isolation and viewer read-only for `ownership_shares`. It refuses a party of another household and `share_bp` 0 and 10001, saves a 9000 bp set, shows `set_ownership_shares` leaving the same rows when run twice, and shows `property_list_rows.owner_party_ids` for a 50/50 property with no row of another household (FND-2, PRP-3, PRP-8).
+- [ ] `packages/core/src/properties/ownership.test.ts` gains `percentToBp` cases for commas, dots, three decimals and `100,01`, and one case per ownership state (PRP-3). `filters.test.ts` gains `owner` parsing, a malformed id refused, and the filter on a 50/50 property (PRP-8).
+- [ ] Run `pnpm db:seed:check`, which compares two resets over `ownership_shares` (FND-7).
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-owners.spec.ts e2e/properties-list.spec.ts`.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-owners.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
+
+- [ ] Rule 1. `me.lane1@demo.esta.test` at 390x844, light, sets `Căn hộ Thủ Đức` to `60` and `30`, saves and reloads. Pass when the save succeeds and `Tỷ lệ sở hữu cộng lại 90%, chưa đủ 100%.` shows after the reload (PRP-3). Asserted in `e2e/property-owners.spec.ts`.
+- [ ] Rule 2. `ryan.lane2@demo.esta.test` at 1440x900, dark, picks owner `Trần Minh Demo` on `Tài sản` and reloads. Pass when exactly `Căn hộ Thủ Đức`, `Kho Biên Hòa` and `Đất vườn Long An` remain and the URL keeps `owner=` (PRP-8). Asserted in `e2e/property-owners.spec.ts`.
+- [ ] Rule 3. `me.lane3@demo.esta.test` at 390x844, dark, quick-adds `Lê Văn Demo` on `Kho Biên Hòa` and sets the shares to `33,33`, `33,33` and `33,34`. Pass when the rows read `33,33%`, `33,33%` and `33,34%` after a reload and no warning shows. Asserted in `e2e/property-owners.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` at 1440x900, light, turns off `Có tên trên sổ` for Trần Minh Demo on `Căn hộ Thủ Đức` and sets the shares to `70` and `40`. Pass when, after a reload, his row has no `Có tên trên sổ` mark and the warning reads `Tỷ lệ sở hữu cộng lại 110%, vượt quá 100%.` Asserted in `e2e/property-owners.spec.ts`.
+- [ ] Rule 5. SPEC §9.4 seed 10 adapted to the section. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 1. Pass when the warning reads in English with `90%`, the share rows wrap without clipping, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/property-owners.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P1-10/`, and puts them in the PR body. Each state gets four files named by viewport and theme. Save `p1-10-owners-<viewport>-<theme>.png` for `/properties/<thu-duc id>/legal` at 50/50, `p1-10-ownership-sheet-<viewport>-<theme>.png`, `p1-10-warning-<viewport>-<theme>.png` after 60/30, and `p1-10-owner-filter-<viewport>-<theme>.png` for `/properties` filtered to Trần Minh Demo.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 and then Rule 2 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, and audits the diff against the PR body. Save `p1-10-verifier-warning.png`. Pass when local CI is green, the warning survives a reload, the owner filter leaves three rows, and the PR body matches the diff.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. Lighthouse mobile LCP, TBT and CLS and initial route JS gzipped for `/properties` and `/properties/<thu-duc id>/legal` on a production build (`pnpm build && pnpm start`) with the full seed, plus `EXPLAIN (ANALYZE)` time of `select * from property_list_rows` as a lane member.
+- [ ] Probe. 5 interleaved Lighthouse runs per side on each route as `me.lane1@demo.esta.test`, and 20 runs of the view query per side.
+- [ ] Baseline. Both routes and the view exist at trunk, so the trunk medians are the baseline for each. `/properties?owner=` is new at head and takes the SPEC §7.2 absolute budgets.
+- [ ] Rule. Fail when any route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when a shared route's head LCP exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped, or when the view median exceeds trunk by more than 25% and 2 ms.
+
+**Review gate.** The operator reviews the PR body screenshots before the merge click. No review video.
+
+- [ ] The PR body carries every screenshot named under **Verify, live**, and the root posts the PR link to the operator at merge-ready.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The operator clicks merge at the verified head. The root merges a Phase 1 PR only under a landing grant that names it.
+
+## Manage units and utility accounts on the Cho thuê tab (P1-08)
+
+**Depends on.** P1-10.
+
+**Files.**
+
+- [ ] Create `supabase/migrations/20261007108000_units.sql` and `supabase/tests/units.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Create `packages/core/src/properties/units.ts` and `packages/core/src/schemas/units.ts` with a `.test.ts` beside each. Edit `packages/core/src/properties/filters.ts` and its test.
+- [ ] Create `units.ts` and `utility-accounts.ts` in `supabase/seed/generator/`. Edit `index.ts`, `context.ts` and `sql.ts` there, and `supabase/seed/README.md`.
+- [ ] Create `page.tsx`, `accounts/[accountId]/page.tsx` and `actions.ts` under `apps/web/src/app/(app)/properties/[id]/rental/`, and `apps/web/src/server/properties/rental.ts`. Create `unit-list.tsx`, `unit-sheet.tsx`, `add-rooms-sheet.tsx`, `utility-account-list.tsx` and `utility-account-form.tsx` in `apps/web/src/components/rental/`.
+- [ ] Create `e2e/property-units.spec.ts`. Edit `property-tabs.ts` and `property-row.tsx` in `apps/web/src/components/properties/`, `apps/web/src/server/properties/list.ts` and the message files.
+
+**Build.**
+
+- [ ] Create `units` and `utility_accounts` with the SPEC §5.3 columns, the household table recipe, `private.enable_household_rls(table, 'member')` and `private.enable_audit(table)`, and no soft delete (SPEC §5.3). `units` keys `(household_id, property_id)` to `properties`, has a unique `(property_id, label)` and a partial unique index for one `whole` unit per property, `list_rent_vnd bigint` of at least 0 and `area_m2 numeric(12,2)` above 0. `utility_accounts.unit_id` points at a unit of the same property through `(household_id, property_id, unit_id)` with `on delete set null (unit_id)`.
+- [ ] Add `private.whole_unit_id(p_property_id uuid)`, which returns `extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'esta:unit:whole:' || p_property_id)`. Trigger `private.ensure_whole_unit()` inserts the `whole` unit `Toàn bộ` with that id after a property insert. A trigger on `units` deletes the `whole` unit when a unit of another kind arrives, and inserts it again when a delete leaves a still-existing property with no unit. A property then has one `whole` unit or one or more other units, never both and never none.
+- [ ] Backfill the `whole` unit for every existing property in the same migration with `on conflict (id) do nothing`, so a rerun adds nothing.
+- [ ] Replace `public.property_list_rows` with `create or replace view`, keeping the P1-10 columns in order, and append `monthly_rent_vnd`, the sum of `list_rent_vnd`, null when no unit has one. Register `rent` in the sort registry of `filters.ts` (highest first, rows without rent last, ties by the name sort). `property-row.tsx` shows it through `formatVndCompact` labelled `Giá niêm yết`.
+- [ ] Implement `nextRoomLabels(existingLabels, count)` and `moveUnit(units, unitId, direction)` in `packages/core/src/properties/units.ts`. Labels continue the highest `Phòng n`, and `moveUnit` returns the two changed `sort_order` values. Export `Unit` with `list_rent_vnd: Vnd` and `UtilityAccount` from `packages/core/src/schemas/units.ts`.
+- [ ] Add the `rental` tab (`Cho thuê`, `/properties/[id]/rental`) to `property-tabs.ts` after `legal`. `UnitList` shows label, kind, area, list rent through the money display, `Có thể cho thuê từ 01/08/2026` from `available_from`, and `Lên` and `Xuống` text buttons. `UnitSheet` edits the five unit fields with the P0-12 money and date inputs. When `kind_details.room_count` differs from the live room count, the list shows `Theo khai báo 8 phòng, đã nhập 9 phòng.`
+- [ ] Build `AddRoomsSheet` for rooming houses. It computes labels with `nextRoomLabels` when it opens and sends them to `addRooms(propertyId, labels, listRentVnd)`, which inserts with `on conflict (property_id, label) do nothing`, so a retried submit adds no room.
+- [ ] Build `UtilityAccountList`, grouped by property and unit, and `UtilityAccountForm` as a full page at `rental/accounts/[accountId]` (`new` or a uuid) with kind, provider, customer code, holder name, unit and note. The kind select carries the id `account-kind`.
+- [ ] Write the save, delete and restore actions in `rental/actions.ts` on the session client with the P1-07 snapshot undo. Undo of a room delete re-links its accounts. Deleting the last room lets the trigger bring back `Toàn bộ`, and the UI offers no delete on a `whole` unit.
+- [ ] Seed `units.ts` per SPEC §9.3 in every household. `di-an` has `Phòng 1` to `Phòng 8` at 2.500.000 VND for rooms 1 to 4, 2.800.000 for rooms 5 to 7 and 3.000.000 for room 8 (21.400.000 in all), with `Phòng 8` `available_from` 2026-08-01. `q1` has one `shop` at 30.000.000, `long-an` and `bao-loc` one `lot` each with no rent, and the `whole` units of `q7`, `thu-duc` and `bien-hoa` get 15.000.000, 9.000.000 and 12.000.000. An `upsert` option on `publicTable` in `context.ts`, rendered by `sql.ts` as `on conflict (id) do update`, writes those rents onto the trigger's rows.
+- [ ] Seed `utility-accounts.ts` with one electricity and one water account at property level for `q7`, `thu-duc`, `di-an` and `bien-hoa`. `q1` has none, because its tenant holds them.
+- [ ] Run `/impeccable harden` on `Cho thuê` and the account form for long labels and provider names, 130% text scale, empty, loading, error and offline states.
+
+**You see.**
+
+- [ ] `Cho thuê` on `Dãy trọ Dĩ An` lists `Phòng 1` to `Phòng 8` in order, and `Phòng 8` reads `Có thể cho thuê từ 01/08/2026`.
+- [ ] A new rooming house shows one `Toàn bộ` unit, and adding 4 rooms leaves `Phòng 1` to `Phòng 4` with no `Toàn bộ`.
+- [ ] `Tài sản` sorted by `Giá thuê` starts with `Mặt bằng Quận 1` at `30 tr` and then `Dãy trọ Dĩ An` at `21,4 tr`.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `supabase/tests/units.test.sql` proves household isolation and viewer read-only for both tables. It covers the `whole` unit and its id after a property insert, its removal when a room arrives and its return after the last room goes, a second `whole` unit refused, a duplicate label refused, an account on another property's unit refused, the backfill converging when run twice, a service-role household delete cascading without error, and `property_list_rows.monthly_rent_vnd` of 21400000 for `di-an` (FND-2, PRP-1, PRP-8).
+- [ ] `packages/core/src/properties/units.test.ts` gains labels after gaps, non-numeric labels, count zero, moving the first unit up and moving the last unit down. `filters.test.ts` gains `sort=rent` with ties and missing rents (PRP-8).
+- [ ] Run `pnpm db:seed:check`, which compares two resets over both new tables (FND-7).
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-units.spec.ts e2e/properties-list.spec.ts`. The spec also deletes `Phòng 8`, taps `Hoàn tác` and asserts its `available_from` returns.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-units.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Sign in as `me.lane1@demo.esta.test` at 390x844 light and open `Cho thuê` on `Dãy trọ Dĩ An` at trunk and at head. Trunk shows the P1-06 empty state, so the lane gates the head unit list and that the header is unchanged. Save `p1-08-units-regression.png`. Pass when both sides show the same header and head lists 8 rooms.
-- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 light and read the Dĩ An rooms. Save `p1-08-di-an-rooms.png`. Pass when `Phòng 1` to `Phòng 8` show in order with list rents in `formatVnd` form and `Phòng 8` shows `01/08/2026`.
-- [ ] Lane 3. Sign in as `me.lane3@demo.esta.test` at 390x844 dark. Add `Phòng 9` with list rent `2tr8`. Save `p1-08-add-room.png`. Pass when the preview reads `2.800.000 ₫` and `Phòng 9` appears last.
-- [ ] Lane 4. Sign in as `ryan.lane4@demo.esta.test` at 1440x900 light. Create rooming house `Dãy trọ Demo Thủ Dầu Một` through P1-05, then add 4 rooms and submit twice quickly. Save `p1-08-bulk-rooms.png`. Pass when exactly `Phòng 1` to `Phòng 4` exist and no `Toàn bộ` unit shows.
-- [ ] Lane 5. Sign in as `ryan.lane5@demo.esta.test` at 1440x900 dark. Move `Phòng 3` up twice with the keyboard on `Lên`. Save `p1-08-reorder.png`. Pass when `Phòng 3` is first and the order survives a reload.
-- [ ] Lane 6. Sign in as `me.lane6@demo.esta.test` at 390x844 light. Open `Nhà phố Q7` and edit the `Toàn bộ` unit's list rent to `45tr`. Save `p1-08-whole-unit.png`. Pass when one unit `Toàn bộ` shows `45.000.000 ₫` and the list row's `Giá niêm yết` matches after returning to `Tài sản`.
-- [ ] Lane 7. Sign in as `ryan.lane7@demo.esta.test` at 1440x900 light. Add an electricity account on `Phòng 2` and a water account on the property of `Dãy trọ Dĩ An`. Save `p1-08-utility-accounts.png`. Pass when the electricity account lists under `Phòng 2` and the water account at property level, each with provider and customer code.
-- [ ] Lane 8. Sign in as `me.lane8@demo.esta.test` at 390x844 dark. Remove `Phòng 8` and tap `Hoàn tác`. Save `p1-08-remove-undo.png`. Pass when the toast names `Phòng 8` and undo restores it with its `available_from`.
-- [ ] Lane 9. Sign in as `ryan.lane9@demo.esta.test` at 1440x900 dark. Remove every utility account of `Kho Biên Hòa`, note the header score, then add one back. Save `p1-08-utility-completeness.png`. Pass when the score drops on removal, the utility check appears among the missing items, and the score returns after the add.
-- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 3. Save `p1-08-english-130-dark.png`. Pass when labels are English, the preview reads the English amount form, and unit rows wrap without clipping.
+- [ ] Rule 1. `me.lane1@demo.esta.test` at 390x844, light, opens `Cho thuê` on `Dãy trọ Dĩ An`. Pass when `Phòng 1` to `Phòng 8` show in order with list rents from `2.500.000 ₫` to `3.000.000 ₫` and `Phòng 8` reads `Có thể cho thuê từ 01/08/2026` (PRP-1). Asserted in `e2e/property-units.spec.ts`.
+- [ ] Rule 2. `me.lane2@demo.esta.test` at 390x844, dark, adds one room on `Dãy trọ Dĩ An` with list rent `2tr8` and taps save twice. Pass when the preview reads `2.800.000 ₫`, exactly one `Phòng 9` is last after a reload, and the list reads `Theo khai báo 8 phòng, đã nhập 9 phòng.` Asserted in `e2e/property-units.spec.ts`.
+- [ ] Rule 3. `ryan.lane3@demo.esta.test` at 1440x900, light, adds an electricity account with customer code `PE0123456789` on `Phòng 2` and a water account at property level on `Dãy trọ Dĩ An`. Pass when the electricity account lists under `Phòng 2` and the water account under the property, each with its provider and code. Asserted in `e2e/property-units.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` at 1440x900, dark, sorts `Tài sản` by `Giá thuê`. Pass when the rows read `Mặt bằng Quận 1`, `Dãy trọ Dĩ An`, `Nhà phố Q7`, `Kho Biên Hòa` and `Căn hộ Thủ Đức`, then the two land properties without rent (PRP-8). Asserted in `e2e/property-units.spec.ts`.
+- [ ] Rule 5. `me.lane5@demo.esta.test` at 390x844, light, creates the rooming house `Dãy trọ Demo Thủ Dầu Một` on `/properties/new`, opens `Cho thuê` and adds 4 rooms. Pass when `Toàn bộ` shows before the add and `Phòng 1` to `Phòng 4` show without `Toàn bộ` after it (PRP-1). Asserted in `e2e/property-units.spec.ts`.
+- [ ] Rule 6. SPEC §9.4 seed 10 adapted to the tab. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 1. Pass when the labels read in English, the room labels stay Vietnamese as data, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/property-units.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P1-08/`, and puts them in the PR body. Each state gets four files named by viewport and theme. Save `p1-08-rental-di-an-<viewport>-<theme>.png` for `/properties/<di-an id>/rental`, `p1-08-add-rooms-<viewport>-<theme>.png`, `p1-08-account-form-<viewport>-<theme>.png` and `p1-08-sort-rent-<viewport>-<theme>.png` for `/properties` sorted by rent.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 and Rule 2 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, and audits the diff against the PR body. Save `p1-08-verifier-di-an.png`. Pass when local CI is green, the eight rooms and `Phòng 8`'s date match Rule 1, a double save creates one `Phòng 9`, and the PR body matches the diff.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Lighthouse mobile LCP, TBT as the INP proxy, CLS and initial route JS gzipped for `/properties/<di-an id>/rent` on a production build (`pnpm build && pnpm start`) with the full seed, plus server action time for adding 8 rooms.
-- [ ] Probe. Run `scripts/perf/lighthouse.ts` 5 times per side, interleaved trunk and head, and time 20 bulk adds on head against fresh rooming houses.
-- [ ] Baseline. Trunk serves the empty `rent` tab from P1-06, so its medians are the route baseline. Trunk has no bulk add, so record that and apply the absolute budget below.
-- [ ] Rule. Fail when the head route exceeds SPEC §7.2 (LCP 2.5 s, TBT 200 ms, CLS 0.05, initial JS 200 KB gzipped), when head LCP exceeds trunk by more than 300 ms, or when adding 8 rooms takes more than 500 ms.
+- [ ] Metric. Lighthouse mobile LCP, TBT and CLS and initial route JS gzipped for `/properties/<di-an id>/rental`, `/properties` and `/properties?sort=rent` on a production build (`pnpm build && pnpm start`) with the full seed, plus `EXPLAIN (ANALYZE)` time of `select * from property_list_rows` as a lane member.
+- [ ] Probe. 5 interleaved Lighthouse runs per side on each route as `me.lane1@demo.esta.test`, and 20 runs of the view query per side.
+- [ ] Baseline. Trunk serves `/properties` and the view without rent, so their trunk medians are the baseline. `/rental` and `?sort=rent` are new at head and take the SPEC §7.2 absolute budgets.
+- [ ] Rule. Fail when any route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when `/properties` head LCP exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped, or when the view median exceeds trunk by more than 25% and 2 ms.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots before the merge click. No review video.
 
-- [ ] Copy every lane screenshot to `~/.claude/orchestrate/esta/media/P1-08/P1-08-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of adding rooms, reordering one and adding a utility account on a rooming house at 390x844, saved as `~/.claude/orchestrate/esta/media/P1-08/P1-08-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live**, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The operator clicks merge at the verified head. The root merges a Phase 1 PR only under a landing grant that names it.
 
-## Show properties on a map, set pins and polygons, and paste Google Maps links (P1-09)
+## Score completeness, show the next missing items and pass the Phase 1 exit (P1-03)
 
-**Depends on.** P1-01, P1-07, P1-08.
+**Depends on.** P1-08.
 
 **Files.**
 
-- [ ] Create `apps/web/src/components/map/MapCanvas.tsx`, `apps/web/src/components/map/mapStyle.ts`, `apps/web/src/components/map/PropertyPins.tsx`, `apps/web/src/components/map/PinEditor.tsx`, `apps/web/src/components/map/PolygonEditor.tsx`, `apps/web/src/components/map/PasteMapsLink.tsx`.
-- [ ] Create `apps/web/src/app/(app)/properties/_components/PropertyMapView.tsx`, `apps/web/src/app/(app)/properties/[propertyId]/_components/LocationSection.tsx`, `apps/web/src/app/(app)/properties/[propertyId]/locationActions.ts`.
-- [ ] Create `packages/core/src/maps/polygon.ts` and `packages/core/src/maps/polygon.test.ts`.
-- [ ] Create `e2e/property-map.spec.ts`. Edit `apps/web/package.json` (add `maplibre-gl`, `terra-draw`, `terra-draw-maplibre-gl-adapter`, `@turf/area`, `@turf/kinks`), `apps/web/messages/vi.json`, `apps/web/messages/en.json`, `apps/web/src/app/(app)/properties/page.tsx`, `docs/plan/STATUS.md`.
+- [ ] Create `supabase/migrations/20261007109000_completeness_facts.sql` and `supabase/tests/completeness_facts.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Create `types.ts`, `registry.ts`, `score.ts`, `index.ts`, `seed-facts.fixture.ts`, `registry.test.ts`, `score.test.ts` and `score.bench.ts` in `packages/core/src/completeness/`. Edit `packages/core/src/properties/filters.ts` and its test.
+- [ ] Create `apps/web/src/server/properties/completeness.ts`, `missing-items.tsx` and `use-focus-anchor.ts` in `apps/web/src/components/completeness/`, and `scripts/completeness-fixture.ts`.
+- [ ] Edit `apps/web/src/app/(app)/properties/[id]/layout.tsx`, `property-row.tsx` in `apps/web/src/components/properties/`, `apps/web/src/server/properties/list.ts`, the P1-05 edit page, the P1-06 location card, the P1-07 parcel and structure forms, the P1-08 account form and the message files.
+- [ ] Create `e2e/property-completeness.spec.ts`. Edit `scripts/phase-exit.ts`, `scripts/phase-exit.test.ts` and `docs/plan/STATUS.md`. Create `scripts/perf/lighthouse.ts` unless an earlier Phase 1 PR added it.
 
 **Build.**
 
-- [ ] Load MapLibre GL only through `next/dynamic` with `ssr: false` from `MapCanvas`, so it is a separate chunk fetched only when the map view or the `Vị trí` section is shown (SPEC §7.2). `mapStyle.ts` picks the OpenFreeMap `positron` style in light and an OpenFreeMap dark style in dark, confirmed against openfreemap.org in this PR, falling back to `positron` if none is published. Attribution stays visible.
-- [ ] Add the `Danh sách` and `Bản đồ` toggle to `/properties` writing `?view=map`, with filters and search applying to both views. `PropertyPins` draws one pin per located property with its status shape. Tapping or pressing Enter on a pin opens a card with the nickname, address and a link to the detail page. Properties without a location are counted in a line `2 tài sản chưa có vị trí` that filters the list to them.
-- [ ] Build `LocationSection` on `Tổng quan` that mounts the map when scrolled into view. `PinEditor` places or drags the pin, and latitude and longitude inputs move it from the keyboard. `PolygonEditor` uses terra-draw to draw and edit a boundary, shows its area from `@turf/area` labelled `Ước tính`, and refuses a self-intersecting ring through `@turf/kinks`.
-- [ ] Build `PasteMapsLink`. It parses long links in the browser with `parseMapsUrl` and sends short links to the P1-01 `resolveMapsLink` action. It shows a preview pin, then `Dùng vị trí này` saves it. A point outside Vietnam shows `Điểm này nằm ngoài Việt Nam. Kiểm tra lại liên kết.` and needs a second tap on `Vẫn lưu`. Each `ResolveError` maps to a Vietnamese message that suggests pasting the long link.
-- [ ] Implement `normalizeRing(points)` and `isValidBoundary(ring)` in `packages/core/src/maps/polygon.ts` (closed ring, at least 3 distinct vertices, inside the lat and lng ranges).
-- [ ] Write `setPropertyLocation(id, point)` and `setPropertyBoundary(id, ring | null)` in `locationActions.ts` on the session client with zod parsing, writing PostGIS values through `ST_SetSRID(ST_MakePoint(lng, lat), 4326)` and `ST_GeomFromGeoJSON`. Both show an undo toast.
-- [ ] Carry the Phase 1 exit (SPEC §10). Run every Phase 1 e2e spec, `pnpm db:test` and Lighthouse on Properties, and record in `docs/plan/STATUS.md` that PRP-1 to PRP-6 and PRP-8 passed with evidence links, PRP-7 moves to P2-08, and the S6 result.
+- [ ] Add the `security_invoker` view `public.property_completeness_facts` with one row per live property. It holds the kind, whether the current address has a commune and a street, whether `location` is set, whether `acquired_on` and `acquisition_kind` are set, the first parcel missing a number or an area, the land area sum, the first structure, the floor area sum, the share total in bp, and the utility account count. P2-02 and P3-07 replace it to add their document facts.
+- [ ] Define `CompletenessFacts` in `types.ts` as the parsed view row, and `CompletenessCheck` as `{ id, weight, kinds, passes(facts), link(facts) }`, where `kinds` is `'all'` or a list of `PropertyKind` and `link` returns a path under `/properties/<id>` with an anchor id.
+- [ ] Write `COMPLETENESS_CHECKS` in `registry.ts` as data, in this order. `parcelIds` (20) links to `legal/parcels/<parcel or new>#parcel-no` and `landArea` (20) to `#parcel-area`, both for every kind except apartments. `floorArea` (20) applies to apartments and links to `legal/structures/<structure or new>#floor-area`. `ownersComplete` (15) links to `legal#owners`, `currentAddress` (10) to `edit#current-address`, `pin` (10) to `#location` and `acquisition` (10) to `edit#acquisition`. `utilityAccounts` (10) skips residential and agricultural land and links to `rental/accounts/new#account-kind`. Each id is also its message key under `completeness.checks`.
+- [ ] Implement `scoreProperty(facts, registry)` and `nextMissing(result, n)` in `score.ts` as pure functions. The score is the integer percent of passing weight over the weight of the checks that apply to the kind, rounded half up, so P2-02 and P3-07 add checks without rescaling the others. `failing` orders failing checks by weight, then registry order.
+- [ ] Add `loadCompleteness(propertyIds)` in `apps/web/src/server/properties/completeness.ts`. It reads the view on the session client, parses each row with zod into `CompletenessFacts` and scores it. `scripts/completeness-fixture.ts` writes the seven `Gia đình Demo 1` rows of a running stack to `seed-facts.fixture.ts`.
+- [ ] Show the score in the header in `layout.tsx` with the P0-12 `CompletenessRing`, and `MissingItems` with the next three as text links such as `Thêm số thửa và số tờ bản đồ`, `Thêm diện tích thửa đất` and `Sửa tỷ lệ sở hữu cho đủ 100%`. A complete property reads `Đã đủ thông tin`.
+- [ ] Implement `useFocusAnchor()`, which scrolls to and focuses the element whose id matches the URL hash on load. Mount it on the parcel, structure and account forms, the edit page and the overview. Give the edit page's address and acquisition groups and the location card the ids `current-address`, `acquisition` and `location` where P1-05 and P1-06 left none.
+- [ ] Show `CompletenessRing` with the missing count on each row in `property-row.tsx`. Register `completeness` in the sort registry of `filters.ts` (lowest first, ties by the name sort), and have `listProperties` score its rows through `loadCompleteness`.
+- [ ] Extend `PHASE_CHECKS` in `scripts/phase-exit.ts` with phase 1. `pnpm phase:check 1` prints one `PASS` or `FAIL` row for each of PRP-1 to PRP-6 and PRP-8 from the unit tests and e2e specs that cite it, such as `e2e/property-legal.spec.ts` and `area.test.ts` for PRP-2. It adds an RLS row from `pnpm db:test` with table coverage over every Phase 1 table, and a Lighthouse row for `/properties`, `/properties?view=map` and `/properties/<di-an id>` against SPEC §7.2 on a production build it starts on the slot. It exits 1 on any `FAIL`.
+- [ ] Record the Phase 1 exit in `docs/plan/STATUS.md` with the `pnpm phase:check 1` output, PRP-7 carried to P2-08, and the S6 result from P1-01.
 
 **You see.**
 
-- [ ] `/properties?view=map` shows a pin for every located seed property and the line `1 tài sản chưa có vị trí` for `Đất vườn Long An`.
-- [ ] Pasting a fresh `https://maps.app.goo.gl/...` link on `Đất vườn Long An` previews a pin, `Dùng vị trí này` saves it, and the header score rises.
-- [ ] `pnpm e2e e2e/properties-list.spec.ts e2e/property-form.spec.ts e2e/property-detail.spec.ts e2e/property-legal.spec.ts e2e/property-units.spec.ts e2e/property-map.spec.ts` passes, `pnpm db:test` passes with every Phase 1 table covered, and the Lighthouse medians for `/properties` and `/properties/<id>` are within SPEC §7.2. This is the Phase 1 exit.
+- [ ] `/properties/<long-an id>` shows a score below 60% with `Thêm số thửa và số tờ bản đồ` and `Thêm diện tích thửa đất` first among the missing items, and tapping the first opens the parcel form with `Thửa đất số` focused.
+- [ ] `Tài sản` sorted by `Mức đầy đủ` lists `Đất vườn Long An` first, and every other row's ring reads at least 60%.
+- [ ] `pnpm phase:check 1` prints `PASS` for PRP-1 to PRP-6, PRP-8, RLS and Lighthouse and exits 0. This is the Phase 1 exit (SPEC §10).
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/maps/polygon.test.ts` gains cases for an open ring closed automatically, two distinct vertices refused, duplicate consecutive vertices removed, and an out-of-range vertex refused (PRP-5).
-- [ ] `e2e/property-map.spec.ts` covers the map toggle and pin card, pin drag and keyboard coordinates, drawing and clearing a polygon, pasting a long link, pasting a short link against a fake resolver bound only in the test server, the outside-Vietnam confirmation, and a network assertion that `/properties` in list view requests no MapLibre chunk (PRP-5). Run `pnpm e2e e2e/property-map.spec.ts`.
-- [ ] Phase 1 exit. Run `pnpm e2e e2e/properties-list.spec.ts e2e/property-form.spec.ts e2e/property-detail.spec.ts e2e/property-legal.spec.ts e2e/property-units.spec.ts e2e/property-map.spec.ts` and confirm it covers PRP-1 to PRP-6 and PRP-8.
-- [ ] Run `pnpm check`.
-- [ ] Run `pnpm db:test` and confirm RLS tests exist for every table added in Phase 1.
+- [ ] `registry.test.ts` proves every id is unique, every kind has positive applicable weight, every link anchor is one the pages render, apartments skip the parcel checks, and land kinds skip utility accounts (PRP-6).
+- [ ] `score.test.ts` covers all passing at 100, none passing at 0, rounding half up, a 9000 bp share total failing `ownersComplete` and lowering the score (PRP-3), the next three ordered by weight then registry order, and an extra registry entry changing only the kinds it applies to. Over `seed-facts.fixture.ts`, `long-an` scores below 60 and the six other properties at least 60 (PRP-6).
+- [ ] `supabase/tests/completeness_facts.test.sql` proves household isolation and viewer reads through the view, and the facts of a property with two parcels and a 9000 bp share set (FND-2). `scripts/phase-exit.test.ts` covers the phase 1 rows and a failing row exiting 1.
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-completeness.spec.ts e2e/properties-list.spec.ts e2e/property-detail.spec.ts`.
+- [ ] Run `pnpm phase:check 1`, which covers PRP-1 to PRP-6 and PRP-8, RLS for every Phase 1 table and the Lighthouse budgets on Properties.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-map.spec.ts`.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-completeness.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Sign in as `ryan.lane1@demo.esta.test` at 1440x900 light and open `/properties`, search `di an`, then clear it, at trunk and at head. Trunk has no map, so the lane gates that the list behaves the same and that the head map view shows the located properties. Save `p1-09-map-regression.png`. Pass when the list results match on both sides and head `Bản đồ` shows 6 pins and the line `1 tài sản chưa có vị trí`.
-- [ ] Lane 2. Sign in as `me.lane2@demo.esta.test` at 390x844 light. Switch to `Bản đồ` and tap the `Dãy trọ Dĩ An` pin. Save `p1-09-pin-card.png`. Pass when the card shows the nickname, the current address and a link that opens the detail page.
-- [ ] Lane 3. Sign in as `me.lane3@demo.esta.test` at 390x844 dark. On `Đất vườn Long An` paste a long `/maps/place/` link with `!3d`/`!4d` for a point near Tân An and tap `Dùng vị trí này`. Save `p1-09-paste-long.png`. Pass when the pin lands on the `!3d`/`!4d` point, the toast offers `Hoàn tác`, and the pin check leaves the missing items.
-- [ ] Lane 4. Sign in as `ryan.lane4@demo.esta.test` at 1440x900 light. Copy a Google Maps Share short link for Chợ Bến Thành in the browse session and paste it on a new property. Save `p1-09-paste-short.png`. Pass when the preview pin is within 0.005 degrees of `10.772, 106.698` within 3 s and saving persists it after reload.
-- [ ] Lane 5. Sign in as `me.lane5@demo.esta.test` at 390x844 light. Paste `https://www.google.com/maps/@48.8584,2.2945,17z` on a property. Save `p1-09-outside-vietnam.png`. Pass when `Điểm này nằm ngoài Việt Nam. Kiểm tra lại liên kết.` shows and nothing saves until `Vẫn lưu` is tapped.
-- [ ] Lane 6. Sign in as `ryan.lane6@demo.esta.test` at 1440x900 dark. On `Kho Biên Hòa` drag the pin, then set latitude and longitude by keyboard only. Save `p1-09-pin-drag-keyboard.png`. Pass when both moves persist after reload and the coordinates shown match the pin.
-- [ ] Lane 7. Sign in as `ryan.lane7@demo.esta.test` at 1440x900 light. On `Đất Bảo Lộc` draw a 4-vertex boundary and save, then try a self-crossing ring. Save `p1-09-polygon.png`. Pass when the first saves with an area labelled `Ước tính` and the second is refused with a message and nothing saved.
-- [ ] Lane 8. Sign in as `me.lane8@demo.esta.test` at 390x844 dark. Open `/properties` in list view with the network panel recording, then switch to `Bản đồ`. Save `p1-09-lazy-maplibre.png`. Pass when no request for the MapLibre chunk or tiles happens before the switch and both load after it.
-- [ ] Lane 9. Phase 1 exit. Run the six Phase 1 e2e specs, `pnpm db:test` and `scripts/perf/lighthouse.ts` for `/properties` and `/properties/<di-an id>`, then open the Playwright HTML report at 1440x900 dark. Save `p1-09-phase1-exit.png`. Pass when every spec passes, `pnpm db:test` reports no failures with Phase 1 tables covered, and every Lighthouse median is within SPEC §7.2.
-- [ ] Lane 10. Sign in as `me.lane10@demo.esta.test`, switch to English, text scale 130% and dark at 390x844, and repeat lane 2 and lane 5. Save `p1-09-english-130-dark.png`. Pass when the toggle, card and warning read in English, the dark map style is in use, and nothing clips at 130%.
+- [ ] Rule 1. Mẹ's flow. `me.lane1@demo.esta.test` at 390x844, light, types `long an` on `Tài sản` and opens `Đất vườn Long An`. Pass when the header ring reads below 60% and at most three missing items show, starting with `Thêm số thửa và số tờ bản đồ` and `Thêm diện tích thửa đất` (PRP-6). Asserted in `e2e/property-completeness.spec.ts`.
+- [ ] Rule 2. Continuing Rule 1, she taps `Thêm số thửa và số tờ bản đồ`, enters `906` and `96` and saves. Pass when the parcel form opens with `Thửa đất số` focused, and back on the property the score is higher and that item is gone (PRP-6). Asserted in `e2e/property-completeness.spec.ts`.
+- [ ] Rule 3. `ryan.lane2@demo.esta.test` at 1440x900, dark, sorts `Tài sản` by `Mức đầy đủ` and opens `Mặt bằng Quận 1`. Pass when `Đất vườn Long An` is first with a ring below 60%, every other ring reads at least 60%, and `Mặt bằng Quận 1` lists `Thêm tài khoản điện, nước` (PRP-6, PRP-8). Asserted in `e2e/property-completeness.spec.ts`.
+- [ ] Rule 4. `ryan.lane3@demo.esta.test` at 1440x900, light, sets `Căn hộ Thủ Đức` to `60` and `30` on `Pháp lý`. Pass when the header score drops and `Sửa tỷ lệ sở hữu cho đủ 100%` appears among the missing items, linking to `legal#owners` (PRP-3). Asserted in `e2e/property-completeness.spec.ts`.
+- [ ] Rule 5. SPEC §9.4 seed 10 adapted to the whole phase. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844, searches `di an` on `Tài sản`, opens `Dãy trọ Dĩ An`, visits `Pháp lý` and `Cho thuê`, and then opens the map view. Pass when every page reads in English, the header's missing items read in English, and `document.documentElement.scrollWidth` is at most its `clientWidth` on each page. Asserted in `e2e/property-completeness.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P1-03/`, and puts them in the PR body. Each state gets four files named by viewport and theme. Save `p1-03-long-an-header-<viewport>-<theme>.png` for `/properties/<long-an id>`, `p1-03-parcel-focus-<viewport>-<theme>.png` after the tap, `p1-03-sort-completeness-<viewport>-<theme>.png` for `/properties` and `p1-03-map-<viewport>-<theme>.png` for `/properties?view=map`.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh` and `pnpm phase:check 1`, then drives Mẹ's flow end to end live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light. It finds `Đất vườn Long An` by typing `long an`, opens it, reads the score and taps the first missing item, and it audits the diff against the PR body. Save `p1-03-verifier-mom-flow.png`. Pass when the score reads below 60%, the tap lands on the parcel form with `Thửa đất số` focused, `pnpm phase:check 1` exits 0, and the PR body matches the diff.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Lighthouse mobile LCP, TBT as the INP proxy, CLS and initial route JS gzipped for `/properties`, `/properties?view=map` and `/properties/<di-an id>` on a production build (`pnpm build && pnpm start`) with the full seed, plus whether the MapLibre chunk is in the initial JS of the list and detail routes.
-- [ ] Probe. Run `scripts/perf/lighthouse.ts` on the three routes 5 times per side, interleaved trunk and head, and read the `next build` route table on each side.
-- [ ] Baseline. Trunk serves `/properties` and the detail page without a map, so those medians are the baseline. Trunk has no map view, so record that and apply the absolute budgets below to it.
-- [ ] Rule. Fail when any route exceeds SPEC §7.2 (LCP 2.5 s, TBT 200 ms, CLS 0.05, initial JS 200 KB gzipped), when list or detail initial JS grows by more than 10 KB gzipped against trunk, or when the MapLibre chunk appears in their initial JS. This is the Phase 1 Lighthouse exit on Properties.
+- [ ] Metric. Lighthouse mobile LCP, TBT and CLS and initial route JS gzipped for `/properties`, `/properties?view=map` and `/properties/<long-an id>` on a production build (`pnpm build && pnpm start`) with the full seed, plus the time `score.bench.ts` takes to score 1,000 facts.
+- [ ] Probe. 5 interleaved Lighthouse runs per side on each route as `me.lane1@demo.esta.test`, and 5 runs of `pnpm vitest bench packages/core/src/completeness` at head.
+- [ ] Baseline. All three routes exist at trunk without the score, so the trunk medians are the baseline. Trunk has no scorer, so the bench takes an absolute budget.
+- [ ] Rule. Fail when any route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when a route's head LCP exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped, or when scoring 1,000 facts takes more than 10 ms. These medians are the Phase 1 Lighthouse exit on Properties.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots before the merge click. No review video.
 
-- [ ] Copy every lane screenshot to `~/.claude/orchestrate/esta/media/P1-09/P1-09-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of the map view, pasting a short link on `Đất vườn Long An`, the score rising, and drawing a boundary at 390x844, saved as `~/.claude/orchestrate/esta/media/P1-09/P1-09-review.mp4`.
-- [ ] Post the screenshots, the video and the Phase 1 exit evidence in chat, stop at merge-ready, and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live** and the `pnpm phase:check 1` output, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The operator clicks merge at the verified head. The root merges a Phase 1 PR only under a landing grant that names it.
 
 Phase 2. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict. The P2-04 section stays as reference for P2-02, which absorbs it.
 
