@@ -5,6 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import noBrowserSupabaseClient from './eslint-rules/no-browser-supabase-client.mjs';
+import noGuardDisable from './eslint-rules/no-guard-disable.mjs';
 import noJsxLiterals from './eslint-rules/no-jsx-literals.mjs';
 import serviceRoleAllowlist from './eslint-rules/service-role-allowlist.mjs';
 
@@ -43,13 +44,14 @@ export default defineConfig(
           'service-role-allowlist': serviceRoleAllowlist,
           'no-jsx-literals': noJsxLiterals,
           'no-browser-supabase-client': noBrowserSupabaseClient,
+          'no-guard-disable': noGuardDisable,
         },
       },
     },
     rules: { 'esta/service-role-allowlist': 'error' },
   },
   {
-    files: ['apps/web/**/*.{ts,tsx}'],
+    files: ['apps/web/**/*.{ts,tsx,mts,cts,js,mjs,cjs}'],
     rules: { 'esta/no-browser-supabase-client': 'error' },
   },
   {
@@ -92,6 +94,7 @@ export default defineConfig(
       '@eslint-community/eslint-comments/no-restricted-disable': ['error', 'esta/*', '@eslint-community/eslint-comments/*'],
       '@eslint-community/eslint-comments/no-unlimited-disable': 'error',
       '@eslint-community/eslint-comments/require-description': 'error',
+      'esta/no-guard-disable': 'error',
     },
   },
 );
