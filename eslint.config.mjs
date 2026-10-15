@@ -61,6 +61,24 @@ export default defineConfig(
     rules: { 'esta/no-jsx-literals': 'error' },
   },
   {
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.ts'],
+    rules: {
+      // Whoever signs up first for an address can set user_metadata, and it survives the owner's code (#23).
+      'no-restricted-properties': [
+        'error',
+        { property: 'user_metadata', message: 'Read names and settings from household_members, never from user_metadata.' },
+        { property: 'raw_user_meta_data', message: 'Read names and settings from household_members, never from user_metadata.' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/user_meta/]',
+          message: 'Read names and settings from household_members, never from user_metadata.',
+        },
+      ],
+    },
+  },
+  {
     files: ['supabase/seed/generator/**'],
     rules: {
       'no-restricted-properties': [
