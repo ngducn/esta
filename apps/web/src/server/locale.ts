@@ -6,9 +6,13 @@ import { createSessionClient } from '@/server/supabase/server';
 const LOCALE_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 
 export async function chooseLocale(locale: Locale, { signedIn }: { signedIn: boolean }): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set(localeCookie, locale, { maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS, sameSite: 'lax', path: '/' });
+  await rememberLocale(locale);
   if (signedIn) await writeMemberLocale(locale);
+}
+
+/** Keeps the locale for pages a signed-out visitor sees, such as /sign-in after sign-out. */
+export async function rememberLocale(locale: Locale): Promise<void> {
+  (await cookies()).set(localeCookie, locale, { maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS, sameSite: 'lax', path: '/' });
 }
 
 export async function carryCookieLocaleToMember(): Promise<void> {
