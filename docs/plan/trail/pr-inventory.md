@@ -165,3 +165,4 @@ The detailed sections for this phase are re-cut at phase start. Each PR here dee
 | Changed | P5-04 | Loses the `Hộp thư` tab to P5-03 |
 | Changed | P6-01 | Generalizes the receiving account, notification and assistant status sections that P3-11, P5-09 and P0-15 built |
 | Changed | P6-06 | Names the Phase 6 exit, which it always carried |
+| Issue | #18 | Tagged `p1-02`, which is deleted. P1-07 is the first PR that extends the seed generator for a Phase 1 table, so #18 belongs to P1-07. Its title still says `p1-02` until someone with issue write access retitles it |
