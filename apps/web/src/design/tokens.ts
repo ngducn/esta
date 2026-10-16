@@ -74,7 +74,7 @@ export const shell = { sidebarPx: 240, contentPx: 1200 } as const;
 /** Controls take `sm`, fields and icon tiles `md`, cards `lg`. */
 export const radius = { xs: 6, sm: 10, md: 12, lg: 16, full: 9999 } as const;
 
-/** One soft offset shadow under cards, one deeper under sheets. A fixed cool ink, so dark mode does not glow. */
+/** A fixed cool ink rather than a theme token, so the shadow never turns light in dark mode. */
 export const shadows = {
   card: '0 0.0625rem 0.125rem oklch(25% 0.02 265 / 0.05), 0 0.0625rem 0.1875rem oklch(25% 0.02 265 / 0.04)',
   sheet: '0 -0.25rem 1.5rem oklch(20% 0.02 265 / 0.14)',

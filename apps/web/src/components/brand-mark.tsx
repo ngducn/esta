@@ -1,7 +1,6 @@
 import { brandHousePath } from '@/design/brand';
 import { cn } from '@/lib/utils';
 
-/** The white house on a lacquer-red square; `scripts/app-icons.ts` draws the same mark for the app icon. */
 export function BrandMark({ name, className }: { name: string; className?: string }) {
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
