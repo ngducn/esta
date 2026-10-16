@@ -2,7 +2,7 @@ import { FROZEN_CLOCK_REFUSAL } from '@esta/core';
 import { describe, expect, it } from 'vitest';
 import { assertStartAllowed, parseAgentEnv } from './env';
 
-const base = { SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_SERVICE_ROLE_KEY: 'service-key' };
+const base = { SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_SERVICE_ROLE_KEY: 'service-key', ESTA_ENV: 'development' };
 
 describe('assertStartAllowed', () => {
   it('starts replay with no credential and records auth mode none', () => {
@@ -43,6 +43,16 @@ describe('assertStartAllowed', () => {
   it('refuses live mode without a routine model', () => {
     const env = parseAgentEnv({ ...base, CLAUDE_CODE_OAUTH_TOKEN: 'oauth-token' });
     expect(() => assertStartAllowed(env)).toThrow(/ESTA_MODEL_ROUTINE/);
+  });
+
+  it.each([undefined, ''])('refuses live mode without an explicit ESTA_ENV (ESTA_ENV=%j)', (estaEnv) => {
+    const env = parseAgentEnv({ ...base, ESTA_ENV: estaEnv, CLAUDE_CODE_OAUTH_TOKEN: 'oauth-token', ESTA_MODEL_ROUTINE: 'm' });
+    expect(() => assertStartAllowed(env)).toThrow('Refusing to start: ESTA_AGENT_MODE=live needs an explicit ESTA_ENV, which is not set');
+  });
+
+  it('starts replay without ESTA_ENV', () => {
+    const env = parseAgentEnv({ ...base, ESTA_ENV: undefined, ESTA_AGENT_MODE: 'replay' });
+    expect(assertStartAllowed(env)).toEqual({ agentMode: 'replay', authMode: 'none' });
   });
 
   it('refuses a frozen clock under ESTA_ENV=production', () => {
