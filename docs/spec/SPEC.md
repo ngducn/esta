@@ -320,6 +320,7 @@ Environment variables (names are part of the contract; `.env.example` lists them
 | `ESTA_MODEL_ROUTINE`, `ESTA_MODEL_DEEP` | agent | Model ids from config, never hardcoded |
 | `ESTA_AGENT_MODE` | agent | `live` (default) or `replay` (recorded responses, CI and north-star) |
 | `ESTA_AGENT_HOME` | agent | Working root for job temp dirs and per-conversation session dirs |
+| `ESTA_REPLAY_DIR` | agent | Replay recordings root; default `fixtures/agent-replay` |
 | `ESTA_BACKUP_DIR` | agent | Nightly backup target |
 | `EMAIL_TRANSPORT`, `SMTP_URL`, `ESTA_EMAIL_FROM` | web, agent | `smtp` to Inbucket in dev; production sender set at the Phase 6 gate |
 | `ESTA_SIGNED_URL_TTL_SECONDS` | web | Default 300 |

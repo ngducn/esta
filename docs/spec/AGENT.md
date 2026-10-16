@@ -24,26 +24,27 @@ main loop
   └─ runner: claim job → build tools for that household and job kind → query() → validate → guard → write → finish
 ```
 
-Time comes from the shared `Clock` (SPEC FND-9), read at the start of every scheduler tick and every job, so tests can advance it without restarting the worker. Claiming uses a SQL function `claim_agent_job(worker_id, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`. A claimed job whose `locked_at` is older than its kind's timeout plus 2 minutes may be reclaimed. Every write a job makes is keyed by `job_id` plus a dedupe key, so a re-run after a crash does not duplicate output. Retries use exponential backoff (1, 5, 25 minutes), up to 3 attempts. The worker's Supabase client sends `x-esta-actor: agent:{worker_id}` on every request so the audit trigger attributes its writes (SPEC §5.7).
+Time comes from the shared `Clock` (SPEC FND-9), read at the start of every scheduler tick and every job, so tests can advance it without restarting the worker. Claiming uses a SQL function `claim_agent_job(worker_id, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`. A claimed job whose `locked_at` is older than its kind's timeout plus 2 minutes may be reclaimed. Every write a job makes is keyed by `job_id` plus a dedupe key, so a re-run after a crash does not duplicate output. A failed job is retried up to 3 times, 1, 5 and then 25 minutes after the failure, so `max_attempts` defaults to 4; a missing replay recording or an `auth_error` fails the job at once, because a retry cannot fix either. The worker's Supabase client sends `x-esta-actor: agent:{worker_id}` on every request so the audit trigger attributes its writes (SPEC §5.7).
 
 Deterministic daily work (invoice generation and auto-issue, lease status transitions, keep-alive) does not run here. It runs on Vercel Cron (SPEC §8) so it never depends on Ryan's machine.
 
 ### 2.2 Claude Agent SDK usage
 
-Confirm exact option names against the current TypeScript SDK docs in spike S1. The intended shape:
+Spike S1 (`spike/s1-agent-sdk`, 83c56e0) confirmed these options on SDK 0.3.291, and `apps/agent/src/sdk/options.ts` builds them:
 
 - `query({ prompt, options })` per job.
-- Custom tools through an in-process MCP server named `esta` (`createSdkMcpServer` with `tool(name, description, zodSchema, handler)`), so tools appear as `mcp__esta__<name>`.
-- `settingSources: []` so the worker never loads Ryan's personal or project Claude Code settings, skills, plugins, hooks or CLAUDE.md. The runtime agent must not inherit the build-time stack.
-- Tool access is enforced twice. `allowedTools` lists the job kind's tools (§3) so they run without prompts, and `canUseTool` denies every tool not on that list and every `Read` outside the job's directory. Bash, Write, Edit, NotebookEdit and subagent tools are also listed in `disallowedTools`.
+- Custom tools through an in-process MCP server named `esta` (`createSdkMcpServer({ name, version, tools, alwaysLoad: true })` with `tool(name, description, zodRawShape, handler)`), so tools appear as `mcp__esta__<name>`. `alwaysLoad: true` keeps them out of tool search, so they are in the first turn's prompt.
+- `settingSources: []` and `strictMcpConfig: true`, so the worker never loads Ryan's personal or project Claude Code settings, skills, plugins, hooks, MCP servers or CLAUDE.md. The runtime agent must not inherit the build-time stack.
+- Tool access is enforced twice. `tools` lists the job kind's built-in tools (§3), which is the only way to remove Glob, Grep, Skill, ToolSearch and the other built-ins that `disallowedTools` leaves on; `ping` sets `tools: []`. `allowedTools` lists the kind's built-in and MCP tools so they run without prompts. A `PreToolUse` hook then denies any tool outside the kind's list and any `Read` outside the job's directory, after resolving symlinks. The hook is the gate, because a bare name in `allowedTools` approves the tool before `canUseTool` runs. `permissionMode: 'default'` is set explicitly.
 - `cwd` is the job's directory under `ESTA_AGENT_HOME`: a temp dir per job, deleted afterwards, except Ask, which uses a stable `conversations/{conversation_id}` dir so SDK sessions can be resumed.
-- `env` passed to the SDK contains only the credential for the active `ESTA_AUTH_MODE` (§2.3), never both.
+- `env` replaces the subprocess environment. It holds `PATH`, `LANG`, the credential for the active `ESTA_AUTH_MODE` (§2.3) and never both, and `HOME` and `CLAUDE_CONFIG_DIR` pointing at an empty per-worker dir under `ESTA_AGENT_HOME`, so the SDK never finds the operator's own Claude login.
 - `model` from `ESTA_MODEL_ROUTINE` or `ESTA_MODEL_DEEP`; never hardcoded.
-- `maxTurns` and a wall-clock timeout per kind (§3).
+- `maxTurns` and a wall-clock timeout per kind (§3), the timeout through `abortController`.
 - Ask stores the SDK `session_id` on the conversation and resumes it for follow-ups.
-- Record the final result message's usage, turn count, cost estimate and session id in `agent_runs`.
+- An auth failure arrives as `subtype: 'success'` with `is_error: true`, so the worker fails any result with `is_error`, and records a 401 or a missing login as `auth_error`, which it does not retry.
+- Record the final result message's `num_turns`, `session_id`, `total_cost_usd` (as `cost_estimate_usd`), `usage` with `modelUsage` and `permission_denials`, and the tool calls as names and counts in `agent_runs`, and the reply in `agent_jobs.result`.
 
-If S1 shows the SDK cannot run on subscription auth on this machine, fall back to spawning `claude -p --output-format stream-json` with equivalent isolation flags and an MCP config pointing at a local stdio MCP server exposing the same tools. Record the decision here.
+S1 settled the SDK path, so the `claude -p --output-format stream-json` fallback is not used.
 
 ### 2.3 Authentication
 
@@ -267,9 +268,13 @@ At least one item or the explicit empty item; every source URL fetches with stat
 
 Run every job kind once in `live` mode locally on the `full` seed with the frozen clock, record the outputs in `docs/plan/trail/`, and check: watch facts equal §7.1 (deterministic), brief and Ask pass §7.3 and §7.4, research passes §7.5, extraction meets §7.2.
 
+### 7.7 Ping
+
+The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. Its prompt carries no date, id or household name, so one recording in `fixtures/agent-replay/ping/` replays at any clock for every household. The golden test (`apps/agent/src/jobs/ping.test.ts`) replays it for `Gia đình Demo`, `Gia đình Demo 4` and `Gia đình Demo 10`, and passes when the reply names that household exactly, the run makes exactly one `mcp__esta__household_info` call, and an empty replay directory raises the missing-recording error. `pnpm agent:record` refreshes the recording from a live run for `Gia đình Demo`.
+
 ## 8. Replay mode
 
-`ESTA_AGENT_MODE=replay` replaces model calls with recordings stored in `fixtures/agent-replay/{job_kind}/{input_hash}.json`. Before hashing, the input (prompt, tool results, schema version) is canonicalized: UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps are taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Tools, validation, the number guard and all writes run for real. A missing recording fails the test with the hash and a hint to record it. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
+`ESTA_AGENT_MODE=replay` replaces model calls with recordings stored in `{ESTA_REPLAY_DIR}/{job_kind}/{input_hash}.json`, where `ESTA_REPLAY_DIR` defaults to `fixtures/agent-replay`. The input hash is the SHA-256 of the canonical input: the prompt, the kind's tools and `maxTurns`, and a schema version. Before hashing, the input is canonicalized: the job's household name becomes `<household>`, UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps become `<time:n>`, taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Tools, the `PreToolUse` policy, validation, the number guard and all writes run for real: the worker replays each recorded tool call through the job's own tools. A missing recording fails the job at once, with no retry, and its error names the 64-character hash and `pnpm agent:record`. Replay needs no credential and records auth mode `none` and cost 0. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
 
 ## 9. Limits, failures and UX
 
@@ -287,14 +292,14 @@ Run every job kind once in `live` mode locally on the `full` seed with the froze
 
 ## 10. Agent-owned tables
 
-- `agent_jobs`: kind, payload, status (`queued | running | done | failed | cancelled`), priority, run_after, attempts, max_attempts, idempotency_key (unique), locked_by, locked_at, started_at, finished_at, error, requested_by.
-- `agent_runs`: job_id, auth_mode, agent_mode (`live | replay`), model, num_turns, usage jsonb, cost_estimate_usd, session_id, tool_calls jsonb (names and counts only), started_at, finished_at.
+- `agent_jobs`: kind, payload, status (`queued | running | done | failed | cancelled`), priority (lower runs first), run_after, attempts, max_attempts (default 4), idempotency_key (unique), locked_by, locked_at, started_at, finished_at, error, result jsonb (the job's output, such as the ping reply), requested_by. Operators read it; a user inserts only a `ping` for themself, and every other write comes from the worker's service client.
+- `agent_runs`: household_id, job_id, auth_mode (`subscription | api_key | none`, where `none` is replay), agent_mode (`live | replay`), model, num_turns, usage jsonb, cost_estimate_usd, session_id, tool_calls jsonb (names and counts only), started_at, finished_at. Operators read it; only the worker writes it.
 - `agent_items`: kind (`brief | alert | proposal | answer_note | research_scan_empty | system`), severity, audience (`all | operator`), title, body_md, related (jsonb of typed ids), citations (jsonb of url, title, source_name, published_at), proposal (jsonb type and params), status (`new | read | approved | dismissed | done | failed`), dedupe_key (unique per household), job_id, decided_by, decided_at.
 - `research_topics`: label, query_templates, province_codes, property_ids, source (`auto | user`), active.
 - `research_items`: url_normalized (unique per household), source_url, source_name, published_at, title_vi, summary_vi, why_it_matters_vi, kind, relevance, related_property_ids, province_codes, job_id.
 - `conversations`: title, created_by, sdk_session_id.
 - `messages`: conversation_id, role, content_md, status (`streaming | done | error`), job_id, refs jsonb.
-- `worker_heartbeats`: worker_id, host_label, version, auth_mode, agent_mode, last_seen_at.
+- `worker_heartbeats`: worker_id, host_label, version, auth_mode, agent_mode, last_seen_at. No household data and no audit trigger. Members read only `worker_id` and `last_seen_at`; only the service role writes.
 - `notifications`: user_id, channel (`inapp | email | push`), agent_item_id, status, sent_at, error.
 
 `document_extractions` is defined in SPEC §5.5; the agent writes it through `save_extraction` only.
