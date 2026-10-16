@@ -1,7 +1,7 @@
 export { addDays, addMonths, daysInMonth, firstOfMonth, fromEpochDay, monthsUntil } from './dates';
 export { DEFAULT_ESCALATION_ROUNDING_VND, applyEscalation, escalate, escalationSteps } from './escalation';
 export { generateSchedule, validateAmendment } from './generate';
-export { roundHalfUpToMultiple } from './rounding';
+export { scaleRoundHalfUp } from './rounding';
 export type {
   Amendment,
   AmendmentChanges,

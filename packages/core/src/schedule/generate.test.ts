@@ -291,6 +291,11 @@ describe('escalation', () => {
     expect(periods.at(-1)).toMatchObject({ start: '2027-01-01', end: '2027-01-07', rentVnd: 2_845_161, prorated: { days: 7, daysInFullPeriod: 31, fullRentVnd: 12_600_000 } });
   });
 
+  it('keeps every đồng when rent times the factor passes 2^53', () => {
+    const oneBps: Escalation = { kind: 'percent', valueBps: 1, everyMonths: 12, roundingVnd: vnd(1) };
+    expect(applyEscalation(vnd(901_000_004_999), oneBps, d('2027-01-01'), d('2026-01-01'))).toBe(901_090_104_999);
+  });
+
   it('applyEscalation gives the rent in force at a period start', () => {
     expect(applyEscalation(vnd(100_000_000), fivePercentYearly, d('2027-01-01'), d('2025-01-01'))).toBe(110_300_000);
     expect(applyEscalation(vnd(100_000_000), fivePercentYearly, d('2025-12-31'), d('2025-01-01'))).toBe(100_000_000);

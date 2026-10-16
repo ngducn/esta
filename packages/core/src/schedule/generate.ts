@@ -4,7 +4,7 @@ import type { Vnd } from '../money/vnd';
 import type { Result } from '../result';
 import { addDays, addMonths, firstOfMonth } from './dates';
 import { escalate, escalationSteps } from './escalation';
-import { roundHalfUpToMultiple } from './rounding';
+import { scaleRoundHalfUp } from './rounding';
 import type { Amendment, AmendmentRefusal, BillingCycleMonths, LeaseTerms, Period } from './types';
 
 type Cursor = {
@@ -71,7 +71,7 @@ export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendme
       start,
       end,
       dueDate: addDays(start, terms.dueOffsetDays),
-      rentVnd: prorated === null ? fullRentVnd : roundHalfUpToMultiple(fullRentVnd * days, daysInFullPeriod, 1),
+      rentVnd: prorated === null ? fullRentVnd : scaleRoundHalfUp(fullRentVnd, days, daysInFullPeriod, 1),
       prorated,
       coveredByPaidThrough: terms.paidThroughDate !== null && end <= terms.paidThroughDate,
     });
