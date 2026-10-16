@@ -87,3 +87,4 @@ Budget. The block that started 2026-10-16T16:00Z may run to 100%: stop spawning 
 Operator's words, 2026-10-17: "no, lets maxed it out up to 98% , i want to juice out every tokens before reset hit today", replacing the 40% cap and the plan to fall back from Fable to Opus.
 
 Budget until the weekly reset today: up to 98% of each 5-hour block. Stop spawning at about 90%, pause at 96%. Owners stay on Fable; verifiers on Sonnet; audits on Opus. Maximize parallel owners: pure-core PRs that need no Supabase stack run alongside the UI track.
+7. Defaults for the Phase 2 re-cut (PR #60), agent interpretation: the landing grant extends to Phase 2 on the same reading as Phase 1; P2-07 gets an Opus audit lane because accepting extracted fields writes certificates, parcels, ownership and parties; members see document extraction state through the `document_status` view, not `agent_jobs` rows.
