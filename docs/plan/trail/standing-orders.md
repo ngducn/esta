@@ -43,3 +43,18 @@ Rules from this update. They override the earlier sections and the plan's per-PR
 6. One fix-forward per PR. A blocking finding that survives it parks the PR with its evidence.
 7. Plan vertically with the `vertical-slice-matrix` skill (`~/.claude/skills/vertical-slice-matrix/SKILL.md`). Build each shared capability inside the first slice that consumes it. P0-13 is removed; its composites move to their first consuming PRs. P0-14 depends on P0-12.
 8. Concurrency. At most two owners with a local stack plus one verifier. Owners use slots 2 and 3, the verifier slot 14. Never touch `esta-1` or `ekh-*`.
+
+## Update 2026-10-16 07:40 +07
+
+Operator's words, 2026-10-16: "ok awesome, but please find an icon and stock photoes or something to make the design look real, also, act as a real user, think UI UX and really on what they are using day to day, what features matter to them" and "the styling looks good, so adjust the design as i suggest if needed, and go ahead with the build, im going to work now". Earlier the same morning, on UI frameworks: "maybe use some UI framework to make your job easier is also a good option? ant-design, daisy ui, .. you choose", and "i also like it bright, not dark themed".
+
+Objective. P0-14 fixed and merged. A redesign PR merged that moves Esta to the bright, modern direction of the canvas at https://claude.ai/artifact/5WMgbh8EwS9T3eiY1SkM3c, with lucide icons, licensed stock photos recorded with their sources, the design docs rewritten, and DESIGN-BRIEF §4 constraints kept. The UX reasoning lives in `docs/plan/trail/ux-daily-use.md`.
+
+Defaults the agent chose, since the operator did not pick (label: agent interpretation):
+
+1. UI framework stays shadcn/ui on Tailwind (SPEC D2). Ant Design and daisyUI were declined; reasons are in the 2026-10-16 decisions rows.
+2. Accent is lacquer red `#B83A26`. Font is Plus Jakarta Sans if it passes `pnpm glyphs:check` (full Vietnamese coverage and `tnum`), else Source Sans 3. Source Serif 4 is dropped.
+3. Light theme is the default whatever the system setting; dark stays opt-in in Cài đặt.
+4. Property cover photos belong to P1-04 and P1-05, not this run.
+5. Budget: at most 50% of each 5-hour block, the operator's last explicit cap, because the operator is at work and may need the rest. Stop spawning at 35%, pause at 45%.
+6. Merging stays under the 2026-10-15 grant. The redesign PR counts as Phase 0 work because it restyles Phase 0 surfaces only. Phase 1 PRs stop at merge-ready for the operator's click.
