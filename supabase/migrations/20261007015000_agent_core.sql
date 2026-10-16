@@ -75,6 +75,13 @@ create policy agent_runs_select on public.agent_runs
   for select to authenticated
   using (private.is_operator(household_id));
 
+-- A job or run diff carries the same operator-only diagnostics, so its audit rows follow the operator rule too.
+alter policy audit_log_select on public.audit_log
+  using (
+    private.is_member(household_id, 'viewer')
+    and (table_name not in ('agent_jobs', 'agent_runs') or private.is_operator(household_id))
+  );
+
 create table public.worker_heartbeats (
   worker_id text primary key check (worker_id ~ '^[A-Za-z0-9._-]{1,64}$'),
   host_label text not null,
@@ -110,12 +117,21 @@ volatile
 set search_path = ''
 as $$
 begin
+  update public.agent_jobs j
+  set status = 'failed',
+      finished_at = p_as_of,
+      error = 'The worker stopped during the last attempt'
+  where j.status = 'running'
+    and j.attempts >= j.max_attempts
+    and j.locked_at < p_as_of - private.agent_job_timeout(j.kind) - interval '2 minutes';
+
   return query
   with candidate as (
     select j.id
     from public.agent_jobs j
-    where (j.status = 'queued' and j.run_after <= p_as_of)
-       or (j.status = 'running' and j.locked_at < p_as_of - private.agent_job_timeout(j.kind) - interval '2 minutes')
+    where j.attempts < j.max_attempts
+      and ((j.status = 'queued' and j.run_after <= p_as_of)
+        or (j.status = 'running' and j.locked_at < p_as_of - private.agent_job_timeout(j.kind) - interval '2 minutes'))
     order by j.priority, j.run_after
     limit 1
     for update skip locked
