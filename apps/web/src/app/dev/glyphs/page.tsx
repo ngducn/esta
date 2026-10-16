@@ -15,8 +15,9 @@ const WEIGHT_CLASS: Record<number, string> = {
   400: 'font-normal',
   500: 'font-medium',
   600: 'font-semibold',
+  700: 'font-bold',
 };
-const FACE_CLASS = { sans: 'font-sans', figure: 'font-figure' } as const;
+const FACE_CLASS = { sans: 'font-sans' } as const;
 const SPECIMEN_SIZES = [
   { px: 16, rem: '1rem' },
   { px: 32, rem: '2rem' },
@@ -105,7 +106,7 @@ export default function DevGlyphsPage() {
           Figures
         </h2>
         <div className="flex flex-wrap items-end gap-x-16 gap-y-8">
-          <table className="font-figure figures text-lead" data-testid="figure-column" aria-label="Amounts, right-aligned">
+          <table className="figures text-lead" data-testid="figure-column" aria-label="Amounts, right-aligned">
             <tbody>
               {AMOUNTS.map((amount) => (
                 <tr key={amount} className="border-b border-rule last:border-b-0">
@@ -116,7 +117,7 @@ export default function DevGlyphsPage() {
               ))}
             </tbody>
           </table>
-          <div className="flex flex-col gap-1 font-figure" style={{ fontSize: '2rem' }}>
+          <div className="flex flex-col gap-1" style={{ fontSize: '2rem' }}>
             <p className="font-medium leading-tight" data-testid="specimen-name">
               Đặng Thị Hường
             </p>
@@ -136,18 +137,18 @@ export default function DevGlyphsPage() {
             <li key={status} className="flex items-start justify-between gap-4" data-status={status}>
               <span className="flex items-center gap-2">
                 <StatusShape status={status} />
-                <span className="font-semibold" style={{ color: `var(--${status}-ink)` }}>
-                  {status}-ink
+                <span className="font-semibold" style={{ color: `var(--${status})` }}>
+                  {status}
                 </span>
               </span>
               <div className="flex gap-6">
-                <div data-kind="shape" className="flex flex-col items-end gap-1">
-                  <p className="text-meta text-ink-muted">shape on paper</p>
-                  <Ratios pair={{ foreground: status, background: 'paper' }} minimum={minimumRatio.shape} />
+                <div data-kind="text" className="flex flex-col items-end gap-1">
+                  <p className="text-meta text-ink-muted">word on ground</p>
+                  <Ratios pair={{ foreground: status, background: 'ground' }} minimum={minimumRatio.text} />
                 </div>
                 <div data-kind="text" className="flex flex-col items-end gap-1">
-                  <p className="text-meta text-ink-muted">word on paper</p>
-                  <Ratios pair={{ foreground: `${status}-ink`, background: 'paper' }} minimum={minimumRatio.text} />
+                  <p className="text-meta text-ink-muted">word on fill</p>
+                  <Ratios pair={{ foreground: status, background: `${status}-fill` }} minimum={minimumRatio.text} />
                 </div>
               </div>
             </li>
@@ -162,7 +163,7 @@ export default function DevGlyphsPage() {
         <ul className="flex flex-col">
           {colorPairs.map((pair) => (
             <li
-              key={`${pair.foreground}-${pair.background}`}
+              key={`${pair.kind}-${pair.foreground}-${pair.background}`}
               className="flex flex-wrap items-center justify-between gap-4 border-b border-rule py-3"
               data-pair={`${pair.foreground}/${pair.background}`}
             >
@@ -173,7 +174,7 @@ export default function DevGlyphsPage() {
                 {pair.kind === 'text' ? (
                   <span style={{ color: `var(--${pair.foreground})` }}>Đặng Thị Hường 3.500.000 ₫</span>
                 ) : (
-                  <StatusShape status={pair.foreground} />
+                  <span className="size-6 rounded-xs border-2" style={{ borderColor: `var(--${pair.foreground})` }} />
                 )}
               </div>
               <p className="flex-1 text-small">

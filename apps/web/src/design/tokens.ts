@@ -2,25 +2,33 @@ export type Oklch = readonly [lightnessPercent: number, chroma: number, hueDegre
 
 export type Theme = 'light' | 'dark';
 
+/** Light values come from the approved 2026-10 mock (docs/design/redesign-2026-10); the hex each one renders as is in DESIGN.md. */
 export const colors = {
-  paper: { light: [98.5, 0.006, 85], dark: [19, 0.01, 60] },
-  surface: { light: [99.6, 0.003, 85], dark: [23, 0.011, 60] },
-  ink: { light: [24, 0.02, 60], dark: [93, 0.012, 80] },
-  'ink-muted': { light: [48, 0.015, 60], dark: [74, 0.012, 70] },
-  rule: { light: [90, 0.01, 80], dark: [33, 0.01, 60] },
-  lacquer: { light: [42, 0.11, 35], dark: [70, 0.1, 35] },
-  paid: { light: [52, 0.09, 165], dark: [68, 0.1, 165] },
-  due: { light: [64, 0.13, 75], dark: [76, 0.13, 75] },
-  overdue: { light: [56, 0.19, 28], dark: [66, 0.17, 28] },
-  vacant: { light: [60, 0.03, 250], dark: [66, 0.03, 250] },
-  'paid-ink': { light: [44, 0.08, 165], dark: [80, 0.09, 165] },
-  'due-ink': { light: [46, 0.09, 75], dark: [84, 0.11, 75] },
-  'overdue-ink': { light: [48, 0.17, 28], dark: [78, 0.12, 28] },
-  'vacant-ink': { light: [46, 0.03, 250], dark: [80, 0.025, 250] },
+  ground: { light: [97.3, 0.003, 265], dark: [16, 0.008, 265] },
+  surface: { light: [99.5, 0.002, 265], dark: [20.5, 0.01, 265] },
+  'surface-2': { light: [98.2, 0.003, 265], dark: [23.5, 0.011, 265] },
+  ink: { light: [20.9, 0.01, 268], dark: [94, 0.006, 265] },
+  'ink-2': { light: [30.5, 0.021, 266], dark: [87, 0.01, 265] },
+  'ink-muted': { light: [49.3, 0.025, 268], dark: [74, 0.018, 265] },
+  rule: { light: [93.4, 0.007, 269], dark: [29, 0.012, 265] },
+  'rule-strong': { light: [90.3, 0.009, 265], dark: [36, 0.014, 265] },
+  field: { light: [62, 0.022, 265], dark: [56, 0.02, 265] },
+  accent: { light: [53, 0.166, 32], dark: [72, 0.14, 32] },
+  'accent-tint': { light: [95, 0.014, 28], dark: [27, 0.04, 30] },
+  'on-accent': { light: [99, 0.004, 32], dark: [18, 0.02, 30] },
+  paid: { light: [46.9, 0.112, 153], dark: [80, 0.12, 155] },
+  due: { light: [47.9, 0.111, 59], dark: [83, 0.12, 75] },
+  overdue: { light: [48.5, 0.165, 30], dark: [78, 0.12, 28] },
+  vacant: { light: [43.2, 0.038, 267], dark: [81, 0.025, 265] },
+  'paid-fill': { light: [96.8, 0.016, 161], dark: [27, 0.04, 155] },
+  'due-fill': { light: [97.2, 0.022, 80], dark: [28, 0.04, 70] },
+  'overdue-fill': { light: [96, 0.017, 27], dark: [27, 0.05, 28] },
+  'vacant-fill': { light: [96, 0.005, 258], dark: [27, 0.012, 265] },
 } as const satisfies Record<string, Record<Theme, Oklch>>;
 
 export type ColorToken = keyof typeof colors;
 
+/** Each status draws its shape and word in its own token, on its `-fill` token or on a plain ground. */
 export const statuses = ['paid', 'due', 'overdue', 'vacant'] as const satisfies readonly ColorToken[];
 
 export type Status = (typeof statuses)[number];
@@ -36,15 +44,15 @@ export const typeScale = {
   small: { px: 15, leading: leading.normal },
   body: { px: 16, leading: leading.relaxed },
   lead: { px: 18, leading: leading.normal },
-  h3: { px: 22, leading: leading.snug },
-  h2: { px: 28, leading: leading.tight },
-  h1: { px: 36, leading: leading.tight },
-  hero: { px: 44, leading: leading.tight },
-  'hero-xl': { px: 56, leading: leading.tight },
+  h3: { px: 20, leading: leading.snug },
+  h2: { px: 24, leading: leading.tight },
+  h1: { px: 30, leading: leading.tight },
+  hero: { px: 34, leading: leading.tight },
+  'hero-xl': { px: 44, leading: leading.tight },
 } as const satisfies Record<string, { px: number; leading: number }>;
 
-/** The weights both variable fonts ship; Tailwind offers no other `font-*` weight. */
-export const fontWeight = { normal: 400, medium: 500, semibold: 600 } as const;
+/** The weights the variable font ships; Tailwind offers no other `font-*` weight. */
+export const fontWeight = { normal: 400, medium: 500, semibold: 600, bold: 700 } as const;
 
 export const spacing = { unitPx: 4, touchPx: 44 } as const;
 
@@ -63,6 +71,15 @@ export type TextScale = (typeof textScales)[number];
 
 export const shell = { sidebarPx: 240, contentPx: 1200 } as const;
 
+/** Controls take `sm`, fields and icon tiles `md`, cards `lg`. */
+export const radius = { xs: 6, sm: 10, md: 12, lg: 16, full: 9999 } as const;
+
+/** A fixed cool ink rather than a theme token, so the shadow never turns light in dark mode. */
+export const shadows = {
+  card: '0 0.0625rem 0.125rem oklch(25% 0.02 265 / 0.05), 0 0.0625rem 0.1875rem oklch(25% 0.02 265 / 0.04)',
+  sheet: '0 -0.25rem 1.5rem oklch(20% 0.02 265 / 0.14)',
+} as const;
+
 export const motion = {
   duration: { fast: 150, base: 180, slow: 220 },
   ease: 'cubic-bezier(0.2, 0, 0, 1)',
@@ -70,18 +87,11 @@ export const motion = {
 
 export const typefaces = {
   sans: {
-    family: 'Source Sans 3',
-    file: 'SourceSans3-Variable.woff2',
+    family: 'Plus Jakarta Sans',
+    file: 'PlusJakartaSans-Variable.woff2',
     weights: Object.values(fontWeight),
     opticalSize: false,
-    requiredFeatures: [],
-  },
-  figure: {
-    family: 'Source Serif 4',
-    file: 'SourceSerif4-Variable.woff2',
-    weights: Object.values(fontWeight),
-    opticalSize: true,
-    requiredFeatures: ['tnum', 'lnum'],
+    requiredFeatures: ['tnum'],
   },
 } as const satisfies Record<
   string,

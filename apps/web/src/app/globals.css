@@ -1,38 +1,33 @@
 @import 'tailwindcss';
 @import '../styles/tokens.css';
 
-@theme inline {
-  --shadow-*: initial;
-  --shadow-sheet: 0 -0.25rem 1.5rem color-mix(in oklch, var(--ink) 14%, transparent);
-}
-
 @layer base {
   html {
     font-size: calc(100% * var(--text-scale));
-    font-family: var(--font-source-sans-3);
-    background-color: var(--paper);
+    font-family: var(--font-plus-jakarta-sans);
+    background-color: var(--ground);
     color: var(--ink);
   }
 
   body {
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
-    background-color: var(--paper);
+    background-color: var(--ground);
   }
 
   ::selection {
-    background-color: color-mix(in oklch, var(--lacquer) 22%, var(--paper));
+    background-color: color-mix(in oklch, var(--accent) 18%, var(--surface));
     color: var(--ink);
   }
 
   :focus-visible {
-    outline: 2px solid var(--ink);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
   input,
   textarea {
-    caret-color: var(--lacquer);
+    caret-color: var(--accent);
   }
 
   a {
@@ -41,8 +36,8 @@
 
   h1,
   h2 {
-    font-family: var(--font-source-serif-4);
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -57,7 +52,5 @@
 
 @utility figures {
   font-variant-numeric: lining-nums tabular-nums;
-  font-feature-settings:
-    'tnum',
-    'lnum';
+  font-feature-settings: 'tnum';
 }

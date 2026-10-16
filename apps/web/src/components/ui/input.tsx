@@ -7,9 +7,9 @@ function Input({ className, ...props }: ComponentProps<'input'>) {
     <InputPrimitive
       data-slot="input"
       className={cn(
-        'min-h-touch w-full min-w-0 rounded-sm border border-ink-muted bg-surface px-3 text-body text-ink transition-colors duration-(--duration-fast) ease-standard',
-        'placeholder:text-ink-muted hover:border-ink',
-        'disabled:cursor-not-allowed disabled:border-rule disabled:bg-paper disabled:text-ink-muted',
+        'min-h-touch w-full min-w-0 rounded-md border border-field bg-surface px-3.5 text-body text-ink transition-colors duration-(--duration-fast) ease-standard',
+        'placeholder:text-ink-muted hover:border-ink-muted',
+        'disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted',
         'aria-invalid:border-overdue',
         className,
       )}

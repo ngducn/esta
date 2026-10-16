@@ -61,7 +61,7 @@ export function DateInput({ label, defaultValue, onValueChange, name, disabled =
         <span className="relative">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             disabled={disabled}
             onClick={() => {
               const input = picker.current;

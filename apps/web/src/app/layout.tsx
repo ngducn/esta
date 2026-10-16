@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { getCurrentMember } from '@/server/member';
 import { getThemePreference } from '@/server/theme';
-import { sourceSans3, sourceSerif4 } from './fonts';
+import { plusJakartaSans } from './fonts';
 import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,7 +19,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       data-theme={theme}
       data-text-scale={member?.textScale ?? 100}
       data-density={member?.density ?? 'comfortable'}
-      className={`${sourceSans3.variable} ${sourceSerif4.variable}`}
+      className={plusJakartaSans.variable}
     >
       <body>{children}</body>
     </html>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { AuthFrame } from '@/components/auth-frame';
 import { env } from '@/server/env';
 import { LanguageSwitch } from '../language-switch';
 import { signInWithGoogle } from './actions';
@@ -39,29 +40,28 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   };
   const google = env.ESTA_GOOGLE_AUTH === 'on';
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-col gap-6 px-4 py-8">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-h3 font-semibold">{app('name')}</p>
-          <p>{app('tagline')}</p>
-        </div>
-        <LanguageSwitch />
-      </header>
-      <h1 className="font-sans text-h1 font-semibold">{t('title')}</h1>
+    <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-h2 lg:text-h1">{t('title')}</h1>
+        <p className="text-ink-muted">{app('tagline')}</p>
+      </div>
       {google && error === 'google' && (
-        <p role="alert" className="font-semibold">
+        <p role="alert" className="font-semibold text-overdue">
           {t('googleFailed')}
         </p>
       )}
       <SignInForm copy={copy} />
       {google && (
         <form action={signInWithGoogle} className="flex flex-col gap-4">
-          <p className="text-center">{t('or')}</p>
-          <button type="submit" className="min-h-touch w-full rounded-md border border-current px-4">
+          <p className="text-center text-ink-muted">{t('or')}</p>
+          <button
+            type="submit"
+            className="min-h-touch w-full rounded-sm border border-rule-strong bg-surface px-4 font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2"
+          >
             {t('google')}
           </button>
         </form>
       )}
-    </main>
+    </AuthFrame>
   );
 }

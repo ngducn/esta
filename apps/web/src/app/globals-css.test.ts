@@ -34,10 +34,9 @@ describe('globals.css', () => {
     expect(chosen).toMatch(/^\.dark\\:bg-ink:where\(\[data-theme="dark"\], \[data-theme="dark"\] \*\) \{/);
   });
 
-  it('keeps dark: on the system theme only while no light theme is chosen', async () => {
+  it('never follows the system dark setting, so light stays the default', async () => {
     const css = await build(['dark:bg-ink']);
-    expect(css).toMatch(/@media \(prefers-color-scheme: dark\) \{\s*\.dark\\:bg-ink:where\(:root:not\(\[data-theme="light"\]\)/);
-    expect(css).not.toMatch(/@media \(prefers-color-scheme: dark\) \{\s*\.dark\\:bg-ink \{/);
+    expect(css).not.toContain('prefers-color-scheme: dark');
   });
 
   it('lets compact density retune every spacing utility through one variable and leaves type alone', async () => {
@@ -59,6 +58,7 @@ describe('globals.css', () => {
       ['font-normal', 400],
       ['font-medium', 500],
       ['font-semibold', 600],
+      ['font-bold', 700],
     ]);
     expect(offered.every(([, weight]) => shipped.includes(Number(weight)))).toBe(true);
   });

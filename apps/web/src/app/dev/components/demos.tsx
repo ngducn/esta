@@ -160,7 +160,7 @@ export function SheetDemo() {
   const dialog = useDeferredDialog(loadSheetPopup);
   return (
     <>
-      <Button variant="secondary" {...dialog.triggerProps}>
+      <Button variant="outline" {...dialog.triggerProps}>
         {t('openSheet')}
       </Button>
       {dialog.open === null ? null : (

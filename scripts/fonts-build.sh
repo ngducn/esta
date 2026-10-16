@@ -20,11 +20,6 @@ build() {
 }
 
 mkdir -p "$out"
-build sourcesans3 'SourceSans3%5Bwght%5D.ttf' 'wght=400:600' "$text_features" SourceSans3-Variable
-build sourceserif4 'SourceSerif4%5Bopsz,wght%5D.ttf' 'wght=400:600 opsz=20:60' "$text_features,tnum,lnum,onum,pnum" SourceSerif4-Variable
-{
-  curl -fsSL "$base/sourcesans3/OFL.txt"
-  printf '\n\n'
-  curl -fsSL "$base/sourceserif4/OFL.txt"
-} > "$out/LICENSE-OFL.txt"
+build plusjakartasans 'PlusJakartaSans%5Bwght%5D.ttf' 'wght=400:700' "$text_features,tnum" PlusJakartaSans-Variable
+curl -fsSL "$base/plusjakartasans/OFL.txt" > "$out/LICENSE-OFL.txt"
 (cd "$out" && shasum -a 256 ./*.woff2)

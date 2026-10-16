@@ -8,9 +8,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-ink text-paper hover:bg-ink/88 active:bg-ink/80 disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
+          'bg-accent text-on-accent hover:bg-accent/90 active:bg-accent/82 disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
         secondary:
-          'border border-ink-muted bg-surface text-ink hover:border-ink active:bg-rule/40 disabled:border-rule disabled:text-ink-muted data-disabled:border-rule data-disabled:text-ink-muted',
+          'bg-ink text-surface hover:bg-ink/88 active:bg-ink/80 disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
+        outline:
+          'border border-rule-strong bg-surface text-ink hover:border-field hover:bg-surface-2 active:bg-rule disabled:text-ink-muted data-disabled:text-ink-muted',
         quiet:
           'px-2 text-ink underline decoration-ink-muted underline-offset-4 hover:decoration-ink disabled:text-ink-muted data-disabled:text-ink-muted',
       },

@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Esta",
-    "tagline": "Sổ cái nhà đất của gia đình"
+    "tagline": "Sổ cái nhà đất của gia đình",
+    "heroAlt": "Mái nhà phố cổ Hà Nội nhìn về cầu Long Biên"
   },
   "language": {
     "label": "Ngôn ngữ",
@@ -70,7 +71,7 @@
     "role": "Quyền: {role}",
     "signedInAs": "Bạn đang đăng nhập với tên {name}.",
     "signedIn": "Bạn đã đăng nhập.",
-    "later": "Việc cần làm hôm nay và số tiền đã thu tháng này sẽ hiện ở đây trong bản cập nhật tới."
+    "later": "Tổng quan sẽ cho biết tháng này đã thu bao nhiêu, ai chưa trả và việc cần làm hôm nay."
   },
   "components": {
     "loading": "Đang tải",
@@ -144,7 +145,8 @@
       "undoToast": "Thông báo có hoàn tác",
       "confirmDialog": "Hộp xác nhận",
       "sheet": "Bảng trượt",
-      "emptyState": "Khi chưa có gì"
+      "emptyState": "Khi chưa có gì",
+      "card": "Thẻ"
     },
     "states": {
       "default": "Mặc định",
@@ -229,15 +231,19 @@
     "sections": "Các mục chính",
     "account": "Tài khoản",
     "accountOf": "Tài khoản: {name}",
-    "signOut": "Đăng xuất"
+    "signOut": "Đăng xuất",
+    "more": "Khác"
   },
   "sections": {
-    "properties": "Danh sách nhà và đất của gia đình sẽ hiện ở đây trong bản cập nhật tới.",
-    "collections": "Tiền thuê từng tháng và phòng nào còn nợ sẽ hiện ở đây trong bản cập nhật tới.",
-    "documents": "Sổ, hợp đồng và giấy tờ sẽ được cất giữ ở đây trong bản cập nhật tới.",
-    "assistant": "Ghi chú hằng ngày của Trợ lý sẽ hiện ở đây trong bản cập nhật tới.",
-    "reports": "Báo cáo thuế và thu chi từng tài sản sẽ có ở đây trong bản cập nhật tới.",
-    "settings": "Gia đình, thành viên và tài khoản nhận tiền sẽ có ở đây trong bản cập nhật tới."
+    "properties": "Tài sản sẽ liệt kê từng căn nhà và mảnh đất của gia đình, kèm ảnh, địa chỉ, sổ và tiền thuê.",
+    "collections": "Thu tiền sẽ cho biết tháng này phòng nào đã trả, phòng nào chưa, và ghi nhận tiền chỉ với vài lần chạm.",
+    "documents": "Tài liệu sẽ cất sổ đỏ, hợp đồng và CCCD ở một chỗ, tìm được ngay bằng một ô tìm kiếm.",
+    "assistant": "Trợ lý sẽ để lại ghi chú mỗi sáng về tiền thu chậm, hợp đồng sắp hết hạn và giấy tờ còn thiếu.",
+    "reports": "Báo cáo sẽ có thẻ thuế cho thuê nhà và thu chi của từng tài sản theo năm.",
+    "settings": "Hiển thị đi theo tài khoản của bạn. Gia đình, thành viên và tài khoản nhận tiền sẽ có ở đây trong bản cập nhật tới.",
+    "soonTitle": "Sắp có trong bản cập nhật tới",
+    "adjustDisplay": "Chỉnh cỡ chữ và giao diện",
+    "photoCaption": "Ảnh minh họa."
   },
   "settings": {
     "display": "Hiển thị",
@@ -267,11 +273,16 @@
     "themeHint": "Chỉ áp dụng cho thiết bị này.",
     "themes": {
       "light": "Sáng",
-      "dark": "Tối",
-      "system": "Theo thiết bị"
+      "dark": "Tối"
     },
     "save": "Lưu",
     "saved": "Đã lưu cài đặt hiển thị.",
     "saveFailed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
+  },
+  "photos": {
+    "nhaPho": "Nhà phố",
+    "dayTro": "Dãy trọ",
+    "canHo": "Căn hộ",
+    "dat": "Đất"
   }
 }

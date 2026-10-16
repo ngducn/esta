@@ -21,10 +21,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   ]);
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
         <h1 className="text-h2 break-words lg:text-h1">{nav('settings')}</h1>
-        <p className="max-w-prose text-lead text-ink-muted">{sections('settings')}</p>
+        <p className="max-w-prose text-ink-2">{sections('settings')}</p>
       </div>
       <DisplaySettingsForm
         settings={{ locale, textScale: member.textScale, density: member.density, theme }}

@@ -133,7 +133,7 @@ export function DataTable<Row>({
                         className={cn(
                           'max-sm:border-0 max-sm:p-0',
                           stacked[placement](selectable),
-                          placement === 'amount' && 'text-end font-figure whitespace-nowrap figures',
+                          placement === 'amount' && 'text-end whitespace-nowrap figures',
                           placement === 'primary' && 'max-sm:font-semibold',
                           placement === 'detail' && 'max-sm:text-small max-sm:text-ink-muted',
                         )}

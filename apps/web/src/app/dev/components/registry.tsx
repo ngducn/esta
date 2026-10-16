@@ -1,3 +1,4 @@
+import { FileText, Plus, Wallet } from 'lucide-react';
 import { vnd } from '@esta/core/money';
 import type { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
@@ -17,6 +18,7 @@ import {
   SkeletonTable,
 } from '@/components/skeleton';
 import { StatusMark } from '@/components/status-mark';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -82,8 +84,15 @@ export const registry: readonly RegistryEntry[] = [
         state: 'default',
         render: (t) => (
           <div className="flex flex-wrap gap-3">
-            <Button>{t('samples.record')}</Button>
-            <Button variant="secondary">{t('samples.viewLease')}</Button>
+            <Button>
+              <Plus aria-hidden="true" />
+              {t('samples.record')}
+            </Button>
+            <Button variant="secondary">{t('samples.record')}</Button>
+            <Button variant="outline">
+              <FileText aria-hidden="true" />
+              {t('samples.viewLease')}
+            </Button>
             <Button variant="quiet">{t('samples.skip')}</Button>
           </div>
         ),
@@ -102,6 +111,9 @@ export const registry: readonly RegistryEntry[] = [
           <div className="flex flex-wrap gap-3">
             <Button disabled>{t('samples.record')}</Button>
             <Button variant="secondary" disabled>
+              {t('samples.record')}
+            </Button>
+            <Button variant="outline" disabled>
               {t('samples.viewLease')}
             </Button>
             <Button variant="quiet" disabled>
@@ -292,12 +304,35 @@ export const registry: readonly RegistryEntry[] = [
   },
   { component: 'sheet', states: [{ state: 'default', render: () => <SheetDemo /> }] },
   {
+    component: 'card',
+    states: [
+      {
+        state: 'default',
+        render: (t) => (
+          <Card className="flex flex-col gap-3">
+            <h3 className="flex items-center gap-2 text-lead font-bold text-ink">
+              <Wallet className="size-5 text-accent" aria-hidden="true" />
+              {t('samples.tableCaption')}
+            </h3>
+            <MoneyDisplay amount={vnd(29_000_000)} variant="compact" className="text-start text-hero font-bold tracking-tight" />
+            <StatusMark status="overdue" days={12} />
+          </Card>
+        ),
+      },
+    ],
+  },
+  {
     component: 'emptyState',
     states: [
       {
         state: 'default',
         render: (t) => (
-          <EmptyState title={t('samples.emptyTitle')} body={t('samples.emptyBody')} action={{ label: t('samples.emptyAction'), href: '#empty-state' }} />
+          <EmptyState
+            icon={FileText}
+            title={t('samples.emptyTitle')}
+            body={t('samples.emptyBody')}
+            action={{ label: t('samples.emptyAction'), href: '#empty-state', icon: Plus }}
+          />
         ),
       },
       {

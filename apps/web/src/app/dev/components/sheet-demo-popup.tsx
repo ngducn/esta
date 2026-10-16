@@ -19,7 +19,7 @@ export default function SheetDemoPopup({ open, onOpenChange, finalFocus }: Sheet
         </div>
         <MoneyInput label={t('amountLabel')} defaultText="3tr5" />
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <SheetClose render={<Button variant="secondary" />}>{t('close')}</SheetClose>
+          <SheetClose render={<Button variant="outline" />}>{t('close')}</SheetClose>
           <SheetClose render={<Button />}>{t('record')}</SheetClose>
         </div>
       </SheetContent>

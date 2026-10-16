@@ -2,33 +2,33 @@ import { describe, expect, it } from 'vitest';
 import { findUnlistedPairs, usedColorPairs } from './used-color-pairs.ts';
 
 describe('usedColorPairs', () => {
-  it('reads text on its own background, and text with no background on both grounds', () => {
-    expect(usedColorPairs(`<div className="bg-ink text-paper" /><p className='text-ink-muted'>`)).toEqual([
-      { kind: 'text', foreground: 'paper', background: 'ink' },
-      { kind: 'text', foreground: 'ink-muted', background: 'paper' },
+  it('reads text on its own background, and text with no background on every ground', () => {
+    expect(usedColorPairs(`<div className="bg-ink text-surface" /><p className='text-ink-muted'>`)).toEqual([
+      { kind: 'text', foreground: 'surface', background: 'ink' },
+      { kind: 'text', foreground: 'ink-muted', background: 'ground' },
       { kind: 'text', foreground: 'ink-muted', background: 'surface' },
+      { kind: 'text', foreground: 'ink-muted', background: 'surface-2' },
     ]);
   });
 
   it('pairs each variant with its own background, falling back to the base one', () => {
-    expect(usedColorPairs(`'bg-surface text-paper group-data-checked/box:bg-ink hover:bg-ink/88'`)).toEqual([
-      { kind: 'text', foreground: 'paper', background: 'surface' },
-      { kind: 'text', foreground: 'paper', background: 'ink' },
-      { kind: 'text', foreground: 'paper', background: 'ink' },
+    expect(usedColorPairs(`'bg-surface text-ground group-data-checked/box:bg-ink hover:bg-ink/88'`)).toEqual([
+      { kind: 'text', foreground: 'ground', background: 'surface' },
+      { kind: 'text', foreground: 'ground', background: 'ink' },
+      { kind: 'text', foreground: 'ground', background: 'ink' },
     ]);
   });
 
-  it('reads a status color as a shape and skips disabled states, which WCAG exempts', () => {
-    expect(usedColorPairs(`'text-due disabled:bg-rule disabled:text-ink-muted'`)).toEqual([
-      { kind: 'shape', foreground: 'due', background: 'paper' },
-      { kind: 'shape', foreground: 'due', background: 'surface' },
+  it('holds a status word to the text minimum and skips disabled states, which WCAG exempts', () => {
+    expect(usedColorPairs(`'text-due bg-due-fill disabled:bg-rule disabled:text-ink-muted'`)).toEqual([
+      { kind: 'text', foreground: 'due', background: 'due-fill' },
     ]);
   });
 });
 
 describe('findUnlistedPairs', () => {
   it('names a pair the UI draws that text-pairs.ts does not list', () => {
-    expect(findUnlistedPairs([{ path: 'x.tsx', source: `'bg-surface text-paper'` }])).toEqual(['x.tsx: paper text on surface']);
+    expect(findUnlistedPairs([{ path: 'x.tsx', source: `'bg-surface text-ground'` }])).toEqual(['x.tsx: ground text on surface']);
   });
 
   it('finds every pair the web app draws in text-pairs.ts', () => {
