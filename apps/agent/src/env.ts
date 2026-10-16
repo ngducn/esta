@@ -13,7 +13,7 @@ export const envSchema = z.object({
   ESTA_MODEL_ROUTINE: text,
   ESTA_AGENT_HOME: text,
   ESTA_REPLAY_DIR: text,
-  ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).default('development'),
+  ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
   ESTA_FROZEN_NOW: text,
   ESTA_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });
@@ -43,6 +43,10 @@ const CREDENTIAL_FOR = { subscription: 'CLAUDE_CODE_OAUTH_TOKEN', api_key: 'ANTH
 export function assertStartAllowed(env: AgentEnv): RunMode {
   assertClockAllowed(env);
   if (env.ESTA_AGENT_MODE === 'replay') return { agentMode: 'replay', authMode: 'none' };
+  // A live worker that defaulted to development would read test_clock and ESTA_FROZEN_NOW in production.
+  if (env.ESTA_ENV === undefined) {
+    throw new Error('Refusing to start: ESTA_AGENT_MODE=live needs an explicit ESTA_ENV, which is not set');
+  }
   const name = CREDENTIAL_FOR[env.ESTA_AUTH_MODE];
   const value = env[name];
   if (value === undefined) {
