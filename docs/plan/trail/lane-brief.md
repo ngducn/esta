@@ -12,7 +12,7 @@ You are one independent verifier lane for one PR of the Esta v1 stack (github.co
 
 ## Rules
 
-- GitHub Actions is off. CI is `/Users/ngducn/Workplace/esta/tools/ci-local.sh <worktree> <pr> <slot>`, which posts `local-ci/*` statuses and a summary comment; `gh pr checks` shows them. Run it once at code-ready (owners) or at the verdict head (gates lane), never in a loop.
+- GitHub Actions is off. CI is `/Users/ngducn/Workplace/esta/tools/ci-local.sh <worktree> <pr> <slot>`, which runs the five jobs in a fresh throwaway worktree at your pushed PR head (uncommitted and gitignored files in yours never count, so commit and push first), then posts `local-ci/*` statuses and a summary comment; `gh pr checks` shows them. Run it once at code-ready (owners) or at the verdict head (gates lane), never in a loop.
 - When a lane switches one slot between trunk and head, run `pnpm db:stop` then `pnpm db:start` from the checkout you switch to before `pnpm db:reset`. A reset alone keeps the previous checkout's auth config and email templates.
 - Many agents share this machine. Stop only processes you started, by the PID you recorded when you started them (`kill <pid>`). Never use `pkill`, `killall` or `kill` by name or pattern, which kills other agents' servers.
 - Docker has 8 GB shared with another project's containers (`ekh-*`, never touch them), and each local Supabase stack takes about 1 GB. Run at most the one stack your brief names, stop it with `ESTA_SLOT=<slot> pnpm db:stop` when you are not actively testing, and never stop a slot you did not start. Port 3000 is taken; never use it.
