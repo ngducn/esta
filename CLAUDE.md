@@ -43,6 +43,7 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm contrast:check` | Contrast of every token pair in `text-pairs.ts`, both themes |
 | `pnpm tokens:build` | Regenerate `apps/web/src/styles/tokens.css` from `tokens.ts` and `apps/web/src/lib/cn-tables.ts` from `tokens.css` (`pnpm check` fails when either is stale) |
 | `pnpm fonts:build` | Rebuild the subset WOFF2 fonts from the pinned google/fonts commit (needs `uv`) |
+| `pnpm icons:build` | Redraw the favicon, apple-touch icon and manifest icons from the brand mark in `apps/web/src/design/brand.ts` |
 
 Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Never configure a real mail sender in development.
 

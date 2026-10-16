@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isPublicPath } from './public-paths';
 
 describe('isPublicPath', () => {
-  it.each(['/sign-in', '/sign-in/callback', '/api/cron/keep-alive', '/api/test/clock', '/dev', '/dev/core', '/dev/i18n'])(
+  it.each(['/sign-in', '/sign-in/callback', '/api/cron/keep-alive', '/api/test/clock', '/dev', '/dev/core', '/dev/i18n', '/manifest.webmanifest'])(
     'lets a signed-out request reach %s',
     (path) => {
       expect(isPublicPath(path)).toBe(true);
