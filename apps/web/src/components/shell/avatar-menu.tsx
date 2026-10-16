@@ -83,12 +83,15 @@ export function AccountTrigger({
   label,
   detail,
   accessibleName,
+  compact = false,
   className,
 }: {
   initial: string | null;
   label: string;
   detail?: string;
   accessibleName: string;
+  /** The phone header: a fixed one-word label that never wraps, so the date line wraps instead at 130%. */
+  compact?: boolean;
   className?: string;
 }) {
   return (
@@ -97,7 +100,8 @@ export function AccountTrigger({
       popoverTarget={menuId}
       aria-label={accessibleName}
       className={cn(
-        'flex min-h-touch max-w-full min-w-touch items-center gap-3 rounded-sm px-2 py-1.5 text-left text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2',
+        'flex min-h-touch max-w-full min-w-touch items-center rounded-sm py-1.5 text-left text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2',
+        compact ? 'shrink-0 gap-2 px-1' : 'gap-3 px-2',
         className,
       )}
     >
@@ -107,7 +111,7 @@ export function AccountTrigger({
         </span>
       )}
       <span className="flex min-w-0 flex-col">
-        <span className="font-semibold break-words">{label}</span>
+        <span className={cn('font-semibold', compact ? 'whitespace-nowrap' : 'break-words')}>{label}</span>
         {detail && <span className="text-small text-ink-muted break-words">{detail}</span>}
       </span>
     </button>

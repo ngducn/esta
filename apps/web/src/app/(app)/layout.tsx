@@ -55,7 +55,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             {formatDateLong(clock.today(), locale)}
           </p>
           <div className="lg:hidden">
-            <AccountTrigger initial={initial} label={shell('account')} accessibleName={shell('account')} />
+            <AccountTrigger initial={initial} label={shell('account')} accessibleName={shell('account')} compact />
           </div>
         </header>
         <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">{children}</main>
