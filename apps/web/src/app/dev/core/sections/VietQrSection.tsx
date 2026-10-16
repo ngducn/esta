@@ -72,7 +72,12 @@ export async function VietQrSection() {
     return [bin, accountNo, amountVnd === undefined ? t('none') : money(amountVnd), purpose ?? t('none')].join(' · ');
   }
 
-  function example(id: string, label: string, encoded: string | { refusal: string }, expected?: string, note?: string): Example {
+  function example(
+    id: string,
+    label: string,
+    encoded: string | { refusal: string },
+    { expected, note }: { expected?: string; note?: string } = {},
+  ): Example {
     if (typeof encoded !== 'string') {
       return { id, label, payload: '', tag01: '', tag54: '', decoded: t('refused', { reason: encoded.refusal }), reencoded: null, ...(note && { note }) };
     }
@@ -97,14 +102,14 @@ export async function VietQrSection() {
   const capNote = t('splitNote', { cap: money(500_000_000) });
 
   const examples: Example[] = [
-    ...ENCODE_VECTORS.map((v) => example(v.id, t('vector', { id: v.id }), v.payload, v.payload)),
+    ...ENCODE_VECTORS.map((v) => example(v.id, t('vector', { id: v.id }), v.payload, { expected: v.payload })),
     ...DECODE_ONLY_VECTORS.map((v) => example(v.id, t('cardVector', { id: v.id }), v.payload)),
     ...MALFORMED_VECTORS.map((v) => example(v.id, t('malformed', { id: v.id }), v.payload)),
-    example('crc-pad', t('crcPad', { amount: money(crcPad.amountVnd) }), crcPad.payload, crcPad.payload),
+    example('crc-pad', t('crcPad', { amount: money(crcPad.amountVnd) }), crcPad.payload, { expected: crcPad.payload }),
     example('no-amount', t('noAmount'), encodeVietQr({ bin: ACCOUNT.bin, accountNo: ACCOUNT.accountNo, purpose: invoiceMemo('7K2QX9MP') })),
     example('below-cap', t('belowCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(499_999_999), memoCode: '7K2QX9MP' }).payload),
-    example('at-cap', t('atCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(500_000_000), memoCode: '7K2QX9MP' }).payload, undefined, capNote),
-    example('above-cap', t('aboveCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(600_000_000), memoCode: '7K2QX9MP' }).payload, undefined, capNote),
+    example('at-cap', t('atCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(500_000_000), memoCode: '7K2QX9MP' }).payload, { note: capNote }),
+    example('above-cap', t('aboveCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(600_000_000), memoCode: '7K2QX9MP' }).payload, { note: capNote }),
     example('long-purpose', t('longPurpose'), attempt(() => encodeVietQr({ bin: ACCOUNT.bin, accountNo: ACCOUNT.accountNo, purpose: 'X'.repeat(26) }))),
     example('overdue', t('overdue'), overdue.payload),
   ];

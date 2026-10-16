@@ -36,8 +36,7 @@ export function amountDigits(amountVnd: Vnd): string {
   return digits;
 }
 
-// Emits tags 00, 01, 38 (00 GUID, 01.00 BIN, 01.01 account, 02 QRIBFTTA), 53, 54, 58, 62 and 63 in that
-// order. The encoder is strict because its input is Esta's own typed data; the decoder is tolerant.
+// Strict, because its input is Esta's own typed data; the decoder is the tolerant side.
 export function encodeVietQr(input: VietQrInput): string {
   if (!BIN.test(input.bin)) throw new RangeError('bin must be 6 digits');
   requireAns('accountNo', input.accountNo, VIETQR_RULES.accountMaxChars);
