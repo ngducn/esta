@@ -58,3 +58,18 @@ Defaults the agent chose, since the operator did not pick (label: agent interpre
 4. Property cover photos belong to P1-04 and P1-05, not this run.
 5. Budget: at most 50% of each 5-hour block, the operator's last explicit cap, because the operator is at work and may need the rest. Stop spawning at 35%, pause at 45%.
 6. Merging stays under the 2026-10-15 grant. The redesign PR counts as Phase 0 work because it restyles Phase 0 surfaces only. Phase 1 PRs stop at merge-ready for the operator's click.
+
+## Update 2026-10-16 10:30 +07
+
+Operator's words, 2026-10-16: "nice work, continue, now the budget it 70%, go ham, work until you cant no more".
+
+Objective. Drain the queue in this order until the budget or the operator stops the run: #40 (local CI in a fresh worktree), the issue #36 plan fixes, P0-15, P0-16, then the Phase 1 slices in `Seq` order from `docs/plan/trail/pr-inventory.md`.
+
+Budget. 70% of each 5-hour block. Stop spawning at 60%, pause at 65%, and resume when the next block starts.
+
+Defaults the agent chose for questions the operator left open in #36 (label: agent interpretation):
+
+1. Landing authority extends to Phase 1 under the same verdict bar, read from "continue ... go ham, work until you cant no more" together with the 2026-10-15 "evaluate and merge everything for me please". One message from the operator withdraws it; Phase 1 PRs then stop at merge-ready.
+2. S6 follows SPEC §10 and §11: P1-01 moves to `Seq` 01, before P1-04. No spec change. It also fits the vertical-slice rule that an unproven column goes first.
+3. The interrogate list names P5-11 (the number guard) in place of P5-03.
+4. Owners and verifiers spawn no subagents unless their brief names them.
