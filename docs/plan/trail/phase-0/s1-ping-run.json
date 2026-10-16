@@ -1,0 +1,10 @@
+{
+  "source": "P0-15 (PR #42): pnpm agent:record ran the ping once live on subscription auth and saved fixtures/agent-replay/ping/2ff54832baea10fb92d56b5971eec216d658e41880e871fcc3e5d6786f694949.json; numbers from the PR #42 body",
+  "job": "ping",
+  "auth_mode": "subscription",
+  "agent_mode": "live",
+  "model": "claude-sonnet-5-5",
+  "num_turns": 2,
+  "cost_estimate_usd": 0.0062,
+  "tool_calls": { "mcp__esta__household_info": 1 }
+}

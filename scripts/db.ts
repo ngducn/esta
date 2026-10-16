@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, join } from 'node:path';
 import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
 import { authDrifts, parseSlot, slotPorts, writeSlotWorkdir } from './slot.ts';
 import { reportTableCoverage } from './table-coverage.ts';
@@ -35,7 +36,17 @@ if (args === undefined) {
   console.error(`Usage: node scripts/db.ts <${Object.keys(COMMANDS).join('|')}> [seed flags] [supabase flags]`);
   process.exit(2);
 }
-const { seed: seedFlags, rest: extra } = splitSeedFlags(flags);
+const { seed: seedFlags, rest } = splitSeedFlags(flags);
+
+/** `supabase test db` mounts only the paths it is given, so named test files run from a copy beside the harness they include. */
+function withHarness(args: readonly string[]): { args: string[]; copy?: string } {
+  const files = args.filter((arg) => arg.endsWith('.test.sql'));
+  if (files.length === 0) return { args: [...args] };
+  const copy = mkdtempSync(join(tmpdir(), 'esta-pgtap-'));
+  for (const file of [join(repoRoot, 'supabase', 'tests', '_harness.psql'), ...files]) copyFileSync(file, join(copy, basename(file)));
+  return { args: [...args.filter((arg) => !files.includes(arg)), copy], copy };
+}
+const { args: extra, copy: testCopy } = command === 'test' ? withHarness(rest) : { args: rest };
 // `start` seeds a fresh database too.
 const seeds = command === 'reset' || command === 'start';
 if (!seeds && seedFlags.length > 0) {
@@ -85,6 +96,7 @@ const result = spawnSync('supabase', [...args, '--workdir', workdir, ...extra], 
   encoding: 'utf8',
   env: supabaseEnv,
 });
+if (testCopy !== undefined) rmSync(testCopy, { recursive: true, force: true });
 if (result.error) throw result.error;
 if (result.status === 0 && command === 'start') {
   const warning = bindingWarning(exposedListeners(listListeners(), slotPorts(slot)), slot);

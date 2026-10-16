@@ -31,7 +31,8 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm db:reset` | Apply migrations and the generated `full` seed with 10 lane households; `pnpm db:reset:northstar` for the north-star variant; takes `--households N`, `--as-of <iso>` and `--variant` (`supabase/seed/README.md`) |
 | `pnpm db:checksum` / `pnpm db:seed:check` | One md5 per public table and per seeded auth table; reset twice and fail on any checksum difference (FND-7) |
 | `pnpm db:types` | Regenerate `packages/db` types |
-| `pnpm db:test` | pgTAP tests (RLS and constraints) |
+| `pnpm db:test` | pgTAP tests (RLS and constraints), then fails on a public table without RLS or a pgTAP file naming it; takes `supabase/tests/<name>.test.sql` paths to run only those files |
+| `pnpm phase:check <n>` | Runs phase n's exit checks (`PHASE_CHECKS` in `scripts/phase-exit.ts`) and prints one PASS or FAIL row per id; exits 1 on any FAIL |
 | `pnpm check` | i18n parity and plan coverage, then typecheck, lint and unit tests in every workspace |
 | `pnpm i18n:parity` | Compares `apps/web/messages/vi.json` and `en.json` (see Translations) |
 | `pnpm plan:coverage` | Maps every SPEC §6 acceptance id, north-star step, phase exit and Mom test to the PRs in `docs/plan/trail/pr-inventory.md`; fails on an unmapped requirement or an id SPEC does not define (`--inventory <path>` checks another copy) |
