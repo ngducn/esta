@@ -252,6 +252,25 @@
       "resolve": { "ok": false, "reason": "redirect_not_allowed" }
     },
     {
+      "name": "redirect down to plain http on the short host",
+      "input": "https://maps.app.goo.gl/DemoDowngrade",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDowngrade" },
+      "hops": [{ "status": 302, "location": "http://maps.app.goo.gl/DemoDowngrade2" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "redirect to the short host on another port",
+      "input": "https://maps.app.goo.gl/DemoPort",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoPort" },
+      "hops": [{ "status": 302, "location": "https://maps.app.goo.gl:8443/DemoPort2" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "plain http Google Maps link",
+      "input": "http://www.google.com/maps?q=10.7769,106.7009",
+      "parse": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "query", "outsideVietnam": false }
+    },
+    {
       "name": "redirect to the Google open redirect /url?q=",
       "input": "https://maps.app.goo.gl/DemoOpen",
       "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoOpen" },
