@@ -24,7 +24,7 @@ main loop
   └─ runner: claim job → build tools for that household and job kind → query() → validate → guard → write → finish
 ```
 
-Time comes from the shared `Clock` (SPEC FND-9), read at the start of every scheduler tick and every job, so tests can advance it without restarting the worker. Claiming uses a SQL function `claim_agent_job(worker_id, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`. A claimed job whose `locked_at` is older than its kind's timeout plus 2 minutes may be reclaimed. Every write a job makes is keyed by `job_id` plus a dedupe key, so a re-run after a crash does not duplicate output. A failed job is retried up to 3 times, 1, 5 and then 25 minutes after the failure, so `max_attempts` defaults to 4; a missing replay recording or an `auth_error` fails the job at once, because a retry cannot fix either. The worker's Supabase client sends `x-esta-actor: agent:{worker_id}` on every request so the audit trigger attributes its writes (SPEC §5.7).
+Time comes from the shared `Clock` (SPEC FND-9), read at the start of every scheduler tick and every job, so tests can advance it without restarting the worker. Claiming uses a SQL function `claim_agent_job(worker_id, p_as_of timestamptz)` with `FOR UPDATE SKIP LOCKED`, ordered by priority then `run_after`. A claimed job whose `locked_at` is older than its kind's timeout plus 2 minutes may be reclaimed while it has an attempt left; one with no attempt left is failed instead. Every write a job makes is keyed by `job_id` plus a dedupe key, so a re-run after a crash does not duplicate output. A failed job is retried up to 3 times, 1, 5 and then 25 minutes after the failure, so `max_attempts` defaults to 4; a missing replay recording or an `auth_error` fails the job at once, because a retry cannot fix either. The worker's Supabase client sends `x-esta-actor: agent:{worker_id}` on every request so the audit trigger attributes its writes (SPEC §5.7). `worker_id` is a random UUID per process, so two workers on one host never share a lock owner, a heartbeat row or a config dir.
 
 Deterministic daily work (invoice generation and auto-issue, lease status transitions, keep-alive) does not run here. It runs on Vercel Cron (SPEC §8) so it never depends on Ryan's machine.
 
@@ -50,7 +50,7 @@ S1 settled the SDK path, so the `claude -p --output-format stream-json` fallback
 
 - `ESTA_AUTH_MODE=subscription` (default): run `claude setup-token` once and put the token in `apps/agent/.env.local` as `CLAUDE_CODE_OAUTH_TOKEN`.
 - `ESTA_AUTH_MODE=api_key`: uses `ANTHROPIC_API_KEY`.
-- In `live` mode the worker refuses to start if the variable for the chosen mode is missing, passes only that credential to the SDK, and writes the mode to its heartbeat. Settings shows it to operators.
+- In `live` mode the worker refuses to start if `ESTA_ENV` or the variable for the chosen mode is missing, passes only that credential to the SDK, and writes the mode to its heartbeat. Settings shows it to operators.
 - In `replay` mode (§8) no credential is needed or read, so CI starts the worker without secrets.
 
 ### 2.4 Where it runs
@@ -299,7 +299,7 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 - `research_items`: url_normalized (unique per household), source_url, source_name, published_at, title_vi, summary_vi, why_it_matters_vi, kind, relevance, related_property_ids, province_codes, job_id.
 - `conversations`: title, created_by, sdk_session_id.
 - `messages`: conversation_id, role, content_md, status (`streaming | done | error`), job_id, refs jsonb.
-- `worker_heartbeats`: worker_id, host_label, version, auth_mode, agent_mode, last_seen_at. No household data and no audit trigger. Members read only `worker_id` and `last_seen_at`; only the service role writes.
+- `worker_heartbeats`: worker_id (a UUID per worker process), host_label, version, auth_mode, agent_mode, last_seen_at. No household data and no audit trigger. Members read only `worker_id` and `last_seen_at`, so they never see the hostname; only the service role writes.
 - `notifications`: user_id, channel (`inapp | email | push`), agent_item_id, status, sent_at, error.
 
 `document_extractions` is defined in SPEC §5.5; the agent writes it through `save_extraction` only.
