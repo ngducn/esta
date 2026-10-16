@@ -61,9 +61,9 @@ select
   province.name as province_name,
   p.certificate_address_text,
   coalesce(legacy.province_names, '{}') as legacy_province_names,
-  public.esta_unaccent(concat_ws(' ',
+  regexp_replace(public.esta_unaccent(concat_ws(' ',
     p.nickname, p.code, p.current_address ->> 'line', commune.name, province.name,
-    p.certificate_address_text, legacy.unit_names)) as search_text
+    p.certificate_address_text, legacy.unit_names)), '[\s,;]+', ' ', 'g') as search_text
 from public.properties p
 left join public.admin_units commune on commune.code = p.current_address ->> 'commune_code'
 left join public.admin_units province on province.code = p.current_address ->> 'province_code'
