@@ -9,7 +9,9 @@
 # <worktree> only names the commit: its HEAD must be the PR head. The jobs run
 # in a throwaway detached worktree at that commit, as Actions would on a fresh
 # checkout, so untracked and gitignored files in <worktree> cannot reach them.
-# The throwaway worktree is removed on exit, on failure and on Ctrl-C.
+# The throwaway worktree is removed on exit, on failure and on Ctrl-C. Runs
+# that include db or e2e stop the slot's Supabase stack before and after, so a
+# stack left exited by a Docker restart cannot fail `db:start`.
 #
 # CI_LOCAL_NO_POST=1 makes no gh call: no PR head guard, no statuses, no
 # comment (the summary prints instead). The PR number then only names the logs.
@@ -38,10 +40,13 @@ mkdir -p "$logdir"
 export ESTA_SLOT=$slot
 
 tree=$(mktemp -d /tmp/ci-local/tree.XXXXXX) || exit 2
+stop_db() {
+	printf '%s\n' "${jobs[@]}" | grep -qE '^(db|e2e)$' && (cd "$tree" && pnpm db:stop >/dev/null 2>&1)
+}
 cleanup() {
 	trap - EXIT
 	cd /tmp
-	if printf '%s\n' "${jobs[@]}" | grep -qE '^(db|e2e)$'; then (cd "$tree" && pnpm db:stop >/dev/null 2>&1); fi
+	stop_db
 	git -C "$worktree" worktree remove --force "$tree" >/dev/null 2>&1 || {
 		rm -rf "$tree"
 		git -C "$worktree" worktree prune
@@ -90,6 +95,7 @@ run_job() {
 	esac
 }
 
+stop_db
 for job in "${jobs[@]}"; do status "$job" pending "running on $(hostname -s)"; done
 
 for job in "${jobs[@]}"; do
