@@ -182,3 +182,4 @@ ts	phase	decision	why	evidence	result
 2026-10-16T17:03:05Z	order	merged P1-01 before P0-16 although the plan lists P0-16 first	no code or migration dependency; unblocks P1-04 while P0-16 builds	PR #50 comment	done
 2026-10-16T17:03:05Z	infra	stopped the operator's slot 2 app during the run; four stacks on 8 GB Docker made slot 5 unhealthy; relaunch at pause	Docker memory	docker ps	open
 2026-10-16T20:33:43Z	budget	block 16:00Z may run to 100%; later blocks capped at 40%; resume P1-04 now with a fresh owner from the handoff brief	operator 2026-10-17 01:20	standing-orders.md 2026-10-17 update	open
+2026-10-16T21:47:05Z	budget	cap 98% per block until the weekly reset today; Fable owners kept; pure-core track widened to P3-05, P3-02 and P3-06 in parallel, P3-03 after P3-02	operator 2026-10-17 04:45	standing-orders.md	open

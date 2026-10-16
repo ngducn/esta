@@ -81,3 +81,9 @@ Operator's words, 2026-10-17: "you can continue now up to 100%, but when reset, 
 
 Budget. The block that started 2026-10-16T16:00Z may run to 100%: stop spawning at about 92%, pause before 97%. Every later block is capped at 40%: stop spawning at 30%, pause at 36%. Check usage at every agent report, not only before a spawn, because one long Opus owner can move a block by 25 points between checks.
 6. Screenshots in PR bodies and comments must render on GitHub: publish them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and paste its Markdown (operator, 2026-10-17: "screenshots are not viewable on the UI").
+
+## Update 2026-10-17 04:45 +07
+
+Operator's words, 2026-10-17: "no, lets maxed it out up to 98% , i want to juice out every tokens before reset hit today", replacing the 40% cap and the plan to fall back from Fable to Opus.
+
+Budget until the weekly reset today: up to 98% of each 5-hour block. Stop spawning at about 90%, pause at 96%. Owners stay on Fable; verifiers on Sonnet; audits on Opus. Maximize parallel owners: pure-core PRs that need no Supabase stack run alongside the UI track.
