@@ -21,6 +21,8 @@ insert into public.agent_jobs (id, household_id, kind, run_after, status)
 values ('00000000-0000-0000-0000-0000000000a1', :'a', 'ping', '2026-10-07T02:00:00Z', 'done');
 insert into public.agent_runs (household_id, job_id, auth_mode, agent_mode, started_at)
 values (:'a', '00000000-0000-0000-0000-0000000000a1', 'none', 'replay', '2026-10-07T02:00:00Z');
+-- A worker that ran on this slot leaves its own rows; the transaction rolls this delete back.
+delete from public.worker_heartbeats;
 insert into public.worker_heartbeats (worker_id, host_label, version, auth_mode, agent_mode, last_seen_at)
 values ('00000000-0000-0000-0000-0000000000f1', 'Mac mini', '0.0.0', 'subscription', 'live', '2026-10-07T02:00:00Z');
 select col_type_is('public', 'worker_heartbeats', 'worker_id', 'uuid', 'the worker id is an opaque uuid, never the hostname');
