@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
 import { authDrifts, parseSlot, slotPorts, writeSlotWorkdir } from './slot.ts';
+import { reportTableCoverage } from './table-coverage.ts';
 
 const COMMANDS: Record<string, string[]> = {
   start: ['start'],
@@ -92,4 +93,5 @@ if (result.status === 0 && command === 'start') {
 if (result.status === 0 && capture) {
   writeFileSync(join(repoRoot, 'packages', 'db', 'src', 'database.types.ts'), result.stdout);
 }
+if (result.status === 0 && command === 'test' && !reportTableCoverage(repoRoot, slot)) process.exit(1);
 process.exit(result.status ?? 1);
