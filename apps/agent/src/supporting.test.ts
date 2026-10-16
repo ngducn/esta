@@ -21,12 +21,16 @@ describe('readClock', () => {
 });
 
 describe('beat', () => {
-  it('upserts the worker row with the clock time', async () => {
+  const clock: Clock = { source: 'table', now: () => parseInstant('2026-10-07T09:06:00+07:00'), today: () => isoDate('2026-10-07') };
+  const info = { worker_id: '6f1c2a4e-0b7d-4f6a-9c1e-2d3b4a5c6d7e', host_label: 'mac-mini', version: '0.1.0', auth_mode: 'none', agent_mode: 'replay' } as const;
+
+  it('upserts the worker row with the clock time, then deletes the rows of workers unseen for a day', async () => {
     const writes: Recorded[] = [];
-    const clock: Clock = { source: 'table', now: () => parseInstant('2026-10-07T09:06:00+07:00'), today: () => isoDate('2026-10-07') };
-    const info = { worker_id: '6f1c2a4e-0b7d-4f6a-9c1e-2d3b4a5c6d7e', host_label: 'mac-mini', version: '0.1.0', auth_mode: 'none', agent_mode: 'replay' } as const;
     await beat(fakeDb({}, writes), info, clock);
-    expect(writes).toEqual([{ table: 'worker_heartbeats', op: 'upsert', row: { ...info, last_seen_at: '2026-10-07T02:06:00.000Z' } }]);
+    expect(writes).toEqual([
+      { table: 'worker_heartbeats', op: 'upsert', row: { ...info, last_seen_at: '2026-10-07T02:06:00.000Z' } },
+      { table: 'worker_heartbeats', op: 'delete', row: { last_seen_at: { lt: '2026-10-06T02:06:00.000Z' } } },
+    ]);
   });
 });
 

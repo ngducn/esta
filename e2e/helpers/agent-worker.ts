@@ -5,7 +5,7 @@ import { join } from 'node:path';
 const repoRoot = join(import.meta.dirname, '..', '..');
 const STARTED = /^\[agent\] worker \S+ started/m;
 
-export type AgentWorker = { stop(): Promise<void>; log(): string };
+export type AgentWorker = { readonly pid: number; running(): boolean; stop(): Promise<void>; log(): string };
 
 /** A replay worker on this slot, run in-process by `scripts/agent-dev.ts` so stopping its pid stops the worker. */
 export async function startAgentWorker({ replayDir, home }: { replayDir?: string; home?: string } = {}): Promise<AgentWorker> {
@@ -41,6 +41,8 @@ export async function startAgentWorker({ replayDir, home }: { replayDir?: string
   });
 
   return {
+    pid: child.pid ?? -1,
+    running: () => child.exitCode === null && child.signalCode === null,
     log: () => output,
     async stop() {
       if (child.exitCode !== null || child.signalCode !== null) return;

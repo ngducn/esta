@@ -4,8 +4,18 @@
 
 - 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), #32 P0-14 app shell (`064303c`, 2026-10-16), #39 design refresh to the bright, modern look with lucide icons, Pexels photos and an app icon (`15a37e9`, 2026-10-16), #43 local CI in a fresh worktree (`20cb81c`), #44 Phase 1 plan fixes with cover photos (`04a595e`), #42 P0-15 agent worker and Trợ lý status (`72fadb6`, after a security fix-forward), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
 - P0-01 to P0-11 landed on 2026-10-07.
+- Phase 0 exit, P0-16 (PR #48). Phase 0 is P0-01 to P0-11 (2026-10-07), P0-12 (#29), P0-14 (#32), P0-15 (#42) and P0-16. P0-13 was removed by the 2026-10-15 re-slice and its composites moved to their first screens. `pnpm phase:check 0` passes FND-1 to FND-7, FND-9 and S1. Slipped: the P0-15 verifier lane did not run the live S1 gate demo, so `docs/plan/trail/phase-0/s1-ping-run.json` records the P0-15 owner's live `pnpm agent:record` run on subscription auth; the `/dev/components` LCP miss stays waived because the page is developer-only.
+- AGENT.md §2.5 help center article re-checked on 2026-10-16: <https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan> still says Agent SDK and `claude -p` usage signed in with a Claude plan draws from the plan's limits, and the 15 June 2026 pause of the SDK changes holds. Since 7 October 2026 Max and Team plans also carry monthly API credits for SDK runs with an API key from a linked Console organization. Subscription auth for this household stays as AGENT.md §2.5 says.
 
 ## Spike results
+
+| Spike | Branch | SHA | Result |
+| --- | --- | --- | --- |
+| S1 | `spike/s1-agent-sdk` | `83c56e0` | Resolved. The Agent SDK runs in `apps/agent` on subscription auth with an in-process MCP tool, isolated settings and a `PreToolUse` path policy, so the CLI fallback is not used (AGENT.md §2.2). Live ping record in `docs/plan/trail/phase-0/s1-ping-run.json`. |
+| S2 | `spike/s2-fonts` | `31dd4a6` | Resolved. Source Sans 3 and Source Serif 4 passed coverage and tabular figures. The operator replaced them with Plus Jakarta Sans on 2026-10-16, which passes `pnpm glyphs:check` (DESIGN.md). |
+| S3 | `spike/s3-admin-units` | `1945c64` | Resolved. NSO catalog and conversion table: 34 province-level units, 3,321 communes, the five FND-6 lookups (DOMAIN-VN §4). Approved with the P0-02 to P0-11 merge. |
+| S4 | `spike/s4-vietqr` | `a7c9e76` | Resolved. Encoder and decoder round-trip on test vectors against the NAPAS QR specification v1.5.2; BIN list from the NAPAS VietQR portal (DOMAIN-VN §9 and §10). |
+| S7 | `spike/s7-receipt` | `8548686` | Resolved. pdf-lib for the PDF and satori with resvg for the PNG, 44 ms and 48 ms warm, in an 11.56 MB traced function under Vercel's limit. |
 
 - S6 (P1-01, 2026-10-16). Parser and SSRF guards pass the PRP-5 tests. Two fresh `maps.app.goo.gl` links, a named place and a dropped pin, each redirect once (`302`) to `www.google.com/maps/place/` with `!3d`/`!4d` coordinates. Google Maps no longer issues `goo.gl/maps` links, and an unknown one answers `404`. The chains are in DOMAIN-VN §9.
 
@@ -23,6 +33,7 @@
 - Close seven issues that `main` already fixes with tests: #3, #4, #8, #9, #10, #11 and #16. Evidence is in `docs/plan/trail/triage-2026-10-15.md`. The permission classifier blocked closing issues from the session.
 - The permission classifier also blocked reading a `pnpm check` log on `main` and rerunning `pnpm check` for its exit code. The first run on `main` after #29 exited 1 with stale `node_modules`; after `pnpm install` the visible output showed every test passing, but the exit code is unconfirmed. Every later branch cut from `main` passed `pnpm check` in its own lanes. Allow these commands if you want unattended runs to verify `main` themselves.
 
+- Confirm the operator-on-create `[app rule]` from P0-09: the member who creates a household becomes its admin and its operator, so that member sees the Trợ lý diagnostics and runs the connection check. Say if a new household should start with no operator instead.
 - Confirm that only an operator can grant operator. SPEC §5.1 ships this as an `[app rule]` from P0-02: a user session changes `household_members.is_operator` only when it is already an operator of that household; the service role is exempt.
 - Approve the NSO admin units source for P0-06: the NSO catalog SOAP service and conversion table, pinned in `scripts/reference/data/`. P0-06 is held until then.
 - Approve the license reading for that source: public legal documents excluded from copyright under IP Law Article 15, an engineer's reading rather than a lawyer's (`supabase/seed/README.md`).
@@ -36,3 +47,7 @@
 ## Needs professional confirmation
 
 - Whether the 2026 rental PIT applies from 1 January or 1 July 2026 (DOMAIN-VN §5). The `tax_rules` row from P0-06 uses 1 January and carries a note that says so.
+- How VAT and PIT on rental revenue interact for one owner, including how the 500,000,000 VND deduction splits across leases and other business revenue (DOMAIN-VN §5).
+- How revenue from a co-owned property is attributed between co-owners (DOMAIN-VN §5). FIN-3 splits by ownership share unless a declaring party is set.
+- Whether household-only use is exempt from parts of the personal data law (DOMAIN-VN §8). Esta builds to the stricter reading.
+- The 500,000,000 VND single-transfer cap from S4 (DOMAIN-VN §10). Esta drops tag 54 at or above it as an `[app rule]` until Ryan decides; a bank or NAPAS should confirm the cap and how payers split a larger transfer.

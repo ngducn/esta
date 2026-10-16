@@ -3,7 +3,7 @@ import { parseSlot, slotPorts } from './scripts/slot.ts';
 
 const port = Number(process.env.PORT ?? slotPorts(parseSlot(process.env.ESTA_SLOT)).web);
 const baseURL = `http://localhost:${port}`;
-const sharedClock = ['clock.spec.ts', 'assistant-status.spec.ts'];
+const sharedClock = ['clock.spec.ts', 'assistant-status.spec.ts', 'fnd9-integration.spec.ts'];
 
 export default defineConfig({
   testDir: 'e2e',

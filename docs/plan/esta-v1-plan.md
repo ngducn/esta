@@ -5290,6 +5290,16 @@ pdf-lib with @pdf-lib/fontkit renders the A5 receipt PDF, and satori with @resvg
 - **Human gates can stall a phase.** The Mom test, the bank-app VietQR scan and every P6-07 step need Ryan. Non-gated work of the next phase continues while they wait.
 - **`[verify]` facts that no source settles.** How VAT and PIT combine, co-owner attribution and the PIT effective date ship as labelled `[app rule]` estimates and are listed in STATUS.md, per DOMAIN-VN §0.
 
+Contradictions resolved in Phase 0, each in the spec file named, per SPEC §0. P0-16 checked each against the merged spec text.
+
+- AGENT.md §2.2 against S1. P0-15 records the S1 options, the `PreToolUse` path policy and SDK 0.3.291 in AGENT.md §2.2, with branch `spike/s1-agent-sdk` at `83c56e0`.
+- DESIGN-BRIEF §5.1 against S2. P0-11 recorded Source Sans 3 and Source Serif 4 from S2 (`spike/s2-fonts`, `31dd4a6`). The operator then chose Plus Jakarta Sans on 2026-10-16, and DESIGN.md and DESIGN-BRIEF §5.1 retire the S2 pair with that reason.
+- DOMAIN-VN §4 against S3. P0-06 records 25 provinces and 9 cities, 3,321 communes and the five FND-6 lookups with the NSO sources (`spike/s3-admin-units`, `1945c64`).
+- DOMAIN-VN §9 and §10 against S4. P0-16 folds the S4 results (`spike/s4-vietqr`, `a7c9e76`): each VietQR tag with its NAPAS section, tag 01 as an `[app rule]`, the 25-character purpose cap, the known-codes memo match and the 500,000,000 VND `[app rule]` pending Ryan.
+- SPEC FND-2 against FND-8. P0-14 lets a viewer write its own display settings and says so in FND-2.
+- SPEC §5.7 against tenancy. P0-02 copies `household_id` into `audit_log`; P0-15 narrows the readers of agent audit rows to operators. SPEC §5.7 says both.
+- AGENT.md §10 against the ping. P0-15 adds `agent_jobs.result` to AGENT.md §10.
+
 ## Appendix D. Links and reading list
 
 - Read `CLAUDE.md`, `PRODUCT.md` and `docs/spec/SPEC.md` before any PR. Read `docs/spec/DOMAIN-VN.md` before PRs that touch certificates, addresses, money, tax, VietQR or names. Read `docs/spec/DESIGN-BRIEF.md` and `DESIGN.md` before UI PRs. Read `docs/spec/AGENT.md` before agent and extraction PRs.

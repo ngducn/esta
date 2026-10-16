@@ -13,11 +13,12 @@
 # that include db or e2e stop the slot's Supabase stack before and after, so a
 # stack left exited by a Docker restart cannot fail `db:start`.
 #
-# CI_LOCAL_NO_POST=1 makes no gh call: no PR head guard, no statuses, no
-# comment (the summary prints instead). The PR number then only names the logs.
+# Any non-empty CI_LOCAL_NO_POST, 0 included, makes no gh call: no PR head
+# guard, no statuses, no comment (the summary prints instead). The PR number
+# then only names the logs.
 set -uo pipefail
 
-worktree=${1:?worktree path}
+worktree=$(realpath "${1:?worktree path}") || exit 2
 pr=${2:?pr number}
 slot=${3:?ESTA_SLOT for the local stack}
 shift 3
@@ -121,6 +122,7 @@ Ran \`tools/ci-local.sh\` in a fresh worktree on $(hostname -s) with ESTA_SLOT=$
 
 if [ -n "${CI_LOCAL_NO_POST:-}" ]; then
 	echo "$body"
+	echo "CI_LOCAL_NO_POST is set, so nothing was posted to PR #$pr."
 else
 	existing=$(gh api "repos/$repo/issues/$pr/comments" --paginate -q ".[] | select(.body | startswith(\"$marker\")) | .id" | tail -1)
 	if [ -n "$existing" ]; then

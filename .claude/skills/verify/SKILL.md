@@ -126,7 +126,7 @@ Proof standards:
 $S/cleanup.sh
 ```
 
-Cleanup acts only on a slot that Launch started from this checkout, which means the `stack` marker exists and names this checkout. Otherwise it prints why and leaves the stack and web server running. It stops the web server by its recorded pid only when that pid's command line runs `scripts/web.ts`, clears the test clock while the stack is still up, stops the slot's Supabase stack and removes the marker. It always stops the lane's browser daemon. Then it checks that nothing listens on the slot's web, API, database, Studio, mailbox and browser ports, prints `OK` or one `FAIL` line per port still held, and exits 1 on any. It never touches `/tmp/swarm-*`, so evidence survives.
+Cleanup acts only on a slot that Launch started from this checkout, which means the `stack` marker exists and names this checkout. Otherwise it prints why, leaves the stack, the web server and the browser daemon running, and exits 1, because that slot belongs to another lane. It stops the web server by its recorded pid only when that pid's command line runs `scripts/web.ts`, clears the test clock while the stack is still up, stops the slot's Supabase stack and removes the marker, then stops the lane's browser daemon. Then it checks that nothing listens on the slot's web, API, database, Studio, mailbox and browser ports, prints `OK` or one `FAIL` line per port still held, and exits 1 on any. It never touches `/tmp/swarm-*`, so evidence survives.
 
 Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pattern, never stop a slot you did not launch, and never touch the `ekh-*` containers. Docker has about 8 GB for every stack on the machine, so run Cleanup as soon as you stop testing.
 

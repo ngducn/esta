@@ -46,6 +46,8 @@ export function decideToolUse(policy: ToolPolicy, toolName: string, input: Reado
   if (field === undefined) return { allow: false, reason: `${toolName} has no input rule` };
   const raw = input[field];
   if (typeof raw !== 'string' || raw === '') return { allow: false, reason: `${toolName} needs a ${field}` };
+  // The SDK's Read expands a leading `~` to a home directory, which no job directory contains.
+  if (raw.startsWith('~')) return { allow: false, reason: `${raw} is outside the job directory` };
   const target = realTarget(policy.jobDir, raw);
   return isInside(policy.jobDir, target) ? { allow: true } : { allow: false, reason: `${raw} is outside the job directory` };
 }

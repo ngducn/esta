@@ -15,7 +15,7 @@ export const SEEDED_AUTH_COLUMNS: Record<string, readonly string[]> = {
   'auth.identities': ['id', 'provider_id', 'user_id', 'identity_data', 'provider'],
 };
 
-function query<Row>(workdir: string, sql: string): Row[] {
+export function query<Row>(workdir: string, sql: string): Row[] {
   const result = spawnSync('supabase', ['db', 'query', '--workdir', workdir, '--agent=no', '-o', 'json', sql], {
     encoding: 'utf8',
     env: { ...process.env, SUPABASE_TELEMETRY_DISABLED: '1' },

@@ -154,7 +154,7 @@ SIL OFL 1.1, self-hosted from `apps/web/src/fonts/` through `next/font/local` an
 
 ### Why this face
 
-The operator picked Plus Jakarta Sans on the canvas. It passed `pnpm glyphs:check` at 400, 500, 600 and 700: all 176 code points of the glyph test string and the Vietnamese letters, and a `tnum` feature with uniform digit widths. It has no `lnum` feature, but its default digits are lining (cap height 745, digits 745 to 757 units). Source Sans 3 and Source Serif 4 from spike S2 are retired; Be Vietnam Pro still fails the tabular figures check.
+The operator picked Plus Jakarta Sans on the canvas. It passed `pnpm glyphs:check` at 400, 500, 600 and 700: all 176 code points of the glyph test string and the Vietnamese letters, and a `tnum` feature with uniform digit widths. It has no `lnum` feature, but its default digits are lining (cap height 745, digits 745 to 757 units). Source Sans 3 and Source Serif 4 from spike S2 (`spike/s2-fonts` at `31dd4a6`) are retired; Be Vietnam Pro still fails the tabular figures check.
 
 ### Hierarchy
 

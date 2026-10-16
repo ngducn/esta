@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseInstant } from '../clock/resolve';
-import { workerStatus } from './worker-status';
+import { heartbeatReadBound, workerStatus } from './worker-status';
 
 const at = parseInstant;
 const now = at('2026-10-07T09:05:00+07:00');
@@ -36,5 +36,15 @@ describe('workerStatus', () => {
       time: '23:58',
       earlierDate: '2026-10-06',
     });
+  });
+});
+
+describe('heartbeatReadBound', () => {
+  it('reads a heartbeat from a worker host up to 10 seconds ahead, and no further', () => {
+    expect(heartbeatReadBound(now)).toBe('2026-10-07T02:05:10.000Z');
+  });
+
+  it('reads a heartbeat 10 seconds ahead as online at its own time', () => {
+    expect(workerStatus(at('2026-10-07T09:05:10+07:00'), now)).toEqual({ kind: 'online', time: '09:05', earlierDate: null });
   });
 });
