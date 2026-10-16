@@ -2,12 +2,12 @@
 
 ## Shipped
 
-- 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
+- 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), #32 P0-14 app shell (`064303c`, 2026-10-16), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
 - P0-01 to P0-11 landed on 2026-10-07.
 
 ## Parked
 
-- P0-14 app shell, PR #32 at `270133b`. The verdict lanes at `44f65a7` were clean: live verifier PASS and auth audit with no blocking finding (follow-ups in #37). The only later commit changes `e2e/auth.spec.ts`. Local CI e2e failed twice at `270133b`: two FND-1 invite tests in `auth.spec.ts` stayed on "Tạo gia đình" after create-household, at load 16 and again at load 4, so load does not explain it. Logs in `/tmp/ci-local/pr-32-270133b/`. Not merged.
+- Nothing parked. P0-14 (PR #32) merged on 2026-10-16 as `064303c` after a test-only fix-forward: the create-household e2e helper gave the server one 5 s wait, which ran out under load. The 2026-10-15 note that it also failed at load 4 was wrong; that rerun failed in `db reset` with a Supabase 502, not in Playwright.
 
 ## Waiting for Ryan
 
