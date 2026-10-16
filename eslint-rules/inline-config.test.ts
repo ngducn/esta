@@ -12,7 +12,7 @@ async function lint(path: string, code: string) {
 }
 
 const webSources = () =>
-  globSync('apps/web/**/*.{ts,tsx,js,mjs}', {
+  globSync('apps/web/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}', {
     cwd: repoRoot,
     exclude: ['**/node_modules/**', '**/.next/**', 'apps/web/src/app/dev/**'],
   });
@@ -61,6 +61,14 @@ describe('inline eslint config in apps/web', () => {
       'same-line directive that also names the esta rule',
       'export const a = <p>Xin chào</p>; // eslint-disable-line esta/no-jsx-literals, @eslint-community/eslint-comments/no-restricted-disable -- bypass\n',
     ],
+    [
+      'block that also names the guard rule itself',
+      guardOffAndEstaOff('/* eslint-disable esta/no-guard-disable, @eslint-community/eslint-comments/no-restricted-disable -- bypass */'),
+    ],
+    [
+      'same-line directive that also names the guard rule itself',
+      'export const a = <p>Xin chào</p>; // eslint-disable-line esta/no-jsx-literals, esta/no-guard-disable, @eslint-community/eslint-comments/no-restricted-disable -- bypass\n',
+    ],
   ])('fails lint on a directive that names an eslint-comments rule, since it silences the guard that would report it: %s', async (_, code) => {
     expect(await lint('apps/web/src/components/scratch.tsx', code)).toContainEqual({
       ruleId: 'esta/no-guard-disable',
@@ -68,7 +76,7 @@ describe('inline eslint config in apps/web', () => {
     });
   });
 
-  const lintedExtensions = ['ts', 'mts', 'cts', 'js', 'mjs', 'cjs'];
+  const lintedExtensions = ['ts', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs'];
 
   it.each(lintedExtensions)('fails lint on a directive that names an eslint-comments rule in a .%s file', async (ext) => {
     const code = '/* eslint-disable @eslint-community/eslint-comments/no-restricted-disable -- bypass */\nconst a = 1;\n';
@@ -85,6 +93,26 @@ describe('inline eslint config in apps/web', () => {
       severity: 2,
     });
   });
+
+  it('applies the JSX literal rule and its guard to a .jsx file, which Next serves as a page', async () => {
+    expect(await lint('apps/web/src/components/scratch.jsx', 'export const a = <p>Xin chào</p>;\n')).toContainEqual({
+      ruleId: 'esta/no-jsx-literals',
+      severity: 2,
+    });
+    const disabled = '// eslint-disable-next-line esta/no-jsx-literals -- bypass\nexport const a = <p>Xin chào</p>;\n';
+    expect(await lint('apps/web/src/components/scratch.jsx', disabled)).toContainEqual({
+      ruleId: '@eslint-community/eslint-comments/no-restricted-disable',
+      severity: 2,
+    });
+  });
+
+  it.each(['packages/core/src/scratch.ts', 'apps/agent/src/scratch.ts', 'scripts/scratch.ts'])(
+    'cannot switch off an esta rule in %s either',
+    async (path) => {
+      const code = "// eslint-disable-next-line esta/service-role-allowlist -- bypass\nexport const key = process.env.SUPABASE_SERVICE_ROLE_KEY;\n";
+      expect(await lint(path, code)).toContainEqual({ ruleId: '@eslint-community/eslint-comments/no-restricted-disable', severity: 2 });
+    },
+  );
 
   it('cannot switch off the browser Supabase client ban', async () => {
     const code =

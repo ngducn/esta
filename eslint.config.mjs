@@ -32,7 +32,7 @@ export default defineConfig(
     languageOptions: { globals: { Buffer: 'readonly', URL: 'readonly', console: 'readonly', process: 'readonly' } },
   },
   {
-    files: ['apps/web/**/*.{ts,tsx}'],
+    files: ['apps/web/**/*.{ts,tsx,jsx}'],
     extends: [nextPlugin.configs['core-web-vitals'], reactHooks.configs.flat.recommended],
     rules: { '@next/next/no-html-link-for-pages': 'off' },
   },
@@ -51,13 +51,13 @@ export default defineConfig(
     rules: { 'esta/service-role-allowlist': 'error' },
   },
   {
-    files: ['apps/web/**/*.{ts,tsx,mts,cts,js,mjs,cjs}'],
+    files: ['apps/web/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     rules: { 'esta/no-browser-supabase-client': 'error' },
   },
   {
-    files: ['apps/web/**/*.tsx'],
+    files: ['apps/web/**/*.{tsx,jsx}'],
     // Tests pass fixture text such as an address or a label as props; it never reaches a user.
-    ignores: ['apps/web/**/*.test.tsx'],
+    ignores: ['apps/web/**/*.test.{tsx,jsx}'],
     rules: { 'esta/no-jsx-literals': 'error' },
   },
   {
@@ -105,8 +105,8 @@ export default defineConfig(
     },
   },
   {
-    files: ['apps/web/**'],
-    ignores: ['apps/web/src/app/dev/**'],
+    // The esta rules are not registered for eslint-rules/, which holds their sources and tests.
+    ignores: ['apps/web/src/app/dev/**', 'eslint-rules/**'],
     plugins: { '@eslint-community/eslint-comments': eslintComments },
     rules: {
       '@eslint-community/eslint-comments/no-restricted-disable': ['error', 'esta/*', '@eslint-community/eslint-comments/*'],
