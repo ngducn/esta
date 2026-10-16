@@ -11,9 +11,16 @@ Paused 2026-10-16 about 00:35 +07 at about 45% of one 5-hour block, the pause li
 
 ## Next, in order
 
-1. Resume P1-04 with a fresh Opus owner from its branch (consolidated scope: the owner brief in this conversation's decisions row, the stopped owner's report, `docs/plan/trail/standing-orders.md`). Then its verifier (Sonnet) and Opus data audit (storage policies, signed URLs, seed service role).
-2. Then Phase 1 in Seq order: P1-09, P1-06, P1-05, P1-07, P1-10, P1-08, P1-03 (Phase 1 exit). P2-01 depends on P1-09.
-3. Issues to fold in where they fit: #49 (photo ignore scope, tab inset), #51 (eslint tests time out under load; add a machine-wide lock to ci-local), #54 (trim paths in the agent tool policy before P2-03).
+1. P1-04 (PR #52): if it is not merged yet, finish its verdict. Open items at handoff: the live verifier's report, local CI green at a load average under 5, and the LCP call (head 3390 ms against trunk 2573 ms; the page's own floor is 2.8 to 3.0 s from shell causes now tracked in #56, so the root's default is to accept the miss for P1-04 and fix the floor in #56 before P3-16). Low audit findings for a follow-up: search scans every household instead of filtering by household first, archived properties keep signable photos, one pgTAP update/delete scoping test cannot fail alone, and Lighthouse JSON holds signed URLs.
+2. Phase 1 on two parallel UI tracks (dependencies are real code dependencies, not only Seq): P1-09 and P1-06 together after P1-04; then P1-05, P1-07 and P1-08, two at a time; then P1-10; then P1-03 (Phase 1 exit). Stop the operator's slot 2 app while two stacks build.
+3. A pure-core track with no Supabase stack, in parallel with step 2: P3-05 (VietQR encode and decode from spike S4's vectors) and P3-02 (lease schedule core). Both are risk-first exceptions to vertical slicing and sit directly under their Phase 3 UI slices; P3-02 is on the interrogate list and gets an Opus audit.
+4. Issues to fold in where they fit: #49, #51 (add a machine-wide lock to ci-local), #54 (trim agent tool paths before P2-03), #55, #56; and move pr-media.sh from ~/.claude/orchestrate/esta/bin into tools/.
+
+## Model policy (operator, 2026-10-17: "check weekly usage and fable usage, please think ahead until reset and utilize the best tokens you can until reset of this week, please speed this up a bit")
+
+- Owners on Fable (`model: "fable"`), which had no use this week; verifiers on Sonnet; audits on Opus.
+- Measure Fable's cost per PR on the first two owners with ccusage. If a Fable owner moves a block more than 25 points, return owners to Opus.
+- The plan's weekly limit and reset time are not visible locally; ask the operator for the numbers from /usage and plan the week's remaining runs from them.
 
 ## Gotchas learned this run
 
