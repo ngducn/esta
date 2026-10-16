@@ -1,8 +1,11 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 import { authApi } from './helpers/auth-api';
 import { latestMail, requestCode, signIn } from './helpers/inbucket';
+
+const SLOWER_THAN_AN_ASSERTION_WAITS_MS = 6_000;
 
 async function seriousAxeViolations(page: Page): Promise<string[]> {
   await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
@@ -61,6 +64,21 @@ test('FND-1: a new email reads its code from Inbucket, signs in and creates a ho
   await expect(page.getByText('Bạn đang đăng nhập với tên Demo Mới.')).toBeVisible();
   await expect(page.getByText('Quyền: Quản trị')).toBeVisible();
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('a slow create-household answer keeps the button busy, then opens the invite step', async ({ page }) => {
+  test.skip(test.info().project.name !== 'mobile', 'a slow network is a phone concern, so one viewport covers it');
+  await signIn(page, uniqueEmail('slow'));
+  await page.route('**/onboarding', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const response = await route.fetch();
+    await setTimeout(SLOWER_THAN_AN_ASSERTION_WAITS_MS);
+    return route.fulfill({ response });
+  });
+
+  const created = createHousehold(page, 'Gia đình Chậm Demo', 'Demo Chậm');
+  await expect(page.getByRole('button', { name: 'Đang tạo…' }), 'a second tap cannot create a second household').toBeDisabled();
+  await created;
 });
 
 test('FND-1: an invited email lands in the inviting household with the invited role', async ({ page, browser }) => {
