@@ -5,6 +5,10 @@
 - 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), #32 P0-14 app shell (`064303c`, 2026-10-16), #39 design refresh to the bright, modern look with lucide icons, Pexels photos and an app icon (`15a37e9`, 2026-10-16), #43 local CI in a fresh worktree (`20cb81c`), #44 Phase 1 plan fixes with cover photos (`04a595e`), #42 P0-15 agent worker and Trợ lý status (`72fadb6`, after a security fix-forward), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
 - P0-01 to P0-11 landed on 2026-10-07.
 
+## Spike results
+
+- S6 (P1-01, 2026-10-16). Parser and SSRF guards pass the PRP-5 tests. Two fresh `maps.app.goo.gl` links, a named place and a dropped pin, each redirect once (`302`) to `www.google.com/maps/place/` with `!3d`/`!4d` coordinates. Google Maps no longer issues `goo.gl/maps` links, and an unknown one answers `404`. The chains are in DOMAIN-VN §9.
+
 ## Parked
 
 - Nothing parked. P0-14 (PR #32) merged on 2026-10-16 as `064303c` after a test-only fix-forward: the create-household e2e helper gave the server one 5 s wait, which ran out under load. The 2026-10-15 note that it also failed at load 4 was wrong; that rerun failed in `db reset` with a Supabase 502, not in Playwright.
