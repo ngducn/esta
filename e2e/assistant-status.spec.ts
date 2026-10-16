@@ -12,11 +12,9 @@ import { signIn } from './helpers/inbucket';
 // The worker, the heartbeat table and the test clock are one per slot, so the rules run in order in the `clock` project.
 test.describe.configure({ mode: 'serial' });
 
-const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
+const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false });
 const rest = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1`;
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-const asService = { apikey: serviceKey, authorization: `Bearer ${serviceKey}` };
 const cron = { authorization: `Bearer ${env.CRON_SECRET}` };
 
 const pingDir = join(import.meta.dirname, '..', 'fixtures', 'agent-replay', 'ping');
@@ -36,20 +34,8 @@ async function restartWorker(replayDir?: string) {
   worker = await startAgentWorker(replayDir === undefined ? {} : { replayDir });
 }
 
-/** Each worker process writes its own row, so a row a stopped worker wrote under a later test clock would read as the newest. */
-async function clearHeartbeats(request: APIRequestContext) {
-  expect((await request.delete(`${rest}/worker_heartbeats?worker_id=not.is.null`, { headers: asService })).ok()).toBe(true);
-}
-
-async function heartbeatIds(request: APIRequestContext): Promise<string[]> {
-  const response = await request.get(`${rest}/worker_heartbeats?select=worker_id`, { headers: asService });
-  return ((await response.json()) as { worker_id: string }[]).map((row) => row.worker_id);
-}
-
 test.beforeEach(async ({ request }) => {
   await setClock(request, '2026-10-07T09:00:00+07:00');
-  await worker?.stop();
-  await clearHeartbeats(request);
   await restartWorker();
 });
 
@@ -117,8 +103,11 @@ test('rule 2: the line goes offline six minutes after the worker stops and onlin
   await page.reload();
   await expect(statusLine(page)).toHaveText('Trợ lý ngoại tuyến từ 09:00. Việc mới sẽ chạy khi máy hoạt động lại.');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  // Each worker process writes its own row, so the restart uses a later minute than the offline check above:
+  // a row left by an earlier run's restart then stays in that check's future, which the page does not read.
+  await setClock(request, '2026-10-07T09:07:00+07:00');
   await restartWorker();
-  await expectStatusLine(page, 'Trợ lý đang hoạt động. Cập nhật lúc 09:06.');
+  await expectStatusLine(page, 'Trợ lý đang hoạt động. Cập nhật lúc 09:07.');
 });
 
 test('rule 3: a non-operator gets no diagnostics in the HTML and RLS refuses her ping', async ({ page }) => {
@@ -199,7 +188,13 @@ test('rule 6: in English at 130% and dark the check still fits a phone', async (
   expect(fits, 'no horizontal page scroll at 390 px').toBe(true);
 });
 
-test('two workers on one host keep their own id, heartbeat and config dir', async ({ request }) => {
+test('two workers on one host keep their own id, heartbeat and config dir', async ({ page }) => {
+  await openAssistant(page, 'me.lane6@demo.esta.test', { viewport: [390, 844], theme: 'light' });
+  const token = await accessToken(page);
+  const heartbeatIds = async () => {
+    const response = await page.request.get(`${rest}/worker_heartbeats?select=worker_id`, { headers: asUser(token) });
+    return ((await response.json()) as { worker_id: string }[]).map((row) => row.worker_id);
+  };
   const home = mkdtempSync(join(tmpdir(), 'esta-e2e-home-'));
   const pair = [await startAgentWorker({ home }), await startAgentWorker({ home })];
   try {
@@ -207,7 +202,7 @@ test('two workers on one host keep their own id, heartbeat and config dir', asyn
     expect(new Set(ids).size, `two distinct worker ids, got ${ids.join(', ')}`).toBe(2);
     for (const id of ids) expect(id).not.toContain(hostname().split('.')[0]);
     expect(readdirSync(home).filter((name) => name.startsWith('config-')).sort()).toEqual(ids.map((id) => `config-${id}`).sort());
-    await expect.poll(() => heartbeatIds(request)).toEqual(expect.arrayContaining(ids));
+    await expect.poll(heartbeatIds).toEqual(expect.arrayContaining(ids));
     await Promise.all(pair.map((started) => started.stop()));
     expect(readdirSync(home).filter((name) => name.startsWith('config-')), 'a stopped worker removes its config dir').toEqual([]);
   } finally {

@@ -4,12 +4,16 @@ import type { Tables } from '@esta/db';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
-/** The newest heartbeat of any worker; members may read only `worker_id` and `last_seen_at`. */
-export async function getWorkerHeartbeat(): Promise<Instant | null> {
+/**
+ * The newest heartbeat of any worker as of the clock; members may read only `worker_id` and `last_seen_at`.
+ * Each worker process writes its own row, so a row a stopped worker wrote under a later test clock is not read.
+ */
+export async function getWorkerHeartbeat(asOf: Instant): Promise<Instant | null> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('worker_heartbeats')
     .select('last_seen_at')
+    .lte('last_seen_at', asOf)
     .order('last_seen_at', { ascending: false })
     .limit(1)
     .maybeSingle();

@@ -161,10 +161,10 @@ async function ConnectionCheck({ householdId, sendFailed, workerOnline }: { hous
 }
 
 export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ check?: string }> }) {
-  const [member, clock, lastSeenAt, nav, sections, { check }] = await Promise.all([
+  const clock = await getClock();
+  const [member, lastSeenAt, nav, sections, { check }] = await Promise.all([
     requireMember(),
-    getClock(),
-    getWorkerHeartbeat(),
+    getWorkerHeartbeat(clock.now()),
     getTranslations('nav'),
     getTranslations('sections'),
     searchParams,
