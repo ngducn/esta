@@ -2,7 +2,7 @@
 
 ## Shipped
 
-- 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), #32 P0-14 app shell (`064303c`, 2026-10-16), #39 design refresh to the bright, modern look with lucide icons, Pexels photos and an app icon (`15a37e9`, 2026-10-16), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
+- 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), #32 P0-14 app shell (`064303c`, 2026-10-16), #39 design refresh to the bright, modern look with lucide icons, Pexels photos and an app icon (`15a37e9`, 2026-10-16), #43 local CI in a fresh worktree (`20cb81c`), #44 Phase 1 plan fixes with cover photos (`04a595e`), #42 P0-15 agent worker and Trợ lý status (`72fadb6`, after a security fix-forward), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
 - P0-01 to P0-11 landed on 2026-10-07.
 
 ## Parked
@@ -10,6 +10,8 @@
 - Nothing parked. P0-14 (PR #32) merged on 2026-10-16 as `064303c` after a test-only fix-forward: the create-household e2e helper gave the server one 5 s wait, which ran out under load. The 2026-10-15 note that it also failed at load 4 was wrong; that rerun failed in `db reset` with a Supabase 502, not in Playwright.
 
 ## Waiting for Ryan
+
+- System design for approval, with the release estimate and seven decisions (D1 to D7): https://claude.ai/artifact/9Bufn7L33HmJueDyXVvqGB. The build continues on its recommendations until you change them.
 
 - Issue #36. The 2026-10-16 10:30 standing orders chose defaults for three of its questions, and the plan follows them. S6 stays first (P1-01 is Phase 1 `Seq` 01, per SPEC §10 and §11, with no spec change), the landing grant extends to Phase 1 until you withdraw it, and the interrogate list names P5-11 in place of P5-03. One question is still yours. Should pstack's `check-plan.mjs`, which still requires ten lanes and a review video per PR, accept the 2026-10-15 verification shape (Playwright rules, one Sonnet verifier lane, no video)?
 - Spec item from the P0-15 owner. AGENT.md §2.1 allows up to 3 attempts but lists a 1, 5 and 25 minute backoff, so the 25-minute step can never run. The P0-15 plan reads it as 3 retries, sets `max_attempts` to 4 and rewrites §2.1 to match. Confirm 4 attempts, or say 3 and drop the 25-minute step.
