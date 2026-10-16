@@ -4,6 +4,17 @@ import type { IsoDate } from '../date/iso-date';
 
 export const OFFLINE_AFTER_MS = 5 * 60_000;
 
+/**
+ * Worker and web hosts may disagree by a few seconds. The margin stays well under the minute between beats,
+ * so a row a stopped worker wrote under a later test clock is still not read.
+ */
+export const HEARTBEAT_SKEW_MS = 10_000;
+
+/** The latest `last_seen_at` that counts as a heartbeat at `now`. */
+export function heartbeatReadBound(now: Instant): Instant {
+  return new Date(Date.parse(now) + HEARTBEAT_SKEW_MS).toISOString() as Instant;
+}
+
 export type WorkerStatus =
   | { readonly kind: 'never' }
   | {

@@ -2,7 +2,7 @@ import type { AgentDb } from '../supabase';
 
 type Row = Record<string, unknown>;
 
-export type Recorded = { table: string; op: 'upsert' | 'insert'; row: Row };
+export type Recorded = { table: string; op: 'upsert' | 'insert' | 'delete'; row: Row };
 
 export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = []): AgentDb {
   const from = (table: string) => {
@@ -27,6 +27,12 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = []): 
         writes.push({ table, op: 'upsert', row });
         return { error: null };
       },
+      delete: () => ({
+        lt: async (column: string, value: unknown) => {
+          writes.push({ table, op: 'delete', row: { [column]: { lt: value } } });
+          return { error: null };
+        },
+      }),
       then<T>(resolve: (value: { data: Row[] | null; count: number; error: null }) => T) {
         return Promise.resolve({ data: head ? null : rows, count: rows.length, error: null }).then(resolve);
       },

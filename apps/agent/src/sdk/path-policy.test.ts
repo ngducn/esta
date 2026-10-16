@@ -46,6 +46,14 @@ describe('decideToolUse', () => {
     expect(decideToolUse(policy, 'Read', { file_path: 'pages/../page-1.png' })).toEqual({ allow: true });
   });
 
+  it('denies a home-relative path, which the Read tool expands outside the job directory', () => {
+    mkdirSync(join(jobDir, '~'));
+    writeFileSync(join(jobDir, '~', 'page-2.png'), 'png');
+    for (const file_path of ['~/.ssh/id_ed25519', '~', '~root/.profile', '~/page-2.png']) {
+      expect(decideToolUse(policy, 'Read', { file_path })).toEqual({ allow: false, reason: `${file_path} is outside the job directory` });
+    }
+  });
+
   it('denies a Read with no path', () => {
     expect(decideToolUse(policy, 'Read', {}).allow).toBe(false);
   });
