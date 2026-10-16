@@ -1,0 +1,315 @@
+{
+  "cases": [
+    {
+      "name": "place link from Share keeps !3d and !4d",
+      "input": "https://www.google.com/maps/place/Ben+Thanh+Market/@10.7725168,106.6980208,17z/data=!3m1!4b1!4m6!3m5!1s0x31752f3f3129e64d:0x8d6b2d79522c7f30!8m2!3d10.7725168!4d106.6980208!16s%2Fm%2F02q30t6?entry=tts",
+      "parse": { "kind": "point", "point": { "lat": 10.7725168, "lng": 106.6980208 }, "source": "place", "outsideVietnam": false }
+    },
+    {
+      "name": "!3d and !4d win over the @ viewport center",
+      "input": "https://www.google.com/maps/place/Demo+Place/@10.78,106.71,15z/data=!4m5!3m4!8m2!3d10.7769!4d106.7009",
+      "parse": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "place", "outsideVietnam": false }
+    },
+    {
+      "name": "dropped pin keeps its quote marks in the path",
+      "input": "https://www.google.com/maps/place/21%C2%B001'42.6%22N+105%C2%B051'07.9%22E/@21.0285,105.8522,17z/data=!3m1!4b1!4m4!3m3!8m2!3d21.0285!4d105.8522?entry=tts",
+      "parse": { "kind": "point", "point": { "lat": 21.0285, "lng": 105.8522 }, "source": "place", "outsideVietnam": false }
+    },
+    {
+      "name": "@lat,lng when no !3d and !4d",
+      "input": "https://www.google.com/maps/place/Demo+Place/@10.7769,106.7009,17z",
+      "parse": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "viewport", "outsideVietnam": false }
+    },
+    {
+      "name": "q with coordinates",
+      "input": "https://www.google.com/maps?q=10.7769,106.7009",
+      "parse": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "query", "outsideVietnam": false }
+    },
+    {
+      "name": "ll on maps.google.com",
+      "input": "https://maps.google.com/?ll=10.7769,106.7009",
+      "parse": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "ll", "outsideVietnam": false }
+    },
+    {
+      "name": "google.com.vn place link",
+      "input": "https://www.google.com.vn/maps/place/Demo+Place/@21.0285,105.8522,17z",
+      "parse": { "kind": "point", "point": { "lat": 21.0285, "lng": 105.8522 }, "source": "viewport", "outsideVietnam": false }
+    },
+    {
+      "name": "maps.google.com.vn with q",
+      "input": "https://maps.google.com.vn/?q=21.0285,105.8522",
+      "parse": { "kind": "point", "point": { "lat": 21.0285, "lng": 105.8522 }, "source": "query", "outsideVietnam": false }
+    },
+    {
+      "name": "share message with text around a long link",
+      "input": "Demo nhà đất: https://www.google.com/maps?q=10.7769,106.7009. Gửi qua Zalo",
+      "parse": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "query", "outsideVietnam": false }
+    },
+    {
+      "name": "q with a place name and no coordinates",
+      "input": "https://www.google.com/maps?q=Ch%E1%BB%A3+B%E1%BA%BFn+Th%C3%A0nh",
+      "parse": { "kind": "invalid", "reason": "no_coordinates" }
+    },
+    {
+      "name": "latitude 91",
+      "input": "https://www.google.com/maps?q=91,106.7009",
+      "parse": { "kind": "invalid", "reason": "out_of_range" }
+    },
+    {
+      "name": "point outside Vietnam warns",
+      "input": "https://www.google.com/maps/place/Demo/@48.8584,2.2945,17z",
+      "parse": { "kind": "point", "point": { "lat": 48.8584, "lng": 2.2945 }, "source": "viewport", "outsideVietnam": true }
+    },
+    {
+      "name": "plain text is not a URL",
+      "input": "Chợ Bến Thành",
+      "parse": { "kind": "invalid", "reason": "not_a_url" }
+    },
+    {
+      "name": "non-Google host",
+      "input": "https://www.openstreetmap.org/?mlat=10.7769&mlon=106.7009",
+      "parse": { "kind": "invalid", "reason": "not_maps" }
+    },
+    {
+      "name": "Google web search is not Maps",
+      "input": "https://www.google.com/search?q=10.7769,106.7009",
+      "parse": { "kind": "invalid", "reason": "not_maps" }
+    },
+    {
+      "name": "maps.app.goo.gl short link",
+      "input": "https://maps.app.goo.gl/5EGXC5WSBATiA4av8",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/5EGXC5WSBATiA4av8" },
+      "hops": [
+        {
+          "status": 302,
+          "location": "https://www.google.com/maps/place/Ben+Thanh+Market/@10.7725168,106.6980208,17z/data=!3m1!4b1!4m6!3m5!1s0x31752f3f3129e64d:0x8d6b2d79522c7f30!8m2!3d10.7725168!4d106.6980208!16s%2Fm%2F02q30t6?entry=tts&g_ep=demo&skid=demo"
+        }
+      ],
+      "resolve": {
+        "ok": true,
+        "value": { "kind": "point", "point": { "lat": 10.7725168, "lng": 106.6980208 }, "source": "place", "outsideVietnam": false }
+      }
+    },
+    {
+      "name": "share message from the Maps app with a short link",
+      "input": "Ben Thanh Market\nhttps://maps.app.goo.gl/5EGXC5WSBATiA4av8?g_st=ic",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/5EGXC5WSBATiA4av8?g_st=ic" }
+    },
+    {
+      "name": "goo.gl/maps short link",
+      "input": "https://goo.gl/maps/DemoAbc123",
+      "parse": { "kind": "short_link", "url": "https://goo.gl/maps/DemoAbc123" },
+      "hops": [{ "status": 301, "location": "https://www.google.com/maps?q=10.7769,106.7009" }],
+      "resolve": {
+        "ok": true,
+        "value": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "query", "outsideVietnam": false }
+      }
+    },
+    {
+      "name": "relative Location on the short host is resolved, then vetted",
+      "input": "https://maps.app.goo.gl/DemoRelative",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoRelative" },
+      "hops": [
+        { "status": 302, "location": "/DemoRelative2" },
+        { "status": 302, "location": "https://www.google.com/maps/place/Demo/@10.7769,106.7009,17z" }
+      ],
+      "resolve": {
+        "ok": true,
+        "value": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "viewport", "outsideVietnam": false }
+      }
+    },
+    {
+      "name": "five hops on short hosts end on Google Maps",
+      "input": "https://maps.app.goo.gl/DemoHop1",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoHop1" },
+      "hops": [
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoHop2" },
+        { "status": 302, "location": "https://goo.gl/maps/DemoHop3" },
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoHop4" },
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoHop5" },
+        { "status": 302, "location": "https://www.google.com/maps?q=10.7769,106.7009" }
+      ],
+      "resolve": {
+        "ok": true,
+        "value": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "query", "outsideVietnam": false }
+      }
+    },
+    {
+      "name": "lookalike host with the short host as a prefix",
+      "input": "https://maps.app.goo.gl.evil.test/abc",
+      "parse": { "kind": "invalid", "reason": "not_maps" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "lookalike host with goo.gl as a suffix",
+      "input": "https://evilgoo.gl/maps/abc",
+      "parse": { "kind": "invalid", "reason": "not_maps" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "goo.gl outside /maps",
+      "input": "https://goo.gl/abc",
+      "parse": { "kind": "invalid", "reason": "not_maps" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "userinfo hides the real host",
+      "input": "https://maps.app.goo.gl@127.0.0.1/",
+      "parse": { "kind": "invalid", "reason": "not_maps" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "userinfo on the short host",
+      "input": "https://demo:secret@maps.app.goo.gl/abc",
+      "parse": { "kind": "short_link", "url": "https://demo:secret@maps.app.goo.gl/abc" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "explicit port",
+      "input": "https://maps.app.goo.gl:8443/abc",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl:8443/abc" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "plain http",
+      "input": "http://maps.app.goo.gl/abc",
+      "parse": { "kind": "short_link", "url": "http://maps.app.goo.gl/abc" },
+      "resolve": { "ok": false, "reason": "not_https" }
+    },
+    {
+      "name": "IPv4 metadata literal",
+      "input": "https://169.254.169.254/latest/meta-data/",
+      "parse": { "kind": "invalid", "reason": "not_maps" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "IPv6 loopback literal",
+      "input": "https://[::1]/maps",
+      "parse": { "kind": "invalid", "reason": "not_maps" },
+      "resolve": { "ok": false, "reason": "host_not_allowed" }
+    },
+    {
+      "name": "DNS answers 10.0.0.1",
+      "input": "https://maps.app.goo.gl/DemoDns",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDns" },
+      "dns": ["10.0.0.1"],
+      "resolve": { "ok": false, "reason": "private_address" }
+    },
+    {
+      "name": "DNS answers 127.0.0.1",
+      "input": "https://maps.app.goo.gl/DemoDns",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDns" },
+      "dns": ["127.0.0.1"],
+      "resolve": { "ok": false, "reason": "private_address" }
+    },
+    {
+      "name": "DNS answers the metadata address 169.254.169.254",
+      "input": "https://maps.app.goo.gl/DemoDns",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDns" },
+      "dns": ["169.254.169.254"],
+      "resolve": { "ok": false, "reason": "private_address" }
+    },
+    {
+      "name": "DNS answers unique local fc00::1",
+      "input": "https://maps.app.goo.gl/DemoDns",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDns" },
+      "dns": ["fc00::1"],
+      "resolve": { "ok": false, "reason": "private_address" }
+    },
+    {
+      "name": "DNS answers link-local fe80::1",
+      "input": "https://maps.app.goo.gl/DemoDns",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDns" },
+      "dns": ["fe80::1"],
+      "resolve": { "ok": false, "reason": "private_address" }
+    },
+    {
+      "name": "DNS answers IPv4-mapped loopback ::ffff:127.0.0.1",
+      "input": "https://maps.app.goo.gl/DemoDns",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDns" },
+      "dns": ["::ffff:127.0.0.1"],
+      "resolve": { "ok": false, "reason": "private_address" }
+    },
+    {
+      "name": "mixed DNS answer with one private address",
+      "input": "https://maps.app.goo.gl/DemoDns",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDns" },
+      "dns": ["142.250.66.78", "10.0.0.1"],
+      "resolve": { "ok": false, "reason": "private_address" }
+    },
+    {
+      "name": "redirect to a non-Google host",
+      "input": "https://maps.app.goo.gl/DemoEvil",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoEvil" },
+      "hops": [{ "status": 302, "location": "https://evil.test/maps/place/@10.7769,106.7009" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "protocol-relative redirect to a non-Google host",
+      "input": "https://maps.app.goo.gl/DemoEvil",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoEvil" },
+      "hops": [{ "status": 302, "location": "//169.254.169.254/maps" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "redirect down to plain http on the short host",
+      "input": "https://maps.app.goo.gl/DemoDowngrade",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoDowngrade" },
+      "hops": [{ "status": 302, "location": "http://maps.app.goo.gl/DemoDowngrade2" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "redirect to the short host on another port",
+      "input": "https://maps.app.goo.gl/DemoPort",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoPort" },
+      "hops": [{ "status": 302, "location": "https://maps.app.goo.gl:8443/DemoPort2" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "plain http Google Maps link",
+      "input": "http://www.google.com/maps?q=10.7769,106.7009",
+      "parse": { "kind": "point", "point": { "lat": 10.7769, "lng": 106.7009 }, "source": "query", "outsideVietnam": false }
+    },
+    {
+      "name": "redirect to the Google open redirect /url?q=",
+      "input": "https://maps.app.goo.gl/DemoOpen",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoOpen" },
+      "hops": [{ "status": 302, "location": "https://www.google.com/url?q=http://127.0.0.1/" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "redirect to maps.google.com is not a terminal host",
+      "input": "https://maps.app.goo.gl/DemoLegacy",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoLegacy" },
+      "hops": [{ "status": 302, "location": "https://maps.google.com/?q=10.7769,106.7009" }],
+      "resolve": { "ok": false, "reason": "redirect_not_allowed" }
+    },
+    {
+      "name": "sixth redirect on short hosts",
+      "input": "https://maps.app.goo.gl/DemoLoop1",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoLoop1" },
+      "hops": [
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoLoop2" },
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoLoop3" },
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoLoop4" },
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoLoop5" },
+        { "status": 302, "location": "https://maps.app.goo.gl/DemoLoop6" }
+      ],
+      "resolve": { "ok": false, "reason": "too_many_redirects" }
+    },
+    {
+      "name": "200 with no Location",
+      "input": "https://maps.app.goo.gl/DemoPage",
+      "parse": { "kind": "short_link", "url": "https://maps.app.goo.gl/DemoPage" },
+      "hops": [{ "status": 200 }],
+      "resolve": { "ok": false, "reason": "no_redirect" }
+    },
+    {
+      "name": "unknown short link answers 404",
+      "input": "https://goo.gl/maps/DemoGone",
+      "parse": { "kind": "short_link", "url": "https://goo.gl/maps/DemoGone" },
+      "hops": [{ "status": 404 }],
+      "resolve": { "ok": false, "reason": "no_redirect" }
+    }
+  ]
+}

@@ -268,6 +268,18 @@ Google Maps links (PRP-5). Prefer the place coordinates over the viewport center
 
 Warn when the point falls outside Vietnam's rough bounds (lat 8 to 24, lng 102 to 110).
 
+The parser also accepts `google.com`, `maps.google.com` and the `google.com.vn` forms, and finds the link inside a pasted share message such as `Ben Thanh Market\nhttps://maps.app.goo.gl/<id>`.
+
+Short link hop chains, captured 2026-10-16 (spike S6, P1-01) from the Google Maps web Share dialog, followed without cookies. Both links are public landmarks.
+
+| Link | Hop 1 | Result |
+| --- | --- | --- |
+| Named place (Chợ Bến Thành), `https://maps.app.goo.gl/5EGXC5WSBATiA4av8` | `302` to `https://www.google.com/maps/place/Ben+Thanh+Market/@10.7725168,106.6980208,17z/data=...!3d10.7725168!4d106.6980208...?entry=tts&g_ep=...&skid=...` | Parses as `place` |
+| Dropped pin (Hồ Hoàn Kiếm, 21.0285, 105.8522), `https://maps.app.goo.gl/9dudihPmscBQ6Rp87` | `302` to `https://www.google.com/maps/place/21°01'42.6"N+105°51'07.9"E/@21.0285,105.8522,17z/data=...!3d21.0285!4d105.8522?entry=tts&...` | Parses as `place` |
+| `goo.gl/maps/<id>` | Google Maps no longer issues these links, so no fresh one exists. An unknown id answers `404` with no `Location` | `no_redirect` |
+
+Each short link redirects once, straight to `www.google.com/maps/place/`, with an empty body and no cookie. The mobile app's `?g_st=ic` suffix is carried onto the target and changes nothing else. The resolver follows a `Location` only on `maps.app.goo.gl` or `goo.gl/maps`, at most 5 fetches in all, and stops without fetching at the first `Location` on `google.com` or `www.google.com` under `/maps`.
+
 ## 10. VietQR payload
 
 `[verify]` against the NAPAS VietQR specification during spike S4, then lock with test vectors. VietQR follows the EMVCo merchant-presented QR format.
