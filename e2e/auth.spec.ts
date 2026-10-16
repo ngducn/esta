@@ -1,8 +1,11 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 import { authApi } from './helpers/auth-api';
 import { latestMail, requestCode, signIn } from './helpers/inbucket';
+
+const SLOWER_THAN_AN_ASSERTION_WAITS_MS = 6_000;
 
 async function seriousAxeViolations(page: Page): Promise<string[]> {
   await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
@@ -18,7 +21,11 @@ async function createHousehold(page: Page, name: string, displayName: string) {
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByLabel('Tên gia đình').fill(name);
   await page.getByLabel('Tên của bạn').fill(displayName);
+  const answer = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/onboarding',
+  );
   await page.getByRole('button', { name: 'Tạo gia đình' }).click();
+  await (await answer).finished();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mời người trong gia đình');
 }
 
@@ -61,6 +68,21 @@ test('FND-1: a new email reads its code from Inbucket, signs in and creates a ho
   await expect(page.getByText('Bạn đang đăng nhập với tên Demo Mới.')).toBeVisible();
   await expect(page.getByText('Quyền: Quản trị')).toBeVisible();
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('a slow create-household answer keeps the button busy, then opens the invite step', async ({ page }) => {
+  test.skip(test.info().project.name !== 'mobile', 'a slow network is a phone concern, so one viewport covers it');
+  await signIn(page, uniqueEmail('slow'));
+  await page.route('**/onboarding', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const response = await route.fetch();
+    await setTimeout(SLOWER_THAN_AN_ASSERTION_WAITS_MS);
+    return route.fulfill({ response });
+  });
+
+  const created = createHousehold(page, 'Gia đình Chậm Demo', 'Demo Chậm');
+  await expect(page.getByRole('button', { name: 'Đang tạo…' }), 'a second tap cannot create a second household').toBeDisabled();
+  await created;
 });
 
 test('FND-1: an invited email lands in the inviting household with the invited role', async ({ page, browser }) => {
@@ -141,11 +163,12 @@ test('an empty code gets app copy, not the browser bubble', async ({ page }) => 
   await expect(page.getByLabel('Mã 6 chữ số')).toHaveAttribute('aria-invalid', 'true');
 });
 
-test('a send that is refused is not blamed on the email', async ({ page }) => {
+test('a send that is refused is not blamed on the email', async ({ page, request }) => {
   const email = uniqueEmail('refused');
-  await requestCode(page, email);
-  await page.getByRole('button', { name: 'Đổi email' }).click();
+  await page.goto('/sign-in');
   await page.getByLabel('Email').fill(email);
+  const first = await request.post(`${authApi.url}/otp`, { headers: authApi.headers, data: { email, create_user: true } });
+  expect(first.ok(), 'the first send lands just before the form sends, inside the 1 s max_frequency window').toBe(true);
   await page.getByRole('button', { name: 'Gửi mã' }).click();
   await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     'Esta đã gửi nhiều mã trong giờ qua. Dùng mã mới nhất trong email, hoặc đợi ít phút rồi thử lại.',
@@ -169,6 +192,7 @@ test('sign-out ends the session', async ({ page }) => {
   await signIn(page, uniqueEmail('signout'));
   await createHousehold(page, 'Gia đình Đăng Xuất Demo', 'Demo');
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tài khoản' }).click();
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await page.goto('/');
@@ -215,12 +239,14 @@ test('a language chosen on sign-in carries into the member and the English chrom
   await page.getByLabel('Your name').fill('Demo');
   await page.getByRole('button', { name: 'Create household' }).click();
   await page.getByRole('link', { name: 'Done' }).click();
+  await page.getByRole('button', { name: 'Account' }).click();
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Tiếng Việt' }).click();
   await expect(page.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
   await page.context().clearCookies({ name: 'NEXT_LOCALE' });
   await page.reload();
+  await page.getByRole('button', { name: 'Tài khoản' }).click();
   await expect(page.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
 });

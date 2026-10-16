@@ -48,6 +48,21 @@ export const fontWeight = { normal: 400, medium: 500, semibold: 600 } as const;
 
 export const spacing = { unitPx: 4, touchPx: 44 } as const;
 
+/** Compact retunes the one spacing unit every `p-*`, `gap-*` and `m-*` multiplies, and leaves type alone. */
+export const densities = { comfortable: { unitPx: 4 }, compact: { unitPx: 3 } } as const;
+
+export type Density = keyof typeof densities;
+
+export const densityNames = Object.keys(densities) as Density[];
+
+export const isDensity = (value: unknown): value is Density => densityNames.some((name) => name === value);
+
+export const textScales = [100, 115, 130] as const;
+
+export type TextScale = (typeof textScales)[number];
+
+export const shell = { sidebarPx: 240, contentPx: 1200 } as const;
+
 export const motion = {
   duration: { fast: 150, base: 180, slow: 220 },
   ease: 'cubic-bezier(0.2, 0, 0, 1)',

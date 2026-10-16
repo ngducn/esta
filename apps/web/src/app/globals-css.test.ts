@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compile } from 'tailwindcss';
 import { describe, expect, it } from 'vitest';
-import { typefaces } from '@/design/tokens';
+import { densities, typeScale, typefaces } from '@/design/tokens';
 
 const globalsPath = fileURLToPath(new URL('./globals.css', import.meta.url));
 const require = createRequire(import.meta.url);
@@ -38,6 +38,16 @@ describe('globals.css', () => {
     const css = await build(['dark:bg-ink']);
     expect(css).toMatch(/@media \(prefers-color-scheme: dark\) \{\s*\.dark\\:bg-ink:where\(:root:not\(\[data-theme="light"\]\)/);
     expect(css).not.toMatch(/@media \(prefers-color-scheme: dark\) \{\s*\.dark\\:bg-ink \{/);
+  });
+
+  it('lets compact density retune every spacing utility through one variable and leaves type alone', async () => {
+    const css = await build(['p-4', 'gap-2', 'text-small', 'text-body']);
+    expect(rulesFor(css, 'p-4').join('')).toContain('padding: calc(var(--spacing) * 4)');
+    expect(rulesFor(css, 'gap-2').join('')).toContain('gap: calc(var(--spacing) * 2)');
+    expect(css).toMatch(/:root\[data-density="compact"\] \{\s*--spacing: 0\.1875rem;/);
+    expect(densities.compact.unitPx).toBeLessThan(densities.comfortable.unitPx);
+    expect([...rulesFor(css, 'text-small'), ...rulesFor(css, 'text-body')].join('')).not.toContain('--spacing');
+    expect(typeScale.small.px, 'the compact density floor').toBeGreaterThanOrEqual(15);
   });
 
   it('offers only the font weights the typefaces ship', async () => {

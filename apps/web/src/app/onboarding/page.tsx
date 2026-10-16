@@ -22,9 +22,9 @@ async function claimLateInvites(): Promise<boolean> {
 }
 
 export default async function OnboardingPage() {
-  const [t, home, messages, member, user] = await Promise.all([
+  const [t, shell, messages, member, user] = await Promise.all([
     getTranslations('onboarding'),
-    getTranslations('home'),
+    getTranslations('shell'),
     getMessages(),
     getCurrentMember(),
     getSessionUser(),
@@ -50,7 +50,7 @@ export default async function OnboardingPage() {
               <p>{t('invitedElsewhere')}</p>
               <form action={signOut}>
                 <button type="submit" className="min-h-touch underline underline-offset-4">
-                  {home('signOut')}
+                  {shell('signOut')}
                 </button>
               </form>
             </div>

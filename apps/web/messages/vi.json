@@ -70,7 +70,7 @@
     "role": "Quyền: {role}",
     "signedInAs": "Bạn đang đăng nhập với tên {name}.",
     "signedIn": "Bạn đã đăng nhập.",
-    "signOut": "Đăng xuất"
+    "later": "Việc cần làm hôm nay và số tiền đã thu tháng này sẽ hiện ở đây trong bản cập nhật tới."
   },
   "components": {
     "loading": "Đang tải",
@@ -215,5 +215,63 @@
       "longEmptyBody": "Chụp sổ hồng, hợp đồng thuê hoặc biên lai thuế bằng điện thoại. Esta đọc giấy tờ và đề xuất thông tin để bạn kiểm tra lại.",
       "longEmptyAction": "Chụp giấy tờ đầu tiên"
     }
+  },
+  "nav": {
+    "home": "Tổng quan",
+    "properties": "Tài sản",
+    "collections": "Thu tiền",
+    "documents": "Tài liệu",
+    "assistant": "Trợ lý",
+    "reports": "Báo cáo",
+    "settings": "Cài đặt"
+  },
+  "shell": {
+    "sections": "Các mục chính",
+    "account": "Tài khoản",
+    "accountOf": "Tài khoản: {name}",
+    "signOut": "Đăng xuất"
+  },
+  "sections": {
+    "properties": "Danh sách nhà và đất của gia đình sẽ hiện ở đây trong bản cập nhật tới.",
+    "collections": "Tiền thuê từng tháng và phòng nào còn nợ sẽ hiện ở đây trong bản cập nhật tới.",
+    "documents": "Sổ, hợp đồng và giấy tờ sẽ được cất giữ ở đây trong bản cập nhật tới.",
+    "assistant": "Ghi chú hằng ngày của Trợ lý sẽ hiện ở đây trong bản cập nhật tới.",
+    "reports": "Báo cáo thuế và thu chi từng tài sản sẽ có ở đây trong bản cập nhật tới.",
+    "settings": "Gia đình, thành viên và tài khoản nhận tiền sẽ có ở đây trong bản cập nhật tới."
+  },
+  "settings": {
+    "display": "Hiển thị",
+    "displayIntro": "Ngôn ngữ, cỡ chữ và mật độ đi theo tài khoản của bạn trên mọi thiết bị.",
+    "language": "Ngôn ngữ",
+    "languages": {
+      "vi": "Tiếng Việt",
+      "en": "English"
+    },
+    "textScale": "Cỡ chữ",
+    "textScaleOption": "{scale}%",
+    "textScaleHints": {
+      "s100": "Vừa",
+      "s115": "Lớn",
+      "s130": "Rất lớn"
+    },
+    "density": "Mật độ",
+    "densities": {
+      "comfortable": "Thoáng",
+      "compact": "Gọn"
+    },
+    "densityHints": {
+      "comfortable": "Khoảng cách rộng, dễ chạm.",
+      "compact": "Nhiều dòng hơn trên một màn hình. Chữ không nhỏ đi."
+    },
+    "theme": "Giao diện",
+    "themeHint": "Chỉ áp dụng cho thiết bị này.",
+    "themes": {
+      "light": "Sáng",
+      "dark": "Tối",
+      "system": "Theo thiết bị"
+    },
+    "save": "Lưu",
+    "saved": "Đã lưu cài đặt hiển thị.",
+    "saveFailed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
   }
 }

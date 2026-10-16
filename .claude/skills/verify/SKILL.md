@@ -76,7 +76,7 @@ $S/b.sh click 'role=button[name="Tạo gia đình"]'
 - `sign-in.sh <email>` drops any earlier session (`sign-out.sh`), clears that address's mail, fills `/sign-in`, reads the newest code with `node scripts/inbucket-code.ts <email>`, submits it and waits until the browser leaves `/sign-in`. It prints the landing path, `/` for a member and `/onboarding` for an address with no household. It takes about 2 s. Sign-in is code-only: email confirmations are on and seeded users have no password, so there is no password path to drive.
 - `set-locale.sh <vi|en>` sets the `NEXT_LOCALE` cookie and reloads. A signed-in member's saved locale wins over the cookie, so when `<html lang>` does not change it presses the in-app language switch (`button[lang="en"]`), which saves the member's choice. It fails unless `<html lang>` ends at the requested locale.
 - `set-theme.sh <light|dark|system>` sets the `esta_theme` cookie and reloads. The server renders `data-theme` on `<html>` from that cookie, so the theme holds from the first byte and across every later navigation and reload. It fails unless the reloaded page carries the requested `data-theme`. `system` follows the browser's `prefers-color-scheme`.
-- `sign-out.sh` leaves the browser signed out on `/sign-in`. When `/sign-in` redirects to `/`, it presses the app's `Đăng xuất` or `Sign out` button.
+- `sign-out.sh` leaves the browser signed out on `/sign-in`. When `/sign-in` redirects to `/`, it opens the account menu (`Tài khoản` or `Account`) and presses `Đăng xuất` or `Sign out` in it.
 - The `sb-` session cookies are httpOnly, so `document.cookie` never shows them. Read cookies with `$S/b.sh cookies`, which prints names and flags and redacts values.
 
 Selectors accept CSS and Playwright engines. Prefer form names, `role=` with an accessible name, and `@e` refs from a fresh `snapshot`:
@@ -84,7 +84,7 @@ Selectors accept CSS and Playwright engines. Prefer form names, `role=` with an 
 - `input[name="email"]`, `input[name="code"]`, `button[value="send"]`, `button[value="verify"]` on `/sign-in`.
 - `input[name="householdName"]`, `input[name="displayName"]`, `input[name="role"][value="viewer"]` on `/onboarding`.
 - `role=button[name="Mời"s]` matches the exact name. Without `s` the name matches as a substring.
-- `[data-testid="date-line"]` is the business date line at the top of every page.
+- `[data-testid="date-line"]` is the business date line in the header of every signed-in page.
 - `$S/b.sh wait '<selector>'` waits up to 15 s. Wait for an element, never a fixed sleep.
 
 Seed people. `pnpm db:reset` seeds `Gia đình Demo` and ten lane households `Gia đình Demo 1` to `Gia đình Demo 10`. Lane `n` signs in as `me.lane<n>@demo.esta.test` (Nguyễn Thị Demo) or `ryan.lane<n>@demo.esta.test` (Trần Minh Demo, the operator); both are admins. Any other address under `@demo.esta.test`, such as `new.lane<n>@` or `invitee.lane<n>@`, is a new user. Every slot seeds all ten lanes, so the lane number picks the household and the slot picks the stack.

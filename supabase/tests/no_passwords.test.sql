@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(3);
+select plan(5);
 
 select tests.create_user('password.holder@test.esta.test') as holder \gset
 
@@ -20,6 +20,12 @@ values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticate
 select is(
   (select encrypted_password from auth.users where email = 'signup.with.password@test.esta.test'), '',
   'a signup with a password stores none');
+
+select ok(not has_function_privilege('authenticated', 'private.blank_passwords()', 'execute'),
+  'a signed-in user cannot run the password backfill');
+select is(
+  (select count(*)::int from auth.users where encrypted_password is distinct from ''), 0,
+  'no user holds a password after the migrations and the seed');
 
 select * from finish();
 rollback;

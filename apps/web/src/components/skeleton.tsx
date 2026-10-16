@@ -17,6 +17,16 @@ function Loading({ children, className }: { children: ReactNode; className?: str
   );
 }
 
+export function SkeletonPage() {
+  return (
+    <Loading className="flex flex-col gap-3">
+      <Block className="h-10 w-48 max-w-full" />
+      <Block className="h-6 w-full max-w-prose" />
+      <Block className="h-6 w-3/5 max-w-sm" />
+    </Loading>
+  );
+}
+
 export function SkeletonMoney({ large = false }: { large?: boolean }) {
   return (
     <Loading>

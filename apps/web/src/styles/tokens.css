@@ -112,8 +112,9 @@
   --leading-snug: 1.35;
   --leading-normal: 1.45;
   --leading-relaxed: 1.5;
-  --spacing: 0.25rem;
   --spacing-touch: 2.75rem;
+  --spacing-sidebar: 15rem;
+  --container-content: 75rem;
   --ease-*: initial;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --font-weight-*: initial;
@@ -124,4 +125,20 @@
   --font-mono: initial;
   --font-sans: var(--font-source-sans-3);
   --font-figure: var(--font-source-serif-4);
+}
+
+/* Not inline, so utilities read var(--spacing) and data-density can retune every one of them. */
+@theme {
+  --spacing: 0.25rem;
+}
+
+:root[data-density="compact"] {
+  --spacing: 0.1875rem;
+}
+
+:root[data-text-scale="115"] {
+  --text-scale: 1.15;
+}
+:root[data-text-scale="130"] {
+  --text-scale: 1.3;
 }
