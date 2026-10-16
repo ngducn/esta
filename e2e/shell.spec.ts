@@ -63,6 +63,17 @@ async function saveDisplaySettings(page: Page, choices: { textScale?: string; de
 const rootFontSize = (page: Page) => page.locator('html').evaluate((html) => getComputedStyle(html).fontSize);
 const pageOverflows = (page: Page) =>
   page.locator('html').evaluate((html) => html.scrollWidth > html.clientWidth);
+const tabLabelLineCounts = (page: Page) =>
+  tabBar(page)
+    .locator('a > span:last-child')
+    .evaluateAll((labels) =>
+      labels.map((label) => {
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const lines = new Set([...range.getClientRects()].map((box) => Math.round(box.top)));
+        return { text: label.textContent, lines: lines.size, fontSize: Number.parseFloat(getComputedStyle(label).fontSize) };
+      }),
+    );
 const overflowingLabels = (page: Page) =>
   tabBar(page)
     .locator('a > span')
@@ -261,4 +272,35 @@ test('lane 10: English, 130% and dark on Collections keep every tab label inside
   expect(await pageOverflows(page)).toBe(false);
   await expect(page.getByTestId('date-line')).toHaveText(/^(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day, \d{2}\/\d{2}\/\d{4}$/);
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('lane 12: the account menu closes once a language switch has landed', async ({ page }) => {
+  await newHousehold(page);
+  await openAccountMenu(page);
+  const menu = page.locator('#account-menu');
+  await menu.getByRole('button', { name: 'English' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(menu, 'the menu does not stay open over the page it just translated').toBeHidden();
+  await openAccountMenu(page);
+  await menu.getByRole('button', { name: 'Tiếng Việt' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
+  await expect(menu).toBeHidden();
+});
+
+test('lane 13: at 390 px and 100% every tab label sits on one line, on the current tab too', async ({ page }) => {
+  onlyOn('mobile');
+  await signIn(page, 'me.lane1@demo.esta.test');
+  expect(await rootFontSize(page)).toBe('16px');
+  for (const section of sections) {
+    await tabBar(page).getByRole('link', { name: section.vi }).click();
+    await expect(tabBar(page).locator('[aria-current="page"]')).toHaveText(section.vi);
+    const labels = await tabLabelLineCounts(page);
+    expect(labels.map((label) => label.text)).toEqual(sections.map((entry) => entry.vi));
+    expect(
+      labels.filter((label) => label.lines !== 1),
+      `${section.vi} is current and a label wraps`,
+    ).toEqual([]);
+    for (const { text, fontSize } of labels) expect(fontSize, `${text} stays readable`).toBeGreaterThanOrEqual(13);
+    for (const link of await tabBar(page).getByRole('link').all()) expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  }
 });

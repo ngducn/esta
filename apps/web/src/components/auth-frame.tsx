@@ -4,8 +4,9 @@ import { Photo } from '@/components/photo';
 import hero from '@/photos/sign-in-hero.webp';
 
 /**
- * Sign-in and onboarding: the form in a card on the left, the photo on the right on desktop. Phones get no
- * photo, and the hidden image stays lazy so a phone never fetches it and the form stays the LCP element.
+ * Sign-in and onboarding: the form in a card on the left, the photo on the right on desktop. The photo is the
+ * largest paint on a desktop, so from `lg` (64rem) up it loads at once and at high priority. A phone never
+ * requests it, so the form stays the LCP element there.
  */
 export function AuthFrame({ brand, photoAlt, aside, children }: { brand: string; photoAlt: string; aside: ReactNode; children: ReactNode }) {
   return (
@@ -19,7 +20,7 @@ export function AuthFrame({ brand, photoAlt, aside, children }: { brand: string;
       </main>
       <div className="relative hidden p-4 lg:block">
         <div className="relative h-full overflow-hidden rounded-lg bg-surface-2">
-          <Photo src={hero} alt={photoAlt} sizes="50vw" className="object-cover" />
+          <Photo src={hero} alt={photoAlt} sizes="50vw" eagerFrom="64rem" className="object-cover" />
         </div>
       </div>
     </div>
