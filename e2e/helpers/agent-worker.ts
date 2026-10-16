@@ -8,10 +8,15 @@ const STARTED = /^\[agent\] worker \S+ started/m;
 export type AgentWorker = { stop(): Promise<void>; log(): string };
 
 /** A replay worker on this slot, run in-process by `scripts/agent-dev.ts` so stopping its pid stops the worker. */
-export async function startAgentWorker({ replayDir }: { replayDir?: string } = {}): Promise<AgentWorker> {
+export async function startAgentWorker({ replayDir, home }: { replayDir?: string; home?: string } = {}): Promise<AgentWorker> {
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', 'scripts/agent-dev.ts'], {
     cwd: repoRoot,
-    env: { ...process.env, ESTA_AGENT_MODE: 'replay', ...(replayDir === undefined ? {} : { ESTA_REPLAY_DIR: replayDir }) },
+    env: {
+      ...process.env,
+      ESTA_AGENT_MODE: 'replay',
+      ...(replayDir === undefined ? {} : { ESTA_REPLAY_DIR: replayDir }),
+      ...(home === undefined ? {} : { ESTA_AGENT_HOME: home }),
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let output = '';

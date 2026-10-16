@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(36);
+select plan(37);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as operator_a \gset
@@ -22,7 +22,8 @@ values ('00000000-0000-0000-0000-0000000000a1', :'a', 'ping', '2026-10-07T02:00:
 insert into public.agent_runs (household_id, job_id, auth_mode, agent_mode, started_at)
 values (:'a', '00000000-0000-0000-0000-0000000000a1', 'none', 'replay', '2026-10-07T02:00:00Z');
 insert into public.worker_heartbeats (worker_id, host_label, version, auth_mode, agent_mode, last_seen_at)
-values ('mac-mini', 'Mac mini', '0.0.0', 'subscription', 'live', '2026-10-07T02:00:00Z');
+values ('00000000-0000-0000-0000-0000000000f1', 'Mac mini', '0.0.0', 'subscription', 'live', '2026-10-07T02:00:00Z');
+select col_type_is('public', 'worker_heartbeats', 'worker_id', 'uuid', 'the worker id is an opaque uuid, never the hostname');
 select results_eq(
   $$ select actor_kind, actor_id from public.audit_log
      where table_name = 'agent_jobs' and row_id = '00000000-0000-0000-0000-0000000000b1' $$,
@@ -95,15 +96,15 @@ select throws_ok(
             values (%L, 'ping', '2026-10-07T02:00:00Z', tests.user_id('viewer.a@test.esta.test')) $$, :'a'),
   '42501', null, 'a viewer cannot queue a ping');
 select results_eq(
-  $$ select worker_id, last_seen_at from public.worker_heartbeats $$,
-  $$ values ('mac-mini', '2026-10-07T02:00:00Z'::timestamptz) $$,
+  $$ select worker_id::text, last_seen_at from public.worker_heartbeats $$,
+  $$ values ('00000000-0000-0000-0000-0000000000f1', '2026-10-07T02:00:00Z'::timestamptz) $$,
   'a member reads the worker id and the last heartbeat');
 select throws_ok(
   $$ select auth_mode from public.worker_heartbeats $$,
   '42501', null, 'a member cannot read the auth mode');
 select throws_ok(
   $$ insert into public.worker_heartbeats (worker_id, host_label, version, auth_mode, agent_mode, last_seen_at)
-     values ('fake', 'Fake', '0', 'none', 'replay', '2026-10-07T02:00:00Z') $$,
+     values ('00000000-0000-0000-0000-0000000000f2', 'Fake', '0', 'none', 'replay', '2026-10-07T02:00:00Z') $$,
   '42501', null, 'a member cannot write a heartbeat');
 
 reset role;

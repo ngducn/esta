@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -9,12 +9,14 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
 
-// The worker, its heartbeat row and the test clock are one per slot, so the rules run in order in the `clock` project.
+// The worker, the heartbeat table and the test clock are one per slot, so the rules run in order in the `clock` project.
 test.describe.configure({ mode: 'serial' });
 
-const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false });
+const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const rest = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1`;
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+const asService = { apikey: serviceKey, authorization: `Bearer ${serviceKey}` };
 const cron = { authorization: `Bearer ${env.CRON_SECRET}` };
 
 const pingDir = join(import.meta.dirname, '..', 'fixtures', 'agent-replay', 'ping');
@@ -34,8 +36,20 @@ async function restartWorker(replayDir?: string) {
   worker = await startAgentWorker(replayDir === undefined ? {} : { replayDir });
 }
 
+/** Each worker process writes its own row, so a row a stopped worker wrote under a later test clock would read as the newest. */
+async function clearHeartbeats(request: APIRequestContext) {
+  expect((await request.delete(`${rest}/worker_heartbeats?worker_id=not.is.null`, { headers: asService })).ok()).toBe(true);
+}
+
+async function heartbeatIds(request: APIRequestContext): Promise<string[]> {
+  const response = await request.get(`${rest}/worker_heartbeats?select=worker_id`, { headers: asService });
+  return ((await response.json()) as { worker_id: string }[]).map((row) => row.worker_id);
+}
+
 test.beforeEach(async ({ request }) => {
   await setClock(request, '2026-10-07T09:00:00+07:00');
+  await worker?.stop();
+  await clearHeartbeats(request);
   await restartWorker();
 });
 
@@ -183,4 +197,19 @@ test('rule 6: in English at 130% and dark the check still fits a phone', async (
   await expect(page.getByTestId('ping-reply')).toContainText('Gia đình Demo 10');
   const fits = await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
   expect(fits, 'no horizontal page scroll at 390 px').toBe(true);
+});
+
+test('two workers on one host keep their own id, heartbeat and config dir', async ({ request }) => {
+  const home = mkdtempSync(join(tmpdir(), 'esta-e2e-home-'));
+  const pair = [await startAgentWorker({ home }), await startAgentWorker({ home })];
+  try {
+    const ids = pair.map((started) => /^\[agent\] worker (\S+) started/m.exec(started.log())?.[1] ?? '');
+    expect(new Set(ids).size, `two distinct worker ids, got ${ids.join(', ')}`).toBe(2);
+    for (const id of ids) expect(id).not.toContain(hostname().split('.')[0]);
+    expect(readdirSync(home).filter((name) => name.startsWith('config-')).sort()).toEqual(ids.map((id) => `config-${id}`).sort());
+    await expect.poll(() => heartbeatIds(request)).toEqual(expect.arrayContaining(ids));
+  } finally {
+    await Promise.all(pair.map((started) => started.stop()));
+    rmSync(home, { recursive: true, force: true });
+  }
 });
