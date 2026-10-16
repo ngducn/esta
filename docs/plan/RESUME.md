@@ -4,16 +4,23 @@ Paused 2026-10-16 about 00:35 +07 at about 45% of one 5-hour block, the pause li
 
 ## Where the run is
 
-- 2026-10-16 run done: P0-14 merged (`064303c`) and the design refresh merged (`15a37e9`, PR #39). `main` holds P0-01 to P0-14 plus the redesign. P0-13 is removed by the re-slice.
-- The new look: DESIGN-BRIEF §5 and §8 and DESIGN.md describe it; the approved canvas is https://claude.ai/artifact/5WMgbh8EwS9T3eiY1SkM3c and its sources are in `docs/design/redesign-2026-10/`; shipped screenshots are in `docs/design/redesign-2026-10/shipped/`; photo sources are in the ATTRIBUTION.md beside the photos. UX reasoning is `docs/plan/trail/ux-daily-use.md`.
-- The app runs on slot 2 from the `main` checkout for the operator to try (http://localhost:3200, codes at http://localhost:54524). Stop it with `ESTA_SLOT=2 .claude/skills/verify/scripts/cleanup.sh`.
+- Paused 2026-10-17 about 01:10 +07 at 73.7% of the block that started 2026-10-16T16:00Z, over the operator's 70% cap (standing orders, 2026-10-16 10:30). The overshoot came from a long Opus owner and verifier lanes between two usage checks; check usage at every drain, not only at spawn time.
+- Phase 0 is complete: P0-01 to P0-16 merged (P0-13 removed). `main` is at `d8bfb41` plus this pause commit.
+- Phase 1: P1-01 merged (`47d79f3`, Maps link parsing behind SSRF guards). P1-04 (properties list with cover photos, Seq 02) was in build on slot 5 and got a stop order: its branch `esta/p1-04-properties-list` holds the pushed work and a final `wip(p1-04)` commit; read its owner's final report in the trail and `/tmp/owner-p1-04/`.
+- Merged this run: #43, #44, #42 (P0-15), #47, #50 (P1-01), #48 (P0-16). The system design and release estimate wait for the operator's decisions: https://claude.ai/artifact/9Bufn7L33HmJueDyXVvqGB.
 
 ## Next, in order
 
-1. #40 first: make `tools/ci-local.sh` run in a fresh worktree at the PR head. PR #39's local CI passed `check` in a dirty worktree while a fresh checkout failed.
-2. P0-15 (agent worker skeleton, held for interrogate; its section was rewritten by the re-slice) and P0-16 (Phase 0 exit; issues #25, #30, #35, #37, #38).
-3. Issue #36 before any Phase 1 owner starts; the operator decides S6 order and whether the landing grant extends to Phase 1. P1-04 (properties list) is the first slice that makes Tài sản real and should carry cover photos.
-4. Design polish in #41.
+1. Resume P1-04 with a fresh Opus owner from its branch (consolidated scope: the owner brief in this conversation's decisions row, the stopped owner's report, `docs/plan/trail/standing-orders.md`). Then its verifier (Sonnet) and Opus data audit (storage policies, signed URLs, seed service role).
+2. Then Phase 1 in Seq order: P1-09, P1-06, P1-05, P1-07, P1-10, P1-08, P1-03 (Phase 1 exit). P2-01 depends on P1-09.
+3. Issues to fold in where they fit: #49 (photo ignore scope, tab inset), #51 (eslint tests time out under load; add a machine-wide lock to ci-local), #54 (trim paths in the agent tool policy before P2-03).
+
+## Gotchas learned this run
+
+- Run at most two Supabase stacks besides `esta-1` on the 8 GB Docker; a fourth stack goes unhealthy. Stop the operator's slot 2 app while agents build, and relaunch it at pause.
+- Local CI e2e fails on 30 s timeouts when the load average is above about 8; run it when `sysctl -n vm.loadavg` shows under 5 (#51). The background wait-then-run pattern in this conversation's last CI rerun works.
+- Never use slot 4 (port 4317 collides with `ekh-phoenix`).
+- The permission classifier denies closing GitHub issues; creating issues and commenting works.
 
 ## Budget
 
