@@ -1,7 +1,6 @@
 import type { SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
 
-/** What one model session returned, from the SDK in live mode or from a recording in replay mode. */
 export type SessionResult = {
   readonly isError: boolean;
   readonly subtype: string;

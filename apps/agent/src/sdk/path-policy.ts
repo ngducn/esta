@@ -5,7 +5,6 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 export type ToolDecision = { readonly allow: true } | { readonly allow: false; readonly reason: string };
 
 export type ToolPolicy = {
-  /** Every tool name the job kind may call: its built-in tools and `mcp__esta__<name>` for its MCP tools. */
   readonly allowed: ReadonlySet<string>;
   /** Already resolved through symlinks, so a comparison against a resolved target is exact. */
   readonly jobDir: string;

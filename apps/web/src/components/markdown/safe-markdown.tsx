@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Markdown, { type Components, type UrlTransform } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
-/** In-app routes for `esta://<type>/<id>` record links in agent output (AGENT.md §5.6). */
 const ESTA_ROUTES: Readonly<Record<string, string>> = { property: '/properties' };
 
 const ESTA_LINK = /^esta:\/\/([a-z_]+)\/([0-9A-Za-z-]+)$/;

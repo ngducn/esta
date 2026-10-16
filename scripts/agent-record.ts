@@ -13,7 +13,6 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { parseSlot } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 
-// Runs the ping case live for `Gia đình Demo` on the slot's seeded stack and rewrites its recording (AGENT.md §8).
 const slot = parseSlot(process.env.ESTA_SLOT);
 const env = parseAgentEnv({ ...slotEnv(join(import.meta.dirname, '..'), slot, { app: 'agent' }), ESTA_AGENT_MODE: 'live' });
 const mode = assertStartAllowed(env);

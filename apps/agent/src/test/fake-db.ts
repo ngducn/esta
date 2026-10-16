@@ -4,7 +4,6 @@ type Row = Record<string, unknown>;
 
 export type Recorded = { table: string; op: 'upsert' | 'insert'; row: Row };
 
-/** Just enough of the supabase-js builder for the worker's reads: select, eq, is, single, maybeSingle, head counts. */
 export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = []): AgentDb {
   const from = (table: string) => {
     let rows = tables[table] ?? [];
