@@ -1847,7 +1847,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Bugbot triage done.
 - [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant stands for Phase 2. Until the operator extends that grant past Phase 1, or if the operator withdraws it, the PR stops at merge-ready for the operator's click.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Upload documents to a property and open them through signed URLs (P2-02)
 
@@ -1925,7 +1925,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Baseline. Trunk serves `/properties/<id>` without the tab, so its medians are that route's baseline. The tab, the upload and the view route are new at head and take absolute budgets. Trunk resets without documents, so its reset median is the reset baseline.
 - [ ] Rule. Fail when a head median misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS on either route, when `pdfjs-dist` appears in the initial chunk, when the first progress update exceeds 1 s or the 20 MB upload exceeds 20 s, when the view route p95 exceeds 300 ms, or when the head reset median exceeds trunk by more than 30 s.
 
-**Review gate.** The operator reviews the PR body screenshots. No review video. Whether the 2026-10-16 10:30 landing grant reaches Phase 2 is the operator's call, so the root merges only while a grant for Phase 2 stands.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
 - [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
@@ -1935,7 +1935,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Bugbot triage done.
 - [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant stands for Phase 2. Until the operator extends that grant past Phase 1, or if the operator withdraws it, the PR stops at merge-ready for the operator's click.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Read certificates and utility bills in the worker and queue them for review (P2-03)
 
@@ -1955,7 +1955,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 
 - [ ] Close #54 with a red test first. `decideToolUse` refuses any path argument that differs from its trimmed form, so `" ~/.ssh/id_rsa"`, a trailing newline and a tab prefix are all denied before the `~` and job-directory checks run. `path-policy.test.ts` gains leading and trailing spaces, tabs and newlines. This PR is the first to give a job a built-in file tool.
 - [ ] Add `document_extractions` per SPEC §5.5 with the household table recipe, `private.enable_household_rls('document_extractions', 'member')` and `private.enable_audit`, `job_id` keyed to `agent_jobs`, and a trigger that allows only the status pairs `queued > running`, `running > needs_review`, `running > failed`, `queued > failed`, `needs_review > accepted` and `needs_review > rejected`, listed as a values table in the migration. Members update only `status`, `accepted_fields`, `reviewed_by` and `reviewed_at` through column grants. Add it to the `supabase_realtime` publication. Add `certificates.extraction_id` as a key to `document_extractions (id) on delete set null`, which P1-07 left as a bare `uuid`.
-- [ ] Add the `security_invoker` view `document_status`, one row per document with the status of its latest extraction, or `none`. Tiles read job state from this view, so the P0-15 operator-only policies on `agent_jobs` and `agent_runs` stay as they are and members never see diagnostics. Record that choice in `docs/plan/STATUS.md` against the P0-15 open item (agent interpretation).
+- [ ] Add the `security_invoker` view `document_status`, one row per document with the status of its latest extraction, or `none`. Tiles read job state from this view, so the P0-15 operator-only policies on `agent_jobs` and `agent_runs` stay as they are and members never see diagnostics. Standing order 7 of the 2026-10-17 04:45 update in `docs/plan/trail/standing-orders.md` settles this choice. Record it in `docs/plan/STATUS.md` against the P0-15 open item, citing that order.
 - [ ] Add `agent_items` per AGENT.md §10 with `dedupe_key` unique per household, select through `private.is_member(household_id, 'viewer')` with `audience = 'operator'` rows visible only to operators, member update limited to `status`, the audit trigger, and the seed generator writing zero rows at this phase (SPEC §9.3 says no extraction waits for review) while the checksum covers the table.
 - [ ] Add `enqueue_extract_document(p_document_id uuid)`, a `security_invoker` SQL function. It reads the document under RLS, inserts a `queued` `document_extractions` row and an `agent_jobs` row with idempotency key `extract_document:{document_id}:{sha256}` (`on conflict do nothing`), and returns the extraction id. Add an `agent_jobs` insert policy for members limited to kind `extract_document` beside the P0-15 `ping` rule. `registerDocument` calls it when `DOCUMENT_CATEGORIES[category].extractionSchema` is set.
 - [ ] Add `utilityBillV1Schema` per AGENT.md §5.1 in the `{ value, confidence, page }` shape of `certificate_v1`, and `AGENT_SCHEMAS` in `index.ts` mapping schema name to schema and version. Extend `REQUIRED_FIELDS` with the bill fields (`provider`, `customer_code`, `period`, `amount_vnd`). `lease_v1` arrives with P3-19.
@@ -2009,7 +2009,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Baseline. Trunk median `ping` wall time and trunk medians for `/assistant`, which exists at trunk with the status line only. Trunk has no extraction, so extraction and the status delay take absolute budgets.
 - [ ] Rule. Fail when the head `ping` median exceeds trunk by more than 10%, when replay extraction p95 exceeds 5 s, when any live recording exceeds 120 s, when the golden suite exceeds 90 s, when the status delay p95 exceeds 2 s, or when `/assistant` misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS or its head LCP median exceeds trunk by more than 10%.
 
-**Review gate.** The operator reviews the PR body screenshots. No review video. Whether the 2026-10-16 10:30 landing grant reaches Phase 2 is the operator's call, so the root merges only while a grant for Phase 2 stands.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
 - [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
@@ -2019,7 +2019,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Bugbot triage done.
 - [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant stands for Phase 2. Until the operator extends that grant past Phase 1, or if the operator withdraws it, the PR stops at merge-ready for the operator's click.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Review extracted fields beside the document and accept them (P2-07)
 
@@ -2076,6 +2076,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Rule 7. SPEC §9.4 seed 10 adapted to the page. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 1. Pass when the labels read in English, Vietnamese values keep their diacritics, long holder names wrap without clipping, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/extraction-review.spec.ts`.
 - [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P2-07/`, publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and pastes the Markdown it prints into the PR body. Each state gets four files named by viewport and theme. Save `p2-07-review-<viewport>-<theme>.png` with markers showing, `p2-07-edit-area-<viewport>-<theme>.png` with the typed input open and `p2-07-legal-after-save-<viewport>-<theme>.png` for `Pháp lý`.
 - [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, with the replay worker on that slot, and audits the diff against the PR body. Save `p2-07-verifier-review.png`. Pass when local CI is green, the markers show, the save puts the serial on `Pháp lý`, and the PR body matches the diff.
+- [ ] Audit lane. One Opus lane audits what accepting extracted fields writes under the user's session, which is parcels, certificates, utility accounts and parties. It checks tenancy, so every planned write lands in the extraction's own household and a member of another household is refused. It checks the session client only, with the service role absent from `apps/web/src/server/extraction/`. It checks idempotent acceptance, so a second save and a retry after a partial failure converge on the same rows through the UUIDv5 ids, the unique index on `certificates.extraction_id` and the party match by normalized name plus `id_last4`. It checks that no field is accepted without review, so only fields marked `Đúng` or edited enter the plan and only a manual entry with `model` null inserts an `accepted` extraction. Pass when it files no blocking finding.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
@@ -2084,7 +2085,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Baseline. Trunk has no review route, so it takes absolute budgets. The documents tab exists on both sides, so its trunk medians are its baseline.
 - [ ] Rule. Fail when the review route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when the documents tab's head LCP median exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped, when save p95 exceeds 1 s, or when the status delay p95 exceeds 2 s.
 
-**Review gate.** The operator reviews the PR body screenshots. No review video. Whether the 2026-10-16 10:30 landing grant reaches Phase 2 is the operator's call, so the root merges only while a grant for Phase 2 stands.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
 - [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
@@ -2094,7 +2095,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Bugbot triage done.
 - [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant stands for Phase 2. Until the operator extends that grant past Phase 1, or if the operator withdraws it, the PR stops at merge-ready for the operator's click.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Build the documents vault with search, sensitive blur and expiring soon (P2-05)
 
@@ -2153,7 +2154,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Baseline. Trunk serves the P0-14 placeholder at `/documents`, so its medians are that route's baseline. The document page and search are new at head and take absolute budgets.
 - [ ] Rule. Fail when a head median misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS on either route, when `pdfjs-dist` appears in the initial chunk, when the search query exceeds 20 ms, or when search p95 exceeds 500 ms after the debounce.
 
-**Review gate.** The operator reviews the PR body screenshots. No review video. Whether the 2026-10-16 10:30 landing grant reaches Phase 2 is the operator's call, so the root merges only while a grant for Phase 2 stands.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
 - [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
@@ -2163,7 +2164,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Bugbot triage done.
 - [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant stands for Phase 2. Until the operator extends that grant past Phase 1, or if the operator withdraws it, the PR stops at merge-ready for the operator's click.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Capture multi-page documents into one PDF in the browser (P2-06)
 
@@ -2220,7 +2221,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Baseline. Trunk has no combine, so it takes absolute budgets. The documents tab exists on both sides, so its trunk medians are its baseline.
 - [ ] Rule. Fail when 3 pages take more than 3 s, 10 pages take more than 10 s, a 10-page PDF exceeds 25 MB, when the tab misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, or when its head LCP median exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped (pdf-lib stays out of the initial chunk).
 
-**Review gate.** The operator reviews the PR body screenshots. No review video. Whether the 2026-10-16 10:30 landing grant reaches Phase 2 is the operator's call, so the root merges only while a grant for Phase 2 stands.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
 - [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
@@ -2230,7 +2231,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Bugbot triage done.
 - [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant stands for Phase 2. Until the operator extends that grant past Phase 1, or if the operator withdraws it, the PR stops at merge-ready for the operator's click.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Add a property by certificate photo with the wizard and pass north-star steps 1 and 2 (P2-08)
 
@@ -2296,7 +2297,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Baseline. Trunk serves the P1-05 form at `/properties/new` and the list at `/properties`, so their medians are the baselines. Review readiness and the north-star time take absolute budgets.
 - [ ] Rule. Fail when either route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when a route's head LCP exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped, when replay review readiness exceeds 10 s, or when north-star steps 1 and 2 exceed 90 s. These medians are the Phase 2 Lighthouse rows.
 
-**Review gate.** The operator reviews the PR body screenshots. No review video. Whether the 2026-10-16 10:30 landing grant reaches Phase 2 is the operator's call, so the root merges only while a grant for Phase 2 stands.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
 - [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, the `pnpm phase:check 2` output and the replay accuracy summary, and the root posts the PR link to the operator at merge-ready.
 
@@ -2306,7 +2307,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Bugbot triage done.
 - [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant stands for Phase 2. Until the operator extends that grant past Phase 1, or if the operator withdraws it, the PR stops at merge-ready for the operator's click.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 Phase 3. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict. The P3-01 section stays as reference for the PRs that take its tables.
 
