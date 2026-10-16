@@ -21,7 +21,11 @@ async function createHousehold(page: Page, name: string, displayName: string) {
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByLabel('Tên gia đình').fill(name);
   await page.getByLabel('Tên của bạn').fill(displayName);
+  const answer = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/onboarding',
+  );
   await page.getByRole('button', { name: 'Tạo gia đình' }).click();
+  await (await answer).finished();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mời người trong gia đình');
 }
 
