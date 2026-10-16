@@ -1,6 +1,7 @@
 import type { HookCallback } from '@anthropic-ai/claude-agent-sdk';
 import { realpathSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, sep } from 'node:path';
+import { mcpToolName } from '../tools/server';
 
 export type ToolDecision = { readonly allow: true } | { readonly allow: false; readonly reason: string };
 
@@ -10,16 +11,27 @@ export type ToolPolicy = {
   readonly jobDir: string;
 };
 
-const PATH_FIELDS: Readonly<Record<string, string>> = { Read: 'file_path' };
+const PATH_FIELDS: ReadonlyMap<string, string> = new Map([['Read', 'file_path']]);
 
-/** Resolves symlinks on the longest existing prefix, so a link inside the job dir cannot point a read outside it. */
-function realTarget(path: string): string {
+/** Esta's own tools parse their input with zod and read only the job's household. */
+const ESTA_TOOL_PREFIX = mcpToolName('');
+
+function realOrSelf(path: string): string {
   try {
     return realpathSync(path);
   } catch {
-    const parent = dirname(path);
-    return parent === path ? path : join(realTarget(parent), relative(parent, path));
+    return path;
   }
+}
+
+/** Resolves each symlink before the next `..`, as the kernel does, so `link/..` cannot leave the job dir. */
+function realTarget(jobDir: string, path: string): string {
+  let current = isAbsolute(path) ? sep : jobDir;
+  for (const part of path.split(sep)) {
+    if (part === '' || part === '.') continue;
+    current = part === '..' ? dirname(current) : realOrSelf(join(current, part));
+  }
+  return current;
 }
 
 function isInside(dir: string, target: string): boolean {
@@ -29,11 +41,12 @@ function isInside(dir: string, target: string): boolean {
 
 export function decideToolUse(policy: ToolPolicy, toolName: string, input: Readonly<Record<string, unknown>>): ToolDecision {
   if (!policy.allowed.has(toolName)) return { allow: false, reason: `${toolName} is not a tool of this job` };
-  const field = PATH_FIELDS[toolName];
-  if (field === undefined) return { allow: true };
+  if (toolName.startsWith(ESTA_TOOL_PREFIX)) return { allow: true };
+  const field = PATH_FIELDS.get(toolName);
+  if (field === undefined) return { allow: false, reason: `${toolName} has no input rule` };
   const raw = input[field];
   if (typeof raw !== 'string' || raw === '') return { allow: false, reason: `${toolName} needs a ${field}` };
-  const target = realTarget(resolve(policy.jobDir, raw));
+  const target = realTarget(policy.jobDir, raw);
   return isInside(policy.jobDir, target) ? { allow: true } : { allow: false, reason: `${raw} is outside the job directory` };
 }
 
