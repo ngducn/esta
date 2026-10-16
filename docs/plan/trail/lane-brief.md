@@ -27,3 +27,5 @@ Return at most 15 lines:
 - The head SHA (and trunk SHA) you tested, and the exact method.
 - Evidence paths, including the screenshot your lane names.
 - For ISSUES, each finding with a repro, the observed versus expected result, and whether the diff causes it or trunk already has it.
+
+Screenshots the root may post to a PR must also be publishable: keep them as PNG files under `/tmp/swarm-<pr id>/`; the root publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh`.

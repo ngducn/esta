@@ -80,3 +80,4 @@ Defaults the agent chose for questions the operator left open in #36 (label: age
 Operator's words, 2026-10-17: "you can continue now up to 100%, but when reset, pls use up to 40% only".
 
 Budget. The block that started 2026-10-16T16:00Z may run to 100%: stop spawning at about 92%, pause before 97%. Every later block is capped at 40%: stop spawning at 30%, pause at 36%. Check usage at every agent report, not only before a spawn, because one long Opus owner can move a block by 25 points between checks.
+6. Screenshots in PR bodies and comments must render on GitHub: publish them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and paste its Markdown (operator, 2026-10-17: "screenshots are not viewable on the UI").
