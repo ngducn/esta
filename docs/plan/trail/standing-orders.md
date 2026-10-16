@@ -74,3 +74,9 @@ Defaults the agent chose for questions the operator left open in #36 (label: age
 3. The interrogate list names P5-11 (the number guard) in place of P5-03.
 4. Owners and verifiers spawn no subagents unless their brief names them.
 5. Never use ESTA_SLOT=4: its production port 4317 collides with the `ekh-phoenix` container, which must not be touched. Use slots 2, 3, 5 and 14.
+
+## Update 2026-10-17 01:20 +07
+
+Operator's words, 2026-10-17: "you can continue now up to 100%, but when reset, pls use up to 40% only".
+
+Budget. The block that started 2026-10-16T16:00Z may run to 100%: stop spawning at about 92%, pause before 97%. Every later block is capped at 40%: stop spawning at 30%, pause at 36%. Check usage at every agent report, not only before a spawn, because one long Opus owner can move a block by 25 points between checks.

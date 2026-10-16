@@ -181,3 +181,4 @@ ts	phase	decision	why	evidence	result
 2026-10-16T17:03:05Z	merges	merged #42 P0-15 (72fadb6), #47 design polish (1f06056), #50 P1-01 (47d79f3) on clean verdicts after one fix-forward each where needed	independent verifier plus Opus audit on security PRs, scoped review per fix-forward	PR comments	done
 2026-10-16T17:03:05Z	order	merged P1-01 before P0-16 although the plan lists P0-16 first	no code or migration dependency; unblocks P1-04 while P0-16 builds	PR #50 comment	done
 2026-10-16T17:03:05Z	infra	stopped the operator's slot 2 app during the run; four stacks on 8 GB Docker made slot 5 unhealthy; relaunch at pause	Docker memory	docker ps	open
+2026-10-16T20:33:43Z	budget	block 16:00Z may run to 100%; later blocks capped at 40%; resume P1-04 now with a fresh owner from the handoff brief	operator 2026-10-17 01:20	standing-orders.md 2026-10-17 update	open
