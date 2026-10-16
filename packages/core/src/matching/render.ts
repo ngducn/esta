@@ -73,9 +73,13 @@ function csvField(cell: StatementCell): string {
   return NEEDS_QUOTES.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export function renderStatementCsv(layout: StatementLayout, rows: readonly RenderableRow[]): string {
-  return renderStatementGrid(layout, rows)
+export function renderCsv(grid: StatementGrid): string {
+  return grid
     .map((cells) => cells.map(csvField).join(','))
     .join('\r\n')
     .concat('\r\n');
+}
+
+export function renderStatementCsv(layout: StatementLayout, rows: readonly RenderableRow[]): string {
+  return renderCsv(renderStatementGrid(layout, rows));
 }
