@@ -96,6 +96,17 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
+test('lane 11: a placeholder section shows no control, because none of its actions works yet', async ({ page }) => {
+  onlyOn('mobile');
+  await signIn(page, 'me.lane1@demo.esta.test');
+  for (const path of ['/properties', '/collections', '/documents', '/assistant', '/reports']) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1 }), path).toBeVisible();
+    await expect(page.getByRole('main').getByRole('link'), `${path} links`).toHaveCount(0);
+    await expect(page.getByRole('main').getByRole('button'), `${path} buttons`).toHaveCount(0);
+  }
+});
+
 test('lane 2: at 1440 px the sidebar is 240 px, content at most 1200 px, and no tab bar renders', async ({ page }) => {
   onlyOn('desktop');
   await signIn(page, 'ryan.lane2@demo.esta.test');

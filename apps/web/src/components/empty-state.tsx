@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export type EmptyStateAction = { label: string; href: string; icon?: LucideIcon };
 
-/** One sentence of what is missing or coming, and the single action that works now. */
+/** One sentence of what is missing or coming, and the single action that works now. With no such action, no button. */
 export function EmptyState({
   title,
   body,
@@ -17,12 +17,12 @@ export function EmptyState({
 }: {
   title: string;
   body: string;
-  action: EmptyStateAction;
+  action?: EmptyStateAction;
   icon?: LucideIcon;
   media?: ReactNode;
   className?: string;
 }) {
-  const ActionIcon = action.icon;
+  const ActionIcon = action?.icon;
   return (
     <section data-slot="empty-state" className={cn('overflow-hidden rounded-lg border border-rule bg-surface shadow-card', className)}>
       {media}
@@ -36,10 +36,12 @@ export function EmptyState({
           <span className="min-w-0 break-words">{title}</span>
         </h2>
         <p className="max-w-prose text-body text-pretty text-ink-2">{body}</p>
-        <Link href={action.href} className={buttonVariants({ variant: 'primary', className: 'mt-2' })}>
-          {ActionIcon ? <ActionIcon aria-hidden="true" /> : null}
-          {action.label}
-        </Link>
+        {action ? (
+          <Link href={action.href} className={buttonVariants({ variant: 'primary', className: 'mt-2' })}>
+            {ActionIcon ? <ActionIcon aria-hidden="true" /> : null}
+            {action.label}
+          </Link>
+        ) : null}
       </div>
     </section>
   );

@@ -1,4 +1,3 @@
-import { SlidersHorizontal } from 'lucide-react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { StaticImageData } from 'next/image';
@@ -53,7 +52,6 @@ export async function SectionPage({ section }: { section: LaterSection }) {
         icon={sectionIcons[section]}
         title={sections('soonTitle')}
         body={sections(section)}
-        action={{ label: sections('adjustDisplay'), href: '/settings', icon: SlidersHorizontal }}
         media={section === 'properties' ? <PropertyCollage /> : undefined}
         className="max-w-3xl"
       />

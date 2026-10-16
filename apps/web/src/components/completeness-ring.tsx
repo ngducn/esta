@@ -16,7 +16,7 @@ export function CompletenessRing({ percent, missing }: { percent: number; missin
             pathLength={100}
             strokeDasharray={`${filled} 100`}
             strokeLinecap={filled === 100 ? 'butt' : 'round'}
-            className="stroke-accent"
+            className={filled === 100 ? 'stroke-paid' : 'stroke-accent'}
           />
         ) : null}
       </svg>
