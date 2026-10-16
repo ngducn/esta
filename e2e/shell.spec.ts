@@ -90,6 +90,7 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
     await expect(tabBar(page).locator('[aria-current="page"]')).toHaveText(section.vi);
     await expect(tabBar(page).locator('[aria-current="page"]')).toHaveCount(1);
     if (section.path !== '/') await expect(page.getByRole('heading', { level: 1 })).toHaveText(section.vi);
+    await expect(page, 'axe waits for the title of this section, not of the previous page').toHaveTitle(section.path === '/' ? 'Esta' : section.vi);
     expect(await seriousAxeViolations(page), section.path).toEqual([]);
   }
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
