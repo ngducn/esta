@@ -12,7 +12,7 @@ Each `[verify]` fact is confirmed in the spike or phase listed, against an offic
 | --- | --- |
 | Certificate forms and eras (§2), land use codes (§3) | S5, first PR of Phase 2 |
 | Province mapping of legacy addresses (§4), commune count | S3, before the plan |
-| VietQR fields and memo length (§10) | S4, before the plan |
+| VietQR fields and memo length (§10) | S4, before the plan (done 2026-10-06, branch `spike/s4-vietqr` at `a7c9e76`) |
 | Zalo link phone format (§9) | Phase 3, LSE-11 |
 | Rental customs and electricity resale rule (§7) | Phase 3 |
 | Lunar dates (§11) | Phase 4, when the P2 item is attempted |
@@ -254,7 +254,7 @@ Bank statements (fixtures for three layouts):
 
 - Amounts appear as `1.500.000`, `1,500,000`, `1500000.00`, with `+`/`-` signs, or in separate credit and debit columns. Parse to integer VND; reject fractional đồng.
 - Dates appear as `dd/MM/yyyy`, `dd/MM/yyyy HH:mm:ss`, or `yyyy-MM-dd`.
-- Descriptions are usually uppercase ASCII without diacritics. Banks prepend and append their own references and sometimes delete spaces, so the memo `ESTA 7K2QX9MP` may arrive as `MBVCB.1234567.ESTA7K2QX9MP.CT TU 0903...`. Match by normalizing (uppercase, strip non-alphanumerics) and searching for `ESTA` followed by the 8-character code.
+- Descriptions are usually uppercase ASCII without diacritics. Banks prepend and append their own references and sometimes delete spaces, so the memo `ESTA 7K2QX9MP` may arrive as `MBVCB.1234567.ESTA7K2QX9MP.CT TU 0903...`. Match by normalizing (uppercase, strip non-alphanumerics) and searching for `ESTA` followed by the 8-character code. Check every `ESTA` occurrence and accept a candidate only if it is one of the household's issued memo codes: with spaces removed, `ESTA` also appears inside words such as `FIESTA`. `[verified]` Source: spike S4, `spikes/s4-vietqr/src/memo.ts` and its tests on branch `spike/s4-vietqr` at `a7c9e76`.
 
 Google Maps links (PRP-5). Prefer the place coordinates over the viewport center.
 
@@ -282,20 +282,24 @@ Each short link redirects once, straight to `www.google.com/maps/place/`, with a
 
 ## 10. VietQR payload
 
-`[verify]` against the NAPAS VietQR specification during spike S4, then lock with test vectors. VietQR follows the EMVCo merchant-presented QR format.
+`[verified]` in spike S4 on 2026-10-06 against NAPAS, *Technical Specifications on NAPAS QR Switching* v1.5.2 (`QR_Format_T&C_v1.5.2_EN_102022.pdf`, from `https://vietqr.net/portal-service/download/documents/QR_Format_T&C_v1.5.2_EN_102022.pdf`, cited below as N), and locked with test vectors in `spikes/s4-vietqr` on branch `spike/s4-vietqr` at `a7c9e76`. VietQR follows the EMVCo merchant-presented QR format.
 
-| Tag | Meaning | Value |
-| --- | --- | --- |
-| 00 | Payload format indicator | `01` |
-| 01 | Point of initiation | `12` when an amount is present, `11` otherwise |
-| 38 | Merchant account information | sub-tag 00 GUID `A000000727`; sub-tag 01 beneficiary organization (sub-tag 00 bank BIN, sub-tag 01 account number); sub-tag 02 service code `QRIBFTTA` (transfer to account) |
-| 53 | Currency | `704` |
-| 54 | Amount | Integer đồng |
-| 58 | Country | `VN` |
-| 62 | Additional data | sub-tag 08 purpose: `ESTA {memo_code}` |
-| 63 | CRC | CRC-16/CCITT-FALSE over the whole payload including `6304` |
+| Tag | Meaning | Value | Source |
+| --- | --- | --- | --- |
+| 00 | Payload format indicator | `01`. Always the first tag. | N §5.1, §5.2.1 |
+| 01 | Point of initiation | `11` static (one QR, many transactions), `12` dynamic (one QR, one transaction). Mandatory for transfers. `[app rule]` Esta emits `12` when an amount is present and `11` otherwise. | N §5.2.2, Table 3 |
+| 38 | Merchant account information | sub-tag 00 GUID `A000000727`; sub-tag 01 beneficiary organization (sub-tag 00 bank BIN, 6 digits; sub-tag 01 account number, up to 19 characters); sub-tag 02 service code `QRIBFTTA` (transfer to account; `QRIBFTTC` is transfer to card) | N §5.2.3.2, Table 8 |
+| 53 | Currency | `704` | N §5.2.5 |
+| 54 | Amount | Integer đồng as plain digits, not zero, up to 13 characters | N §5.2.6 |
+| 58 | Country | `VN` | N §5.2.10 |
+| 62 | Additional data | sub-tag 08 purpose: `ESTA {memo_code}`. Sub-tag 08 holds at most 25 characters; the whole tag 62 holds at most 99. | N §5.2.14, Tables 6 and 12 |
+| 63 | CRC | CRC-16/CCITT-FALSE (ISO/IEC 13239, polynomial `1021`, initial `FFFF`) over the whole payload including `6304`, written as 4 uppercase hex characters, zero-padded. Always the last tag. | N §5.2.15 |
 
-Each field is `tag + 2-digit length + value`. The memo stays ASCII uppercase and short (≤ 25 characters recommended `[verify]`). Bank BINs come from the NAPAS list, seeded into `bank_bins` with its source.
+Each field is `tag + 2-digit length + value`. Root tags between `00` and `63` may appear in any order, so a decoder must not depend on order (N §5.1). Tags 52 (MCC), 59 (merchant name) and 60 (city) are optional for transfers and Esta omits them; the payer's bank shows the account holder's name from its own lookup. The memo stays ASCII uppercase; `ESTA {memo_code}` is 13 characters, inside the 25-character limit.
+
+NAPAS 247 caps one transfer below 500,000,000 VND (`https://napas.com.vn/dich-vu-chuyen-tien-nhanh-napas-247-ngan-hang`). `[app rule]` for LSE-5, pending Ryan (listed in `docs/plan/STATUS.md`): when the amount is 500,000,000 or more, issue the QR without tag 54 and show the amount with a note to split the transfer.
+
+Bank BINs come from the NAPAS list on `vietqr.net` (`/portal-service/v1/info/banks`), seeded into `bank_bins` with its source and fetch date. The snapshot, its sha256, and a comparison with the `api.vietqr.io/v2/banks` mirror are in `spikes/s4-vietqr/data`.
 
 ## 11. Lunar calendar (P2)
 
