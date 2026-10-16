@@ -6,10 +6,11 @@ import type { Emitter } from './context.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
+import { agentJobs, agentRuns } from './agent.ts';
 import { renderSeed } from './sql.ts';
 import { isVariantName, VARIANTS, type VariantName } from './variants.ts';
 
-const EMITTERS: readonly Emitter[] = [...HOUSEHOLD_EMITTERS, parties, properties];
+const EMITTERS: readonly Emitter[] = [...HOUSEHOLD_EMITTERS, parties, properties, agentJobs, agentRuns];
 
 const TIMEZONE = 'Asia/Ho_Chi_Minh';
 const MAX_LANES = 99;

@@ -29,7 +29,7 @@ export function memberId(person: Person, household: HouseholdSeed) {
   return seedId(`seed:member:${personKey(person, household)}`);
 }
 
-function userId(person: Person, household: HouseholdSeed) {
+export function userId(person: Person, household: HouseholdSeed) {
   return seedId(`seed:user:${personKey(person, household)}`);
 }
 

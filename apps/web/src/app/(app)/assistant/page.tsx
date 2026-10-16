@@ -1,7 +1,182 @@
-import { SectionPage, sectionMetadata } from '@/components/shell/section-page';
+import { businessDate, type Instant } from '@esta/core';
+import { wallTime, workerStatus } from '@esta/core/agent';
+import { formatDate } from '@esta/core/format';
+import { History, Play, PlugZap, type LucideIcon } from 'lucide-react';
+import { getLocale, getTranslations } from 'next-intl/server';
+import type { ReactNode } from 'react';
+import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
+import { EmptyState } from '@/components/empty-state';
+import { SafeMarkdown } from '@/components/markdown/safe-markdown';
+import { sectionIcons } from '@/components/shell/section-icons';
+import { sectionMetadata } from '@/components/shell/section-page';
+import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
+import { buttonVariants } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { getConnectionCheck, getWorkerHeartbeat, type AgentRun, type PingCheck } from '@/server/assistant';
+import { getClock } from '@/server/clock';
+import { env } from '@/server/env';
+import { requireMember } from '@/server/member';
+import { runConnectionCheck } from './actions';
+import { RefreshWhilePending } from './connection-check';
 
 export const generateMetadata = () => sectionMetadata('assistant');
 
-export default function AssistantPage() {
-  return <SectionPage section="assistant" />;
+const jobMarks: Record<PingCheck['status'], MarkStatus> = { queued: 'due', running: 'due', done: 'paid', failed: 'overdue', cancelled: 'ended' };
+
+const dateTime = (instant: Instant) => `${formatDate(businessDate(instant, env.ESTA_TIMEZONE), 'vi')} ${wallTime(instant, env.ESTA_TIMEZONE)}`;
+
+function CardHeading({ id, icon: Icon, children }: { id: string; icon: LucideIcon; children: ReactNode }) {
+  return (
+    <h2 id={id} className="flex items-center gap-3 text-lead font-bold text-ink">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
+        <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
+      </span>
+      <span className="min-w-0 break-words">{children}</span>
+    </h2>
+  );
+}
+
+async function LatestPing({ ping }: { ping: PingCheck | null }) {
+  const t = await getTranslations('assistant');
+  if (ping === null) return <p className="text-ink-muted">{t('noCheck')}</p>;
+  const mark = jobMarks[ping.status];
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span
+          data-testid="ping-status"
+          data-status={ping.status}
+          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[mark].pill)}
+        >
+          <StatusShape status={mark} className="size-4" />
+          <span>{t(`jobStatus.${ping.status}`)}</span>
+        </span>
+        <span className="text-small text-ink-muted">{t('latestCheck', { time: dateTime(ping.requestedAt) })}</span>
+      </div>
+      {ping.reply !== null ? (
+        <div data-testid="ping-reply">
+          <SafeMarkdown>{ping.reply}</SafeMarkdown>
+        </div>
+      ) : null}
+      {ping.error !== null && ping.status !== 'done' ? (
+        <p data-testid="ping-error" className="text-body wrap-anywhere text-overdue">
+          {ping.error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+async function RecentRuns({ runs }: { runs: readonly AgentRun[] }) {
+  const [t, locale] = await Promise.all([getTranslations('assistant'), getLocale()]);
+  if (runs.length === 0) return <p className="text-ink-muted">{t('noRuns')}</p>;
+  const usd = new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
+  const columns = ['time', 'authMode', 'agentMode', 'model', 'turns', 'cost', 'toolCalls'] as const;
+  return (
+    <div role="region" aria-labelledby="runs-heading" tabIndex={0} className="-mx-5 -mb-5 overflow-x-auto sm:-mx-6 sm:-mb-6 [&_tr:last-child_td]:border-b-0">
+      <Table data-testid="runs-table">
+        <TableHeader>
+          <TableRow>
+            {columns.map((column) => (
+              <TableHead key={column} scope="col" className={cn(['turns', 'cost'].includes(column) && 'text-end')}>
+                {t(`columns.${column}`)}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {runs.map((run) => (
+            <TableRow key={run.id} data-testid="run-row">
+              <TableCell className="whitespace-nowrap figures">{dateTime(run.startedAt)}</TableCell>
+              <TableCell>{run.authMode}</TableCell>
+              <TableCell>{run.agentMode}</TableCell>
+              <TableCell className="whitespace-nowrap">{run.model ?? t('unknown')}</TableCell>
+              <TableCell className="text-end figures">{run.numTurns ?? t('unknown')}</TableCell>
+              <TableCell className="text-end whitespace-nowrap figures">{run.costUsd === null ? t('unknown') : usd.format(run.costUsd)}</TableCell>
+              <TableCell>
+                {Object.keys(run.toolCalls).length === 0 ? (
+                  <span className="text-ink-muted">{t('noToolCalls')}</span>
+                ) : (
+                  <ul className="flex flex-col">
+                    {Object.entries(run.toolCalls).map(([name, count]) => (
+                      <li key={name} className="whitespace-nowrap">
+                        {t('toolCall', { name, count })}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+/** Operator-only: the server never renders this for anyone else, so Mẹ's HTML carries no diagnostics (PLT-1). */
+async function ConnectionCheck({ householdId, sendFailed }: { householdId: string; sendFailed: boolean }) {
+  const [t, { latest, runs }] = await Promise.all([getTranslations('assistant'), getConnectionCheck(householdId)]);
+  const pending = latest?.status === 'queued' || latest?.status === 'running';
+  return (
+    <>
+      <section
+        aria-labelledby="connection-heading"
+        data-testid="connection-check"
+        className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex max-w-prose min-w-0 flex-col gap-2">
+            <CardHeading id="connection-heading" icon={PlugZap}>
+              {t('check')}
+            </CardHeading>
+            <p className="text-body text-pretty text-ink-2">{t('checkIntro')}</p>
+          </div>
+          <form action={runConnectionCheck}>
+            <button type="submit" disabled={pending} className={buttonVariants({ variant: 'primary' })}>
+              <Play aria-hidden="true" />
+              {t('runCheck')}
+            </button>
+          </form>
+        </div>
+        {sendFailed ? (
+          <p role="alert" className="font-semibold text-overdue">
+            {t('checkSendFailed')}
+          </p>
+        ) : null}
+        <div className="border-t border-rule pt-4">
+          <LatestPing ping={latest} />
+        </div>
+        <RefreshWhilePending pending={pending} />
+      </section>
+      <section aria-labelledby="runs-heading" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+        <CardHeading id="runs-heading" icon={History}>
+          {t('recentRuns')}
+        </CardHeading>
+        <RecentRuns runs={runs} />
+      </section>
+    </>
+  );
+}
+
+export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ check?: string }> }) {
+  const [member, clock, lastSeenAt, nav, sections, { check }] = await Promise.all([
+    requireMember(),
+    getClock(),
+    getWorkerHeartbeat(),
+    getTranslations('nav'),
+    getTranslations('sections'),
+    searchParams,
+  ]);
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <h1 className="text-h2 break-words lg:text-h1">{nav('assistant')}</h1>
+        <WorkerStatusLine status={workerStatus(lastSeenAt, clock.now(), env.ESTA_TIMEZONE)} />
+      </div>
+      <EmptyState icon={sectionIcons.assistant} title={sections('soonTitle')} body={sections('assistant')} />
+      {member.isOperator ? <ConnectionCheck householdId={member.household.id} sendFailed={check === 'failed'} /> : null}
+    </div>
+  );
 }

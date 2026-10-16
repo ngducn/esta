@@ -245,6 +245,38 @@
     "adjustDisplay": "Adjust text size and theme",
     "photoCaption": "Illustrative photos."
   },
+  "assistant": {
+    "statusOnline": "Assistant is online. Updated at {time}.",
+    "statusOffline": "Assistant has been offline since {time}. New work will run when the machine is back.",
+    "statusNever": "Assistant has not connected yet. New work will run when the machine is back.",
+    "check": "Connection check",
+    "checkIntro": "Run a small job to make sure the assistant can read the household's data. Only operators see this section.",
+    "runCheck": "Run check",
+    "checkSendFailed": "The check could not be sent. Try again in a few minutes.",
+    "noCheck": "No check has run yet.",
+    "latestCheck": "Latest check, at {time}",
+    "jobStatus": {
+      "queued": "Waiting",
+      "running": "Running",
+      "done": "Done",
+      "failed": "Error",
+      "cancelled": "Cancelled"
+    },
+    "recentRuns": "Recent runs",
+    "noRuns": "No runs yet.",
+    "columns": {
+      "time": "Time",
+      "authMode": "Auth",
+      "agentMode": "Mode",
+      "model": "Model",
+      "turns": "Turns",
+      "cost": "Estimated cost",
+      "toolCalls": "Tools called"
+    },
+    "unknown": "Unknown",
+    "noToolCalls": "No tool calls",
+    "toolCall": "{name} × {count}"
+  },
   "settings": {
     "display": "Display",
     "displayIntro": "Language, text size and density follow your account on every device.",

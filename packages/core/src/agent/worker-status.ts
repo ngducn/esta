@@ -16,7 +16,7 @@ export type WorkerStatus =
 
 const timeFormatters = new Map<string, Intl.DateTimeFormat>();
 
-function wallTime(instant: Instant, timezone: string): string {
+export function wallTime(instant: Instant, timezone: string): string {
   let formatter = timeFormatters.get(timezone);
   if (formatter === undefined) {
     formatter = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
