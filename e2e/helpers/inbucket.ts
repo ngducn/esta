@@ -11,6 +11,7 @@ const mailbox = mail.slotMailbox(slot);
 
 /** Auth's `max_frequency` for one address, plus a margin, so the next holder's send is never refused. */
 const SEND_SPACING_MS = 1_200;
+const CODE_STEP_TIMEOUT_MS = 15_000;
 /** Longer than any sign-in, so a lock left by a killed test is taken over. */
 const STALE_LOCK_MS = 60_000;
 
@@ -23,7 +24,9 @@ export async function requestCode(page: Page, email: string): Promise<void> {
   await page.goto('/sign-in');
   await page.locator('input[name="email"]').fill(email);
   await page.locator('button[value="send"]').click();
-  await expect(page.locator('input[name="code"]')).toBeVisible();
+  await expect(page.locator('input[name="code"]'), 'the send goes through auth and SMTP, which a loaded machine slows').toBeVisible({
+    timeout: CODE_STEP_TIMEOUT_MS,
+  });
 }
 
 /**

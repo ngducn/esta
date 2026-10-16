@@ -2,10 +2,13 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
+import config from '../playwright.config';
 import { authApi } from './helpers/auth-api';
 import { latestMail, requestCode, signIn } from './helpers/inbucket';
 
-const SLOWER_THAN_AN_ASSERTION_WAITS_MS = 6_000;
+const SLOWER_THAN_AN_ASSERTION_WAITS_MS = (config.expect?.timeout ?? 5_000) + 1_000;
+/** Above the slow-answer test's delay, so only a POST that never answers runs out. */
+const CREATE_ANSWER_TIMEOUT_MS = SLOWER_THAN_AN_ASSERTION_WAITS_MS + 10_000;
 
 async function seriousAxeViolations(page: Page): Promise<string[]> {
   await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
@@ -23,9 +26,12 @@ async function createHousehold(page: Page, name: string, displayName: string) {
   await page.getByLabel('Tên của bạn').fill(displayName);
   const answer = page.waitForResponse(
     (response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/onboarding',
+    { timeout: CREATE_ANSWER_TIMEOUT_MS },
   );
   await page.getByRole('button', { name: 'Tạo gia đình' }).click();
-  await (await answer).finished();
+  const response = await answer;
+  expect(response.status(), 'the create-household POST answers without a server error').toBeLessThan(500);
+  await response.finished();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mời người trong gia đình');
 }
 
@@ -164,15 +170,20 @@ test('an empty code gets app copy, not the browser bubble', async ({ page }) => 
 });
 
 test('a send that is refused is not blamed on the email', async ({ page, request }) => {
-  const email = uniqueEmail('refused');
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(email);
-  const first = await request.post(`${authApi.url}/otp`, { headers: authApi.headers, data: { email, create_user: true } });
-  expect(first.ok(), 'the first send lands just before the form sends, inside the 1 s max_frequency window').toBe(true);
-  await page.getByRole('button', { name: 'Gửi mã' }).click();
-  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
-    'Esta đã gửi nhiều mã trong giờ qua. Dùng mã mới nhất trong email, hoặc đợi ít phút rồi thử lại.',
-  );
+  // The form's send is refused only when it lands inside auth's 1 s max_frequency window after the API send,
+  // which a loaded machine can miss, so each attempt takes a fresh address until one lands inside it.
+  await expect(async () => {
+    const email = uniqueEmail('refused');
+    await page.goto('/sign-in');
+    await page.getByLabel('Email').fill(email);
+    const first = await request.post(`${authApi.url}/otp`, { headers: authApi.headers, data: { email, create_user: true } });
+    expect(first.ok(), 'the first send lands just before the form sends').toBe(true);
+    await page.getByRole('button', { name: 'Gửi mã' }).click();
+    await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+      'Esta đã gửi nhiều mã trong giờ qua. Dùng mã mới nhất trong email, hoặc đợi ít phút rồi thử lại.',
+      { timeout: 3_000 },
+    );
+  }).toPass({ timeout: 25_000 });
   await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'false');
 });
 

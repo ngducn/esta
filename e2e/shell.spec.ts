@@ -19,10 +19,22 @@ function uniqueEmail(prefix: string): string {
   return `${prefix}.${randomUUID().slice(0, 8)}@demo.esta.test`;
 }
 
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  await expect(page).not.toHaveTitle('');
+async function analyzeSerious(page: Page): Promise<string[]> {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+}
+
+/**
+ * A client navigation streams its title in after the body and can drop it for a moment while it settles,
+ * so axe reruns until the page passes or the expect timeout ends; a lasting violation still fails.
+ */
+async function seriousAxeViolations(page: Page): Promise<string[]> {
+  await expect(page).not.toHaveTitle('');
+  let violations = await analyzeSerious(page);
+  if (violations.length > 0) {
+    await expect.poll(async () => (violations = await analyzeSerious(page))).toEqual([]).catch(() => undefined);
+  }
+  return violations;
 }
 
 async function setTheme(page: Page, baseURL: string | undefined, theme: 'light' | 'dark') {
