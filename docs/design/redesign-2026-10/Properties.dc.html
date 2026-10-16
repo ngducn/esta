@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Esta, Tài sản</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Source+Sans+3:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#1F2430}a:hover{color:#000000}
+.nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#3A3F4B;text-decoration:none;font-size:15px;font-weight:500;min-height:44px;box-sizing:border-box}
+.nav:hover{background:#F2F3F6;color:#16181D}
+.card{background:#FFFFFF;border:1px solid #E7E9EE;border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,0.04);overflow:hidden;display:flex;flex-direction:column}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:10px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;box-sizing:border-box;white-space:nowrap;text-decoration:none}
+.btn-ghost{background:#FFFFFF;color:#1F2430;border:1px solid #DCDFE5}
+.btn-ghost:hover{background:#F5F6F8}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #DCDFE5;background:#FFFFFF;font:inherit;font-size:14px;font-weight:600;color:#3A3F4B;cursor:pointer}
+.chip span{color:#5B6170;font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
+.paid{background:#ECF8F1;color:#146C3B}
+.due{background:#FFF5E5;color:#8A4B06}
+.over{background:#FDEEEC;color:#A82A1D}
+.vacant{background:#F0F2F5;color:#475066}
+.diamond{width:8px;height:8px;background:currentColor;transform:rotate(45deg);display:inline-block}
+.tag{position:absolute;top:12px;left:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.94);font-size:13px;font-weight:600;color:#1F2430}
+.photo{position:relative;aspect-ratio:16/10;background:#E9EEF3}
+.photo svg.scene{width:100%;height:100%;display:block}
+.more{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:999px;border:0;background:rgba(255,255,255,0.94);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.price{font-size:22px;font-weight:700;letter-spacing:-0.01em;font-variant-numeric:tabular-nums}
+.meta{display:flex;flex-wrap:wrap;gap:16px;padding-top:12px;border-top:1px solid #EEF0F3;font-size:14px;color:#3A3F4B}
+.meta span{display:inline-flex;align-items:center;gap:6px}
+.muted{color:#5B6170;font-size:13px}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1120px; background: #F5F6F8; color: #16181D; font-family: '{{font}}', system-ui, sans-serif;">
+
+<aside style="flex: 1 1 240px; max-width: 272px; background: #FFFFFF; border-right: 1px solid #E7E9EE; padding: 20px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px;">
+<div style="width: 36px; height: 36px; border-radius: 10px; background: {{accent}}; display: flex; align-items: center; justify-content: center;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+</div>
+<span style="font-size: 21px; font-weight: 700; letter-spacing: -0.01em;">Esta</span>
+</div>
+<button type="button" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 56px; padding: 8px 12px; border: 1px solid #E7E9EE; border-radius: 12px; background: #F8F9FB; font: inherit; text-align: left; cursor: pointer;">
+<span style="display: flex; flex-direction: column; gap: 2px;">
+<span style="font-size: 15px; font-weight: 600; color: #16181D;">Gia đình Demo</span>
+<span style="font-size: 13px; color: #5B6170;">5 tài sản, 10 phòng</span>
+</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6170" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+</button>
+<nav aria-label="Điều hướng chính" style="display: flex; flex-direction: column; gap: 4px;">
+<a class="nav" href="Main.dc.html">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+Tổng quan</a>
+<a class="nav" href="#" aria-current="page" style="background: color-mix(in srgb, {{accent}} 10%, #FFFFFF); color: {{accent}}; font-weight: 600;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1.5"></rect><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"></path></svg>
+Tài sản</a>
+<a class="nav" href="#">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"></rect><circle cx="12" cy="12" r="2.5"></circle><path d="M6 9.5v5M18 9.5v5"></path></svg>
+Thu tiền
+<span class="pill over" style="margin-left: auto; padding: 2px 8px;">2</span></a>
+<a class="nav" href="#">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h6"></path></svg>
+Tài liệu</a>
+<a class="nav" href="#">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+Trợ lý</a>
+</nav>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<span style="font-size: 13px; font-weight: 600; color: #5B6170; padding: 0 12px 4px;">Khác</span>
+<a class="nav" href="#">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"></path></svg>
+Báo cáo</a>
+<a class="nav" href="#">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>
+Cài đặt</a>
+</div>
+<div style="margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 4px 8px;">
+<div style="width: 40px; height: 40px; border-radius: 999px; background: #1F2430; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600;">D</div>
+<div style="display: flex; flex-direction: column;">
+<span style="font-size: 15px; font-weight: 600;">Nguyễn Thị Demo</span>
+<span style="font-size: 13px; color: #5B6170;">Quản trị</span>
+</div>
+</div>
+</aside>
+
+<main style="flex: 999 1 560px; min-width: 0; padding: 28px 32px 48px; box-sizing: border-box;">
+<div style="max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<h1 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em;">Tài sản</h1>
+<span style="font-size: 15px; color: #5B6170;">5 tài sản, 10 phòng, thu dự kiến 54.000.000 ₫ mỗi tháng</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+<button type="button" class="btn btn-ghost">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>
+Xuất Excel</button>
+<button type="button" class="btn" style="background: {{accent}}; color: #FFFFFF; border: 0;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+Thêm tài sản</button>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+<label style="flex: 1 1 260px; max-width: 380px; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; background: #FFFFFF; border: 1px solid #E7E9EE; border-radius: 12px; box-sizing: border-box;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6170" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Tìm tài sản</span>
+<input type="search" placeholder="Tìm theo tên hoặc địa chỉ" style="flex: 1; min-width: 0; border: 0; outline: none; font: inherit; font-size: 15px; background: transparent;">
+</label>
+<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+<button type="button" class="chip" style="background: #1F2430; color: #FFFFFF; border-color: #1F2430;">Tất cả <span style="color: #C9CDD6;">5</span></button>
+<button type="button" class="chip">Dãy trọ <span>1</span></button>
+<button type="button" class="chip">Căn hộ <span>1</span></button>
+<button type="button" class="chip">Nhà phố <span>1</span></button>
+<button type="button" class="chip">Kiot <span>1</span></button>
+<button type="button" class="chip">Đất <span>1</span></button>
+</div>
+<div style="margin-left: auto; display: flex; gap: 8px;">
+<button type="button" class="btn btn-ghost">Mới nhất
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg></button>
+<div role="group" aria-label="Kiểu xem" style="display: flex; border: 1px solid #DCDFE5; border-radius: 10px; overflow: hidden;">
+<button type="button" aria-pressed="true" style="min-height: 44px; padding: 0 12px; border: 0; background: #1F2430; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"></rect><rect x="13" y="4" width="7" height="7" rx="1"></rect><rect x="4" y="13" width="7" height="7" rx="1"></rect><rect x="13" y="13" width="7" height="7" rx="1"></rect></svg>Lưới</button>
+<button type="button" aria-pressed="false" style="min-height: 44px; padding: 0 12px; border: 0; background: #FFFFFF; color: #1F2430; font: inherit; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"></path></svg>Danh sách</button>
+</div>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+
+<article class="card">
+<div class="photo">
+<img src="/_blob/43b706214b20fe7ee58715cb1ccac3e7" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span class="tag">Dãy trọ, 7 phòng</span>
+<button type="button" class="more" aria-label="Thêm thao tác cho Dãy trọ Dĩ An Demo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1F2430" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; flex-wrap: wrap; gap: 6px;"><span class="pill paid">6/7 đang thuê</span><span class="pill over"><span class="diamond"></span>2 quá hạn</span></div>
+<h2 style="margin: 0; font-size: 18px; font-weight: 700;">Dãy trọ Dĩ An Demo</h2>
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<span style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: #2A2F3A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>12 Đường Số 3, Phường Dĩ An, TP.HCM</span>
+<span class="muted" style="padding-left: 22px;">Theo sổ: P. Dĩ An, TP. Dĩ An, Bình Dương</span>
+</div>
+<span class="price">21.000.000 ₫<span style="font-size: 14px; font-weight: 500; color: #5B6170;"> /tháng</span></span>
+<div class="meta"><span>7 phòng</span><span>180 m²</span><span>Hồ sơ 85%</span></div>
+</div>
+</article>
+
+<article class="card">
+<div class="photo">
+<img src="/_blob/b5a02b6471a54f0c21be8f85e9461fe5" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span class="tag">Căn hộ, 2 phòng ngủ</span>
+<button type="button" class="more" aria-label="Thêm thao tác cho Căn hộ Thảo Điền Demo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1F2430" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; flex-wrap: wrap; gap: 6px;"><span class="pill paid">Đang cho thuê</span><span class="pill due">Hết hạn 30/10</span></div>
+<h2 style="margin: 0; font-size: 18px; font-weight: 700;">Căn hộ Thảo Điền Demo</h2>
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<span style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: #2A2F3A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>Căn 12.05, Tòa B, Phường An Khánh, TP.HCM</span>
+<span class="muted" style="padding-left: 22px;">Theo sổ: P. Thảo Điền, TP. Thủ Đức</span>
+</div>
+<span class="price">15.000.000 ₫<span style="font-size: 14px; font-weight: 500; color: #5B6170;"> /tháng</span></span>
+<div class="meta"><span>2 phòng ngủ</span><span>78 m²</span><span>Hồ sơ 100%</span></div>
+</div>
+</article>
+
+<article class="card">
+<div class="photo">
+<img src="/_blob/ddc6d0fd1f2bb841eac2563c4dc282cc" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span class="tag">Nhà phố, 4 tầng</span>
+<button type="button" class="more" aria-label="Thêm thao tác cho Nhà phố Gò Vấp Demo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1F2430" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; flex-wrap: wrap; gap: 6px;"><span class="pill paid">Đang cho thuê</span><span class="pill due">Đến hạn 10/10</span></div>
+<h2 style="margin: 0; font-size: 18px; font-weight: 700;">Nhà phố Gò Vấp Demo</h2>
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<span style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: #2A2F3A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>45 Đường Demo, Phường Gò Vấp, TP.HCM</span>
+<span class="muted" style="padding-left: 22px;">Theo sổ: P. 5, Q. Gò Vấp</span>
+</div>
+<span class="price">18.000.000 ₫<span style="font-size: 14px; font-weight: 500; color: #5B6170;"> /tháng</span></span>
+<div class="meta"><span>4 tầng</span><span>64 m²</span><span>Hồ sơ 70%</span></div>
+</div>
+</article>
+
+<article class="card">
+<div class="photo">
+<img src="/_blob/a779d83517f0620a6418b4bb976affab" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span class="tag">Đất, 1.250 m²</span>
+<button type="button" class="more" aria-label="Thêm thao tác cho Đất Long An Demo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1F2430" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; flex-wrap: wrap; gap: 6px;"><span class="pill vacant">Không cho thuê</span><span class="pill due">Thiếu ảnh sổ</span></div>
+<h2 style="margin: 0; font-size: 18px; font-weight: 700;">Đất Long An Demo</h2>
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<span style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: #2A2F3A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>Thửa 1234, tờ bản đồ 56, Xã Đức Hòa, Tây Ninh</span>
+<span class="muted" style="padding-left: 22px;">Theo sổ: Huyện Đức Hòa, Long An</span>
+</div>
+<span class="price">Ước tính 3,2 tỷ ₫</span>
+<div class="meta"><span>1.250 m²</span><span>Đất trồng cây lâu năm</span><span>Hồ sơ 40%</span></div>
+</div>
+</article>
+
+<article class="card">
+<div class="photo">
+<img src="/_blob/edab18c27b9a2d57b0c4ab4b0c10f9d8" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span class="tag">Kiot, 24 m²</span>
+<button type="button" class="more" aria-label="Thêm thao tác cho Kiot Bình Dương Demo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1F2430" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; flex-wrap: wrap; gap: 6px;"><span class="pill vacant"><span style="width: 8px; height: 8px; border: 1.5px solid currentColor; box-sizing: border-box;"></span>Trống từ 01/09</span></div>
+<h2 style="margin: 0; font-size: 18px; font-weight: 700;">Kiot Bình Dương Demo</h2>
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<span style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: #2A2F3A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>Kiot 8, Chợ Demo, Phường Thủ Dầu Một, TP.HCM</span>
+<span class="muted" style="padding-left: 22px;">Theo sổ: TP. Thủ Dầu Một, Bình Dương</span>
+</div>
+<span class="price">6.500.000 ₫<span style="font-size: 14px; font-weight: 500; color: #5B6170;"> /tháng, giá rao</span></span>
+<div class="meta"><span>24 m²</span><span>Mặt chợ</span><span>Hồ sơ 90%</span></div>
+</div>
+</article>
+
+<a href="#" class="card" style="border: 1.5px dashed #C9CDD6; background: #FAFBFC; box-shadow: none; text-decoration: none; align-items: center; justify-content: center; gap: 12px; padding: 32px; min-height: 360px; text-align: center;">
+<span style="width: 56px; height: 56px; border-radius: 16px; background: color-mix(in srgb, {{accent}} 10%, #FFFFFF); color: {{accent}}; display: flex; align-items: center; justify-content: center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path><circle cx="12" cy="13.5" r="3.5"></circle></svg></span>
+<span style="font-size: 17px; font-weight: 700; color: #16181D;">Thêm tài sản bằng ảnh sổ</span>
+<span style="font-size: 14px; color: #5B6170; max-width: 240px;">Chụp sổ đỏ hoặc sổ hồng, Trợ lý điền sẵn thông tin để Mẹ kiểm tra.</span>
+</a>
+
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B83A26","options":["#B83A26","#2952CC","#0F766E","#1F2430"],"section":"Theme"},"font":{"editor":"enum","default":"Plus Jakarta Sans","options":["Plus Jakarta Sans","Source Sans 3","Be Vietnam Pro"],"section":"Theme"},"$preview":{"width":1440,"height":1120}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+accent: this.props.accent ?? '#B83A26',
+font: this.props.font ?? 'Plus Jakarta Sans'
+};
+}
+}
+</script>
+</body>
+</html>
