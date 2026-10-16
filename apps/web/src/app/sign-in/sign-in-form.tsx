@@ -103,7 +103,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
       <input type="hidden" name="email" value={state.email} />
       <p id="code-sent" className="text-ink-2">
         {copy.codeSent[0]}
-        <strong className="wrap-anywhere">{state.email}</strong>
+        <strong className="inline-block max-w-full wrap-anywhere">{state.email}</strong>
         {copy.codeSent[1]}
       </p>
       <div className="flex flex-col gap-2">
