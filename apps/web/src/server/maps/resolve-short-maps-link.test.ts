@@ -143,23 +143,23 @@ describe('resolveShortMapsLink', () => {
     expect(lines.at(-1)).toBe('maps.resolve result=timeout');
   });
 
-  test('sends no cookie or authorization header', async () => {
+  test('sends only undici fetch defaults, so no cookie or authorization', async () => {
     const agent = new MockAgent();
     agent.disableNetConnect();
-    const seen: Record<string, unknown>[] = [];
+    const seen: string[][] = [];
     agent
       .get('https://maps.app.goo.gl')
       .intercept({ path: '/DemoHeaders', method: 'GET' })
       .reply((options) => {
-        seen.push(Object.fromEntries(Object.entries(options.headers ?? {}).map(([key, value]) => [key.toLowerCase(), value])));
+        seen.push(Object.keys(options.headers ?? {}).map((name) => name.toLowerCase()));
         return { statusCode: 302, responseOptions: { headers: { location: 'https://www.google.com/maps?q=1,2' } } };
       });
 
     await resolveShortMapsLink('https://maps.app.goo.gl/DemoHeaders', { dispatcher: agent });
 
-    expect(seen).toHaveLength(1);
-    expect(Object.keys(seen[0] ?? {})).not.toEqual(expect.arrayContaining(['cookie']));
-    expect(Object.keys(seen[0] ?? {})).not.toEqual(expect.arrayContaining(['authorization']));
+    expect(seen.map((names) => names.toSorted())).toEqual([
+      ['accept', 'accept-encoding', 'accept-language', 'sec-fetch-mode', 'user-agent'],
+    ]);
   });
 });
 

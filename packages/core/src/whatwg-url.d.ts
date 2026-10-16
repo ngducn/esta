@@ -1,4 +1,3 @@
-// Node, browsers and workers all ship the WHATWG URL global; core declares the part it reads instead of pulling in DOM or Node types.
 declare class URLSearchParams {
   get(name: string): string | null;
 }

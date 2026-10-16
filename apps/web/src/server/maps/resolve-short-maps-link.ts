@@ -121,10 +121,7 @@ function startUrl(input: string): Result<URL, ResolveError> {
   return { ok: true, value: url };
 }
 
-/**
- * Follows a `maps.app.goo.gl` or `goo.gl/maps` link to the Google Maps URL it names and parses that URL
- * without fetching it. P1-09's server action is the only intended caller.
- */
+/** Follows a `maps.app.goo.gl` or `goo.gl/maps` link to the Google Maps URL it names and parses that URL without fetching it. */
 export async function resolveShortMapsLink(
   input: string,
   deps: ResolveDeps = { dispatcher: (sharedAgent ??= guardedAgent()) },
