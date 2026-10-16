@@ -142,6 +142,7 @@ Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pa
 | `set-locale.sh <vi\|en>` | Switch the UI language |
 | `set-theme.sh <light\|dark>` | Set the theme cookie and reload into that theme |
 | `evidence.sh <pr-id> <slug>` | Screenshot and accessibility tree under `/tmp/swarm-<pr-id>/` |
+| `worker.sh start replay\|live`, `worker.sh stop` | Start or stop the slot's agent worker; pid in `worker.pid`, log in `worker.log` |
 | `cleanup.sh` | Stop everything Launch started and prove the ports are free |
 | `node scripts/inbucket-code.ts <email> [--clear]` | Print the newest 6-digit code for an address, or clear its mail |
 

@@ -11,7 +11,7 @@ function authorization(): { authorization: string } {
 }
 
 function ownTheClockRow() {
-  test.skip(test.info().project.name !== 'mobile', 'the test clock row is shared per slot');
+  test.skip(test.info().project.name !== 'clock', 'the test clock row is shared per slot');
 }
 
 async function setClock(request: APIRequestContext, frozenNow: string) {
