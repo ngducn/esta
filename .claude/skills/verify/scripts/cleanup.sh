@@ -8,6 +8,7 @@ if [[ ! -f "$STACK_MARKER" ]]; then
 elif [[ "$(marker_checkout)" != "$REPO_ROOT" ]]; then
   echo "Slot $ESTA_SLOT was launched from $(marker_checkout). Run cleanup.sh in that checkout; this one leaves the slot running."
 else
+  "$(dirname "$0")/worker.sh" stop
   stop_web
   if stack_running; then
     pnpm --silent clock:set off

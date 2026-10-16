@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "kind": "ping",
+  "inputHash": "2ff54832baea10fb92d56b5971eec216d658e41880e871fcc3e5d6786f694949",
+  "input": {
+    "version": 1,
+    "kind": "ping",
+    "prompt": "This is a connection check for Esta, a family property app.\nCall the household_info tool once.\nThen reply with exactly one sentence in the household's locale (vi means Vietnamese) that says the connection works and names the household exactly as the tool returned it.\nWrite nothing else: no numbers, no lists, no emoji.",
+    "builtInTools": [],
+    "mcpTools": [
+      "household_info"
+    ],
+    "maxTurns": 3
+  },
+  "model": "claude-sonnet-5-5",
+  "numTurns": 2,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__household_info",
+      "input": {}
+    }
+  ],
+  "reply": "Kết nối với Esta hoạt động bình thường cho hộ gia đình \"<household>\"."
+}

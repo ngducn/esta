@@ -122,6 +122,155 @@ export type Database = {
           },
         ]
       }
+      agent_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          created_by: string | null
+          error: string | null
+          finished_at: string | null
+          household_id: string
+          id: string
+          idempotency_key: string | null
+          kind: string
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          requested_by: string | null
+          result: Json | null
+          run_after: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          finished_at?: string | null
+          household_id: string
+          id?: string
+          idempotency_key?: string | null
+          kind: string
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          payload?: Json
+          priority?: number
+          requested_by?: string | null
+          result?: Json | null
+          run_after: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          finished_at?: string | null
+          household_id?: string
+          id?: string
+          idempotency_key?: string | null
+          kind?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          payload?: Json
+          priority?: number
+          requested_by?: string | null
+          result?: Json | null
+          run_after?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_jobs_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_runs: {
+        Row: {
+          agent_mode: string
+          auth_mode: string
+          cost_estimate_usd: number | null
+          created_at: string
+          created_by: string | null
+          finished_at: string | null
+          household_id: string
+          id: string
+          job_id: string
+          model: string | null
+          num_turns: number | null
+          session_id: string | null
+          started_at: string
+          tool_calls: Json
+          updated_at: string
+          usage: Json
+        }
+        Insert: {
+          agent_mode: string
+          auth_mode: string
+          cost_estimate_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          household_id: string
+          id?: string
+          job_id: string
+          model?: string | null
+          num_turns?: number | null
+          session_id?: string | null
+          started_at: string
+          tool_calls?: Json
+          updated_at?: string
+          usage?: Json
+        }
+        Update: {
+          agent_mode?: string
+          auth_mode?: string
+          cost_estimate_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          household_id?: string
+          id?: string
+          job_id?: string
+          model?: string | null
+          num_turns?: number | null
+          session_id?: string | null
+          started_at?: string
+          tool_calls?: Json
+          updated_at?: string
+          usage?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_runs_household_id_job_id_fkey"
+            columns: ["household_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "agent_jobs"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -554,6 +703,33 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_heartbeats: {
+        Row: {
+          agent_mode: string
+          auth_mode: string
+          host_label: string
+          last_seen_at: string
+          version: string
+          worker_id: string
+        }
+        Insert: {
+          agent_mode: string
+          auth_mode: string
+          host_label: string
+          last_seen_at: string
+          version: string
+          worker_id: string
+        }
+        Update: {
+          agent_mode?: string
+          auth_mode?: string
+          host_label?: string
+          last_seen_at?: string
+          version?: string
+          worker_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -561,6 +737,37 @@ export type Database = {
     Functions: {
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
+      claim_agent_job: {
+        Args: { p_as_of: string; worker_id: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          created_by: string | null
+          error: string | null
+          finished_at: string | null
+          household_id: string
+          id: string
+          idempotency_key: string | null
+          kind: string
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          requested_by: string | null
+          result: Json | null
+          run_after: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_pending_invites: { Args: never; Returns: number }
       create_household: {
         Args: { p_display_name: string; p_name: string }

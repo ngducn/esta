@@ -245,6 +245,38 @@
     "adjustDisplay": "Chỉnh cỡ chữ và giao diện",
     "photoCaption": "Ảnh minh họa."
   },
+  "assistant": {
+    "statusOnline": "Trợ lý đang hoạt động. Cập nhật lúc {time}.",
+    "statusOffline": "Trợ lý ngoại tuyến từ {time}. Việc mới sẽ chạy khi máy hoạt động lại.",
+    "statusNever": "Trợ lý chưa kết nối. Việc mới sẽ chạy khi máy hoạt động lại.",
+    "check": "Kiểm tra kết nối",
+    "checkIntro": "Chạy một việc nhỏ để chắc Trợ lý đọc được dữ liệu của gia đình. Chỉ người vận hành thấy mục này.",
+    "runCheck": "Chạy kiểm tra",
+    "checkSendFailed": "Chưa gửi được yêu cầu kiểm tra. Thử lại sau ít phút.",
+    "noCheck": "Chưa chạy kiểm tra lần nào.",
+    "latestCheck": "Lần kiểm tra mới nhất, lúc {time}",
+    "jobStatus": {
+      "queued": "Đang chờ",
+      "running": "Đang chạy",
+      "done": "Xong",
+      "failed": "Lỗi",
+      "cancelled": "Đã hủy"
+    },
+    "recentRuns": "Lần chạy gần đây",
+    "noRuns": "Chưa có lần chạy nào.",
+    "columns": {
+      "time": "Thời gian",
+      "authMode": "Xác thực",
+      "agentMode": "Chế độ",
+      "model": "Mô hình",
+      "turns": "Lượt",
+      "cost": "Chi phí ước tính",
+      "toolCalls": "Công cụ đã gọi"
+    },
+    "unknown": "Không rõ",
+    "noToolCalls": "Không gọi công cụ",
+    "toolCall": "{name} × {count}"
+  },
   "settings": {
     "display": "Hiển thị",
     "displayIntro": "Ngôn ngữ, cỡ chữ và mật độ đi theo tài khoản của bạn trên mọi thiết bị.",
