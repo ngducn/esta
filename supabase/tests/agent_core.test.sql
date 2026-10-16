@@ -108,7 +108,8 @@ select throws_ok(
 
 reset role;
 select tests.clear_request();
--- Postgres 17.6.1.106 segfaults on SET ROLE plus a denied function call, so the grant is read instead of called.
+-- supautils' permission hint segfaults this postgres session when it is denied a function, so the grant is read
+-- instead of called (policy_functions.test.sql has the reason).
 select ok(not has_function_privilege('authenticated', 'public.claim_agent_job(text, timestamptz)', 'execute'),
   'a member cannot claim a job');
 select ok(not has_function_privilege('anon', 'public.claim_agent_job(text, timestamptz)', 'execute'),
