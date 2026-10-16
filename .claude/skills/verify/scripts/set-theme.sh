@@ -2,8 +2,8 @@
 source "$(dirname "$0")/env.sh"
 
 theme="${1:-}"
-[[ "$theme" == light || "$theme" == dark || "$theme" == system ]] || {
-  echo "Usage: ESTA_SLOT=<n> set-theme.sh <light|dark|system>" >&2
+[[ "$theme" == light || "$theme" == dark ]] || {
+  echo "Usage: ESTA_SLOT=<n> set-theme.sh <light|dark>" >&2
   exit 2
 }
 

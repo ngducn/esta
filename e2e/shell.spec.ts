@@ -104,9 +104,12 @@ test('lane 2: at 1440 px the sidebar is 240 px, content at most 1200 px, and no 
   expect((await sidebar.boundingBox())?.width).toBe(240);
   expect((await page.getByRole('main').boundingBox())?.width).toBeLessThanOrEqual(1200);
   await expect(page.getByRole('navigation', { name: 'Các mục chính' })).toHaveCount(1);
-  await expect(sidebar.getByRole('navigation')).toBeVisible();
-  await expect(sidebar.getByRole('link')).toHaveText(sections.map((section) => section.vi));
+  const main = sidebar.getByRole('navigation', { name: 'Các mục chính' });
+  await expect(main).toBeVisible();
+  await expect(main.getByRole('link')).toHaveText(sections.map((section) => section.vi));
+  await expect(sidebar.getByRole('navigation', { name: 'Khác' }).getByRole('link')).toHaveText(['Báo cáo', 'Cài đặt']);
   await expect(sidebar.locator('[aria-current="page"]')).toHaveText('Tổng quan');
+  await expect(sidebar.getByRole('button', { name: /^Tài khoản: / }), 'the member block names the member and the role').toContainText('Quản trị');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 

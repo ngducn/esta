@@ -67,7 +67,7 @@ Send browser commands through `$S/b.sh`, which runs gstack browse against your s
 $S/b.sh viewport 390x844          # phone; 1440x900 for desktop
 $S/sign-in.sh me.lane1@demo.esta.test
 $S/set-locale.sh en               # or vi
-$S/set-theme.sh dark              # or light, system
+$S/set-theme.sh dark              # or light
 $S/b.sh goto http://localhost:4300/onboarding
 $S/b.sh snapshot -i               # interactive elements with @e refs
 $S/b.sh click 'role=button[name="Tạo gia đình"]'
@@ -75,7 +75,7 @@ $S/b.sh click 'role=button[name="Tạo gia đình"]'
 
 - `sign-in.sh <email>` drops any earlier session (`sign-out.sh`), clears that address's mail, fills `/sign-in`, reads the newest code with `node scripts/inbucket-code.ts <email>`, submits it and waits until the browser leaves `/sign-in`. It prints the landing path, `/` for a member and `/onboarding` for an address with no household. It takes about 2 s. Sign-in is code-only: email confirmations are on and seeded users have no password, so there is no password path to drive.
 - `set-locale.sh <vi|en>` sets the `NEXT_LOCALE` cookie and reloads. A signed-in member's saved locale wins over the cookie, so when `<html lang>` does not change it presses the in-app language switch (`button[lang="en"]`), which saves the member's choice. It fails unless `<html lang>` ends at the requested locale.
-- `set-theme.sh <light|dark|system>` sets the `esta_theme` cookie and reloads. The server renders `data-theme` on `<html>` from that cookie, so the theme holds from the first byte and across every later navigation and reload. It fails unless the reloaded page carries the requested `data-theme`. `system` follows the browser's `prefers-color-scheme`.
+- `set-theme.sh <light|dark>` sets the `esta_theme` cookie and reloads. The server renders `data-theme` on `<html>` from that cookie, so the theme holds from the first byte and across every later navigation and reload. It fails unless the reloaded page carries the requested `data-theme`. With no cookie the app is light whatever the browser's `prefers-color-scheme` says.
 - `sign-out.sh` leaves the browser signed out on `/sign-in`. When `/sign-in` redirects to `/`, it opens the account menu (`Tài khoản` or `Account`) and presses `Đăng xuất` or `Sign out` in it.
 - The `sb-` session cookies are httpOnly, so `document.cookie` never shows them. Read cookies with `$S/b.sh cookies`, which prints names and flags and redacts values.
 
@@ -140,7 +140,7 @@ Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pa
 | `sign-in.sh <email>` | Sign in through `/sign-in` with the mailbox code |
 | `sign-out.sh` | Sign out through the app and open `/sign-in` |
 | `set-locale.sh <vi\|en>` | Switch the UI language |
-| `set-theme.sh <light\|dark\|system>` | Set the theme cookie and reload into that theme |
+| `set-theme.sh <light\|dark>` | Set the theme cookie and reload into that theme |
 | `evidence.sh <pr-id> <slug>` | Screenshot and accessibility tree under `/tmp/swarm-<pr-id>/` |
 | `cleanup.sh` | Stop everything Launch started and prove the ports are free |
 | `node scripts/inbucket-code.ts <email> [--clear]` | Print the newest 6-digit code for an address, or clear its mail |

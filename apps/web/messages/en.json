@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Esta",
-    "tagline": "The family's property ledger"
+    "tagline": "The family's property ledger",
+    "heroAlt": "Hanoi rooftops looking towards the Long Bien bridge"
   },
   "language": {
     "label": "Language",
@@ -70,7 +71,7 @@
     "role": "Access: {role}",
     "signedInAs": "You are signed in as {name}.",
     "signedIn": "You are signed in.",
-    "later": "Today's tasks and this month's collection will appear here in a coming update."
+    "later": "Overview will show what has been collected this month, who has not paid yet and what needs doing today."
   },
   "components": {
     "loading": "Loading",
@@ -230,15 +231,19 @@
     "sections": "Main sections",
     "account": "Account",
     "accountOf": "Account: {name}",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "more": "More"
   },
   "sections": {
-    "properties": "The family's houses and land will be listed here in a coming update.",
-    "collections": "Monthly rent and which rooms still owe will appear here in a coming update.",
-    "documents": "Certificates, leases and papers will be kept here in a coming update.",
-    "assistant": "The assistant's daily notes will appear here in a coming update.",
-    "reports": "Tax and per-property income reports will be here in a coming update.",
-    "settings": "Household, members and receiving bank accounts will be here in a coming update."
+    "properties": "Properties will list every house and plot of land in the family, with its photo, address, certificate and rent.",
+    "collections": "Collections will show which rooms have paid this month and which have not, and record a payment in a few taps.",
+    "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",
+    "assistant": "The assistant will leave a note every morning about late rent, leases ending soon and missing papers.",
+    "reports": "Reports will hold the rental tax card and each property’s income and costs by year.",
+    "settings": "Display settings follow your account. The household, members and receiving bank accounts arrive here in the next update.",
+    "soonTitle": "Coming in the next update",
+    "adjustDisplay": "Adjust text size and theme",
+    "photoCaption": "Illustrative photos."
   },
   "settings": {
     "display": "Display",
@@ -273,5 +278,11 @@
     "save": "Save",
     "saved": "Display settings saved.",
     "saveFailed": "Not saved. Check the connection and try again."
+  },
+  "photos": {
+    "nhaPho": "Town house",
+    "dayTro": "Rooming house",
+    "canHo": "Apartment",
+    "dat": "Land"
   }
 }

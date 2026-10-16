@@ -4,40 +4,58 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { isActive, type NavItem } from './nav';
-import { activeLabel, SectionIcon } from './tab-bar';
+import { sectionIcons } from './section-icons';
+
+const linkClass =
+  'flex min-h-touch items-center gap-3 rounded-sm px-3 text-body font-medium text-ink-2 transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent-tint aria-[current=page]:font-semibold aria-[current=page]:text-accent';
+
+function NavList({ items, pathname }: { items: readonly NavItem[]; pathname: string }) {
+  return (
+    <ul className="flex flex-col gap-1">
+      {items.map((item) => {
+        const Icon = sectionIcons[item.key];
+        return (
+          <li key={item.key}>
+            <Link href={item.href} aria-current={isActive(pathname, item.href) ? 'page' : undefined} className={linkClass}>
+              <Icon className="size-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+              <span className="min-w-0 break-words">{item.label}</span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export function Sidebar({
   items,
+  more,
   label,
+  moreLabel,
   header,
   footer,
 }: {
   items: readonly NavItem[];
+  more: readonly NavItem[];
   label: string;
+  moreLabel: string;
   header: ReactNode;
   footer: ReactNode;
 }) {
   const pathname = usePathname();
   return (
-    <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col overflow-y-auto border-r border-rule lg:flex">
-      <div className="px-6 pt-6 pb-5">{header}</div>
+    <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col gap-5 overflow-y-auto border-r border-rule bg-surface px-4 py-5 lg:flex">
+      {header}
       <nav aria-label={label}>
-        <ul className="flex flex-col gap-1 px-3">
-          {items.map((item) => (
-            <li key={item.key}>
-              <Link
-                href={item.href}
-                aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                className="group flex min-h-touch items-center gap-3 rounded-sm px-3 text-body font-medium text-ink-muted transition-colors duration-(--duration-fast) ease-standard hover:bg-rule/50 hover:text-ink aria-[current=page]:text-ink"
-              >
-                <SectionIcon d={item.icon} />
-                <span className={`min-w-0 break-words ${activeLabel}`}>{item.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <NavList items={items} pathname={pathname} />
       </nav>
-      <div className="mt-auto border-t border-rule p-3">{footer}</div>
+      <nav aria-labelledby="sidebar-more" className="flex flex-col gap-1">
+        <p id="sidebar-more" className="px-3 pb-1 text-small font-semibold text-ink-muted">
+          {moreLabel}
+        </p>
+        <NavList items={more} pathname={pathname} />
+      </nav>
+      <div className="mt-auto border-t border-rule pt-3">{footer}</div>
     </aside>
   );
 }

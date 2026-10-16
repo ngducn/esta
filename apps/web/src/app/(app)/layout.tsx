@@ -1,6 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { formatDateLong } from '@esta/core/format';
+import { BrandMark } from '@/components/brand-mark';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
 import { accountSections, primarySections, type NavItem } from '@/components/shell/nav';
 import { Sidebar } from '@/components/shell/sidebar';
@@ -26,40 +27,45 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     getTranslations('app'),
   ]);
 
-  const items: NavItem[] = primarySections.map(({ key, href, icon }) => ({ key, href, icon, label: nav(key) }));
+  const toItem = ({ key, href }: { key: NavItem['key']; href: string }): NavItem => ({ key, href, label: nav(key) });
+  const items = primarySections.map(toItem);
+  const more = accountSections.map(toItem);
   const name = member.displayName ?? shell('account');
   const initial = monogram(member.displayName);
+  const role = onboarding(`roles.${member.role}`);
 
   return (
     <div className="lg:flex">
       <Sidebar
         items={items}
+        more={more}
         label={shell('sections')}
+        moreLabel={shell('more')}
         header={
           <>
-            <p className="text-h3 font-semibold text-accent">{app('name')}</p>
-            <p className="text-small text-ink-muted break-words">{member.household.name}</p>
+            <BrandMark name={app('name')} className="px-2 pt-1" />
+            <p className="rounded-md border border-rule bg-surface-2 px-3 py-2.5 font-semibold break-words text-ink">{member.household.name}</p>
           </>
         }
-        footer={<AccountTrigger initial={initial} label={name} accessibleName={shell('accountOf', { name })} />}
+        footer={<AccountTrigger initial={initial} label={name} detail={role} accessibleName={shell('accountOf', { name })} className="w-full" />}
       />
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 px-4 pt-2 lg:px-8 lg:pt-6">
-          <p data-testid="date-line" className="text-small text-ink-muted">
+        <header className="flex items-center justify-between gap-4 px-4 pt-3 lg:px-8 lg:pt-6">
+          <p data-testid="date-line" className="text-small font-medium text-ink-muted">
             {formatDateLong(clock.today(), locale)}
           </p>
           <div className="lg:hidden">
             <AccountTrigger initial={initial} label={shell('account')} accessibleName={shell('account')} />
           </div>
         </header>
-        <main className="w-full max-w-content flex-1 px-4 pt-4 pb-10 lg:px-8 lg:pt-6">{children}</main>
+        <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">{children}</main>
         <TabBar items={items} label={shell('sections')} />
       </div>
       <AvatarMenu
         name={name}
         household={member.household.name}
-        role={onboarding(`roles.${member.role}`)}
-        links={accountSections.map(({ key, href }) => ({ key, href, label: nav(key) }))}
+        role={role}
+        links={more}
         switchLanguage={{ locale: locale === 'vi' ? 'en' : 'vi', label: language('switchTo') }}
         signOut={shell('signOut')}
       />
