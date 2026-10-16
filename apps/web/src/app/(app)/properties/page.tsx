@@ -8,7 +8,6 @@ import {
   type SearchParamsRecord,
 } from '@esta/core/properties';
 import Link from 'next/link';
-import { preload } from 'react-dom';
 import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
 import { FilterChips, filterChips, hasChoice, type FilterGroup } from '@/components/properties/filter-chips';
@@ -69,9 +68,6 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   })).filter((group) => hasChoice(group, filters[group.key]));
 
   const cards = list.rows.map(toCard);
-  const lcpPhoto = cards[0]?.photoUrl;
-  if (lcpPhoto) preload(lcpPhoto, { as: 'image', fetchPriority: 'high' });
-
   const filtered = filters.q !== '' || PROPERTY_FILTER_KEYS.some((key) => filters[key] !== null);
   const count = filtered ? t('countFiltered', { shown: list.rows.length, count: list.householdCount }) : t('count', { count: list.householdCount });
 

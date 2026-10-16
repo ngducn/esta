@@ -68,6 +68,12 @@ export type PropertyCardData = {
   photoUrl: string | null;
 };
 
+/** The first card is the likely LCP, the second shares the first screen on a phone, the rest wait for the scroll. */
+export function photoPriority(index: number): CoverPhotoPriority {
+  if (index === 0) return 'high';
+  return index === 1 ? 'eager' : 'lazy';
+}
+
 const pill = 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold';
 
 export function PropertyCard({ card, priority }: { card: PropertyCardData; priority: CoverPhotoPriority }) {
