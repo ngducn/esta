@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -12,6 +12,9 @@ mkdirSync(siblingDir);
 writeFileSync(join(jobDir, 'page-1.png'), 'png');
 writeFileSync(join(siblingDir, 'secret.png'), 'png');
 symlinkSync(join(siblingDir, 'secret.png'), join(jobDir, 'link.png'));
+mkdirSync(join(siblingDir, 'pages'));
+symlinkSync(join(siblingDir, 'pages'), join(jobDir, 'pages-link'));
+mkdirSync(join(jobDir, 'pages'));
 afterAll(() => rmSync(jobsDir, { recursive: true, force: true }));
 
 const policy: ToolPolicy = { allowed: new Set(['Read', 'mcp__esta__save_extraction']), jobDir };
@@ -32,6 +35,17 @@ describe('decideToolUse', () => {
     expect(decideToolUse(policy, 'Read', { file_path: 'link.png' }).allow).toBe(false);
   });
 
+  it('denies a symlink followed by dot-dot, which the kernel resolves outside the job directory', () => {
+    const escape = `${jobDir}/pages-link/../secret.png`;
+    expect(existsSync(escape), 'the kernel reaches the sibling file').toBe(true);
+    expect(decideToolUse(policy, 'Read', { file_path: 'pages-link/../secret.png' }).allow).toBe(false);
+    expect(decideToolUse(policy, 'Read', { file_path: escape }).allow).toBe(false);
+  });
+
+  it('allows dot-dot through a real directory that stays inside the job directory', () => {
+    expect(decideToolUse(policy, 'Read', { file_path: 'pages/../page-1.png' })).toEqual({ allow: true });
+  });
+
   it('denies a Read with no path', () => {
     expect(decideToolUse(policy, 'Read', {}).allow).toBe(false);
   });
@@ -44,6 +58,12 @@ describe('decideToolUse', () => {
 
   it('allows a listed MCP tool', () => {
     expect(decideToolUse(policy, 'mcp__esta__save_extraction', {})).toEqual({ allow: true });
+  });
+
+  it('denies a listed built-in tool that has no input rule', () => {
+    const withGlob: ToolPolicy = { ...policy, allowed: new Set([...policy.allowed, 'Glob', 'mcp__other__read']) };
+    expect(decideToolUse(withGlob, 'Glob', { pattern: '/etc/*' })).toEqual({ allow: false, reason: 'Glob has no input rule' });
+    expect(decideToolUse(withGlob, 'mcp__other__read', {})).toEqual({ allow: false, reason: 'mcp__other__read has no input rule' });
   });
 });
 
