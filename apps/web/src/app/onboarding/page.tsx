@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
+import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { AuthFrame } from '@/components/auth-frame';
+import { buttonVariants } from '@/components/ui/button';
 import { getCurrentMember, getSessionUser } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { signOut } from '../home-actions';
@@ -22,9 +25,10 @@ async function claimLateInvites(): Promise<boolean> {
 }
 
 export default async function OnboardingPage() {
-  const [t, shell, messages, member, user] = await Promise.all([
+  const [t, shell, app, messages, member, user] = await Promise.all([
     getTranslations('onboarding'),
     getTranslations('shell'),
+    getTranslations('app'),
     getMessages(),
     getCurrentMember(),
     getSessionUser(),
@@ -33,23 +37,20 @@ export default async function OnboardingPage() {
   if (member !== null && member.role !== 'admin') redirect('/');
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8">
-      <div className="flex justify-end">
-        <LanguageSwitch />
-      </div>
+    <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
       <NextIntlClientProvider messages={{ onboarding: messages.onboarding }}>
         {member === null ? (
           <>
             <div className="flex flex-col gap-2">
-              <h1 className="text-h1 font-semibold">{t('title')}</h1>
-              <p>{t('intro')}</p>
+              <h1 className="text-h2 lg:text-h1">{t('title')}</h1>
+              <p className="text-ink-2">{t('intro')}</p>
             </div>
             <CreateHouseholdForm />
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 border-t border-rule pt-5 text-small text-ink-muted">
               {user?.email && <p className="break-all">{t('signedInEmail', { email: user.email })}</p>}
               <p>{t('invitedElsewhere')}</p>
               <form action={signOut}>
-                <button type="submit" className="min-h-touch underline underline-offset-4">
+                <button type="submit" className="min-h-touch font-semibold text-ink underline decoration-ink-muted underline-offset-4">
                   {shell('signOut')}
                 </button>
               </form>
@@ -58,17 +59,20 @@ export default async function OnboardingPage() {
         ) : (
           <>
             <div className="flex flex-col gap-2">
-              <p className="text-h3 font-semibold">{member.household.name}</p>
-              <h1 className="text-h1 font-semibold">{t('inviteTitle')}</h1>
-              <p>{t('inviteIntro', { household: member.household.name })}</p>
+              <p className="flex items-center gap-2 font-semibold text-ink-muted">
+                <UserPlus className="size-5 text-accent" strokeWidth={1.8} aria-hidden="true" />
+                {member.household.name}
+              </p>
+              <h1 className="text-h2 lg:text-h1">{t('inviteTitle')}</h1>
+              <p className="text-ink-2">{t('inviteIntro', { household: member.household.name })}</p>
             </div>
             <InviteForm />
-            <Link href="/" className="flex min-h-touch items-center justify-center underline underline-offset-4">
+            <Link href="/" className={buttonVariants({ variant: 'outline', className: 'w-full' })}>
               {t('done')}
             </Link>
           </>
         )}
       </NextIntlClientProvider>
-    </main>
+    </AuthFrame>
   );
 }

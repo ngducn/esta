@@ -29,9 +29,9 @@ export type SignInCopy = {
 
 const initialState: SignInState = { step: 'email', email: '', error: null };
 
-const fieldClass = 'min-h-touch w-full rounded-md border border-current px-3 text-body';
-const primaryClass = 'min-h-touch w-full rounded-md bg-ink px-4 font-semibold text-surface disabled:opacity-60';
-const secondaryClass = 'min-h-touch px-2 underline underline-offset-4 disabled:no-underline disabled:opacity-60';
+const fieldClass = 'min-h-touch w-full rounded-md border border-field bg-surface px-3.5 text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted aria-invalid:border-overdue';
+const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
+const secondaryClass = 'min-h-touch px-2 font-semibold text-ink underline decoration-ink-muted underline-offset-4 disabled:no-underline disabled:opacity-60';
 
 function ResendButton({ copy, pending }: { copy: SignInCopy; pending: boolean }) {
   const [seconds, setSeconds] = useState(RESEND_WAIT_SECONDS);
@@ -68,7 +68,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
   if (state.step === 'email') {
     return (
       <form action={action} className="flex flex-col gap-4" noValidate>
-        <p>{copy.emailIntro}</p>
+        <p className="text-ink-2">{copy.emailIntro}</p>
         <div className="flex flex-col gap-2">
           <label htmlFor="email" className="font-semibold">
             {copy.emailLabel}
@@ -87,7 +87,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
             aria-describedby={error === null ? undefined : 'email-error'}
             className={fieldClass}
           />
-          <p id="email-error" role="alert" className="min-h-6 font-semibold">
+          <p id="email-error" role="alert" className="min-h-6 font-semibold text-overdue">
             {error}
           </p>
         </div>
@@ -101,7 +101,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <input type="hidden" name="email" value={state.email} />
-      <p id="code-sent">
+      <p id="code-sent" className="text-ink-2">
         {copy.codeSent[0]}
         <strong className="wrap-anywhere">{state.email}</strong>
         {copy.codeSent[1]}
@@ -126,7 +126,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
           aria-describedby={error === null ? 'code-sent' : 'code-sent code-error'}
           className={`${fieldClass} text-h2 tracking-widest tabular-nums`}
         />
-        <p id="code-error" role="alert" className="min-h-6 font-semibold">
+        <p id="code-error" role="alert" className="min-h-6 font-semibold text-overdue">
           {error}
         </p>
       </div>

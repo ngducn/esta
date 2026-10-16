@@ -7,8 +7,8 @@ import { NAME_MAX_LENGTH } from './limits';
 
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
 
-const fieldClass = 'min-h-touch w-full rounded-md border border-current px-3 text-body';
-const primaryClass = 'min-h-touch w-full rounded-md bg-ink px-4 font-semibold text-surface disabled:opacity-60';
+const fieldClass = 'min-h-touch w-full rounded-md border border-field bg-surface px-3.5 text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted aria-invalid:border-overdue';
+const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
 
 const initialCreate: CreateHouseholdState = { householdName: '', displayName: '', errors: {} };
 const initialInvite: InviteState = { status: 'idle' };
@@ -49,7 +49,9 @@ function TextField({
       <label htmlFor={name} className="font-semibold">
         {label}
       </label>
-      <p id={hintId}>{hint}</p>
+      <p id={hintId} className="text-small text-ink-muted">
+        {hint}
+      </p>
       <input
         id={name}
         name={name}
@@ -63,7 +65,7 @@ function TextField({
         className={fieldClass}
       />
       {error !== null && (
-        <p id={errorId} role="alert" className="font-semibold">
+        <p id={errorId} role="alert" className="font-semibold text-overdue">
           {error}
         </p>
       )}
@@ -96,7 +98,7 @@ export function CreateHouseholdForm() {
         autoComplete="name"
       />
       {state.errors.form === 'failed' && (
-        <p role="alert" className="font-semibold">
+        <p role="alert" className="font-semibold text-overdue">
           {t('createFailed')}
         </p>
       )}
@@ -137,17 +139,20 @@ export function InviteForm() {
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 font-semibold">{t('role')}</legend>
         {ROLES.map((role) => (
-          <label key={role} className="flex min-h-touch items-start gap-3 py-1">
+          <label
+            key={role}
+            className="flex min-h-touch cursor-pointer items-start gap-3 rounded-md border border-rule px-3 py-2.5 transition-colors duration-(--duration-fast) ease-standard hover:border-field has-checked:border-ink has-checked:bg-surface-2"
+          >
             <input
               type="radio"
               name="role"
               value={role}
               defaultChecked={role === (failed?.role ?? 'member')}
-              className="mt-1 size-5"
+              className="mt-0.5 size-5 shrink-0 accent-ink"
             />
             <span>
               <span className="block font-semibold">{t(`roles.${role}`)}</span>
-              <span className="block">{t(`roleHints.${role}`)}</span>
+              <span className="block text-small text-ink-muted">{t(`roleHints.${role}`)}</span>
             </span>
           </label>
         ))}
@@ -156,7 +161,7 @@ export function InviteForm() {
         {state.status === 'invited' ? t('invited', { email: state.email, role: t(`roles.${state.role}`) }) : null}
       </p>
       {error !== null && (
-        <p id="invite-error" role="alert" className="font-semibold">
+        <p id="invite-error" role="alert" className="font-semibold text-overdue">
           {error}
         </p>
       )}
