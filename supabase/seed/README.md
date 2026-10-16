@@ -93,4 +93,10 @@ Keys added by the generator:
 
 `<property>` is a SPEC §9.3 seed key: `q7`, `thu-duc`, `di-an`, `q1`, `bien-hoa`, `long-an` or `bao-loc`. A property's `code` is that key in uppercase without hyphens, such as `DIAN`.
 
+## Cover photos and bulk properties
+
+Each seeded property except `bien-hoa` gets `cover_photo_path` `<household id>/<property id>/<file>`, where the file is one of the four in `supabase/seed/photos/` (`ATTRIBUTION.md` there names their sources). `bien-hoa` keeps none, so every household shows the fallback tile. After `pnpm db:reset` and `pnpm db:start`, `scripts/db.ts` runs `scripts/seed-photos.ts`, which uploads each file with the service role to the private `property-photos` bucket at its path with `x-upsert`, and prints `seed-photos: 66 objects in property-photos` for the default 11 households. A rerun uploads the same bytes to the same paths. `pnpm db:checksum` hashes public tables only, so object timestamps never affect FND-7.
+
+`tsx scripts/seed-bulk-properties.ts --household <n> --count <count>` adds `Tài sản Demo 0001` and onward, without photos, to lane household n for list performance tests. Their ids come from `seed:bulk-property:lane-<n>:<0001>`, and a rerun adds nothing new.
+
 To seed a new table, add an emitter with `publicTable('<table>', (ctx) => rows)` in a module beside the others, give every row an id from `seedId(<key>)`, add the key shape to the table above, and insert the emitter into `EMITTERS` in `index.ts` after the tables it references. `SeedRow<'<table>'>` checks each row against the generated types in `packages/db`, including misspelled columns, so run `pnpm db:types` after the migration. A JavaScript array becomes a Postgres array and an object becomes jsonb, so pass a jsonb array as its JSON text. Rows must be the same in every household, so key random streams by what they draw, never by household. Rows that hang off a property iterate `ctx.properties`, which already leaves out the variant's omitted properties (`variants.ts`).

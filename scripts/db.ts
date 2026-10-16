@@ -106,4 +106,12 @@ if (result.status === 0 && capture) {
   writeFileSync(join(repoRoot, 'packages', 'db', 'src', 'database.types.ts'), result.stdout);
 }
 if (result.status === 0 && command === 'test' && !reportTableCoverage(repoRoot, slot)) process.exit(1);
+if (result.status === 0 && seeds) {
+  const photos = spawnSync(join(repoRoot, 'node_modules', '.bin', 'tsx'), [join(repoRoot, 'scripts', 'seed-photos.ts')], {
+    stdio: 'inherit',
+    env: { ...process.env, ESTA_SLOT: String(slot) },
+  });
+  if (photos.error) throw photos.error;
+  process.exit(photos.status ?? 1);
+}
 process.exit(result.status ?? 1);
