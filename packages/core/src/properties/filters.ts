@@ -86,7 +86,7 @@ function first(value: string | readonly string[] | undefined): string | undefine
   return typeof value === 'string' ? value : value?.[0];
 }
 
-/** Reads `q`, the filters and `sort` from the URL. A value the registry does not know is dropped, never an error. */
+/** A value the registry does not know is dropped, never an error. */
 export function parsePropertyFilters(params: SearchParamsRecord): PropertyFilters {
   const filters = Object.fromEntries(
     PROPERTY_FILTER_KEYS.map((key) => {
@@ -102,7 +102,6 @@ export function parsePropertyFilters(params: SearchParamsRecord): PropertyFilter
   };
 }
 
-/** The URL query for these filters, leaving out defaults, so a link and a reload land on the same list. */
 export function propertyFiltersQuery(filters: PropertyFilters): string {
   const pairs: [string, string][] = [
     ['q', filters.q],

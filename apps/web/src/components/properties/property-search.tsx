@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 
 const DEBOUNCE_MS = 200;
 
-/** Writes `?q=` 200 ms after the last keystroke. Without script the form submits the same query on Enter. */
+/** Without script the form still submits the query on Enter. */
 export function PropertySearch({ label, placeholder }: { label: string; placeholder: string }) {
   const router = useRouter();
   const pathname = usePathname();

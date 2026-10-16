@@ -4,7 +4,7 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PropertyCard, type PropertyCardData } from './property-card';
 
-/** The column count `cardGrid` draws: one below md (48rem), two below xl (80rem), three from there. */
+/** The grid's breakpoints: one column below md (48rem), two below xl (80rem), three from there. */
 const COLUMN_QUERIES = [
   ['(min-width: 80rem)', 3],
   ['(min-width: 48rem)', 2],

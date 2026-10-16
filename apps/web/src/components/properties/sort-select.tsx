@@ -3,7 +3,6 @@
 import { ChevronDown } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-/** Sorting lives in the URL beside the filters, so a reload or the back button keeps it. */
 export function SortSelect({ label, value, options }: { label: string; value: string; options: readonly { value: string; label: string }[] }) {
   const router = useRouter();
   const pathname = usePathname();

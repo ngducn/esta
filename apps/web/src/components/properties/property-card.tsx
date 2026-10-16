@@ -21,7 +21,7 @@ import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-m
 import { cn } from '@/lib/utils';
 import { CoverPhoto, type CoverPhotoPriority } from './cover-photo';
 
-export const kindIcons = {
+const kindIcons = {
   townhouse: House,
   apartment: Building2,
   villa: Hotel,

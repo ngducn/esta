@@ -72,10 +72,8 @@ async function readMatchingRows(supabase: SessionClient, tokens: readonly string
   }
 }
 
-/** `provinceNames` names every current province code among the search matches, for the province chips. */
 export type PropertyList = FilteredProperties & { householdCount: number; provinceNames: ReadonlyMap<string, string> };
 
-/** Reads the household's live properties through RLS, keeps those matching every search token, then applies the filters. */
 export async function listProperties(filters: PropertyFilters): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
