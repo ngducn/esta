@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
 import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,7 +9,7 @@ import { assertStartAllowed, parseAgentEnv } from './env';
 import { startHeartbeat } from './heartbeat';
 import { DEFAULT_REPLAY_DIR } from './replay/store';
 import { pollOnce, type Worker } from './runner';
-import { serviceClient, workerIdFor } from './supabase';
+import { serviceClient } from './supabase';
 
 const IDLE_POLL_MS = 1_000;
 
@@ -16,11 +17,11 @@ function start(): { worker: Worker; stopHeartbeat: () => void } {
   const env = parseAgentEnv(process.env);
   const mode = assertStartAllowed(env);
   const host = hostname();
-  const workerId = workerIdFor(host);
+  // Per process, so two workers on one host never share a lock owner, a heartbeat row or a config dir.
+  const workerId = randomUUID();
   const db = serviceClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, workerId);
   const home = env.ESTA_AGENT_HOME ?? join(tmpdir(), 'esta-agent');
   const configDir = join(home, `config-${workerId}`);
-  rmSync(configDir, { recursive: true, force: true });
   mkdirSync(configDir, { recursive: true });
   const clock = () => readClock(db, env);
   const worker: Worker = {
@@ -65,4 +66,5 @@ while (!stopping) {
   });
   if (!ran && !stopping) await sleep(IDLE_POLL_MS);
 }
+rmSync(started.worker.configDir, { recursive: true, force: true });
 process.exit(0);

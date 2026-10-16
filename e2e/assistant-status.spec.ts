@@ -208,6 +208,8 @@ test('two workers on one host keep their own id, heartbeat and config dir', asyn
     for (const id of ids) expect(id).not.toContain(hostname().split('.')[0]);
     expect(readdirSync(home).filter((name) => name.startsWith('config-')).sort()).toEqual(ids.map((id) => `config-${id}`).sort());
     await expect.poll(() => heartbeatIds(request)).toEqual(expect.arrayContaining(ids));
+    await Promise.all(pair.map((started) => started.stop()));
+    expect(readdirSync(home).filter((name) => name.startsWith('config-')), 'a stopped worker removes its config dir').toEqual([]);
   } finally {
     await Promise.all(pair.map((started) => started.stop()));
     rmSync(home, { recursive: true, force: true });

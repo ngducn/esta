@@ -83,7 +83,7 @@ alter policy audit_log_select on public.audit_log
   );
 
 create table public.worker_heartbeats (
-  worker_id text primary key check (worker_id ~ '^[A-Za-z0-9._-]{1,64}$'),
+  worker_id uuid primary key,
   host_label text not null,
   version text not null,
   auth_mode text not null check (auth_mode in ('subscription', 'api_key', 'none')),

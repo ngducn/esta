@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { readClock } from './clock';
 import { beat } from './heartbeat';
 import { jobSpec, JOBS } from './jobs/registry';
-import { workerIdFor } from './supabase';
 import { fakeDb, type Recorded } from './test/fake-db';
 import { buildTools, isEstaToolName } from './tools/server';
 
@@ -25,16 +24,9 @@ describe('beat', () => {
   it('upserts the worker row with the clock time', async () => {
     const writes: Recorded[] = [];
     const clock: Clock = { source: 'table', now: () => parseInstant('2026-10-07T09:06:00+07:00'), today: () => isoDate('2026-10-07') };
-    const info = { worker_id: 'mac-mini', host_label: 'mac-mini', version: '0.1.0', auth_mode: 'none', agent_mode: 'replay' } as const;
+    const info = { worker_id: '6f1c2a4e-0b7d-4f6a-9c1e-2d3b4a5c6d7e', host_label: 'mac-mini', version: '0.1.0', auth_mode: 'none', agent_mode: 'replay' } as const;
     await beat(fakeDb({}, writes), info, clock);
     expect(writes).toEqual([{ table: 'worker_heartbeats', op: 'upsert', row: { ...info, last_seen_at: '2026-10-07T02:06:00.000Z' } }]);
-  });
-});
-
-describe('workerIdFor', () => {
-  it('keeps only characters the audit actor allows', () => {
-    expect(workerIdFor('Ryan’s MacBook Pro.local')).toBe('Ryan-s-MacBook-Pro.local');
-    expect(workerIdFor('***')).toBe('worker');
   });
 });
 
