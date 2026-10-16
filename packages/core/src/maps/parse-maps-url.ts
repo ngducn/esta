@@ -12,7 +12,7 @@ export function toLatLng(lat: number, lng: number): Result<LatLng, 'out_of_range
 
 export type PointSource = 'place' | 'viewport' | 'query' | 'll';
 
-export type MapsLinkInvalidReason = 'not_a_url' | 'not_maps' | 'no_coordinates' | 'out_of_range';
+export type MapsLinkInvalidReason = 'too_long' | 'not_a_url' | 'not_maps' | 'no_coordinates' | 'out_of_range';
 
 export type MapsLinkParse =
   | { readonly kind: 'point'; readonly point: LatLng; readonly source: PointSource; readonly outsideVietnam: boolean }
@@ -70,14 +70,21 @@ export const MAPS_PATTERNS: readonly MapsPattern[] = [
   { row: '?ll=<lat>,<lng>', match: (url) => coordinates('ll', PAIR.exec(url.searchParams.get('ll') ?? '')) },
 ];
 
+export const MAX_MAPS_INPUT_LENGTH = 2048;
 const URL_IN_TEXT = /https?:\/\/[^\s<>"]+/i;
-const TRAILING_PUNCTUATION = /[.,;:!?)\]}]+$/;
+const TRAILING_PUNCTUATION = new Set('.,;:!?)]}');
+
+function trimTrailingPunctuation(text: string): string {
+  let end = text.length;
+  while (end > 0 && TRAILING_PUNCTUATION.has(text.charAt(end - 1))) end -= 1;
+  return text.slice(0, end);
+}
 
 function findUrl(input: string): URL | undefined {
-  const found = URL_IN_TEXT.exec(input)?.[0].replace(TRAILING_PUNCTUATION, '');
+  const found = URL_IN_TEXT.exec(input)?.[0];
   if (found === undefined) return undefined;
   try {
-    return new URL(found);
+    return new URL(trimTrailingPunctuation(found));
   } catch {
     return undefined;
   }
@@ -89,6 +96,7 @@ function invalid(reason: MapsLinkInvalidReason): MapsLinkParse {
 
 /** Reads a pasted Google Maps link, or a share message that contains one, without any network call. */
 export function parseMapsUrl(input: string): MapsLinkParse {
+  if (input.length > MAX_MAPS_INPUT_LENGTH) return invalid('too_long');
   const url = findUrl(input);
   if (url === undefined) return invalid('not_a_url');
   if (!isShortMapsLink(url) && !isLongMapsLink(url)) return invalid('not_maps');

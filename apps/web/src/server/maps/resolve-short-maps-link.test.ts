@@ -214,6 +214,10 @@ describe('vetAddress', () => {
     ['::ffff:127.0.0.1', 'refused'],
     ['::ffff:10.0.0.1', 'refused'],
     ['::ffff:169.254.169.254', 'refused'],
+    ['::7f00:1', 'refused'],
+    ['::a9fe:a9fe', 'refused'],
+    ['::127.0.0.1', 'refused'],
+    ['::8efa:424e', 'refused'],
     ['not-an-ip', 'refused'],
   ])('%s is %s', (ip, verdict) => {
     expect(vetAddress(ip)).toBe(verdict);

@@ -1,6 +1,7 @@
 export { VIETNAM_BOUNDS, isInVietnam } from './bounds';
 export {
   MAPS_PATTERNS,
+  MAX_MAPS_INPUT_LENGTH,
   isShortMapsLink,
   isUnderMapsPath,
   parseMapsUrl,

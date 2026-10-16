@@ -34,6 +34,35 @@ describe('the DOMAIN-VN §9 rows', () => {
     });
   });
 
+  test('100k trailing punctuation characters return within a few ms', () => {
+    const input = `https://a${'.'.repeat(100_000)}x`;
+    const started = Date.now();
+
+    const parsed = parseMapsUrl(input);
+
+    expect(Date.now() - started).toBeLessThan(20);
+    expect(parsed).toEqual({ kind: 'invalid', reason: 'too_long' });
+  });
+
+  test('input over 2048 characters is too long, even with a link inside', () => {
+    expect(parseMapsUrl(`https://www.google.com/maps?q=10.7769,106.7009 ${'x'.repeat(2048)}`)).toEqual({
+      kind: 'invalid',
+      reason: 'too_long',
+    });
+  });
+
+  test('a link of exactly 2048 characters still parses', () => {
+    const head = 'https://www.google.com/maps?q=10.7769,106.7009&pad=';
+    expect(parseMapsUrl(head + 'p'.repeat(2048 - head.length))).toMatchObject({ kind: 'point', source: 'query' });
+  });
+
+  test('a run of trailing punctuation is stripped from a link inside a message', () => {
+    expect(parseMapsUrl(`Xem https://maps.app.goo.gl/DemoAbc${'.)!?'.repeat(400)}`)).toEqual({
+      kind: 'short_link',
+      url: 'https://maps.app.goo.gl/DemoAbc',
+    });
+  });
+
   test('maps.app.goo.gl with no id is not a short link', () => {
     expect(parseMapsUrl('https://maps.app.goo.gl/')).toEqual({ kind: 'invalid', reason: 'not_maps' });
   });
