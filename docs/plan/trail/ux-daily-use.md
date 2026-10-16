@@ -25,7 +25,7 @@ Desktop, weekly. Reviews the month, exports, the tax card against the 500,000,00
 
 1. Mobile Home leads with this month's collection and the list of who has not paid, each row one tap from Ghi nhận, Mã QR or Nhắc Zalo. On a phone the KPI tiles collapse into one collection card.
 2. Ghi nhận tiền is the primary action everywhere it exists. Mã QR and Nhập chỉ số sit next to it on Home.
-3. Summary cards show money in compact words ("29 triệu", "3,5 triệu") so Mẹ reads them at a glance. Tables, forms, receipts and QR sheets show the exact amount (DOMAIN-VN §9 format).
+3. Summary cards show money in the compact form of DOMAIN-VN `formatVndCompact` ("29 tr", "3,5 tr", "3,2 tỷ") so Mẹ reads them at a glance. Tables, forms, receipts and QR sheets show the exact amount (DOMAIN-VN §9 format).
 4. Places are named the way Mẹ says them: "Phòng 5, Dãy trọ Dĩ An", never an id. Overdue says how long: "Quá hạn 12 ngày".
 5. Every property shows its photo first; Mẹ recognizes a house before its nickname. Demo properties use licensed stock photos.
 6. Tenants show initials, never photos.
