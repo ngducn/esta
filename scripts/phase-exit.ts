@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { closeSync, mkdirSync, openSync, readFileSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -100,6 +100,7 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
       }
     } else {
       const log = join(logs, `${check.id}.log`);
+      writeFileSync(log, '');
       const failedCommand = check.commands.find((command) => run(command, log) !== 0);
       outcome = { pass: failedCommand === undefined, detail: failedCommand === undefined ? log : `${failedCommand.join(' ')} failed, log ${log}` };
     }

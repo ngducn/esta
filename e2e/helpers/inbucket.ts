@@ -24,9 +24,11 @@ export async function requestCode(page: Page, email: string): Promise<void> {
   await page.goto('/sign-in');
   await page.locator('input[name="email"]').fill(email);
   await page.locator('button[value="send"]').click();
-  await expect(page.locator('input[name="code"]'), 'the send goes through auth and SMTP, which a loaded machine slows').toBeVisible({
-    timeout: CODE_STEP_TIMEOUT_MS,
-  });
+  const codeStep = page.locator('input[name="code"]');
+  const refusal = page.getByRole('main').getByRole('alert').filter({ hasText: /\S/ });
+  // The send goes through auth and SMTP, which a loaded machine slows; a refusal returns at once, so callers can retry.
+  await expect(codeStep.or(refusal)).toBeVisible({ timeout: CODE_STEP_TIMEOUT_MS });
+  if (!(await codeStep.isVisible())) throw new Error(`The send was refused: ${await refusal.innerText()}`);
 }
 
 /**
