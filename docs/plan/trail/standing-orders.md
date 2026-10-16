@@ -73,3 +73,4 @@ Defaults the agent chose for questions the operator left open in #36 (label: age
 2. S6 follows SPEC §10 and §11: P1-01 moves to `Seq` 01, before P1-04. No spec change. It also fits the vertical-slice rule that an unproven column goes first.
 3. The interrogate list names P5-11 (the number guard) in place of P5-03.
 4. Owners and verifiers spawn no subagents unless their brief names them.
+5. Never use ESTA_SLOT=4: its production port 4317 collides with the `ekh-phoenix` container, which must not be touched. Use slots 2, 3, 5 and 14.
