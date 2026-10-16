@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { coverage, parseInventory, parseSpec } from './plan-coverage.ts';
 
-const spec = parseSpec(`# Spec
+const specText = `# Spec
 
 ### 1.2 North-star scenario
 
@@ -35,7 +35,9 @@ const spec = parseSpec(`# Spec
 | 1 Portfolio | PRP | PRP checks | Yes |
 
 ### 10.1 Mom test (human gate after Phase 0, repeated in Phase 1)
-`);
+`;
+
+const spec = parseSpec(specText);
 
 const inventory = (phase1Exit: string, extra = '') => `# Inventory
 
@@ -68,6 +70,7 @@ describe('parseSpec', () => {
       acceptance: ['FND-1', 'FND-2', 'FND-3', 'PRP-1'],
       northStarSteps: [1, 2, 3],
       phases: [0, 1],
+      phaseExitSteps: new Map(),
       momTestPhases: [0, 1],
     });
   });
@@ -113,6 +116,28 @@ describe('coverage', () => {
     expect(check('Phase 1 exit', 'Phase 0 exit').problems).toEqual([
       'P1-01 sits in Phase 1 but cites the Phase 0 exit',
       'The Phase 1 exit PR does not carry the Mom test',
+    ]);
+  });
+
+  it('fails when a phase exit PR drops a north-star step its SPEC §10 predicate names, even under a later full-run range', () => {
+    const phased = parseSpec(
+      specText
+        .replace('| PRP checks |', '| PRP checks; north-star steps 2 and 3 pass |')
+        .replace('| 1 Portfolio | PRP | PRP checks; north-star steps 2 and 3 pass | Yes |', '$&\n| 2 Ship | Polish | Full north-star passes | Yes |'),
+    );
+    const staged = (phase1Exit: string) =>
+      coverage(
+        phased,
+        parseInventory(
+          inventory(phase1Exit).replace(
+            '## Changes from the old inventory',
+            '## Phase 2. Ship\n\n| Seq | Id | G | Title | Scope |\n| --- | --- | --- | --- | --- |\n| 01 | P2-01 | G | Ship | Phase 2 exit with north-star steps 1 to 3 |\n\n## Changes from the old inventory',
+          ),
+        ),
+      );
+    expect(staged('Phase 1 exit and the Mom test, north-star steps 2 and 3').problems).toEqual([]);
+    expect(staged('Phase 1 exit and the Mom test, north-star step 2').problems).toEqual([
+      'P1-02 carries the Phase 1 exit but cites no north-star step 3, which SPEC §10 puts in that exit',
     ]);
   });
 

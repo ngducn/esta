@@ -13,6 +13,7 @@ export type Spec = {
   acceptance: string[];
   northStarSteps: number[];
   phases: number[];
+  phaseExitSteps: Map<number, number[]>;
   momTestPhases: number[];
 };
 
@@ -49,13 +50,19 @@ export function parseSpec(text: string): Spec {
     const step = line.match(/^(\d+)\. /)?.[1];
     return step === undefined ? [] : [Number(step)];
   });
-  const phases = section(text, /^## 10\. Delivery phases/, /^#{2,3} /).flatMap((line) => {
+  const phases: number[] = [];
+  const phaseExitSteps = new Map<number, number[]>();
+  for (const line of section(text, /^## 10\. Delivery phases/, /^#{2,3} /)) {
     const phase = line.match(/^\| (\d+) [A-Z]/)?.[1];
-    return phase === undefined ? [] : [Number(phase)];
-  });
+    if (phase === undefined) continue;
+    phases.push(Number(phase));
+    const exitPredicate = line.split('|')[3] ?? '';
+    const steps = /\bfull north-star\b/i.test(exitPredicate) ? northStarSteps : citedNorthStarSteps(exitPredicate);
+    if (steps.length > 0) phaseExitSteps.set(Number(phase), steps);
+  }
   const mom = text.match(/^### [\d.]+ Mom test \(.*after Phase (\d+), repeated in Phase (\d+)\)/m);
   const momTestPhases = mom ? [Number(mom[1]), Number(mom[2])] : [];
-  return { prefixes, acceptance, northStarSteps, phases, momTestPhases };
+  return { prefixes, acceptance, northStarSteps, phases, phaseExitSteps, momTestPhases };
 }
 
 export function parseInventory(text: string): InventoryRow[] {
@@ -137,6 +144,12 @@ export function coverage(spec: Spec, rows: InventoryRow[]): CoverageReport {
       else if (phase !== row.phase) problems.push(`${row.pr} sits in Phase ${row.phase} but cites the Phase ${phase} exit`);
       else {
         cover({ kind: 'phase-exit', phase }, row.pr);
+        const cited = citedNorthStarSteps(row.text);
+        for (const step of spec.phaseExitSteps.get(phase) ?? []) {
+          if (!cited.includes(step)) {
+            problems.push(`${row.pr} carries the Phase ${phase} exit but cites no north-star step ${step}, which SPEC §10 puts in that exit`);
+          }
+        }
         if (spec.momTestPhases.includes(phase) && /\bMom test\b/.test(row.text)) cover({ kind: 'mom-test', phase }, row.pr);
       }
     }
