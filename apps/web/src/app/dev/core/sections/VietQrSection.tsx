@@ -107,11 +107,19 @@ export async function VietQrSection() {
     ...MALFORMED_VECTORS.map((v) => example(v.id, t('malformed', { id: v.id }), v.payload)),
     example('crc-pad', t('crcPad', { amount: money(crcPad.amountVnd) }), crcPad.payload, { expected: crcPad.payload }),
     example('no-amount', t('noAmount'), encodeVietQr({ bin: ACCOUNT.bin, accountNo: ACCOUNT.accountNo, purpose: invoiceMemo('7K2QX9MP') })),
-    example('below-cap', t('belowCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(499_999_999), memoCode: '7K2QX9MP' }).payload),
-    example('at-cap', t('atCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(500_000_000), memoCode: '7K2QX9MP' }).payload, { note: capNote }),
-    example('above-cap', t('aboveCap'), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(600_000_000), memoCode: '7K2QX9MP' }).payload, { note: capNote }),
+    ...(
+      [
+        ['below-cap', 'belowCap', 499_999_999],
+        ['at-cap', 'atCap', 500_000_000],
+        ['above-cap', 'aboveCap', 600_000_000],
+      ] as const
+    ).map(([id, key, amount]) =>
+      example(id, t(key, { amount: money(amount) }), buildInvoiceQr({ account: ACCOUNT, outstandingVnd: vnd(amount), memoCode: '7K2QX9MP' }).payload, {
+        ...(amount >= 500_000_000 && { note: capNote }),
+      }),
+    ),
     example('long-purpose', t('longPurpose'), attempt(() => encodeVietQr({ bin: ACCOUNT.bin, accountNo: ACCOUNT.accountNo, purpose: 'X'.repeat(26) }))),
-    example('overdue', t('overdue'), overdue.payload),
+    example('overdue', t('overdue', { amount: money(OVERDUE.outstandingVnd) }), overdue.payload),
   ];
 
   const scanLabels = { scan: t('scan'), match: t('match'), mismatch: t('mismatch'), pending: t('pending') };
@@ -126,7 +134,7 @@ export async function VietQrSection() {
 
       <div className="grid gap-6 sm:grid-cols-2">
         <figure data-testid="vietqr-canonical" data-payload={canonical.payload} className="flex flex-col gap-3">
-          <figcaption className="font-semibold">{t('canonical')}</figcaption>
+          <figcaption className="font-semibold">{t('canonical', { amount: money(ESTA_INVOICE.input.outstandingVnd) })}</figcaption>
           <VietQrScan id="vietqr-canonical" payload={canonical.payload} labels={scanLabels} />
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-small tabular-nums">
             <dt>{t('bin')}</dt>
@@ -152,7 +160,7 @@ export async function VietQrSection() {
         </figure>
 
         <figure data-testid="vietqr-overdue" data-payload={overdue.payload} className="flex flex-col gap-3">
-          <figcaption className="font-semibold">{t('overdue')}</figcaption>
+          <figcaption className="font-semibold">{t('overdue', { amount: money(OVERDUE.outstandingVnd) })}</figcaption>
           <VietQrScan id="vietqr-overdue" payload={overdue.payload} labels={scanLabels} />
           <p className="wrap-anywhere font-mono text-small">{overdue.payload}</p>
         </figure>

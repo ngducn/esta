@@ -221,8 +221,8 @@
   "devVietqr": {
     "title": "VietQR",
     "intro": "The sample invoice QR, read back from its image, and the S4 vectors. This page exists only in development.",
-    "canonical": "Sample invoice, 15,000,000 ₫",
-    "overdue": "Room 5 overdue, 7,000,000 ₫",
+    "canonical": "Sample invoice, {amount}",
+    "overdue": "Room 5 overdue, {amount}",
     "payload": "Payload",
     "bin": "BIN",
     "account": "Account number",
@@ -249,9 +249,9 @@
     "malformed": "Malformed sample {id}",
     "crcPad": "CRC starting with 0 ({amount})",
     "noAmount": "No amount",
-    "belowCap": "Below the cap, 499,999,999 ₫",
-    "atCap": "At the cap, 500,000,000 ₫",
-    "aboveCap": "Above the cap, 600,000,000 ₫",
+    "belowCap": "Below the cap, {amount}",
+    "atCap": "At the cap, {amount}",
+    "aboveCap": "Above the cap, {amount}",
     "longPurpose": "26-character purpose"
   },
   "nav": {

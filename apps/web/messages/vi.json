@@ -221,8 +221,8 @@
   "devVietqr": {
     "title": "VietQR",
     "intro": "Mã QR hóa đơn mẫu, đọc lại từ ảnh, và các vector từ S4. Trang này chỉ có khi phát triển.",
-    "canonical": "Hóa đơn mẫu 15.000.000 ₫",
-    "overdue": "Phòng 5 quá hạn 7.000.000 ₫",
+    "canonical": "Hóa đơn mẫu {amount}",
+    "overdue": "Phòng 5 quá hạn {amount}",
     "payload": "Chuỗi QR",
     "bin": "BIN",
     "account": "Số tài khoản",
@@ -249,9 +249,9 @@
     "malformed": "Mẫu lỗi {id}",
     "crcPad": "CRC bắt đầu bằng 0 ({amount})",
     "noAmount": "Không có số tiền",
-    "belowCap": "Dưới hạn mức, 499.999.999 ₫",
-    "atCap": "Bằng hạn mức, 500.000.000 ₫",
-    "aboveCap": "Trên hạn mức, 600.000.000 ₫",
+    "belowCap": "Dưới hạn mức, {amount}",
+    "atCap": "Bằng hạn mức, {amount}",
+    "aboveCap": "Trên hạn mức, {amount}",
     "longPurpose": "Nội dung 26 ký tự"
   },
   "nav": {
