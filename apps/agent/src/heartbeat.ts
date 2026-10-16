@@ -11,7 +11,6 @@ export async function beat(db: AgentDb, info: HeartbeatInfo, clock: Clock): Prom
   if (error) throw new Error(`Writing the heartbeat failed: ${error.message}`);
 }
 
-/** Beats at once, then every minute; returns a function that stops it. */
 export function startHeartbeat(db: AgentDb, info: HeartbeatInfo, clock: () => Promise<Clock>, onError: (error: unknown) => void): () => void {
   const tick = () => {
     clock()

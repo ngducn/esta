@@ -60,7 +60,7 @@ async function LatestPing({ ping }: { ping: PingCheck | null }) {
         </div>
       ) : null}
       {ping.error !== null && ping.status !== 'done' ? (
-        <p data-testid="ping-error" className="text-body wrap-anywhere text-overdue">
+        <p data-testid="ping-error" className="text-small wrap-anywhere text-ink-2">
           {ping.error}
         </p>
       ) : null}

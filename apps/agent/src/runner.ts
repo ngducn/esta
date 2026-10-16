@@ -17,7 +17,6 @@ export type Worker = {
   readonly db: AgentDb;
   readonly workerId: string;
   readonly mode: RunMode;
-  /** Holds one temp dir per job, deleted afterwards. */
   readonly jobsDir: string;
   readonly configDir: string;
   readonly replayDir: string;
@@ -120,7 +119,6 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant): Pro
   return { ok: false, failure };
 }
 
-/** Claims and runs at most one job; resolves false when nothing was due. */
 export async function pollOnce(worker: Worker): Promise<boolean> {
   const asOf = (await worker.clock()).now();
   const { data, error } = await worker.db.rpc('claim_agent_job', { worker_id: worker.workerId, p_as_of: asOf });
