@@ -12,7 +12,7 @@ function SheetContent({ className, children, ...props }: SheetPrimitive.Popup.Pr
     <SheetPrimitive.Portal>
       <SheetPrimitive.Backdrop
         data-slot="sheet-backdrop"
-        className="fixed inset-0 min-h-dvh bg-paper/85 transition-opacity duration-(--duration-slow) ease-standard data-ending-style:opacity-0 data-starting-style:opacity-0"
+        className="fixed inset-0 min-h-dvh bg-ground/85 transition-opacity duration-(--duration-slow) ease-standard data-ending-style:opacity-0 data-starting-style:opacity-0"
       />
       <SheetPrimitive.Popup
         data-slot="sheet-content"

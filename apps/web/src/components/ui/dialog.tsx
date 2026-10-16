@@ -11,7 +11,7 @@ function AlertDialogContent({ className, children, ...props }: AlertDialogPrimit
     <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Backdrop
         data-slot="dialog-backdrop"
-        className="fixed inset-0 min-h-dvh bg-paper/85 transition-opacity duration-(--duration-base) ease-standard data-ending-style:opacity-0 data-starting-style:opacity-0"
+        className="fixed inset-0 min-h-dvh bg-ground/85 transition-opacity duration-(--duration-base) ease-standard data-ending-style:opacity-0 data-starting-style:opacity-0"
       />
       <AlertDialogPrimitive.Popup
         data-slot="dialog-content"

@@ -19,9 +19,9 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
         aria-hidden="true"
         className={cn(
           'flex size-6 items-center justify-center rounded-sm border-2 border-ink-muted bg-surface transition-colors duration-(--duration-fast) ease-standard',
-          'group-hover/checkbox:border-ink group-data-checked/checkbox:border-ink group-data-checked/checkbox:bg-ink group-data-checked/checkbox:text-paper',
-          'group-data-indeterminate/checkbox:border-ink group-data-indeterminate/checkbox:bg-ink group-data-indeterminate/checkbox:text-paper',
-          'group-data-disabled/checkbox:border-rule group-data-disabled/checkbox:bg-paper',
+          'group-hover/checkbox:border-ink group-data-checked/checkbox:border-ink group-data-checked/checkbox:bg-ink group-data-checked/checkbox:text-surface',
+          'group-data-indeterminate/checkbox:border-ink group-data-indeterminate/checkbox:bg-ink group-data-indeterminate/checkbox:text-surface',
+          'group-data-disabled/checkbox:border-rule group-data-disabled/checkbox:bg-ground',
         )}
       >
         <CheckboxPrimitive.Indicator

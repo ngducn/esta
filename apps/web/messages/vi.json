@@ -267,8 +267,7 @@
     "themeHint": "Chỉ áp dụng cho thiết bị này.",
     "themes": {
       "light": "Sáng",
-      "dark": "Tối",
-      "system": "Theo thiết bị"
+      "dark": "Tối"
     },
     "save": "Lưu",
     "saved": "Đã lưu cài đặt hiển thị.",

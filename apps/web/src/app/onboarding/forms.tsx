@@ -8,7 +8,7 @@ import { NAME_MAX_LENGTH } from './limits';
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
 
 const fieldClass = 'min-h-touch w-full rounded-md border border-current px-3 text-body';
-const primaryClass = 'min-h-touch w-full rounded-md bg-ink px-4 font-semibold text-paper disabled:opacity-60';
+const primaryClass = 'min-h-touch w-full rounded-md bg-ink px-4 font-semibold text-surface disabled:opacity-60';
 
 const initialCreate: CreateHouseholdState = { householdName: '', displayName: '', errors: {} };
 const initialInvite: InviteState = { status: 'idle' };

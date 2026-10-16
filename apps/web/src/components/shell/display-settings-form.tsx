@@ -50,7 +50,7 @@ export async function DisplaySettingsForm({ settings, status }: { settings: Disp
           </p>
         )}
         {status === 'failed' && (
-          <p role="alert" className="font-semibold text-overdue-ink">
+          <p role="alert" className="font-semibold text-overdue">
             {t('saveFailed')}
           </p>
         )}

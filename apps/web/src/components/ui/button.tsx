@@ -8,7 +8,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-ink text-paper hover:bg-ink/88 active:bg-ink/80 disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
+          'bg-ink text-surface hover:bg-ink/88 active:bg-ink/80 disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
         secondary:
           'border border-ink-muted bg-surface text-ink hover:border-ink active:bg-rule/40 disabled:border-rule disabled:text-ink-muted data-disabled:border-rule data-disabled:text-ink-muted',
         quiet:

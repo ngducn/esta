@@ -37,7 +37,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         label={shell('sections')}
         header={
           <>
-            <p className="font-figure text-h3 font-semibold text-lacquer">{app('name')}</p>
+            <p className="text-h3 font-semibold text-accent">{app('name')}</p>
             <p className="text-small text-ink-muted break-words">{member.household.name}</p>
           </>
         }

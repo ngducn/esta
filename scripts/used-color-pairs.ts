@@ -1,21 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { colorPairs, type ColorPair } from '../apps/web/src/design/text-pairs.ts';
-import { colors, statuses, type ColorToken, type Status } from '../apps/web/src/design/tokens.ts';
+import { colorPairs, grounds, type ColorPair } from '../apps/web/src/design/text-pairs.ts';
+import { colors, type ColorToken } from '../apps/web/src/design/tokens.ts';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const webSrc = join(repo, 'apps/web/src');
-
-/** Text with no background of its own sits on the page or on a card. */
-const grounds = ['paper', 'surface'] as const satisfies readonly ColorToken[];
 
 const tokenNames = Object.keys(colors).sort((a, b) => b.length - a.length);
 const colorUtility = new RegExp(`^(text|bg)-(${tokenNames.join('|')})(?:/\\d+)?$`);
 const stringLiteral = /'([^'\n]*)'|"([^"\n]*)"|`([^`]*)`/g;
 
 const isToken = (name: string): name is ColorToken => name in colors;
-const isStatus = (token: ColorToken): token is Status => (statuses as readonly string[]).includes(token);
 
 type Layer = { text?: ColorToken; bg?: ColorToken };
 
@@ -43,12 +39,7 @@ export function usedColorPairs(source: string): ColorPair[] {
       const foreground = layer.text ?? base?.text;
       if (foreground === undefined) return [];
       const background = layer.bg ?? base?.bg;
-      return (background === undefined ? grounds : [background]).map(
-        (ground): ColorPair =>
-          isStatus(foreground)
-            ? { kind: 'shape', foreground, background: ground }
-            : { kind: 'text', foreground, background: ground },
-      );
+      return (background === undefined ? grounds : [background]).map((ground): ColorPair => ({ kind: 'text', foreground, background: ground }));
     });
   });
 }

@@ -31,6 +31,6 @@ describe('fonts.ts', () => {
 
   it('gives each face a generic fallback, so Android never lands on an unadjusted browser default', () => {
     const fallbacks = [...source.matchAll(/localFont\(\{[^}]*?fallback: \[([^\]]*)\]/g)].map((m) => m[1]);
-    expect(fallbacks).toEqual(["'sans-serif'", "'serif'"]);
+    expect(fallbacks).toEqual(["'sans-serif'"]);
   });
 });

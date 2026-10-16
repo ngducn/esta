@@ -22,7 +22,7 @@ function TableHead({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       data-slot="table-head"
-      className={cn('border-b border-rule bg-paper px-3 py-2 text-start align-bottom text-small font-semibold text-ink-muted', className)}
+      className={cn('border-b border-rule bg-ground px-3 py-2 text-start align-bottom text-small font-semibold text-ink-muted', className)}
       {...props}
     />
   );

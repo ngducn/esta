@@ -1,22 +1,23 @@
-import { statuses, type ColorToken, type Status } from './tokens';
+import { statuses, type ColorToken } from './tokens';
 
-/** WCAG 2.2 minimums: 1.4.3 for text, 1.4.11 for the status shapes that carry meaning. */
+/** WCAG 2.2 minimums: 1.4.3 for text, 1.4.11 for the control borders and shapes that carry meaning. */
 export const minimumRatio = { text: 4.5, shape: 3 } as const;
 
-export type ColorPair =
-  | { kind: 'text'; foreground: Exclude<ColorToken, Status>; background: ColorToken }
-  | { kind: 'shape'; foreground: Status; background: ColorToken };
+export type ColorPair = { kind: 'text' | 'shape'; foreground: ColorToken; background: ColorToken };
 
-const grounds = ['paper', 'surface'] as const satisfies readonly ColorToken[];
+/** Text with no background of its own sits on the page, on a card or on a table header. */
+export const grounds = ['ground', 'surface', 'surface-2'] as const satisfies readonly ColorToken[];
 
-const textOnGrounds = (foreground: Exclude<ColorToken, Status>): ColorPair[] =>
-  grounds.map((background) => ({ kind: 'text', foreground, background }));
-const shapeOnGrounds = (foreground: Status): ColorPair[] =>
-  grounds.map((background) => ({ kind: 'shape', foreground, background }));
+const onGrounds = (kind: ColorPair['kind'], foreground: ColorToken): ColorPair[] =>
+  grounds.map((background) => ({ kind, foreground, background }));
 
 export const colorPairs: readonly ColorPair[] = [
-  ...(['ink', 'ink-muted', 'lacquer', 'paid-ink', 'due-ink', 'overdue-ink', 'vacant-ink'] as const).flatMap(textOnGrounds),
-  { kind: 'text', foreground: 'paper', background: 'ink' },
+  ...(['ink', 'ink-2', 'ink-muted', 'accent', ...statuses] as const).flatMap((foreground) => onGrounds('text', foreground)),
+  ...statuses.map((status): ColorPair => ({ kind: 'text', foreground: status, background: `${status}-fill` })),
+  { kind: 'text', foreground: 'on-accent', background: 'accent' },
+  { kind: 'text', foreground: 'accent', background: 'accent-tint' },
+  { kind: 'text', foreground: 'surface', background: 'ink' },
   { kind: 'text', foreground: 'ink', background: 'rule' },
-  ...statuses.flatMap(shapeOnGrounds),
+  { kind: 'text', foreground: 'ink-muted', background: 'rule' },
+  ...onGrounds('shape', 'field'),
 ];

@@ -27,7 +27,7 @@ export function MoneyDisplay({ amount, variant = 'full', className }: { amount: 
     <data
       value={amount}
       data-variant={variant}
-      className={cn('inline-block font-figure text-end whitespace-nowrap figures', variantClass, className)}
+      className={cn('inline-block text-end whitespace-nowrap figures', variantClass, className)}
     >
       {format(amount, locale)}
     </data>

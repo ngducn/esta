@@ -267,8 +267,7 @@
     "themeHint": "Applies to this device only.",
     "themes": {
       "light": "Light",
-      "dark": "Dark",
-      "system": "Match device"
+      "dark": "Dark"
     },
     "save": "Save",
     "saved": "Display settings saved.",

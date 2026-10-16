@@ -6,10 +6,7 @@ import { oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
 import { colors } from '../apps/web/src/design/tokens.ts';
 
 const GLYPHS = readFileSync(new URL('../fixtures/glyph-test-string.txt', import.meta.url), 'utf8').trim();
-const FACES = [
-  { face: 'sans', variable: '--font-source-sans-3' },
-  { face: 'figure', variable: '--font-source-serif-4' },
-] as const;
+const FACES = [{ face: 'sans', variable: '--font-plus-jakarta-sans' }] as const;
 
 /** The rendered sRGB of a CSS color, read back through a canvas so oklch, lab and rgb serializations compare alike. */
 function srgbOf(page: Page, cssColor: string): Promise<number[]> {
@@ -62,7 +59,7 @@ test('the figure column sets 1.111.111 ₫ and 8.888.888 ₫ at equal widths', a
   expect(Math.abs(ones - eights)).toBeLessThan(0.5);
 });
 
-test('esta_theme=dark renders dark paper from the server and keeps it across navigation', async ({ page, request }) => {
+test('esta_theme=dark renders the dark ground from the server and keeps it across navigation', async ({ page, request }) => {
   const html = await (await request.get('/sign-in', { headers: { Cookie: 'esta_theme=dark' } })).text();
   expect(html).toMatch(/<html[^>]*data-theme="dark"/);
 
@@ -74,7 +71,15 @@ test('esta_theme=dark renders dark paper from the server and keeps it across nav
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const body = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const rendered = await srgbOf(page, body);
-  oklchToSrgb255(colors.paper.dark).forEach((channel, i) => expect(Math.abs((rendered[i] ?? NaN) - channel)).toBeLessThanOrEqual(1));
+  oklchToSrgb255(colors.ground.dark).forEach((channel, i) => expect(Math.abs((rendered[i] ?? NaN) - channel)).toBeLessThanOrEqual(1));
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('a phone set to dark still gets the light theme until the member chooses dark', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/dev/glyphs');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  const rendered = await srgbOf(page, await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
+  oklchToSrgb255(colors.ground.light).forEach((channel, i) => expect(Math.abs((rendered[i] ?? NaN) - channel)).toBeLessThanOrEqual(1));
 });

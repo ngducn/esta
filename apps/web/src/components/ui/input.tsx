@@ -9,7 +9,7 @@ function Input({ className, ...props }: ComponentProps<'input'>) {
       className={cn(
         'min-h-touch w-full min-w-0 rounded-sm border border-ink-muted bg-surface px-3 text-body text-ink transition-colors duration-(--duration-fast) ease-standard',
         'placeholder:text-ink-muted hover:border-ink',
-        'disabled:cursor-not-allowed disabled:border-rule disabled:bg-paper disabled:text-ink-muted',
+        'disabled:cursor-not-allowed disabled:border-rule disabled:bg-ground disabled:text-ink-muted',
         'aria-invalid:border-overdue',
         className,
       )}

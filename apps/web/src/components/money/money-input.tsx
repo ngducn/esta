@@ -63,7 +63,7 @@ export function MoneyInput({ label, defaultText = '', onValueChange, name, disab
             <span aria-hidden="true" className="text-ink-muted">
               =
             </span>
-            <data value={result.value} data-testid="money-preview" className="font-figure text-lead text-ink figures">
+            <data value={result.value} data-testid="money-preview" className="text-lead text-ink figures">
               {formatVnd(result.value, locale)}
             </data>
           </>

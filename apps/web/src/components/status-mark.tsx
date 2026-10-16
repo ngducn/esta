@@ -11,18 +11,18 @@ type Shape = { d: string; fill: boolean; dashed: boolean; stroke: number };
  * the word is set in the `-ink` token that reaches 4.5:1 (DESIGN.md Colors).
  */
 export const statusMarks = {
-  paid: { shape: { d: 'M4 12.5l5 5L20 6.5', fill: false, dashed: false, stroke: 2.25 }, shapeClass: 'text-paid', wordClass: 'text-paid-ink' },
+  paid: { shape: { d: 'M4 12.5l5 5L20 6.5', fill: false, dashed: false, stroke: 2.25 }, shapeClass: 'text-paid', wordClass: 'text-paid' },
   due: {
     shape: { d: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7v5l3.5 2', fill: false, dashed: false, stroke: 2.25 },
     shapeClass: 'text-due',
-    wordClass: 'text-due-ink',
+    wordClass: 'text-due',
   },
   overdue: {
     shape: { d: 'M12 2.5L21.5 12L12 21.5L2.5 12z', fill: true, dashed: false, stroke: 2.25 },
     shapeClass: 'text-overdue',
-    wordClass: 'text-overdue-ink',
+    wordClass: 'text-overdue',
   },
-  vacant: { shape: { d: 'M4.5 4.5h15v15h-15z', fill: false, dashed: false, stroke: 2.25 }, shapeClass: 'text-vacant', wordClass: 'text-vacant-ink' },
+  vacant: { shape: { d: 'M4.5 4.5h15v15h-15z', fill: false, dashed: false, stroke: 2.25 }, shapeClass: 'text-vacant', wordClass: 'text-vacant' },
   draft: {
     shape: { d: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17z', fill: false, dashed: true, stroke: 2.25 },
     shapeClass: 'text-ink-muted',

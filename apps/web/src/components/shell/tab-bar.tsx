@@ -22,12 +22,12 @@ export function SectionIcon({ d }: { d: string }) {
 }
 
 export const activeLabel =
-  'decoration-lacquer decoration-2 underline-offset-4 group-aria-[current=page]:text-ink group-aria-[current=page]:underline';
+  'decoration-accent decoration-2 underline-offset-4 group-aria-[current=page]:text-ink group-aria-[current=page]:underline';
 
 export function TabBar({ items, label }: { items: readonly NavItem[]; label: string }) {
   const pathname = usePathname();
   return (
-    <nav aria-label={label} className="sticky bottom-0 z-10 border-t border-rule bg-paper lg:hidden">
+    <nav aria-label={label} className="sticky bottom-0 z-10 border-t border-rule bg-ground lg:hidden">
       <ul className="grid grid-cols-5 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => (
           <li key={item.key} className="min-w-0">

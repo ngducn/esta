@@ -10,7 +10,7 @@ export function FieldMessage({ id, error, children }: { id: string; error: strin
       ) : (
         <>
           <StatusShape status="overdue" className="mt-1 size-4" />
-          <span className="text-overdue-ink">{error}</span>
+          <span className="text-overdue">{error}</span>
         </>
       )}
     </p>
