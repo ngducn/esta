@@ -116,7 +116,7 @@ async function RecentRuns({ runs }: { runs: readonly AgentRun[] }) {
 }
 
 /** Operator-only: the server never renders this for anyone else, so Mẹ's HTML carries no diagnostics (PLT-1). */
-async function ConnectionCheck({ householdId, sendFailed }: { householdId: string; sendFailed: boolean }) {
+async function ConnectionCheck({ householdId, sendFailed, workerOnline }: { householdId: string; sendFailed: boolean; workerOnline: boolean }) {
   const [t, { latest, runs }] = await Promise.all([getTranslations('assistant'), getConnectionCheck(householdId)]);
   const pending = latest?.status === 'queued' || latest?.status === 'running';
   return (
@@ -148,7 +148,7 @@ async function ConnectionCheck({ householdId, sendFailed }: { householdId: strin
         <div className="border-t border-rule pt-4">
           <LatestPing ping={latest} />
         </div>
-        <RefreshWhilePending pending={pending} />
+        <RefreshWhilePending pending={pending && workerOnline} />
       </section>
       <section aria-labelledby="runs-heading" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
         <CardHeading id="runs-heading" icon={History}>
@@ -169,14 +169,17 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
     getTranslations('sections'),
     searchParams,
   ]);
+  const status = workerStatus(lastSeenAt, clock.now(), env.ESTA_TIMEZONE);
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <h1 className="text-h2 break-words lg:text-h1">{nav('assistant')}</h1>
-        <WorkerStatusLine status={workerStatus(lastSeenAt, clock.now(), env.ESTA_TIMEZONE)} />
+        <WorkerStatusLine status={status} />
       </div>
       <EmptyState icon={sectionIcons.assistant} title={sections('soonTitle')} body={sections('assistant')} />
-      {member.isOperator ? <ConnectionCheck householdId={member.household.id} sendFailed={check === 'failed'} /> : null}
+      {member.isOperator ? (
+        <ConnectionCheck householdId={member.household.id} sendFailed={check === 'failed'} workerOnline={status.kind === 'online'} />
+      ) : null}
     </div>
   );
 }
