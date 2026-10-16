@@ -24,7 +24,8 @@ values (:'a', '00000000-0000-0000-0000-0000000000a1', 'none', 'replay', '2026-10
 insert into public.worker_heartbeats (worker_id, host_label, version, auth_mode, agent_mode, last_seen_at)
 values ('mac-mini', 'Mac mini', '0.0.0', 'subscription', 'live', '2026-10-07T02:00:00Z');
 select results_eq(
-  $$ select actor_kind, actor_id from public.audit_log where table_name = 'agent_jobs' order by id limit 1 $$,
+  $$ select actor_kind, actor_id from public.audit_log
+     where table_name = 'agent_jobs' and row_id = '00000000-0000-0000-0000-0000000000b1' $$,
   $$ values ('agent', 'test-worker') $$,
   'a worker write is audited under its x-esta-actor');
 
