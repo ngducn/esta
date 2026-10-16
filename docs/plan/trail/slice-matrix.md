@@ -22,7 +22,8 @@ Every capability that two or more slices need, with the slice that builds it and
 | Trợ lý page | Route | P0-15 (status line, connection check) | P2-03 (new items), P5-03 (Hộp thư), P5-05 (Thị trường), P5-07 (Hỏi) |
 | `WorkerStatusLine`, `SafeMarkdown` | Component | P0-15 | P5-03, P5-04 |
 | `agent_jobs`, `agent_runs`, worker loop | Table, job | P0-15 (`ping`) | P2-03, P3-19, P5-03 to P5-08, P6-02 |
-| `properties` | Table | P0-07 (minimal) | P1-09 (`boundary`), P1-05 (acquisition, notes) |
+| `properties` | Table | P0-07 (minimal) | P1-04 (`cover_photo_path`), P1-09 (`boundary`), P1-05 (acquisition, notes) |
+| `property-photos` bucket, `CoverPhoto` | Storage, component | P1-04 (private bucket, policies, signed URLs, seed photos) | P1-09 (pin card), P1-06 (detail header), P1-05 (signed upload and replace) |
 | `property_list_rows` and the filter registry | View, core | P1-04 (search, four filters, name sort) | P1-10 (owner), P1-08 (rent), P1-03 (completeness) |
 | Property detail layout and tab registry | Route | P1-06 (Tổng quan, Hoạt động) | P1-07 (Pháp lý), P1-08 (Cho thuê), P2-02 (Tài liệu), P3-07 (leases), P4-03 (Thu chi) |
 | Map component | Component, integration | P1-09 | P1-06 (location card), P3-16 (map strip) |
@@ -51,7 +52,7 @@ Every capability that two or more slices need, with the slice that builds it and
 | `valuations` | Table | P4-06 | P4-05, P5-07 |
 | Watch rules, number guard | Core | P5-02, P5-11 | P5-03, P5-04, P5-05, P5-07, P5-08 |
 | Daily scheduler | Job | P5-03 | P5-04, P5-05, P5-08, P6-02 |
-| Read tools | Tool | P5-07 | P5-08 |
+| Read tools | Tool | P5-05 (`list_properties`) | P5-07 (the rest), P5-08 |
 | `notifications`, SMTP | Table, integration | P5-09 | P6-01 |
 
 ## Phase 0. Foundations
@@ -69,17 +70,17 @@ P0-13 is gone. It built ten composites on `/dev/components` for screens that arr
 
 | Seq | PR | Slice | Schema | Core | Components | Screens | Jobs and integrations | Proof |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | P1-04 | Mẹ finds Dãy trọ Dĩ An by typing `di an` | `property_list_rows` view and search index | Filter and sort registry | List, row, filter chips | Tài sản list | | `e2e/properties-list.spec.ts`, Lighthouse |
-| 02 | P1-01 | (pure) Maps links parse and short links resolve safely | | `parseMapsUrl` | | | `resolveShortMapsLink` with SSRF guards | Unit tests per pattern and refusal |
-| 03 | P1-09 | Mẹ pins Kho Biên Hòa by pasting a Google Maps link | `properties.boundary` | | Lazy map | Map view of Tài sản, pin and polygon editing | MapLibre, OpenFreeMap | `e2e/properties-map.spec.ts`, list JS unchanged |
-| 04 | P1-06 | Mẹ opens a property and sees both addresses, its pin and its history | Activity view if needed | | Detail header, tab registry, location card | Property detail Tổng quan, Hoạt động | | `e2e/property-detail.spec.ts` |
-| 05 | P1-05 | Mẹ adds, edits and archives a property with the address picker | Acquisition columns, notes | Property zod schemas | Address picker, kind-aware form | `/properties/new`, edit | | `e2e/property-form.spec.ts` |
+| 01 | P1-01 | (pure, spike S6) Maps links parse and short links resolve safely | | `parseMapsUrl` | | | `resolveShortMapsLink` with SSRF guards | Unit tests per pattern and refusal, live short link |
+| 02 | P1-04 | Mẹ recognizes each property by its photo and finds Dãy trọ Dĩ An by typing `di an` | `property_list_rows` view, `cover_photo_path`, `property-photos` bucket and policies | Filter and sort registry, photo path | Card with cover photo, filter chips | Tài sản list | Storage signed URLs, seed photo upload | `e2e/properties-list.spec.ts`, pgTAP, Lighthouse |
+| 03 | P1-09 | Mẹ pins Đất vườn Long An by pasting a Google Maps link | `properties.boundary` | Polygon checks | Lazy map, pin card, location panel | Map view of Tài sản, pin and polygon editing | MapLibre, OpenFreeMap, `resolveMapsLink` | `e2e/properties-map.spec.ts`, list JS unchanged |
+| 04 | P1-06 | Mẹ opens a property and sees its photo, both addresses, its pin and its history | `property_activity` | Activity descriptions | Detail header with photo, tab registry, location card | Property detail Tổng quan, Hoạt động | | `e2e/property-detail.spec.ts` |
+| 05 | P1-05 | Mẹ adds, edits and archives a property with the address picker, and Ryan replaces its cover photo | Acquisition columns, notes, `kind_details` check | Property zod schemas | Address picker, kind-aware form, cover photo input | `/properties/new`, edit | Signed upload from the browser | `e2e/property-form.spec.ts` |
 | 06 | P1-07 | Mẹ records parcels and the certificate and sees the land area add up | `parcels`, `structures`, `certificates` | | Parcel, certificate forms | Pháp lý tab | | `e2e/property-legal.spec.ts`, pgTAP |
 | 07 | P1-10 | Mẹ records owners and is warned when shares do not reach 100% | `ownership_shares`, owner column on the list view | Owner filter | Owners section | Pháp lý owners, list owner filter | | `e2e/property-owners.spec.ts`, pgTAP |
 | 08 | P1-08 | Mẹ sees Phòng 1 to 8 with list rents and adds a room | `units` with whole-unit trigger, `utility_accounts`, rent on the list view | Rent sort | Units, utility account forms | Cho thuê tab, list rent column | | `e2e/property-units.spec.ts`, pgTAP |
 | 09 | P1-03 | Mẹ sees what is missing on Long An and taps straight to it | | Completeness registry, `scoreProperty` | Score in header, ring on list | Header next three items, completeness sort | | Registry tests, `pnpm phase:check 1`, Lighthouse |
 
-The old Phase 1 opened with the S6 parser and then one schema PR for eight tables before any screen. Now the properties list opens the phase, because it runs on the minimal `properties` table that P0-07 already shipped. Every table lands in the PR whose tab or form first reads it. The legal tables come with Pháp lý, ownership with the owners section, units and utility accounts with Cho thuê, and `valuations` in Phase 4 with its first screen. The S6 parser moves from first to second, directly before the map that consumes it. It is still early, as SPEC §11 intends, but it no longer ships with only a `/dev/core` section as its consumer. The legal PR splits in two, because owners are their own outcome and feed the owner filter and, later, tax. Completeness merges its core and its UI and moves last, because it scores data from every earlier slice, and it carries the Phase 1 exit. Detail tabs appear only when their content does, so no slice ships a placeholder tab or column.
+The old Phase 1 opened with the S6 parser and then one schema PR for eight tables before any screen. The schema PR is gone. Every table lands in the PR whose tab or form first reads it. The legal tables come with Pháp lý, ownership with the owners section, units and utility accounts with Cho thuê, and `valuations` in Phase 4 with its first screen. The S6 parser stays first, because SPEC §10 says "spike S6 first" and §11 makes S6 the first PR of Phase 1, and because an unproven column goes early. It no longer ships a `/dev/core` section or a server action. Its consumer is P1-09, two slices later, and the properties list follows it as the first screen, on the minimal `properties` table that P0-07 shipped plus the cover photos that ux-daily-use rule 5 asks for. The legal PR splits in two, because owners are their own outcome and feed the owner filter and, later, tax. Completeness merges its core and its UI and moves last, because it scores data from every earlier slice, and it carries the Phase 1 exit. Detail tabs appear only when their content does, so no slice ships a placeholder tab or column.
 
 ## Phase 2. Documents
 
@@ -171,5 +172,5 @@ Phase 6 deepens surfaces that earlier slices built, so its order stays. P6-01 no
 | A PR whose only consumer is a dev page or fixtures | P0-13, P0-15 (`/dev/agent`), the `/dev/core` sections of P1-01, P1-03, P3-06, P5-02 | Fixed. P2-01 remains, justified above as the SPEC §11 spike |
 | Schema-only or core-only PRs before the first screen | P1-02, P3-01 to P3-06, P5-01 to P5-03 | Fixed. At most two pure PRs precede a screen, and only the one that consumes them |
 | Built for later | P0-13 composites, P0-15 scheduler, P1-02 `valuations`, P1-06 placeholder tabs, P1-04 rent placeholder, P2-03 `lease_v1`, P5-01 tables and tools | Fixed. Each moves to its first consumer |
-| First user-visible change at the fifth PR or later | Phase 3 (Seq 7), Phase 5 (Seq 4) | Fixed. Phase 1 opens at Seq 01, Phase 2 at 02, Phase 3 at 02, Phase 4 at 01, Phase 5 at 03 |
+| First user-visible change at the fifth PR or later | Phase 3 (Seq 7), Phase 5 (Seq 4) | Fixed. Phase 1 opens at Seq 02 after the S6 spike, Phase 2 at 02, Phase 3 at 02, Phase 4 at 01, Phase 5 at 03 |
 | Merged PRs on dev pages | P0-04 `/dev/core`, P0-11 `/dev/glyphs`, P0-12 `/dev/components` | Kept. They are merged, and FND-5 names `/dev/components` as its check |
