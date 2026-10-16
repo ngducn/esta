@@ -52,7 +52,7 @@ export function FilterChips({
         popover="auto"
         aria-label={labels.title}
         className={cn(
-          'fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-lg border-t border-rule bg-surface p-5 pb-[max(--spacing(5),env(safe-area-inset-bottom))] text-ink shadow-sheet backdrop:bg-ink/40',
+          'fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-lg border-t border-rule bg-surface p-5 pb-[max(--spacing(5),env(safe-area-inset-bottom))] text-ink shadow-sheet backdrop:bg-ground/85',
           'lg:static lg:order-last lg:block lg:basis-full lg:max-h-none lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none',
         )}
       >
@@ -75,7 +75,7 @@ export function FilterChips({
                         className={cn(chip, current ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:border-field')}
                       >
                         {option.label}
-                        <span className={cn('font-medium tabular-nums', current ? 'text-surface' : 'text-ink-muted')}>{option.count}</span>
+                        <span className={cn('font-medium tabular-nums', !current && 'text-ink-muted')}>{option.count}</span>
                       </Link>
                     </li>
                   );
@@ -88,7 +88,7 @@ export function FilterChips({
           type="button"
           popoverTarget={SHEET_ID}
           popoverTargetAction="hide"
-          className={buttonVariants({ variant: 'primary', className: 'mt-6 w-full lg:hidden' })}
+          className={buttonVariants({ variant: 'primary', className: 'sticky bottom-0 mt-6 w-full shadow-sheet lg:hidden' })}
         >
           {labels.done}
         </button>
