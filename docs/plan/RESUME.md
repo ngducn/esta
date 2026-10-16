@@ -4,15 +4,16 @@ Paused 2026-10-16 about 00:35 +07 at about 45% of one 5-hour block, the pause li
 
 ## Where the run is
 
-- Playbook is Autopilot-full. PRs branch off `main`, merge then branch, no stacks. The operator's landing grant covers Phase 0 and the plan docs only; Phase 1 needs the operator's click unless the grant is extended (issue #36).
-- `main` is at `d324110` plus this pause commit. P0-01 to P0-12 are merged. P0-13 is removed. The plan is re-sliced: `docs/plan/trail/slice-matrix.md` and `pr-inventory.md` win over the older plan sections, and the new `Seq` column gives delivery order.
-- P0-14 (PR #32, branch `esta/p0-14-app-shell`, head `270133b`) is parked. Verdict lanes at `44f65a7` were clean: live verifier PASS, auth audit with no blocking finding. The only later commit changes `e2e/auth.spec.ts`. Local CI e2e failed twice at `270133b`, at load 16 and again at load 4. The failures are two FND-1 invite tests in `auth.spec.ts` that stay on "Tạo gia đình" after create-household. Logs in `/tmp/ci-local/pr-32-270133b/`. Owner trail in `.claude/worktrees/agent-a6fb7c198e3eb518c/decisions.tsv`.
+- 2026-10-16 run done: P0-14 merged (`064303c`) and the design refresh merged (`15a37e9`, PR #39). `main` holds P0-01 to P0-14 plus the redesign. P0-13 is removed by the re-slice.
+- The new look: DESIGN-BRIEF §5 and §8 and DESIGN.md describe it; the approved canvas is https://claude.ai/artifact/5WMgbh8EwS9T3eiY1SkM3c and its sources are in `docs/design/redesign-2026-10/`; shipped screenshots are in `docs/design/redesign-2026-10/shipped/`; photo sources are in the ATTRIBUTION.md beside the photos. UX reasoning is `docs/plan/trail/ux-daily-use.md`.
+- The app runs on slot 2 from the `main` checkout for the operator to try (http://localhost:3200, codes at http://localhost:54524). Stop it with `ESTA_SLOT=2 .claude/skills/verify/scripts/cleanup.sh`.
 
 ## Next, in order
 
-1. P0-14. A fresh owner reproduces the two invite failures at `270133b` against `main`, finds the cause (the PR moved sign-out and locale into an account menu and dropped the date line from `/sign-in` and `/onboarding`, so check those paths first), fixes it with a red test, reruns local CI once, and a scoped Sonnet lane verifies the fix-forward diff only. Then merge under the grant with `--match-head-commit`.
-2. Issue #36. Fix the re-sliced plan before any Phase 1 owner starts: S6 order (operator's call), stale Depends-on lines in Phase 1 Seq 01 to 05, and the other listed gaps. Section drafts from stopped writers may be in `/tmp/owner-replan/`.
-3. P0-15 (agent worker skeleton, held for interrogate) and P0-16 (Phase 0 exit; issues #25, #30, #35, #37).
+1. #40 first: make `tools/ci-local.sh` run in a fresh worktree at the PR head. PR #39's local CI passed `check` in a dirty worktree while a fresh checkout failed.
+2. P0-15 (agent worker skeleton, held for interrogate; its section was rewritten by the re-slice) and P0-16 (Phase 0 exit; issues #25, #30, #35, #37, #38).
+3. Issue #36 before any Phase 1 owner starts; the operator decides S6 order and whether the landing grant extends to Phase 1. P1-04 (properties list) is the first slice that makes Tài sản real and should carry cover photos.
+4. Design polish in #41.
 
 ## Budget
 

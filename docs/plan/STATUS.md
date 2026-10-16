@@ -2,7 +2,7 @@
 
 ## Shipped
 
-- 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), #32 P0-14 app shell (`064303c`, 2026-10-16), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
+- 2026-10-15 to 16 run, under a cap of 50% of one 5-hour block and the operator's landing grant for Phase 0 and the plan docs. #29 P0-12 base components (`8314fa0`), #32 P0-14 app shell (`064303c`, 2026-10-16), #39 design refresh to the bright, modern look with lucide icons, Pexels photos and an app icon (`15a37e9`, 2026-10-16), with the `/dev/components` LCP miss waived because the page is developer-only. #33 closes two lint guard holes behind #14 and #22 (`b126e29`). #34 re-slices the plan into vertical slices and adds `pnpm plan:coverage` (`d324110`). P0-13 is removed and its composites move to their first real screens; see `docs/plan/trail/slice-matrix.md`.
 - P0-01 to P0-11 landed on 2026-10-07.
 
 ## Parked
