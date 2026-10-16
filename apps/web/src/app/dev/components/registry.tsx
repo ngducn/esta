@@ -1,7 +1,7 @@
 import { FileText, Plus, Wallet } from 'lucide-react';
 import { vnd } from '@esta/core/money';
 import type { getTranslations } from 'next-intl/server';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { AddressBlock } from '@/components/address-block';
 import { CompletenessRing } from '@/components/completeness-ring';
 import { EmptyState } from '@/components/empty-state';
@@ -66,10 +66,13 @@ function TextField({ t, id, value, disabled = false, error }: { t: DevT; id: str
 }
 
 function CheckboxField({ label, defaultChecked = false, disabled = false }: { label: string; defaultChecked?: boolean; disabled?: boolean }) {
+  const labelId = useId();
   return (
     <label className="-ml-2.5 inline-flex max-w-prose cursor-pointer items-start text-body text-ink has-data-disabled:cursor-not-allowed has-data-disabled:text-ink-muted">
-      <Checkbox defaultChecked={defaultChecked} disabled={disabled} />
-      <span className="py-2.5 pr-2">{label}</span>
+      <Checkbox defaultChecked={defaultChecked} disabled={disabled} aria-labelledby={labelId} />
+      <span id={labelId} className="py-2.5 pr-2">
+        {label}
+      </span>
     </label>
   );
 }

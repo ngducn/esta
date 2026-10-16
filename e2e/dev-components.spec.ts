@@ -11,6 +11,13 @@ async function open(page: Page, theme: (typeof themes)[number]) {
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 }
 
+test('every checkbox is named in the server HTML, before hydration can add a name', async ({ request }) => {
+  const html = await (await request.get('/dev/components')).text();
+  const checkboxes = html.match(/<[^>]* role="checkbox"[^>]*>/g) ?? [];
+  expect(checkboxes.length).toBeGreaterThan(0);
+  expect(checkboxes.filter((tag) => !/ aria-label(ledby)?="/.test(tag))).toEqual([]);
+});
+
 for (const theme of themes) {
   test(`/dev/components shows one card per registry state with no serious axe issue, ${theme}`, async ({ page }) => {
     await open(page, theme);

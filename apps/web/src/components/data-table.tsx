@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,7 @@ export function DataTable<Row>({
 }: DataTableProps<Row>) {
   const t = useTranslations('components.table');
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const selectAllId = useId();
 
   const select = (next: ReadonlySet<string>) => {
     setSelected(next);
@@ -71,9 +72,10 @@ export function DataTable<Row>({
             <Checkbox
               checked={allSelected}
               indeterminate={someSelected}
+              aria-labelledby={selectAllId}
               onCheckedChange={(checked) => select(checked ? new Set(allIds) : new Set())}
             />
-            {t('selectAll')}
+            <span id={selectAllId}>{t('selectAll')}</span>
           </label>
           <p aria-live="polite" data-testid="selection-count" className="text-body font-semibold text-ink">
             {selected.size > 0 ? t('selected', { count: selected.size }) : null}
