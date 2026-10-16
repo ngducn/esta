@@ -8,6 +8,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
+import { accessToken } from './helpers/session';
 
 // The worker, the heartbeat table and the test clock are one per slot, so the rules run in order in the `clock` project.
 test.describe.configure({ mode: 'serial' });
@@ -64,17 +65,6 @@ async function expectStatusLine(page: Page, text: string, timeout = 10_000) {
 async function seriousAxeViolations(page: Page): Promise<string[]> {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-}
-
-/** The session's access token, read from the `@supabase/ssr` cookie, which may be split into numbered chunks. */
-async function accessToken(page: Page): Promise<string> {
-  const chunks = (await page.context().cookies())
-    .filter((cookie) => /^sb-.+-auth-token(\.\d+)?$/.test(cookie.name))
-    .sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }))
-    .map((cookie) => cookie.value)
-    .join('');
-  const session = JSON.parse(Buffer.from(chunks.replace(/^base64-/, ''), 'base64url').toString('utf8')) as { access_token: string };
-  return session.access_token;
 }
 
 const asUser = (token: string) => ({ apikey: anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
