@@ -243,10 +243,39 @@ test('a language chosen on sign-in carries into the member and the English chrom
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Tiếng Việt' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
+  await page.getByRole('button', { name: 'Tài khoản' }).click();
   await expect(page.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
   await page.context().clearCookies({ name: 'NEXT_LOCALE' });
   await page.reload();
   await page.getByRole('button', { name: 'Tài khoản' }).click();
   await expect(page.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
+});
+
+async function watchSignInPhoto(page: Page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Network.enable');
+  const requests: { url: string; priority: string }[] = [];
+  cdp.on('Network.requestWillBeSent', ({ request }) => {
+    if (request.url.includes('sign-in-hero')) requests.push({ url: request.url, priority: request.initialPriority });
+  });
+  return requests;
+}
+
+test('the sign-in photo is requested at high priority on a desktop', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the photo only shows from 1024 px');
+  const requests = await watchSignInPhoto(page);
+  await page.goto('/sign-in');
+  await page.waitForLoadState('load');
+  expect(requests.map(({ priority }) => priority)).toEqual(['High']);
+});
+
+test('a phone never requests the sign-in photo', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'compares the phone with the desktop');
+  const requests = await watchSignInPhoto(page);
+  await page.goto('/sign-in');
+  await page.waitForLoadState('load');
+  await expect(page.getByRole('button', { name: 'Gửi mã' })).toBeVisible();
+  expect(requests).toEqual([]);
 });

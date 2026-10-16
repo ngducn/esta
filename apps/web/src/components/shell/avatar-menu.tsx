@@ -24,14 +24,19 @@ export type AccountMenuProps = {
   signOut: string;
 };
 
-/** A native popover, so the menu opens, closes on Escape or an outside tap, and keeps focus order with no script of its own. */
+function close(menu: HTMLDivElement | null) {
+  if (menu?.matches(':popover-open')) menu.hidePopover();
+}
+
+/**
+ * A native popover, so the menu opens, closes on Escape or an outside tap, and keeps focus order with no script of its own.
+ * Taking a link or switching language does not dismiss a popover, so those close it here.
+ */
 export function AvatarMenu({ name, household, role, links, switchLanguage: language, signOut: signOutLabel }: AccountMenuProps) {
   const pathname = usePathname();
   const menu = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (menu.current?.matches(':popover-open')) menu.current.hidePopover();
-  }, [pathname]);
+  useEffect(() => close(menu.current), [pathname]);
 
   return (
     <div
@@ -58,7 +63,7 @@ export function AvatarMenu({ name, household, role, links, switchLanguage: langu
           );
         })}
         <li>
-          <form action={switchLanguage}>
+          <form action={switchLanguage} onSubmit={() => close(menu.current)}>
             <input type="hidden" name="locale" value={language.locale} />
             <button type="submit" lang={language.locale} className={itemClass}>
               <Languages strokeWidth={1.8} aria-hidden="true" />

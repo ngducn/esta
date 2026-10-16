@@ -5,7 +5,7 @@ Every signed-in page sits in the shell. Below 1024 px a bottom tab bar holds `Tá
 ## Sub-features
 
 - `shell-nav` marks the current section with `aria-current="page"` and a lacquer underline.
-- `shell-account-menu` opens the account menu, which closes on Escape, an outside tap or a navigation.
+- `shell-account-menu` opens the account menu, which closes on Escape, an outside tap, a navigation or a language switch.
 - `shell-display-settings` saves language, text scale and density on the member and theme in the `esta_theme` cookie.
 
 ## How to get to it (user POV)
