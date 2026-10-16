@@ -144,7 +144,8 @@
       "undoToast": "Thông báo có hoàn tác",
       "confirmDialog": "Hộp xác nhận",
       "sheet": "Bảng trượt",
-      "emptyState": "Khi chưa có gì"
+      "emptyState": "Khi chưa có gì",
+      "card": "Thẻ"
     },
     "states": {
       "default": "Mặc định",

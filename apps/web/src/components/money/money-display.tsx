@@ -17,7 +17,7 @@ const variants: Record<MoneyVariant, { format: (amount: Vnd, locale: Locale) => 
     },
     className: '',
   },
-  large: { format: formatVnd, className: 'text-h1 font-semibold sm:text-hero' },
+  large: { format: formatVnd, className: 'text-h1 font-bold tracking-tight sm:text-hero' },
 };
 
 export function MoneyDisplay({ amount, variant = 'full', className }: { amount: Vnd; variant?: MoneyVariant; className?: string }) {

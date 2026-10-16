@@ -19,10 +19,13 @@ function Loading({ children, className }: { children: ReactNode; className?: str
 
 export function SkeletonPage() {
   return (
-    <Loading className="flex flex-col gap-3">
-      <Block className="h-10 w-48 max-w-full" />
-      <Block className="h-6 w-full max-w-prose" />
-      <Block className="h-6 w-3/5 max-w-sm" />
+    <Loading className="flex flex-col gap-6">
+      <Block className="h-9 w-56 max-w-full" />
+      <div className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+        <Block className="h-7 w-64 max-w-full" />
+        <Block className="h-5 w-full max-w-prose" />
+        <Block className="mt-2 h-touch w-44" />
+      </div>
     </Loading>
   );
 }
@@ -98,7 +101,7 @@ export function SkeletonTable({ rows = 4 }: { rows?: number }) {
 
 export function SkeletonEmptyState() {
   return (
-    <Loading className="flex flex-col gap-3 border-t border-rule pt-6">
+    <Loading className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <Block className="h-7 w-64 max-w-full" />
       <Block className="h-5 w-full max-w-prose" />
       <Block className="mt-2 h-touch w-44" />

@@ -24,7 +24,7 @@ export default function ConfirmDialogPopup({ open, onOpenChange, finalFocus, tit
           {description === undefined ? null : <AlertDialogDescription>{description}</AlertDialogDescription>}
         </div>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <AlertDialogClose render={<Button variant="secondary" />}>{cancelLabel}</AlertDialogClose>
+          <AlertDialogClose render={<Button variant="outline" />}>{cancelLabel}</AlertDialogClose>
           <AlertDialogClose render={<Button variant="primary" />} onClick={onConfirm}>
             {confirmLabel}
           </AlertDialogClose>

@@ -144,7 +144,8 @@
       "undoToast": "Toast with undo",
       "confirmDialog": "Confirm dialog",
       "sheet": "Sheet",
-      "emptyState": "Empty state"
+      "emptyState": "Empty state",
+      "card": "Card"
     },
     "states": {
       "default": "Default",

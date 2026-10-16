@@ -43,7 +43,7 @@ function ToastList() {
       key={toast.id}
       toast={toast}
       data-slot="toast"
-      className="rounded-sm bg-ink text-surface transition-[translate,opacity] duration-(--duration-slow) ease-standard data-ending-style:translate-y-4 data-ending-style:opacity-0 data-limited:opacity-0 data-starting-style:translate-y-4 data-starting-style:opacity-0"
+      className="rounded-md bg-ink text-surface shadow-sheet transition-[translate,opacity] duration-(--duration-slow) ease-standard data-ending-style:translate-y-4 data-ending-style:opacity-0 data-limited:opacity-0 data-starting-style:translate-y-4 data-starting-style:opacity-0"
     >
       <ToastPrimitive.Content className="flex items-center gap-2 py-1 pr-1 pl-4">
         <ToastPrimitive.Title className="flex-1 py-2 text-body text-pretty" />
