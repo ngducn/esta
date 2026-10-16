@@ -2,7 +2,7 @@
 
 import { RotateCw, TriangleAlert } from 'lucide-react';
 import { useErrorLabels } from '@/components/properties/error-labels';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 
 export default function PropertiesError({ retry }: { error: Error & { digest?: string }; retry: () => void }) {
   const labels = useErrorLabels();
@@ -13,10 +13,10 @@ export default function PropertiesError({ retry }: { error: Error & { digest?: s
         {labels.title}
       </h1>
       <p className="text-body text-ink-2">{labels.body}</p>
-      <Button variant="outline" onClick={retry}>
+      <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={retry}>
         <RotateCw aria-hidden="true" />
         {labels.retry}
-      </Button>
+      </button>
     </section>
   );
 }

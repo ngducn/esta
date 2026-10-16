@@ -4,7 +4,7 @@ Demo cover photos for the seeded properties. `scripts/seed-photos.ts` uploads ea
 
 Every photo here comes from Pexels under the Pexels License (https://www.pexels.com/license/): free use, editing allowed, attribution optional. Not allowed: reselling unaltered copies, redistributing on competing stock sites, or implying that a person or brand endorses a product. Each photo page showed "Free" with no editorial or sponsored label when checked on 2026-10-16.
 
-Each file is the 1280 px wide WebP made from the Pexels download `https://images.pexels.com/photos/<id>/pexels-photo-<id>.jpeg?auto=compress&cs=tinysrgb&w=1600` with `cwebp` at quality 72.
+Each file started as the 1280 px wide WebP made from the Pexels download `https://images.pexels.com/photos/<id>/pexels-photo-<id>.jpeg?auto=compress&cs=tinysrgb&w=1600` with `cwebp` at quality 72. P1-04 resized each to 800 px wide with `cwebp -q 72 -resize 800 0 -metadata none`, because a signed storage URL skips the image optimizer and a phone card should cost about 60 KB.
 
 | File | Shows | Author | Source page | Edits |
 | --- | --- | --- | --- | --- |

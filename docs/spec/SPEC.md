@@ -119,7 +119,7 @@ Name the data shape before writing code. These tables live in Supabase Postgres.
 
 ### 5.3 Property
 
-- `properties`: nickname (e.g. "Nhà Q7"), code (short, unique per household, used in invoice numbers), kind, kind_details (jsonb validated per kind, see below), use_mode, legal_status, current_address (jsonb: house_no, street, commune_code, province_code, line), certificate_address_text, location (PostGIS point), boundary (PostGIS polygon, optional), acquired_on, acquisition_kind (`purchase | inheritance | gift | allocation | other`), acquisition_price_vnd, notes. Soft delete.
+- `properties`: nickname (e.g. "Nhà Q7"), code (short, unique per household, used in invoice numbers), kind, kind_details (jsonb validated per kind, see below), use_mode, legal_status, current_address (jsonb: house_no, street, commune_code, province_code, line), certificate_address_text, location (PostGIS point), boundary (PostGIS polygon, optional), cover_photo_path (the object `<household_id>/<id>/<name>` in the private `property-photos` bucket, held by a check to the row's own household and id; shown through signed URLs from the member's session), acquired_on, acquisition_kind (`purchase | inheritance | gift | allocation | other`), acquisition_price_vnd, notes. Soft delete.
   - kind: `townhouse | apartment | villa | rooming_house | commercial_space | warehouse | residential_land | agricultural_land | mixed | other`.
   - kind_details by kind: apartment {building_name, block, floor, unit_no, management_fee_vnd}; rooming_house {room_count}; land kinds {frontage_m, road_width_m}; others {}.
   - use_mode: `rental | owner_occupied | family_use | own_business | held | under_renovation`.
