@@ -30,7 +30,6 @@ export function publicTables(workdir: string): PublicTable[] {
   );
 }
 
-/** Prints each problem and returns whether every public table is covered. */
 export function reportTableCoverage(repoRoot: string, slot: number): boolean {
   const tables = publicTables(slotWorkdir(repoRoot, slot));
   const problems = coverageProblems(tables, readTestFiles(join(repoRoot, 'supabase', 'tests')));

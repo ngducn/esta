@@ -10,7 +10,6 @@ export const OFFLINE_AFTER_MS = 5 * 60_000;
  */
 export const HEARTBEAT_SKEW_MS = 10_000;
 
-/** The latest `last_seen_at` that counts as a heartbeat at `now`. */
 export function heartbeatReadBound(now: Instant): Instant {
   return new Date(Date.parse(now) + HEARTBEAT_SKEW_MS).toISOString() as Instant;
 }

@@ -6,7 +6,6 @@ import { z } from 'zod';
 
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
-/** A check either runs commands, all of which must exit 0, or reads a record. */
 export type PhaseCheck =
   | { readonly id: string; readonly commands: readonly (readonly string[])[] }
   | { readonly id: string; readonly verify: (repoRoot: string) => Outcome };
