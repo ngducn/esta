@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { BrandMark } from '@/components/brand-mark';
+import { Photo } from '@/components/photo';
 import hero from '@/photos/sign-in-hero.webp';
 
 /**
@@ -19,7 +19,7 @@ export function AuthFrame({ brand, photoAlt, aside, children }: { brand: string;
       </main>
       <div className="relative hidden p-4 lg:block">
         <div className="relative h-full overflow-hidden rounded-lg bg-surface-2">
-          <Image src={hero} alt={photoAlt} fill sizes="50vw" className="object-cover" />
+          <Photo src={hero} alt={photoAlt} sizes="50vw" className="object-cover" />
         </div>
       </div>
     </div>

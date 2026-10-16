@@ -1,8 +1,9 @@
 import { SlidersHorizontal } from 'lucide-react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import Image, { type StaticImageData } from 'next/image';
+import type { StaticImageData } from 'next/image';
 import { EmptyState } from '@/components/empty-state';
+import { Photo } from '@/components/photo';
 import canHo from '@/photos/can-ho.webp';
 import dat from '@/photos/dat.webp';
 import dayTro from '@/photos/day-tro.webp';
@@ -32,7 +33,7 @@ async function PropertyCollage() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {collage.map(({ photo, label }) => (
           <div key={label} className="relative aspect-[4/3] overflow-hidden rounded-md bg-surface-2">
-            <Image src={photo} alt="" fill sizes="(min-width: 1024px) 15rem, (min-width: 640px) 25vw, 50vw" className="object-cover" />
+            <Photo src={photo} alt="" sizes="(min-width: 1024px) 15rem, (min-width: 640px) 25vw, 50vw" className="object-cover" />
             <span className="absolute top-2 left-2 rounded-full bg-surface px-2.5 py-1 text-small font-semibold text-ink">{photos(label)}</span>
           </div>
         ))}

@@ -7,7 +7,6 @@ import { useEffect, useRef } from 'react';
 import { signOut } from '@/app/home-actions';
 import { switchLanguage } from '@/app/language-actions';
 import type { Locale } from '@/i18n/locale';
-import { cn } from '@/lib/utils';
 import type { SectionKey } from './nav';
 import { sectionIcons } from './section-icons';
 
@@ -99,11 +98,7 @@ export function AccountTrigger({
       type="button"
       popoverTarget={menuId}
       aria-label={accessibleName}
-      className={cn(
-        'flex min-h-touch max-w-full min-w-touch items-center rounded-sm py-1.5 text-left text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2',
-        compact ? 'shrink-0 gap-2 px-1' : 'gap-3 px-2',
-        className,
-      )}
+      className={`flex min-h-touch max-w-full min-w-touch items-center rounded-sm py-1.5 text-left text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 ${compact ? 'shrink-0 gap-2 px-1' : 'gap-3 px-2'} ${className ?? ''}`}
     >
       {initial !== null && (
         <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-body font-semibold text-surface">
@@ -111,7 +106,7 @@ export function AccountTrigger({
         </span>
       )}
       <span className="flex min-w-0 flex-col">
-        <span className={cn('font-semibold', compact ? 'whitespace-nowrap' : 'break-words')}>{label}</span>
+        <span className={compact ? 'font-semibold whitespace-nowrap' : 'font-semibold break-words'}>{label}</span>
         {detail && <span className="text-small text-ink-muted break-words">{detail}</span>}
       </span>
     </button>
