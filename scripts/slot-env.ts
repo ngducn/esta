@@ -8,8 +8,8 @@ export type Env = Record<string, string>;
 
 const STATUS_KEYS = { ANON_KEY: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', SERVICE_ROLE_KEY: 'SUPABASE_SERVICE_ROLE_KEY' } as const;
 
-function readEnvLocal(repoRoot: string): Env {
-  const file = join(repoRoot, 'apps', 'web', '.env.local');
+function readEnvLocal(repoRoot: string, app: 'web' | 'agent'): Env {
+  const file = join(repoRoot, 'apps', app, '.env.local');
   return existsSync(file) ? (parseEnv(readFileSync(file, 'utf8')) as Env) : {};
 }
 
@@ -27,14 +27,14 @@ function statusKeys(repoRoot: string, slot: number): Env {
   );
 }
 
-export function slotEnv(repoRoot: string, slot: number, { withKeys = true } = {}): Env {
+export function slotEnv(repoRoot: string, slot: number, { withKeys = true, app = 'web' as 'web' | 'agent' } = {}): Env {
   const ports = slotPorts(slot);
   const apiUrl = `http://127.0.0.1:${ports.api}`;
   const fromShell = Object.fromEntries(
     Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
   );
   return {
-    ...readEnvLocal(repoRoot),
+    ...readEnvLocal(repoRoot, app),
     PORT: String(ports.web),
     NEXT_PUBLIC_SUPABASE_URL: apiUrl,
     SUPABASE_URL: apiUrl,

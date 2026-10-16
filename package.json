@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "node scripts/web.ts dev",
     "dev:lan": "node scripts/dev-lan.ts",
+    "agent:dev": "node --import tsx scripts/agent-dev.ts",
+    "agent:record": "node --import tsx scripts/agent-record.ts",
     "build": "pnpm --filter @esta/web build",
     "start": "node scripts/web.ts start",
     "check": "pnpm i18n:parity && pnpm plan:coverage --quiet && pnpm tokens:check && pnpm glyphs:check && pnpm contrast:check && pnpm -r --include-workspace-root run typecheck && pnpm lint && pnpm -r --include-workspace-root run test",
