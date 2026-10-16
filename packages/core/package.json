@@ -9,6 +9,7 @@
     "./date": "./src/date/iso-date.ts",
     "./date/calendar": "./src/date/calendar.ts",
     "./format": "./src/format/index.ts",
+    "./maps": "./src/maps/index.ts",
     "./money": "./src/money/vnd.ts",
     "./names": "./src/names/index.ts",
     "./parse/*": "./src/parse/*.ts",
