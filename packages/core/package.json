@@ -15,7 +15,8 @@
     "./parse/*": "./src/parse/*.ts",
     "./phone": "./src/phone/index.ts",
     "./result": "./src/result.ts",
-    "./search": "./src/search/fold.ts"
+    "./search": "./src/search/fold.ts",
+    "./vietqr": "./src/vietqr/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
