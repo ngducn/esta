@@ -1,11 +1,16 @@
 'use client';
 
 import { RotateCw, TriangleAlert } from 'lucide-react';
-import { useErrorLabels } from '@/components/properties/error-labels';
+import { catchError } from 'next/error';
 import { buttonVariants } from '@/components/ui/button-variants';
 
-export default function PropertiesError({ retry }: { error: Error & { digest?: string }; retry: () => void }) {
-  const labels = useErrorLabels();
+type ErrorLabels = { title: string; body: string; retry: string };
+
+/**
+ * A component boundary instead of `error.tsx`: Next loads a segment's `error.tsx` as its own chunk once hydration
+ * starts, a request chained after the framework chunk inside the cover's LCP window. This one ships with the layout.
+ */
+export const PropertiesErrorBoundary = catchError<{ labels: ErrorLabels }>(function PropertiesError({ labels }, { retry }) {
   return (
     <section role="alert" className="flex max-w-3xl flex-col items-start gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <h1 className="flex items-center gap-3 text-lead font-bold text-ink">
@@ -19,4 +24,4 @@ export default function PropertiesError({ retry }: { error: Error & { digest?: s
       </button>
     </section>
   );
-}
+});
