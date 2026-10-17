@@ -63,9 +63,9 @@ function afterLineEnd(body: string, at: number): number {
   return body[at] === '\r' && body[at + 1] === '\n' ? at + 2 : at + 1;
 }
 
-/** The index of the quote that closes a quoted field opened just before `from`, or -1. */
+/** The index of the quote that closes, on the same line, a quoted field opened just before `from`, or -1. */
 function closingQuote(body: string, from: number): number {
-  for (let at = from; at < body.length; at++) {
+  for (let at = from; at < body.length && !isLineEnd(body[at]); at++) {
     if (body[at] !== '"') continue;
     if (body[at + 1] !== '"') return at;
     at++;
@@ -104,9 +104,11 @@ function readRecord(body: string, start: number, delimiter: string): { record: C
 }
 
 /**
- * RFC 4180 text to records: a leading BOM, CRLF, quoted fields and doubled quotes are handled. A
- * quote opens a field only at its start. A record with a quote anywhere else, or whose quote never
- * closes, is refused and reading resumes on the next line, so one bad record costs one row.
+ * RFC 4180 text to records, one per line: a leading BOM, CRLF, quoted fields and doubled quotes are
+ * handled. A statement carries one transaction per line, so a quoted field may not span a line
+ * break. A quote opens a field only at its start. A record with a quote anywhere else, or whose
+ * quote does not close on its line, is refused and reading resumes on the next line, so one bad
+ * line costs one row.
  */
 export function decodeCsv(text: string): CsvRecord[] {
   const body = text.startsWith('\uFEFF') ? text.slice(1) : text;
