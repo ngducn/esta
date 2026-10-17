@@ -25,6 +25,8 @@ function row(nickname: string, fields: Partial<PropertyListRow> = {}): PropertyL
     certificateAddressText: null,
     legacyProvinceNames: ['Thành phố Hồ Chí Minh'],
     searchText: nickname,
+    location: null,
+    hasBoundary: false,
     ...fields,
   };
 }
@@ -56,14 +58,14 @@ const baoLoc = row('Đất Bảo Lộc', {
 });
 const lane = [q7, thuDuc, diAn, q1, bienHoa, longAn, baoLoc];
 
-const none = { q: '', sort: 'name', province: null, kind: null, use: null, legal: null } as const;
+const none = { q: '', sort: 'name', view: 'list', province: null, kind: null, use: null, legal: null } as const;
 const names = (rows: readonly PropertyListRow[]) => rows.map((r) => r.nickname);
 
 describe('parsePropertyFilters', () => {
   it('reads every param', () => {
     expect(
-      parsePropertyFilters({ q: '  di   an ', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', sort: 'name' }),
-    ).toEqual({ q: 'di an', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', sort: 'name' });
+      parsePropertyFilters({ q: '  di   an ', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', sort: 'name', view: 'map' }),
+    ).toEqual({ q: 'di an', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', sort: 'name', view: 'map' });
   });
 
   it('reads a former province by name', () => {
@@ -72,7 +74,7 @@ describe('parsePropertyFilters', () => {
   });
 
   it('drops unknown values and keeps the rest', () => {
-    expect(parsePropertyFilters({ kind: 'castle', use: 'rental', legal: 'maybe', sort: 'price', province: '7', owner: 'x' })).toEqual({
+    expect(parsePropertyFilters({ kind: 'castle', use: 'rental', legal: 'maybe', sort: 'price', view: 'globe', province: '7', owner: 'x' })).toEqual({
       ...none,
       use: 'rental',
     });
@@ -92,6 +94,11 @@ describe('parsePropertyFilters', () => {
     const params = Object.fromEntries(query.slice(1).split('&').map((pair) => pair.split('=').map(decodeURIComponent)));
     expect(parsePropertyFilters(params)).toEqual(filters);
     expect(propertyFiltersQuery(none)).toBe('');
+  });
+
+  it('keeps the map view through a filter change', () => {
+    const filters = parsePropertyFilters({ view: 'map', kind: 'warehouse', locate: 'any' });
+    expect(propertyFiltersQuery({ ...filters, kind: null })).toBe('?view=map');
   });
 });
 

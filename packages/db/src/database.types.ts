@@ -601,6 +601,7 @@ export type Database = {
       }
       properties: {
         Row: {
+          boundary: unknown
           certificate_address_text: string | null
           code: string
           cover_photo_path: string | null
@@ -619,6 +620,7 @@ export type Database = {
           use_mode: string
         }
         Insert: {
+          boundary?: unknown
           certificate_address_text?: string | null
           code: string
           cover_photo_path?: string | null
@@ -637,6 +639,7 @@ export type Database = {
           use_mode: string
         }
         Update: {
+          boundary?: unknown
           certificate_address_text?: string | null
           code?: string
           cover_photo_path?: string | null
@@ -742,11 +745,14 @@ export type Database = {
           code: string | null
           commune_name: string | null
           cover_photo_path: string | null
+          has_boundary: boolean | null
           household_id: string | null
           id: string | null
           kind: string | null
+          lat: number | null
           legacy_province_names: string[] | null
           legal_status: string | null
+          lng: number | null
           nickname: string | null
           province_code: string | null
           province_name: string | null
@@ -812,7 +818,16 @@ export type Database = {
         }
         Returns: string
       }
+      property_boundary: { Args: { p_property_id: string }; Returns: Json }
       set_my_locale: { Args: { p_locale: string }; Returns: undefined }
+      set_property_boundary: {
+        Args: { p_boundary: Json; p_property_id: string }
+        Returns: Json
+      }
+      set_property_location: {
+        Args: { p_lat?: number; p_lng?: number; p_property_id: string }
+        Returns: Json
+      }
       suggest_current_unit: {
         Args: { p_text: string }
         Returns: {

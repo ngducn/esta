@@ -2,6 +2,7 @@ import {
   PROPERTY_FILTER_KEYS,
   PROPERTY_SORT_KEYS,
   parsePropertyFilters,
+  propertyFiltersQuery,
   shortProvinceName,
   type PropertyFilterKey,
   type PropertyListRow,
@@ -9,25 +10,31 @@ import {
 } from '@esta/core/properties';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
 import { FilterChips, filterChips, hasChoice, type FilterGroup } from '@/components/properties/filter-chips';
 import type { PropertyCardData } from '@/components/properties/property-card';
 import { PropertyList } from '@/components/properties/property-list';
 import { PropertySearch } from '@/components/properties/property-search';
 import { SortSelect } from '@/components/properties/sort-select';
+import { ViewToggle } from '@/components/properties/view-toggle';
 import { sectionIcons } from '@/components/shell/section-icons';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button';
 import { requireMember } from '@/server/member';
 import { listProperties } from '@/server/properties/list';
 import { signCoverPhotos } from '@/server/properties/photos';
+import MapView from './map-view';
 
 export const generateMetadata = () => sectionMetadata('properties');
 
 const comparable = (address: string) => address.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('vi');
 
+const locateParam = z.uuid();
+
 export default async function PropertiesPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
-  const [filters, member] = await Promise.all([searchParams.then(parsePropertyFilters), requireMember()]);
+  const [params, member] = await Promise.all([searchParams, requireMember()]);
+  const filters = parsePropertyFilters(params);
   const [list, nav, t] = await Promise.all([listProperties(member.household.id, filters), getTranslations('nav'), getTranslations('properties')]);
   const photos = await signCoverPhotos(list.rows.flatMap((row) => (row.coverPhotoPath === null ? [] : [row.coverPhotoPath])));
 
@@ -74,11 +81,16 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-h2 break-words lg:text-h1">{nav('properties')}</h1>
-        <p data-testid="property-count" className="text-small text-ink-muted">
-          {count}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-h2 break-words lg:text-h1">{nav('properties')}</h1>
+          <p data-testid="property-count" className="text-small text-ink-muted">
+            {count}
+          </p>
+        </div>
+        {list.householdCount === 0 ? null : (
+          <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
+        )}
       </header>
 
       {list.householdCount === 0 ? (
@@ -105,6 +117,8 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
                 {t('clearFilters')}
               </Link>
             </section>
+          ) : filters.view === 'map' ? (
+            <MapView cards={cards} rows={list.rows} locate={locateParam.safeParse(params.locate).data ?? null} query={propertyFiltersQuery(filters)} />
           ) : (
             <PropertyList cards={cards} />
           )}
@@ -113,3 +127,4 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
     </div>
   );
 }
+

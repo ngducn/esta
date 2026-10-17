@@ -1,38 +1,9 @@
 import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
-import {
-  BedDouble,
-  Briefcase,
-  Building,
-  Building2,
-  CirclePause,
-  Hammer,
-  Hotel,
-  House,
-  KeyRound,
-  LandPlot,
-  MapPin,
-  Sprout,
-  Store,
-  Users,
-  Warehouse,
-  type LucideIcon,
-} from 'lucide-react';
+import { Briefcase, CirclePause, Hammer, House, KeyRound, MapPin, Users, type LucideIcon } from 'lucide-react';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
 import { cn } from '@/lib/utils';
 import { CoverPhoto, type CoverPhotoPriority } from './cover-photo';
-
-const kindIcons = {
-  townhouse: House,
-  apartment: Building2,
-  villa: Hotel,
-  rooming_house: BedDouble,
-  commercial_space: Store,
-  warehouse: Warehouse,
-  residential_land: LandPlot,
-  agricultural_land: Sprout,
-  mixed: Building,
-  other: MapPin,
-} as const satisfies Record<PropertyKind, LucideIcon>;
+import { kindIcons } from './kind-icons';
 
 const useIcons = {
   rental: KeyRound,

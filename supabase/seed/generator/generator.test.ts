@@ -82,12 +82,14 @@ describe('db:checksum', () => {
 
 describe('PROPERTY_SEEDS', () => {
   it('keeps every location inside Vietnam and every code unique', () => {
-    for (const seed of PROPERTY_SEEDS) {
-      expect(seed.lat).toBeGreaterThan(8.18);
-      expect(seed.lat).toBeLessThan(23.39);
-      expect(seed.lng).toBeGreaterThan(102.14);
-      expect(seed.lng).toBeLessThan(109.47);
+    for (const { location } of PROPERTY_SEEDS) {
+      if (location === null) continue;
+      expect(location.lat).toBeGreaterThan(8.18);
+      expect(location.lat).toBeLessThan(23.39);
+      expect(location.lng).toBeGreaterThan(102.14);
+      expect(location.lng).toBeLessThan(109.47);
     }
+    expect(PROPERTY_SEEDS.filter(({ location }) => location === null).map(({ key }) => key), 'one unpinned property for the map').toEqual(['long-an']);
     const codes = PROPERTY_SEEDS.map((seed) => seed.key.replaceAll('-', '').toUpperCase());
     expect(new Set(codes).size).toBe(codes.length);
   });
