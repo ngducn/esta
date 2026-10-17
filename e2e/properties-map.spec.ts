@@ -100,6 +100,9 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
     .map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
+/** The dev server runs the toaster's effect twice, so a first toast can still be leaving when the real one lands. */
+const liveToast = (page: Page) => page.locator('[data-slot="toast"]:not([data-ending-style])');
+
 async function expectRule1(page: Page, words: { unpinned: RegExp; edit: string }) {
   await expect.poll(() => pinnedCount(page)).toBe(6);
   const unpinned = page.getByTestId('unpinned-list');
@@ -166,7 +169,7 @@ test('rule 2: a pasted place link saves the !3d!4d point, offers Hoàn tác, and
   expect(await seriousAxeViolations(page)).toEqual([]);
   await panel(page).getByRole('button', { name: 'Dùng vị trí này' }).click();
 
-  const toast = page.locator('[data-slot="toast"]');
+  const toast = liveToast(page);
   await expect(toast).toContainText('Đã lưu vị trí Đất vườn Long An.');
   await expect(toast.getByRole('button', { name: 'Hoàn tác' })).toBeVisible();
   await expect.poll(() => stored(page, id)).toMatchObject({ lat: 10.5331, lng: 106.4052 });
@@ -196,7 +199,7 @@ test('rule 3: dragging the Kho Biên Hòa pin and typing coordinates both persis
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2 + 60, { steps: 12 });
   await page.mouse.up();
-  await expect(page.locator('[data-slot="toast"]')).toContainText('Đã lưu vị trí Kho Biên Hòa.');
+  await expect(liveToast(page)).toContainText('Đã lưu vị trí Kho Biên Hòa.');
   await expect.poll(async () => (await stored(page, id)).lat).not.toBe(10.97);
   const dragged = await stored(page, id);
   expect(dragged.lat, 'dragging down moves the pin south').toBeLessThan(10.97);
@@ -254,7 +257,7 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   await expect(area).toContainText('Ước tính');
   await expect(area).toContainText('m²');
   await panel(page).getByRole('button', { name: 'Lưu ranh giới' }).click();
-  await expect(page.locator('[data-slot="toast"]')).toContainText('Đã lưu ranh giới Đất Bảo Lộc.');
+  await expect(liveToast(page)).toContainText('Đã lưu ranh giới Đất Bảo Lộc.');
   await expect.poll(async () => (await stored(page, id)).has_boundary).toBe(true);
   const saved = await rpc(page, 'property_boundary', { p_property_id: id });
   expect((saved as { coordinates: unknown[][] }).coordinates[0], 'four corners and the closing one').toHaveLength(5);
@@ -275,7 +278,7 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   await panel(page).getByRole('button', { name: 'Hủy' }).click();
 
   await panel(page).getByRole('button', { name: 'Xóa ranh giới' }).click();
-  const toast = page.locator('[data-slot="toast"]').filter({ hasText: 'Đã xóa ranh giới Đất Bảo Lộc.' });
+  const toast = liveToast(page).filter({ hasText: 'Đã xóa ranh giới Đất Bảo Lộc.' });
   await expect(toast).toBeVisible();
   await toast.getByRole('button', { name: 'Hoàn tác' }).click();
   await expect.poll(() => rpc(page, 'property_boundary', { p_property_id: id }), 'the undo brings back the 4-corner boundary').toEqual(saved);
@@ -305,7 +308,7 @@ test('rule 5: a point outside Vietnam warns and waits for Vẫn lưu, and a user
   await paste(page, PARIS_LINK);
   await panel(page).getByRole('button', { name: 'Vẫn lưu' }).click();
   await expect.poll(() => stored(page, id)).toMatchObject({ lat: 48.8584, lng: 2.2945 });
-  await page.locator('[data-slot="toast"]').getByRole('button', { name: 'Hoàn tác' }).click();
+  await liveToast(page).getByRole('button', { name: 'Hoàn tác' }).click();
   await expect.poll(async () => (await stored(page, id)).lat, 'Hoàn tác writes the empty pin back').toBeNull();
 });
 
