@@ -1,5 +1,5 @@
-import { SkeletonPage } from '@/components/skeleton';
+import { SkeletonPropertyHeader } from '@/components/skeleton';
 
 export default function PropertyDetailLoading() {
-  return <SkeletonPage />;
+  return <SkeletonPropertyHeader />;
 }

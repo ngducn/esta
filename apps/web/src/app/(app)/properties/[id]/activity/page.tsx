@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ActivityList, type ActivityListEntry } from '@/components/properties/activity-list';
 import { env } from '@/server/env';
 import { loadPropertyActivity, loadPropertyDetail } from '@/server/properties/detail';
+import { PropertyDetailFrame } from '../detail-frame';
 
 export default async function PropertyActivityPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,5 +36,9 @@ export default async function PropertyActivityPage({ params }: { params: Promise
     };
   });
 
-  return <ActivityList entries={entries} title={t('activityTitle')} empty={t('activityEmpty')} />;
+  return (
+    <PropertyDetailFrame property={property} tab="activity">
+      <ActivityList entries={entries} title={t('activityTitle')} empty={t('activityEmpty')} />
+    </PropertyDetailFrame>
+  );
 }

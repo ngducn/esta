@@ -15,6 +15,7 @@ const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 const SIGNED_PHOTO = /\/storage\/v1\/object\/sign\/property-photos\//;
 const LONG_LINK = 'https://www.google.com/maps/place/Demo+Long+An/@10.6,106.3,15z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d10.5331!4d106.4052';
 
+const MAPLIBRE_BODY = 'maplibregl-canvas';
 const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
@@ -51,6 +52,7 @@ async function open(page: Page, email: string, theme: 'light' | 'dark') {
 async function tapCard(page: Page, nickname: string) {
   await page.getByTestId('property-card').getByRole('link', { name: nickname, exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(nickname);
+  await expect.poll(() => page.evaluate(() => window.scrollY), 'the detail page opens at its photo, not at the list scroll').toBe(0);
 }
 
 const tabs = (page: Page) => page.getByRole('navigation', { name: /^(Các mục của tài sản|Property sections)$/ }).getByRole('link');
@@ -75,11 +77,21 @@ async function expectDiAn(page: Page, words: { current: string; legal: string; t
 test('rule 1: Mẹ taps Dãy trọ Dĩ An on Tài sản and the detail page leads with its photo and both addresses', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await stubTiles(page);
+  const mapChunks: string[] = [];
+  page.on('response', async (response) => {
+    const url = response.url();
+    if (/\/_next\/static\/chunks\/.+\.js/.test(url) && (await response.text().catch(() => '')).includes(MAPLIBRE_BODY)) mapChunks.push(url);
+  });
   await open(page, 'me.lane1@demo.esta.test', 'light');
   await tapCard(page, 'Dãy trọ Dĩ An');
   await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'di-an')}$`));
   await expectDiAn(page, { current: 'Hiện nay', legal: 'Theo sổ', tabs: ['Tổng quan', 'Hoạt động'] });
   await expect(page.getByTestId('overview-facts')).toContainText('Số phòng');
+  await page.waitForLoadState('networkidle');
+  expect(mapChunks, 'the detail page fetches no MapLibre chunk while the location card is off screen').toEqual([]);
+  await page.getByTestId('location-card').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('location-card').getByTestId('map-canvas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
+  await expect.poll(() => mapChunks.length).toBeGreaterThan(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await tabs(page).filter({ hasText: 'Hoạt động' }).click();

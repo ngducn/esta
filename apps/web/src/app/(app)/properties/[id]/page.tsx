@@ -8,6 +8,7 @@ import { OverviewFacts, type OverviewFact } from '@/components/properties/overvi
 import { readBoundary } from '@/server/properties/boundary';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { getThemePreference } from '@/server/theme';
+import { PropertyDetailFrame } from './detail-frame';
 
 type DetailFormat = 'count' | 'meters' | 'text' | 'vnd';
 
@@ -61,38 +62,40 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
   });
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-      <OverviewFacts
-        facts={{
-          title: t('factsTitle'),
-          kind: property.kind,
-          kindTerm: t('factKind'),
-          kindLabel: tp('kind', { kind: property.kind }),
-          details,
-          useTerm: t('factUse'),
-          useMode: property.useMode,
-          useLabel: tp('use', { use: property.useMode }),
-          legalTerm: t('factLegal'),
-          legalStatus: property.legalStatus,
-          legalLabel: tp('legal', { legal: property.legalStatus }),
-        }}
-      />
-      <LocationCard
-        locateHref={`/properties?view=map&locate=${property.id}`}
-        labels={{ title: t('locationTitle'), edit: t('editLocation'), set: t('setLocation'), none: t('noLocation'), noneBody: t('noLocationBody') }}
-        map={
-          property.location === null
-            ? null
-            : {
-                locale,
-                messages: { map: messages.map },
-                theme,
-                label: t('mapLabel', { nickname: property.nickname }),
-                pin: { id: property.id, nickname: property.nickname, ...property.location },
-                boundary,
-              }
-        }
-      />
-    </div>
+    <PropertyDetailFrame property={property} tab="overview">
+      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+        <OverviewFacts
+          facts={{
+            title: t('factsTitle'),
+            kind: property.kind,
+            kindTerm: t('factKind'),
+            kindLabel: tp('kind', { kind: property.kind }),
+            details,
+            useTerm: t('factUse'),
+            useMode: property.useMode,
+            useLabel: tp('use', { use: property.useMode }),
+            legalTerm: t('factLegal'),
+            legalStatus: property.legalStatus,
+            legalLabel: tp('legal', { legal: property.legalStatus }),
+          }}
+        />
+        <LocationCard
+          locateHref={`/properties?view=map&locate=${property.id}`}
+          labels={{ title: t('locationTitle'), edit: t('editLocation'), set: t('setLocation'), none: t('noLocation'), noneBody: t('noLocationBody') }}
+          map={
+            property.location === null
+              ? null
+              : {
+                  locale,
+                  messages: { map: messages.map },
+                  theme,
+                  label: t('mapLabel', { nickname: property.nickname }),
+                  pin: { id: property.id, nickname: property.nickname, ...property.location },
+                  boundary,
+                }
+          }
+        />
+      </div>
+    </PropertyDetailFrame>
   );
 }
