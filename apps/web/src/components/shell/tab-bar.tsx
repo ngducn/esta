@@ -10,11 +10,11 @@ export function TabBar({ items, label }: { items: readonly NavItem[]; label: str
   const pathname = usePathname();
   return (
     <nav aria-label={label} className="sticky bottom-0 z-10 border-t border-rule bg-surface lg:hidden">
-      <ul className="grid grid-cols-5 pb-[env(safe-area-inset-bottom)]">
+      <ul className="flex px-1 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
           const Icon = sectionIcons[item.key];
           return (
-            <li key={item.key} className="min-w-0">
+            <li key={item.key} className="min-w-0 flex-auto">
               <IntentLink
                 href={item.href}
                 aria-current={isActive(pathname, item.href) ? 'page' : undefined}
