@@ -1,0 +1,151 @@
+{
+  "fixture_id": "so_do_pre2009-scan",
+  "form": "so_do_pre2009",
+  "variant": "scan",
+  "files": [
+    "document.pdf"
+  ],
+  "qr_payload": null,
+  "printed_id_numbers": [
+    "079058004217"
+  ],
+  "handwritten_fields": [],
+  "certificate": {
+    "form": {
+      "value": "so_do_pre2009",
+      "confidence": 1,
+      "page": 1
+    },
+    "holders": [
+      {
+        "full_name": {
+          "value": "Trần Văn Demo Bình",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1958,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "4217",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "ấp Tân Phú, xã Tân Thông Hội, huyện Củ Chi, TP. Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        }
+      }
+    ],
+    "parcels": [
+      {
+        "parcel_no": {
+          "value": "245",
+          "confidence": 1,
+          "page": 1
+        },
+        "map_sheet_no": {
+          "value": "12",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "ấp Tân Phú, xã Tân Thông Hội, huyện Củ Chi, TP. Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "area_m2": {
+          "value": 1250.5,
+          "confidence": 1,
+          "page": 1
+        },
+        "use_form": {
+          "value": "Riêng",
+          "confidence": 1,
+          "page": 1
+        },
+        "purposes": [
+          {
+            "land_use_code": {
+              "value": "ONT",
+              "confidence": 1,
+              "page": 1
+            },
+            "area_m2": {
+              "value": 300,
+              "confidence": 1,
+              "page": 1
+            },
+            "term": {
+              "value": "Lâu dài",
+              "confidence": 1,
+              "page": 1
+            }
+          },
+          {
+            "land_use_code": {
+              "value": "CLN",
+              "confidence": 1,
+              "page": 1
+            },
+            "area_m2": {
+              "value": 950.5,
+              "confidence": 1,
+              "page": 1
+            },
+            "term": {
+              "value": "Đến tháng 10/2043",
+              "confidence": 1,
+              "page": 1
+            }
+          }
+        ],
+        "origin_text": {
+          "value": "Nhà nước công nhận quyền sử dụng đất",
+          "confidence": 1,
+          "page": 1
+        }
+      }
+    ],
+    "structures": [],
+    "serial_no": {
+      "value": "Q 482915",
+      "confidence": 1,
+      "page": 1
+    },
+    "book_entry_no": {
+      "value": "01234 QSDĐ/123/QĐ-UB",
+      "confidence": 1,
+      "page": 1
+    },
+    "issued_on": {
+      "value": "2003-05-14",
+      "confidence": 1,
+      "page": 1
+    },
+    "issued_by": {
+      "value": "UBND huyện Củ Chi",
+      "confidence": 1,
+      "page": 1
+    },
+    "annotations": [],
+    "has_qr": {
+      "value": false,
+      "confidence": 1,
+      "page": 1
+    },
+    "notes_text": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    }
+  }
+}

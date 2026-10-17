@@ -1,0 +1,201 @@
+{
+  "fixture_id": "so_hong_pre2009-photo",
+  "form": "so_hong_pre2009",
+  "variant": "photo",
+  "files": [
+    "page-1.jpg",
+    "page-2.jpg"
+  ],
+  "qr_payload": null,
+  "printed_id_numbers": [
+    "079062118340",
+    "079165220913"
+  ],
+  "handwritten_fields": [],
+  "certificate": {
+    "form": {
+      "value": "so_hong_pre2009",
+      "confidence": 1,
+      "page": 1
+    },
+    "holders": [
+      {
+        "full_name": {
+          "value": "Phạm Minh Demo",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1962,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "8340",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "12/45 đường Lê Văn Sỹ, phường 13, quận 3, TP. Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": "Vợ chồng",
+          "confidence": 1,
+          "page": 1
+        }
+      },
+      {
+        "full_name": {
+          "value": "Nguyễn Thị Demo Lan",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1965,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "0913",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "12/45 đường Lê Văn Sỹ, phường 13, quận 3, TP. Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": "Vợ chồng",
+          "confidence": 1,
+          "page": 1
+        }
+      }
+    ],
+    "parcels": [
+      {
+        "parcel_no": {
+          "value": "87",
+          "confidence": 1,
+          "page": 1
+        },
+        "map_sheet_no": {
+          "value": "5",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "12/45 đường Lê Văn Sỹ, phường 13, quận 3, TP. Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "area_m2": {
+          "value": 68.4,
+          "confidence": 1,
+          "page": 1
+        },
+        "use_form": {
+          "value": "Riêng",
+          "confidence": 1,
+          "page": 1
+        },
+        "purposes": [
+          {
+            "land_use_code": {
+              "value": "ODT",
+              "confidence": 1,
+              "page": 1
+            },
+            "area_m2": {
+              "value": 68.4,
+              "confidence": 1,
+              "page": 1
+            },
+            "term": {
+              "value": "Lâu dài",
+              "confidence": 1,
+              "page": 1
+            }
+          }
+        ],
+        "origin_text": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        }
+      }
+    ],
+    "structures": [
+      {
+        "kind": {
+          "value": "Nhà ở",
+          "confidence": 1,
+          "page": 1
+        },
+        "footprint_m2": {
+          "value": 68.4,
+          "confidence": 1,
+          "page": 1
+        },
+        "floor_area_m2": {
+          "value": 205.2,
+          "confidence": 1,
+          "page": 1
+        },
+        "floors": {
+          "value": 3,
+          "confidence": 1,
+          "page": 1
+        },
+        "structure_text": {
+          "value": "Tường gạch, sàn bê tông cốt thép, mái tôn",
+          "confidence": 1,
+          "page": 1
+        },
+        "completed_year": {
+          "value": 2001,
+          "confidence": 1,
+          "page": 1
+        },
+        "ownership_term": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        }
+      }
+    ],
+    "serial_no": {
+      "value": "0012345",
+      "confidence": 1,
+      "page": 1
+    },
+    "book_entry_no": {
+      "value": "5678/2004",
+      "confidence": 1,
+      "page": 1
+    },
+    "issued_on": {
+      "value": "2004-09-20",
+      "confidence": 1,
+      "page": 1
+    },
+    "issued_by": {
+      "value": "UBND TP. Hồ Chí Minh",
+      "confidence": 1,
+      "page": 1
+    },
+    "annotations": [],
+    "has_qr": {
+      "value": false,
+      "confidence": 1,
+      "page": 1
+    },
+    "notes_text": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    }
+  }
+}

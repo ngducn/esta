@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isIsoDate } from '../date/iso-date';
+import { parseDecimal } from '../parse/decimal';
 
 export const CERTIFICATE_FORMS = ['so_do_pre2009', 'so_hong_pre2009', 'gcn_2009_2024', 'gcn_2024', 'paper_only'] as const;
 
@@ -7,25 +8,28 @@ export type CertificateForm = (typeof CERTIFICATE_FORMS)[number];
 
 export const ANNOTATION_KINDS = ['mortgage', 'mortgage_release', 'transfer', 'change_of_area', 'other'] as const;
 
-const confidence = z.number().min(0).max(1);
-const page = z.number().int().min(1);
+export type AnnotationKind = (typeof ANNOTATION_KINDS)[number];
 
-/** Every leaf carries the model's confidence and the page it read the value from (DOMAIN-VN §2.1). */
+const confidence = z.number().min(0).max(1);
+const page = z.number().int().min(1).nullable();
+
+/** Every leaf carries the model's confidence and the page it read the value from, null when the value is absent (DOMAIN-VN §2.1). */
 function leaf<T extends z.ZodType>(value: T) {
   return z.object({ value: value.nullable(), confidence, page });
 }
 
-const DECIMAL_COMMA = /^\s*(\d+)(?:,(\d+))?\s*$/;
+const AREA_UNIT = /\s*m(?:²|2)\s*$/u;
 
-/** Areas arrive as numbers; a `125,5` string is the Vietnamese decimal comma and reads as 125.5. */
-const area = z.preprocess((raw) => {
+/** Reads an area printed the Vietnamese way, so `125,5 m²` is 125.5 and `1.250,5` is 1250.5. */
+export function parseArea(raw: unknown): unknown {
   if (typeof raw !== 'string') return raw;
-  const match = DECIMAL_COMMA.exec(raw);
-  return match === null ? raw : Number(match[2] === undefined ? match[1] : `${match[1]}.${match[2]}`);
-}, z.number().nonnegative());
+  const decimal = parseDecimal(raw.trim().replace(AREA_UNIT, ''));
+  return decimal === null ? raw : Number(decimal.digits) / 10 ** decimal.scale;
+}
+
+const area = z.preprocess(parseArea, z.number().nonnegative());
 
 const text = leaf(z.string());
-const number = leaf(z.number());
 const isoDate = leaf(z.string().refine(isIsoDate, 'expected YYYY-MM-DD'));
 
 export const holderSchema = z.object({
@@ -84,5 +88,3 @@ export const certificateV1Schema = z.object({
 
 export type CertificateV1 = z.infer<typeof certificateV1Schema>;
 export type CertificateV1Input = z.input<typeof certificateV1Schema>;
-
-export { number as certificateNumberLeaf };

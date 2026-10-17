@@ -1,0 +1,209 @@
+{
+  "fixture_id": "gcn_2009_2024-photo",
+  "form": "gcn_2009_2024",
+  "variant": "photo",
+  "files": [
+    "page-1.jpg",
+    "page-2.jpg",
+    "page-3.jpg"
+  ],
+  "qr_payload": null,
+  "printed_id_numbers": [
+    "074171035582"
+  ],
+  "handwritten_fields": [],
+  "certificate": {
+    "form": {
+      "value": "gcn_2009_2024",
+      "confidence": 1,
+      "page": 1
+    },
+    "holders": [
+      {
+        "full_name": {
+          "value": "Võ Thị Demo Mai",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1971,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "5582",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "phường Phú Hòa, thành phố Thủ Dầu Một, tỉnh Bình Dương",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        }
+      }
+    ],
+    "parcels": [
+      {
+        "parcel_no": {
+          "value": "1023",
+          "confidence": 1,
+          "page": 2
+        },
+        "map_sheet_no": {
+          "value": "34",
+          "confidence": 1,
+          "page": 2
+        },
+        "address_text": {
+          "value": "phường Phú Hòa, thành phố Thủ Dầu Một, tỉnh Bình Dương",
+          "confidence": 1,
+          "page": 2
+        },
+        "area_m2": {
+          "value": 125.5,
+          "confidence": 1,
+          "page": 2
+        },
+        "use_form": {
+          "value": "Sử dụng riêng",
+          "confidence": 1,
+          "page": 2
+        },
+        "purposes": [
+          {
+            "land_use_code": {
+              "value": "ODT",
+              "confidence": 1,
+              "page": 2
+            },
+            "area_m2": {
+              "value": 125.5,
+              "confidence": 1,
+              "page": 2
+            },
+            "term": {
+              "value": "Lâu dài",
+              "confidence": 1,
+              "page": 2
+            }
+          }
+        ],
+        "origin_text": {
+          "value": "Nhận chuyển nhượng đất được Công nhận QSDĐ như giao đất có thu tiền sử dụng đất",
+          "confidence": 1,
+          "page": 2
+        }
+      }
+    ],
+    "structures": [
+      {
+        "kind": {
+          "value": "Nhà ở riêng lẻ",
+          "confidence": 1,
+          "page": 2
+        },
+        "footprint_m2": {
+          "value": 98.2,
+          "confidence": 1,
+          "page": 2
+        },
+        "floor_area_m2": {
+          "value": 196.4,
+          "confidence": 1,
+          "page": 2
+        },
+        "floors": {
+          "value": 2,
+          "confidence": 1,
+          "page": 2
+        },
+        "structure_text": {
+          "value": "Bê tông cốt thép",
+          "confidence": 1,
+          "page": 2
+        },
+        "completed_year": {
+          "value": 2016,
+          "confidence": 1,
+          "page": 2
+        },
+        "ownership_term": {
+          "value": "Lâu dài",
+          "confidence": 1,
+          "page": 2
+        }
+      }
+    ],
+    "serial_no": {
+      "value": "CS 254817",
+      "confidence": 1,
+      "page": 1
+    },
+    "book_entry_no": {
+      "value": "CS 01234",
+      "confidence": 1,
+      "page": 2
+    },
+    "issued_on": {
+      "value": "2018-03-12",
+      "confidence": 1,
+      "page": 2
+    },
+    "issued_by": {
+      "value": "Sở Tài nguyên và Môi trường tỉnh Bình Dương",
+      "confidence": 1,
+      "page": 2
+    },
+    "annotations": [
+      {
+        "date": {
+          "value": "2020-06-15",
+          "confidence": 1,
+          "page": 3
+        },
+        "text": {
+          "value": "Thế chấp bằng quyền sử dụng đất và tài sản gắn liền với đất tại Ngân hàng TMCP Demo theo hợp đồng số 123/2020/HĐTC",
+          "confidence": 1,
+          "page": 3
+        },
+        "kind": {
+          "value": "mortgage",
+          "confidence": 1,
+          "page": 3
+        }
+      },
+      {
+        "date": {
+          "value": "2023-08-01",
+          "confidence": 1,
+          "page": 3
+        },
+        "text": {
+          "value": "Xóa thế chấp theo hợp đồng số 123/2020/HĐTC",
+          "confidence": 1,
+          "page": 3
+        },
+        "kind": {
+          "value": "mortgage_release",
+          "confidence": 1,
+          "page": 3
+        }
+      }
+    ],
+    "has_qr": {
+      "value": false,
+      "confidence": 1,
+      "page": 1
+    },
+    "notes_text": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    }
+  }
+}

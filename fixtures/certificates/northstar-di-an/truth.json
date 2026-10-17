@@ -1,0 +1,191 @@
+{
+  "fixture_id": "northstar-di-an",
+  "form": "gcn_2009_2024",
+  "variant": "photo",
+  "files": [
+    "page-1.jpg",
+    "page-2.jpg",
+    "page-3.jpg"
+  ],
+  "qr_payload": null,
+  "printed_id_numbers": [
+    "074160018829"
+  ],
+  "handwritten_fields": [],
+  "certificate": {
+    "form": {
+      "value": "gcn_2009_2024",
+      "confidence": 1,
+      "page": 1
+    },
+    "holders": [
+      {
+        "full_name": {
+          "value": "Nguyễn Thị Demo",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1960,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "8829",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "phường Dĩ An, thành phố Dĩ An, tỉnh Bình Dương",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        }
+      }
+    ],
+    "parcels": [
+      {
+        "parcel_no": {
+          "value": "903",
+          "confidence": 1,
+          "page": 2
+        },
+        "map_sheet_no": {
+          "value": "41",
+          "confidence": 1,
+          "page": 2
+        },
+        "address_text": {
+          "value": "phường Dĩ An, thành phố Dĩ An, tỉnh Bình Dương",
+          "confidence": 1,
+          "page": 2
+        },
+        "area_m2": {
+          "value": 312.8,
+          "confidence": 1,
+          "page": 2
+        },
+        "use_form": {
+          "value": "Sử dụng riêng",
+          "confidence": 1,
+          "page": 2
+        },
+        "purposes": [
+          {
+            "land_use_code": {
+              "value": "ODT",
+              "confidence": 1,
+              "page": 2
+            },
+            "area_m2": {
+              "value": 150,
+              "confidence": 1,
+              "page": 2
+            },
+            "term": {
+              "value": "Lâu dài",
+              "confidence": 1,
+              "page": 2
+            }
+          },
+          {
+            "land_use_code": {
+              "value": "CLN",
+              "confidence": 1,
+              "page": 2
+            },
+            "area_m2": {
+              "value": 162.8,
+              "confidence": 1,
+              "page": 2
+            },
+            "term": {
+              "value": "Đến ngày 15/10/2064",
+              "confidence": 1,
+              "page": 2
+            }
+          }
+        ],
+        "origin_text": {
+          "value": "Nhận chuyển nhượng đất được Công nhận QSDĐ như giao đất có thu tiền sử dụng đất",
+          "confidence": 1,
+          "page": 2
+        }
+      }
+    ],
+    "structures": [
+      {
+        "kind": {
+          "value": "Nhà ở riêng lẻ",
+          "confidence": 1,
+          "page": 2
+        },
+        "footprint_m2": {
+          "value": 240,
+          "confidence": 1,
+          "page": 2
+        },
+        "floor_area_m2": {
+          "value": 240,
+          "confidence": 1,
+          "page": 2
+        },
+        "floors": {
+          "value": 1,
+          "confidence": 1,
+          "page": 2
+        },
+        "structure_text": {
+          "value": "Tường gạch, mái tôn, nền gạch men",
+          "confidence": 1,
+          "page": 2
+        },
+        "completed_year": {
+          "value": 2015,
+          "confidence": 1,
+          "page": 2
+        },
+        "ownership_term": {
+          "value": "Lâu dài",
+          "confidence": 1,
+          "page": 2
+        }
+      }
+    ],
+    "serial_no": {
+      "value": "CĐ 718204",
+      "confidence": 1,
+      "page": 1
+    },
+    "book_entry_no": {
+      "value": "CS 07712",
+      "confidence": 1,
+      "page": 2
+    },
+    "issued_on": {
+      "value": "2016-10-15",
+      "confidence": 1,
+      "page": 2
+    },
+    "issued_by": {
+      "value": "Sở Tài nguyên và Môi trường tỉnh Bình Dương",
+      "confidence": 1,
+      "page": 2
+    },
+    "annotations": [],
+    "has_qr": {
+      "value": false,
+      "confidence": 1,
+      "page": 1
+    },
+    "notes_text": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    }
+  }
+}

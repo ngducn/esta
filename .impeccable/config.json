@@ -20,6 +20,15 @@
         ],
         "createdAt": "2026-10-16T12:57:38.125Z",
         "reason": "agent decision: the img sits in a picture whose source carries the srcset, and it must have no src so a phone never fetches the desktop-only photo; PR 41 item 1"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "sans",
+        "files": [
+          "fixtures/certificates/generator/templates/parts.tsx"
+        ],
+        "createdAt": "2026-10-17T04:06:46.774Z",
+        "reason": "owner: synthetic certificate fixture renderer, not app UI; satori font alias for Be Vietnam Pro"
       }
     ]
   }

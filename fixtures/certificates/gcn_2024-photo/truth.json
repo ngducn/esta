@@ -1,0 +1,201 @@
+{
+  "fixture_id": "gcn_2024-photo",
+  "form": "gcn_2024",
+  "variant": "photo",
+  "files": [
+    "page-1.jpg",
+    "page-2.jpg"
+  ],
+  "qr_payload": "GCN-DEMO:AA01234567:T56:TBD18",
+  "printed_id_numbers": [
+    "079084301776",
+    "079187402658"
+  ],
+  "handwritten_fields": [],
+  "certificate": {
+    "form": {
+      "value": "gcn_2024",
+      "confidence": 1,
+      "page": 1
+    },
+    "holders": [
+      {
+        "full_name": {
+          "value": "Đặng Quốc Demo",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1984,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "1776",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": "Vợ chồng",
+          "confidence": 1,
+          "page": 1
+        }
+      },
+      {
+        "full_name": {
+          "value": "Huỳnh Ngọc Demo Thảo",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1987,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "2658",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": "Vợ chồng",
+          "confidence": 1,
+          "page": 1
+        }
+      }
+    ],
+    "parcels": [
+      {
+        "parcel_no": {
+          "value": "56",
+          "confidence": 1,
+          "page": 1
+        },
+        "map_sheet_no": {
+          "value": "18",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh",
+          "confidence": 1,
+          "page": 1
+        },
+        "area_m2": {
+          "value": 82.7,
+          "confidence": 1,
+          "page": 1
+        },
+        "use_form": {
+          "value": "Sử dụng chung",
+          "confidence": 1,
+          "page": 1
+        },
+        "purposes": [
+          {
+            "land_use_code": {
+              "value": "ODT",
+              "confidence": 1,
+              "page": 1
+            },
+            "area_m2": {
+              "value": 82.7,
+              "confidence": 1,
+              "page": 1
+            },
+            "term": {
+              "value": "Lâu dài",
+              "confidence": 1,
+              "page": 1
+            }
+          }
+        ],
+        "origin_text": {
+          "value": "Nhận chuyển nhượng quyền sử dụng đất",
+          "confidence": 1,
+          "page": 1
+        }
+      }
+    ],
+    "structures": [
+      {
+        "kind": {
+          "value": "Nhà ở riêng lẻ",
+          "confidence": 1,
+          "page": 1
+        },
+        "footprint_m2": {
+          "value": 80.1,
+          "confidence": 1,
+          "page": 1
+        },
+        "floor_area_m2": {
+          "value": 320.4,
+          "confidence": 1,
+          "page": 1
+        },
+        "floors": {
+          "value": 4,
+          "confidence": 1,
+          "page": 1
+        },
+        "structure_text": {
+          "value": "Khung bê tông cốt thép, tường gạch, mái bê tông",
+          "confidence": 1,
+          "page": 1
+        },
+        "completed_year": {
+          "value": 2022,
+          "confidence": 1,
+          "page": 1
+        },
+        "ownership_term": {
+          "value": "Lâu dài",
+          "confidence": 1,
+          "page": 1
+        }
+      }
+    ],
+    "serial_no": {
+      "value": "AA 01234567",
+      "confidence": 1,
+      "page": 1
+    },
+    "book_entry_no": {
+      "value": "DT 00456",
+      "confidence": 1,
+      "page": 1
+    },
+    "issued_on": {
+      "value": "2024-11-05",
+      "confidence": 1,
+      "page": 1
+    },
+    "issued_by": {
+      "value": "Văn phòng đăng ký đất đai Thành phố Hồ Chí Minh",
+      "confidence": 1,
+      "page": 1
+    },
+    "annotations": [],
+    "has_qr": {
+      "value": true,
+      "confidence": 1,
+      "page": 1
+    },
+    "notes_text": {
+      "value": "Thửa đất có 12,3 m² thuộc hành lang lộ giới đường Demo.",
+      "confidence": 1,
+      "page": 1
+    }
+  }
+}
