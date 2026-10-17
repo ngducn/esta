@@ -122,3 +122,7 @@ These are operator-granted exceptions to rule 6 of the 2026-10-15 update for the
 ## Update 2026-10-17 11:55 +07
 
 Operator's words, 2026-10-17: "the actual usage is at 65%, go at it". The local meter read 78.8% at that moment, so `~/.claude/orchestrate/esta/bin/usage-pct.sh` is rescaled by 0.825 (100% is now $146.8 or 460.5M tokens per block). The 80% stop-spawning and 86% pause lines from the 09:25 update stay, on the rescaled meter.
+
+## Update 2026-10-17 13:00 +07
+
+Operator's words, 2026-10-17: "it resets in 1 hr, we still have 15% left. lets spawn some lower effort tasks to cover the usage, stop at 97". For the block ending 07:00Z: spawn lower-effort tasks (Sonnet owners, Opus at medium effort for the critical path), send stop orders at 94% and stop everything by 97%.
