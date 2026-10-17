@@ -39,7 +39,7 @@ export function TextField({
   testId?: string;
   inputId?: string;
   className?: string;
-  maxLength: number;
+  maxLength?: number;
   inputMode?: 'text' | 'decimal' | 'numeric';
 }) {
   const generated = useId();

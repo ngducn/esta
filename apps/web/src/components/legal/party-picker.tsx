@@ -1,6 +1,6 @@
 'use client';
 
-import { compareVietnameseNames } from '@esta/core/names';
+import { compareVietnameseNames, idLast4 } from '@esta/core/names';
 import { Plus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
@@ -21,11 +21,11 @@ function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; on
   const [pending, startTransition] = useTransition();
   const add = () => {
     if (name.trim() === '') return setError('name');
-    if (last4.trim() !== '' && !LAST4.test(last4.trim())) return setError('last4');
+    if (last4 !== '' && !LAST4.test(last4)) return setError('last4');
     setError(null);
     const input =
       kind === 'individual'
-        ? { kind: 'individual', full_name: name, id_last4: last4.trim() === '' ? null : last4.trim() }
+        ? { kind: 'individual', full_name: name, id_last4: last4 === '' ? null : last4 }
         : { kind: 'organization', full_name: name, bank: true };
     startTransition(async () => {
       const result = await quickAddParty(input).catch(() => ({ ok: false }) as const);
@@ -49,11 +49,10 @@ function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; on
           hint={t('partyLast4Hint')}
           testId="quick-add-last4"
           value={last4}
-          maxLength={4}
           inputMode="numeric"
           className="max-w-32 figures"
           error={error === 'last4' ? t('partyLast4Invalid') : null}
-          onChange={(text) => setLast4(text.replace(/[^0-9]/g, ''))}
+          onChange={(text) => setLast4(idLast4(text))}
         />
       ) : null}
       {error === 'failed' ? (

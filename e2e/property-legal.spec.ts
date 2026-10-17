@@ -126,9 +126,19 @@ test('rule 4: Ryan mortgages the Kho Biên Hòa certificate for 1ty2 and quick-a
   await expect(page.getByTestId('money-preview')).toHaveText(/^1\.200\.000\.000\s₫$/);
   await page.getByTestId('add-holder').click();
   await page.getByTestId('quick-add-name').fill('Lê Văn Demo');
-  await page.getByTestId('quick-add-last4').fill('1234');
+  const last4 = page.getByTestId('quick-add-last4');
+  await last4.fill('079201005582');
+  await expect(last4).toHaveValue('5582');
+  await last4.fill('023 456 789');
+  await expect(last4).toHaveValue('6789');
+  const posted: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST') posted.push(request.postData() ?? '');
+  });
   await page.getByTestId('quick-add-save').click();
   await expect(page.getByTestId('holders')).toContainText('Lê Văn Demo');
+  expect(posted.some((body) => body.includes('"6789"'))).toBe(true);
+  expect(posted.filter((body) => /079201005582|023 ?456 ?789/.test(body))).toEqual([]);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.getByTestId('save-legal-item').click();
   await expect(page).toHaveURL(new RegExp(`${legalPath(4, 'bien-hoa')}$`));
@@ -178,6 +188,36 @@ test('Đất vườn Long An shows a paper-only certificate and one parcel with 
   await expect(parcels(page)).toHaveCount(1);
   await expect(parcels(page).getByRole('heading', { level: 3 })).toHaveText('Thửa chưa có số');
   await expect(parcels(page).getByTestId('parcel-area')).toHaveText('Chưa có diện tích');
+});
+
+test('on a slow phone the parcel form takes no typing until it hydrates, then keeps what Mẹ types', async ({ page }) => {
+  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  let release = () => {};
+  const scripts = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(/\/_next\/static\/chunks\/.+\.js(\?.*)?$/, async (route) => {
+    await scripts;
+    await route.continue();
+  });
+  await page.goto(`${legalPath(1, 'bao-loc')}/parcels/new`, { waitUntil: 'commit' });
+
+  const parcelNo = page.locator('#parcel-no');
+  const area = page.locator('#parcel-area');
+  await expect(page.getByTestId('form-loading')).toBeVisible();
+  await expect(parcelNo).toBeDisabled();
+  await expect(area).toBeDisabled();
+  await expect(page.getByTestId('save-legal-item')).toBeDisabled();
+
+  release();
+  await expect(parcelNo).toBeEnabled({ timeout: 60_000 });
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await parcelNo.pressSequentially('777');
+  await area.pressSequentially('99,5');
+  await expect(parcelNo).toHaveValue('777');
+  await expect(area).toHaveValue('99,5');
 });
 
 test('a bad kind or item id is not found, and the tab renders its empty states', async ({ page }) => {
