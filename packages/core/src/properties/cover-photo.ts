@@ -23,3 +23,23 @@ export function parseCoverPhotoPath(path: string): CoverPhotoParts | null {
   const [householdId = '', propertyId = '', name = ''] = segments;
   return coverPhotoPath(householdId, propertyId, name).ok ? { householdId, propertyId, name } : null;
 }
+
+export type StoredPhoto = { readonly path: string; readonly createdAt: string };
+
+/**
+ * The objects a cover change may delete: those created before `anchor` (and `anchor` itself when `inclusive`), never
+ * `current`, the path the row holds when re-read after listing. A newer object is another editor's upload that may not
+ * have reached the row yet, so it stays for that editor's own sweep.
+ */
+export function stalePhotos(
+  objects: readonly StoredPhoto[],
+  { anchor, inclusive, current }: { anchor: string; inclusive: boolean; current: string | null },
+): string[] {
+  const bound = objects.find((object) => object.path === anchor);
+  if (bound === undefined) return [];
+  const limit = Date.parse(bound.createdAt);
+  return objects
+    .filter((object) => object.path !== current)
+    .filter((object) => (object.path === anchor ? inclusive : Date.parse(object.createdAt) < limit))
+    .map((object) => object.path);
+}

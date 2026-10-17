@@ -1,7 +1,7 @@
 'use server';
 
 import { formatCurrentAddress } from '@esta/core/address';
-import { coverPhotoPath, parseCoverPhotoPath } from '@esta/core/properties';
+import { coverPhotoPath, parseCoverPhotoPath, stalePhotos, type StoredPhoto } from '@esta/core/properties';
 import { propertyInputSchema, type PropertyInput } from '@esta/core/schemas/property';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
@@ -142,16 +142,30 @@ export async function suggestAddress(text: unknown): Promise<CurrentUnitSuggesti
   return parsed.success ? suggestCurrentUnits(parsed.data) : [];
 }
 
-async function photoNames(householdId: string, propertyId: string): Promise<string[] | null> {
+async function photoObjects(householdId: string, propertyId: string): Promise<StoredPhoto[] | null> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase.storage.from(PROPERTY_PHOTOS_BUCKET).list(`${householdId}/${propertyId}`, { limit: 100 });
-  return error ? null : data.map((object) => `${householdId}/${propertyId}/${object.name}`);
+  return error ? null : data.flatMap((object) => (object.created_at === null ? [] : [{ path: `${householdId}/${propertyId}/${object.name}`, createdAt: object.created_at }]));
 }
 
-/** Removes every object under the property's folder except `keep`, so a property converges on one photo object. */
-async function sweepPhotos(householdId: string, propertyId: string, keep: string | null): Promise<void> {
-  const names = await photoNames(householdId, propertyId);
-  const stale = (names ?? []).filter((name) => name !== keep);
+async function coverPath(householdId: string, propertyId: string): Promise<{ path: string | null } | null> {
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase
+    .from('properties')
+    .select('cover_photo_path')
+    .eq('household_id', householdId)
+    .eq('id', propertyId)
+    .is('deleted_at', null)
+    .maybeSingle();
+  return error || data === null ? null : { path: data.cover_photo_path };
+}
+
+/** Lists the folder before re-reading the row, so a cover another editor saved meanwhile is the `current` that stays. */
+async function sweepPhotos(householdId: string, propertyId: string, anchor: string, inclusive: boolean): Promise<void> {
+  const objects = await photoObjects(householdId, propertyId);
+  const cover = await coverPath(householdId, propertyId);
+  if (objects === null || cover === null) return;
+  const stale = stalePhotos(objects, { anchor, inclusive, current: cover.path });
   if (stale.length === 0) return;
   const supabase = await createSessionClient();
   await supabase.storage.from(PROPERTY_PHOTOS_BUCKET).remove(stale);
@@ -174,7 +188,7 @@ export async function requestCoverPhotoUpload(propertyId: unknown, type: unknown
   return error ? { ok: false } : { ok: true, path: data.path, url: data.signedUrl };
 }
 
-/** Points the cover at an uploaded object, then removes the previous one, only after the column update has committed. */
+/** Points the cover at an uploaded object, then, once the update has committed, removes the objects older than it. */
 export async function setCoverPhoto(propertyId: unknown, path: unknown): Promise<PhotoWrite> {
   const parsedId = id.safeParse(propertyId);
   const parts = typeof path === 'string' ? parseCoverPhotoPath(path) : null;
@@ -182,19 +196,20 @@ export async function setCoverPhoto(propertyId: unknown, path: unknown): Promise
   if (!parsedId.success || parts === null || parts.householdId !== member.household.id || parts.propertyId !== parsedId.data) {
     return { ok: false };
   }
-  const uploaded = await photoNames(parts.householdId, parts.propertyId);
+  const uploaded = await photoObjects(parts.householdId, parts.propertyId);
   const next = `${parts.householdId}/${parts.propertyId}/${parts.name}`;
-  if (uploaded === null || !uploaded.includes(next)) return { ok: false };
+  if (uploaded === null || !uploaded.some((object) => object.path === next)) return { ok: false };
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('properties')
     .update({ cover_photo_path: next })
     .eq('household_id', member.household.id)
     .eq('id', parts.propertyId)
+    .is('deleted_at', null)
     .select('id')
     .maybeSingle();
   if (error || data === null) return { ok: false };
-  await sweepPhotos(parts.householdId, parts.propertyId, next);
+  await sweepPhotos(parts.householdId, parts.propertyId, next, false);
   revalidateProperty(parts.propertyId);
   return { ok: true };
 }
@@ -203,15 +218,18 @@ export async function removeCoverPhoto(propertyId: unknown): Promise<PhotoWrite>
   const parsedId = id.safeParse(propertyId);
   if (!parsedId.success) return { ok: false };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
+  const previous = await coverPath(member.household.id, parsedId.data);
+  if (previous === null) return { ok: false };
   const { data, error } = await supabase
     .from('properties')
     .update({ cover_photo_path: null })
     .eq('household_id', member.household.id)
     .eq('id', parsedId.data)
+    .is('deleted_at', null)
     .select('id')
     .maybeSingle();
   if (error || data === null) return { ok: false };
-  await sweepPhotos(member.household.id, parsedId.data, null);
+  if (previous.path !== null) await sweepPhotos(member.household.id, parsedId.data, previous.path, true);
   revalidateProperty(parsedId.data);
   return { ok: true };
 }

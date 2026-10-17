@@ -1,4 +1,4 @@
-export { coverPhotoPath, parseCoverPhotoPath, type CoverPhotoParts, type CoverPhotoPath } from './cover-photo';
+export { coverPhotoPath, parseCoverPhotoPath, stalePhotos, type CoverPhotoParts, type CoverPhotoPath, type StoredPhoto } from './cover-photo';
 export {
   LEGAL_STATUSES,
   PROPERTY_FILTERS,
