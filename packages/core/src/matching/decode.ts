@@ -83,7 +83,8 @@ function readRecord(body: string, start: number, delimiter: string): { record: C
       const close = closingQuote(body, at + 1);
       if (close === -1) {
         const lineEnd = body.slice(at).search(/[\r\n]/);
-        return { record: { ok: false, reason: 'unterminated_quote' }, next: lineEnd === -1 ? body.length : afterLineEnd(body, at + lineEnd) };
+        const next = lineEnd === -1 ? body.length : afterLineEnd(body, at + lineEnd);
+        return { record: { ok: false, reason: 'unterminated_quote' }, next };
       }
       field = body.slice(at + 1, close).replaceAll('""', '"');
       at = close + 1;

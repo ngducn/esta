@@ -5,7 +5,7 @@ export const MEMO_CODE_LENGTH = 8;
 
 const MEMO_CODE = new RegExp(`^[A-Z0-9]{${MEMO_CODE_LENGTH}}$`);
 
-/** The form P3-05 issues memo codes in (DOMAIN-VN §10). */
+/** The form P3-05 issues memo codes in: 8 characters of A to Z and 0 to 9. */
 export function isMemoCode(code: string): boolean {
   return MEMO_CODE.test(code);
 }
