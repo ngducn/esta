@@ -1,16 +1,24 @@
--- The audit clock follows the test clock (FND-9) when a row exists, so a history entry written at a frozen time reads
--- that time. Production never has a test_clock row: only service_role writes it, and `pnpm clock:set` refuses any
--- host but localhost.
+-- The audit clock follows the test clock (FND-9) only on a local stack. The database knows no ESTA_ENV, so the marker
+-- is a row the generated seed writes and the cloud never runs: without it a stray test_clock row (service_role can
+-- write one) cannot freeze audit times in production.
+create table private.local_stack (
+  marked boolean primary key default true check (marked)
+);
+revoke all on table private.local_stack from public, anon, authenticated, service_role;
+
 create function private.audit_now()
 returns timestamptz
 language sql
 stable
-security definer
+security invoker
 set search_path = ''
 as $$
-  select coalesce((select frozen_now from public.test_clock), now());
+  select case
+    when exists (select from private.local_stack) then coalesce((select frozen_now from public.test_clock), now())
+    else now()
+  end;
 $$;
-revoke all on function private.audit_now() from public;
+revoke all on function private.audit_now() from public, anon;
 
 alter table public.audit_log alter column at set default private.audit_now();
 

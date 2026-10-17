@@ -56,10 +56,16 @@ describe('generate', () => {
     expect(northstar.filter((row) => row.includes('Dãy trọ Dĩ An') || row.includes("'DIAN'"))).toEqual([]);
   });
 
+  it('marks the database as a local stack, which the cloud never seeds', () => {
+    expect(generate(DEFAULT_OPTIONS)).toContain('insert into private.local_stack default values on conflict do nothing;');
+  });
+
   it('stamps every row with --as-of and names the seed as the audit actor', () => {
     const sql = generate(DEFAULT_OPTIONS);
     expect(sql).toContain("select set_config('esta.actor', 'system:seed', true);");
-    const statements = sql.split(';\n').filter((part) => part.includes('insert into'));
+    const statements = sql
+      .split(';\n')
+      .filter((part) => part.includes('insert into') && !part.includes('private.local_stack'));
     expect(statements.length).toBeGreaterThan(0);
     for (const statement of statements) {
       expect(statement).toMatch(/\(.*created_at, updated_at\) values/);

@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(10);
+select plan(14);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -16,6 +16,16 @@ values (:'b', 'Nhà B Demo', 'Q7', 'townhouse', 'rental') returning id as proper
 
 delete from public.test_clock;
 insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
+
+delete from private.local_stack;
+select is(private.audit_now(), now(), 'without the local stack marker the audit clock ignores a test clock row');
+update public.properties set nickname = 'Nhà B2 Demo' where id = :'property_b';
+select is((select at from public.audit_log order by id desc limit 1), now(),
+  'without the local stack marker an audit row takes the wall clock while a test clock row exists');
+
+insert into private.local_stack default values;
+select is(private.audit_now(), '2026-10-07T09:00:00+07:00'::timestamptz,
+  'with the local stack marker the audit clock reads the test clock');
 
 select tests.act_as('member.a@test.esta.test');
 select public.set_property_location(:'property_a', 10.5331, 106.4052);
@@ -55,6 +65,9 @@ update public.properties set nickname = 'Đất vườn Demo' where id = :'prope
 reset role;
 select ok((select at from public.audit_log order by id desc limit 1) > '2026-10-08'::timestamptz,
   'without a test clock row the audit row takes the wall clock');
+
+select ok(not has_function_privilege('authenticated', 'private.audit_now()', 'execute'),
+  'authenticated cannot call the audit clock');
 
 select ok(not has_function_privilege('anon', 'public.property_activity(uuid, int)', 'execute'),
   'anon cannot call the history function');
