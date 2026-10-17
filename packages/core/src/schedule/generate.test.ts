@@ -227,12 +227,14 @@ describe('end dates', () => {
     expect(periods[0]?.prorated).toBeNull();
   });
 
-  it('prorates a first period cut by the end date from the month start under none and from the lease start under by_days', () => {
+  it('bills only the days inside the lease when the end date cuts a first calendar period, under none as under by_days', () => {
     const cut = { startDate: d('2026-07-15'), endDate: d('2026-07-20'), rentVnd: vnd(10_000_000), periodAnchor: 'calendar_month' as const };
     const none = generateSchedule(lease({ ...cut, firstPeriodProration: 'none' }), [], d('2027-01-01'));
     const byDays = generateSchedule(lease({ ...cut, firstPeriodProration: 'by_days' }), [], d('2027-01-01'));
-    expect(none[0]).toMatchObject({ end: '2026-07-20', rentVnd: 6_451_613, prorated: { days: 20, daysInFullPeriod: 31 } });
+    expect(none[0]).toMatchObject({ end: '2026-07-20', rentVnd: 1_935_484, prorated: { days: 6, daysInFullPeriod: 31 } });
     expect(byDays[0]).toMatchObject({ end: '2026-07-20', rentVnd: 1_935_484, prorated: { days: 6, daysInFullPeriod: 31 } });
+    const oneDay = generateSchedule(lease({ ...cut, endDate: d('2026-07-15'), firstPeriodProration: 'none' }), [], d('2027-01-01'));
+    expect(oneDay).toEqual([expect.objectContaining({ start: '2026-07-15', end: '2026-07-15', rentVnd: 322_581, prorated: { days: 1, daysInFullPeriod: 31, fullPeriodVnd: 10_000_000 } })]);
   });
 
   it('returns nothing for an end date before the start date', () => {
@@ -377,10 +379,10 @@ describe('amendments', () => {
     expect(rents(periods)).toEqual([3_500_000, 4_000_000, 4_000_000]);
   });
 
-  it('counts escalation steps for an amended rent from the amendment, not from the lease start', () => {
+  it('escalates an amended rent at the next lease anniversary, not twelve months after the amendment', () => {
     const terms = lease({ startDate: d('2026-01-01'), rentVnd: vnd(10_000_000), escalation: fivePercentYearly });
     const amendment: Amendment = { effectivePeriodStart: d('2027-07-01'), changes: { rentVnd: vnd(12_000_000) } };
-    const periods = generateSchedule(terms, [amendment], d('2028-01-01'));
+    const periods = generateSchedule(terms, [amendment], d('2028-07-01'));
     const rentAt = (start: string) => periods.find((p) => p.start === start)?.rentVnd;
     expect(rentAt('2026-12-01')).toBe(10_000_000);
     expect(rentAt('2027-01-01')).toBe(10_500_000);
@@ -388,6 +390,7 @@ describe('amendments', () => {
     expect(rentAt('2027-07-01')).toBe(12_000_000);
     expect(rentAt('2027-12-01')).toBe(12_000_000);
     expect(rentAt('2028-01-01')).toBe(12_600_000);
+    expect(rentAt('2028-07-01')).toBe(12_600_000);
   });
 
   it('applies amendments in effective order whatever the input order', () => {
