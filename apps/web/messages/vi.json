@@ -435,6 +435,7 @@
     "area": "Diện tích (m²)",
     "areaHint": "Ví dụ 350,5",
     "areaInvalid": "{reason, select, too_precise {Diện tích chỉ ghi tới 2 số lẻ.} too_large {Số này lớn hơn mức Esta ghi được.} other {Viết diện tích như 350,5.}}",
+    "parcelUnidentified": "Thửa này chưa có gì để nhận ra. Điền số thửa, tờ bản đồ hoặc diện tích. Đất chỉ có giấy tay thì ghi nguồn gốc sử dụng.",
     "useFormLabel": "Hình thức sử dụng",
     "useFormNone": "Chưa rõ",
     "originText": "Nguồn gốc sử dụng",
