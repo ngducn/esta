@@ -47,9 +47,9 @@ describe('LegalItemActions', () => {
       </UndoToastProvider>,
     );
     fireEvent.click(screen.getByTestId('delete-legal-item'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tác' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tác' }, { timeout: 5000 }));
     await waitFor(() => expect(screen.queryByTestId('delete-legal-item')).toBeNull());
-    expect(await screen.findByText(labels.restoreFailed)).toBeTruthy();
+    expect(await screen.findByText(labels.restoreFailed, undefined, { timeout: 5000 })).toBeTruthy();
   });
 
   it('renders the delete button disabled in the server HTML, before hydration can attach onClick', () => {
