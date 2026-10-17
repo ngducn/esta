@@ -177,12 +177,7 @@ function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds,
           })}
         </ul>
       )}
-      <p data-testid="ownership-running-total" className="flex flex-wrap items-center gap-x-2 rounded-md bg-surface-2 px-3 py-2 text-body text-ink">
-        {running === null ? <StatusShape status="paid" className="size-4" /> : <StatusShape status="due" className="size-4" />}
-        <span className="figures font-semibold">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
-        {running === null ? null : <span className="figures text-ink-2">{running}</span>}
-      </p>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 border-t border-rule pt-4">
         <PartyAdder
           parties={available}
           labels={{ choose: t('choose'), add: t('addPerson') }}
@@ -190,17 +185,24 @@ function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds,
           onParty={(party) => setParties((current) => [...current, party])}
         />
       </div>
-      {showErrors || failed ? (
-        <p role="alert" data-testid="ownership-error" className="flex items-start gap-2 text-body text-overdue">
-          <StatusShape status="overdue" className="mt-1 size-4" />
-          <span>{failed ? t('failed') : t('invalid')}</span>
+      <div className="sticky -bottom-[max(--spacing(6),env(safe-area-inset-bottom))] -mx-6 -mb-6 flex flex-col gap-3 border-t border-rule bg-surface px-6 pt-4 pb-[max(--spacing(6),env(safe-area-inset-bottom))]">
+        <p data-testid="ownership-running-total" className="flex flex-wrap items-center gap-x-2 rounded-md bg-surface-2 px-3 py-2 text-body text-ink">
+          {running === null ? <StatusShape status="paid" className="size-4" /> : <StatusShape status="due" className="size-4" />}
+          <span className="figures font-semibold">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
+          {running === null ? null : <span className="figures text-ink-2">{running}</span>}
         </p>
-      ) : null}
-      <div className="sticky bottom-0 -mx-6 -mb-6 grid grid-cols-2 gap-3 border-t border-rule bg-surface px-6 pt-4 pb-[max(--spacing(6),env(safe-area-inset-bottom))] sm:flex sm:justify-end">
-        <SheetClose render={<Button type="button" variant="outline" />}>{t('cancel')}</SheetClose>
-        <Button type="submit" disabled={pending} data-testid="save-ownership">
-          {t('save')}
-        </Button>
+        {showErrors || failed ? (
+          <p role="alert" data-testid="ownership-error" className="flex items-start gap-2 text-body text-overdue">
+            <StatusShape status="overdue" className="mt-1 size-4" />
+            <span>{failed ? t('failed') : t('invalid')}</span>
+          </p>
+        ) : null}
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
+          <SheetClose render={<Button type="button" variant="outline" />}>{t('cancel')}</SheetClose>
+          <Button type="submit" disabled={pending} data-testid="save-ownership">
+            {t('save')}
+          </Button>
+        </div>
       </div>
     </form>
   );
