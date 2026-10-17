@@ -19,9 +19,18 @@ function redirectKeepingCookies(request: NextRequest, from: NextResponse, pathna
   return redirect;
 }
 
-export async function proxy(request: NextRequest) {
+/** Storage needs only the signed token in the query, so the session cookie and any bearer stay on the app origin. */
+function rewriteCover(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
-  if (pathname.startsWith(COVER_PREFIX)) return NextResponse.rewrite(new URL(`${pathname}${search}`, env.NEXT_PUBLIC_SUPABASE_URL));
+  const headers = new Headers(request.headers);
+  headers.delete('cookie');
+  headers.delete('authorization');
+  return NextResponse.rewrite(new URL(`${pathname}${search}`, env.NEXT_PUBLIC_SUPABASE_URL), { request: { headers } });
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith(COVER_PREFIX)) return rewriteCover(request);
   let response = NextResponse.next({ request });
   const supabase = createServerClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {

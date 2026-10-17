@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(34);
+select plan(35);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -15,13 +15,15 @@ select id as pb from public.properties where household_id = :'b' and code = 'B1'
 
 select set_config('tests.a_path', format('%s/%s/cover.webp', :'a', :'pa'), true);
 select set_config('tests.b_path', format('%s/%s/cover.webp', :'b', :'pb'), true);
+select set_config('tests.b_avif', format('%s/%s/cover.avif', :'b', :'pb'), true);
 select set_config('tests.b_prefix', format('%s/%s/', :'b', :'pb'), true);
 select set_config('tests.a_unknown', format('%s/%s/cover.webp', :'a', gen_random_uuid()), true);
 select set_config('storage.allow_delete_query', 'true', true);
 
 insert into storage.objects (bucket_id, name) values
   ('property-photos', current_setting('tests.a_path')),
-  ('property-photos', current_setting('tests.b_path'));
+  ('property-photos', current_setting('tests.b_path')),
+  ('property-photos', current_setting('tests.b_avif'));
 
 select results_eq(
   $$ select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'property-photos' $$,
@@ -56,6 +58,8 @@ select isnt_empty($$ select 1 from storage.objects where name = current_setting(
   'a member of A reads A''s photo');
 select is_empty($$ select 1 from storage.objects where name = current_setting('tests.b_path') $$,
   'a member of A reads none of B''s photos');
+select is_empty($$ select 1 from storage.objects where name = current_setting('tests.b_avif') $$,
+  'a member of A reads none of B''s AVIF covers');
 select lives_ok(
   format($$ insert into storage.objects (bucket_id, name) values ('property-photos', '%s/%s/front.jpg') $$, :'a', :'pa'),
   'a member of A uploads under A''s property');
