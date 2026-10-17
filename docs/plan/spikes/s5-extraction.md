@@ -83,7 +83,7 @@ No target missed, so no schema change is needed. P2-03 reuses `certificateV1Sche
 1. Tell the model that a lone `-` or a blank after a label is an absent value (null), which removes the `notes_text` misses.
 2. Keep "Handwritten values get confidence at most 0.6" and "Never write the full number anywhere". On `paper_only` the model kept handwritten values at or below 0.6, so only 7 of its leaves counted as high confidence.
 3. Score the `gcn_2024` holders' `relation` from the print. The fixture prints no relation, and its truth now says null.
-4. Move the `gcn_2024` QR code to the top right of page 1, where Circular 10/2024/TT-BTNMT places it. The fixtures print it at the top left. Changing it now would change the images this run measured.
+4. Fix two `gcn_2024` layout faults, then regenerate and rerun the set. The QR code belongs at the top right of page 1, where Circular 10/2024/TT-BTNMT places it, and the fixtures print it at the top left. Page 1 also holds more than fits, so the renderer squeezes the title, the holder lines and the address into each other; the model still read every holder field there. Changing either now would change the images this run measured.
 
 ## Private run
 
