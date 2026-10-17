@@ -33,6 +33,8 @@ const memoWithBankNoise: ScenarioRow = {
   expect: memoMatch('inv-dian-p3-202610', '7K2QX9MP'),
 };
 
+const counterDeposit = { date: isoDate('2026-10-09'), amount: vnd(6_000_000), bankRef: '', description: 'NOP TIEN MAT ESTA H8J3K7LM PHAM THU HA DEMO' };
+
 export const SCENARIO_ROWS: readonly ScenarioRow[] = [
   memoWithBankNoise,
   {
@@ -93,7 +95,9 @@ export const SCENARIO_ROWS: readonly ScenarioRow[] = [
     description: 'PHAM THU HA DEMO CHUYEN TIEN',
     expect: unmatched(),
   },
-  memoWithBankNoise,
+  { ...memoWithBankNoise, expect: { status: 'ignored', reason: 'duplicate' } },
+  { ...counterDeposit, expect: memoMatch('inv-baoloc-nha-202610', 'H8J3K7LM') },
+  { ...counterDeposit, expect: { status: 'unmatched', candidateIds: ['inv-baoloc-nha-202610'], repeatOf: 13 } },
 ];
 
 const fractional = { date: isoDate('2026-10-09'), bankRef: 'FT26282013', description: 'LE MINH DEMO NUA DONG' };

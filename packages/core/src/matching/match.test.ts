@@ -1,8 +1,8 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import type { StatementRow } from './decode';
-import { rowFingerprint } from './fingerprint';
 import { matchRows, type InvoiceCandidate } from './match';
 
 const huong: InvoiceCandidate = {
@@ -128,23 +128,6 @@ describe('ignored', () => {
     });
   });
 
-  it('keeps two identical transfers in one import as two matches, so a double payment is not lost', () => {
-    const memo = row({ description: 'ESTA 7K2QX9MP', bankRef: '' });
-    const matched = matchRows([memo, { ...memo, index: 9 }], invoices);
-    const once = { status: 'memo_match', invoiceId: 'inv-huong', memoCode: '7K2QX9MP' };
-    expect(matched.map((m) => m.match)).toEqual([once, once]);
-    expect(matched.map((m) => m.fingerprint)).toEqual([rowFingerprint(memo, 1), rowFingerprint(memo, 2)]);
-  });
-
-  it('ignores only the copies an earlier import holds', () => {
-    const memo = row({ description: 'ESTA 7K2QX9MP', bankRef: '' });
-    const again = matchRows([memo, memo], invoices, { knownFingerprints: new Set([rowFingerprint(memo, 1)]) });
-    expect(again.map((m) => m.match)).toEqual([
-      { status: 'ignored', reason: 'duplicate' },
-      { status: 'memo_match', invoiceId: 'inv-huong', memoCode: '7K2QX9MP' },
-    ]);
-  });
-
   it('ignores every row of a re-imported file when its fingerprints are known', () => {
     const rows = [row({ description: 'ESTA 7K2QX9MP' }), row({ index: 2, description: 'NGUYEN THI HUONG DEMO' }), row({ index: 3, amount: vnd(-1) })];
     const first = matchRows(rows, invoices);
@@ -158,8 +141,87 @@ describe('ignored', () => {
     const memo = row({ description: 'ESTA 7K2QX9MP' });
     expect(matchRows([memo], invoices)[0]).toEqual({
       row: memo,
-      fingerprint: rowFingerprint(memo),
+      fingerprint: sha256('ref\n2026-10-05\n3500000\nFT1'),
       match: { status: 'memo_match', invoiceId: 'inv-huong', memoCode: '7K2QX9MP' },
     });
+  });
+});
+
+const sha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
+const once = { status: 'memo_match', invoiceId: 'inv-huong', memoCode: '7K2QX9MP' };
+const duplicate = { status: 'ignored', reason: 'duplicate' };
+
+describe('a row with a bank reference', () => {
+  const memo = row({ description: 'MBVCB.2627501.ESTA7K2QX9MP.CT TU 0903', bankRef: 'FT26275001' });
+  const other = row({ index: 2, description: 'ESTA Q4N8R2TV', amount: vnd(4_200_000), bankRef: 'FT26276002' });
+
+  it('is fingerprinted by its reference, date and amount, so P3-15 can store one key per transfer', () => {
+    expect(matchRows([memo], invoices)[0]?.fingerprint).toBe(sha256('ref\n2026-10-05\n3500000\nFT26275001'));
+  });
+
+  it('is ignored as a duplicate when the same reference, date and amount appear again in the file', () => {
+    const matched = matchRows([memo, { ...memo, index: 12 }], invoices);
+    expect(matched.map((m) => m.match)).toEqual([once, duplicate]);
+    expect(matched[1]?.fingerprint).toBe(matched[0]?.fingerprint);
+  });
+
+  it('posts each transfer once when two overlapping exports are pasted into one file', () => {
+    const file = [memo, other, { ...memo, index: 3 }, { ...other, index: 4 }];
+    expect(matchRows(file, invoices).map((m) => m.match.status)).toEqual(['memo_match', 'memo_match', 'ignored', 'ignored']);
+  });
+
+  it('stays a duplicate on re-import when the bank words the description differently', () => {
+    const known = new Set(matchRows([memo], invoices).map((m) => m.fingerprint));
+    const reworded = { ...memo, description: 'ESTA 7K2QX9MP CT TU 0903123456 NGUYEN THI HUONG DEMO' };
+    expect(matchRows([reworded], invoices, { knownFingerprints: known })[0]?.match).toEqual(duplicate);
+  });
+
+  it('is another transfer when the same reference comes with another date or amount', () => {
+    expect(matchRows([memo, { ...memo, date: isoDate('2026-11-05') }], invoices).map((m) => m.match)).toEqual([once, once]);
+    expect(matchRows([memo, { ...memo, amount: vnd(1_000) }], invoices).map((m) => m.match)).toEqual([once, once]);
+  });
+});
+
+describe('a row without a bank reference', () => {
+  const cash = row({ description: 'NOP TIEN MAT ESTA 7K2QX9MP', bankRef: '' });
+  const repeat = (...candidateIds: string[]) => ({ status: 'unmatched', candidateIds, repeatOf: 1 });
+
+  it('is fingerprinted by date, amount, normalized description and which identical copy it is', () => {
+    expect(matchRows([cash, { ...cash, index: 2 }], invoices).map((m) => m.fingerprint)).toEqual([
+      sha256('row\n2026-10-05\n3500000\nNOPTIENMATESTA7K2QX9MP\n1'),
+      sha256('row\n2026-10-05\n3500000\nNOPTIENMATESTA7K2QX9MP\n2'),
+    ]);
+  });
+
+  it('auto-matches only the first identical copy and leaves every later one for a person, never dropped', () => {
+    const matched = matchRows([cash, { ...cash, index: 5 }, { ...cash, index: 9, description: 'nop tien mat esta-7k2qx9mp' }], invoices);
+    expect(matched.map((m) => m.match)).toEqual([once, repeat('inv-huong'), repeat('inv-huong')]);
+    expect(new Set(matched.map((m) => m.fingerprint)).size).toBe(3);
+  });
+
+  it('leaves a later copy of a suggestion or an ambiguous row for a person with the same candidates', () => {
+    const named = row({ description: 'NGUYEN THI HUONG DEMO CK', bankRef: '' });
+    expect(matchRows([named, { ...named, index: 2 }], invoices).map((m) => m.match)).toEqual([
+      { status: 'suggested', invoiceId: 'inv-huong' },
+      repeat('inv-huong'),
+    ]);
+    const both = row({ description: 'ESTA Q4N8R2TV ESTA 7K2QX9MP', bankRef: '' });
+    expect(matchRows([both, { ...both, index: 2 }], invoices)[1]?.match).toEqual(repeat('inv-huong', 'inv-khoa'));
+  });
+
+  it('keeps a later copy of a debit ignored as a debit', () => {
+    const fee = row({ description: 'PHI SMS', amount: vnd(-11_000), bankRef: '' });
+    expect(matchRows([fee, { ...fee, index: 2 }], invoices).map((m) => m.match)).toEqual([
+      { status: 'ignored', reason: 'debit' },
+      { status: 'ignored', reason: 'debit' },
+    ]);
+  });
+
+  it('leaves a new copy for a person when an earlier import holds only the first', () => {
+    const known = new Set(matchRows([cash], invoices).map((m) => m.fingerprint));
+    expect(matchRows([cash, { ...cash, index: 2 }], invoices, { knownFingerprints: known }).map((m) => m.match)).toEqual([
+      duplicate,
+      repeat('inv-huong'),
+    ]);
   });
 });

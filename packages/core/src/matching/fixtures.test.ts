@@ -7,7 +7,7 @@ import layoutC from '../../../../fixtures/statements/layout-c.csv?raw';
 import { decodeCsv, decodeStatement } from './decode';
 import { rowFingerprints } from './fingerprint';
 import { STATEMENT_LAYOUTS, type StatementGrid, type StatementLayoutId } from './layouts';
-import { matchRows } from './match';
+import { matchRows, type StatementMatch } from './match';
 import { renderCsv } from './render';
 import { SCENARIO_INVOICES, SCENARIO_REJECTED, SCENARIO_ROWS, scenarioGrid } from './statement-scenario';
 
@@ -57,8 +57,16 @@ describe('fixtures/statements', () => {
   });
 
   it('covers every match status the matcher can produce, plus a refusal', () => {
-    const statuses = new Set(SCENARIO_ROWS.map((row) => `${row.expect.status}${'reason' in row.expect ? `:${row.expect.reason}` : ''}`));
-    expect([...statuses].sort()).toEqual(['ignored:debit', 'memo_match', 'suggested', 'unmatched']);
+    const label = (match: StatementMatch): string =>
+      'reason' in match ? `${match.status}:${match.reason}` : 'repeatOf' in match ? `${match.status}:repeat` : match.status;
+    expect([...new Set(SCENARIO_ROWS.map((row) => label(row.expect)))].sort()).toEqual([
+      'ignored:debit',
+      'ignored:duplicate',
+      'memo_match',
+      'suggested',
+      'unmatched',
+      'unmatched:repeat',
+    ]);
     expect(SCENARIO_ROWS.filter((row) => row.expect.status === 'unmatched' && row.expect.candidateIds.length === 2)).toHaveLength(1);
     expect(SCENARIO_REJECTED).toHaveLength(1);
   });

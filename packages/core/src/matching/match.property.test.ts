@@ -4,8 +4,7 @@ import { daysBetween } from '../date/calendar';
 import { isoDate, type IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
 import type { StatementRow } from './decode';
-import { rowFingerprint } from './fingerprint';
-import { SUGGESTION_WINDOW_DAYS, matchRows, type InvoiceCandidate } from './match';
+import { SUGGESTION_WINDOW_DAYS, matchRows, type InvoiceCandidate, type StatementMatch } from './match';
 import { normalizeDescription } from './memo';
 
 const params = { seed: 20261007, numRuns: 500 };
@@ -40,6 +39,7 @@ type Recipe = {
   other: Vnd;
   unissued: string;
   index: number;
+  referenced: boolean;
 };
 
 const recipe: fc.Arbitrary<Recipe> = fc.record({
@@ -49,11 +49,12 @@ const recipe: fc.Arbitrary<Recipe> = fc.record({
   other: money,
   unissued: code,
   index: fc.nat({ max: 400 }),
+  referenced: fc.boolean(),
 });
 
 function rowFrom(r: Recipe, invoices: InvoiceCandidate[]): StatementRow {
   const invoice = invoices[r.pick % invoices.length] as InvoiceCandidate;
-  const base = { index: r.index, date: shiftDays(invoice.dueDate, r.offset), amount: invoice.outstanding, bankRef: `FT${r.index}` };
+  const base = { index: r.index, date: shiftDays(invoice.dueDate, r.offset), amount: invoice.outstanding, bankRef: r.referenced ? `FT${r.index}` : '' };
   switch (r.kind) {
     case 'memo':
       return { ...base, description: `ESTA ${invoice.memoCode}` };
@@ -74,9 +75,23 @@ function rowFrom(r: Recipe, invoices: InvoiceCandidate[]): StatementRow {
   }
 }
 
+const withCopies = (rows: StatementRow[], picks: number[]): StatementRow[] =>
+  rows.length === 0 ? rows : [...rows, ...picks.map((pick, i) => ({ ...(rows[pick % rows.length] as StatementRow), index: 1000 + i }))];
+
 const scenario = invoiceSet.chain((invoices) =>
-  fc.record({ invoices: fc.constant(invoices), rows: fc.array(recipe, { maxLength: 12 }).map((rs) => rs.map((r) => rowFrom(r, invoices))) }),
+  fc.record({
+    invoices: fc.constant(invoices),
+    rows: fc
+      .tuple(fc.array(recipe, { maxLength: 12 }), fc.array(fc.nat(), { maxLength: 4 }))
+      .map(([recipes, picks]) => withCopies(recipes.map((r) => rowFrom(r, invoices)), picks)),
+  }),
 );
+
+const transferKey = (row: StatementRow): string =>
+  row.bankRef === '' ? `row ${row.date} ${row.amount} ${normalizeDescription(row.description)}` : `ref ${row.date} ${row.amount} ${row.bankRef}`;
+
+const candidatesOf = (match: StatementMatch): readonly string[] =>
+  match.status === 'unmatched' ? match.candidateIds : 'invoiceId' in match ? [match.invoiceId] : [];
 
 const byId = (invoices: InvoiceCandidate[], id: string): InvoiceCandidate => {
   const found = invoices.find((invoice) => invoice.id === id);
@@ -156,31 +171,77 @@ describe('matchRows properties', () => {
     );
   });
 
-  it('matches a repeated row like its first copy, gives every row its own fingerprint, and matches nothing on a re-import', () => {
+  it('matches the first copy of a transfer alone, ignores a referenced repeat and leaves an unreferenced repeat for a person', () => {
     fc.assert(
       fc.property(scenario, ({ invoices, rows }) => {
-        const first = matchRows(rows, invoices);
-        const fingerprints = first.map((m) => m.fingerprint);
-        expect(new Set(fingerprints).size).toBe(rows.length);
-        for (const m of first) {
-          expect(m.match).not.toEqual({ status: 'ignored', reason: 'duplicate' });
-          const earlier = rows.findIndex((r) => rowFingerprint(r) === rowFingerprint(m.row));
-          expect(m.match).toEqual(first[earlier]?.match);
-        }
-        const again = matchRows(rows, invoices, { knownFingerprints: new Set(fingerprints) });
-        for (const m of again) expect(m.match).toEqual({ status: 'ignored', reason: 'duplicate' });
-        expect(again.map((m) => m.fingerprint)).toEqual(fingerprints);
+        const matched = matchRows(rows, invoices);
+        const first = new Map<string, number>();
+        matched.forEach(({ row, fingerprint, match }, i) => {
+          const key = transferKey(row);
+          const alone = matchRows([row], invoices)[0]?.match as StatementMatch;
+          const earlier = first.get(key);
+          if (earlier === undefined) {
+            first.set(key, i);
+            expect(match).toEqual(alone);
+            return;
+          }
+          const original = matched[earlier] as (typeof matched)[number];
+          if (row.bankRef !== '') {
+            expect(match).toEqual({ status: 'ignored', reason: 'duplicate' });
+            expect(fingerprint).toBe(original.fingerprint);
+          } else if (alone.status === 'ignored') {
+            expect(match).toEqual(alone);
+          } else {
+            expect(match).toEqual({ status: 'unmatched', candidateIds: candidatesOf(alone), repeatOf: original.row.index });
+          }
+        });
       }),
       params,
     );
   });
 
-  it('names only real invoices as candidates, each once, and never exactly one', () => {
+  it('posts or suggests each transfer at most once across overlapping imports, and matches nothing on a re-import', () => {
+    fc.assert(
+      fc.property(scenario, fc.nat(), fc.nat(), ({ invoices, rows }, cut, overlap) => {
+        const end = rows.length === 0 ? 0 : cut % (rows.length + 1);
+        const start = end === 0 ? 0 : overlap % (end + 1);
+        const known = new Set<string>();
+        const taken = new Map<string, number>();
+        for (const file of [rows.slice(0, end), rows.slice(start), rows]) {
+          const matched = matchRows(file, invoices, { knownFingerprints: known });
+          for (const { row, fingerprint, match } of matched) {
+            if (match.status === 'memo_match' || match.status === 'suggested') {
+              const key = transferKey(row);
+              taken.set(key, (taken.get(key) ?? 0) + 1);
+            }
+            known.add(fingerprint);
+          }
+        }
+        for (const [key, count] of taken) expect(count, key).toBe(1);
+        const again = matchRows(rows, invoices, { knownFingerprints: known });
+        for (const m of again) expect(m.match).toEqual({ status: 'ignored', reason: 'duplicate' });
+      }),
+      params,
+    );
+  });
+
+  it('never ignores an unreferenced row of a fresh import as a duplicate', () => {
+    fc.assert(
+      fc.property(scenario, ({ invoices, rows }) => {
+        for (const { row, match } of matchRows(rows, invoices)) {
+          if (row.bankRef === '') expect(match).not.toEqual({ status: 'ignored', reason: 'duplicate' });
+        }
+      }),
+      params,
+    );
+  });
+
+  it('names only real invoices as candidates, each once, and exactly one only for a repeat', () => {
     fc.assert(
       fc.property(scenario, ({ invoices, rows }) => {
         for (const { match } of matchRows(rows, invoices)) {
           if (match.status !== 'unmatched') continue;
-          expect(match.candidateIds).not.toHaveLength(1);
+          if (!('repeatOf' in match)) expect(match.candidateIds).not.toHaveLength(1);
           expect(new Set(match.candidateIds).size).toBe(match.candidateIds.length);
           for (const id of match.candidateIds) byId(invoices, id);
         }
