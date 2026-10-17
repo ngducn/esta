@@ -189,14 +189,14 @@ export const GCN_2024: CertificateFacts = {
       birth_year: 1984,
       id_number: '079084301776',
       address_text: 'phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh',
-      relation: 'Vợ chồng',
+      relation: null,
     },
     {
       full_name: 'Huỳnh Ngọc Demo Thảo',
       birth_year: 1987,
       id_number: '079187402658',
       address_text: 'phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh',
-      relation: 'Vợ chồng',
+      relation: null,
     },
   ],
   parcels: [

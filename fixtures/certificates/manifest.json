@@ -96,7 +96,7 @@
       "variant": "scan",
       "files": {
         "document.pdf": "55d5320b94476393dd4d8b60742a2c657e1cbd422fb6451ea8956567852c1255",
-        "truth.json": "c5244e20782f157987c7172ca11724406fbf9ffdf8fd74ca6d6d2fe87f7af6a1"
+        "truth.json": "0b0515dacba46f0ae2a6e86bbb0cd8b9ec05eaea072bccee33157a90deffa801"
       }
     },
     {
@@ -106,7 +106,7 @@
       "files": {
         "page-1.jpg": "53f040893e25e9c1421f18f2197e83b069e7ee3521ed879ee63bd8a65babb707",
         "page-2.jpg": "079bf8a9f4088b8aeada2ca6964484089551383bbf560e646b11d5b55bf2998f",
-        "truth.json": "7026aed380f812ef6d1393be65901e6953e8ed6fca6e8e4611450079f05c2e5d"
+        "truth.json": "92633f557ed15142c802a7238d46f517772e5d980534373cfec958d0071a18f7"
       }
     },
     {
@@ -116,7 +116,7 @@
       "files": {
         "page-1.jpg": "76e2b433affa2f180bf71520c91e7324900d46c55f00b44257f7f6f36756542b",
         "page-2.jpg": "36d7cc5894078263aefff1fd40e645d6fc08874c5f563af05b72451b84f704d0",
-        "truth.json": "7a9d1ce0a307377f1da69dd2e92eb781df7e94cc08ca8146212a03cf611e8c11"
+        "truth.json": "7a174924b3e8bb9b89944aeab74adf0a04d99e0bccb37e03eb9c1cb22f288d08"
       }
     },
     {

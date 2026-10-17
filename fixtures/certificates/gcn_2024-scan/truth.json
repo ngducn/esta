@@ -40,9 +40,9 @@
           "page": 1
         },
         "relation": {
-          "value": "Vợ chồng",
+          "value": null,
           "confidence": 1,
-          "page": 1
+          "page": null
         }
       },
       {
@@ -67,9 +67,9 @@
           "page": 1
         },
         "relation": {
-          "value": "Vợ chồng",
+          "value": null,
           "confidence": 1,
-          "page": 1
+          "page": null
         }
       }
     ],
