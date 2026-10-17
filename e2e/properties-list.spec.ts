@@ -235,11 +235,11 @@ test('no match names the query and offers Xóa bộ lọc', async ({ page }) => 
   await expect(search(page)).toHaveValue('');
 });
 
-test('sort offers name and area in a 44 px control, and the URL keeps the choice', async ({ page }) => {
+test('sort offers name, area and rent in a 44 px control, and the URL keeps the choice', async ({ page }) => {
   onlyOn('mobile');
   await open(page, 'me.lane1@demo.esta.test', 'light');
   const sort = page.getByRole('combobox', { name: /^Sắp xếp/ });
-  await expect(sort.locator('option')).toHaveText(['Tên', 'Khu vực']);
+  await expect(sort.locator('option')).toHaveText(['Tên', 'Khu vực', 'Giá thuê']);
   const box = await sort.boundingBox();
   expect(box?.height, 'the select itself is a 44 px target').toBeGreaterThanOrEqual(44);
   expect(box?.width, 'the select itself is a 44 px target').toBeGreaterThanOrEqual(44);

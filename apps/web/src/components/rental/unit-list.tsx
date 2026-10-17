@@ -2,7 +2,7 @@
 
 import { formatArea, formatDate } from '@esta/core/format';
 import type { Unit } from '@esta/core/schemas/units';
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Pencil, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { lazy, Suspense, useState, useTransition } from 'react';
@@ -23,7 +23,8 @@ const small = 'min-h-touch px-3 text-small';
 
 /**
  * Rooms in the order Mẹ walks them. `Lên` and `Xuống` are words rather than drag handles, because a drag is hard on a
- * phone held in one hand. The `whole` unit has no delete: the database brings it back whenever none is left.
+ * phone held in one hand. Delete sits in the edit sheet, away from the row, and the `whole` unit has none: the database
+ * brings it back whenever none is left.
  */
 export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propertyId: string; units: readonly Unit[]; canEdit: boolean; roomingHouse: boolean }) {
   const t = useTranslations('propertyRental');
@@ -157,19 +158,6 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
                     <Pencil aria-hidden="true" />
                     {t('edit')}
                   </button>
-                  {unit.kind === 'whole' ? null : (
-                    <button
-                      type="button"
-                      data-testid="delete-unit"
-                      onClick={() => remove(unit)}
-                      disabled={pending}
-                      aria-label={t('deleteLabel', { label: unit.label })}
-                      className={cn(buttonVariants({ variant: 'outline' }), small)}
-                    >
-                      <Trash2 aria-hidden="true" />
-                      {t('delete')}
-                    </button>
-                  )}
                 </div>
               ) : null}
             </li>
@@ -177,7 +165,15 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
         })}
       </ol>
       <Suspense fallback={null}>
-        {open?.sheet === 'unit' ? <UnitSheet propertyId={propertyId} unit={open.unit} otherUnits={units.length - (open.unit === null ? 0 : 1)} onClose={close} /> : null}
+        {open?.sheet === 'unit' ? (
+          <UnitSheet
+            propertyId={propertyId}
+            unit={open.unit}
+            otherUnits={units.length - (open.unit === null ? 0 : 1)}
+            onClose={close}
+            onDelete={open.unit === null || open.unit.kind === 'whole' ? null : remove}
+          />
+        ) : null}
         {open?.sheet === 'rooms' ? <AddRoomsSheet propertyId={propertyId} existing={open.existing} onClose={close} /> : null}
       </Suspense>
     </div>

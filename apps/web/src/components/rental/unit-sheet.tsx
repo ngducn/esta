@@ -5,6 +5,7 @@ import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { vndInputText } from '@esta/core/properties';
 import { parseAreaInput } from '@esta/core/properties/area';
 import { UNIT_KINDS, type Unit, type UnitKind } from '@esta/core/schemas/units';
+import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type FormEvent } from 'react';
@@ -20,7 +21,20 @@ import { RentalFormError, type RentalFormErrorKind } from './rental-form-error';
 type Invalid = 'label' | 'area' | 'rent' | null;
 
 /** Five fields, so a sheet rather than a page (DESIGN-BRIEF §5.3). `whole` is offered only when no other unit exists. */
-export default function UnitSheet({ propertyId, unit, otherUnits, onClose }: { propertyId: string; unit: Unit | null; otherUnits: number; onClose: () => void }) {
+export default function UnitSheet({
+  propertyId,
+  unit,
+  otherUnits,
+  onClose,
+  onDelete,
+}: {
+  propertyId: string;
+  unit: Unit | null;
+  otherUnits: number;
+  onClose: () => void;
+  /** `null` for a new unit and for the `whole` unit, which has no delete. */
+  onDelete: ((unit: Unit) => void) | null;
+}) {
   const t = useTranslations('propertyRental');
   const router = useRouter();
   const [label, setLabel] = useState(unit?.label ?? '');
@@ -86,6 +100,22 @@ export default function UnitSheet({ propertyId, unit, otherUnits, onClose }: { p
           <DateInput label={t('availableField')} {...(availableFrom === null ? {} : { defaultValue: availableFrom })} onValueChange={setAvailableFrom} />
           <RentalFormError error={error} />
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            {unit === null || onDelete === null ? null : (
+              <Button
+                type="button"
+                variant="quiet"
+                data-testid="delete-unit"
+                aria-label={t('deleteLabel', { label: unit.label })}
+                className="text-overdue sm:mr-auto"
+                onClick={() => {
+                  onDelete(unit);
+                  onClose();
+                }}
+              >
+                <Trash2 aria-hidden="true" />
+                {t('delete')}
+              </Button>
+            )}
             <SheetClose render={<Button type="button" variant="outline" />}>{t('cancel')}</SheetClose>
             <Button type="submit" disabled={pending} data-testid="save-unit">
               {pending ? t('saving') : t('save')}
