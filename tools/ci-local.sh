@@ -108,6 +108,7 @@ fi
 
 logdir=/tmp/ci-local/pr-$pr-${sha:0:7}
 mkdir -p "$logdir"
+rm -f "$logdir/e2e.flaky"
 export ESTA_SLOT=$slot
 
 tree=$(mktemp -d /tmp/ci-local/tree.XXXXXX) || exit 2
@@ -143,7 +144,7 @@ gateway_healthy() {
 
 ci_root=$(cd "$(dirname "$0")/.." && pwd)
 empty_photos() {
-	(cd "$ci_root" && node_modules/.bin/tsx scripts/seed-photos.ts --empty) || echo "ci-local: could not empty the property-photos bucket; continuing"
+	(cd "$ci_root" && ESTA_SLOT_ROOT=$tree node_modules/.bin/tsx scripts/seed-photos.ts --empty)
 }
 
 run_e2e() {

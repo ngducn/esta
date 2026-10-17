@@ -84,7 +84,7 @@ async function removeObjects(url: string, headers: Headers, paths: readonly stri
 }
 
 async function run(): Promise<void> {
-  const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
+  const env = slotEnv(process.env.ESTA_SLOT_ROOT ?? join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
   const host = URL.parse(env.SUPABASE_URL ?? '')?.hostname;
   if (host === undefined || !LOCAL_HOSTS.has(host)) {
     throw new Error(`seed-photos uploads only to a local stack, not ${host ?? env.SUPABASE_URL}`);

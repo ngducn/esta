@@ -7,7 +7,7 @@ function walk(suite, trail) {
   const here = suite.title ? [...trail, suite.title] : trail;
   for (const spec of suite.specs ?? []) {
     for (const test of spec.tests ?? []) {
-      if (test.status === 'flaky') flaky.push([...here, spec.title].join(' > '));
+      if (test.status === 'flaky') flaky.push([test.projectName, ...here, spec.title].filter(Boolean).join(' > '));
     }
   }
   for (const child of suite.suites ?? []) walk(child, here);
