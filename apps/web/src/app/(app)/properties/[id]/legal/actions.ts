@@ -146,7 +146,7 @@ function partyRow(householdId: string, party: NewParty): TablesInsert<'parties'>
 /**
  * Quick-added parties exist only in the form until a save names them. They go in just before the save, under their
  * client-made ids so a retry changes nothing, and the ones this call created are deleted again if the save fails, so
- * an abandoned or failed form leaves no one behind. Only the session client runs, so RLS decides every write.
+ * an abandoned or failed form leaves no one behind.
  */
 async function savingWithParties<T extends { readonly ok: boolean }>(
   supabase: SessionClient,
