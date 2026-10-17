@@ -21,17 +21,21 @@ export function PropertySearch({ label, placeholder }: { label: string; placehol
     if (document.activeElement !== input.current) setValue(urlQuery);
   }, [urlQuery]);
 
+  useEffect(() => () => clearTimeout(timer.current), []);
+
   useEffect(() => {
-    // The pathname only changes when the new page commits, so unmount alone is too late: a click on any link has to cancel the replace.
-    const cancelOnLinkClick = (event: MouseEvent) => {
-      if (event.target instanceof Element && event.target.closest('a[href]') !== null) clearTimeout(timer.current);
+    // The pathname only changes when the new page commits, so unmount alone is too late: a click that leaves this page has to cancel the replace.
+    const cancelOnLeavingClick = (event: MouseEvent) => {
+      if (event.button !== 0 || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest('a[href]');
+      if (!(link instanceof HTMLAnchorElement) || link.target === '_blank' || link.hasAttribute('download')) return;
+      const destination = new URL(link.href);
+      if (destination.origin === window.location.origin && destination.pathname !== pathname) clearTimeout(timer.current);
     };
-    document.addEventListener('click', cancelOnLinkClick, true);
-    return () => {
-      document.removeEventListener('click', cancelOnLinkClick, true);
-      clearTimeout(timer.current);
-    };
-  }, []);
+    document.addEventListener('click', cancelOnLeavingClick, true);
+    return () => document.removeEventListener('click', cancelOnLeavingClick, true);
+  }, [pathname]);
 
   function update(next: string) {
     setValue(next);
