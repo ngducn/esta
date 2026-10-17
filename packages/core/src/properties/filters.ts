@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import type { IsoDate } from '../date/iso-date';
+import type { Vnd } from '../money/vnd';
 import { shortProvinceName } from '../address/format-current';
 import { foldVietnamese } from '../search/fold';
 
@@ -27,6 +29,10 @@ export type PropertyListRow = {
   hasBoundary: boolean;
   /** Parties holding a share of the property (`ownership_shares`), sorted by id. */
   ownerPartyIds: readonly string[];
+  /** The sum of the units' list rents, `null` when no unit has one. */
+  monthlyRentVnd: Vnd | null;
+  /** The earliest `available_from` among the units, `null` when none has one. */
+  vacantSince: IsoDate | null;
 };
 
 /** The two-tier address in daily use, as one line: house and street, commune, short province; `null` with none of them. */
@@ -83,9 +89,16 @@ const byProvince: Compare = (a, b) => {
   return collator.compare(unprefixedProvinceName(a.provinceName), unprefixedProvinceName(b.provinceName));
 };
 
+/** Highest list rent first; a property with no rent goes last. */
+const byRent: Compare = (a, b) => {
+  if (a.monthlyRentVnd === null || b.monthlyRentVnd === null) return Number(a.monthlyRentVnd === null) - Number(b.monthlyRentVnd === null);
+  return b.monthlyRentVnd - a.monthlyRentVnd;
+};
+
 export const PROPERTY_SORTS = {
   name: byNickname,
   area: (a, b) => byProvince(a, b) || byNickname(a, b),
+  rent: (a, b) => byRent(a, b) || byNickname(a, b),
 } as const satisfies Record<string, Compare>;
 
 export type PropertySortKey = keyof typeof PROPERTY_SORTS;

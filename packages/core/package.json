@@ -27,6 +27,7 @@
     "./schemas/legal": "./src/schemas/legal.ts",
     "./schemas/ownership": "./src/schemas/ownership.ts",
     "./schemas/property": "./src/schemas/property.ts",
+    "./schemas/units": "./src/schemas/units.ts",
     "./search": "./src/search/fold.ts",
     "./vietqr": "./src/vietqr/index.ts"
   },

@@ -13,7 +13,7 @@ export const ANNOTATION_KINDS = ['mortgage', 'mortgage_release', 'transfer', 'ch
 export const USE_FORMS = ['private', 'shared'] as const;
 export const LONG_TERM = 'long_term';
 
-const isoDate = z
+export const isoDateSchema = z
   .string()
   .refine(isIsoDate)
   .transform((text) => text as IsoDate);
@@ -25,7 +25,7 @@ export const areaSchema = z
   .lt(10_000_000_000)
   .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6);
 
-const text = (max: number) =>
+export const text = (max: number) =>
   z
     .string()
     .trim()
@@ -33,7 +33,7 @@ const text = (max: number) =>
     .max(max)
     .transform((value) => value.normalize('NFC'));
 
-const optionalText = (max: number) =>
+export const optionalText = (max: number) =>
   z
     .string()
     .trim()
@@ -45,7 +45,7 @@ const optionalText = (max: number) =>
 export const purposeSchema = z.strictObject({
   land_use_code: text(20).transform((code) => code.toUpperCase()),
   area_m2: areaSchema.optional(),
-  term: z.union([z.literal(LONG_TERM), isoDate]).optional(),
+  term: z.union([z.literal(LONG_TERM), isoDateSchema]).optional(),
 });
 export type Purpose = z.output<typeof purposeSchema>;
 
@@ -73,7 +73,7 @@ export const structureSchema = z.strictObject({
 export type Structure = z.output<typeof structureSchema>;
 
 export const annotationSchema = z.strictObject({
-  date: isoDate.optional(),
+  date: isoDateSchema.optional(),
   text: text(2000),
   kind: z.enum(ANNOTATION_KINDS).optional(),
 });
@@ -82,8 +82,8 @@ export type Annotation = z.output<typeof annotationSchema>;
 const mortgageShape = z.strictObject({
   bank_party_id: z.uuid(),
   amount_vnd: vndSchema,
-  registered_on: isoDate.optional(),
-  released_on: isoDate.optional(),
+  registered_on: isoDateSchema.optional(),
+  released_on: isoDateSchema.optional(),
 });
 
 export const mortgageSchema = mortgageShape.refine(
@@ -96,7 +96,7 @@ const certificateBase = z.object({
   form: z.enum(CERTIFICATE_FORMS),
   serial_no: optionalText(40),
   book_entry_no: optionalText(40),
-  issued_on: isoDate.nullable(),
+  issued_on: isoDateSchema.nullable(),
   issued_by: optionalText(300),
   holder_party_ids: z
     .array(z.uuid())
