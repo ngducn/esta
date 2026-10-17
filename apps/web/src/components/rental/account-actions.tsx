@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { deleteAccount, restoreAccount } from '@/app/(app)/properties/[id]/rental/actions';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { useUndoToast } from '@/components/undo-toast';
+import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { cn } from '@/lib/utils';
 
 export type AccountActionLabels = {
@@ -26,6 +26,7 @@ const small = 'min-h-touch px-3 text-small';
 export function AccountActions({ propertyId, accountId, labels }: { propertyId: string; accountId: string; labels: AccountActionLabels }) {
   const router = useRouter();
   const showUndo = useUndoToast();
+  const showNotice = useNoticeToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -40,8 +41,8 @@ export function AccountActions({ propertyId, accountId, labels }: { propertyId: 
       router.refresh();
       showUndo(labels.deleted, () => {
         restoreAccount(result.deleted)
-          .then((restored) => (restored.ok ? router.refresh() : setError(labels.restoreFailed)))
-          .catch(() => setError(labels.restoreFailed));
+          .then((restored) => (restored.ok ? router.refresh() : showNotice(labels.restoreFailed)))
+          .catch(() => showNotice(labels.restoreFailed));
       });
     });
 

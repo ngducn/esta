@@ -9,7 +9,7 @@ import { lazy, Suspense, useState, useTransition } from 'react';
 import { deleteUnit, moveUnitAction, restoreUnit } from '@/app/(app)/properties/[id]/rental/actions';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { useUndoToast } from '@/components/undo-toast';
+import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { cn } from '@/lib/utils';
 
 const loadUnitSheet = () => import('./unit-sheet');
@@ -31,6 +31,7 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
   const locale = useLocale();
   const router = useRouter();
   const showUndo = useUndoToast();
+  const showNotice = useNoticeToast();
   const [open, setOpen] = useState<Open>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +55,8 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
       router.refresh();
       showUndo(t('deleted', { label: unit.label }), () => {
         restoreUnit(result.deleted)
-          .then((restored) => (restored.ok ? router.refresh() : setError(t('restoreFailed'))))
-          .catch(() => setError(t('restoreFailed')));
+          .then((restored) => (restored.ok ? router.refresh() : showNotice(t('restoreFailed'))))
+          .catch(() => showNotice(t('restoreFailed')));
       });
     });
 
