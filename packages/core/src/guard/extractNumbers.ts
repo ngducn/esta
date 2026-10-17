@@ -1,6 +1,9 @@
 import { businessDate, parseInstant } from '../clock/resolve';
 import type { Instant } from '../clock/clock';
+import { foldVietnamese } from '../search/fold';
 import {
+  JOINER,
+  parseNumeral,
   readAmount,
   readArea,
   readCompact,
@@ -10,10 +13,10 @@ import {
   readMonth,
   readMonthYear,
   readRatio,
-  readShorthand,
-  readSpoken,
   readTime,
   readYear,
+  unitSize,
+  type CompactPart,
   type CompactUnit,
   type ExtractedValue,
 } from './normalize';
@@ -30,76 +33,54 @@ export type Citation = { readonly id: string; readonly sentence: number };
 
 export type Scan = { readonly numbers: readonly ExtractedNumber[]; readonly citations: readonly Citation[] };
 
-type Found = { readonly end: number; readonly values: readonly ExtractedValue[]; readonly resume?: number };
+/** `unitEnd` ends the unit words a range lends its lower bound: `triệu` of `12 triệu 5`, never the `5`. */
+type Found = { readonly end: number; readonly values: readonly ExtractedValue[]; readonly unitEnd?: number; readonly resume?: number };
 
-type Pattern = {
-  readonly regex: RegExp;
-  readonly read: (match: RegExpExecArray) => readonly ExtractedValue[] | null;
-};
+type Reader = (text: string, at: number) => Found | null;
 
 const BUSINESS_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
 const SIGN = '([-−+]?)';
-const GROUP_SPACE = String.raw`[ \u00A0\u202F\u2009]`;
-/** `5 000 000` grouped by a space, NBSP, narrow NBSP or thin space, else `1.500.000` and `3,5` for parseDecimal. */
-const NUMBER = String.raw`(\d{1,3}(?:${GROUP_SPACE}\d{3})+(?:[.,]\d{1,2})?(?![\p{N}])|\d+(?:[.,]\d+)*)`;
+/** A numeral, matched atomically: a pattern reads every digit and separator of it or does not match. */
+const NUMBER = String.raw`(?=(?<numeral>\d+(?:${JOINER}\d+)*))\k<numeral>`;
 const NOT_DIGIT = String.raw`(?![\p{N}])`;
 const NOT_LETTER = String.raw`(?![\p{L}])`;
-const CURRENCY = String.raw`(?:₫|đồng|đ|dong|VNĐ|VND|vnd)${NOT_LETTER}`;
+const CURRENCY = String.raw`(?:₫|đồng|đ|dong|[Vv][Nn][DdĐđ])${NOT_LETTER}`;
 const MONTH = '(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept|Sep|Oct|Nov|Dec)\\.?';
 const ORDINAL = '(?:st|nd|rd|th)?';
 const COUNT_UNIT = String.raw`(\s(?:ngày|tháng|năm|phòng|căn|lần|days?|months?|years?|rooms?|units?|times?)${NOT_LETTER})?`;
 
-/** Unit words may follow a space, as may the letter units in `850 K ₫` and `15 M ₫`. */
-const VI_UNITS: Readonly<Record<string, CompactUnit>> = {
-  tỷ: 'ty',
-  tỉ: 'ty',
-  triệu: 'tr',
-  trđ: 'tr',
-  tr: 'tr',
-  nghìn: 'nghin',
-  ngàn: 'nghin',
-};
-const WORD_UNITS: Readonly<Record<string, CompactUnit>> = {
-  ...VI_UNITS,
-  billions: 'ty',
-  billion: 'ty',
+/** Magnitude words, keyed without diacritics or case. */
+const MAGNITUDE_WORDS: Readonly<Record<string, CompactUnit>> = {
+  ty: 'ty',
+  ti: 'ty',
   bn: 'ty',
-  millions: 'tr',
-  million: 'tr',
+  billion: 'ty',
+  billions: 'ty',
+  trieu: 'tr',
+  tr: 'tr',
+  trd: 'tr',
+  cu: 'tr',
+  mil: 'tr',
+  mio: 'tr',
   mln: 'tr',
   mn: 'tr',
-  thousands: 'nghin',
+  million: 'tr',
+  millions: 'tr',
+  nghin: 'nghin',
+  ngan: 'nghin',
   thousand: 'nghin',
+  thousands: 'nghin',
 };
-const LETTER_UNITS: Readonly<Record<string, CompactUnit>> = { B: 'ty', M: 'tr', K: 'nghin', k: 'nghin' };
-const WORD_UNIT = String.raw`(${Object.keys(WORD_UNITS).join('|')})${NOT_LETTER}`;
-const LETTER_UNIT = String.raw`(${Object.keys(LETTER_UNITS).join('|')})(?![\p{L}\p{N}])`;
-const VI_UNIT = String.raw`(?:${Object.keys(VI_UNITS).join('|')})${NOT_LETTER}`;
-const VI_UNIT_WORDS = new RegExp(VI_UNIT, 'giu');
-
-/** `3 trăm nghìn` is 300 nghìn. Without a unit after it, `5 trăm` may be 500 or 500 nghìn. */
-const MULTIPLIER_WORDS: Readonly<Record<string, bigint>> = { trăm: 100n, chục: 10n };
-
-const GAP = String.raw`[^\S\n]`;
-const DIGIT_WORD = '(?:mốt|hai|ba|bốn|tư|năm|sáu|bảy|tám|chín)';
-/**
- * What may follow `3 triệu` in one spoken amount: another unit (`1 tỷ 250 triệu`, `1,2 nghìn tỷ`), `rưỡi`,
- * trailing digits (`3 triệu 5`), or a digit word ending the phrase (`3 triệu tư`). parseVndInput reads the
- * whole amount the way the app reads typed input, and anything it cannot read is unparseable.
- */
-const SPOKEN_TAIL = `(?:${[
-  String.raw`${GAP}*\d+(?:[.,]\d+)*${GAP}*${VI_UNIT}`,
-  String.raw`${GAP}*${VI_UNIT}`,
-  String.raw`${GAP}+rưỡi${NOT_LETTER}`,
-  String.raw`${GAP}+\d{1,3}(?![\p{N}]|[.,/:-]\p{N}|${GAP}*(?:%|m²|m2|trăm|chục))`,
-  String.raw`${GAP}+${DIGIT_WORD}(?=${GAP}*(?:[.,;:!?)\]\n]|$))`,
-].join('|')})`;
-
-function lastUnit(body: string): CompactUnit | undefined {
-  const word = body.match(VI_UNIT_WORDS)?.at(-1);
-  return word === undefined ? undefined : VI_UNITS[word.toLowerCase()];
-}
+/** One-letter magnitudes keep their case: `m` alone is a metre unless a currency follows it. */
+const LETTER_MAGNITUDES: Readonly<Record<string, CompactUnit>> = { B: 'ty', M: 'tr', K: 'nghin', k: 'nghin' };
+/** `3 trăm nghìn` is 300 nghìn. Without a magnitude after it, `5 trăm` may be 500 or 500 nghìn. */
+const MULTIPLIERS: Readonly<Record<string, bigint>> = { tram: 100n, chuc: 10n };
+/** The glued shorthand `3tr5`, `1ty2` and `1k5` that parseVndInput accepts. */
+const SHORTHAND_WORDS = new Set(['ty', 'ti', 'trieu', 'tr', 'trd', 'nghin', 'ngan', 'k']);
+const HALF = 'ruoi';
+const DIGIT_WORDS = new Set(['mot', 'hai', 'ba', 'bon', 'tu', 'nam', 'sau', 'bay', 'tam', 'chin']);
+const CURRENCY_WORDS = new Set(['₫', 'd', 'dong', 'vnd']);
 
 /** Basis points per unit of each percentage word. */
 const RATIO_UNITS: Readonly<Record<string, bigint>> = {
@@ -132,6 +113,15 @@ const orNull = (value: ExtractedValue): readonly ExtractedValue[] | null => (val
 const re = (source: string, flags = ''): RegExp => new RegExp(source, `yu${flags}`);
 const invalid: ExtractedValue = { kind: 'invalid' };
 
+function pattern(regex: RegExp, read: (match: RegExpExecArray) => readonly ExtractedValue[] | null): Reader {
+  return (text, at) => {
+    regex.lastIndex = at;
+    const match = regex.exec(text);
+    const values = match === null ? null : read(match);
+    return match === null || values === null ? null : { end: at + match[0].length, values };
+  };
+}
+
 const hcmTime = new Intl.DateTimeFormat('en-GB', { timeZone: BUSINESS_TIMEZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 /** A timestamp also allows the business date and wall-clock time it falls on in Asia/Ho_Chi_Minh. */
@@ -147,122 +137,185 @@ function readTimestamp(match: RegExpExecArray): readonly ExtractedValue[] {
   return [date, time, { kind: 'date', iso: localDate }, { kind: 'time', hhmm: localTime }];
 }
 
-const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { ...VI_UNITS, ty: 'ty', k: 'nghin' };
+/** Tried in order at each digit, dates before values. The first reader that reads the whole numeral wins. */
+const DATE_READERS: readonly Reader[] = [
+  pattern(re(String.raw`(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?${NOT_DIGIT}`), readTimestamp),
+  pattern(re(String.raw`(\d{4})-(\d{2})${NOT_DIGIT}`), ([, year = '', month = '']) => orNull(readMonthYear(month, year))),
+  pattern(re(String.raw`(?<=[Nn]gày\s+)(\d{1,2})\s+tháng\s+(\d{1,2})(?:\s+năm\s+(\d{4}))?${NOT_DIGIT}`), ([, day = '', month = '', year]) => [
+    year === undefined ? readDayMonth(day, month) : readDate(year, month, day),
+  ]),
+  pattern(re(String.raw`(?<=[Tt]háng\s+)(\d{1,2})(?:\s+năm\s+(\d{4}))?(?![\p{N}/])`), ([, month = '', year]) => [
+    year === undefined ? readMonth(month) : readMonthYear(month, year),
+  ]),
+  pattern(re(String.raw`(?<=[Nn]ăm\s+)(\d{4})${NOT_DIGIT}`), ([, year = '']) => [readYear(year)]),
+  pattern(re(String.raw`(\d{1,2})${ORDINAL}\s+${MONTH},?\s+(\d{4})${NOT_DIGIT}`, 'i'), ([, day = '', month = '', year = '']) => [
+    readDate(year, monthNumber(month), day),
+  ]),
+  pattern(re(String.raw`(?<=${MONTH}\s+)(\d{1,2})${ORDINAL},?\s+(\d{4})${NOT_DIGIT}`, 'i'), ([, month = '', day = '', year = '']) => [
+    readDate(year, monthNumber(month), day),
+  ]),
+  pattern(re(String.raw`(?<=${MONTH}\s+)(\d{4})${NOT_DIGIT}`, 'i'), ([, month = '', year = '']) => [readMonthYear(monthNumber(month), year)]),
+  pattern(re(String.raw`(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})${NOT_DIGIT}`), ([, day = '', month = '', year = '']) => [readDate(year, month, day)]),
+  pattern(re(String.raw`(\d{1,2})/(\d{4})${NOT_DIGIT}`), ([, month = '', year = '']) => orNull(readMonthYear(month, year))),
+  pattern(re(String.raw`(\d{1,2})/(\d{1,2})(?![\p{N}/])`), ([, day = '', month = '']) => orNull(readDayMonth(day, month))),
+  pattern(re(String.raw`(\d{1,2}):(\d{2})${NOT_DIGIT}`), ([, hour = '', minute = '']) => orNull(readTime(hour, minute))),
+];
 
-/** Digits split by an invisible format character, such as a zero-width space in `1\u200B2`, cannot be read. */
-const HIDDEN_SPLIT: Pattern = { regex: re(String.raw`\p{N}+(?:\p{Cf}+\p{N}+)+`), read: () => [invalid] };
+const RATIO = pattern(re(String.raw`${SIGN}${NUMBER}\s*${RATIO_UNIT}`, 'i'), ([, s = '', digits = '', word = '']) => {
+  const multiplier = ratioUnit(word);
+  return multiplier === undefined ? null : [readRatio(digits, sign(s), multiplier)];
+});
+const AREA = pattern(re(String.raw`${SIGN}${NUMBER}\s*m(?:²|2)(?![\p{L}\p{N}])`), ([, s = '', digits = '']) => [readArea(digits, sign(s))]);
+
+const GAP = /[^\S\n]*/uy;
+const WORD = /[\p{L}\p{M}]+|₫/uy;
+const SIGNED_NUMERAL = re(`${SIGN}${NUMBER}`);
+const NUMERAL = re(NUMBER);
+const CURRENCY_AHEAD = re(String.raw`[^\S\n]*${CURRENCY}`);
+/** Digits after a unit that start a date, a time, a range, a percentage or an area belong to that, not to the amount. */
+const NOT_A_TAIL = re(String.raw`[/:\-–][\p{N}]|[^\S\n]*(?:%|‰|m²|m2${NOT_LETTER}|phần|percent|per${NOT_LETTER}|pct|bps?${NOT_LETTER}|điểm)`);
+
+type Token = { readonly text: string; readonly end: number };
+
+function tokenAt(regex: RegExp, text: string, at: number): Token | null {
+  regex.lastIndex = at;
+  const match = regex.exec(text);
+  return match === null || match[0] === '' ? null : { text: match[0], end: at + match[0].length };
+}
+
+function gapEnd(text: string, at: number): number {
+  GAP.lastIndex = at;
+  GAP.exec(text);
+  return GAP.lastIndex;
+}
+
+function magnitudeOf(word: Token, text: string): CompactUnit | undefined {
+  if (word.text.length > 1) return MAGNITUDE_WORDS[foldVietnamese(word.text)];
+  if (word.text === 'm') return tokenAt(CURRENCY_AHEAD, text, word.end) === null ? undefined : 'tr';
+  return LETTER_MAGNITUDES[word.text];
+}
+
+const endsPhrase = (text: string, at: number): boolean => /^[^\S\n]*(?:[.,;:!?)\]\n]|$)/u.test(text.slice(at, at + 64));
+
+type Magnitude = { readonly unit: CompactUnit; readonly size: bigint; readonly end: number } | { readonly unit: null; readonly end: number };
+
+/** The magnitude after a numeral: `triệu`, `M` or `trăm nghìn`; a lone `trăm` is unreadable, and no word is no magnitude. */
+function magnitudeAfter(text: string, at: number): Magnitude | null {
+  const word = tokenAt(WORD, text, gapEnd(text, at));
+  if (word === null) return null;
+  const multiplier = MULTIPLIERS[foldVietnamese(word.text)];
+  if (multiplier === undefined) {
+    const unit = magnitudeOf(word, text);
+    return unit === undefined ? null : { unit, size: unitSize(unit), end: word.end };
+  }
+  const next = tokenAt(WORD, text, gapEnd(text, word.end));
+  const unit = next === null ? undefined : magnitudeOf(next, text);
+  return next === null || unit === undefined ? { unit: null, end: word.end } : { unit, size: unitSize(unit) * multiplier, end: next.end };
+}
+
+const decimalOf = (digits: string, scale: number) => ({ digits: BigInt(digits), scale });
+
+/**
+ * An amount with magnitude words, read whole: a numeral and its magnitude (`3,5 tr`, `15.5M`, `3 trăm nghìn`), more
+ * parts in falling magnitude (`1 tỷ 250 triệu`), then `rưỡi` or one tail of one or three digits (`3 triệu 5`,
+ * `3 triệu 460`, `3tr5`), then a currency word. A two-digit tail (`3 triệu 50`), a digit word ending the phrase
+ * (`3 triệu tư`), a part after a decimal and a magnitude word after the amount (`3 trăm nghìn tỷ`) are unreadable.
+ */
+function readMagnitude(text: string, at: number): Found | null {
+  const lead = tokenAt(SIGNED_NUMERAL, text, at);
+  const first = lead === null ? null : magnitudeAfter(text, lead.end);
+  if (lead === null || first === null) return null;
+  const numeral = parseNumeral(lead.text.replace(/^[-−+]/u, ''));
+  if (first.unit === null || numeral === null) return { end: first.end, values: [invalid], unitEnd: first.end };
+  const unitEnd = first.end;
+  const fail = (end: number): Found => ({ end, values: [invalid], unitEnd });
+  const parts: CompactPart[] = [{ numeral, size: first.size }];
+  let last = { unit: first.unit, size: first.size, scale: numeral.scale };
+  let end = first.end;
+  let closed = false;
+  for (;;) {
+    const at = gapEnd(text, end);
+    const word = tokenAt(WORD, text, at);
+    if (word !== null) {
+      const folded = foldVietnamese(word.text);
+      if (magnitudeOf(word, text) !== undefined || MULTIPLIERS[folded] !== undefined) return fail(word.end);
+      if (!closed && folded === HALF) {
+        if (last.scale > 0) return fail(word.end);
+        parts.push({ numeral: decimalOf('5', 1), size: last.size });
+        closed = true;
+        end = word.end;
+        continue;
+      }
+      if (!closed && DIGIT_WORDS.has(folded) && endsPhrase(text, word.end)) return fail(word.end);
+      if (CURRENCY_WORDS.has(folded)) {
+        closed = true;
+        end = word.end;
+        continue;
+      }
+      break;
+    }
+    const digits = closed ? null : tokenAt(NUMERAL, text, at);
+    if (digits === null || tokenAt(NOT_A_TAIL, text, digits.end) !== null) break;
+    const next = magnitudeAfter(text, digits.end);
+    if (next === null) {
+      if (last.scale > 0 || !/^(?:\d|\d{3})$/u.test(digits.text)) return fail(digits.end);
+      parts.push({ numeral: decimalOf(digits.text, digits.text.length), size: last.size });
+      closed = true;
+      end = digits.end;
+      continue;
+    }
+    const value = parseNumeral(digits.text);
+    if (next.unit === null || value === null || last.scale > 0 || next.size >= last.size) return fail(next.end);
+    parts.push({ numeral: value, size: next.size });
+    last = { unit: next.unit, size: next.size, scale: value.scale };
+    end = next.end;
+  }
+  return { end, values: [readCompact(parts, sign(lead.text.charAt(0)), last.unit)], unitEnd };
+}
+
+const VALUE_READERS: readonly Reader[] = [
+  RATIO,
+  AREA,
+  readMagnitude,
+  pattern(re(String.raw`${SIGN}${NUMBER}\s*${CURRENCY}`), ([, s = '', digits = '']) => [readAmount(digits, sign(s))]),
+  pattern(re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`), ([, s = '', digits = '', unit]) => {
+    const year = unit === undefined && s === '' && /^\d{4}$/u.test(digits) ? readYear(digits) : null;
+    return [year?.kind === 'year' ? year : readCount(digits, sign(s))];
+  }),
+];
 
 /** `3tr5`, `1ty2` and `1k5` alternate digits and letters like a code, so they are read before the code rule. */
-const SHORTHAND: Pattern = {
-  regex: re(String.raw`(?<![\p{L}\p{N}])(\d{1,3})(${Object.keys(SHORTHAND_UNITS).join('|')})(\d{1,3})(?![\p{L}\p{N}])`, 'i'),
-  read: ([, whole = '', unit = '', fraction = '']) => {
-    const compact = SHORTHAND_UNITS[unit.toLowerCase()];
-    return compact === undefined ? null : [readShorthand(whole, fraction, compact)];
-  },
-};
+const SHORTHAND = re(String.raw`(?<![\p{L}\p{N}])[-−+]?\d{1,3}([\p{L}\p{M}]+)\d{1,3}(?![\p{L}\p{N}])`);
 
-/** Tried in order at each digit run, dates before values. The first pattern whose regex matches and whose read accepts wins. */
-const DATE_PATTERNS: readonly Pattern[] = [
-  {
-    regex: re(String.raw`(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?${NOT_DIGIT}`),
-    read: readTimestamp,
-  },
-  { regex: re(String.raw`(\d{4})-(\d{2})${NOT_DIGIT}`), read: ([, year = '', month = '']) => orNull(readMonthYear(month, year)) },
-  {
-    regex: re(String.raw`(?<=[Nn]gày\s+)(\d{1,2})\s+tháng\s+(\d{1,2})(?:\s+năm\s+(\d{4}))?${NOT_DIGIT}`),
-    read: ([, day = '', month = '', year]) => [year === undefined ? readDayMonth(day, month) : readDate(year, month, day)],
-  },
-  {
-    regex: re(String.raw`(?<=[Tt]háng\s+)(\d{1,2})(?:\s+năm\s+(\d{4}))?(?![\p{N}/])`),
-    read: ([, month = '', year]) => [year === undefined ? readMonth(month) : readMonthYear(month, year)],
-  },
-  { regex: re(String.raw`(?<=[Nn]ăm\s+)(\d{4})${NOT_DIGIT}`), read: ([, year = '']) => [readYear(year)] },
-  {
-    regex: re(String.raw`(\d{1,2})${ORDINAL}\s+${MONTH},?\s+(\d{4})${NOT_DIGIT}`, 'i'),
-    read: ([, day = '', month = '', year = '']) => [readDate(year, monthNumber(month), day)],
-  },
-  {
-    regex: re(String.raw`(?<=${MONTH}\s+)(\d{1,2})${ORDINAL},?\s+(\d{4})${NOT_DIGIT}`, 'i'),
-    read: ([, month = '', day = '', year = '']) => [readDate(year, monthNumber(month), day)],
-  },
-  {
-    regex: re(String.raw`(?<=${MONTH}\s+)(\d{4})${NOT_DIGIT}`, 'i'),
-    read: ([, month = '', year = '']) => [readMonthYear(monthNumber(month), year)],
-  },
-  {
-    regex: re(String.raw`(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})${NOT_DIGIT}`),
-    read: ([, day = '', month = '', year = '']) => [readDate(year, month, day)],
-  },
-  { regex: re(String.raw`(\d{1,2})/(\d{4})${NOT_DIGIT}`), read: ([, month = '', year = '']) => orNull(readMonthYear(month, year)) },
-  { regex: re(String.raw`(\d{1,2})/(\d{1,2})(?![\p{N}/])`), read: ([, day = '', month = '']) => orNull(readDayMonth(day, month)) },
-  { regex: re(String.raw`(\d{1,2}):(\d{2})${NOT_DIGIT}`), read: ([, hour = '', minute = '']) => orNull(readTime(hour, minute)) },
-];
-
-const VALUE_PATTERNS: readonly Pattern[] = [
-  {
-    regex: re(String.raw`${SIGN}${NUMBER}\s*${RATIO_UNIT}`, 'i'),
-    read: ([, s = '', digits = '', word = '']) => {
-      const multiplier = ratioUnit(word);
-      return multiplier === undefined ? null : [readRatio(digits, sign(s), multiplier)];
-    },
-  },
-  { regex: re(String.raw`${SIGN}${NUMBER}\s*m(?:²|2)(?![\p{L}\p{N}])`), read: ([, s = '', digits = '']) => [readArea(digits, sign(s))] },
-  {
-    regex: re(String.raw`${SIGN}${NUMBER}\s*(trăm|chục)${NOT_LETTER}(?:${GAP}+${WORD_UNIT})?`, 'i'),
-    read: ([, s = '', digits = '', word = '', unit]) => {
-      const compact = unit === undefined ? undefined : WORD_UNITS[unit.toLowerCase()];
-      const multiplier = MULTIPLIER_WORDS[word.toLowerCase()];
-      return [compact === undefined || multiplier === undefined ? invalid : readCompact(digits, sign(s), compact, multiplier)];
-    },
-  },
-  {
-    regex: re(String.raw`${SIGN}(${NUMBER}${GAP}*${VI_UNIT}${SPOKEN_TAIL}+)(?:\s*${CURRENCY})?`, 'i'),
-    read: ([, s = '', body = '']) => {
-      const unit = lastUnit(body);
-      return [unit === undefined ? invalid : readSpoken(body, sign(s), unit)];
-    },
-  },
-  {
-    regex: re(String.raw`${SIGN}${NUMBER}\s*${WORD_UNIT}(?:\s*${CURRENCY})?`, 'i'),
-    read: ([, s = '', digits = '', unit = '']) => {
-      const compact = WORD_UNITS[unit.toLowerCase()];
-      return compact === undefined ? null : [readCompact(digits, sign(s), compact)];
-    },
-  },
-  {
-    regex: re(String.raw`${SIGN}${NUMBER}\s*${LETTER_UNIT}(?:\s*${CURRENCY})?`),
-    read: ([, s = '', digits = '', unit = '']) => {
-      const compact = LETTER_UNITS[unit];
-      return compact === undefined ? null : [readCompact(digits, sign(s), compact)];
-    },
-  },
-  { regex: re(String.raw`${SIGN}${NUMBER}\s*${CURRENCY}`), read: ([, s = '', digits = '']) => [readAmount(digits, sign(s))] },
-  { regex: re(String.raw`${SIGN}\d+(?:${GROUP_SPACE}+\d+)+\s*${CURRENCY}`), read: () => [invalid] },
-  {
-    regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`),
-    read: ([, s = '', digits = '', unit]) => {
-      const year = unit === undefined && s === '' && /^\d{4}$/u.test(digits) ? readYear(digits) : null;
-      return [year?.kind === 'year' ? year : readCount(digits, sign(s))];
-    },
-  },
-];
+function readShorthand(text: string, at: number): Found | null {
+  SHORTHAND.lastIndex = at;
+  const match = SHORTHAND.exec(text);
+  return match !== null && SHORTHAND_WORDS.has(foldVietnamese(match[1] ?? '')) ? readMagnitude(text, at) : null;
+}
 
 /** Any digit, except a non-decimal digit after a letter, such as the ² in `m²`. */
 const DIGIT = /\p{Nd}|(?<!\p{L})\p{N}/gu;
-const UNREADABLE = /[-−+]?\p{N}+/yu;
+/** The span of one numeral in any script, which a reading must cover whole. */
+const NUMERAL_SPAN = re(String.raw`[-−+]?\p{N}+(?:${JOINER}\p{N}+)*`);
+const MAX_NUMERAL = 40;
 const WORD_CHAR = /[\p{L}\p{N}]/u;
 const LETTER = /\p{L}/u;
+const IS_DIGIT = /\p{N}/u;
+const SPACE_JOINER = /[\p{Zs}\t]/u;
+const JOINER_CHAR = new RegExp(`^${JOINER}$`, 'u');
 const SENTENCE_END = /[.!?;](?=\s|$)|\n/gu;
 const CITATION = /esta:\/\/[a-z_]+\/([A-Za-z0-9-]+)/gu;
 const SKIP = /https?:\/\/[^\s)\]]+|esta:\/\/[^\s)\]]+|\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b|^[ \t]*\d{1,2}[.)](?=[ \t])/gimu;
+const IGNORABLE = /\p{Default_Ignorable_Code_Point}/u;
 
 const UPPER_CODE = /^(?:[A-Z]{3,}\d+|\d+[A-Z]{3,})$/u;
+const GLUED_CURRENCY = /^(?:VN[DĐ])?\d+(?:VN[DĐ]|đ)?$/iu;
 const AFTER_ESTA = /ESTA[^\S\n]*$/u;
 
 /**
  * A code is a word that alternates between letters and digits at least twice (`7K2QX9MP`, `3PN2WC`), three or
  * more capitals glued to digits (`INV12`), or any word after `ESTA`: the run must contain the same word, read
- * case-insensitively. `Q7` and `Phòng5` are not codes.
+ * case-insensitively. `Q7`, `Phòng5` and `12000000VND` are not codes.
  */
 function codeWordAt(text: string, at: number): { readonly start: number; readonly end: number } | null {
   let start = at;
@@ -277,43 +330,54 @@ function codeWordAt(text: string, at: number): { readonly start: number; readonl
     wasLetter = isLetter;
   }
   const word = text.slice(start, end);
-  const isCode = transitions >= 2 || UPPER_CODE.test(word) || AFTER_ESTA.test(text.slice(Math.max(0, start - 8), start));
+  const isCode =
+    !GLUED_CURRENCY.test(word) && (transitions >= 2 || UPPER_CODE.test(word) || AFTER_ESTA.test(text.slice(Math.max(0, start - 8), start)));
   return isCode ? { start, end } : null;
 }
 
-/** Digits no pattern reads, such as full-width `１３`, still count as a number the guard cannot read. */
-function unreadable(text: string, at: number): Found {
-  UNREADABLE.lastIndex = at;
-  const match = UNREADABLE.exec(text);
-  return { end: at + (match?.[0].length ?? 1), values: [invalid] };
+function numeralEnd(text: string, at: number): number {
+  NUMERAL_SPAN.lastIndex = at;
+  return NUMERAL_SPAN.exec(text) === null ? at + 1 : NUMERAL_SPAN.lastIndex;
 }
 
-function readAt(text: string, at: number, patterns: readonly Pattern[]): Found | null {
-  for (const pattern of patterns) {
-    pattern.regex.lastIndex = at;
-    const match = pattern.regex.exec(text);
-    if (match === null) continue;
-    const values = pattern.read(match);
-    if (values !== null) return { end: at + match[0].length, values };
+/**
+ * True when a reading stops inside a numeral, as `3tr5` does in `3tr5.000`. A date or a time may stop before a
+ * space, since its last field is fixed: `07/10/2026 15:00` is a date and a time.
+ */
+function stopsInsideNumeral(text: string, end: number, fixedFields: boolean): boolean {
+  if (!IS_DIGIT.test(text.charAt(end - 1))) return false;
+  const next = text.charAt(end);
+  if (IS_DIGIT.test(next)) return true;
+  return JOINER_CHAR.test(next) && IS_DIGIT.test(text.charAt(end + 1)) && !(fixedFields && SPACE_JOINER.test(next));
+}
+
+function readAt(text: string, at: number, readers: readonly Reader[], fixedFields = false): Found | null {
+  const whole = numeralEnd(text, at);
+  for (const reader of readers) {
+    const found = reader(text, at);
+    if (found !== null && found.end >= whole && !stopsInsideNumeral(text, found.end, fixedFields)) return found;
   }
   return null;
 }
 
 const RANGE = re(String.raw`${SIGN}${NUMBER}(?:\s*[–—~−-]\s*|\s+(?:đến|tới|to|and|và|hoặc|hay|or)\s+)(?=[-−+]?\p{Nd})`, 'i');
-const BOUND = re(String.raw`${SIGN}${NUMBER}`);
 
-/** `8–12 triệu`, `từ 8 đến 12 triệu` and `8 and 12M ₫`: the lower bound is read with the upper bound's unit, and the upper bound on its own. */
+/**
+ * `8–12 triệu`, `từ 8 đến 12 triệu` and `8 and 12M ₫`: the lower bound is read with the upper bound's unit words and
+ * nothing after them, so `8–12 triệu 5` claims 8 triệu. A range into a date, such as `12-15/10/2026`, is unreadable.
+ */
 function readRange(text: string, at: number): Found | null {
   RANGE.lastIndex = at;
   const range = RANGE.exec(text);
   if (range === null) return null;
   const upperAt = at + range[0].length;
-  const upper = readAt(text, upperAt, VALUE_PATTERNS);
-  BOUND.lastIndex = upperAt;
-  const upperNumber = BOUND.exec(text);
+  const date = readAt(text, upperAt, DATE_READERS, true);
+  if (date !== null) return { end: date.end, values: [invalid], resume: upperAt };
+  const upper = readAt(text, upperAt, VALUE_READERS);
+  const upperNumber = tokenAt(SIGNED_NUMERAL, text, upperAt);
   if (upper === null || upperNumber === null) return null;
-  const unit = text.slice(upperAt + upperNumber[0].length, upper.end);
-  const lower = readAt(`${range[1] ?? ''}${range[2] ?? ''}${unit}`, 0, VALUE_PATTERNS);
+  const unit = text.slice(upperNumber.end, upper.unitEnd ?? upper.end);
+  const lower = readAt(`${range[1] ?? ''}${range[2] ?? ''}${unit}`, 0, VALUE_READERS);
   return lower === null ? null : { end: upper.end, values: lower.values, resume: upperAt };
 }
 
@@ -331,11 +395,35 @@ function sentenceAt(boundaries: readonly number[], position: number): number {
 const isSignStart = (text: string, at: number): boolean =>
   at > 0 && /[-−+]/u.test(text.charAt(at - 1)) && (at === 1 || /[\s(]/u.test(text.charAt(at - 2)));
 
-export function scan(text: string): Scan {
+type Visible = { readonly text: string; readonly start: (at: number) => number; readonly end: (at: number) => number };
+
+/** Default-ignorable marks such as U+200B or U+FE0F render as nothing, so the guard reads the text without them. */
+function visible(text: string): Visible {
+  if (!IGNORABLE.test(text)) return { text, start: (at) => at, end: (at) => at };
+  const offsets: number[] = [];
+  let kept = '';
+  let index = 0;
+  for (const char of text) {
+    if (!IGNORABLE.test(char)) {
+      kept += char;
+      for (let i = 0; i < char.length; i++) offsets.push(index + i);
+    }
+    index += char.length;
+  }
+  return { text: kept, start: (at) => offsets[at] ?? text.length, end: (at) => (at === 0 ? 0 : (offsets[at - 1] ?? text.length - 1) + 1) };
+}
+
+export function scan(original: string): Scan {
+  const { text, start: originalStart, end: originalEnd } = visible(original);
   const boundaries = [...text.matchAll(SENTENCE_END)].map((match) => match.index);
   const skips = [...text.matchAll(SKIP)].map((match) => ({ start: match.index, end: match.index + match[0].length }));
   const citations = [...text.matchAll(CITATION)].map((match) => ({ id: match[1] ?? '', sentence: sentenceAt(boundaries, match.index) }));
   const numbers: ExtractedNumber[] = [];
+  const push = (from: number, to: number, value: ExtractedValue): void => {
+    const start = originalStart(from);
+    const end = originalEnd(to);
+    numbers.push({ text: original.slice(start, end), start, end, sentence: sentenceAt(boundaries, from), value });
+  };
   let skipIndex = 0;
   DIGIT.lastIndex = 0;
   for (let match = DIGIT.exec(text); match !== null; match = DIGIT.exec(text)) {
@@ -346,21 +434,27 @@ export function scan(text: string): Scan {
       DIGIT.lastIndex = skip.end;
       continue;
     }
-    let found = readAt(text, at, [HIDDEN_SPLIT, SHORTHAND]);
+    if (isSignStart(text, at)) at -= 1;
+    const whole = numeralEnd(text, at);
+    if (whole - at > MAX_NUMERAL) {
+      push(at, whole, invalid);
+      DIGIT.lastIndex = whole;
+      continue;
+    }
+    let found = readAt(text, at, [readShorthand]);
     if (found === null) {
-      const code = codeWordAt(text, at);
+      const code = codeWordAt(text, match.index);
       if (code !== null) {
-        const word = text.slice(code.start, code.end);
-        const sentence = sentenceAt(boundaries, code.start);
-        numbers.push({ text: word, start: code.start, end: code.end, sentence, value: { kind: 'code', code: word.toUpperCase() } });
-        DIGIT.lastIndex = code.end;
+        const end = Math.max(code.end, numeralEnd(text, match.index));
+        const word = text.slice(code.start, end);
+        push(code.start, end, end === code.end ? { kind: 'code', code: word.toUpperCase() } : invalid);
+        DIGIT.lastIndex = end;
         continue;
       }
-      if (isSignStart(text, at)) at -= 1;
-      found = readAt(text, at, DATE_PATTERNS) ?? readRange(text, at) ?? readAt(text, at, VALUE_PATTERNS) ?? unreadable(text, at);
+      found =
+        readAt(text, at, DATE_READERS, true) ?? readRange(text, at) ?? readAt(text, at, VALUE_READERS) ?? { end: whole, values: [invalid] };
     }
-    const sentence = sentenceAt(boundaries, at);
-    for (const value of found.values) numbers.push({ text: text.slice(at, found.end), start: at, end: found.end, sentence, value });
+    for (const value of found.values) push(at, found.end, value);
     DIGIT.lastIndex = found.resume ?? found.end;
   }
   return { numbers, citations };

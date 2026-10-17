@@ -193,6 +193,14 @@ describe('every digit token is read whole by one grammar or is unparseable', () 
     },
   );
 
+  it('reads groups joined by two different space characters as unparseable', () => {
+    expect(values('5 000\u00A0000 ₫')).toEqual([{ kind: 'invalid' }]);
+  });
+
+  it('never stops a date inside the numeral it starts', () => {
+    expect(values('Năm 2026 000 000 ₫')).toEqual([{ kind: 'invalid' }]);
+  });
+
   it('reads a separator after a currency word the same way', () => {
     expect(offending('Owes VND 5 000.000.', { fee: 5_000, paid: 0 })).toEqual(['5 000.000:unparseable']);
   });
@@ -237,9 +245,9 @@ describe('every digit token is read whole by one grammar or is unparseable', () 
   it('reads 8000 spaced digits as one unparseable token in linear time', () => {
     const allowed = allowedFor({ v: 1 });
     for (const text of [`${'1 '.repeat(8000)}x`, `${'1'.repeat(8000)} ₫`, `1${' 000'.repeat(8000)} x`]) {
-      const started = performance.now();
+      const started = Date.now();
       const report = checkNumbers(text, allowed);
-      expect(performance.now() - started).toBeLessThan(50);
+      expect(Date.now() - started).toBeLessThan(50);
       expect(report.violations.map((violation) => violation.status)).toEqual(['unparseable']);
     }
   });

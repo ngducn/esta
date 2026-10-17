@@ -1,6 +1,5 @@
 import { isIsoDate, type IsoDate } from '../date/iso-date';
 import { parseDecimal, toSafeNumber, toWholeDong, type Decimal } from '../parse/decimal';
-import { parseVndInput } from '../parse/vnd-input';
 
 export type CompactUnit = 'ty' | 'tr' | 'nghin';
 
@@ -159,43 +158,56 @@ function wholeNumber(decimal: Decimal, multiplier: bigint, sign: 1 | -1): number
 
 const invalid: ExtractedValue = { kind: 'invalid' };
 
-const GROUP_SPACE = /[ \u00A0\u202F\u2009]/gu;
-const decimalOf = (digits: string): Decimal | null => parseDecimal(digits.replace(GROUP_SPACE, ''));
+/** What may sit between two digits of one numeral. Each is a single character; only `.`, `,` and a repeated space character group digits. */
+export const JOINER = String.raw`[.,'’·_\p{Zs}\t\p{Pc}\p{Cf}]`;
+
+const SPACE_GROUPED = /^(\d{1,3}([\p{Zs}\t])\d{3}(?:\2\d{3})*)(?:[.,](\d{1,2}))?$/u;
+const SPACE = /[\p{Zs}\t]/gu;
+
+/**
+ * The numeral grammar. `1.500.000`, `1,500` and `3,5` read as parseDecimal reads them; `5 000 000` and `5 000 000,50`
+ * are three-digit groups joined by one space character used throughout. Anything else, such as `5 000.000`, `5'000`
+ * or `50 00 000`, reads as nothing.
+ */
+export function parseNumeral(text: string): Decimal | null {
+  const grouped = SPACE_GROUPED.exec(text);
+  if (grouped === null) return parseDecimal(text);
+  const [, integer = '', , fraction = ''] = grouped;
+  return { digits: BigInt(integer.replace(SPACE, '') + fraction), scale: fraction.length };
+}
 
 export function readAmount(digits: string, sign: 1 | -1): ExtractedValue {
-  const decimal = decimalOf(digits);
+  const decimal = parseNumeral(digits);
   const vnd = decimal === null ? null : wholeNumber(decimal, 1n, sign);
   return vnd === null ? invalid : { kind: 'amount', vnd };
 }
 
-export function readCompact(digits: string, sign: 1 | -1, unit: CompactUnit, multiplier = 1n): ExtractedValue {
-  const decimal = decimalOf(digits);
-  const vnd = decimal === null ? null : wholeNumber(decimal, BigInt(COMPACT_RULES[unit].size) * multiplier, sign);
-  return vnd === null ? invalid : { kind: 'compact', vnd, unit };
-}
+/** One numeral times one unit size: `3,5` of a million, or the `5` of `3 triệu 5`, a tenth of the last unit. */
+export type CompactPart = { readonly numeral: Decimal; readonly size: bigint };
 
-/** A spoken amount such as `3 triệu rưỡi` or `1 tỷ 250 triệu`, compared at the precision of its smallest unit. */
-export function readSpoken(body: string, sign: 1 | -1, unit: CompactUnit): ExtractedValue {
-  const parsed = parseVndInput(body);
-  return parsed.ok ? { kind: 'compact', vnd: sign * parsed.value, unit } : invalid;
-}
+export const unitSize = (unit: CompactUnit): bigint => BigInt(COMPACT_RULES[unit].size);
 
-/** The spoken shorthand `3tr5` (parseVndInput): the digits after the unit are its decimals, so `12tr500` is 12,5 tr. */
-export function readShorthand(whole: string, fraction: string, unit: CompactUnit): ExtractedValue {
-  const decimal = { digits: BigInt(whole + fraction), scale: fraction.length };
-  const vnd = wholeNumber(decimal, BigInt(COMPACT_RULES[unit].size), 1);
-  return vnd === null ? invalid : { kind: 'compact', vnd, unit };
+/** A compact amount such as `1 tỷ 250 triệu` or `3 triệu rưỡi` is the sum of its parts, compared at the precision of its smallest unit. */
+export function readCompact(parts: readonly CompactPart[], sign: 1 | -1, unit: CompactUnit): ExtractedValue {
+  let total = 0n;
+  for (const { numeral, size } of parts) {
+    const whole = toWholeDong(numeral, size);
+    if (!whole.ok) return invalid;
+    total += whole.value;
+  }
+  const safe = toSafeNumber(total * BigInt(sign));
+  return safe.ok ? { kind: 'compact', vnd: safe.value, unit } : invalid;
 }
 
 export function readRatio(digits: string, sign: 1 | -1, bpPerUnit: bigint): ExtractedValue {
-  const decimal = decimalOf(digits);
+  const decimal = parseNumeral(digits);
   const bp = decimal === null ? null : wholeNumber(decimal, bpPerUnit, sign);
   return bp === null ? invalid : { kind: 'ratio', bp };
 }
 
-/** Every form follows parseDecimal's grouping rule: `1.500` and `1,500` are both 1500, `3,5` and `3.5` are 3.5. */
+/** Every form follows the numeral grammar: `1.500` and `1,500` are both 1500, `3,5` and `3.5` are 3.5. */
 function toNumber(digits: string, sign: 1 | -1): number | null {
-  const decimal = decimalOf(digits);
+  const decimal = parseNumeral(digits);
   if (decimal === null) return null;
   const integer = toSafeNumber(decimal.digits);
   if (!integer.ok) return null;
