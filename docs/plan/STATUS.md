@@ -21,6 +21,8 @@
 
 ## Parked
 
+- P3-06 (PR #58) at `727db97`, 2026-10-17. The one fix-forward fixed the double post, but its CSV decode fix does not hold: an unterminated quote at a field start is closed by a later quote, and every row in between disappears without a refusal (repro and suggested second-round scope in the PR #58 park comment). Your call: grant a second, narrow round (refuse quoted fields that span a line break), narrow the PR, or close it. Nothing depends on it before P3-15.
+- P5-11 (PR #61) at `ad5b9e5`, 2026-10-17. The one fix-forward closed every round 1 bypass, but round 2 found a new range bypass it introduced (`từ 3 đến 3 triệu rưỡi` passes an invented 3 triệu), mixed separators read as smaller counts, and unaccented or abbreviated magnitude words (`25 trieu`, `25 mil`) still pass (details and a suggested structural second round in the PR #61 park comment). Your call: grant a second round, narrow the PR, or close it. Nothing depends on it before P5-03.
 - Nothing parked. P0-14 (PR #32) merged on 2026-10-16 as `064303c` after a test-only fix-forward: the create-household e2e helper gave the server one 5 s wait, which ran out under load. The 2026-10-15 note that it also failed at load 4 was wrong; that rerun failed in `db reset` with a Supabase 502, not in Playwright.
 
 ## Waiting for Ryan
