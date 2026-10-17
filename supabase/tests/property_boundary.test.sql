@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(22);
+select plan(26);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -42,6 +42,20 @@ select is(
 select throws_ok(
   $$ select public.set_property_location(current_setting('tests.longan')::uuid, 10.5, null) $$,
   '22023', null, 'a latitude without a longitude is refused');
+select throws_ok(
+  $$ select public.set_property_location(current_setting('tests.longan')::uuid, 10.5, 407) $$,
+  '22003', null, 'a longitude past 180 is refused, not wrapped to 47');
+select throws_ok(
+  $$ select public.set_property_location(current_setting('tests.longan')::uuid, -90.5, 106) $$,
+  '22003', null, 'a latitude past -90 is refused');
+select throws_ok(
+  $$ select public.set_property_boundary(current_setting('tests.baoloc')::uuid,
+    '{"type": "Polygon", "coordinates": [[[107.8, 11.5], [207.81, 11.5], [207.81, 91.51], [107.8, 11.5]]]}') $$,
+  '23514', null, 'a boundary corner outside the lng and lat ranges is refused by the check');
+select lives_ok(
+  $$ select public.set_property_location(current_setting('tests.longan')::uuid, -90, 180),
+            public.set_property_location(current_setting('tests.longan')::uuid, null, null) $$,
+  'the range edges -90 and 180 are accepted');
 
 select throws_ok(
   $$ select public.set_property_boundary(current_setting('tests.baoloc')::uuid,
