@@ -1,12 +1,14 @@
 export {
   cellText,
-  decodeCsv,
   decodeStatement,
+  decodeStatementCsv,
   decodeStatementRows,
   type AmountRefusal,
+  type CsvReason,
   type DecodedRows,
   type DecodedStatement,
   type RejectedRow,
+  type RowRefusal,
   type StatementRow,
 } from './decode';
 export { sha256Hex } from './fingerprint';

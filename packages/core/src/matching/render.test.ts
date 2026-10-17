@@ -2,8 +2,9 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { decodeCsv, decodeStatement, type StatementRow } from './decode';
-import { STATEMENT_LAYOUTS } from './layouts';
+import { decodeStatement, decodeStatementCsv, type DecodedStatement, type StatementRow } from './decode';
+import { STATEMENT_LAYOUTS, type HeaderReason } from './layouts';
+import type { Result } from '../result';
 import { renderDate, renderMagnitude, renderStatementCsv, renderStatementGrid, type RenderableRow } from './render';
 
 const rows: RenderableRow[] = [
@@ -68,8 +69,7 @@ const renderableRow: fc.Arbitrary<RenderableRow> = fc.record({ date, amount, des
 const layout = fc.constantFrom(...Object.values(STATEMENT_LAYOUTS));
 const params = { seed: 20261007, numRuns: 500 };
 
-function decodedRows(grid: Parameters<typeof decodeStatement>[0]): StatementRow[] {
-  const decoded = decodeStatement(grid);
+function decodedRows(decoded: Result<DecodedStatement, HeaderReason>): StatementRow[] {
   if (!decoded.ok) throw new Error(decoded.reason);
   expect(decoded.value.rejected).toEqual([]);
   return decoded.value.rows;
@@ -79,7 +79,7 @@ describe('decode is the inverse of render', () => {
   it('through the grid, for every layout', () => {
     fc.assert(
       fc.property(layout, fc.array(renderableRow, { maxLength: 8 }), (chosen, input) => {
-        expect(decodedRows(renderStatementGrid(chosen, input))).toEqual(input.map((row, i) => ({ index: i + 1, ...row })));
+        expect(decodedRows(decodeStatement(renderStatementGrid(chosen, input)))).toEqual(input.map((row, i) => ({ index: i + 1, ...row })));
       }),
       params,
     );
@@ -88,7 +88,7 @@ describe('decode is the inverse of render', () => {
   it('through CSV text, for every layout', () => {
     fc.assert(
       fc.property(layout, fc.array(renderableRow, { maxLength: 8 }), (chosen, input) => {
-        expect(decodedRows(decodeCsv(renderStatementCsv(chosen, input)))).toEqual(input.map((row, i) => ({ index: i + 1, ...row })));
+        expect(decodedRows(decodeStatementCsv(renderStatementCsv(chosen, input)))).toEqual(input.map((row, i) => ({ index: i + 1, ...row })));
       }),
       params,
     );

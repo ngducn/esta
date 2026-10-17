@@ -4,16 +4,16 @@ import invoicesFile from '../../../../fixtures/statements/invoices.json';
 import layoutA from '../../../../fixtures/statements/layout-a.csv?raw';
 import layoutB from '../../../../fixtures/statements/layout-b.xlsx.json';
 import layoutC from '../../../../fixtures/statements/layout-c.csv?raw';
-import { decodeCsv, decodeStatement } from './decode';
+import { decodeStatement, decodeStatementCsv } from './decode';
 import { identifyRows } from './fingerprint';
-import { STATEMENT_LAYOUTS, type StatementGrid, type StatementLayoutId } from './layouts';
+import { STATEMENT_LAYOUTS, type StatementLayoutId } from './layouts';
 import { matchRows, type StatementMatch } from './match';
 import { renderCsv } from './render';
 import { SCENARIO_INVOICES, SCENARIO_REJECTED, SCENARIO_ROWS, scenarioGrid } from './statement-scenario';
 
 const DIR = '../../../../fixtures/statements/';
 const FILES: Readonly<Record<StatementLayoutId, string>> = { a: 'layout-a.csv', b: 'layout-b.xlsx.json', c: 'layout-c.csv' };
-const COMMITTED: Readonly<Record<StatementLayoutId, StatementGrid>> = { a: decodeCsv(layoutA), b: layoutB, c: decodeCsv(layoutC) };
+const DECODED = { a: decodeStatementCsv(layoutA), b: decodeStatement(layoutB), c: decodeStatementCsv(layoutC) } as const;
 
 function rendered(id: StatementLayoutId): string {
   const grid = scenarioGrid(STATEMENT_LAYOUTS[id]);
@@ -27,7 +27,7 @@ const golden = {
 };
 
 function matched(id: StatementLayoutId, knownFingerprints?: ReadonlySet<string>): typeof golden {
-  const decoded = decodeStatement(COMMITTED[id]);
+  const decoded = DECODED[id];
   if (!decoded.ok) throw new Error(decoded.reason);
   const rows = matchRows(decoded.value.rows, SCENARIO_INVOICES, knownFingerprints === undefined ? {} : { knownFingerprints });
   return { rows: rows.map(({ row, fingerprint, match }) => ({ ...row, fingerprint, match })), rejected: decoded.value.rejected };
