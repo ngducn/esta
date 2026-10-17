@@ -1,6 +1,6 @@
--- The audit clock follows the test clock (FND-9) only on a local stack. The database knows no ESTA_ENV, so the marker
--- is a row the generated seed writes and the cloud never runs: without it a stray test_clock row (service_role can
--- write one) cannot freeze audit times in production.
+-- The audit clock follows the test clock (FND-9) only on a seeded database. The database knows no ESTA_ENV, so the
+-- marker is a row the generated seed writes and production never runs: without it a stray test_clock row
+-- (service_role can write one) cannot freeze audit times in production.
 create table private.local_stack (
   marked boolean primary key default true check (marked)
 );

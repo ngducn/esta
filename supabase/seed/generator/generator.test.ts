@@ -56,7 +56,7 @@ describe('generate', () => {
     expect(northstar.filter((row) => row.includes('Dãy trọ Dĩ An') || row.includes("'DIAN'"))).toEqual([]);
   });
 
-  it('marks the database as a local stack, which the cloud never seeds', () => {
+  it('marks the database as seeded, which production never is', () => {
     expect(generate(DEFAULT_OPTIONS)).toContain('insert into private.local_stack default values on conflict do nothing;');
   });
 
