@@ -7,6 +7,7 @@ import { useId, useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Input } from '@/components/ui/input';
+import { useHydrated } from '@/lib/use-hydrated';
 
 const DECIMALS = 6;
 
@@ -18,13 +19,15 @@ function readCoordinate(text: string): number {
 
 const show = (value: number | undefined) => (value === undefined ? '' : String(Number(value.toFixed(DECIMALS))));
 
-/** Moves the pin from the keyboard; remount it with a new key when the saved pin moves so the fields follow the map. */
+/**
+ * Moves the pin from the keyboard; remount it with a new key when the saved pin moves so the fields follow the map. The
+ * fields are uncontrolled, so what was typed into the server HTML before hydration is still there when React takes over.
+ */
 export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; saving: boolean; onSave: (point: GeoPoint) => void }) {
   const t = useTranslations('map');
   const id = useId();
-  const [lat, setLat] = useState(show(pin?.lat));
-  const [lng, setLng] = useState(show(pin?.lng));
   const [invalid, setInvalid] = useState(false);
+  const hydrated = useHydrated();
 
   return (
     <form
@@ -32,7 +35,8 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
       className="flex flex-col gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        const point = toLatLng(readCoordinate(lat), readCoordinate(lng));
+        const form = new FormData(event.currentTarget);
+        const point = toLatLng(readCoordinate(String(form.get('lat'))), readCoordinate(String(form.get('lng'))));
         setInvalid(!point.ok);
         if (point.ok) onSave({ lat: point.value.lat, lng: point.value.lng });
       }}
@@ -50,10 +54,9 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
             name="lat"
             inputMode="decimal"
             autoComplete="off"
-            value={lat}
+            defaultValue={show(pin?.lat)}
             aria-invalid={invalid}
             aria-describedby={invalid ? `${id}-error` : undefined}
-            onChange={(event) => setLat(event.target.value)}
             className="figures font-normal"
           />
         </label>
@@ -63,16 +66,15 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
             name="lng"
             inputMode="decimal"
             autoComplete="off"
-            value={lng}
+            defaultValue={show(pin?.lng)}
             aria-invalid={invalid}
             aria-describedby={invalid ? `${id}-error` : undefined}
-            onChange={(event) => setLng(event.target.value)}
             className="figures font-normal"
           />
         </label>
       </div>
       {invalid ? <FieldMessage id={`${id}-error`} error={t('coordinateInvalid')} /> : null}
-      <button type="submit" disabled={saving} className={buttonVariants({ variant: 'outline' })}>
+      <button type="submit" disabled={saving || !hydrated} className={buttonVariants({ variant: 'outline' })}>
         <Save aria-hidden="true" />
         {t('savePin')}
       </button>
