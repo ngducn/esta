@@ -17,9 +17,14 @@
 # guard, no statuses, no comment (the summary prints instead). The PR number
 # then only names the logs.
 #
-# Only one run at a time holds the /tmp/ci-local/lock directory, and the
-# others wait until it exits. A lock whose holder exited without removing it
-# is taken over.
+# Only one run at a time holds the lock directory (CI_LOCAL_LOCK, default
+# /tmp/ci-local/lock); the others wait. A run writes its pid into a staging
+# directory and renames it into place, so a lock never exists without its pid.
+# A lock is stale when its holder exited, or when it has no pid and its mtime
+# is over 60 s old. A waiter takes over a stale lock by renaming it to
+# <lock>.stale.<inode>-<birth>. rename(2) refuses a non-empty target, so a
+# second waiter that judged the same lock cannot move its successor; a lock
+# with no pid gets a file first so that its graveyard is not empty.
 set -uo pipefail
 
 worktree=$(realpath "${1:?worktree path}") || exit 2
@@ -30,28 +35,56 @@ jobs=("$@")
 [ ${#jobs[@]} -eq 0 ] && jobs=(check db e2e prod-build design)
 
 repo=ngducn/esta
-lock=/tmp/ci-local/lock
+lock=${CI_LOCAL_LOCK:-/tmp/ci-local/lock}
+stage=
+grave=
+rename_dir() {
+	perl -e 'rename($ARGV[0], $ARGV[1]) or exit 1' "$1" "$2"
+}
+lock_id() {
+	stat -f '%i-%B' "$lock" 2>/dev/null
+}
+is_stale() {
+	if [ -n "$1" ]; then
+		! kill -0 "$1" 2>/dev/null
+		return
+	fi
+	local mtime
+	mtime=$(stat -f %m "$lock" 2>/dev/null) || return 1
+	[ $(($(date +%s) - mtime)) -gt 60 ]
+}
 release_lock() {
-	[ "$(cat "$lock/pid" 2>/dev/null)" = $$ ] && rm -rf "$lock"
+	[ -n "$stage" ] && rm -rf "$stage"
+	local holder=
+	read -r holder 2>/dev/null <"$lock/pid"
+	[ "$holder" = $$ ] && mv "$lock" "$lock.released.$$" && rm -rf "$lock.released.$$"
+	[ -n "$grave" ] && rm -rf "$grave"
 }
 trap release_lock EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
-mkdir -p /tmp/ci-local
+mkdir -p "$(dirname "$lock")"
+stage=$(mktemp -d "$lock.stage.XXXXXX") || exit 2
+echo $$ >"$stage/pid"
+echo "PR #$pr ${jobs[*]}" >"$stage/run"
 announced=-
-until mkdir "$lock" 2>/dev/null; do
-	holder=$(cat "$lock/pid" 2>/dev/null)
-	if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
-		echo "taking over the ci-local lock from exited pid $holder" >&2
-		rm -rf "$lock"
+until [ ! -e "$lock" ] && rename_dir "$stage" "$lock"; do
+	id=$(lock_id) || continue
+	holder=
+	read -r holder 2>/dev/null <"$lock/pid"
+	if is_stale "$holder" && [ "$(lock_id)" = "$id" ]; then
+		[ -n "$holder" ] || touch "$lock/taken"
+		if rename_dir "$lock" "$lock.stale.$id"; then
+			grave=$lock.stale.$id
+			echo "took over the ci-local lock from ${holder:+exited pid }${holder:-a lock with no pid}" >&2
+		fi
 		continue
 	fi
 	[ "$holder" = "$announced" ] || echo "waiting for the ci-local lock held by pid ${holder:-unknown} ($(cat "$lock/run" 2>/dev/null))" >&2
 	announced=$holder
 	sleep 5
 done
-echo $$ >"$lock/pid"
-echo "PR #$pr ${jobs[*]}" >"$lock/run"
+stage=
 
 cd "$worktree" || exit 2
 sha=$(git rev-parse HEAD)
