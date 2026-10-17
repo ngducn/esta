@@ -2,23 +2,25 @@
 
 Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (every 2026-10-17 update; 11:25 and 11:55 are the newest), `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, and `docs/plan/STATUS.md`. Briefs for every owner and lane of this session are in `~/.claude/orchestrate/esta/briefs/`; the root's checklist is `~/.claude/orchestrate/esta/todo.md`.
 
-## Where the run is (2026-10-17, about 12:45 +07)
+## Where the run is (2026-10-17, about 20:05 +07)
 
-Merged this session: #57 P3-05 VietQR (`6f420f2`), #60 Phase 2 re-cut (`aae66e9`), #59 P3-02 lease schedule (`9476d68`), #64 lint-test flake and CI lock (`f1579b7`), #52 P1-04 properties list (`8cbd2ed`, LCP miss accepted by the operator and gated at P1-03), #58 P3-06 statement matching (`0923f94`), #67 P2-01 extraction spike (`671d744`), #73 CI cleanup closing #65, #66 and #71 (`70641ef`).
+Merged 2026-10-17 (18): #57 P3-05, #60 Phase 2 re-cut, #59 P3-02, #64, #52 P1-04, #58 P3-06, #67 P2-01, #73, #74, #75, #69 (#56), #72 P1-09, #77 (#55), #81 (#76), #84 (#78, #79, map half of #83), #87 (#68), #86 (#85), #89. Phase 1 is at 3 of 9 (P1-01, P1-04, P1-09).
 
 Open, with the next step for each:
 
-- #69 shell LCP (closes #56) at `b188d1a`: code-ready. Next: one Sonnet lane with a Lighthouse re-measure at load under 5 (Tài sản, Home, Thu tiền, head against trunk), local CI, merge. Then a fresh owner for #68 (cover photo bytes). #56 and #68 must both close before P1-03 merges.
-- #72 P1-09 map at `cf07c3d`: owner stopped at the pause. Next: a fresh Opus owner from the branch and its trail (`~/.claude/orchestrate/esta/trails/p1-09-decisions.tsv`) runs `e2e/properties-map.spec.ts`, `pnpm check`, design and axe, screenshots, Lighthouse and the PR body; `next dev` fails on `@swc/helpers` in /tmp worktrees, so use `/tmp/owner-p1-09/build.mjs` and `scripts/web.ts start`. Then one Sonnet live lane, local CI, merge, then P1-06.
-- #61 P5-11 number guard at `a8d00d8`: parked after both granted rounds; the root recommends a redesign over rendered plain text (PR #61 comment). The operator decides: here or inside P5-03.
+- #80 P1-06 property detail: reviews PASS (Opus audit after the audit-clock fix, Sonnet live). A rebase owner is resolving conflicts with #81, #84 and #87, renumbering its migration to 20261007201600 and adding the 404 half of #83. Then full CI, merge, and P1-05 (brief to write from briefs/p1-06.md; it must revoke INSERT on properties.location and boundary per the #84 audit).
+- Polish PR for #41 and #49: owner running on slot 5.
+- #61 P5-11: parked; P5-03 rebuilds the guard over rendered text (standing orders 16:00).
+- Open issues to watch: #82 (local Postgres segfault on a denied anon call; blocks P6-07), #88 (Kong keeps the old Storage IP after a reset; the CI retry should stop and start the stack), #70-class P2-03 notes.
 
-Phase 1 after P1-09, one at a time because each depends on the last: P1-06, P1-05, P1-07, P1-10, P1-08, P1-03.
+Phase 1 after P1-06, one at a time: P1-05, P1-07, P1-10, P1-08, P1-03 (its speed gate is now met over HTTP/2).
 
 ## How CI runs now
 
 - The root runs `~/.claude/orchestrate/esta/bin/ci-when-calm.sh <worktree> <pr> <slot> [jobs]`. It waits for its own lock and a load under 5 (1 minute) and 6 (5 minutes), then calls `tools/ci-local.sh`, which since #64 also takes `/tmp/ci-local/lock` and caps vitest workers at 3.
 - Before each merge, compare the PR's changed files with what `main` changed since its base. When they overlap (it was `packages/core/package.json` and the lockfile every time today), rebase, check `git range-diff`, push with lease, and run CI at the rebased head.
-- Since #73, ci-local retries a `db reset` 502 once on its own.
+- Since #73, ci-local retries a `db reset` 502 once (it does not always cure it, #88). Since #86, the e2e job retries a failed test once and lists flaky tests, and Storage is emptied before each seed.
+- Lighthouse budgets are measured over HTTP/2 (standing orders 19:00); scripts/perf/lighthouse.ts defaults to it since #89.
 
 ## Budget
 
