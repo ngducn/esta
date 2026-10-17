@@ -10,6 +10,7 @@ export default defineConfig({
   testIgnore: 'prod/**',
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? 'github' : 'list',
+  globalSetup: './e2e/warm-routes.ts',
   use: { baseURL, trace: 'retain-on-failure' },
   projects: [
     { name: 'mobile', testIgnore: ['prod/**', ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
