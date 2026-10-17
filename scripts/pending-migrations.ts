@@ -2,7 +2,6 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { query } from './db-checksum.ts';
 
-/** Migration files under `supabase/migrations` whose version the database has not applied, oldest first. */
 export function pendingMigrations(files: readonly string[], applied: ReadonlySet<string>): string[] {
   return files.filter((file) => /^\d+_.+\.sql$/.test(file) && !applied.has(file.split('_')[0] ?? '')).toSorted();
 }
