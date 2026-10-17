@@ -4,7 +4,7 @@ export type AreaInputReason = 'empty' | 'invalid' | 'too_precise' | 'too_large';
 
 /** numeric(12,2): at most ten integer digits. */
 const MAX_HUNDREDTHS = 999_999_999_999;
-const UNIT_SUFFIX = /\s*(?:m²|m2|m)$/i;
+const UNIT_SUFFIX = /(?:m²|m2|m)$/i;
 const DOT_GROUPED = /^(\d{1,3}(?:\.\d{3})+)(?:,(\d+))?$/;
 const PLAIN = /^(\d+)(?:[.,](\d+))?$/;
 
@@ -14,7 +14,7 @@ const PLAIN = /^(\d+)(?:[.,](\d+))?$/;
  * the column keeps hundredths.
  */
 export function parseAreaInput(text: string): Result<number, AreaInputReason> {
-  const trimmed = text.replace(/[\s ]+/g, ' ').trim().replace(UNIT_SUFFIX, '').replace(/ /g, '');
+  const trimmed = text.replace(/\s+/g, '').replace(UNIT_SUFFIX, '');
   if (trimmed === '') return { ok: false, reason: 'empty' };
   const grouped = DOT_GROUPED.exec(trimmed);
   const match = grouped ?? PLAIN.exec(trimmed);

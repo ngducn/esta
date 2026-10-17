@@ -10,7 +10,6 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { useHydrated } from '@/lib/use-hydrated';
 import type { LegalKind } from '@/server/properties/legal';
 
-/** What a form hands the shell on submit: the input for the server action, or `null` when a field is wrong. */
 export type LegalSubmit = () => Record<string, unknown> | null;
 
 /**

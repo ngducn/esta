@@ -27,7 +27,6 @@ export function purposeDraft(key: number, purpose?: Purpose): PurposeDraft {
 
 export type PurposeInvalid = { readonly key: number; readonly field: 'code' | 'area' | 'until' };
 
-/** Reads the drafts into purposes, or names the first wrong field. */
 export function readPurposes(drafts: readonly PurposeDraft[]): { ok: true; value: Purpose[] } | { ok: false; invalid: PurposeInvalid } {
   const value: Purpose[] = [];
   for (const draft of drafts) {

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 
-/** One entry per legal table: the form route segment, its columns and the schema that parses both a row and a save. */
+/** One entry per legal table: the columns a read selects and the schema that parses both a row and a save. */
 export const LEGAL_KINDS = {
   parcels: {
     schema: parcelSchema,

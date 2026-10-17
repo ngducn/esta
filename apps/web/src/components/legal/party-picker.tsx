@@ -77,7 +77,6 @@ function sorted(parties: readonly PartyOption[]): PartyOption[] {
   return [...parties].sort((a, b) => compareVietnameseNames(a.fullName, b.fullName));
 }
 
-/** Holders: chosen people as removable chips, a list of everyone else, and quick-add. */
 export function HolderPicker({
   parties,
   selected,
@@ -147,7 +146,6 @@ export function HolderPicker({
   );
 }
 
-/** One bank: organizations, banks first, and quick-add of a bank. */
 export function BankPicker({
   parties,
   value,

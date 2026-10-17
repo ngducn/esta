@@ -3,7 +3,6 @@ import { getTranslations } from 'next-intl/server';
 import type { LegalKind } from '@/server/properties/legal';
 import type { LegalItemActionLabels } from './legal-item-actions';
 
-/** `name` is what the card calls the item, or `none` when it has nothing to go by. */
 export async function itemActionLabels(kind: LegalKind, name: string): Promise<LegalItemActionLabels> {
   const t = await getTranslations('propertyLegal');
   const item = t('itemName', { kind, name });

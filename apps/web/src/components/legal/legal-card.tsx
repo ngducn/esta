@@ -3,7 +3,6 @@ import type { LegalKind } from '@/server/properties/legal';
 import { itemActionLabels } from './item-labels';
 import { LegalItemActions } from './legal-item-actions';
 
-/** The frame every legal item shares: its facts, then edit and delete for a member who may write. */
 export async function LegalCard({
   propertyId,
   kind,
