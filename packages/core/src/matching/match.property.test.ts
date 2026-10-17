@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { daysBetween } from '../date/calendar';
 import { isoDate, type IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
+import { foldVietnamese } from '../search/fold';
 import type { StatementRow } from './decode';
 import { SUGGESTION_WINDOW_DAYS, matchRows, type InvoiceCandidate, type StatementMatch } from './match';
 import { normalizeDescription } from './memo';
@@ -99,13 +100,24 @@ const byId = (invoices: InvoiceCandidate[], id: string): InvoiceCandidate => {
   return found;
 };
 
+function namesTenant(description: string, tenantName: string): boolean {
+  const name = normalizeDescription(tenantName);
+  const words = foldVietnamese(description).toUpperCase().split(/[^A-Z0-9]+/).filter((word) => word !== '');
+  for (let first = 0; first < words.length; first++) {
+    let joined = '';
+    for (let last = first; last < words.length && joined.length < name.length; last++) {
+      joined += words[last];
+      if (joined === name) return true;
+    }
+  }
+  return false;
+}
+
 function suggestionCandidates(row: StatementRow, invoices: InvoiceCandidate[]): InvoiceCandidate[] {
-  const description = normalizeDescription(row.description);
   return invoices.filter(
     (invoice) =>
       invoice.outstanding === row.amount &&
-      normalizeDescription(invoice.tenantName) !== '' &&
-      description.includes(normalizeDescription(invoice.tenantName)) &&
+      namesTenant(row.description, invoice.tenantName) &&
       Math.abs(daysBetween(invoice.dueDate, row.date)) <= SUGGESTION_WINDOW_DAYS,
   );
 }

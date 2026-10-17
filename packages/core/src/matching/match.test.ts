@@ -120,6 +120,32 @@ describe('suggested', () => {
   });
 });
 
+describe('an invoice whose memo code is not an issued code', () => {
+  it.each(['', '7k2qx9mp', 'K2QX9MP', '7K2QX9MPX', '7K2Q-9MP'])('is ignored by memo and by name for the code %j', (memoCode) => {
+    const malformed = { ...huong, id: 'inv-malformed', memoCode };
+    expect(statusOf(row({ description: 'THANH TOAN CAFE FIESTA' }), [malformed])).toEqual({ status: 'unmatched', candidateIds: [] });
+    expect(statusOf(row({ description: `NGUYEN THI HUONG DEMO ESTA ${memoCode}` }), [malformed])).toEqual({
+      status: 'unmatched',
+      candidateIds: [],
+    });
+  });
+});
+
+describe('the tenant name of a suggestion', () => {
+  const an = { ...huong, id: 'inv-an', memoCode: 'AAAA1111', tenantName: 'Nguyễn Văn An' };
+
+  it.each([
+    ['NGUYEN VAN ANH CHUYEN TIEN', 'unmatched'],
+    ['NGUYENVANANH CHUYEN TIEN', 'unmatched'],
+    ['TRANNGUYEN VAN AN CK', 'unmatched'],
+    ['CK NGUYEN VAN AN CHUYEN TIEN', 'suggested'],
+    ['NGUYENVANAN CHUYEN TIEN', 'suggested'],
+    ['MBVCB.123.NGUYEN.VAN.AN', 'suggested'],
+  ])('reads %j as %s, comparing whole words', (description, status) => {
+    expect(statusOf(row({ description }), [an])).toMatchObject({ status });
+  });
+});
+
 describe('ignored', () => {
   it('ignores a debit even when it names an issued code and the tenant', () => {
     expect(statusOf(row({ amount: vnd(-3_500_000), description: 'NGUYEN THI HUONG DEMO ESTA 7K2QX9MP' }))).toEqual({
