@@ -14,4 +14,4 @@ export {
   type DepositRefusal,
   type DepositRow,
 } from './deposits';
-export { PAYMENT_STATUSES, derivePaymentStatus, type PaymentStatus } from './status';
+export { derivePaymentStatus, type PaymentStatus } from './status';

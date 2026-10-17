@@ -130,7 +130,7 @@ const DEPOSIT_EXAMPLES: readonly DepositExample[] = [
   },
 ];
 
-type AllocationRow = { key: string; example: string; payment: string; subject: string; actual: Outcome; expected: Outcome | undefined };
+type AllocationRow = { key: string; exampleId: string; example: string; payment: string; subject: string; actual: Outcome; expected: Outcome | undefined };
 
 function runAllocation(example: AllocationExample): { payment: number | null; subject: string | null; actual: Outcome }[] {
   const allocated = new Map(example.invoices.map((invoice) => [invoice.number, 0]));
@@ -186,6 +186,7 @@ export async function AllocationSection() {
     const totals = new Map(example.payments.map((p) => [p.transfer, p.amountVnd]));
     return runAllocation(example).map((row, i) => ({
       key: `${example.id}-${i}`,
+      exampleId: example.id,
       example: t(example.label),
       payment: row.payment === null ? t('noPayment') : t('transfer', { n: row.payment, amount: money(totals.get(row.payment) ?? 0) }),
       subject: row.subject ?? (row.actual.status === '' ? t('credit') : ''),
@@ -206,7 +207,7 @@ export async function AllocationSection() {
       const actual: number | Refused = ledger.ok
         ? ledger.value.heldVnd
         : { refused: ledger.reason, ...(ledger.reason === 'exceeds_held' && { heldVnd: ledger.heldVnd }) };
-      return { key: entry.id, example: t(example.label), entry, actual, expected: example.expected[i] };
+      return { key: entry.id, exampleId: example.id, example: t(example.label), entry, actual, expected: example.expected[i] };
     });
   });
 
@@ -228,7 +229,7 @@ export async function AllocationSection() {
           const matches = outcome(row.actual) === outcome(row.expected);
           return {
             key: row.key,
-            attributes: { 'data-example': row.key.replace(/-\d+$/, ''), 'data-match': matches ? 'match' : 'mismatch' },
+            attributes: { 'data-example': row.exampleId, 'data-match': matches ? 'match' : 'mismatch' },
             cells: [
               ['example', row.example],
               ['payment', row.payment],
@@ -249,7 +250,7 @@ export async function AllocationSection() {
           const matches = held(row.actual) === held(row.expected);
           return {
             key: row.key,
-            attributes: { 'data-example': row.key.replace(/-\d+$/, ''), 'data-match': matches ? 'match' : 'mismatch' },
+            attributes: { 'data-example': row.exampleId, 'data-match': matches ? 'match' : 'mismatch' },
             cells: [
               ['ledger', row.example],
               ['date', formatDate(row.entry.onDate, locale)],
