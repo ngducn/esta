@@ -274,12 +274,12 @@ async function watchSignInPhoto(page: Page) {
   return requests;
 }
 
-test('the sign-in photo is requested at high priority on a desktop', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'the photo only shows from 1024 px');
-  const requests = await watchSignInPhoto(page);
-  await page.goto('/sign-in');
-  await page.waitForLoadState('load');
-  expect(requests.map(({ priority }) => priority)).toEqual(['High']);
+test('the sign-in page preloads the photo for desktop widths only', async ({ request }) => {
+  const html = await (await request.get('/sign-in')).text();
+  const preload = html.match(/<link\b[^>]*rel="preload"[^>]*as="image"[^>]*>/i)?.[0] ?? '';
+  expect(preload).toContain('media="(min-width: 64rem)"');
+  expect(preload).toMatch(/fetchpriority="high"/i);
+  expect(preload).toContain('sign-in-hero');
 });
 
 test('a phone never requests the sign-in photo', async ({ page }, testInfo) => {
