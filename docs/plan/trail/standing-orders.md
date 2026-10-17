@@ -179,3 +179,9 @@ Operator's words, 2026-10-18: "for tax related stuffs, im giving you merge permi
 
 1. The landing grant extends to tax PRs (P4-01 #103 now, and later tax PRs) under the same verdict bar: a clean independent verdict at the exact head and green local CI.
 2. The root may comment on and close issues. It closes an issue only with evidence that main fixes it (a merged PR or a test), and says so in the closing comment.
+
+## Update 2026-10-18 06:00 +07
+
+Operator's words, 2026-10-18: "i want a mechanic where you would spin up more rigorous checker like more verification lanes and screenshots and videos for crucial pieces and flows of the software, but not every one of them, so we are easier and more lean most of the time, but we are also rigorous and very careful where it matters". On #36 they agreed with all three defaults: 4 assistant attempts, a simple document status for Mẹ, and a replacement for the plan checker's fixed routine.
+
+Verification is tiered by risk, as `docs/plan/trail/verification-tiers.md` defines it: lean, standard and rigorous, with the triggers, the lanes for each tier and a planned tier for every remaining PR. It replaces the one-size routine of the 2026-10-15 update rule 4 and the per-PR lane notes in the 05:15 update rule 6. The coordinator sets the tier in each owner brief, takes the higher of the planned tier and `pnpm verify:tier`, and states it on the PR's first line.
