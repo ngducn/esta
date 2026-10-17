@@ -195,7 +195,7 @@ export async function VietQrSection() {
                 className="border-b align-top max-sm:grid max-sm:grid-cols-[auto_1fr] max-sm:gap-x-3 max-sm:py-2"
               >
                 {cells.map(([cell, label, value]) => (
-                  <td key={cell} className={`py-1 pr-4 wrap-anywhere ${value === '' ? 'max-sm:hidden' : 'max-sm:contents'}`}>
+                  <td key={cell} className={`py-1 pr-4 wrap-anywhere ${cell === 'tag54' ? 'whitespace-nowrap' : ''} ${value === '' ? 'max-sm:hidden' : 'max-sm:contents'}`}>
                     <span aria-hidden="true" className="font-sans font-normal text-meta sm:hidden">
                       {label}
                     </span>
