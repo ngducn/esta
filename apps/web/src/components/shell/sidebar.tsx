@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { IntentLink } from './intent-link';
 import { isActive, type NavItem } from './nav';
 import { sectionIcons } from './section-icons';
 
@@ -16,10 +16,10 @@ function NavList({ items, pathname }: { items: readonly NavItem[]; pathname: str
         const Icon = sectionIcons[item.key];
         return (
           <li key={item.key}>
-            <Link href={item.href} aria-current={isActive(pathname, item.href) ? 'page' : undefined} className={linkClass}>
+            <IntentLink href={item.href} aria-current={isActive(pathname, item.href) ? 'page' : undefined} className={linkClass}>
               <Icon className="size-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
               <span className="min-w-0 break-words">{item.label}</span>
-            </Link>
+            </IntentLink>
           </li>
         );
       })}

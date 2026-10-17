@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { IntentLink } from './intent-link';
 import { isActive, type NavItem } from './nav';
 import { sectionIcons } from './section-icons';
 
@@ -15,7 +15,7 @@ export function TabBar({ items, label }: { items: readonly NavItem[]; label: str
           const Icon = sectionIcons[item.key];
           return (
             <li key={item.key} className="min-w-0">
-              <Link
+              <IntentLink
                 href={item.href}
                 aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                 className="group flex min-h-touch flex-col items-center gap-1 pt-2 pb-2.5 text-center text-small leading-tight font-medium text-ink-muted aria-[current=page]:font-bold aria-[current=page]:text-accent"
@@ -24,7 +24,7 @@ export function TabBar({ items, label }: { items: readonly NavItem[]; label: str
                   <Icon className="size-5.5 shrink-0" strokeWidth={1.9} aria-hidden="true" />
                 </span>
                 <span className="max-w-full break-words hyphens-auto">{item.label}</span>
-              </Link>
+              </IntentLink>
             </li>
           );
         })}

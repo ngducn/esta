@@ -1,12 +1,12 @@
 'use client';
 
 import { Languages, LogOut } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { signOut } from '@/app/home-actions';
 import { switchLanguage } from '@/app/language-actions';
 import type { Locale } from '@/i18n/locale';
+import { IntentLink } from './intent-link';
 import type { SectionKey } from './nav';
 import { sectionIcons } from './section-icons';
 
@@ -55,10 +55,10 @@ export function AvatarMenu({ name, household, role, links, switchLanguage: langu
           const Icon = sectionIcons[link.key];
           return (
             <li key={link.key}>
-              <Link href={link.href} className={itemClass}>
+              <IntentLink href={link.href} className={itemClass}>
                 <Icon strokeWidth={1.8} aria-hidden="true" />
                 {link.label}
-              </Link>
+              </IntentLink>
             </li>
           );
         })}
