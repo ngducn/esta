@@ -601,6 +601,9 @@ export type Database = {
       }
       properties: {
         Row: {
+          acquired_on: string | null
+          acquisition_kind: string | null
+          acquisition_price_vnd: number | null
           boundary: unknown
           certificate_address_text: string | null
           code: string
@@ -616,10 +619,14 @@ export type Database = {
           legal_status: string
           location: unknown
           nickname: string
+          notes: string | null
           updated_at: string
           use_mode: string
         }
         Insert: {
+          acquired_on?: string | null
+          acquisition_kind?: string | null
+          acquisition_price_vnd?: number | null
           boundary?: unknown
           certificate_address_text?: string | null
           code: string
@@ -635,10 +642,14 @@ export type Database = {
           legal_status?: string
           location?: unknown
           nickname: string
+          notes?: string | null
           updated_at?: string
           use_mode: string
         }
         Update: {
+          acquired_on?: string | null
+          acquisition_kind?: string | null
+          acquisition_price_vnd?: number | null
           boundary?: unknown
           certificate_address_text?: string | null
           code?: string
@@ -654,6 +665,7 @@ export type Database = {
           legal_status?: string
           location?: unknown
           nickname?: string
+          notes?: string | null
           updated_at?: string
           use_mode?: string
         }
