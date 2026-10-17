@@ -2,7 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
-import { addDays, addMonths } from './dates';
+import { addDays } from './dates';
 import { generateSchedule } from './generate';
 import type { Amendment, BillingCycleMonths, Escalation, LeaseTerms, Period } from './types';
 
@@ -256,7 +256,6 @@ describe('generateSchedule properties', () => {
         const first = amended[index];
         if (first === undefined) throw new Error('amended period missing');
         if (newRent !== null) expect(first.monthlyRentVnd).toBe(newRent);
-        if (newCycle !== null) expect(first.end).toBe(addDays(addMonths(effectivePeriodStart, newCycle), -1));
       }),
       params,
     );

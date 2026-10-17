@@ -355,6 +355,18 @@ describe('amendments', () => {
     ]);
   });
 
+  it('keeps the lease anchor day, clamped per month, after a cycle change from a clamped period start', () => {
+    const toQuarterly: Amendment = { effectivePeriodStart: d('2026-02-28'), changes: { billingCycleMonths: 3 } };
+    const periods = generateSchedule(lease({ startDate: d('2026-01-31') }), [toQuarterly], d('2026-12-01'));
+    expect(spans(periods)).toEqual([
+      '2026-01-31..2026-02-27',
+      '2026-02-28..2026-05-30',
+      '2026-05-31..2026-08-30',
+      '2026-08-31..2026-11-29',
+      '2026-11-30..2027-02-27',
+    ]);
+  });
+
   it('keeps a month-end grid when only the rent changes', () => {
     const periods = generateSchedule(
       lease({ startDate: d('2026-01-31') }),
