@@ -41,3 +41,28 @@ describe('magnitude and percent words make an amount or a percentage, never a ba
     expect(passes('Đã thu 31,2 triệu, lấp đầy 78,57 phần trăm.')).toBe(true);
   });
 });
+
+describe('space-grouped digits are one number', () => {
+  const NBSP = ' ';
+  const NNBSP = ' ';
+  const THIN = ' ';
+
+  it.each<[string, unknown, string[]]>([
+    ['Phòng 5 còn nợ 5 000 000 ₫.', undefined, ['5 000 000 ₫:unknown']],
+    [`Phòng 5 còn nợ 5${NBSP}000${NBSP}000${NBSP}₫.`, undefined, [`5${NBSP}000${NBSP}000${NBSP}₫:unknown`]],
+    [`Phòng 5 còn nợ 5${NNBSP}000${NNBSP}000 ₫.`, undefined, [`5${NNBSP}000${NNBSP}000 ₫:unknown`]],
+    [`Phòng 5 còn nợ 5${THIN}000${THIN}000 ₫.`, undefined, [`5${THIN}000${THIN}000 ₫:unknown`]],
+    ['Nợ 12 000 000 ₫.', { days_overdue: 12, paid: 0 }, ['12 000 000 ₫:unknown']],
+  ])('%s', (text, result, expected) => {
+    expect(offending(text, result)).toEqual(expected);
+  });
+
+  it('reads any other spacing before a currency sign as unparseable', () => {
+    expect(offending('Nợ 12 00 ₫.', { days_overdue: 12, paid: 0 })).toEqual(['12 00 ₫:unparseable']);
+    expect(offending('Nợ 1 2000 ₫.', { member_count: 1, paid: 2000 })).toEqual(['1 2000 ₫:unparseable']);
+  });
+
+  it('still passes a run amount grouped with spaces', () => {
+    expect(passes(`Hợp đồng Nhà Thủ Đức thu 12 000 000 ₫, đã cọc 42${NBSP}000${NBSP}000${NBSP}₫.`)).toBe(true);
+  });
+});
