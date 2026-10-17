@@ -601,7 +601,7 @@ export type Database = {
       }
       properties: {
         Row: {
-          boundary: unknown | null
+          boundary: unknown
           certificate_address_text: string | null
           code: string
           cover_photo_path: string | null
@@ -620,7 +620,7 @@ export type Database = {
           use_mode: string
         }
         Insert: {
-          boundary?: unknown | null
+          boundary?: unknown
           certificate_address_text?: string | null
           code: string
           cover_photo_path?: string | null
@@ -639,7 +639,7 @@ export type Database = {
           use_mode: string
         }
         Update: {
-          boundary?: unknown | null
+          boundary?: unknown
           certificate_address_text?: string | null
           code?: string
           cover_photo_path?: string | null

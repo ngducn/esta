@@ -1,33 +1,30 @@
 import { describe, expect, test } from 'vitest';
 import { isValidBoundary, normalizeRing, ringFromGeoJson, ringToGeoJson } from './polygon';
 
-const square = [
-  { lat: 11.5, lng: 107.8 },
-  { lat: 11.5, lng: 107.81 },
-  { lat: 11.51, lng: 107.81 },
-  { lat: 11.51, lng: 107.8 },
-];
+const a = { lat: 11.5, lng: 107.8 };
+const b = { lat: 11.5, lng: 107.81 };
+const c = { lat: 11.51, lng: 107.81 };
+const d = { lat: 11.51, lng: 107.8 };
+const square = [a, b, c, d];
 
 describe('normalizeRing', () => {
   test('closes an open ring by repeating the first vertex', () => {
     const ring = normalizeRing(square);
-    expect(ring).toEqual({ ok: true, value: [...square, square[0]] });
+    expect(ring).toEqual({ ok: true, value: [...square, a] });
   });
 
   test('keeps an already closed ring as it is', () => {
-    expect(normalizeRing([...square, square[0]!])).toEqual({ ok: true, value: [...square, square[0]] });
+    expect(normalizeRing([...square, a])).toEqual({ ok: true, value: [...square, a] });
   });
 
   test('refuses two distinct vertices, even repeated', () => {
-    const [a, b] = square;
-    expect(normalizeRing([a!, b!, a!, b!])).toEqual({ ok: false, reason: 'too_few_vertices' });
-    expect(normalizeRing([a!, b!])).toEqual({ ok: false, reason: 'too_few_vertices' });
+    expect(normalizeRing([a, b, a, b])).toEqual({ ok: false, reason: 'too_few_vertices' });
+    expect(normalizeRing([a, b])).toEqual({ ok: false, reason: 'too_few_vertices' });
     expect(normalizeRing([])).toEqual({ ok: false, reason: 'too_few_vertices' });
   });
 
   test('removes consecutive duplicates', () => {
-    const [a, b, c] = square;
-    expect(normalizeRing([a!, a!, b!, b!, b!, c!, a!])).toEqual({ ok: true, value: [a, b, c, a] });
+    expect(normalizeRing([a, a, b, b, b, c, a])).toEqual({ ok: true, value: [a, b, c, a] });
   });
 
   test('refuses a vertex out of range', () => {
@@ -39,13 +36,13 @@ describe('normalizeRing', () => {
 
 describe('isValidBoundary', () => {
   test('accepts a closed ring of three distinct vertices', () => {
-    expect(isValidBoundary([...square.slice(0, 3), square[0]!])).toBe(true);
+    expect(isValidBoundary([a, b, c, a])).toBe(true);
   });
 
   test('refuses an open ring, a ring with a repeat and a degenerate ring', () => {
     expect(isValidBoundary(square)).toBe(false);
-    expect(isValidBoundary([square[0]!, square[0]!, square[1]!, square[2]!, square[0]!])).toBe(false);
-    expect(isValidBoundary([square[0]!, square[1]!, square[0]!])).toBe(false);
+    expect(isValidBoundary([a, a, b, c, a])).toBe(false);
+    expect(isValidBoundary([a, b, a])).toBe(false);
   });
 });
 

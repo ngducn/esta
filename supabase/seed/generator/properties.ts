@@ -148,7 +148,7 @@ export const properties = publicTable('properties', ({ household, properties }) 
       legal_status: seed.legal_status,
       current_address: currentAddress(seed.address),
       certificate_address_text: seed.certificate_address_text,
-      location: seed.location === null ? null : `SRID=4326;POINT(${seed.location.lng} ${seed.location.lat})`,
+      ...(seed.location === null ? {} : { location: `SRID=4326;POINT(${seed.location.lng} ${seed.location.lat})` }),
       cover_photo_path: seed.photo === null ? null : `${household_id}/${id}/${seed.photo}`,
     };
   }),

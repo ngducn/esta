@@ -134,7 +134,7 @@ export default function MapSurface({ theme, label, pins, selectedId, onSelect, e
 
   return (
     <>
-      <div ref={container} role="region" aria-label={label} data-testid="map-canvas" data-style={styleName} className="size-full" />
+      <div ref={container} role="region" aria-label={label} data-testid="map-canvas" data-style={styleName} data-ready={styled} className="size-full" />
       {map === null ? null : (
         <>
           <PropertyPins map={map} pins={pins} selectedId={selectedId} edit={edit} onSelect={onSelect} />
