@@ -4,7 +4,7 @@ import { RotateCw, TriangleAlert } from 'lucide-react';
 import { catchError } from 'next/error';
 import { buttonVariants } from '@/components/ui/button-variants';
 
-export type ErrorLabels = { title: string; body: string; retry: string };
+type ErrorLabels = { title: string; body: string; retry: string };
 
 /**
  * A component boundary instead of `error.tsx`: Next loads a segment's `error.tsx` as its own chunk once hydration
