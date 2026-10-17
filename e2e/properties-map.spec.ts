@@ -81,16 +81,28 @@ async function restore(page: Page, id: string, location: { lat: number; lng: num
   await rpc(page, 'set_property_boundary', { p_property_id: id, p_boundary: null });
 }
 
-async function openMap(page: Page, email: string, theme: 'light' | 'dark') {
+async function openMap(page: Page, theme: 'light' | 'dark') {
   await page.context().addCookies([{ name: 'esta_theme', value: theme, url: test.info().project.use.baseURL ?? '' }]);
-  await signIn(page, email);
   await page.goto('/properties');
   await page.getByRole('navigation', { name: /^(Cách xem|View)$/ }).getByRole('link', { name: /^(Bản đồ|Map)$/ }).click();
   await expect(page).toHaveURL(/[?&]view=map/);
   await expect(page.getByTestId('map-canvas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
 }
 
-const pins = (page: Page) => page.getByTestId('property-pin');
+/** Properties on the map: a single pin counts one, a group of pins that would overlap counts its members. */
+async function pinnedCount(page: Page): Promise<number> {
+  const groups = await page.getByTestId('pin-group').allInnerTexts();
+  return (await page.getByTestId('property-pin').count()) + groups.reduce((sum, text) => sum + Number(text), 0);
+}
+
+/** Taps the pin, first tapping the group that holds it until the map has zoomed far enough to split it. */
+async function tapPin(page: Page, nickname: string) {
+  const pin = page.getByTestId('property-pin').and(page.getByRole('button', { name: nickname, exact: true }));
+  for (let tap = 0; tap < 4 && (await pin.count()) === 0; tap += 1) {
+    await page.getByTestId('pin-group').and(page.getByRole('button', { name: new RegExp(nickname) })).click();
+  }
+  await pin.click();
+}
 const panel = (page: Page) => page.getByTestId('location-panel');
 
 async function paste(page: Page, text: string) {
@@ -111,13 +123,13 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 }
 
 async function expectRule1(page: Page, words: { unpinned: RegExp; edit: string }) {
-  await expect(pins(page)).toHaveCount(6);
+  await expect.poll(() => pinnedCount(page)).toBe(6);
   const unpinned = page.getByTestId('unpinned-list');
   await expect(unpinned.getByRole('heading', { level: 2 })).toHaveText(words.unpinned);
   await expect(unpinned.getByRole('listitem')).toHaveCount(1);
   await expect(unpinned.getByRole('listitem')).toContainText('Đất vườn Long An');
 
-  await page.getByRole('button', { name: 'Dãy trọ Dĩ An', exact: true }).click();
+  await tapPin(page, 'Dãy trọ Dĩ An');
   const card = page.getByTestId('pin-card');
   await expect(card.locator(':scope > *').first(), 'the card leads with the photo').toHaveAttribute('data-testid', 'pin-card-photo');
   await expect(card.locator('img')).toHaveAttribute('src', SIGNED_PHOTO);
@@ -154,7 +166,7 @@ test('rule 1: the map shows six pins, the unpinned line names Đất vườn Lon
   await stubTiles(page);
   await signIn(page, 'me.lane1@demo.esta.test');
   await restore(page, propertyId(1, 'long-an'), null);
-  await openMap(page, 'me.lane1@demo.esta.test', 'light');
+  await openMap(page, 'light');
   await expectRule1(page, { unpinned: /^1 tài sản chưa có vị trí$/, edit: 'Sửa vị trí' });
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
@@ -165,7 +177,7 @@ test('rule 2: a pasted place link saves the !3d!4d point, offers Hoàn tác, and
   const id = propertyId(2, 'long-an');
   await signIn(page, 'me.lane2@demo.esta.test');
   await restore(page, id, null);
-  await openMap(page, 'me.lane2@demo.esta.test', 'dark');
+  await openMap(page, 'dark');
 
   await page.getByRole('link', { name: /Đất vườn Long An$/ }).click();
   await expect(page).toHaveURL(new RegExp(`locate=${id}`));
@@ -183,7 +195,7 @@ test('rule 2: a pasted place link saves the !3d!4d point, offers Hoàn tác, and
 
   await page.goto('/properties?view=map');
   await expect(page.getByTestId('unpinned-list').getByRole('heading', { level: 2 })).toHaveText('Mọi tài sản đều đã có vị trí trên bản đồ.');
-  await expect(pins(page)).toHaveCount(7);
+  await expect.poll(() => pinnedCount(page)).toBe(7);
 });
 
 test('rule 3: dragging the Kho Biên Hòa pin and typing coordinates both persist, and the inputs match the pin', async ({ page }) => {
@@ -192,8 +204,8 @@ test('rule 3: dragging the Kho Biên Hòa pin and typing coordinates both persis
   const id = propertyId(3, 'bien-hoa');
   await signIn(page, 'ryan.lane3@demo.esta.test');
   await restore(page, id, { lat: 10.97, lng: 106.846 });
-  await openMap(page, 'ryan.lane3@demo.esta.test', 'light');
-  await page.getByRole('button', { name: 'Kho Biên Hòa', exact: true }).click();
+  await openMap(page, 'light');
+  await tapPin(page, 'Kho Biên Hòa');
   await page.getByTestId('pin-card').getByRole('link', { name: 'Sửa vị trí' }).click();
   await expect(panel(page)).toBeVisible();
 
@@ -237,8 +249,8 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   const id = propertyId(4, 'bao-loc');
   await signIn(page, 'ryan.lane4@demo.esta.test');
   await restore(page, id, { lat: 11.547, lng: 107.808 });
-  await openMap(page, 'ryan.lane4@demo.esta.test', 'dark');
-  await page.getByRole('button', { name: 'Đất Bảo Lộc', exact: true }).click();
+  await openMap(page, 'dark');
+  await tapPin(page, 'Đất Bảo Lộc');
   await page.getByTestId('pin-card').getByRole('link', { name: 'Sửa vị trí' }).click();
   await expect(panel(page)).toBeVisible();
 
@@ -265,10 +277,13 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   expect((saved as { coordinates: unknown[][] }).coordinates[0], 'four corners and the closing one').toHaveLength(5);
 
   await panel(page).getByRole('button', { name: 'Sửa ranh giới' }).click();
-  const [, , third] = corners;
-  await page.mouse.move(third[0], third[1]);
+  const moved = await page.getByTestId('map-canvas').boundingBox();
+  if (moved === null) throw new Error('the map has no box');
+  const mx = moved.x + moved.width / 2;
+  const my = moved.y + moved.height / 2;
+  await page.mouse.move(mx + 120, my + 90);
   await page.mouse.down();
-  await page.mouse.move(cx - 190, cy - 40, { steps: 12 });
+  await page.mouse.move(mx - 190, my - 40, { steps: 12 });
   await page.mouse.up();
   await expect(panel(page).getByText('Các cạnh của ranh giới cắt nhau. Hãy vẽ lại để các cạnh không cắt nhau.')).toBeVisible();
   await expect(panel(page).getByRole('button', { name: 'Lưu ranh giới' })).toBeDisabled();
@@ -276,8 +291,8 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   await panel(page).getByRole('button', { name: 'Hủy' }).click();
 
   await panel(page).getByRole('button', { name: 'Xóa ranh giới' }).click();
-  const toast = page.locator('[data-slot="toast"]');
-  await expect(toast).toContainText('Đã xóa ranh giới Đất Bảo Lộc.');
+  const toast = page.locator('[data-slot="toast"]').filter({ hasText: 'Đã xóa ranh giới Đất Bảo Lộc.' });
+  await expect(toast).toBeVisible();
   await toast.getByRole('button', { name: 'Hoàn tác' }).click();
   await expect.poll(() => rpc(page, 'property_boundary', { p_property_id: id }), 'the undo brings back the 4-corner boundary').toEqual(saved);
   await expect(panel(page).getByTestId('boundary-area')).toContainText('Ước tính');
@@ -295,12 +310,12 @@ test('rule 5: a point outside Vietnam warns and waits for Vẫn lưu, and a user
   const id = propertyId(5, 'long-an');
   await signIn(page, 'me.lane5@demo.esta.test');
   await restore(page, id, null);
-  await openMap(page, 'me.lane5@demo.esta.test', 'light');
+  await openMap(page, 'light');
   await expectRule5(page, 5, {
     outside: 'Điểm này nằm ngoài Việt Nam. Kiểm tra lại liên kết.',
     saveAnyway: 'Vẫn lưu',
     use: 'Dùng vị trí này',
-    notMaps: /^Đây không phải liên kết Google Maps\./m,
+    notMaps: /Đây không phải liên kết Google Maps\./,
   });
 
   await paste(page, PARIS_LINK);
@@ -343,7 +358,7 @@ test('rule 7: in English at 130% and dark, the map, card and warning translate a
   await page.getByRole('button', { name: /^(Lưu|Save)$/ }).click();
   await expect(page.getByRole('status')).toHaveText(/^(Đã lưu cài đặt hiển thị\.|Display settings saved\.)$/);
 
-  await openMap(page, 'me.lane10@demo.esta.test', 'dark');
+  await openMap(page, 'dark');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('navigation', { name: 'View' }).getByRole('link', { name: 'Map' })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByTestId('map-canvas')).toHaveAttribute('data-style', 'dark');
@@ -354,7 +369,7 @@ test('rule 7: in English at 130% and dark, the map, card and warning translate a
     outside: 'This point is outside Vietnam. Check the link.',
     saveAnyway: 'Save anyway',
     use: 'Use this location',
-    notMaps: /^This is not a Google Maps link\./m,
+    notMaps: /This is not a Google Maps link\./,
   });
   expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth), 'no horizontal page scroll').toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);

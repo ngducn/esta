@@ -27,7 +27,7 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
         role="region"
         aria-live="polite"
         aria-label={t('region')}
-        className="fixed inset-x-4 bottom-4 mx-auto max-w-lg"
+        className="fixed inset-x-4 bottom-20 z-20 mx-auto max-w-lg lg:bottom-4"
       >
         {request === null ? null : (
           <Suspense fallback={null}>

@@ -107,6 +107,7 @@ function MapView({ properties, theme, locate, query }: Props) {
               ? null
               : {
                   propertyId: target.id,
+                  nickname: target.nickname,
                   pin,
                   preview: draft.preview?.point ?? null,
                   boundary: locate.boundary,

@@ -2,16 +2,22 @@
 
 import type { GeoPoint } from '@esta/core/maps';
 import { MapPin } from 'lucide-react';
-import { Marker, type Map as MapLibre } from 'maplibre-gl';
-import { useEffect, useEffectEvent, useMemo, useRef } from 'react';
+import { LngLatBounds, Marker, type Map as MapLibre } from 'maplibre-gl';
+import { useTranslations } from 'next-intl';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import type { MapEdit } from './map-surface';
+import { groupPins, worldPixels } from './pin-groups';
 
 export type MapPin = { readonly id: string; readonly nickname: string; readonly lat: number; readonly lng: number };
 
 const pinButton =
   'group flex size-touch items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+/** The pin's touch target; two pins closer than this on screen become one group a tap zooms into. */
+const TOUCH_PX = 44;
+const GROUP_MAX_ZOOM = 17;
+
 const pinHead =
   'flex size-9 items-center justify-center rounded-full border-2 border-surface shadow-sheet transition-transform duration-(--duration-fast) ease-standard [&_svg]:size-5';
 
@@ -56,6 +62,19 @@ function useMarkers(map: MapLibre, wanted: readonly { key: string; point: GeoPoi
   return elements;
 }
 
+function useZoom(map: MapLibre): number {
+  const [zoom, setZoom] = useState(() => map.getZoom());
+  useEffect(() => {
+    const update = () => setZoom(map.getZoom());
+    map.on('zoomend', update);
+    update();
+    return () => {
+      map.off('zoomend', update);
+    };
+  }, [map]);
+  return zoom;
+}
+
 export function PropertyPins({
   map,
   pins,
@@ -69,20 +88,26 @@ export function PropertyPins({
   edit: MapEdit | null;
   onSelect: (id: string) => void;
 }) {
+  const t = useTranslations('map');
+  const zoom = useZoom(map);
   const editing = edit?.propertyId ?? null;
+  const groups = groupPins(
+    pins.filter((pin) => pin.id !== editing),
+    (pin) => worldPixels(pin, zoom),
+    TOUCH_PX,
+  );
+  const groupByKey = new Map(groups.map((group) => [group.key, group]));
   const wanted = [
-    ...pins.filter((pin) => pin.id !== editing).map((pin) => ({ key: pin.id, point: pin, draggable: false })),
+    ...groups.map((group) => ({ key: group.key, point: group, draggable: false })),
     ...(edit?.pin == null ? [] : [{ key: 'edit', point: edit.pin, draggable: edit.draw === 'off' }]),
     ...(edit?.preview == null ? [] : [{ key: 'preview', point: edit.preview, draggable: false }]),
   ];
   const elements = useMarkers(map, wanted, (point) => edit?.onPinMove(point));
-  const byId = new Map(pins.map((pin) => [pin.id, pin]));
-  const editNickname = editing === null ? '' : (byId.get(editing)?.nickname ?? '');
 
   return [...elements].map(([key, element]) => {
     if (key === 'edit') {
       return createPortal(
-        <span data-testid="edit-pin" aria-label={editNickname} role="img" className={cn(pinButton, 'cursor-grab active:cursor-grabbing')}>
+        <span data-testid="edit-pin" aria-label={edit?.nickname} role="img" className={cn(pinButton, 'cursor-grab active:cursor-grabbing')}>
           <span className={cn(pinHead, 'size-11 bg-accent text-on-accent')}>
             <MapPin aria-hidden="true" strokeWidth={2.25} />
           </span>
@@ -93,7 +118,7 @@ export function PropertyPins({
     }
     if (key === 'preview') {
       return createPortal(
-        <span data-testid="preview-pin" role="img" aria-label={editNickname} className={pinButton}>
+        <span data-testid="preview-pin" role="img" aria-label={t('previewPin', { nickname: edit?.nickname ?? '' })} className={pinButton}>
           <span className={cn(pinHead, 'border-dashed border-accent bg-surface text-accent')}>
             <MapPin aria-hidden="true" strokeWidth={2.25} />
           </span>
@@ -102,10 +127,34 @@ export function PropertyPins({
         key,
       );
     }
-    const pin = byId.get(key);
-    if (pin === undefined) return null;
-    const selected = pin.id === selectedId;
+    const group = groupByKey.get(key);
+    const [pin] = group?.pins ?? [];
+    if (group === undefined || pin === undefined) return null;
     const inert = editing !== null;
+    if (group.pins.length > 1) {
+      return createPortal(
+        <button
+          type="button"
+          data-testid="pin-group"
+          aria-label={t('pinGroup', { count: group.pins.length, names: group.pins.map(({ nickname }) => nickname).join(', ') })}
+          tabIndex={inert ? -1 : 0}
+          aria-hidden={inert}
+          disabled={inert}
+          onClick={(event) => {
+            event.stopPropagation();
+            const bounds = new LngLatBounds();
+            for (const member of group.pins) bounds.extend([member.lng, member.lat]);
+            map.fitBounds(bounds, { padding: 96, maxZoom: Math.max(GROUP_MAX_ZOOM, map.getZoom() + 2), duration: 0 });
+          }}
+          className={cn(pinButton, inert && 'pointer-events-none opacity-60')}
+        >
+          <span className={cn(pinHead, 'figures bg-accent text-body font-bold text-on-accent group-hover:scale-110')}>{group.pins.length}</span>
+        </button>,
+        element,
+        key,
+      );
+    }
+    const selected = pin.id === selectedId;
     return createPortal(
       <button
         type="button"

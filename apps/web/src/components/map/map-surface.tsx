@@ -15,6 +15,7 @@ setWorkerUrl(`/map-worker?v=${getVersion()}`);
 /** What the location panel is editing; the map only reports moves and drawings back, the panel decides what to save. */
 export type MapEdit = {
   readonly propertyId: string;
+  readonly nickname: string;
   readonly pin: GeoPoint | null;
   readonly preview: GeoPoint | null;
   readonly boundary: readonly GeoPoint[] | null;
