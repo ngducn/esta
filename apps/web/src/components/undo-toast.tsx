@@ -1,26 +1,29 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { createContext, lazy, Suspense, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { ToastRequest } from '@/components/ui/toast';
 
 export const UNDO_MS = 6000;
 
 type ShowUndo = (message: string, onUndo: () => void) => void;
+type ShowNotice = (message: string) => void;
 
 const Toaster = lazy(() => import('@/components/ui/toast'));
-const ShowUndoContext = createContext<ShowUndo | null>(null);
+const ToastContext = createContext<{ undo: ShowUndo; notice: ShowNotice } | null>(null);
 
 /** Mount once around the screen; `useUndoToast` shows the toast inside it. */
 export function UndoToastProvider({ children }: { children: ReactNode }) {
   const t = useTranslations('components.toast');
   const [request, setRequest] = useState<ToastRequest | null>(null);
-  const show = useCallback<ShowUndo>(
+  const undo = useCallback<ShowUndo>(
     (message, onUndo) => setRequest({ message, timeout: UNDO_MS, action: { label: t('undo'), onClick: onUndo } }),
     [t],
   );
+  const notice = useCallback<ShowNotice>((message) => setRequest({ message, timeout: UNDO_MS }), []);
+  const value = useMemo(() => ({ undo, notice }), [undo, notice]);
   return (
-    <ShowUndoContext value={show}>
+    <ToastContext value={value}>
       {children}
       {/* The live region is in the first paint so screen readers already watch it when the lazy toast lands inside. */}
       <div
@@ -35,13 +38,22 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
           </Suspense>
         )}
       </div>
-    </ShowUndoContext>
+    </ToastContext>
   );
+}
+
+function useToastContext() {
+  const context = useContext(ToastContext);
+  if (context === null) throw new Error('useUndoToast and useNoticeToast need an UndoToastProvider above them');
+  return context;
 }
 
 /** Returns `show(message, onUndo)`: the message names what happened, and `Hoàn tác` reverses it for 6 s. */
 export function useUndoToast(): ShowUndo {
-  const show = useContext(ShowUndoContext);
-  if (show === null) throw new Error('useUndoToast needs an UndoToastProvider above it');
-  return show;
+  return useToastContext().undo;
+}
+
+/** Returns `show(message)` for an outcome the screen may no longer be mounted to report, such as a failed `Hoàn tác`. */
+export function useNoticeToast(): ShowNotice {
+  return useToastContext().notice;
 }

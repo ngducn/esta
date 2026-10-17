@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { deleteLegalItem, restoreLegalItem } from '@/app/(app)/properties/[id]/legal/actions';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { useUndoToast } from '@/components/undo-toast';
+import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { useHydrated } from '@/lib/use-hydrated';
 import type { LegalKind } from '@/server/properties/legal';
 
 export type LegalItemActionLabels = {
@@ -24,6 +25,8 @@ export type LegalItemActionLabels = {
 export function LegalItemActions({ propertyId, kind, itemId, labels }: { propertyId: string; kind: LegalKind; itemId: string; labels: LegalItemActionLabels }) {
   const router = useRouter();
   const showUndo = useUndoToast();
+  const showNotice = useNoticeToast();
+  const hydrated = useHydrated();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -38,8 +41,8 @@ export function LegalItemActions({ propertyId, kind, itemId, labels }: { propert
       router.refresh();
       showUndo(labels.deleted, () => {
         restoreLegalItem(result.deleted)
-          .then((restored) => (restored.ok ? router.refresh() : setError(labels.restoreFailed)))
-          .catch(() => setError(labels.restoreFailed));
+          .then((restored) => (restored.ok ? router.refresh() : showNotice(labels.restoreFailed)))
+          .catch(() => showNotice(labels.restoreFailed));
       });
     });
 
@@ -50,7 +53,7 @@ export function LegalItemActions({ propertyId, kind, itemId, labels }: { propert
           <Pencil aria-hidden="true" />
           {labels.edit}
         </Link>
-        <button type="button" onClick={remove} disabled={pending} aria-label={labels.deleteLabel} data-testid="delete-legal-item" className={buttonVariants({ variant: 'outline' })}>
+        <button type="button" onClick={remove} disabled={pending || !hydrated} aria-label={labels.deleteLabel} data-testid="delete-legal-item" className={buttonVariants({ variant: 'outline' })}>
           <Trash2 aria-hidden="true" />
           {pending ? labels.deleting : labels.delete}
         </button>

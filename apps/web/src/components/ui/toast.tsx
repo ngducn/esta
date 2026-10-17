@@ -3,7 +3,7 @@
 import { Toast as ToastPrimitive } from '@base-ui/react/toast';
 import { useEffect } from 'react';
 
-export type ToastRequest = { message: string; timeout: number; action: { label: string; onClick: () => void } };
+export type ToastRequest = { message: string; timeout: number; action?: { label: string; onClick: () => void } };
 
 const manager = ToastPrimitive.createToastManager();
 
@@ -16,10 +16,10 @@ export default function Toaster({ request }: { request: ToastRequest }) {
     const id = manager.add({
       title: request.message,
       timeout: request.timeout,
-      actionProps: {
+      actionProps: request.action && {
         children: request.action.label,
         onClick: () => {
-          request.action.onClick();
+          request.action?.onClick();
           manager.close(id);
         },
       },
