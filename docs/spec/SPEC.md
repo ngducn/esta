@@ -264,6 +264,7 @@ Measured with Lighthouse mobile emulation on a production build with the full se
 
 - Home and Collections: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.05.
 - Initial JS per route ≤ 200 KB gzipped. MapLibre and chart code load only on routes and tabs that show them.
+- The map view (`/properties?view=map`, opened from the list's `Bản đồ` toggle) is exempt from the 200 KB, 2.5 s LCP and 200 ms TBT lines above, because D10's MapLibre alone is about 283 KB gzipped. It has its own budget instead: map-view script ≤ 300 KB gzipped, TBT ≤ 500 ms, and every seeded pin visible within 8 s on Lighthouse mobile. The list view stays the default and keeps the general budgets (operator, 2026-10-17).
 - Lists of up to 1,000 rows stay interactive (virtualize above 100 rows).
 - A 10 MB upload on a throttled 10 Mbps connection shows progress and completes; thumbnails are generated client-side.
 

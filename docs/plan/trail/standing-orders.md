@@ -126,3 +126,7 @@ Operator's words, 2026-10-17: "the actual usage is at 65%, go at it". The local 
 ## Update 2026-10-17 13:00 +07
 
 Operator's words, 2026-10-17: "it resets in 1 hr, we still have 15% left. lets spawn some lower effort tasks to cover the usage, stop at 97". For the block ending 07:00Z: spawn lower-effort tasks (Sonnet owners, Opus at medium effort for the critical path), send stop orders at 94% and stop everything by 97%.
+
+## Update 2026-10-17 14:30 +07
+
+Operator's answer, 2026-10-17, on P1-09's map view: "Exempt the map view". SPEC §7.2 gains a map exception: `/properties?view=map` has its own budget (map-view script ≤ 300 KB gzipped, TBT ≤ 500 ms, every seeded pin within 8 s on Lighthouse mobile); the list view keeps the general budgets. D10 is unchanged.

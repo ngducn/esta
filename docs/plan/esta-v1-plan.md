@@ -1335,7 +1335,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] Metric. Lighthouse mobile LCP, TBT and CLS and initial route JS gzipped for `/properties` and `/properties?view=map` on a production build (`pnpm build && pnpm start`) with the full seed, and whether the MapLibre chunk is in the list route's initial JS.
 - [ ] Probe. `scripts/perf/lighthouse.ts` on both routes 5 times per side, interleaved, as `me.lane1@demo.esta.test`, and the `next build` route table on each side.
 - [ ] Baseline. Trunk serves `/properties` without a map, so its medians are that route's baseline. The map view is new at head and takes the SPEC §7.2 absolute budgets.
-- [ ] Rule. Fail when either route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when `/properties` initial JS grows by more than 2 KB gzipped against trunk, or when the MapLibre chunk appears in its initial JS.
+- [ ] Rule. Fail when `/properties` misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when its initial JS grows by more than 2 KB gzipped against trunk, or when the MapLibre chunk appears in its initial JS. Fail when `/properties?view=map` exceeds 300 KB of map-view script gzipped, TBT 500 ms or CLS 0.05, or shows any seeded pin later than 8 s (SPEC §7.2 map exception, operator 2026-10-17).
 
 **Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 1 on its clean verdict without waiting for that review. No review video.
 
