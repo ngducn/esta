@@ -6,13 +6,13 @@ import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
+import { stubTiles, TILE_HOST } from './helpers/map-tiles';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 const SIGNED_PHOTO = /\/storage\/v1\/object\/sign\/property-photos\//;
-const TILE_HOST = 'https://tiles.openfreemap.org/';
 
 const PLACE_LINK = 'https://www.google.com/maps/place/Demo+Long+An/@10.6,106.3,15z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d10.5331!4d106.4052';
 const PARIS_LINK = 'https://www.google.com/maps/@48.8584,2.2945,17z';
@@ -22,29 +22,6 @@ const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${l
 
 function onlyOn(project: 'mobile' | 'desktop') {
   test.skip(test.info().project.name !== project, `runs at the ${project} viewport`);
-}
-
-/** No CI run depends on OpenFreeMap: each style is a stub with one vector layer, so a tile is still requested, and each tile is empty. */
-async function stubTiles(page: Page): Promise<string[]> {
-  const styles: string[] = [];
-  await page.route(`${TILE_HOST}**`, async (route) => {
-    const url = new URL(route.request().url());
-    const style = /^\/styles\/([a-z]+)$/.exec(url.pathname)?.[1];
-    if (style === undefined) return route.fulfill({ status: 200, contentType: 'application/x-protobuf', body: Buffer.alloc(0) });
-    styles.push(style);
-    return route.fulfill({
-      json: {
-        version: 8,
-        name: `stub-${style}`,
-        sources: { openmaptiles: { type: 'vector', tiles: [`${TILE_HOST}planet/stub/{z}/{x}/{y}.pbf`], maxzoom: 14 } },
-        layers: [
-          { id: 'background', type: 'background', paint: { 'background-color': style === 'dark' ? '#202228' : '#f2f3f5' } },
-          { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water', paint: { 'fill-color': '#9fb8d6' } },
-        ],
-      },
-    });
-  });
-  return styles;
 }
 
 async function accessToken(page: Page): Promise<string> {

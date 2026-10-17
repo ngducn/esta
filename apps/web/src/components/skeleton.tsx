@@ -52,6 +52,24 @@ export function SkeletonCards({ count = 3 }: { count?: number }) {
   );
 }
 
+/** The detail header in the grid it draws, then the tab row, so the page lands without a shift. */
+export function SkeletonPropertyHeader() {
+  return (
+    <Loading className="flex flex-col gap-5">
+      <div className="overflow-hidden rounded-lg border border-rule bg-surface shadow-card md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+        <Block className="aspect-[16/10] w-full rounded-none md:aspect-auto md:min-h-60" />
+        <div className="flex flex-col gap-4 p-5 lg:p-6">
+          <Block className="h-9 w-64 max-w-full" />
+          <Block className="h-7 w-48" />
+          <Block className="h-5 w-full max-w-md" />
+          <Block className="h-5 w-4/5 max-w-sm" />
+        </div>
+      </div>
+      <Block className="h-touch w-56" />
+    </Loading>
+  );
+}
+
 export function SkeletonMoney({ large = false }: { large?: boolean }) {
   return (
     <Loading>

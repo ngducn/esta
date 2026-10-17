@@ -1,6 +1,8 @@
 import type { Database } from '@esta/db';
 import { createServerClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
+import { z } from 'zod';
 import { parseEnv } from '@/server/env-schema';
 import { isPublicPath } from '@/server/public-paths';
 import { sessionCookie } from '@/server/supabase/session';
@@ -28,6 +30,21 @@ function rewriteCover(request: NextRequest): NextResponse {
   return NextResponse.rewrite(new URL(`${pathname}${search}`, env.NEXT_PUBLIC_SUPABASE_URL), { request: { headers } });
 }
 
+const PROPERTY_PATH = /^\/properties\/([^/]+)(?:\/|$)/;
+
+/**
+ * Every page under (app) streams below a loading boundary, so a page's notFound() arrives after the 200 is sent.
+ * A document request for a property this member cannot read gets its 404 here instead; the page still renders the
+ * not-found screen. Client navigations (the rsc header) skip the query, because their status is never shown.
+ */
+async function isMissingProperty(request: NextRequest, supabase: SupabaseClient<Database>): Promise<boolean> {
+  const id = PROPERTY_PATH.exec(request.nextUrl.pathname)?.[1];
+  if (id === undefined || request.headers.has('rsc')) return false;
+  if (!z.uuid().safeParse(id).success) return true;
+  const { data, error } = await supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle();
+  return error === null && data === null;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (pathname.startsWith(COVER_PREFIX)) return rewriteCover(request);
@@ -47,6 +64,7 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   if (data === null && !isPublicPath(pathname)) return redirectKeepingCookies(request, response, '/sign-in');
   if (data !== null && pathname === '/sign-in') return redirectKeepingCookies(request, response, '/');
+  if (data !== null && (await isMissingProperty(request, supabase))) return new NextResponse(null, { status: 404, headers: response.headers });
   return response;
 }
 

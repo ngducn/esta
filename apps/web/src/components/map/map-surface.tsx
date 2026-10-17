@@ -36,6 +36,8 @@ export type MapSurfaceProps = {
   readonly selectedId: string | null;
   readonly onSelect: (id: string | null) => void;
   readonly edit: MapEdit | null;
+  /** A boundary to show while nothing is edited, such as on the property's own location card. */
+  readonly boundary?: readonly GeoPoint[] | null;
   readonly onStatus: (status: MapStatus) => void;
 };
 
@@ -56,7 +58,7 @@ function addBoundaryLayers(map: MapLibre, theme: Theme) {
   map.addLayer({ id: `${BOUNDARY_SOURCE}-line`, type: 'line', source: BOUNDARY_SOURCE, paint: { 'line-color': tokenHex('accent', theme), 'line-width': 2.5 } });
 }
 
-export default function MapSurface({ theme, label, pins, selectedId, onSelect, edit, onStatus }: MapSurfaceProps) {
+export default function MapSurface({ theme, label, pins, selectedId, onSelect, edit, boundary = null, onStatus }: MapSurfaceProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibre | null>(null);
   const [styled, setStyled] = useState(false);
@@ -136,7 +138,7 @@ export default function MapSurface({ theme, label, pins, selectedId, onSelect, e
     if (editing) void import('./polygon-draw');
   }, [editing]);
 
-  const shownBoundary = edit !== null && edit.draw === 'off' ? edit.boundary : null;
+  const shownBoundary = edit === null ? boundary : edit.draw === 'off' ? edit.boundary : null;
   useEffect(() => {
     if (map === null || !styled) return;
     (map.getSource(BOUNDARY_SOURCE) as GeoJSONSource | undefined)?.setData(boundaryData(shownBoundary));

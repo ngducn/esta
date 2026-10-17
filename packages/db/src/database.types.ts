@@ -818,6 +818,18 @@ export type Database = {
         }
         Returns: string
       }
+      property_activity: {
+        Args: { p_limit?: number; p_property_id: string }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_kind: string
+          actor_name: string
+          at: string
+          diff: Json
+          id: number
+        }[]
+      }
       property_boundary: { Args: { p_property_id: string }; Returns: Json }
       set_my_locale: { Args: { p_locale: string }; Returns: undefined }
       set_property_boundary: {

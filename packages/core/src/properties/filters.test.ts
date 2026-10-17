@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  currentAddressText,
   applyPropertyFilters,
   parsePropertyFilters,
   preferPhrase,
@@ -186,5 +187,15 @@ describe('shortProvinceName', () => {
     ['Thành phố Đồng Nai', 'TP. Đồng Nai'],
   ])('%s reads %s', (name, short) => {
     expect(shortProvinceName(name)).toBe(short);
+  });
+});
+
+describe('currentAddressText', () => {
+  it('joins the street line, commune and short province, and is null with none of them', () => {
+    expect(currentAddressText({ addressLine: '903/9 Demo Đường Nguyễn An Ninh', communeName: 'Phường Dĩ An', provinceName: 'Thành phố Hồ Chí Minh' })).toBe(
+      '903/9 Demo Đường Nguyễn An Ninh, Phường Dĩ An, TP. Hồ Chí Minh',
+    );
+    expect(currentAddressText({ addressLine: '', communeName: null, provinceName: 'Tỉnh Long An' })).toBe('Long An');
+    expect(currentAddressText({ addressLine: null, communeName: null, provinceName: null })).toBeNull();
   });
 });

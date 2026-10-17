@@ -1,28 +1,9 @@
 import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
-import { Briefcase, CirclePause, Hammer, House, KeyRound, MapPin, Users, type LucideIcon } from 'lucide-react';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
-import { cn } from '@/lib/utils';
+import { MapPin } from 'lucide-react';
+import { IntentLink } from '@/components/shell/intent-link';
 import { CoverPhoto, type CoverPhotoPriority } from './cover-photo';
 import { kindIcons } from './kind-icons';
-
-const useIcons = {
-  rental: KeyRound,
-  owner_occupied: House,
-  family_use: Users,
-  own_business: Briefcase,
-  held: CirclePause,
-  under_renovation: Hammer,
-} as const satisfies Record<UseMode, LucideIcon>;
-
-/** Legal status borrows the status shapes: a certificate is settled, a pending or paper-only one needs attention. */
-const legalMarks = {
-  certified: 'paid',
-  certificate_pending: 'due',
-  paper_only: 'due',
-  shared_certificate: 'vacant',
-  in_dispute: 'overdue',
-  unknown: 'draft',
-} as const satisfies Record<LegalStatus, MarkStatus>;
+import { LegalPill, UsePill } from './property-pills';
 
 /** Everything a card shows, already translated and signed on the server, so the card renders the same on either side. */
 export type PropertyCardData = {
@@ -45,14 +26,13 @@ export function photoPriority(index: number): CoverPhotoPriority {
   return index === 1 ? 'eager' : 'lazy';
 }
 
-const pill = 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold';
-
 export function PropertyCard({ card, priority }: { card: PropertyCardData; priority: CoverPhotoPriority }) {
   const KindIcon = kindIcons[card.kind];
-  const UseIcon = useIcons[card.useMode];
-  const legal = legalMarks[card.legalStatus];
   return (
-    <article data-testid="property-card" className="flex h-full flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+    <article
+      data-testid="property-card"
+      className="relative flex h-full flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card transition-shadow duration-(--duration-fast) ease-standard has-[a:hover]:shadow-sheet has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-accent"
+    >
       <div data-testid="property-cover" className="relative aspect-[16/10] bg-surface-2">
         <CoverPhoto
           src={card.photoUrl}
@@ -70,16 +50,14 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-4 lg:px-5">
         <div className="flex flex-wrap gap-1.5">
-          <span data-use={card.useMode} className={cn(pill, 'border border-rule bg-surface-2 text-ink-2')}>
-            <UseIcon className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-            {card.useLabel}
-          </span>
-          <span data-legal={card.legalStatus} className={cn(pill, statusMarks[legal].pill)}>
-            <StatusShape status={legal} className="size-4" />
-            {card.legalLabel}
-          </span>
+          <UsePill useMode={card.useMode} label={card.useLabel} />
+          <LegalPill legalStatus={card.legalStatus} label={card.legalLabel} />
         </div>
-        <h2 className="text-lead font-bold break-words text-ink">{card.nickname}</h2>
+        <h2 className="text-lead font-bold break-words text-ink">
+          <IntentLink href={`/properties/${card.id}`} className="outline-none after:absolute after:inset-0">
+            {card.nickname}
+          </IntentLink>
+        </h2>
         <div className="flex flex-col gap-0.5 text-small">
           <p className="flex items-start gap-1.5 break-words text-ink-2">
             <MapPin className="mt-0.5 size-4 shrink-0 text-ink-muted" strokeWidth={2} aria-hidden="true" />

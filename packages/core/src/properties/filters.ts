@@ -37,6 +37,14 @@ export function shortProvinceName(name: string): string {
   return name.normalize('NFC').replace(/^Thành phố\s+/u, 'TP. ').replace(/^Tỉnh\s+/u, '');
 }
 
+/** The two-tier address in daily use, as one line: house and street, commune, short province; `null` with none of them. */
+export function currentAddressText(row: Pick<PropertyListRow, 'addressLine' | 'communeName' | 'provinceName'>): string | null {
+  const text = [row.addressLine, row.communeName, row.provinceName === null ? null : shortProvinceName(row.provinceName)]
+    .filter((part): part is string => part !== null && part !== '')
+    .join(', ');
+  return text === '' ? null : text;
+}
+
 const unprefixedProvinceName = (name: string) => name.normalize('NFC').replace(/^(Thành phố|Tỉnh)\s+/u, '');
 const bareProvinceName = (name: string) => foldVietnamese(unprefixedProvinceName(name));
 
