@@ -9,12 +9,15 @@ import {
   type PropertyListRow,
   type SearchParamsRecord,
 } from '@esta/core/properties';
+import { Archive, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
+import { ArchivedNoticeLoader } from '@/components/properties/archived-notice-loader';
 import { FilterChips, filterChips, hasChoice, type FilterGroup } from '@/components/properties/filter-chips';
 import type { PropertyCardData } from '@/components/properties/property-card';
+import { ARCHIVED_PARAM } from '@/components/properties/property-form-values';
 import { PropertyList } from '@/components/properties/property-list';
 import { PropertySearch } from '@/components/properties/property-search';
 import { SortSelect } from '@/components/properties/sort-select';
@@ -22,7 +25,10 @@ import { ViewToggle } from '@/components/properties/view-toggle';
 import { sectionIcons } from '@/components/shell/section-icons';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { requireMember } from '@/server/member';
+import { loadArchivedNickname } from '@/server/properties/form';
+import { propertyIslandIntl } from '@/server/properties/island-messages';
 import { listProperties } from '@/server/properties/list';
 import { signCoverPhotos } from '@/server/properties/photos';
 import MapView from './map-view';
@@ -36,7 +42,15 @@ const locateParam = z.uuid();
 export default async function PropertiesPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
   const [params, member] = await Promise.all([searchParams, requireMember()]);
   const filters = parsePropertyFilters(params);
-  const [list, nav, t] = await Promise.all([listProperties(member.household.id, filters), getTranslations('nav'), getTranslations('properties')]);
+  const archivedId = locateParam.safeParse(params[ARCHIVED_PARAM]).data ?? null;
+  const [list, nav, t, archived] = await Promise.all([
+    listProperties(member.household.id, filters),
+    getTranslations('nav'),
+    getTranslations('properties'),
+    archivedId === null ? null : loadArchivedNickname(member.household.id, archivedId),
+  ]);
+  const canEdit = member.role !== 'viewer';
+  const addAction = canEdit ? { label: t('add'), href: '/properties/new', icon: Plus } : undefined;
   const photos = await signCoverPhotos(member.id, list.rows.flatMap((row) => (row.coverPhotoPath === null ? [] : [row.coverPhotoPath])));
 
   const toCard = (row: PropertyListRow): PropertyCardData => {
@@ -87,13 +101,28 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
             {count}
           </p>
         </div>
-        {list.householdCount === 0 ? null : (
-          <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {list.householdCount === 0 ? null : (
+            <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
+          )}
+          {addAction === undefined ? null : (
+            <Link href={addAction.href} data-testid="add-property" className={buttonVariants({ variant: 'primary' })}>
+              <Plus aria-hidden="true" />
+              {addAction.label}
+            </Link>
+          )}
+        </div>
       </header>
+      {archivedId === null || archived === null ? null : <ArchivedPropertyToast id={archivedId} nickname={archived} />}
 
       {list.householdCount === 0 ? (
-        <EmptyState icon={sectionIcons.properties} title={t('empty')} body={t('emptyBody')} className="max-w-3xl" />
+        <EmptyState
+          icon={sectionIcons.properties}
+          title={t('empty')}
+          body={t('emptyBody')}
+          className="max-w-3xl"
+          {...(addAction === undefined ? {} : { action: addAction })}
+        />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2 lg:gap-3">
@@ -120,7 +149,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
             <MapView
               cards={cards}
               rows={list.rows}
-              canEdit={member.role !== 'viewer'}
+              canEdit={canEdit}
               locate={locateParam.safeParse(params.locate).data ?? null}
               query={propertyFiltersQuery(filters)}
             />
@@ -129,7 +158,16 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           )}
         </>
       )}
+      <Link href="/properties/archived" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start')}>
+        <Archive aria-hidden="true" />
+        {t('archivedLink')}
+      </Link>
     </div>
   );
 }
 
+
+async function ArchivedPropertyToast({ id, nickname }: { id: string; nickname: string }) {
+  const intl = await propertyIslandIntl();
+  return <ArchivedNoticeLoader locale={intl.locale} messages={intl.messages} propertyId={id} nickname={nickname} />;
+}

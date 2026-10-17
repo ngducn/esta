@@ -39,6 +39,7 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           currentAddress: currentAddressText(property),
           certificateAddress: property.certificateAddressText,
           photoUrl: property.coverPhotoPath === null ? null : (photos.get(property.coverPhotoPath) ?? null),
+          edit: member.role === 'viewer' ? null : { href: `/properties/${property.id}/edit`, label: t('edit') },
         }}
       />
       <PropertyTabBar

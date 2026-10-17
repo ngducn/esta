@@ -1,4 +1,4 @@
-export { coverPhotoPath, parseCoverPhotoPath, type CoverPhotoParts, type CoverPhotoPath } from './cover-photo';
+export { coverPhotoPath, parseCoverPhotoPath, stalePhotos, type CoverPhotoParts, type CoverPhotoPath, type StoredPhoto } from './cover-photo';
 export {
   LEGAL_STATUSES,
   PROPERTY_FILTERS,
@@ -27,3 +27,5 @@ export {
   type SearchParamsRecord,
   type UseMode,
 } from './filters';
+export { PROPERTY_CODE_MAX_LENGTH, suggestPropertyCode } from './code';
+export { KIND_FIELDS, kindDetailsText, readKindDetails, vndInputText, type KindField, type KindFieldInput, type KindFieldTexts } from './form-fields';

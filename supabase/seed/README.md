@@ -93,9 +93,13 @@ Keys added by the generator:
 
 `<property>` is a SPEC §9.3 seed key: `q7`, `thu-duc`, `di-an`, `q1`, `bien-hoa`, `long-an` or `bao-loc`. A property's `code` is that key in uppercase without hyphens, such as `DIAN`.
 
+## Acquisition
+
+Every seeded property except `long-an` carries `acquired_on`, `acquisition_kind` and, for a purchase, `acquisition_price_vnd` in integer đồng: `q7`, `thu-duc`, `di-an` and `bien-hoa` were bought, `q1` was inherited and `bao-loc` was a gift, so neither has a price. `long-an` has none, so the completeness check in P1-03 flags its missing acquisition.
+
 ## Cover photos and bulk properties
 
-Each seeded property except `bien-hoa` gets `cover_photo_path` `<household id>/<property id>/<file>`, where the file is one of the four AVIF covers in `supabase/seed/photos/` (`scripts/seed-covers.sh` rebuilds them from `source/`) (`ATTRIBUTION.md` there names their sources). `bien-hoa` keeps none, so every household shows the fallback tile. After `pnpm db:reset` and `pnpm db:start`, `scripts/db.ts` runs `scripts/seed-photos.ts`, which uploads each file with the service role to the private `property-photos` bucket at its path with `x-upsert`, and prints `seed-photos: 66 objects in property-photos` for the default 11 households. A rerun uploads the same bytes to the same paths. `pnpm db:checksum` hashes public tables only, so object timestamps never affect FND-7.
+Each seeded property except `bien-hoa` gets `cover_photo_path` `<household id>/<property id>/<file>`, where the file is one of the four AVIF covers in `supabase/seed/photos/` (`scripts/seed-covers.sh` rebuilds them from `source/`) (`ATTRIBUTION.md` there names their sources). `bien-hoa` keeps none, so every household shows the fallback tile. After `pnpm db:reset` and `pnpm db:start`, `scripts/db.ts` runs `scripts/seed-photos.ts`, which uploads each file with the service role to the private `property-photos` bucket at its path with `x-upsert`, and prints `seed-photos: 66 objects in property-photos` for the default 11 households. A rerun uploads the same bytes to the same paths. It uploads only paths named after a seed photo; a cover uploaded through the app, such as one an e2e run left in a volume that a plain `db:start` keeps, has a uuid name and no seed file, so seed-photos neither uploads it nor sweeps its object. `pnpm db:checksum` hashes public tables only, so object timestamps never affect FND-7.
 
 `tsx scripts/seed-bulk-properties.ts --household <n> --count <count>` adds `Tài sản Demo 0001` and onward, without photos, to lane household n for list performance tests. Their ids come from `seed:bulk-property:lane-<n>:<0001>`, and a rerun adds nothing new.
 

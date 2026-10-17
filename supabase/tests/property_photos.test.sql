@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(35);
+select plan(42);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -81,6 +81,18 @@ select is_empty($$ update storage.objects set metadata = '{}' where name = curre
   'a member of A updates none of B''s photos');
 select is_empty($$ delete from storage.objects where name = current_setting('tests.b_path') returning 1 $$,
   'a member of A deletes none of B''s photos');
+select set_config('tests.a2_old', format('%s/%s/old.webp', :'a', :'pa2'), true);
+select set_config('tests.a2_new', format('%s/%s/new.webp', :'a', :'pa2'), true);
+select lives_ok($$ insert into storage.objects (bucket_id, name) values
+    ('property-photos', current_setting('tests.a2_old')), ('property-photos', current_setting('tests.a2_new')) $$,
+  'a member of A uploads a replacement beside the current photo');
+select isnt_empty(format($$ update public.properties set cover_photo_path = %L where id = %L returning 1 $$, current_setting('tests.a2_new'), :'pa2'),
+  'FND-2: a member points the cover at the replacement');
+select isnt_empty($$ delete from storage.objects where name = current_setting('tests.a2_old') returning 1 $$,
+  'FND-2: a member deletes the replaced object');
+select results_eq(format($$ select name from storage.objects where bucket_id = 'property-photos' and name like '%s/%s/%%' $$, :'a', :'pa2'),
+  array[current_setting('tests.a2_new')],
+  'after the replacement the property keeps one photo object');
 
 select tests.act_as('viewer.a@test.esta.test');
 select isnt_empty($$ select 1 from storage.objects where name = current_setting('tests.a_path') $$,
@@ -92,6 +104,13 @@ select is_empty($$ update storage.objects set metadata = '{}' where name = curre
   'a viewer updates no photo');
 select is_empty($$ delete from storage.objects where name = current_setting('tests.a_path') returning 1 $$,
   'a viewer deletes no photo');
+select throws_ok(
+  format($$ insert into storage.objects (bucket_id, name) values ('property-photos', '%s/%s/viewer.webp') $$, :'a', :'pa2'),
+  '42501', null, 'FND-2: a viewer cannot upload a replacement');
+select is_empty($$ delete from storage.objects where name = current_setting('tests.a2_new') returning 1 $$,
+  'FND-2: a viewer cannot delete the current photo');
+select is_empty(format($$ update public.properties set cover_photo_path = null where id = %L returning 1 $$, :'pa2'),
+  'FND-2: a viewer cannot clear the cover');
 
 select tests.act_as('admin.a@test.esta.test');
 select isnt_empty($$ delete from storage.objects where name = current_setting('tests.a_path') returning 1 $$,

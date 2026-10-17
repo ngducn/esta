@@ -25,7 +25,11 @@ type PropertySeedShape = {
   /** `long-an` has none, so every household shows one unpinned property on the map (P1-09). */
   location: { lat: number; lng: number } | null;
   photo: SeedPhoto | null;
+  /** `long-an` has none, so P1-03 flags its missing acquisition. */
+  acquisition: Acquisition | null;
 };
+
+type Acquisition = { acquired_on: string; kind: 'purchase' | 'inheritance' | 'gift' | 'allocation' | 'other'; price_vnd: number | null };
 
 export const PROPERTY_SEEDS = [
   {
@@ -39,6 +43,7 @@ export const PROPERTY_SEEDS = [
     certificate_address_text: 'Số 901 Demo, đường số 15, Khu phố 1, Phường Tân Phong, Quận 7, Thành phố Hồ Chí Minh',
     location: { lat: 10.7295, lng: 106.7058 },
     photo: 'nha-pho.avif',
+    acquisition: { acquired_on: '2012-05-18', kind: 'purchase', price_vnd: 3_800_000_000 },
   },
   {
     key: 'thu-duc',
@@ -58,6 +63,7 @@ export const PROPERTY_SEEDS = [
       'Căn hộ A-12.05, Chung cư Demo Bình Thọ, số 902 Demo, đường Võ Văn Ngân, Phường Bình Thọ, Thành phố Thủ Đức, Thành phố Hồ Chí Minh',
     location: { lat: 10.8497, lng: 106.7717 },
     photo: 'can-ho.avif',
+    acquisition: { acquired_on: '2019-09-02', kind: 'purchase', price_vnd: 2_650_000_000 },
   },
   {
     key: 'di-an',
@@ -70,6 +76,7 @@ export const PROPERTY_SEEDS = [
     certificate_address_text: 'Số 903/9 Demo, đường Nguyễn An Ninh, Khu phố Nhị Đồng 2, Phường Dĩ An, Thành phố Dĩ An, Tỉnh Bình Dương',
     location: { lat: 10.9068, lng: 106.769 },
     photo: 'day-tro.avif',
+    acquisition: { acquired_on: '2015-03-10', kind: 'purchase', price_vnd: 1_900_000_000 },
   },
   {
     key: 'q1',
@@ -82,6 +89,7 @@ export const PROPERTY_SEEDS = [
     certificate_address_text: 'Số 904 Demo, đường Lê Thánh Tôn, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
     location: { lat: 10.778, lng: 106.702 },
     photo: 'nha-pho.avif',
+    acquisition: { acquired_on: '2008-11-20', kind: 'inheritance', price_vnd: null },
   },
   {
     key: 'bien-hoa',
@@ -94,6 +102,7 @@ export const PROPERTY_SEEDS = [
     certificate_address_text: 'Lô C95 Demo, đường số 7, Khu phố 3, Phường Tân Phong, Thành phố Biên Hòa, Tỉnh Đồng Nai',
     location: { lat: 10.97, lng: 106.846 },
     photo: null,
+    acquisition: { acquired_on: '2017-07-01', kind: 'purchase', price_vnd: 4_200_000_000 },
   },
   {
     key: 'long-an',
@@ -106,6 +115,7 @@ export const PROPERTY_SEEDS = [
     certificate_address_text: 'Thửa đất số 906 Demo, tờ bản đồ số 96, Phường 2, Thành phố Tân An, Tỉnh Long An',
     location: null,
     photo: 'dat.avif',
+    acquisition: null,
   },
   {
     key: 'bao-loc',
@@ -118,6 +128,7 @@ export const PROPERTY_SEEDS = [
     certificate_address_text: 'Số 907 Demo, đường Trần Phú, Phường 1, Thành phố Bảo Lộc, Tỉnh Lâm Đồng',
     location: { lat: 11.547, lng: 107.808 },
     photo: 'dat.avif',
+    acquisition: { acquired_on: '2021-01-15', kind: 'gift', price_vnd: null },
   },
 ] as const satisfies readonly PropertySeedShape[];
 
@@ -150,6 +161,9 @@ export const properties = publicTable('properties', ({ household, properties }) 
       certificate_address_text: seed.certificate_address_text,
       ...(seed.location === null ? {} : { location: `SRID=4326;POINT(${seed.location.lng} ${seed.location.lat})` }),
       cover_photo_path: seed.photo === null ? null : `${household_id}/${id}/${seed.photo}`,
+      acquired_on: seed.acquisition?.acquired_on ?? null,
+      acquisition_kind: seed.acquisition?.kind ?? null,
+      acquisition_price_vnd: seed.acquisition?.price_vnd ?? null,
     };
   }),
 );

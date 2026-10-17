@@ -31,6 +31,7 @@ function rewriteCover(request: NextRequest): NextResponse {
 }
 
 const PROPERTY_PATH = /^\/properties\/([^/]+)(?:\/|$)/;
+const STATIC_PROPERTY_ROUTES = new Set(['new', 'archived']);
 
 /**
  * Every page under (app) streams below a loading boundary, so a page's notFound() arrives after the 200 is sent.
@@ -39,7 +40,7 @@ const PROPERTY_PATH = /^\/properties\/([^/]+)(?:\/|$)/;
  */
 async function isMissingProperty(request: NextRequest, supabase: SupabaseClient<Database>): Promise<boolean> {
   const id = PROPERTY_PATH.exec(request.nextUrl.pathname)?.[1];
-  if (id === undefined || request.headers.has('rsc')) return false;
+  if (id === undefined || STATIC_PROPERTY_ROUTES.has(id) || request.headers.has('rsc')) return false;
   if (!z.uuid().safeParse(id).success) return true;
   const { data, error } = await supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle();
   return error === null && data === null;

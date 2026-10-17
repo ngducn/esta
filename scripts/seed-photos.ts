@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseCoverPhotoPath } from '../packages/core/src/properties/cover-photo.ts';
+import { SEED_PHOTOS } from '../supabase/seed/generator/properties.ts';
 import { parseSlot } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 
@@ -32,13 +33,19 @@ export async function retrying(
   }
 }
 
-/** One upload per distinct path, sorted, so a second run sends the same bytes to the same paths. */
+const SEED_FILES: ReadonlySet<string> = new Set(SEED_PHOTOS);
+
+/**
+ * One upload per distinct path named after a seed photo, sorted, so a second run sends the same bytes to the same
+ * paths. A cover uploaded through the app (a uuid name, kept by a plain `db:start`) has no seed file and is skipped.
+ */
 export function planPhotoUploads(paths: readonly (string | null)[], photosDir = PHOTOS_DIR): PhotoUpload[] {
-  return [...new Set(paths.filter((path): path is string => path !== null))].toSorted().map((path) => {
+  return [...new Set(paths.filter((path): path is string => path !== null))].toSorted().flatMap((path) => {
     const parts = parseCoverPhotoPath(path);
     if (parts === null) throw new Error(`seed-photos: ${path} is not a cover photo path`);
+    if (!SEED_FILES.has(parts.name)) return [];
     const extension = parts.name.split('.').at(-1) as keyof typeof CONTENT_TYPES;
-    return { path, file: join(photosDir, parts.name), contentType: CONTENT_TYPES[extension] };
+    return [{ path, file: join(photosDir, parts.name), contentType: CONTENT_TYPES[extension] }];
   });
 }
 
@@ -110,7 +117,8 @@ async function run(): Promise<void> {
   });
   if (!response.ok) throw new Error(`seed-photos: reading properties failed: ${response.status} ${await response.text()}`);
   const rows = (await response.json()) as { cover_photo_path: string }[];
-  const uploads = planPhotoUploads(rows.map((row) => row.cover_photo_path));
+  const referenced = rows.map((row) => row.cover_photo_path);
+  const uploads = planPhotoUploads(referenced);
 
   const files = new Map<string, Buffer>();
   for (const { file } of uploads) if (!files.has(file)) files.set(file, await readFile(file));
@@ -129,7 +137,7 @@ async function run(): Promise<void> {
       if (!upload.ok) throw new Error(`seed-photos: ${path} failed: ${upload.status} ${await upload.text()}`);
     }),
   );
-  const stale = stalePaths(await listObjects(url, headers), uploads.map((upload) => upload.path));
+  const stale = stalePaths(await listObjects(url, headers), referenced);
   await removeObjects(url, headers, stale);
   console.log(`seed-photos: ${uploads.length} objects in ${BUCKET}, removed ${stale.length} stale`);
 }

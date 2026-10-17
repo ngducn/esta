@@ -17,10 +17,9 @@ values (:'b', 'Nhà B', 'Q7', 'townhouse', 'rental');
 select tests.act_as('member.a@test.esta.test');
 
 select lives_ok(
-  format($$ insert into public.properties (household_id, nickname, code, kind, use_mode, current_address, location)
+  format($$ insert into public.properties (household_id, nickname, code, kind, use_mode, current_address)
             values (%L, 'Nhà phố Q7', 'Q7', 'townhouse', 'rental',
-                    '{"street": "Đường số 15", "commune_code": "27475", "province_code": "79"}',
-                    'SRID=4326;POINT(106.7058 10.7295)') $$, :'a'),
+                    '{"street": "Đường số 15", "commune_code": "27475", "province_code": "79"}') $$, :'a'),
   'a member inserts a property into its household');
 select is((select created_by from public.properties where household_id = :'a'), :'member_a'::uuid,
   'created_by is the inserting user');
