@@ -1,9 +1,11 @@
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { businessDate, parseInstant } from '../packages/core/src/index.ts';
 import { householdSeeds } from '../supabase/seed/generator/households.ts';
 import { properties, PROPERTY_SEEDS } from '../supabase/seed/generator/properties.ts';
-import { planPhotoUploads, retrying } from './seed-photos.ts';
+import { planPhotoUploads, retrying, stalePaths } from './seed-photos.ts';
 
 const asOf = parseInstant('2026-10-07T09:00:00+07:00');
 const today = businessDate(asOf, 'Asia/Ho_Chi_Minh');
@@ -69,5 +71,19 @@ describe('retrying', () => {
     expect(refusal.waits).toEqual([]);
     const down = server('refused', 'refused');
     await expect(retrying(down.request, { attempts: 2, firstDelayMs: 250, wait: down.wait })).rejects.toThrow('fetch failed');
+  });
+});
+
+describe('stalePaths', () => {
+  it('lists the objects the seed would not upload, sorted', () => {
+    expect(stalePaths(['a/b/z.avif', 'a/b/x.avif', 'a/b/keep.avif'], ['a/b/keep.avif'])).toEqual(['a/b/x.avif', 'a/b/z.avif']);
+    expect(stalePaths(['a/b/keep.avif'], ['a/b/keep.avif'])).toEqual([]);
+  });
+});
+
+describe('flaky-report', () => {
+  it('names each flaky test from a Playwright JSON report', () => {
+    const out = execFileSync('node', [join(import.meta.dirname, '..', 'tools', 'flaky-report.mjs'), join(import.meta.dirname, '..', 'tools', 'fixtures', 'playwright-flaky.json')], { encoding: 'utf8' });
+    expect(out).toBe('flaky: 1\n- leases.spec.ts > rent > marks an invoice paid\n');
   });
 });
