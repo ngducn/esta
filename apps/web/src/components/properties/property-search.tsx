@@ -21,7 +21,17 @@ export function PropertySearch({ label, placeholder }: { label: string; placehol
     if (document.activeElement !== input.current) setValue(urlQuery);
   }, [urlQuery]);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => {
+    // The pathname only changes when the new page commits, so unmount alone is too late: a click on any link has to cancel the replace.
+    const cancelOnLinkClick = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest('a[href]') !== null) clearTimeout(timer.current);
+    };
+    document.addEventListener('click', cancelOnLinkClick, true);
+    return () => {
+      document.removeEventListener('click', cancelOnLinkClick, true);
+      clearTimeout(timer.current);
+    };
+  }, []);
 
   function update(next: string) {
     setValue(next);

@@ -124,6 +124,16 @@ test('rule 3: bao loc leaves Đất Bảo Lộc with its photo, and clearing bri
   await expect(nicknames(page)).toHaveText(LANE_SEVEN);
 });
 
+test('a card tapped right after typing opens its page, and the late search replace never pulls back to the list', async ({ page }) => {
+  onlyOn('desktop');
+  await open(page, 'ryan.lane3@demo.esta.test', 'light');
+  await search(page).fill('bao loc');
+  await page.getByRole('link', { name: 'Đất Bảo Lộc', exact: true }).click();
+  await expect(page).toHaveURL(/\/properties\/[0-9a-f-]{36}$/);
+  await page.waitForTimeout(600);
+  await expect(page, 'the 200 ms search debounce has long passed').toHaveURL(/\/properties\/[0-9a-f-]{36}$/);
+});
+
 test('rule 4: the former and current province chips filter, and a reload keeps the chip', async ({ page }) => {
   onlyOn('desktop');
   await open(page, 'ryan.lane4@demo.esta.test', 'dark');
