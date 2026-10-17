@@ -15,9 +15,10 @@ export function PropertyTabBar({ propertyId, label, labels }: { propertyId: stri
             <IntentLink
               href={propertyTabHref(propertyId, tab)}
               aria-current={segment === tab.segment ? 'page' : undefined}
-              className="-mb-px flex min-h-touch items-center border-b-3 border-transparent px-3 text-body font-medium whitespace-nowrap text-ink-muted transition-colors duration-(--duration-fast) ease-standard outline-none hover:text-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent aria-[current=page]:border-accent aria-[current=page]:font-bold aria-[current=page]:text-ink"
+              className="group relative flex min-h-touch items-center px-3 text-body font-medium whitespace-nowrap text-ink-muted transition-colors duration-(--duration-fast) ease-standard outline-none hover:text-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent aria-[current=page]:font-bold aria-[current=page]:text-ink"
             >
               {labels[tab.id]}
+              <span aria-hidden="true" className="absolute inset-x-0 -bottom-px hidden h-0.75 rounded-full bg-accent group-aria-[current=page]:block" />
             </IntentLink>
           </li>
         ))}
