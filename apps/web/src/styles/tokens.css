@@ -12,6 +12,7 @@
   --rule-strong: oklch(90.3% 0.009 265);
   --field: oklch(62% 0.022 265);
   --accent: oklch(53% 0.166 32);
+  --accent-pressed: oklch(47% 0.166 32);
   --accent-tint: oklch(95% 0.014 28);
   --on-accent: oklch(99% 0.004 32);
   --paid: oklch(46.9% 0.112 153);
@@ -39,6 +40,7 @@
   --rule-strong: oklch(36% 0.014 265);
   --field: oklch(56% 0.02 265);
   --accent: oklch(72% 0.14 32);
+  --accent-pressed: oklch(66% 0.14 32);
   --accent-tint: oklch(27% 0.04 30);
   --on-accent: oklch(18% 0.02 30);
   --paid: oklch(80% 0.12 155);
@@ -67,6 +69,7 @@
   --color-rule-strong: var(--rule-strong);
   --color-field: var(--field);
   --color-accent: var(--accent);
+  --color-accent-pressed: var(--accent-pressed);
   --color-accent-tint: var(--accent-tint);
   --color-on-accent: var(--on-accent);
   --color-paid: var(--paid);

@@ -7,7 +7,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-accent text-on-accent hover:bg-accent/90 active:bg-accent/82 disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
+          'bg-accent text-on-accent hover:bg-accent/90 active:bg-accent-pressed disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
         secondary:
           'bg-ink text-surface hover:bg-ink/88 active:bg-ink/80 disabled:bg-rule disabled:text-ink-muted data-disabled:bg-rule data-disabled:text-ink-muted',
         outline:

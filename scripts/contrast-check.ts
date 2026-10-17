@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { contrastRatio, inSrgbGamut, mixOklch, oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
-import { colorPairs, minimumRatio, type ColorPair } from '../apps/web/src/design/text-pairs.ts';
+import { colorPairs, grounds, minimumRatio, type ColorPair } from '../apps/web/src/design/text-pairs.ts';
 import { colors, type ColorToken, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
 import { findUnlistedPairs } from './used-color-pairs.ts';
 
@@ -11,10 +11,18 @@ export type PairResult = ColorPair & { theme: Theme; ratio: number; minimum: num
 
 const themes: readonly Theme[] = ['light', 'dark'];
 
+/** A translucent background shows the ground through it, so the pair holds only if it holds on every ground. */
+function pairRatio(palette: Palette, pair: ColorPair, theme: Theme): number {
+  const foreground = palette[pair.foreground][theme];
+  if (pair.opacity === undefined) return contrastRatio(foreground, palette[pair.background][theme]);
+  const share = pair.opacity / 100;
+  return Math.min(...grounds.map((ground) => contrastRatio(foreground, mixOklch(palette[pair.background][theme], palette[ground][theme], share))));
+}
+
 export function checkPairs(palette: Palette, pairs: readonly ColorPair[]): PairResult[] {
   return themes.flatMap((theme) =>
     pairs.map((pair) => {
-      const ratio = contrastRatio(palette[pair.foreground][theme], palette[pair.background][theme]);
+      const ratio = pairRatio(palette, pair, theme);
       const minimum = minimumRatio[pair.kind];
       return { ...pair, theme, ratio, minimum, ok: ratio >= minimum };
     }),
@@ -62,7 +70,7 @@ function main(): void {
   const rows = results.map((r) => [
     r.theme,
     r.foreground,
-    r.background,
+    r.opacity === undefined ? r.background : `${r.background}/${r.opacity}`,
     r.kind,
     r.ratio.toFixed(2),
     r.minimum.toFixed(1),

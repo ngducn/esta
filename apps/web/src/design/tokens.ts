@@ -14,6 +14,7 @@ export const colors = {
   'rule-strong': { light: [90.3, 0.009, 265], dark: [36, 0.014, 265] },
   field: { light: [62, 0.022, 265], dark: [56, 0.02, 265] },
   accent: { light: [53, 0.166, 32], dark: [72, 0.14, 32] },
+  'accent-pressed': { light: [47, 0.166, 32], dark: [66, 0.14, 32] },
   'accent-tint': { light: [95, 0.014, 28], dark: [27, 0.04, 30] },
   'on-accent': { light: [99, 0.004, 32], dark: [18, 0.02, 30] },
   paid: { light: [46.9, 0.112, 153], dark: [80, 0.12, 155] },
