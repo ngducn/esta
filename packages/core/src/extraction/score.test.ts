@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scoreExtraction } from './score';
+import { normalizeValue, scoreExtraction } from './score';
 
 const leaf = (value: unknown, confidence = 1) => ({ value, confidence, page: 1 });
 
@@ -57,7 +57,7 @@ describe('scoreExtraction', () => {
   });
 
   it('matches 07/10/2026 to 2026-10-07', () => {
-    expect(hitOf(certificate({ issued_on: leaf('07/10/2026') }), 'issued_on')).toBe(true);
+    expect(normalizeValue('issued_on', '07/10/2026')).toBe('2026-10-07');
   });
 
   it('counts a missing field as a miss', () => {
@@ -90,9 +90,27 @@ describe('scoreExtraction', () => {
     expect(score.highConfidence.correct).toBe(score.highConfidence.total);
   });
 
-  it('marks a result the schema rejects as invalid but still scores its fields', () => {
+  it('zeroes every hit when the schema rejects the reply', () => {
     const score = scoreExtraction('certificate_v1', truth, certificate({ form: leaf('so_trang') }));
     expect(score.schemaValid).toBe(false);
-    expect(score.required.every((field) => field.hit)).toBe(true);
+    expect(score.required.some((field) => field.hit)).toBe(false);
+  });
+
+  it('reports null-truth slots as their own count, apart from required', () => {
+    const paperOnly = certificate({ serial_no: leaf(null), issued_on: leaf(null) });
+    const exact = scoreExtraction('certificate_v1', paperOnly, paperOnly);
+    expect(exact.required).toHaveLength(5);
+    expect(exact.required.every((field) => field.hit)).toBe(true);
+    expect(exact.nullTruth).toEqual([
+      { field: 'issued_on', hit: true },
+      { field: 'serial_no', hit: true },
+    ]);
+  });
+
+  it('scores an empty reply 0 of 5 required and 0 null-truth hits', () => {
+    const paperOnly = certificate({ serial_no: leaf(null), issued_on: leaf(null) });
+    const score = scoreExtraction('certificate_v1', paperOnly, {});
+    expect(score.required.filter((field) => field.hit)).toHaveLength(0);
+    expect(score.nullTruth.filter((field) => field.hit)).toHaveLength(0);
   });
 });

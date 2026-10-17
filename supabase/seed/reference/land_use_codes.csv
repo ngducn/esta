@@ -1,9 +1,9 @@
 code,name_vi,name_en,land_group
-BHK,Đất bằng trồng cây hằng năm khác,Other annual crop land,agricultural
+BHK,Đất bằng trồng cây hằng năm khác,"Other annual crop land, flat terrain (pre-2024 code)",agricultural
 CLN,Đất trồng cây lâu năm,Perennial crop land,agricultural
-CSD,Đất bằng chưa sử dụng,Unused flat land,unused
-LUC,Đất chuyên trồng lúa nước,Specialized wet rice land,agricultural
-LUK,Đất trồng lúa nước còn lại,Other wet rice land,agricultural
+CSD,Đất chưa sử dụng,Unused land,unused
+LUC,Đất chuyên trồng lúa,Specialized rice land,agricultural
+LUK,Đất trồng lúa còn lại,Other rice land,agricultural
 NKH,Đất nông nghiệp khác,Other agricultural land,agricultural
 NTS,Đất nuôi trồng thủy sản,Aquaculture land,agricultural
 ODT,Đất ở tại đô thị,Urban residential,non_agricultural
@@ -11,3 +11,5 @@ ONT,Đất ở tại nông thôn,Rural residential,non_agricultural
 RSX,Đất rừng sản xuất,Production forest land,agricultural
 SKC,Đất cơ sở sản xuất phi nông nghiệp,Non-agricultural production land,non_agricultural
 TMD,"Đất thương mại, dịch vụ",Commercial and service land,non_agricultural
+BCS,Đất bằng chưa sử dụng,Unused flat land,unused
+HNK,Đất trồng cây hằng năm khác,Other annual crop land,agricultural

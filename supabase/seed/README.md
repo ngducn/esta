@@ -29,7 +29,7 @@ Admin units, the legacy address mapping, land use codes, bank BINs and tax rules
 2. `node scripts/reference/build-csvs.ts` checks each source against its pinned SHA-256, then writes `admin_units.csv`, `admin_unit_legacy_map.csv` and `napas_bins.csv` here.
 3. `node scripts/reference/build-migration.ts` writes the data migration from every file in this directory, sorted, and writes their SHA-256 to `SHA256SUMS`. A rerun produces a byte-identical migration.
 
-`pnpm reference:build` runs steps 2 and 3. Never edit the migration by hand. After a refresh, write a new migration that changes the data instead of editing an applied one.
+`pnpm reference:build` runs steps 2 and 3. Never edit the migration by hand. `build-migration.ts` writes `20261007006100_reference_data.sql` only when it is missing and otherwise leaves the applied file alone. `land_use_codes.csv` holds the current table (post-S5, DOMAIN-VN §3). After changing it, run `node scripts/reference/build-migration.ts --land-use-migration <timestamp>_<name>.sql` to emit a new upsert migration; it refuses to overwrite an existing file.
 
 ## Sources
 

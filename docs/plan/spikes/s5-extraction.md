@@ -12,7 +12,7 @@ schema-valid 100.0%, required exact 100.0%, high-confidence precision 100.0%
 
 - Fixtures. `pnpm fixtures:certificates` renders the five DOMAIN-VN §2 forms as a clean scan PDF, a skewed photo with a glare band, and a dim, blurred, noisy low-light photo, plus the north-star Dĩ An sổ hồng (`fixtures/certificates/README.md`). Names contain "Demo" and ID numbers are invented.
 - Model and path. `claude-sonnet-5-5`, the routine model the P0-15 ping recording ran on, on subscription auth. Each fixture runs through the worker's own `liveSession` (`apps/agent/src/sdk/session.ts`): only the `Read` tool, a fresh temp job dir holding only the page files, the `PreToolUse` path policy, `settingSources: []`, `permissionMode: 'default'` and an empty config dir. The prompt is `extractionPrompt` in `scripts/extraction-eval.ts`.
-- Scoring. `scoreExtraction` in `packages/core/src/extraction/score.ts`: zod validity, exact match on the required fields after normalization (NFC, collapsed whitespace, upper-case land use codes, areas to two decimals, dates to `IsoDate`), and precision of fields with confidence at or above 0.9.
+- Scoring. `scoreExtraction` in `packages/core/src/extraction/score.ts`: zod validity, exact match on the required fields the truth fills after normalization (NFC, collapsed whitespace, upper-case land use codes, areas to two decimals, dates to `IsoDate`), and precision of fields with confidence at or above 0.9. A schema-invalid reply scores no hit. Required slots whose truth is null (`serial_no` and `issued_on` on the three `paper_only` fixtures) are counted apart as `nullTruth`, so an empty reply cannot earn them.
 - One live run on 2026-10-17 (04:18Z), four fixtures at a time. The raw replies are in `s5/outputs/`. `pnpm extraction:eval --from docs/plan/spikes/s5/outputs` rescores them with no credential and prints the tables below.
 
 ## AGENT.md §7.2 targets
@@ -20,7 +20,7 @@ schema-valid 100.0%, required exact 100.0%, high-confidence precision 100.0%
 | Target | Result | Met |
 | --- | --- | --- |
 | 100% schema-valid | 16/16 (100.0%) | Yes |
-| Required fields exact ≥ 90% | 112/112 (100.0%) | Yes |
+| Required fields exact ≥ 90% | 106/106 (100.0%), plus 6/6 null-truth slots counted apart | Yes |
 | Fields with confidence ≥ 0.9 at least 97% correct | 331/331 (100.0%) | Yes |
 
 ## By form
@@ -31,7 +31,7 @@ schema-valid 100.0%, required exact 100.0%, high-confidence precision 100.0%
 | so_hong_pre2009 | 3 | 3/3 (100.0%) | 21/21 (100.0%) | 76/76 (100.0%) |
 | gcn_2009_2024 | 4 | 4/4 (100.0%) | 28/28 (100.0%) | 116/116 (100.0%) |
 | gcn_2024 | 3 | 3/3 (100.0%) | 21/21 (100.0%) | 73/73 (100.0%) |
-| paper_only | 3 | 3/3 (100.0%) | 21/21 (100.0%) | 7/7 (100.0%) |
+| paper_only | 3 | 3/3 (100.0%) | 15/15 (100.0%) | 7/7 (100.0%) |
 
 ## By required field
 
@@ -42,8 +42,8 @@ schema-valid 100.0%, required exact 100.0%, high-confidence precision 100.0%
 | parcels[].area_m2 | 16/16 (100.0%) |
 | parcels[].address_text | 16/16 (100.0%) |
 | holders[].full_name | 16/16 (100.0%) |
-| issued_on | 16/16 (100.0%) |
-| serial_no | 16/16 (100.0%) |
+| issued_on | 13/13 (100.0%) |
+| serial_no | 13/13 (100.0%) |
 
 ## By fixture
 
@@ -61,9 +61,9 @@ schema-valid 100.0%, required exact 100.0%, high-confidence precision 100.0%
 | gcn_2024-scan | yes | 7/7 | 31/31 | 2 | 11.7 | 0.0307 |
 | gcn_2024-photo | yes | 7/7 | 17/17 | 3 | 12.4 | 0.0341 |
 | gcn_2024-low-light | yes | 7/7 | 25/25 | 3 | 13.4 | 0.0355 |
-| paper_only-scan | yes | 7/7 | 2/2 | 2 | 8.6 | 0.0183 |
-| paper_only-photo | yes | 7/7 | 2/2 | 2 | 9.7 | 0.0234 |
-| paper_only-low-light | yes | 7/7 | 3/3 | 2 | 9.5 | 0.0196 |
+| paper_only-scan | yes | 5/5 | 2/2 | 2 | 8.6 | 0.0183 |
+| paper_only-photo | yes | 5/5 | 2/2 | 2 | 9.7 | 0.0234 |
+| paper_only-low-light | yes | 5/5 | 3/3 | 2 | 9.5 | 0.0196 |
 | northstar-di-an | yes | 7/7 | 29/29 | 4 | 12.5 | 0.0419 |
 
 Totals: 45 turns, 213.0 s of model time (59 s wall clock at four at a time), 0.5544 USD, a mean of 0.0346 USD and at most 18.1 s per fixture.
