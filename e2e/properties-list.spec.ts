@@ -217,3 +217,24 @@ test('no match names the query and offers Xóa bộ lọc', async ({ page }) => 
   await expect(nicknames(page)).toHaveCount(7);
   await expect(search(page)).toHaveValue('');
 });
+
+test('sort offers name and area in a 44 px control, and the URL keeps the choice', async ({ page }) => {
+  onlyOn('mobile');
+  await open(page, 'me.lane1@demo.esta.test', 'light');
+  const sort = page.getByRole('combobox', { name: /^Sắp xếp/ });
+  await expect(sort.locator('option')).toHaveText(['Tên', 'Khu vực']);
+  const box = await sort.boundingBox();
+  expect(box?.height, 'the select itself is a 44 px target').toBeGreaterThanOrEqual(44);
+  expect(box?.width, 'the select itself is a 44 px target').toBeGreaterThanOrEqual(44);
+
+  const byArea = ['Kho Biên Hòa', 'Căn hộ Thủ Đức', 'Dãy trọ Dĩ An', 'Mặt bằng Quận 1', 'Nhà phố Q7', 'Đất Bảo Lộc', 'Đất vườn Long An'];
+  await sort.selectOption({ label: 'Khu vực' });
+  await expect(page).toHaveURL(/[?&]sort=area/);
+  await expect(nicknames(page), 'Đồng Nai, then Hồ Chí Minh, Lâm Đồng and Tây Ninh').toHaveText(byArea);
+  await page.reload();
+  await expect(sort).toHaveValue('area');
+  await expect(nicknames(page)).toHaveText(byArea);
+  await sort.selectOption({ label: 'Tên' });
+  await expect(page).toHaveURL(/\/properties$/);
+  await expect(nicknames(page)).toHaveText(LANE_SEVEN);
+});
