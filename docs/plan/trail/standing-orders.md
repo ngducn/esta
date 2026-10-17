@@ -130,3 +130,11 @@ Operator's words, 2026-10-17: "it resets in 1 hr, we still have 15% left. lets s
 ## Update 2026-10-17 14:30 +07
 
 Operator's answer, 2026-10-17, on P1-09's map view: "Exempt the map view". SPEC §7.2 gains a map exception: `/properties?view=map` has its own budget (map-view script ≤ 300 KB gzipped, TBT ≤ 500 ms, every seeded pin within 8 s on Lighthouse mobile); the list view keeps the general budgets. D10 is unchanged.
+
+## Update 2026-10-17 16:00 +07
+
+Operator's words, 2026-10-17: "choose all of them for me on your recommended action as a staff engineer and someone who uses this app". Decisions taken on that grant:
+
+1. P5-11 (#61) stays parked and is not merged. P5-03, the first PR that writes agent prose to Mẹ, owns the guard and builds it over the rendered plain text, reusing #61's grammar, its 236 tests and the three verifiers' probe sets as the starting corpus.
+2. Cover photo signed URLs stay at 24 h (property photos, low sensitivity; phone caching on Mẹ's mobile data matters more); documents stay at 300 s per DOC-4.
+3. The issues already fixed on main stay listed for the operator to close, because the permission classifier blocks closing from the session.
