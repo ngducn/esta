@@ -6,7 +6,7 @@
       "amount": 3500000,
       "bankRef": "FT26275001",
       "description": "MBVCB.2627501.ESTA7K2QX9MP.CT TU 0903123456 NGUYEN THI HUONG DEMO",
-      "fingerprint": "6cd2aed1b4e96857ca8b79dba4cab3c8d359756437e04abb036dd18d348f7b7a",
+      "fingerprint": "d8ebfd0dd24fcd766895ce7a750431f8ee24b5c1860ea0b8f9154af768e6bf44",
       "match": {
         "status": "memo_match",
         "invoiceId": "inv-dian-p3-202610",
@@ -19,7 +19,7 @@
       "amount": 4200000,
       "bankRef": "FT26276002",
       "description": "esta q4n8r2tv tien phong thang 10",
-      "fingerprint": "c11589fd20bf33984b8a073e789ec2814a40493d963e559bd2af73f23acc2115",
+      "fingerprint": "afa4c27d5c31daa8a8bc6f160c79053c1aa08025ca596bf67a44f2713a147158",
       "match": {
         "status": "memo_match",
         "invoiceId": "inv-dian-p5-202610",
@@ -32,7 +32,7 @@
       "amount": 1000000,
       "bankRef": "FT26279003",
       "description": "TRAN VAN KHOA DEMO ESTAX2Y6Z4WP CK MOT PHAN",
-      "fingerprint": "3b20e9381d1486ab69e0cb86e06807eaa8b093a35905884e713f3e713a55fdc9",
+      "fingerprint": "e60d2ff190f85a4c59decc882ff740e45822db7efa02714a53bb571d671e4593",
       "match": {
         "status": "memo_match",
         "invoiceId": "inv-dian-p8-202610",
@@ -45,7 +45,7 @@
       "amount": 2800000,
       "bankRef": "FT26279004",
       "description": "CAFE FIESTA THANH TOAN",
-      "fingerprint": "f76aae5cbc71210a589739ec8d3ef4ede02c6821930105cb9ccf98dbd7fc28d2",
+      "fingerprint": "07b5bed899eddcc2e7ff3f4bff2da2f382d41f91d695b760bed1956b8094f8b3",
       "match": {
         "status": "unmatched",
         "candidateIds": []
@@ -57,7 +57,7 @@
       "amount": 2800000,
       "bankRef": "FT26280005",
       "description": "FIESTAESTAB7C3D9EF LE MINH DEMO",
-      "fingerprint": "d793f9df882207b546447122757f7fcd68892806c8a11d8f4bc85f03bcd767c7",
+      "fingerprint": "445ddae4d30cbd02579e582d9fbacc8408134400586035be9d2980f68d893500",
       "match": {
         "status": "memo_match",
         "invoiceId": "inv-dian-p7-202610",
@@ -70,7 +70,7 @@
       "amount": 12000000,
       "bankRef": "FT26277006",
       "description": "PHAM THU HA DEMO CHUYEN TIEN THUE NHA",
-      "fingerprint": "4b5605e51d0f6b91a4b6bd7cb911dfc55974fb73ef167b5b36f990e3d82c8dad",
+      "fingerprint": "449aa466fe6896a824fe349484a3bb61c892912a60df1ee378b838850111b253",
       "match": {
         "status": "suggested",
         "invoiceId": "inv-baoloc-nha-202610"
@@ -82,7 +82,7 @@
       "amount": 4200000,
       "bankRef": "FT26278007",
       "description": "TRAN VAN KHOA DEMO CK",
-      "fingerprint": "29a4e4c86412a60aa4a1d662918b8b266997c22cfe200ae29b89457f55c8f3ce",
+      "fingerprint": "1aa917f68a09a9795da41608db5135e36024b2fe01dee35441c60982b43cc703",
       "match": {
         "status": "unmatched",
         "candidateIds": [
@@ -97,7 +97,7 @@
       "amount": -11000,
       "bankRef": "FT26278008",
       "description": "PHI DICH VU SMS BANKING",
-      "fingerprint": "fdfda12739cf6c64704737e72f359f2dfe3857db36ff922fa0b74be9d2ce8264",
+      "fingerprint": "c73a779d49f0f8803a599829c26fffbd0dc46d84fd25667627791764b2a63481",
       "match": {
         "status": "ignored",
         "reason": "debit"
@@ -109,7 +109,7 @@
       "amount": -2000000,
       "bankRef": "FT26281009",
       "description": "RUT TIEN ATM",
-      "fingerprint": "d4e91483e7ab3a4e6f85ddafd0e2528fe4fcd264313c8474306b734758490ee3",
+      "fingerprint": "4dbfa2875d66744f09d7eedb9dce70c594dd26bc6f290801a028c478369fad4d",
       "match": {
         "status": "ignored",
         "reason": "debit"
@@ -121,7 +121,7 @@
       "amount": 850000,
       "bankRef": "FT26281010",
       "description": "ESTA ZZZZZZZZ HOANG ANH DEMO",
-      "fingerprint": "a4dc3c3dd9090ef0b50bf2ce11b9e1c1339d11319c426eebae40b77887b97dd1",
+      "fingerprint": "2af4cb484c473e6a32f1467d03cd11cb431757b0a4b81b09050517f6dd2faa40",
       "match": {
         "status": "unmatched",
         "candidateIds": []
@@ -133,7 +133,7 @@
       "amount": 12000000,
       "bankRef": "FT26288011",
       "description": "PHAM THU HA DEMO CHUYEN TIEN",
-      "fingerprint": "26264475c314148149fcd8ea30e12dc5014bbeb6a85689d5bd4ed312c61d4039",
+      "fingerprint": "eb08e563695aaa18a9477b7c6c525facb22abae7cbae671851343ffc255a9adc",
       "match": {
         "status": "unmatched",
         "candidateIds": []
@@ -145,17 +145,44 @@
       "amount": 3500000,
       "bankRef": "FT26275001",
       "description": "MBVCB.2627501.ESTA7K2QX9MP.CT TU 0903123456 NGUYEN THI HUONG DEMO",
-      "fingerprint": "535fd3a1e476f3eef04f0a40a89faa9bfa112d15aa356bb3dd630905b38d87f5",
+      "fingerprint": "d8ebfd0dd24fcd766895ce7a750431f8ee24b5c1860ea0b8f9154af768e6bf44",
+      "match": {
+        "status": "ignored",
+        "reason": "duplicate"
+      }
+    },
+    {
+      "index": 13,
+      "date": "2026-10-09",
+      "amount": 6000000,
+      "bankRef": "",
+      "description": "NOP TIEN MAT ESTA H8J3K7LM PHAM THU HA DEMO",
+      "fingerprint": "efc68ce53c023bf73ac90a15e2cb4edbda9b8ae0d35c285ee4c793f8bfffa46b",
       "match": {
         "status": "memo_match",
-        "invoiceId": "inv-dian-p3-202610",
-        "memoCode": "7K2QX9MP"
+        "invoiceId": "inv-baoloc-nha-202610",
+        "memoCode": "H8J3K7LM"
+      }
+    },
+    {
+      "index": 14,
+      "date": "2026-10-09",
+      "amount": 6000000,
+      "bankRef": "",
+      "description": "NOP TIEN MAT ESTA H8J3K7LM PHAM THU HA DEMO",
+      "fingerprint": "8d01919cf7e8c574c1bc47cd7fbbb3d775d68916edd9c3476111f9cdf2c9d1b6",
+      "match": {
+        "status": "unmatched",
+        "candidateIds": [
+          "inv-baoloc-nha-202610"
+        ],
+        "repeatOf": 13
       }
     }
   ],
   "rejected": [
     {
-      "index": 13,
+      "index": 15,
       "field": "amount",
       "reason": "fractional"
     }

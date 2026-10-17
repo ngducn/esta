@@ -9,7 +9,7 @@ export {
   type RejectedRow,
   type StatementRow,
 } from './decode';
-export { rowFingerprint, rowFingerprints, sha256Hex } from './fingerprint';
+export { sha256Hex } from './fingerprint';
 export {
   HEADER_ALIASES,
   STATEMENT_LAYOUTS,

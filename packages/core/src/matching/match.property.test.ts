@@ -132,7 +132,7 @@ describe('matchRows properties', () => {
     fc.assert(
       fc.property(scenario, ({ invoices, rows }) => {
         for (const { row, match } of matchRows(rows, invoices)) {
-          if (row.amount <= 0) expect(match).toEqual({ status: 'ignored', reason: 'debit' });
+          if (row.amount <= 0) expect(match.status).toBe('ignored');
         }
       }),
       params,
@@ -158,7 +158,7 @@ describe('matchRows properties', () => {
       fc.property(scenario, ({ invoices, rows }) => {
         const issued = new Set(invoices.map((invoice) => invoice.memoCode));
         for (const { row, match } of matchRows(rows, invoices)) {
-          if (row.amount <= 0) continue;
+          if (row.amount <= 0 || match.status === 'ignored' || 'repeatOf' in match) continue;
           const codes = [...issued].filter((c) => normalizeDescription(row.description).includes(`ESTA${c}`));
           if (codes.length > 0) continue;
           const fitting = suggestionCandidates(row, invoices);

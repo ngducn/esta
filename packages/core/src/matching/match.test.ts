@@ -129,7 +129,11 @@ describe('ignored', () => {
   });
 
   it('ignores every row of a re-imported file when its fingerprints are known', () => {
-    const rows = [row({ description: 'ESTA 7K2QX9MP' }), row({ index: 2, description: 'NGUYEN THI HUONG DEMO' }), row({ index: 3, amount: vnd(-1) })];
+    const rows = [
+      row({ description: 'ESTA 7K2QX9MP' }),
+      row({ index: 2, description: 'NGUYEN THI HUONG DEMO', bankRef: 'FT2' }),
+      row({ index: 3, amount: vnd(-1), bankRef: 'FT3' }),
+    ];
     const first = matchRows(rows, invoices);
     expect(first.map((m) => m.match.status)).toEqual(['memo_match', 'suggested', 'ignored']);
     const again = matchRows(rows, invoices, { knownFingerprints: new Set(first.map((m) => m.fingerprint)) });

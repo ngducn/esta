@@ -5,7 +5,7 @@ import layoutA from '../../../../fixtures/statements/layout-a.csv?raw';
 import layoutB from '../../../../fixtures/statements/layout-b.xlsx.json';
 import layoutC from '../../../../fixtures/statements/layout-c.csv?raw';
 import { decodeCsv, decodeStatement } from './decode';
-import { rowFingerprints } from './fingerprint';
+import { identifyRows } from './fingerprint';
 import { STATEMENT_LAYOUTS, type StatementGrid, type StatementLayoutId } from './layouts';
 import { matchRows, type StatementMatch } from './match';
 import { renderCsv } from './render';
@@ -20,7 +20,7 @@ function rendered(id: StatementLayoutId): string {
   return id === 'b' ? `${JSON.stringify(grid, null, 2)}\n` : renderCsv(grid);
 }
 
-const fingerprints = rowFingerprints(SCENARIO_ROWS);
+const fingerprints = identifyRows(SCENARIO_ROWS).map((identity) => identity.fingerprint);
 const golden = {
   rows: SCENARIO_ROWS.map(({ expect: match, ...row }, i) => ({ index: i + 1, ...row, fingerprint: fingerprints[i] as string, match })),
   rejected: SCENARIO_REJECTED,

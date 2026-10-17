@@ -2,7 +2,7 @@ import { daysBetween } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
 import type { Vnd } from '../money/vnd';
 import type { StatementRow } from './decode';
-import { rowFingerprints } from './fingerprint';
+import { identifyRows, type RowIdentity } from './fingerprint';
 import { findMemoCodes, normalizeDescription } from './memo';
 
 /** An issued invoice as the matcher sees it. The caller derives `outstanding` from allocations. */
@@ -23,7 +23,16 @@ export type StatementMatch =
   | { status: 'suggested'; invoiceId: string }
   /** Zero candidates, or two or more that the operator must choose between. */
   | { status: 'unmatched'; candidateIds: readonly string[] }
-  /** `debit` covers any row that brings no money in; `duplicate` a row an earlier import already holds. */
+  /**
+   * A later identical copy of the row at grid index `repeatOf`, neither with a bank reference: a
+   * second transfer or the same one printed twice, so a person decides. The candidates are the
+   * invoices its own match names.
+   */
+  | { status: 'unmatched'; candidateIds: readonly string[]; repeatOf: number }
+  /**
+   * `debit` covers any row that brings no money in; `duplicate` a row an earlier import already
+   * holds, or a repeat of an earlier row of the file with the same bank reference, date and amount.
+   */
   | { status: 'ignored'; reason: 'debit' | 'duplicate' };
 
 export type MatchedRow = { row: StatementRow; fingerprint: string; match: StatementMatch };
@@ -71,12 +80,25 @@ function matchRow(row: StatementRow, index: Indexed[], issuedCodes: ReadonlySet<
   return decide(suggested, (invoice) => ({ status: 'suggested', invoiceId: invoice.id }));
 }
 
+function asRepeat(match: StatementMatch, repeatOf: number): StatementMatch {
+  switch (match.status) {
+    case 'ignored':
+      return match;
+    case 'unmatched':
+      return { status: 'unmatched', candidateIds: match.candidateIds, repeatOf };
+    case 'memo_match':
+    case 'suggested':
+      return { status: 'unmatched', candidateIds: [match.invoiceId], repeatOf };
+  }
+}
+
 /**
  * The LSE-8 rules. A credit row naming exactly one issued memo code is `memo_match`. A credit row
  * whose amount equals the outstanding amount of exactly one invoice, whose tenant's name appears in
  * the description and whose date is within ten days of the due date is `suggested`. Everything
  * else is `unmatched`, with the candidates when there were several. Rows that bring no money in
- * and rows an earlier import already holds are `ignored`.
+ * and rows an earlier import or row already holds are `ignored`. Only the first of several
+ * identical rows without a bank reference can match.
  */
 export function matchRows(
   rows: readonly StatementRow[],
@@ -86,10 +108,15 @@ export function matchRows(
   const index: Indexed[] = invoices.map((invoice) => ({ invoice, normalizedName: normalizeDescription(invoice.tenantName) }));
   const issuedCodes = new Set(invoices.map((invoice) => invoice.memoCode));
   const known = options.knownFingerprints ?? new Set<string>();
-  const fingerprints = rowFingerprints(rows);
+  const identities = identifyRows(rows);
   return rows.map((row, i) => {
-    const fingerprint = fingerprints[i] as string;
-    const match: StatementMatch = known.has(fingerprint) ? { status: 'ignored', reason: 'duplicate' } : matchRow(row, index, issuedCodes);
-    return { row, fingerprint, match };
+    const identity = identities[i] as RowIdentity;
+    const { fingerprint } = identity;
+    if (known.has(fingerprint) || identity.copy === 'same_reference') {
+      return { row, fingerprint, match: { status: 'ignored', reason: 'duplicate' } };
+    }
+    const match = matchRow(row, index, issuedCodes);
+    if (identity.copy === 'first') return { row, fingerprint, match };
+    return { row, fingerprint, match: asRepeat(match, (rows[identity.of] as StatementRow).index) };
   });
 }

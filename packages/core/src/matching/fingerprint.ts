@@ -71,28 +71,38 @@ export function sha256Hex(text: string): string {
 
 type FingerprintFields = Pick<StatementRow, 'date' | 'amount' | 'bankRef' | 'description'>;
 
-function rowIdentity(row: FingerprintFields): string {
-  return [row.date, String(row.amount), row.bankRef, normalizeDescription(row.description)].join('\n');
-}
+/**
+ * A row's fingerprint and whether an earlier row of the same file (`of`, its position) is the
+ * same transfer. A bank reference names one transfer, so a later row with the same reference,
+ * date and amount is that transfer printed again. A row without one can only be told apart by
+ * position, so a later identical copy may be a second transfer.
+ */
+export type RowIdentity =
+  | { fingerprint: string; copy: 'first' }
+  | { fingerprint: string; copy: 'same_reference' | 'identical'; of: number };
 
-const hashIdentity = (identity: string, occurrence: number): string => sha256Hex(`${identity}\n${occurrence}`);
+function identityText(row: FingerprintFields): string {
+  return row.bankRef === ''
+    ? ['row', row.date, String(row.amount), normalizeDescription(row.description)].join('\n')
+    : ['ref', row.date, String(row.amount), row.bankRef].join('\n');
+}
 
 /**
- * The identity of a statement row across imports (LSE-8): date, amount, bank reference, the
- * normalized description and which occurrence of that row the file holds. A re-exported file
- * hashes the same, and two identical transfers in one file stay two rows instead of one.
+ * The fingerprint is the contract P3-15 stores (LSE-8): the SHA-256, as lowercase hex, of
+ * `ref`, date, amount and bank reference joined by newlines for a row with a reference, and of
+ * `row`, date, amount, normalized description and occurrence for a row without one, where the
+ * nth identical row of the file is occurrence n. A re-export of the same rows hashes the same.
  */
-export function rowFingerprint(row: FingerprintFields, occurrence = 1): string {
-  return hashIdentity(rowIdentity(row), occurrence);
-}
-
-/** One fingerprint per row, the nth identical row of the file hashed as occurrence n. */
-export function rowFingerprints(rows: readonly FingerprintFields[]): string[] {
-  const occurrences = new Map<string, number>();
-  return rows.map((row) => {
-    const identity = rowIdentity(row);
-    const occurrence = (occurrences.get(identity) ?? 0) + 1;
-    occurrences.set(identity, occurrence);
-    return hashIdentity(identity, occurrence);
+export function identifyRows(rows: readonly FingerprintFields[]): RowIdentity[] {
+  const seen = new Map<string, { first: number; count: number }>();
+  return rows.map((row, position) => {
+    const text = identityText(row);
+    const earlier = seen.get(text);
+    const count = (earlier?.count ?? 0) + 1;
+    seen.set(text, { first: earlier?.first ?? position, count });
+    const referenced = row.bankRef !== '';
+    const fingerprint = sha256Hex(referenced ? text : `${text}\n${count}`);
+    if (earlier === undefined) return { fingerprint, copy: 'first' };
+    return { fingerprint, copy: referenced ? 'same_reference' : 'identical', of: earlier.first };
   });
 }
