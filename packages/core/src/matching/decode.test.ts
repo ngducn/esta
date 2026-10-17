@@ -1,36 +1,94 @@
 import { describe, expect, it } from 'vitest';
-import { cellText, decodeCsv, decodeStatement, decodeStatementRows } from './decode';
+import { cellText, decodeCsv, decodeStatement, decodeStatementCsv, decodeStatementRows } from './decode';
 import type { DetectedHeader } from './layouts';
+
+const read = (...cells: string[]) => ({ ok: true, value: cells });
+const refused = (reason: string) => ({ ok: false, reason });
 
 describe('decodeCsv', () => {
   it('reads comma-separated rows with a BOM, CRLF line ends and a trailing newline', () => {
-    expect(decodeCsv('﻿a,b\r\n1,2\r\n')).toEqual([
-      ['a', 'b'],
-      ['1', '2'],
-    ]);
+    expect(decodeCsv('\uFEFFa,b\r\n1,2\r\n')).toEqual([read('a', 'b'), read('1', '2')]);
   });
 
   it('keeps delimiters, doubled quotes and line breaks inside quoted fields', () => {
-    expect(decodeCsv('x,y\n"3,500,000","he said ""hi""\nthen left"')).toEqual([
-      ['x', 'y'],
-      ['3,500,000', 'he said "hi"\nthen left'],
-    ]);
+    expect(decodeCsv('x,y\n"3,500,000","he said ""hi""\nthen left"')).toEqual([read('x', 'y'), read('3,500,000', 'he said "hi"\nthen left')]);
   });
 
   it.each([
-    ['semicolons', 'a;b;c\n1;2;3', ['1', '2', '3']],
-    ['tabs', 'a\tb\tc\n1\t2\t3', ['1', '2', '3']],
-    ['commas when all three appear', 'a,b;c\td\n1,2;3\t4', ['1', '2;3\t4']],
-  ])('detects %s from the first line', (_label, text, secondRow) => {
-    expect(decodeCsv(text)[1]).toEqual(secondRow);
+    ['semicolons', 'a;b;c\n1;2;3', read('1', '2', '3')],
+    ['tabs', 'a\tb\tc\n1\t2\t3', read('1', '2', '3')],
+    ['commas when all three appear', 'a,b;c\td\n1,2;3\t4', read('1', '2;3\t4')],
+  ])('detects %s from the first line', (_label, text, secondRecord) => {
+    expect(decodeCsv(text)[1]).toEqual(secondRecord);
   });
 
-  it('returns no rows for empty text and keeps empty fields', () => {
+  it('returns no records for empty text and keeps empty fields', () => {
     expect(decodeCsv('')).toEqual([]);
-    expect(decodeCsv('a,,c\n,,\n')).toEqual([
-      ['a', '', 'c'],
-      ['', '', ''],
-    ]);
+    expect(decodeCsv('a,,c\n,,\n')).toEqual([read('a', '', 'c'), read('', '', '')]);
+  });
+
+  it('opens a quoted field only at the start of a field, and refuses a record with a quote anywhere else', () => {
+    expect(decodeCsv('a,b\r\n1,CK "PHONG 5\r\n2,x\r\n')).toEqual([read('a', 'b'), refused('stray_quote'), read('2', 'x')]);
+    expect(decodeCsv('a,b\n"1"2,x\n3,y')).toEqual([read('a', 'b'), refused('stray_quote'), read('3', 'y')]);
+    expect(decodeCsv('a,b\n1, "x"\n')).toEqual([read('a', 'b'), refused('stray_quote')]);
+  });
+
+  it('refuses a record whose quote never closes and reads on from the next line', () => {
+    expect(decodeCsv('a,b\n1,"open\r\n2,x\n3,y\n')).toEqual([read('a', 'b'), refused('unterminated_quote'), read('2', 'x'), read('3', 'y')]);
+  });
+});
+
+describe('decodeStatementCsv', () => {
+  const header = 'Date,Reference,Amount,Description\r\n';
+  const r2 = { index: 2, date: '2026-10-06', amount: 3_500_000, description: 'ESTA 7K2QX9MP NGUYEN THI HUONG', bankRef: 'R2' };
+  const r3 = { index: 3, date: '2026-10-07', amount: -50_000, description: 'PHI', bankRef: 'R3' };
+
+  it('refuses a row with a stray quote and keeps every row after it', () => {
+    const text = `${header}2026-10-05,R1,100000,CK "PHONG 5\r\n2026-10-06,R2,3500000,ESTA 7K2QX9MP NGUYEN THI HUONG\r\n2026-10-07,R3,-50000,PHI\r\n`;
+    expect(decodeStatementCsv(text)).toMatchObject({ ok: true, value: { rows: [r2, r3], rejected: [{ index: 1, field: 'row', reason: 'stray_quote' }] } });
+  });
+
+  it('refuses a row whose quote never closes and keeps every row after it', () => {
+    const text = `${header}2026-10-05,R1,100000,"CK PHONG 5\r\n2026-10-06,R2,3500000,ESTA 7K2QX9MP NGUYEN THI HUONG\r\n2026-10-07,R3,-50000,PHI\r\n`;
+    expect(decodeStatementCsv(text)).toMatchObject({
+      ok: true,
+      value: { rows: [r2, r3], rejected: [{ index: 1, field: 'row', reason: 'unterminated_quote' }] },
+    });
+  });
+
+  it('refuses a row with more or fewer cells than the header, so an unquoted 1,500,000 is never read as 1', () => {
+    const text = 'Date,Description,Amount\r\n2026-10-05,ESTA 7K2QX9MP,1,500,000\r\n2026-10-06,SHORT\r\n2026-10-07,QUOTED,"1,500,000"\r\n';
+    expect(decodeStatementCsv(text)).toEqual({
+      ok: true,
+      value: {
+        headerRow: 0,
+        mapping: { date: 0, description: 1, bankRef: null, amount: { kind: 'signed', amount: 2 } },
+        rows: [{ index: 3, date: '2026-10-07', amount: 1_500_000, description: 'QUOTED', bankRef: '' }],
+        rejected: [
+          { index: 1, field: 'row', reason: 'cell_count' },
+          { index: 2, field: 'row', reason: 'cell_count' },
+        ],
+      },
+    });
+  });
+
+  it('reads account lines of any width above the header, skips blank lines and lists every refusal in file order', () => {
+    const text = `Sao kê tài khoản\r\nSố tài khoản: 0123\r\n${header}\r\n2026-10-05,R1,"1.500.000,50",HALF\r\n,,,\r\n2026-10-06,R2,10,"X"Y\r\n2026-10-07,R3,20,FINE\r\n`;
+    expect(decodeStatementCsv(text)).toMatchObject({
+      ok: true,
+      value: {
+        headerRow: 2,
+        rows: [{ index: 7, amount: 20, bankRef: 'R3' }],
+        rejected: [
+          { index: 4, field: 'amount', reason: 'fractional' },
+          { index: 6, field: 'row', reason: 'stray_quote' },
+        ],
+      },
+    });
+  });
+
+  it('refuses text without a header', () => {
+    expect(decodeStatementCsv('07/10/2026,3.500.000,ESTA 7K2QX9MP\r\n')).toEqual({ ok: false, reason: 'no_header' });
   });
 });
 
