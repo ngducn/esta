@@ -218,6 +218,7 @@ describe('decodeVietQr', () => {
     ['tag 00 not first', ['010212', '000201', merchant(), '5303704', '5802VN'], { kind: 'field', tag: '00', expected: 'first, with value 01' }],
     ['tag 00 not 01', ['000202', '010212', merchant(), '5303704', '5802VN'], { kind: 'field', tag: '00', expected: 'first, with value 01' }],
     ['tag 63 swallowed by the field before it', ['000201', '5810VN'], { kind: 'field', tag: '63', expected: 'last' }],
+    ['tag 63 with length 10 around the CRC', ['000201', '010212', merchant(), '5303704', '5802VN', '6310AB'], { kind: 'field', tag: '63', expected: '4 characters' }],
     ['tag 01 out of range', ['000201', '010213', merchant(), '5303704', '5802VN'], { kind: 'field', tag: '01', expected: '11 or 12' }],
     ['tag 01 missing', ['000201', merchant(), '5303704', '5802VN'], { kind: 'field', tag: '01', expected: '11 or 12' }],
     ['currency not 704', ['000201', '010212', merchant(), '5303840', '5802VN'], { kind: 'field', tag: '53', expected: '704' }],
