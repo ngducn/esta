@@ -149,7 +149,8 @@ const PATTERNS: readonly Pattern[] = [
   { regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`), read: ([, , digits = '']) => [readCount(digits)] },
 ];
 
-const DIGIT = /\d/gu;
+const DIGIT = /\p{Nd}/gu;
+const UNREADABLE = /[-−]?\p{Nd}+/yu;
 const WORD_CHAR = /[\p{L}\p{N}]/u;
 const LETTER = /\p{L}/u;
 const SENTENCE_END = /[.!?;](?=\s|$)|\n/gu;
@@ -158,9 +159,9 @@ const SKIP = /https?:\/\/[^\s)\]]+|esta:\/\/[^\s)\]]+|\b[0-9a-f]{8}-[0-9a-f]{4}-
 
 /**
  * A word that alternates between letters and digits at least twice, such as a memo code `7K2QX9MP` or
- * a hex id, is a code: its digits are not numbers on either side of the guard. `Q7` and `Phòng5` are not codes.
+ * `3PN2WC`, is a code: the run must contain the same word, read case-insensitively. `Q7` and `Phòng5` are not codes.
  */
-function codeWordEnd(text: string, at: number): number | null {
+function codeWordAt(text: string, at: number): { readonly start: number; readonly end: number } | null {
   let start = at;
   while (start > 0 && WORD_CHAR.test(text.charAt(start - 1))) start -= 1;
   let end = at;
@@ -172,7 +173,14 @@ function codeWordEnd(text: string, at: number): number | null {
     if (wasLetter !== undefined && wasLetter !== isLetter) transitions += 1;
     wasLetter = isLetter;
   }
-  return transitions >= 2 ? end : null;
+  return transitions >= 2 ? { start, end } : null;
+}
+
+/** Digits no pattern reads, such as full-width `１３`, still count as a number the guard cannot read. */
+function unreadable(text: string, at: number): { readonly end: number; readonly values: readonly ExtractedValue[] } {
+  UNREADABLE.lastIndex = at;
+  const match = UNREADABLE.exec(text);
+  return { end: at + (match?.[0].length ?? 1), values: [{ kind: 'invalid' }] };
 }
 
 function readAt(
@@ -222,15 +230,17 @@ export function scan(text: string): Scan {
     }
     let found = readAt(text, at, [SHORTHAND]);
     if (found === null) {
-      const codeEnd = codeWordEnd(text, at);
-      if (codeEnd !== null) {
-        DIGIT.lastIndex = codeEnd;
+      const code = codeWordAt(text, at);
+      if (code !== null) {
+        const word = text.slice(code.start, code.end);
+        const sentence = sentenceAt(boundaries, code.start);
+        numbers.push({ text: word, start: code.start, end: code.end, sentence, value: { kind: 'code', code: word.toUpperCase() } });
+        DIGIT.lastIndex = code.end;
         continue;
       }
       if (isSignStart(text, at)) at -= 1;
-      found = readAt(text, at, PATTERNS);
+      found = readAt(text, at, PATTERNS) ?? unreadable(text, at);
     }
-    if (found === null) continue;
     const sentence = sentenceAt(boundaries, at);
     for (const value of found.values) numbers.push({ text: text.slice(at, found.end), start: at, end: found.end, sentence, value });
     DIGIT.lastIndex = found.end;

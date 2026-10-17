@@ -125,9 +125,9 @@ describe('extractNumbers reads every form', () => {
     expect(values(text)).toEqual(expected);
   });
 
-  it('reads nothing from codes, ids, links and list markers', () => {
-    expect(values('mã ESTA 7K2QX9MP')).toEqual([]);
-    expect(values('ESTA7K2QX9MP')).toEqual([]);
+  it('reads a code-shaped word as one code, and nothing from ids, links and list markers', () => {
+    expect(values('mã ESTA 7K2QX9MP')).toEqual([{ kind: 'code', code: '7K2QX9MP' }]);
+    expect(values('ESTA7k2qx9mp')).toEqual([{ kind: 'code', code: 'ESTA7K2QX9MP' }]);
     expect(values('3f2a9c1d-4b5e-4c6d-8e9f-0a1b2c3d4e5f')).toEqual([]);
     expect(values('3f2a9c1d-1234-4c6d-8e9f-0a1b2c3d4e5f')).toEqual([]);
     expect(values('https://example.com/x/123?y=45')).toEqual([]);
@@ -242,6 +242,16 @@ describe('checkNumbers against the run (AGENT.md §6.3)', () => {
   it('takes a percentage only from a basis-point field or a percentage, not from any number with the same digits', () => {
     expect(offending('tăng 5%', { area_m2: 500, rent: 500 })).toEqual(['5%']);
     expect(check('tăng 5%', { vat_rate_bp: 500 }).ok).toBe(true);
+  });
+
+  it('checks a code-shaped word as a token the run must contain', () => {
+    expect(check('chuyển khoản ghi ESTA 7K2QX9MP', { memo_code: 'ESTA 7K2QX9MP' }).ok).toBe(true);
+    expect(offending('chuyển khoản ghi ESTA 7K2QX9MQ', { memo_code: 'ESTA 7K2QX9MP' })).toEqual(['7K2QX9MQ']);
+    expect(offending('căn 3PN2WC', { bedrooms: 3, bathrooms: 2 })).toEqual(['3PN2WC']);
+  });
+
+  it('flags digits outside ASCII as unreadable', () => {
+    expect(check('quá hạn １３ ngày', { days_overdue: 13 }).violations).toMatchObject([{ status: 'unparseable', text: '１３' }]);
   });
 
   it('reads the spoken shorthand 3tr5 and 1ty2 as compact amounts', () => {
@@ -417,7 +427,7 @@ describe('Trợ lý notes over the fixture run', () => {
   it('indexes the whole run with one source per path', () => {
     const paths = new Set([...allowed.values()].flat().map((source) => `${source.tool}:${source.path}`));
     expect(paths.has('watch_facts:facts[0].outstanding')).toBe(true);
-    expect(paths.has('watch_facts:facts[0].memo_code')).toBe(false);
+    expect(allowed.get('code:7K2QX9MP')?.map((source) => source.path)).toEqual(['facts[0].memo_code']);
     expect(paths.has('watch_facts:facts[0].invoice_id')).toBe(false);
   });
 

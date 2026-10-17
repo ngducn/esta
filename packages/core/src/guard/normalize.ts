@@ -27,7 +27,8 @@ export type CanonicalNumber =
   | { readonly kind: 'year'; readonly year: number }
   | { readonly kind: 'time'; readonly hhmm: string }
   | { readonly kind: 'area'; readonly m2: number }
-  | { readonly kind: 'count'; readonly value: number };
+  | { readonly kind: 'count'; readonly value: number }
+  | { readonly kind: 'code'; readonly code: string };
 
 /** A number the guard could not read, such as `1.500.00 ₫` or `3,5 ₫`. It can never match. */
 export type ExtractedValue = CanonicalNumber | { readonly kind: 'invalid' };
@@ -87,6 +88,8 @@ export function indexKeys(value: CanonicalNumber): readonly string[] {
       return [`a:${value.m2}`, `n:${value.m2}`];
     case 'count':
       return [`n:${value.value}`, ...(Number.isInteger(value.value) ? compactKeys(value.value) : [])];
+    case 'code':
+      return [`code:${value.code}`];
   }
 }
 
@@ -117,6 +120,8 @@ export function lookupKeys(claim: CanonicalNumber): readonly string[] {
       const yearish = Number.isInteger(claim.value) && claim.value >= YEAR_RANGE.min && claim.value <= YEAR_RANGE.max;
       return yearish ? [`n:${claim.value}`, `y:${claim.value}`] : [`n:${claim.value}`];
     }
+    case 'code':
+      return [`code:${claim.code}`];
   }
 }
 
