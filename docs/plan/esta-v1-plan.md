@@ -85,6 +85,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] Deliver input only through the driver skill's commands. Before P0-10 merges, use gstack browse with `$B viewport 390x844` or `$B viewport 1440x900`, then `$B goto`, `$B fill`, `$B click` and `$B screenshot`. From P0-10 on, use `.claude/skills/verify/SKILL.md`, which signs in as `me.lane<n>@demo.esta.test` or `ryan.lane<n>@demo.esta.test` by reading the code from Inbucket, and switches language, theme and text scale through its helpers.
 - [ ] Use only read-only diagnostics. These are `$B console`, `$B snapshot`, `SELECT` statements through `supabase db query`, the Inbucket web UI, Supabase Studio, and worker logs.
 - [ ] Save every screenshot to `/tmp/swarm-<pr-id>/worker-<n>/<slug>.png` and return the paths with the report.
+- [ ] Measure Lighthouse with `pnpm exec tsx scripts/perf/lighthouse.ts <route> --email <member>` against `pnpm build && pnpm start` on the lane's slot. It measures over HTTP/2 through a local TLS proxy (needs `caddy` and `mkcert`; the dev CA is trusted only by the Chrome it launches, never system-wide) and prints the protocol in every line. Add `--http1` for the secondary HTTP/1.1 number.
 
 ## Scaffold the pnpm monorepo, CI and the dev route guard (P0-01)
 

@@ -6,13 +6,15 @@ import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
 import { clearMailbox, latestCode, slotMailbox } from '../inbucket-code.ts';
 import { parseSlot, slotPorts } from '../slot.ts';
+import { startH2Proxy } from './h2-proxy.ts';
 
 const USAGE =
-  'Usage: tsx scripts/perf/lighthouse.ts <route> --email <member email> [--base <origin>] [--runs 5] [--label head] [--out <dir for the JSON reports>]\n' +
-  'Runs Lighthouse 12.8.2 mobile on a running production server, signed in as the member, and prints the medians.';
+  'Usage: tsx scripts/perf/lighthouse.ts <route> --email <member email> [--base <origin>] [--http1] [--runs 5] [--label head] [--out <dir for the JSON reports>]\n' +
+  'Runs Lighthouse 12.8.2 mobile on a running production server, signed in as the member, and prints the medians.\n' +
+  'Measures over HTTP/2 through a local TLS proxy in front of the server (production serves HTTP/2); --http1 measures the server directly.';
 const LIGHTHOUSE = 'lighthouse@12.8.2';
 
-type Run = { lcp: number; tbt: number; cls: number; scriptBytes: number; imageBytes: number };
+type Run = { protocol: string; lcp: number; tbt: number; cls: number; scriptBytes: number; imageBytes: number };
 
 export function median(values: readonly number[]): number {
   const sorted = values.toSorted((a, b) => a - b);
@@ -21,7 +23,7 @@ export function median(values: readonly number[]): number {
 }
 
 type Report = {
-  audits: Record<string, { numericValue?: number; details?: { items?: { resourceType?: string; transferSize?: number; url?: string }[] } }>;
+  audits: Record<string, { numericValue?: number; details?: { items?: { resourceType?: string; transferSize?: number; url?: string; protocol?: string }[] } }>;
 };
 
 function summarize(report: Report, origin: string): Run {
@@ -30,7 +32,9 @@ function summarize(report: Report, origin: string): Run {
     requests
       .filter((item) => item.resourceType === type && (!sameOrigin || item.url?.startsWith(origin)))
       .reduce((sum, item) => sum + (item.transferSize ?? 0), 0);
+  const document = requests.find((item) => item.resourceType === 'Document');
   return {
+    protocol: document?.protocol ?? 'unknown',
     lcp: report.audits['largest-contentful-paint']?.numericValue ?? Number.NaN,
     tbt: report.audits['total-blocking-time']?.numericValue ?? Number.NaN,
     cls: report.audits['cumulative-layout-shift']?.numericValue ?? Number.NaN,
@@ -43,7 +47,7 @@ async function sessionCookie(origin: string, email: string, slot: number): Promi
   const mailbox = slotMailbox(slot);
   const browser = await chromium.launch();
   try {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ ignoreHTTPSErrors: true });
     await clearMailbox(email, mailbox);
     await page.goto(`${origin}/sign-in`);
     await page.locator('input[name="email"]').fill(email);
@@ -61,12 +65,15 @@ async function sessionCookie(origin: string, email: string, slot: number): Promi
 async function run(): Promise<void> {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: { email: { type: 'string' }, base: { type: 'string' }, runs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' } },
+    options: { email: { type: 'string' }, base: { type: 'string' }, runs: { type: 'string' }, label: { type: 'string' }, http1: { type: 'boolean' }, out: { type: 'string' } },
   });
   const [route] = positionals;
   if (route === undefined || values.email === undefined) throw new Error(USAGE);
   const slot = parseSlot(process.env.ESTA_SLOT);
-  const origin = values.base ?? `http://localhost:${slotPorts(slot).webProd}`;
+  const server = values.base ?? `http://localhost:${slotPorts(slot).webProd}`;
+  const proxy = values.http1 ? undefined : await startH2Proxy({ slot, upstream: new URL(server).host });
+  const origin = proxy?.origin ?? server;
+  const chromeFlags = ['--headless=new', ...(proxy ? [`--ignore-certificate-errors-spki-list=${proxy.spkiHash}`] : [])].join(' ');
   const runs = Number(values.runs ?? '5');
   const workdir = mkdtempSync(join(tmpdir(), 'esta-lighthouse-'));
   try {
@@ -86,7 +93,7 @@ async function run(): Promise<void> {
           '--output=json',
           `--output-path=${output}`,
           `--extra-headers=${headers}`,
-          '--chrome-flags=--headless=new',
+          `--chrome-flags=${chromeFlags}`,
         ],
         { stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, CHROME_PATH: process.env.CHROME_PATH ?? chromium.executablePath() } },
       );
@@ -95,10 +102,11 @@ async function run(): Promise<void> {
       results.push(result);
       console.log(JSON.stringify({ label: values.label ?? 'run', route, email: values.email, run: index + 1, ...result }));
     }
-    const pick = (key: keyof Run) => median(results.map((result) => result[key]));
+    const pick = (key: Exclude<keyof Run, 'protocol'>) => median(results.map((result) => result[key]));
     console.log(
       JSON.stringify({
         label: values.label ?? 'median',
+        protocol: [...new Set(results.map((result) => result.protocol))].join(','),
         route,
         email: values.email,
         runs,
@@ -110,6 +118,7 @@ async function run(): Promise<void> {
       }),
     );
   } finally {
+    proxy?.stop();
     rmSync(workdir, { recursive: true, force: true });
   }
 }
