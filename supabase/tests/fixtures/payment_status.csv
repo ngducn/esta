@@ -1,0 +1,13 @@
+case,total_vnd,allocated_vnd,payment_status
+nothing allocated,3500000,0,unpaid
+one dong allocated,3500000,1,partial
+first of two transfers,3500000,2000000,partial
+one dong short,3500000,3499999,partial
+exact total,3500000,3500000,paid
+two transfers summing to the total,3500000,3500000,paid
+one dong over,3500000,3500001,overpaid
+override past the total,3500000,4000000,overpaid
+zero total with nothing allocated,0,0,paid
+zero total with one dong allocated,0,1,overpaid
+largest safe total exactly,9007199254740991,9007199254740991,paid
+largest safe total one dong short,9007199254740991,9007199254740990,partial

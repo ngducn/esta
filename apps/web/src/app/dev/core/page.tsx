@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AddressLookup } from './address-lookup';
 import { LiveParse } from './live-parse';
 import { checkRow, sections, type CheckedRow } from './sections';
+import { AllocationSection } from './sections/AllocationSection';
 import { VietQrSection } from './sections/VietQrSection';
 
 export const metadata: Metadata = {
@@ -54,6 +55,7 @@ export default async function DevCorePage() {
       <LiveParse />
       <AddressLookup />
       <VietQrSection />
+      <AllocationSection />
 
       {checked.map((section) => (
         <section key={section.id} aria-labelledby={`${section.id}-heading`} data-section={section.id}>

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { signIn } from './helpers/inbucket';
 
 const NBSP = String.fromCharCode(160);
-const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address', 'vietqr'];
+const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address', 'vietqr', 'allocation'];
 const ESTA_INVOICE_PAYLOAD =
   '00020101021238540010A00000072701240006970436011001234567890208QRIBFTTA53037045408150000005802VN62170813ESTA 7K2QX9MP6304BB90';
 const NAPAS_6_3_3_PAYLOAD =
@@ -115,6 +115,30 @@ test('the VietQR section shows the invoice QR, reads it back from the canvas and
   await expect(section.locator('tr[data-example="long-purpose"] [data-cell="decoded"]')).toContainText('1..25');
 
   const { violations } = await new AxeBuilder({ page }).include('section[data-section="vietqr"]').analyze();
+  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+});
+
+test('the allocation section pays the oldest invoice first and matches every expected row', async ({ page }) => {
+  await page.goto('/dev/core');
+  const section = page.locator('section[data-section="allocation"]');
+  const rows = section.locator('tbody tr');
+  await expect(rows).toHaveCount(18);
+  await expect(section.locator('tr[data-match="mismatch"]')).toHaveCount(0);
+  await expect(rows.locator('[data-cell="result"]').filter({ hasText: 'lệch' })).toHaveCount(0);
+
+  const oldestFirst = section.locator('tr[data-example="oldest-first"]');
+  expect(await oldestFirst.locator('[data-cell="allocated"]').allTextContents()).toEqual([
+    `3.500.000${NBSP}₫`,
+    `1.500.000${NBSP}₫`,
+    `0${NBSP}₫`,
+  ]);
+  expect(await oldestFirst.locator('[data-cell="status"]').allTextContents()).toEqual(['paid', 'partial', '']);
+  await expect(section.locator('tr[data-example="override"]').last().locator('[data-cell="status"]')).toHaveText(
+    'từ chối: override_exceeds_payment',
+  );
+  await expect(section.locator('tr[data-example="bien-hoa"]').last().locator('[data-cell="held"]')).toHaveText(`0${NBSP}₫`);
+
+  const { violations } = await new AxeBuilder({ page }).include('section[data-section="allocation"]').analyze();
   expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
 });
 
