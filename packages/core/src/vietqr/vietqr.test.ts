@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { vnd } from '../money/vnd';
+import { vnd, type Vnd } from '../money/vnd';
 import { crc16CcittFalse, crcHex } from './crc';
 import { decodeVietQr, describeDecodeFault } from './decode';
 import { encodeVietQr, type VietQr, type VietQrInput } from './encode';
@@ -160,6 +160,10 @@ describe('encodeVietQr', () => {
     expect(() => encodeVietQr(input)).toThrow(message);
   });
 
+  it.each([1.5, Number.NaN, Number.POSITIVE_INFINITY, 1e21])('refuses the amount %s, which the Vnd brand alone does not exclude', (amount) => {
+    expect(() => encodeVietQr({ ...ACCOUNT, amountVnd: amount as Vnd })).toThrow(/^amountVnd must be a positive integer$/);
+  });
+
   it('accepts a purpose of exactly 25 characters', () => {
     expect(decodeVietQr(encodeVietQr({ ...ACCOUNT, purpose: 'Y'.repeat(25) }))).toMatchObject({
       ok: true,
@@ -274,6 +278,12 @@ describe('buildInvoiceQr', () => {
   it('refuses a zero or negative outstanding amount', () => {
     expect(() => buildInvoiceQr({ account, outstandingVnd: vnd(0), memoCode: '7K2QX9MP' })).toThrow(/outstandingVnd/);
     expect(() => buildInvoiceQr({ account, outstandingVnd: vnd(-1), memoCode: '7K2QX9MP' })).toThrow(/outstandingVnd/);
+  });
+
+  it.each([1.5, 600_000_000.5, Number.NaN, Number.POSITIVE_INFINITY, 1e21])('refuses the outstanding amount %s on either side of the cap', (amount) => {
+    expect(() => buildInvoiceQr({ account, outstandingVnd: amount as Vnd, memoCode: '7K2QX9MP' })).toThrow(
+      /^outstandingVnd must be a positive integer$/,
+    );
   });
 
   it.each(['Nguyen Thi Demo', 'NGUYỄN THỊ DEMO', '', 'NGUYEN\tTHI'])('refuses the account name %j', (accountName) => {
