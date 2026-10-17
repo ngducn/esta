@@ -53,7 +53,6 @@ export type FixtureTruth = {
   readonly variant: Variant;
   readonly files: readonly string[];
   readonly qr_payload: string | null;
-  /** Printed on the page in full; extraction keeps only `id_last4`. */
   readonly printed_id_numbers: readonly string[];
   readonly handwritten_fields: readonly string[];
   readonly certificate: CertificateV1Input;
@@ -61,19 +60,13 @@ export type FixtureTruth = {
 
 export type GeneratedFixture = { readonly spec: FixtureSpec; readonly files: ReadonlyMap<string, Uint8Array> };
 
-const FONT_DIR = join(HERE, 'fonts');
-const FONTS = [
-  { name: 'Sans', file: 'BeVietnamPro-Regular.ttf', weight: 400 },
-  { name: 'Sans', file: 'BeVietnamPro-Bold.ttf', weight: 700 },
-  { name: 'Hand', file: 'PatrickHand-Regular.ttf', weight: 400 },
-] as const;
-
-let fontCache: { name: string; data: Buffer; weight: 400 | 700; style: 'normal' }[] | undefined;
-
-function fonts() {
-  fontCache ??= FONTS.map(({ name, file, weight }) => ({ name, data: readFileSync(join(FONT_DIR, file)), weight, style: 'normal' as const }));
-  return fontCache;
-}
+const FONTS = (
+  [
+    { name: 'Sans', file: 'BeVietnamPro-Regular.ttf', weight: 400 },
+    { name: 'Sans', file: 'BeVietnamPro-Bold.ttf', weight: 700 },
+    { name: 'Hand', file: 'PatrickHand-Regular.ttf', weight: 400 },
+  ] as const
+).map(({ name, file, weight }) => ({ name, data: readFileSync(join(HERE, 'fonts', file)), weight, style: 'normal' as const }));
 
 function pageOf(template: CertificateTemplate, section: Section): number | null {
   const index = template.pages.findIndex((page) => page.sections.includes(section));
@@ -144,7 +137,7 @@ async function renderPage(template: CertificateTemplate, index: number, facts: C
   const page = template.pages[index];
   if (page === undefined) throw new Error(`${facts.form} has no page ${index + 1}`);
   const qr = page.sections.includes('qr') && facts.qr_payload !== null ? await QRCode.toDataURL(facts.qr_payload, { margin: 1, width: 300 }) : null;
-  const svg = await satori(page.render(facts, qr), { width: PAGE_WIDTH, height: PAGE_HEIGHT, fonts: fonts() });
+  const svg = await satori(page.render(facts, qr), { width: PAGE_WIDTH, height: PAGE_HEIGHT, fonts: [...FONTS] });
   const rendered = new Resvg(svg, { font: { loadSystemFonts: false } }).render();
   return { raster: { width: rendered.width, height: rendered.height, data: new Uint8Array(rendered.pixels) }, png: new Uint8Array(rendered.asPng()) };
 }
@@ -161,7 +154,6 @@ async function scanPdf(pngs: readonly Uint8Array[]): Promise<Uint8Array> {
   return pdf.save({ useObjectStreams: false });
 }
 
-/** Clean page renders of one fixture, before any degradation; the PR body shows a first page from here. */
 export async function renderPages(spec: FixtureSpec): Promise<{ raster: Raster; png: Uint8Array }[]> {
   const template = TEMPLATES[spec.facts.form];
   return Promise.all(template.pages.map((_, index) => renderPage(template, index, spec.facts)));
@@ -170,11 +162,12 @@ export async function renderPages(spec: FixtureSpec): Promise<{ raster: Raster; 
 export async function renderFixture(spec: FixtureSpec, seed: number = FIXTURE_SEED): Promise<GeneratedFixture> {
   const pages = await renderPages(spec);
   const files = new Map<string, Uint8Array>();
-  if (spec.variant === 'scan') {
+  const { variant } = spec;
+  if (variant === 'scan') {
     files.set('document.pdf', await scanPdf(pages.map((page) => page.png)));
   } else {
     const rng = rngFor(`${seed}:${spec.id}`);
-    pages.forEach((page, index) => files.set(`page-${index + 1}.jpg`, degrade(page.raster, spec.variant as Exclude<Variant, 'scan'>, rng)));
+    pages.forEach((page, index) => files.set(`page-${index + 1}.jpg`, degrade(page.raster, variant, rng)));
   }
   const certificate = certificateTruth(spec.facts);
   const truth: FixtureTruth = {

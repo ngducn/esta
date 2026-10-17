@@ -12,7 +12,6 @@ const PRIVATE_DIR = join(ROOT, 'fixtures-private', 'certificates');
 export const OUTPUTS_DIR = join(ROOT, 'docs', 'plan', 'spikes', 's5', 'outputs');
 const SCHEMA = 'certificate_v1';
 
-/** One document to read: its pages in order and its truth. Private fixtures never leave this process. */
 export type EvalFixture = { readonly id: string; readonly form: CertificateForm; readonly variant: string; readonly dir: string; readonly files: readonly string[]; readonly truth: unknown };
 
 /** What a live run saves per fixture, so `--from` can rescore without a model call. */

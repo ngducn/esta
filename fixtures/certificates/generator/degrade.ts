@@ -64,7 +64,6 @@ function sample(source: Raster, x: number, y: number, out: Uint8Array, offset: n
   out[offset + 3] = 255;
 }
 
-/** A handheld shot: the page shrinks onto a table, turns 4 to 8 degrees, leans back, and catches a glare band. */
 function photograph(page: Raster, rng: Rng): Raster {
   const { width, height } = page;
   const angle = (between(rng, 4, 8) * (rng.next() < 0.5 ? -1 : 1) * Math.PI) / 180;
@@ -142,7 +141,6 @@ function gaussianNoise(rng: Rng): number {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng.next());
 }
 
-/** Dim indoor light: darker and warmer, a 1.2 px blur, then sensor noise. */
 function dim(photo: Raster, rng: Rng): Raster {
   const kernel = gaussianKernel(1.2);
   const blurred = blurPass(blurPass(photo, kernel, true), kernel, false);
