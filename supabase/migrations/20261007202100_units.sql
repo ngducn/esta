@@ -8,7 +8,8 @@ create table public.units (
   label text not null check (btrim(label) <> '' and char_length(label) <= 80),
   kind text not null check (kind in ('whole', 'room', 'floor', 'shop', 'lot')),
   area_m2 numeric(12, 2) check (area_m2 > 0),
-  list_rent_vnd bigint check (list_rent_vnd between 0 and 9007199254740991),
+  -- [app rule] A ceiling far above any real rent, so the view's sum over thousands of units stays a safe integer.
+  list_rent_vnd bigint check (list_rent_vnd between 0 and 1000000000000),
   available_from date,
   sort_order integer not null default 0 check (sort_order between 0 and 100000),
   created_at timestamptz not null default now(),
@@ -57,8 +58,8 @@ revoke all on function private.whole_unit_id(uuid) from public;
 grant execute on function private.whole_unit_id(uuid) to authenticated, service_role;
 
 -- The triggers run as the writer (security invoker), so RLS applies to every row they touch: they can only do what
--- the person who wrote the property or the unit could already do. They are AFTER triggers, so RLS and the foreign keys
--- have already accepted the row before they say anything.
+-- the person who wrote the property or the unit could already do. The AFTER triggers run once RLS and the foreign keys
+-- have accepted the row, and the BEFORE UPDATE trigger only sees rows the writer's update policy already let through.
 create function private.ensure_whole_unit()
 returns trigger
 language plpgsql
@@ -77,12 +78,38 @@ create trigger ensure_whole_unit
   after insert on public.properties
   for each row execute function private.ensure_whole_unit();
 
+-- A unit never moves to another property and the whole unit never becomes another kind, so the only ways a property
+-- loses units are a delete, which restore_whole_unit answers, and a room arriving, which keep_whole_unit_exclusive does.
+create function private.freeze_unit()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.property_id <> old.property_id then
+    raise exception 'a unit stays on its property' using errcode = '23514';
+  end if;
+  if old.kind = 'whole' and new.kind <> 'whole' then
+    raise exception 'the whole unit keeps its kind' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.freeze_unit() from public;
+
+create trigger freeze_unit
+  before update of property_id, kind on public.units
+  for each row execute function private.freeze_unit();
+
+-- Both triggers lock the property row first, so two writers on one property take turns: without it, two members
+-- deleting its last two rooms at once each still see the other's room, and the property is left with none.
 create function private.keep_whole_unit_exclusive()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
+  perform 1 from public.properties p where p.id = new.property_id for no key update;
   if new.kind = 'whole' then
     if exists (select 1 from public.units u where u.property_id = new.property_id and u.id <> new.id) then
       raise exception 'a whole unit is the only unit of its property' using errcode = '23514';
@@ -97,10 +124,10 @@ $$;
 revoke all on function private.keep_whole_unit_exclusive() from public;
 
 create trigger keep_whole_unit_exclusive
-  after insert or update of kind, property_id on public.units
+  after insert or update of kind on public.units
   for each row execute function private.keep_whole_unit_exclusive();
 
--- A household or property delete cascades here after its parent row is gone, so the join finds nothing and no unit
+-- A household or property delete cascades here after its parent row is gone, so the lock finds nothing and no unit
 -- comes back for a property that is being removed.
 create function private.restore_whole_unit()
 returns trigger
@@ -108,11 +135,11 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if not exists (select 1 from public.units u where u.property_id = old.property_id)
-    and exists (
-      select 1 from public.properties p join public.households h on h.id = p.household_id
-      where p.id = old.property_id and p.household_id = old.household_id
-    ) then
+  perform 1
+  from public.properties p join public.households h on h.id = p.household_id
+  where p.id = old.property_id and p.household_id = old.household_id
+  for no key update of p;
+  if found and not exists (select 1 from public.units u where u.property_id = old.property_id) then
     insert into public.units (id, household_id, property_id, label, kind)
     values (private.whole_unit_id(old.property_id), old.household_id, old.property_id, 'Toàn bộ', 'whole')
     on conflict (id) do nothing;
@@ -123,7 +150,7 @@ $$;
 revoke all on function private.restore_whole_unit() from public;
 
 create trigger restore_whole_unit
-  after delete or update of property_id on public.units
+  after delete on public.units
   for each row execute function private.restore_whole_unit();
 
 -- Only properties with no unit get one, so a rerun adds nothing, including where rooms replaced the whole unit.
@@ -175,6 +202,7 @@ select
   extensions.st_y(p.location::extensions.geometry) as lat,
   extensions.st_x(p.location::extensions.geometry) as lng,
   p.boundary is not null as has_boundary,
+  coalesce(owners.party_ids, '{}') as owner_party_ids,
   rent.monthly_rent_vnd,
   rent.vacant_since
 from public.properties p
@@ -187,6 +215,11 @@ left join lateral (
   from public.admin_unit_legacy_map m
   where m.new_commune_code = p.current_address ->> 'commune_code'
 ) legacy on true
+left join lateral (
+  select array_agg(o.party_id order by o.party_id) as party_ids
+  from public.ownership_shares o
+  where o.household_id = p.household_id and o.property_id = p.id
+) owners on true
 left join lateral (
   select sum(u.list_rent_vnd)::bigint as monthly_rent_vnd, min(u.available_from) as vacant_since
   from public.units u

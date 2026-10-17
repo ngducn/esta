@@ -4,7 +4,7 @@ import type { IsoDate } from '@esta/core/date';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { vndInputText } from '@esta/core/properties';
 import { parseAreaInput } from '@esta/core/properties/area';
-import { UNIT_KINDS, type Unit, type UnitKind } from '@esta/core/schemas/units';
+import { MAX_LIST_RENT_VND, UNIT_KINDS, type Unit, type UnitKind } from '@esta/core/schemas/units';
 import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -20,7 +20,7 @@ import { RentalFormError, type RentalFormErrorKind } from './rental-form-error';
 
 type Invalid = 'label' | 'area' | 'rent' | null;
 
-/** Five fields, so a sheet rather than a page (DESIGN-BRIEF §5.3). `whole` is offered only when no other unit exists. */
+/** Five fields, so a sheet rather than a page (DESIGN-BRIEF §5.3). The whole unit keeps its kind, and `whole` is offered only when no other unit exists. */
 export default function UnitSheet({
   propertyId,
   unit,
@@ -45,13 +45,14 @@ export default function UnitSheet({
   const [invalid, setInvalid] = useState<Invalid>(null);
   const [error, setError] = useState<RentalFormErrorKind>(null);
   const [pending, startTransition] = useTransition();
-  const kinds = UNIT_KINDS.filter((option) => option !== 'whole' || otherUnits === 0 || unit?.kind === 'whole');
+  const kinds = unit?.kind === 'whole' ? (['whole'] as const) : UNIT_KINDS.filter((option) => option !== 'whole' || otherUnits === 0);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const areaValue = area.trim() === '' ? { ok: true as const, value: null } : parseAreaInput(area);
     const rent = rentText.trim() === '' ? { ok: true as const, value: null } : parseVndInput(rentText);
-    const wrong: Invalid = label.trim() === '' ? 'label' : !areaValue.ok ? 'area' : !rent.ok ? 'rent' : null;
+    const rentOk = rent.ok && (rent.value === null || rent.value <= MAX_LIST_RENT_VND);
+    const wrong: Invalid = label.trim() === '' ? 'label' : !areaValue.ok ? 'area' : !rentOk ? 'rent' : null;
     setInvalid(wrong);
     if (wrong !== null || !areaValue.ok || !rent.ok) {
       setError('invalid');

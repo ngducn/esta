@@ -13,11 +13,16 @@ describe('unitSchema', () => {
     ['an unknown kind', { kind: 'garage' }],
     ['a negative rent', { list_rent_vnd: -1 }],
     ['a fractional rent', { list_rent_vnd: 2_800_000.5 }],
+    ['a rent above 1.000.000.000.000', { list_rent_vnd: 1_000_000_000_001 }],
     ['a zero area', { area_m2: 0 }],
     ['an impossible date', { available_from: '2026-02-30' }],
     ['an extra column', { household_id: 'x' }],
   ])('refuses %s', (_, change) => {
     expect(unitSchema.safeParse({ ...room, ...change }).success).toBe(false);
+  });
+
+  it('accepts a rent of exactly 1.000.000.000.000', () => {
+    expect(unitSchema.parse({ ...room, list_rent_vnd: 1_000_000_000_000 }).list_rent_vnd).toBe(1_000_000_000_000);
   });
 
   it('accepts a unit with only a label and kind', () => {

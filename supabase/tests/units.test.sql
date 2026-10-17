@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(54);
+select plan(58);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -76,6 +76,22 @@ select throws_ok(
 select throws_ok(
   format($$ insert into public.units (household_id, property_id, label, kind) values (%L, '00000000-0000-4000-8000-0000000000a1', '  ', 'room') $$, :'a'),
   '23514', null, 'a blank label is refused');
+select throws_ok(
+  $$ update public.units set property_id = '00000000-0000-4000-8000-0000000000a2'
+     where property_id = '00000000-0000-4000-8000-0000000000a1' and label = 'Phòng 4' $$,
+  '23514', null, 'a unit cannot move to another property');
+select throws_ok(
+  $$ update public.units set kind = 'room' where id = private.whole_unit_id('00000000-0000-4000-8000-0000000000a3') $$,
+  '23514', null, 'the whole unit cannot change its kind');
+select throws_ok(
+  format($$ insert into public.units (household_id, property_id, label, kind, list_rent_vnd)
+            values (%L, '00000000-0000-4000-8000-0000000000a1', 'Phòng 21', 'room', 1000000000001) $$, :'a'),
+  '23514', null, 'a list rent above 1.000.000.000.000 is refused');
+select lives_ok(
+  $$ update public.units set list_rent_vnd = 1000000000000
+     where property_id = '00000000-0000-4000-8000-0000000000a1' and label = 'Phòng 4' $$,
+  'a list rent of exactly 1.000.000.000.000 is accepted');
+update public.units set list_rent_vnd = 2500000 where property_id = '00000000-0000-4000-8000-0000000000a1' and label = 'Phòng 4';
 select throws_ok(
   format($$ insert into public.units (household_id, property_id, label, kind) values (%L, '00000000-0000-4000-8000-0000000000b1', 'Phòng 1', 'room') $$, :'a'),
   '23503', null, 'a unit on another household''s property under the member''s own household is refused');

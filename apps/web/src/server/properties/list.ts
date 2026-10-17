@@ -40,8 +40,8 @@ export const propertyRowSchema = z
     lng: z.number().nullable(),
     has_boundary: z.boolean(),
     owner_party_ids: z.array(z.string()).nullable(),
-    monthly_rent_vnd: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable(),
-    vacant_since: z.string().refine(isIsoDate).nullable(),
+    monthly_rent_vnd: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().catch(null),
+    vacant_since: z.string().refine(isIsoDate).nullable().catch(null),
   })
   .transform(
     (row): PropertyListRow => ({
