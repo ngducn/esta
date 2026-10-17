@@ -65,7 +65,7 @@ export function LegacyAddressSuggest({
           setTyped(true);
           onChange(event.target.value);
         }}
-        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted"
+        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
       />
       {typed && suggestions.length > 0 ? (
         <section aria-labelledby={`${id}-suggest`} className="mt-2 flex flex-col gap-2">

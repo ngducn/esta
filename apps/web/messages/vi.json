@@ -341,6 +341,7 @@
     "edit": "Sửa thông tin"
   },
   "propertyForm": {
+    "formLoading": "Đang tải…",
     "newTitle": "Thêm tài sản",
     "editTitle": "Sửa {nickname}",
     "groupBasics": "Thông tin chính",

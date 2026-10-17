@@ -32,13 +32,16 @@ type Invalid = { field: 'nickname' | 'code' | 'commune' | 'price' } | { field: '
 
 type FormError = { kind: 'invalid' } | { kind: 'network' } | { kind: 'code_taken'; code: string; takenBy: string };
 
-function Group({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
+function Group({ id, title, aside, children }: { id?: string; title: string; aside?: ReactNode; children: ReactNode }) {
   const headingId = useId();
   return (
     <section id={id} aria-labelledby={headingId} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id={headingId} className="text-lead font-bold text-ink">
-        {title}
-      </h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id={headingId} className="text-lead font-bold text-ink">
+          {title}
+        </h2>
+        {aside}
+      </div>
       {children}
     </section>
   );
@@ -215,114 +218,126 @@ export function PropertyForm({
 
   return (
     <form noValidate onSubmit={submit} className="flex max-w-3xl flex-col gap-5" data-testid="property-form">
-      <Group title={t('groupBasics')}>
-        <TextField
-          label={t('nickname')}
-          hint={t('nicknameHint')}
-          testId="nickname"
-          value={values.nickname}
-          maxLength={120}
-          error={invalid?.field === 'nickname' ? t('nicknameRequired') : null}
-          onChange={(text) => set('nickname', text)}
-        />
-        <FormSelect
-          label={t('kind')}
-          testId="kind-select"
-          value={values.kind}
-          options={PROPERTY_KINDS.map((kind) => ({ value: kind, label: tp('kind', { kind }) }))}
-          onChange={(kind) => set('kind', PROPERTY_KINDS.find((option) => option === kind) ?? values.kind)}
-        />
-        <KindFields
-          kind={values.kind}
-          texts={values.kindTexts}
-          invalid={invalid?.field === 'detail' ? invalid.key : null}
-          onChange={(key, text) => set('kindTexts', { ...values.kindTexts, [key]: text })}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormSelect
-            label={t('useMode')}
-            value={values.useMode}
-            options={USE_MODES.map((use) => ({ value: use, label: tp('use', { use }) }))}
-            onChange={(use) => set('useMode', USE_MODES.find((option) => option === use) ?? values.useMode)}
+      {/* Controlled fields would drop whatever is typed before React hydrates, so nothing takes input until then. */}
+      <fieldset disabled={!hydrated} className="flex min-w-0 flex-col gap-5">
+        <Group
+          title={t('groupBasics')}
+          aside={
+            hydrated ? null : (
+              <p role="status" data-testid="form-loading" className="text-body text-ink-muted">
+                {t('formLoading')}
+              </p>
+            )
+          }
+        >
+          <TextField
+            label={t('nickname')}
+            hint={t('nicknameHint')}
+            testId="nickname"
+            value={values.nickname}
+            maxLength={120}
+            error={invalid?.field === 'nickname' ? t('nicknameRequired') : null}
+            onChange={(text) => set('nickname', text)}
           />
           <FormSelect
-            label={t('legalStatus')}
-            value={values.legalStatus}
-            options={LEGAL_STATUSES.map((legal) => ({ value: legal, label: tp('legal', { legal }) }))}
-            onChange={(legal) => set('legalStatus', LEGAL_STATUSES.find((option) => option === legal) ?? values.legalStatus)}
+            label={t('kind')}
+            testId="kind-select"
+            value={values.kind}
+            options={PROPERTY_KINDS.map((kind) => ({ value: kind, label: tp('kind', { kind }) }))}
+            onChange={(kind) => set('kind', PROPERTY_KINDS.find((option) => option === kind) ?? values.kind)}
           />
-        </div>
-        <TextField
-          label={t('code')}
-          hint={t('codeHint')}
-          testId="code"
-          value={code}
-          maxLength={8}
-          className="max-w-48 uppercase figures"
-          error={invalid?.field === 'code' ? (error?.kind === 'code_taken' ? t('errorCodeTaken', { code: error.code, nickname: error.takenBy }) : t('codeInvalid')) : null}
-          onChange={(text) => {
-            setCodeEdited(true);
-            set('code', text.toUpperCase().replace(/[^A-Z0-9]/g, ''));
-          }}
-        />
-      </Group>
-
-      <Group title={t('groupAddress')}>
-        <AddressPicker
-          provinces={provinces}
-          communes={communes.province === values.address.provinceCode ? communes.options : []}
-          loadingCommunes={values.address.provinceCode !== null && communes.options.length === 0}
-          value={values.address}
-          communeInvalid={invalid?.field === 'commune'}
-          onProvince={(provinceCode) => chooseProvince(provinceCode)}
-          onChange={(address) => set('address', address)}
-        />
-        {invalid?.field === 'commune' ? <FieldMessage id="commune-required" error={t('communeRequired')} /> : null}
-      </Group>
-
-      <Group title={t('groupCertificate')}>
-        <LegacyAddressSuggest
-          value={values.certificateAddress}
-          onChange={(text) => set('certificateAddress', text)}
-          pickedCommune={values.address.communeCode}
-          onPick={pickSuggestion}
-        />
-      </Group>
-
-      <Group title={t('groupAcquisition')}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <DateInput
-            label={t('acquiredOn')}
-            {...(values.acquiredOn === null ? {} : { defaultValue: values.acquiredOn })}
-            onValueChange={(date) => set('acquiredOn', date)}
+          <KindFields
+            kind={values.kind}
+            texts={values.kindTexts}
+            invalid={invalid?.field === 'detail' ? invalid.key : null}
+            onChange={(key, text) => set('kindTexts', { ...values.kindTexts, [key]: text })}
           />
-          <FormSelect
-            label={t('acquisitionKind')}
-            value={values.acquisitionKind ?? ''}
-            options={[{ value: '', label: t('acquisitionKindNone') }, ...ACQUISITION_KINDS.map((kind) => ({ value: kind, label: t('acquisitionKindOption', { kind }) }))]}
-            onChange={(kind) => set('acquisitionKind', ACQUISITION_KINDS.find((option) => option === kind) ?? null)}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormSelect
+              label={t('useMode')}
+              value={values.useMode}
+              options={USE_MODES.map((use) => ({ value: use, label: tp('use', { use }) }))}
+              onChange={(use) => set('useMode', USE_MODES.find((option) => option === use) ?? values.useMode)}
+            />
+            <FormSelect
+              label={t('legalStatus')}
+              value={values.legalStatus}
+              options={LEGAL_STATUSES.map((legal) => ({ value: legal, label: tp('legal', { legal }) }))}
+              onChange={(legal) => set('legalStatus', LEGAL_STATUSES.find((option) => option === legal) ?? values.legalStatus)}
+            />
+          </div>
+          <TextField
+            label={t('code')}
+            hint={t('codeHint')}
+            testId="code"
+            value={code}
+            maxLength={8}
+            className="max-w-48 uppercase figures"
+            error={invalid?.field === 'code' ? (error?.kind === 'code_taken' ? t('errorCodeTaken', { code: error.code, nickname: error.takenBy }) : t('codeInvalid')) : null}
+            onChange={(text) => {
+              setCodeEdited(true);
+              set('code', text.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+            }}
           />
-        </div>
-        <MoneyInput label={t('acquisitionPrice')} defaultText={values.priceText} onTextChange={(text) => set('priceText', text)} />
-        <NotesField value={values.notes} onChange={(text) => set('notes', text)} label={t('notes')} />
-      </Group>
+        </Group>
 
-      <div className="flex flex-col gap-3">
-        {errorText === null ? null : (
-          <p role="alert" data-testid="form-error" className="flex items-start gap-2 text-body text-overdue">
-            <StatusShape status="overdue" className="mt-1 size-4" />
-            <span className="wrap-anywhere">{errorText}</span>
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" disabled={pending || !hydrated} data-testid="save-property">
-            {pending ? t('saving') : propertyId === null ? t('save') : t('saveChanges')}
-          </Button>
-          <Link href={cancelHref} className={buttonVariants({ variant: 'outline' })}>
-            {t('cancel')}
-          </Link>
+        <Group title={t('groupAddress')}>
+          <AddressPicker
+            provinces={provinces}
+            communes={communes.province === values.address.provinceCode ? communes.options : []}
+            loadingCommunes={values.address.provinceCode !== null && communes.options.length === 0}
+            value={values.address}
+            communeInvalid={invalid?.field === 'commune'}
+            onProvince={(provinceCode) => chooseProvince(provinceCode)}
+            onChange={(address) => set('address', address)}
+          />
+          {invalid?.field === 'commune' ? <FieldMessage id="commune-required" error={t('communeRequired')} /> : null}
+        </Group>
+
+        <Group title={t('groupCertificate')}>
+          <LegacyAddressSuggest
+            value={values.certificateAddress}
+            onChange={(text) => set('certificateAddress', text)}
+            pickedCommune={values.address.communeCode}
+            onPick={pickSuggestion}
+          />
+        </Group>
+
+        <Group title={t('groupAcquisition')}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DateInput
+              label={t('acquiredOn')}
+              {...(values.acquiredOn === null ? {} : { defaultValue: values.acquiredOn })}
+              onValueChange={(date) => set('acquiredOn', date)}
+            />
+            <FormSelect
+              label={t('acquisitionKind')}
+              value={values.acquisitionKind ?? ''}
+              options={[{ value: '', label: t('acquisitionKindNone') }, ...ACQUISITION_KINDS.map((kind) => ({ value: kind, label: t('acquisitionKindOption', { kind }) }))]}
+              onChange={(kind) => set('acquisitionKind', ACQUISITION_KINDS.find((option) => option === kind) ?? null)}
+            />
+          </div>
+          <MoneyInput label={t('acquisitionPrice')} defaultText={values.priceText} onTextChange={(text) => set('priceText', text)} />
+          <NotesField value={values.notes} onChange={(text) => set('notes', text)} label={t('notes')} />
+        </Group>
+
+        <div className="flex flex-col gap-3">
+          {errorText === null ? null : (
+            <p role="alert" data-testid="form-error" className="flex items-start gap-2 text-body text-overdue">
+              <StatusShape status="overdue" className="mt-1 size-4" />
+              <span className="wrap-anywhere">{errorText}</span>
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="submit" disabled={pending} data-testid="save-property">
+              {pending ? t('saving') : propertyId === null ? t('save') : t('saveChanges')}
+            </Button>
+            <Link href={cancelHref} className={buttonVariants({ variant: 'outline' })}>
+              {t('cancel')}
+            </Link>
+          </div>
         </div>
-      </div>
+      </fieldset>
     </form>
   );
 }
@@ -340,7 +355,7 @@ function NotesField({ label, value, onChange }: { label: string; value: string; 
         rows={3}
         maxLength={4000}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted"
+        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
       />
     </div>
   );

@@ -38,7 +38,7 @@ export function FormSelect({
           data-testid={testId}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="min-h-touch w-full appearance-none rounded-md border border-field bg-surface pr-10 pl-3.5 text-body text-ink hover:border-ink-muted"
+          className="min-h-touch w-full appearance-none rounded-md border border-field bg-surface pr-10 pl-3.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
         >
           {placeholder === undefined ? null : (
             <option value="" disabled>

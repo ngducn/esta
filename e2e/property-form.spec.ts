@@ -302,3 +302,33 @@ test('PRP-1: one property of each of the ten kinds saves with its own fields', a
   await page.goto('/properties');
   await expect(page.getByTestId('property-count')).toHaveText('10 tài sản');
 });
+
+test('on a slow phone the form takes no typing until it is ready, then keeps what Mẹ types', async ({ page, context }) => {
+  onlyOn('mobile');
+  test.setTimeout(180_000);
+  await signIn(page, 'me.lane6@demo.esta.test');
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 800, downloadThroughput: 50_000, uploadThroughput: 30_000 });
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+
+  for (const path of ['/properties/new', `/properties/${propertyId(6, 'thu-duc')}/edit`]) {
+    await page.goto(path, { waitUntil: 'commit' });
+    const nickname = page.getByTestId('nickname');
+    await nickname.waitFor({ timeout: 60_000 });
+    expect(await page.evaluate(() => Object.keys(document.querySelector('form') ?? {}).some((key) => key.startsWith('__react'))), `${path} is still loading`).toBe(false);
+    const fields = page.getByTestId('property-form').locator('input:not([type=hidden]), select, textarea');
+    const states = await fields.evaluateAll((nodes) => nodes.map((node) => (node as HTMLInputElement).matches(':disabled')));
+    expect(states.length).toBeGreaterThan(5);
+    expect(states.every(Boolean), `${path}: every field waits for the page`).toBe(true);
+    await expect(page.getByTestId('form-loading')).toHaveText('Đang tải…');
+
+    await expect(nickname).toBeEnabled({ timeout: 90_000 });
+    await expect(page.getByTestId('form-loading')).toHaveCount(0);
+    await nickname.fill('Nhà Demo chậm mạng');
+    await kindSelect(page).selectOption({ label: 'Dãy trọ' });
+    await page.getByTestId('detail-room_count').fill('8');
+    await expect(nickname).toHaveValue('Nhà Demo chậm mạng');
+    await expect(page.getByTestId('detail-room_count')).toHaveValue('8');
+  }
+});

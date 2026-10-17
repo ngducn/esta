@@ -341,6 +341,7 @@
     "edit": "Edit details"
   },
   "propertyForm": {
+    "formLoading": "Loading…",
     "newTitle": "Add a property",
     "editTitle": "Edit {nickname}",
     "groupBasics": "Basics",
