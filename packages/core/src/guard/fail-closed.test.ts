@@ -143,3 +143,29 @@ describe('memo codes and identifier values from the run', () => {
     expect(offending('Mã 777.', { unit_id: 'unit-777' })).toEqual(['777:unknown']);
   });
 });
+
+describe('list markers, code words, years and hidden digits', () => {
+  it('skips only a one or two digit list marker at a line start', () => {
+    expect(offending('Tổng tiền cọc đang giữ là\n45000000. Đề nghị hoàn trả.')).toEqual(['45000000:unknown']);
+    expect(values('1. Phòng 5\n12. Phòng 7')).toEqual([
+      { kind: 'count', value: 5 },
+      { kind: 'count', value: 7 },
+    ]);
+  });
+
+  it('reads the word after ESTA as a memo code, never as a count', () => {
+    expect(offending('Mã ESTA ABCDEF12.', { memo_code: '7K2QX9MP', days_overdue: 12 })).toEqual(['ABCDEF12:unknown']);
+    expect(offending('Hóa đơn INV12.', { days_overdue: 12 })).toEqual(['INV12:unknown']);
+  });
+
+  it('never lets a year satisfy a count with a unit', () => {
+    expect(offending('Quá hạn 2026 ngày.', {})).toEqual(['2026 ngày:unknown']);
+    expect(passes('Bảo hiểm cháy nổ 2026 còn 23 ngày.')).toBe(true);
+  });
+
+  it('reads digits split by an invisible character, or written as a fraction, as unparseable', () => {
+    expect(offending('Nợ 1​2 triệu.', { member_count: 1, v: 2_000_000 })).toEqual(['1​2:unparseable']);
+    expect(offending('Giá ½ tỷ.', {})).toEqual(['½:unparseable']);
+    expect(passes('Diện tích 125,5 m², giá mỗi m² theo bảng giá.', { area_m2: 125.5 })).toBe(true);
+  });
+});
