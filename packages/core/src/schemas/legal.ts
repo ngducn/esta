@@ -58,6 +58,17 @@ export const parcelSchema = z.strictObject({
   purposes: z.array(purposeSchema).max(20),
   origin_text: optionalText(500),
 });
+
+export const PARCEL_UNIDENTIFIED = 'parcel_unidentified';
+
+/**
+ * [app rule] A new parcel needs a number, a map sheet, an area or an origin note. Existing parcels are never refused on
+ * read, edit or restore, because the seeded paper-only parcel of Đất vườn Long An has none of them (DOMAIN-VN §2).
+ */
+export const newParcelSchema = parcelSchema.refine(
+  (parcel) => parcel.parcel_no !== null || parcel.map_sheet_no !== null || parcel.area_m2 !== null || parcel.origin_text !== null,
+  { error: PARCEL_UNIDENTIFIED },
+);
 export type Parcel = z.output<typeof parcelSchema>;
 
 export const structureSchema = z.strictObject({

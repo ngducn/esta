@@ -2,7 +2,7 @@
 
 import { formatArea } from '@esta/core/format';
 import { parseAreaInput, purposesMismatch } from '@esta/core/properties/area';
-import { USE_FORMS, type Parcel } from '@esta/core/schemas/legal';
+import { PARCEL_UNIDENTIFIED, USE_FORMS, newParcelSchema, type Parcel } from '@esta/core/schemas/legal';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Group, TextField } from '@/components/form-parts';
@@ -39,7 +39,7 @@ export function ParcelForm({
   const [originText, setOriginText] = useState(initial?.origin_text ?? '');
   const [purposes, setPurposes] = useState<readonly PurposeDraft[]>(() => (initial?.purposes ?? []).map((purpose, index) => purposeDraft(index, purpose)));
   const [nextKey, setNextKey] = useState(purposes.length);
-  const [invalid, setInvalid] = useState<'area' | PurposeInvalid | null>(null);
+  const [invalid, setInvalid] = useState<'area' | 'identity' | PurposeInvalid | null>(null);
 
   const parsedArea = area.trim() === '' ? null : parseAreaInput(area);
   const read = readPurposes(purposes);
@@ -55,8 +55,7 @@ export function ParcelForm({
       setInvalid(read.invalid);
       return null;
     }
-    setInvalid(null);
-    return {
+    const input = {
       certificate_id: certificateId === '' ? null : certificateId,
       parcel_no: parcelNo,
       map_sheet_no: mapSheetNo,
@@ -65,11 +64,24 @@ export function ParcelForm({
       purposes: read.value,
       origin_text: originText,
     };
+    const checked = itemId === null ? newParcelSchema.safeParse(input) : null;
+    if (checked !== null && !checked.success && checked.error.issues.some((issue) => issue.message === PARCEL_UNIDENTIFIED)) {
+      setInvalid('identity');
+      return null;
+    }
+    setInvalid(null);
+    return input;
   };
 
   return (
     <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit}>
       <Group title={t('groupParcel')}>
+        {invalid === 'identity' ? (
+          <p data-testid="parcel-unidentified" role="alert" className="flex items-start gap-2 text-body text-overdue">
+            <StatusShape status="overdue" className="mt-1 size-4" />
+            <span>{t('parcelUnidentified')}</span>
+          </p>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label={t('parcelNo')} inputId="parcel-no" value={parcelNo} maxLength={20} error={null} onChange={setParcelNo} />
           <TextField label={t('mapSheetNo')} inputId="map-sheet-no" value={mapSheetNo} maxLength={20} error={null} onChange={setMapSheetNo} />

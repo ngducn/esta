@@ -435,6 +435,7 @@
     "area": "Area (m²)",
     "areaHint": "For example 350,5",
     "areaInvalid": "{reason, select, too_precise {Areas keep at most 2 decimals.} too_large {This number is larger than Esta can record.} other {Write the area like 350,5.}}",
+    "parcelUnidentified": "Nothing identifies this parcel yet. Fill in the parcel number, the map sheet or the area. For land with only a handwritten paper, write the origin of use.",
     "useFormLabel": "Use",
     "useFormNone": "Unknown",
     "originText": "Origin of use",

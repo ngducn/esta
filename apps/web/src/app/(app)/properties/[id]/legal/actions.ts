@@ -32,8 +32,8 @@ function revalidateLegal(propertyId: string) {
 type LegalInsert = Omit<TablesInsert<'parcels'>, 'household_id' | 'property_id'>;
 
 /** Parsed by the kind's own schema; typed as a parcel only to reach the client, as `legalTable` explains. */
-function parseValue(kind: LegalKind, raw: unknown): LegalInsert | null {
-  const parsed = LEGAL_KINDS[kind].schema.safeParse(raw);
+function parseValue(kind: LegalKind, raw: unknown, creating: boolean): LegalInsert | null {
+  const parsed = LEGAL_KINDS[kind][creating ? 'createSchema' : 'schema'].safeParse(raw);
   return parsed.success ? (parsed.data as LegalInsert) : null;
 }
 
@@ -42,7 +42,7 @@ export async function saveLegalItem(propertyId: unknown, kind: unknown, itemId: 
   const table = legalKindSchema.safeParse(kind);
   const item = itemId === null ? { success: true as const, data: null } : uuid.safeParse(itemId);
   if (!property.success || !table.success || !item.success) return { ok: false, reason: 'invalid' };
-  const value = parseValue(table.data, raw);
+  const value = parseValue(table.data, raw, item.data === null);
   if (value === null) return { ok: false, reason: 'invalid' };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: property.data };
@@ -108,7 +108,7 @@ export async function restoreLegalItem(raw: unknown): Promise<LegalWrite> {
   if (!deleted.success) return { ok: false, reason: 'invalid' };
   const { kind, propertyId, row, unlinked } = deleted.data;
   const { id, ...rest } = row;
-  const value = parseValue(kind, rest);
+  const value = parseValue(kind, rest, false);
   if (value === null) return { ok: false, reason: 'invalid' };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const householdId = member.household.id;

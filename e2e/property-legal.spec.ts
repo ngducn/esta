@@ -190,6 +190,22 @@ test('Đất vườn Long An shows a paper-only certificate and one parcel with 
   await expect(parcels(page).getByTestId('parcel-area')).toHaveText('Chưa có diện tích');
 });
 
+test('tapping Lưu on an empty parcel form says what is missing and adds no row', async ({ page }) => {
+  await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
+  await page.goto(`${legalPath(6, 'long-an')}/parcels/new`);
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await page.getByTestId('save-legal-item').click();
+  await expect(page.getByTestId('parcel-unidentified')).toHaveText(
+    'Thửa này chưa có gì để nhận ra. Điền số thửa, tờ bản đồ hoặc diện tích. Đất chỉ có giấy tay thì ghi nguồn gốc sử dụng.',
+  );
+  await expect(page.getByTestId('form-error')).toBeVisible();
+  await expect(page).toHaveURL(/\/parcels\/new$/);
+
+  await page.goto(legalPath(6, 'long-an'));
+  await expect(parcels(page)).toHaveCount(1);
+  await expect(parcels(page).getByRole('heading', { level: 3 })).toHaveText('Thửa chưa có số');
+});
+
 test('on a slow phone the parcel form takes no typing until it hydrates, then keeps what Mẹ types', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   const cdp = await page.context().newCDPSession(page);
