@@ -14,6 +14,7 @@
     "build": "pnpm --filter @esta/web build",
     "start": "node scripts/web.ts start",
     "check": "pnpm i18n:parity && pnpm plan:coverage --quiet && pnpm tokens:check && pnpm glyphs:check && pnpm contrast:check && pnpm -r --include-workspace-root run typecheck && pnpm lint && pnpm -r --include-workspace-root run test",
+    "verify:tier": "node scripts/verify-tier.ts",
     "i18n:parity": "node scripts/i18n-parity.ts",
     "plan:coverage": "node scripts/plan-coverage.ts",
     "phase:check": "node scripts/phase-exit.ts",

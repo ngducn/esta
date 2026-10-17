@@ -4,6 +4,8 @@ Ryan asked for this on 2026-10-18: "spin up more rigorous checker like more veri
 
 Every PR gets one tier. The coordinator sets it when it writes the owner's brief, using the triggers below and `pnpm verify:tier`, and states it in the first line of the PR body. A PR can move up a tier, never down. A finding during review that hits a trigger moves the PR up.
 
+`pnpm verify:tier` applies the triggers that a file path or a migration's added text can show. Its rules sit in one list in `scripts/verify-tier.ts`. It cannot see intent, such as a phase exit or the assistant acting for the family, so the coordinator raises the tier by hand when the question below says so. `pnpm verify:tier --declared <tier>` fails when the tier written in the PR is lower than the computed one.
+
 ## The question that decides
 
 Ask: **if this PR has a bug that slips through, could Mẹ lose money, lose data, see wrong money or legal facts without noticing, or could someone outside the household see the family's data?** If yes, the PR is **rigorous**. If it adds or changes something Mẹ uses, it is **standard**. Otherwise it is **lean**.
