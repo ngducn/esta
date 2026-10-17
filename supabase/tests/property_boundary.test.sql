@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(26);
+select plan(31);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -66,9 +66,15 @@ select throws_ok(
     '{"type": "Polygon", "coordinates": [[[107.8, 11.5], [107.81, 11.5], [107.82, 11.5], [107.8, 11.5]]]}') $$,
   '23514', null, 'a ring with no area is refused by the check');
 select throws_ok(
-  $$ update public.properties set boundary = 'SRID=4326;POLYGON((107.8 11.5, 107.81 11.51, 107.81 11.5, 107.8 11.51, 107.8 11.5))'
+  $$ update public.properties set boundary = 'SRID=4326;POLYGON((107.8 11.5, 107.81 11.5, 107.81 11.51, 107.8 11.5))'
      where id = current_setting('tests.baoloc')::uuid $$,
-  '23514', null, 'a direct update with a self-crossing ring is refused too');
+  '42501', null, 'a member cannot update boundary directly, only through set_property_boundary');
+select throws_ok(
+  $$ update public.properties set location = 'SRID=4326;POINT(407 10.5)' where id = current_setting('tests.longan')::uuid $$,
+  '42501', null, 'a member cannot update location directly, so a wrapped longitude never lands');
+select lives_ok(
+  $$ update public.properties set nickname = 'Đất vườn Long An 2' where id = current_setting('tests.longan')::uuid $$,
+  'a member still updates the other columns directly');
 select is(public.property_boundary(current_setting('tests.baoloc')::uuid), null, 'nothing was saved by the refused writes');
 
 select is(
@@ -101,9 +107,9 @@ select throws_ok(
 select throws_ok(
   $$ select public.set_property_boundary(current_setting('tests.q7')::uuid, null) $$,
   'P0002', null, 'a viewer cannot clear a boundary');
-select is_empty(
-  $$ update public.properties set location = null, boundary = null where id = current_setting('tests.q7')::uuid returning 1 $$,
-  'a viewer''s direct update of location and boundary touches no row');
+select throws_ok(
+  $$ update public.properties set location = null, boundary = null where id = current_setting('tests.q7')::uuid $$,
+  '42501', null, 'a viewer''s direct update of location and boundary is refused');
 
 reset role;
 select tests.clear_request();
@@ -116,6 +122,19 @@ select ok(
     and not has_function_privilege('anon', 'public.set_property_boundary(uuid, jsonb)', 'execute')
     and not has_function_privilege('anon', 'public.property_boundary(uuid)', 'execute'),
   'anon cannot call the location functions');
+select ok(
+  not has_column_privilege('authenticated', 'public.properties', 'location', 'update')
+    and not has_column_privilege('authenticated', 'public.properties', 'boundary', 'update'),
+  'authenticated holds no update privilege on location or boundary');
+select is_empty(
+  $$ select column_name from information_schema.columns
+     where table_schema = 'public' and table_name = 'properties' and column_name not in ('location', 'boundary')
+       and not has_column_privilege('authenticated', 'public.properties', column_name, 'update') $$,
+  'authenticated can update every other properties column, so a new column needs its grant in the same migration');
+select ok(
+  (select prosecdef from pg_proc where oid = 'public.set_property_location(uuid, double precision, double precision)'::regprocedure)
+    and (select prosecdef from pg_proc where oid = 'public.set_property_boundary(uuid, jsonb)'::regprocedure),
+  'the pin and boundary writers run as their owner, since the caller cannot write those columns');
 
 select * from finish();
 rollback;
