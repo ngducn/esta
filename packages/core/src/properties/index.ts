@@ -9,6 +9,7 @@ export {
   PROPERTY_VIEWS,
   USE_MODES,
   applyPropertyFilters,
+  currentAddressText,
   parsePropertyFilters,
   preferPhrase,
   propertyFiltersQuery,

@@ -1,6 +1,7 @@
 import {
   PROPERTY_FILTER_KEYS,
   PROPERTY_SORT_KEYS,
+  currentAddressText,
   parsePropertyFilters,
   propertyFiltersQuery,
   shortProvinceName,
@@ -39,9 +40,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const photos = await signCoverPhotos(member.id, list.rows.flatMap((row) => (row.coverPhotoPath === null ? [] : [row.coverPhotoPath])));
 
   const toCard = (row: PropertyListRow): PropertyCardData => {
-    const address = [row.addressLine, row.communeName, row.provinceName === null ? null : shortProvinceName(row.provinceName)]
-      .filter((part): part is string => part !== null && part !== '')
-      .join(', ');
+    const address = currentAddressText(row) ?? '';
     const certificate = row.certificateAddressText;
     return {
       id: row.id,

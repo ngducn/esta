@@ -13,10 +13,10 @@ import {
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
-const COLUMNS =
+export const PROPERTY_ROW_COLUMNS =
   'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary';
 
-const rowSchema = z
+export const propertyRowSchema = z
   .object({
     id: z.string(),
     nickname: z.string(),
@@ -68,11 +68,11 @@ type SessionClient = Awaited<ReturnType<typeof createSessionClient>>;
 async function readMatchingRows(supabase: SessionClient, householdId: string, tokens: readonly string[]): Promise<PropertyListRow[]> {
   const rows: PropertyListRow[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    let query = supabase.from('property_list_rows').select(COLUMNS).eq('household_id', householdId);
+    let query = supabase.from('property_list_rows').select(PROPERTY_ROW_COLUMNS).eq('household_id', householdId);
     for (const token of tokens) query = query.ilike('search_text', likeToken(token));
     const { data, error } = await query.order('id').range(from, from + PAGE_SIZE - 1);
     if (error) throw new Error(`Reading the property list failed: ${error.message}`);
-    rows.push(...z.array(rowSchema).parse(data));
+    rows.push(...z.array(propertyRowSchema).parse(data));
     if (data.length < PAGE_SIZE) return rows;
   }
 }
