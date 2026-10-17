@@ -9,27 +9,37 @@ import { slotEnv } from '../slot-env.ts';
 import { measure, median, sessionCookie, type Medians } from './lighthouse.ts';
 
 type Metric = 'lcpMs' | 'tbtMs' | 'cls' | 'scriptKb';
-/** `pinsMs` is the time until every pinned property shows on the map, under Lighthouse's mobile throttling. */
-export type Budget = { route: string; limits: Partial<Record<Metric, number>>; pinsMs?: number };
+/**
+ * `addedScriptKb` limits the script a route loads beyond the list view's, and `pinsMs` the time until every pinned
+ * property shows on the map under Lighthouse's mobile throttling.
+ */
+export type Budget = { route: string; limits: Partial<Record<Metric, number>>; addedScriptKb?: number; pinsMs?: number };
+export type Extras = { listScriptKb?: number; pinsMs?: number };
 
 const GENERAL = { lcpMs: 2500, tbtMs: 200, cls: 0.05, scriptKb: 200 };
 const EMAIL = 'me.lane1@demo.esta.test';
 const HOUSEHOLD = seedId('seed:household:lane-1');
 
-/** SPEC §7.2 on Properties. The map view has its own budget (operator, 2026-10-17 14:30); the list keeps the general one. */
+/**
+ * SPEC §7.2 on Properties. The map view is exempt from the script, LCP and TBT lines and has its own budget (operator,
+ * 2026-10-17 14:30): what it adds over the list's script, as P1-09 measured it, TBT and every pin within 8 s.
+ */
 export const PHASE_1_BUDGETS: readonly Budget[] = [
   { route: '/properties', limits: GENERAL },
-  { route: '/properties?view=map', limits: { tbtMs: 500, scriptKb: 300 }, pinsMs: 8000 },
+  { route: '/properties?view=map', limits: { tbtMs: 500, cls: GENERAL.cls }, addedScriptKb: 300, pinsMs: 8000 },
   { route: `/properties/${seedId('seed:property:lane-1:di-an')}`, limits: GENERAL },
 ];
 
-export function misses(budget: Budget, medians: Medians, pinsMs?: number): string[] {
+export function misses(budget: Budget, medians: Medians, { listScriptKb, pinsMs }: Extras = {}): string[] {
   const metrics = (Object.keys(budget.limits) as Metric[]).flatMap((key) => {
     const limit = budget.limits[key];
     return limit !== undefined && medians[key] > limit ? [`${key} ${medians[key]} > ${limit}`] : [];
   });
+  const added = listScriptKb === undefined ? undefined : medians.scriptKb - listScriptKb;
+  const script =
+    budget.addedScriptKb !== undefined && (added === undefined || added > budget.addedScriptKb) ? [`addedScriptKb ${added ?? 'unknown'} > ${budget.addedScriptKb}`] : [];
   const pins = budget.pinsMs !== undefined && (pinsMs === undefined || pinsMs > budget.pinsMs) ? [`pinsMs ${pinsMs ?? 'never'} > ${budget.pinsMs}`] : [];
-  return [...metrics, ...pins];
+  return [...metrics, ...script, ...pins];
 }
 
 /** Lighthouse's mobile throttling: 4x CPU, 150 ms round trip, 1.6 Mbps down and 750 kbps up, cache off. */
@@ -88,6 +98,7 @@ async function run(): Promise<number> {
       `select count(*)::int as count from public.property_list_rows where household_id = '${HOUSEHOLD}' and lat is not null`,
     );
     let failed = 0;
+    let listScriptKb: number | undefined;
     for (const budget of PHASE_1_BUDGETS) {
       const medians = await measure({ route: budget.route, email: EMAIL, slot, base: origin, runs, label: 'phase-1' });
       let pinsMs: number | undefined;
@@ -97,8 +108,13 @@ async function run(): Promise<number> {
         for (let index = 0; index < runs; index++) times.push((await pinsVisibleMs(origin, cookie, pinned?.count ?? 0)) ?? Number.POSITIVE_INFINITY);
         pinsMs = median(times);
       }
-      const missed = misses(budget, medians, pinsMs);
-      const shown = { ...medians, ...(pinsMs === undefined ? {} : { pinsMs, pins: pinned?.count }) };
+      if (budget.route === '/properties') listScriptKb = medians.scriptKb;
+      const missed = misses(budget, medians, { ...(listScriptKb === undefined ? {} : { listScriptKb }), ...(pinsMs === undefined ? {} : { pinsMs }) });
+      const shown = {
+        ...medians,
+        ...(budget.addedScriptKb === undefined || listScriptKb === undefined ? {} : { addedScriptKb: medians.scriptKb - listScriptKb }),
+        ...(pinsMs === undefined ? {} : { pinsMs, pins: pinned?.count }),
+      };
       console.log(`${missed.length === 0 ? 'PASS' : 'FAIL'}  ${JSON.stringify(shown)}${missed.length === 0 ? '' : `  ${missed.join(', ')}`}`);
       if (missed.length > 0) failed++;
     }

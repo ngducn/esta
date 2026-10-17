@@ -15,9 +15,14 @@ describe('the Phase 1 Lighthouse budgets', () => {
     expect(list && misses(list, { ...medians, tbtMs: 450, scriptKb: 280 })).toEqual(['tbtMs 450 > 200', 'scriptKb 280 > 200']);
   });
 
-  it('give the map view its own budget: TBT 500 ms, script 300 KB and every pin within 8 s, with no LCP limit', () => {
-    expect(map && misses(map, { ...medians, lcpMs: 4000, tbtMs: 450, scriptKb: 280 }, 3500)).toEqual([]);
-    expect(map && misses(map, { ...medians, tbtMs: 600, scriptKb: 310 }, 8200)).toEqual(['tbtMs 600 > 500', 'scriptKb 310 > 300', 'pinsMs 8200 > 8000']);
-    expect(map && misses(map, medians)).toEqual(['pinsMs never > 8000']);
+  it('give the map view its own budget: 300 KB of script over the list, TBT 500 ms and every pin within 8 s, with no LCP limit', () => {
+    const map439 = { ...medians, lcpMs: 4000, tbtMs: 450, scriptKb: 439 };
+    expect(map && misses(map, map439, { listScriptKb: 152, pinsMs: 3500 })).toEqual([]);
+    expect(map && misses(map, { ...map439, tbtMs: 600, scriptKb: 460 }, { listScriptKb: 152, pinsMs: 8200 })).toEqual([
+      'tbtMs 600 > 500',
+      'addedScriptKb 308 > 300',
+      'pinsMs 8200 > 8000',
+    ]);
+    expect(map && misses(map, map439)).toEqual(['addedScriptKb unknown > 300', 'pinsMs never > 8000']);
   });
 });
