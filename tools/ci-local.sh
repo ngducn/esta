@@ -25,6 +25,9 @@
 # <lock>.stale.<inode>-<birth>. rename(2) refuses a non-empty target, so a
 # second waiter that judged the same lock cannot move its successor; a lock
 # with no pid gets a file first so that its graveyard is not empty.
+#
+# The db and e2e jobs rerun a reset once when the Supabase CLI answers 502
+# during its container restart, after Kong and Storage report healthy.
 set -uo pipefail
 
 worktree=$(realpath "${1:?worktree path}") || exit 2
@@ -127,6 +130,25 @@ status() {
 		-f state="$2" -f context="local-ci/$1" -f description="$3" >/dev/null
 }
 
+gateway_healthy() {
+	[ "$(docker inspect --format '{{.State.Health.Status}}' "supabase_kong_esta-$slot" "supabase_storage_esta-$slot" 2>/dev/null | grep -cx healthy)" = 2 ]
+}
+
+reset_db() {
+	"$@" 2>&1 | tee "$logdir/reset.log"
+	local code=${PIPESTATUS[0]}
+	[ "$code" -eq 0 ] && return 0
+	grep -q 'Error status 502' "$logdir/reset.log" || return "$code"
+	echo "ci-local: $* got a 502 during the container restart; retrying once after Kong and Storage report healthy"
+	local waited=0
+	until gateway_healthy; do
+		[ $waited -ge 120 ] && echo "ci-local: Kong and Storage are not healthy after 120 s" && return "$code"
+		sleep 2
+		waited=$((waited + 2))
+	done
+	"$@"
+}
+
 run_job() {
 	case $1 in
 	check)
@@ -135,12 +157,12 @@ run_job() {
 	db)
 		pnpm install --frozen-lockfile &&
 			pnpm db:start &&
-			{ if node -e 'process.exit(require("./package.json").scripts["db:seed:check"]?0:1)'; then pnpm db:seed:check; else pnpm db:reset; fi; } &&
+			{ if node -e 'process.exit(require("./package.json").scripts["db:seed:check"]?0:1)'; then reset_db pnpm db:seed:check; else reset_db pnpm db:reset; fi; } &&
 			pnpm db:test &&
 			pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
 		;;
 	e2e)
-		pnpm install --frozen-lockfile && pnpm db:start && pnpm db:reset && pnpm e2e
+		pnpm install --frozen-lockfile && pnpm db:start && reset_db pnpm db:reset && pnpm e2e
 		;;
 	prod-build)
 		pnpm install --frozen-lockfile && pnpm run --if-present e2e:prod && pnpm run --if-present check:build-env
