@@ -2417,7 +2417,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `packages/core/src/schedule/generate.property.test.ts` uses fast-check with a fixed seed and 1,000 runs to prove that periods have no gaps or overlaps, that the total equals rent times months adjusted for proration, escalation and amendments, that periods before an amendment's start are identical with and without it, and that generating twice gives equal output (LSE-3).
 - [ ] Run `pnpm check`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
 - [ ] No lanes apply. P3-02 has no surface to drive, because the `ScheduleSection` and its lanes moved to P3-08 (Seq 07). The golden cases in `generate.test.ts` cover the same periods, and P3-08 runs the lanes (LSE-3 canonical, anchor 25, `q7` quarterly, escalation, mid-cycle end, amendment, annual, `thu-duc`, seed 10) against the real section.
 
@@ -2635,6 +2635,8 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Create `fixtures/statements/generate.ts`, `fixtures/statements/layout-a.csv`, `fixtures/statements/layout-b.xlsx`, `fixtures/statements/layout-c.csv`, `fixtures/statements/invoices.json` and `fixtures/statements/<layout>.golden.json` for each layout.
 - [ ] Create `apps/web/src/app/dev/core/sections/MatchingSection.tsx` and register it on `/dev/core`.
 
+**Moved to P3-15.** `MatchingSection.tsx`, `fixtures/statements/generate.ts` and `decodeStatementFile` do not ship here. The live matching lanes P3-06 dropped belong to the P3-15 import screen, which drives the same matcher on real files.
+
 **Build.**
 
 - [ ] Implement `parseStatementAmount(text)` in `amount.ts` for `1.500.000`, `1,500,000`, `1500000.00`, signed values and separate credit and debit columns. It returns `Vnd` or a typed refusal for fractional đồng.
@@ -2694,8 +2696,8 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Create `apps/web/src/app/(app)/properties/[propertyId]/leases/new/page.tsx`.
 - [ ] Create `apps/web/src/components/leases/LeaseForm.tsx`, `TenantQuickAdd.tsx` and `ActivateLeaseDialog.tsx`.
 - [ ] Create `apps/web/src/server/actions/leases.ts` and `apps/web/src/server/actions/leases.integration.test.ts`.
-- [ ] Create `packages/core/src/lease/defaults.ts`, `packages/core/src/lease/defaults.test.ts`, `packages/core/src/lease/monthlyRent.ts`, `packages/core/src/lease/fromExtraction.ts` and `packages/core/src/lease/fromExtraction.test.ts`.
-- [ ] Edit the P2-05 document view to add the lease entry point, and extend `supabase/seed/generator/leasing.ts`.
+- [ ] Create `packages/core/src/lease/defaults.ts`, `packages/core/src/lease/defaults.test.ts` and `packages/core/src/lease/monthlyRent.ts`.
+- [ ] Extend `supabase/seed/generator/leasing.ts`.
 - [ ] Edit the units list on the `Cho thuê` tab from P1-08. Create a migration that replaces `public.property_list_rows`, and edit `apps/web/src/components/properties/property-card.tsx` and `packages/core/src/properties/status.ts` with its test.
 - [ ] Create `e2e/leases.spec.ts`. Edit `docs/spec/DOMAIN-VN.md` §7 and `docs/plan/STATUS.md`.
 
@@ -2705,8 +2707,6 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Build `TenantQuickAdd` with name and phone only. `createTenant` stores a party tagged `tenant` with the phone from `normalizePhone` (LSE-1).
 - [ ] Build `LeaseForm` with unit, tenant, start and end dates, rent through the money input, cycle, anchor, proration, deposit, escalation, utilities mode, tax payer and notice days. `createLease` saves a `draft` under the session client after zod parsing.
 - [ ] Build `ActivateLeaseDialog` asking `Đã thu tiền đến hết ngày` with an optional date and `Đã nhận tiền cọc` with the deposit amount. `activateLease` sets `paid_through_date`, moves the lease to `active` through `transitionLease`, writes a `received` deposit entry when ticked, then calls `runInvoicing` with the session client and the Clock's date (LSE-2, LSE-3).
-- [ ] Prefill the form from an accepted `lease_v1` extraction. A `lease_contract` document whose latest extraction is `accepted` shows `Tạo hợp đồng thuê từ tài liệu này`, which opens `/properties/[propertyId]/leases/new?fromDocument=<id>`. `leaseFieldsFromExtraction(acceptedFields)` in `fromExtraction.ts` parses `document_extractions.accepted_fields` with the `lease_v1` zod schema from P3-19 and maps tenant name and phone, dates, rent, cycle and deposit to form defaults. Each prefilled field carries the note `Từ hợp đồng đã quét`. Fields the user did not accept stay empty. `createLease` then sets `documents.lease_id` on the source document.
-- [ ] Seed one synthetic `lease_contract` document for `di-an` Phòng 8 with an `accepted` `lease_v1` extraction in every household, so the prefill has a deterministic starting point. It has no `expires_on` and needs no review, so SPEC §9.3 facts hold.
 - [ ] Map `ESTA_UNIT_HAS_LEASES` and `ESTA_WHOLE_UNIT_LEASED` from P3-01 and every activation refusal to Vietnamese messages in `vi.json` and `en.json`.
 - [ ] Show each unit's active lease, tenant and status mark on the `Cho thuê` tab with `Thêm hợp đồng` on units without one.
 - [ ] Implement `currentMonthlyRent(lease, amendments, asOf)` in `monthlyRent.ts` from the schedule and replace the Phase 1 rent placeholder on the properties list with the sum over active leases.
@@ -2721,10 +2721,9 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/lease/fromExtraction.test.ts` covers a full accepted extraction, a partial one where unaccepted fields stay empty, and a payload that fails `lease_v1` parsing and yields no defaults.
 - [ ] `packages/core/src/lease/defaults.test.ts` covers each unit kind. `monthlyRent` tests cover quarterly and annual leases and an escalated period.
 - [ ] `apps/web/src/server/actions/leases.integration.test.ts` runs the LSE-3 canonical activation and asserts one issued invoice for October due `2026-10-01`, a second activation call that inserts nothing, and a refused activation without rent (LSE-2, LSE-3).
-- [ ] `e2e/leases.spec.ts` covers quick-add with phone normalization, create from the seeded lease contract, activate and the unit tab update at 390 and 1440. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/leases.spec.ts`.
+- [ ] `e2e/leases.spec.ts` covers quick-add with phone normalization, edit a draft, activate and the unit tab update at 390 and 1440. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/leases.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/leases.spec.ts`.
@@ -2736,7 +2735,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Lane 3. As `ryan.lane3@demo.esta.test` at 1440x900, dark, add a quarterly lease on `bien-hoa` starting `01/08/2026` with a calendar anchor and activate with `Đã thu tiền đến hết ngày` `30/09/2026`. Save `p3-07-lse3.png`. Pass when the toast reads `Đã kích hoạt hợp đồng. Hóa đơn tháng 10 đã phát hành.` and Studio shows one issued invoice for the period starting `2026-10-01` due `2026-10-01`.
 - [ ] Lane 4. As `me.lane4@demo.esta.test` at 390x844, dark, open the new lease form on `di-an` Phòng 8, then on `bien-hoa`. Save `p3-07-defaults.png`. Pass when Phòng 8 prefills `1 tháng` and `Điện nước theo đồng hồ`, and `bien-hoa` prefills `3 tháng`.
 - [ ] Lane 5. As `ryan.lane5@demo.esta.test` at 1440x900, light, save a draft without rent and press `Kích hoạt`. Save `p3-07-activate-refused.png`. Pass when the dialog shows the Vietnamese refusal naming the missing rent and the lease stays `Nháp`.
-- [ ] Lane 6. As `me.lane6@demo.esta.test` at 390x844, light, open the seeded Phòng 8 lease contract in `Tài liệu`, tap `Tạo hợp đồng thuê từ tài liệu này`, and save. Save `p3-07-from-extraction.png`. Pass when tenant, rent, start date and deposit equal the extraction's `accepted_fields` in Studio, each carries `Từ hợp đồng đã quét`, and the document's `lease_id` equals the new lease's id.
+- [ ] Lane 6. As `me.lane6@demo.esta.test` at 390x844, light, save a draft lease on Phòng 7, reopen it, change the rent to `4tr` and the deposit to 2 months, and save. Save `p3-07-edit-draft.png`. Pass when the lease still reads `Nháp` with rent `4.000.000 ₫` and the deposit of 2 months, and Studio shows no invoice for it.
 - [ ] Lane 7. As `ryan.lane7@demo.esta.test` at 1440x900, dark, open the properties list. Save `p3-07-list-rent.png`. Pass when every rental property shows a monthly rent figure, `bien-hoa` shows none, and the `di-an` figure equals the sum Studio computes for its six active leases.
 - [ ] Lane 8. As `me.lane8@demo.esta.test` at 390x844, dark, save a lease on Phòng 7 as draft without activating. Save `p3-07-draft.png`. Pass when Phòng 7 shows the `Nháp` mark and Studio shows no invoice for that lease.
 - [ ] Lane 9. As `ryan.lane9@demo.esta.test` at 1440x900, light, try to add a `Phòng` unit to `thu-duc`. Save `p3-07-subdivide-refused.png`. Pass when the form shows `Không thể chia nhỏ tài sản khi đang cho thuê nguyên căn.` and no unit is added.
@@ -2814,7 +2813,17 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Lane 9. As `ryan.lane9@demo.esta.test` at 1440x900, light, open the new lease from lane 2's scenario or any lease with no documents. Save `p3-08-docs-empty.png`. Pass when the documents block shows one action `Tải hợp đồng lên`.
 - [ ] Lane 10. As `me.lane10@demo.esta.test` at 390x844, English, text scale 130%, dark, open the Phòng 5 lease to find what is overdue. Save `p3-08-seed10.png`. Pass when the September period reads overdue 12 days in English and every timeline row wraps without clipping.
 
-- [ ] Schedule section lanes, moved from P3-02. They run in this PR's live pass beside the ten lanes, each saving its `p3-08-sched-<slug>.png` and containing `Pass when`. S1 LSE-3 canonical at 1440x900, dark (`lse3`). Pass when the first generated period is `01/10/2026` to `31/10/2026` due `01/10/2026` and no September period appears. S2 the 25th anchor at 390x844, dark (`anchor-25`). Pass when the periods read `25/09/2026` to `24/10/2026` and `25/10/2026` to `24/11/2026`, each due on its start. S3 `q7` quarterly at 1440x900, light (`quarterly`). Pass when periods start on `01/01`, `01/04`, `01/07` and `01/10` and every period ending on or before `31/12/2026` is covered. S4 escalation at 390x844, light (`escalation`). Pass when 100,000,000 monthly billed quarterly reads `300.000.000 ₫`, `315.000.000 ₫`, then `330.900.000 ₫`. S5 mid-cycle end at 1440x900, dark (`mid-end`). Pass when the last period is `01/11/2026` to `07/11/2026` prorated over 7 of 30 days. S6 amendment at 390x844, dark (`amendment`). Pass when periods before `01/12/2026` keep the old rent and the refused start `01/09/2026` shows its reason. S7 annual `q1` and `thu-duc` at 1440x900, light, then English at text scale 130% (`annual-thuduc`). Pass when one period `01/03/2026` to `28/02/2027` is covered, the last `thu-duc` period is the single day `01/11/2026`, Phòng 5's `2026-09-25` period shows in English format, and nothing overflows.
+- [ ] Schedule section lanes, moved from P3-02. They run in this PR's live pass beside the ten lanes, one box each, each saving its `p3-08-sched-<slug>.png` and containing `Pass when`.
+- [ ] S1 LSE-3 canonical at 1440x900, dark. Save `p3-08-sched-lse3.png`. Pass when the first generated period is `01/10/2026` to `31/10/2026` due `01/10/2026` and no September period appears.
+- [ ] S2 the 25th anchor at 390x844, dark. Save `p3-08-sched-anchor-25.png`. Pass when the periods read `25/09/2026` to `24/10/2026` and `25/10/2026` to `24/11/2026`, each due on its start.
+- [ ] S3 `q7` quarterly at 1440x900, light. Save `p3-08-sched-quarterly.png`. Pass when periods start on `01/01`, `01/04`, `01/07` and `01/10` and every period ending on or before `31/12/2026` is covered.
+- [ ] S4 escalation at 390x844, light. Save `p3-08-sched-escalation.png`. Pass when 100,000,000 monthly billed quarterly reads `300.000.000 ₫`, `315.000.000 ₫`, then `330.900.000 ₫`.
+- [ ] S5 mid-cycle end at 1440x900, dark. Save `p3-08-sched-mid-end.png`. Pass when the last period is `01/11/2026` to `07/11/2026` prorated over 7 of 30 days.
+- [ ] S6 amendment at 390x844, dark. Save `p3-08-sched-amendment.png`. Pass when periods before `01/12/2026` keep the old rent and the refused start `01/09/2026` shows its reason.
+- [ ] S7 annual `q1` at 1440x900, light. Save `p3-08-sched-annual.png`. Pass when one period `01/03/2026` to `28/02/2027` appears and is covered.
+- [ ] S8 `thu-duc` at 390x844, light. Save `p3-08-sched-thuduc.png`. Pass when the last period is the single day `01/11/2026` with a prorated amount and every section row reads `khớp`.
+- [ ] S9 English, text scale 130%, dark, at 390x844. Save `p3-08-sched-seed10.png`. Pass when Phòng 5's `2026-09-25` period shows, amounts read in English format such as `3.5M ₫`, and no row overflows the viewport.
+- [ ] S10 regression at 390x844, light, `/dev/core` on trunk and head. Save `p3-08-sched-devcore-regression.png`. Pass when every section present on trunk reads the same on head and the head's schedule section shows no `lệch` row.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
@@ -3263,6 +3272,8 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Create `apps/web/src/lib/statements/decodeStatementFile.ts` with its test, and `fixtures/statements/generate.ts`.
 - [ ] Create `e2e/statement-import.spec.ts`.
 
+**Inherited from P3-06.** The live matching lanes P3-06 dropped, the fractional-amount refusal and fingerprint stability, belong to this import screen. `MatchingSection`, `generate.ts` and `decodeStatementFile` moved here too.
+
 **Build.**
 
 - [ ] Implement `decodeStatementFile(bytes, mime)` in `apps/web/src/lib/statements/decodeStatementFile.ts`, which P3-06 did not ship. It reads XLSX in the browser with `read-excel-file` through a dynamic import and hands the grid to core, and for CSV it calls `decodeStatementCsv`, the one CSV entry point in `packages/core/src/matching`. It returns rows of strings and does no IO beyond the passed bytes.
@@ -3282,7 +3293,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
 - [ ] `commit_statement_import.test.sql` proves that only `memo_match` and confirmed rows post, that a second commit posts nothing, that another household's import is refused, and that a viewer cannot commit (LSE-8, FND-2).
-- [ ] `statements.integration.test.ts` imports each of the three fixtures for a test household, compares statuses with the golden files, commits, re-imports and asserts zero new payments (LSE-8).
+- [ ] `statements.integration.test.ts` imports each of the three fixtures for a test household, compares statuses with the golden files, commits, re-imports and asserts zero new payments, equal fingerprints and a refused fractional row (LSE-8).
 - [ ] `e2e/statement-import.spec.ts` covers upload, mapping, preview, commit and bulk confirm at 1440 and 390. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/statement-import.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
@@ -3292,10 +3303,10 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 
 - [ ] Lane 1. Regression lane against trunk. Trunk has no import because the gated Phase 3 PRs land in the phase batch, so the lane opens `/collections` as `ryan.lane1@demo.esta.test` at 1440x900, light, on both sides and gates the head's import and commit. Save `p3-15-import-regression.png`. Pass when trunk shows the placeholder and the head posts every `Khớp mã` row of layout A.
 - [ ] Lane 2. SPEC §9.4 seed 6. As `ryan.lane2@demo.esta.test` at 1440x900, light, import layout A, map columns, commit, then select all `Gợi ý` rows and confirm. Save `p3-15-seed6.png`. Pass when the preview counts equal the golden file, Studio shows one `statement_import` payment per posted row, and the confirmed suggestion's invoice is paid.
-- [ ] Lane 3. As `ryan.lane3@demo.esta.test` at 1440x900, dark, import and commit layout A, then import the same file again. Save `p3-15-reimport.png`. Pass when every row reads `Đã ghi sổ` and Studio's payment count is unchanged.
+- [ ] Lane 3. As `ryan.lane3@demo.esta.test` at 1440x900, dark, import and commit layout A, then import the same file again. Save `p3-15-reimport.png`. Pass when every row reads `Đã ghi sổ`, each row's `fingerprint` in Studio equals its value from the first import after a page reload, and Studio's payment count is unchanged.
 - [ ] Lane 4. As `ryan.lane4@demo.esta.test` at 1440x900, light, commit one layout B import, then start a second layout B import for the same account. Save `p3-15-preset.png`. Pass when the second import skips mapping with the saved columns.
 - [ ] Lane 5. As `me.lane5@demo.esta.test` at 390x844, dark, import layout B from XLSX. Save `p3-15-mobile-xlsx.png`. Pass when the preview renders stacked rows without horizontal scroll and debit rows read `Bỏ qua`.
-- [ ] Lane 6. As `ryan.lane6@demo.esta.test` at 1440x900, dark, import layout C and find the `FIESTA` row. Save `p3-15-fiesta.png`. Pass when it reads `Chưa khớp` and does not post on commit.
+- [ ] Lane 6. As `ryan.lane6@demo.esta.test` at 1440x900, dark, import layout C and find the `FIESTA` row. Save `p3-15-fiesta.png`. Pass when it reads `Chưa khớp` and does not post on commit, and the fractional-đồng row shows its refusal, is excluded from matching and does not post.
 - [ ] Lane 7. As `me.lane7@demo.esta.test` at 390x844, light, import layout A and open the ambiguous row. Save `p3-15-ambiguous.png`. Pass when it reads `Chưa khớp`, names two candidate invoices, and has no confirm action.
 - [ ] Lane 8. As `ryan.lane8@demo.esta.test` at 1440x900, light, commit layout A and open the October board. Save `p3-15-board-after.png`. Pass when every room paid by a posted row sits under `Đã thu`.
 - [ ] Lane 9. As `ryan.lane9@demo.esta.test` at 1440x900, dark, press `Ghi sổ` twice in quick succession. Save `p3-15-double-commit.png`. Pass when Studio shows each row posted once.
