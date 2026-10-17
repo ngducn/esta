@@ -1,10 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { certificateV1Schema } from './certificate_v1';
 
-const FIXTURES = fileURLToPath(new URL('../../../../fixtures/certificates', import.meta.url));
+const FIXTURES = join(import.meta.dirname, '../../../../fixtures/certificates');
 
 const truths = readdirSync(FIXTURES, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name !== 'generator')
