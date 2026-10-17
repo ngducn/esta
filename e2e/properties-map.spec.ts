@@ -266,6 +266,7 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   ] as const;
 
   await panel(page).getByRole('button', { name: 'Vẽ ranh giới' }).click();
+  await expect(page.getByTestId('map-canvas')).toHaveAttribute('data-draw-ready', 'true');
   for (const [x, y] of [...corners, corners[0]]) await page.mouse.click(x, y);
   const area = panel(page).getByTestId('boundary-area');
   await expect(area).toContainText('Ước tính');
@@ -277,6 +278,7 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   expect((saved as { coordinates: unknown[][] }).coordinates[0], 'four corners and the closing one').toHaveLength(5);
 
   await panel(page).getByRole('button', { name: 'Sửa ranh giới' }).click();
+  await expect(page.getByTestId('map-canvas')).toHaveAttribute('data-draw-ready', 'true');
   const moved = await page.getByTestId('map-canvas').boundingBox();
   if (moved === null) throw new Error('the map has no box');
   const mx = moved.x + moved.width / 2;

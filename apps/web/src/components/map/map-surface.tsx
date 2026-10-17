@@ -3,12 +3,15 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeoPoint } from '@esta/core/maps';
 import { getVersion, LngLatBounds, Map as MapLibre, NavigationControl, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl';
+import dynamic from 'next/dynamic';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { Theme } from '@/design/tokens';
-import { BoundaryDrawing } from './polygon-draw';
 import { DEFAULT_VIEW, FALLBACK_STYLE, LOCATE_ZOOM, MAP_STYLES, mapStyleUrl, tokenHex } from './map-style';
 import { PropertyPins, type MapPin } from './property-pins';
 import type { DrawMode } from './types';
+
+/** Terra-draw loads only when a boundary is drawn or edited, never with the map itself. */
+const BoundaryDrawing = dynamic(() => import('./polygon-draw').then((module) => module.BoundaryDrawing), { ssr: false });
 
 setWorkerUrl(`/map-worker?v=${getVersion()}`);
 
@@ -58,6 +61,7 @@ export default function MapSurface({ theme, label, pins, selectedId, onSelect, e
   const [map, setMap] = useState<MapLibre | null>(null);
   const [styled, setStyled] = useState(false);
   const [styleName, setStyleName] = useState<string>(MAP_STYLES[theme]);
+  const [drawReady, setDrawReady] = useState(false);
   const reportStatus = useEffectEvent(onStatus);
   const handleClick = useEffectEvent((point: GeoPoint) => {
     if (edit === null) onSelect(null);
@@ -127,6 +131,11 @@ export default function MapSurface({ theme, label, pins, selectedId, onSelect, e
     // eslint-disable-next-line react-hooks/exhaustive-deps -- focusKey stands for focus
   }, [map, editId, focusKey]);
 
+  const editing = edit !== null;
+  useEffect(() => {
+    if (editing) void import('./polygon-draw');
+  }, [editing]);
+
   const shownBoundary = edit !== null && edit.draw === 'off' ? edit.boundary : null;
   useEffect(() => {
     if (map === null || !styled) return;
@@ -135,12 +144,12 @@ export default function MapSurface({ theme, label, pins, selectedId, onSelect, e
 
   return (
     <>
-      <div ref={container} role="region" aria-label={label} data-testid="map-canvas" data-style={styleName} data-ready={styled} className="size-full" />
+      <div ref={container} role="region" aria-label={label} data-testid="map-canvas" data-style={styleName} data-ready={styled} data-draw-ready={drawReady} className="size-full" />
       {map === null ? null : (
         <>
           <PropertyPins map={map} pins={pins} selectedId={selectedId} edit={edit} onSelect={onSelect} />
           {styled && edit !== null && edit.draw !== 'off' ? (
-            <BoundaryDrawing map={map} theme={theme} mode={edit.draw} boundary={edit.boundary} onDraw={edit.onDraw} />
+            <BoundaryDrawing map={map} theme={theme} mode={edit.draw} boundary={edit.boundary} onDraw={edit.onDraw} onReady={setDrawReady} />
           ) : null}
         </>
       )}

@@ -21,14 +21,17 @@ export function BoundaryDrawing({
   mode,
   boundary,
   onDraw,
+  onReady,
 }: {
   map: MapLibre;
   theme: Theme;
   mode: 'draw' | 'edit';
   boundary: readonly GeoPoint[] | null;
   onDraw: (ring: GeoPoint[] | null) => void;
+  onReady: (ready: boolean) => void;
 }) {
   const report = useEffectEvent(onDraw);
+  const ready = useEffectEvent(onReady);
   const initial = useEffectEvent(() => (mode === 'edit' ? boundary : null));
 
   useEffect(() => {
@@ -94,7 +97,11 @@ export function BoundaryDrawing({
       const [id] = ids;
       if (id !== undefined) report(openRing(draw.getSnapshotFeature(id)));
     });
-    return () => draw.stop();
+    ready(true);
+    return () => {
+      ready(false);
+      draw.stop();
+    };
   }, [map, theme, mode]);
 
   return null;
