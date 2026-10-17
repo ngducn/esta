@@ -1,9 +1,8 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
-import { vnd } from '../money/vnd';
-import { addDays, addMonths, firstOfMonth, monthsUntil } from './dates';
-import { applyEscalation } from './escalation';
+import { vnd, type Vnd } from '../money/vnd';
+import { addDays, addMonths } from './dates';
 import { generateSchedule } from './generate';
 import type { Amendment, BillingCycleMonths, Escalation, LeaseTerms, Period } from './types';
 
@@ -42,7 +41,120 @@ const terms: fc.Arbitrary<LeaseTerms> = fc
 
 const termsAndUntil = fc.tuple(terms, fc.integer({ min: -30, max: 2_000 })).map(([t, days]) => ({ terms: t, until: addDays(t.startDate, days) }));
 
-const plain: fc.Arbitrary<LeaseTerms> = terms.map((t) => ({ ...t, escalation: { kind: 'none' }, endDate: null }));
+type Day = { y: number; m: number; d: number };
+
+const toDay = (text: string): Day => ({ y: Number(text.slice(0, 4)), m: Number(text.slice(5, 7)), d: Number(text.slice(8, 10)) });
+const toText = ({ y, m, d }: Day): string => `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+const lengthOfMonth = (y: number, m: number): number => new Date(Date.UTC(y, m, 0)).getUTCDate();
+const tomorrow = ({ y, m, d }: Day): Day =>
+  d < lengthOfMonth(y, m) ? { y, m, d: d + 1 } : m < 12 ? { y, m: m + 1, d: 1 } : { y: y + 1, m: 1, d: 1 };
+const monthNumber = ({ y, m }: Day): number => y * 12 + m;
+
+function roundHalfUp(numerator: bigint, denominator: bigint): bigint {
+  const quotient = numerator / denominator;
+  return (numerator % denominator) * 2n >= denominator ? quotient + 1n : quotient;
+}
+
+type ReferencePeriod = { start: string; end: string; rentVnd: number };
+
+/**
+ * A deliberately naive schedule that walks the lease one day at a time and shares no code with the generator:
+ * a day starts a period when it sits a whole number of cycles after the segment's month on the anchor day.
+ */
+function referenceSchedule(t: LeaseTerms, amendments: readonly Amendment[], until: string): ReferencePeriod[] {
+  const leaseStart = toDay(t.startDate);
+  const anchorDay = t.periodAnchor === 'calendar_month' ? 1 : leaseStart.d;
+  const lastStart = t.endDate !== null && t.endDate < until ? t.endDate : until;
+  const escalation = t.escalation;
+  let segmentMonth = monthNumber(leaseStart);
+  let cycle: number = t.billingCycleMonths;
+  let base: { from: string; monthlyVnd: bigint } = { from: t.startDate, monthlyVnd: BigInt(t.rentVnd) };
+
+  const startsPeriod = (day: Day): boolean => {
+    const months = monthNumber(day) - segmentMonth;
+    return months > 0 && months % cycle === 0 && day.d === Math.min(anchorDay, lengthOfMonth(day.y, day.m));
+  };
+  const anniversariesUpTo = (date: string): number => {
+    if (escalation.kind === 'none') return 0;
+    for (let k = 1; ; k += 1) {
+      const month = leaseStart.y * 12 + leaseStart.m - 1 + k * escalation.everyMonths;
+      const y = Math.floor(month / 12);
+      const m = (month % 12) + 1;
+      if (toText({ y, m, d: Math.min(leaseStart.d, lengthOfMonth(y, m)) }) > date) return k - 1;
+    }
+  };
+  const monthlyRentAt = (date: string): bigint => {
+    let rent = base.monthlyVnd;
+    for (let step = anniversariesUpTo(base.from); step < anniversariesUpTo(date); step += 1) {
+      if (escalation.kind === 'percent') {
+        rent = roundHalfUp(rent * BigInt(10_000 + escalation.valueBps), 10_000n * BigInt(escalation.roundingVnd)) * BigInt(escalation.roundingVnd);
+      } else if (escalation.kind === 'fixed') {
+        rent = roundHalfUp(rent + BigInt(escalation.valueVnd), BigInt(escalation.roundingVnd)) * BigInt(escalation.roundingVnd);
+      }
+    }
+    return rent;
+  };
+
+  const periods: ReferencePeriod[] = [];
+  for (let start = leaseStart; toText(start) <= lastStart; ) {
+    const startText = toText(start);
+    for (const amendment of amendments.filter((a) => a.effectivePeriodStart === startText)) {
+      if (amendment.changes.rentVnd !== undefined) base = { from: startText, monthlyVnd: BigInt(amendment.changes.rentVnd) };
+      if (amendment.changes.billingCycleMonths !== undefined) {
+        segmentMonth = monthNumber(start);
+        cycle = amendment.changes.billingCycleMonths;
+      }
+    }
+    let naturalDays = 0;
+    let leaseDays = 0;
+    let last = start;
+    let day = start;
+    do {
+      naturalDays += 1;
+      if (t.endDate === null || toText(day) <= t.endDate) {
+        leaseDays += 1;
+        last = day;
+      }
+      day = tomorrow(day);
+    } while (!startsPeriod(day));
+    const fullDays = periods.length === 0 && t.periodAnchor === 'calendar_month' ? naturalDays + start.d - 1 : naturalDays;
+    const billedDays = leaseDays < naturalDays || t.firstPeriodProration === 'by_days' ? leaseDays : fullDays;
+    const fullPeriodVnd = monthlyRentAt(startText) * BigInt(cycle);
+    const rentVnd = billedDays === fullDays ? fullPeriodVnd : roundHalfUp(fullPeriodVnd * BigInt(billedDays), BigInt(fullDays));
+    periods.push({ start: startText, end: toText(last), rentVnd: Number(rentVnd) });
+    start = day;
+  }
+  return periods;
+}
+
+const amendmentPlans = fc.array(
+  fc.record({ pick: fc.nat(), rentVnd: fc.option(rent, { nil: null }), billingCycleMonths: fc.option(cycle, { nil: null }) }),
+  { maxLength: 3 },
+);
+
+type AmendmentPlan = { pick: number; rentVnd: Vnd | null; billingCycleMonths: BillingCycleMonths | null };
+
+function placeAmendments(t: LeaseTerms, until: string, plans: readonly AmendmentPlan[]): Amendment[] {
+  const amendments: Amendment[] = [];
+  for (const plan of plans) {
+    const after = amendments.at(-1)?.effectivePeriodStart ?? t.startDate;
+    const starts = referenceSchedule(t, amendments, until)
+      .map((p) => p.start)
+      .filter((start) => start > after);
+    const effectivePeriodStart = starts[plan.pick % Math.max(starts.length, 1)];
+    if (effectivePeriodStart === undefined) break;
+    amendments.push({
+      effectivePeriodStart: isoDate(effectivePeriodStart),
+      changes: {
+        ...(plan.rentVnd === null ? {} : { rentVnd: plan.rentVnd }),
+        ...(plan.billingCycleMonths === null ? {} : { billingCycleMonths: plan.billingCycleMonths }),
+      },
+    });
+  }
+  return amendments;
+}
+
+const total = (periods: readonly { rentVnd: number }[]): number => periods.reduce((sum, p) => sum + p.rentVnd, 0);
 
 function prorateOracle(rentVnd: number, days: number, fullDays: number): number {
   return Number((2n * BigInt(rentVnd) * BigInt(days) + BigInt(fullDays)) / (2n * BigInt(fullDays)));
@@ -96,31 +208,14 @@ describe('generateSchedule properties', () => {
     );
   });
 
-  it('totals rent times the number of periods, adjusted only for proration, when nothing escalates', () => {
+  it('bills every period as the day-by-day reference does, so the total is monthly rent times months adjusted for proration, escalation and amendments (LSE-3)', () => {
     fc.assert(
-      fc.property(fc.tuple(plain, fc.integer({ min: 0, max: 2_000 })), ([t, days]) => {
-        const until = addDays(t.startDate, days);
-        const periods = generateSchedule(t, [], until);
-        const gridOrigin = t.periodAnchor === 'lease_start' ? t.startDate : firstOfMonth(t.startDate);
-        expect(periods).toHaveLength(Math.floor(monthsUntil(gridOrigin, until) / t.billingCycleMonths) + 1);
-        const expectedTotal = periods.reduce(
-          (sum, p) => sum + (p.prorated === null ? t.rentVnd : prorateOracle(t.rentVnd, p.prorated.days, p.prorated.daysInFullPeriod)),
-          0,
-        );
-        expect(periods.reduce((sum, p) => sum + p.rentVnd, 0)).toBe(expectedTotal);
-        expect(periods.filter((p) => p.prorated !== null).length).toBeLessThanOrEqual(1);
-      }),
-      params,
-    );
-  });
-
-  it('starts every period on the anchor grid', () => {
-    fc.assert(
-      fc.property(termsAndUntil, ({ terms: t, until }) => {
-        for (const [i, p] of generateSchedule(t, [], until).entries()) {
-          if (t.periodAnchor === 'lease_start') expect(p.start).toBe(addMonths(t.startDate, i * t.billingCycleMonths));
-          else if (i > 0) expect(p.start).toBe(addMonths(firstOfMonth(t.startDate), i * t.billingCycleMonths));
-        }
+      fc.property(termsAndUntil, amendmentPlans, ({ terms: t, until }, plans) => {
+        const amendments = placeAmendments(t, until, plans);
+        const expected = referenceSchedule(t, amendments, until);
+        const actual = generateSchedule(t, amendments, until);
+        expect(actual.map(({ start, end, rentVnd }) => ({ start, end, rentVnd }))).toEqual(expected);
+        expect(total(actual)).toBe(total(expected));
       }),
       params,
     );
@@ -134,25 +229,6 @@ describe('generateSchedule properties', () => {
         const once = generateSchedule(t, [], shorter);
         expect(generateSchedule(t, [], shorter)).toEqual(once);
         expect(generateSchedule(t, [], longer).slice(0, once.length)).toEqual(once);
-      }),
-      params,
-    );
-  });
-
-  it('escalates to applyEscalation at every period start, in multiples of rounding_vnd, and never down once a step outweighs the rounding', () => {
-    fc.assert(
-      fc.property(termsAndUntil, ({ terms: t, until }) => {
-        const e = t.escalation;
-        const firstIncrease = e.kind === 'percent' ? (t.rentVnd * e.valueBps) / 10_000 : e.kind === 'fixed' ? e.valueVnd : 0;
-        const monotone = e.kind === 'none' || firstIncrease >= e.roundingVnd / 2;
-        let previous = 0;
-        for (const p of generateSchedule(t, [], until)) {
-          const full = p.prorated === null ? p.rentVnd : p.prorated.fullRentVnd;
-          expect(full).toBe(applyEscalation(t.rentVnd, e, p.start, t.startDate));
-          if (monotone) expect(full).toBeGreaterThanOrEqual(previous);
-          if (e.kind !== 'none' && full !== t.rentVnd) expect(full % e.roundingVnd).toBe(0);
-          previous = full;
-        }
       }),
       params,
     );
