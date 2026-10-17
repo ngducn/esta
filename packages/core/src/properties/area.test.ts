@@ -28,7 +28,7 @@ describe('parseAreaInput', () => {
   });
 });
 
-describe('sumLandArea', () => {
+describe('sumLandArea (PRP-2)', () => {
   it('sums 120,5 and 80,25 to exactly 200,75', () => {
     expect(sumLandArea([{ area_m2: 120.5 }, { area_m2: 80.25 }])).toBe(200.75);
   });

@@ -1,3 +1,4 @@
+-- PRP-8: the list view behind search, filters and sorts.
 begin;
 \ir _harness.psql
 

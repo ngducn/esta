@@ -139,7 +139,7 @@ async function expectRule5(page: Page, lane: number, words: { outside: string; s
   expect((await stored(page, id)).lat).toBeNull();
 }
 
-test('rule 1: the map shows six pins, the unpinned line names Đất vườn Long An, and the pin card leads with the photo', async ({ page }) => {
+test('rule 1: the map shows six pins, the unpinned line names Đất vườn Long An, and the pin card leads with the photo (PRP-5)', async ({ page }) => {
   onlyOn('mobile');
   await stubTiles(page);
   await signIn(page, 'me.lane1@demo.esta.test');

@@ -64,7 +64,7 @@ async function expectRule2Results(page: Page) {
   await expect(nicknames(page)).toHaveText(['Nhà phố Q7']);
 }
 
-test('rule 1: Mẹ sees seven cards, each led by its photo or its kind tile, with both addresses', async ({ page }) => {
+test('rule 1: Mẹ sees seven cards, each led by its photo or its kind tile, with both addresses (PRP-8)', async ({ page }) => {
   onlyOn('mobile');
   await open(page, 'me.lane1@demo.esta.test', 'light');
   await expect(nicknames(page)).toHaveText(LANE_SEVEN);

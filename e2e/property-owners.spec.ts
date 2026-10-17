@@ -59,7 +59,7 @@ async function saveSheet(page: Page) {
   await expect(page.getByTestId('ownership-sheet')).toHaveCount(0);
 }
 
-test('rule 1: Mẹ saves 60% and 30% on Căn hộ Thủ Đức and the under-100% warning survives a reload', async ({ page }) => {
+test('rule 1: Mẹ saves 60% and 30% on Căn hộ Thủ Đức and the under-100% warning survives a reload (PRP-3)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   await resetFiftyFifty(page, 1, 'thu-duc', '2019-11-20');
   await page.goto(legalPath(1, 'thu-duc'));

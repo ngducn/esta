@@ -61,7 +61,7 @@ async function openFromSearch(page: Page, query: string, nickname: string) {
   await page.getByTestId('property-card').getByRole('link', { name: nickname, exact: true }).click();
 }
 
-test('rules 1 and 2: Mẹ finds Đất vườn Long An below 60%, taps the parcel number item, saves 906 and 96, and the item goes', async ({ page }) => {
+test('rules 1 and 2: Mẹ finds Đất vườn Long An below 60%, taps the parcel number item, saves 906 and 96, and the item goes (PRP-6)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   await blankLongAnParcel(page, 1);
   try {
@@ -93,7 +93,7 @@ test('rules 1 and 2: Mẹ finds Đất vườn Long An below 60%, taps the parce
   }
 });
 
-test('rule 3: Ryan sorts Tài sản by Mức đầy đủ, Đất vườn Long An leads below 60%, and Mặt bằng Quận 1 asks for its accounts', async ({ page }) => {
+test('rule 3: Ryan sorts Tài sản by Mức đầy đủ, Đất vườn Long An leads below 60%, and Mặt bằng Quận 1 asks for its accounts (PRP-6, PRP-8)', async ({ page }) => {
   await open(page, 'ryan.lane2@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
   await page.getByRole('combobox', { name: /^Sắp xếp/ }).selectOption({ label: 'Mức đầy đủ' });
@@ -116,7 +116,7 @@ test('rule 3: Ryan sorts Tài sản by Mức đầy đủ, Đất vườn Long A
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('rule 4: Ryan sets Căn hộ Thủ Đức to 60% and 30%, the score drops and the owners item links to legal#owners', async ({ page }) => {
+test('rule 4: Ryan sets Căn hộ Thủ Đức to 60% and 30%, the score drops and the owners item links to legal#owners (PRP-3)', async ({ page }) => {
   await open(page, 'ryan.lane3@demo.esta.test', 'light', DESKTOP);
   await resetFiftyFifty(page, 3);
   const id = propertyId(3, 'thu-duc');

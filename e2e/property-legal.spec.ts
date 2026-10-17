@@ -44,7 +44,7 @@ const parcels = (page: Page) => page.getByTestId('parcels-card');
 
 test.beforeEach(onlyOnMobile);
 
-test('rule 1: Mẹ adds parcel 412 to Đất Bảo Lộc and the land area adds up to 500,5 m²', async ({ page }) => {
+test('rule 1: Mẹ adds parcel 412 to Đất Bảo Lộc and the land area adds up to 500,5 m² (PRP-2)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   await rest(page, 'DELETE', `parcels?property_id=eq.${propertyId(1, 'bao-loc')}&parcel_no=eq.412`);
   await page.goto(legalPath(1, 'bao-loc'));

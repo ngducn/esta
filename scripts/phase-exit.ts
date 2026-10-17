@@ -7,7 +7,12 @@ import { z } from 'zod';
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
 export type PhaseCheck =
-  | { readonly id: string; readonly commands: readonly (readonly string[])[] }
+  | {
+      readonly id: string;
+      readonly commands: readonly (readonly string[])[];
+      /** Test files, from the repo root, that must name `id`; the row fails before running when one does not. */
+      readonly cites?: readonly string[];
+    }
   | { readonly id: string; readonly verify: (repoRoot: string) => Outcome };
 
 /** The redacted record of one live ping: no token, no session id, so any other key fails the parse. */
@@ -42,9 +47,26 @@ export function verifyPingRecord(text: string): Outcome {
 }
 
 const e2e = (spec: string) => ['pnpm', 'e2e', spec];
-const core = (...tests: string[]) => ['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', ...tests];
-const web = (...tests: string[]) => ['pnpm', '--filter', '@esta/web', 'exec', 'vitest', 'run', '--exclude', '**/*.live.test.ts', ...tests];
-const pgtap = (...tests: string[]) => ['pnpm', 'db:test', ...tests.map((name) => `supabase/tests/${name}.test.sql`)];
+
+type CitedFiles = { core?: readonly string[]; web?: readonly string[]; pgtap?: readonly string[]; e2e?: readonly string[] };
+
+/** An acceptance row runs exactly the tests that cite its id, and checks that each one does. */
+function cited(id: string, files: CitedFiles): PhaseCheck {
+  const core = (files.core ?? []).map((file) => `src/${file}`);
+  const web = (files.web ?? []).map((file) => `src/${file}`);
+  const pgtap = (files.pgtap ?? []).map((name) => `supabase/tests/${name}.test.sql`);
+  const specs = (files.e2e ?? []).map((name) => `e2e/${name}.spec.ts`);
+  return {
+    id,
+    cites: [...core.map((file) => `packages/core/${file}`), ...web.map((file) => `apps/web/${file}`), ...pgtap, ...specs],
+    commands: [
+      ...(core.length === 0 ? [] : [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', ...core]]),
+      ...(web.length === 0 ? [] : [['pnpm', '--filter', '@esta/web', 'exec', 'vitest', 'run', ...web]]),
+      ...(pgtap.length === 0 ? [] : [['pnpm', 'db:test', ...pgtap]]),
+      ...specs.map(e2e),
+    ],
+  };
+}
 
 /** Each phase-final PR adds its phase's rows. */
 export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
@@ -62,28 +84,35 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
   ],
   // PRP-7 moved to P2-08. The e2e rows need the slot's web server, as `pnpm e2e` does; Lighthouse starts its own build.
   '1': [
-    {
-      id: 'PRP-1',
-      commands: [core('src/properties/form-fields.test.ts', 'src/schemas/property.test.ts', 'src/properties/units.test.ts'), e2e('e2e/property-form.spec.ts'), e2e('e2e/property-units.spec.ts')],
-    },
-    { id: 'PRP-2', commands: [core('src/properties/area.test.ts', 'src/schemas/legal.test.ts'), pgtap('property_legal'), e2e('e2e/property-legal.spec.ts')] },
-    {
-      id: 'PRP-3',
-      commands: [
-        core('src/properties/ownership.test.ts', 'src/schemas/ownership.test.ts', 'src/completeness/score.test.ts'),
-        pgtap('ownership_shares', 'completeness_facts'),
-        e2e('e2e/property-owners.spec.ts'),
-      ],
-    },
-    { id: 'PRP-4', commands: [core('src/address/format-current.test.ts'), pgtap('suggest_current_unit'), e2e('e2e/property-form.spec.ts')] },
-    { id: 'PRP-5', commands: [core('src/maps'), web('src/server/maps'), e2e('e2e/properties-map.spec.ts')] },
-    { id: 'PRP-6', commands: [core('src/completeness'), pgtap('completeness_facts'), e2e('e2e/property-completeness.spec.ts')] },
-    { id: 'PRP-8', commands: [core('src/properties/filters.test.ts'), pgtap('property_list'), e2e('e2e/properties-list.spec.ts'), e2e('e2e/property-completeness.spec.ts')] },
+    cited('PRP-1', { core: ['properties/form-fields.test.ts'], e2e: ['property-form', 'property-units'] }),
+    cited('PRP-2', { core: ['properties/area.test.ts'], pgtap: ['property_legal'], e2e: ['property-legal'] }),
+    cited('PRP-3', {
+      core: ['properties/ownership.test.ts', 'completeness/score.test.ts'],
+      pgtap: ['ownership_shares', 'completeness_facts'],
+      e2e: ['property-owners', 'property-completeness'],
+    }),
+    cited('PRP-4', { pgtap: ['suggest_current_unit'], e2e: ['property-form'] }),
+    cited('PRP-5', { core: ['maps/parse-maps-url.test.ts'], web: ['server/maps/resolve-short-maps-link.test.ts'], e2e: ['properties-map'] }),
+    cited('PRP-6', { core: ['completeness/registry.test.ts', 'completeness/score.test.ts'], pgtap: ['completeness_facts'], e2e: ['property-completeness'] }),
+    cited('PRP-8', { core: ['properties/filters.test.ts'], pgtap: ['property_list'], e2e: ['properties-list', 'property-units', 'property-completeness'] }),
     // Every public table has RLS and a pgTAP file naming it, which `pnpm db:test` checks after the tests.
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'Lighthouse', commands: [['node', 'scripts/perf/phase-budget.ts']] },
   ],
 };
+
+/** The files of a row that do not name its id, a missing file included. */
+export function uncited(repoRoot: string, check: PhaseCheck): string[] {
+  if (!('cites' in check) || check.cites === undefined) return [];
+  const id = new RegExp(`\\b${check.id}\\b`);
+  return check.cites.filter((file) => {
+    try {
+      return !id.test(readFileSync(join(repoRoot, file), 'utf8'));
+    } catch {
+      return true;
+    }
+  });
+}
 
 export type RunCommand = (command: readonly string[], log: string) => number;
 
@@ -124,6 +153,8 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
       } catch (error) {
         outcome = { pass: false, detail: error instanceof Error ? error.message : String(error) };
       }
+    } else if (uncited(repoRoot, check).length > 0) {
+      outcome = { pass: false, detail: `${uncited(repoRoot, check).join(', ')} never names ${check.id}` };
     } else {
       const log = join(logs, `${check.id}.log`);
       writeFileSync(log, '');

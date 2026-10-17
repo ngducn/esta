@@ -43,7 +43,7 @@ function summarize(report: Report, origin: string): Run {
   };
 }
 
-async function sessionCookie(origin: string, email: string, slot: number): Promise<string> {
+export async function sessionCookie(origin: string, email: string, slot: number): Promise<string> {
   const mailbox = slotMailbox(slot);
   const browser = await chromium.launch();
   try {

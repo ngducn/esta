@@ -1,8 +1,8 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { checkPhase, PHASE_CHECKS, S1_RECORD, verifyPingRecord, type PhaseCheck } from './phase-exit.ts';
+import { checkPhase, PHASE_CHECKS, S1_RECORD, uncited, verifyPingRecord, type PhaseCheck } from './phase-exit.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const logDir = mkdtempSync(join(tmpdir(), 'esta-phase-test-'));
@@ -65,14 +65,26 @@ describe('checkPhase', () => {
     expect(PHASE_CHECKS['1']?.map((check) => check.id)).toEqual(['PRP-1', 'PRP-2', 'PRP-3', 'PRP-4', 'PRP-5', 'PRP-6', 'PRP-8', 'RLS', 'Lighthouse']);
   });
 
-  it('points every phase 1 row at test files and specs that exist', () => {
-    const paths = (PHASE_CHECKS['1'] ?? []).flatMap((check) => ('commands' in check ? check.commands.flat() : []));
-    const files = [
-      ...paths.filter((arg) => /^(e2e|supabase|scripts)\//.test(arg)).map((arg) => join(repoRoot, arg)),
-      ...paths.filter((arg) => arg.startsWith('src/')).map((arg) => (existsSync(join(repoRoot, 'packages/core', arg)) ? join(repoRoot, 'packages/core', arg) : join(repoRoot, 'apps/web', arg))),
-    ];
-    expect(files.length).toBeGreaterThan(20);
-    expect(files.filter((file) => !existsSync(file))).toEqual([]);
+  it('runs only files that cite their row id, at least one per row', () => {
+    for (const check of PHASE_CHECKS['1'] ?? []) {
+      if (!('commands' in check) || check.cites === undefined) continue;
+      expect(check.cites.length, check.id).toBeGreaterThan(0);
+      expect(uncited(repoRoot, check), check.id).toEqual([]);
+    }
+  });
+
+  it('fails a row whose file does not cite its id, or is missing, without running it', () => {
+    const { code, lines } = runPhase('9', {
+      '9': [
+        { id: 'PRP-2', cites: ['scripts/slot.ts'], commands: [node('process.exit(0)')] },
+        { id: 'PRP-9', cites: ['e2e/missing.spec.ts'], commands: [node('process.exit(0)')] },
+      ],
+    });
+    expect(code).toBe(1);
+    expect(lines).toEqual([
+      expect.stringMatching(/^FAIL {2}PRP-2 .*scripts\/slot\.ts never names PRP-2$/),
+      expect.stringMatching(/^FAIL {2}PRP-9 .*e2e\/missing\.spec\.ts never names PRP-9$/),
+    ]);
   });
 
   it('exits 1 when one phase 1 row fails', () => {

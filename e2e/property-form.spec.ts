@@ -87,7 +87,7 @@ async function apartmentWithFee(page: Page, words: { kind: string; fee: string; 
   await expect(page.getByTestId('overview-facts')).toContainText(/1\.200\.000\s₫/);
 }
 
-test('rule 1: Mẹ adds a townhouse, picks the ward the Dĩ An, Bình Dương suggestion names, and both addresses show', async ({ page }) => {
+test('rule 1: Mẹ adds a townhouse, picks the ward the Dĩ An, Bình Dương suggestion names, and both addresses show (PRP-4)', async ({ page }) => {
   onlyOn('mobile');
   await setTheme(page, 'light');
   await newHousehold(page);

@@ -1,3 +1,4 @@
+-- PRP-3 and PRP-6: the facts the completeness registry scores, a 9000 bp share set among them.
 begin;
 \ir _harness.psql
 
