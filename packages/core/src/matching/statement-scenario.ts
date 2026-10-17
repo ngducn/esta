@@ -93,7 +93,7 @@ export const SCENARIO_ROWS: readonly ScenarioRow[] = [
     description: 'PHAM THU HA DEMO CHUYEN TIEN',
     expect: unmatched(),
   },
-  { ...memoWithBankNoise, expect: { status: 'ignored', reason: 'duplicate' } },
+  memoWithBankNoise,
 ];
 
 const fractional = { date: isoDate('2026-10-09'), bankRef: 'FT26282013', description: 'LE MINH DEMO NUA DONG' };

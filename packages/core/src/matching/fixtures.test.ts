@@ -5,7 +5,7 @@ import layoutA from '../../../../fixtures/statements/layout-a.csv?raw';
 import layoutB from '../../../../fixtures/statements/layout-b.xlsx.json';
 import layoutC from '../../../../fixtures/statements/layout-c.csv?raw';
 import { decodeCsv, decodeStatement } from './decode';
-import { rowFingerprint } from './fingerprint';
+import { rowFingerprints } from './fingerprint';
 import { STATEMENT_LAYOUTS, type StatementGrid, type StatementLayoutId } from './layouts';
 import { matchRows } from './match';
 import { renderCsv } from './render';
@@ -20,16 +20,17 @@ function rendered(id: StatementLayoutId): string {
   return id === 'b' ? `${JSON.stringify(grid, null, 2)}\n` : renderCsv(grid);
 }
 
+const fingerprints = rowFingerprints(SCENARIO_ROWS);
 const golden = {
-  rows: SCENARIO_ROWS.map(({ expect: match, ...row }, i) => ({ index: i + 1, ...row, fingerprint: rowFingerprint(row), match })),
+  rows: SCENARIO_ROWS.map(({ expect: match, ...row }, i) => ({ index: i + 1, ...row, fingerprint: fingerprints[i] as string, match })),
   rejected: SCENARIO_REJECTED,
 };
 
-function matched(id: StatementLayoutId): typeof golden {
+function matched(id: StatementLayoutId, knownFingerprints?: ReadonlySet<string>): typeof golden {
   const decoded = decodeStatement(COMMITTED[id]);
   if (!decoded.ok) throw new Error(decoded.reason);
-  const rows = matchRows(decoded.value.rows, SCENARIO_INVOICES).map(({ row, fingerprint, match }) => ({ ...row, fingerprint, match }));
-  return { rows, rejected: decoded.value.rejected };
+  const rows = matchRows(decoded.value.rows, SCENARIO_INVOICES, knownFingerprints === undefined ? {} : { knownFingerprints });
+  return { rows: rows.map(({ row, fingerprint, match }) => ({ ...row, fingerprint, match })), rejected: decoded.value.rejected };
 }
 
 describe('fixtures/statements', () => {
@@ -48,9 +49,16 @@ describe('fixtures/statements', () => {
     expect(matched(id)).toEqual(goldenFile);
   });
 
+  it.each(Object.keys(FILES) as StatementLayoutId[])('layout %s imported again after any layout matches nothing', (id) => {
+    for (const earlier of Object.keys(FILES) as StatementLayoutId[]) {
+      const again = matched(id, new Set(matched(earlier).rows.map((row) => row.fingerprint)));
+      expect(again.rows.map((row) => row.match)).toEqual(golden.rows.map(() => ({ status: 'ignored', reason: 'duplicate' })));
+    }
+  });
+
   it('covers every match status the matcher can produce, plus a refusal', () => {
     const statuses = new Set(SCENARIO_ROWS.map((row) => `${row.expect.status}${'reason' in row.expect ? `:${row.expect.reason}` : ''}`));
-    expect([...statuses].sort()).toEqual(['ignored:debit', 'ignored:duplicate', 'memo_match', 'suggested', 'unmatched']);
+    expect([...statuses].sort()).toEqual(['ignored:debit', 'memo_match', 'suggested', 'unmatched']);
     expect(SCENARIO_ROWS.filter((row) => row.expect.status === 'unmatched' && row.expect.candidateIds.length === 2)).toHaveLength(1);
     expect(SCENARIO_REJECTED).toHaveLength(1);
   });

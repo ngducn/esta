@@ -69,10 +69,30 @@ export function sha256Hex(text: string): string {
   return Array.from(hash, (word) => word.toString(16).padStart(8, '0')).join('');
 }
 
+type FingerprintFields = Pick<StatementRow, 'date' | 'amount' | 'bankRef' | 'description'>;
+
+function rowIdentity(row: FingerprintFields): string {
+  return [row.date, String(row.amount), row.bankRef, normalizeDescription(row.description)].join('\n');
+}
+
+const hashIdentity = (identity: string, occurrence: number): string => sha256Hex(`${identity}\n${occurrence}`);
+
 /**
- * The identity of a statement row across imports (LSE-8): date, amount, bank reference and the
- * normalized description, so the same transfer in a re-exported file hashes the same.
+ * The identity of a statement row across imports (LSE-8): date, amount, bank reference, the
+ * normalized description and which occurrence of that row the file holds. A re-exported file
+ * hashes the same, and two identical transfers in one file stay two rows instead of one.
  */
-export function rowFingerprint(row: Pick<StatementRow, 'date' | 'amount' | 'bankRef' | 'description'>): string {
-  return sha256Hex([row.date, String(row.amount), row.bankRef, normalizeDescription(row.description)].join('\n'));
+export function rowFingerprint(row: FingerprintFields, occurrence = 1): string {
+  return hashIdentity(rowIdentity(row), occurrence);
+}
+
+/** One fingerprint per row, the nth identical row of the file hashed as occurrence n. */
+export function rowFingerprints(rows: readonly FingerprintFields[]): string[] {
+  const occurrences = new Map<string, number>();
+  return rows.map((row) => {
+    const identity = rowIdentity(row);
+    const occurrence = (occurrences.get(identity) ?? 0) + 1;
+    occurrences.set(identity, occurrence);
+    return hashIdentity(identity, occurrence);
+  });
 }

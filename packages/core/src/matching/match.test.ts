@@ -128,12 +128,20 @@ describe('ignored', () => {
     });
   });
 
-  it('ignores the second copy of a row inside one import', () => {
-    const memo = row({ description: 'ESTA 7K2QX9MP' });
-    const matches = matchRows([memo, { ...memo, index: 9 }], invoices).map((m) => m.match);
-    expect(matches).toEqual([
-      { status: 'memo_match', invoiceId: 'inv-huong', memoCode: '7K2QX9MP' },
+  it('keeps two identical transfers in one import as two matches, so a double payment is not lost', () => {
+    const memo = row({ description: 'ESTA 7K2QX9MP', bankRef: '' });
+    const matched = matchRows([memo, { ...memo, index: 9 }], invoices);
+    const once = { status: 'memo_match', invoiceId: 'inv-huong', memoCode: '7K2QX9MP' };
+    expect(matched.map((m) => m.match)).toEqual([once, once]);
+    expect(matched.map((m) => m.fingerprint)).toEqual([rowFingerprint(memo, 1), rowFingerprint(memo, 2)]);
+  });
+
+  it('ignores only the copies an earlier import holds', () => {
+    const memo = row({ description: 'ESTA 7K2QX9MP', bankRef: '' });
+    const again = matchRows([memo, memo], invoices, { knownFingerprints: new Set([rowFingerprint(memo, 1)]) });
+    expect(again.map((m) => m.match)).toEqual([
       { status: 'ignored', reason: 'duplicate' },
+      { status: 'memo_match', invoiceId: 'inv-huong', memoCode: '7K2QX9MP' },
     ]);
   });
 

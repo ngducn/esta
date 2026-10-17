@@ -2,7 +2,7 @@ import { daysBetween } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
 import type { Vnd } from '../money/vnd';
 import type { StatementRow } from './decode';
-import { rowFingerprint } from './fingerprint';
+import { rowFingerprints } from './fingerprint';
 import { findMemoCodes, normalizeDescription } from './memo';
 
 /** An issued invoice as the matcher sees it. The caller derives `outstanding` from allocations. */
@@ -23,7 +23,7 @@ export type StatementMatch =
   | { status: 'suggested'; invoiceId: string }
   /** Zero candidates, or two or more that the operator must choose between. */
   | { status: 'unmatched'; candidateIds: readonly string[] }
-  /** `debit` covers any row that brings no money in; `duplicate` a fingerprint seen before. */
+  /** `debit` covers any row that brings no money in; `duplicate` a row an earlier import already holds. */
   | { status: 'ignored'; reason: 'debit' | 'duplicate' };
 
 export type MatchedRow = { row: StatementRow; fingerprint: string; match: StatementMatch };
@@ -76,7 +76,7 @@ function matchRow(row: StatementRow, index: Indexed[], issuedCodes: ReadonlySet<
  * whose amount equals the outstanding amount of exactly one invoice, whose tenant's name appears in
  * the description and whose date is within ten days of the due date is `suggested`. Everything
  * else is `unmatched`, with the candidates when there were several. Rows that bring no money in
- * and rows whose fingerprint was seen before are `ignored`.
+ * and rows an earlier import already holds are `ignored`.
  */
 export function matchRows(
   rows: readonly StatementRow[],
@@ -85,11 +85,11 @@ export function matchRows(
 ): MatchedRow[] {
   const index: Indexed[] = invoices.map((invoice) => ({ invoice, normalizedName: normalizeDescription(invoice.tenantName) }));
   const issuedCodes = new Set(invoices.map((invoice) => invoice.memoCode));
-  const seen = new Set(options.knownFingerprints);
-  return rows.map((row) => {
-    const fingerprint = rowFingerprint(row);
-    const match: StatementMatch = seen.has(fingerprint) ? { status: 'ignored', reason: 'duplicate' } : matchRow(row, index, issuedCodes);
-    seen.add(fingerprint);
+  const known = options.knownFingerprints ?? new Set<string>();
+  const fingerprints = rowFingerprints(rows);
+  return rows.map((row, i) => {
+    const fingerprint = fingerprints[i] as string;
+    const match: StatementMatch = known.has(fingerprint) ? { status: 'ignored', reason: 'duplicate' } : matchRow(row, index, issuedCodes);
     return { row, fingerprint, match };
   });
 }

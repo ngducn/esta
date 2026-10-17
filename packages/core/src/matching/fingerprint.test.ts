@@ -3,7 +3,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { rowFingerprint, sha256Hex } from './fingerprint';
+import { rowFingerprint, rowFingerprints, sha256Hex } from './fingerprint';
 
 const nodeSha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
 
@@ -33,8 +33,9 @@ describe('sha256Hex', () => {
 describe('rowFingerprint', () => {
   const row = { date: isoDate('2026-10-07'), amount: vnd(3_500_000), bankRef: 'FT26280001', description: 'MBVCB.1234567.ESTA7K2QX9MP.CT TU 0903' };
 
-  it('is the SHA-256 of date, amount, bank reference and the normalized description, newline separated', () => {
-    expect(rowFingerprint(row)).toBe(nodeSha256('2026-10-07\n3500000\nFT26280001\nMBVCB1234567ESTA7K2QX9MPCTTU0903'));
+  it('is the SHA-256 of date, amount, bank reference, the normalized description and the occurrence, newline separated', () => {
+    expect(rowFingerprint(row)).toBe(nodeSha256('2026-10-07\n3500000\nFT26280001\nMBVCB1234567ESTA7K2QX9MPCTTU0903\n1'));
+    expect(rowFingerprint(row, 2)).toBe(nodeSha256('2026-10-07\n3500000\nFT26280001\nMBVCB1234567ESTA7K2QX9MPCTTU0903\n2'));
   });
 
   it('ignores spacing, case and punctuation differences in the description', () => {
@@ -53,5 +54,24 @@ describe('rowFingerprint', () => {
   it('is unchanged by the row index', () => {
     const indexed = { ...row, index: 7 };
     expect(rowFingerprint(indexed)).toBe(rowFingerprint(row));
+  });
+});
+
+describe('rowFingerprints', () => {
+  const first = { date: isoDate('2026-10-07'), amount: vnd(3_500_000), bankRef: '', description: 'ESTA 7K2QX9MP' };
+  const other = { ...first, amount: vnd(4_200_000) };
+
+  it('counts identical rows, so two identical transfers in one file get two fingerprints', () => {
+    expect(rowFingerprints([first, other, { ...first, description: 'esta 7k2qx9mp' }, first])).toEqual([
+      rowFingerprint(first, 1),
+      rowFingerprint(other, 1),
+      rowFingerprint(first, 2),
+      rowFingerprint(first, 3),
+    ]);
+  });
+
+  it('gives the same file the same fingerprints every time', () => {
+    const file = [first, other, first];
+    expect(rowFingerprints(file)).toEqual(rowFingerprints(file));
   });
 });

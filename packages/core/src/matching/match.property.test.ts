@@ -4,6 +4,7 @@ import { daysBetween } from '../date/calendar';
 import { isoDate, type IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
 import type { StatementRow } from './decode';
+import { rowFingerprint } from './fingerprint';
 import { SUGGESTION_WINDOW_DAYS, matchRows, type InvoiceCandidate } from './match';
 import { normalizeDescription } from './memo';
 
@@ -141,11 +142,8 @@ describe('matchRows properties', () => {
     fc.assert(
       fc.property(scenario, ({ invoices, rows }) => {
         const issued = new Set(invoices.map((invoice) => invoice.memoCode));
-        const seen = new Set<string>();
-        for (const { row, fingerprint, match } of matchRows(rows, invoices)) {
-          const duplicate = seen.has(fingerprint);
-          seen.add(fingerprint);
-          if (duplicate || row.amount <= 0) continue;
+        for (const { row, match } of matchRows(rows, invoices)) {
+          if (row.amount <= 0) continue;
           const codes = [...issued].filter((c) => normalizeDescription(row.description).includes(`ESTA${c}`));
           if (codes.length > 0) continue;
           const fitting = suggestionCandidates(row, invoices);
@@ -158,16 +156,17 @@ describe('matchRows properties', () => {
     );
   });
 
-  it('ignores a repeated row as a duplicate and matches nothing on a re-import', () => {
+  it('matches a repeated row like its first copy, gives every row its own fingerprint, and matches nothing on a re-import', () => {
     fc.assert(
       fc.property(scenario, ({ invoices, rows }) => {
         const first = matchRows(rows, invoices);
         const fingerprints = first.map((m) => m.fingerprint);
-        const seenBefore = (i: number) => fingerprints.slice(0, i).includes(fingerprints[i] as string);
-        first.forEach((m, i) => {
-          if (seenBefore(i)) expect(m.match).toEqual({ status: 'ignored', reason: 'duplicate' });
-          else expect(m.match).not.toEqual({ status: 'ignored', reason: 'duplicate' });
-        });
+        expect(new Set(fingerprints).size).toBe(rows.length);
+        for (const m of first) {
+          expect(m.match).not.toEqual({ status: 'ignored', reason: 'duplicate' });
+          const earlier = rows.findIndex((r) => rowFingerprint(r) === rowFingerprint(m.row));
+          expect(m.match).toEqual(first[earlier]?.match);
+        }
         const again = matchRows(rows, invoices, { knownFingerprints: new Set(fingerprints) });
         for (const m of again) expect(m.match).toEqual({ status: 'ignored', reason: 'duplicate' });
         expect(again.map((m) => m.fingerprint)).toEqual(fingerprints);
