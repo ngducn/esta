@@ -1,10 +1,11 @@
 begin;
 \ir _harness.psql
 
-select plan(42);
+select plan(61);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
+select tests.user_id('member.b@test.esta.test') as member_b \gset
 
 select set_config('esta.actor', 'system:test', true);
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
@@ -24,6 +25,10 @@ insert into public.structures (household_id, property_id, kind) values (:'b', '0
 create temporary view legal_audit as
   select * from public.audit_log where table_name in ('certificates', 'parcels', 'structures') order by id;
 grant select on legal_audit to authenticated;
+
+delete from public.test_clock;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
+insert into private.local_stack default values on conflict do nothing;
 
 select tests.act_as('member.a@test.esta.test');
 
@@ -124,9 +129,15 @@ select tests.cannot_write('public.structures', :'b',
   format($$ insert into public.structures (household_id, property_id, kind) values (%L, '00000000-0000-4000-8000-0000000000b1', 'Nhà') $$, :'b'));
 
 select tests.act_as('viewer.a@test.esta.test');
+select tests.sees_household('public.certificates', :'a', true);
 select tests.sees_household('public.parcels', :'a', true);
+select tests.sees_household('public.structures', :'a', true);
 select tests.cannot_write('public.certificates', :'a',
   format($$ insert into public.certificates (household_id, property_id, form) values (%L, '00000000-0000-4000-8000-0000000000a2', 'gcn_2024') $$, :'a'));
+select tests.cannot_write('public.parcels', :'a',
+  format($$ insert into public.parcels (household_id, property_id) values (%L, '00000000-0000-4000-8000-0000000000a2') $$, :'a'));
+select tests.cannot_write('public.structures', :'a',
+  format($$ insert into public.structures (household_id, property_id, kind) values (%L, '00000000-0000-4000-8000-0000000000a2', 'Nhà') $$, :'a'));
 
 select tests.act_as('member.a@test.esta.test');
 select lives_ok($$ delete from public.parcels where id = '00000000-0000-4000-8000-0000000d00a1' $$, 'a member deletes a parcel');
@@ -137,6 +148,64 @@ select results_eq(
 select lives_ok($$ delete from public.certificates where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'a member deletes a certificate');
 select is((select certificate_id from public.structures where id = '00000000-0000-4000-8000-0000000e00a1'), null::uuid,
   'deleting the certificate unlinks its structure and keeps it');
+
+select throws_ok(
+  format($$ insert into public.certificates (household_id, property_id, form, holder_party_ids)
+            values (%L, '00000000-0000-4000-8000-0000000000b1', 'gcn_2024', array[%L::uuid]) $$, :'b', :'owner_b'),
+  '42501', null, 'a non-member naming a holder that exists in the other household gets the RLS refusal');
+select throws_ok(
+  format($$ insert into public.certificates (household_id, property_id, form, holder_party_ids)
+            values (%L, '00000000-0000-4000-8000-0000000000b1', 'gcn_2024', array[gen_random_uuid()]) $$, :'b'),
+  '42501', null, 'a non-member naming a random holder id gets the same refusal');
+select throws_ok(
+  format($$ insert into public.certificates (household_id, property_id, form, status, mortgage)
+            values (%L, '00000000-0000-4000-8000-0000000000b1', 'gcn_2024', 'mortgaged',
+                    '{"bank_party_id": "00000000-0000-4000-8000-00000000ba0b", "amount_vnd": 5}') $$, :'b'),
+  '42501', null, 'a non-member naming a bank that exists in the other household gets the same refusal');
+
+select lives_ok(
+  format($$ insert into public.certificates (id, household_id, property_id, form, verified_by, verified_at)
+            values ('00000000-0000-4000-8000-00000000c0a7', %L, '00000000-0000-4000-8000-0000000000a2', 'gcn_2024',
+                    %L, '2001-01-01T00:00:00Z') $$, :'a', :'member_b'),
+  'a member inserts a verified certificate with a forged verifier and time');
+select results_eq(
+  $$ select verified_by, verified_at from public.certificates where id = '00000000-0000-4000-8000-00000000c0a7' $$,
+  format($$ values (%L::uuid, '2026-10-07T09:00:00+07:00'::timestamptz) $$, :'member_a'),
+  'an insert marked verified is stamped with the inserting user and the clock');
+select lives_ok(
+  format($$ insert into public.certificates (id, household_id, property_id, form, verified_by)
+            values ('00000000-0000-4000-8000-00000000c0a8', %L, '00000000-0000-4000-8000-0000000000a2', 'gcn_2024', %L) $$,
+         :'a', :'member_b'),
+  'a member inserts an unverified certificate with a forged verifier');
+select results_eq(
+  $$ select verified_by, verified_at from public.certificates where id = '00000000-0000-4000-8000-00000000c0a8' $$,
+  $$ values (null::uuid, null::timestamptz) $$,
+  'an unverified insert keeps no verifier');
+update public.certificates set verified_at = '2001-01-01T00:00:00Z', verified_by = :'member_b'
+  where id = '00000000-0000-4000-8000-00000000c0a8';
+select results_eq(
+  $$ select verified_by, verified_at from public.certificates where id = '00000000-0000-4000-8000-00000000c0a8' $$,
+  format($$ values (%L::uuid, '2026-10-07T09:00:00+07:00'::timestamptz) $$, :'member_a'),
+  'flipping to verified stamps the updating user and the clock, ignoring the client values');
+update public.certificates set verified_at = '2001-01-01T00:00:00Z', verified_by = :'member_b'
+  where id = '00000000-0000-4000-8000-00000000c0a7';
+select results_eq(
+  $$ select verified_by, verified_at from public.certificates where id = '00000000-0000-4000-8000-00000000c0a7' $$,
+  format($$ values (%L::uuid, '2026-10-07T09:00:00+07:00'::timestamptz) $$, :'member_a'),
+  'a verified certificate keeps its stamp against a forged verifier and time');
+update public.certificates set verified_at = null where id = '00000000-0000-4000-8000-00000000c0a7';
+select results_eq(
+  $$ select verified_by, verified_at from public.certificates where id = '00000000-0000-4000-8000-00000000c0a7' $$,
+  $$ values (null::uuid, null::timestamptz) $$,
+  'flipping to unverified clears the verifier and the time');
+
+select tests.act_as_service('{"x-esta-actor": "agent:extract"}');
+update public.certificates set verified_by = :'member_b', verified_at = '2001-01-01T00:00:00Z'
+  where id = '00000000-0000-4000-8000-00000000c0a7';
+select results_eq(
+  $$ select verified_by, verified_at from public.certificates where id = '00000000-0000-4000-8000-00000000c0a7' $$,
+  format($$ values (%L::uuid, '2001-01-01T00:00:00Z'::timestamptz) $$, :'member_b'),
+  'a service-role write sets the verifier and the time it names');
 
 select * from finish();
 rollback;

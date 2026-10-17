@@ -177,7 +177,8 @@ create index structures_household_property_idx on public.structures (household_i
 create index structures_certificate_idx on public.structures (household_id, property_id, certificate_id);
 
 -- holder_party_ids and the mortgage bank are ids inside jsonb and an array, which a foreign key cannot reach. Security
--- definer, so a party hidden by RLS and a party that does not exist fail the same way.
+-- definer, so a party hidden by RLS and a party that does not exist fail the same way. A user who cannot write the
+-- household skips the check and meets the RLS refusal, so the error never says whether another household's party exists.
 create function private.check_certificate_parties()
 returns trigger
 language plpgsql
@@ -187,6 +188,9 @@ as $$
 declare
   v_ids uuid[] := new.holder_party_ids;
 begin
+  if (select auth.uid()) is not null and not private.is_member(new.household_id, 'member') then
+    return new;
+  end if;
   if pg_catalog.pg_input_is_valid(new.mortgage ->> 'bank_party_id', 'uuid') then
     v_ids := v_ids || (new.mortgage ->> 'bank_party_id')::uuid;
   end if;
@@ -204,6 +208,36 @@ revoke all on function private.check_certificate_parties() from public;
 create trigger check_certificate_parties
   before insert or update of household_id, holder_party_ids, mortgage on public.certificates
   for each row execute function private.check_certificate_parties();
+
+-- verified_at set by a user is a request to verify: the stamp is the user and the clock, never client values. Other
+-- writers (the service role for P2 extraction, seeds) keep the values they send.
+create function private.stamp_certificate_verified()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role' is distinct from 'authenticated' then
+    return new;
+  end if;
+  if new.verified_at is null then
+    new.verified_by := null;
+  elsif tg_op = 'INSERT' or old.verified_at is null then
+    new.verified_by := (select auth.uid());
+    new.verified_at := private.audit_now();
+  else
+    new.verified_by := old.verified_by;
+    new.verified_at := old.verified_at;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.stamp_certificate_verified() from public;
+
+create trigger stamp_certificate_verified
+  before insert or update of verified_by, verified_at on public.certificates
+  for each row execute function private.stamp_certificate_verified();
 
 select private.enable_household_rls('public.certificates', 'member');
 select private.enable_audit('public.certificates');
