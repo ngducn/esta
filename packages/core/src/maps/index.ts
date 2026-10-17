@@ -11,3 +11,12 @@ export {
   type MapsLinkParse,
   type PointSource,
 } from './parse-maps-url';
+export {
+  isValidBoundary,
+  normalizeRing,
+  ringFromGeoJson,
+  ringToGeoJson,
+  type BoundaryRing,
+  type GeoJsonPolygon,
+  type RingInvalidReason,
+} from './polygon';
