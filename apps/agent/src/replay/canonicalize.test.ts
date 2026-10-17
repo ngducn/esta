@@ -1,3 +1,5 @@
+import { checkNumbers, collectAllowed } from '@esta/core/guard';
+import type { IsoDate } from '@esta/core/date';
 import { describe, expect, it } from 'vitest';
 import { canonicalizer, inputHash, type CanonicalInput } from './canonicalize';
 
@@ -25,6 +27,36 @@ describe('canonicalizer', () => {
   it('restores a recorded reply into the current household', () => {
     const canon = canonicalizer({ householdName: 'Gia đình Demo 10' });
     expect(canon.restore('Kết nối tốt cho "<household>".')).toBe('Kết nối tốt cho "Gia đình Demo 10".');
+  });
+});
+
+describe('a recorded reply under the number guard (AGENT.md §6.3 and §8)', () => {
+  const recorded = '<household>: Phòng 5 quá hạn 12 ngày, còn nợ 3.500.000 ₫. [Xem](esta://invoice/<id:1>)';
+  const run = (householdName: string, invoiceId: string) => {
+    const canon = canonicalizer({ householdName });
+    canon.canonical(`Hộ ${householdName}, hóa đơn ${invoiceId}`);
+    const allowed = collectAllowed(
+      [{ tool: 'watch_facts', result: { invoice_id: invoiceId, unit_label: 'Phòng 5', days_overdue: 12, outstanding: 3_500_000 } }],
+      { today: '2026-10-07' as IsoDate, householdName },
+    );
+    return { reply: canon.restore(recorded), allowed };
+  };
+
+  it('passes in each household it replays for, with that household name and record id', () => {
+    for (const [name, id] of [
+      ['Gia đình Demo 3', '0b5a6c7d-1111-5222-8333-444455550003'],
+      ['Gia đình Demo 7', '0b5a6c7d-1111-5222-8333-444455550007'],
+    ] as const) {
+      const { reply, allowed } = run(name, id);
+      expect(reply).toBe(`${name}: Phòng 5 quá hạn 12 ngày, còn nợ 3.500.000 ₫. [Xem](esta://invoice/${id})`);
+      expect(checkNumbers(reply, allowed).violations).toEqual([]);
+    }
+  });
+
+  it('rejects another household name, whose number only that household context allows', () => {
+    const three = run('Gia đình Demo 3', '0b5a6c7d-1111-5222-8333-444455550003');
+    const seven = run('Gia đình Demo 7', '0b5a6c7d-1111-5222-8333-444455550007');
+    expect(checkNumbers(three.reply, seven.allowed).violations.map((violation) => violation.text)).toEqual(['3']);
   });
 });
 
