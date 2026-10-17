@@ -1,22 +1,20 @@
 'use client';
 
 import type { GeoPoint } from '@esta/core/maps';
+import dynamic from 'next/dynamic';
 import { NextIntlClientProvider, useTranslations, type AbstractIntlMessages } from 'next-intl';
 import { useOptimistic, useState, useTransition } from 'react';
 import { setPropertyBoundary, setPropertyLocation } from '@/app/(app)/properties/location-actions';
-import { FieldMessage } from '@/components/field-message';
 import { UndoToastProvider, useUndoToast } from '@/components/undo-toast';
 import type { Theme } from '@/design/tokens';
 import type { Locale } from '@/i18n/locale';
-import { cn } from '@/lib/utils';
-import { LocationPanel } from './location-panel';
 import { MapCanvas } from './map-canvas';
-import { PasteMapsLink, type LinkPreview } from './paste-maps-link';
+import type { LinkPreview } from './paste-maps-link';
 import { PinCard } from './pin-card';
-import { PinEditor } from './pin-editor';
-import { PolygonEditor } from './polygon-editor';
 import type { DrawMode, LocateTarget, MapProperty } from './types';
 import { UnpinnedList } from './unpinned-list';
+
+const LocationTools = dynamic(() => import('./location-tools').then((module) => module.LocationTools));
 
 type Props = {
   properties: readonly MapProperty[];
@@ -91,10 +89,7 @@ function MapView({ properties, theme, locate, query }: Props) {
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] lg:items-start lg:gap-5">
       <div
-        className={cn(
-          'relative overflow-hidden rounded-lg border border-rule shadow-card lg:sticky lg:top-6 lg:h-[calc(100dvh-13rem)] lg:min-h-[30rem]',
-          target === null ? 'h-[60dvh] min-h-80' : 'h-[45dvh] min-h-72',
-        )}
+        className={`relative overflow-hidden rounded-lg border border-rule shadow-card lg:sticky lg:top-6 lg:h-[calc(100dvh-13rem)] lg:min-h-[30rem] ${target === null ? 'h-[60dvh] min-h-80' : 'h-[45dvh] min-h-72'}`}
       >
         <MapCanvas
           theme={theme}
@@ -125,25 +120,22 @@ function MapView({ properties, theme, locate, query }: Props) {
       {target === null || locate === null ? (
         <UnpinnedList properties={properties.filter((property) => property.location === null)} locateHref={locateHref} />
       ) : (
-        <LocationPanel nickname={target.nickname} address={target.address} closeHref={`/properties${query}`}>
-          <PasteMapsLink
-            preview={draft.preview}
-            saving={saving}
-            onPreview={(preview) => setDraft((current) => ({ ...current, preview }))}
-            onSave={savePin}
-          />
-          <PinEditor key={pin === null ? 'none' : `${pin.lat},${pin.lng}`} pin={pin} saving={saving} onSave={savePin} />
-          <PolygonEditor
-            saved={locate.boundary}
-            mode={draft.draw}
-            draft={draft.ring}
-            saving={saving}
-            onMode={(draw) => setDraft((current) => ({ ...current, draw, ring: null }))}
-            onSave={saveBoundary}
-            onClear={() => saveBoundary(null)}
-          />
-          {draft.failed ? <FieldMessage id="location-save-failed" error={t('saveFailed')} /> : null}
-        </LocationPanel>
+        <LocationTools
+          nickname={target.nickname}
+          address={target.address}
+          closeHref={`/properties${query}`}
+          pin={pin}
+          boundary={locate.boundary}
+          preview={draft.preview}
+          draw={draft.draw}
+          ring={draft.ring}
+          failed={draft.failed}
+          saving={saving}
+          onPreview={(preview) => setDraft((current) => ({ ...current, preview }))}
+          onDraw={(draw) => setDraft((current) => ({ ...current, draw, ring: null }))}
+          onSavePin={savePin}
+          onSaveBoundary={saveBoundary}
+        />
       )}
     </div>
   );

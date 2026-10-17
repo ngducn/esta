@@ -4,9 +4,8 @@ import { MapPin, MapPinPen, X } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { CoverPhoto } from '@/components/properties/cover-photo';
-import { kindIcons } from '@/components/properties/property-card';
+import { kindIcons } from '@/components/properties/kind-icons';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { cn } from '@/lib/utils';
 import type { MapProperty } from './types';
 
 /** Opens over the map when a pin is tapped: the photo first, because Mẹ knows a house by sight before its nickname. */
@@ -44,7 +43,7 @@ export function PinCard({ property, editHref, onClose }: { property: MapProperty
             <MapPinPen aria-hidden="true" />
             {t('editLocation')}
           </Link>
-          <button type="button" onClick={onClose} className={cn(buttonVariants({ variant: 'quiet' }), 'gap-1.5')}>
+          <button type="button" onClick={onClose} className={buttonVariants({ variant: 'quiet' })}>
             <X aria-hidden="true" />
             {t('close')}
           </button>

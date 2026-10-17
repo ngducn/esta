@@ -6,7 +6,6 @@ import { LngLatBounds, Marker, type Map as MapLibre } from 'maplibre-gl';
 import { useTranslations } from 'next-intl';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
 import type { MapEdit } from './map-surface';
 import { groupPins, worldPixels } from './pin-groups';
 
@@ -19,7 +18,7 @@ const TOUCH_PX = 44;
 const GROUP_MAX_ZOOM = 17;
 
 const pinHead =
-  'flex size-9 items-center justify-center rounded-full border-2 border-surface shadow-sheet transition-transform duration-(--duration-fast) ease-standard [&_svg]:size-5';
+  'flex items-center justify-center rounded-full border-2 border-surface shadow-sheet transition-transform duration-(--duration-fast) ease-standard [&_svg]:size-5';
 
 /** One marker per key on a node React portals the pin into; positions and dragging follow the props without a remount. */
 function useMarkers(map: MapLibre, wanted: readonly { key: string; point: GeoPoint; draggable: boolean }[], onDragEnd: (point: GeoPoint) => void) {
@@ -107,8 +106,8 @@ export function PropertyPins({
   return [...elements].map(([key, element]) => {
     if (key === 'edit') {
       return createPortal(
-        <span data-testid="edit-pin" aria-label={edit?.nickname} role="img" className={cn(pinButton, 'cursor-grab active:cursor-grabbing')}>
-          <span className={cn(pinHead, 'size-11 bg-accent text-on-accent')}>
+        <span data-testid="edit-pin" aria-label={edit?.nickname} role="img" className={`${pinButton} cursor-grab active:cursor-grabbing`}>
+          <span className={`${pinHead} size-11 bg-accent text-on-accent`}>
             <MapPin aria-hidden="true" strokeWidth={2.25} />
           </span>
         </span>,
@@ -119,7 +118,7 @@ export function PropertyPins({
     if (key === 'preview') {
       return createPortal(
         <span data-testid="preview-pin" role="img" aria-label={t('previewPin', { nickname: edit?.nickname ?? '' })} className={pinButton}>
-          <span className={cn(pinHead, 'border-dashed border-accent bg-surface text-accent')}>
+          <span className={`${pinHead} size-9 border-dashed border-accent bg-surface text-accent`}>
             <MapPin aria-hidden="true" strokeWidth={2.25} />
           </span>
         </span>,
@@ -146,9 +145,9 @@ export function PropertyPins({
             for (const member of group.pins) bounds.extend([member.lng, member.lat]);
             map.fitBounds(bounds, { padding: 96, maxZoom: Math.max(GROUP_MAX_ZOOM, map.getZoom() + 2), duration: 0 });
           }}
-          className={cn(pinButton, inert && 'pointer-events-none opacity-60')}
+          className={inert ? `${pinButton} pointer-events-none opacity-60` : pinButton}
         >
-          <span className={cn(pinHead, 'figures bg-accent text-body font-bold text-on-accent group-hover:scale-110')}>{group.pins.length}</span>
+          <span className={`${pinHead} figures size-9 bg-accent text-body font-bold text-on-accent group-hover:scale-110`}>{group.pins.length}</span>
         </button>,
         element,
         key,
@@ -168,9 +167,9 @@ export function PropertyPins({
           event.stopPropagation();
           onSelect(pin.id);
         }}
-        className={cn(pinButton, inert && 'pointer-events-none opacity-60')}
+        className={inert ? `${pinButton} pointer-events-none opacity-60` : pinButton}
       >
-        <span className={cn(pinHead, selected ? 'scale-115 bg-ink text-surface' : 'bg-accent text-on-accent group-hover:scale-110')}>
+        <span className={selected ? `${pinHead} size-9 scale-115 bg-ink text-surface` : `${pinHead} size-9 bg-accent text-on-accent group-hover:scale-110`}>
           <MapPin aria-hidden="true" strokeWidth={2.25} />
         </span>
       </button>,
