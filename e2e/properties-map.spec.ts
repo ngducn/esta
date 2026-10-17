@@ -200,6 +200,8 @@ test('rule 2: a pasted place link saves the !3d!4d point, offers Hoàn tác, and
 
 test('rule 3: dragging the Kho Biên Hòa pin and typing coordinates both persist, and the inputs match the pin', async ({ page }) => {
   onlyOn('desktop');
+  // On a cold dev server this test compiles the map and its edit panel first; that alone took 28 s of the default 30 s.
+  test.slow();
   await stubTiles(page);
   const id = propertyId(3, 'bien-hoa');
   await signIn(page, 'ryan.lane3@demo.esta.test');
@@ -227,6 +229,8 @@ test('rule 3: dragging the Kho Biên Hòa pin and typing coordinates both persis
   const lng = panel(page).getByRole('textbox', { name: 'Kinh độ' });
   await expect(lat).toHaveValue(String(Number(dragged.lat?.toFixed(6))));
   await expect(lng).toHaveValue(String(Number(dragged.lng?.toFixed(6))));
+  // The panel moves focus to its title once it hydrates; typing before that lands on the title and Enter then hits Xong.
+  await expect(panel(page).getByRole('heading', { level: 2 })).toBeFocused();
 
   await lat.focus();
   await page.keyboard.press('ControlOrMeta+A');
@@ -327,6 +331,9 @@ test('rule 5: a point outside Vietnam warns and waits for Vẫn lưu, and a user
   await expect.poll(async () => (await stored(page, id)).lat, 'Hoàn tác writes the empty pin back').toBeNull();
 });
 
+// Dev chunks that only list the map island's chunk names also contain "maplibre", so match the class the library itself gives its canvas.
+const MAPLIBRE_BODY = 'maplibregl-canvas';
+
 test('rule 6: the list loads no MapLibre chunk and no tile, and the map loads both', async ({ page }) => {
   onlyOn('mobile');
   await stubTiles(page);
@@ -334,7 +341,7 @@ test('rule 6: the list loads no MapLibre chunk and no tile, and the map loads bo
   page.on('response', async (response) => {
     const url = response.url();
     if (url.startsWith(TILE_HOST)) seen.push(`tile ${url}`);
-    else if (/\/_next\/static\/chunks\/.+\.js/.test(url) && (await response.text().catch(() => '')).includes('maplibre')) seen.push(`maplibre ${url}`);
+    else if (/\/_next\/static\/chunks\/.+\.js/.test(url) && (await response.text().catch(() => '')).includes(MAPLIBRE_BODY)) seen.push(`maplibre ${url}`);
   });
   await page.context().addCookies([{ name: 'esta_theme', value: 'dark', url: test.info().project.use.baseURL ?? '' }]);
   await signIn(page, 'me.lane6@demo.esta.test');
