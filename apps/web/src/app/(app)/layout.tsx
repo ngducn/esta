@@ -4,6 +4,7 @@ import { formatDateLong } from '@esta/core/format';
 import { BrandMark } from '@/components/brand-mark';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
 import { accountSections, primarySections, type NavItem } from '@/components/shell/nav';
+import { PrefetchTabs } from '@/components/shell/prefetch-tabs';
 import { Sidebar } from '@/components/shell/sidebar';
 import { TabBar } from '@/components/shell/tab-bar';
 import { getClock } from '@/server/clock';
@@ -61,6 +62,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">{children}</main>
         <TabBar items={items} label={shell('sections')} />
       </div>
+      <PrefetchTabs />
       <AvatarMenu
         name={name}
         household={member.household.name}
