@@ -6,9 +6,24 @@ import type { PropertyCardData } from '@/components/properties/property-card';
 import { readBoundary } from '@/server/properties/boundary';
 import { getThemePreference } from '@/server/theme';
 
-/** The server half of the map view: the household's rows as map properties, the open panel's boundary, and the island's messages. */
-export default async function MapView({ cards, rows, locate, query }: { cards: readonly PropertyCardData[]; rows: readonly PropertyListRow[]; locate: string | null; query: string }) {
-  const located = rows.find((row) => row.id === locate);
+/**
+ * The server half of the map view: the household's rows as map properties, the open panel's boundary, and the island's
+ * messages. A viewer cannot save a pin, so `canEdit` false drops `locate` and every link into the location panel.
+ */
+export default async function MapView({
+  cards,
+  rows,
+  canEdit,
+  locate,
+  query,
+}: {
+  cards: readonly PropertyCardData[];
+  rows: readonly PropertyListRow[];
+  canEdit: boolean;
+  locate: string | null;
+  query: string;
+}) {
+  const located = canEdit ? rows.find((row) => row.id === locate) : undefined;
   const [theme, locale, messages, boundary] = await Promise.all([
     getThemePreference(),
     getLocale(),
@@ -30,6 +45,7 @@ export default async function MapView({ cards, rows, locate, query }: { cards: r
       messages={{ map: messages.map, components: { toast: messages.components.toast } }}
       properties={properties}
       theme={theme}
+      canEdit={canEdit}
       locate={target}
       query={query}
     />

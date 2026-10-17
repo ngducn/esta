@@ -3,10 +3,11 @@
 import { parseMapsUrl, type GeoPoint } from '@esta/core/maps';
 import { Check, ClipboardPaste, TriangleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useId, useState, useTransition } from 'react';
+import { useId, useRef, useState, useTransition } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Input } from '@/components/ui/input';
+import { useHydrated } from '@/lib/use-hydrated';
 import { resolveMapsLink, type MapsLinkFailure, type MapsLinkResult } from '@/server/maps/actions';
 
 /** Every refusal, from the browser parser or the server resolver, lands on one of a few messages that say what to paste instead. */
@@ -52,9 +53,10 @@ export function PasteMapsLink({
 }) {
   const t = useTranslations('map');
   const id = useId();
-  const [text, setText] = useState('');
   const [failure, setFailure] = useState<MapsLinkFailure | null>(null);
   const [reading, startReading] = useTransition();
+  const hydrated = useHydrated();
+  const form = useRef<HTMLFormElement>(null);
 
   const read = (value: string) => {
     if (value.trim() === '') return;
@@ -70,11 +72,12 @@ export function PasteMapsLink({
   return (
     <div className="flex flex-col gap-3">
       <form
+        ref={form}
         aria-labelledby={`${id}-title`}
         className="flex flex-col gap-3"
         onSubmit={(event) => {
           event.preventDefault();
-          read(text);
+          read(String(new FormData(event.currentTarget).get('link')));
         }}
       >
         <div className="flex flex-col gap-1">
@@ -94,16 +97,13 @@ export function PasteMapsLink({
           inputMode="url"
           autoComplete="off"
           spellCheck={false}
-          value={text}
+          name="link"
           aria-describedby={`${id}-help ${id}-message`}
           aria-invalid={failure !== null}
-          onChange={(event) => {
-            setText(event.target.value);
-            setFailure(null);
-          }}
+          onChange={() => setFailure(null)}
           onPaste={(event) => read(event.clipboardData.getData('text'))}
         />
-        <button type="submit" disabled={reading} className={buttonVariants({ variant: 'outline' })}>
+        <button type="submit" disabled={reading || !hydrated} className={buttonVariants({ variant: 'outline' })}>
           <ClipboardPaste aria-hidden="true" />
           {reading ? t('reading') : t('preview')}
         </button>
@@ -131,7 +131,7 @@ export function PasteMapsLink({
           disabled={saving}
           onClick={() => {
             onSave(preview.point);
-            setText('');
+            form.current?.reset();
           }}
           className={buttonVariants({ variant: preview.outsideVietnam ? 'outline' : 'primary', className: 'scroll-mb-24 lg:scroll-mb-6' })}
         >

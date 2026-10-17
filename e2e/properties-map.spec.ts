@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page, type Request } from '@playwright/test';
+import { expect, test, type Browser, type Page, type Request } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -382,4 +383,79 @@ test('rule 7: in English at 130% and dark, the map, card and warning translate a
   });
   expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth), 'no horizontal page scroll').toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+async function inviteViewer(page: Page, browser: Browser) {
+  const email = `viewer.${randomUUID().slice(0, 8)}@demo.esta.test`;
+  await page.goto('/onboarding');
+  await page.getByLabel('Email người được mời').fill(email);
+  await page.getByLabel(/^Chỉ xem/).check();
+  await page.getByRole('button', { name: 'Mời', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText(`Đã mời ${email} với quyền Chỉ xem.`);
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const viewerPage = await context.newPage();
+  await signIn(viewerPage, email);
+  return { context, page: viewerPage };
+}
+
+test('rule 8: coordinates typed before the panel hydrates survive it, keep focus, and an early Enter stays on the page', async ({ page }) => {
+  onlyOn('desktop');
+  await stubTiles(page);
+  const id = propertyId(9, 'long-an');
+  await signIn(page, 'ryan.lane9@demo.esta.test');
+  await restore(page, id, null);
+
+  let release = () => {};
+  const scripts = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/_next/static/chunks/**/*.js', async (route) => {
+    await scripts;
+    await route.continue();
+  });
+  await page.goto(`/properties?view=map&locate=${id}`, { waitUntil: 'commit' });
+  const lat = panel(page).getByRole('textbox', { name: 'Vĩ độ' });
+  const lng = panel(page).getByRole('textbox', { name: 'Kinh độ' });
+  await lat.click();
+  await page.keyboard.type('10,5331');
+  await page.keyboard.press('Tab');
+  await page.keyboard.type('106,4052');
+  await page.keyboard.press('Enter');
+  release();
+
+  await expect(page.getByTestId('map-canvas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
+  expect(new URL(page.url()).searchParams.get('locate'), 'the early Enter did not leave the panel').toBe(id);
+  expect(new URL(page.url()).searchParams.has('lat')).toBe(false);
+  await expect(lat).toHaveValue('10,5331');
+  await expect(lng).toHaveValue('106,4052');
+  await expect(lng).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect.poll(() => stored(page, id)).toMatchObject({ lat: 10.5331, lng: 106.4052 });
+  await restore(page, id, null);
+});
+
+test('rule 9: a viewer sees the pin card without Sửa vị trí, no Đặt vị trí, and no location panel', async ({ page, browser }) => {
+  onlyOn('mobile');
+  await signIn(page, 'me.lane9@demo.esta.test');
+  const viewer = await inviteViewer(page, browser);
+  try {
+    await stubTiles(viewer.page);
+    await viewer.page.context().addCookies([{ name: 'esta_theme', value: 'light', url: test.info().project.use.baseURL ?? '' }]);
+    await viewer.page.goto('/properties?view=map');
+    await expect(viewer.page.getByTestId('map-canvas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
+    await tapPin(viewer.page, 'Kho Biên Hòa');
+    const card = viewer.page.getByTestId('pin-card');
+    await expect(card.getByRole('heading', { name: 'Kho Biên Hòa' })).toBeVisible();
+    await expect(card.getByRole('link', { name: 'Sửa vị trí' })).toHaveCount(0);
+    await expect(viewer.page.getByTestId('unpinned-list').getByRole('link')).toHaveCount(0);
+    await viewer.page.screenshot({ path: test.info().outputPath('viewer-pin-card.png') });
+
+    await viewer.page.goto(`/properties?view=map&locate=${propertyId(9, 'bien-hoa')}`);
+    await expect(viewer.page.getByTestId('map-canvas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
+    await expect(viewer.page.getByTestId('location-panel')).toHaveCount(0);
+    await expect(viewer.page.getByTestId('edit-pin')).toHaveCount(0);
+  } finally {
+    await viewer.context.close();
+  }
 });

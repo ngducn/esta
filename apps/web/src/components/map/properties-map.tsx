@@ -19,6 +19,7 @@ const LocationTools = dynamic(() => import('./location-tools').then((module) => 
 type Props = {
   properties: readonly MapProperty[];
   theme: Theme;
+  canEdit: boolean;
   locate: LocateTarget | null;
   /** The list's filter query with `view=map`, so every link out of the map keeps search and filters. */
   query: string;
@@ -39,7 +40,7 @@ export function PropertiesMap({ locale, messages, ...props }: Props & { locale: 
   );
 }
 
-function MapView({ properties, theme, locate, query }: Props) {
+function MapView({ properties, theme, canEdit, locate, query }: Props) {
   const t = useTranslations('map');
   const showUndo = useUndoToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,7 +56,7 @@ function MapView({ properties, theme, locate, query }: Props) {
   const [pin, setOptimisticPin] = useOptimistic<GeoPoint | null>(target?.location ?? null);
   const selected = target === null && selectedId !== null ? (properties.find((property) => property.id === selectedId) ?? null) : null;
   const pins = properties.flatMap(({ id, nickname, location }) => (location === null ? [] : [{ id, nickname, lat: location.lat, lng: location.lng }]));
-  const locateHref = (id: string) => `/properties${query}&locate=${id}`;
+  const locateHref = canEdit ? (id: string) => `/properties${query}&locate=${id}` : null;
 
   const savePin = (point: GeoPoint) => {
     if (target === null) return;
@@ -113,7 +114,7 @@ function MapView({ properties, theme, locate, query }: Props) {
           }
         />
         {selected === null ? null : (
-          <PinCard property={selected} editHref={locateHref(selected.id)} onClose={() => setSelectedId(null)} />
+          <PinCard property={selected} editHref={locateHref?.(selected.id) ?? null} onClose={() => setSelectedId(null)} />
         )}
       </div>
 

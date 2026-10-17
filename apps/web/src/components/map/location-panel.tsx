@@ -20,7 +20,9 @@ export function LocationPanel({
 }) {
   const t = useTranslations('map');
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => heading.current?.focus(), []);
+  useEffect(() => {
+    if (document.activeElement === null || document.activeElement === document.body) heading.current?.focus();
+  }, []);
 
   return (
     <section

@@ -118,7 +118,13 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
               </Link>
             </section>
           ) : filters.view === 'map' ? (
-            <MapView cards={cards} rows={list.rows} locate={locateParam.safeParse(params.locate).data ?? null} query={propertyFiltersQuery(filters)} />
+            <MapView
+              cards={cards}
+              rows={list.rows}
+              canEdit={member.role !== 'viewer'}
+              locate={locateParam.safeParse(params.locate).data ?? null}
+              query={propertyFiltersQuery(filters)}
+            />
           ) : (
             <PropertyList cards={cards} />
           )}

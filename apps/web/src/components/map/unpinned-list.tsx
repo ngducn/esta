@@ -7,7 +7,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import type { MapProperty } from './types';
 
 /** Beside the map: the properties it cannot show yet, each one tap from its location panel. */
-export function UnpinnedList({ properties, locateHref }: { properties: readonly MapProperty[]; locateHref: (id: string) => string }) {
+export function UnpinnedList({ properties, locateHref }: { properties: readonly MapProperty[]; locateHref: ((id: string) => string) | null }) {
   const t = useTranslations('map');
   return (
     <section aria-labelledby="unpinned-title" data-testid="unpinned-list" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card lg:p-5">
@@ -22,15 +22,17 @@ export function UnpinnedList({ properties, locateHref }: { properties: readonly 
                 <p className="text-body font-semibold break-words text-ink">{property.nickname}</p>
                 <p className="text-small break-words text-ink-muted">{property.address}</p>
               </div>
-              <Link
-                href={locateHref(property.id)}
-                scroll={false}
-                aria-label={t('setLocationFor', { nickname: property.nickname })}
-                className={buttonVariants({ variant: 'outline' })}
-              >
-                <MapPinPlus aria-hidden="true" />
-                {t('setLocation')}
-              </Link>
+              {locateHref === null ? null : (
+                <Link
+                  href={locateHref(property.id)}
+                  scroll={false}
+                  aria-label={t('setLocationFor', { nickname: property.nickname })}
+                  className={buttonVariants({ variant: 'outline' })}
+                >
+                  <MapPinPlus aria-hidden="true" />
+                  {t('setLocation')}
+                </Link>
+              )}
             </li>
           ))}
         </ul>

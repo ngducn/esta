@@ -9,7 +9,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import type { MapProperty } from './types';
 
 /** Opens over the map when a pin is tapped: the photo first, because Mẹ knows a house by sight before its nickname. */
-export function PinCard({ property, editHref, onClose }: { property: MapProperty; editHref: string; onClose: () => void }) {
+export function PinCard({ property, editHref, onClose }: { property: MapProperty; editHref: string | null; onClose: () => void }) {
   const t = useTranslations('map');
   const KindIcon = kindIcons[property.kind];
   return (
@@ -39,10 +39,12 @@ export function PinCard({ property, editHref, onClose }: { property: MapProperty
           <span className="min-w-0">{property.address}</span>
         </p>
         <div className="mt-auto flex flex-wrap items-center gap-2">
-          <Link href={editHref} scroll={false} className={buttonVariants({ variant: 'outline' })}>
-            <MapPinPen aria-hidden="true" />
-            {t('editLocation')}
-          </Link>
+          {editHref === null ? null : (
+            <Link href={editHref} scroll={false} className={buttonVariants({ variant: 'outline' })}>
+              <MapPinPen aria-hidden="true" />
+              {t('editLocation')}
+            </Link>
+          )}
           <button type="button" onClick={onClose} className={buttonVariants({ variant: 'quiet' })}>
             <X aria-hidden="true" />
             {t('close')}
