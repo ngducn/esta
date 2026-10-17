@@ -138,3 +138,7 @@ Operator's words, 2026-10-17: "choose all of them for me on your recommended act
 1. P5-11 (#61) stays parked and is not merged. P5-03, the first PR that writes agent prose to Mẹ, owns the guard and builds it over the rendered plain text, reusing #61's grammar, its 236 tests and the three verifiers' probe sets as the starting corpus.
 2. Cover photo signed URLs stay at 24 h (property photos, low sensitivity; phone caching on Mẹ's mobile data matters more); documents stay at 300 s per DOC-4.
 3. The issues already fixed on main stay listed for the operator to close, because the permission classifier blocks closing from the session.
+
+## Update 2026-10-17 19:00 +07
+
+Decision by the root under the operator's 16:00 delegation ("choose ... on your recommended action as a staff engineer and someone who uses this app"): SPEC §7.2's Lighthouse budgets are measured over HTTP/2, through the local TLS proxy `pnpm dev:lan` already uses, because production serves HTTP/2 or later and Lighthouse's six-connection HTTP/1.1 queue (stylesheet, font, cover, favicon, manifest and icon ahead of the framework chunk) is a cost no user meets. Measured by the #87 owner: /properties with photos at about 2.13 s (7 properties) and 2.34 s (1,000) over HTTP/2 on main and head alike. HTTP/1.1 numbers stay in PR bodies as a secondary signal. scripts/perf/lighthouse.ts defaults to HTTP/2 in a follow-up tooling PR.
