@@ -37,5 +37,8 @@
     "pngjs": "7.0.0",
     "qrcode": "1.5.4",
     "vietnam-qr-pay": "1.5.1"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
   }
 }
