@@ -7,6 +7,7 @@ import { PropertyTabBar } from '@/components/properties/property-tab-bar';
 import type { PropertyTabId } from '@/components/properties/property-tabs';
 import { IntentLink } from '@/components/shell/intent-link';
 import type { PropertyDetail } from '@/server/properties/detail';
+import { requireMember } from '@/server/member';
 import { signCoverPhotos } from '@/server/properties/photos';
 
 /**
@@ -14,10 +15,11 @@ import { signCoverPhotos } from '@/server/properties/photos';
  * new page: from a scrolled list, or at 130% text, that element must be the photo, not the tab content below it.
  */
 export async function PropertyDetailFrame({ property, tab, children }: { property: PropertyDetail; tab: PropertyTabId; children: ReactNode }) {
+  const member = await requireMember();
   const [t, tp, photos] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
-    signCoverPhotos(property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
+    signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
   ]);
   return (
     <div className="flex flex-col gap-5">
