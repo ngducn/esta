@@ -1,7 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderInLocale } from '@/test/render';
-import { UNDO_MS, UndoToastProvider, useUndoToast } from './undo-toast';
+import { UNDO_MS, UndoToastProvider, useNoticeToast, useUndoToast } from './undo-toast';
 
 function Trigger({ onUndo }: { onUndo: () => void }) {
   const show = useUndoToast();
@@ -57,5 +57,26 @@ describe('UndoToast', () => {
     act(() => vi.advanceTimersByTime(UNDO_MS + 1000));
     expect(screen.queryByRole('button', { name: 'Hoàn tác' })).toBeNull();
     expect(onUndo).not.toHaveBeenCalled();
+  });
+
+  it('shows a notice without an undo action and clears it after 6 seconds', async () => {
+    function Notify() {
+      const notify = useNoticeToast();
+      return (
+        <button type="button" onClick={() => notify('Chưa khôi phục được.')}>
+          notify
+        </button>
+      );
+    }
+    renderInLocale(
+      <UndoToastProvider>
+        <Notify />
+      </UndoToastProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'notify' }));
+    await screen.findByText('Chưa khôi phục được.');
+    expect(screen.queryByRole('button', { name: 'Hoàn tác' })).toBeNull();
+    act(() => vi.advanceTimersByTime(UNDO_MS + 1000));
+    expect(screen.queryByText('Chưa khôi phục được.')).toBeNull();
   });
 });
