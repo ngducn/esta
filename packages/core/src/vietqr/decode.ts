@@ -49,6 +49,7 @@ export function decodeVietQr(payload: string): DecodeResult {
   const tags = [...root.value.keys()];
   if (tags[0] !== '00' || root.value.get('00') !== VIETQR_RULES.payloadFormat) return field('00', 'first, with value 01');
   if (tags.at(-1) !== '63') return field('63', 'last');
+  if (root.value.get('63')?.length !== 4) return field('63', '4 characters');
 
   const initiation = INITIATION_BY_CODE.get(root.value.get('01') ?? '');
   if (initiation === undefined) return field('01', '11 or 12');
