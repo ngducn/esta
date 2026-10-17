@@ -1034,33 +1034,6 @@ export type Database = {
         }
         Relationships: []
       }
-      worker_heartbeats: {
-        Row: {
-          agent_mode: string
-          auth_mode: string
-          host_label: string
-          last_seen_at: string
-          version: string
-          worker_id: string
-        }
-        Insert: {
-          agent_mode: string
-          auth_mode: string
-          host_label: string
-          last_seen_at: string
-          version: string
-          worker_id: string
-        }
-        Update: {
-          agent_mode?: string
-          auth_mode?: string
-          host_label?: string
-          last_seen_at?: string
-          version?: string
-          worker_id?: string
-        }
-        Relationships: []
-      }
       units: {
         Row: {
           area_m2: number | null
@@ -1104,7 +1077,29 @@ export type Database = {
           sort_order?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "units_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "units_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "units_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
       }
       utility_accounts: {
         Row: {
@@ -1148,6 +1143,62 @@ export type Database = {
           provider?: string | null
           unit_id?: string | null
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_accounts_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_accounts_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "utility_accounts_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "utility_accounts_household_id_property_id_unit_id_fkey"
+            columns: ["household_id", "property_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["household_id", "property_id", "id"]
+          },
+        ]
+      }
+      worker_heartbeats: {
+        Row: {
+          agent_mode: string
+          auth_mode: string
+          host_label: string
+          last_seen_at: string
+          version: string
+          worker_id: string
+        }
+        Insert: {
+          agent_mode: string
+          auth_mode: string
+          host_label: string
+          last_seen_at: string
+          version: string
+          worker_id: string
+        }
+        Update: {
+          agent_mode?: string
+          auth_mode?: string
+          host_label?: string
+          last_seen_at?: string
+          version?: string
+          worker_id?: string
         }
         Relationships: []
       }

@@ -1,6 +1,7 @@
+import { formatDayMonth } from '@esta/core/format';
 import { currentAddressText } from '@esta/core/properties';
 import { ChevronLeft } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { PropertyHeader } from '@/components/properties/property-header';
 import { PropertyTabBar } from '@/components/properties/property-tab-bar';
@@ -16,9 +17,10 @@ import { signCoverPhotos } from '@/server/properties/photos';
  */
 export async function PropertyDetailFrame({ property, tab, children }: { property: PropertyDetail; tab: PropertyTabId; children: ReactNode }) {
   const member = await requireMember();
-  const [t, tp, photos] = await Promise.all([
+  const [t, tp, locale, photos] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
+    getLocale(),
     signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
   ]);
   return (
@@ -39,6 +41,7 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           currentAddress: currentAddressText(property),
           certificateAddress: property.certificateAddressText,
           photoUrl: property.coverPhotoPath === null ? null : (photos.get(property.coverPhotoPath) ?? null),
+          vacant: property.status === null ? null : tp('vacantSince', { date: formatDayMonth(property.status.since, locale) }),
           edit: member.role === 'viewer' ? null : { href: `/properties/${property.id}/edit`, label: t('edit') },
         }}
       />
@@ -46,7 +49,12 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
         propertyId={property.id}
         active={tab}
         label={t('tabs')}
-        labels={{ overview: t('tab', { tab: 'overview' }), legal: t('tab', { tab: 'legal' }), activity: t('tab', { tab: 'activity' }) }}
+        labels={{
+          overview: t('tab', { tab: 'overview' }),
+          legal: t('tab', { tab: 'legal' }),
+          rental: t('tab', { tab: 'rental' }),
+          activity: t('tab', { tab: 'activity' }),
+        }}
       />
       {children}
     </div>

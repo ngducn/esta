@@ -1,14 +1,19 @@
 import 'server-only';
 import { AUDIT_ACTIONS, AUDIT_ACTOR_KINDS, type ActivityRow } from '@esta/core/activity';
 import { parseInstant, type Instant } from '@esta/core';
-import type { PropertyListRow } from '@esta/core/properties';
+import { propertyStatus, type PropertyListRow, type PropertyStatusMark } from '@esta/core/properties';
 import { cache } from 'react';
 import { z } from 'zod';
+import { getClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { PROPERTY_ROW_COLUMNS, propertyRowSchema } from './list';
 
-export type PropertyDetail = PropertyListRow & { readonly kindDetails: Readonly<Record<string, unknown>> };
+export type PropertyDetail = PropertyListRow & {
+  readonly kindDetails: Readonly<Record<string, unknown>>;
+  /** The `propertyStatus` mark on the Clock's date. */
+  readonly status: PropertyStatusMark | null;
+};
 
 const kindDetailsSchema = z.object({ kind_details: z.record(z.string(), z.unknown()) });
 
@@ -18,7 +23,7 @@ const kindDetailsSchema = z.object({ kind_details: z.record(z.string(), z.unknow
  */
 export const loadPropertyDetail = cache(async (id: string): Promise<PropertyDetail | null> => {
   if (!z.uuid().safeParse(id).success) return null;
-  const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
+  const [member, supabase, clock] = await Promise.all([requireMember(), createSessionClient(), getClock()]);
   const [row, details] = await Promise.all([
     supabase.from('property_list_rows').select(PROPERTY_ROW_COLUMNS).eq('household_id', member.household.id).eq('id', id).maybeSingle(),
     supabase.from('properties').select('kind_details').eq('household_id', member.household.id).eq('id', id).maybeSingle(),
@@ -26,7 +31,8 @@ export const loadPropertyDetail = cache(async (id: string): Promise<PropertyDeta
   if (row.error) throw new Error(`Reading the property failed: ${row.error.message}`);
   if (details.error) throw new Error(`Reading the property details failed: ${details.error.message}`);
   if (row.data === null || details.data === null) return null;
-  return { ...propertyRowSchema.parse(row.data), kindDetails: kindDetailsSchema.parse(details.data).kind_details };
+  const property = propertyRowSchema.parse(row.data);
+  return { ...property, kindDetails: kindDetailsSchema.parse(details.data).kind_details, status: propertyStatus(property, clock.today()) };
 });
 
 const activitySchema = z

@@ -43,3 +43,13 @@ export function LegalPill({ legalStatus, label }: { legalStatus: LegalStatus; la
     </span>
   );
 }
+
+/** The `propertyStatus` mark: shape, word and the status token, as `Trống từ 01/08`. */
+export function StatusPill({ status, label }: { status: MarkStatus; label: string }) {
+  return (
+    <span data-status={status} className={cn(pill, statusMarks[status].pill)}>
+      <StatusShape status={status} className="size-4" />
+      {label}
+    </span>
+  );
+}

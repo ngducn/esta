@@ -18,6 +18,7 @@ export function FormSelect({
   placeholder,
   onChange,
   testId,
+  selectId,
 }: {
   label: string;
   value: string;
@@ -25,8 +26,10 @@ export function FormSelect({
   placeholder?: string;
   onChange: (value: string) => void;
   testId?: string;
+  selectId?: string;
 }) {
-  const id = useId();
+  const generated = useId();
+  const id = selectId ?? generated;
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-body font-semibold text-ink">

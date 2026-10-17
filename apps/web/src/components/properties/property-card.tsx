@@ -3,7 +3,7 @@ import { MapPin } from 'lucide-react';
 import { IntentLink } from '@/components/shell/intent-link';
 import { CoverPhoto, type CoverPhotoPriority } from './cover-photo';
 import { kindIcons } from './kind-icons';
-import { LegalPill, UsePill } from './property-pills';
+import { LegalPill, StatusPill, UsePill } from './property-pills';
 
 /** Everything a card shows, already translated and signed on the server, so the card renders the same on either side. */
 export type PropertyCardData = {
@@ -18,6 +18,10 @@ export type PropertyCardData = {
   address: string;
   certificateLine: string | null;
   photoUrl: string | null;
+  /** `Giá niêm yết` and the compact sum of the units' list rents, `null` when no unit has one. */
+  rent: { label: string; amount: string } | null;
+  /** The `propertyStatus` mark's word, such as `Trống từ 01/08`. */
+  vacant: string | null;
 };
 
 /** The first card is the likely LCP, the second shares the first screen on a phone, the rest wait for the scroll. */
@@ -52,6 +56,7 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
         <div className="flex flex-wrap gap-1.5">
           <UsePill useMode={card.useMode} label={card.useLabel} />
           <LegalPill legalStatus={card.legalStatus} label={card.legalLabel} />
+          {card.vacant === null ? null : <StatusPill status="vacant" label={card.vacant} />}
         </div>
         <h2 className="text-lead font-bold break-words text-ink">
           <IntentLink href={`/properties/${card.id}`} className="outline-none after:absolute after:inset-0">
@@ -69,6 +74,12 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
             </p>
           )}
         </div>
+        {card.rent === null ? null : (
+          <p data-testid="property-rent" className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1 text-small text-ink-muted">
+            {card.rent.label}
+            <span className="figures text-lead font-bold text-ink">{card.rent.amount}</span>
+          </p>
+        )}
       </div>
     </article>
   );
