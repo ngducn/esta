@@ -3,6 +3,7 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from '
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
+import { slotPendingMigrations } from './pending-migrations.ts';
 import { authDrifts, parseSlot, slotPorts, writeSlotWorkdir } from './slot.ts';
 import { reportTableCoverage } from './table-coverage.ts';
 
@@ -106,6 +107,13 @@ if (result.status === 0 && capture) {
   writeFileSync(join(repoRoot, 'packages', 'db', 'src', 'database.types.ts'), result.stdout);
 }
 if (result.status === 0 && command === 'test' && !reportTableCoverage(repoRoot, slot)) process.exit(1);
+if (result.status === 0 && command === 'start') {
+  const pending = slotPendingMigrations(repoRoot, workdir);
+  if (pending.length > 0) {
+    console.error(`ESTA_SLOT=${slot}: the database predates ${pending.length} migration(s), from ${pending[0]}. Run pnpm db:reset to apply them and seed the photos.`);
+    process.exit(0);
+  }
+}
 if (result.status === 0 && seeds) {
   const photos = spawnSync(join(repoRoot, 'node_modules', '.bin', 'tsx'), [join(repoRoot, 'scripts', 'seed-photos.ts')], {
     stdio: 'inherit',
