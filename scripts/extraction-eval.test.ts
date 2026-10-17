@@ -6,7 +6,7 @@ import { buildReport, formatReport, parseReply, scoreOutput, summaryLine, synthe
 const FIELDS = REQUIRED_FIELDS.certificate_v1;
 
 function score(valid: boolean, hits: number, highConfidence: { total: number; correct: number }): ExtractionScore {
-  return { schemaValid: valid, required: FIELDS.map((field, index) => ({ field, hit: index < hits })), highConfidence };
+  return { schemaValid: valid, nullTruth: [], required: FIELDS.map((field, index) => ({ field, hit: index < hits })), highConfidence };
 }
 
 function result(id: string, form: FixtureResult['form'], extraction: ExtractionScore): FixtureResult {
@@ -52,6 +52,8 @@ describe('extraction eval report', () => {
       const missed = scoreOutput(fixture, output);
       expect(missed.schemaValid).toBe(false);
       expect(missed.required.some((field) => field.hit)).toBe(false);
+      expect(missed.nullTruth).toHaveLength(2);
+      expect(missed.nullTruth.some((field) => field.hit)).toBe(false);
     }
   });
 

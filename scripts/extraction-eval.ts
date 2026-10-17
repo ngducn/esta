@@ -42,6 +42,7 @@ export type Report = {
   readonly fixtures: readonly FixtureResult[];
   readonly schemaValid: Ratio;
   readonly required: Ratio;
+  readonly nullTruth: Ratio;
   readonly highConfidence: Ratio;
   readonly byForm: readonly { readonly form: CertificateForm; readonly fixtures: number; readonly schemaValid: Ratio; readonly required: Ratio; readonly highConfidence: Ratio }[];
   readonly byField: readonly { readonly field: string; readonly hits: Ratio }[];
@@ -63,11 +64,11 @@ export function parseReply(reply: string): unknown {
   }
 }
 
-/** A reply that did not parse scores as invalid with every required field missed, even where the truth is empty. */
+/** A reply that did not parse scores as an empty, schema-invalid object: no hit anywhere. */
 export function scoreOutput(fixture: EvalFixture, output: Pick<SavedOutput, 'reply' | 'is_error'>): ExtractionScore {
   const extraction = output.is_error ? null : parseReply(output.reply);
   if (extraction === null || typeof extraction !== 'object') {
-    return { schemaValid: false, required: REQUIRED_FIELDS[SCHEMA].map((field) => ({ field, hit: false })), highConfidence: { total: 0, correct: 0 } };
+    return { ...scoreExtraction(SCHEMA, fixture.truth, {}), highConfidence: { total: 0, correct: 0 } };
   }
   return scoreExtraction(SCHEMA, fixture.truth, extraction);
 }
@@ -78,6 +79,7 @@ function ratios(results: readonly FixtureResult[]) {
   return {
     schemaValid: { hits: results.filter((result) => result.score.schemaValid).length, total: results.length },
     required: sum(results.map((result) => ({ hits: result.score.required.filter((field) => field.hit).length, total: result.score.required.length }))),
+    nullTruth: sum(results.map((result) => ({ hits: result.score.nullTruth.filter((field) => field.hit).length, total: result.score.nullTruth.length }))),
     highConfidence: sum(results.map((result) => ({ hits: result.score.highConfidence.correct, total: result.score.highConfidence.total }))),
   };
 }
@@ -88,7 +90,12 @@ export function buildReport(fixtures: readonly FixtureResult[]): Report {
     .map((results) => ({ form: results[0]?.form ?? 'paper_only', fixtures: results.length, ...ratios(results) }));
   const byField = REQUIRED_FIELDS[SCHEMA].map((field) => ({
     field,
-    hits: sum(fixtures.map((result) => ({ hits: result.score.required.some((score) => score.field === field && score.hit) ? 1 : 0, total: 1 }))),
+    hits: sum(
+      fixtures.map((result) => {
+        const slot = result.score.required.find((score) => score.field === field);
+        return { hits: slot?.hit ? 1 : 0, total: slot === undefined ? 0 : 1 };
+      }),
+    ),
   }));
   return {
     fixtures,
@@ -138,7 +145,7 @@ export function formatReport(report: Report, set: 'synthetic' | 'private'): stri
       }),
     );
   }
-  lines.push('', summaryLine(report));
+  lines.push('', `null-truth slots (not in required exact): ${count(report.nullTruth)}`, summaryLine(report));
   return lines.join('\n');
 }
 

@@ -65,7 +65,7 @@ Certificate forms the app must recognize. `form` values match `certificates.form
 | `so_do_pre2009` | "Giấy chứng nhận quyền sử dụng đất", red cover, land only | Before 10 Dec 2009 `[verified]`<sup>1</sup> |
 | `so_hong_pre2009` | "Giấy chứng nhận quyền sở hữu nhà ở và quyền sử dụng đất ở", pink, urban housing | Before 10 Dec 2009 `[verified]`<sup>1</sup> |
 | `gcn_2009_2024` | Unified "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu nhà ở và tài sản khác gắn liền với đất", one sheet of four pages, pink drum pattern, serial of 2 letters and 6 digits | 10 Dec 2009 to 31 Jul 2024 `[verified]`<sup>1</sup> |
-| `gcn_2024` | "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất" under the 2024 Land Law (form 04/ĐK-GCN), carries a 2 × 2 cm QR code at the top right of page 1 | From 1 Aug 2024 `[verified]`<sup>2</sup> (Circular 10/2024/TT-BTNMT) |
+| `gcn_2024` | "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất" under the 2024 Land Law, carries a 2 × 2 cm QR code at the top right of page 1 | From 1 Aug 2024 `[verified]`<sup>2</sup> (Circular 10/2024/TT-BTNMT) |
 | `paper_only` | No certificate; handwritten or notarized paper only | Any |
 
 Older certificates remain valid and are not required to be reissued `[verified]`<sup>3</sup>. The app treats every form as first-class.
@@ -112,7 +112,7 @@ Seed for `land_use_codes`. Common codes seen on existing certificates, checked `
 | CSD | Đất chưa sử dụng | Unused land `[app rule]` |
 | BCS | Đất bằng chưa sử dụng | Unused flat land |
 
-S5 changes from the P0-06 seed: LUC and LUK drop "nước", HNK and BCS are added, and CSD is the whole unused group, so the flat unused land P0-06 called CSD is BCS. Two rows stay as `[app rule]`, listed in `docs/plan/STATUS.md` under "Needs professional confirmation". BHK left the 2024 list, but certificates issued under older lists carry it and stay valid (§2, source 3), so the app keeps it. CSD is kept as a code because source 4 lists it and source 5 lists only its sub-codes.
+S5 changes from the P0-06 seed: LUC and LUK drop "nước", HNK and BCS are added, and CSD is the whole unused group, so the flat unused land P0-06 called CSD is BCS. Two rows stay as `[app rule]`, listed in `docs/plan/STATUS.md` under "Needs professional confirmation". BHK left the 2024 list, but certificates issued under older lists carry it and stay valid (§2, source 3), so the app keeps it. CSD is kept as a code because both sources list it, as "Nhóm đất chưa sử dụng (Ký hiệu chung: CSD)" in source 5, but neither confirms it as a certificate-level code.
 
 4. https://luatvietnam.vn/dat-dai-nha-o/ky-hieu-cac-loai-dat-567-24866-article.html
 5. https://hethongphapluat.com/phap-luat/huong-dan/bang-tra-cuu-ky-hieu-cac-loai-dat-moi-nhat-bi-kip-doc-hieu-so-do-va-ban-do-dia-chinh-theo-luat-dat-dai-2024.html

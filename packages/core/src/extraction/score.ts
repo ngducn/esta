@@ -8,7 +8,10 @@ export type FieldScore = { readonly field: string; readonly hit: boolean };
 
 export type ExtractionScore = {
   readonly schemaValid: boolean;
+  /** Required slots the truth fills. */
   readonly required: readonly FieldScore[];
+  /** Required slots the truth leaves null, kept out of `required` so empty output earns no free hit. */
+  readonly nullTruth: readonly FieldScore[];
   readonly highConfidence: { readonly total: number; readonly correct: number };
 };
 
@@ -76,19 +79,21 @@ function sameValues(a: readonly string[], b: readonly string[]): boolean {
 /**
  * Scores one extraction against its truth: zod validity, exact hits on the schema's required
  * fields, and how many fields the model marked at or above 0.9 confidence are actually right.
- * Field scoring reads the raw object, so a result the schema rejects still shows which fields it got.
+ * A result the schema rejects scores no hit in `required` or `nullTruth`.
  */
 export function scoreExtraction(schemaName: SchemaName, truth: unknown, result: unknown): ExtractionScore {
   const schemaValid = SCHEMAS[schemaName].safeParse(result).success;
-  const required = REQUIRED_FIELDS[schemaName].map((field) => ({
-    field,
-    hit: sameValues(valuesAt(truth, field), valuesAt(result, field)),
-  }));
+  const slots = REQUIRED_FIELDS[schemaName].map((field) => {
+    const expected = valuesAt(truth, field);
+    return { field, isNull: expected.length === 0, hit: schemaValid && sameValues(expected, valuesAt(result, field)) };
+  });
+  const required = slots.filter((slot) => !slot.isNull).map(({ field, hit }) => ({ field, hit }));
+  const nullTruth = slots.filter((slot) => slot.isNull).map(({ field, hit }) => ({ field, hit }));
   const truthByPath = new Map(flattenLeaves(truth).map((entry) => [entry.path, entry]));
   const confident = flattenLeaves(result).filter((entry) => entry.leaf.confidence >= HIGH_CONFIDENCE);
   const correct = confident.filter((entry) => {
     const expected = truthByPath.get(entry.path);
     return expected !== undefined && normalizeValue(entry.leafName, expected.leaf.value) === normalizeValue(entry.leafName, entry.leaf.value);
   });
-  return { schemaValid, required, highConfidence: { total: confident.length, correct: correct.length } };
+  return { schemaValid, required, nullTruth, highConfidence: { total: confident.length, correct: correct.length } };
 }
