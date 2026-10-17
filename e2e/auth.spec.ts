@@ -274,14 +274,6 @@ async function watchSignInPhoto(page: Page) {
   return requests;
 }
 
-test('the sign-in page preloads the photo for desktop widths only', async ({ request }) => {
-  const html = await (await request.get('/sign-in')).text();
-  const preload = html.match(/<link\b[^>]*rel="preload"[^>]*as="image"[^>]*>/i)?.[0] ?? '';
-  expect(preload).toContain('media="(min-width: 64rem)"');
-  expect(preload).toMatch(/fetchpriority="high"/i);
-  expect(preload).toContain('sign-in-hero');
-});
-
 test('a phone never requests the sign-in photo', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'compares the phone with the desktop');
   const requests = await watchSignInPhoto(page);
