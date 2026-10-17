@@ -96,3 +96,15 @@ Operator's words, 2026-10-17, after the session limit stopped every agent at abo
 Models: no Fable. Owners on Opus, verifiers on Sonnet, audits on Opus.
 
 Budget: 90% of each block. The block that hit the limit (2026-10-16T21:00Z, heavy Fable) stopped at $64.22 and 134M tokens while the ccusage meter read about 50%, so the old calibration ($121.11 and 379.9M = 100%, from an Opus-only block) undercounts Fable. With Fable off, keep that calibration, but stop spawning at 80% and pause at 86%, because the highest Opus-only block that did not hit the limit reached $95.32 (about 79%). Watch usage with `~/.claude/orchestrate/esta/bin/wait-usage.sh <pct>` in the background instead of manual checks.
+
+## Update 2026-10-17 09:55 +07
+
+Operator's handoff, 2026-10-17: "Resume the Esta v1 run as the coordinator (root) ... Then continue the queue in docs/plan/RESUME.md "Next, in order", using its parallel tracks and model policy."
+
+Objective. Drain the RESUME.md queue: #60 verified and merged, then P2-01 finished from its branch on the re-cut section; #52 P1-04 through its one fix-forward and merged; #57 P3-05 and #59 P3-02 verified and merged; #58 P3-06 and P5-11 finished, verified and merged; then Phase 1 on the parallel tracks of the `583e8f0` RESUME.md (P1-09 and P1-06 after P1-04, then P1-05, P1-07 and P1-08 two at a time, then P1-10, then P1-03). Budget and models as in the 09:25 update.
+
+Defaults the agent chose (label: agent interpretation):
+
+1. The landing grant extends to the pure-core Phase 3 and Phase 5 PRs (P3-05, P3-02, P3-06, P5-11) on the reading already applied to Phases 1 and 2, and every verdict for them includes an Opus audit lane. One message from the operator withdraws it; those PRs then stop at merge-ready.
+2. The root runs local CI, one run at a time, when the 1-minute load is under 5, on a slot no owner or lane holds. Owners and lanes do not start `tools/ci-local.sh` unless their brief says so.
+3. Slots: the P1-04 owner holds 5 and the P3-05 lane holds 3; root CI takes 3 after that lane. Pure-core owners and docs lanes start no Supabase stack.
