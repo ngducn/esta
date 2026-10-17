@@ -55,10 +55,8 @@ reset role;
 select ok((select at from public.audit_log order by id desc limit 1) > '2026-10-08'::timestamptz,
   'without a test clock row the audit row takes the wall clock');
 
-set local role anon;
-select throws_ok(format('select * from public.property_activity(%L)', :'property_a'), '42501', null,
+select ok(not has_function_privilege('anon', 'public.property_activity(uuid, int)', 'execute'),
   'anon cannot call the history function');
-reset role;
 
 select * from finish();
 rollback;
