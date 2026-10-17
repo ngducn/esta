@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./activity": "./src/activity/describe.ts",
+    "./address": "./src/address/format-current.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./auth": "./src/auth/otp.ts",
     "./date": "./src/date/iso-date.ts",
@@ -19,6 +20,7 @@
     "./properties": "./src/properties/index.ts",
     "./result": "./src/result.ts",
     "./schedule": "./src/schedule/index.ts",
+    "./schemas/property": "./src/schemas/property.ts",
     "./search": "./src/search/fold.ts",
     "./vietqr": "./src/vietqr/index.ts"
   },
