@@ -4,6 +4,7 @@ import { currentAddressText } from '@esta/core/properties';
 import { ChevronLeft } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { MissingItems } from '@/components/completeness/missing-items';
 import { PropertyHeader } from '@/components/properties/property-header';
 import { PropertyTabBar } from '@/components/properties/property-tab-bar';
 import type { PropertyTabId } from '@/components/properties/property-tabs';
@@ -52,13 +53,6 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
             title: tc('title'),
             percent: score.percent,
             score: tc('score', { percent: score.percent }),
-            complete: score.failing.length === 0 ? tc('complete') : null,
-            listLabel: tc('nextTitle'),
-            items: nextMissing(score, 3).map((item) => ({
-              id: item.id,
-              label: tc(`checks.${item.id}`),
-              href: member.role === 'viewer' ? null : item.href,
-            })),
           },
         }}
       />
@@ -73,6 +67,19 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           activity: t('tab', { tab: 'activity' }),
         }}
       />
+      {tab === 'overview' ? (
+        <MissingItems
+          data={{
+            listLabel: tc('nextTitle'),
+            complete: score.failing.length === 0 ? tc('complete') : null,
+            items: nextMissing(score, 3).map((item) => ({
+              id: item.id,
+              label: tc(`checks.${item.id}`),
+              href: member.role === 'viewer' ? null : item.href,
+            })),
+          }}
+        />
+      ) : null}
       {children}
     </div>
   );

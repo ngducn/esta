@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -50,8 +50,21 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 
 const block = (page: Page) => page.getByTestId('property-header').getByTestId('property-completeness');
 const headerPercent = async (page: Page) => Number(await block(page).getByTestId('completeness-ring').getAttribute('data-percent'));
-const items = (page: Page) => block(page).getByTestId('missing-items').getByRole('listitem');
+const items = (page: Page) => page.getByTestId('missing-items').getByRole('listitem');
 const cardRings = (page: Page) => page.getByTestId('property-card').getByTestId('completeness-ring');
+/** Where the property tabs sit on the first screen, and where the app's bottom bar covers it. */
+async function tabBarFold(page: Page) {
+  const bottomBar = await page.getByRole('navigation', { name: 'Các mục chính' }).evaluate((nav) => nav.getBoundingClientRect().top);
+  return page.getByRole('navigation', { name: 'Các mục của tài sản' }).evaluate((nav, covered) => {
+    const { top, bottom } = nav.getBoundingClientRect();
+    return { top: top + window.scrollY, bottom: bottom + window.scrollY, covered };
+  }, bottomBar);
+}
+/** A form keeps its fields disabled until React owns the page, and focus lands in the same commit, so wait for the field to enable before asserting focus. */
+async function expectFocusLanded(field: Locator) {
+  await expect(field).toBeEnabled({ timeout: 30_000 });
+  await expect(field).toBeFocused();
+}
 const noSideScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
 async function openFromSearch(page: Page, query: string, nickname: string) {
@@ -71,12 +84,15 @@ test('rules 1 and 2: Mẹ finds Đất vườn Long An below 60%, taps the parce
     expect(before).toBeLessThan(60);
     await expect(items(page)).toHaveCount(3);
     await expect(items(page).first()).toHaveText('Thêm số thửa và số tờ bản đồ');
+    const fold = await tabBarFold(page);
+    expect(fold.top, 'the property tabs start on the first screen').toBeLessThanOrEqual(PHONE.height);
+    expect(fold.bottom, 'the bottom bar does not cover the property tabs').toBeLessThanOrEqual(fold.covered);
     await expect(items(page).nth(1)).toHaveText('Thêm diện tích thửa đất');
     expect(await seriousAxeViolations(page)).toEqual([]);
 
     await items(page).first().getByRole('link').click();
     await expect(page).toHaveURL(new RegExp(`/legal/parcels/${seedId('seed:parcel:lane-1:long-an:1')}#parcel-no$`));
-    await expect(page.locator('#parcel-no')).toBeFocused();
+    await expectFocusLanded(page.locator('#parcel-no'));
     expect(await seriousAxeViolations(page)).toEqual([]);
     await page.keyboard.type('906');
     await page.locator('#map-sheet-no').fill('96');
@@ -112,7 +128,7 @@ test('rule 3: Ryan sorts Tài sản by Mức đầy đủ, Đất vườn Long A
   await expect(items(page)).toHaveText(['Thêm tài khoản điện, nước']);
   await expect(items(page).getByRole('link')).toHaveAttribute('href', `/properties/${propertyId(2, 'q1')}/rental/accounts/new#account-kind`);
   await items(page).getByRole('link').click();
-  await expect(page.locator('#account-kind')).toBeFocused();
+  await expectFocusLanded(page.locator('#account-kind'));
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -121,9 +137,10 @@ test('rule 4: Ryan sets Căn hộ Thủ Đức to 60% and 30%, the score drops a
   await resetFiftyFifty(page, 3);
   const id = propertyId(3, 'thu-duc');
   try {
-    await page.goto(`/properties/${id}/legal`);
-    await expect(block(page).getByTestId('completeness-complete')).toHaveText('Đã đủ thông tin');
+    await page.goto(`/properties/${id}`);
+    await expect(page.getByTestId('completeness-complete')).toHaveText('Đã đủ thông tin');
     const before = await headerPercent(page);
+    await page.goto(`/properties/${id}/legal`);
     await page.getByTestId('edit-owners').click();
     await page.getByTestId('owner-draft').filter({ hasText: 'Nguyễn Thị Demo' }).getByTestId('owner-share').fill('60');
     await page.getByTestId('owner-draft').filter({ hasText: 'Trần Minh Demo' }).getByTestId('owner-share').fill('30');
@@ -132,11 +149,11 @@ test('rule 4: Ryan sets Căn hộ Thủ Đức to 60% and 30%, the score drops a
 
     await page.reload();
     await expect.poll(() => headerPercent(page)).toBeLessThan(before);
+    await page.goto(`/properties/${id}`);
     const owners = items(page).filter({ hasText: 'Sửa tỷ lệ sở hữu cho đủ 100%' });
     await expect(owners.getByRole('link')).toHaveAttribute('href', `/properties/${id}/legal#owners`);
-    await page.goto(`/properties/${id}`);
     await owners.getByRole('link').click();
-    await expect(page.getByTestId('edit-owners')).toBeFocused();
+    await expectFocusLanded(page.getByTestId('edit-owners'));
     expect(await seriousAxeViolations(page)).toEqual([]);
   } finally {
     await resetFiftyFifty(page, 3);

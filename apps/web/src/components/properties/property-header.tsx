@@ -2,7 +2,7 @@ import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
 import { Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { AddressBlock } from '@/components/address-block';
-import { MissingItems, type MissingItemsData } from '@/components/completeness/missing-items';
+import { CompletenessRingView } from '@/components/completeness-ring';
 import { buttonVariants } from '@/components/ui/button';
 import { CoverPhoto } from './cover-photo';
 import { kindIcons } from './kind-icons';
@@ -23,7 +23,8 @@ export type PropertyHeaderData = {
   vacant: string | null;
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
-  completeness: MissingItemsData;
+  /** The score, already translated: `title` is the word `Mức đầy đủ`, `score` such as `29%`. */
+  completeness: { title: string; percent: number; score: string };
 };
 
 /** The photo leads, because Mẹ knows a house by sight before its nickname; the kind tile stands in when there is none. */
@@ -63,11 +64,14 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
           <UsePill useMode={property.useMode} label={property.useLabel} />
           <LegalPill legalStatus={property.legalStatus} label={property.legalLabel} />
           {property.vacant === null ? null : <StatusPill status="vacant" label={property.vacant} />}
+          <p data-testid="property-completeness" className="flex items-center gap-2 px-1 text-small text-ink-2">
+            <span className="sr-only sm:not-sr-only">{property.completeness.title}</span>
+            <CompletenessRingView percent={property.completeness.percent} label={property.completeness.score} />
+          </p>
         </div>
         <div data-testid="property-addresses">
           <AddressBlock current={property.currentAddress} legal={property.certificateAddress} />
         </div>
-        <MissingItems data={property.completeness} />
       </div>
     </header>
   );

@@ -46,7 +46,21 @@ export function verifyPingRecord(text: string): Outcome {
   return { pass, detail: `auth ${auth_mode}, agent ${agent_mode}, household_info × ${calls}` };
 }
 
-const e2e = (spec: string) => ['pnpm', 'e2e', spec];
+/** Local CI's policy: a test that fails gets one retry, and a test that fails twice fails its row. */
+const e2e = (spec: string) => ['pnpm', 'e2e', '--retries=1', '--reporter=list', spec];
+
+/** The titles Playwright's list reporter prints under its `N flaky` line: tests that failed once and then passed. */
+export function flakyTests(log: string): string[] {
+  const lines = log.split('\n');
+  const start = lines.findIndex((line) => /^\s+\d+ flaky$/.test(line));
+  if (start === -1) return [];
+  const titles: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (!/^\s{4}\S/.test(line)) break;
+    titles.push(line.trim());
+  }
+  return titles;
+}
 
 type CitedFiles = { core?: readonly string[]; web?: readonly string[]; pgtap?: readonly string[]; e2e?: readonly string[] };
 
@@ -113,6 +127,14 @@ export function uncited(repoRoot: string, check: PhaseCheck): string[] {
   });
 }
 
+const readLog = (path: string) => {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch {
+    return '';
+  }
+};
+
 export type RunCommand = (command: readonly string[], log: string) => number;
 
 const runCommand: RunCommand = ([program = '', ...args], log) => {
@@ -146,6 +168,7 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
   for (const check of rows) {
     const started = performance.now();
     let outcome: Outcome;
+    let log: string | undefined;
     if ('verify' in check) {
       try {
         outcome = check.verify(repoRoot);
@@ -155,13 +178,15 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
     } else if (uncited(repoRoot, check).length > 0) {
       outcome = { pass: false, detail: `${uncited(repoRoot, check).join(', ')} never names ${check.id}` };
     } else {
-      const log = join(logs, `${check.id}.log`);
-      writeFileSync(log, '');
-      const failedCommand = check.commands.find((command) => run(command, log) !== 0);
-      outcome = { pass: failedCommand === undefined, detail: failedCommand === undefined ? log : `${failedCommand.join(' ')} failed, log ${log}` };
+      const rowLog = join(logs, `${check.id}.log`);
+      log = rowLog;
+      writeFileSync(rowLog, '');
+      const failedCommand = check.commands.find((command) => run(command, rowLog) !== 0);
+      outcome = { pass: failedCommand === undefined, detail: failedCommand === undefined ? rowLog : `${failedCommand.join(' ')} failed, log ${rowLog}` };
     }
     const seconds = Math.round((performance.now() - started) / 1000);
     print(`${outcome.pass ? 'PASS' : 'FAIL'}  ${check.id.padEnd(6)} ${String(seconds).padStart(4)} s  ${outcome.detail}`);
+    if (log !== undefined) for (const title of flakyTests(readLog(log))) print(`       flaky  ${title}`);
     if (!outcome.pass) failed++;
   }
   return failed === 0 ? 0 : 1;

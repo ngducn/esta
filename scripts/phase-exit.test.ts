@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { checkPhase, PHASE_CHECKS, S1_RECORD, uncited, verifyPingRecord, type PhaseCheck } from './phase-exit.ts';
+import { checkPhase, flakyTests, PHASE_CHECKS, S1_RECORD, uncited, verifyPingRecord, type PhaseCheck } from './phase-exit.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const logDir = mkdtempSync(join(tmpdir(), 'esta-phase-test-'));
@@ -87,11 +87,42 @@ describe('checkPhase', () => {
     ]);
   });
 
+  it('runs every phase 1 spec with one retry, as local CI does', () => {
+    const specCommands = (PHASE_CHECKS['1'] ?? []).flatMap((check) => ('commands' in check ? check.commands : [])).filter((command) => command[1] === 'e2e');
+    expect(specCommands.length).toBeGreaterThan(0);
+    for (const command of specCommands) expect(command, command.join(' ')).toEqual(expect.arrayContaining(['--retries=1', '--reporter=list']));
+  });
+
+  it('passes a row whose test needed its retry and names that test as flaky', () => {
+    const epilogue = '  1 flaky\n    [mobile] › e2e/a.spec.ts:3:1 › opens the page\n  4 passed (9.1s)\n';
+    const { code, lines } = runPhase('9', { '9': [{ id: 'A', commands: [node(`process.stdout.write(${JSON.stringify(epilogue)})`)] }] });
+    expect(code).toBe(0);
+    expect(lines).toEqual([expect.stringMatching(/^PASS {2}A /), '       flaky  [mobile] › e2e/a.spec.ts:3:1 › opens the page']);
+  });
+
+  it('fails a row whose test failed on its retry too', () => {
+    const epilogue = '  1 failed\n    [mobile] › e2e/a.spec.ts:3:1 › opens the page\n';
+    const { code, lines } = runPhase('9', { '9': [{ id: 'A', commands: [node(`process.stdout.write(${JSON.stringify(epilogue)}); process.exit(1)`)] }] });
+    expect(code).toBe(1);
+    expect(lines).toEqual([expect.stringMatching(/^FAIL {2}A /)]);
+  });
+
   it('exits 1 when one phase 1 row fails', () => {
     const rows = (PHASE_CHECKS['1'] ?? []).map((check, index): PhaseCheck => ({ id: check.id, commands: [node(`process.exit(${index === 7 ? 1 : 0})`)] }));
     const { code, lines } = runPhase('1', { '1': rows });
     expect(code).toBe(1);
     expect(lines.filter((line) => line.startsWith('FAIL'))).toEqual([expect.stringMatching(/^FAIL {2}RLS /)]);
+  });
+});
+
+describe('flakyTests', () => {
+  it('reads the titles under the flaky count and stops at the next count', () => {
+    const log = ['Running 6 tests', '  1 failed', '    [mobile] › e2e/b.spec.ts:9:1 › broke', '  2 flaky', '    [mobile] › e2e/a.spec.ts:3:1 › one', '    [mobile] › e2e/a.spec.ts:20:1 › two', '  3 passed (9s)'].join('\n');
+    expect(flakyTests(log)).toEqual(['[mobile] › e2e/a.spec.ts:3:1 › one', '[mobile] › e2e/a.spec.ts:20:1 › two']);
+  });
+
+  it('finds none in a clean run', () => {
+    expect(flakyTests('  8 passed (30s)\n')).toEqual([]);
   });
 });
 
