@@ -40,6 +40,14 @@ function rents(periods: readonly Period[]): number[] {
   return periods.map((p) => p.rentVnd);
 }
 
+function monthlyRents(periods: readonly Period[]): number[] {
+  return periods.map((p) => p.monthlyRentVnd);
+}
+
+function distinct(values: readonly number[]): number[] {
+  return [...new Set(values)];
+}
+
 describe('period grid per cycle and anchor', () => {
   it('bills a monthly lease anchored on the 25th across February (Dĩ An Phòng 3)', () => {
     const periods = generateSchedule(monthlyFrom25th, [], d('2026-11-30'));
@@ -79,7 +87,7 @@ describe('period grid per cycle and anchor', () => {
   it('bills a quarterly calendar lease on 1 January, April, July and October (q7)', () => {
     const q7 = lease({
       startDate: d('2025-01-01'),
-      rentVnd: vnd(60_000_000),
+      rentVnd: vnd(20_000_000),
       billingCycleMonths: 3,
       periodAnchor: 'calendar_month',
       paidThroughDate: d('2026-12-31'),
@@ -89,7 +97,7 @@ describe('period grid per cycle and anchor', () => {
     expect(spans(periods)[0]).toBe('2025-01-01..2025-03-31');
     expect(spans(periods)[8]).toBe('2027-01-01..2027-03-31');
     expect(periods.map((p) => p.coveredByPaidThrough)).toEqual([true, true, true, true, true, true, true, true, false]);
-    expect(periods.every((p) => p.rentVnd === 60_000_000 && p.prorated === null)).toBe(true);
+    expect(periods.every((p) => p.monthlyRentVnd === 20_000_000 && p.rentVnd === 60_000_000 && p.prorated === null)).toBe(true);
   });
 
   it('bills a six-month lease from its start date', () => {
@@ -97,27 +105,34 @@ describe('period grid per cycle and anchor', () => {
     expect(spans(periods)).toEqual(['2026-03-10..2026-09-09', '2026-09-10..2027-03-09', '2027-03-10..2027-09-09']);
   });
 
+  it('bills monthly rent times the cycle and prorates a cut quarter over the days of the full quarter', () => {
+    const periods = generateSchedule(lease({ startDate: d('2026-01-10'), endDate: d('2026-05-09'), rentVnd: vnd(10_000_000), billingCycleMonths: 3 }), [], d('2027-01-01'));
+    expect(spans(periods)).toEqual(['2026-01-10..2026-04-09', '2026-04-10..2026-05-09']);
+    expect(periods[0]).toMatchObject({ monthlyRentVnd: 10_000_000, rentVnd: 30_000_000, prorated: null });
+    expect(periods[1]).toMatchObject({ monthlyRentVnd: 10_000_000, rentVnd: 9_890_110, prorated: { days: 30, daysInFullPeriod: 91, fullPeriodVnd: 30_000_000 } });
+  });
+
   it('bills an annual prepaid lease as one covered period (q1)', () => {
     const q1 = lease({
       startDate: d('2026-03-01'),
       endDate: d('2027-02-28'),
-      rentVnd: vnd(240_000_000),
+      rentVnd: vnd(20_000_000),
       billingCycleMonths: 12,
       paidThroughDate: d('2027-02-28'),
     });
     const periods = generateSchedule(q1, [], d('2027-12-31'));
     expect(spans(periods)).toEqual(['2026-03-01..2027-02-28']);
-    expect(periods[0]).toMatchObject({ rentVnd: 240_000_000, prorated: null, coveredByPaidThrough: true, dueDate: '2026-03-01' });
+    expect(periods[0]).toMatchObject({ monthlyRentVnd: 20_000_000, rentVnd: 240_000_000, prorated: null, coveredByPaidThrough: true, dueDate: '2026-03-01' });
   });
 
   it('aligns a quarterly calendar lease to months counted from its start month', () => {
     const periods = generateSchedule(
-      lease({ startDate: d('2026-08-10'), rentVnd: vnd(30_000_000), billingCycleMonths: 3, periodAnchor: 'calendar_month', firstPeriodProration: 'by_days' }),
+      lease({ startDate: d('2026-08-10'), rentVnd: vnd(10_000_000), billingCycleMonths: 3, periodAnchor: 'calendar_month', firstPeriodProration: 'by_days' }),
       [],
       d('2026-11-01'),
     );
     expect(spans(periods)).toEqual(['2026-08-10..2026-10-31', '2026-11-01..2027-01-31']);
-    expect(periods[0]?.prorated).toEqual({ days: 83, daysInFullPeriod: 92, fullRentVnd: 30_000_000 });
+    expect(periods[0]?.prorated).toEqual({ days: 83, daysInFullPeriod: 92, fullPeriodVnd: 30_000_000 });
     expect(rents(periods)).toEqual([27_065_217, 30_000_000]);
   });
 });
@@ -126,7 +141,7 @@ describe('first period proration', () => {
   it('prorates a mid-month calendar start by days when the lease says so', () => {
     const periods = generateSchedule(lease({ ...lse3Canonical, paidThroughDate: null, firstPeriodProration: 'by_days' }), [], d('2026-08-01'));
     expect(spans(periods)).toEqual(['2026-07-15..2026-07-31', '2026-08-01..2026-08-31']);
-    expect(periods[0]).toMatchObject({ rentVnd: 5_483_871, prorated: { days: 17, daysInFullPeriod: 31, fullRentVnd: 10_000_000 } });
+    expect(periods[0]).toMatchObject({ rentVnd: 5_483_871, prorated: { days: 17, daysInFullPeriod: 31, fullPeriodVnd: 10_000_000 } });
     expect(periods[1]).toMatchObject({ rentVnd: 10_000_000, prorated: null });
   });
 
@@ -177,7 +192,7 @@ describe('end dates', () => {
       start: '2026-11-01',
       end: '2026-11-07',
       rentVnd: 2_800_000,
-      prorated: { days: 7, daysInFullPeriod: 30, fullRentVnd: 12_000_000 },
+      prorated: { days: 7, daysInFullPeriod: 30, fullPeriodVnd: 12_000_000 },
     });
   });
 
@@ -195,7 +210,7 @@ describe('end dates', () => {
       start: '2026-11-01',
       end: '2026-11-01',
       rentVnd: 266_667,
-      prorated: { days: 1, daysInFullPeriod: 30, fullRentVnd: 8_000_000 },
+      prorated: { days: 1, daysInFullPeriod: 30, fullPeriodVnd: 8_000_000 },
       coveredByPaidThrough: false,
     });
   });
@@ -203,7 +218,7 @@ describe('end dates', () => {
   it('prorates a lease_start anchor that ends mid-cycle over the full cycle length', () => {
     const periods = generateSchedule(lease({ endDate: d('2026-04-10') }), [], d('2027-01-01'));
     expect(spans(periods)).toEqual(['2026-01-25..2026-02-24', '2026-02-25..2026-03-24', '2026-03-25..2026-04-10']);
-    expect(periods.at(-1)).toMatchObject({ rentVnd: 1_919_355, prorated: { days: 17, daysInFullPeriod: 31, fullRentVnd: 3_500_000 } });
+    expect(periods.at(-1)).toMatchObject({ rentVnd: 1_919_355, prorated: { days: 17, daysInFullPeriod: 31, fullPeriodVnd: 3_500_000 } });
   });
 
   it('does not prorate a last period that ends exactly on a cycle boundary', () => {
@@ -248,12 +263,17 @@ describe('due dates', () => {
 describe('escalation', () => {
   const quarterly100M = lease({ startDate: d('2025-01-01'), rentVnd: vnd(100_000_000), billingCycleMonths: 3, escalation: fivePercentYearly });
 
-  it('compounds 5% every 12 months and rounds half up to 100,000', () => {
+  it('compounds 5% every 12 months on the monthly rent, rounds half up to 100,000 and bills three months a quarter', () => {
     const periods = generateSchedule(quarterly100M, [], d('2027-12-31'));
-    expect(rents(periods)).toEqual([
+    expect(monthlyRents(periods)).toEqual([
       ...Array<number>(4).fill(100_000_000),
       ...Array<number>(4).fill(105_000_000),
       ...Array<number>(4).fill(110_300_000),
+    ]);
+    expect(rents(periods)).toEqual([
+      ...Array<number>(4).fill(300_000_000),
+      ...Array<number>(4).fill(315_000_000),
+      ...Array<number>(4).fill(330_900_000),
     ]);
   });
 
@@ -261,17 +281,18 @@ describe('escalation', () => {
     const fixed: Escalation = { kind: 'fixed', valueVnd: vnd(5_000_000), everyMonths: 12, roundingVnd: vnd(100_000) };
     const periods = generateSchedule(lease({ ...quarterly100M, escalation: fixed }), [], d('2027-12-31'));
     expect(rents(periods)).toEqual([
-      ...Array<number>(4).fill(100_000_000),
-      ...Array<number>(4).fill(105_000_000),
-      ...Array<number>(4).fill(110_000_000),
+      ...Array<number>(4).fill(300_000_000),
+      ...Array<number>(4).fill(315_000_000),
+      ...Array<number>(4).fill(330_000_000),
     ]);
   });
 
   it('rounds each step half up to rounding_vnd before compounding the next', () => {
     const to100k = generateSchedule(lease({ ...quarterly100M, rentVnd: vnd(73_000_000) }), [], d('2027-01-01'));
-    expect(rents(to100k).filter((rent, i, all) => all.indexOf(rent) === i)).toEqual([73_000_000, 76_700_000, 80_500_000]);
+    expect(distinct(monthlyRents(to100k))).toEqual([73_000_000, 76_700_000, 80_500_000]);
+    expect(distinct(rents(to100k))).toEqual([219_000_000, 230_100_000, 241_500_000]);
     const toDong = generateSchedule(lease({ ...quarterly100M, rentVnd: vnd(73_000_000), escalation: { ...fivePercentYearly, roundingVnd: vnd(1) } }), [], d('2027-01-01'));
-    expect(rents(toDong).filter((rent, i, all) => all.indexOf(rent) === i)).toEqual([73_000_000, 76_650_000, 80_482_500]);
+    expect(distinct(monthlyRents(toDong))).toEqual([73_000_000, 76_650_000, 80_482_500]);
   });
 
   it('steps on the first period that starts on or after the lease anniversary', () => {
@@ -288,7 +309,7 @@ describe('escalation', () => {
       [],
       d('2027-12-31'),
     );
-    expect(periods.at(-1)).toMatchObject({ start: '2027-01-01', end: '2027-01-07', rentVnd: 2_845_161, prorated: { days: 7, daysInFullPeriod: 31, fullRentVnd: 12_600_000 } });
+    expect(periods.at(-1)).toMatchObject({ start: '2027-01-01', end: '2027-01-07', rentVnd: 2_845_161, prorated: { days: 7, daysInFullPeriod: 31, fullPeriodVnd: 12_600_000 } });
   });
 
   it('keeps every đồng when rent times the factor passes 2^53', () => {

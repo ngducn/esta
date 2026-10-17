@@ -200,8 +200,8 @@ describe('generateSchedule properties', () => {
           if (p.prorated === null) continue;
           expect(p.prorated.days).toBeGreaterThanOrEqual(1);
           expect(p.prorated.days).toBeLessThan(p.prorated.daysInFullPeriod);
-          expect(p.rentVnd).toBeLessThanOrEqual(p.prorated.fullRentVnd);
-          expect(p.rentVnd).toBe(prorateOracle(p.prorated.fullRentVnd, p.prorated.days, p.prorated.daysInFullPeriod));
+          expect(p.rentVnd).toBeLessThanOrEqual(p.prorated.fullPeriodVnd);
+          expect(p.rentVnd).toBe(prorateOracle(p.prorated.fullPeriodVnd, p.prorated.days, p.prorated.daysInFullPeriod));
         }
       }),
       params,
@@ -255,7 +255,7 @@ describe('generateSchedule properties', () => {
         expectTiling(amended, t, until);
         const first = amended[index];
         if (first === undefined) throw new Error('amended period missing');
-        if (newRent !== null) expect(first.prorated === null ? first.rentVnd : first.prorated.fullRentVnd).toBe(newRent);
+        if (newRent !== null) expect(first.monthlyRentVnd).toBe(newRent);
         if (newCycle !== null) expect(first.end).toBe(addDays(addMonths(effectivePeriodStart, newCycle), -1));
       }),
       params,
