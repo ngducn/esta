@@ -8,6 +8,7 @@ import { removeCoverPhoto, requestCoverPhotoUpload, setCoverPhoto } from '@/app/
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { StatusShape } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
+import { useHydrated } from '@/lib/use-hydrated';
 import { resizePhoto, type ResizeRefusal } from './resize-photo';
 
 type Failure = ResizeRefusal | 'upload';
@@ -35,6 +36,7 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
   const [pending, startTransition] = useTransition();
   const [failure, setFailure] = useState<{ reason: Failure; file: File | null } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const hydrated = useHydrated();
 
   useEffect(() => () => {
     if (preview !== null) URL.revokeObjectURL(preview);
@@ -87,8 +89,10 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
         data-testid="cover-photo-file"
         type="file"
         accept="image/*"
+        aria-label={t('photoPick')}
         className="sr-only"
         tabIndex={-1}
+        disabled={!hydrated}
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = '';
@@ -96,7 +100,7 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
         }}
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" disabled={pending} onClick={() => picker.current?.click()}>
+        <Button type="button" variant="outline" disabled={pending || !hydrated} data-testid="cover-photo-pick" onClick={() => picker.current?.click()}>
           <ImagePlus aria-hidden="true" />
           {pending ? t('photoUploading') : shown === null ? t('photoPick') : t('photoReplace')}
         </Button>

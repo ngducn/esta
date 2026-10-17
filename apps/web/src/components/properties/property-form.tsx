@@ -20,6 +20,7 @@ import { MoneyInput } from '@/components/money/money-input';
 import { StatusShape } from '@/components/status-mark';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useHydrated } from '@/lib/use-hydrated';
 import type { AdminUnitOption, CurrentUnitSuggestion } from '@/server/address/suggest';
 import { AddressPicker, FormSelect } from './address-picker';
 import { KindFields } from './kind-fields';
@@ -117,6 +118,7 @@ export function PropertyForm({
   const [invalid, setInvalid] = useState<Invalid | null>(null);
   const [error, setError] = useState<FormError | null>(null);
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [communes, setCommunes] = useState<{ province: string | null; options: readonly AdminUnitOption[] }>({
     province: initial.address.provinceCode,
     options: initialCommunes,
@@ -312,7 +314,7 @@ export function PropertyForm({
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" disabled={pending} data-testid="save-property">
+          <Button type="submit" disabled={pending || !hydrated} data-testid="save-property">
             {pending ? t('saving') : propertyId === null ? t('save') : t('saveChanges')}
           </Button>
           <Link href={cancelHref} className={buttonVariants({ variant: 'outline' })}>
