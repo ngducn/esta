@@ -197,7 +197,7 @@ Icons come from `lucide-react` (ISC), imported by name, at 20 px in navigation a
 
 ## Imagery
 
-Photos are brand and demo imagery only, in `apps/web/src/photos/` with `ATTRIBUTION.md` beside them (all Pexels License). They render through `next/image` from static imports with explicit `sizes`. None is preloaded: the sign-in hero shows on desktop only and stays lazy, so a phone never fetches it and the form stays the LCP element. Property photos as data arrive with properties in P1-04 and P1-05. The app icon is the brand mark (a white house on a lacquer-red rounded square). `pnpm icons:build` draws `icon.svg`, the 180 px apple-touch icon and the 192, 512 and maskable 512 px manifest icons from the one path in `apps/web/src/design/brand.ts`.
+Photos are brand and demo imagery only, in `apps/web/src/photos/` with `ATTRIBUTION.md` beside them (all Pexels License). They render through `next/image` from static imports with explicit `sizes`. The sign-in hero shows on desktop only. Its img is lazy and `ReactDOM.preload` requests it at high priority under `(min-width: 64rem)`, so a desktop fetches it early and a phone never fetches it, which keeps the form the LCP element there. Property photos as data arrive with properties in P1-04 and P1-05. The app icon is the brand mark (a white house on a lacquer-red rounded square). `pnpm icons:build` draws `icon.svg`, the 180 px apple-touch icon and the 192, 512 and maskable 512 px manifest icons from the one path in `apps/web/src/design/brand.ts`.
 
 ## Do's and Don'ts
 

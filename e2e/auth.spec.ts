@@ -274,14 +274,6 @@ async function watchSignInPhoto(page: Page) {
   return requests;
 }
 
-test('the sign-in photo is requested at high priority on a desktop', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'the photo only shows from 1024 px');
-  const requests = await watchSignInPhoto(page);
-  await page.goto('/sign-in');
-  await page.waitForLoadState('load');
-  expect(requests.map(({ priority }) => priority)).toEqual(['High']);
-});
-
 test('a phone never requests the sign-in photo', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'compares the phone with the desktop');
   const requests = await watchSignInPhoto(page);

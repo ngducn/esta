@@ -316,3 +316,39 @@ test('lane 13: at 390 px and 100% every tab label sits on one line, on the curre
     for (const link of await tabBar(page).getByRole('link').all()) expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   }
 });
+
+const tabLabelEdges = (page: Page) =>
+  tabBar(page)
+    .locator('a > span:last-child')
+    .evaluateAll((labels) =>
+      labels.map((label) => {
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const box = range.getBoundingClientRect();
+        return { text: label.textContent, left: box.left, right: document.documentElement.clientWidth - box.right };
+      }),
+    );
+
+test('lane 14: at 390 px and 130% every Vietnamese tab label sits on one line at least 4 px from the screen edge', async ({ page }) => {
+  onlyOn('mobile');
+  await newHousehold(page);
+  await saveDisplaySettings(page, { textScale: '130%' });
+  for (const section of sections) {
+    await tabBar(page).getByRole('link', { name: section.vi }).click();
+    await expect(tabBar(page).locator('[aria-current="page"]')).toHaveText(section.vi);
+    expect(await rootFontSize(page)).toBe('20.8px');
+    expect(
+      (await tabLabelLineCounts(page)).filter((label) => label.lines !== 1),
+      `${section.vi} is current and a label wraps`,
+    ).toEqual([]);
+    const edges = await tabLabelEdges(page);
+    expect(edges[0]?.left, 'Tổng quan clears the left edge').toBeGreaterThanOrEqual(4);
+    expect(edges.at(-1)?.right, 'Trợ lý clears the right edge').toBeGreaterThanOrEqual(4);
+    for (const link of await tabBar(page).getByRole('link').all()) {
+      const box = await link.boundingBox();
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+    }
+    expect(await pageOverflows(page)).toBe(false);
+  }
+});
