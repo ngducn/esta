@@ -22,8 +22,8 @@ type PropertySeedShape = {
   legal_status: string;
   address: CurrentAddress;
   certificate_address_text: string;
-  lat: number;
-  lng: number;
+  /** `long-an` has none, so every household shows one unpinned property on the map (P1-09). */
+  location: { lat: number; lng: number } | null;
   photo: SeedPhoto | null;
 };
 
@@ -37,8 +37,7 @@ export const PROPERTY_SEEDS = [
     legal_status: 'certified',
     address: { house_no: '901 Demo', street: 'Đường số 15', commune_code: '27475', province_code: '79' },
     certificate_address_text: 'Số 901 Demo, đường số 15, Khu phố 1, Phường Tân Phong, Quận 7, Thành phố Hồ Chí Minh',
-    lat: 10.7295,
-    lng: 106.7058,
+    location: { lat: 10.7295, lng: 106.7058 },
     photo: 'nha-pho.webp',
   },
   {
@@ -57,8 +56,7 @@ export const PROPERTY_SEEDS = [
     address: { house_no: '902 Demo', street: 'Đường Võ Văn Ngân', commune_code: '26824', province_code: '79' },
     certificate_address_text:
       'Căn hộ A-12.05, Chung cư Demo Bình Thọ, số 902 Demo, đường Võ Văn Ngân, Phường Bình Thọ, Thành phố Thủ Đức, Thành phố Hồ Chí Minh',
-    lat: 10.8497,
-    lng: 106.7717,
+    location: { lat: 10.8497, lng: 106.7717 },
     photo: 'can-ho.webp',
   },
   {
@@ -70,8 +68,7 @@ export const PROPERTY_SEEDS = [
     legal_status: 'certified',
     address: { house_no: '903/9 Demo', street: 'Đường Nguyễn An Ninh', commune_code: '25942', province_code: '79' },
     certificate_address_text: 'Số 903/9 Demo, đường Nguyễn An Ninh, Khu phố Nhị Đồng 2, Phường Dĩ An, Thành phố Dĩ An, Tỉnh Bình Dương',
-    lat: 10.9068,
-    lng: 106.769,
+    location: { lat: 10.9068, lng: 106.769 },
     photo: 'day-tro.webp',
   },
   {
@@ -83,8 +80,7 @@ export const PROPERTY_SEEDS = [
     legal_status: 'certified',
     address: { house_no: '904 Demo', street: 'Đường Lê Thánh Tôn', commune_code: '26740', province_code: '79' },
     certificate_address_text: 'Số 904 Demo, đường Lê Thánh Tôn, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
-    lat: 10.778,
-    lng: 106.702,
+    location: { lat: 10.778, lng: 106.702 },
     photo: 'nha-pho.webp',
   },
   {
@@ -96,8 +92,7 @@ export const PROPERTY_SEEDS = [
     legal_status: 'certified',
     address: { house_no: 'C95 Demo', street: 'Đường số 7', commune_code: '26188', province_code: '75' },
     certificate_address_text: 'Lô C95 Demo, đường số 7, Khu phố 3, Phường Tân Phong, Thành phố Biên Hòa, Tỉnh Đồng Nai',
-    lat: 10.97,
-    lng: 106.846,
+    location: { lat: 10.97, lng: 106.846 },
     photo: null,
   },
   {
@@ -109,8 +104,7 @@ export const PROPERTY_SEEDS = [
     legal_status: 'certified',
     address: { street: 'Đường Châu Thị Kim', commune_code: '27694', province_code: '80' },
     certificate_address_text: 'Thửa đất số 906 Demo, tờ bản đồ số 96, Phường 2, Thành phố Tân An, Tỉnh Long An',
-    lat: 10.533,
-    lng: 106.405,
+    location: null,
     photo: 'dat.webp',
   },
   {
@@ -122,8 +116,7 @@ export const PROPERTY_SEEDS = [
     legal_status: 'certified',
     address: { house_no: '907 Demo', street: 'Đường Trần Phú', commune_code: '24823', province_code: '68' },
     certificate_address_text: 'Số 907 Demo, đường Trần Phú, Phường 1, Thành phố Bảo Lộc, Tỉnh Lâm Đồng',
-    lat: 11.547,
-    lng: 107.808,
+    location: { lat: 11.547, lng: 107.808 },
     photo: 'dat.webp',
   },
 ] as const satisfies readonly PropertySeedShape[];
@@ -155,7 +148,7 @@ export const properties = publicTable('properties', ({ household, properties }) 
       legal_status: seed.legal_status,
       current_address: currentAddress(seed.address),
       certificate_address_text: seed.certificate_address_text,
-      location: `SRID=4326;POINT(${seed.lng} ${seed.lat})`,
+      location: seed.location === null ? null : `SRID=4326;POINT(${seed.location.lng} ${seed.location.lat})`,
       cover_photo_path: seed.photo === null ? null : `${household_id}/${id}/${seed.photo}`,
     };
   }),

@@ -18,5 +18,6 @@ export {
   ringToGeoJson,
   type BoundaryRing,
   type GeoJsonPolygon,
+  type GeoPoint,
   type RingInvalidReason,
 } from './polygon';

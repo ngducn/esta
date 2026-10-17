@@ -40,7 +40,7 @@ where p.deleted_at is null;
 
 -- Security invoker, so RLS decides: a viewer or another household updates no row and gets no_data_found.
 -- Each returns the value it replaced, so the caller's undo writes exactly that back.
-create function public.set_property_location(p_property_id uuid, p_lat double precision, p_lng double precision)
+create function public.set_property_location(p_property_id uuid, p_lat double precision default null, p_lng double precision default null)
 returns jsonb
 language plpgsql
 security invoker

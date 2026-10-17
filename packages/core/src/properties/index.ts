@@ -6,6 +6,7 @@ export {
   PROPERTY_KINDS,
   PROPERTY_SORTS,
   PROPERTY_SORT_KEYS,
+  PROPERTY_VIEWS,
   USE_MODES,
   applyPropertyFilters,
   parsePropertyFilters,
@@ -21,6 +22,7 @@ export {
   type PropertyKind,
   type PropertyListRow,
   type PropertySortKey,
+  type PropertyView,
   type SearchParamsRecord,
   type UseMode,
 } from './filters';

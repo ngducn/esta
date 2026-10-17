@@ -6,17 +6,17 @@ declare const ringBrand: unique symbol;
 /** A closed ring: the first vertex repeats as the last, with at least 3 distinct vertices before it, every one in range. */
 export type BoundaryRing = readonly LatLng[] & { readonly [ringBrand]: true };
 
+/** An unchecked point as forms, the map and the database hand it over; `toLatLng` turns one into a checked `LatLng`. */
+export type GeoPoint = { readonly lat: number; readonly lng: number };
+
 export type RingInvalidReason = 'too_few_vertices' | 'out_of_range';
 
-export interface GeoJsonPolygon {
-  readonly type: 'Polygon';
-  readonly coordinates: readonly (readonly (readonly [number, number])[])[];
-}
+export type GeoJsonPolygon = { type: 'Polygon'; coordinates: [lng: number, lat: number][][] };
 
 const same = (a: LatLng, b: LatLng) => a.lat === b.lat && a.lng === b.lng;
 
 /** Drops consecutive repeats, closes an open ring and refuses fewer than 3 distinct vertices or a vertex out of range. */
-export function normalizeRing(points: readonly { readonly lat: number; readonly lng: number }[]): Result<BoundaryRing, RingInvalidReason> {
+export function normalizeRing(points: readonly GeoPoint[]): Result<BoundaryRing, RingInvalidReason> {
   const ring: LatLng[] = [];
   for (const { lat, lng } of points) {
     const point = toLatLng(lat, lng);
@@ -31,7 +31,7 @@ export function normalizeRing(points: readonly { readonly lat: number; readonly 
   return { ok: true, value: [...ring, ring[0]] as unknown as BoundaryRing };
 }
 
-export function isValidBoundary(ring: readonly { readonly lat: number; readonly lng: number }[]): ring is BoundaryRing {
+export function isValidBoundary(ring: readonly GeoPoint[]): ring is BoundaryRing {
   const [first] = ring;
   const last = ring.at(-1);
   if (first === undefined || last === undefined || first.lat !== last.lat || first.lng !== last.lng) return false;
@@ -40,7 +40,7 @@ export function isValidBoundary(ring: readonly { readonly lat: number; readonly 
 }
 
 export function ringToGeoJson(ring: BoundaryRing): GeoJsonPolygon {
-  return { type: 'Polygon', coordinates: [ring.map(({ lat, lng }) => [lng, lat] as const)] };
+  return { type: 'Polygon', coordinates: [ring.map(({ lat, lng }) => [lng, lat])] };
 }
 
 /** Reads the outer ring of a stored polygon; holes are not drawn or edited in v1. */

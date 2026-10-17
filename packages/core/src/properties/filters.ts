@@ -28,6 +28,8 @@ export type PropertyListRow = {
   certificateAddressText: string | null;
   legacyProvinceNames: readonly string[];
   searchText: string;
+  location: { lat: number; lng: number } | null;
+  hasBoundary: boolean;
 };
 
 /** The name people say: "Thành phố Hồ Chí Minh" reads "TP. Hồ Chí Minh", "Tỉnh Bình Dương" reads "Bình Dương". */
@@ -88,7 +90,11 @@ export const PROPERTY_SORTS = {
 export type PropertySortKey = keyof typeof PROPERTY_SORTS;
 export const PROPERTY_SORT_KEYS = Object.keys(PROPERTY_SORTS) as readonly PropertySortKey[];
 
-export type PropertyFilters = { q: string; sort: PropertySortKey } & { [K in PropertyFilterKey]: string | null };
+/** `Danh sách` or `Bản đồ`; search, filters and sort apply to both. */
+export const PROPERTY_VIEWS = ['list', 'map'] as const;
+export type PropertyView = (typeof PROPERTY_VIEWS)[number];
+
+export type PropertyFilters = { q: string; sort: PropertySortKey; view: PropertyView } & { [K in PropertyFilterKey]: string | null };
 
 export type SearchParamsRecord = Readonly<Record<string, string | readonly string[] | undefined>>;
 
@@ -107,9 +113,11 @@ export function parsePropertyFilters(params: SearchParamsRecord): PropertyFilter
     }),
   ) as { [K in PropertyFilterKey]: string | null };
   const sort = first(params.sort);
+  const view = first(params.view);
   return {
     q: (first(params.q) ?? '').normalize('NFC').trim().replace(/\s+/g, ' ').slice(0, MAX_QUERY_LENGTH),
     sort: PROPERTY_SORT_KEYS.find((key) => key === sort) ?? 'name',
+    view: PROPERTY_VIEWS.find((key) => key === view) ?? 'list',
     ...filters,
   };
 }
@@ -119,6 +127,7 @@ export function propertyFiltersQuery(filters: PropertyFilters): string {
     ['q', filters.q],
     ...PROPERTY_FILTER_KEYS.map((key): [string, string] => [key, filters[key] ?? '']),
     ['sort', filters.sort === 'name' ? '' : filters.sort],
+    ['view', filters.view === 'list' ? '' : filters.view],
   ];
   const query = pairs
     .filter(([, value]) => value !== '')

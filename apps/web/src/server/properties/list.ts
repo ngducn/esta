@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
 const COLUMNS =
-  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text';
+  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary';
 
 const rowSchema = z
   .object({
@@ -32,6 +32,9 @@ const rowSchema = z
     certificate_address_text: z.string().nullable(),
     legacy_province_names: z.array(z.string()).nullable(),
     search_text: z.string().nullable(),
+    lat: z.number().nullable(),
+    lng: z.number().nullable(),
+    has_boundary: z.boolean(),
   })
   .transform(
     (row): PropertyListRow => ({
@@ -49,6 +52,8 @@ const rowSchema = z
       certificateAddressText: row.certificate_address_text,
       legacyProvinceNames: row.legacy_province_names ?? [],
       searchText: row.search_text ?? '',
+      location: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng },
+      hasBoundary: row.has_boundary,
     }),
   );
 
