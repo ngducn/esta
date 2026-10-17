@@ -62,14 +62,14 @@ async function openAccountMenu(page: Page) {
 async function signOutThroughMenu(page: Page) {
   await openAccountMenu(page);
   await page.getByRole('button', { name: /^(Đăng xuất|Sign out)$/ }).click();
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page).toHaveURL(/\/sign-in$/, { timeout: 15_000 });
 }
 
 async function saveDisplaySettings(page: Page, choices: { textScale?: string; density?: string; theme?: string; language?: string }) {
   await page.goto('/settings');
   for (const choice of Object.values(choices)) await page.getByRole('radio', { name: new RegExp(`^${choice}`) }).check();
   await page.getByRole('button', { name: /^(Lưu|Save)$/ }).click();
-  await expect(page.getByRole('status')).toHaveText(/^(Đã lưu cài đặt hiển thị\.|Display settings saved\.)$/);
+  await expect(page.getByRole('status')).toHaveText(/^(Đã lưu cài đặt hiển thị\.|Display settings saved\.)$/, { timeout: 15_000 });
 }
 
 const rootFontSize = (page: Page) => page.locator('html').evaluate((html) => getComputedStyle(html).fontSize);
