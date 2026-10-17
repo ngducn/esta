@@ -10,9 +10,23 @@ import { parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
 import { agentJobs, agentRuns } from './agent.ts';
 import { renderSeed } from './sql.ts';
+import { units } from './units.ts';
+import { utilityAccounts } from './utility-accounts.ts';
 import { isVariantName, VARIANTS, type VariantName } from './variants.ts';
 
-const EMITTERS: readonly Emitter[] = [...HOUSEHOLD_EMITTERS, parties, properties, certificates, parcels, structures, ownershipShares, agentJobs, agentRuns];
+const EMITTERS: readonly Emitter[] = [
+  ...HOUSEHOLD_EMITTERS,
+  parties,
+  properties,
+  certificates,
+  parcels,
+  structures,
+  ownershipShares,
+  units,
+  utilityAccounts,
+  agentJobs,
+  agentRuns,
+];
 
 const TIMEZONE = 'Asia/Ho_Chi_Minh';
 const MAX_LANES = 99;
@@ -30,8 +44,9 @@ export function generate({ lanes, asOf, variant }: GenerateOptions): string {
   const today = businessDate(asOf, TIMEZONE);
   const omitted: readonly string[] = VARIANTS[variant].omitProperties;
   const properties = PROPERTY_SEEDS.filter((seed) => !omitted.includes(seed.key));
-  const tables = EMITTERS.map(({ table, rows }) => ({
+  const tables = EMITTERS.map(({ table, upsert, rows }) => ({
     table,
+    ...(upsert === true ? { upsert } : {}),
     rows: households.flatMap((household) => rows({ household, properties, asOf, today })),
   }));
   return renderSeed(tables, asOf);

@@ -20,7 +20,8 @@ export type SeedContext = {
   readonly today: IsoDate;
 };
 
-export type Emitter = { readonly table: string; rows(ctx: SeedContext): readonly SqlRow[] };
+/** `upsert` renders `on conflict (id) do update`, for rows a trigger already inserted, such as each property's `whole` unit. */
+export type Emitter = { readonly table: string; readonly upsert?: boolean; rows(ctx: SeedContext): readonly SqlRow[] };
 
 type PublicTable = keyof Database['public']['Tables'];
 type Generated = 'id' | 'created_by' | 'created_at' | 'updated_at';
@@ -37,6 +38,7 @@ type NoExtraColumns<R, Shape> = R & Record<Exclude<keyof R, keyof Shape>, never>
 export function publicTable<T extends PublicTable, R extends SeedRow<T>>(
   table: T,
   rows: (ctx: SeedContext) => readonly NoExtraColumns<R, SeedRow<T>>[],
+  options: { readonly upsert?: boolean } = {},
 ): Emitter {
-  return { table: `public.${table}`, rows };
+  return { table: `public.${table}`, rows, ...(options.upsert === true ? { upsert: true } : {}) };
 }

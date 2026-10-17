@@ -86,7 +86,7 @@ test('rule 1: Mẹ taps Dãy trọ Dĩ An on Tài sản and the detail page lead
   await open(page, 'me.lane1@demo.esta.test', 'light');
   await tapCard(page, 'Dãy trọ Dĩ An');
   await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'di-an')}$`));
-  await expectDiAn(page, { current: 'Hiện nay', legal: 'Theo sổ', tabs: ['Tổng quan', 'Pháp lý', 'Hoạt động'] });
+  await expectDiAn(page, { current: 'Hiện nay', legal: 'Theo sổ', tabs: ['Tổng quan', 'Pháp lý', 'Cho thuê', 'Hoạt động'] });
   await expect(page.getByTestId('overview-facts')).toContainText('Số phòng');
   await page.waitForLoadState('networkidle');
   expect(mapChunks, 'the detail page fetches no MapLibre chunk while the location card is off screen').toEqual([]);
@@ -191,7 +191,7 @@ test('rule 5: in English at 130% and dark the labels and tabs translate, the add
   await page.goto('/properties');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await tapCard(page, 'Dãy trọ Dĩ An');
-  await expectDiAn(page, { current: 'Current', legal: 'On the certificate', tabs: ['Overview', 'Legal', 'Activity'] });
+  await expectDiAn(page, { current: 'Current', legal: 'On the certificate', tabs: ['Overview', 'Legal', 'Rental', 'Activity'] });
   await expect(page.getByTestId('overview-facts')).toContainText('Rooms');
   expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth), 'no horizontal page scroll').toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);

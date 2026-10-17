@@ -29,3 +29,5 @@ export {
 } from './filters';
 export { PROPERTY_CODE_MAX_LENGTH, suggestPropertyCode } from './code';
 export { KIND_FIELDS, kindDetailsText, readKindDetails, vndInputText, type KindField, type KindFieldInput, type KindFieldTexts } from './form-fields';
+export { PROPERTY_STATUS_RULES, propertyStatus, type PropertyStatusFacts, type PropertyStatusMark } from './status';
+export { compareUnits, moveUnit, nextRoomLabels, type SortChange } from './units';

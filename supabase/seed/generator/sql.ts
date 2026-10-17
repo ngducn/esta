@@ -11,7 +11,7 @@ export type SqlValue =
 
 export type SqlRow = Readonly<Record<string, SqlValue>>;
 
-export type TableRows = { readonly table: string; readonly rows: readonly SqlRow[] };
+export type TableRows = { readonly table: string; readonly upsert?: boolean; readonly rows: readonly SqlRow[] };
 
 const STAMPED_COLUMNS = ['created_at', 'updated_at'] as const;
 
@@ -41,13 +41,15 @@ function literal(value: SqlValue): string {
   return quote(JSON.stringify(value));
 }
 
-function insert({ table, rows }: TableRows, stamp: Instant): string {
+function insert({ table, upsert, rows }: TableRows, stamp: Instant): string {
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
   const stamped = STAMPED_COLUMNS.filter((column) => !columns.includes(column));
   const values = rows.map(
     (row) => `  (${[...columns.map((column) => literal(row[column])), ...stamped.map(() => quote(stamp))].join(', ')})`,
   );
-  return `insert into ${table} (${[...columns, ...stamped].join(', ')}) values\n${values.join(',\n')};\n`;
+  const updated = columns.filter((column) => column !== 'id' && column !== 'created_at');
+  const conflict = upsert === true ? `\non conflict (id) do update set ${updated.map((column) => `${column} = excluded.${column}`).join(', ')}` : '';
+  return `insert into ${table} (${[...columns, ...stamped].join(', ')}) values\n${values.join(',\n')}${conflict};\n`;
 }
 
 export function renderSeed(tables: readonly TableRows[], stamp: Instant): string {

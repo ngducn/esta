@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { vnd } from '../money/vnd';
 import {
   currentAddressText,
   applyPropertyFilters,
@@ -29,6 +30,8 @@ function row(nickname: string, fields: Partial<PropertyListRow> = {}): PropertyL
     location: null,
     hasBoundary: false,
     ownerPartyIds: [],
+    monthlyRentVnd: null,
+    vacantSince: null,
     ...fields,
   };
 }
@@ -184,6 +187,45 @@ describe('applyPropertyFilters', () => {
     ]);
     expect(parsePropertyFilters({ sort: 'area' }).sort).toBe('area');
     expect(propertyFiltersQuery({ ...none, sort: 'area' })).toBe('?sort=area');
+  });
+});
+
+describe('sort by rent', () => {
+  const none = parsePropertyFilters({});
+  const rent = (amount: number) => ({ monthlyRentVnd: vnd(amount) });
+
+  it('puts the highest rent first, ties by name, and properties without rent last by name', () => {
+    const rows = [
+      row('Đất vườn Long An'),
+      row('Kho Biên Hòa', rent(12_000_000)),
+      row('Mặt bằng Quận 1', rent(30_000_000)),
+      row('Đất Bảo Lộc'),
+      row('Nhà phố Q7', rent(15_000_000)),
+      row('Căn hộ Thủ Đức', rent(9_000_000)),
+      row('Dãy trọ Dĩ An', rent(21_400_000)),
+      row('Biệt thự Demo', rent(15_000_000)),
+    ];
+    const sorted = applyPropertyFilters(rows, { ...none, sort: 'rent' }).rows.map((r) => r.nickname);
+    expect(sorted).toEqual([
+      'Mặt bằng Quận 1',
+      'Dãy trọ Dĩ An',
+      'Biệt thự Demo',
+      'Nhà phố Q7',
+      'Kho Biên Hòa',
+      'Căn hộ Thủ Đức',
+      'Đất Bảo Lộc',
+      'Đất vườn Long An',
+    ]);
+  });
+
+  it('keeps a zero rent above a missing one', () => {
+    const sorted = applyPropertyFilters([row('A'), row('B', rent(0))], { ...none, sort: 'rent' }).rows.map((r) => r.nickname);
+    expect(sorted).toEqual(['B', 'A']);
+  });
+
+  it('round-trips sort=rent through the URL', () => {
+    expect(parsePropertyFilters({ sort: 'rent' }).sort).toBe('rent');
+    expect(propertyFiltersQuery({ ...none, sort: 'rent' })).toBe('?sort=rent');
   });
 });
 

@@ -5,7 +5,7 @@ import { AddressBlock } from '@/components/address-block';
 import { buttonVariants } from '@/components/ui/button';
 import { CoverPhoto } from './cover-photo';
 import { kindIcons } from './kind-icons';
-import { LegalPill, UsePill } from './property-pills';
+import { LegalPill, StatusPill, UsePill } from './property-pills';
 
 export type PropertyHeaderData = {
   nickname: string;
@@ -18,6 +18,8 @@ export type PropertyHeaderData = {
   currentAddress: string | null;
   certificateAddress: string | null;
   photoUrl: string | null;
+  /** The `propertyStatus` mark's word, such as `Trống từ 01/08`. */
+  vacant: string | null;
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
 };
@@ -58,6 +60,7 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
         <div className="flex flex-wrap gap-1.5">
           <UsePill useMode={property.useMode} label={property.useLabel} />
           <LegalPill legalStatus={property.legalStatus} label={property.legalLabel} />
+          {property.vacant === null ? null : <StatusPill status="vacant" label={property.vacant} />}
         </div>
         <div data-testid="property-addresses">
           <AddressBlock current={property.currentAddress} legal={property.certificateAddress} />

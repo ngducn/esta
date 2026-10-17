@@ -54,6 +54,11 @@ export function formatDate(date: IsoDate, _locale: Locale): string {
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
+/** `01/08`, for a date the reader places in the current year, such as the `Trống từ 01/08` mark. */
+export function formatDayMonth(date: IsoDate, locale: Locale): string {
+  return formatDate(date, locale).slice(0, 5);
+}
+
 const WEEKDAYS: Record<Locale, readonly string[]> = {
   vi: ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'],
   en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],

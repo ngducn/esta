@@ -12,7 +12,8 @@ import {
 import { compareVietnameseNames } from '@esta/core/names';
 import { Archive, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { formatDayMonth, formatVndCompact } from '@esta/core/format';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
 import { ArchivedNoticeLoader } from '@/components/properties/archived-notice-loader';
@@ -27,6 +28,7 @@ import { sectionIcons } from '@/components/shell/section-icons';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 import { loadArchivedNickname } from '@/server/properties/form';
 import { propertyIslandIntl } from '@/server/properties/island-messages';
@@ -41,13 +43,14 @@ const comparable = (address: string) => address.normalize('NFC').trim().replace(
 const locateParam = z.uuid();
 
 export default async function PropertiesPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
-  const [params, member] = await Promise.all([searchParams, requireMember()]);
+  const [params, member, clock] = await Promise.all([searchParams, requireMember(), getClock()]);
   const filters = parsePropertyFilters(params);
   const archivedId = locateParam.safeParse(params[ARCHIVED_PARAM]).data ?? null;
-  const [list, nav, t, archived] = await Promise.all([
-    listProperties(member.household.id, filters),
+  const [list, nav, t, locale, archived] = await Promise.all([
+    listProperties(member.household.id, filters, clock.today()),
     getTranslations('nav'),
     getTranslations('properties'),
+    getLocale(),
     archivedId === null ? null : loadArchivedNickname(member.household.id, archivedId),
   ]);
   const canEdit = member.role !== 'viewer';
@@ -57,6 +60,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const toCard = (row: PropertyListRow): PropertyCardData => {
     const address = currentAddressText(row) ?? '';
     const certificate = row.certificateAddressText;
+    const status = list.statuses.get(row.id);
     return {
       id: row.id,
       nickname: row.nickname,
@@ -70,6 +74,8 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
       certificateLine:
         certificate === null || comparable(certificate) === comparable(address) ? null : t('certificateAddress', { address: certificate }),
       photoUrl: row.coverPhotoPath === null ? null : (photos.get(row.coverPhotoPath) ?? null),
+      rent: row.monthlyRentVnd === null ? null : { label: t('listRent'), amount: formatVndCompact(row.monthlyRentVnd, locale) },
+      vacant: status === undefined ? null : t('vacantSince', { date: formatDayMonth(status.since, locale) }),
     };
   };
 

@@ -5,16 +5,20 @@ import {
   USE_MODES,
   applyPropertyFilters,
   preferPhrase,
+  propertyStatus,
   searchTokens,
   type FilteredProperties,
   type PropertyFilters,
   type PropertyListRow,
+  type PropertyStatusMark,
 } from '@esta/core/properties';
+import { isIsoDate, type IsoDate } from '@esta/core/date';
+import { vnd } from '@esta/core/money';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
 export const PROPERTY_ROW_COLUMNS =
-  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary, owner_party_ids';
+  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary, owner_party_ids, monthly_rent_vnd, vacant_since';
 
 export const propertyRowSchema = z
   .object({
@@ -36,6 +40,8 @@ export const propertyRowSchema = z
     lng: z.number().nullable(),
     has_boundary: z.boolean(),
     owner_party_ids: z.array(z.string()).nullable(),
+    monthly_rent_vnd: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().catch(null),
+    vacant_since: z.string().refine(isIsoDate).nullable().catch(null),
   })
   .transform(
     (row): PropertyListRow => ({
@@ -56,6 +62,8 @@ export const propertyRowSchema = z
       location: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng },
       hasBoundary: row.has_boundary,
       ownerPartyIds: row.owner_party_ids ?? [],
+      monthlyRentVnd: row.monthly_rent_vnd === null ? null : vnd(row.monthly_rent_vnd),
+      vacantSince: row.vacant_since as IsoDate | null,
     }),
   );
 
@@ -83,6 +91,8 @@ export type PropertyList = FilteredProperties & {
   householdCount: number;
   provinceNames: ReadonlyMap<string, string>;
   ownerNames: ReadonlyMap<string, string>;
+  /** Each shown row's `propertyStatus` mark on the Clock's date; a row with none is absent. */
+  statuses: ReadonlyMap<string, PropertyStatusMark>;
 };
 
 async function readOwnerNames(supabase: SessionClient, householdId: string): Promise<Map<string, string>> {
@@ -92,7 +102,7 @@ async function readOwnerNames(supabase: SessionClient, householdId: string): Pro
 }
 
 /** RLS already limits the rows to the member's households; the household predicate keeps a member of two to one list. */
-export async function listProperties(householdId: string, filters: PropertyFilters): Promise<PropertyList> {
+export async function listProperties(householdId: string, filters: PropertyFilters, asOf: IsoDate): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
   const [rows, count, ownerNames] = await Promise.all([
@@ -102,8 +112,15 @@ export async function listProperties(householdId: string, filters: PropertyFilte
   ]);
   if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
   const matches = preferPhrase(rows, tokens);
+  const filtered = applyPropertyFilters(matches, filters);
   return {
-    ...applyPropertyFilters(matches, filters),
+    ...filtered,
+    statuses: new Map(
+      filtered.rows.flatMap((row) => {
+        const mark = propertyStatus(row, asOf);
+        return mark === null ? [] : [[row.id, mark] as const];
+      }),
+    ),
     householdCount: count?.count ?? rows.length,
     ownerNames,
     provinceNames: new Map(

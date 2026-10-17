@@ -1034,6 +1034,147 @@ export type Database = {
         }
         Relationships: []
       }
+      units: {
+        Row: {
+          area_m2: number | null
+          available_from: string | null
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          kind: string
+          label: string
+          list_rent_vnd: number | null
+          property_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          area_m2?: number | null
+          available_from?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          kind: string
+          label: string
+          list_rent_vnd?: number | null
+          property_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          area_m2?: number | null
+          available_from?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          kind?: string
+          label?: string
+          list_rent_vnd?: number | null
+          property_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "units_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "units_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "units_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      utility_accounts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_code: string | null
+          holder_name: string | null
+          household_id: string
+          id: string
+          kind: string
+          note: string | null
+          property_id: string
+          provider: string | null
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_code?: string | null
+          holder_name?: string | null
+          household_id: string
+          id?: string
+          kind: string
+          note?: string | null
+          property_id: string
+          provider?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_code?: string | null
+          holder_name?: string | null
+          household_id?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          property_id?: string
+          provider?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_accounts_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_accounts_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "utility_accounts_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "utility_accounts_household_id_property_id_unit_id_fkey"
+            columns: ["household_id", "property_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["household_id", "property_id", "id"]
+          },
+        ]
+      }
       worker_heartbeats: {
         Row: {
           agent_mode: string
@@ -1078,12 +1219,14 @@ export type Database = {
           legacy_province_names: string[] | null
           legal_status: string | null
           lng: number | null
+          monthly_rent_vnd: number | null
           nickname: string | null
           owner_party_ids: string[] | null
           province_code: string | null
           province_name: string | null
           search_text: string | null
           use_mode: string | null
+          vacant_since: string | null
         }
         Relationships: [
           {
