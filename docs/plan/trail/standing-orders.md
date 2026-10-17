@@ -108,3 +108,13 @@ Defaults the agent chose (label: agent interpretation):
 1. The landing grant extends to the pure-core Phase 3 and Phase 5 PRs (P3-05, P3-02, P3-06, P5-11) on the reading already applied to Phases 1 and 2, and every verdict for them includes an Opus audit lane. One message from the operator withdraws it; those PRs then stop at merge-ready.
 2. The root runs local CI, one run at a time, when the 1-minute load is under 5, on a slot no owner or lane holds. Owners and lanes do not start `tools/ci-local.sh` unless their brief says so.
 3. Slots: the P1-04 owner holds 5 and the P3-05 lane holds 3; root CI takes 3 after that lane. Pure-core owners and docs lanes start no Supabase stack.
+
+## Update 2026-10-17 11:25 +07
+
+Operator's answers, 2026-10-17, to the three parked PRs:
+
+1. P1-04 (#52): "Accept, gate at P1-03". Merge #52 with the LCP miss; #56 (shell floor) and a new photo-bytes issue are both required before the Phase 1 exit P1-03 can merge, so SPEC §7.2's 2.5 s binds at the phase gate.
+2. P3-06 (#58): "Second narrow round". One more fix-forward limited to refusing quoted fields that span a line break, then a scoped review.
+3. P5-11 (#61): "Second structural round". One more fix-forward that makes fail-closed structural (one strict grammar per digit token, else unparseable), then a scoped Opus review.
+
+These are operator-granted exceptions to rule 6 of the 2026-10-15 update for these PRs only; the one-fix-forward rule still holds everywhere else.

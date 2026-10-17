@@ -1712,7 +1712,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 
 ## Score completeness, show the next missing items and pass the Phase 1 exit (P1-03)
 
-**Depends on.** P1-08.
+**Depends on.** P1-08, and issues #56 (app shell LCP floor) and #68 (first-screen cover photo bytes) closed: the operator accepted P1-04's LCP miss on 2026-10-17 on condition that SPEC §7.2's 2.5 s binds at this phase exit.
 
 **Files.**
 
