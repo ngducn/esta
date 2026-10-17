@@ -1,45 +1,36 @@
 # Resume notes for the Esta v1 run
 
-Paused 2026-10-16 about 00:35 +07 at about 45% of one 5-hour block, the pause line under the operator's 50% cap for that run. Resume with `skills/poteto-mode/playbooks/session-pickup.md`. Read `docs/plan/trail/standing-orders.md` first, especially its "Update 2026-10-15 23:40 +07" section, then `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, and `docs/plan/STATUS.md`.
+Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (every 2026-10-17 update; 11:25 and 11:55 are the newest), `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, and `docs/plan/STATUS.md`. Briefs for every owner and lane of this session are in `~/.claude/orchestrate/esta/briefs/`; the root's checklist is `~/.claude/orchestrate/esta/todo.md`.
 
-## Where the run is
+## Where the run is (2026-10-17, about 12:45 +07)
 
-- 2026-10-17 05:20 +07 the session limit stopped every agent mid-run. Nothing pushed was lost; the root saved unpushed work as `wip:` commits at 09:25.
-- main is at the latest docs commit; Phase 0 complete, P1-01 merged.
-- Open PRs and branches, with the next step for each:
-  - #52 P1-04 at eb62881: round 1 verdict done (ISSUES). Next: a fresh Opus fix-forward owner from `~/.claude/orchestrate/esta/briefs/p1-04-ff.md`, then a scoped review and local CI at load under 5.
-  - #57 P3-05 VietQR at 89e8e50: code-ready, owner's live /dev/core check and local CI not done, verifier died. Next: Opus verify-and-audit lane (money), then local CI on a free slot.
-  - #59 P3-02 lease schedule at c73e035: code-ready, verifier died. Next: Opus verify-and-audit lane (interrogate list), then local CI.
-  - #58 P3-06 statement matching at b4eee5c (wip): owner died mid-build. Next: fresh Opus owner to finish from the branch and its trail.
-  - `esta/p5-11-number-guard` at 43f64ca (wip, no PR): fresh Opus owner to finish and open the PR.
-  - `esta/p2-01-extraction-spike` at c9e8cba (wip, no PR): fresh Opus owner to finish (live calls allowed for the spike).
-  - #60 Phase 2 re-cut at 2210e72: verifier died. Next: Opus or Sonnet verifier, then merge.
-- Owner trails for the dead agents are in `~/.claude/orchestrate/esta/trails/<agent>/decisions.tsv`.
+Merged this session: #57 P3-05 VietQR (`6f420f2`), #60 Phase 2 re-cut (`aae66e9`), #59 P3-02 lease schedule (`9476d68`), #64 lint-test flake and CI lock (`f1579b7`), #52 P1-04 properties list (`8cbd2ed`, LCP miss accepted by the operator and gated at P1-03), #58 P3-06 statement matching (`0923f94`).
 
-## Model policy (operator, 2026-10-17: "check weekly usage and fable usage, please think ahead until reset and utilize the best tokens you can until reset of this week, please speed this up a bit")
+Open, with the next step for each:
 
-- Superseded 2026-10-17 09:25: no Fable. Owners on Opus, verifiers on Sonnet, audits on Opus.
-- Measure Fable's cost per PR on the first two owners with ccusage. If a Fable owner moves a block more than 25 points, return owners to Opus.
-- The plan's weekly limit and reset time are not visible locally; ask the operator for the numbers from /usage and plan the week's remaining runs from them.
+- #67 P2-01 extraction spike at `a6ca3f8`: verifier PASS (low findings filed as #70). Next: local CI 5/5 at that head, then merge. The private-fixture run was blocked by the permission classifier for any command naming `fixtures-private`; the folder is absent on this machine.
+- #73 CI cleanup (closes #65, #66, #71) at `25ed8f6`: Sonnet verifier running. Next: local-ci/check, then merge.
+- #69 shell LCP (closes #56) at `b188d1a`: code-ready. Next: one Sonnet lane with a Lighthouse re-measure at load under 5 (Tài sản, Home, Thu tiền, head against trunk), local CI, merge. Then a fresh owner for #68 (cover photo bytes). #56 and #68 must both close before P1-03 merges.
+- #72 P1-09 map at `fc29c9c` or later: owner running on slot 2 (stack approved). Next: code-ready, one Sonnet live lane, local CI, merge, then P1-06.
+- #61 P5-11 number guard at `a8d00d8`: parked after both granted rounds; the root recommends a redesign over rendered plain text (PR #61 comment). The operator decides: here or inside P5-03.
 
-## Gotchas learned this run
+Phase 1 after P1-09, one at a time because each depends on the last: P1-06, P1-05, P1-07, P1-10, P1-08, P1-03.
 
-- Run at most two Supabase stacks besides `esta-1` on the 8 GB Docker; a fourth stack goes unhealthy. Stop the operator's slot 2 app while agents build, and relaunch it at pause.
-- Local CI e2e fails on 30 s timeouts when the load average is above about 8; run it when `sysctl -n vm.loadavg` shows under 5 (#51). The background wait-then-run pattern in this conversation's last CI rerun works.
-- Never use slot 4 (port 4317 collides with `ekh-phoenix`).
-- The permission classifier denies closing GitHub issues; creating issues and commenting works.
+## How CI runs now
+
+- The root runs `~/.claude/orchestrate/esta/bin/ci-when-calm.sh <worktree> <pr> <slot> [jobs]`. It waits for its own lock and a load under 5 (1 minute) and 6 (5 minutes), then calls `tools/ci-local.sh`, which since #64 also takes `/tmp/ci-local/lock` and caps vitest workers at 3.
+- Before each merge, compare the PR's changed files with what `main` changed since its base. When they overlap (it was `packages/core/package.json` and the lockfile every time today), rebase, check `git range-diff`, push with lease, and run CI at the rebased head.
+- Supabase CLI 502 during `db reset` hit four runs; rerun the job once until #73 lands.
 
 ## Budget
 
-- This run spent about 45% of a block. Two Opus owners that spawned their own subagents (the planner fanned out section writers; the P0-14 owner ran Lighthouse and review lanes) burned about 25 points an hour. Brief owners with "spawn no subagents" unless the brief names them, and give writers a timebox.
-- One full UI PR with a verifier and an audit lane cost about 20 to 25%. A docs re-plan cost about 10%. A small lint PR with a verifier cost about 5%.
-- Usage check: `python3` over `ccusage blocks --active --json --offline`. 100% means the block of 2026-10-06T22:00Z, which hit the limit at $121.11 and 379.9M tokens. Take the larger of the cost ratio and the token ratio.
+- `~/.claude/orchestrate/esta/bin/usage-pct.sh` was rescaled at 11:55 to the operator's /usage reading (65% real when the old scale read 78.8%). Stop spawning at 80%, pause at 86%, per block.
+- This block (02:00Z to 07:00Z) reached 80% at about 12:30 +07 with up to seven agents running. Opus owners cost about 6 to 10 points each per hour; scoped review lanes 2 to 4.
 
 ## Gotchas learned this run
 
-- The permission classifier denies closing GitHub issues, and denied reading a `pnpm check` log and rerunning `pnpm check` for its exit code on `main`. Creating issues and commenting on PRs worked.
-- `ls` is aliased to `eza`, where `-t` takes a field name; `ls -t /tmp` lists the current directory. Use `/bin/ls` for time sorts.
-- Two local Supabase stacks starting at once can fail `db reset` with a Supabase CLI "Error status 502" while containers restart; rerun once.
-- The `main` checkout's `node_modules` goes stale after a merge that adds dependencies; run `pnpm install --frozen-lockfile` there before `pnpm check`.
-- Old agent worktrees were removed; their HEADs are pinned at `refs/archive/*` and their untracked trails are in `~/.claude/orchestrate/esta/trails/`.
-- Earlier gotchas still hold: migration versions now follow inventory `Seq` (owner-brief.md); Docker has 8 GB shared with `ekh-*`; stop processes by PID only; a fresh worktree may need the `@swc/helpers` symlink (#30).
+- At most two Supabase stacks besides `esta-1`. CI counts as one while it runs; hold queued CI when two owners hold stacks.
+- A bash script edited in place keeps running its old text if it was already started.
+- Owners' `next dev` 500s on a missing `@swc/helpers` in fresh worktrees (#30 class); production builds work for screenshots.
+- Never slot 4. The permission classifier denies closing issues and any command naming `fixtures-private`.
+- Issues waiting for the operator to close: #3, #4, #8, #9, #10, #11, #16, #31, and #36 after its one open question.

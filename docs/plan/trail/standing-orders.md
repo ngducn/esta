@@ -118,3 +118,7 @@ Operator's answers, 2026-10-17, to the three parked PRs:
 3. P5-11 (#61): "Second structural round". One more fix-forward that makes fail-closed structural (one strict grammar per digit token, else unparseable), then a scoped Opus review.
 
 These are operator-granted exceptions to rule 6 of the 2026-10-15 update for these PRs only; the one-fix-forward rule still holds everywhere else.
+
+## Update 2026-10-17 11:55 +07
+
+Operator's words, 2026-10-17: "the actual usage is at 65%, go at it". The local meter read 78.8% at that moment, so `~/.claude/orchestrate/esta/bin/usage-pct.sh` is rescaled by 0.825 (100% is now $146.8 or 460.5M tokens per block). The 80% stop-spawning and 86% pause lines from the 09:25 update stay, on the rescaled meter.
