@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { LocationCard } from '@/components/properties/location-card';
 import { OverviewFacts, type OverviewFact } from '@/components/properties/overview-facts';
 import { readBoundary } from '@/server/properties/boundary';
+import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { getThemePreference } from '@/server/theme';
 import { PropertyDetailFrame } from './detail-frame';
@@ -32,7 +33,8 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
   const { id } = await params;
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
-  const [t, tp, theme, locale, messages, boundary] = await Promise.all([
+  const [member, t, tp, theme, locale, messages, boundary] = await Promise.all([
+    requireMember(),
     getTranslations('propertyDetail'),
     getTranslations('properties'),
     getThemePreference(),
@@ -80,7 +82,7 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
           }}
         />
         <LocationCard
-          locateHref={`/properties?view=map&locate=${property.id}`}
+          locateHref={member.role === 'viewer' ? null : `/properties?view=map&locate=${property.id}`}
           labels={{ title: t('locationTitle'), edit: t('editLocation'), set: t('setLocation'), none: t('noLocation'), noneBody: t('noLocationBody') }}
           map={
             property.location === null

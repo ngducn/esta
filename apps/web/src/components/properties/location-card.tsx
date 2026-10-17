@@ -5,15 +5,15 @@ import { buttonVariants } from '@/components/ui/button-variants';
 
 export type LocationCardLabels = { title: string; edit: string; set: string; none: string; noneBody: string };
 
-/** `id="location"` lets a link land on the card. */
-export function LocationCard({ map, locateHref, labels }: { map: LocationMapProps | null; locateHref: string; labels: LocationCardLabels }) {
+/** `id="location"` lets a link land on the card. `locateHref` is null for a member who cannot set the location. */
+export function LocationCard({ map, locateHref, labels }: { map: LocationMapProps | null; locateHref: string | null; labels: LocationCardLabels }) {
   return (
     <section id="location" aria-labelledby="location-title" data-testid="location-card" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card lg:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="location-title" className="text-h3 text-ink">
           {labels.title}
         </h2>
-        {map === null ? null : (
+        {map === null || locateHref === null ? null : (
           <IntentLink href={locateHref} className={buttonVariants({ variant: 'outline' })}>
             <MapPinPen aria-hidden="true" />
             {labels.edit}
@@ -27,10 +27,12 @@ export function LocationCard({ map, locateHref, labels }: { map: LocationMapProp
             {labels.none}
           </p>
           <p className="max-w-prose text-body text-ink-2">{labels.noneBody}</p>
-          <IntentLink href={locateHref} className={buttonVariants({ variant: 'primary' })}>
-            <MapPinPlus aria-hidden="true" />
-            {labels.set}
-          </IntentLink>
+          {locateHref === null ? null : (
+            <IntentLink href={locateHref} className={buttonVariants({ variant: 'primary' })}>
+              <MapPinPlus aria-hidden="true" />
+              {labels.set}
+            </IntentLink>
+          )}
         </div>
       ) : (
         <LocationMap {...map} />

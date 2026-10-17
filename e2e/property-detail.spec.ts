@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -196,3 +197,31 @@ test('rule 5: in English at 130% and dark the labels and tabs translate, the add
   await expect(page.getByTestId('activity-entry').last()).toContainText('Sample data added the property');
   expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth), 'no horizontal page scroll').toBe(true);
 });
+
+test('rule 6: a viewer sees the pin on the location card but no Sửa vị trí, a control it could not save', async ({ page, browser }) => {
+  await signIn(page, 'me.lane7@demo.esta.test');
+  const viewer = await inviteViewer(page, browser);
+  try {
+    await stubTiles(viewer.page);
+    await viewer.page.goto(`/properties/${propertyId(7, 'bien-hoa')}`);
+    const card = viewer.page.getByTestId('location-card');
+    await card.scrollIntoViewIfNeeded();
+    await expect(card.getByTestId('property-pin')).toHaveAccessibleName('Kho Biên Hòa');
+    await expect(card.getByRole('link', { name: 'Sửa vị trí' })).toHaveCount(0);
+  } finally {
+    await viewer.context.close();
+  }
+});
+
+async function inviteViewer(page: Page, browser: Browser) {
+  const email = `viewer.${randomUUID().slice(0, 8)}@demo.esta.test`;
+  await page.goto('/onboarding');
+  await page.getByLabel('Email người được mời').fill(email);
+  await page.getByLabel(/^Chỉ xem/).check();
+  await page.getByRole('button', { name: 'Mời', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText(`Đã mời ${email} với quyền Chỉ xem.`);
+  const context = await browser.newContext({ viewport: PHONE });
+  const viewerPage = await context.newPage();
+  await signIn(viewerPage, email);
+  return { context, page: viewerPage };
+}
