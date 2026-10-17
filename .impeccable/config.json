@@ -13,15 +13,6 @@
         "reason": "32 px specimen size from spike S2 and the P0-11 plan; /dev/glyphs is a font proof page, not UI"
       },
       {
-        "rule": "broken-image",
-        "value": "*",
-        "files": [
-          "apps/web/src/components/photo.tsx"
-        ],
-        "createdAt": "2026-10-16T12:57:38.125Z",
-        "reason": "agent decision: the img sits in a picture whose source carries the srcset, and it must have no src so a phone never fetches the desktop-only photo; PR 41 item 1"
-      },
-      {
         "rule": "design-system-font",
         "value": "sans",
         "files": [
