@@ -15,6 +15,7 @@ export type Escalation =
 export type LeaseTerms = {
   startDate: IsoDate;
   endDate: IsoDate | null;
+  /** Rent per month; a full period bills it once per month of the billing cycle. */
   rentVnd: Vnd;
   billingCycleMonths: BillingCycleMonths;
   periodAnchor: PeriodAnchor;
@@ -37,13 +38,14 @@ export type Amendment = {
 export type Proration = {
   days: number;
   daysInFullPeriod: number;
-  fullRentVnd: Vnd;
+  fullPeriodVnd: Vnd;
 };
 
 export type Period = {
   start: IsoDate;
   end: IsoDate;
   dueDate: IsoDate;
+  monthlyRentVnd: Vnd;
   rentVnd: Vnd;
   prorated: Proration | null;
   coveredByPaidThrough: boolean;

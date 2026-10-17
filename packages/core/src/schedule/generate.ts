@@ -1,6 +1,6 @@
 import { daysBetween } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
-import type { Vnd } from '../money/vnd';
+import { vnd, type Vnd } from '../money/vnd';
 import type { Result } from '../result';
 import { addDays, addMonths, firstOfMonth } from './dates';
 import { escalate, escalationSteps } from './escalation';
@@ -65,13 +65,15 @@ export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendme
     const steps =
       escalationSteps(terms.escalation, terms.startDate, start) -
       escalationSteps(terms.escalation, terms.startDate, cursor.rent.from);
-    const fullRentVnd = escalate(cursor.rent.vnd, terms.escalation, steps);
-    const prorated = days < daysInFullPeriod ? { days, daysInFullPeriod, fullRentVnd } : null;
+    const monthlyRentVnd = escalate(cursor.rent.vnd, terms.escalation, steps);
+    const fullPeriodVnd = vnd(monthlyRentVnd * cursor.cycle);
+    const prorated = days < daysInFullPeriod ? { days, daysInFullPeriod, fullPeriodVnd } : null;
     periods.push({
       start,
       end,
       dueDate: addDays(start, terms.dueOffsetDays),
-      rentVnd: prorated === null ? fullRentVnd : scaleRoundHalfUp(fullRentVnd, days, daysInFullPeriod, 1),
+      monthlyRentVnd,
+      rentVnd: prorated === null ? fullPeriodVnd : scaleRoundHalfUp(monthlyRentVnd, cursor.cycle * days, daysInFullPeriod, 1),
       prorated,
       coveredByPaidThrough: terms.paidThroughDate !== null && end <= terms.paidThroughDate,
     });
