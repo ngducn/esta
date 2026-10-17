@@ -19,7 +19,7 @@ export function ViewToggle({ filters, label, optionLabel }: { filters: PropertyF
             aria-current={active ? 'page' : undefined}
             scroll={false}
             className={cn(
-              'flex min-h-touch flex-1 items-center justify-center gap-2 rounded-sm px-4 text-body font-semibold transition-colors duration-(--duration-fast) ease-standard [&_svg]:size-5',
+              'flex min-h-touch flex-1 items-center justify-center gap-2 rounded-sm px-4 text-body font-semibold whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard [&_svg]:size-5',
               active ? 'bg-ink text-surface' : 'text-ink-2 hover:bg-surface-2',
             )}
           >
