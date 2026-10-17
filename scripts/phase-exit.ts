@@ -101,7 +101,6 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
   ],
 };
 
-/** The files of a row that do not name its id, a missing file included. */
 export function uncited(repoRoot: string, check: PhaseCheck): string[] {
   if (!('cites' in check) || check.cites === undefined) return [];
   const id = new RegExp(`\\b${check.id}\\b`);

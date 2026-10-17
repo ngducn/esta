@@ -66,7 +66,6 @@ export type Medians = { protocol: string; route: string; runs: number; lcpMs: nu
 
 export type MeasureOptions = { route: string; email: string; slot: number; base?: string; http1?: boolean; runs?: number; label?: string; out?: string };
 
-/** Runs Lighthouse `runs` times on `route`, printing one JSON line per run, and returns the medians. */
 export async function measure({ route, email, slot, base, http1 = false, runs = 5, label, out }: MeasureOptions): Promise<Medians> {
   const server = base ?? `http://localhost:${slotPorts(slot).webProd}`;
   const proxy = http1 ? undefined : await startH2Proxy({ slot, upstream: new URL(server).host });
