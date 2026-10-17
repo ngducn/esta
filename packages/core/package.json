@@ -14,6 +14,7 @@
     "./names": "./src/names/index.ts",
     "./parse/*": "./src/parse/*.ts",
     "./phone": "./src/phone/index.ts",
+    "./properties": "./src/properties/index.ts",
     "./result": "./src/result.ts",
     "./schedule": "./src/schedule/index.ts",
     "./search": "./src/search/fold.ts",
@@ -23,6 +24,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/pngjs": "6.0.5",

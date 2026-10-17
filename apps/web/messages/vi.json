@@ -271,15 +271,40 @@
     "more": "Khác"
   },
   "sections": {
-    "properties": "Tài sản sẽ liệt kê từng căn nhà và mảnh đất của gia đình, kèm ảnh, địa chỉ, sổ và tiền thuê.",
     "collections": "Thu tiền sẽ cho biết tháng này phòng nào đã trả, phòng nào chưa, và ghi nhận tiền chỉ với vài lần chạm.",
     "documents": "Tài liệu sẽ cất sổ đỏ, hợp đồng và CCCD ở một chỗ, tìm được ngay bằng một ô tìm kiếm.",
     "assistant": "Trợ lý sẽ để lại ghi chú mỗi sáng về tiền thu chậm, hợp đồng sắp hết hạn và giấy tờ còn thiếu.",
     "reports": "Báo cáo sẽ có thẻ thuế cho thuê nhà và thu chi của từng tài sản theo năm.",
     "settings": "Hiển thị đi theo tài khoản của bạn. Gia đình, thành viên và tài khoản nhận tiền sẽ có ở đây trong bản cập nhật tới.",
     "soonTitle": "Sắp có trong bản cập nhật tới",
-    "adjustDisplay": "Chỉnh cỡ chữ và giao diện",
-    "photoCaption": "Ảnh minh họa."
+    "adjustDisplay": "Chỉnh cỡ chữ và giao diện"
+  },
+  "properties": {
+    "count": "{count, plural, other {# tài sản}}",
+    "countFiltered": "{shown} trong {count, plural, other {# tài sản}}",
+    "searchLabel": "Tìm tài sản",
+    "searchPlaceholder": "Tìm theo tên hoặc địa chỉ",
+    "filters": "Bộ lọc",
+    "filtersTitle": "Lọc tài sản",
+    "showResults": "Xem {count, plural, other {# tài sản}}",
+    "all": "Tất cả",
+    "group": "{group, select, province {Tỉnh, thành} kind {Loại} use {Sử dụng} legal {Pháp lý} other {Lọc}}",
+    "legacyProvince": "{name} (cũ)",
+    "sort": "Sắp xếp",
+    "sortOption": "{sort, select, name {Tên} area {Khu vực} other {Tên}}",
+    "certificateAddress": "Theo sổ: {address}",
+    "noAddress": "Chưa có địa chỉ",
+    "empty": "Chưa có tài sản nào.",
+  "emptyBody": "Mỗi căn nhà, mảnh đất gia đình thêm vào sẽ hiện ở đây, kèm ảnh và địa chỉ.",
+    "noMatch": "Không có tài sản nào khớp với “{query}”.",
+    "noMatchFilters": "Không có tài sản nào khớp với bộ lọc này.",
+    "clearFilters": "Xóa bộ lọc",
+    "kind": "{kind, select, townhouse {Nhà phố} apartment {Căn hộ} villa {Biệt thự} rooming_house {Dãy trọ} commercial_space {Mặt bằng} warehouse {Kho} residential_land {Đất ở} agricultural_land {Đất nông nghiệp} mixed {Nhà đất hỗn hợp} other {Khác}}",
+    "use": "{use, select, rental {Cho thuê} owner_occupied {Nhà mình ở} family_use {Người nhà dùng} own_business {Tự kinh doanh} held {Để không} under_renovation {Đang sửa} other {Khác}}",
+    "legal": "{legal, select, certified {Có sổ} certificate_pending {Đang làm sổ} paper_only {Giấy tay} shared_certificate {Sổ chung} in_dispute {Đang tranh chấp} unknown {Chưa rõ pháp lý} other {Chưa rõ pháp lý}}",
+    "errorTitle": "Chưa tải được danh sách tài sản",
+    "errorBody": "Kiểm tra kết nối mạng rồi thử lại.",
+    "retry": "Thử lại"
   },
   "assistant": {
     "statusOnline": "Trợ lý đang hoạt động. Cập nhật lúc {time}.",
@@ -346,11 +371,5 @@
     "save": "Lưu",
     "saved": "Đã lưu cài đặt hiển thị.",
     "saveFailed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
-  },
-  "photos": {
-    "nhaPho": "Nhà phố",
-    "dayTro": "Dãy trọ",
-    "canHo": "Căn hộ",
-    "dat": "Đất"
   }
 }

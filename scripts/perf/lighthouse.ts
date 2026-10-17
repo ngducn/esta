@@ -1,0 +1,122 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { parseArgs } from 'node:util';
+import { chromium } from '@playwright/test';
+import { clearMailbox, latestCode, slotMailbox } from '../inbucket-code.ts';
+import { parseSlot, slotPorts } from '../slot.ts';
+
+const USAGE =
+  'Usage: tsx scripts/perf/lighthouse.ts <route> --email <member email> [--base <origin>] [--runs 5] [--label head] [--out <dir for the JSON reports>]\n' +
+  'Runs Lighthouse 12.8.2 mobile on a running production server, signed in as the member, and prints the medians.';
+const LIGHTHOUSE = 'lighthouse@12.8.2';
+
+type Run = { lcp: number; tbt: number; cls: number; scriptBytes: number; imageBytes: number };
+
+export function median(values: readonly number[]): number {
+  const sorted = values.toSorted((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? (sorted[middle] ?? Number.NaN) : ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2;
+}
+
+type Report = {
+  audits: Record<string, { numericValue?: number; details?: { items?: { resourceType?: string; transferSize?: number; url?: string }[] } }>;
+};
+
+function summarize(report: Report, origin: string): Run {
+  const requests = report.audits['network-requests']?.details?.items ?? [];
+  const bytes = (type: string, sameOrigin: boolean) =>
+    requests
+      .filter((item) => item.resourceType === type && (!sameOrigin || item.url?.startsWith(origin)))
+      .reduce((sum, item) => sum + (item.transferSize ?? 0), 0);
+  return {
+    lcp: report.audits['largest-contentful-paint']?.numericValue ?? Number.NaN,
+    tbt: report.audits['total-blocking-time']?.numericValue ?? Number.NaN,
+    cls: report.audits['cumulative-layout-shift']?.numericValue ?? Number.NaN,
+    scriptBytes: bytes('Script', true),
+    imageBytes: bytes('Image', false),
+  };
+}
+
+async function sessionCookie(origin: string, email: string, slot: number): Promise<string> {
+  const mailbox = slotMailbox(slot);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await clearMailbox(email, mailbox);
+    await page.goto(`${origin}/sign-in`);
+    await page.locator('input[name="email"]').fill(email);
+    await page.locator('button[value="send"]').click();
+    await page.locator('input[name="code"]').fill(await latestCode(email, mailbox));
+    await page.locator('button[value="verify"]').click();
+    await page.waitForURL((url) => url.pathname !== '/sign-in');
+    const cookies = await page.context().cookies(origin);
+    return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
+  } finally {
+    await browser.close();
+  }
+}
+
+async function run(): Promise<void> {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: { email: { type: 'string' }, base: { type: 'string' }, runs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' } },
+  });
+  const [route] = positionals;
+  if (route === undefined || values.email === undefined) throw new Error(USAGE);
+  const slot = parseSlot(process.env.ESTA_SLOT);
+  const origin = values.base ?? `http://localhost:${slotPorts(slot).webProd}`;
+  const runs = Number(values.runs ?? '5');
+  const workdir = mkdtempSync(join(tmpdir(), 'esta-lighthouse-'));
+  try {
+    const headers = join(workdir, 'headers.json');
+    writeFileSync(headers, JSON.stringify({ Cookie: await sessionCookie(origin, values.email, slot) }));
+    const results: Run[] = [];
+    for (let index = 0; index < runs; index++) {
+      const output = join(values.out ?? workdir, `${values.label ?? 'run'}-${index + 1}.json`);
+      const lighthouse = spawnSync(
+        'npx',
+        [
+          '-y',
+          LIGHTHOUSE,
+          `${origin}${route}`,
+          '--quiet',
+          '--only-categories=performance',
+          '--output=json',
+          `--output-path=${output}`,
+          `--extra-headers=${headers}`,
+          '--chrome-flags=--headless=new',
+        ],
+        { stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, CHROME_PATH: process.env.CHROME_PATH ?? chromium.executablePath() } },
+      );
+      if (lighthouse.status !== 0) throw new Error(`lighthouse exited with ${lighthouse.status}`);
+      const result = summarize(JSON.parse(readFileSync(output, 'utf8')) as Report, origin);
+      results.push(result);
+      console.log(JSON.stringify({ label: values.label ?? 'run', route, email: values.email, run: index + 1, ...result }));
+    }
+    const pick = (key: keyof Run) => median(results.map((result) => result[key]));
+    console.log(
+      JSON.stringify({
+        label: values.label ?? 'median',
+        route,
+        email: values.email,
+        runs,
+        lcpMs: Math.round(pick('lcp')),
+        tbtMs: Math.round(pick('tbt')),
+        cls: Number(pick('cls').toFixed(3)),
+        scriptKb: Math.round(pick('scriptBytes') / 1024),
+        imageKb: Math.round(pick('imageBytes') / 1024),
+      }),
+    );
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+}
+
+if (import.meta.main) {
+  run().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}

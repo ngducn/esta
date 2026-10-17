@@ -603,6 +603,7 @@ export type Database = {
         Row: {
           certificate_address_text: string | null
           code: string
+          cover_photo_path: string | null
           created_at: string
           created_by: string | null
           current_address: Json | null
@@ -620,6 +621,7 @@ export type Database = {
         Insert: {
           certificate_address_text?: string | null
           code: string
+          cover_photo_path?: string | null
           created_at?: string
           created_by?: string | null
           current_address?: Json | null
@@ -637,6 +639,7 @@ export type Database = {
         Update: {
           certificate_address_text?: string | null
           code?: string
+          cover_photo_path?: string | null
           created_at?: string
           created_by?: string | null
           current_address?: Json | null
@@ -732,7 +735,34 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      property_list_rows: {
+        Row: {
+          address_line: string | null
+          certificate_address_text: string | null
+          code: string | null
+          commune_name: string | null
+          cover_photo_path: string | null
+          household_id: string | null
+          id: string | null
+          kind: string | null
+          legacy_province_names: string[] | null
+          legal_status: string | null
+          nickname: string | null
+          province_code: string | null
+          province_name: string | null
+          search_text: string | null
+          use_mode: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_name_fold: { Args: { p_text: string }; Returns: string }

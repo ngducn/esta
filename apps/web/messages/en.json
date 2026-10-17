@@ -271,15 +271,40 @@
     "more": "More"
   },
   "sections": {
-    "properties": "Properties will list every house and plot of land in the family, with its photo, address, certificate and rent.",
     "collections": "Collections will show which rooms have paid this month and which have not, and record a payment in a few taps.",
     "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",
     "assistant": "The assistant will leave a note every morning about late rent, leases ending soon and missing papers.",
     "reports": "Reports will hold the rental tax card and each property’s income and costs by year.",
     "settings": "Display settings follow your account. The household, members and receiving bank accounts arrive here in the next update.",
     "soonTitle": "Coming in the next update",
-    "adjustDisplay": "Adjust text size and theme",
-    "photoCaption": "Illustrative photos."
+    "adjustDisplay": "Adjust text size and theme"
+  },
+  "properties": {
+    "count": "{count, plural, one {# property} other {# properties}}",
+    "countFiltered": "{shown} of {count, plural, one {# property} other {# properties}}",
+    "searchLabel": "Search properties",
+    "searchPlaceholder": "Search by name or address",
+    "filters": "Filters",
+    "filtersTitle": "Filter properties",
+    "showResults": "Show {count, plural, one {# property} other {# properties}}",
+    "all": "All",
+    "group": "{group, select, province {Province} kind {Kind} use {Use} legal {Legal status} other {Filter}}",
+    "legacyProvince": "{name} (former)",
+    "sort": "Sort",
+    "sortOption": "{sort, select, name {Name} area {Area} other {Name}}",
+    "certificateAddress": "On the certificate: {address}",
+    "noAddress": "No address yet",
+    "empty": "No properties yet.",
+  "emptyBody": "Each house and plot of land the family adds shows here, with its photo and address.",
+    "noMatch": "No property matches “{query}”.",
+    "noMatchFilters": "No property matches these filters.",
+    "clearFilters": "Clear filters",
+    "kind": "{kind, select, townhouse {Townhouse} apartment {Apartment} villa {Villa} rooming_house {Rooming house} commercial_space {Commercial space} warehouse {Warehouse} residential_land {Residential land} agricultural_land {Agricultural land} mixed {Mixed use} other {Other}}",
+    "use": "{use, select, rental {For rent} owner_occupied {We live here} family_use {Family use} own_business {Own business} held {Held} under_renovation {Under renovation} other {Other}}",
+    "legal": "{legal, select, certified {Certified} certificate_pending {Certificate pending} paper_only {Paper only} shared_certificate {Shared certificate} in_dispute {In dispute} unknown {Legal status unknown} other {Legal status unknown}}",
+    "errorTitle": "The property list did not load",
+    "errorBody": "Check the connection, then try again.",
+    "retry": "Try again"
   },
   "assistant": {
     "statusOnline": "Assistant is online. Updated at {time}.",
@@ -346,11 +371,5 @@
     "save": "Save",
     "saved": "Display settings saved.",
     "saveFailed": "Not saved. Check the connection and try again."
-  },
-  "photos": {
-    "nhaPho": "Town house",
-    "dayTro": "Rooming house",
-    "canHo": "Apartment",
-    "dat": "Land"
   }
 }
