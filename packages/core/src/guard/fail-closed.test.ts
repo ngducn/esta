@@ -66,3 +66,21 @@ describe('space-grouped digits are one number', () => {
     expect(passes(`Hợp đồng Nhà Thủ Đức thu 12 000 000 ₫, đã cọc 42${NBSP}000${NBSP}000${NBSP}₫.`)).toBe(true);
   });
 });
+
+describe('the unit of a range applies to both bounds', () => {
+  it.each<[string, unknown, string[]]>([
+    ['Giá thuê thị trường khoảng 8–12 triệu.', undefined, ['8–12 triệu:unknown']],
+    ['Khoảng 8-12 triệu.', undefined, ['8-12 triệu:unknown']],
+    ['Từ 8 đến 12 triệu.', undefined, ['8 đến 12 triệu:unknown']],
+    ['Between 8 and 12M ₫.', undefined, ['8 and 12M ₫:unknown']],
+    ['Giá thuê thị trường 10–12 triệu.', { days_overdue: 10, rent: 12_000_000 }, ['10–12 triệu:unknown']],
+    ['Lợi suất 5–7%.', { unit_label: 'Phòng 5', yield_bp: 700 }, ['5–7%:unknown']],
+  ])('%s', (text, result, expected) => {
+    expect(offending(text, result)).toEqual(expected);
+  });
+
+  it('still passes a range whose bounds are both in the run', () => {
+    expect(passes('Tiền thuê từ 3,5 tr đến 12 triệu.')).toBe(true);
+    expect(passes('Trống 67–70 ngày.')).toBe(true);
+  });
+});
