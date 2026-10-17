@@ -1,12 +1,13 @@
 'use client';
 
 import type { GeoPoint } from '@esta/core/maps';
-import { useTranslations } from 'next-intl';
+import { NextIntlClientProvider, useTranslations, type AbstractIntlMessages } from 'next-intl';
 import { useOptimistic, useState, useTransition } from 'react';
 import { setPropertyBoundary, setPropertyLocation } from '@/app/(app)/properties/location-actions';
 import { FieldMessage } from '@/components/field-message';
 import { UndoToastProvider, useUndoToast } from '@/components/undo-toast';
 import type { Theme } from '@/design/tokens';
+import type { Locale } from '@/i18n/locale';
 import { cn } from '@/lib/utils';
 import { LocationPanel } from './location-panel';
 import { MapCanvas } from './map-canvas';
@@ -29,11 +30,14 @@ type Draft = { readonly preview: LinkPreview | null; readonly draw: DrawMode; re
 
 const NO_DRAFT: Draft = { preview: null, draw: 'off', ring: null, failed: false };
 
-export function PropertiesMap(props: Props) {
+/** The root layout has no intl provider, so the island brings its own with only the `map` and toast messages. */
+export function PropertiesMap({ locale, messages, ...props }: Props & { locale: Locale; messages: AbstractIntlMessages }) {
   return (
-    <UndoToastProvider>
-      <MapView {...props} />
-    </UndoToastProvider>
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Ho_Chi_Minh">
+      <UndoToastProvider>
+        <MapView {...props} />
+      </UndoToastProvider>
+    </NextIntlClientProvider>
   );
 }
 
