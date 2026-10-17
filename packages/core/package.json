@@ -15,7 +15,8 @@
     "./parse/*": "./src/parse/*.ts",
     "./phone": "./src/phone/index.ts",
     "./result": "./src/result.ts",
-    "./search": "./src/search/fold.ts"
+    "./search": "./src/search/fold.ts",
+    "./vietqr": "./src/vietqr/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -23,6 +24,12 @@
     "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
-    "fast-check": "^4.10.2"
+    "@types/pngjs": "6.0.5",
+    "@types/qrcode": "1.5.6",
+    "fast-check": "^4.10.2",
+    "jsqr": "1.4.0",
+    "pngjs": "7.0.0",
+    "qrcode": "1.5.4",
+    "vietnam-qr-pay": "1.5.1"
   }
 }
