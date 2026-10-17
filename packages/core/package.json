@@ -18,6 +18,7 @@
     "./parse/*": "./src/parse/*.ts",
     "./phone": "./src/phone/index.ts",
     "./properties": "./src/properties/index.ts",
+    "./properties/form": "./src/properties/form.ts",
     "./result": "./src/result.ts",
     "./schedule": "./src/schedule/index.ts",
     "./schemas/property": "./src/schemas/property.ts",

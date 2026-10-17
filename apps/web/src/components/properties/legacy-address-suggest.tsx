@@ -1,6 +1,6 @@
 'use client';
 
-import { shortProvinceName } from '@esta/core/properties';
+import { shortProvinceName } from '@esta/core/address';
 import { Check, MapPin } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState } from 'react';

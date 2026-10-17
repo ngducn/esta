@@ -1,14 +1,15 @@
 'use client';
 
 import { parseVndInput } from '@esta/core/parse/vnd-input';
-import { readKindDetails, suggestPropertyCode } from '@esta/core/properties';
 import {
   ACQUISITION_KINDS,
   LEGAL_STATUSES,
   PROPERTY_KINDS,
   USE_MODES,
+  readKindDetails,
+  suggestPropertyCode,
   type KindDetailKey,
-} from '@esta/core/schemas/property';
+} from '@esta/core/properties/form';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

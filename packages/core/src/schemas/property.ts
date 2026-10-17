@@ -1,12 +1,31 @@
 import { z } from 'zod';
 import { isIsoDate, type IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
-import { LEGAL_STATUSES, PROPERTY_KINDS, USE_MODES, type LegalStatus, type PropertyKind, type UseMode } from '../properties/filters';
+import {
+  ACQUISITION_KINDS,
+  KIND_DETAIL_KEYS,
+  LEGAL_STATUSES,
+  PROPERTY_KINDS,
+  USE_MODES,
+  type AcquisitionKind,
+  type KindDetailKey,
+  type LegalStatus,
+  type PropertyKind,
+  type UseMode,
+} from '../properties/kinds';
 
-export { LEGAL_STATUSES, PROPERTY_KINDS, USE_MODES, type LegalStatus, type PropertyKind, type UseMode };
-
-export const ACQUISITION_KINDS = ['purchase', 'inheritance', 'gift', 'allocation', 'other'] as const;
-export type AcquisitionKind = (typeof ACQUISITION_KINDS)[number];
+export {
+  ACQUISITION_KINDS,
+  KIND_DETAIL_KEYS,
+  LEGAL_STATUSES,
+  PROPERTY_KINDS,
+  USE_MODES,
+  type AcquisitionKind,
+  type KindDetailKey,
+  type LegalStatus,
+  type PropertyKind,
+  type UseMode,
+};
 
 export const vndSchema = z
   .number()
@@ -29,26 +48,9 @@ const DETAIL_SCHEMAS = {
   room_count: whole(1, 1000),
   frontage_m: metres,
   road_width_m: metres,
-} as const;
+} as const satisfies Record<KindDetailKey, z.ZodType>;
 
-export type KindDetailKey = keyof typeof DETAIL_SCHEMAS;
 type DetailValues = { [K in KindDetailKey]: z.output<(typeof DETAIL_SCHEMAS)[K]> };
-
-const LAND = ['frontage_m', 'road_width_m'] as const;
-
-/** SPEC §5.3: the keys each kind may carry, in the order the form shows them. Every key is optional. */
-export const KIND_DETAIL_KEYS = {
-  townhouse: [],
-  apartment: ['building_name', 'block', 'floor', 'unit_no', 'management_fee_vnd'],
-  villa: [],
-  rooming_house: ['room_count'],
-  commercial_space: [],
-  warehouse: [],
-  residential_land: LAND,
-  agricultural_land: LAND,
-  mixed: [],
-  other: [],
-} as const satisfies Record<PropertyKind, readonly KindDetailKey[]>;
 
 export type DetailsOf<K extends PropertyKind> = Partial<Pick<DetailValues, (typeof KIND_DETAIL_KEYS)[K][number]>>;
 

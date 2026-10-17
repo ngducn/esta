@@ -1,7 +1,8 @@
 import { parseDecimal } from '../parse/decimal';
 import { parseVndInput } from '../parse/vnd-input';
 import type { Result } from '../result';
-import { KIND_DETAIL_KEYS, type DetailsOf, type KindDetailKey, type PropertyKind } from '../schemas/property';
+import type { DetailsOf } from '../schemas/property';
+import { KIND_DETAIL_KEYS, type KindDetailKey, type PropertyKind } from './kinds';
 
 /** How a detail is typed: `vnd` reads shorthand such as `1tr2`, `meters` takes a decimal comma or point. */
 export type KindFieldInput = 'text' | 'integer' | 'meters' | 'vnd';

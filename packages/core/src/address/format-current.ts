@@ -7,3 +7,8 @@ export function formatCurrentAddress({ houseNo, street }: CurrentAddressLinePart
   const line = [clean(houseNo), clean(street)].filter((part) => part !== '').join(' ');
   return line === '' ? null : line;
 }
+
+/** The name people say: "Thành phố Hồ Chí Minh" reads "TP. Hồ Chí Minh", "Tỉnh Bình Dương" reads "Bình Dương". */
+export function shortProvinceName(name: string): string {
+  return name.normalize('NFC').replace(/^Thành phố\s+/u, 'TP. ').replace(/^Tỉnh\s+/u, '');
+}

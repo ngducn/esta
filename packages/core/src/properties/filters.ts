@@ -1,16 +1,11 @@
 import { z } from 'zod';
+import { shortProvinceName } from '../address/format-current';
 import { foldVietnamese } from '../search/fold';
 
-export const PROPERTY_KINDS = [
-  'townhouse', 'apartment', 'villa', 'rooming_house', 'commercial_space', 'warehouse',
-  'residential_land', 'agricultural_land', 'mixed', 'other',
-] as const;
-export const USE_MODES = ['rental', 'owner_occupied', 'family_use', 'own_business', 'held', 'under_renovation'] as const;
-export const LEGAL_STATUSES = ['certified', 'certificate_pending', 'paper_only', 'shared_certificate', 'in_dispute', 'unknown'] as const;
+import { LEGAL_STATUSES, PROPERTY_KINDS, USE_MODES, type LegalStatus, type PropertyKind, type UseMode } from './kinds';
 
-export type PropertyKind = (typeof PROPERTY_KINDS)[number];
-export type UseMode = (typeof USE_MODES)[number];
-export type LegalStatus = (typeof LEGAL_STATUSES)[number];
+export { shortProvinceName };
+export { LEGAL_STATUSES, PROPERTY_KINDS, USE_MODES, type LegalStatus, type PropertyKind, type UseMode };
 
 /** One row of `property_list_rows`. `searchText` is `esta_unaccent` over the names and addresses. */
 export type PropertyListRow = {
@@ -31,11 +26,6 @@ export type PropertyListRow = {
   location: { lat: number; lng: number } | null;
   hasBoundary: boolean;
 };
-
-/** The name people say: "Thành phố Hồ Chí Minh" reads "TP. Hồ Chí Minh", "Tỉnh Bình Dương" reads "Bình Dương". */
-export function shortProvinceName(name: string): string {
-  return name.normalize('NFC').replace(/^Thành phố\s+/u, 'TP. ').replace(/^Tỉnh\s+/u, '');
-}
 
 /** The two-tier address in daily use, as one line: house and street, commune, short province; `null` with none of them. */
 export function currentAddressText(row: Pick<PropertyListRow, 'addressLine' | 'communeName' | 'provinceName'>): string | null {

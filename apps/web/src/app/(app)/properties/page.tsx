@@ -14,11 +14,10 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
-import { ArchivedNotice } from '@/components/properties/archive-button';
+import { ArchivedNoticeLoader } from '@/components/properties/archived-notice-loader';
 import { FilterChips, filterChips, hasChoice, type FilterGroup } from '@/components/properties/filter-chips';
 import type { PropertyCardData } from '@/components/properties/property-card';
 import { ARCHIVED_PARAM } from '@/components/properties/property-form-values';
-import { PropertyIntl } from '@/components/properties/property-intl';
 import { PropertyList } from '@/components/properties/property-list';
 import { PropertySearch } from '@/components/properties/property-search';
 import { SortSelect } from '@/components/properties/sort-select';
@@ -170,9 +169,5 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
 
 async function ArchivedPropertyToast({ id, nickname }: { id: string; nickname: string }) {
   const intl = await propertyIslandIntl();
-  return (
-    <PropertyIntl locale={intl.locale} messages={intl.messages}>
-      <ArchivedNotice propertyId={id} nickname={nickname} />
-    </PropertyIntl>
-  );
+  return <ArchivedNoticeLoader locale={intl.locale} messages={intl.messages} propertyId={id} nickname={nickname} />;
 }

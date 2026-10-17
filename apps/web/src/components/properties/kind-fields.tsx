@@ -1,7 +1,6 @@
 'use client';
 
-import { KIND_FIELDS, type KindFieldTexts, type PropertyKind } from '@esta/core/properties';
-import type { KindDetailKey } from '@esta/core/schemas/property';
+import { KIND_FIELDS, type KindDetailKey, type KindFieldTexts, type PropertyKind } from '@esta/core/properties/form';
 import { useTranslations } from 'next-intl';
 import { useId } from 'react';
 import { FieldMessage } from '@/components/field-message';

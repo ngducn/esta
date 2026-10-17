@@ -1,6 +1,5 @@
 import type { IsoDate } from '@esta/core/date';
-import type { KindFieldTexts } from '@esta/core/properties';
-import type { AcquisitionKind, LegalStatus, PropertyKind, UseMode } from '@esta/core/schemas/property';
+import type { AcquisitionKind, KindFieldTexts, LegalStatus, PropertyKind, UseMode } from '@esta/core/properties/form';
 
 export type AddressValue = {
   readonly provinceCode: string | null;
