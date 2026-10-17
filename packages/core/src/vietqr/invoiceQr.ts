@@ -1,5 +1,5 @@
 import type { Vnd } from '../money/vnd';
-import { encodeVietQr } from './encode';
+import { encodeVietQr, requirePositiveVnd } from './encode';
 import { ASCII_UPPERCASE, VIETQR_RULES } from './rules';
 
 export const INVOICE_MEMO_PREFIX = 'ESTA';
@@ -34,7 +34,7 @@ export function buildInvoiceQr({ account, outstandingVnd, memoCode }: InvoiceQrI
   if (!ASCII_UPPERCASE.test(account.accountName)) {
     throw new RangeError('accountName must be printable ASCII with no lowercase letter');
   }
-  if (outstandingVnd <= 0) throw new RangeError('outstandingVnd must be positive');
+  requirePositiveVnd('outstandingVnd', outstandingVnd);
   const purpose = invoiceMemo(memoCode);
   const capVnd = VIETQR_RULES.singleTransferCapVnd;
   const base = { bin: account.bin, accountNo: account.accountNo, purpose };

@@ -27,8 +27,13 @@ function requireAns(field: string, value: string, max: number): void {
   }
 }
 
-export function amountDigits(amountVnd: Vnd): string {
-  if (amountVnd <= 0) throw new RangeError('amountVnd must be positive');
+// Checks the value as well as the brand, because a cast can carry 1.5, NaN or 1e21 and String() writes each into tag 54.
+export function requirePositiveVnd(field: string, amount: Vnd): void {
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new RangeError(`${field} must be a positive integer`);
+}
+
+function amountDigits(amountVnd: Vnd): string {
+  requirePositiveVnd('amountVnd', amountVnd);
   const digits = String(amountVnd);
   if (digits.length > VIETQR_RULES.amountMaxChars) {
     throw new RangeError(`amountVnd exceeds ${VIETQR_RULES.amountMaxChars} digits`);
