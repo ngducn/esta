@@ -52,7 +52,7 @@ export function SkeletonCards({ count = 3 }: { count?: number }) {
   );
 }
 
-/** The detail header's photo, title, pills and addresses, then the tab row, in the grid the header draws. */
+/** The detail header in the grid it draws, then the tab row, so the page lands without a shift. */
 export function SkeletonPropertyHeader() {
   return (
     <Loading className="flex flex-col gap-5">

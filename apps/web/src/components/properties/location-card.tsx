@@ -5,7 +5,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 
 export type LocationCardLabels = { title: string; edit: string; set: string; none: string; noneBody: string };
 
-/** `id="location"` lets a link land on the card; both actions open the P1-09 location panel on the map. */
+/** `id="location"` lets a link land on the card. */
 export function LocationCard({ map, locateHref, labels }: { map: LocationMapProps | null; locateHref: string; labels: LocationCardLabels }) {
   return (
     <section id="location" aria-labelledby="location-title" data-testid="location-card" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card lg:p-6">
