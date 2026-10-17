@@ -1,7 +1,7 @@
 import type { Result } from '../result';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const NAME = /^[a-z0-9-]{1,64}\.(webp|jpe?g|png)$/;
+const NAME = /^[a-z0-9-]{1,64}\.(avif|webp|jpe?g|png)$/;
 
 /** `<household_id>/<property_id>/<name>`, the one shape the `property-photos` policies and the `cover_photo_path` check accept. */
 export type CoverPhotoPath = string & { readonly __brand: 'CoverPhotoPath' };

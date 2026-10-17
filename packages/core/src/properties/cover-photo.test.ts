@@ -11,7 +11,7 @@ describe('coverPhotoPath', () => {
     expect(path.ok && parseCoverPhotoPath(path.value)).toEqual({ householdId: household, propertyId: property, name: 'nha-pho.webp' });
   });
 
-  it.each(['cover.jpg', 'cover.jpeg', 'cover.png', 'a'.repeat(64) + '.webp'])('accepts %s', (name) => {
+  it.each(['cover.avif', 'cover.jpg', 'cover.jpeg', 'cover.png', 'a'.repeat(64) + '.webp'])('accepts %s', (name) => {
     expect(coverPhotoPath(household, property, name).ok).toBe(true);
   });
 

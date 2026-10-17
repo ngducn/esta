@@ -53,6 +53,7 @@
   - A `calendar_month` lease with a cycle above 1 aligns to months counted from its start month, not to calendar quarters. A quarterly lease from 10 August bills 10 August to 31 October, then November to January. Say if quarters should fall on January, April, July and October.
   - When the end date cuts a first calendar period, the period bills only the days from the lease start to the end date, under `first_period_proration` `none` as under `by_days`. A one-day lease on 15 July bills 1/31 of the month.
   - An amended rent escalates at the lease's next anniversary, because an amendment changes rent and cycle but not the escalation terms (SPEC §5 `lease_amendments.changes`). A rent change from July 2027 on a lease from 1 January 2026 steps on 1 January 2028, not in July 2028.
+- Confirm the cover photo URL lifetime `[app rule]` from #77. Cover photo signed URLs live 24 hours so a return visit reuses them, while document URLs stay at 300 seconds per DOC-4. A member removed from a household keeps the covers already in hand for up to a day. P1-05 must give each new upload its own object name, so a replaced photo never answers to an old signed URL. Say if covers should expire sooner.
 
 ## Needs professional confirmation
 
