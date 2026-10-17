@@ -142,3 +142,33 @@ Operator's words, 2026-10-17: "choose all of them for me on your recommended act
 ## Update 2026-10-17 19:00 +07
 
 Decision by the root under the operator's 16:00 delegation ("choose ... on your recommended action as a staff engineer and someone who uses this app"): SPEC §7.2's Lighthouse budgets are measured over HTTP/2, through the local TLS proxy `pnpm dev:lan` already uses, because production serves HTTP/2 or later and Lighthouse's six-connection HTTP/1.1 queue (stylesheet, font, cover, favicon, manifest and icon ahead of the framework chunk) is a cost no user meets. Measured by the #87 owner: /properties with photos at about 2.13 s (7 properties) and 2.34 s (1,000) over HTTP/2 on main and head alike. HTTP/1.1 numbers stay in PR bodies as a secondary signal. scripts/perf/lighthouse.ts defaults to HTTP/2 in a follow-up tooling PR.
+
+## Update 2026-10-18 00:40 +07
+
+Operator's words, 2026-10-18: "ok, continue to work, i expect you to hit 95% tonight, and continue after the reset, until hitting 95% again" and "so speed up a little if you would like, dont need to idle one 1 thread too long".
+
+Budget: up to 95% of the block that started 2026-10-17T17:00Z, then the same in the next block (from 22:00Z). Stop spawning at 90%, send stop orders at 93%, pause by 95%. Models unchanged: Opus owners and audits, Sonnet live and scoped lanes, no Fable.
+
+Defaults the root chose for "speed up" (agent interpretation):
+
+1. P1-10 starts now on a short private stack over #95's branch and rebases onto `main` once #95 merges. This is the autopilot-full step 3 exception for a genuinely dependent change.
+2. P1-08 starts as soon as #95 merges and runs beside P1-10. The plan lists P1-10 as its dependency, but the only shared surfaces are `property_list_rows`, the filter registry and the list chips. Whichever merges second rebases, recreates the view with both columns and renumbers its migration.
+3. P3-03 (pure core allocation, money) runs now with no Supabase stack. Its parity pgTAP test moves to the PR that creates `invoice_balances` (P3-07 or P3-09), declared in its PR body. It gets an Opus audit lane, and the 09:55 grant for pure-core Phase 3 PRs covers its merge.
+4. Small issue fixes (#94, #96 to #98) take a Sonnet owner when a slot is free. The two-stack limit still holds.
+
+## Update 2026-10-18 05:15 +07
+
+Operator's words, 2026-10-18: "finish it, i still have one reset so no worries", then "the new practice of execution must focus on the 80 20 of it, it should do first the most important work, and should aim to use ur tokens on most impactful tasks on early phases, cut off chasing of less impactful tasks early on and keep them as low prio issues if needed" and "we should have a round of heavy audit and tech debt clean up when we see fit in terms of delivered results and tokens abundance".
+
+Why: on the night of 2026-10-17 the Phase 1 slices cost about 2M agent tokens, and about as much again went to side work. That side work was small issue PRs, P4-01 built ahead of its dependency, agent-run rebases, and investigations of load-induced e2e flakes.
+
+Rules from this update. They override earlier updates where they conflict, including the 2026-10-18 00:40 "speed up" defaults 3 and 4.
+
+1. Critical path first. The root starts only the next plan item on the critical path. It starts no ahead-of-dependency PRs and no side work to fill a free slot unless the operator asks.
+2. Findings triage. A finding that does not block the current PR becomes a GitHub issue with `[low]` at the start of its title: a low, a nit, a UX polish or an existing trunk defect. It gets no owner and no PR. The one fix-forward carries blocking findings only.
+3. Cleanup rounds. Low-priority issues are fixed in batches, one cleanup PR per round. A heavy audit and tech-debt round (security, data, a11y and perf sweeps plus the `[low]` backlog) runs at a phase boundary when results and tokens allow, decided with the operator.
+4. The root does conflict-free rebases itself with git: range-diff check, then push with lease. It spawns an agent only for a rebase with a real semantic conflict.
+5. At most two heavy agents at once. A heavy agent is an owner or lane with a Supabase stack. Heavy jobs go through `bin/heavy.sh`. A flaky trunk test gets one issue, not an investigation per PR.
+6. One lane per PR where the rules allow: a single Opus lane covering live checks and audit for small data PRs, and Sonnet for UI-only PRs.
+7. The root wakes on CI run endings and failures only, and sends no reply for routine events.
+8. Tonight: P1-03 finishes and merges on a clean verdict, closing Phase 1. #103 (P4-01) and #110 wait for the operator or the next cleanup round. No new side PRs.

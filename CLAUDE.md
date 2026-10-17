@@ -80,6 +80,15 @@ See SPEC §9.1. In short: `pnpm check`, `pnpm db:test` and the touched e2e flows
 
 Follow DOMAIN-VN §0. Confirm from a source in the mapped spike or phase and record the source. If only a professional could confirm it, ship the labelled `[app rule]` behavior, list it in `docs/plan/STATUS.md`, and keep going.
 
+## Execution priority (80/20)
+
+Spend effort on the plan's critical path first, and keep everything else small.
+
+- Build the next plan item. Do not build ahead of a dependency or add side work unless Ryan asks for it.
+- The one fix-forward carries only findings that block the current PR. Anything else is a low, a nit, polish, or a defect `main` already has: file it as a GitHub issue with `[low]` at the start of its title, and do not open a PR for it now.
+- Fix `[low]` issues in batches, one cleanup PR per round. A heavy audit and tech-debt round runs at a phase boundary when results and budget allow, decided with Ryan.
+- Run heavy jobs (Playwright suites, Lighthouse, production builds) one at a time on this machine. Parallel heavy jobs cause flaky failures that cost more to investigate than they save.
+
 ## Stop and ask Ryan before
 
 - Any production deploy, or creating or changing a cloud Supabase project, its database or its storage.
