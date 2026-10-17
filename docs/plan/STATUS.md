@@ -46,6 +46,12 @@
 
 - The NSO source, its license reading, the NAPAS BIN snapshot and the curated rows above were approved when you merged P0-02 to P0-11 on 2026-10-07 (standing orders, 08:40 update); they stay listed until you confirm that reading.
 
+- Confirm four `[app rule]` readings from P3-02, the lease schedule generator. Each is pinned by a table test in `packages/core/src/schedule/generate.test.ts`.
+  - `leases.rent_vnd` is the monthly rent, read from SPEC LSE-3 ("totals equal rent × months"), `units.list_rent_vnd` and the per-month quotes and deposits in DOMAIN-VN §7. A full period bills `rent_vnd × billing_cycle_months`, so a 100,000,000 lease billed quarterly bills 300,000,000 a quarter. Say if rent should be entered per billing period instead.
+  - A `calendar_month` lease with a cycle above 1 aligns to months counted from its start month, not to calendar quarters. A quarterly lease from 10 August bills 10 August to 31 October, then November to January. Say if quarters should fall on January, April, July and October.
+  - When the end date cuts a first calendar period, the period bills only the days from the lease start to the end date, under `first_period_proration` `none` as under `by_days`. A one-day lease on 15 July bills 1/31 of the month.
+  - An amended rent escalates at the lease's next anniversary, because an amendment changes rent and cycle but not the escalation terms (SPEC §5 `lease_amendments.changes`). A rent change from July 2027 on a lease from 1 January 2026 steps on 1 January 2028, not in July 2028.
+
 ## Needs professional confirmation
 
 - Whether the 2026 rental PIT applies from 1 January or 1 July 2026 (DOMAIN-VN §5). The `tax_rules` row from P0-06 uses 1 January and carries a note that says so.
