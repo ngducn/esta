@@ -171,4 +171,11 @@ Rules from this update. They override earlier updates where they conflict, inclu
 5. At most two heavy agents at once. A heavy agent is an owner or lane with a Supabase stack. Heavy jobs go through `bin/heavy.sh`. A flaky trunk test gets one issue, not an investigation per PR.
 6. One lane per PR where the rules allow: a single Opus lane covering live checks and audit for small data PRs, and Sonnet for UI-only PRs.
 7. The root wakes on CI run endings and failures only, and sends no reply for routine events.
-8. Tonight: P1-03 finishes and merges on a clean verdict, closing Phase 1. #103 (P4-01) and #110 wait for the operator or the next cleanup round. No new side PRs.
+8. Tonight: P1-03 finishes and merges on a clean verdict, closing Phase 1. #110 is already verified, so it merges if its CI is green, because that costs no more agent tokens. #103 (P4-01) waits for the operator. No new side PRs.
+
+## Update 2026-10-18 05:45 +07
+
+Operator's words, 2026-10-18: "for tax related stuffs, im giving you merge permission too, so yes mergr #103" and, on issues, "u can comment and close issues u see fit".
+
+1. The landing grant extends to tax PRs (P4-01 #103 now, and later tax PRs) under the same verdict bar: a clean independent verdict at the exact head and green local CI.
+2. The root may comment on and close issues. It closes an issue only with evidence that main fixes it (a merged PR or a test), and says so in the closing comment.

@@ -89,6 +89,15 @@ Spend effort on the plan's critical path first, and keep everything else small.
 - Fix `[low]` issues in batches, one cleanup PR per round. A heavy audit and tech-debt round runs at a phase boundary when results and budget allow, decided with Ryan.
 - Run heavy jobs (Playwright suites, Lighthouse, production builds) one at a time on this machine. Parallel heavy jobs cause flaky failures that cost more to investigate than they save.
 
+## Writing issues and PRs
+
+Ryan reads issues, PR descriptions and review comments on his phone, without the plan open. Write them so he understands the problem and what you need from him.
+
+- Open with one or two plain sentences: what is wrong or what changes, described by what Mẹ or Ryan sees ("the property list", "the owners section on the legal tab"), and why it matters.
+- Name things in words. Add a plan code in parentheses only when it helps find the work, as in "the owners screen (P1-10)". Never make a bare code like `P1-06`, `Seq 02` or `SPEC §10` the subject of a sentence.
+- When Ryan has to decide something, put it first: the question, the current default, and your recommendation.
+- Put files, SHAs, test names and logs under a "Details" heading or in a `<details>` block, after the summary.
+
 ## Stop and ask Ryan before
 
 - Any production deploy, or creating or changing a cloud Supabase project, its database or its storage.
