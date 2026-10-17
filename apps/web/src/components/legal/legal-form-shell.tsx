@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { saveLegalItem } from '@/app/(app)/properties/[id]/legal/actions';
+import { useFocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { StatusShape } from '@/components/status-mark';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useHydrated } from '@/lib/use-hydrated';
@@ -36,6 +37,7 @@ export function LegalFormShell({
   const t = useTranslations('propertyLegal');
   const router = useRouter();
   const hydrated = useHydrated();
+  useFocusAnchor(hydrated);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<'invalid' | 'network' | null>(null);
   const tabHref = `/properties/${propertyId}/legal`;

@@ -3,6 +3,7 @@ import { formatVnd } from '@esta/core/format';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
+import { FocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { LocationCard } from '@/components/properties/location-card';
 import { OverviewFacts, type OverviewFact } from '@/components/properties/overview-facts';
 import { readBoundary } from '@/server/properties/boundary';
@@ -65,6 +66,7 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
 
   return (
     <PropertyDetailFrame property={property} tab="overview">
+      <FocusAnchor />
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         <OverviewFacts
           facts={{

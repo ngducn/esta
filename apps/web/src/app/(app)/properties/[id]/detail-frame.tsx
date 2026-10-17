@@ -1,4 +1,5 @@
 import { formatDayMonth } from '@esta/core/format';
+import { nextMissing } from '@esta/core/completeness';
 import { currentAddressText } from '@esta/core/properties';
 import { ChevronLeft } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
@@ -9,6 +10,7 @@ import type { PropertyTabId } from '@/components/properties/property-tabs';
 import { IntentLink } from '@/components/shell/intent-link';
 import type { PropertyDetail } from '@/server/properties/detail';
 import { requireMember } from '@/server/member';
+import { loadCompleteness } from '@/server/properties/completeness';
 import { signCoverPhotos } from '@/server/properties/photos';
 
 /**
@@ -17,12 +19,15 @@ import { signCoverPhotos } from '@/server/properties/photos';
  */
 export async function PropertyDetailFrame({ property, tab, children }: { property: PropertyDetail; tab: PropertyTabId; children: ReactNode }) {
   const member = await requireMember();
-  const [t, tp, locale, photos] = await Promise.all([
+  const [t, tp, tc, locale, photos, scores] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
+    getTranslations('completeness'),
     getLocale(),
     signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
+    loadCompleteness(member.household.id, property.id),
   ]);
+  const score = scores.get(property.id) ?? { percent: 100, failing: [] };
   return (
     <div className="flex flex-col gap-5">
       <IntentLink href="/properties" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-semibold text-ink-2 hover:text-ink">
@@ -43,6 +48,18 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           photoUrl: property.coverPhotoPath === null ? null : (photos.get(property.coverPhotoPath) ?? null),
           vacant: property.status === null ? null : tp('vacantSince', { date: formatDayMonth(property.status.since, locale) }),
           edit: member.role === 'viewer' ? null : { href: `/properties/${property.id}/edit`, label: t('edit') },
+          completeness: {
+            title: tc('title'),
+            percent: score.percent,
+            score: tc('score', { percent: score.percent }),
+            complete: score.failing.length === 0 ? tc('complete') : null,
+            listLabel: tc('nextTitle'),
+            items: nextMissing(score, 3).map((item) => ({
+              id: item.id,
+              label: tc(`checks.${item.id}`),
+              href: member.role === 'viewer' ? null : item.href,
+            })),
+          },
         }}
       />
       <PropertyTabBar

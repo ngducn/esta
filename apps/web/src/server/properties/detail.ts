@@ -1,7 +1,7 @@
 import 'server-only';
 import { AUDIT_ACTIONS, AUDIT_ACTOR_KINDS, type ActivityRow } from '@esta/core/activity';
 import { parseInstant, type Instant } from '@esta/core';
-import { propertyStatus, type PropertyListRow, type PropertyStatusMark } from '@esta/core/properties';
+import { propertyStatus, type PropertyStatusMark, type PropertyViewRow } from '@esta/core/properties';
 import { cache } from 'react';
 import { z } from 'zod';
 import { getClock } from '@/server/clock';
@@ -9,7 +9,7 @@ import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { PROPERTY_ROW_COLUMNS, propertyRowSchema } from './list';
 
-export type PropertyDetail = PropertyListRow & {
+export type PropertyDetail = PropertyViewRow & {
   readonly kindDetails: Readonly<Record<string, unknown>>;
   /** The `propertyStatus` mark on the Clock's date. */
   readonly status: PropertyStatusMark | null;

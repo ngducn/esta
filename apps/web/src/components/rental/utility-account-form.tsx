@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type FormEvent } from 'react';
 import { saveAccount } from '@/app/(app)/properties/[id]/rental/actions';
+import { useFocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -27,6 +28,7 @@ export function UtilityAccountForm({
   const t = useTranslations('propertyRental');
   const router = useRouter();
   const hydrated = useHydrated();
+  useFocusAnchor(hydrated);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<RentalFormErrorKind>(null);
   const [values, setValues] = useState({

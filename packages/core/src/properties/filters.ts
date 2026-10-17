@@ -10,7 +10,7 @@ export { shortProvinceName };
 export { LEGAL_STATUSES, PROPERTY_KINDS, USE_MODES, type LegalStatus, type PropertyKind, type UseMode };
 
 /** One row of `property_list_rows`. `searchText` is `esta_unaccent` over the names and addresses. */
-export type PropertyListRow = {
+export type PropertyViewRow = {
   id: string;
   nickname: string;
   code: string;
@@ -35,8 +35,11 @@ export type PropertyListRow = {
   vacantSince: IsoDate | null;
 };
 
+/** A list row: the view row with its completeness score and the number of failing checks. */
+export type PropertyListRow = PropertyViewRow & { completeness: { percent: number; missing: number } };
+
 /** The two-tier address in daily use, as one line: house and street, commune, short province; `null` with none of them. */
-export function currentAddressText(row: Pick<PropertyListRow, 'addressLine' | 'communeName' | 'provinceName'>): string | null {
+export function currentAddressText(row: Pick<PropertyViewRow, 'addressLine' | 'communeName' | 'provinceName'>): string | null {
   const text = [row.addressLine, row.communeName, row.provinceName === null ? null : shortProvinceName(row.provinceName)]
     .filter((part): part is string => part !== null && part !== '')
     .join(', ');
@@ -94,10 +97,14 @@ const byRent: Compare = (a, b) => {
   return b.monthlyRentVnd - a.monthlyRentVnd;
 };
 
+/** Least complete first, so the property that most needs filling in leads. */
+const byCompleteness: Compare = (a, b) => a.completeness.percent - b.completeness.percent;
+
 export const PROPERTY_SORTS = {
   name: byNickname,
   area: (a, b) => byProvince(a, b) || byNickname(a, b),
   rent: (a, b) => byRent(a, b) || byNickname(a, b),
+  completeness: (a, b) => byCompleteness(a, b) || byNickname(a, b),
 } as const satisfies Record<string, Compare>;
 
 export type PropertySortKey = keyof typeof PROPERTY_SORTS;
@@ -161,7 +168,7 @@ export function searchTokens(query: string): string[] {
  * Every token must match, so `nguyen an ninh di an` finds a street and a ward together. When some rows also hold the
  * whole query as one phrase, only those stay: `binh duong` then means the province, not a Bình ward on some Đường.
  */
-export function preferPhrase<Row extends Pick<PropertyListRow, 'searchText'>>(rows: readonly Row[], tokens: readonly string[]): readonly Row[] {
+export function preferPhrase<Row extends Pick<PropertyViewRow, 'searchText'>>(rows: readonly Row[], tokens: readonly string[]): readonly Row[] {
   if (tokens.length < 2) return rows;
   const phrase = tokens.join(' ');
   const exact = rows.filter((row) => row.searchText.includes(phrase));

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -59,6 +59,27 @@ describe('checkPhase', () => {
 
   it('lists FND-1 to FND-7, FND-9 and S1 for phase 0', () => {
     expect(PHASE_CHECKS['0']?.map((check) => check.id)).toEqual(['FND-1', 'FND-2', 'FND-3', 'FND-4', 'FND-5', 'FND-6', 'FND-7', 'FND-9', 'S1']);
+  });
+
+  it('lists PRP-1 to PRP-6, PRP-8, RLS and Lighthouse for phase 1, with PRP-7 left to Phase 2', () => {
+    expect(PHASE_CHECKS['1']?.map((check) => check.id)).toEqual(['PRP-1', 'PRP-2', 'PRP-3', 'PRP-4', 'PRP-5', 'PRP-6', 'PRP-8', 'RLS', 'Lighthouse']);
+  });
+
+  it('points every phase 1 row at test files and specs that exist', () => {
+    const paths = (PHASE_CHECKS['1'] ?? []).flatMap((check) => ('commands' in check ? check.commands.flat() : []));
+    const files = [
+      ...paths.filter((arg) => /^(e2e|supabase|scripts)\//.test(arg)).map((arg) => join(repoRoot, arg)),
+      ...paths.filter((arg) => arg.startsWith('src/')).map((arg) => (existsSync(join(repoRoot, 'packages/core', arg)) ? join(repoRoot, 'packages/core', arg) : join(repoRoot, 'apps/web', arg))),
+    ];
+    expect(files.length).toBeGreaterThan(20);
+    expect(files.filter((file) => !existsSync(file))).toEqual([]);
+  });
+
+  it('exits 1 when one phase 1 row fails', () => {
+    const rows = (PHASE_CHECKS['1'] ?? []).map((check, index): PhaseCheck => ({ id: check.id, commands: [node(`process.exit(${index === 7 ? 1 : 0})`)] }));
+    const { code, lines } = runPhase('1', { '1': rows });
+    expect(code).toBe(1);
+    expect(lines.filter((line) => line.startsWith('FAIL'))).toEqual([expect.stringMatching(/^FAIL {2}RLS /)]);
   });
 });
 

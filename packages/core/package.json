@@ -9,6 +9,7 @@
     "./address": "./src/address/format-current.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./auth": "./src/auth/otp.ts",
+    "./completeness": "./src/completeness/index.ts",
     "./date": "./src/date/iso-date.ts",
     "./date/calendar": "./src/date/calendar.ts",
     "./format": "./src/format/index.ts",

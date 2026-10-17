@@ -1,0 +1,13 @@
+// Written by `node scripts/completeness-fixture.ts` from a slot reset with the full seed. Do not edit by hand.
+import type { CompletenessFacts } from './types';
+
+/** The seven `Gia đình Demo 1` properties' rows of `property_completeness_facts`, by seed key. */
+export const SEED_FACTS = {
+  "q7": {"propertyId":"0bbbd17b-a10c-5642-a475-bf42d6a935d9","kind":"townhouse","hasCurrentAddress":true,"hasLocation":true,"hasAcquisition":true,"parcelCount":1,"parcelWithoutNumberId":null,"parcelWithoutAreaId":null,"structureCount":1,"structureWithoutFloorAreaId":null,"shareTotalBp":10000,"utilityAccountCount":2},
+  "thu-duc": {"propertyId":"ac31d798-842d-527c-b44e-24de02f6ec54","kind":"apartment","hasCurrentAddress":true,"hasLocation":true,"hasAcquisition":true,"parcelCount":1,"parcelWithoutNumberId":null,"parcelWithoutAreaId":"fb71a78e-e108-54ab-851a-cedd70be7f43","structureCount":1,"structureWithoutFloorAreaId":null,"shareTotalBp":10000,"utilityAccountCount":2},
+  "di-an": {"propertyId":"0977d91c-ce5e-58fd-a808-62ed886b18c9","kind":"rooming_house","hasCurrentAddress":true,"hasLocation":true,"hasAcquisition":true,"parcelCount":1,"parcelWithoutNumberId":null,"parcelWithoutAreaId":null,"structureCount":1,"structureWithoutFloorAreaId":null,"shareTotalBp":10000,"utilityAccountCount":2},
+  "q1": {"propertyId":"a90d7d54-9cdc-5bf9-a697-9c2c128fcb6d","kind":"commercial_space","hasCurrentAddress":true,"hasLocation":true,"hasAcquisition":true,"parcelCount":1,"parcelWithoutNumberId":null,"parcelWithoutAreaId":null,"structureCount":1,"structureWithoutFloorAreaId":null,"shareTotalBp":10000,"utilityAccountCount":0},
+  "bien-hoa": {"propertyId":"35132547-941f-5b21-9ad6-9341a9fafe98","kind":"warehouse","hasCurrentAddress":true,"hasLocation":true,"hasAcquisition":true,"parcelCount":1,"parcelWithoutNumberId":null,"parcelWithoutAreaId":null,"structureCount":1,"structureWithoutFloorAreaId":null,"shareTotalBp":10000,"utilityAccountCount":2},
+  "long-an": {"propertyId":"70e0929f-9683-5329-8fa4-2b998509b083","kind":"agricultural_land","hasCurrentAddress":true,"hasLocation":false,"hasAcquisition":false,"parcelCount":1,"parcelWithoutNumberId":"b8b06d5a-a376-50d8-b522-40433680cebb","parcelWithoutAreaId":"b8b06d5a-a376-50d8-b522-40433680cebb","structureCount":0,"structureWithoutFloorAreaId":null,"shareTotalBp":10000,"utilityAccountCount":0},
+  "bao-loc": {"propertyId":"8c016f06-8d6e-5de5-8d33-d670b33491d9","kind":"residential_land","hasCurrentAddress":true,"hasLocation":true,"hasAcquisition":true,"parcelCount":1,"parcelWithoutNumberId":null,"parcelWithoutAreaId":null,"structureCount":0,"structureWithoutFloorAreaId":null,"shareTotalBp":10000,"utilityAccountCount":0},
+} as const satisfies Record<string, CompletenessFacts>;

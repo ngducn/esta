@@ -62,26 +62,23 @@ async function sessionCookie(origin: string, email: string, slot: number): Promi
   }
 }
 
-async function run(): Promise<void> {
-  const { values, positionals } = parseArgs({
-    allowPositionals: true,
-    options: { email: { type: 'string' }, base: { type: 'string' }, runs: { type: 'string' }, label: { type: 'string' }, http1: { type: 'boolean' }, out: { type: 'string' } },
-  });
-  const [route] = positionals;
-  if (route === undefined || values.email === undefined) throw new Error(USAGE);
-  const slot = parseSlot(process.env.ESTA_SLOT);
-  const server = values.base ?? `http://localhost:${slotPorts(slot).webProd}`;
-  const proxy = values.http1 ? undefined : await startH2Proxy({ slot, upstream: new URL(server).host });
+export type Medians = { protocol: string; route: string; runs: number; lcpMs: number; tbtMs: number; cls: number; scriptKb: number; imageKb: number };
+
+export type MeasureOptions = { route: string; email: string; slot: number; base?: string; http1?: boolean; runs?: number; label?: string; out?: string };
+
+/** Runs Lighthouse `runs` times on `route`, printing one JSON line per run, and returns the medians. */
+export async function measure({ route, email, slot, base, http1 = false, runs = 5, label, out }: MeasureOptions): Promise<Medians> {
+  const server = base ?? `http://localhost:${slotPorts(slot).webProd}`;
+  const proxy = http1 ? undefined : await startH2Proxy({ slot, upstream: new URL(server).host });
   const origin = proxy?.origin ?? server;
   const chromeFlags = ['--headless=new', ...(proxy ? [`--ignore-certificate-errors-spki-list=${proxy.spkiHash}`] : [])].join(' ');
-  const runs = Number(values.runs ?? '5');
   const workdir = mkdtempSync(join(tmpdir(), 'esta-lighthouse-'));
   try {
     const headers = join(workdir, 'headers.json');
-    writeFileSync(headers, JSON.stringify({ Cookie: await sessionCookie(origin, values.email, slot) }));
+    writeFileSync(headers, JSON.stringify({ Cookie: await sessionCookie(origin, email, slot) }));
     const results: Run[] = [];
     for (let index = 0; index < runs; index++) {
-      const output = join(values.out ?? workdir, `${values.label ?? 'run'}-${index + 1}.json`);
+      const output = join(out ?? workdir, `${label ?? 'run'}-${index + 1}.json`);
       const lighthouse = spawnSync(
         'npx',
         [
@@ -100,27 +97,44 @@ async function run(): Promise<void> {
       if (lighthouse.status !== 0) throw new Error(`lighthouse exited with ${lighthouse.status}`);
       const result = summarize(JSON.parse(readFileSync(output, 'utf8')) as Report, origin);
       results.push(result);
-      console.log(JSON.stringify({ label: values.label ?? 'run', route, email: values.email, run: index + 1, ...result }));
+      console.log(JSON.stringify({ label: label ?? 'run', route, email, run: index + 1, ...result }));
     }
     const pick = (key: Exclude<keyof Run, 'protocol'>) => median(results.map((result) => result[key]));
-    console.log(
-      JSON.stringify({
-        label: values.label ?? 'median',
-        protocol: [...new Set(results.map((result) => result.protocol))].join(','),
-        route,
-        email: values.email,
-        runs,
-        lcpMs: Math.round(pick('lcp')),
-        tbtMs: Math.round(pick('tbt')),
-        cls: Number(pick('cls').toFixed(3)),
-        scriptKb: Math.round(pick('scriptBytes') / 1024),
-        imageKb: Math.round(pick('imageBytes') / 1024),
-      }),
-    );
+    return {
+      protocol: [...new Set(results.map((result) => result.protocol))].join(','),
+      route,
+      runs,
+      lcpMs: Math.round(pick('lcp')),
+      tbtMs: Math.round(pick('tbt')),
+      cls: Number(pick('cls').toFixed(3)),
+      scriptKb: Math.round(pick('scriptBytes') / 1024),
+      imageKb: Math.round(pick('imageBytes') / 1024),
+    };
   } finally {
     proxy?.stop();
     rmSync(workdir, { recursive: true, force: true });
   }
+}
+
+async function run(): Promise<void> {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: { email: { type: 'string' }, base: { type: 'string' }, runs: { type: 'string' }, label: { type: 'string' }, http1: { type: 'boolean' }, out: { type: 'string' } },
+  });
+  const [route] = positionals;
+  if (route === undefined || values.email === undefined) throw new Error(USAGE);
+  const medians = await measure({
+    route,
+    email: values.email,
+    slot: parseSlot(process.env.ESTA_SLOT),
+    ...(values.base === undefined ? {} : { base: values.base }),
+    http1: values.http1 ?? false,
+    runs: Number(values.runs ?? '5'),
+    ...(values.label === undefined ? {} : { label: values.label }),
+    ...(values.out === undefined ? {} : { out: values.out }),
+  });
+  const { protocol, route: measured, ...rest } = medians;
+  console.log(JSON.stringify({ label: values.label ?? 'median', protocol, route: measured, email: values.email, ...rest }));
 }
 
 if (import.meta.main) {

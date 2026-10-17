@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, useTransition, type FormEvent } from 'react';
 import { createProperty, loadCommunes, updateProperty, type PropertyWrite } from '@/app/(app)/properties/actions';
+import { useFocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { DateInput } from '@/components/date-input';
 import { Group, TextField } from '@/components/form-parts';
 import { FieldMessage } from '@/components/field-message';
@@ -62,6 +63,7 @@ export function PropertyForm({
   const [error, setError] = useState<FormError | null>(null);
   const [pending, startTransition] = useTransition();
   const hydrated = useHydrated();
+  useFocusAnchor(hydrated);
   const [communes, setCommunes] = useState<{ province: string | null; options: readonly AdminUnitOption[] }>({
     province: initial.address.provinceCode,
     options: initialCommunes,
@@ -220,7 +222,7 @@ export function PropertyForm({
           />
         </Group>
 
-        <Group title={t('groupAddress')}>
+        <Group id="current-address" title={t('groupAddress')}>
           <AddressPicker
             provinces={provinces}
             communes={communes.province === values.address.provinceCode ? communes.options : []}
@@ -242,7 +244,7 @@ export function PropertyForm({
           />
         </Group>
 
-        <Group title={t('groupAcquisition')}>
+        <Group id="acquisition" title={t('groupAcquisition')}>
           <div className="grid gap-4 sm:grid-cols-2">
             <DateInput
               label={t('acquiredOn')}

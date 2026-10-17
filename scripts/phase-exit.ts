@@ -42,6 +42,9 @@ export function verifyPingRecord(text: string): Outcome {
 }
 
 const e2e = (spec: string) => ['pnpm', 'e2e', spec];
+const core = (...tests: string[]) => ['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', ...tests];
+const web = (...tests: string[]) => ['pnpm', '--filter', '@esta/web', 'exec', 'vitest', 'run', '--exclude', '**/*.live.test.ts', ...tests];
+const pgtap = (...tests: string[]) => ['pnpm', 'db:test', ...tests.map((name) => `supabase/tests/${name}.test.sql`)];
 
 /** Each phase-final PR adds its phase's rows. */
 export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
@@ -56,6 +59,29 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'FND-7', commands: [['pnpm', 'db:seed:check']] },
     { id: 'FND-9', commands: [e2e('e2e/fnd9-integration.spec.ts')] },
     { id: 'S1', verify: (repoRoot) => verifyPingRecord(readFileSync(join(repoRoot, S1_RECORD), 'utf8')) },
+  ],
+  // PRP-7 moved to P2-08. The e2e rows need the slot's web server, as `pnpm e2e` does; Lighthouse starts its own build.
+  '1': [
+    {
+      id: 'PRP-1',
+      commands: [core('src/properties/form-fields.test.ts', 'src/schemas/property.test.ts', 'src/properties/units.test.ts'), e2e('e2e/property-form.spec.ts'), e2e('e2e/property-units.spec.ts')],
+    },
+    { id: 'PRP-2', commands: [core('src/properties/area.test.ts', 'src/schemas/legal.test.ts'), pgtap('property_legal'), e2e('e2e/property-legal.spec.ts')] },
+    {
+      id: 'PRP-3',
+      commands: [
+        core('src/properties/ownership.test.ts', 'src/schemas/ownership.test.ts', 'src/completeness/score.test.ts'),
+        pgtap('ownership_shares', 'completeness_facts'),
+        e2e('e2e/property-owners.spec.ts'),
+      ],
+    },
+    { id: 'PRP-4', commands: [core('src/address/format-current.test.ts'), pgtap('suggest_current_unit'), e2e('e2e/property-form.spec.ts')] },
+    { id: 'PRP-5', commands: [core('src/maps'), web('src/server/maps'), e2e('e2e/properties-map.spec.ts')] },
+    { id: 'PRP-6', commands: [core('src/completeness'), pgtap('completeness_facts'), e2e('e2e/property-completeness.spec.ts')] },
+    { id: 'PRP-8', commands: [core('src/properties/filters.test.ts'), pgtap('property_list'), e2e('e2e/properties-list.spec.ts'), e2e('e2e/property-completeness.spec.ts')] },
+    // Every public table has RLS and a pgTAP file naming it, which `pnpm db:test` checks after the tests.
+    { id: 'RLS', commands: [['pnpm', 'db:test']] },
+    { id: 'Lighthouse', commands: [['node', 'scripts/perf/phase-budget.ts']] },
   ],
 };
 

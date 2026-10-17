@@ -2,6 +2,7 @@ import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
 import { Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { AddressBlock } from '@/components/address-block';
+import { MissingItems, type MissingItemsData } from '@/components/completeness/missing-items';
 import { buttonVariants } from '@/components/ui/button';
 import { CoverPhoto } from './cover-photo';
 import { kindIcons } from './kind-icons';
@@ -22,6 +23,7 @@ export type PropertyHeaderData = {
   vacant: string | null;
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
+  completeness: MissingItemsData;
 };
 
 /** The photo leads, because Mẹ knows a house by sight before its nickname; the kind tile stands in when there is none. */
@@ -65,6 +67,7 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
         <div data-testid="property-addresses">
           <AddressBlock current={property.currentAddress} legal={property.certificateAddress} />
         </div>
+        <MissingItems data={property.completeness} />
       </div>
     </header>
   );

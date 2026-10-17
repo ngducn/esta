@@ -1,5 +1,6 @@
 import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
 import { MapPin } from 'lucide-react';
+import { CompletenessRingView } from '@/components/completeness-ring';
 import { IntentLink } from '@/components/shell/intent-link';
 import { CoverPhoto, type CoverPhotoPriority } from './cover-photo';
 import { kindIcons } from './kind-icons';
@@ -22,6 +23,8 @@ export type PropertyCardData = {
   rent: { label: string; amount: string } | null;
   /** The `propertyStatus` mark's word, such as `Trống từ 01/08`. */
   vacant: string | null;
+  /** `label` is the missing count, such as `Thiếu 4 mục`, and `srLabel` the percent. */
+  completeness: { percent: number; label: string; srLabel: string };
 };
 
 /** The first card is the likely LCP, the second shares the first screen on a phone, the rest wait for the scroll. */
@@ -74,12 +77,15 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
             </p>
           )}
         </div>
-        {card.rent === null ? null : (
-          <p data-testid="property-rent" className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1 text-small text-ink-muted">
-            {card.rent.label}
-            <span className="figures text-lead font-bold text-ink">{card.rent.amount}</span>
-          </p>
-        )}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-1">
+          {card.rent === null ? null : (
+            <p data-testid="property-rent" className="flex flex-wrap items-baseline gap-x-2 text-small text-ink-muted">
+              {card.rent.label}
+              <span className="figures text-lead font-bold text-ink">{card.rent.amount}</span>
+            </p>
+          )}
+          <CompletenessRingView {...card.completeness} />
+        </div>
       </div>
     </article>
   );

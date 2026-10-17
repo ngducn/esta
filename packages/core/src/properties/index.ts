@@ -24,6 +24,7 @@ export {
   type PropertyListRow,
   type PropertySortKey,
   type PropertyView,
+  type PropertyViewRow,
   type SearchParamsRecord,
   type UseMode,
 } from './filters';

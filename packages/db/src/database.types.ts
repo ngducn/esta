@@ -1204,6 +1204,24 @@ export type Database = {
       }
     }
     Views: {
+      property_completeness_facts: {
+        Row: {
+          has_acquisition: boolean | null
+          has_current_address: boolean | null
+          has_location: boolean | null
+          household_id: string | null
+          kind: string | null
+          parcel_count: number | null
+          parcel_without_area_id: string | null
+          parcel_without_number_id: string | null
+          property_id: string | null
+          share_total_bp: number | null
+          structure_count: number | null
+          structure_without_floor_area_id: string | null
+          utility_account_count: number | null
+        }
+        Relationships: []
+      }
       property_list_rows: {
         Row: {
           address_line: string | null
