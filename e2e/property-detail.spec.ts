@@ -159,8 +159,10 @@ test('rule 3: Mẹ sets the Đất vườn Long An pin from its card and Hoạt 
 test('rule 4: another household’s property id renders the not-found page with none of its data', async ({ page }) => {
   await page.setViewportSize(DESKTOP);
   await open(page, 'ryan.lane4@demo.esta.test', 'light');
+  expect((await page.goto(`/properties/${propertyId(4, 'q7')}`))?.status()).toBe(200);
   const otherId = propertyId(5, 'q7');
   const response = await page.goto(`/properties/${otherId}`);
+  expect(response?.status()).toBe(404);
   await expect(page.getByTestId('property-not-found')).toContainText('Không tìm thấy tài sản này');
   await expect(page.getByTestId('property-header')).toHaveCount(0);
   const html = (await response?.text()) ?? '';
@@ -169,7 +171,8 @@ test('rule 4: another household’s property id renders the not-found page with 
   expect(html).not.toMatch(SIGNED_PHOTO);
   expect(html).not.toContain('Số 901 Demo');
 
-  await page.goto(`/properties/${otherId}/activity`);
+  const activity = await page.goto(`/properties/${otherId}/activity`);
+  expect(activity?.status()).toBe(404);
   await expect(page.getByTestId('property-not-found')).toBeVisible();
   await expect(page.getByTestId('activity-entry')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
