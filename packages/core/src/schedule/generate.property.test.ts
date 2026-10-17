@@ -58,8 +58,8 @@ function roundHalfUp(numerator: bigint, denominator: bigint): bigint {
 type ReferencePeriod = { start: string; end: string; rentVnd: number };
 
 /**
- * A deliberately naive schedule that walks the lease one day at a time and shares no code with the generator:
- * a day starts a period when it sits a whole number of cycles after the segment's month on the anchor day.
+ * A deliberately naive schedule that walks the lease one day at a time. It shares no code with the generator,
+ * so the two cannot agree by running the same mistake.
  */
 function referenceSchedule(t: LeaseTerms, amendments: readonly Amendment[], until: string): ReferencePeriod[] {
   const leaseStart = toDay(t.startDate);

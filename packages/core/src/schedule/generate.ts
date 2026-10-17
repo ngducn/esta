@@ -16,7 +16,7 @@ type Cursor = {
 function amend(cursor: Cursor, amendment: Amendment): Cursor {
   const { rentVnd, billingCycleMonths } = amendment.changes;
   return {
-    offsetMonths: cursor.offsetMonths,
+    ...cursor,
     cycle: billingCycleMonths ?? cursor.cycle,
     rent: rentVnd === undefined ? cursor.rent : { from: amendment.effectivePeriodStart, vnd: rentVnd },
   };
@@ -103,8 +103,7 @@ export function validateAmendment(
   if (effective <= asOf) return { ok: false, reason: 'not_after_as_of' };
   if (amendments.some((other) => other.effectivePeriodStart === effective)) return { ok: false, reason: 'duplicate_effective_start' };
   const sorted = [...amendments, amendment].sort(byEffectiveStart);
-  const until = sorted.reduce((latest, other) => (other.effectivePeriodStart > latest ? other.effectivePeriodStart : latest), effective);
-  const { periods, stranded } = draftSchedule(terms, sorted, until);
+  const { periods, stranded } = draftSchedule(terms, sorted, sorted.at(-1)?.effectivePeriodStart ?? effective);
   if (stranded !== undefined) {
     return { ok: false, reason: stranded.effectivePeriodStart === effective ? 'not_a_period_start' : 'moves_later_amendment' };
   }

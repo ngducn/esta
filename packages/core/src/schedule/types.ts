@@ -15,7 +15,7 @@ export type Escalation =
 export type LeaseTerms = {
   startDate: IsoDate;
   endDate: IsoDate | null;
-  /** Rent per month; a full period bills it once per month of the billing cycle. */
+  /** Monthly rent. A full period bills it once per month of the billing cycle. */
   rentVnd: Vnd;
   billingCycleMonths: BillingCycleMonths;
   periodAnchor: PeriodAnchor;
