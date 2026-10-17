@@ -46,7 +46,7 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
         propertyId={property.id}
         active={tab}
         label={t('tabs')}
-        labels={{ overview: t('tab', { tab: 'overview' }), activity: t('tab', { tab: 'activity' }) }}
+        labels={{ overview: t('tab', { tab: 'overview' }), legal: t('tab', { tab: 'legal' }), activity: t('tab', { tab: 'activity' }) }}
       />
       {children}
     </div>

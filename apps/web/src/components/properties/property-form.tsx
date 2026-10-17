@@ -13,14 +13,14 @@ import {
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, useTransition, type FormEvent } from 'react';
 import { createProperty, loadCommunes, updateProperty, type PropertyWrite } from '@/app/(app)/properties/actions';
 import { DateInput } from '@/components/date-input';
+import { Group, TextField } from '@/components/form-parts';
 import { FieldMessage } from '@/components/field-message';
 import { MoneyInput } from '@/components/money/money-input';
 import { StatusShape } from '@/components/status-mark';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useHydrated } from '@/lib/use-hydrated';
 import type { AdminUnitOption, CurrentUnitSuggestion } from '@/server/address/suggest';
 import { AddressPicker, FormSelect } from './address-picker';
@@ -31,67 +31,6 @@ import { LegacyAddressSuggest } from './legacy-address-suggest';
 type Invalid = { field: 'nickname' | 'code' | 'commune' | 'price' } | { field: 'detail'; key: KindDetailKey };
 
 type FormError = { kind: 'invalid' } | { kind: 'network' } | { kind: 'code_taken'; code: string; takenBy: string };
-
-function Group({ id, title, aside, children }: { id?: string; title: string; aside?: ReactNode; children: ReactNode }) {
-  const headingId = useId();
-  return (
-    <section id={id} aria-labelledby={headingId} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id={headingId} className="text-lead font-bold text-ink">
-          {title}
-        </h2>
-        {aside}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function TextField({
-  label,
-  hint,
-  value,
-  onChange,
-  error,
-  testId,
-  className,
-  maxLength,
-}: {
-  label: string;
-  hint?: string;
-  value: string;
-  onChange: (text: string) => void;
-  error: string | null;
-  testId?: string;
-  className?: string;
-  maxLength: number;
-}) {
-  const id = useId();
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
-        {label}
-      </label>
-      {hint === undefined ? null : (
-        <p id={`${id}-hint`} className="text-small text-ink-muted">
-          {hint}
-        </p>
-      )}
-      <Input
-        id={id}
-        data-testid={testId}
-        value={value}
-        maxLength={maxLength}
-        autoComplete="off"
-        aria-invalid={error !== null}
-        aria-describedby={hint === undefined ? `${id}-message` : `${id}-hint ${id}-message`}
-        onChange={(event) => onChange(event.target.value)}
-        className={className === undefined ? 'mt-1' : `mt-1 ${className}`}
-      />
-      <FieldMessage id={`${id}-message`} error={error} />
-    </div>
-  );
-}
 
 const CODE = /^[A-Z0-9]{1,8}$/;
 
