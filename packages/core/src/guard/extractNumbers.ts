@@ -29,6 +29,8 @@ export type Citation = { readonly id: string; readonly sentence: number };
 
 export type Scan = { readonly numbers: readonly ExtractedNumber[]; readonly citations: readonly Citation[] };
 
+type Found = { readonly end: number; readonly values: readonly ExtractedValue[]; readonly resume?: number };
+
 type Pattern = {
   readonly regex: RegExp;
   readonly read: (match: RegExpExecArray) => readonly ExtractedValue[] | null;
@@ -126,8 +128,8 @@ const SHORTHAND: Pattern = {
   },
 };
 
-/** Tried in order at each digit run. The first pattern whose regex matches and whose read accepts wins. */
-const PATTERNS: readonly Pattern[] = [
+/** Tried in order at each digit run, dates before values. The first pattern whose regex matches and whose read accepts wins. */
+const DATE_PATTERNS: readonly Pattern[] = [
   {
     regex: re(String.raw`(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?${NOT_DIGIT}`),
     read: readTimestamp,
@@ -161,6 +163,9 @@ const PATTERNS: readonly Pattern[] = [
   { regex: re(String.raw`(\d{1,2})/(\d{4})${NOT_DIGIT}`), read: ([, month = '', year = '']) => orNull(readMonthYear(month, year)) },
   { regex: re(String.raw`(\d{1,2})/(\d{1,2})(?![\p{N}/])`), read: ([, day = '', month = '']) => orNull(readDayMonth(day, month)) },
   { regex: re(String.raw`(\d{1,2}):(\d{2})${NOT_DIGIT}`), read: ([, hour = '', minute = '']) => orNull(readTime(hour, minute)) },
+];
+
+const VALUE_PATTERNS: readonly Pattern[] = [
   {
     regex: re(String.raw`${SIGN}${NUMBER}\s*${RATIO_UNIT}`, 'i'),
     read: ([, , digits = '', word = '']) => {
@@ -216,17 +221,13 @@ function codeWordAt(text: string, at: number): { readonly start: number; readonl
 }
 
 /** Digits no pattern reads, such as full-width `１３`, still count as a number the guard cannot read. */
-function unreadable(text: string, at: number): { readonly end: number; readonly values: readonly ExtractedValue[] } {
+function unreadable(text: string, at: number): Found {
   UNREADABLE.lastIndex = at;
   const match = UNREADABLE.exec(text);
   return { end: at + (match?.[0].length ?? 1), values: [{ kind: 'invalid' }] };
 }
 
-function readAt(
-  text: string,
-  at: number,
-  patterns: readonly Pattern[],
-): { readonly end: number; readonly values: readonly ExtractedValue[] } | null {
+function readAt(text: string, at: number, patterns: readonly Pattern[]): Found | null {
   for (const pattern of patterns) {
     pattern.regex.lastIndex = at;
     const match = pattern.regex.exec(text);
@@ -235,6 +236,24 @@ function readAt(
     if (values !== null) return { end: at + match[0].length, values };
   }
   return null;
+}
+
+const RANGE = re(String.raw`${SIGN}${NUMBER}(?:\s*[–—~−-]\s*|\s+(?:đến|tới|to|and|và|hoặc|hay|or)\s+)(?=[-−]?\p{Nd})`, 'i');
+const BOUND = re(String.raw`${SIGN}${NUMBER}`);
+
+/** `8–12 triệu`, `từ 8 đến 12 triệu` and `8 and 12M ₫`: the lower bound is read with the upper bound's unit, and the upper bound on its own. */
+function readRange(text: string, at: number): Found | null {
+  RANGE.lastIndex = at;
+  const range = RANGE.exec(text);
+  if (range === null) return null;
+  const upperAt = at + range[0].length;
+  const upper = readAt(text, upperAt, VALUE_PATTERNS);
+  BOUND.lastIndex = upperAt;
+  const upperNumber = BOUND.exec(text);
+  if (upper === null || upperNumber === null) return null;
+  const unit = text.slice(upperAt + upperNumber[0].length, upper.end);
+  const lower = readAt(`${range[1] ?? ''}${range[2] ?? ''}${unit}`, 0, VALUE_PATTERNS);
+  return lower === null ? null : { end: upper.end, values: lower.values, resume: upperAt };
 }
 
 function sentenceAt(boundaries: readonly number[], position: number): number {
@@ -277,11 +296,11 @@ export function scan(text: string): Scan {
         continue;
       }
       if (isSignStart(text, at)) at -= 1;
-      found = readAt(text, at, PATTERNS) ?? unreadable(text, at);
+      found = readAt(text, at, DATE_PATTERNS) ?? readRange(text, at) ?? readAt(text, at, VALUE_PATTERNS) ?? unreadable(text, at);
     }
     const sentence = sentenceAt(boundaries, at);
     for (const value of found.values) numbers.push({ text: text.slice(at, found.end), start: at, end: found.end, sentence, value });
-    DIGIT.lastIndex = found.end;
+    DIGIT.lastIndex = found.resume ?? found.end;
   }
   return { numbers, citations };
 }
