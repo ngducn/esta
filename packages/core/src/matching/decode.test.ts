@@ -1,6 +1,9 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { cellText, decodeCsv, decodeStatement, decodeStatementCsv, decodeStatementRows } from './decode';
 import type { DetectedHeader } from './layouts';
+import { matchRows } from './match';
+import { SCENARIO_INVOICES } from './statement-scenario';
 
 const read = (...cells: string[]) => ({ ok: true, value: cells });
 const refused = (reason: string) => ({ ok: false, reason });
@@ -10,8 +13,23 @@ describe('decodeCsv', () => {
     expect(decodeCsv('\uFEFFa,b\r\n1,2\r\n')).toEqual([read('a', 'b'), read('1', '2')]);
   });
 
-  it('keeps delimiters, doubled quotes and line breaks inside quoted fields', () => {
-    expect(decodeCsv('x,y\n"3,500,000","he said ""hi""\nthen left"')).toEqual([read('x', 'y'), read('3,500,000', 'he said "hi"\nthen left')]);
+  it('keeps delimiters and doubled quotes inside quoted fields', () => {
+    expect(decodeCsv('x,y\n"3,500,000","he said ""hi"", then left"')).toEqual([read('x', 'y'), read('3,500,000', 'he said "hi", then left')]);
+  });
+
+  it('refuses a quoted field that would span a line break, then reads the next line as its own record', () => {
+    expect(decodeCsv('x,y\n"3,500,000","he said ""hi""\nthen left"')).toEqual([read('x', 'y'), refused('unterminated_quote'), refused('stray_quote')]);
+    expect(decodeCsv('a,b\r\n1,"open\r\n2,x\r\n3,"y"\r\n')).toEqual([read('a', 'b'), refused('unterminated_quote'), read('2', 'x'), read('3', 'y')]);
+  });
+
+  it('returns one record per line, whatever quotes the lines hold', () => {
+    const line = fc.string({ unit: fc.constantFrom('"', ',', ';', '\t', ' ', 'a', '7') });
+    fc.assert(
+      fc.property(fc.array(line, { minLength: 1, maxLength: 12 }), fc.constantFrom('\n', '\r\n'), (lines, end) => {
+        expect(decodeCsv(lines.map((text) => text + end).join(''))).toHaveLength(lines.length);
+      }),
+      { seed: 20261017, numRuns: 1000 },
+    );
   });
 
   it.each([
@@ -89,6 +107,75 @@ describe('decodeStatementCsv', () => {
 
   it('refuses text without a header', () => {
     expect(decodeStatementCsv('07/10/2026,3.500.000,ESTA 7K2QX9MP\r\n')).toEqual({ ok: false, reason: 'no_header' });
+  });
+});
+
+describe('a statement whose quote does not close on its line', () => {
+  function decodedAndMatched(lines: readonly string[]) {
+    const decoded = decodeStatementCsv(lines.map((line) => `${line}\r\n`).join(''));
+    if (!decoded.ok) throw new Error(decoded.reason);
+    return {
+      matched: matchRows(decoded.value.rows, SCENARIO_INVOICES).map(({ row, match }) => [row.index, row.bankRef, row.amount, match]),
+      rejected: decoded.value.rejected,
+    };
+  }
+  const memo = (invoiceId: string, memoCode: string) => ({ status: 'memo_match', invoiceId, memoCode });
+
+  it('refuses only the opening line when a later row opens a quoted field (C4)', () => {
+    expect(
+      decodedAndMatched([
+        'Date,Reference,Amount,Description',
+        '2026-10-05,R1,100000,"CK PHONG 5',
+        '2026-10-06,R2,3500000,ESTA 7K2QX9MP',
+        '2026-10-07,R3,4200000,"ESTA Q4N8R2TV"',
+        '2026-10-08,R4,2800000,ESTA B7C3D9EF',
+      ]),
+    ).toEqual({
+      matched: [
+        [2, 'R2', 3_500_000, memo('inv-dian-p3-202610', '7K2QX9MP')],
+        [3, 'R3', 4_200_000, memo('inv-dian-p5-202610', 'Q4N8R2TV')],
+        [4, 'R4', 2_800_000, memo('inv-dian-p7-202610', 'B7C3D9EF')],
+      ],
+      rejected: [{ index: 1, field: 'row', reason: 'unterminated_quote' }],
+    });
+  });
+
+  it('loses no row of an all-quoted export with an unescaped trailing quote (C4d)', () => {
+    expect(
+      decodedAndMatched([
+        '"Date","Reference","Amount","Description"',
+        '"2026-10-05","R1","-5000000","TIVI 32""',
+        '"2026-10-06","R2","3500000","ESTA 7K2QX9MP"',
+        '"2026-10-07","R3","4200000","ESTA Q4N8R2TV"',
+      ]),
+    ).toEqual({
+      matched: [
+        [2, 'R2', 3_500_000, memo('inv-dian-p3-202610', '7K2QX9MP')],
+        [3, 'R3', 4_200_000, memo('inv-dian-p5-202610', 'Q4N8R2TV')],
+      ],
+      rejected: [{ index: 1, field: 'row', reason: 'unterminated_quote' }],
+    });
+  });
+
+  it('never joins the opening line to a later field that ends in a quote, so its amount takes no memo code from the next row (C4e)', () => {
+    expect(
+      decodedAndMatched([
+        'Date,Reference,Amount,Description',
+        '2026-10-05,R1,100000,"CK PHONG 5',
+        '2026-10-06,R2,3500000,ESTA 7K2QX9MP',
+        '2026-10-07,R3,-50000,PHI TIVI 32"',
+        '2026-10-08,R4,2800000,ESTA B7C3D9EF',
+      ]),
+    ).toEqual({
+      matched: [
+        [2, 'R2', 3_500_000, memo('inv-dian-p3-202610', '7K2QX9MP')],
+        [4, 'R4', 2_800_000, memo('inv-dian-p7-202610', 'B7C3D9EF')],
+      ],
+      rejected: [
+        { index: 1, field: 'row', reason: 'unterminated_quote' },
+        { index: 3, field: 'row', reason: 'stray_quote' },
+      ],
+    });
   });
 });
 
