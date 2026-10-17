@@ -1,0 +1,161 @@
+{
+  "seed": 20261007,
+  "fixtures": [
+    {
+      "id": "so_do_pre2009-scan",
+      "form": "so_do_pre2009",
+      "variant": "scan",
+      "files": {
+        "document.pdf": "3400b0f37674f8185d6dc2bddadbd75879e3d17ca931a2f5356d5e826a18ee28",
+        "truth.json": "291605ebff67bb1d057826c90c47ec35564eeb6c3bf87edbe1f515b068f9360d"
+      }
+    },
+    {
+      "id": "so_do_pre2009-photo",
+      "form": "so_do_pre2009",
+      "variant": "photo",
+      "files": {
+        "page-1.jpg": "14c682e578704c1c11a22ee2bef6676791c2a66cd719f397a258158072e16e27",
+        "page-2.jpg": "af1b0b72974b70814c05703d3c9d84cd65769b63690dcebafee0883bfe4640a6",
+        "truth.json": "8a608ae752f4cebb345c2dd45157bf53667fa83480b676a826ae9b28a95ce934"
+      }
+    },
+    {
+      "id": "so_do_pre2009-low-light",
+      "form": "so_do_pre2009",
+      "variant": "low-light",
+      "files": {
+        "page-1.jpg": "4f6ffd0a0cadcf6fb3413e272a2b1c5b8393b5b8273bc3c79cf8742b783f8c8e",
+        "page-2.jpg": "91e6c14ee5fdb0140c146bd7ada3b3704d49cb1c179aefd50b84881f3f1e0c99",
+        "truth.json": "79f1971fb1a208005c6eabdfdd65151cca45e874d8543c773a63ad61dcd4477e"
+      }
+    },
+    {
+      "id": "so_hong_pre2009-scan",
+      "form": "so_hong_pre2009",
+      "variant": "scan",
+      "files": {
+        "document.pdf": "9f073e672c59a1563b79c913a4976585989d1ffc91634be94bf85782511efae5",
+        "truth.json": "ef6bb1f8c58fc8e360cab019c82e6bf505267838e3f62656a11cf85fa33060e1"
+      }
+    },
+    {
+      "id": "so_hong_pre2009-photo",
+      "form": "so_hong_pre2009",
+      "variant": "photo",
+      "files": {
+        "page-1.jpg": "382324990141b25d846fc5d134c848132e23669511c2aab034fb5dcc8fa45720",
+        "page-2.jpg": "d5bbbe5dddf9059c11043c3135e376c0f7e4ede525f52d1e4b62b3e3e870621a",
+        "truth.json": "3a548457222d14090bd47060c05745626c544b24a3491a7203f05a605903feba"
+      }
+    },
+    {
+      "id": "so_hong_pre2009-low-light",
+      "form": "so_hong_pre2009",
+      "variant": "low-light",
+      "files": {
+        "page-1.jpg": "a303c1d660c392be4abf55426f02e5890465eb44998bb36a21c1535197fd72d2",
+        "page-2.jpg": "63e0b1d9f171cb16324a553187d6814c3f6bb851cfdba29e23dbbf60f1f32d69",
+        "truth.json": "188bb5f5d8a2d731008183989b03b7f518fd89166308a9816c13b41c932893ab"
+      }
+    },
+    {
+      "id": "gcn_2009_2024-scan",
+      "form": "gcn_2009_2024",
+      "variant": "scan",
+      "files": {
+        "document.pdf": "c98a6ff3565eed77e1d59cbdefdf1640d0a3ff0b77a18dec736432e579a83bf5",
+        "truth.json": "8f8a51185906d01ee24f44f606570c783ca374a31435568c6df6a9aa34a5b385"
+      }
+    },
+    {
+      "id": "gcn_2009_2024-photo",
+      "form": "gcn_2009_2024",
+      "variant": "photo",
+      "files": {
+        "page-1.jpg": "f1067557921231d86e12ef68f738b5ab08b12f9a295f1bd0322bc664c2b809da",
+        "page-2.jpg": "c962552983bd3ab94db8c2ec5d1cfd3e7a70553c8890783ac976615856b53c17",
+        "page-3.jpg": "4a25c80e168c7312401609310733035316edd793fbf169ee929aba7da9edf7cf",
+        "truth.json": "cade349731d08264ccc163ac0cb83f132e89915bac639bcb55fd1fd767748832"
+      }
+    },
+    {
+      "id": "gcn_2009_2024-low-light",
+      "form": "gcn_2009_2024",
+      "variant": "low-light",
+      "files": {
+        "page-1.jpg": "334355c2cc8e1cff4e30c9557f6750858bde1da48f8d2bc3df5512ac6be02199",
+        "page-2.jpg": "2ee1e23f3568b59f4c79fead7e1684220f793d0597ca6a64fc94c9a680d3f948",
+        "page-3.jpg": "b19219ac4d3a31c2c085d6ae4ed52c0db1bbc6520256ef89f502fb84dbfeaeed",
+        "truth.json": "55a0df484e98c0b4ea3835dc53380c47c919f96de6cb12968c44925ad630f6bf"
+      }
+    },
+    {
+      "id": "gcn_2024-scan",
+      "form": "gcn_2024",
+      "variant": "scan",
+      "files": {
+        "document.pdf": "55d5320b94476393dd4d8b60742a2c657e1cbd422fb6451ea8956567852c1255",
+        "truth.json": "0b0515dacba46f0ae2a6e86bbb0cd8b9ec05eaea072bccee33157a90deffa801"
+      }
+    },
+    {
+      "id": "gcn_2024-photo",
+      "form": "gcn_2024",
+      "variant": "photo",
+      "files": {
+        "page-1.jpg": "53f040893e25e9c1421f18f2197e83b069e7ee3521ed879ee63bd8a65babb707",
+        "page-2.jpg": "079bf8a9f4088b8aeada2ca6964484089551383bbf560e646b11d5b55bf2998f",
+        "truth.json": "92633f557ed15142c802a7238d46f517772e5d980534373cfec958d0071a18f7"
+      }
+    },
+    {
+      "id": "gcn_2024-low-light",
+      "form": "gcn_2024",
+      "variant": "low-light",
+      "files": {
+        "page-1.jpg": "76e2b433affa2f180bf71520c91e7324900d46c55f00b44257f7f6f36756542b",
+        "page-2.jpg": "36d7cc5894078263aefff1fd40e645d6fc08874c5f563af05b72451b84f704d0",
+        "truth.json": "7a174924b3e8bb9b89944aeab74adf0a04d99e0bccb37e03eb9c1cb22f288d08"
+      }
+    },
+    {
+      "id": "paper_only-scan",
+      "form": "paper_only",
+      "variant": "scan",
+      "files": {
+        "document.pdf": "a86ed70e716eb7273ed9577f0ba993511181e508c9f40c0407d9b3c3b139e423",
+        "truth.json": "967caf139e0b57526af2c6070037ca9f124598f210c4494a411e475f65775c7e"
+      }
+    },
+    {
+      "id": "paper_only-photo",
+      "form": "paper_only",
+      "variant": "photo",
+      "files": {
+        "page-1.jpg": "0d677411b26beef0580ce9957c969f9393f1942a3b3e5882615e9c162ba58a5d",
+        "truth.json": "fd9161e68bf10f509118acb1fb61bab05f7d9018f99aad6e88a5641b2a0f9bff"
+      }
+    },
+    {
+      "id": "paper_only-low-light",
+      "form": "paper_only",
+      "variant": "low-light",
+      "files": {
+        "page-1.jpg": "2c8563a6a76a2ecb6a35a2c7f267ea56f88cfaa051dd354edc0c6afff2f5aece",
+        "truth.json": "2553fbc9e81d9101f10c6cb99ddf6cc9c3cd44fe93d785c35a44e2626807ba46"
+      }
+    },
+    {
+      "id": "northstar-di-an",
+      "form": "gcn_2009_2024",
+      "variant": "photo",
+      "files": {
+        "page-1.jpg": "af259fe6850b7bc5d7d424cbcc64b62910e0ebbdaae76a3c240350e8609f0b39",
+        "page-2.jpg": "e6a4d012a0e354c47b5974a6ed200078ce35e91a4fcdb689680b377ad8c0a83a",
+        "page-3.jpg": "a2ea5dad3f873b4623e24ffb26f2f155edc2eb5a2f0f4a65cb00e3913c62d646",
+        "truth.json": "f58dcad1b40321bba44337c8c3a1351010b92ff1e1904174b73fdc3254a0a2c8"
+      }
+    }
+  ]
+}

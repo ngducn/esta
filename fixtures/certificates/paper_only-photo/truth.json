@@ -1,0 +1,125 @@
+{
+  "fixture_id": "paper_only-photo",
+  "form": "paper_only",
+  "variant": "photo",
+  "files": [
+    "page-1.jpg"
+  ],
+  "qr_payload": null,
+  "printed_id_numbers": [
+    "080179553104"
+  ],
+  "handwritten_fields": [
+    "holders[0].full_name",
+    "holders[0].birth_year",
+    "holders[0].id_last4",
+    "holders[0].address_text",
+    "parcels[0].parcel_no",
+    "parcels[0].map_sheet_no",
+    "parcels[0].address_text",
+    "parcels[0].area_m2"
+  ],
+  "certificate": {
+    "form": {
+      "value": "paper_only",
+      "confidence": 1,
+      "page": 1
+    },
+    "holders": [
+      {
+        "full_name": {
+          "value": "Trương Thị Demo Hạnh",
+          "confidence": 1,
+          "page": 1
+        },
+        "birth_year": {
+          "value": 1979,
+          "confidence": 1,
+          "page": 1
+        },
+        "id_last4": {
+          "value": "3104",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "ấp 3, xã Mỹ Yên, huyện Bến Lức, tỉnh Long An",
+          "confidence": 1,
+          "page": 1
+        },
+        "relation": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        }
+      }
+    ],
+    "parcels": [
+      {
+        "parcel_no": {
+          "value": "312",
+          "confidence": 1,
+          "page": 1
+        },
+        "map_sheet_no": {
+          "value": "7",
+          "confidence": 1,
+          "page": 1
+        },
+        "address_text": {
+          "value": "ấp 3, xã Mỹ Yên, huyện Bến Lức, tỉnh Long An",
+          "confidence": 1,
+          "page": 1
+        },
+        "area_m2": {
+          "value": 100,
+          "confidence": 1,
+          "page": 1
+        },
+        "use_form": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        },
+        "purposes": [],
+        "origin_text": {
+          "value": null,
+          "confidence": 1,
+          "page": null
+        }
+      }
+    ],
+    "structures": [],
+    "serial_no": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    },
+    "book_entry_no": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    },
+    "issued_on": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    },
+    "issued_by": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    },
+    "annotations": [],
+    "has_qr": {
+      "value": false,
+      "confidence": 1,
+      "page": 1
+    },
+    "notes_text": {
+      "value": null,
+      "confidence": 1,
+      "page": null
+    }
+  }
+}

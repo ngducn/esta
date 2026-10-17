@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(37);
+select plan(39);
 
 select is((select count(*) from public.admin_units where parent_code is null), 34::bigint, '34 province-level units');
 select is((select count(*) from public.admin_units where parent_code is not null), 3321::bigint, '3,321 commune-level units');
@@ -49,7 +49,13 @@ select results_eq(
   $$ values ('VCB', 'Vietcombank') $$,
   'a BIN carries its NAPAS code and curated short name');
 
-select is((select count(*) from public.land_use_codes), 12::bigint, '12 land use codes');
+select is((select count(*) from public.land_use_codes), 14::bigint, '14 land use codes after the S5 check');
+select results_eq(
+  $$ select code, name_vi from public.land_use_codes where code in ('BCS', 'CSD', 'HNK', 'LUC', 'LUK') order by code $$,
+  $$ values ('BCS', 'Đất bằng chưa sử dụng'), ('CSD', 'Đất chưa sử dụng'), ('HNK', 'Đất trồng cây hằng năm khác'),
+            ('LUC', 'Đất chuyên trồng lúa'), ('LUK', 'Đất trồng lúa còn lại') $$,
+  'S5 names follow Circular 08/2024/TT-BTNMT');
+select is((select land_group::text from public.land_use_codes where code = 'BHK'), 'agricultural', 'the pre-2024 BHK code stays for older certificates');
 select is((select name_vi from public.land_use_codes where code = 'TMD'), 'Đất thương mại, dịch vụ', 'land use names keep their commas');
 
 select results_eq(

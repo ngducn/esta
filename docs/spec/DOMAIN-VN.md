@@ -62,13 +62,19 @@ Certificate forms the app must recognize. `form` values match `certificates.form
 
 | `form` | What it is | Era |
 | --- | --- | --- |
-| `so_do_pre2009` | "Giấy chứng nhận quyền sử dụng đất", red cover, land only | Before 2009 `[verify]` |
-| `so_hong_pre2009` | "Giấy chứng nhận quyền sở hữu nhà ở và quyền sử dụng đất ở", pink, urban housing | Before 2009 `[verify]` |
-| `gcn_2009_2024` | Unified "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu nhà ở và tài sản khác gắn liền với đất", pink, multi-page | 2009 to mid-2024 `[verify]` |
-| `gcn_2024` | "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất" under the 2024 Land Law, carries a QR code | From 1 Aug 2024 `[verify]` (Circular 10/2024/TT-BTNMT) |
+| `so_do_pre2009` | "Giấy chứng nhận quyền sử dụng đất", red cover, land only | Before 10 Dec 2009 `[verified]`<sup>1</sup> |
+| `so_hong_pre2009` | "Giấy chứng nhận quyền sở hữu nhà ở và quyền sử dụng đất ở", pink, urban housing | Before 10 Dec 2009 `[verified]`<sup>1</sup> |
+| `gcn_2009_2024` | Unified "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu nhà ở và tài sản khác gắn liền với đất", one sheet of four pages, pink drum pattern, serial of 2 letters and 6 digits | 10 Dec 2009 to 31 Jul 2024 `[verified]`<sup>1</sup> |
+| `gcn_2024` | "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất" under the 2024 Land Law (form 04/ĐK-GCN), carries a 2 × 2 cm QR code at the top right of page 1 | From 1 Aug 2024 `[verified]`<sup>2</sup> (Circular 10/2024/TT-BTNMT) |
 | `paper_only` | No certificate; handwritten or notarized paper only | Any |
 
-Older certificates remain valid and are not required to be reissued `[verify]`. The app treats every form as first-class.
+Older certificates remain valid and are not required to be reissued `[verified]`<sup>3</sup>. The app treats every form as first-class.
+
+Sources, fetched 2026-10-17 in spike S5:
+
+1. Circular 17/2009/TT-BTNMT, Article 3 (the unified form) and its effective date of 10 Dec 2009, which ends the two separate pre-2009 forms: https://caselaw.vn/van-ban-phap-luat/269521-thong-tu-17-2009-tt-btnmt-ve-giay-chung-nhan-quyen-su-dung-dat-quyen-so-huu-nha-o-va-tai-san-khac-gan-lien-voi-dat-do-bo-tai-nguyen-va-moi-truong-ban-hanh
+2. Circular 10/2024/TT-BTNMT, effective 1 Aug 2024, QR code size and position: https://lsvn.vn/quy-dinh-chinh-thuc-ve-ma-qr-tren-gcnqsdd-tu-01-8-2024-1723246241-a146084.html
+3. Land Law 2024, Article 256(3): certificates issued before 1 Aug 2024 "vẫn có giá trị pháp lý và không phải cấp đổi": https://hethongphapluat.com/phap-luat/hoi-dap-phap-luat-chinh-sach-phap-luat/so-do-so-hong-cu-co-con-gia-tri-su-ve-viec-doi-so-theo-luat-dat-dai-2024.html
 
 ### 2.1 Extraction schema
 
@@ -87,22 +93,29 @@ Rules `[app rule]`: numbers keep Vietnamese decimal commas converted to dots int
 
 ## 3. Land use purpose codes
 
-Seed for `land_use_codes`. Common codes seen on existing certificates. `[verify]` against the current land classification rules; unknown codes from extraction are kept as free text and shown with a "mã chưa có trong danh mục" hint.
+Seed for `land_use_codes`. Common codes seen on existing certificates, checked `[verified]` against Circular 08/2024/TT-BTNMT, Annex II section A, as luatvietnam.vn<sup>4</sup> and hethongphapluat.com<sup>5</sup> list it (fetched 2026-10-17 in spike S5; migration `20261007201000_land_use_codes_s5.sql`). Unknown codes from extraction are kept as free text and shown with a "mã chưa có trong danh mục" hint.
 
 | Code | Vietnamese | English |
 | --- | --- | --- |
 | ODT | Đất ở tại đô thị | Urban residential |
 | ONT | Đất ở tại nông thôn | Rural residential |
 | CLN | Đất trồng cây lâu năm | Perennial crop land |
-| BHK | Đất bằng trồng cây hằng năm khác | Other annual crop land |
-| LUC | Đất chuyên trồng lúa nước | Specialized wet rice land |
-| LUK | Đất trồng lúa nước còn lại | Other wet rice land |
+| HNK | Đất trồng cây hằng năm khác | Other annual crop land |
+| BHK | Đất bằng trồng cây hằng năm khác | Other annual crop land, flat terrain (pre-2024 code) `[app rule]` |
+| LUC | Đất chuyên trồng lúa | Specialized rice land |
+| LUK | Đất trồng lúa còn lại | Other rice land |
 | NTS | Đất nuôi trồng thủy sản | Aquaculture land |
 | RSX | Đất rừng sản xuất | Production forest land |
 | NKH | Đất nông nghiệp khác | Other agricultural land |
 | TMD | Đất thương mại, dịch vụ | Commercial and service land |
 | SKC | Đất cơ sở sản xuất phi nông nghiệp | Non-agricultural production land |
-| CSD | Đất bằng chưa sử dụng | Unused flat land |
+| CSD | Đất chưa sử dụng | Unused land `[app rule]` |
+| BCS | Đất bằng chưa sử dụng | Unused flat land |
+
+S5 changes from the P0-06 seed: LUC and LUK drop "nước", HNK and BCS are added, and CSD is the whole unused group, so the flat unused land P0-06 called CSD is BCS. Two rows stay as `[app rule]`, listed in `docs/plan/STATUS.md` under "Needs professional confirmation". BHK left the 2024 list, but certificates issued under older lists carry it and stay valid (§2, source 3), so the app keeps it. CSD is kept as a code because source 4 lists it and source 5 lists only its sub-codes.
+
+4. https://luatvietnam.vn/dat-dai-nha-o/ky-hieu-cac-loai-dat-567-24866-article.html
+5. https://hethongphapluat.com/phap-luat/huong-dan/bang-tra-cuu-ky-hieu-cac-loai-dat-moi-nhat-bi-kip-doc-hieu-so-do-va-ban-do-dia-chinh-theo-luat-dat-dai-2024.html
 
 ## 4. Administrative units after the 2025 reform
 

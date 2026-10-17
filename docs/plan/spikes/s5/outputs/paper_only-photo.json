@@ -1,0 +1,9 @@
+{
+  "fixture_id": "paper_only-photo",
+  "model": "claude-sonnet-5-5",
+  "is_error": false,
+  "num_turns": 2,
+  "wall_ms": 9673,
+  "total_cost_usd": 0.0234382,
+  "reply": "{\"form\":{\"value\":\"paper_only\",\"confidence\":0.97,\"page\":1},\"holders\":[{\"full_name\":{\"value\":\"Trương Thị Demo Hạnh\",\"confidence\":0.6,\"page\":1},\"birth_year\":{\"value\":1979,\"confidence\":0.6,\"page\":1},\"id_last4\":{\"value\":\"3104\",\"confidence\":0.55,\"page\":1},\"address_text\":{\"value\":\"ấp 3, xã Mỹ Yên, huyện Bến Lức, tỉnh Long An\",\"confidence\":0.6,\"page\":1},\"relation\":{\"value\":null,\"confidence\":0,\"page\":null}}],\"parcels\":[{\"parcel_no\":{\"value\":\"312\",\"confidence\":0.6,\"page\":1},\"map_sheet_no\":{\"value\":\"7\",\"confidence\":0.6,\"page\":1},\"address_text\":{\"value\":\"ấp 3, xã Mỹ Yên, huyện Bến Lức, tỉnh Long An\",\"confidence\":0.6,\"page\":1},\"area_m2\":{\"value\":100,\"confidence\":0.6,\"page\":1},\"use_form\":{\"value\":null,\"confidence\":0,\"page\":null},\"purposes\":[],\"origin_text\":{\"value\":null,\"confidence\":0,\"page\":null}}],\"structures\":[],\"serial_no\":{\"value\":null,\"confidence\":0,\"page\":null},\"book_entry_no\":{\"value\":null,\"confidence\":0,\"page\":null},\"issued_on\":{\"value\":null,\"confidence\":0,\"page\":null},\"issued_by\":{\"value\":null,\"confidence\":0,\"page\":null},\"annotations\":[],\"has_qr\":{\"value\":false,\"confidence\":0.95,\"page\":1},\"notes_text\":{\"value\":null,\"confidence\":0,\"page\":null}}"
+}
