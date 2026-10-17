@@ -1,13 +1,8 @@
-import { join } from 'node:path';
-import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
-
-const repoRoot = join(import.meta.dirname, '..');
-const eslint = new ESLint({ cwd: repoRoot });
+import { lintText } from './lint-text.ts';
 
 async function ruleIds(path: string, code: string) {
-  const [result] = await eslint.lintText(code, { filePath: join(repoRoot, path) });
-  return (result?.messages ?? []).map((message) => message.ruleId);
+  return (await lintText(path, code)).map((message) => message.ruleId);
 }
 
 describe('user_metadata never feeds the app (#23)', () => {

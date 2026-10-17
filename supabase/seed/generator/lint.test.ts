@@ -1,13 +1,9 @@
-import { join } from 'node:path';
-import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
-
-const repoRoot = join(import.meta.dirname, '..', '..', '..');
-const eslint = new ESLint({ cwd: repoRoot });
+import { lintText } from '../../../eslint-rules/lint-text.ts';
 
 async function restrictedRules(code: string): Promise<string[]> {
-  const [result] = await eslint.lintText(code, { filePath: join(repoRoot, 'supabase/seed/generator/scratch.ts') });
-  return (result?.messages ?? []).flatMap(({ ruleId }) => (ruleId?.startsWith('no-restricted-') ? [ruleId] : []));
+  const messages = await lintText('supabase/seed/generator/scratch.ts', code);
+  return messages.flatMap(({ ruleId }) => (ruleId?.startsWith('no-restricted-') ? [ruleId] : []));
 }
 
 describe('generator lint', () => {
