@@ -11,6 +11,7 @@ import {
   readMonthYear,
   readRatio,
   readShorthand,
+  readSpoken,
   readTime,
   readYear,
   type CompactUnit,
@@ -50,7 +51,7 @@ const ORDINAL = '(?:st|nd|rd|th)?';
 const COUNT_UNIT = String.raw`(?:\s(?:ngày|tháng|năm|phòng|căn|lần|days?|months?|years?|rooms?|units?|times?)${NOT_LETTER})?`;
 
 /** Unit words may follow a space, as may the letter units in `850 K ₫` and `15 M ₫`. */
-const WORD_UNITS: Readonly<Record<string, CompactUnit>> = {
+const VI_UNITS: Readonly<Record<string, CompactUnit>> = {
   tỷ: 'ty',
   tỉ: 'ty',
   triệu: 'tr',
@@ -58,6 +59,9 @@ const WORD_UNITS: Readonly<Record<string, CompactUnit>> = {
   tr: 'tr',
   nghìn: 'nghin',
   ngàn: 'nghin',
+};
+const WORD_UNITS: Readonly<Record<string, CompactUnit>> = {
+  ...VI_UNITS,
   billions: 'ty',
   billion: 'ty',
   bn: 'ty',
@@ -70,6 +74,26 @@ const WORD_UNITS: Readonly<Record<string, CompactUnit>> = {
 };
 const LETTER_UNITS: Readonly<Record<string, CompactUnit>> = { B: 'ty', M: 'tr', K: 'nghin', k: 'nghin' };
 const WORD_UNIT = String.raw`(${Object.keys(WORD_UNITS).join('|')})${NOT_LETTER}`;
+const VI_UNIT = String.raw`(?:${Object.keys(VI_UNITS).join('|')})${NOT_LETTER}`;
+const VI_UNIT_WORDS = new RegExp(VI_UNIT, 'giu');
+
+/** `3 trăm nghìn` is 300 nghìn. Without a unit after it, `5 trăm` may be 500 or 500 nghìn. */
+const MULTIPLIER_WORDS: Readonly<Record<string, bigint>> = { trăm: 100n, chục: 10n };
+
+const GAP = String.raw`[^\S\n]`;
+const DIGIT_WORD = '(?:mốt|hai|ba|bốn|tư|năm|sáu|bảy|tám|chín)';
+/**
+ * What may follow `3 triệu` in one spoken amount: another unit (`1 tỷ 250 triệu`, `1,2 nghìn tỷ`), `rưỡi`,
+ * trailing digits (`3 triệu 5`), or a digit word ending the phrase (`3 triệu tư`). parseVndInput reads the
+ * whole amount the way the app reads typed input, and anything it cannot read is unparseable.
+ */
+const SPOKEN_TAIL = String.raw`(?:${GAP}*\d+(?:[.,]\d+)*${GAP}*${VI_UNIT}|${GAP}*${VI_UNIT}|${GAP}+rưỡi${NOT_LETTER}|${GAP}+\d{1,3}(?![\p{N}]|[.,/:-]\p{N}|${GAP}*(?:%|m²|m2|trăm|chục))|${GAP}+${DIGIT_WORD}(?=${GAP}*(?:[.,;:!?)\]\n]|$)))`;
+
+function lastUnit(body: string): CompactUnit | undefined {
+  const words = body.match(VI_UNIT_WORDS) ?? [];
+  const word = words.at(-1);
+  return word === undefined ? undefined : VI_UNITS[word.toLowerCase()];
+}
 const LETTER_UNIT = String.raw`(${Object.keys(LETTER_UNITS).join('|')})(?![\p{L}\p{N}])`;
 
 /** Basis points per unit of each percentage word. */
@@ -174,6 +198,21 @@ const VALUE_PATTERNS: readonly Pattern[] = [
     },
   },
   { regex: re(String.raw`${SIGN}${NUMBER}\s*m(?:²|2)(?![\p{L}\p{N}])`), read: ([, , digits = '']) => [readArea(digits)] },
+  {
+    regex: re(String.raw`${SIGN}${NUMBER}\s*(trăm|chục)${NOT_LETTER}(?:${GAP}+${WORD_UNIT})?`, 'i'),
+    read: ([, s = '', digits = '', word = '', unit]) => {
+      const compact = unit === undefined ? undefined : WORD_UNITS[unit.toLowerCase()];
+      const multiplier = MULTIPLIER_WORDS[word.toLowerCase()];
+      return [compact === undefined || multiplier === undefined ? { kind: 'invalid' } : readCompact(digits, sign(s), compact, multiplier)];
+    },
+  },
+  {
+    regex: re(String.raw`${SIGN}(${NUMBER}${GAP}*${VI_UNIT}${SPOKEN_TAIL}+)(?:\s*${CURRENCY})?`, 'i'),
+    read: ([, s = '', body = '']) => {
+      const unit = lastUnit(body);
+      return [unit === undefined ? { kind: 'invalid' } : readSpoken(body, sign(s), unit)];
+    },
+  },
   {
     regex: re(String.raw`${SIGN}${NUMBER}\s*${WORD_UNIT}(?:\s*${CURRENCY})?`, 'i'),
     read: ([, s = '', digits = '', unit = '']) => {

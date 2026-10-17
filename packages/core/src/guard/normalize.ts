@@ -1,5 +1,6 @@
 import { isIsoDate, type IsoDate } from '../date/iso-date';
 import { parseDecimal, toSafeNumber, toWholeDong, type Decimal } from '../parse/decimal';
+import { parseVndInput } from '../parse/vnd-input';
 
 export type CompactUnit = 'ty' | 'tr' | 'nghin';
 
@@ -144,10 +145,16 @@ export function readAmount(digits: string, sign: 1 | -1): ExtractedValue {
   return vnd === null ? invalid : { kind: 'amount', vnd };
 }
 
-export function readCompact(digits: string, sign: 1 | -1, unit: CompactUnit): ExtractedValue {
+export function readCompact(digits: string, sign: 1 | -1, unit: CompactUnit, multiplier = 1n): ExtractedValue {
   const decimal = decimalOf(digits);
-  const vnd = decimal === null ? null : wholeNumber(decimal, BigInt(COMPACT_RULES[unit].size), sign);
+  const vnd = decimal === null ? null : wholeNumber(decimal, BigInt(COMPACT_RULES[unit].size) * multiplier, sign);
   return vnd === null ? invalid : { kind: 'compact', vnd, unit };
+}
+
+/** A spoken amount such as `3 triệu rưỡi` or `1 tỷ 250 triệu`, compared at the precision of its smallest unit. */
+export function readSpoken(body: string, sign: 1 | -1, unit: CompactUnit): ExtractedValue {
+  const parsed = parseVndInput(body);
+  return parsed.ok ? { kind: 'compact', vnd: sign * parsed.value, unit } : invalid;
 }
 
 /** The spoken shorthand `3tr5` (parseVndInput): the digits after the unit are its decimals, so `12tr500` is 12,5 tr. */
