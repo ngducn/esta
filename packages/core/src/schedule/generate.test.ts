@@ -425,5 +425,29 @@ describe('amendments', () => {
     it('refuses a start that is not a period start', () => {
       expect(validateAmendment(schedule, { ...rentTo12M, effectivePeriodStart: d('2026-12-15') }, asOf)).toEqual({ ok: false, reason: 'not_a_period_start' });
     });
+
+    const rentTo12MFromJanuary: Amendment = { effectivePeriodStart: d('2027-01-01'), changes: { rentVnd: vnd(12_000_000) } };
+    const quarterlyFromDecember: Amendment = { effectivePeriodStart: d('2026-12-01'), changes: { billingCycleMonths: 3 } };
+    const withJanuary = generateSchedule(lse3Canonical, [rentTo12MFromJanuary], d('2027-06-01'));
+
+    it('refuses an amendment that moves a later amendment off the period grid', () => {
+      expect(validateAmendment(withJanuary, quarterlyFromDecember, asOf)).toEqual({ ok: false, reason: 'moves_later_amendment' });
+    });
+
+    it('accepts a cycle change that keeps every later amendment on a period start, and the result generates', () => {
+      const rentFromMarch: Amendment = { effectivePeriodStart: d('2027-03-01'), changes: { rentVnd: vnd(12_000_000) } };
+      const withMarch = generateSchedule(lse3Canonical, [rentFromMarch], d('2027-06-01'));
+      expect(validateAmendment(withMarch, quarterlyFromDecember, asOf)).toMatchObject({ ok: true, value: { start: '2026-12-01', end: '2027-02-28' } });
+      expect(spans(generateSchedule(lse3Canonical, [rentFromMarch, quarterlyFromDecember], d('2027-03-01'))).slice(-2)).toEqual([
+        '2026-12-01..2027-02-28',
+        '2027-03-01..2027-05-31',
+      ]);
+    });
+
+    it('refuses a second amendment from the same period start instead of letting input order decide', () => {
+      const rentTo13M: Amendment = { effectivePeriodStart: d('2027-01-01'), changes: { rentVnd: vnd(13_000_000) } };
+      expect(validateAmendment(withJanuary, rentTo13M, asOf)).toEqual({ ok: false, reason: 'duplicate_effective_start' });
+      expect(() => generateSchedule(lse3Canonical, [rentTo12MFromJanuary, rentTo13M], d('2027-02-01'))).toThrow(RangeError);
+    });
   });
 });
