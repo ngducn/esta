@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./activity": "./src/activity/describe.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./auth": "./src/auth/otp.ts",
     "./date": "./src/date/iso-date.ts",
