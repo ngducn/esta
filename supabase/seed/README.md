@@ -8,6 +8,10 @@ Seed rows use fixed ids so tests, screenshots and lanes can name them. Each id i
 | `auth.users` row | `seed:user:<person>-<household>` | `seed:user:ryan-lane-3` |
 | `household_members` row | `seed:member:<person>-<household>` | `seed:member:me-demo` |
 | Owner party | `seed:party:<person>-<household>` | `seed:party:me-lane-10` |
+| Bank party `Ngân hàng Demo` | `seed:party:bank-<household>` | `seed:party:bank-lane-2` |
+| Certificate | `seed:certificate:<household>:<property>` | `seed:certificate:demo:bao-loc` |
+| Parcel | `seed:parcel:<household>:<property>:<n>` | `seed:parcel:lane-1:bao-loc:1` |
+| Structure | `seed:structure:<household>:<property>:<n>` | `seed:structure:lane-5:q7:1` |
 
 `<household>` is `demo` for slot 0's household `Gia đình Demo`, and `lane-<n>` for the lane households `Gia đình Demo <n>`, where n runs from 1 to the `--households` value: 10 by default, at most 99, and 0 for `Gia đình Demo` alone. `<person>` is `me` or `ryan`.
 

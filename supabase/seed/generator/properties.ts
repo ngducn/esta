@@ -110,7 +110,7 @@ export const PROPERTY_SEEDS = [
     kind: 'agricultural_land',
     kind_details: { frontage_m: 25, road_width_m: 4 },
     use_mode: 'held',
-    legal_status: 'certified',
+    legal_status: 'paper_only',
     address: { street: 'Đường Châu Thị Kim', commune_code: '27694', province_code: '80' },
     certificate_address_text: 'Thửa đất số 906 Demo, tờ bản đồ số 96, Phường 2, Thành phố Tân An, Tỉnh Long An',
     location: null,

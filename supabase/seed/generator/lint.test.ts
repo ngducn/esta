@@ -17,6 +17,12 @@ describe('generator lint', () => {
     'export const a = performance.now();',
     "import { randomUUID } from 'node:crypto';\nexport const a = randomUUID();",
     "import { randomBytes } from 'crypto';\nexport const a = randomBytes(4);",
+    'export const a = globalThis.crypto.randomUUID();',
+    'export const a = globalThis.crypto.getRandomValues(new Uint8Array(4));',
+    "import * as c from 'node:crypto';\nexport const a = c.randomUUID();",
+    "import c from 'crypto';\nexport const a = c.randomUUID();",
+    'export const a = process.hrtime();',
+    'export const a = process.hrtime.bigint();',
   ])('bans a nondeterministic source: %s', async (code) => {
     expect(await restrictedRules(code)).toHaveLength(1);
   });

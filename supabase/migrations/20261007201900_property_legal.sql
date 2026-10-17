@@ -113,7 +113,7 @@ create table public.certificates (
   issued_by text check (btrim(issued_by) <> '' and char_length(issued_by) <= 300),
   holder_party_ids uuid[] not null default '{}' check (cardinality(holder_party_ids) <= 20),
   status text not null default 'valid' check (status in ('valid', 'mortgaged', 'replaced', 'lost')),
-  mortgage jsonb check (private.valid_mortgage(mortgage)),
+  mortgage jsonb check (mortgage is null or private.valid_mortgage(mortgage)),
   annotations jsonb not null default '[]' check (private.valid_annotations(annotations)),
   document_id uuid,
   extraction_id uuid,
