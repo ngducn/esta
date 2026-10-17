@@ -7,6 +7,7 @@ import { collectAllowed } from './collectAllowed';
 
 const BUDGET_MS = 5;
 const ALLOWED_VALUES = 2_000;
+const VALUES_PER_ROW = 6;
 
 function rows(count: number): unknown[] {
   return Array.from({ length: count }, (_, i) => {
@@ -24,7 +25,7 @@ function rows(count: number): unknown[] {
 }
 
 const allowed = collectAllowed(
-  [{ tool: 'collections', result: { rows: rows(ALLOWED_VALUES / 7), gross_yield_bp: 650, area_m2: 125.5 } }],
+  [{ tool: 'collections', result: { rows: rows(Math.ceil(ALLOWED_VALUES / VALUES_PER_ROW)), gross_yield_bp: 650, area_m2: 125.5 } }],
   { today: '2026-10-07' as IsoDate, householdName: 'Gia đình Demo 3' },
 );
 
@@ -32,12 +33,13 @@ const sentence = (i: number): string =>
   `- Phòng ${(i % 40) + 1} quá hạn ${i % 90} ngày, hóa đơn đến hạn 25/09/2026, còn nợ ${formatVnd(vnd(1_000_000 + i * 123_457), 'vi')} (khoảng ${formatVndCompact(vnd(1_000_000 + i * 123_457), 'vi')}), lợi suất 6,5%, 125,5 m². [Xem](esta://invoice/d1000000-0000-4000-8000-${String(i).padStart(12, '0')})`;
 const text = Array.from({ length: 12 }, (_, i) => sentence(i)).join('\n');
 
-test(`checkNumbers on a ${text.split(/\s+/u).length}-token text against ${allowed.size} allowed keys stays under ${BUDGET_MS} ms`, async ({ bench }) => {
+const values = new Set([...allowed.values()].flat()).size;
+
+test(`checkNumbers on a ${text.split(/\s+/u).length}-token text against ${values} allowed values stays under ${BUDGET_MS} ms`, async ({ bench }) => {
+  expect(values).toBeGreaterThanOrEqual(ALLOWED_VALUES);
   expect(checkNumbers(text, allowed).ok).toBe(true);
-  const results = await bench.compare(
-    bench('checkNumbers', () => {
-      checkNumbers(text, allowed);
-    }),
-  );
-  expect(results.get('checkNumbers').latency.mean).toBeLessThan(BUDGET_MS);
+  const result = await bench('checkNumbers', () => {
+    checkNumbers(text, allowed);
+  }).run();
+  expect(result.latency.mean).toBeLessThan(BUDGET_MS);
 });

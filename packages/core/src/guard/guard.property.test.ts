@@ -116,4 +116,25 @@ describe('DOMAIN-VN formatters round-trip through the guard', () => {
       params,
     );
   });
+
+  it('a percentage never matches the same digits outside a basis-point field', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 100_000 }), locale, (bp, loc) => {
+        const text = `${percentFormats[loc].format(bp / 100)}%`;
+        expect(passes(text, { area_m2: bp, rent: bp, days_overdue: bp })).toBe(false);
+      }),
+      params,
+    );
+  });
+
+  it('the spoken shorthand 3tr5 passes against the amount it names and fails one step away', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 999 }), fc.integer({ min: 1, max: 9 }), (whole, tenth) => {
+        const named = (whole * 10 + tenth) * 100_000;
+        expect(passes(`${whole}tr${tenth}`, { rent: named })).toBe(true);
+        expect(passes(`${whole}tr${tenth}`, { rent: named + 100_000 })).toBe(false);
+      }),
+      params,
+    );
+  });
 });
