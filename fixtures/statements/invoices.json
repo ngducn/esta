@@ -1,0 +1,44 @@
+[
+  {
+    "id": "inv-dian-p3-202610",
+    "memoCode": "7K2QX9MP",
+    "tenantName": "Nguyễn Thị Hường Demo",
+    "dueDate": "2026-10-01",
+    "outstanding": 3500000
+  },
+  {
+    "id": "inv-dian-p5-202610",
+    "memoCode": "Q4N8R2TV",
+    "tenantName": "Trần Văn Khoa Demo",
+    "dueDate": "2026-10-01",
+    "outstanding": 4200000
+  },
+  {
+    "id": "inv-dian-p7-202610",
+    "memoCode": "B7C3D9EF",
+    "tenantName": "Lê Minh Demo",
+    "dueDate": "2026-10-05",
+    "outstanding": 2800000
+  },
+  {
+    "id": "inv-baoloc-nha-202610",
+    "memoCode": "H8J3K7LM",
+    "tenantName": "Phạm Thu Hà Demo",
+    "dueDate": "2026-10-01",
+    "outstanding": 12000000
+  },
+  {
+    "id": "inv-dian-p8-202610",
+    "memoCode": "X2Y6Z4WP",
+    "tenantName": "Trần Văn Khoa Demo",
+    "dueDate": "2026-10-01",
+    "outstanding": 4200000
+  },
+  {
+    "id": "inv-dian-p1-202609",
+    "memoCode": "N5P9R3SQ",
+    "tenantName": "Hoàng Anh Demo",
+    "dueDate": "2026-09-01",
+    "outstanding": 0
+  }
+]

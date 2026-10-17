@@ -1,0 +1,130 @@
+[
+  [
+    "Ngày GD",
+    "Mã giao dịch",
+    "Ghi nợ",
+    "Ghi có",
+    "Số dư",
+    "Diễn giải"
+  ],
+  [
+    "02/10/2026",
+    "FT26275001",
+    null,
+    3500000,
+    null,
+    "MBVCB.2627501.ESTA7K2QX9MP.CT TU 0903123456 NGUYEN THI HUONG DEMO"
+  ],
+  [
+    "03/10/2026",
+    "FT26276002",
+    null,
+    4200000,
+    null,
+    "esta q4n8r2tv tien phong thang 10"
+  ],
+  [
+    "06/10/2026",
+    "FT26279003",
+    null,
+    1000000,
+    null,
+    "TRAN VAN KHOA DEMO ESTAX2Y6Z4WP CK MOT PHAN"
+  ],
+  [
+    "06/10/2026",
+    "FT26279004",
+    null,
+    2800000,
+    null,
+    "CAFE FIESTA THANH TOAN"
+  ],
+  [
+    "07/10/2026",
+    "FT26280005",
+    null,
+    2800000,
+    null,
+    "FIESTAESTAB7C3D9EF LE MINH DEMO"
+  ],
+  [
+    "04/10/2026",
+    "FT26277006",
+    null,
+    12000000,
+    null,
+    "PHAM THU HA DEMO CHUYEN TIEN THUE NHA"
+  ],
+  [
+    "05/10/2026",
+    "FT26278007",
+    null,
+    4200000,
+    null,
+    "TRAN VAN KHOA DEMO CK"
+  ],
+  [
+    "05/10/2026",
+    "FT26278008",
+    11000,
+    null,
+    null,
+    "PHI DICH VU SMS BANKING"
+  ],
+  [
+    "08/10/2026",
+    "FT26281009",
+    2000000,
+    null,
+    null,
+    "RUT TIEN ATM"
+  ],
+  [
+    "08/10/2026",
+    "FT26281010",
+    null,
+    850000,
+    null,
+    "ESTA ZZZZZZZZ HOANG ANH DEMO"
+  ],
+  [
+    "15/10/2026",
+    "FT26288011",
+    null,
+    12000000,
+    null,
+    "PHAM THU HA DEMO CHUYEN TIEN"
+  ],
+  [
+    "02/10/2026",
+    "FT26275001",
+    null,
+    3500000,
+    null,
+    "MBVCB.2627501.ESTA7K2QX9MP.CT TU 0903123456 NGUYEN THI HUONG DEMO"
+  ],
+  [
+    "09/10/2026",
+    "",
+    null,
+    6000000,
+    null,
+    "NOP TIEN MAT ESTA H8J3K7LM PHAM THU HA DEMO"
+  ],
+  [
+    "09/10/2026",
+    "",
+    null,
+    6000000,
+    null,
+    "NOP TIEN MAT ESTA H8J3K7LM PHAM THU HA DEMO"
+  ],
+  [
+    "09/10/2026",
+    "FT26282013",
+    null,
+    1500000.5,
+    null,
+    "LE MINH DEMO NUA DONG"
+  ]
+]
