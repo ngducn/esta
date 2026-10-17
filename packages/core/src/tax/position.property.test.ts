@@ -63,14 +63,23 @@ const asOf = date('2025-12-01', '2027-01-31');
 const YEAR = 2026;
 const JAN_1 = isoDate('2026-01-01');
 const NEXT_JAN_1 = isoDate('2027-01-01');
+const yearOf = (day: IsoDate) => Number(day.slice(0, 4));
 
-/** The in-year part of a period through `until`, split at 1 January, the day after the as-of date and the next 1 January. */
-function inYear(period: RevenuePeriod, at: IsoDate, until: IsoDate | null): number {
-  const afterAsOf = addDays(at, 1);
-  const cut = afterAsOf < JAN_1 ? JAN_1 : afterAsOf > NEXT_JAN_1 ? NEXT_JAN_1 : afterAsOf;
-  return splitAmountByDays(period.amountVnd, period, [JAN_1, cut, NEXT_JAN_1])
-    .filter((segment) => segment.start >= JAN_1 && segment.start < NEXT_JAN_1 && (until === null || segment.start <= until))
+/** The part of a period that falls in `year`, from a split at each 1 January it crosses and at no other day. */
+function yearShare(period: RevenuePeriod, year: number): number {
+  const januaryFirsts: IsoDate[] = [];
+  for (let y = yearOf(period.start) + 1; y <= yearOf(period.end); y += 1) januaryFirsts.push(isoDate(`${y}-01-01`));
+  return splitAmountByDays(period.amountVnd, period, januaryFirsts)
+    .filter((segment) => yearOf(segment.start) === year)
     .reduce((sum, segment) => sum + segment.amountVnd, 0);
+}
+
+function totals(list: readonly RevenuePeriod[], year: number, at: IsoDate, shareList: readonly OwnershipShare[] = []) {
+  const result = attributeRevenue({ periods: list, shares: shareList, year, asOf: at });
+  return {
+    accrued: result.owners.reduce<number>((sum, owner) => sum + owner.accruedVnd, result.unattributed.accruedVnd),
+    projected: result.owners.reduce<number>((sum, owner) => sum + owner.projectedVnd, result.unattributed.projectedVnd),
+  };
 }
 
 describe('splitAmountByDays properties', () => {
@@ -91,14 +100,42 @@ describe('splitAmountByDays properties', () => {
 });
 
 describe('attributeRevenue properties', () => {
-  it('owner revenue plus unattributed equals the in-year sum of period amounts', () => {
+  it('gives each year the share a year-only split assigns it, whatever the as-of date', () => {
+    fc.assert(
+      fc.property(revenuePeriod, date('2024-06-01', '2030-06-01'), (period, at) => {
+        const active = { ...period, active: true };
+        const years = Array.from({ length: yearOf(period.end) - yearOf(period.start) + 1 }, (_, i) => yearOf(period.start) + i);
+        expect(years.reduce((sum, year) => sum + yearShare(active, year), 0)).toBe(period.amountVnd);
+        for (const year of years) expect(totals([active], year, at).projected).toBe(yearShare(active, year));
+      }),
+      params,
+    );
+  });
+
+  it('splits a year share into accrued and contracted at every as-of date in the year', () => {
+    fc.assert(
+      fc.property(revenuePeriod, fc.integer({ min: 2025, max: 2028 }), fc.integer({ min: 0, max: 364 }), fc.integer({ min: 0, max: 364 }), (period, year, a, b) => {
+        const active = { ...period, active: true };
+        const share = yearShare(active, year);
+        const early = addDays(isoDate(`${year}-01-01`), Math.min(a, b));
+        const before = totals([active], year, early);
+        const after = totals([active], year, addDays(isoDate(`${year}-01-01`), Math.max(a, b)));
+        expect([before.projected, after.projected]).toEqual([share, share]);
+        expect(before.accrued).toBeLessThanOrEqual(after.accrued);
+        expect(totals([active], year, isoDate(`${year}-12-31`)).accrued).toBe(share);
+        expect(totals([{ ...period, active: false }], year, early)).toEqual({ accrued: before.accrued, projected: before.accrued });
+      }),
+      params,
+    );
+  });
+
+  it('owner revenue plus unattributed adds up period by period', () => {
     fc.assert(
       fc.property(periods, shares, asOf, (list, shareList, at) => {
-        const result = attributeRevenue({ periods: list, shares: shareList, year: YEAR, asOf: at });
-        const projected = result.owners.reduce<number>((sum, owner) => sum + owner.projectedVnd, result.unattributed.projectedVnd);
-        const accrued = result.owners.reduce<number>((sum, owner) => sum + owner.accruedVnd, result.unattributed.accruedVnd);
-        expect(projected).toBe(list.reduce((sum, period) => sum + inYear(period, at, period.active ? null : at), 0));
-        expect(accrued).toBe(list.reduce((sum, period) => sum + inYear(period, at, at), 0));
+        const { accrued, projected } = totals(list, YEAR, at, shareList);
+        const alone = list.map((period) => ({ period, accrued: totals([period], YEAR, at).accrued }));
+        expect(accrued).toBe(alone.reduce((sum, item) => sum + item.accrued, 0));
+        expect(projected).toBe(alone.reduce((sum, item) => sum + (item.period.active ? yearShare(item.period, YEAR) : item.accrued), 0));
       }),
       params,
     );

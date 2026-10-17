@@ -104,22 +104,30 @@ export function splitAmountByDays(
 
 type LeaseTotals = { period: RevenuePeriod; accrued: number; remainder: number };
 
+const yearOf = (day: IsoDate) => Number(day.slice(0, 4));
+
 function yearStart(year: number): IsoDate {
   return `${String(year).padStart(4, '0')}-01-01` as IsoDate;
 }
 
+/**
+ * The part of a period that falls in `year`. The split cuts only at each 1 January the period crosses,
+ * so a year's share never depends on the as-of date and the shares of all years sum to the amount.
+ */
+function yearShare(period: RevenuePeriod, year: number): (DateRange & { amountVnd: Vnd }) | undefined {
+  const januaryFirsts: IsoDate[] = [];
+  for (let y = yearOf(period.start) + 1; y <= yearOf(period.end); y += 1) januaryFirsts.push(yearStart(y));
+  return splitAmountByDays(period.amountVnd, period, januaryFirsts).find((segment) => yearOf(segment.start) === year);
+}
+
 function sumLeaseTotals(periods: readonly RevenuePeriod[], year: number, asOf: IsoDate): Map<string, LeaseTotals> {
-  const first = yearStart(year);
-  const next = yearStart(year + 1);
-  const afterAsOf = addDays(asOf, 1);
-  const cut = afterAsOf < first ? first : afterAsOf > next ? next : afterAsOf;
   const totals = new Map<string, LeaseTotals>();
   for (const period of periods) {
-    if (period.end < first || period.start >= next) continue;
+    const share = yearShare(period, year);
+    if (share === undefined) continue;
     const lease = totals.get(period.leaseId) ?? { period, accrued: 0, remainder: 0 };
-    for (const segment of splitAmountByDays(period.amountVnd, period, [first, cut, next])) {
-      if (segment.start < first || segment.start >= next) continue;
-      if (segment.start < cut) lease.accrued += segment.amountVnd;
+    for (const segment of splitAmountByDays(share.amountVnd, share, [addDays(asOf, 1)])) {
+      if (segment.start <= asOf) lease.accrued += segment.amountVnd;
       else if (period.active) lease.remainder += segment.amountVnd;
     }
     totals.set(period.leaseId, lease);

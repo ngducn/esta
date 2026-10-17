@@ -73,6 +73,20 @@ describe('attributeRevenue', () => {
     expect(next.owners[0]).toMatchObject({ accruedVnd: 31_000_000, projectedVnd: 31_000_000 });
   });
 
+  it('keeps a year total of an active lease the same whatever the as-of date', () => {
+    const straddle = [period('2026-12-15', '2027-01-14', 10_000_001)];
+    for (const asOf of ['2026-10-07', '2026-12-20', '2026-12-31']) {
+      expect(attribute(straddle, asOf).owners[0]?.projectedVnd).toBe(5_483_872);
+    }
+  });
+
+  it('never splits a period into year shares that add up to more than its amount', () => {
+    const straddle = [period('2026-12-30', '2027-01-01', 2)];
+    const thisYear = attribute(straddle, '2026-12-30').owners[0]?.projectedVnd ?? 0;
+    const nextYear = attribute(straddle, '2026-12-30', sole, 2027).owners[0]?.projectedVnd ?? 0;
+    expect([thisYear, nextYear]).toEqual([1, 1]);
+  });
+
   it('counts 29 February in a 2028 leap-year period', () => {
     const result = attribute([period('2028-02-01', '2028-02-29', 29_000_000)], '2028-02-28', sole, 2028);
     expect(result.owners[0]).toMatchObject({ accruedVnd: 28_000_000, projectedVnd: 29_000_000 });
