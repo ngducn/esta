@@ -18,6 +18,7 @@ You are one independent verifier lane for one PR of the Esta v1 stack (github.co
 - Docker has 8 GB shared with another project's containers (`ekh-*`, never touch them), and each local Supabase stack takes about 1 GB. Run at most the one stack your brief names, stop it with `ESTA_SLOT=<slot> pnpm db:stop` when you are not actively testing, and never stop a slot you did not start. Port 3000 is taken; never use it.
 - Never print or copy `apps/agent/.env.local` or any token. No real family data. Never touch cloud services.
 - Use read-only diagnostics only (console, snapshot, SELECT queries, logs).
+- Keep every evidence file and scratch script outside the worktree (for example `/tmp/swarm-<pr id>-ev/`). Files left inside it are linted by `pnpm check` and fail the next lane that reuses the worktree.
 - Stop every process you started (dev server, browse daemon, local stack on your slot) before you return. Leave evidence files in place.
 
 ## Report
