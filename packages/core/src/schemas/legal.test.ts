@@ -85,8 +85,7 @@ describe('parcelSchema', () => {
   });
 
   it('accepts a restore payload of an empty parcel', () => {
-    const { certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes, origin_text } = empty;
-    const restored = { certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes, origin_text };
+    const restored = { certificate_id: bank, parcel_no: null, map_sheet_no: null, area_m2: null, use_form: 'private', purposes: [], origin_text: null };
     expect(parcelSchema.safeParse(restored).success).toBe(true);
   });
 
