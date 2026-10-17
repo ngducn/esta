@@ -51,7 +51,7 @@ export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendme
     }
     const naturalEnd = addDays(addMonths(origin, cursor.offsetMonths + cursor.cycle), -1);
     const end = terms.endDate !== null && terms.endDate < naturalEnd ? terms.endDate : naturalEnd;
-    const chargeStart = fullStart !== start && terms.firstPeriodProration === 'none' ? fullStart : start;
+    const chargeStart = terms.firstPeriodProration === 'none' && end === naturalEnd ? fullStart : start;
     const daysInFullPeriod = daysBetween(fullStart, naturalEnd) + 1;
     const days = daysBetween(chargeStart, end) + 1;
     const steps =
