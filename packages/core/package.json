@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./activity": "./src/activity/describe.ts",
+    "./allocation": "./src/allocation/index.ts",
     "./address": "./src/address/format-current.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./auth": "./src/auth/otp.ts",
