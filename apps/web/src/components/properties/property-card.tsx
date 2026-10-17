@@ -23,7 +23,6 @@ export type PropertyCardData = {
   rent: { label: string; amount: string } | null;
   /** The `propertyStatus` mark's word, such as `Trống từ 01/08`. */
   vacant: string | null;
-  /** `label` is the missing count, such as `Thiếu 4 mục`, and `srLabel` the percent. */
   completeness: { percent: number; label: string; srLabel: string };
 };
 

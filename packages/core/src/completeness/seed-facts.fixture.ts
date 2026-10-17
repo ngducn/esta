@@ -1,4 +1,4 @@
-// Written by `node scripts/completeness-fixture.ts` from a slot reset with the full seed. Do not edit by hand.
+// Written by `pnpm exec tsx scripts/completeness-fixture.ts` from a slot reset with the full seed. Do not edit by hand.
 import type { CompletenessFacts } from './types';
 
 /** The seven `Gia đình Demo 1` properties' rows of `property_completeness_facts`, by seed key. */

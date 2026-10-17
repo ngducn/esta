@@ -11,11 +11,13 @@ const target = join(repoRoot, 'packages/core/src/completeness/seed-facts.fixture
 
 const slot = parseSlot(process.env.ESTA_SLOT);
 const household = seedId('seed:household:lane-1');
-const rows = query<unknown>(
+// `supabase db query` prints a uuid as its bytes, so each row comes back as JSON text.
+const rows = query<{ row: string }>(
   slotWorkdir(repoRoot, slot),
-  `select ${COMPLETENESS_FACT_COLUMNS} from public.property_completeness_facts where household_id = '${household}' order by property_id`,
+  `select json_build_object(${COMPLETENESS_FACT_COLUMNS.split(', ').map((column) => `'${column}', ${column}`).join(', ')})::text as row
+   from public.property_completeness_facts where household_id = '${household}' order by property_id`,
 );
-const facts = new Map(rows.map((row) => completenessFactsRowSchema.parse(row)).map((row) => [row.propertyId, row]));
+const facts = new Map(rows.map(({ row }) => completenessFactsRowSchema.parse(JSON.parse(row))).map((row) => [row.propertyId, row]));
 
 const entries = PROPERTY_SEEDS.map(({ key }) => {
   const row = facts.get(seedId(`seed:property:lane-1:${key}`));
@@ -27,7 +29,7 @@ if (facts.size !== entries.length) throw new Error(`Gia đình Demo 1 has ${fact
 writeFileSync(
   target,
   [
-    '// Written by `node scripts/completeness-fixture.ts` from a slot reset with the full seed. Do not edit by hand.',
+    '// Written by `pnpm exec tsx scripts/completeness-fixture.ts` from a slot reset with the full seed. Do not edit by hand.',
     "import type { CompletenessFacts } from './types';",
     '',
     `/** The seven \`Gia đình Demo 1\` properties' rows of \`property_completeness_facts\`, by seed key. */`,

@@ -13,7 +13,6 @@ export type MissingItemsData = {
   items: readonly { id: string; label: string; href: string | null }[];
 };
 
-/** The score and the next items to fill in, each a link that lands on its field. */
 export function MissingItems({ data }: { data: MissingItemsData }) {
   return (
     <section aria-label={data.title} data-testid="property-completeness" className="flex flex-col gap-2 rounded-md bg-surface-2 p-4">

@@ -411,6 +411,13 @@ export type Database = {
             foreignKeyName: "certificates_household_id_property_id_fkey"
             columns: ["household_id", "property_id"]
             isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "certificates_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
             referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
@@ -675,6 +682,13 @@ export type Database = {
             foreignKeyName: "ownership_shares_household_id_property_id_fkey"
             columns: ["household_id", "property_id"]
             isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "ownership_shares_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
             referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
@@ -747,6 +761,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "parcels_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
           },
           {
             foreignKeyName: "parcels_household_id_property_id_fkey"
@@ -987,6 +1008,13 @@ export type Database = {
             foreignKeyName: "structures_household_id_property_id_fkey"
             columns: ["household_id", "property_id"]
             isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "structures_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
             referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
@@ -1096,6 +1124,13 @@ export type Database = {
             foreignKeyName: "units_household_id_property_id_fkey"
             columns: ["household_id", "property_id"]
             isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "units_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
             referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
@@ -1163,6 +1198,13 @@ export type Database = {
             foreignKeyName: "utility_accounts_household_id_property_id_fkey"
             columns: ["household_id", "property_id"]
             isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "utility_accounts_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
             referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
@@ -1220,7 +1262,15 @@ export type Database = {
           structure_without_floor_area_id: string | null
           utility_account_count: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_list_rows: {
         Row: {
