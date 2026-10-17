@@ -1,4 +1,4 @@
-import { certificateV1Schema } from '../agent-schemas/certificate_v1';
+import { certificateV1Schema, parseArea } from '../agent-schemas/certificate_v1';
 import { parseDateInput } from '../parse/date-input';
 import { REQUIRED_FIELDS, type SchemaName } from './required-fields';
 
@@ -28,32 +28,21 @@ function isLeaf(value: unknown): value is Leaf {
   return isRecord(value) && 'value' in value && typeof value.confidence === 'number';
 }
 
-function normalizeText(value: string): string {
-  return value.normalize('NFC').replace(/\s+/g, ' ').trim().toUpperCase();
-}
-
-function normalizeArea(value: unknown): string | null {
-  if (typeof value === 'number') return value.toFixed(2);
-  if (typeof value !== 'string') return null;
-  const parsed = Number(value.trim().replace(',', '.'));
-  return Number.isFinite(parsed) ? parsed.toFixed(2) : null;
-}
-
-function normalizeDate(value: string): string {
-  const parsed = parseDateInput(value);
-  return parsed.ok ? parsed.value : normalizeText(value);
-}
-
-/** Collapses the formats a model may choose so `125,5`, an NFD name or `07/10/2026` match their truth. */
+/** Collapses the formats a model may choose so `125,5 m²`, an NFD name or `07/10/2026` match their truth. */
 export function normalizeValue(leafName: string, value: unknown): string | null {
   if (value === null || value === undefined) return null;
-  if (AREA_LEAVES.has(leafName)) return normalizeArea(value);
-  if (typeof value === 'boolean') return String(value);
-  if (typeof value === 'number') return String(value);
+  if (AREA_LEAVES.has(leafName)) {
+    const area = parseArea(value);
+    return typeof area === 'number' && Number.isFinite(area) ? area.toFixed(2) : null;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (typeof value !== 'string') return null;
-  if (DATE_LEAVES.has(leafName)) return normalizeDate(value);
-  if (CODE_LEAVES.has(leafName)) return normalizeText(value);
-  return normalizeText(value);
+  const text = value.normalize('NFC').replace(/\s+/g, ' ').trim();
+  if (DATE_LEAVES.has(leafName)) {
+    const parsed = parseDateInput(text);
+    return parsed.ok ? parsed.value : text;
+  }
+  return CODE_LEAVES.has(leafName) ? text.toUpperCase() : text;
 }
 
 type FlatLeaf = { readonly path: string; readonly leafName: string; readonly leaf: Leaf };
