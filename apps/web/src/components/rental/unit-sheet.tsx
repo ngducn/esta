@@ -39,8 +39,8 @@ export default function UnitSheet({
   const router = useRouter();
   const [label, setLabel] = useState(unit?.label ?? '');
   const [kind, setKind] = useState<UnitKind>(unit?.kind ?? 'room');
-  const [area, setArea] = useState(unit?.area_m2 === null || unit === null ? '' : String(unit.area_m2).replace('.', ','));
-  const [rentText, setRentText] = useState(unit?.list_rent_vnd === null || unit === null ? '' : vndInputText(unit.list_rent_vnd));
+  const [area, setArea] = useState(unit === null || unit.area_m2 === null ? '' : String(unit.area_m2).replace('.', ','));
+  const [rentText, setRentText] = useState(unit === null || unit.list_rent_vnd === null ? '' : vndInputText(unit.list_rent_vnd));
   const [availableFrom, setAvailableFrom] = useState<IsoDate | null>(unit?.available_from ?? null);
   const [invalid, setInvalid] = useState<Invalid>(null);
   const [error, setError] = useState<RentalFormErrorKind>(null);

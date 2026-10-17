@@ -89,7 +89,6 @@ const byProvince: Compare = (a, b) => {
   return collator.compare(unprefixedProvinceName(a.provinceName), unprefixedProvinceName(b.provinceName));
 };
 
-/** Highest list rent first; a property with no rent goes last. */
 const byRent: Compare = (a, b) => {
   if (a.monthlyRentVnd === null || b.monthlyRentVnd === null) return Number(a.monthlyRentVnd === null) - Number(b.monthlyRentVnd === null);
   return b.monthlyRentVnd - a.monthlyRentVnd;

@@ -45,7 +45,7 @@ export async function UtilityAccountList({ propertyId, accounts, units, canEdit 
                         <p className="text-small text-ink-muted">{t('noCode')}</p>
                       ) : (
                         <p className="text-small text-ink-muted">
-                          {t('customerCode')} <span data-testid="customer-code" className="figures font-semibold break-all text-ink select-all">{account.customer_code}</span>
+                          {t('customerCode')} <span data-testid="customer-code" className="figures inline-block font-semibold break-all text-ink select-all">{account.customer_code}</span>
                         </p>
                       )}
                       {account.holder_name === null ? null : (

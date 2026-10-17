@@ -1,6 +1,5 @@
 'use client';
 
-import type { Vnd } from '@esta/core/money';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { nextRoomLabels } from '@esta/core/properties';
 import { useTranslations } from 'next-intl';
@@ -45,9 +44,8 @@ export default function AddRoomsSheet({ propertyId, existing, onClose }: { prope
       return;
     }
     setError(null);
-    const listRent: Vnd | null = rent.value;
     startTransition(async () => {
-      const result = await addRooms(propertyId, { labels, list_rent_vnd: listRent }).catch(() => ({ ok: false, reason: 'failed' }) as const);
+      const result = await addRooms(propertyId, { labels, list_rent_vnd: rent.value }).catch(() => ({ ok: false, reason: 'failed' }) as const);
       if (result.ok) {
         router.refresh();
         onClose();
