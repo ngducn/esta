@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PropertySearch } from './property-search';
 
 const replace = vi.fn();
+const blockNavigation = (event: MouseEvent) => event.preventDefault();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
@@ -30,8 +31,12 @@ describe('PropertySearch', () => {
     vi.useFakeTimers();
     replace.mockClear();
     window.history.replaceState(null, '', '/properties');
+    document.addEventListener('click', blockNavigation);
   });
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    document.removeEventListener('click', blockNavigation);
+  });
 
   it('puts the query in the URL once typing pauses', () => {
     setup();
