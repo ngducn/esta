@@ -144,7 +144,8 @@ export function lookupKeys(claim: CanonicalNumber): readonly string[] {
 }
 
 /** The compact keys one step either side of a compact claim, for the rounding diagnosis. */
-export function neighbourKeys(claim: { readonly vnd: number; readonly unit: CompactUnit }): readonly string[] {
+export function neighbourKeys(claim: CanonicalNumber): readonly string[] {
+  if (claim.kind !== 'compact') return [];
   const { step } = COMPACT_RULES[claim.unit];
   return [`c:${claim.unit}:${claim.vnd - step}`, `c:${claim.unit}:${claim.vnd + step}`];
 }

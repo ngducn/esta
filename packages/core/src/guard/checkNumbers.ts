@@ -43,9 +43,10 @@ export function checkNumbers(text: string, allowed: AllowedIndex): GuardReport {
   const checked = numbers.map((number): CheckedNumber => {
     const { value } = number;
     if (value.kind === 'invalid') return { ...number, status: 'unparseable' };
-    const claims = SIGNED.test(number.text) ? [value] : [value, negated(value) ?? value];
+    const opposite = SIGNED.test(number.text) ? null : negated(value);
+    const claims = opposite === null ? [value] : [value, opposite];
     const literal = DIGITS_ONLY.test(number.text) ? [`code:${number.text}`] : [];
-    const sources = [...new Set([...claims.flatMap(lookupKeys), ...literal])].flatMap((key) => allowed.get(key) ?? []);
+    const sources = [...claims.flatMap(lookupKeys), ...literal].flatMap((key) => allowed.get(key) ?? []);
     const cited = citedBySentence.get(number.sentence);
     const [first] = sources;
     if (first !== undefined) {
@@ -53,11 +54,8 @@ export function checkNumbers(text: string, allowed: AllowedIndex): GuardReport {
       const citation: CitationStatus = cited === undefined ? 'none' : inCited === undefined ? 'elsewhere' : 'cited';
       return { ...number, status: 'matched', source: inCited ?? first, citation };
     }
-    if (value.kind === 'compact') {
-      const [nearest] = claims.flatMap((claim) => (claim.kind === 'compact' ? neighbourKeys(claim) : [])).flatMap((key) => allowed.get(key) ?? []);
-      if (nearest !== undefined) return { ...number, status: 'rounding', nearest };
-    }
-    return { ...number, status: 'unknown' };
+    const [nearest] = claims.flatMap(neighbourKeys).flatMap((key) => allowed.get(key) ?? []);
+    return nearest === undefined ? { ...number, status: 'unknown' } : { ...number, status: 'rounding', nearest };
   });
 
   const violations = checked.filter(isViolation);

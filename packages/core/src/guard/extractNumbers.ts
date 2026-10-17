@@ -74,6 +74,7 @@ const WORD_UNITS: Readonly<Record<string, CompactUnit>> = {
 };
 const LETTER_UNITS: Readonly<Record<string, CompactUnit>> = { B: 'ty', M: 'tr', K: 'nghin', k: 'nghin' };
 const WORD_UNIT = String.raw`(${Object.keys(WORD_UNITS).join('|')})${NOT_LETTER}`;
+const LETTER_UNIT = String.raw`(${Object.keys(LETTER_UNITS).join('|')})(?![\p{L}\p{N}])`;
 const VI_UNIT = String.raw`(?:${Object.keys(VI_UNITS).join('|')})${NOT_LETTER}`;
 const VI_UNIT_WORDS = new RegExp(VI_UNIT, 'giu');
 
@@ -87,14 +88,18 @@ const DIGIT_WORD = '(?:mốt|hai|ba|bốn|tư|năm|sáu|bảy|tám|chín)';
  * trailing digits (`3 triệu 5`), or a digit word ending the phrase (`3 triệu tư`). parseVndInput reads the
  * whole amount the way the app reads typed input, and anything it cannot read is unparseable.
  */
-const SPOKEN_TAIL = String.raw`(?:${GAP}*\d+(?:[.,]\d+)*${GAP}*${VI_UNIT}|${GAP}*${VI_UNIT}|${GAP}+rưỡi${NOT_LETTER}|${GAP}+\d{1,3}(?![\p{N}]|[.,/:-]\p{N}|${GAP}*(?:%|m²|m2|trăm|chục))|${GAP}+${DIGIT_WORD}(?=${GAP}*(?:[.,;:!?)\]\n]|$)))`;
+const SPOKEN_TAIL = `(?:${[
+  String.raw`${GAP}*\d+(?:[.,]\d+)*${GAP}*${VI_UNIT}`,
+  String.raw`${GAP}*${VI_UNIT}`,
+  String.raw`${GAP}+rưỡi${NOT_LETTER}`,
+  String.raw`${GAP}+\d{1,3}(?![\p{N}]|[.,/:-]\p{N}|${GAP}*(?:%|m²|m2|trăm|chục))`,
+  String.raw`${GAP}+${DIGIT_WORD}(?=${GAP}*(?:[.,;:!?)\]\n]|$))`,
+].join('|')})`;
 
 function lastUnit(body: string): CompactUnit | undefined {
-  const words = body.match(VI_UNIT_WORDS) ?? [];
-  const word = words.at(-1);
+  const word = body.match(VI_UNIT_WORDS)?.at(-1);
   return word === undefined ? undefined : VI_UNITS[word.toLowerCase()];
 }
-const LETTER_UNIT = String.raw`(${Object.keys(LETTER_UNITS).join('|')})(?![\p{L}\p{N}])`;
 
 /** Basis points per unit of each percentage word. */
 const RATIO_UNITS: Readonly<Record<string, bigint>> = {
@@ -125,6 +130,7 @@ const monthNumber = (name: string): string => MONTH_NUMBERS[name.slice(0, 3).toL
 const sign = (text: string): 1 | -1 => (text === '-' || text === '−' ? -1 : 1);
 const orNull = (value: ExtractedValue): readonly ExtractedValue[] | null => (value.kind === 'invalid' ? null : [value]);
 const re = (source: string, flags = ''): RegExp => new RegExp(source, `yu${flags}`);
+const invalid: ExtractedValue = { kind: 'invalid' };
 
 const hcmTime = new Intl.DateTimeFormat('en-GB', { timeZone: BUSINESS_TIMEZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
@@ -141,10 +147,10 @@ function readTimestamp(match: RegExpExecArray): readonly ExtractedValue[] {
   return [date, time, { kind: 'date', iso: localDate }, { kind: 'time', hhmm: localTime }];
 }
 
-const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { tỷ: 'ty', tỉ: 'ty', ty: 'ty', triệu: 'tr', trđ: 'tr', tr: 'tr', nghìn: 'nghin', ngàn: 'nghin', k: 'nghin' };
+const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { ...VI_UNITS, ty: 'ty', k: 'nghin' };
 
 /** Digits split by an invisible format character, such as a zero-width space in `1\u200B2`, cannot be read. */
-const HIDDEN_SPLIT: Pattern = { regex: re(String.raw`\p{N}+(?:\p{Cf}+\p{N}+)+`), read: () => [{ kind: 'invalid' }] };
+const HIDDEN_SPLIT: Pattern = { regex: re(String.raw`\p{N}+(?:\p{Cf}+\p{N}+)+`), read: () => [invalid] };
 
 /** `3tr5`, `1ty2` and `1k5` alternate digits and letters like a code, so they are read before the code rule. */
 const SHORTHAND: Pattern = {
@@ -206,14 +212,14 @@ const VALUE_PATTERNS: readonly Pattern[] = [
     read: ([, s = '', digits = '', word = '', unit]) => {
       const compact = unit === undefined ? undefined : WORD_UNITS[unit.toLowerCase()];
       const multiplier = MULTIPLIER_WORDS[word.toLowerCase()];
-      return [compact === undefined || multiplier === undefined ? { kind: 'invalid' } : readCompact(digits, sign(s), compact, multiplier)];
+      return [compact === undefined || multiplier === undefined ? invalid : readCompact(digits, sign(s), compact, multiplier)];
     },
   },
   {
     regex: re(String.raw`${SIGN}(${NUMBER}${GAP}*${VI_UNIT}${SPOKEN_TAIL}+)(?:\s*${CURRENCY})?`, 'i'),
     read: ([, s = '', body = '']) => {
       const unit = lastUnit(body);
-      return [unit === undefined ? { kind: 'invalid' } : readSpoken(body, sign(s), unit)];
+      return [unit === undefined ? invalid : readSpoken(body, sign(s), unit)];
     },
   },
   {
@@ -231,7 +237,7 @@ const VALUE_PATTERNS: readonly Pattern[] = [
     },
   },
   { regex: re(String.raw`${SIGN}${NUMBER}\s*${CURRENCY}`), read: ([, s = '', digits = '']) => [readAmount(digits, sign(s))] },
-  { regex: re(String.raw`${SIGN}\d+(?:${GROUP_SPACE}+\d+)+\s*${CURRENCY}`), read: () => [{ kind: 'invalid' }] },
+  { regex: re(String.raw`${SIGN}\d+(?:${GROUP_SPACE}+\d+)+\s*${CURRENCY}`), read: () => [invalid] },
   {
     regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`),
     read: ([, s = '', digits = '', unit]) => {
@@ -241,9 +247,9 @@ const VALUE_PATTERNS: readonly Pattern[] = [
   },
 ];
 
-/** Any digit, except a superscript or subscript after a letter, as in `m²`. */
+/** Any digit, except a non-decimal digit after a letter, such as the ² in `m²`. */
 const DIGIT = /\p{Nd}|(?<!\p{L})\p{N}/gu;
-const UNREADABLE = /[-−]?\p{Nd}+/yu;
+const UNREADABLE = /[-−+]?\p{N}+/yu;
 const WORD_CHAR = /[\p{L}\p{N}]/u;
 const LETTER = /\p{L}/u;
 const SENTENCE_END = /[.!?;](?=\s|$)|\n/gu;
@@ -279,7 +285,7 @@ function codeWordAt(text: string, at: number): { readonly start: number; readonl
 function unreadable(text: string, at: number): Found {
   UNREADABLE.lastIndex = at;
   const match = UNREADABLE.exec(text);
-  return { end: at + (match?.[0].length ?? 1), values: [{ kind: 'invalid' }] };
+  return { end: at + (match?.[0].length ?? 1), values: [invalid] };
 }
 
 function readAt(text: string, at: number, patterns: readonly Pattern[]): Found | null {
