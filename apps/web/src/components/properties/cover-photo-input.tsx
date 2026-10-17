@@ -114,7 +114,7 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
           />
         )}
       </div>
-      <p role="status" aria-live="polite" className="flex min-h-7 flex-wrap items-center gap-2 text-body">
+      <p role="status" aria-live="polite" className="flex flex-wrap items-center gap-2 text-body">
         {message === null ? null : (
           <>
             <StatusShape status="overdue" className="size-4" />

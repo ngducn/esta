@@ -38,11 +38,11 @@ function DetailInput({
         inputMode={INPUT_MODE[input]}
         autoComplete="off"
         aria-invalid={error !== null}
-        aria-describedby={`${id}-message`}
+        aria-describedby={input === 'text' ? undefined : `${id}-message`}
         onChange={(event) => onChange(event.target.value)}
         className={input === 'text' ? 'mt-1' : 'mt-1 max-w-48 figures'}
       />
-      <FieldMessage id={`${id}-message`} error={error} />
+      {input === 'text' ? null : <FieldMessage id={`${id}-message`} error={error} />}
     </div>
   );
 }

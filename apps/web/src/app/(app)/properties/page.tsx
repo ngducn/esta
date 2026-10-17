@@ -26,6 +26,7 @@ import { ViewToggle } from '@/components/properties/view-toggle';
 import { sectionIcons } from '@/components/shell/section-icons';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { requireMember } from '@/server/member';
 import { loadArchivedNickname } from '@/server/properties/form';
 import { propertyIslandIntl } from '@/server/properties/island-messages';
@@ -105,10 +106,6 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           {list.householdCount === 0 ? null : (
             <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
           )}
-          <Link href="/properties/archived" className={buttonVariants({ variant: 'outline' })}>
-            <Archive aria-hidden="true" />
-            {t('archivedLink')}
-          </Link>
           {addAction === undefined ? null : (
             <Link href={addAction.href} data-testid="add-property" className={buttonVariants({ variant: 'primary' })}>
               <Plus aria-hidden="true" />
@@ -162,6 +159,10 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           )}
         </>
       )}
+      <Link href="/properties/archived" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start')}>
+        <Archive aria-hidden="true" />
+        {t('archivedLink')}
+      </Link>
     </div>
   );
 }
