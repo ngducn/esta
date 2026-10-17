@@ -3,6 +3,13 @@ import { foldVietnamese } from '../search/fold';
 export const MEMO_PREFIX = 'ESTA';
 export const MEMO_CODE_LENGTH = 8;
 
+const MEMO_CODE = new RegExp(`^[A-Z0-9]{${MEMO_CODE_LENGTH}}$`);
+
+/** The form P3-05 issues memo codes in (DOMAIN-VN §10). */
+export function isMemoCode(code: string): boolean {
+  return MEMO_CODE.test(code);
+}
+
 /** Uppercase ASCII letters and digits only, the form a bank may deliver a memo in (DOMAIN-VN §9). */
 export function normalizeDescription(description: string): string {
   return foldVietnamese(description)

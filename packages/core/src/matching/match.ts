@@ -1,13 +1,15 @@
 import { daysBetween } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
 import type { Vnd } from '../money/vnd';
+import { foldVietnamese } from '../search/fold';
 import type { StatementRow } from './decode';
 import { identifyRows, type RowIdentity } from './fingerprint';
-import { findMemoCodes, normalizeDescription } from './memo';
+import { findMemoCodes, isMemoCode, normalizeDescription } from './memo';
 
 /** An issued invoice as the matcher sees it. The caller derives `outstanding` from allocations. */
 export type InvoiceCandidate = {
   id: string;
+  /** Matched only in the issued form, 8 characters of A to Z and 0 to 9; an invoice with any other code is ignored. */
   memoCode: string;
   tenantName: string;
   dueDate: IsoDate;
@@ -54,6 +56,28 @@ function decide(candidates: InvoiceCandidate[], ifOne: (invoice: InvoiceCandidat
   return { status: 'unmatched', candidateIds: [...candidates].sort(byDueDateThenId).map((invoice) => invoice.id) };
 }
 
+/** A description folded like `normalizeDescription`, with the offsets where its words start and end. */
+type FoldedWords = { text: string; edges: ReadonlySet<number> };
+
+function foldWords(description: string): FoldedWords {
+  const edges = new Set<number>([0]);
+  let text = '';
+  for (const word of foldVietnamese(description).toUpperCase().split(/[^A-Z0-9]+/)) {
+    text += word;
+    edges.add(text.length);
+  }
+  return { text, edges };
+}
+
+/** The name must start and end on word edges, so `AN` never matches inside `ANH` while a bank's deleted spaces still match. */
+function namesTenant(description: FoldedWords, name: string): boolean {
+  if (name === '') return false;
+  for (let at = description.text.indexOf(name); at !== -1; at = description.text.indexOf(name, at + 1)) {
+    if (description.edges.has(at) && description.edges.has(at + name.length)) return true;
+  }
+  return false;
+}
+
 function withinWindow(row: StatementRow, invoice: InvoiceCandidate): boolean {
   return Math.abs(daysBetween(invoice.dueDate, row.date)) <= SUGGESTION_WINDOW_DAYS;
 }
@@ -67,14 +91,11 @@ function matchRow(row: StatementRow, index: Indexed[], issuedCodes: ReadonlySet<
     return decide(named, (invoice) => ({ status: 'memo_match', invoiceId: invoice.id, memoCode: invoice.memoCode }));
   }
 
-  const description = normalizeDescription(row.description);
+  const description = foldWords(row.description);
   const suggested = index
     .filter(
       ({ invoice, normalizedName }) =>
-        invoice.outstanding === row.amount &&
-        normalizedName !== '' &&
-        description.includes(normalizedName) &&
-        withinWindow(row, invoice),
+        invoice.outstanding === row.amount && namesTenant(description, normalizedName) && withinWindow(row, invoice),
     )
     .map(({ invoice }) => invoice);
   return decide(suggested, (invoice) => ({ status: 'suggested', invoiceId: invoice.id }));
@@ -93,9 +114,10 @@ function asRepeat(match: StatementMatch, repeatOf: number): StatementMatch {
 }
 
 /**
- * The LSE-8 rules. A credit row naming exactly one issued memo code is `memo_match`. A credit row
- * whose amount equals the outstanding amount of exactly one invoice, whose tenant's name appears in
- * the description and whose date is within ten days of the due date is `suggested`. Everything
+ * The LSE-8 rules, over the invoices whose memo code has the issued form. A credit row naming
+ * exactly one issued memo code is `memo_match`. A credit row whose amount equals the outstanding
+ * amount of exactly one invoice, whose tenant's name appears in the description as whole words and
+ * whose date is within ten days of the due date is `suggested`. Everything
  * else is `unmatched`, with the candidates when there were several. Rows that bring no money in
  * and rows an earlier import or row already holds are `ignored`. Only the first of several
  * identical rows without a bank reference can match.
@@ -105,8 +127,9 @@ export function matchRows(
   invoices: readonly InvoiceCandidate[],
   options: MatchOptions = {},
 ): MatchedRow[] {
-  const index: Indexed[] = invoices.map((invoice) => ({ invoice, normalizedName: normalizeDescription(invoice.tenantName) }));
-  const issuedCodes = new Set(invoices.map((invoice) => invoice.memoCode));
+  const issued = invoices.filter((invoice) => isMemoCode(invoice.memoCode));
+  const index: Indexed[] = issued.map((invoice) => ({ invoice, normalizedName: normalizeDescription(invoice.tenantName) }));
+  const issuedCodes = new Set(issued.map((invoice) => invoice.memoCode));
   const known = options.knownFingerprints ?? new Set<string>();
   const identities = identifyRows(rows);
   return rows.map((row, i) => {

@@ -38,5 +38,5 @@ export {
   type MatchedRow,
   type StatementMatch,
 } from './match';
-export { MEMO_CODE_LENGTH, MEMO_PREFIX, findMemoCodes, normalizeDescription } from './memo';
+export { MEMO_CODE_LENGTH, MEMO_PREFIX, findMemoCodes, isMemoCode, normalizeDescription } from './memo';
 export { renderCsv, renderDate, renderMagnitude, renderStatementCsv, renderStatementGrid, type RenderableRow } from './render';
