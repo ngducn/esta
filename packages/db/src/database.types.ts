@@ -328,6 +328,94 @@ export type Database = {
         }
         Relationships: []
       }
+      certificates: {
+        Row: {
+          annotations: Json
+          book_entry_no: string | null
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          extraction_id: string | null
+          form: string
+          holder_party_ids: string[]
+          household_id: string
+          id: string
+          issued_by: string | null
+          issued_on: string | null
+          mortgage: Json | null
+          property_id: string
+          serial_no: string | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          annotations?: Json
+          book_entry_no?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          extraction_id?: string | null
+          form: string
+          holder_party_ids?: string[]
+          household_id: string
+          id?: string
+          issued_by?: string | null
+          issued_on?: string | null
+          mortgage?: Json | null
+          property_id: string
+          serial_no?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          annotations?: Json
+          book_entry_no?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          extraction_id?: string | null
+          form?: string
+          holder_party_ids?: string[]
+          household_id?: string
+          id?: string
+          issued_by?: string | null
+          issued_on?: string | null
+          mortgage?: Json | null
+          property_id?: string
+          serial_no?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "certificates_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       household_members: {
         Row: {
           created_at: string
@@ -524,6 +612,83 @@ export type Database = {
           },
         ]
       }
+      parcels: {
+        Row: {
+          area_m2: number | null
+          certificate_id: string | null
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          map_sheet_no: string | null
+          origin_text: string | null
+          parcel_no: string | null
+          property_id: string
+          purposes: Json
+          updated_at: string
+          use_form: string | null
+        }
+        Insert: {
+          area_m2?: number | null
+          certificate_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          map_sheet_no?: string | null
+          origin_text?: string | null
+          parcel_no?: string | null
+          property_id: string
+          purposes?: Json
+          updated_at?: string
+          use_form?: string | null
+        }
+        Update: {
+          area_m2?: number | null
+          certificate_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          map_sheet_no?: string | null
+          origin_text?: string | null
+          parcel_no?: string | null
+          property_id?: string
+          purposes?: Json
+          updated_at?: string
+          use_form?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcels_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcels_household_id_property_id_certificate_id_fkey"
+            columns: ["household_id", "property_id", "certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["household_id", "property_id", "id"]
+          },
+          {
+            foreignKeyName: "parcels_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "parcels_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       parties: {
         Row: {
           address_text: string | null
@@ -676,6 +841,86 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "households"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      structures: {
+        Row: {
+          certificate_id: string | null
+          completed_year: number | null
+          created_at: string
+          created_by: string | null
+          floor_area_m2: number | null
+          floors: number | null
+          footprint_m2: number | null
+          household_id: string
+          id: string
+          kind: string
+          ownership_term: string | null
+          property_id: string
+          structure_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          certificate_id?: string | null
+          completed_year?: number | null
+          created_at?: string
+          created_by?: string | null
+          floor_area_m2?: number | null
+          floors?: number | null
+          footprint_m2?: number | null
+          household_id: string
+          id?: string
+          kind: string
+          ownership_term?: string | null
+          property_id: string
+          structure_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          certificate_id?: string | null
+          completed_year?: number | null
+          created_at?: string
+          created_by?: string | null
+          floor_area_m2?: number | null
+          floors?: number | null
+          footprint_m2?: number | null
+          household_id?: string
+          id?: string
+          kind?: string
+          ownership_term?: string | null
+          property_id?: string
+          structure_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "structures_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "structures_household_id_property_id_certificate_id_fkey"
+            columns: ["household_id", "property_id", "certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["household_id", "property_id", "id"]
+          },
+          {
+            foreignKeyName: "structures_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "structures_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
           },
         ]
       }

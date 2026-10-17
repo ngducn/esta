@@ -4,6 +4,7 @@
  */
 export const PROPERTY_TABS = [
   { id: 'overview', labelKey: 'overview', segment: null },
+  { id: 'legal', labelKey: 'legal', segment: 'legal' },
   { id: 'activity', labelKey: 'activity', segment: 'activity' },
 ] as const satisfies readonly { id: string; labelKey: string; segment: string | null }[];
 

@@ -42,7 +42,10 @@ describe('generate', () => {
       'Gia đình Demo 3',
     ]);
     expect(insertedRows(sql, 'public.properties')).toHaveLength(28);
-    expect(insertedRows(sql, 'public.parties')).toHaveLength(8);
+    expect(insertedRows(sql, 'public.parties')).toHaveLength(12);
+    expect(insertedRows(sql, 'public.certificates')).toHaveLength(28);
+    expect(insertedRows(sql, 'public.parcels')).toHaveLength(28);
+    expect(insertedRows(sql, 'public.structures')).toHaveLength(20);
     expect(insertedRows(sql, 'public.notification_preferences')).toHaveLength(8);
     expect(sql).toContain("'ryan.lane3@demo.esta.test'");
   });
@@ -105,6 +108,27 @@ describe('PROPERTY_SEEDS', () => {
       if ('house_no' in seed.address) expect(seed.address.house_no).toMatch(/^\S+ Demo$/);
       expect(seed.certificate_address_text).toMatch(/(Số|số|Lô|Thửa đất số) \S+ Demo, /);
     }
+  });
+});
+
+describe('legal seed', () => {
+  const sql = generate({ ...DEFAULT_OPTIONS, lanes: 1 });
+  const certificates = insertedRows(sql, 'public.certificates');
+
+  it('covers all five certificate forms in each household', () => {
+    const forms = certificates.filter((row) => row.includes(`'${seedId('seed:household:lane-1')}'`)).map((row) => /'(so_do_pre2009|so_hong_pre2009|gcn_2009_2024|gcn_2024|paper_only)'/.exec(row)?.[1]);
+    expect(new Set(forms)).toEqual(new Set(['so_do_pre2009', 'so_hong_pre2009', 'gcn_2009_2024', 'gcn_2024', 'paper_only']));
+  });
+
+  it('mortgages Bảo Lộc to the household bank party for 2.000.000.000 VND', () => {
+    const baoLoc = certificates.find((row) => row.includes(`'${seedId('seed:certificate:lane-1:bao-loc')}'`));
+    expect(baoLoc).toContain(`'mortgaged', '{"bank_party_id":"${seedId('seed:party:bank-lane-1')}","amount_vnd":2000000000,"registered_on":"2024-03-12"}'`);
+    expect(insertedRows(sql, 'public.parties').filter((row) => row.includes("'Ngân hàng Demo'") && row.includes(`'{"bank"}'`))).toHaveLength(2);
+  });
+
+  it('leaves the Long An parcel without a number, a map sheet or an area', () => {
+    const longAn = insertedRows(sql, 'public.parcels').find((row) => row.includes(`'${seedId('seed:parcel:lane-1:long-an:1')}'`));
+    expect(longAn).toContain(`'${seedId('seed:certificate:lane-1:long-an')}', null, null, null, null, '[]'`);
   });
 });
 

@@ -23,3 +23,8 @@ export function compareVietnameseNames(a: string, b: string): number {
     collator.compare(left.family, right.family)
   );
 }
+
+/** SPEC D11: a pasted or typed ID number keeps only its last four digits, so the full number is never held. */
+export function idLast4(text: string): string {
+  return text.replace(/[^0-9]/g, '').slice(-4);
+}

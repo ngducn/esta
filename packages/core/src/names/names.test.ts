@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareVietnameseNames, sortKeyVietnameseName } from './index';
+import { compareVietnameseNames, idLast4, sortKeyVietnameseName } from './index';
 
 describe('sortKeyVietnameseName', () => {
   it('orders the parts given, middle, family', () => {
@@ -35,5 +35,21 @@ describe('compareVietnameseNames', () => {
 
   it('sorts a shorter given name before a longer one that starts with it', () => {
     expect(compareVietnameseNames('Bùi Demo Thị An', 'Bùi Demo Anh')).toBeLessThan(0);
+  });
+});
+
+describe('idLast4', () => {
+  it('keeps the last four digits of a pasted 12-digit CCCD', () => {
+    expect(idLast4('079201005582')).toBe('5582');
+  });
+
+  it('keeps the last four digits of a pasted 9-digit CMND with separators', () => {
+    expect(idLast4('023 456 789')).toBe('6789');
+  });
+
+  it('keeps fewer digits as typed and drops everything that is not a digit', () => {
+    expect(idLast4('55')).toBe('55');
+    expect(idLast4('a5-5b')).toBe('55');
+    expect(idLast4('')).toBe('');
   });
 });

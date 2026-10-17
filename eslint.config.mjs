@@ -88,12 +88,14 @@ export default defineConfig(
         { object: 'performance', property: 'now', message: 'Seed timestamps come from --as-of (ctx.asOf).' },
         { object: 'crypto', property: 'randomUUID', message: 'Seed ids come from seedId(key).' },
         { object: 'crypto', property: 'getRandomValues', message: 'Seed data is deterministic: draw from rngFor(scope).' },
+        { object: 'globalThis', property: 'crypto', message: 'Seed data is deterministic: ids come from seedId(key), draws from rngFor(scope).' },
+        { object: 'process', property: 'hrtime', message: 'Seed timestamps come from --as-of (ctx.asOf).' },
       ],
       'no-restricted-imports': [
         'error',
         ...['crypto', 'node:crypto'].map((name) => ({
           name,
-          importNames: ['randomUUID', 'randomBytes', 'randomInt', 'randomFillSync', 'getRandomValues', 'webcrypto'],
+          importNames: ['default', 'randomUUID', 'randomBytes', 'randomInt', 'randomFillSync', 'getRandomValues', 'webcrypto'],
           message: 'Seed data is deterministic: ids come from seedId(key), draws from rngFor(scope).',
         })),
       ],
