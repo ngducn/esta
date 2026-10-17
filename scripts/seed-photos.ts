@@ -7,7 +7,7 @@ import { slotEnv } from './slot-env.ts';
 export const BUCKET = 'property-photos';
 const PHOTOS_DIR = join(import.meta.dirname, '..', 'supabase', 'seed', 'photos');
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
-const CONTENT_TYPES = { webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' } as const;
+const CONTENT_TYPES = { avif: 'image/avif', webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' } as const;
 
 export type PhotoUpload = { path: string; file: string; contentType: string };
 

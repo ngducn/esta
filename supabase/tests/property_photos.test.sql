@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(33);
+select plan(34);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -25,11 +25,13 @@ insert into storage.objects (bucket_id, name) values
 
 select results_eq(
   $$ select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'property-photos' $$,
-  $$ values (false, 5242880::bigint, array['image/webp', 'image/jpeg', 'image/png']) $$,
-  'property-photos is private, capped at 5 MB and takes WebP, JPEG and PNG only');
+  $$ values (false, 5242880::bigint, array['image/avif', 'image/webp', 'image/jpeg', 'image/png']) $$,
+  'property-photos is private, capped at 5 MB and takes AVIF, WebP, JPEG and PNG only');
 
 select is(private.property_photo_household(current_setting('tests.a_path')), :'a'::uuid,
   'a path under a property of household A resolves to A');
+select is(private.property_photo_household(format('%s/%s/cover.avif', :'a', :'pa')), :'a'::uuid,
+  'an AVIF cover under a property of household A resolves to A');
 select is(private.property_photo_household(format('%s/%s/cover.webp', :'a', :'pb')), null,
   'household A with household B''s property resolves to nothing');
 select is(private.property_photo_household(current_setting('tests.a_unknown')), null,
@@ -40,7 +42,7 @@ select is(private.property_photo_household(format('%s/%s/Cover.WEBP', :'a', :'pa
   'an upper-case name resolves to nothing');
 select is(private.property_photo_household('not-a-uuid/x/cover.webp'), null, 'a malformed path resolves to nothing');
 
-select lives_ok(format($$ update public.properties set cover_photo_path = '%s/%s/nha-pho.webp' where id = %L $$, :'a', :'pa', :'pa'),
+select lives_ok(format($$ update public.properties set cover_photo_path = '%s/%s/nha-pho.avif' where id = %L $$, :'a', :'pa', :'pa'),
   'cover_photo_path takes a name under the row''s own household and id');
 select throws_ok(format($$ update public.properties set cover_photo_path = '%s/%s/nha-pho.webp' where id = %L $$, :'b', :'pb', :'pa'),
   '23514', null, 'cover_photo_path refuses a path naming another household');

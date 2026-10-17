@@ -19,7 +19,7 @@ describe('planPhotoUploads', () => {
     const plan = planPhotoUploads(seededPaths(1));
     expect(plan).toHaveLength(12);
     expect(new Set(plan.map((upload) => upload.path.split('/')[0])).size).toBe(2);
-    expect(plan.every((upload) => existsSync(upload.file) && upload.contentType === 'image/webp')).toBe(true);
+    expect(plan.every((upload) => existsSync(upload.file) && upload.contentType === 'image/avif')).toBe(true);
     expect(seededPaths(1).filter((path) => path === null)).toHaveLength(2);
   });
 

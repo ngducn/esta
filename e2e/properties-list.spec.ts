@@ -138,7 +138,7 @@ test('rule 5: a member cannot sign or read another household photo, and her page
   await open(page, 'me.lane5@demo.esta.test', 'light');
   const ownHousehold = seedId('seed:household:lane-5');
   const otherHousehold = seedId('seed:household:lane-6');
-  const otherPath = `${otherHousehold}/${seedId('seed:property:lane-6:q7')}/nha-pho.webp`;
+  const otherPath = `${otherHousehold}/${seedId('seed:property:lane-6:q7')}/nha-pho.avif`;
   const headers = { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}` };
 
   const sign = await page.request.post(`${supabaseUrl}/storage/v1/object/sign/property-photos/${otherPath}`, { headers, data: { expiresIn: 60 } });
@@ -146,7 +146,7 @@ test('rule 5: a member cannot sign or read another household photo, and her page
   const read = await page.request.get(`${supabaseUrl}/storage/v1/object/authenticated/property-photos/${otherPath}`, { headers });
   expect(read.ok(), 'reading household 6 photo with her token fails').toBe(false);
   const own = await page.request.get(
-    `${supabaseUrl}/storage/v1/object/authenticated/property-photos/${ownHousehold}/${seedId('seed:property:lane-5:q7')}/nha-pho.webp`,
+    `${supabaseUrl}/storage/v1/object/authenticated/property-photos/${ownHousehold}/${seedId('seed:property:lane-5:q7')}/nha-pho.avif`,
     { headers },
   );
   expect(own.ok(), 'the same request for her own photo succeeds, so the refusal above is the policy').toBe(true);
