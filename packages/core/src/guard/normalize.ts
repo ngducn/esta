@@ -135,14 +135,17 @@ function wholeNumber(decimal: Decimal, multiplier: bigint, sign: 1 | -1): number
 
 const invalid: ExtractedValue = { kind: 'invalid' };
 
+const GROUP_SPACE = /[ \u00A0\u202F\u2009]/gu;
+const decimalOf = (digits: string): Decimal | null => parseDecimal(digits.replace(GROUP_SPACE, ''));
+
 export function readAmount(digits: string, sign: 1 | -1): ExtractedValue {
-  const decimal = parseDecimal(digits);
+  const decimal = decimalOf(digits);
   const vnd = decimal === null ? null : wholeNumber(decimal, 1n, sign);
   return vnd === null ? invalid : { kind: 'amount', vnd };
 }
 
 export function readCompact(digits: string, sign: 1 | -1, unit: CompactUnit): ExtractedValue {
-  const decimal = parseDecimal(digits);
+  const decimal = decimalOf(digits);
   const vnd = decimal === null ? null : wholeNumber(decimal, BigInt(COMPACT_RULES[unit].size), sign);
   return vnd === null ? invalid : { kind: 'compact', vnd, unit };
 }
@@ -155,14 +158,14 @@ export function readShorthand(whole: string, fraction: string, unit: CompactUnit
 }
 
 export function readRatio(digits: string, bpPerUnit: bigint): ExtractedValue {
-  const decimal = parseDecimal(digits);
+  const decimal = decimalOf(digits);
   const bp = decimal === null ? null : wholeNumber(decimal, bpPerUnit, 1);
   return bp === null ? invalid : { kind: 'ratio', bp };
 }
 
 /** Every form follows parseDecimal's grouping rule: `1.500` and `1,500` are both 1500, `3,5` and `3.5` are 3.5. */
 function toNumber(digits: string): number | null {
-  const decimal = parseDecimal(digits);
+  const decimal = decimalOf(digits);
   if (decimal === null) return null;
   const integer = toSafeNumber(decimal.digits);
   return integer.ok ? integer.value / 10 ** decimal.scale : null;

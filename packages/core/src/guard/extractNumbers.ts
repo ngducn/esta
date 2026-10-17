@@ -37,7 +37,9 @@ type Pattern = {
 const BUSINESS_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
 const SIGN = '([-−]?)';
-const NUMBER = String.raw`(\d+(?:[.,]\d+)*)`;
+const GROUP_SPACE = String.raw`[ \u00A0\u202F\u2009]`;
+/** `5 000 000` grouped by a space, NBSP, narrow NBSP or thin space, else `1.500.000` and `3,5` for parseDecimal. */
+const NUMBER = String.raw`(\d{1,3}(?:${GROUP_SPACE}\d{3})+(?:[.,]\d{1,2})?(?![\p{N}])|\d+(?:[.,]\d+)*)`;
 const NOT_DIGIT = String.raw`(?![\p{N}])`;
 const NOT_LETTER = String.raw`(?![\p{L}])`;
 const CURRENCY = String.raw`(?:₫|đồng|đ|dong|VNĐ|VND|vnd)${NOT_LETTER}`;
@@ -182,6 +184,7 @@ const PATTERNS: readonly Pattern[] = [
     },
   },
   { regex: re(String.raw`${SIGN}${NUMBER}\s*${CURRENCY}`), read: ([, s = '', digits = '']) => [readAmount(digits, sign(s))] },
+  { regex: re(String.raw`${SIGN}\d+(?:${GROUP_SPACE}+\d+)+\s*${CURRENCY}`), read: () => [{ kind: 'invalid' }] },
   { regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`), read: ([, , digits = '']) => [readCount(digits)] },
 ];
 
