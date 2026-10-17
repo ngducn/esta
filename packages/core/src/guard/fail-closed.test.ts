@@ -164,7 +164,8 @@ describe('list markers, code words, years and hidden digits', () => {
   });
 
   it('reads digits split by an invisible character, or written as a fraction, as unparseable', () => {
-    expect(offending('Nợ 1​2 triệu.', { member_count: 1, v: 2_000_000 })).toEqual(['1​2:unparseable']);
+    const ZWSP = '\u200B';
+    expect(offending(`Nợ 1${ZWSP}2 triệu.`, { member_count: 1, v: 2_000_000 })).toEqual([`1${ZWSP}2:unparseable`]);
     expect(offending('Giá ½ tỷ.', {})).toEqual(['½:unparseable']);
     expect(passes('Diện tích 125,5 m², giá mỗi m² theo bảng giá.', { area_m2: 125.5 })).toBe(true);
   });

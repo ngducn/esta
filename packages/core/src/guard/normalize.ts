@@ -136,10 +136,8 @@ export function lookupKeys(claim: CanonicalNumber): readonly string[] {
       return [`t:${claim.hhmm}`];
     case 'area':
       return [`a:${claim.m2}`, `n:${claim.m2}`];
-    case 'count': {
-      const yearish = Number.isInteger(claim.value) && claim.value >= YEAR_RANGE.min && claim.value <= YEAR_RANGE.max;
-      return yearish ? [`n:${claim.value}`, `y:${claim.value}`] : [`n:${claim.value}`];
-    }
+    case 'count':
+      return [`n:${claim.value}`];
     case 'code':
       return [`code:${memoless(claim.code)}`];
   }

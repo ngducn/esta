@@ -48,7 +48,7 @@ const NOT_LETTER = String.raw`(?![\p{L}])`;
 const CURRENCY = String.raw`(?:₫|đồng|đ|dong|VNĐ|VND|vnd)${NOT_LETTER}`;
 const MONTH = '(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept|Sep|Oct|Nov|Dec)\\.?';
 const ORDINAL = '(?:st|nd|rd|th)?';
-const COUNT_UNIT = String.raw`(?:\s(?:ngày|tháng|năm|phòng|căn|lần|days?|months?|years?|rooms?|units?|times?)${NOT_LETTER})?`;
+const COUNT_UNIT = String.raw`(\s(?:ngày|tháng|năm|phòng|căn|lần|days?|months?|years?|rooms?|units?|times?)${NOT_LETTER})?`;
 
 /** Unit words may follow a space, as may the letter units in `850 K ₫` and `15 M ₫`. */
 const VI_UNITS: Readonly<Record<string, CompactUnit>> = {
@@ -143,6 +143,9 @@ function readTimestamp(match: RegExpExecArray): readonly ExtractedValue[] {
 
 const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { tỷ: 'ty', tỉ: 'ty', ty: 'ty', triệu: 'tr', trđ: 'tr', tr: 'tr', nghìn: 'nghin', ngàn: 'nghin', k: 'nghin' };
 
+/** Digits split by an invisible format character, such as a zero-width space in `1\u200B2`, cannot be read. */
+const HIDDEN_SPLIT: Pattern = { regex: re(String.raw`\p{N}+(?:\p{Cf}+\p{N}+)+`), read: () => [{ kind: 'invalid' }] };
+
 /** `3tr5`, `1ty2` and `1k5` alternate digits and letters like a code, so they are read before the code rule. */
 const SHORTHAND: Pattern = {
   regex: re(String.raw`(?<![\p{L}\p{N}])(\d{1,3})(${Object.keys(SHORTHAND_UNITS).join('|')})(\d{1,3})(?![\p{L}\p{N}])`, 'i'),
@@ -229,20 +232,31 @@ const VALUE_PATTERNS: readonly Pattern[] = [
   },
   { regex: re(String.raw`${SIGN}${NUMBER}\s*${CURRENCY}`), read: ([, s = '', digits = '']) => [readAmount(digits, sign(s))] },
   { regex: re(String.raw`${SIGN}\d+(?:${GROUP_SPACE}+\d+)+\s*${CURRENCY}`), read: () => [{ kind: 'invalid' }] },
-  { regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`), read: ([, s = '', digits = '']) => [readCount(digits, sign(s))] },
+  {
+    regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`),
+    read: ([, s = '', digits = '', unit]) => {
+      const year = unit === undefined && s === '' && /^\d{4}$/u.test(digits) ? readYear(digits) : null;
+      return [year?.kind === 'year' ? year : readCount(digits, sign(s))];
+    },
+  },
 ];
 
-const DIGIT = /\p{Nd}/gu;
+/** Any digit, except a superscript or subscript after a letter, as in `m²`. */
+const DIGIT = /\p{Nd}|(?<!\p{L})\p{N}/gu;
 const UNREADABLE = /[-−]?\p{Nd}+/yu;
 const WORD_CHAR = /[\p{L}\p{N}]/u;
 const LETTER = /\p{L}/u;
 const SENTENCE_END = /[.!?;](?=\s|$)|\n/gu;
 const CITATION = /esta:\/\/[a-z_]+\/([A-Za-z0-9-]+)/gu;
-const SKIP = /https?:\/\/[^\s)\]]+|esta:\/\/[^\s)\]]+|\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b|^[ \t]*\d+[.)](?=[ \t])/gimu;
+const SKIP = /https?:\/\/[^\s)\]]+|esta:\/\/[^\s)\]]+|\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b|^[ \t]*\d{1,2}[.)](?=[ \t])/gimu;
+
+const UPPER_CODE = /^(?:[A-Z]{3,}\d+|\d+[A-Z]{3,})$/u;
+const AFTER_ESTA = /ESTA[^\S\n]*$/u;
 
 /**
- * A word that alternates between letters and digits at least twice, such as a memo code `7K2QX9MP` or
- * `3PN2WC`, is a code: the run must contain the same word, read case-insensitively. `Q7` and `Phòng5` are not codes.
+ * A code is a word that alternates between letters and digits at least twice (`7K2QX9MP`, `3PN2WC`), three or
+ * more capitals glued to digits (`INV12`), or any word after `ESTA`: the run must contain the same word, read
+ * case-insensitively. `Q7` and `Phòng5` are not codes.
  */
 function codeWordAt(text: string, at: number): { readonly start: number; readonly end: number } | null {
   let start = at;
@@ -256,7 +270,9 @@ function codeWordAt(text: string, at: number): { readonly start: number; readonl
     if (wasLetter !== undefined && wasLetter !== isLetter) transitions += 1;
     wasLetter = isLetter;
   }
-  return transitions >= 2 ? { start, end } : null;
+  const word = text.slice(start, end);
+  const isCode = transitions >= 2 || UPPER_CODE.test(word) || AFTER_ESTA.test(text.slice(Math.max(0, start - 8), start));
+  return isCode ? { start, end } : null;
 }
 
 /** Digits no pattern reads, such as full-width `１３`, still count as a number the guard cannot read. */
@@ -324,7 +340,7 @@ export function scan(text: string): Scan {
       DIGIT.lastIndex = skip.end;
       continue;
     }
-    let found = readAt(text, at, [SHORTHAND]);
+    let found = readAt(text, at, [HIDDEN_SPLIT, SHORTHAND]);
     if (found === null) {
       const code = codeWordAt(text, at);
       if (code !== null) {

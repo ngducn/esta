@@ -74,7 +74,7 @@ describe('extractNumbers reads every form', () => {
     ['Thứ Tư, 07/10/2026', [date('2026-10-07')]],
     ['2026-10-07', [date('2026-10-07')]],
     ['2026-09', [{ kind: 'monthYear', year: 2026, month: 9 }]],
-    ['2020-2026', [count(2020), count(2026)]],
+    ['2020-2026', [{ kind: 'year', year: 2020 }, { kind: 'year', year: 2026 }]],
     ['31/02/2026', [invalid]],
     ['7/10', [{ kind: 'dayMonth', month: 10, day: 7 }]],
     ['ngày 7 tháng 10', [{ kind: 'dayMonth', month: 10, day: 7 }]],
