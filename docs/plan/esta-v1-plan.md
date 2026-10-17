@@ -2,7 +2,7 @@
 
 This plan builds Esta v1, the private web app Mẹ and Ryan use to run the family's houses, land, leases, rent, money and the Trợ lý assistant, as specified in `docs/spec/`.
 It runs as 72 PRs in seven phases, in the order of SPEC §10, cut into vertical slices on 2026-10-15 (`docs/plan/trail/slice-matrix.md`).
-`docs/plan/trail/pr-inventory.md` gives each PR's delivery order (`Seq`), user outcome, scope and proof. Ids stay stable when a PR moves, so ids are not in delivery order, and the sections below follow delivery order for Phases 0 and 1.
+`docs/plan/trail/pr-inventory.md` gives each PR's delivery order (`Seq`), user outcome, scope and proof. Ids stay stable when a PR moves, so ids are not in delivery order, and the sections below follow delivery order for Phases 0, 1 and 2.
 The 2026-10-15 update in `docs/plan/trail/standing-orders.md` overrides this plan where they conflict. It runs Autopilot-full with every PR off `main`, encodes lane rules as Playwright assertions, uses one Sonnet verifier lane and no review video, and applies Lighthouse budgets to user routes only.
 Spikes S1, S2, S3, S4 and S7 are settled with evidence in Appendix A. S6 is P1-01 and S5 is P2-01.
 
@@ -1781,76 +1781,65 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 1 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
-Phase 2. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict. The P2-04 section stays as reference for P2-02, which absorbs it.
+Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in delivery order (`Seq` 01 to 07 in `docs/plan/trail/pr-inventory.md`), so ids are not in numeric order. Every Phase 2 section follows the 2026-10-15 verification rules and the 2026-10-16 10:30 merge rules. P2-04 is absorbed into P2-02. P2-01 needs no Supabase stack and depends only on the Phase 0 exit, so it can run beside the Phase 1 UI track (standing orders, 2026-10-17 04:45). Every later PR depends on the PR with the next lower `Seq`, and P2-02 also depends on the Phase 1 exit.
 
 ## Measure certificate extraction quality on synthetic fixtures (P2-01)
 
-**Depends on.** P0-06, P0-15, P1-09.
+**Depends on.** P0-16.
 
 **Files.**
 
-- [ ] Create `fixtures/certificates/generator/generate.ts`, `fixtures/certificates/generator/degrade.ts`, `fixtures/certificates/generator/templates/<form>.tsx` (one per DOMAIN-VN §2 form) and `fixtures/certificates/generator/generate.test.ts`.
+- [ ] Create `generate.ts`, `degrade.ts`, `generate.test.ts` and `templates/<form>.tsx` (one per DOMAIN-VN §2 form) in `fixtures/certificates/generator/`, and `fixtures/certificates/README.md`.
 - [ ] Create the generated fixtures `fixtures/certificates/<fixture-id>/` (page images or `document.pdf`, plus `truth.json`) and `fixtures/certificates/manifest.json`.
-- [ ] Create `packages/core/src/agent-schemas/certificate_v1.ts`, `packages/core/src/agent-schemas/certificate_v1.test.ts`, `packages/core/src/extraction/score.ts` and `packages/core/src/extraction/score.test.ts`.
-- [ ] Create `scripts/extraction-eval.ts` and add the `fixtures:certificates` and `extraction:eval` scripts to the root `package.json`.
-- [ ] Create `apps/web/src/app/dev/core/sections/extraction.tsx` and register it in `apps/web/src/app/dev/core/page.tsx`.
+- [ ] Create `certificate_v1.ts` and `certificate_v1.test.ts` in `packages/core/src/agent-schemas/`, and `score.ts`, `required-fields.ts` and `score.test.ts` in `packages/core/src/extraction/`.
+- [ ] Create `scripts/extraction-eval.ts` and `scripts/extraction-eval.test.ts`. Edit the root `package.json` (add `fixtures:certificates` and `extraction:eval`).
 - [ ] Create `docs/plan/spikes/s5-extraction.md` and `docs/plan/spikes/s5/outputs/<fixture-id>.json` (synthetic fixtures only).
-- [ ] Edit `docs/spec/DOMAIN-VN.md` §2 and §3, `docs/plan/STATUS.md`, `apps/web/messages/vi.json` and `apps/web/messages/en.json`.
-- [ ] Create `supabase/migrations/20261007020100_land_use_codes_s5.sql` only if S5 changes a land use code.
+- [ ] Edit `docs/spec/DOMAIN-VN.md` §2 and §3 and `docs/plan/STATUS.md`. Create `supabase/migrations/20261007201000_land_use_codes_s5.sql` only if S5 changes a land use code.
 
 **Build.**
 
-- [ ] Add `generateCertificateFixtures(seed)` in `fixtures/certificates/generator/generate.ts`. It renders each DOMAIN-VN §2 form (`so_do_pre2009`, `so_hong_pre2009`, `gcn_2009_2024`, `gcn_2024`, `paper_only`) with satori and @resvg/resvg-js and builds PDFs with pdf-lib, the stack settled in S7 (spike/s7-receipt 8548686). Fonts load with `loadSystemFonts: false`.
+- [ ] Add `generateCertificateFixtures(seed)` in `generate.ts`. It renders each DOMAIN-VN §2 form (`so_do_pre2009`, `so_hong_pre2009`, `gcn_2009_2024`, `gcn_2024`, `paper_only`) with satori and `@resvg/resvg-js` and builds PDFs with pdf-lib, the stack S7 settled (`spike/s7-receipt` at `8548686`). Fonts load with `loadSystemFonts: false`.
 - [ ] Produce three variants per form in `degrade.ts` with a fixed RNG seed. `scan` is a clean PDF. `photo` is a JPEG at quality 70 with a 4 to 8 degree perspective skew and a glare band. `low-light` adds a 1.2 px blur and sensor noise. Fifteen fixtures result.
 - [ ] Add the sixteenth fixture `northstar-di-an`, a `gcn_2009_2024` sổ hồng for Dãy trọ Dĩ An in the `photo` variant. Its parcel address reads `phường Dĩ An, thành phố Dĩ An, tỉnh Bình Dương`, so north-star step 2 can show both addresses.
 - [ ] Give every holder a synthetic name containing `Demo` and a synthetic 12-digit ID number printed on the page, so P2-03 can prove the reduction to `id_last4`. `gcn_2024` pages carry a QR code from the `qrcode` package. `paper_only` uses a handwriting-style OFL font, with its source and license in `fixtures/certificates/README.md`, and its `truth.json` marks the handwritten fields.
 - [ ] Write `manifest.json` with the SHA-256 of every generated file. A second run must leave it byte-identical.
-- [ ] Define `certificateV1Schema` (zod) in `packages/core/src/agent-schemas/certificate_v1.ts` per DOMAIN-VN §2.1. Every leaf is `{ value, confidence, page }`, `form` is the §2 enum, `area_m2` is a number (decimal commas converted), `issued_on` is an `IsoDate`, and `id_last4` matches exactly four digits. Export `CertificateV1`. P2-03 reuses the schema unchanged.
-- [ ] Add `scoreExtraction(schemaName, truth, result)` in `packages/core/src/extraction/score.ts`, a pure function. It normalizes values (NFC, collapsed whitespace, upper-case land use codes, areas to two decimals, dates to `IsoDate`) and returns schema validity, per-field hits on the required fields, and the precision of fields with confidence at or above 0.9. The required fields live in a `REQUIRED_FIELDS` registry keyed by schema name, seeded with AGENT.md §7.2's certificate list (`parcel_no`, `map_sheet_no`, `area_m2`, `address_text`, holder names, `issued_on`, `serial_no`).
-- [ ] Build `scripts/extraction-eval.ts` on the S1 SDK path (spike/s1-agent-sdk 83c56e0). It copies one fixture into an empty temp dir, calls `query()` with `tools: ['Read']`, a `PreToolUse` hook that denies any `Read` outside that dir, `permissionMode: 'default'`, `settingSources: []`, `env` holding only the active credential plus an empty `CLAUDE_CONFIG_DIR`, and the model from `ESTA_MODEL_ROUTINE`. It checks `is_error` on the result and records `num_turns`, wall time and `total_cost_usd` per fixture.
+- [ ] Define `certificateV1Schema` (zod) in `certificate_v1.ts` per DOMAIN-VN §2.1. Every leaf is `{ value, confidence, page }`, `form` is the §2 enum, `area_m2` is a number (decimal commas converted), `issued_on` is an `IsoDate`, and `id_last4` matches exactly four digits. Export `CertificateV1`. P2-03 reuses the schema unchanged.
+- [ ] Write `REQUIRED_FIELDS` in `required-fields.ts` as a registry keyed by schema name, seeded with the AGENT.md §7.2 certificate list (`parcel_no`, `map_sheet_no`, `area_m2`, `address_text`, holder names, `issued_on`, `serial_no`). P2-03 adds the utility bill entry.
+- [ ] Add `scoreExtraction(schemaName, truth, result)` in `score.ts`, a pure function. It normalizes values (NFC, collapsed whitespace, upper-case land use codes, areas to two decimals, dates to `IsoDate`) and returns schema validity, per-field hits on the required fields, and the precision of fields with confidence at or above 0.9.
+- [ ] Build `scripts/extraction-eval.ts` on the P0-15 SDK path (`apps/agent/src/sdk/options.ts` and `path-policy.ts`, S1). It copies one fixture into an empty temp dir, runs `query()` with `tools: ['Read']` under the `pathPolicyHook` for that dir, `permissionMode: 'default'`, `settingSources: []`, `env` holding only the active credential plus an empty `CLAUDE_CONFIG_DIR`, and the model from `ESTA_MODEL_ROUTINE`. It checks `is_error` on the result and records `num_turns`, wall time and `total_cost_usd` per fixture. The report builder and the summary line are pure functions that `extraction-eval.test.ts` covers.
 - [ ] Give the script two modes. `--mode live --set synthetic` calls the model and saves raw outputs to `docs/plan/spikes/s5/outputs/`. `--from <dir>` rescores saved outputs with no model call and no credential read, and prints `auth=none`.
 - [ ] Add `--set private` for `fixtures-private/certificates/`, where Ryan places scans and hand-written `truth.json` files. It runs live, never saves outputs, and prints counts and percentages only, never a field value. When the folder is absent, the report says `no private fixtures measured`.
 - [ ] Run the live synthetic eval once and commit the outputs and `docs/plan/spikes/s5-extraction.md`, with per-form and per-field tables, turns, wall time and cost. If an AGENT.md §7.2 target misses, record the miss with per-field numbers and the prompt or schema change P2-03 makes. The spike does not block on the target.
 - [ ] Confirm the DOMAIN-VN §2 form names and eras, the rule that older certificates stay valid, and the §3 land use codes against official sources (thuvienphapluat.vn, the ministry portal). Check the issuing circulars named in the forms' own text, starting with Circular 17/2009/TT-BTNMT for the unified form and Circular 10/2024/TT-BTNMT for the 2024 form. Replace each `[verify]` tag with `[verified]` plus the source URL and fetch date. Where no source settles a fact, keep the `[app rule]` behavior and list it in `docs/plan/STATUS.md` under `Needs professional confirmation`.
-- [ ] If a land use code changes, add the migration updating `land_use_codes`, keep unknown codes as free text with the `mã chưa có trong danh mục` hint, and update the P0-06 FND-6 test.
-- [ ] Add the `/dev/core` section `Trích xuất sổ`. It shows the sixteen fixture cards (first page, form label, truth fields) and `scoreExtraction` examples with expected values beside computed ones and a match mark.
+- [ ] If a land use code changes, add the migration updating `land_use_codes`, keep unknown codes as free text with the `mã chưa có trong danh mục` hint, and update the P0-06 FND-6 test. No `/dev/core` section. P2-02 is the first screen that shows a fixture, as a seeded document.
 
 **You see.**
 
 - [ ] A second `pnpm fixtures:certificates` run prints `16 fixtures, manifest unchanged`.
 - [ ] `pnpm extraction:eval --from docs/plan/spikes/s5/outputs` prints `auth=none` and a summary line `schema-valid <x>%, required exact <y>%, high-confidence precision <z>%` whose numbers equal `docs/plan/spikes/s5-extraction.md`.
-- [ ] `/dev/core#extraction` shows sixteen fixture cards and every scorer example with a match mark.
 - [ ] `grep -c '\[verify\]'` over DOMAIN-VN §2 and §3 prints `0`, and every replaced row carries a source URL or a STATUS.md entry.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/extraction/score.test.ts` gains cases for `125,5 m²` matching `125.5`, an NFD holder name matching its NFC truth, `07/10/2026` matching `2026-10-07`, a missing field counting as a miss, an extra holder lowering precision, and confidence exactly 0.9 counting as high-confidence (AGT-2).
-- [ ] `packages/core/src/agent-schemas/certificate_v1.test.ts` gains cases rejecting a 12-digit `id_last4` and an unknown `form`, and accepting every committed `truth.json`.
-- [ ] `fixtures/certificates/generator/generate.test.ts` gains cases for two runs producing the same manifest, all five forms present, and every holder name containing `Demo`.
-- [ ] Run `pnpm check`. Run `pnpm db:test` if the land use migration exists.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-core.spec.ts`.
+- [ ] `score.test.ts` gains cases for `125,5 m²` matching `125.5`, an NFD holder name matching its NFC truth, `07/10/2026` matching `2026-10-07`, a missing field counting as a miss, an extra holder lowering precision, and confidence exactly 0.9 counting as high-confidence (AGT-2).
+- [ ] `certificate_v1.test.ts` gains cases rejecting a 12-digit `id_last4` and an unknown `form`, and accepting every committed `truth.json`.
+- [ ] `generate.test.ts` gains cases for two runs producing the same manifest, all five forms present, and every holder name containing `Demo`. `scripts/extraction-eval.test.ts` gains the summary line from a fixed set of scores and `--set private` output containing no truth value.
+- [ ] Run `pnpm check`. Run `pnpm db:test` only if the land use migration exists.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk has no extraction section, so the lane opens `/dev/core` at trunk and head as `me.lane1@demo.esta.test` at 390x844 light, records that trunk lacks the section, and gates the head section. Save `p2-01-devcore-mobile.png`. Pass when every trunk section still shows its match marks at head and the head `Trích xuất sổ` section shows sixteen fixture cards.
-- [ ] Lane 2. Run `pnpm fixtures:certificates` twice in the PR worktree. Save `p2-01-manifest.png` of the terminal. Pass when the second run prints `16 fixtures, manifest unchanged` and `git status --porcelain fixtures/` prints nothing.
-- [ ] Lane 3. Run `pnpm extraction:eval --from docs/plan/spikes/s5/outputs` in a shell with no `CLAUDE_CODE_OAUTH_TOKEN` and no network. Save `p2-01-rescore.png` of the terminal. Pass when the log shows `auth=none` and the summary line equals the numbers in `docs/plan/spikes/s5-extraction.md`.
-- [ ] Lane 4. As `ryan.lane4@demo.esta.test` at 1440x900 dark, open `/dev/core#extraction` and the `gcn_2024` scan card. Save `p2-01-qr-card.png`. Pass when the card shows a QR code and decoding it with `zbarimg` on the fixture page prints the `qr_payload` from its `truth.json`.
-- [ ] Lane 5. If `fixtures-private/certificates/` exists, run `pnpm extraction:eval --mode live --set private`. Otherwise record its absence. Save `p2-01-private.png` of the terminal. Pass when stdout holds only counts and percentages, a grep of stdout and the report for every private `truth.json` value returns nothing, and `git status --porcelain` lists no new file.
-- [ ] Lane 6. As `me.lane6@demo.esta.test` at 1440x900 light, open `/dev/core#extraction` and read the scorer examples. Save `p2-01-scorer.png`. Pass when the `125,5 m²`, NFD name and `07/10/2026` rows each show the expected value beside the computed one with a match mark.
-- [ ] Lane 7. Open `docs/spec/DOMAIN-VN.md` §2 and §3 at the PR head on GitHub and follow two source links at random. Save `p2-01-domain-sources.png`. Pass when both links return HTTP 200 and the fetched page names the form or code the row cites.
-- [ ] Lane 8. As `ryan.lane8@demo.esta.test` at 390x844 dark, open Supabase Studio at the slot's Studio port and run a read-only select on `land_use_codes`. Save `p2-01-land-use-codes.png`. Pass when the row count and codes equal the DOMAIN-VN §3 table at the PR head.
-- [ ] Lane 9. Open `docs/plan/spikes/s5-extraction.md` at the PR head and `docs/plan/STATUS.md`. Save `p2-01-report.png`. Pass when the report has a row for each of the five forms and the `northstar-di-an` fixture, each with turns, wall time and cost, and every missed target names the P2-03 change.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then open `/dev/core#extraction` at 390x844. Save `p2-01-en-130-dark.png`. Pass when the section heading and field labels read in English, `document.documentElement.scrollWidth` is at most 390, and Vietnamese truth values keep their diacritics.
+- [ ] Rules. P2-01 has no screen, so its deterministic rules are the unit cases above and the two command outputs under **You see**. `e2e/documents-upload.spec.ts` shows a fixture on the real surface in P2-02, and `apps/agent/test/golden/extract.test.ts` scores every fixture in P2-03.
+- [ ] Screenshots. None, because P2-01 renders nothing. The owner puts the `pnpm fixtures:certificates` and `pnpm extraction:eval --from` outputs and the first page of two fixtures (one `scan`, one `low-light`) in the PR body, published with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...`.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, runs `pnpm fixtures:certificates` twice, runs `pnpm extraction:eval --from docs/plan/spikes/s5/outputs` in a shell with no `CLAUDE_CODE_OAUTH_TOKEN`, decodes the `gcn_2024` scan QR with `zbarimg`, follows two DOMAIN-VN source links, and audits the diff against the PR body. Save `p2-01-verifier-eval.png` of the terminal. Pass when local CI is green, the second generation prints `16 fixtures, manifest unchanged` with `git status --porcelain fixtures/` empty, the rescore prints `auth=none` and the report's numbers, the QR decodes to the fixture's `qr_payload`, both links answer 200 and name the cited form or code, and the PR body matches the diff.
+- [ ] Private run. The same lane runs `pnpm extraction:eval --mode live --set private` when `fixtures-private/certificates/` exists, and otherwise records its absence. Save `p2-01-verifier-private.png` of the terminal. Pass when stdout holds only counts and percentages, `grep -cF` of stdout against every private `truth.json` value prints 0, and `git status --porcelain` lists no new file after the run.
+- [ ] Land use check. When the PR adds `20261007201000_land_use_codes_s5.sql`, the same lane resets slot 14 with `pnpm db:reset` and runs a read-only select on `land_use_codes` in Supabase Studio at the slot's Studio port. Save `p2-01-verifier-land-use-codes.png`. Pass when the row count and codes equal the DOMAIN-VN §3 table at the head. Without the migration, the lane records that no file under `supabase/migrations/` changed.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Live wall time and `total_cost_usd` per fixture, offline rescore wall time, and cold `pnpm check` wall time.
-- [ ] Probe. Take live numbers from the one committed live run. Run the rescore 5 times at head. Run `pnpm check` 5 times at trunk and head, interleaved.
-- [ ] Baseline. Trunk has no fixtures or eval, so record that and take the head values as the first baseline. Trunk median for `pnpm check`.
-- [ ] Rule. Fail when any fixture's live wall time exceeds 120 s (the wizard's 1 to 2 minute promise in DESIGN-BRIEF §6.4), when rescoring exceeds 5 s, or when head `pnpm check` median exceeds trunk median by more than 10%. List in STATUS.md any mean cost above 0.10 USD per fixture.
+- [ ] Metric. Live wall time and `total_cost_usd` per fixture, offline rescore wall time, `pnpm fixtures:certificates` wall time, and cold `pnpm check` wall time.
+- [ ] Probe. Take live numbers from the one committed live run. Run the rescore and the generator 5 times at head. Run `pnpm check` 5 times at trunk and head, interleaved.
+- [ ] Baseline. Trunk has no fixtures or eval, so those take absolute budgets. Trunk median for `pnpm check`.
+- [ ] Rule. Fail when any fixture's live wall time exceeds 120 s (the wizard's 1 to 2 minute promise in DESIGN-BRIEF §6.4), when rescoring exceeds 5 s, when generation exceeds 60 s, or when the head `pnpm check` median exceeds trunk by more than 10%. List in STATUS.md any mean cost above 0.10 USD per fixture.
 
 **Review gate.** None. P2-01 is not review-gated.
 
@@ -1858,529 +1847,474 @@ Phase 2. The detailed sections for this phase are re-cut at phase start from `do
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
-## Store documents in a private bucket with signed URLs and an access log (P2-02)
+## Upload documents to a property and open them through signed URLs (P2-02)
 
-**Depends on.** P0-02, P0-07, P1-07, P2-01.
+**Depends on.** P1-03, P2-01.
 
 **Files.**
 
-- [ ] Create `supabase/migrations/20261007020200_documents.sql`, `supabase/tests/documents.test.sql` and `supabase/tests/documents_storage.test.sql`.
-- [ ] Create `packages/core/src/documents/categories.ts`, `packages/core/src/documents/storage-path.ts` and their `.test.ts` files.
-- [ ] Create `apps/web/src/server/documents/actions.ts`, `apps/web/src/server/documents/actions.test.ts` and `apps/web/src/app/api/documents/[documentId]/view/route.ts`.
-- [ ] Create `supabase/seed/generator/documents.ts`, `supabase/seed/generator/test/completeness-bands.test.ts` and `scripts/seed-storage.ts`, and edit the seed checksum script and `packages/db` generated types.
+- [ ] Create `supabase/migrations/20261007202000_documents.sql`, `supabase/tests/documents.test.sql` and `supabase/tests/documents_storage.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Create `categories.ts`, `storage-path.ts`, `expiry.ts` and a `.test.ts` beside each in `packages/core/src/documents/`. Edit `packages/core/src/completeness/registry.ts`, `types.ts` and `registry.test.ts`.
+- [ ] Edit `scripts/completeness-fixture.ts` for the two new facts, and regenerate `packages/core/src/completeness/seed-facts.fixture.ts` with it from a slot reset with this PR's seed.
+- [ ] Create `sha256.ts`, `thumbnail.ts`, `upload-with-progress.ts` and a `.test.ts` beside each in `apps/web/src/lib/upload/`.
+- [ ] Create `actions.ts`, `actions.test.ts`, `list.ts` and `sign.ts` in `apps/web/src/server/documents/`, and `apps/web/src/app/api/documents/[documentId]/view/route.ts`.
+- [ ] Create `document-tile.tsx`, `document-grid.tsx`, `upload-sheet.tsx`, `upload-progress.tsx` and `duplicate-dialog.tsx` in `apps/web/src/components/documents/`. Create `apps/web/src/app/(app)/properties/[id]/documents/page.tsx`. Edit `apps/web/src/components/properties/property-tabs.ts`, `apps/web/src/server/properties/completeness.ts` and the message files.
+- [ ] Create `supabase/seed/generator/documents.ts`, `scripts/seed-documents.ts` and `scripts/seed-documents.test.ts`. Edit `supabase/seed/generator/index.ts`, `scripts/db.ts`, `supabase/seed/README.md`, `apps/web/src/server/env.ts`, `.env.example`, `apps/web/package.json` (add `pdfjs-dist`) and `docs/plan/STATUS.md`.
+- [ ] Create `e2e/documents-upload.spec.ts` and `e2e/helpers/make-large-image.ts`.
 
 **Build.**
 
-- [ ] Add `documents` per SPEC §5.5 with soft delete (`deleted_at`), a category check over the SPEC list, `sensitivity` (`normal | sensitive`), `sha256` with a non-unique index on `(household_id, sha256)`, `page_count` and `expires_on`. Leave out `lease_id`. The Phase 3 leases migration adds it with its foreign key.
-- [ ] Add `search_vector` as a generated column over `esta_unaccent(title)`, tags and `ocr_text` with the `simple` configuration and a GIN index. `ocr_text` stays null in Phase 2.
-- [ ] Add `search_documents(p_household_id uuid, p_query text)`, a security-invoker SQL function. It unaccents the query, turns each word into a prefix term joined by AND, and orders by rank then title, so `bao loc so` finds `Sổ hồng Bảo Lộc` (DOC-3).
-- [ ] Add `document_extractions` per SPEC §5.5 with `job_id` referencing `agent_jobs`. A trigger enforces the allowed status pairs `queued > running`, `running > needs_review`, `running > failed`, `queued > failed`, `needs_review > accepted` and `needs_review > rejected`, listed as a values table in the migration.
-- [ ] Add `document_access_log` (`view | download | share`) and the `document_status` view (`security_invoker = true`) returning each document's latest extraction status.
-- [ ] Add RLS through `private.is_member(household_id, 'viewer')` for select and `private.is_member(household_id, 'member')` for insert and update on `documents`. On `document_extractions`, members may update only `status`, `accepted_fields`, `reviewed_by` and `reviewed_at` (column grants). On `document_access_log`, members insert only rows with their own `user_id`, and nobody updates or deletes. Attach the audit trigger to `documents` and `document_extractions`.
-- [ ] Create the private bucket `documents` with a 25 MB `file_size_limit` and allowed types JPEG, PNG, WebP and PDF. Storage policies on `storage.objects` read the household from `(storage.foldername(name))[1]` and call `private.is_member` with `viewer` for select and `member` for insert, mirroring the table policies.
-- [ ] Add the `DOCUMENT_CATEGORIES` registry in `packages/core/src/documents/categories.ts`. Each category has an i18n key, a default sensitivity (`certificate` and `id_card` are `sensitive`), an extraction schema name or null (`certificate_v1`, `lease_v1`, `utility_bill_v1`), and accepted MIME types. Server actions, the upload sheet and the extraction trigger read only this registry.
-- [ ] Add `storagePath(householdId, documentId, filename)` in `packages/core/src/documents/storage-path.ts`. It returns `{household_id}/{document_id}/{filename}` with the filename NFC-normalized, stripped of diacritics, slugged to ASCII with its extension, and at most 100 characters. `thumbPath` and `thumbBlurPath` return `thumb.webp` and `thumb-blur.webp` in the same folder.
-- [ ] Add server actions in `apps/web/src/server/documents/actions.ts` on the user's session client, inputs parsed with zod. `createDocumentUpload` checks membership by reading the caller's `household_members` row under RLS through the session client, picks a document id, returns signed upload URLs for the file and both thumbnails, and returns any same-household rows with the same `sha256` for the duplicate warning. `registerDocument` confirms the object exists and inserts the row with `on conflict (id) do nothing`, so a retry converges on one row. `getDocumentViewUrl(documentId, action)` selects the row under RLS, signs a URL with `ESTA_SIGNED_URL_TTL_SECONDS`, and inserts the access log row (DOC-4).
-- [ ] Add `GET /api/documents/[documentId]/view`. It calls `getDocumentViewUrl` and answers 302 to the signed URL with `Cache-Control: no-store`, or 404 when RLS hides the row.
-- [ ] Extend the seed generator for every household. Add one certificate document per P1-07 certificate row using the P2-01 fixture of that row's form, titled like `Sổ hồng Bảo Lộc`. Add standalone certificate documents for any DOMAIN-VN §2 form no row uses, so every form appears. Add `Hợp đồng thuê Căn hộ Thủ Đức` (`lease_contract`, property `thu-duc`), the `q7` insurance PDF expiring 2026-10-30, and one `id_card` scan of a synthetic Demo card for Nguyễn Thị Demo. Ids are UUIDv5 from `seed:document:<key>`. No extraction rows. The `northstar` variant drops the `di-an` documents.
-- [ ] Add `scripts/seed-storage.ts`, which `pnpm db:reset` runs after the SQL seed. It uploads each seeded file and its two thumbnails (sharp, 320 px WebP, blur radius 24 for the blurred variant) to the bucket with the service role, sending `x-esta-actor: system:seed`. The service role stays inside the `scripts/` allowlist.
-- [ ] Add the foreign keys P1-07 left out, both in this migration because `document_extractions` is created here. They are `certificates.document_id` to `documents.id` and `certificates.extraction_id` to `document_extractions.id`, each `on delete set null`, plus every other `document_id` column that exists at this point in the stack.
-- [ ] Re-check the P1-03 completeness bands now that the certificate-document and photo checks can pass on seeded documents. Keep `long-an` below 60% and every other seed property at or above 60% (SPEC §9.3), adjusting only which seed documents attach to `long-an` if a band breaks.
-- [ ] Add documents, extractions and access log rows to the FND-7 checksum and run `pnpm db:types`.
+- [ ] Add `documents` per SPEC §5.5 with the household table recipe, `private.enable_household_rls('documents', 'member')`, `private.enable_audit('documents')` and `private.enable_soft_delete('documents')`. Leave out `lease_id`, which P3-07 adds with its key, and `search_vector` and `ocr_text`, which P2-05 adds. `category` is a check over the SPEC list, `sensitivity` is `normal` or `sensitive`, `sha256` has a non-unique index on `(household_id, sha256)`, and `(household_id, property_id)` keys to `properties`. A check holds `storage_path` to `<household_id>/<id>/<name>`, where the first two segments equal the row's own `household_id` and `id`, the P1-04 `cover_photo_path` pattern.
+- [ ] Add `document_access_log` (`document_id`, `user_id`, `action` in `view`, `download` or `share`, `at`) with select through `private.is_member(household_id, 'viewer')`, insert only by a member whose `user_id` equals `auth.uid()`, and no update or delete policy.
+- [ ] Create the private bucket `documents` in the migration (`public` false, `file_size_limit` 25 MB, `allowed_mime_types` `image/jpeg`, `image/png`, `image/webp` and `application/pdf`). Add `private.document_household(name text) returns uuid` on the P1-04 `private.property_photo_household` recipe, which returns the first folder as a uuid only when the second folder is a document of that household. Add four policies on `storage.objects` limited to `bucket_id = 'documents'`. Select requires `private.is_member(private.document_household(name), 'viewer')`, and insert, update and delete require `'member'`, with `using` and `with check` both stated on update.
+- [ ] Add `certificates.document_id` as a key to `documents (id) on delete set null`, which P1-07 left as a bare `uuid`.
+- [ ] Replace `public.property_completeness_facts` so it also returns `certificate_document_count` (live `certificate` documents of the property) and `photo_count` (`photo` documents plus one when `cover_photo_path` is set). Add `certificateDocument` (10, every kind, message `Thêm ảnh sổ`, link `documents#upload`) and `photo` (5, link `documents#upload`) to `COMPLETENESS_CHECKS`, which P1-03 built so that new checks rescale nothing (PRP-6).
+- [ ] Write `DOCUMENT_CATEGORIES` in `categories.ts` as a registry. Each category has an i18n key, a default sensitivity (`certificate` and `id_card` are `sensitive`), an extraction schema name or null, and accepted MIME types. `certificate` names `certificate_v1` and `utility_bill` names `utility_bill_v1`. Every other category is null, `lease_contract` included, because P2-03 enqueues extraction for any category whose schema is set and `lease_v1` does not exist until P3-19, which sets it on `lease_contract`. The upload sheet, the server actions and the P2-03 enqueue read only this registry.
+- [ ] Add `storagePath(householdId, documentId, filename)` in `storage-path.ts`, which returns `<household_id>/<document_id>/<slug>.<ext>` with the filename NFC-normalized, stripped of diacritics, slugged to ASCII and at most 100 characters, with `thumbPath` and `thumbBlurPath` for `thumb.webp` and `thumb-blur.webp` in the same folder. Add `documentExpiry(expiresOn, today)` in `expiry.ts`, a pure function returning `none`, `expires_in` with the day count, or `expired`, so a tile reads `Hết hạn sau 23 ngày` or `Đã hết hạn`. P2-05 generalizes it into the `Sắp hết hạn` section.
+- [ ] Add `ESTA_SIGNED_URL_TTL_SECONDS` (default 300) to `env.ts` and `.env.example`. Add `signDocumentUrl(path, ttl)` in `sign.ts` on the session client, so the storage select policy decides every URL and the service role never signs one.
+- [ ] Add server actions in `actions.ts` on the user's session client, inputs parsed with zod. `createDocumentUpload` picks a document id, returns `createSignedUploadUrl` tokens for the file and both thumbnails (the P1-05 `requestCoverPhotoUpload` pattern, so the storage insert policy decides), and returns same-household rows with the same `sha256` for the duplicate warning. `registerDocument` confirms the object exists and inserts the row with `on conflict (id) do nothing`, so a retry converges on one row. `openDocument(documentId, action)` selects the row under RLS, signs the file URL with the TTL and inserts the access log row (DOC-4). `revealThumbnail(documentId)` signs `thumb.webp` and logs a `view`. `archiveDocument` and `restoreDocument` set and clear `deleted_at`.
+- [ ] Add `GET /api/documents/[documentId]/view`, which calls `openDocument` and answers 302 to the signed URL with `Cache-Control: no-store`, or 404 when RLS hides the row.
+- [ ] Add `sha256(file)` with `crypto.subtle.digest` and `makeThumbnails(file, sensitive)` in `thumbnail.ts`. It draws a 320 px WebP with canvas from `createImageBitmap(file, { imageOrientation: 'from-image' })`, renders page 1 of a PDF with `pdfjs-dist` loaded by dynamic import, and for sensitive documents also draws a blurred variant at blur radius 24. Add `uploadWithProgress(url, file, onProgress)`, an XMLHttpRequest PUT to the signed upload URL so `upload.onprogress` drives the bar. A retry reuses the same document id and path with upsert.
+- [ ] Build `UploadSheet`, opened by `Thêm tài liệu` on the property `Tài liệu` tab. It offers `Chụp ảnh` (`accept="image/*" capture="environment"`), `Chọn tệp` (JPEG, PNG, WebP, PDF) and on desktop a labelled drop zone that is never the only path. The `accept` list lets iOS Safari hand over JPEG for library photos. That is `[inferred]`, so the owner lists it in `docs/plan/STATUS.md` under `Waiting for Ryan` for a check on his iPhone over `pnpm dev:lan`, and the merge does not wait for that check. It has five fields, so it stays a sheet (DESIGN-BRIEF §5.3). They are category (order from `DOCUMENT_CATEGORIES`), property (prefilled from the page), title (prefilled as category label plus nickname), `expires_on` through the shared `DateInput`, and `Tài liệu nhạy cảm (che mờ)` defaulted from the registry. Size and type are checked before any request. Above 25 MB it shows `Tệp lớn hơn 25 MB. Hãy chọn tệp nhỏ hơn hoặc chụp lại.` Viewers never see `Thêm tài liệu`.
+- [ ] Wire the flow. `createDocumentUpload` runs first. A non-empty duplicates list opens `DuplicateDialog`, `Tài liệu này đã có: <title>. Vẫn tải lên?` with `Vẫn tải lên` and `Hủy`. Then the file and thumbnails upload, then `registerDocument` runs. `UploadProgress` shows a bar with the percent in words and `Đang tải lên 4,2 / 10 MB`, and a network error shows `Chưa tải lên được. Kiểm tra kết nối mạng rồi thử lại.` with `Thử lại`. The toast reads `Đã lưu <title>.` with `Hoàn tác`, which calls `archiveDocument`. The sheet preview of a sensitive file uses the blurred variant, and no `img` or canvas in the sheet holds the clear image.
+- [ ] Build `DocumentTile` (DESIGN-BRIEF §7) with the thumbnail, category, title, the expiry line from `documentExpiry`, and the blurred state. The server sends only the `thumb-blur.webp` URL for a sensitive document, so the clear image never reaches the browser before a tap. `Xem` calls `revealThumbnail`, and the tile re-blurs on `visibilitychange` to hidden and after 60 s (DOC-5 blur). Tapping the title opens `/api/documents/<id>/view` in a new tab. P2-03 adds the status label and P2-05 the document page.
+- [ ] Add the `documents` tab (`Tài liệu`, `/properties/[id]/documents`) to `PROPERTY_TABS` after `rental`. The page reads `listDocuments(propertyId)` from `list.ts` on the session client and renders `DocumentGrid`, one column at 390 px and three at 1440 px, with the empty state `Chưa có tài liệu nào. Thêm ảnh sổ, hợp đồng hoặc hóa đơn.` and `Thêm tài liệu`. The top-level `/documents` page stays the P0-14 placeholder until P2-05.
+- [ ] Extend the seed generator for every household in `documents.ts`. Add one `certificate` document per P1-07 certificate row except `long-an`, using the P2-01 fixture of that row's form and titled like `Sổ hồng Bảo Lộc`, the `q7` insurance PDF (`insurance`, `expires_on` 2026-10-30), `Hợp đồng thuê Căn hộ Thủ Đức` (`lease_contract`) and one `id_card` scan of a synthetic Demo card. Ids are UUIDv5 from `seed:document:<household>:<key>`. The `northstar` variant drops the `di-an` documents. `long-an` stays below 60% and now lists `Thêm ảnh sổ`, and every other seed property stays at or above 60% with the two new checks (SPEC §9.3). No standalone certificate documents are seeded for forms without a document. The P1-07 rows already use all five DOMAIN-VN §2 forms, so only `paper_only` lacks a document, because its one row is `long-an`. No Phase 2 slice reads a seeded document by its form, and the P2-03 golden test scores the fixtures of all five forms.
+- [ ] Write `scripts/seed-documents.ts` on the `scripts/seed-photos.ts` recipe. With the service role it uploads each seeded file and its two thumbnails (sharp, 320 px WebP, blur radius 24) to `documents` at the row's path with `upsert: true`, sending `x-esta-actor: system:seed`. `scripts/db.ts` runs it after `seed-photos`. `pnpm db:checksum` gains `documents` and `document_access_log` (FND-7).
+- [ ] Run `/impeccable harden` on the tab and the sheet for long Vietnamese titles, 130% text scale, empty, loading, error and offline states, a failed upload and an expired signed URL.
 
 **You see.**
 
-- [ ] Signed in as a member, `GET /api/documents/<Bảo Lộc certificate id>/view` shows the certificate image, and Studio shows one new `document_access_log` row with action `view`.
-- [ ] With `ESTA_SIGNED_URL_TTL_SECONDS=2`, the signed URL returns an expired-token error 3 s after it was issued.
-- [ ] `select title from search_documents('<demo household id>', 'hop dong')` returns `Hợp đồng thuê Căn hộ Thủ Đức`.
-- [ ] `pnpm db:reset` twice prints identical checksum lines that include `documents`.
+- [ ] At 390x844 on `Đất vườn Long An`, `Tài liệu`, then `Thêm tài liệu`, `Chụp ảnh` with `fixtures/certificates/gcn_2024-photo/page-1.jpg` and `Lưu` shows the progress bar, then the toast `Đã lưu Sổ hồng Long An.` and a blurred tile.
+- [ ] Tapping the `Sổ hồng Bảo Lộc` title opens the certificate image from the local Storage host, and Studio shows one new `document_access_log` row with action `view`.
+- [ ] `pnpm db:reset` ends with `seed-documents: <n> objects in documents`, and a second reset prints identical checksum lines that include `documents`.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `supabase/tests/documents.test.sql` gains household isolation for select, insert, update and delete on `documents`, `document_extractions` and `document_access_log`, viewer read-only, no update or delete on the access log, an audit row per insert, the status trigger rejecting `queued > accepted`, and DOC-3 searches (`hop dong` finds `Hợp đồng thuê Căn hộ Thủ Đức`, `bao loc so` finds `Sổ hồng Bảo Lộc`) (FND-2, DOC-3).
-- [ ] `supabase/tests/documents_storage.test.sql` gains cases where a member of household A cannot select or insert objects under household B's folder and a viewer cannot insert (FND-2 storage).
-- [ ] `apps/web/src/server/documents/actions.test.ts` against local Supabase gains `registerDocument` twice leaving one row, duplicates returned for a matching `sha256`, a TTL 2 URL failing after 3 s, one access log row per open, and refusal for a non-member (DOC-4).
-- [ ] `packages/core/src/documents/storage-path.test.ts` covers `Sổ hồng Bảo Lộc (bản sao).jpg`, a 300-character name and a name without extension. `categories.test.ts` asserts every SPEC category has an entry and only `certificate` and `id_card` default to sensitive.
-- [ ] `supabase/tests/documents.test.sql` also asserts both new certificate foreign keys exist and that a `certificates.document_id` pointing at a missing document is rejected.
-- [ ] `supabase/seed/generator/test/completeness-bands.test.ts` runs `scoreProperty` over the generator's `full` rows with documents and asserts `long-an` is below 60% and every other seed property is at or above 60% (PRP-6, AGENT.md §7.1 W11).
-- [ ] The FND-7 checksum test passes with documents included. Run `pnpm check` and `pnpm db:test`.
+- [ ] `supabase/tests/documents.test.sql` includes `_harness.psql` and proves household isolation and viewer read-only on `documents` and `document_access_log`, a user's DELETE on `documents` touching no row, a member inserting an access log row only with her own `user_id` and nobody updating or deleting one, an audit row per insert, the `storage_path` check refusing another household or document id, and `certificates.document_id` refusing a missing document (FND-2).
+- [ ] `supabase/tests/documents_storage.test.sql` proves the bucket is private, a member of household A reads A's objects and none of B's, a viewer reads but cannot insert, update or delete, an insert under B's prefix or an unknown document id is refused, and a rename under B's prefix is refused and leaves the object in place (FND-2).
+- [ ] `apps/web/src/server/documents/actions.test.ts` against local Supabase gains `registerDocument` twice leaving one row, duplicates returned for a matching `sha256`, a TTL 2 URL failing after 3 s, one access log row per open, and a non-member refused (DOC-4).
+- [ ] `storage-path.test.ts` covers `Sổ hồng Bảo Lộc (bản sao).jpg`, a 300-character name and a name without an extension. `categories.test.ts` asserts every SPEC category has an entry and only `certificate` and `id_card` default to sensitive. `expiry.test.ts` covers the `q7` insurance at 23 days on 2026-10-07, 30 days included, 31 days excluded, and an expired date. `registry.test.ts` gains the two document checks. Over the regenerated `seed-facts.fixture.ts`, whose rows now carry `certificate_document_count` and `photo_count`, `score.test.ts` still scores `long-an` below 60 and the six other properties at or above 60 with both document checks counted (PRP-6).
+- [ ] `sha256.test.ts` matches a known digest. `thumbnail.test.ts` asserts the long side is at most 320 px, an EXIF-rotated photo comes out upright, and the blurred variant differs from the clear one. `upload-with-progress.test.ts` asserts monotonic progress and one object after a retry. `scripts/seed-documents.test.ts` covers the upload plan for two households and a second run planning the same uploads.
+- [ ] `e2e/documents-upload.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-upload.spec.ts e2e/property-completeness.spec.ts`.
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on `/properties/[id]/documents` with the sheet open in `e2e/documents-upload.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk has no documents, so the lane records that `/api/documents/<seed id>/view` returns 404 at trunk and gates the head, as `me.lane1@demo.esta.test` at 390x844 light opening the view route for `Sổ hồng Bảo Lộc`. Save `p2-02-view-mobile.png`. Pass when the certificate image renders from the local Supabase storage host and Studio shows exactly one new `view` row for that user and document.
-- [ ] Lane 2. Restart the web app with `ESTA_SIGNED_URL_TTL_SECONDS=2`. As `ryan.lane2@demo.esta.test` at 1440x900 light, open the view route, copy the signed URL, wait 3 s and load it again. Save `p2-02-ttl-expired.png`. Pass when the first load renders the image and the second returns HTTP 400 with an expired-token message.
-- [ ] Lane 3. As `me.lane3@demo.esta.test` at 390x844 dark, open the view route with a household 4 document id. Save `p2-02-cross-household.png`. Pass when the response is 404 and the `document_access_log` count is unchanged.
-- [ ] Lane 4. Seed 4 adapted to SQL. In Studio, run `search_documents` for lane household 4 with `bao loc so`, then `hop dong`, as the authenticated role with `ryan.lane4@demo.esta.test` claims. Save `p2-02-search.png`. Pass when the first result is `Sổ hồng Bảo Lộc` and the second query returns `Hợp đồng thuê Căn hộ Thủ Đức`.
-- [ ] Lane 5. As `me.lane5@demo.esta.test` at 1440x900 dark, call `supabase.storage.from('documents').list('<household 6 id>')` and `createSignedUrl` on a household 6 path from the browser console. Save `p2-02-storage-read-refused.png`. Pass when the list is empty and `createSignedUrl` returns an error.
-- [ ] Lane 6. As `ryan.lane6@demo.esta.test` at 390x844 light, call `createSignedUploadUrl` from the console for a path under the lane's own household and then under household 7. Save `p2-02-storage-write.png`. Pass when the own-household call returns a token and the household 7 call returns an error.
-- [ ] Lane 7. Run `pnpm db:reset` twice and the checksum script after each. Save `p2-02-checksum.png` of the terminal. Pass when both checksum lines are identical and every household has the same `documents` count.
-- [ ] Lane 8. In Studio, run a read-only select on lane household 8's documents grouped by category and sensitivity. Save `p2-02-sensitivity.png`. Pass when every `certificate` and `id_card` row is `sensitive` and every other row is `normal`.
-- [ ] Lane 9. As `ryan.lane9@demo.esta.test` at 1440x900 light, update one document title from the console with the session client, then select its `audit_log` rows in Studio. Save `p2-02-audit.png`. Pass when the newest row has `actor_kind` `user` and `actor_id` equal to that user's id.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then open the view route for the `q7` insurance PDF at 390x844. Save `p2-02-en-130-dark.png`. Pass when the PDF renders with intact Vietnamese diacritics and Studio shows one new `view` row.
+- [ ] Rule 1. `me.lane1@demo.esta.test` at 390x844, light, opens `Đất vườn Long An`, `Tài liệu`, and uploads `fixtures/certificates/gcn_2024-photo/page-1.jpg` through the camera input with `setInputFiles`, category `Sổ đỏ / sổ hồng`. Pass when the toast reads `Đã lưu Sổ hồng Long An.`, the bytes went in one PUT to a URL under `/storage/v1/object/upload/sign/documents/`, no server action request body exceeds 10 KB, the new row is `sensitive`, the tile is blurred, and the bucket holds the object and two thumbnails (DOC-1). Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 2. The spec generates a 20 MB JPEG and a 10 MB JPEG with `make-large-image.ts`. `me.lane2@demo.esta.test` at 390x844, dark, uploads the 20 MB file through the camera input with `setInputFiles` and no throttling (DOC-1), then the 10 MB file with the route throttled to 10 Mbps through CDP (SPEC §7.2). Pass when the 20 MB row's `size_bytes` equals its file and the bucket holds it, and the 10 MB upload sends its first progress update within 1 s, shows a frame with a percent between 10% and 90% in words, and completes within 12 s, about 8.4 s at line rate plus headroom. Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 3. `ryan.lane3@demo.esta.test` at 1440x900, light, drops the `gcn_2009_2024` scan PDF on the `Đất Bảo Lộc` tab's drop zone, then chooses the seeded Bảo Lộc file again and presses `Hủy`. Pass when the property field reads `Đất Bảo Lộc`, the PDF row has `page_count` equal to its pages and a page-1 thumbnail, the dialog names `Sổ hồng Bảo Lộc`, and the documents count is unchanged after `Hủy` (DOC-1). Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 4. `me.lane4@demo.esta.test` at 390x844, light, chooses a 30 MB image, then uploads a photo and presses `Hoàn tác`. Pass when the 25 MB message shows with no request to the storage host, and the undone row has `deleted_at` set and leaves the grid. Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 5. `ryan.lane5@demo.esta.test` at 1440x900, dark, opens `Sổ hồng Bảo Lộc` through the view route and loads the signed URL. Pass when the route answers 302 with `Cache-Control: no-store`, the image loads from the local Storage host with a `token` query, and Studio shows exactly one new `view` row for that user and document (DOC-4). The TTL expiry is proven with TTL 2 in `actions.test.ts`. Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 6. `me.lane6@demo.esta.test` at 390x844, dark, taps `Xem` on the blurred `Sổ hồng Bảo Lộc` tile, hides the tab and returns. Pass when no request for a sensitive `thumb.webp` happened before the tap, the clear thumbnail shows after it with one new `view` row, and the tile is blurred again on return (DOC-5). Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 7. `me.lane7@demo.esta.test` at 1440x900, light, requests `/api/documents/<household 8 document id>/view`, lists household 8's folder with `supabase.storage.from('documents').list(...)` through her session, and calls `createSignedUploadUrl` under household 8's prefix. Pass when the route answers 404, the list is empty, the upload call returns an error, and household 8's access log count is unchanged (FND-2). Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 8. `ryan.lane8@demo.esta.test` at 1440x900, dark, opens `Nhà phố Q7`, `Tài liệu`, then `Đất vườn Long An`. Pass when the insurance tile reads `Hết hạn sau 23 ngày` on the test clock, and the Long An header lists `Thêm ảnh sổ` among its missing items, linking to its `Tài liệu` tab (PRP-6). Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 9. SPEC §9.4 seed 10 adapted to the tab. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 1. Pass when the sheet labels read in English, no label is clipped, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Rule 10. The spec adds `viewer.lane9@demo.esta.test` as a viewer of `Gia đình Demo 9` with the service role, and the viewer at 390x844, light, opens `Đất Bảo Lộc`, `Tài liệu`. Pass when the seeded `Sổ hồng Bảo Lộc` tile shows and the page holds no `Thêm tài liệu` button and no drop zone (FND-2). Asserted in `e2e/documents-upload.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P2-02/`, publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and pastes the Markdown it prints into the PR body. Each state gets four files named by viewport and theme. Save `p2-02-tab-<viewport>-<theme>.png` for `Đất Bảo Lộc`, `p2-02-sheet-<viewport>-<theme>.png` with the sheet open, `p2-02-progress-<viewport>-<theme>.png` mid-upload and `p2-02-reveal-<viewport>-<theme>.png` after `Xem`.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 and Rule 6 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, and audits the diff against the PR body. Save `p2-02-verifier-upload.png`. Pass when local CI is green, the toast and the blurred tile show, the reveal logs one `view`, and the PR body matches the diff.
+- [ ] Audit lane. One Opus lane audits the private bucket and its policies, `private.document_household`, the `storage_path` check, signing on the session client only, the access log's insert-only rule, the view route's `no-store` answer, the service role staying in `scripts/`, the blurred-only path for sensitive thumbnails, and seed determinism. Pass when it files no blocking finding.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. `pnpm db:reset` wall time including `scripts/seed-storage.ts`, `search_documents` execution time from `EXPLAIN (ANALYZE)` on the full seed, and p95 latency of the view route.
-- [ ] Probe. Run `pnpm db:reset` 5 times at trunk and head, interleaved. Run the search `EXPLAIN (ANALYZE)` 5 times at head. Send 50 sequential signed-in requests to the view route at head.
-- [ ] Baseline. Trunk median `pnpm db:reset` time. Trunk has no documents, so search and view take absolute budgets.
-- [ ] Rule. Fail when head `pnpm db:reset` median exceeds trunk median by more than 30 s, when search exceeds 20 ms, or when the view route p95 exceeds 300 ms.
+- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for `/properties/<bao-loc id>/documents` and `/properties/<bao-loc id>` on a production build (`pnpm build && pnpm start`) with the full seed, time to the first progress update and completion for the 10 MB upload at 10 Mbps (SPEC §7.2), p95 latency of the view route over 50 sequential signed-in requests, and `pnpm db:reset` wall time, which now ends with `scripts/seed-documents.ts`.
+- [ ] Probe. `scripts/perf/lighthouse.ts` 5 times per side, interleaved, on each route as `me.lane1@demo.esta.test`. 5 uploads of the 10 MB file through Playwright with CDP throttling at head. 5 runs of `pnpm db:reset` per side, interleaved.
+- [ ] Baseline. Trunk serves `/properties/<id>` without the tab, so its medians are that route's baseline. The tab, the upload and the view route are new at head and take absolute budgets. Trunk resets without documents, so its reset median is the reset baseline.
+- [ ] Rule. Fail when a head median misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS on either route, when `pdfjs-dist` appears in the initial chunk, when the first progress update exceeds 1 s or the 10 MB upload exceeds 12 s, the Rule 2 bound, when the view route p95 exceeds 300 ms, or when the head reset median exceeds trunk by more than 30 s.
 
-**Review gate.** None. P2-02 is not review-gated.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
+
+- [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
-## Run extract_document in the worker and save extractions for review (P2-03)
+## Read certificates and utility bills in the worker and queue them for review (P2-03)
 
-**Depends on.** P0-15, P2-01, P2-02.
+**Depends on.** P2-02.
 
 **Files.**
 
-- [ ] Create `supabase/migrations/20261007020300_agent_items_extraction.sql`, `supabase/tests/agent_items.test.sql` and `supabase/tests/enqueue_extract.test.sql`.
-- [ ] Create `packages/core/src/agent-schemas/lease_v1.ts`, `packages/core/src/agent-schemas/utility_bill_v1.ts`, `packages/core/src/agent-schemas/index.ts`, `packages/core/src/agent-schemas/reduce-national-ids.ts` and their `.test.ts` files.
-- [ ] Create `apps/agent/src/jobs/extract-document.ts`, `apps/agent/src/tools/save-extraction.ts` and `apps/agent/src/prompts/extract-document.ts`, and edit `apps/agent/src/jobs/registry.ts`.
+- [ ] Create `supabase/migrations/20261007203000_document_extractions.sql`, `supabase/tests/document_extractions.test.sql` and `supabase/tests/agent_items.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Create `utility_bill_v1.ts`, `index.ts`, `reduce-national-ids.ts` and a `.test.ts` beside each in `packages/core/src/agent-schemas/`. Edit `packages/core/src/extraction/required-fields.ts`.
+- [ ] Create `apps/agent/src/jobs/extract-document.ts`, `apps/agent/src/jobs/extract-document.test.ts`, `apps/agent/src/prompts/extract-document.ts` and `apps/agent/src/tools/save-extraction.ts`. Edit `apps/agent/src/jobs/registry.ts`, `apps/agent/src/tools/server.ts`, `apps/agent/src/sdk/path-policy.ts` and `apps/agent/src/sdk/path-policy.test.ts`.
 - [ ] Create `apps/agent/test/golden/extract.test.ts`, `apps/agent/test/sensitive-documents.test.ts` and `apps/agent/test/extract-idempotency.test.ts`.
-- [ ] Create `fixtures/leases/` (three leases) and `fixtures/utility-bills/` (two bills) from templates added to `fixtures/certificates/generator/`, plus `fixtures/agent-replay/extract_document/<input_hash>.json` for every fixture.
-- [ ] Edit `apps/web/src/server/documents/actions.ts`, `apps/web/src/app/dev/agent/page.tsx`, `supabase/seed/generator/`, `apps/web/messages/vi.json` and `apps/web/messages/en.json`.
+- [ ] Create `fixtures/utility-bills/` (two bills) from templates added to `fixtures/certificates/generator/`, and `fixtures/agent-replay/extract_document/<input_hash>.json` for every certificate and bill fixture.
+- [ ] Create `apps/web/src/components/documents/use-document-status.ts`, `apps/web/src/components/assistant/new-items.tsx` and `apps/web/src/server/agent/items.ts`. Edit `apps/web/src/server/documents/actions.ts`, `apps/web/src/server/documents/list.ts`, `document-tile.tsx`, `apps/web/src/app/(app)/assistant/page.tsx`, `supabase/seed/generator/agent.ts` and the message files.
+- [ ] Create `e2e/documents-extract.spec.ts`. Edit `docs/plan/STATUS.md`.
 
 **Build.**
 
-- [ ] Add `agent_items` per AGENT.md §10 with `dedupe_key` unique per household, RLS through `private.is_member(household_id, 'viewer')` for select with operator-audience rows visible only to operators, member update limited to `status`, the audit trigger, pgTAP, and the seed generator writing zero rows at this phase (SPEC §9.3 says no extraction waits for review) while the checksum covers the table.
-- [ ] Add `enqueue_extract_document(p_document_id uuid)`, a security-invoker SQL function. It reads the document under RLS, inserts a `queued` `document_extractions` row and an `agent_jobs` row with idempotency key `extract_document:{document_id}:{sha256}` (`on conflict do nothing`), and returns the extraction id. Add an `agent_jobs` insert policy for members limited to kind `extract_document`.
-- [ ] Call `enqueue_extract_document` from `registerDocument` when `DOCUMENT_CATEGORIES[category].extractionSchema` is set.
-- [ ] Add `leaseV1Schema` and `utilityBillV1Schema` per AGENT.md §5.1 in the same `{ value, confidence, page }` shape as `certificate_v1`, and `AGENT_SCHEMAS` in `index.ts` mapping schema name to schema and version. Extend `REQUIRED_FIELDS` with the lease and bill required fields.
+- [ ] Close #54 with a red test first. `decideToolUse` refuses any path argument that differs from its trimmed form, so `" ~/.ssh/id_rsa"`, a trailing newline and a tab prefix are all denied before the `~` and job-directory checks run. `path-policy.test.ts` gains leading and trailing spaces, tabs and newlines. This PR is the first to give a job a built-in file tool.
+- [ ] Add `document_extractions` per SPEC §5.5 with the household table recipe, `private.enable_household_rls('document_extractions', 'member')` and `private.enable_audit`, `job_id` keyed to `agent_jobs`, and a trigger that allows only the status pairs `queued > running`, `running > needs_review`, `running > failed`, `queued > failed`, `needs_review > accepted` and `needs_review > rejected`, listed as a values table in the migration. Members update only `status`, `accepted_fields`, `reviewed_by` and `reviewed_at` through column grants. Add it to the `supabase_realtime` publication. Add `certificates.extraction_id` as a key to `document_extractions (id) on delete set null`, which P1-07 left as a bare `uuid`.
+- [ ] Add the `security_invoker` view `document_status`, one row per document with the status of its latest extraction, or `none`. Tiles read job state from this view, so the P0-15 operator-only policies on `agent_jobs` and `agent_runs` stay as they are and members never see diagnostics. Standing order 7 of the 2026-10-17 04:45 update in `docs/plan/trail/standing-orders.md` settles this choice. Record it in `docs/plan/STATUS.md` against the P0-15 open item, citing that order.
+- [ ] Add `agent_items` per AGENT.md §10 with `dedupe_key` unique per household, select through `private.is_member(household_id, 'viewer')` with `audience = 'operator'` rows visible only to operators, member update limited to `status`, the audit trigger, and the seed generator writing zero rows at this phase (SPEC §9.3 says no extraction waits for review) while the checksum covers the table.
+- [ ] Add `enqueue_extract_document(p_document_id uuid)`, a `security_invoker` SQL function. It reads the document under RLS, inserts a `queued` `document_extractions` row and an `agent_jobs` row with idempotency key `extract_document:{document_id}:{sha256}` (`on conflict do nothing`), and returns the extraction id. Add an `agent_jobs` insert policy for members limited to kind `extract_document` beside the P0-15 `ping` rule. `registerDocument` calls it when `DOCUMENT_CATEGORIES[category].extractionSchema` is set, which in Phase 2 is `certificate` and `utility_bill` only. P2-02 leaves `lease_contract` null, so a lease upload enqueues nothing until P3-19 sets `lease_v1` on it.
+- [ ] Add `utilityBillV1Schema` per AGENT.md §5.1 in the `{ value, confidence, page }` shape of `certificate_v1`, and `AGENT_SCHEMAS` in `index.ts` mapping schema name to schema and version. Extend `REQUIRED_FIELDS` with the bill fields (`provider`, `customer_code`, `period`, `amount_vnd`). The bill schema also carries an optional top-level `full_text` string, the bill's printed text, which is not a `{ value, confidence, page }` leaf, so the P2-07 review form shows no row for it. It ships here because the replay input hash covers the prompt and the schema version (AGENT.md §8), so adding it later would force new recordings. P2-05 owns its only writer, the copy into `documents.ocr_text`. `lease_v1` arrives with P3-19.
 - [ ] Add `reduceNationalIds(result)` in `reduce-national-ids.ts`. It walks every string leaf, replaces any run of 9 or 12 digits that sits in an ID field or follows `CCCD`, `CMND` or `số định danh` with its last four digits, and sets `id_last4` (AGENT.md §5.1 step 5, D11).
-- [ ] Register `extract_document` in `apps/agent/src/jobs/registry.ts` with `tools: ['Read']`, the `mcp__esta__save_extraction` tool, `maxTurns` 8 and a 5 minute timeout. Reuse the P0-15 `PreToolUse` path hook so `Read` is allowed only inside the job's directory (S1, spike/s1-agent-sdk 83c56e0).
-- [ ] Build `runExtractDocument(job)` in `extract-document.ts`. It loads the document with the service role filtered by the job's household and fails when the household differs. It downloads only that file into `ESTA_AGENT_HOME/jobs/<job_id>/`, sets the extraction `running`, runs the prompt from `prompts/extract-document.ts` (the AGENT.md §6.1 skeleton plus the schema and the file's `sha256`), and validates with zod. On failure it sends the validation errors back for at most two repair turns. Then it applies `reduceNationalIds`, calls `save_extraction`, and deletes the job directory.
-- [ ] Build `save_extraction` in `save-extraction.ts` with the household bound in a closure. It updates the extraction row named in the job payload to `needs_review` with `result`, `field_confidence`, `model` and `job_id`, and creates one `agent_items` row (kind `alert`, severity `info`, audience `all`, `dedupe_key` `extract_review:{extraction_id}`) whose title comes from a template in the household locale, `Đã đọc xong <title>. Mời bạn kiểm tra lại.` A re-run after a crash rewrites the same row and hits the same dedupe key.
-- [ ] After the last retry fails, set the extraction `failed` and create an `info` item for admins with a Retry action, per AGENT.md §9.
-- [ ] Generate the lease and utility bill fixtures with `Demo` parties and truth files. Record every fixture with `pnpm agent:record --kind extract_document` (live, allowed) and commit the recordings for Ryan to review as code. Add two crafted recordings, `repair-invalid-area` (first answer fails zod) and `deny-outside-read` (asks to `Read` `/etc/hosts`).
-- [ ] Add an `Đọc tài liệu` control on `/dev/agent` that enqueues `extract_document` for a chosen document of the signed-in household and links each run to its extraction row.
+- [ ] Register `extract_document` in `JOBS` with `builtInTools: ['Read']`, `mcpTools: ['save_extraction']`, `maxTurns` 8, a 5 minute timeout and the `routine` role, and add `save_extraction` to the tool `CATALOG` with the household bound in its closure. The P0-15 `pathPolicyHook` allows `Read` only inside the job's directory.
+- [ ] Build `runExtractDocument(job)` in `extract-document.ts`. It loads the document with the service role filtered by the job's household and fails when the household differs. It downloads only that file into `ESTA_AGENT_HOME/jobs/<job_id>/`, sets the extraction `running`, runs the prompt from `prompts/extract-document.ts` (the AGENT.md §6.1 skeleton plus the schema and the file's `sha256`), and validates with zod. On failure it sends the validation errors back for at most two repair turns. Then it applies `reduceNationalIds`, calls `save_extraction` and deletes the job directory.
+- [ ] Build `save_extraction` in `save-extraction.ts`. It updates the extraction row named in the job payload to `needs_review` with `result`, `field_confidence`, `model` and `job_id`, and creates one `agent_items` row (kind `alert`, severity `info`, audience `all`, `dedupe_key` `extract_review:{extraction_id}`) titled `Đã đọc xong <title>. Mời bạn kiểm tra lại.` in the household locale. A re-run after a crash rewrites the same row and hits the same dedupe key. After the last retry fails, the worker sets the extraction `failed` and creates an `info` item for admins with a Retry action (AGENT.md §9).
+- [ ] Generate the two utility bill fixtures with `Demo` parties and truth files. Record every certificate and bill fixture with `pnpm agent:record --kind extract_document` (live, allowed) and commit the recordings for Ryan to review as code. Add two crafted recordings, `repair-invalid-area` (the first answer fails zod) and `deny-outside-read` (asks to `Read` `/etc/hosts`), and a blank-page fixture whose recording fails validation three times.
+- [ ] Add `useDocumentStatus(documentId)`, a Realtime subscription to `document_extractions` filtered by document, and show the status on `DocumentTile` as a pill, `Đang đọc` for `queued` and `running`, `Chờ xem lại` for `needs_review`, `Không đọc được` for `failed`, nothing for `none` or `accepted`. The pill links nowhere until P2-07 adds the review page. When the worker heartbeat is older than 5 minutes the tile reads `Trợ lý ngoại tuyến` in place of `Đang đọc`.
+- [ ] Add `listNewItems(householdId)` in `items.ts` on the session client and `NewItems` on the Trợ lý page under the P0-15 status line, a list of `agent_items` in status `new` with title and time, `Chưa có việc mới` when empty. P5-03 generalizes it into `Hộp thư`.
+- [ ] Extend `e2e/helpers/agent-worker.ts` use in `e2e/documents-extract.spec.ts`, which starts the replay worker through `startAgentWorker` for its tests and stops it by pid.
 
 **You see.**
 
-- [ ] With the worker in replay, `/dev/agent` shows an `extract_document` run for `Sổ hồng Bảo Lộc` finish as `done`, and Studio shows its extraction in `needs_review` with one `agent_items` row.
+- [ ] With the worker in replay, uploading `fixtures/certificates/gcn_2009_2024-scan/document.pdf` as a certificate on `Đất Bảo Lộc` shows the tile pill `Đang đọc`, then `Chờ xem lại` without a reload, and the Trợ lý page lists `Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.`
 - [ ] The saved `result` for every fixture with a printed 12-digit ID holds only `id_last4`.
 - [ ] `ESTA_AGENT_MODE=replay pnpm --filter agent test` prints the AGENT.md §7.2 summary `schema-valid 100%, required exact >= 90%, high-confidence precision >= 97%`.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Golden tests in AGENT.md §7 for `extract_document` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`. `apps/agent/test/golden/extract.test.ts` scores sixteen certificate fixtures, three leases and two bills with `scoreExtraction` and asserts the §7.2 targets (AGT-2, DOC-6).
-- [ ] `apps/agent/test/sensitive-documents.test.ts` (DOC-5 tool part) gains cases where the job dir holds only the target file, the hook denies `Read` of another job's file and of `/etc/hosts` and `agent_runs.permission_denials` records it, no job kind other than `extract_document` holds `Read` or any tool returning file bytes, and `save_extraction` refuses a document of another household.
-- [ ] `apps/agent/test/extract-idempotency.test.ts` kills the job after `save_extraction` and before finish, re-runs it, and asserts one extraction in `needs_review` and one `agent_items` row (AGT-1).
-- [ ] `packages/core/src/agent-schemas/reduce-national-ids.test.ts` covers a 12-digit CCCD, a 9-digit CMND, a phone number left intact and an ID inside `notes_text`. `index.test.ts` asserts every schema name in `DOCUMENT_CATEGORIES` exists in `AGENT_SCHEMAS`.
-- [ ] `supabase/tests/agent_items.test.sql` and `supabase/tests/enqueue_extract.test.sql` gain household isolation, viewer read-only, operator-only visibility, the insert policy refusing kinds other than `extract_document`, and a second enqueue being a no-op (FND-2).
-- [ ] Run `pnpm check` and `pnpm db:test`.
+- [ ] Golden tests in AGENT.md §7 for `extract_document` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`. `apps/agent/test/golden/extract.test.ts` scores sixteen certificate fixtures and two bills with `scoreExtraction` and asserts the §7.2 targets (AGT-2, DOC-6).
+- [ ] `apps/agent/test/sensitive-documents.test.ts` (DOC-5 tool part) gains cases where the job dir holds only the target file, the hook denies `Read` of another job's file, of `/etc/hosts` and of `" ~/.ssh/id_rsa"` and `agent_runs.permission_denials` records each, no job kind other than `extract_document` holds `Read` or any tool returning file bytes, and `save_extraction` refuses a document of another household.
+- [ ] `apps/agent/test/extract-idempotency.test.ts` kills the job after `save_extraction` and before finish, re-runs it, and asserts one extraction in `needs_review` and one `agent_items` row (AGT-1). `extract-document.test.ts` on the fake db gains a job for household A whose payload names a household B document failing with a household mismatch and writing no extraction (FND-2).
+- [ ] `reduce-national-ids.test.ts` covers a 12-digit CCCD, a 9-digit CMND, a phone number left intact and an ID inside `notes_text`. `index.test.ts` asserts every non-null schema name in `DOCUMENT_CATEGORIES` exists in `AGENT_SCHEMAS`, and that `lease_contract` is null until P3-19. `path-policy.test.ts` gains the #54 cases.
+- [ ] `supabase/tests/document_extractions.test.sql` and `agent_items.test.sql` gain household isolation, viewer read-only, the status trigger rejecting `queued > accepted`, members updating only the review columns, operator-only visibility of operator items, the insert policy refusing kinds other than `extract_document` and `ping`, and a second enqueue being a no-op (FND-2).
+- [ ] `e2e/documents-extract.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-extract.spec.ts e2e/documents-upload.spec.ts e2e/assistant-status.spec.ts`.
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-agent.spec.ts`.
+- [ ] axe reports zero serious or critical issues on `/properties/[id]/documents` and `/assistant` in `e2e/documents-extract.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk has no `extract_document` kind, so the lane enqueues a `ping` from `/dev/agent` at trunk and head and gates the head extraction, as `me.lane1@demo.esta.test` at 390x844 light with the worker in replay. Save `p2-03-extract-run.png`. Pass when `ping` finishes `done` on both sides and the head `Đọc tài liệu` run for `Sổ hồng Bảo Lộc` finishes `done` with its extraction in `needs_review`.
-- [ ] Lane 2. As `ryan.lane2@demo.esta.test` at 1440x900 dark, enqueue an extraction and stop the worker with `kill -9` once the log prints `save_extraction ok`, then restart it. Save `p2-03-crash-rerun.png`. Pass when Studio shows one extraction for the document in `needs_review` and one `agent_items` row with key `extract_review:<extraction id>`.
-- [ ] Lane 3. As `me.lane3@demo.esta.test` at 390x844 dark, run the `repair-invalid-area` case from `/dev/agent`. Save `p2-03-repair.png`. Pass when `agent_runs.num_turns` shows the repair turn and the saved `area_m2` is a number.
-- [ ] Lane 4. As `ryan.lane4@demo.esta.test` at 1440x900 light, extract the `so_hong_pre2009` photo fixture, then select its `result::text` in Studio. Save `p2-03-id-last4.png`. Pass when `result::text ~ '[0-9]{12}'` is false and `id_last4` equals the last four digits in `truth.json`.
-- [ ] Lane 5. As `me.lane5@demo.esta.test` at 390x844 light, run the `deny-outside-read` case. Save `p2-03-hook-deny.png`. Pass when the run's `permission_denials` lists `Read /etc/hosts`, the extraction still reaches `needs_review`, and the job dir no longer exists.
-- [ ] Lane 6. As `ryan.lane6@demo.esta.test` at 1440x900 dark, stop the worker, enqueue an extraction, wait 60 s, then start the worker. Save `p2-03-offline-queue.png`. Pass when the job stays `queued` while stopped and finishes `done` after start with no duplicate extraction.
-- [ ] Lane 7. As `me.lane7@demo.esta.test` at 390x844 light, extract a blank-page fixture whose recording fails validation three times. Save `p2-03-failed.png`. Pass when the extraction is `failed` and one admin `info` item with a Retry action exists.
-- [ ] Lane 8. As `ryan.lane8@demo.esta.test`, insert from Studio an `extract_document` job for household 8 whose payload names a household 9 document. Save `p2-03-household-guard.png`. Pass when the job fails with a household mismatch error and household 9 has no new extraction row.
-- [ ] Lane 9. As `me.lane9@demo.esta.test` at 1440x900 light, upload nothing and extract one seeded lease and one utility bill fixture from `/dev/agent`. Save `p2-03-lease-bill.png`. Pass when both reach `needs_review` and their `result` fields equal the `truth.json` values for every required field.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then open `/dev/agent` at 390x844 and run one extraction. Save `p2-03-en-130-dark.png`. Pass when the controls read in English, the run row shows `done`, and nothing overflows horizontally.
+- [ ] Rule 1. `me.lane1@demo.esta.test` at 390x844, light, uploads the `gcn_2009_2024` scan as a certificate on `Đất Bảo Lộc` with the replay worker running. Pass when the tile reads `Đang đọc` within 2 s of the toast, `Chờ xem lại` within 10 s without a reload, Studio shows one extraction in `needs_review` and one `agent_items` row keyed `extract_review:<extraction id>`, and the Trợ lý page lists its title (DOC-6). Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 2. `ryan.lane2@demo.esta.test` at 1440x900, dark, uploads one certificate, one `photo` document and one `lease_contract` document. Pass when the certificate has one `agent_jobs` row keyed `extract_document:<id>:<sha256>` and one `queued` extraction, and the photo and the lease contract have neither. Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 3. The spec stops the worker with its pid once the log prints `save_extraction ok`, then starts it again, as `me.lane3@demo.esta.test` at 390x844, dark. Pass when Studio shows one extraction for the document in `needs_review` and one `agent_items` row (AGT-1). Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` at 1440x900, light, uploads the `so_hong_pre2009` photo fixture, waits for `Chờ xem lại`, and the spec selects `result::text`. Pass when `result::text ~ '[0-9]{12}'` is false and `id_last4` equals the last four digits in `truth.json` (D11). Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 5. The spec runs the `repair-invalid-area` and `deny-outside-read` recordings as `me.lane5@demo.esta.test` at 390x844, light. Pass when `agent_runs.num_turns` shows the repair turn with `area_m2` saved as a number, the second run's `permission_denials` lists `Read /etc/hosts`, both extractions reach `needs_review`, and neither job directory exists afterwards (DOC-5). Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 6. With the worker stopped, `ryan.lane6@demo.esta.test` at 1440x900, dark, uploads a certificate, the spec advances the test clock six minutes through `/api/test/clock` as `e2e/assistant-status.spec.ts` rule 2 does, then starts the worker. Pass when the tile reads `Trợ lý ngoại tuyến` while stopped, the job stays `queued`, and the tile reaches `Chờ xem lại` after the start with no duplicate extraction (AGENT.md §9). Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 7. `me.lane7@demo.esta.test` at 390x844, light, uploads the blank-page fixture. Pass when the tile reads `Không đọc được`, the extraction is `failed`, and one admin `info` item with a Retry action exists. Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 8. `me.lane8@demo.esta.test` at 1440x900, light, uploads a utility bill fixture for `Nhà phố Q7`. Pass when it reaches `Chờ xem lại` and its `result` equals `truth.json` for every required bill field. Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Rule 9. SPEC §9.4 seed 10 adapted to the PR. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844, repeats Rule 1 and opens the Trợ lý page. Pass when the pill and the list read in English, the item title keeps its Vietnamese document title, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/documents-extract.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P2-03/`, publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and pastes the Markdown it prints into the PR body. Each state gets four files named by viewport and theme. Save `p2-03-reading-<viewport>-<theme>.png` with `Đang đọc`, `p2-03-waiting-<viewport>-<theme>.png` with `Chờ xem lại` and `p2-03-new-items-<viewport>-<theme>.png` for the Trợ lý page.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, with `ESTA_AGENT_MODE=replay pnpm agent:dev` on that slot, and audits the diff against the PR body. Save `p2-03-verifier-waiting.png`. Pass when local CI is green, the pill moves from `Đang đọc` to `Chờ xem lại` without a reload, the item shows on the Trợ lý page, and the PR body matches the diff.
+- [ ] Audit lane. One Opus lane audits the worker job and its file access. It checks #54 and the trimmed-path rule, `Read` confined to the job directory with the hook denying everything else, the service-role download filtered by the job's household, `save_extraction` bound to the household, the job directory deleted on every exit path, the national ID reduction, the `agent_jobs` insert policy, `document_status` exposing no diagnostics, and the replay recordings holding no real data. Pass when it files no blocking finding.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. `ping` job wall time on both sides, `extract_document` wall time in replay per fixture, the live wall time stored with each recording, and the golden suite wall time.
-- [ ] Probe. Run 5 `ping` jobs at trunk and head, interleaved. Run every extraction fixture 5 times in replay at head. Read live times from the recording metadata.
-- [ ] Baseline. Trunk median `ping` wall time. Trunk has no extraction, so extraction takes absolute budgets.
-- [ ] Rule. Fail when head `ping` median exceeds trunk by more than 10%, when replay extraction p95 exceeds 5 s, when any live recording exceeds 120 s, or when the golden suite exceeds 90 s.
+- [ ] Metric. `ping` job wall time on both sides, `extract_document` wall time in replay per fixture, the live wall time stored with each recording, the golden suite wall time, the delay from `save_extraction` to the tile's `Chờ xem lại`, and Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for `/assistant` on a production build with the full seed.
+- [ ] Probe. 5 `ping` jobs at trunk and head, interleaved. Every fixture 5 times in replay at head. 10 timed status changes at head. `scripts/perf/lighthouse.ts /assistant` 5 times per side, interleaved.
+- [ ] Baseline. Trunk median `ping` wall time and trunk medians for `/assistant`, which exists at trunk with the status line only. Trunk has no extraction, so extraction and the status delay take absolute budgets.
+- [ ] Rule. Fail when the head `ping` median exceeds trunk by more than 10%, when replay extraction p95 exceeds 5 s, when any live recording exceeds 120 s, when the golden suite exceeds 90 s, when the status delay p95 exceeds 2 s, or when `/assistant` misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS or its head LCP median exceeds trunk by more than 10%.
 
-**Review gate.** None. P2-03 is not review-gated.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
+
+- [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
-## Upload documents from file picker, drag and drop and the phone camera (P2-04)
+## Review extracted fields beside the document and accept them (P2-07)
 
-**Depends on.** P0-12, P0-14, P1-06, P2-03.
+**Depends on.** P2-03.
 
 **Files.**
 
-- [ ] Create `apps/web/src/components/documents/upload-sheet.tsx` and `apps/web/src/components/documents/duplicate-dialog.tsx`.
-- [ ] Create `apps/web/src/lib/upload/sha256.ts`, `apps/web/src/lib/upload/thumbnail.ts`, `apps/web/src/lib/upload/upload-with-progress.ts` and their `.test.ts` files.
-- [ ] Edit `apps/web/src/app/(app)/documents/page.tsx` and `apps/web/src/app/(app)/properties/[propertyId]/documents/page.tsx`.
-- [ ] Edit `apps/web/src/server/documents/actions.ts` (add `archiveDocument` and `restoreDocument`), `apps/web/messages/vi.json` and `apps/web/messages/en.json`.
-- [ ] Create `e2e/documents-upload.spec.ts` and `e2e/helpers/make-large-image.ts`.
+- [ ] Create `supabase/migrations/20261007204000_extraction_acceptance.sql` and `supabase/tests/extraction_acceptance.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Create `fields.ts`, `confidence.ts`, `acceptance.ts` and a `.test.ts` beside each in `packages/core/src/extraction/`.
+- [ ] Create `apps/web/src/server/extraction/actions.ts` and `apps/web/src/server/extraction/actions.test.ts`.
+- [ ] Create `apps/web/src/app/(app)/documents/[documentId]/review/page.tsx`, and `extraction-field-row.tsx`, `review-panel.tsx` and `document-pager.tsx` in `apps/web/src/components/extraction/`. Edit `document-tile.tsx`, `new-items.tsx` and the message files.
+- [ ] Create `e2e/extraction-review.spec.ts`.
 
 **Build.**
 
-- [ ] Build `UploadSheet`, opened by `Thêm tài liệu` on the Tài liệu page and on the property Tài liệu tab. It offers `Chụp ảnh` (`accept="image/*" capture="environment"`), `Chọn tệp` (JPEG, PNG, WebP, PDF), and on desktop a labelled drop zone that is never the only path. The `accept` list lets iOS Safari hand over JPEG for library photos [inferred, confirm on Ryan's phone over `pnpm dev:lan` at the gate].
-- [ ] Give the sheet five fields, so it stays a sheet per DESIGN-BRIEF §5.3. They are category (order from `DOCUMENT_CATEGORIES`), property (prefilled when opened from a property), title (prefilled as category label plus nickname), `expires_on` with the P0-12 date input, and `Tài liệu nhạy cảm (che mờ)` defaulted from the registry.
-- [ ] Check size and type on the client before any request. Above 25 MB the sheet shows `Tệp lớn hơn 25 MB. Hãy chọn tệp nhỏ hơn hoặc chụp lại.`
-- [ ] Add `sha256(file)` with `crypto.subtle.digest`, and `makeThumbnails(file, sensitive)` in `thumbnail.ts`. It draws a 320 px WebP with canvas from `createImageBitmap(file, { imageOrientation: 'from-image' })`, and for PDFs renders page 1 with `pdfjs-dist` loaded by dynamic import. For sensitive documents it also draws a blurred variant at blur radius 24.
-- [ ] Add `uploadWithProgress(url, file, onProgress)`, an XMLHttpRequest PUT to the signed upload URL so `upload.onprogress` drives the bar. A retry reuses the same document id and path with upsert, so it converges on one object.
-- [ ] Wire the flow. `createDocumentUpload` runs first. A non-empty duplicates list opens `DuplicateDialog`, which reads `Tài liệu này đã có: <title>. Vẫn tải lên?` with `Vẫn tải lên` and `Hủy`. Then the file and thumbnails upload and `registerDocument` runs. The toast reads `Đã lưu <title>.` with `Xem` and `Hoàn tác`, and `Hoàn tác` calls `archiveDocument`, which sets `deleted_at`.
-- [ ] Show progress as a bar with the percent in words and `Đang tải lên 4,2 / 10 MB`. On a network error the sheet shows `Chưa tải lên được. Kiểm tra kết nối mạng rồi thử lại.` with `Thử lại`.
-- [ ] Never show an unblurred preview of a file whose sensitivity switch is on. The sheet preview uses the blurred variant, because tenants may be watching over Mẹ's shoulder.
-- [ ] Hide `Thêm tài liệu` for viewers.
+- [ ] Write `EXTRACTION_FIELDS` in `fields.ts` as a registry, one descriptor per schema leaf of `certificate_v1` and `utility_bill_v1`. Each names the path, i18n label, input kind (`text`, `area`, `date`, `land_use_code`, `form`, `money`), whether it is required, and its target table and column. The review form renders from the registry with no per-field branches.
+- [ ] Add `REVIEW_CONFIDENCE_THRESHOLD = 0.9` and `needsCheck(field)` in `confidence.ts`. The threshold matches the AGENT.md §7.2 high-confidence line.
+- [ ] Add `planCertificateAcceptance(extraction, decisions)` and `planUtilityBillAcceptance(extraction, decisions)` in `acceptance.ts`, pure functions returning an ordered write plan. Holders become parties, matched by normalized name plus `id_last4` before creating one tagged `owner`. Then come the certificate (keyed by `extraction_id`), parcels, structures and the property's `certificate_address_text`. A bill plan writes one `utility_accounts` row. Row ids are UUIDv5 of `extraction:<id>:<path>`, so running a plan twice upserts the same rows. Only accepted or edited fields enter the plan.
+- [ ] Add a partial unique index on `certificates.extraction_id` (keyed in P2-03), so one extraction yields one certificate. Allow inserting a `document_extractions` row as `accepted` only when `model` is null (manual entry), with pgTAP.
+- [ ] Build the review page. On desktop the image sits left with page tabs and zoom in `DocumentPager`, and the fields sit right. On mobile the image is a collapsible top panel and each field's `Trang 2` link scrolls the image to its page. Opening a sensitive document here logs a `view` through `openDocument`.
+- [ ] Build `ExtractionFieldRow` (DESIGN-BRIEF §7) with the value, the confidence marker, the source page link, `Đúng` and `Sửa`. A field below the threshold carries the ochre marker and the word `kiểm tra lại`. `Đúng` accepts in one tap, and `Sửa` opens the typed input. Areas parse decimal commas, money uses the money input, and land use codes pick from `land_use_codes` with unknown codes kept and the `mã chưa có trong danh mục` hint. When the parcel area and the sum of purpose areas disagree, both show with a warning (DOMAIN-VN §2.1).
+- [ ] Add server actions in `apps/web/src/server/extraction/actions.ts` on the user's session client. `saveExtractionReview(extractionId, decisions)` builds the plan, upserts each step, then sets the extraction `accepted` with `accepted_fields`, `reviewed_by` and `reviewed_at`. A retry after a partial failure converges on the same rows. `rejectExtraction` sets `rejected`. A document without a property asks for one before saving.
+- [ ] Offer manual entry when the latest extraction is `failed`. The same field rows show empty beside the image, and saving inserts an `accepted` extraction with `model` null through the same plan.
+- [ ] Reuse `useDocumentStatus` on the page. Before `needs_review` it shows `Trợ lý đang đọc tài liệu.`, and when the heartbeat is stale it shows `Trợ lý ngoại tuyến từ <HH:mm>. Việc mới sẽ chạy khi máy hoạt động lại.` (AGENT.md §9). The fields appear without a reload when the status changes.
+- [ ] Link the tile pill `Chờ xem lại` and the Trợ lý item to the review page.
+- [ ] Run `/impeccable harden` on the page for long Vietnamese holder names and addresses, 130% text scale, a 5-page PDF, empty, loading, error and offline states.
 
 **You see.**
 
-- [ ] At 390x844, `Thêm tài liệu` then `Chụp ảnh` with a certificate photo, category `Sổ đỏ / sổ hồng` and `Lưu` shows the progress bar, then the toast `Đã lưu Sổ hồng Long An.`
-- [ ] Choosing the seeded Bảo Lộc file again opens the dialog naming `Sổ hồng Bảo Lộc`.
-- [ ] A 30 MB file shows the 25 MB message and sends no request to Storage.
+- [ ] At 390x844, the review page for a freshly uploaded `gcn_2024` photo shows the image above the fields, and every field below 0.9 carries `kiểm tra lại`.
+- [ ] After `Đúng` on every field and `Lưu`, the property's `Pháp lý` tab shows the certificate serial and parcel numbers from `truth.json`.
+- [ ] Pressing `Lưu` twice leaves one certificate row for the extraction.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `apps/web/src/lib/upload/sha256.test.ts` matches a known digest. `thumbnail.test.ts` asserts the long side is at most 320 px, an EXIF-rotated photo comes out upright, and the blurred variant differs from the clear one. `upload-with-progress.test.ts` asserts monotonic progress and one object after a retry.
-- [ ] `e2e/documents-upload.spec.ts` gains a 20 MB generated fixture uploaded at 390x844 through the camera input with `setInputFiles` (DOC-1), the duplicate dialog, the 30 MB refusal, undo setting `deleted_at`, a certificate upload creating one queued extraction, and a viewer seeing no `Thêm tài liệu`. Run `pnpm e2e e2e/documents-upload.spec.ts`.
-- [ ] Run `pnpm check`.
+- [ ] `acceptance.test.ts` gains a plan from the `gcn_2024` truth, identical ids across two runs, an edit overriding the extracted value, unaccepted fields left out, a holder matching an existing party, a bill plan writing one utility account, and no full ID in any planned row (DOC-6, D11).
+- [ ] `fields.test.ts` asserts every leaf of `certificate_v1` and `utility_bill_v1` has a descriptor. `confidence.test.ts` asserts 0.9 is not flagged and 0.89 is.
+- [ ] `apps/web/src/server/extraction/actions.test.ts` against local Supabase gains a double save leaving the same row counts, a save interrupted after the certificate step and retried converging, `audit_log` naming the user as actor, and a viewer refused.
+- [ ] `supabase/tests/extraction_acceptance.test.sql` gains the unique index, the manual-entry insert rule and a viewer refused (FND-2).
+- [ ] `e2e/extraction-review.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/extraction-review.spec.ts e2e/property-legal.spec.ts`.
+- [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/documents-upload.spec.ts`.
+- [ ] axe reports zero serious or critical issues on `/documents/[documentId]/review` in `e2e/extraction-review.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk's Tài liệu page is a placeholder with no upload, so the lane records that and gates the head, as `me.lane1@demo.esta.test` at 390x844 light uploading `fixtures/certificates/gcn_2024-photo/page-1.jpg` through `Chụp ảnh` for property `long-an`. Save `p2-04-upload-mobile.png`. Pass when the toast reads `Đã lưu Sổ hồng Long An.` and Studio shows one `sensitive` documents row whose object and two thumbnails exist.
-- [ ] Lane 2. As `ryan.lane2@demo.esta.test` at 1440x900 dark, open property `bao-loc`, then the Tài liệu tab, and drop the `gcn_2009_2024` scan PDF on the drop zone. Save `p2-04-drop-desktop.png`. Pass when the property field shows `Đất Bảo Lộc` and the new row has `page_count` equal to the PDF's pages.
-- [ ] Lane 3. As `me.lane3@demo.esta.test` at 390x844 dark with the network throttled to 10 Mbps, upload a 10 MB photo. Save `p2-04-progress.png` mid-upload. Pass when the screenshot shows a percent between 10% and 90% in words and the upload completes within 12 s.
-- [ ] Lane 4. As `ryan.lane4@demo.esta.test` at 1440x900 light, upload the seeded Bảo Lộc certificate file again and press `Hủy`. Save `p2-04-duplicate.png`. Pass when the dialog names `Sổ hồng Bảo Lộc` and the documents count is unchanged.
-- [ ] Lane 5. As `me.lane5@demo.esta.test` at 390x844 light, choose a 30 MB image. Save `p2-04-too-large.png`. Pass when the 25 MB message shows and the network log has no request to the storage host.
-- [ ] Lane 6. As `ryan.lane6@demo.esta.test` at 390x844 dark, start an upload, switch the browser offline at about 50%, switch back online and press `Thử lại`. Save `p2-04-retry.png`. Pass when Studio shows exactly one row and the bucket holds one object for that document id.
-- [ ] Lane 7. As `me.lane7@demo.esta.test` at 390x844 light, pick an ID card photo and category `Căn cước`. Save `p2-04-sensitive-preview.png`. Pass when the preview shows the blurred image and no `img` or canvas in the sheet holds the clear image.
-- [ ] Lane 8. As `ryan.lane8@demo.esta.test` at 1440x900 light, upload one certificate and one `photo` document. Save `p2-04-enqueue.png` of Studio. Pass when the certificate has one `agent_jobs` row keyed `extract_document:<id>:<sha256>` and one queued extraction, and the photo has none.
-- [ ] Lane 9. As `me.lane9@demo.esta.test` at 1440x900 dark, upload a file and press `Hoàn tác` in the toast. Save `p2-04-undo.png`. Pass when the row has `deleted_at` set and the toast confirms the undo.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then open the sheet at 390x844 and upload a photo. Save `p2-04-en-130-dark.png`. Pass when every label reads in English, no label is clipped, and `document.documentElement.scrollWidth` is at most 390.
+- [ ] Rule 1. SPEC §9.4 seed 3, review half. `me.lane1@demo.esta.test` at 390x844, light, uploads the `gcn_2024` photo on `Đất vườn Long An` with the replay worker, taps `Chờ xem lại`, presses `Đúng` on every field and `Lưu`. Pass when the count of `kiểm tra lại` markers equals the count of fields below 0.9 in the recording, each marker shows shape and word, and `Pháp lý` shows the `truth.json` serial and parcel numbers (DOC-6). Asserted in `e2e/extraction-review.spec.ts`.
+- [ ] Rule 2. `me.lane2@demo.esta.test` at 390x844, dark, edits `area_m2` to `125,5`, saves, then presses `Lưu` again after the spec cuts the first response with `page.route`. Pass when the parcel's `area_m2` reads `125.50`, `accepted_fields` marks the field as edited, and Studio shows one certificate for the extraction with the parcel count of `truth.json`. Asserted in `e2e/extraction-review.spec.ts`.
+- [ ] Rule 3. `ryan.lane3@demo.esta.test` at 1440x900, light, reviews a certificate whose holder is `Nguyễn Thị Demo` with the seeded `id_last4`, saves, and the spec selects the new certificate's `audit_log` rows. Pass when the parties count is unchanged, `holder_party_ids` holds her party id, and every row has `actor_kind` `user` with his id and none has `agent`. Asserted in `e2e/extraction-review.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` at 1440x900, dark, uploads the blank-page fixture and opens its review. Pass when the empty field rows sit beside the image and saving creates a parcel and an `accepted` extraction with `model` null. Asserted in `e2e/extraction-review.spec.ts`.
+- [ ] Rule 5. With the worker stopped and the test clock advanced six minutes through `/api/test/clock`, `me.lane5@demo.esta.test` at 390x844, light, uploads a certificate, opens its review, and the spec starts the worker. Pass when the offline notice names the last heartbeat time and the fields appear without a reload after the worker starts. Asserted in `e2e/extraction-review.spec.ts`.
+- [ ] Rule 6. `me.lane6@demo.esta.test` at 390x844, dark, uploads a utility bill fixture on `Nhà phố Q7` and accepts it. Pass when the `Cho thuê` tab's utility accounts list shows the `truth.json` customer code and provider. Asserted in `e2e/extraction-review.spec.ts`.
+- [ ] Rule 7. SPEC §9.4 seed 10 adapted to the page. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 1. Pass when the labels read in English, Vietnamese values keep their diacritics, long holder names wrap without clipping, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/extraction-review.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P2-07/`, publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and pastes the Markdown it prints into the PR body. Each state gets four files named by viewport and theme. Save `p2-07-review-<viewport>-<theme>.png` with markers showing, `p2-07-edit-area-<viewport>-<theme>.png` with the typed input open and `p2-07-legal-after-save-<viewport>-<theme>.png` for `Pháp lý`.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, with the replay worker on that slot, and audits the diff against the PR body. Save `p2-07-verifier-review.png`. Pass when local CI is green, the markers show, the save puts the serial on `Pháp lý`, and the PR body matches the diff.
+- [ ] Audit lane. One Opus lane audits what accepting extracted fields writes under the user's session, which is parcels, certificates, utility accounts and parties. It checks tenancy, so every planned write lands in the extraction's own household and a member of another household is refused. It checks the session client only, with the service role absent from `apps/web/src/server/extraction/`. It checks idempotent acceptance, so a second save and a retry after a partial failure converge on the same rows through the UUIDv5 ids, the unique index on `certificates.extraction_id` and the party match by normalized name plus `id_last4`. It checks that no field is accepted without review, so only fields marked `Đúng` or edited enter the plan and only a manual entry with `model` null inserts an `accepted` extraction. Pass when it files no blocking finding.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Time to complete a 10 MB upload on a throttled 10 Mbps connection and time to the first progress update (SPEC §7.2), plus Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for the Tài liệu route on a production build (`pnpm build && pnpm start`) with the full seed.
-- [ ] Probe. Run the upload 5 times at head through Playwright with CDP throttling. Run Lighthouse 5 times per side, interleaved, on the Tài liệu route.
-- [ ] Baseline. Trunk has no upload, so the upload takes an absolute budget. Trunk Lighthouse medians for the placeholder route, reported beside head without a ratio because the pages differ.
-- [ ] Rule. Fail when the 10 MB upload exceeds 12 s or the first progress update exceeds 1 s, or when the head route exceeds LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB initial JS (SPEC §7.2). `pdfjs-dist` must not appear in the initial chunk.
+- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for the review route on a production build with the full seed plus one `needs_review` extraction, and for `/properties/<bao-loc id>/documents`, plus `saveExtractionReview` latency and the delay from the status change to the fields rendering.
+- [ ] Probe. `scripts/perf/lighthouse.ts` 5 times at head on the review route and 5 times per side, interleaved, on the documents tab. 20 timed saves and 10 timed status changes at head.
+- [ ] Baseline. Trunk has no review route, so it takes absolute budgets. The documents tab exists on both sides, so its trunk medians are its baseline.
+- [ ] Rule. Fail when the review route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when the documents tab's head LCP median exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped, when save p95 exceeds 1 s, or when the status delay p95 exceeds 2 s.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/p2-04/p2-04-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of Mẹ photographing a certificate at 390x844 through `pnpm dev:lan`, seeing progress and the toast, saved as `~/.claude/orchestrate/esta/media/p2-04/p2-04-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Build the documents vault with search, sensitive blur and expiring soon (P2-05)
 
-**Depends on.** P0-13, P2-04.
+**Depends on.** P2-07.
 
 **Files.**
 
-- [ ] Create `apps/web/src/components/documents/document-vault.tsx`, `apps/web/src/components/documents/vault-search.tsx` and `apps/web/src/components/documents/sensitive-thumbnail.tsx`.
-- [ ] Edit `apps/web/src/app/(app)/documents/page.tsx` and `apps/web/src/app/(app)/properties/[propertyId]/documents/page.tsx`, and create `apps/web/src/app/(app)/documents/[documentId]/page.tsx`.
-- [ ] Create `packages/core/src/documents/expiry.ts` and `packages/core/src/documents/expiry.test.ts`.
-- [ ] Edit `apps/web/src/server/documents/actions.ts` (add `revealThumbnail` and `updateDocument`), `apps/web/messages/vi.json` and `apps/web/messages/en.json`.
+- [ ] Create `supabase/migrations/20261007205000_document_search.sql` and `supabase/tests/document_search.test.sql`. Regenerate `packages/db/src/database.types.ts` with `pnpm db:types`.
+- [ ] Edit `packages/core/src/documents/expiry.ts` and its test.
+- [ ] Create `document-vault.tsx`, `vault-search.tsx`, `vault-groups.tsx` and `document-page.tsx` in `apps/web/src/components/documents/`. Create `apps/web/src/app/(app)/documents/[documentId]/page.tsx`. Edit `apps/web/src/app/(app)/documents/page.tsx`, which replaces the P0-14 placeholder, and create `loading.tsx` and `error.tsx` beside it.
+- [ ] Create `apps/web/src/server/documents/search.ts`. Edit `apps/web/src/server/documents/actions.ts` (add `updateDocument`), `list.ts`, `document-tile.tsx`, `apps/web/src/app/(app)/properties/[id]/documents/page.tsx` and the message files.
+- [ ] Edit `apps/web/src/server/extraction/actions.ts` and `actions.test.ts` for the `ocr_text` writer, and `docs/spec/SPEC.md` §5.5.
 - [ ] Create `e2e/documents-vault.spec.ts`.
 
 **Build.**
 
-- [ ] Run `/impeccable shape Tài liệu` and record the confirmed brief in the PR body before building.
-- [ ] Add `expiringSoon(documents, asOf)` in `packages/core/src/documents/expiry.ts`, a pure function returning documents whose `expires_on` falls within 30 days of the Clock's business date with the day count. The window matches W5, so the vault and the Phase 5 watch rule agree.
-- [ ] Build the Tài liệu page with the search bar first. `VaultSearch` debounces by 250 ms, calls `search_documents`, and keeps the query in `?q=`. Below it sit `Sắp hết hạn` (for example `Bảo hiểm nhà Q7, hết hạn sau 23 ngày`), then the groups. A toggle switches between `Theo tài sản` (property, then category) and `Theo loại`. Each group shows its count. Lists above 100 rows virtualize.
-- [ ] Render tiles with the P0-13 `DocumentTile`, showing category, property, expiry and the `document_status` label.
-- [ ] Build `SensitiveThumbnail`. The server sends only the signed URL of `thumb-blur.webp` for a sensitive document, so the clear image never reaches the browser before a tap. Tapping `Xem` calls `revealThumbnail(documentId)`, which signs `thumb.webp` and logs a `view`. The tile re-blurs on `visibilitychange` to hidden and after 60 s.
-- [ ] Build the document page `documents/[documentId]`. It shows image pages or the PDF (`pdfjs-dist` loaded by dynamic import) through `getDocumentViewUrl`, `Tải xuống` logging a `download`, and `Sửa thông tin` for title, category, property, `expires_on`, tags and sensitivity through `updateDocument`, with an undo toast. It also shows the extraction status label.
-- [ ] Render `DocumentVault` filtered by property on the property Tài liệu tab.
-- [ ] Add the empty state `Chưa có tài liệu nào. Thêm ảnh sổ, hợp đồng hoặc hóa đơn.` with `Thêm tài liệu`, a search empty state `Không tìm thấy tài liệu cho "<q>".`, and the offline error `Chưa tải được danh sách. Kiểm tra kết nối mạng rồi thử lại.`
-- [ ] Run `/impeccable harden` on the screen for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
+- [ ] Run `/impeccable shape Tài liệu` and record the confirmed brief in the PR body before building. The screen opens on search (ux-daily-use rule 7, DESIGN-BRIEF §6.10).
+- [ ] Add `documents.ocr_text text` and `search_vector` as a generated column over `esta_unaccent(title)`, tags and `ocr_text` with the `simple` configuration and a GIN index. Add `search_documents(p_query text)`, a `security_invoker` SQL function that unaccents the query, turns each word into a prefix term joined by AND, and orders by rank then title, so `bao loc so` finds `Sổ hồng Bảo Lộc` (DOC-3). RLS on `documents` keeps it inside the caller's households.
+- [ ] Give `documents.ocr_text` its writer, which SPEC §5.5 lacks. This PR is its one owner, because the vault search is its first reader. `saveExtractionReview` copies the accepted extraction's `full_text` (the optional `utility_bill_v1` string from P2-03) into `documents.ocr_text` under the user's session when the document's sensitivity is `normal`. Sensitive documents keep `ocr_text` null. P3-19 adds `full_text` to `lease_v1` and reuses this copy. Record the writer in SPEC §5.5.
+- [ ] Add `expiringSoon(documents, today)` in `expiry.ts` over `documentExpiry`, returning the documents whose `expires_on` falls within 30 days with the day count, in date order. The window matches watch rule W5, so the vault and P5-02 agree (DOC-7 vault part).
+- [ ] Build the Tài liệu page with `VaultSearch` first. It debounces by 250 ms, calls `searchDocuments(q)` from `search.ts` on the session client, and keeps the query in `?q=`. Below it sit `Sắp hết hạn` (`Bảo hiểm nhà Q7, hết hạn sau 23 ngày`), then `VaultGroups`. A toggle switches between `Theo tài sản` (property, then category) and `Theo loại`, each group with its count. Tiles are the P2-02 `DocumentTile`, now also showing the property name. Lists above 100 tiles virtualize with the P1-04 `@tanstack/react-virtual` pattern.
+- [ ] Build the document page `documents/[documentId]` in `document-page.tsx`. It shows image pages or the PDF (`pdfjs-dist` by dynamic import) through `openDocument`, `Tải xuống` logging a `download`, the status pill with its link to the review page, and `Sửa thông tin` for title, category, property, `expires_on`, tags and sensitivity through `updateDocument` with an undo toast. The tile title now opens this page instead of the view route.
+- [ ] Render `DocumentVault` filtered by property on the property `Tài liệu` tab, so both screens share one component.
+- [ ] Add the empty states. No document reads `Chưa có tài liệu nào. Thêm ảnh sổ, hợp đồng hoặc hóa đơn.` with `Thêm tài liệu`, no match reads `Không tìm thấy tài liệu cho "<q>".`, and the offline error reads `Chưa tải được danh sách. Kiểm tra kết nối mạng rồi thử lại.`
+- [ ] Run `/impeccable harden` on the screen for long Vietnamese titles, 130% text scale, empty, loading, error and offline states.
 
 **You see.**
 
 - [ ] At 390x844 on the full seed, Tài liệu opens with the search bar first and `Sắp hết hạn` listing the `q7` insurance with `23 ngày`.
 - [ ] Typing `bao loc so` shows `Sổ hồng Bảo Lộc` first, blurred, with `Xem`.
-- [ ] Tapping `Xem` shows the clear thumbnail and adds one `view` row in `document_access_log`.
+- [ ] Tapping its title opens the document page, which shows the certificate image and adds one `view` row in `document_access_log`.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/documents/expiry.test.ts` gains the `q7` insurance at 23 days on 2026-10-07, a document expiring exactly 30 days later included, one at 31 days excluded, and an expired document excluded (DOC-7 UI).
-- [ ] `e2e/documents-vault.spec.ts` gains `hop dong` finding `Hợp đồng thuê Căn hộ Thủ Đức` and `bao loc so` finding `Sổ hồng Bảo Lộc` (DOC-3), sensitive tiles blurred until tapped with no request for a sensitive `thumb.webp` before the tap (DOC-5), one access log row per open (DOC-4), and the expiring soon section (DOC-7 UI). Run `pnpm e2e e2e/documents-vault.spec.ts`.
-- [ ] Run `pnpm check`.
+- [ ] `supabase/tests/document_search.test.sql` proves `hop dong` finds `Hợp đồng thuê Căn hộ Thủ Đức`, `bao loc so` finds `Sổ hồng Bảo Lộc`, tokens combine with AND, an archived document is absent, a word found only in a document's `ocr_text` finds it, and a member sees no other household's rows through the function (DOC-3, FND-2).
+- [ ] `apps/web/src/server/extraction/actions.test.ts` against local Supabase gains accepting a `normal` utility bill extraction setting `documents.ocr_text` to its `full_text`, the same bill marked sensitive leaving `ocr_text` null, and a certificate acceptance leaving `ocr_text` null.
+- [ ] `expiry.test.ts` gains `expiringSoon` with the `q7` insurance at 23 days, 30 days included, 31 days excluded, an expired document excluded and date order (DOC-7).
+- [ ] `e2e/documents-vault.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-vault.spec.ts e2e/documents-upload.spec.ts`.
+- [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/documents-vault.spec.ts`.
+- [ ] axe reports zero serious or critical issues on `/documents` and `/documents/[documentId]` in `e2e/documents-vault.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk's Tài liệu page lists documents without search or expiring soon, so the lane opens it at trunk and head as `me.lane1@demo.esta.test` at 390x844 light and gates the head. Save `p2-05-vault-mobile.png`. Pass when the head shows the search bar above `Sắp hết hạn`, which lists the `q7` insurance with `23 ngày`.
-- [ ] Lane 2. Seed 4. As `me.lane2@demo.esta.test` at 390x844 light, start a timer at Home, open Tài liệu and type `bao loc so`. Save `p2-05-seed4.png`. Pass when `Sổ hồng Bảo Lộc` is the first result, blurred, within 10 s of the timer start.
-- [ ] Lane 3. As `me.lane3@demo.esta.test` at 390x844 dark with 4x CPU slowdown and Slow 4G, navigate from Home to Tài liệu, capture a frame every 100 ms until network idle, and record every request. Save `p2-05-no-flash.png` as a contact sheet of the frames. Pass when no frame shows a clear sensitive thumbnail and the request log has no `thumb.webp` request for any sensitive document id.
-- [ ] Lane 4. As `ryan.lane4@demo.esta.test` at 1440x900 light, tap `Xem` on `Sổ hồng Bảo Lộc`, switch to another tab and back. Save `p2-05-reveal.png` after the reveal. Pass when the clear thumbnail shows after the tap, Studio has one new `view` row, and the tile is blurred again on return.
-- [ ] Lane 5. As `ryan.lane5@demo.esta.test` at 1440x900 dark, type `hop dong`. Save `p2-05-hop-dong.png`. Pass when `Hợp đồng thuê Căn hộ Thủ Đức` is in the results.
-- [ ] Lane 6. As `me.lane6@demo.esta.test` at 1440x900 light, switch to `Theo loại`. Save `p2-05-by-category.png`. Pass when the `Sổ đỏ / sổ hồng` group count equals a Studio count of the household's `certificate` documents.
-- [ ] Lane 7. As `me.lane7@demo.esta.test` at 390x844 light, open the `q7` insurance document, set `expires_on` to 2026-10-12 with `Sửa thông tin`, then press `Hoàn tác`. Save `p2-05-edit-undo.png`. Pass when the vault showed `5 ngày` before the undo and shows `23 ngày` after it.
-- [ ] Lane 8. As `ryan.lane8@demo.esta.test` at 1440x900 dark, open property `bao-loc`, then the Tài liệu tab. Save `p2-05-property-tab.png`. Pass when the tab lists exactly the documents a Studio select returns for that property.
-- [ ] Lane 9. As `me.lane9@demo.esta.test` at 390x844 dark, open the Tài liệu tab of a property created in the lane, then switch the browser offline and search. Save `p2-05-empty-offline.png`. Pass when the tab shows `Chưa có tài liệu nào.` with `Thêm tài liệu` and the offline search shows the network error copy.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then repeat seed 4 at 390x844. Save `p2-05-en-130-dark.png`. Pass when `Sổ hồng Bảo Lộc` is the first result, the UI reads in English, and `document.documentElement.scrollWidth` is at most 390.
+- [ ] Rule 1. SPEC §9.4 seed 4. `me.lane1@demo.esta.test` at 390x844, light, starts a timer on Home, opens `Tài liệu` from the tab bar and types `bao loc so`. Pass when the search bar is the first focusable element, `Sắp hết hạn` lists the `q7` insurance with `23 ngày`, and `Sổ hồng Bảo Lộc` is the first result, blurred, within 10 s of the timer start (DOC-3, DOC-7). Asserted in `e2e/documents-vault.spec.ts`.
+- [ ] Rule 2. `me.lane2@demo.esta.test` at 390x844, dark, with 4x CPU slowdown and Slow 4G, navigates from Home to `Tài liệu` while the spec records every request. Pass when no request names a sensitive document's `thumb.webp` before any tap (DOC-5). Asserted in `e2e/documents-vault.spec.ts`.
+- [ ] Rule 3. `ryan.lane3@demo.esta.test` at 1440x900, light, types `hop dong`, then switches to `Theo loại`. Pass when `Hợp đồng thuê Căn hộ Thủ Đức` is in the results and the `Sổ đỏ / sổ hồng` group count equals the household's `certificate` document count (DOC-3). Asserted in `e2e/documents-vault.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` at 1440x900, dark, opens the `q7` insurance page, presses `Tải xuống`, sets `expires_on` to 2026-10-12 with `Sửa thông tin`, then presses `Hoàn tác`. Pass when one `download` row exists, the vault showed `5 ngày` before the undo and `23 ngày` after it (DOC-4). Asserted in `e2e/documents-vault.spec.ts`.
+- [ ] Rule 5. `me.lane5@demo.esta.test` at 390x844, light, opens the `Tài liệu` tab of a property she creates in the spec, then goes offline and searches on `/documents`. Pass when the tab shows `Chưa có tài liệu nào.` with `Thêm tài liệu` and the offline search shows the network error copy. Asserted in `e2e/documents-vault.spec.ts`.
+- [ ] Rule 6. SPEC §9.4 seed 10 adapted to the vault. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 1. Pass when `Sổ hồng Bảo Lộc` is the first result, the UI reads in English, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/documents-vault.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P2-05/`, publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and pastes the Markdown it prints into the PR body. Each state gets four files named by viewport and theme. Save `p2-05-vault-<viewport>-<theme>.png` for `/documents`, `p2-05-search-bao-loc-<viewport>-<theme>.png` and `p2-05-document-<viewport>-<theme>.png` for the document page.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, and audits the diff against the PR body. Save `p2-05-verifier-seed4.png`. Pass when local CI is green, the search bar comes first, `Sổ hồng Bảo Lộc` is the first result within 10 s, and the PR body matches the diff.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for the Tài liệu route on a production build (`pnpm build && pnpm start`) with the full seed, plus search round-trip time from keystroke to results.
-- [ ] Probe. Run Lighthouse 5 times per side, interleaved. Time 20 searches at head with Playwright.
-- [ ] Baseline. Trunk medians for the trunk Tài liệu route, reported beside head without a ratio because the page changed. Trunk has no search, so search takes an absolute budget.
-- [ ] Rule. Fail when the head route exceeds LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB initial JS (SPEC §7.2), or when search p95 exceeds 500 ms after the debounce.
+- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for `/documents` and `/documents/<q7 insurance id>` on a production build (`pnpm build && pnpm start`) with the full seed, `EXPLAIN (ANALYZE)` time of `search_documents('bao loc so')` over a household with 1,000 documents inserted by the spec, and search round-trip time from keystroke to results.
+- [ ] Probe. `scripts/perf/lighthouse.ts` 5 times per side, interleaved, on `/documents` as `me.lane1@demo.esta.test`, and 5 times at head on the document page. 20 runs of the search query and 20 timed searches at head.
+- [ ] Baseline. Trunk serves the P0-14 placeholder at `/documents`, so its medians are that route's baseline. The document page and search are new at head and take absolute budgets.
+- [ ] Rule. Fail when a head median misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS on either route, when `pdfjs-dist` appears in the initial chunk, when the search query exceeds 20 ms, or when search p95 exceeds 500 ms after the debounce.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/p2-05/p2-05-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of seed 4 at 390x844 with the blurred tile, the tap to reveal and the document opening, saved as `~/.claude/orchestrate/esta/media/p2-05/p2-05-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Capture multi-page documents into one PDF in the browser (P2-06)
 
-**Depends on.** P2-04, P2-05.
+**Depends on.** P2-05.
 
 **Files.**
 
 - [ ] Create `apps/web/src/components/documents/multi-page-capture.tsx`.
-- [ ] Create `apps/web/src/lib/capture/pages.ts`, `apps/web/src/lib/capture/downscale.ts`, `apps/web/src/lib/capture/build-pdf.ts` and their `.test.ts` files.
+- [ ] Create `pages.ts`, `downscale.ts`, `build-pdf.ts` and a `.test.ts` beside each in `apps/web/src/lib/capture/`.
 - [ ] Create `e2e/fixtures/pages/page-1.jpg`, `page-2.jpg` and `page-3.jpg` (synthetic, distinct sizes, large printed page numbers).
-- [ ] Edit `apps/web/src/components/documents/upload-sheet.tsx`, `apps/web/messages/vi.json` and `apps/web/messages/en.json`.
+- [ ] Edit `apps/web/src/components/documents/upload-sheet.tsx`, `apps/web/package.json` (add `pdf-lib`) and the message files.
 - [ ] Create `e2e/documents-multipage.spec.ts`.
 
 **Build.**
 
-- [ ] Add `capturePagesReducer` in `apps/web/src/lib/capture/pages.ts` with actions `add`, `moveUp`, `moveDown` and `remove`. The page list is the only state, and a page holds its blob, object URL and size.
+- [ ] Add `capturePagesReducer` in `pages.ts` with actions `add`, `moveUp`, `moveDown` and `remove`. The page list is the only state, and a page holds its blob, object URL and size.
 - [ ] Build `MultiPageCapture`, opened by `Chụp nhiều trang` in the upload sheet. It has `Chụp trang tiếp` (camera input), on desktop `Chọn nhiều ảnh` (multiple file input), and a numbered strip where each page has the text buttons `Lên`, `Xuống` and `Xóa`, with no drag-only or swipe-only control. `Gộp thành PDF` finishes the capture.
 - [ ] Add `downscaleForPdf(blob)` in `downscale.ts`. It applies EXIF orientation through `createImageBitmap` and re-encodes to JPEG at quality 0.85 with the long side capped at 2000 px.
 - [ ] Add `buildPdfFromImages(pages)` in `build-pdf.ts` with pdf-lib loaded by dynamic import. Each page is A4 width with the height following the image's aspect ratio, in strip order.
-- [ ] Pass the PDF to the P2-04 pipeline with `page_count` set and the thumbnail from page 1. A certificate category still enqueues one extraction for the combined PDF.
+- [ ] Pass the PDF to the P2-02 upload flow with `page_count` set and the thumbnail from page 1. A certificate category still enqueues one P2-03 extraction for the combined PDF.
 - [ ] Cap a capture at 20 pages with `Tối đa 20 trang mỗi tài liệu.` and revoke object URLs on remove and unmount.
 - [ ] Leaving with captured pages opens the confirm `Bỏ 3 trang đã chụp?`, naming the count, because the photos are not saved yet.
 
 **You see.**
 
 - [ ] At 390x844, three captures show a strip numbered 1 to 3. `Lên` on page 3 moves it to second place.
-- [ ] `Gộp thành PDF` then `Lưu` creates one document with `page_count` 3, and its viewer shows the pages in strip order.
+- [ ] `Gộp thành PDF` then `Lưu` creates one document with `page_count` 3, and its document page shows the pages in strip order.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `apps/web/src/lib/capture/build-pdf.test.ts` gains three images of distinct sizes producing a 3-page PDF whose page image sizes appear in input order, and a reordered input producing the reordered PDF (DOC-2).
+- [ ] `build-pdf.test.ts` gains three images of distinct sizes producing a 3-page PDF whose page image sizes appear in input order, and a reordered input producing the reordered PDF (DOC-2).
 - [ ] `pages.test.ts` covers `moveUp` on the first page and `moveDown` on the last as no-ops, `remove` revoking the URL, and the 20-page cap. `downscale.test.ts` covers an EXIF-rotated photo coming out upright and the 2000 px cap.
-- [ ] `e2e/documents-multipage.spec.ts` captures the three page fixtures, moves page 3 up, combines and saves, then reads the stored PDF with `pdfjs-dist` and asserts 3 pages with printed numbers 1, 3, 2 in that order. Run `pnpm e2e e2e/documents-multipage.spec.ts`.
+- [ ] `e2e/documents-multipage.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-multipage.spec.ts e2e/documents-upload.spec.ts`.
 - [ ] Run `pnpm check`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/documents-multipage.spec.ts`.
+- [ ] axe reports zero serious or critical issues on the sheet with the capture open in `e2e/documents-multipage.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk's upload sheet has no `Chụp nhiều trang`, so the lane uploads one photo at trunk and head and gates the head capture, as `me.lane1@demo.esta.test` at 390x844 light capturing the three page fixtures. Save `p2-06-strip-mobile.png`. Pass when the single upload succeeds on both sides and the head creates one document with `page_count` 3.
-- [ ] Lane 2. As `ryan.lane2@demo.esta.test` at 390x844 dark, capture three pages, press `Lên` on page 3, combine and open the document. Save `p2-06-reordered.png`. Pass when the viewer shows printed numbers 1, 3, 2 in order.
-- [ ] Lane 3. As `me.lane3@demo.esta.test` at 390x844 light with 4x CPU slowdown, capture ten 12 MP photos and combine. Save `p2-06-ten-pages.png`. Pass when combining finishes within 10 s and the stored PDF is at most 25 MB.
-- [ ] Lane 4. As `ryan.lane4@demo.esta.test` at 1440x900 light, add three pages and press `Xóa` on page 2. Save `p2-06-remove.png`. Pass when the strip shows two pages numbered 1 and 2 and the saved PDF has 2 pages.
-- [ ] Lane 5. As `me.lane5@demo.esta.test` at 390x844 dark, capture three pages and tap the back control. Save `p2-06-leave-confirm.png`. Pass when the dialog reads `Bỏ 3 trang đã chụp?` and cancelling keeps the strip.
-- [ ] Lane 6. As `ryan.lane6@demo.esta.test` at 1440x900 dark, capture the `gcn_2009_2024` pages as a certificate for `di-an`. Save `p2-06-certificate-pdf.png` of the vault. Pass when the tile is blurred and Studio shows one queued extraction for the new document.
-- [ ] Lane 7. As `me.lane7@demo.esta.test` at 390x844 light, capture a photo with EXIF orientation 6. Save `p2-06-exif.png`. Pass when the PDF page is upright with the printed number reading normally.
-- [ ] Lane 8. As `ryan.lane8@demo.esta.test` at 1440x900 light, select 21 images. Save `p2-06-cap.png`. Pass when the strip holds 20 pages and shows `Tối đa 20 trang mỗi tài liệu.`
-- [ ] Lane 9. As `me.lane9@demo.esta.test` at 1440x900 dark, pick three images with `Chọn nhiều ảnh` and combine. Save `p2-06-desktop-multi.png`. Pass when the saved document has `page_count` 3 and keyboard focus moves through every `Lên`, `Xuống` and `Xóa` button.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then capture three pages at 390x844. Save `p2-06-en-130-dark.png`. Pass when the strip buttons read in English, none is clipped, and the saved PDF has 3 pages.
+- [ ] Rule 1. `me.lane1@demo.esta.test` at 390x844, light, captures the three page fixtures, presses `Lên` on page 3, combines and saves, and the spec reads the stored PDF with `pdfjs-dist`. Pass when the strip showed 1 to 3, the saved document has `page_count` 3, and the PDF's printed numbers read 1, 3, 2 in order (DOC-2). Asserted in `e2e/documents-multipage.spec.ts`.
+- [ ] Rule 2. `ryan.lane2@demo.esta.test` at 1440x900, light, picks three images with `Chọn nhiều ảnh`, presses `Xóa` on page 2 and tabs through the strip. Pass when the strip shows two pages numbered 1 and 2, keyboard focus reaches every `Lên`, `Xuống` and `Xóa` button, and the saved PDF has 2 pages. Asserted in `e2e/documents-multipage.spec.ts`.
+- [ ] Rule 3. `me.lane3@demo.esta.test` at 390x844, dark, captures three pages and presses the back control, then cancels. Pass when the dialog reads `Bỏ 3 trang đã chụp?` and the strip is kept. Asserted in `e2e/documents-multipage.spec.ts`.
+- [ ] Rule 4. `ryan.lane4@demo.esta.test` at 1440x900, dark, captures the `gcn_2009_2024` photo pages as a certificate for `Dãy trọ Dĩ An` with the replay worker running. Pass when the tile is blurred and reaches `Chờ xem lại`, with one extraction for the new document. Asserted in `e2e/documents-multipage.spec.ts`.
+- [ ] Rule 5. `me.lane5@demo.esta.test` at 390x844, light, with 4x CPU slowdown, captures a photo with EXIF orientation 6, then selects 21 images. Pass when the PDF page is upright with its printed number reading normally, the strip holds 20 pages and shows `Tối đa 20 trang mỗi tài liệu.` Asserted in `e2e/documents-multipage.spec.ts`.
+- [ ] Rule 6. SPEC §9.4 seed 10 adapted to the capture. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 1. Pass when the strip buttons read in English, none is clipped, and the saved PDF has 3 pages. Asserted in `e2e/documents-multipage.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P2-06/`, publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and pastes the Markdown it prints into the PR body. Each state gets four files named by viewport and theme. Save `p2-06-strip-<viewport>-<theme>.png` with three pages, `p2-06-leave-confirm-<viewport>-<theme>.png` and `p2-06-combined-<viewport>-<theme>.png` for the document page.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh`, drives Rule 1 live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, and audits the diff against the PR body. Save `p2-06-verifier-strip.png`. Pass when local CI is green, the reordered PDF reads 1, 3, 2, and the PR body matches the diff.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Combine time and PDF size for 3 and 10 photos of 12 MP under 4x CPU slowdown, and initial route JS gzipped for the Tài liệu route on a production build with the full seed.
-- [ ] Probe. Run each combine 5 times at head. Read the route size table from `next build` once per side.
-- [ ] Baseline. Trunk has no combine, so record that and use absolute budgets. Trunk initial JS for the Tài liệu route.
-- [ ] Rule. Fail when 3 pages take more than 3 s, 10 pages take more than 10 s, a 10-page PDF exceeds 25 MB, or head initial JS exceeds trunk by more than 5 KB (pdf-lib stays out of the initial chunk).
+- [ ] Metric. Combine time and PDF size for 3 and 10 photos of 12 MP under 4x CPU slowdown, and Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for `/properties/<bao-loc id>/documents` on a production build (`pnpm build && pnpm start`) with the full seed.
+- [ ] Probe. Each combine 5 times at head. `scripts/perf/lighthouse.ts` 5 times per side, interleaved, on the documents tab as `me.lane1@demo.esta.test`.
+- [ ] Baseline. Trunk has no combine, so it takes absolute budgets. The documents tab exists on both sides, so its trunk medians are its baseline.
+- [ ] Rule. Fail when 3 pages take more than 3 s, 10 pages take more than 10 s, a 10-page PDF exceeds 25 MB, when the tab misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, or when its head LCP median exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped (pdf-lib stays out of the initial chunk).
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/p2-06/p2-06-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of capturing a three-page lease at 390x844, reordering one page and opening the combined PDF, saved as `~/.claude/orchestrate/esta/media/p2-06/p2-06-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
-
-## Review extracted fields beside the document image and accept them (P2-07)
-
-**Depends on.** P1-07, P2-03, P2-05.
-
-**Files.**
-
-- [ ] Create `apps/web/src/app/(app)/documents/[documentId]/review/page.tsx`, `apps/web/src/components/extraction/review-panel.tsx`, `apps/web/src/components/extraction/document-pager.tsx` and `apps/web/src/components/extraction/use-extraction-status.ts`.
-- [ ] Create `packages/core/src/extraction/fields.ts`, `packages/core/src/extraction/confidence.ts`, `packages/core/src/extraction/acceptance.ts` and their `.test.ts` files.
-- [ ] Create `apps/web/src/server/extraction/actions.ts` and `apps/web/src/server/extraction/actions.test.ts`.
-- [ ] Create `supabase/migrations/20261007020400_extraction_acceptance.sql` and `supabase/tests/extraction_acceptance.test.sql`.
-- [ ] Edit `playwright.config.ts`, `apps/web/messages/vi.json` and `apps/web/messages/en.json`.
-- [ ] Create `e2e/extraction-review.spec.ts`.
-
-**Build.**
-
-- [ ] Add the `EXTRACTION_FIELDS` registry in `packages/core/src/extraction/fields.ts`, one descriptor per schema leaf. Each names the path, i18n label, input kind (`text`, `area`, `date`, `land_use_code`, `form`), whether it is required, and its target table and column. The review form renders from the registry with no per-field branches.
-- [ ] Add `REVIEW_CONFIDENCE_THRESHOLD = 0.9` and `needsCheck(field)` in `confidence.ts`. The threshold matches AGENT.md §7.2's high-confidence line.
-- [ ] Add `planCertificateAcceptance(extraction, decisions)` and `planUtilityBillAcceptance(extraction, decisions)` in `acceptance.ts`, pure functions returning an ordered write plan. Holders become parties, matched by normalized name plus `id_last4` before creating one tagged `owner`. Then come the certificate (keyed by `extraction_id`), parcels, structures and the property's `certificate_address_text`. Row ids are UUIDv5 of `extraction:<id>:<path>`, so running a plan twice upserts the same rows. Only accepted or edited fields enter the plan.
-- [ ] Add a partial unique index on `certificates.extraction_id`, allow inserting a `document_extractions` row as `accepted` only when `model` is null (manual entry), and add `document_extractions` to the `supabase_realtime` publication, with pgTAP.
-- [ ] Build the review page. On desktop the image sits left with page tabs and zoom and the fields sit right. On mobile the image is a collapsible top panel and each field's `Trang 2` link scrolls the image to its page. Opening a sensitive document here logs a `view`.
-- [ ] Render each field with the P0-13 extraction field row. A field below the threshold carries the ochre marker and the word `kiểm tra lại`. `Đúng` accepts it in one tap, and `Sửa` opens the typed input. Areas parse decimal commas and land use codes pick from `land_use_codes`, with unknown codes kept and the `mã chưa có trong danh mục` hint. When the parcel area and the sum of purpose areas disagree, both show with a warning (DOMAIN-VN §2.1).
-- [ ] Add server actions in `apps/web/src/server/extraction/actions.ts` on the user's session client. `saveExtractionReview(extractionId, decisions)` builds the plan, upserts each step, then sets the extraction `accepted` with `accepted_fields`, `reviewed_by` and `reviewed_at`. A retry after a partial failure converges on the same rows. `rejectExtraction` sets `rejected`. A document without a property asks for one before saving.
-- [ ] Save `lease_v1` reviews as `accepted_fields` only, because `leases` arrives in Phase 3. Utility bills write `utility_accounts` through `planUtilityBillAcceptance`.
-- [ ] Give `documents.ocr_text` its writer, which SPEC §5.5 lacks. Add an optional `full_text` field to `lease_v1` and `utility_bill_v1` in `packages/core/src/agent-schemas`, and have `saveExtractionReview` copy it into `documents.ocr_text` under the user's session for documents whose sensitivity is `normal`. Sensitive documents keep `ocr_text` null. Record the writer in SPEC §5.5 in this PR.
-- [ ] Offer manual entry when the latest extraction is `failed`. The same field rows show empty beside the image, and saving inserts an `accepted` extraction with `model` null through the same plan.
-- [ ] Add `useExtractionStatus(documentId)`, a Realtime subscription to `document_extractions` filtered by document. Before `needs_review` the page shows `Trợ lý đang đọc tài liệu.`, and when the worker heartbeat is older than 5 minutes it shows `Trợ lý ngoại tuyến từ <HH:mm>. Việc mới sẽ chạy khi máy hoạt động lại.` (AGENT.md §9).
-- [ ] Link the vault status label and the document page to the review page.
-- [ ] Add the worker in replay mode as a second `webServer` entry in `playwright.config.ts` (`ESTA_AGENT_MODE=replay pnpm agent:dev`).
-
-**You see.**
-
-- [ ] At 390x844, the review page for a freshly uploaded `gcn_2024` photo shows the image above the fields, and every field below 0.9 carries `kiểm tra lại`.
-- [ ] After `Đúng` on every field and `Lưu`, the property's Pháp lý tab shows the certificate serial and parcel numbers from `truth.json`.
-- [ ] Pressing `Lưu` twice leaves one certificate row for the extraction.
-
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] `packages/core/src/extraction/acceptance.test.ts` gains a plan from the `gcn_2024` truth, identical ids across two runs, an edit overriding the extracted value, unaccepted fields left out, a holder matching an existing party, and no full ID in any planned row (DOC-6, D11).
-- [ ] `fields.test.ts` asserts every leaf of `certificate_v1`, `lease_v1` and `utility_bill_v1` has a descriptor. `confidence.test.ts` asserts 0.9 is not flagged and 0.89 is.
-- [ ] `apps/web/src/server/extraction/actions.test.ts` against local Supabase gains a double save leaving the same row counts, a save interrupted after the certificate step and retried converging, `audit_log` naming the user as actor, and a viewer refused.
-- [ ] `supabase/tests/extraction_acceptance.test.sql` gains the unique index, the manual-entry insert rule and household isolation of the Realtime-published table. Run `pnpm db:test`.
-- [ ] `e2e/extraction-review.spec.ts` uploads the `gcn_2024` photo, waits for `needs_review` in replay, accepts every field, edits `area_m2`, saves and asserts the business rows equal `truth.json`. It also runs the failed-extraction manual entry. Run `pnpm e2e e2e/extraction-review.spec.ts`.
-- [ ] Run `pnpm check`.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/extraction-review.spec.ts`.
-
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
-
-- [ ] Lane 1. Regression lane against trunk. Trunk shows the extraction status label with no review page, so the lane uploads the `gcn_2024` photo at trunk and head as `me.lane1@demo.esta.test` at 390x844 light with the worker in replay, and gates the head review. Save `p2-07-review-mobile.png`. Pass when both sides reach `needs_review` and the head save puts the `truth.json` serial on the Pháp lý tab.
-- [ ] Lane 2. Seed 3, review half. As `ryan.lane2@demo.esta.test` at 1440x900 dark, open the review for the `so_hong_pre2009` photo. Save `p2-07-low-confidence.png`. Pass when the count of `kiểm tra lại` markers equals the count of fields below 0.9 in the recording, and each marker shows shape and word.
-- [ ] Lane 3. As `me.lane3@demo.esta.test` at 390x844 dark, edit `area_m2` to `125,5` and save. Save `p2-07-edit-area.png`. Pass when the parcel's `area_m2` reads `125.50` in Studio and `accepted_fields` marks the field as edited.
-- [ ] Lane 4. As `ryan.lane4@demo.esta.test` at 390x844 light, press `Lưu`, switch offline before the response, switch online and press `Lưu` again. Save `p2-07-idempotent.png`. Pass when Studio shows one certificate for the extraction and the parcel count equals `truth.json`.
-- [ ] Lane 5. As `me.lane5@demo.esta.test` at 1440x900 light, accept and save an extraction, then select the new certificate's `audit_log` rows. Save `p2-07-audit.png`. Pass when `actor_kind` is `user` with that user's id and no row for it has `actor_kind` `agent`.
-- [ ] Lane 6. As `ryan.lane6@demo.esta.test` at 390x844 light, upload the blank-page fixture whose recording fails and open its review. Save `p2-07-manual-entry.png`. Pass when the empty field rows sit beside the image and saving creates a parcel and an `accepted` extraction with `model` null.
-- [ ] Lane 7. As `me.lane7@demo.esta.test` at 1440x900 dark, stop the worker, upload a certificate, open its review, then start the worker. Save `p2-07-offline-then-ready.png`. Pass when the offline notice names the last heartbeat time and the fields appear without a reload after the worker starts.
-- [ ] Lane 8. As `ryan.lane8@demo.esta.test` at 1440x900 light, review a certificate whose holder is `Nguyễn Thị Demo` with the seeded `id_last4`. Save `p2-07-holder-match.png`. Pass when the parties count is unchanged and `holder_party_ids` holds her party id.
-- [ ] Lane 9. As `me.lane9@demo.esta.test` at 390x844 dark, upload a utility bill fixture for `q7` and accept it. Save `p2-07-utility.png`. Pass when the Q7 utility accounts list shows the `truth.json` customer code and provider.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then review the `gcn_2024` photo at 390x844. Save `p2-07-en-130-dark.png`. Pass when labels read in English, Vietnamese values keep their diacritics, and long holder names wrap without clipping.
-
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for the review route on a production build with the full seed plus one `needs_review` extraction, `saveExtractionReview` latency, and the delay from the status change to the fields rendering.
-- [ ] Probe. Run Lighthouse 5 times at head. Time 20 saves at head. Time 10 Realtime updates at head.
-- [ ] Baseline. Trunk has no review route, so record that and use absolute budgets. Trunk and head both run Lighthouse on the Tài liệu route to show the shared components did not regress.
-- [ ] Rule. Fail when the review route exceeds LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB initial JS (SPEC §7.2), when save p95 exceeds 1 s, when Realtime p95 exceeds 2 s, or when the head Tài liệu route median LCP exceeds trunk by more than 10%.
-
-**Review gate.** The operator reviews before merge.
-
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/p2-07/p2-07-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of reviewing a certificate at 390x844, accepting fields in one tap, correcting one and saving, saved as `~/.claude/orchestrate/esta/media/p2-07/p2-07-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready and wait for the operator's click.
-
-**Merge.**
-
-- [ ] Root's clean verdict at the exact head SHA.
-- [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 ## Add a property by certificate photo with the wizard and pass north-star steps 1 and 2 (P2-08)
 
-**Depends on.** P0-06, P1-03, P1-05, P1-08, P2-07.
+**Depends on.** P2-06.
 
 **Files.**
 
-- [ ] Create `apps/web/src/app/(app)/properties/new/page.tsx` and `apps/web/src/components/property-wizard/` (`wizard-machine.ts`, `step-photo.tsx`, `step-review.tsx`, `step-owners.tsx`, `step-use.tsx`, `finish-checklist.tsx`, `review-ready-notice.tsx`).
+- [ ] Edit `apps/web/src/app/(app)/properties/new/page.tsx`, which P1-05 created, and create `wizard-machine.ts`, `wizard-machine.test.ts`, `step-photo.tsx`, `step-details.tsx`, `step-review.tsx`, `step-owners.tsx`, `step-use.tsx`, `finish-checklist.tsx` and `review-ready-notice.tsx` in `apps/web/src/components/property-wizard/`.
 - [ ] Create `apps/web/src/server/properties/wizard.ts` and `apps/web/src/server/properties/wizard.test.ts`.
 - [ ] Create `packages/core/src/properties/owners-from-holders.ts` and its `.test.ts`.
-- [ ] Create `e2e/northstar.spec.ts`, `e2e/property-wizard.spec.ts` and the root script `e2e:northstar`.
-- [ ] Refresh `fixtures/agent-replay/extract_document/` and edit `docs/plan/STATUS.md`, `apps/web/messages/vi.json` and `apps/web/messages/en.json`.
+- [ ] Create `e2e/northstar.spec.ts` and `e2e/property-wizard.spec.ts`. Edit the root `package.json` (add `e2e:northstar`), `scripts/phase-exit.ts`, `scripts/phase-exit.test.ts` and `docs/plan/STATUS.md`.
+- [ ] Refresh `fixtures/agent-replay/extract_document/` and edit the message files.
 
 **Build.**
 
-- [ ] Run `/impeccable shape Add property wizard` and record the confirmed brief in the PR body before building.
+- [ ] Run `/impeccable shape Add property wizard` and record the confirmed brief in the PR body before building (DESIGN-BRIEF §6.4).
 - [ ] Add `wizardMachine` in `wizard-machine.ts` as a transition table over `photo`, `details`, `owners`, `use` and `finish`, with `review` reachable from any step once the extraction is `needs_review`. Skipping the photo removes `review` from the path.
-- [ ] Build step 1. It asks `Bạn có ảnh sổ không?` with `Chụp ảnh`, `Chọn tệp`, `Chụp nhiều trang` and `Bỏ qua`, then asks the nickname and kind. `startPropertyWizard` creates the property with a client-generated id (a retry converges on one row), uploads through the P2-04 pipeline with the property set, and enqueues the extraction. The property exists from here, because accepting fields needs a property id.
-- [ ] Show `ReviewReadyNotice` while the user works on later steps. Driven by `useExtractionStatus`, it reads `Trợ lý đã đọc xong sổ. Xem lại ngay` when the extraction is ready, or the offline notice when the worker is stale. The user never waits on the extraction.
-- [ ] Build step 2 with the P2-07 `ReviewPanel` beside the photo. Accepting the parcel address fills `certificate_address_text` and calls `suggest_current_unit` (P0-06). The P1-05 address picker shows the suggestion as `Hiện nay`, listing every candidate for split wards, for the user to confirm.
-- [ ] Add `ownersFromHolders(holders, parties)` in `owners-from-holders.ts`, a pure function. It proposes owner shares from accepted holders, matched to existing parties, split equally in basis points with the remainder on the first holder so the total is 10000, each with `named_on_certificate` true. Step 3 prefills from it and saves through the P1-07 ownership action. Without a review it starts empty with `Có thể điền từ ảnh sổ khi Trợ lý đọc xong.`
-- [ ] Build step 4 with the use mode and, for rooming houses, a room count that creates `Phòng 1` to `Phòng n` through the P1-08 unit action. Leases show `Thêm hợp đồng sau` until Phase 3.
-- [ ] Build the finish step with `scoreProperty` (P1-03), showing the score and every missing item linked to its field.
-- [ ] Write `e2e/northstar.spec.ts` with one `test.step` per north-star step, steps 1 and 2 implemented on the `northstar` seed in replay with the clock at 2026-10-07 09:00. Step 1 signs Mẹ in at 390x844 with the 6-digit code from Inbucket. Step 2 runs the wizard with `fixtures/certificates/northstar-di-an/` as `Dãy trọ Dĩ An`, kind `rooming_house`. It continues to owners while the extraction runs, accepts parcel number, map sheet, area, land use purpose and address, edits `area_m2` to the `truth.json` value, and saves. Then it asserts the property shows the Bình Dương certificate address beside `Phường Dĩ An, Thành phố Hồ Chí Minh` (commune 25942, province 79). Add `pnpm e2e:northstar`.
-- [ ] Refresh the extraction recordings with `pnpm agent:record --kind extract_document` (live, allowed), have Ryan review the diff, and record the replay `pnpm extraction:eval` summary against AGENT.md §7.2 in `docs/plan/STATUS.md`.
-- [ ] Run `/impeccable harden` on the screen for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
+- [ ] Build step 1. It asks `Bạn có ảnh sổ không?` with `Chụp ảnh`, `Chọn tệp`, `Chụp nhiều trang` (P2-06) and `Bỏ qua`, then asks the nickname and kind. `startPropertyWizard` creates the property with a client-generated id (a retry converges on one row), uploads through the P2-02 flow with the property set, and enqueues the P2-03 extraction. The property exists from here, because accepting fields needs a property id. Step `details` is the P1-05 form's fields.
+- [ ] Show `ReviewReadyNotice` while the user works on later steps. Driven by `useDocumentStatus`, it reads `Trợ lý đã đọc xong sổ. Xem lại ngay` when the extraction is ready, or the offline notice when the worker is stale. The user never waits on the extraction.
+- [ ] Build step `review` with the P2-07 `ReviewPanel` beside the photo. Accepting the parcel address fills `certificate_address_text` and calls `suggest_current_unit` (P0-06). The P1-05 `AddressPicker` shows the suggestion as `Hiện nay`, listing every candidate for split wards, for the user to confirm.
+- [ ] Add `ownersFromHolders(holders, parties)` in `owners-from-holders.ts`, a pure function. It proposes owner shares from accepted holders, matched to existing parties, split equally in basis points with the remainder on the first holder so the total is 10000, each with `named_on_certificate` true. Step `owners` prefills from it and saves through the P1-10 ownership action. Without a review it starts empty with `Có thể điền từ ảnh sổ khi Trợ lý đọc xong.`
+- [ ] Build step `use` with the use mode and, for rooming houses, a room count that creates `Phòng 1` to `Phòng n` through the P1-08 add-rooms action. Leases show `Thêm hợp đồng sau` until Phase 3.
+- [ ] Build the finish step with `scoreProperty` (P1-03), showing the score and every missing item linked to its field through the P1-03 anchors.
+- [ ] Write `e2e/northstar.spec.ts` with one `test.step` per north-star step, steps 1 and 2 implemented on the `northstar` seed in replay with the clock at 2026-10-07 09:00, and later steps marked `test.skip` with their phase. Step 1 signs Mẹ in at 390x844 with the 6-digit code from Inbucket. Step 2 runs the wizard with `fixtures/certificates/northstar-di-an/` as `Dãy trọ Dĩ An`, kind `rooming_house`, continues to owners while the extraction runs, accepts parcel number, map sheet, area, land use purpose and address, edits `area_m2` to the `truth.json` value, and saves. Then it asserts the property shows the Bình Dương certificate address beside `Phường Dĩ An, Thành phố Hồ Chí Minh` (commune 25942, province 79). Add `pnpm e2e:northstar`.
+- [ ] Refresh the extraction recordings with `pnpm agent:record --kind extract_document` (live, allowed), have Ryan review the diff, and record the replay `pnpm --filter agent test` summary against AGENT.md §7.2 in `docs/plan/STATUS.md`.
+- [ ] Extend `PHASE_CHECKS` in `scripts/phase-exit.ts` with phase 2. `pnpm phase:check 2` prints one `PASS` or `FAIL` row for DOC-1 to DOC-7 and PRP-7 from the unit tests and e2e specs that cite them, an AGT-2 row from the replay golden suite against the §7.2 targets, an RLS row from `pnpm db:test` with table coverage over every Phase 2 table, a north-star row from `pnpm e2e:northstar` steps 1 and 2, and a Lighthouse row for `/documents` and `/properties/new` against SPEC §7.2 on a production build it starts on the slot. It exits 1 on any `FAIL`.
+- [ ] Record the Phase 2 exit in `docs/plan/STATUS.md` with the `pnpm phase:check 2` output and the S5 result from P2-01.
+- [ ] Run `/impeccable harden` on the wizard for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
 
 **You see.**
 
-- [ ] `pnpm e2e:northstar` passes steps 1 and 2 on the `northstar` seed in replay, and the run prints the remaining steps as not yet implemented.
-- [ ] The new property's header shows `Theo sổ` with `tỉnh Bình Dương` and `Hiện nay` with `Phường Dĩ An, Thành phố Hồ Chí Minh`.
-- [ ] `ESTA_AGENT_MODE=replay pnpm --filter agent test` prints `schema-valid 100%`, required exact at least 90% and high-confidence precision at least 97% for the synthetic fixtures (Phase 2 exit, AGENT.md §7.2).
-- [ ] The finish step lists the score and the missing items, each opening its field.
+- [ ] `pnpm e2e:northstar` passes steps 1 and 2 on the `northstar` seed in replay, and the run prints the remaining steps as skipped with their phase.
+- [ ] The new property's header shows `Theo sổ` with `tỉnh Bình Dương` and `Hiện nay` with `Phường Dĩ An, Thành phố Hồ Chí Minh`, and the finish step lists the score and the missing items, each opening its field.
+- [ ] `pnpm phase:check 2` prints `PASS` for DOC-1 to DOC-7, PRP-7, AGT-2, RLS, north-star and Lighthouse and exits 0. This is the Phase 2 exit (SPEC §10).
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
 - [ ] Golden tests in AGENT.md §7 for `extract_document` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`, with the refreshed recordings meeting the §7.2 targets on synthetic fixtures (Phase 2 exit, AGT-2).
-- [ ] `packages/core/src/properties/owners-from-holders.test.ts` gains one holder at 10000 bp, a married couple at 5000 and 5000, three holders at 3334, 3333 and 3333, and an existing party matched by name and `id_last4` (PRP-3).
-- [ ] `apps/web/src/server/properties/wizard.test.ts` gains `startPropertyWizard` called twice with one id leaving one property, one document and one extraction.
-- [ ] `e2e/northstar.spec.ts` steps 1 and 2 pass with `pnpm e2e:northstar` (FND-1, PRP-7, DOC-6). `e2e/property-wizard.spec.ts` covers the skip path, the split ward choice and the room count. Run `pnpm e2e e2e/property-wizard.spec.ts`.
-- [ ] Run `pnpm check` and `pnpm db:test`.
+- [ ] `owners-from-holders.test.ts` gains one holder at 10000 bp, a married couple at 5000 and 5000, three holders at 3334, 3333 and 3333, and an existing party matched by name and `id_last4` (PRP-3). `wizard-machine.test.ts` covers the skip path removing `review` and `review` reachable from every later step.
+- [ ] `wizard.test.ts` gains `startPropertyWizard` called twice with one id leaving one property, one document and one extraction. `scripts/phase-exit.test.ts` covers the phase 2 rows and a failing row exiting 1.
+- [ ] `e2e/northstar.spec.ts` steps 1 and 2 pass with `pnpm e2e:northstar` (FND-1, PRP-7, DOC-6). `e2e/property-wizard.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/property-wizard.spec.ts e2e/property-form.spec.ts`.
+- [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm phase:check 2`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-wizard.spec.ts`.
+- [ ] axe reports zero serious or critical issues on every wizard step in `e2e/property-wizard.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. Trunk's `Thêm tài sản` opens the P1-05 form, so the lane creates a property by form at trunk and head and gates seed 3 at head, as `me.lane1@demo.esta.test` at 390x844 light adding the `gcn_2024` photo through the wizard with the worker in replay. Save `p2-08-seed3-finish.png`. Pass when the form path works on both sides and the head finish step shows a score with the certificate on the Pháp lý tab.
-- [ ] Lane 2. North-star steps 1 and 2 on a separate slot reset with `pnpm db:reset:northstar`. As `me.lane2@demo.esta.test` at 390x844 light, sign in with the Inbucket code and add Dãy trọ Dĩ An from `northstar-di-an`, correcting the area. Save `p2-08-northstar.png`. Pass when the header shows `Theo sổ` with `tỉnh Bình Dương` and `Hiện nay` with `Phường Dĩ An, Thành phố Hồ Chí Minh`, and parcel number, map sheet, area and land use code equal `truth.json`.
-- [ ] Lane 3. As `ryan.lane3@demo.esta.test` at 390x844 dark, take the photo and move to owners before the extraction finishes. Save `p2-08-continue-while-reading.png`. Pass when the owners step is open while the notice reads `Trợ lý đang đọc`, and the notice changes to `Trợ lý đã đọc xong sổ. Xem lại ngay` without a reload.
-- [ ] Lane 4. As `me.lane4@demo.esta.test` at 1440x900 light, choose `Bỏ qua` and finish. Save `p2-08-skip.png`. Pass when the property exists with no document and the checklist lists the missing certificate photo.
-- [ ] Lane 5. As `ryan.lane5@demo.esta.test` at 390x844 light, stop the worker, run the wizard with a photo to finish, then start the worker. Save `p2-08-offline.png`. Pass when the offline notice names the last heartbeat time, finish succeeds, and the review opens from the property after the worker starts.
-- [ ] Lane 6. As `me.lane6@demo.esta.test` at 1440x900 dark, run the wizard with the `so_hong_pre2009` fixture whose address is in old `Quận 7`. Save `p2-08-split-ward.png`. Pass when the picker lists all four current wards and the saved `current_address` holds the chosen commune code.
-- [ ] Lane 7. As `ryan.lane7@demo.esta.test` at 1440x900 dark, use the `gcn_2009_2024` fixture with two married holders. Save `p2-08-two-owners.png`. Pass when owners show 50% and 50%, both named on the certificate, with no ownership warning.
-- [ ] Lane 8. As `me.lane8@demo.esta.test` at 390x844 light, set kind `rooming_house` and room count 8 in step 4. Save `p2-08-rooms.png`. Pass when the Cho thuê tab lists `Phòng 1` to `Phòng 8`.
-- [ ] Lane 9. As `ryan.lane9@demo.esta.test` at 1440x900 light, leave the wizard after the owners step and open Tài sản. Save `p2-08-abandoned.png`. Pass when the property is listed with its completeness ring and its checklist links open the missing fields.
-- [ ] Lane 10. Seed 10 adapted to the PR. As `me.lane10@demo.esta.test` switch to English, text scale 130% and dark, then run seed 3 at 390x844. Save `p2-08-en-130-dark.png`. Pass when every step reads in English, long Vietnamese addresses wrap without clipping, and the finish step shows the score.
+- [ ] Rule 1. North-star steps 1 and 2 on the `northstar` seed. `me.lane1@demo.esta.test` at 390x844, light, signs in with the Inbucket code and adds `Dãy trọ Dĩ An` from `northstar-di-an` with the replay worker, correcting the area. Pass when the header shows `Theo sổ` with `tỉnh Bình Dương` and `Hiện nay` with `Phường Dĩ An, Thành phố Hồ Chí Minh`, and parcel number, map sheet, area and land use code equal `truth.json` (PRP-7). Asserted in `e2e/northstar.spec.ts`.
+- [ ] Rule 2. SPEC §9.4 seed 3. `me.lane2@demo.esta.test` at 390x844, dark, takes the `gcn_2024` photo, moves to owners before the extraction finishes, then follows the notice to the review. Pass when the owners step is open while the notice reads `Trợ lý đang đọc`, the notice changes to `Trợ lý đã đọc xong sổ. Xem lại ngay` without a reload, and the finish step shows a score with the certificate on `Pháp lý`. Asserted in `e2e/property-wizard.spec.ts`.
+- [ ] Rule 3. `ryan.lane3@demo.esta.test` at 1440x900, light, chooses `Bỏ qua` and finishes, then leaves a second wizard after the owners step and opens `Tài sản`. Pass when the first property exists with no document and its checklist lists the missing certificate photo, and the second is listed with its completeness ring and working checklist links. Asserted in `e2e/property-wizard.spec.ts`.
+- [ ] Rule 4. With the worker stopped and the test clock advanced six minutes through `/api/test/clock`, `me.lane4@demo.esta.test` at 390x844, light, runs the wizard with a photo to finish, and the spec starts the worker. Pass when the offline notice names the last heartbeat time, finish succeeds, and the review opens from the property after the worker starts. Asserted in `e2e/property-wizard.spec.ts`.
+- [ ] Rule 5. `ryan.lane5@demo.esta.test` at 1440x900, dark, uses the `so_hong_pre2009` fixture whose address is in old `Quận 7`, then the `gcn_2009_2024` fixture with two married holders. Pass when the picker lists all four current wards and the saved `current_address` holds the chosen commune code, and the second wizard's owners show 50% and 50%, both named on the certificate, with no ownership warning (PRP-3, PRP-4). Asserted in `e2e/property-wizard.spec.ts`.
+- [ ] Rule 6. `me.lane6@demo.esta.test` at 390x844, dark, sets kind `rooming_house` and room count 8 in step `use`. Pass when the `Cho thuê` tab lists `Phòng 1` to `Phòng 8`. Asserted in `e2e/property-wizard.spec.ts`.
+- [ ] Rule 7. SPEC §9.4 seed 10 adapted to the wizard. `me.lane10@demo.esta.test` switches to English, text scale 130% and dark at 390x844 and repeats Rule 2. Pass when every step reads in English, long Vietnamese addresses wrap without clipping, the finish step shows the score, and `document.documentElement.scrollWidth` is at most its `clientWidth`. Asserted in `e2e/property-wizard.spec.ts`.
+- [ ] Screenshots. The owner saves verify-skill screenshots at 390x844 and 1440x900 in Vietnamese, light and dark, under `/tmp/owner-P2-08/`, publishes them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` and pastes the Markdown it prints into the PR body with the `pnpm phase:check 2` output. Each state gets four files named by viewport and theme. Save `p2-08-step-photo-<viewport>-<theme>.png`, `p2-08-review-ready-<viewport>-<theme>.png` with the notice, `p2-08-finish-<viewport>-<theme>.png` and `p2-08-northstar-header-<viewport>-<theme>.png`.
+- [ ] Verifier lane. One Sonnet lane at the head SHA re-runs `tools/ci-local.sh` and `pnpm phase:check 2`, then drives Rule 1 end to end live through `.claude/skills/verify` on slot 14 as `me.lane1@demo.esta.test` at 390x844, light, on `pnpm db:reset:northstar` with the replay worker on that slot, and audits the diff against the PR body. Save `p2-08-verifier-northstar.png`. Pass when both addresses show, the four fields equal `truth.json`, `pnpm phase:check 2` exits 0, and the PR body matches the diff.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for `/properties/new` and the Tài sản list on a production build with the full seed, the time from upload to `needs_review` in replay, and the wall time of north-star steps 1 and 2.
-- [ ] Probe. Run Lighthouse 5 times per side, interleaved, on the Tài sản list, and 5 times at head on the wizard. Run the north-star steps 5 times at head.
-- [ ] Baseline. Trunk medians for the Tài sản list, a like-for-like page on both sides. Trunk has no wizard, so the wizard takes absolute budgets.
-- [ ] Rule. Fail when the wizard exceeds LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB initial JS, when the Tài sản list median LCP exceeds trunk by more than 10%, when replay review readiness exceeds 10 s, or when north-star steps 1 and 2 exceed 90 s.
+- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial route JS gzipped for `/properties/new` and `/properties` on a production build (`pnpm build && pnpm start`) with the full seed, the time from upload to `needs_review` in replay, and the wall time of north-star steps 1 and 2.
+- [ ] Probe. `scripts/perf/lighthouse.ts` 5 times per side, interleaved, on both routes as `me.lane1@demo.esta.test`. The north-star steps 5 times at head.
+- [ ] Baseline. Trunk serves the P1-05 form at `/properties/new` and the list at `/properties`, so their medians are the baselines. Review readiness and the north-star time take absolute budgets.
+- [ ] Rule. Fail when either route misses LCP 2.5 s, TBT 200 ms, CLS 0.05 or 200 KB of initial JS, when a route's head LCP exceeds trunk by more than 10% or its initial JS grows by more than 5 KB gzipped, when replay review readiness exceeds 10 s, or when north-star steps 1 and 2 exceed 90 s. These medians are the Phase 2 Lighthouse rows.
 
-**Review gate.** The operator reviews before merge.
+**Review gate.** The operator reviews the PR body screenshots. The 2026-10-16 10:30 landing grant lets the root merge Phase 2 on its clean verdict without waiting for that review. No review video.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/p2-08/p2-08-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of north-star steps 1 and 2 at 390x844 through `pnpm dev:lan`, with the worker live as the gate demo, saved as `~/.claude/orchestrate/esta/media/p2-08/p2-08-review.mp4`.
-- [ ] Post the screenshots, the video and the replay accuracy summary in chat, stop at merge-ready and wait for the operator's click.
+- [ ] The PR body carries every screenshot named under **Verify, live**, published through `pr-media.sh`, the `pnpm phase:check 2` output and the replay accuracy summary, and the root posts the PR link to the operator at merge-ready.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] At most one fix-forward round. A blocking finding that survives it parks the PR with its evidence.
+- [ ] The branch is current with `main` and the verdict holds under the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` on its clean verdict while the 2026-10-16 10:30 landing grant for Phase 2 stands. If the operator withdraws the grant, the PR stops at merge-ready for the operator's click.
 
 Phase 3. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict. The P3-01 section stays as reference for the PRs that take its tables.
 
@@ -3601,7 +3535,7 @@ Phase 4. The detailed sections for this phase are re-cut at phase start from `do
 
 ## Record expenses with receipts from the property page or a photo (P4-02)
 
-**Depends on.** P1-06, P2-04, P4-01.
+**Depends on.** P1-06, P2-02, P4-01.
 
 **Files.**
 
@@ -3619,7 +3553,7 @@ Phase 4. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Add `expenseInputSchema` (zod) in `packages/core/src/expenses/schema.ts`. `amountVnd` comes from `parseVndInput` and must be a positive `Vnd`. `paidOn` is an `IsoDate` that defaults to the Clock's business date.
 - [ ] Add server actions `createExpense`, `updateExpense`, `deleteExpense` and `restoreExpense` in `apps/web/src/server/expenses/actions.ts` on the user's session client. `createExpense` takes a client-generated id so a retried submit converges on one row. Delete sets `deleted_at` and the toast offers `Hoàn tác`, which calls `restoreExpense`.
 - [ ] Build `ExpenseSheet` with the money input (live preview), category chips, date input, vendor picker with quick-add of a party tagged `contractor`, note, and an optional receipt. On mobile it is a bottom sheet. It has five fields, so it stays a sheet per DESIGN-BRIEF §5.3.
-- [ ] Add the receipt photo path. `Chụp hoá đơn` opens the camera input, uploads through the P2-04 signed upload flow as a `documents` row with category `invoice_receipt` and the property set, then opens `ExpenseSheet` with `document_id` linked and the photo beside the fields. No extraction runs, and the amount is typed by the user.
+- [ ] Add the receipt photo path. `Chụp hoá đơn` opens the camera input, uploads through the P2-02 signed upload flow as a `documents` row with category `invoice_receipt` and the property set, then opens `ExpenseSheet` with `document_id` linked and the photo beside the fields. No extraction runs, and the amount is typed by the user.
 - [ ] Put `Thêm chi phí` and `Chụp hoá đơn` on the property header and on the Thu chi tab, and list the property's expenses for the selected year on the Thu chi tab (`expense-list.tsx`) newest first with category, vendor, amount and receipt link.
 - [ ] Extend the seed generator with 12 months of expenses per SPEC §9.3 in every household, including repairs on `q7`, a `land_tax` row on `bao-loc` and a `management_fee` on `thu-duc`, each with a UUIDv5 from `seed:expense:<property>:<yyyy-mm>:<n>`. Record Q7's 2026 repair total in the generator README for AGENT.md §7.4 question 7.
 
@@ -5270,7 +5204,7 @@ pdf-lib with @pdf-lib/fontkit renders the A5 receipt PDF, and satori with @resvg
 - **SPEC FND-2 says a viewer writes nothing, but FND-8 lets every member set display preferences.** P0-14 adds `update_my_display_settings`, limited to the caller's own language, text scale, density and theme, and records the exception in SPEC FND-2.
 - **SPEC §5.7 gives `audit_log` no household column.** P0-02 copies `household_id` from the audited row so members can read their own history under RLS, and updates SPEC §5.7. P1-06 depends on it.
 - **AGENT.md §10 gives `agent_jobs` no place for a job's output.** P0-15 adds `agent_jobs.result jsonb` and updates AGENT.md §10.
-- **SPEC §5.5 gives `documents.ocr_text` no writer.** P2-07 copies an optional `full_text` from accepted lease and utility bill extractions for non-sensitive documents, and records the writer in SPEC §5.5.
+- **SPEC §5.5 gives `documents.ocr_text` no writer.** P2-05 adds the column with the vault search, copies the optional `full_text` of an accepted utility bill extraction into it for non-sensitive documents, and records the writer in SPEC §5.5. P3-19 adds `full_text` to `lease_v1` and reuses the copy.
 - **AGENT.md §6.2 allows no Markdown tables, but DESIGN-BRIEF §5.5 wants tables in Ask answers.** P5-07 allows tables in Ask answers only and updates AGENT.md §6.2.
 - **AGENT.md §6.3 guards text before it is written, but §5.6 streams partial text.** P5-07 guards each sentence before appending it and records the rule in AGENT.md §5.6.
 - **SPEC §8 lacks two variables the plan needs.** P5-09 adds `ESTA_APP_URL` for links in emails, and P6-02 adds `ESTA_EXPORT_PART_MB` because the Supabase free plan caps one object at 50 MB. Each PR updates SPEC §8 and `.env.example`.
