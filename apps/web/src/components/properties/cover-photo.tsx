@@ -36,7 +36,7 @@ export function CoverPhoto({ src, alt, priority, fallback }: { src: string | nul
 
   if (src === null || failed === src) return fallback;
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- a signed storage URL changes every render, so the optimizer could never cache it
+    // eslint-disable-next-line @next/next/no-img-element -- the cover is stored at card size, so the optimizer has nothing left to shrink
     <img
       ref={image}
       src={src}

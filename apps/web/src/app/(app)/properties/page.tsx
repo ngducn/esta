@@ -36,7 +36,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const [params, member] = await Promise.all([searchParams, requireMember()]);
   const filters = parsePropertyFilters(params);
   const [list, nav, t] = await Promise.all([listProperties(member.household.id, filters), getTranslations('nav'), getTranslations('properties')]);
-  const photos = await signCoverPhotos(list.rows.flatMap((row) => (row.coverPhotoPath === null ? [] : [row.coverPhotoPath])));
+  const photos = await signCoverPhotos(member.id, list.rows.flatMap((row) => (row.coverPhotoPath === null ? [] : [row.coverPhotoPath])));
 
   const toCard = (row: PropertyListRow): PropertyCardData => {
     const address = [row.addressLine, row.communeName, row.provinceName === null ? null : shortProvinceName(row.provinceName)]
