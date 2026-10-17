@@ -84,6 +84,13 @@ test('rule 1: Mẹ sees seven cards, each led by its photo or its kind tile, wit
   await expect(card(page, 'Kho Biên Hòa').getByTestId('property-icon-tile')).toBeVisible();
   await expect(card(page, 'Kho Biên Hòa').locator('img')).toHaveCount(0);
 
+  const sources = () => photos.evaluateAll((images: HTMLImageElement[]) => images.map((img) => img.src));
+  const firstVisit = await sources();
+  expect(firstVisit.every((src) => new URL(src).origin === new URL(page.url()).origin), 'covers load from the app origin').toBe(true);
+  await page.reload();
+  await expect(photos).toHaveCount(6);
+  expect(await sources(), 'a return visit gets the same cover URLs, so the browser cache serves them (#55)').toEqual(firstVisit);
+
   const diAn = card(page, 'Dãy trọ Dĩ An');
   await expect(diAn).toContainText('Phường Dĩ An, TP. Hồ Chí Minh');
   const certificate = diAn.getByTestId('certificate-line');
