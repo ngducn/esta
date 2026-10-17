@@ -11,6 +11,7 @@ export type {
   TaxLease,
   TaxPayer,
 } from './attribute';
+export { TAX_WORKED_EXAMPLES, runWorkedExample, type WorkedExample, type WorkedExampleOwner } from './examples';
 export { TAX_NOTES, activeTaxNotes, type TaxNoteKey, type TaxNoteLabel } from './notes';
 export { computeTaxPosition, type TaxPosition, type WithheldLease } from './position';
 export {

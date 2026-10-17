@@ -793,5 +793,40 @@
     "boundarySaved": "Saved the boundary of {nickname}.",
     "boundaryCleared": "Cleared the boundary of {nickname}.",
     "saveFailed": "Not saved. Check the network connection and try again."
+  },
+  "taxNotes": {
+    "estimateDisclaimer": "Estimate, not tax advice",
+    "labelAssumption": "Assumption",
+    "labelAskAccountant": "Note",
+    "pitEffectiveDate": "PIT start date: {note}",
+    "coOwnerSplit": "Revenue of a co-owned property is split by ownership share",
+    "deductionSplit": "ask an accountant how to apply the 500 million deduction",
+    "utilityExcluded": "Metered electricity and water are not counted",
+    "tenantWithholds": "Tenant withholds the tax",
+    "source": "Source: {citation}",
+    "noRule": "No tax rule for {year}"
+  },
+  "devTax": {
+    "title": "Rental tax",
+    "intro": "The seven DOMAIN-VN §5 examples E1 to E7, computed with the rule in the tax_rules table. This page exists only in development.",
+    "ruleFor": "Rule for {year}",
+    "ruleUnavailable": "Could not read tax_rules: {reason}",
+    "example": "Example",
+    "inputs": "Inputs",
+    "revenue": "Revenue",
+    "thresholdTotal": "Threshold total",
+    "vat": "VAT",
+    "pit": "PIT",
+    "notes": "Notes",
+    "result": "Result",
+    "expected": "expected: {value}",
+    "withheld": "{label}: {amount}",
+    "e1": "One owner, 360 million rent",
+    "e2": "One owner, 600 million rent",
+    "e3": "One owner, 900 million rent",
+    "e4": "900 million paid in January 2026 for 24 months",
+    "e5": "800 million a year, owned 50/50 by two people",
+    "e6": "700 million, of which 200 million the tenant withholds",
+    "e7": "450 million rent plus 100 million other business revenue"
   }
 }

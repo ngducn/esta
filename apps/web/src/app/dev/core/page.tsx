@@ -3,6 +3,7 @@ import { AddressLookup } from './address-lookup';
 import { LiveParse } from './live-parse';
 import { checkRow, sections, type CheckedRow } from './sections';
 import { AllocationSection } from './sections/AllocationSection';
+import { TaxSection } from './sections/tax';
 import { VietQrSection } from './sections/VietQrSection';
 
 export const metadata: Metadata = {
@@ -36,7 +37,8 @@ const COLUMNS: readonly Column[] = [
   },
 ];
 
-export default async function DevCorePage() {
+export default async function DevCorePage({ searchParams }: { searchParams: Promise<{ taxYear?: string }> }) {
+  const { taxYear } = await searchParams;
   const checked = await Promise.all(
     sections.map(async (section) => ({ ...section, rows: await Promise.all(section.rows.map(checkRow)) })),
   );
@@ -56,6 +58,7 @@ export default async function DevCorePage() {
       <AddressLookup />
       <VietQrSection />
       <AllocationSection />
+      <TaxSection taxYear={taxYear} />
 
       {checked.map((section) => (
         <section key={section.id} aria-labelledby={`${section.id}-heading`} data-section={section.id}>

@@ -57,9 +57,10 @@
 
 ## Needs professional confirmation
 
-- Whether the 2026 rental PIT applies from 1 January or 1 July 2026 (DOMAIN-VN §5). The `tax_rules` row from P0-06 uses 1 January and carries a note that says so.
-- How VAT and PIT on rental revenue interact for one owner, including how the 500,000,000 VND deduction splits across leases and other business revenue (DOMAIN-VN §5).
-- How revenue from a co-owned property is attributed between co-owners (DOMAIN-VN §5). FIN-3 splits by ownership share unless a declaring party is set.
+- Whether the 2026 rental PIT applies from 1 January or 1 July 2026 (DOMAIN-VN §5). The `tax_rules` row from P0-06 uses 1 January and carries a note that says so. The UI shows "Giả định: Ngày áp dụng thuế TNCN: " followed by the row's note (`TAX_NOTES.pit_effective_date`).
+- How the 500,000,000 VND deduction splits across leases and other business revenue (DOMAIN-VN §5). FIN-3 takes it off self-declared rental revenue first and shows "Lưu ý: hỏi kế toán về cách trừ 500 triệu" whenever other business revenue is above 0 (`TAX_NOTES.deduction_split`).
+- How revenue from a co-owned property is attributed between co-owners (DOMAIN-VN §5). FIN-3 splits by ownership share unless a declaring party is set, and shows "Giả định: Doanh thu nhà đồng sở hữu được chia theo tỷ lệ sở hữu" (`TAX_NOTES.co_owner_split`).
+- Whether metered electricity and water billed through to tenants count as rental revenue (DOMAIN-VN §5). FIN-3 excludes them and shows "Giả định: Không tính tiền điện, nước thu theo công tơ" (`TAX_NOTES.utility_excluded`).
 - Whether household-only use is exempt from parts of the personal data law (DOMAIN-VN §8). Esta builds to the stricter reading.
 - The 500,000,000 VND single-transfer cap from S4 (DOMAIN-VN §10; source `https://napas.com.vn/dich-vu-chuyen-tien-nhanh-napas-247-ngan-hang`, "Hạn mức chuyển lên đến dưới 500 triệu VND/giao dịch"). `VIETQR_RULES.singleTransferCapVnd` in `packages/core/src/vietqr/rules.ts` drops tag 54 at or above it as an `[app rule]` until Ryan decides; a bank or NAPAS should confirm the cap and how payers split a larger transfer.
 - Two land use codes kept as `[app rule]` by S5 (DOMAIN-VN §3). BHK is not in the Circular 08/2024/TT-BTNMT list but stays, because older certificates carry it and remain valid. CSD stays as a code named "Đất chưa sử dụng" because luatvietnam.vn and hethongphapluat.com both list it as the group code, though neither confirms it as a certificate-level code. A land registry officer or the circular's own annex should confirm both.
