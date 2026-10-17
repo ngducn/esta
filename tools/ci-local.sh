@@ -34,7 +34,8 @@
 # are reported as "flaky: N" with their titles, in the job log and the comment.
 #
 # The db and e2e jobs rerun a reset once when the Supabase CLI answers 502
-# during its container restart, after Kong and Storage report healthy.
+# during its container restart. Kong keeps the restarted Storage container's old
+# IP, so the retry runs db:stop and db:start first and waits for health.
 set -uo pipefail
 
 worktree=$(realpath "${1:?worktree path}") || exit 2
@@ -160,7 +161,8 @@ reset_db() {
 	local code=${PIPESTATUS[0]}
 	[ "$code" -eq 0 ] && return 0
 	grep -q 'Error status 502' "$logdir/reset.log" || return "$code"
-	echo "ci-local: $* got a 502 during the container restart; retrying once after Kong and Storage report healthy"
+	echo "ci-local: $* got a 502 during the container restart; restarting the stack, then retrying once"
+	(cd "$tree" && pnpm db:stop && pnpm db:start) || return "$code"
 	local waited=0
 	until gateway_healthy; do
 		[ $waited -ge 120 ] && echo "ci-local: Kong and Storage are not healthy after 120 s" && return "$code"

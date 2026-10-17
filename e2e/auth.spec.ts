@@ -31,8 +31,9 @@ async function createHousehold(page: Page, name: string, displayName: string) {
   await page.getByRole('button', { name: 'Tạo gia đình' }).click();
   const response = await answer;
   expect(response.status(), 'the create-household POST answers without a server error').toBeLessThan(500);
-  await response.finished();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mời người trong gia đình');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mời người trong gia đình', {
+    timeout: CREATE_ANSWER_TIMEOUT_MS,
+  });
 }
 
 test('/ sends a signed-out visitor to /sign-in', async ({ page }) => {
