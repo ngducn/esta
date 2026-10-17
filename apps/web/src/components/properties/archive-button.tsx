@@ -77,7 +77,7 @@ function ArchivedToast({ propertyId, nickname }: { propertyId: string; nickname:
 }
 
 /** Shown on `Tài sản` right after an archive, so the undo sits beside the list the card left. */
-export function ArchivedNotice({ propertyId, nickname }: { propertyId: string; nickname: string }) {
+export function ArchivedUndo({ propertyId, nickname }: { propertyId: string; nickname: string }) {
   return (
     <UndoToastProvider>
       <ArchivedToast propertyId={propertyId} nickname={nickname} />

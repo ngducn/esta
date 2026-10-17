@@ -1,7 +1,7 @@
 'use client';
 
 import type { AbstractIntlMessages, Locale } from 'next-intl';
-import { ArchivedNotice as Notice } from './archive-button';
+import { ArchivedUndo } from './archive-button';
 import { PropertyIntl } from './property-intl';
 
 export default function ArchivedNotice({
@@ -17,7 +17,7 @@ export default function ArchivedNotice({
 }) {
   return (
     <PropertyIntl locale={locale} messages={messages}>
-      <Notice propertyId={propertyId} nickname={nickname} />
+      <ArchivedUndo propertyId={propertyId} nickname={nickname} />
     </PropertyIntl>
   );
 }

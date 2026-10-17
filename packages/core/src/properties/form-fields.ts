@@ -22,7 +22,6 @@ const INPUTS: Record<KindDetailKey, KindFieldInput> = {
 
 const fields = (keys: readonly KindDetailKey[]): readonly KindField[] => keys.map((key) => ({ key, input: INPUTS[key] }));
 
-/** The fields the form renders for each kind, in order. Apartments get building and unit, rooming houses rooms, land frontage. */
 export const KIND_FIELDS: { readonly [K in PropertyKind]: readonly KindField[] } = {
   townhouse: fields(KIND_DETAIL_KEYS.townhouse),
   apartment: fields(KIND_DETAIL_KEYS.apartment),

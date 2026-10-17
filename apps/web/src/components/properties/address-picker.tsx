@@ -167,7 +167,6 @@ function CommuneCombobox({
   );
 }
 
-/** PRP-4: province first, then a ward or commune of that province, then the house number and street. */
 export function AddressPicker({
   provinces,
   communes,

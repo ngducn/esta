@@ -46,7 +46,7 @@ alter table public.properties add constraint properties_kind_details check (priv
 
 -- An INSERT could store a wrapped point the same way a direct UPDATE could (#84), so creating a property never sets a
 -- pin or boundary: those go through set_property_location and set_property_boundary once the row exists. Grants are
--- per column, so every column a later migration adds must be granted here too; property_details.test.sql fails until it is.
+-- per column, so a migration that adds a column must grant INSERT and UPDATE on it; property_details.test.sql fails until it does.
 revoke insert on table public.properties from authenticated;
 do $$
 declare

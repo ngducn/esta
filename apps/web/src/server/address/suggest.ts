@@ -37,7 +37,6 @@ const suggestionSchema = z
 
 const SUGGESTION_LIMIT = 6;
 
-/** The 34 province-level units, by name. */
 export async function listProvinces(): Promise<AdminUnitOption[]> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase.from('admin_units').select('code, name').is('parent_code', null).order('name');
