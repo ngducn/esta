@@ -136,6 +136,22 @@ describe('applyPropertyFilters', () => {
       'Tài sản Demo 10',
     ]);
   });
+
+  it('sorts by area: province as people name it, then nickname, with no province last', () => {
+    const noAddress = row('Nhà chưa có địa chỉ', { provinceCode: null, provinceName: null, legacyProvinceNames: [] });
+    expect(names(applyPropertyFilters([noAddress, ...lane], { ...none, sort: 'area' }).rows)).toEqual([
+      'Kho Biên Hòa',
+      'Căn hộ Thủ Đức',
+      'Dãy trọ Dĩ An',
+      'Mặt bằng Quận 1',
+      'Nhà phố Q7',
+      'Đất Bảo Lộc',
+      'Đất vườn Long An',
+      'Nhà chưa có địa chỉ',
+    ]);
+    expect(parsePropertyFilters({ sort: 'area' }).sort).toBe('area');
+    expect(propertyFiltersQuery({ ...none, sort: 'area' })).toBe('?sort=area');
+  });
 });
 
 describe('search', () => {

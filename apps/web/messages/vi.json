@@ -291,7 +291,7 @@
     "group": "{group, select, province {Tỉnh, thành} kind {Loại} use {Sử dụng} legal {Pháp lý} other {Lọc}}",
     "legacyProvince": "{name} (cũ)",
     "sort": "Sắp xếp",
-    "sortOption": "{sort, select, name {Tên} other {Tên}}",
+    "sortOption": "{sort, select, name {Tên} area {Khu vực} other {Tên}}",
     "certificateAddress": "Theo sổ: {address}",
     "noAddress": "Chưa có địa chỉ",
     "empty": "Chưa có tài sản nào.",

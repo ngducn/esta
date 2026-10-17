@@ -291,7 +291,7 @@
     "group": "{group, select, province {Province} kind {Kind} use {Use} legal {Legal status} other {Filter}}",
     "legacyProvince": "{name} (former)",
     "sort": "Sort",
-    "sortOption": "{sort, select, name {Name} other {Name}}",
+    "sortOption": "{sort, select, name {Name} area {Area} other {Name}}",
     "certificateAddress": "On the certificate: {address}",
     "noAddress": "No address yet",
     "empty": "No properties yet.",

@@ -35,7 +35,8 @@ export function shortProvinceName(name: string): string {
   return name.normalize('NFC').replace(/^Thành phố\s+/u, 'TP. ').replace(/^Tỉnh\s+/u, '');
 }
 
-const bareProvinceName = (name: string) => foldVietnamese(name.normalize('NFC').replace(/^(Thành phố|Tỉnh)\s+/u, ''));
+const unprefixedProvinceName = (name: string) => name.normalize('NFC').replace(/^(Thành phố|Tỉnh)\s+/u, '');
+const bareProvinceName = (name: string) => foldVietnamese(unprefixedProvinceName(name));
 
 function isSameProvince(legacyName: string, currentName: string | null): boolean {
   return currentName !== null && bareProvinceName(legacyName) === bareProvinceName(currentName);
@@ -67,11 +68,22 @@ export const PROPERTY_FILTERS = {
 export type PropertyFilterKey = keyof typeof PROPERTY_FILTERS;
 export const PROPERTY_FILTER_KEYS = Object.keys(PROPERTY_FILTERS) as readonly PropertyFilterKey[];
 
-const nicknameCollator = new Intl.Collator('vi', { numeric: true });
+const collator = new Intl.Collator('vi', { numeric: true });
+
+type Compare = (a: PropertyListRow, b: PropertyListRow) => number;
+
+const byNickname: Compare = (a, b) => collator.compare(a.nickname, b.nickname);
+
+/** Provinces by the name people say, so Đồng Nai comes before Hồ Chí Minh; a property with no province goes last. */
+const byProvince: Compare = (a, b) => {
+  if (a.provinceName === null || b.provinceName === null) return Number(a.provinceName === null) - Number(b.provinceName === null);
+  return collator.compare(unprefixedProvinceName(a.provinceName), unprefixedProvinceName(b.provinceName));
+};
 
 export const PROPERTY_SORTS = {
-  name: (a: PropertyListRow, b: PropertyListRow) => nicknameCollator.compare(a.nickname, b.nickname),
-} as const;
+  name: byNickname,
+  area: (a, b) => byProvince(a, b) || byNickname(a, b),
+} as const satisfies Record<string, Compare>;
 
 export type PropertySortKey = keyof typeof PROPERTY_SORTS;
 export const PROPERTY_SORT_KEYS = Object.keys(PROPERTY_SORTS) as readonly PropertySortKey[];
