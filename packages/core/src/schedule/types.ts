@@ -51,4 +51,4 @@ export type Period = {
   coveredByPaidThrough: boolean;
 };
 
-export type AmendmentRefusal = 'not_a_period_start' | 'not_after_as_of';
+export type AmendmentRefusal = 'not_a_period_start' | 'not_after_as_of' | 'duplicate_effective_start' | 'moves_later_amendment';

@@ -26,13 +26,9 @@ function byEffectiveStart(a: Amendment, b: Amendment): number {
   return a.effectivePeriodStart < b.effectivePeriodStart ? -1 : a.effectivePeriodStart > b.effectivePeriodStart ? 1 : 0;
 }
 
-/**
- * Every period of the lease whose start is on or before `until` (and the end date, when set).
- * An amendment applies from the period whose start equals its effective start; one that matches
- * no period start inside that range breaks the invariant `validateAmendment` guards and throws.
- */
-export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendment[], until: IsoDate): Period[] {
-  const sorted = [...amendments].sort(byEffectiveStart);
+type Draft = { periods: Period[]; stranded: Amendment | undefined };
+
+function draftSchedule(terms: LeaseTerms, sorted: readonly Amendment[], until: IsoDate): Draft {
   const lastStart = terms.endDate !== null && terms.endDate < until ? terms.endDate : until;
   const periods: Period[] = [];
   const origin = terms.periodAnchor === 'lease_start' ? terms.startDate : firstOfMonth(terms.startDate);
@@ -73,21 +69,46 @@ export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendme
     fullStart = addMonths(origin, cursor.offsetMonths);
     start = fullStart;
   }
-  const unapplied = sorted[applied];
-  if (unapplied !== undefined && unapplied.effectivePeriodStart <= lastStart) {
-    throw new RangeError(`Amendment effective ${unapplied.effectivePeriodStart} matches no period start`);
-  }
+  const next = sorted[applied];
+  return { periods, stranded: next !== undefined && next.effectivePeriodStart <= lastStart ? next : undefined };
+}
+
+/**
+ * Every period of the lease whose start is on or before `until` (and the end date, when set).
+ * An amendment applies from the period whose start equals its effective start. One that matches no
+ * period start inside that range, or shares its start with another, breaks the invariant
+ * `validateAmendment` guards and throws.
+ */
+export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendment[], until: IsoDate): Period[] {
+  const sorted = [...amendments].sort(byEffectiveStart);
+  const shared = sorted.find((amendment, i) => sorted[i - 1]?.effectivePeriodStart === amendment.effectivePeriodStart);
+  if (shared !== undefined) throw new RangeError(`Two amendments take effect on ${shared.effectivePeriodStart}`);
+  const { periods, stranded } = draftSchedule(terms, sorted, until);
+  if (stranded !== undefined) throw new RangeError(`Amendment effective ${stranded.effectivePeriodStart} matches no period start`);
   return periods;
 }
 
-/** Accepts an amendment only from a generated period start after `asOf`, and returns that period. */
+/**
+ * Accepts `amendment` beside the lease's existing `amendments` only from a period start after `asOf`
+ * that no other amendment uses, and only when every later amendment still starts a period once it
+ * applies. Returns the first period the amendment bills.
+ */
 export function validateAmendment(
-  schedule: readonly Period[],
+  terms: LeaseTerms,
+  amendments: readonly Amendment[],
   amendment: Amendment,
   asOf: IsoDate,
 ): Result<Period, AmendmentRefusal> {
-  if (amendment.effectivePeriodStart <= asOf) return { ok: false, reason: 'not_after_as_of' };
-  const period = schedule.find((candidate) => candidate.start === amendment.effectivePeriodStart);
+  const effective = amendment.effectivePeriodStart;
+  if (effective <= asOf) return { ok: false, reason: 'not_after_as_of' };
+  if (amendments.some((other) => other.effectivePeriodStart === effective)) return { ok: false, reason: 'duplicate_effective_start' };
+  const sorted = [...amendments, amendment].sort(byEffectiveStart);
+  const until = sorted.reduce((latest, other) => (other.effectivePeriodStart > latest ? other.effectivePeriodStart : latest), effective);
+  const { periods, stranded } = draftSchedule(terms, sorted, until);
+  if (stranded !== undefined) {
+    return { ok: false, reason: stranded.effectivePeriodStart === effective ? 'not_a_period_start' : 'moves_later_amendment' };
+  }
+  const period = periods.find((candidate) => candidate.start === effective);
   if (period === undefined) return { ok: false, reason: 'not_a_period_start' };
   return { ok: true, value: period };
 }
