@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { isIsoDate, type IsoDate } from '../date/iso-date';
 import { FULL_SHARE_BP } from '../properties/ownership';
 
-/** One row of `ownership_shares`, as `set_ownership_shares` takes it. */
 export const ownershipShareSchema = z.strictObject({
   party_id: z.uuid(),
   share_bp: z.number().int().min(1).max(FULL_SHARE_BP),

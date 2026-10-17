@@ -76,7 +76,6 @@ function sorted(parties: readonly PartyOption[]): PartyOption[] {
   return [...parties].sort((a, b) => compareVietnameseNames(a.fullName, b.fullName));
 }
 
-/** Picks one of `parties` or quick-adds a new person; the caller decides what a pick means. */
 export function PartyAdder({
   parties,
   labels,

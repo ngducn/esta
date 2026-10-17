@@ -8,7 +8,6 @@ import type { ReactNode } from 'react';
 import type { PartyOption } from '@/server/properties/legal';
 import { OwnershipWarning } from './ownership-warning';
 
-/** The `Chủ sở hữu` rows on `Pháp lý`: each party with its share, `Có tên trên sổ` and the date it holds from. */
 export async function OwnersSection({
   shares,
   parties,

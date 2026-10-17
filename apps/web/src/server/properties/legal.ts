@@ -108,7 +108,6 @@ export const loadLandUseCodes = cache(async (): Promise<LandUseCode[]> => {
   return data.map((row) => ({ code: row.code, nameVi: row.name_vi, nameEn: row.name_en }));
 });
 
-/** The property's shares, largest first, as saved: the warning reads these rows, never a draft. */
 export const loadOwnership = cache(async (propertyId: string): Promise<OwnershipShare[]> => {
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const { data, error } = await supabase

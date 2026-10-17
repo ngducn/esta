@@ -9,7 +9,6 @@ import type { OwnershipSheetProps } from './ownership-sheet-popup';
 const loadPopup = () => import('./ownership-sheet-popup');
 const OwnershipSheetPopup = lazy(loadPopup);
 
-/** Opens the sheet that edits every share at once; its module loads on hover, focus or the first tap. */
 export function OwnershipSheet({ label, adding, ...props }: OwnershipSheetProps & { label: string; adding: boolean }) {
   const dialog = useDeferredDialog(loadPopup);
   const Icon = adding ? Plus : Pencil;

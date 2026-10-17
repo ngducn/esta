@@ -54,8 +54,8 @@ $$;
 revoke all on function private.valid_ownership_shares(jsonb) from public;
 grant execute on function private.valid_ownership_shares(jsonb) to authenticated, service_role;
 
--- Security invoker, so RLS answers every read and write: a property outside the caller's households is not found
--- whether or not it exists, and a viewer is refused by the insert and delete policies.
+-- Security invoker, so RLS answers before anything else: a property outside the caller's households is not found
+-- whether or not it exists.
 create function public.set_ownership_shares(p_property_id uuid, p_shares jsonb)
 returns void
 language plpgsql
