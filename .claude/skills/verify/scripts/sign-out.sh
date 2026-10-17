@@ -4,7 +4,8 @@ source "$(dirname "$0")/env.sh"
 
 "$B" goto "$WEB_URL/sign-in" >/dev/null
 if [[ "$(current_path)" != /sign-in ]]; then
-  "$B" click 'role=button[name=/^(Tài khoản|Account)/]' >/dev/null
+  # /onboarding has no account menu; it shows its own sign-out button.
+  [[ "$(current_path)" == /onboarding ]] || "$B" click 'role=button[name=/^(Tài khoản|Account)/]' >/dev/null
   "$B" click 'role=button[name=/^(Đăng xuất|Sign out)$/]' >/dev/null
   for _ in $(seq 1 50); do
     [[ "$(current_path)" == /sign-in ]] && break
