@@ -36,7 +36,7 @@ $S/launch.sh --clock 2026-11-01T09:00:00+07:00
 
 Launch runs `pnpm db:start`, `pnpm db:reset` (or `db:reset:northstar`), `pnpm clock:set` and then `node scripts/web.ts dev`, which is what `pnpm dev` runs. It starts the web server without pnpm because pnpm moves its script into another process group and forwards no signal, so the recorded pid could not stop it. Each slot's server builds into `apps/web/.next/slot-<n>`, because Next allows one `next dev` per build directory, so one checkout can serve several slots at once. Launch records the pid in `/tmp/esta-verify/slot-<n>/web.pid` and the server log in `web.log` beside it.
 
-State lives per slot in `/tmp/esta-verify/slot-<n>/`, one directory that every checkout shares for that slot:
+State lives per slot in `/tmp/esta-verify/slot-<n>/`, one directory that every checkout shares for that slot. `ESTA_VERIFY_DIR` replaces `/tmp/esta-verify`; only `scripts/verify-cleanup.test.ts` sets it, so parallel test runs do not share a marker. The directory holds:
 
 | File | Holds |
 | --- | --- |
