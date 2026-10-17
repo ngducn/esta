@@ -16,6 +16,10 @@
 # Any non-empty CI_LOCAL_NO_POST, 0 included, makes no gh call: no PR head
 # guard, no statuses, no comment (the summary prints instead). The PR number
 # then only names the logs.
+#
+# Only one run at a time holds the /tmp/ci-local/lock directory, and the
+# others wait until it exits. A lock whose holder exited without removing it
+# is taken over.
 set -uo pipefail
 
 worktree=$(realpath "${1:?worktree path}") || exit 2
@@ -26,6 +30,29 @@ jobs=("$@")
 [ ${#jobs[@]} -eq 0 ] && jobs=(check db e2e prod-build design)
 
 repo=ngducn/esta
+lock=/tmp/ci-local/lock
+release_lock() {
+	[ "$(cat "$lock/pid" 2>/dev/null)" = $$ ] && rm -rf "$lock"
+}
+trap release_lock EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
+mkdir -p /tmp/ci-local
+announced=-
+until mkdir "$lock" 2>/dev/null; do
+	holder=$(cat "$lock/pid" 2>/dev/null)
+	if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+		echo "taking over the ci-local lock from exited pid $holder" >&2
+		rm -rf "$lock"
+		continue
+	fi
+	[ "$holder" = "$announced" ] || echo "waiting for the ci-local lock held by pid ${holder:-unknown} ($(cat "$lock/run" 2>/dev/null))" >&2
+	announced=$holder
+	sleep 5
+done
+echo $$ >"$lock/pid"
+echo "PR #$pr ${jobs[*]}" >"$lock/run"
+
 cd "$worktree" || exit 2
 sha=$(git rev-parse HEAD)
 if [ -z "${CI_LOCAL_NO_POST:-}" ]; then
@@ -52,10 +79,9 @@ cleanup() {
 		rm -rf "$tree"
 		git -C "$worktree" worktree prune
 	}
+	release_lock
 }
 trap cleanup EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM HUP
 git worktree add --detach "$tree" "$sha" >"$logdir/worktree.log" 2>&1 || {
 	cat "$logdir/worktree.log" >&2
 	exit 2
@@ -71,7 +97,7 @@ status() {
 run_job() {
 	case $1 in
 	check)
-		pnpm install --frozen-lockfile && pnpm check && pnpm run --if-present test:live
+		pnpm install --frozen-lockfile && VITEST_MAX_WORKERS=3 pnpm check && pnpm run --if-present test:live
 		;;
 	db)
 		pnpm install --frozen-lockfile &&

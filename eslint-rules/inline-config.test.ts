@@ -1,14 +1,10 @@
 import { globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
-
-const repoRoot = join(import.meta.dirname, '..');
-const eslint = new ESLint({ cwd: repoRoot });
+import { lintText, repoRoot } from './lint-text.ts';
 
 async function lint(path: string, code: string) {
-  const results = await eslint.lintText(code, { filePath: join(repoRoot, path) });
-  return results.flatMap((result) => result.messages.map(({ ruleId, severity }) => ({ ruleId, severity })));
+  return (await lintText(path, code)).map(({ ruleId, severity }) => ({ ruleId, severity }));
 }
 
 const webSources = () =>
