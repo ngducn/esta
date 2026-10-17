@@ -3,18 +3,20 @@ import { parseDecimal, toSafeNumber, toWholeDong, type Decimal } from '../parse/
 
 export type CompactUnit = 'ty' | 'tr' | 'nghin';
 
-export type CompactRule = { readonly unit: CompactUnit; readonly size: number; readonly step: number };
+export type CompactRule = { readonly size: number; readonly step: number };
 
 /**
  * The tolerance table. A compact claim in a unit matches an amount when the amount rounded to the
  * unit's step equals the claim and is at least one whole unit: the rounding formatVndCompact
  * applies (DOMAIN-VN §9), so `3,5 tr` covers 3.450.000 to 3.549.999 and nothing else.
  */
-export const COMPACT_RULES: readonly CompactRule[] = [
-  { unit: 'ty', size: 1_000_000_000, step: 10_000_000 },
-  { unit: 'tr', size: 1_000_000, step: 100_000 },
-  { unit: 'nghin', size: 1_000, step: 1_000 },
-];
+export const COMPACT_RULES: Readonly<Record<CompactUnit, CompactRule>> = {
+  ty: { size: 1_000_000_000, step: 10_000_000 },
+  tr: { size: 1_000_000, step: 100_000 },
+  nghin: { size: 1_000, step: 1_000 },
+};
+
+const COMPACT_UNITS: readonly CompactUnit[] = ['ty', 'tr', 'nghin'];
 
 export type CanonicalNumber =
   | { readonly kind: 'amount'; readonly vnd: number }
@@ -35,12 +37,6 @@ export type ExtractedValue = CanonicalNumber | { readonly kind: 'invalid' };
 
 const YEAR_RANGE = { min: 1900, max: 2199 };
 
-export function compactRule(unit: CompactUnit): CompactRule {
-  const rule = COMPACT_RULES.find((candidate) => candidate.unit === unit);
-  if (rule === undefined) throw new RangeError(`Unknown compact unit: ${unit}`);
-  return rule;
-}
-
 export function roundToUnit(vnd: number, rule: CompactRule): number | null {
   const rounded = Math.round(Math.abs(vnd) / rule.step) * rule.step;
   return rounded < rule.size ? null : Math.sign(vnd) * rounded;
@@ -48,16 +44,15 @@ export function roundToUnit(vnd: number, rule: CompactRule): number | null {
 
 function compactKeys(vnd: number): string[] {
   const keys: string[] = [];
-  for (const rule of COMPACT_RULES) {
-    const rounded = roundToUnit(vnd, rule);
-    if (rounded !== null) keys.push(`c:${rule.unit}:${rounded}`);
+  for (const unit of COMPACT_UNITS) {
+    const rounded = roundToUnit(vnd, COMPACT_RULES[unit]);
+    if (rounded !== null) keys.push(`c:${unit}:${rounded}`);
   }
   return keys;
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
-/** The keys an allowed value registers under. */
 export function indexKeys(value: CanonicalNumber): readonly string[] {
   switch (value.kind) {
     case 'amount':
@@ -127,7 +122,7 @@ export function lookupKeys(claim: CanonicalNumber): readonly string[] {
 
 /** The compact keys one step either side of a compact claim, for the rounding diagnosis. */
 export function neighbourKeys(claim: { readonly vnd: number; readonly unit: CompactUnit }): readonly string[] {
-  const { step } = compactRule(claim.unit);
+  const { step } = COMPACT_RULES[claim.unit];
   return [`c:${claim.unit}:${claim.vnd - step}`, `c:${claim.unit}:${claim.vnd + step}`];
 }
 
@@ -148,14 +143,14 @@ export function readAmount(digits: string, sign: 1 | -1): ExtractedValue {
 
 export function readCompact(digits: string, sign: 1 | -1, unit: CompactUnit): ExtractedValue {
   const decimal = parseDecimal(digits);
-  const vnd = decimal === null ? null : wholeNumber(decimal, BigInt(compactRule(unit).size), sign);
+  const vnd = decimal === null ? null : wholeNumber(decimal, BigInt(COMPACT_RULES[unit].size), sign);
   return vnd === null ? invalid : { kind: 'compact', vnd, unit };
 }
 
 /** The spoken shorthand `3tr5` (parseVndInput): the digits after the unit are its decimals, so `12tr500` is 12,5 tr. */
 export function readShorthand(whole: string, fraction: string, unit: CompactUnit): ExtractedValue {
   const decimal = { digits: BigInt(whole + fraction), scale: fraction.length };
-  const vnd = wholeNumber(decimal, BigInt(compactRule(unit).size), 1);
+  const vnd = wholeNumber(decimal, BigInt(COMPACT_RULES[unit].size), 1);
   return vnd === null ? invalid : { kind: 'compact', vnd, unit };
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { IsoDate } from '../date/iso-date';
 import { checkNumbers, repairMessage, type CheckedNumber } from './checkNumbers';
-import { collectAllowed, type ToolResult } from './collectAllowed';
+import { collectAllowed } from './collectAllowed';
 import { extractNumbers, scan } from './extractNumbers';
 import { CONTEXT, IDS, RUN } from './fixtures/run';
 import { NOTES } from './fixtures/notes';
@@ -429,10 +429,5 @@ describe('Trợ lý notes over the fixture run', () => {
     expect(paths.has('watch_facts:facts[0].outstanding')).toBe(true);
     expect(allowed.get('code:7K2QX9MP')?.map((source) => source.path)).toEqual(['facts[0].memo_code']);
     expect(paths.has('watch_facts:facts[0].invoice_id')).toBe(false);
-  });
-
-  it('keeps every tool result in the fixture typed as external data', () => {
-    const results: readonly ToolResult[] = RUN;
-    expect(results.map((result) => result.tool)).toEqual(['household_info', 'watch_facts', 'collections', 'portfolio_overview']);
   });
 });

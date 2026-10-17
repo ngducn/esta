@@ -85,7 +85,7 @@ function readTimestamp(match: RegExpExecArray): readonly ExtractedValue[] {
 
 const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { ...VI_UNITS, ty: 'ty', k: 'nghin' };
 
-/** `3tr5`, `1ty2` and `1k5` alternate digits and letters like a code, so they are read before the code rule skips them. */
+/** `3tr5`, `1ty2` and `1k5` alternate digits and letters like a code, so they are read before the code rule. */
 const SHORTHAND: Pattern = {
   regex: re(String.raw`(?<![\p{L}\p{N}])(\d{1,3})(${Object.keys(SHORTHAND_UNITS).join('|')})(\d{1,3})(?![\p{L}\p{N}])`, 'i'),
   read: ([, whole = '', unit = '', fraction = '']) => {
@@ -212,7 +212,6 @@ function sentenceAt(boundaries: readonly number[], position: number): number {
 const isSignStart = (text: string, at: number): boolean =>
   at > 0 && (text[at - 1] === '-' || text[at - 1] === '−') && (at === 1 || /[\s(]/u.test(text.charAt(at - 2)));
 
-/** Every number in a text with its sentence, plus the `esta://` records each sentence cites. */
 export function scan(text: string): Scan {
   const boundaries = [...text.matchAll(SENTENCE_END)].map((match) => match.index);
   const skips = [...text.matchAll(SKIP)].map((match) => ({ start: match.index, end: match.index + match[0].length }));

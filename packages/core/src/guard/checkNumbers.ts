@@ -26,7 +26,6 @@ export type GuardReport = {
 
 const isViolation = (number: CheckedNumber): number is Violation => number.status !== 'matched';
 
-/** Checks every number in the text against the allowed index (AGENT.md §6.3). */
 export function checkNumbers(text: string, allowed: AllowedIndex): GuardReport {
   const { numbers, citations } = scan(text);
   const citedBySentence = new Map<number, Set<string>>();
@@ -69,7 +68,6 @@ function describe(violation: Violation): string {
   }
 }
 
-/** The repair-turn text, naming every offending number (AGENT.md §6.3). */
 export function repairMessage(report: GuardReport): string {
   return report.violations.map(describe).join('; ');
 }

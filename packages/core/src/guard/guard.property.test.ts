@@ -60,8 +60,7 @@ describe('DOMAIN-VN formatters round-trip through the guard', () => {
     fc.assert(
       fc.property(compactAmount, compactAmount, locale, (claimed, actual, loc) => {
         const text = formatVndCompact(claimed, loc);
-        const rule = COMPACT_RULES.find((candidate) => candidate.unit === compactUnitOf(text));
-        if (rule === undefined) throw new Error(`no rule for ${text}`);
+        const rule = COMPACT_RULES[compactUnitOf(text)];
         if (formatVndCompact(actual, loc) === text) expect(passes(text, { actual })).toBe(true);
         if (Math.abs(actual - claimed) > rule.step) expect(passes(text, { actual })).toBe(false);
       }),
