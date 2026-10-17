@@ -10,7 +10,6 @@ type TaxNote = {
   label: TaxNoteLabel;
   /** Key in the `taxNotes` message namespace. */
   messageKey: string;
-  /** Whether the note's text embeds the rule's own `note`. */
   showsRuleNote: boolean;
   active: (context: NoteContext) => boolean;
 };
