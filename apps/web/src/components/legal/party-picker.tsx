@@ -1,10 +1,10 @@
 'use client';
 
 import { compareVietnameseNames, idLast4 } from '@esta/core/names';
+import type { NewParty } from '@esta/core/schemas/party';
 import { Plus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
-import { quickAddParty } from '@/app/(app)/properties/[id]/legal/actions';
+import { useState } from 'react';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
@@ -12,26 +12,19 @@ import type { PartyOption } from '@/server/properties/legal';
 
 const LAST4 = /^[0-9]{4}$/;
 
-/** Adds a party inline: a name, and for a person only the last 4 ID digits (SPEC D11), never the full number. */
-function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; onAdded: (party: PartyOption) => void; onCancel: () => void }) {
+/** Names a party inline: a name, and for a person only the last 4 ID digits (SPEC D11). Nothing is saved until the form is. */
+function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; onAdded: (party: NewParty) => void; onCancel: () => void }) {
   const t = useTranslations('propertyLegal');
   const [name, setName] = useState('');
   const [last4, setLast4] = useState('');
-  const [error, setError] = useState<'name' | 'last4' | 'failed' | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<'name' | 'last4' | null>(null);
   const add = () => {
     if (name.trim() === '') return setError('name');
     if (last4 !== '' && !LAST4.test(last4)) return setError('last4');
     setError(null);
-    const input =
-      kind === 'individual'
-        ? { kind: 'individual', full_name: name, id_last4: last4 === '' ? null : last4 }
-        : { kind: 'organization', full_name: name, bank: true };
-    startTransition(async () => {
-      const result = await quickAddParty(input).catch(() => ({ ok: false }) as const);
-      if (result.ok) onAdded(result.party);
-      else setError('failed');
-    });
+    const id = crypto.randomUUID();
+    const full_name = name.trim();
+    onAdded(kind === 'individual' ? { id, kind, full_name, id_last4: last4 === '' ? null : last4 } : { id, kind: 'organization', full_name, bank: true });
   };
   return (
     <div data-testid={`quick-add-${kind}`} className="flex flex-col gap-3 rounded-md border border-rule bg-surface-2 p-3 sm:p-4">
@@ -55,13 +48,8 @@ function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; on
           onChange={(text) => setLast4(idLast4(text))}
         />
       ) : null}
-      {error === 'failed' ? (
-        <p role="alert" className="text-small text-overdue">
-          {t('partyFailed')}
-        </p>
-      ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={add} disabled={pending} data-testid="quick-add-save">
+        <Button type="button" onClick={add} data-testid="quick-add-save">
           {t('partySave')}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
@@ -85,7 +73,7 @@ export function PartyAdder({
   parties: readonly PartyOption[];
   labels: { choose: string; add: string };
   onPick: (id: string) => void;
-  onParty: (party: PartyOption) => void;
+  onParty: (party: NewParty) => void;
 }) {
   const [adding, setAdding] = useState(false);
   return (
@@ -129,7 +117,7 @@ export function HolderPicker({
   parties: readonly PartyOption[];
   selected: readonly string[];
   onChange: (ids: readonly string[]) => void;
-  onParty: (party: PartyOption) => void;
+  onParty: (party: NewParty) => void;
 }) {
   const t = useTranslations('propertyLegal');
   const byId = new Map(parties.map((party) => [party.id, party]));
@@ -177,7 +165,7 @@ export function BankPicker({
   parties: readonly PartyOption[];
   value: string;
   onChange: (id: string) => void;
-  onParty: (party: PartyOption) => void;
+  onParty: (party: NewParty) => void;
   invalid: boolean;
 }) {
   const t = useTranslations('propertyLegal');

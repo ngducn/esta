@@ -137,15 +137,35 @@ test('rule 4: Ryan mortgages the Kho Biên Hòa certificate for 1ty2 and quick-a
   });
   await page.getByTestId('quick-add-save').click();
   await expect(page.getByTestId('holders')).toContainText('Lê Văn Demo');
-  expect(posted.some((body) => body.includes('"6789"'))).toBe(true);
-  expect(posted.filter((body) => /079201005582|023 ?456 ?789/.test(body))).toEqual([]);
+  expect(posted).toEqual([]);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.getByTestId('save-legal-item').click();
   await expect(page).toHaveURL(new RegExp(`${legalPath(4, 'bien-hoa')}$`));
+  expect(posted.some((body) => body.includes('"6789"'))).toBe(true);
+  expect(posted.filter((body) => /079201005582|023 ?456 ?789/.test(body))).toEqual([]);
 
   await page.reload();
   await expect(page.getByTestId('certificate-status')).toHaveText('Đang thế chấp');
   await expect(page.getByTestId('certificate-holders')).toContainText('Lê Văn Demo');
+});
+
+test('rule 4b: Mẹ quick-adds a holder, leaves the certificate form, and the person is not in the picker', async ({ page }) => {
+  await open(page, 'me.lane4@demo.esta.test', 'light', PHONE);
+  const certificate = seedId('seed:certificate:lane-4:bien-hoa');
+  const form = `${legalPath(4, 'bien-hoa')}/certificates/${certificate}`;
+  const abandoned = 'Mồ Côi Demo';
+  await page.goto(form);
+  await page.getByTestId('add-holder').click();
+  await page.getByTestId('quick-add-name').fill(abandoned);
+  await page.getByTestId('quick-add-save').click();
+  await expect(page.getByTestId('holders')).toContainText(abandoned);
+  await page.getByRole('link', { name: 'Hủy', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${legalPath(4, 'bien-hoa')}$`));
+
+  await page.goto(form);
+  await expect(page.getByTestId('add-holder')).toBeVisible();
+  await expect(page.getByTestId('holders')).not.toContainText(abandoned);
+  await expect(page.getByTestId('holder-select').locator('option', { hasText: abandoned })).toHaveCount(0);
 });
 
 test('rule 5: Mẹ deletes the Q7 structure and Hoàn tác brings it back', async ({ page }) => {

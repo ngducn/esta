@@ -1,5 +1,6 @@
 'use client';
 
+import type { NewParty } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,12 +22,15 @@ export function LegalFormShell({
   kind,
   itemId,
   read,
+  newParties,
   children,
 }: {
   propertyId: string;
   kind: LegalKind;
   itemId: string | null;
   read: LegalSubmit;
+  /** The quick-added parties the read input names, created in the same request as the save. */
+  newParties?: () => readonly NewParty[];
   children: ReactNode;
 }) {
   const t = useTranslations('propertyLegal');
@@ -45,7 +49,7 @@ export function LegalFormShell({
     }
     setError(null);
     startTransition(async () => {
-      const result = await saveLegalItem(propertyId, kind, itemId, input).catch(() => ({ ok: false, reason: 'failed' }) as const);
+      const result = await saveLegalItem(propertyId, kind, itemId, input, newParties?.() ?? []).catch(() => ({ ok: false, reason: 'failed' }) as const);
       if (result.ok) {
         router.push(tabHref);
         return;
