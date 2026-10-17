@@ -612,6 +612,74 @@ export type Database = {
           },
         ]
       }
+      ownership_shares: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          named_on_certificate: boolean
+          party_id: string
+          property_id: string
+          share_bp: number
+          since: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          named_on_certificate?: boolean
+          party_id: string
+          property_id: string
+          share_bp: number
+          since?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          named_on_certificate?: boolean
+          party_id?: string
+          property_id?: string
+          share_bp?: number
+          since?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ownership_shares_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ownership_shares_household_id_party_id_fkey"
+            columns: ["household_id", "party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "ownership_shares_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "ownership_shares_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       parcels: {
         Row: {
           area_m2: number | null
@@ -1011,6 +1079,7 @@ export type Database = {
           legal_status: string | null
           lng: number | null
           nickname: string | null
+          owner_party_ids: string[] | null
           province_code: string | null
           province_name: string | null
           search_text: string | null
@@ -1089,6 +1158,10 @@ export type Database = {
       }
       property_boundary: { Args: { p_property_id: string }; Returns: Json }
       set_my_locale: { Args: { p_locale: string }; Returns: undefined }
+      set_ownership_shares: {
+        Args: { p_property_id: string; p_shares: Json }
+        Returns: undefined
+      }
       set_property_boundary: {
         Args: { p_boundary: Json; p_property_id: string }
         Returns: Json

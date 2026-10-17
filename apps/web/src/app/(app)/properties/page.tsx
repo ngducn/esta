@@ -9,13 +9,14 @@ import {
   type PropertyListRow,
   type SearchParamsRecord,
 } from '@esta/core/properties';
+import { compareVietnameseNames } from '@esta/core/names';
 import { Archive, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
 import { ArchivedNoticeLoader } from '@/components/properties/archived-notice-loader';
-import { FilterChips, filterChips, hasChoice, type FilterGroup } from '@/components/properties/filter-chips';
+import { FilterChips, filterChips, hasChoice, type FilterChip, type FilterGroup } from '@/components/properties/filter-chips';
 import type { PropertyCardData } from '@/components/properties/property-card';
 import { ARCHIVED_PARAM } from '@/components/properties/property-form-values';
 import { PropertyList } from '@/components/properties/property-list';
@@ -81,11 +82,13 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
     kind: (value) => t('kind', { kind: value }),
     use: (value) => t('use', { use: value }),
     legal: (value) => t('legal', { legal: value }),
+    owner: (value) => list.ownerNames.get(value) ?? t('unknownOwner'),
   };
+  const byName = (a: FilterChip, b: FilterChip) => compareVietnameseNames(a.label, b.label);
   const groups: FilterGroup[] = PROPERTY_FILTER_KEYS.map((key) => ({
     key,
     label: t('group', { group: key }),
-    chips: filterChips(key, list.tallies[key], filters[key], valueLabel[key], t('all')),
+    chips: filterChips(key, list.tallies[key], filters[key], valueLabel[key], t('all'), key === 'owner' ? byName : undefined),
   })).filter((group) => hasChoice(group, filters[group.key]));
 
   const cards = list.rows.map(toCard);

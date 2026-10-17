@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
 export const PROPERTY_ROW_COLUMNS =
-  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary';
+  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary, owner_party_ids';
 
 export const propertyRowSchema = z
   .object({
@@ -35,6 +35,7 @@ export const propertyRowSchema = z
     lat: z.number().nullable(),
     lng: z.number().nullable(),
     has_boundary: z.boolean(),
+    owner_party_ids: z.array(z.string()).nullable(),
   })
   .transform(
     (row): PropertyListRow => ({
@@ -54,6 +55,7 @@ export const propertyRowSchema = z
       searchText: row.search_text ?? '',
       location: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng },
       hasBoundary: row.has_boundary,
+      ownerPartyIds: row.owner_party_ids ?? [],
     }),
   );
 
@@ -77,21 +79,33 @@ async function readMatchingRows(supabase: SessionClient, householdId: string, to
   }
 }
 
-export type PropertyList = FilteredProperties & { householdCount: number; provinceNames: ReadonlyMap<string, string> };
+export type PropertyList = FilteredProperties & {
+  householdCount: number;
+  provinceNames: ReadonlyMap<string, string>;
+  ownerNames: ReadonlyMap<string, string>;
+};
+
+async function readOwnerNames(supabase: SessionClient, householdId: string): Promise<Map<string, string>> {
+  const { data, error } = await supabase.from('parties').select('id, full_name').eq('household_id', householdId);
+  if (error) throw new Error(`Reading owner names failed: ${error.message}`);
+  return new Map(data.map((party) => [party.id, party.full_name]));
+}
 
 /** RLS already limits the rows to the member's households; the household predicate keeps a member of two to one list. */
 export async function listProperties(householdId: string, filters: PropertyFilters): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
-  const [rows, count] = await Promise.all([
+  const [rows, count, ownerNames] = await Promise.all([
     readMatchingRows(supabase, householdId, tokens),
     tokens.length === 0 ? null : supabase.from('property_list_rows').select('id', { count: 'exact', head: true }).eq('household_id', householdId),
+    readOwnerNames(supabase, householdId),
   ]);
   if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
   const matches = preferPhrase(rows, tokens);
   return {
     ...applyPropertyFilters(matches, filters),
     householdCount: count?.count ?? rows.length,
+    ownerNames,
     provinceNames: new Map(
       matches.flatMap((row) => (row.provinceCode === null || row.provinceName === null ? [] : [[row.provinceCode, row.provinceName] as const])),
     ),

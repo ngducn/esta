@@ -46,6 +46,7 @@ describe('generate', () => {
     expect(insertedRows(sql, 'public.certificates')).toHaveLength(28);
     expect(insertedRows(sql, 'public.parcels')).toHaveLength(28);
     expect(insertedRows(sql, 'public.structures')).toHaveLength(20);
+    expect(insertedRows(sql, 'public.ownership_shares')).toHaveLength(36);
     expect(insertedRows(sql, 'public.notification_preferences')).toHaveLength(8);
     expect(sql).toContain("'ryan.lane3@demo.esta.test'");
   });
@@ -129,6 +130,30 @@ describe('legal seed', () => {
   it('leaves the Long An parcel without a number, a map sheet or an area', () => {
     const longAn = insertedRows(sql, 'public.parcels').find((row) => row.includes(`'${seedId('seed:parcel:lane-1:long-an:1')}'`));
     expect(longAn).toContain(`'${seedId('seed:certificate:lane-1:long-an')}', null, null, null, null, '[]'`);
+  });
+});
+
+describe('ownership seed', () => {
+  const shares = insertedRows(generate({ ...DEFAULT_OPTIONS, lanes: 1 }), 'public.ownership_shares');
+  const lane1 = (key: string, person: 'me' | 'ryan') => shares.find((row) => row.includes(`'${seedId(`seed:ownership:lane-1:${key}:${person}`)}'`));
+
+  it('splits Thủ Đức and Biên Hòa 50/50, names both on the certificate, and gives Long An to Ryan alone (SPEC §9.3)', () => {
+    for (const key of ['thu-duc', 'bien-hoa']) {
+      expect(lane1(key, 'me')).toContain(`'${seedId('seed:party:me-lane-1')}', 5000, true,`);
+      expect(lane1(key, 'ryan')).toContain(`'${seedId('seed:party:ryan-lane-1')}', 5000, true,`);
+    }
+    expect(lane1('long-an', 'ryan')).toContain(`'${seedId('seed:party:ryan-lane-1')}', 10000, true, null`);
+    expect(lane1('long-an', 'me')).toBeUndefined();
+  });
+
+  it('sums every property to 10000 bp', () => {
+    const totals = new Map<string, number>();
+    for (const row of shares) {
+      const [, property, bp] = /^\s*\('[^']+', '[^']+', '([^']+)', '[^']+', (\d+),/.exec(row) ?? [];
+      totals.set(property ?? '', (totals.get(property ?? '') ?? 0) + Number(bp));
+    }
+    expect(totals.size).toBe(14);
+    expect([...totals.values()].every((total) => total === 10000)).toBe(true);
   });
 });
 

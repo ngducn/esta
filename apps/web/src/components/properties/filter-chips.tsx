@@ -13,10 +13,11 @@ export function filterChips(
   selected: string | null,
   label: (value: string) => string,
   allLabel: string,
+  compare: (a: FilterChip, b: FilterChip) => number = (a, b) => b.count - a.count || a.label.localeCompare(b.label, 'vi'),
 ): FilterChip[] {
   const values = [...tally.values].map(([value, count]) => ({ value, label: label(value), count }));
   if (selected !== null && !tally.values.has(selected)) values.push({ value: selected, label: label(selected), count: 0 });
-  values.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'vi'));
+  values.sort(compare);
   return [{ value: null, label: allLabel, count: tally.all }, ...values];
 }
 

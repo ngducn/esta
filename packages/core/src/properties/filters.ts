@@ -25,6 +25,8 @@ export type PropertyListRow = {
   searchText: string;
   location: { lat: number; lng: number } | null;
   hasBoundary: boolean;
+  /** Parties holding a share of the property (`ownership_shares`), sorted by id. */
+  ownerPartyIds: readonly string[];
 };
 
 /** The two-tier address in daily use, as one line: house and street, commune, short province; `null` with none of them. */
@@ -63,6 +65,7 @@ export const PROPERTY_FILTERS = {
   kind: { schema: z.enum(PROPERTY_KINDS), values: (row) => [row.kind] },
   use: { schema: z.enum(USE_MODES), values: (row) => [row.useMode] },
   legal: { schema: z.enum(LEGAL_STATUSES), values: (row) => [row.legalStatus] },
+  owner: { schema: z.uuid().transform((id) => id.toLowerCase()), values: (row) => row.ownerPartyIds },
 } as const satisfies Record<string, FilterDefinition>;
 
 export type PropertyFilterKey = keyof typeof PROPERTY_FILTERS;
@@ -177,7 +180,7 @@ export function applyPropertyFilters(rows: readonly PropertyListRow[], filters: 
     }
     return { all: others.length, values };
   };
-  const tallies = { province: tally('province'), kind: tally('kind'), use: tally('use'), legal: tally('legal') };
+  const tallies = Object.fromEntries(PROPERTY_FILTER_KEYS.map((key) => [key, tally(key)])) as FilteredProperties['tallies'];
   const kept = rows.filter((row) => PROPERTY_FILTER_KEYS.every((key) => matchesFilter(row, key, filters[key])));
   return { rows: kept.toSorted(PROPERTY_SORTS[filters.sort]), tallies };
 }
