@@ -76,6 +76,51 @@ function sorted(parties: readonly PartyOption[]): PartyOption[] {
   return [...parties].sort((a, b) => compareVietnameseNames(a.fullName, b.fullName));
 }
 
+/** Picks one of `parties` or quick-adds a new person; the caller decides what a pick means. */
+export function PartyAdder({
+  parties,
+  labels,
+  onPick,
+  onParty,
+}: {
+  parties: readonly PartyOption[];
+  labels: { choose: string; add: string };
+  onPick: (id: string) => void;
+  onParty: (party: PartyOption) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  return (
+    <>
+      {parties.length === 0 ? null : (
+        <FormSelect
+          label={labels.choose}
+          testId="holder-select"
+          value=""
+          placeholder={labels.choose}
+          options={sorted(parties).map((party) => ({ value: party.id, label: party.fullName }))}
+          onChange={onPick}
+        />
+      )}
+      {adding ? (
+        <QuickAdd
+          kind="individual"
+          onCancel={() => setAdding(false)}
+          onAdded={(party) => {
+            onParty(party);
+            onPick(party.id);
+            setAdding(false);
+          }}
+        />
+      ) : (
+        <Button type="button" variant="outline" className="self-start" onClick={() => setAdding(true)} data-testid="add-holder">
+          <Plus aria-hidden="true" />
+          {labels.add}
+        </Button>
+      )}
+    </>
+  );
+}
+
 export function HolderPicker({
   parties,
   selected,
@@ -88,9 +133,7 @@ export function HolderPicker({
   onParty: (party: PartyOption) => void;
 }) {
   const t = useTranslations('propertyLegal');
-  const [adding, setAdding] = useState(false);
   const byId = new Map(parties.map((party) => [party.id, party]));
-  const rest = sorted(parties.filter((party) => !selected.includes(party.id) && !party.isBank));
   return (
     <div className="flex flex-col gap-3">
       {selected.length === 0 ? (
@@ -115,32 +158,12 @@ export function HolderPicker({
           })}
         </ul>
       )}
-      {rest.length === 0 ? null : (
-        <FormSelect
-          label={t('partyChoose')}
-          testId="holder-select"
-          value=""
-          placeholder={t('partyChoose')}
-          options={rest.map((party) => ({ value: party.id, label: party.fullName }))}
-          onChange={(id) => onChange([...selected, id])}
-        />
-      )}
-      {adding ? (
-        <QuickAdd
-          kind="individual"
-          onCancel={() => setAdding(false)}
-          onAdded={(party) => {
-            onParty(party);
-            onChange([...selected, party.id]);
-            setAdding(false);
-          }}
-        />
-      ) : (
-        <Button type="button" variant="outline" className="self-start" onClick={() => setAdding(true)} data-testid="add-holder">
-          <Plus aria-hidden="true" />
-          {t('partyAdd')}
-        </Button>
-      )}
+      <PartyAdder
+        parties={parties.filter((party) => !selected.includes(party.id) && !party.isBank)}
+        labels={{ choose: t('partyChoose'), add: t('partyAdd') }}
+        onPick={(id) => onChange([...selected, id])}
+        onParty={onParty}
+      />
     </div>
   );
 }

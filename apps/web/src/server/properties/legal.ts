@@ -1,6 +1,7 @@
 import 'server-only';
 import { compareVietnameseNames } from '@esta/core/names';
 import { certificateSchema, parcelSchema, structureSchema } from '@esta/core/schemas/legal';
+import { ownershipShareSchema, type OwnershipShare } from '@esta/core/schemas/ownership';
 import { cache } from 'react';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
@@ -105,4 +106,18 @@ export const loadLandUseCodes = cache(async (): Promise<LandUseCode[]> => {
   const { data, error } = await supabase.from('land_use_codes').select('code, name_vi, name_en').order('code');
   if (error) throw new Error(`Reading land use codes failed: ${error.message}`);
   return data.map((row) => ({ code: row.code, nameVi: row.name_vi, nameEn: row.name_en }));
+});
+
+/** The property's shares, largest first, as saved: the warning reads these rows, never a draft. */
+export const loadOwnership = cache(async (propertyId: string): Promise<OwnershipShare[]> => {
+  const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
+  const { data, error } = await supabase
+    .from('ownership_shares')
+    .select('party_id, share_bp, named_on_certificate, since')
+    .eq('household_id', member.household.id)
+    .eq('property_id', propertyId)
+    .order('share_bp', { ascending: false })
+    .order('party_id');
+  if (error) throw new Error(`Reading ownership failed: ${error.message}`);
+  return z.array(ownershipShareSchema).parse(data);
 });

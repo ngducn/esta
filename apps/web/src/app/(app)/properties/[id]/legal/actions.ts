@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { ownershipSharesSchema } from '@esta/core/schemas/ownership';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import type { TablesInsert } from '@esta/db';
@@ -22,6 +23,7 @@ export type LegalDelete = { readonly ok: true; readonly deleted: DeletedLegalIte
 const uuid = z.uuid();
 const FOREIGN_KEY_VIOLATION = '23503';
 const CHECK_VIOLATION = '23514';
+const INVALID_PARAMETER = '22023';
 
 function revalidateLegal(propertyId: string) {
   revalidatePath(`/properties/${propertyId}/legal`, 'layout');
@@ -161,4 +163,21 @@ export async function quickAddParty(raw: unknown): Promise<PartyWrite> {
     .single();
   if (error) return { ok: false };
   return { ok: true, party: { id: data.id, fullName, kind: input.kind, isBank: input.kind === 'organization' && input.bank } };
+}
+
+export type OwnershipWrite = { readonly ok: true } | { readonly ok: false; readonly reason: 'invalid' | 'failed' };
+
+/** Replaces the property's whole set in one call; an incomplete set saves, and the page warns from the saved rows. */
+export async function saveOwnershipShares(propertyId: unknown, raw: unknown): Promise<OwnershipWrite> {
+  const property = uuid.safeParse(propertyId);
+  const shares = ownershipSharesSchema.safeParse(raw);
+  if (!property.success || !shares.success) return { ok: false, reason: 'invalid' };
+  const supabase = await createSessionClient();
+  const { error } = await supabase.rpc('set_ownership_shares', { p_property_id: property.data, p_shares: shares.data });
+  if (error) {
+    const invalid = [FOREIGN_KEY_VIOLATION, CHECK_VIOLATION, INVALID_PARAMETER].includes(error.code);
+    return { ok: false, reason: invalid ? 'invalid' : 'failed' };
+  }
+  revalidateLegal(property.data);
+  return { ok: true };
 }
