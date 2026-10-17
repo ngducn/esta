@@ -98,7 +98,7 @@ export function lookupKeys(claim: CanonicalNumber): readonly string[] {
     case 'compact':
       return [`c:${claim.unit}:${claim.vnd}`, `n:${claim.vnd}`];
     case 'ratio':
-      return [`bp:${claim.bp}`, `n:${claim.bp}`];
+      return [`bp:${claim.bp}`];
     case 'date':
       return [`d:${claim.iso}`];
     case 'dayMonth':
@@ -144,6 +144,13 @@ export function readAmount(digits: string, sign: 1 | -1): ExtractedValue {
 export function readCompact(digits: string, sign: 1 | -1, unit: CompactUnit): ExtractedValue {
   const decimal = parseDecimal(digits);
   const vnd = decimal === null ? null : wholeNumber(decimal, BigInt(compactRule(unit).size), sign);
+  return vnd === null ? invalid : { kind: 'compact', vnd, unit };
+}
+
+/** The spoken shorthand `3tr5` (parseVndInput): the digits after the unit are its decimals, so `12tr500` is 12,5 tr. */
+export function readShorthand(whole: string, fraction: string, unit: CompactUnit): ExtractedValue {
+  const decimal = { digits: BigInt(whole + fraction), scale: fraction.length };
+  const vnd = wholeNumber(decimal, BigInt(compactRule(unit).size), 1);
   return vnd === null ? invalid : { kind: 'compact', vnd, unit };
 }
 

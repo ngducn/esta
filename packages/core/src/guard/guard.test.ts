@@ -239,6 +239,18 @@ describe('checkNumbers against the run (AGENT.md §6.3)', () => {
     expect(offending('lợi suất 6,6%', { gross_yield_bp: 650 })).toEqual(['6,6%']);
   });
 
+  it('takes a percentage only from a basis-point field or a percentage, not from any number with the same digits', () => {
+    expect(offending('tăng 5%', { area_m2: 500, rent: 500 })).toEqual(['5%']);
+    expect(check('tăng 5%', { vat_rate_bp: 500 }).ok).toBe(true);
+  });
+
+  it('reads the spoken shorthand 3tr5 and 1ty2 as compact amounts', () => {
+    expect(check('tiền thuê 3tr5, giá 1ty2', { rent: 3_500_000, price: 1_200_000_000 }).ok).toBe(true);
+    expect(offending('tiền thuê 3tr5', { rent: 12_000_000 })).toEqual(['3tr5']);
+    expect(offending('tiền thuê 12TR5', { rent: 12_000_000 })).toEqual(['12TR5']);
+    expect(offending('cọc 1k5', { deposit: 1_000 })).toEqual(['1k5']);
+  });
+
   it('accepts a date as 7/10 or 07/10/2026 and its month and year', () => {
     for (const text of ['hạn 7/10', 'hạn 07/10/2026', 'tháng 10/2026', 'tháng 10', 'năm 2026', 'October 2026', '2026']) {
       expect(check(text, {}).ok, text).toBe(true);

@@ -10,6 +10,7 @@ import {
   readMonth,
   readMonthYear,
   readRatio,
+  readShorthand,
   readTime,
   readYear,
   type CompactUnit,
@@ -81,6 +82,17 @@ function readTimestamp(match: RegExpExecArray): readonly ExtractedValue[] {
   const localTime = hcmTime.format(Date.parse(instant));
   return [date, time, { kind: 'date', iso: localDate }, { kind: 'time', hhmm: localTime }];
 }
+
+const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { ...VI_UNITS, ty: 'ty', k: 'nghin' };
+
+/** `3tr5`, `1ty2` and `1k5` alternate digits and letters like a code, so they are read before the code rule skips them. */
+const SHORTHAND: Pattern = {
+  regex: re(String.raw`(?<![\p{L}\p{N}])(\d{1,3})(${Object.keys(SHORTHAND_UNITS).join('|')})(\d{1,3})(?![\p{L}\p{N}])`, 'i'),
+  read: ([, whole = '', unit = '', fraction = '']) => {
+    const compact = SHORTHAND_UNITS[unit.toLowerCase()];
+    return compact === undefined ? null : [readShorthand(whole, fraction, compact)];
+  },
+};
 
 /** Tried in order at each digit run. The first pattern whose regex matches and whose read accepts wins. */
 const PATTERNS: readonly Pattern[] = [
@@ -163,8 +175,12 @@ function codeWordEnd(text: string, at: number): number | null {
   return transitions >= 2 ? end : null;
 }
 
-function readAt(text: string, at: number): { readonly end: number; readonly values: readonly ExtractedValue[] } | null {
-  for (const pattern of PATTERNS) {
+function readAt(
+  text: string,
+  at: number,
+  patterns: readonly Pattern[],
+): { readonly end: number; readonly values: readonly ExtractedValue[] } | null {
+  for (const pattern of patterns) {
     pattern.regex.lastIndex = at;
     const match = pattern.regex.exec(text);
     if (match === null) continue;
@@ -204,13 +220,16 @@ export function scan(text: string): Scan {
       DIGIT.lastIndex = skip.end;
       continue;
     }
-    const codeEnd = codeWordEnd(text, at);
-    if (codeEnd !== null) {
-      DIGIT.lastIndex = codeEnd;
-      continue;
+    let found = readAt(text, at, [SHORTHAND]);
+    if (found === null) {
+      const codeEnd = codeWordEnd(text, at);
+      if (codeEnd !== null) {
+        DIGIT.lastIndex = codeEnd;
+        continue;
+      }
+      if (isSignStart(text, at)) at -= 1;
+      found = readAt(text, at, PATTERNS);
     }
-    if (isSignStart(text, at)) at -= 1;
-    const found = readAt(text, at);
     if (found === null) continue;
     const sentence = sentenceAt(boundaries, at);
     for (const value of found.values) numbers.push({ text: text.slice(at, found.end), start: at, end: found.end, sentence, value });

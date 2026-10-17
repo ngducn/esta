@@ -23,6 +23,8 @@ export const CONTEXT_TOOL = 'context';
 const ID_KEY = /(?:^|_)ids?$/;
 /** Ids and keys such as `subject_key` are identifiers, whose digits are not numbers the model may quote. */
 const IDENTIFIER_KEY = /(?:^|_)(?:ids?|keys?)$/;
+/** Rates are stored in basis points under `_bp` keys (`vat_rate_bp: 500` reads as `5%`); no other number is a percentage. */
+const BASIS_POINT_KEY = /(?:^|_)bp$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const URL_LIKE = /^[a-z][a-z0-9+.-]*:\/\//i;
 
@@ -55,9 +57,12 @@ export function collectAllowed(toolResults: readonly ToolResult[], context: Guar
     }
   };
 
-  const walk = (tool: string, value: unknown, path: string, ids: readonly string[]): void => {
+  const walk = (tool: string, value: unknown, path: string, ids: readonly string[], field: string): void => {
     if (typeof value === 'number') {
-      if (Number.isFinite(value)) add({ kind: 'count', value }, { tool, path, ids, text: String(value) });
+      if (!Number.isFinite(value)) return;
+      const source = { tool, path, ids, text: String(value) };
+      add({ kind: 'count', value }, source);
+      if (BASIS_POINT_KEY.test(field) && Number.isSafeInteger(value)) add({ kind: 'ratio', bp: value }, source);
       return;
     }
     if (typeof value === 'string') {
@@ -68,17 +73,17 @@ export function collectAllowed(toolResults: readonly ToolResult[], context: Guar
       return;
     }
     if (Array.isArray(value)) {
-      value.forEach((item, i) => walk(tool, item, `${path}[${i}]`, ids));
+      value.forEach((item, i) => walk(tool, item, `${path}[${i}]`, ids, field));
       return;
     }
     if (!isRecord(value)) return;
     const recordIds = [...ids, ...idsOf(value)];
     for (const [key, child] of Object.entries(value)) {
-      if (!IDENTIFIER_KEY.test(key)) walk(tool, child, path === '' ? key : `${path}.${key}`, recordIds);
+      if (!IDENTIFIER_KEY.test(key)) walk(tool, child, path === '' ? key : `${path}.${key}`, recordIds, key);
     }
   };
 
-  for (const { tool, result } of toolResults) walk(tool, result, '', []);
-  walk(CONTEXT_TOOL, { today: context.today, household_name: context.householdName }, '', []);
+  for (const { tool, result } of toolResults) walk(tool, result, '', [], '');
+  walk(CONTEXT_TOOL, { today: context.today, household_name: context.householdName }, '', [], '');
   return index;
 }
