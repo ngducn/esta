@@ -12,6 +12,7 @@ Seed rows use fixed ids so tests, screenshots and lanes can name them. Each id i
 | Certificate | `seed:certificate:<household>:<property>` | `seed:certificate:demo:bao-loc` |
 | Parcel | `seed:parcel:<household>:<property>:<n>` | `seed:parcel:lane-1:bao-loc:1` |
 | Structure | `seed:structure:<household>:<property>:<n>` | `seed:structure:lane-5:q7:1` |
+| Ownership share | `seed:ownership:<household>:<property>:<person>` | `seed:ownership:lane-1:thu-duc:ryan` |
 
 `<household>` is `demo` for slot 0's household `Gia đình Demo`, and `lane-<n>` for the lane households `Gia đình Demo <n>`, where n runs from 1 to the `--households` value: 10 by default, at most 99, and 0 for `Gia đình Demo` alone. `<person>` is `me` or `ryan`.
 

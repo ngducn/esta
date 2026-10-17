@@ -21,7 +21,7 @@ type LegalSeed = {
 
 const residential = (area_m2: number): Purpose[] => [{ land_use_code: 'ODT', area_m2, term: 'long_term' }];
 
-const LEGAL_SEEDS: Record<PropertySeedKey, LegalSeed> = {
+export const LEGAL_SEEDS: Record<PropertySeedKey, LegalSeed> = {
   q7: {
     form: 'so_hong_pre2009',
     serial_no: 'AĐ 901001',
