@@ -187,6 +187,8 @@ App behavior `[app rule]`:
 - Leases with `tax_payer = tenant_withholds` count toward the owner's revenue total but are excluded from "estimated tax you pay" and labelled "Bên thuê nộp thay".
 - When `owner_tax_inputs.other_business_revenue_vnd > 0`, the threshold uses the total, the PIT estimate applies the 500M deduction to rental revenue first, and the card shows a "hỏi kế toán về cách trừ 500 triệu" note.
 - Every tax figure is labelled "Ước tính, không phải tư vấn thuế" with the rule's source.
+- Rounding. VAT and PIT are the rule's rate in basis points times the base, rounded half up to a whole đồng. Pro-rating a period by days and splitting a lease by ownership share both use the largest remainder method, with ties going to the earlier day segment or the earlier share, so the parts always sum exactly to the whole. A period is split first at each 1 January it crosses, and only then is each year's share split at the as-of date into accrued and contracted, so a year's total never depends on the as-of date. Shares that sum below 10000 bp leave the rest unattributed; shares above 10000 bp split in proportion.
+- Taxable rental revenue is rent plus the lease's recurring charges. Metered electricity and water billed through to tenants are excluded, and the card shows "Giả định: Không tính tiền điện, nước thu theo công tơ".
 
 Worked examples. FIN-3 unit tests reproduce these exactly.
 

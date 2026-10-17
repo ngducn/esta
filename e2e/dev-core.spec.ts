@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { signIn } from './helpers/inbucket';
 
 const NBSP = String.fromCharCode(160);
-const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address', 'vietqr', 'allocation'];
+const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address', 'vietqr', 'allocation', 'tax'];
 const ESTA_INVOICE_PAYLOAD =
   '00020101021238540010A00000072701240006970436011001234567890208QRIBFTTA53037045408150000005802VN62170813ESTA 7K2QX9MP6304BB90';
 const NAPAS_6_3_3_PAYLOAD =
@@ -179,4 +179,32 @@ test('the live address box lists current wards for an old address', async ({ pag
 
   await lookUp('Phường 1');
   await expect(output).toHaveText('No match');
+});
+
+test('the tax section reproduces E1 to E7 from the seeded tax_rules row', async ({ page }) => {
+  await page.goto('/dev/core#tax');
+  const section = page.locator('section[data-section="tax"]');
+  const rows = section.locator('tbody tr');
+  await expect(rows).toHaveCount(7);
+  await expect(section.locator('tr[data-match="match"]')).toHaveCount(7);
+
+  const e7 = section.locator('tr[data-example="E7"]');
+  await expect(e7.locator('[data-cell="vat"]')).toHaveText(`22.500.000${NBSP}₫`);
+  await expect(e7.locator('[data-cell="pit"]')).toHaveText(`0${NBSP}₫`);
+  await expect(e7.locator('[data-cell="notes"]')).toContainText('hỏi kế toán về cách trừ 500 triệu');
+  await expect(section.locator('tr[data-example="E6"] [data-cell="notes"]')).toContainText(`Bên thuê nộp thay: 200.000.000${NBSP}₫`);
+
+  await expect(section.getByTestId('tax-source')).toHaveText(
+    'Nguồn: Luật Thuế TNCN 109/2025/QH15; Luật sửa đổi Luật Thuế GTGT; Nghị định 68/2026/NĐ-CP',
+  );
+  await expect(section.getByTestId('tax-rule-note')).toContainText('Giả định: ');
+});
+
+test('?taxYear=2025 shows the no_rule state and keeps the examples on the 2026 rule', async ({ page }) => {
+  await page.goto('/dev/core?taxYear=2025#tax');
+  const section = page.locator('section[data-section="tax"]');
+  await expect(section.getByTestId('tax-rule')).toHaveAttribute('data-state', 'no_rule');
+  await expect(section.getByTestId('tax-no-rule')).toHaveText('Chưa có quy định thuế cho năm 2025');
+  await expect(section.getByTestId('tax-source')).toHaveCount(0);
+  await expect(section.locator('tr[data-match="match"]')).toHaveCount(7);
 });

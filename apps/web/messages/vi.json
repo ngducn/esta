@@ -793,5 +793,40 @@
     "boundarySaved": "Đã lưu ranh giới {nickname}.",
     "boundaryCleared": "Đã xóa ranh giới {nickname}.",
     "saveFailed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
+  },
+  "taxNotes": {
+    "estimateDisclaimer": "Ước tính, không phải tư vấn thuế",
+    "labelAssumption": "Giả định",
+    "labelAskAccountant": "Lưu ý",
+    "pitEffectiveDate": "Ngày áp dụng thuế TNCN: {note}",
+    "coOwnerSplit": "Doanh thu nhà đồng sở hữu được chia theo tỷ lệ sở hữu",
+    "deductionSplit": "hỏi kế toán về cách trừ 500 triệu",
+    "utilityExcluded": "Không tính tiền điện, nước thu theo công tơ",
+    "tenantWithholds": "Bên thuê nộp thay",
+    "source": "Nguồn: {citation}",
+    "noRule": "Chưa có quy định thuế cho năm {year}"
+  },
+  "devTax": {
+    "title": "Thuế cho thuê nhà",
+    "intro": "Bảy ví dụ E1 đến E7 của DOMAIN-VN §5, tính bằng quy định trong bảng tax_rules. Trang này chỉ có khi phát triển.",
+    "ruleFor": "Quy định năm {year}",
+    "ruleUnavailable": "Không đọc được tax_rules: {reason}",
+    "example": "Ví dụ",
+    "inputs": "Dữ liệu",
+    "revenue": "Doanh thu",
+    "thresholdTotal": "Tổng tính ngưỡng",
+    "vat": "Thuế GTGT",
+    "pit": "Thuế TNCN",
+    "notes": "Ghi chú",
+    "result": "Kết quả",
+    "expected": "cần: {value}",
+    "withheld": "{label}: {amount}",
+    "e1": "Một chủ, 360 triệu tiền thuê",
+    "e2": "Một chủ, 600 triệu tiền thuê",
+    "e3": "Một chủ, 900 triệu tiền thuê",
+    "e4": "900 triệu trả tháng 1/2026 cho 24 tháng",
+    "e5": "800 triệu/năm, hai người sở hữu 50/50",
+    "e6": "700 triệu, trong đó 200 triệu bên thuê nộp thay",
+    "e7": "450 triệu tiền thuê và 100 triệu kinh doanh khác"
   }
 }
