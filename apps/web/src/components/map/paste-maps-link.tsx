@@ -125,13 +125,15 @@ export function PasteMapsLink({
 
       {preview === null ? null : (
         <button
+          key={formatPoint(preview.point)}
+          ref={(button) => button?.scrollIntoView({ block: 'nearest' })}
           type="button"
           disabled={saving}
           onClick={() => {
             onSave(preview.point);
             setText('');
           }}
-          className={buttonVariants({ variant: preview.outsideVietnam ? 'outline' : 'primary' })}
+          className={buttonVariants({ variant: preview.outsideVietnam ? 'outline' : 'primary', className: 'scroll-mb-24 lg:scroll-mb-6' })}
         >
           <Check aria-hidden="true" />
           {preview.outsideVietnam ? t('saveAnyway') : t('useThisLocation')}
