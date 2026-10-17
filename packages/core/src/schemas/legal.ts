@@ -49,25 +49,26 @@ export const purposeSchema = z.strictObject({
 });
 export type Purpose = z.output<typeof purposeSchema>;
 
+export const parcelSchema = z.strictObject({
+  certificate_id: z.uuid().nullable(),
+  parcel_no: optionalText(20),
+  map_sheet_no: optionalText(20),
+  area_m2: areaSchema.nullable(),
+  use_form: z.enum(USE_FORMS).nullable(),
+  purposes: z.array(purposeSchema).max(20),
+  origin_text: optionalText(500),
+});
+
 export const PARCEL_UNIDENTIFIED = 'parcel_unidentified';
 
 /**
- * [app rule] A parcel needs its number, its map sheet, its area or a note on where it came from. The note keeps a
- * paper-only parcel such as Đất vườn Long An possible when no number is known (DOMAIN-VN §2).
+ * [app rule] A new parcel needs a number, a map sheet, an area or an origin note. Existing parcels are never refused on
+ * read, edit or restore, because the seeded paper-only parcel of Đất vườn Long An has none of them (DOMAIN-VN §2).
  */
-export const parcelSchema = z
-  .strictObject({
-    certificate_id: z.uuid().nullable(),
-    parcel_no: optionalText(20),
-    map_sheet_no: optionalText(20),
-    area_m2: areaSchema.nullable(),
-    use_form: z.enum(USE_FORMS).nullable(),
-    purposes: z.array(purposeSchema).max(20),
-    origin_text: optionalText(500),
-  })
-  .refine((parcel) => parcel.parcel_no !== null || parcel.map_sheet_no !== null || parcel.area_m2 !== null || parcel.origin_text !== null, {
-    error: PARCEL_UNIDENTIFIED,
-  });
+export const newParcelSchema = parcelSchema.refine(
+  (parcel) => parcel.parcel_no !== null || parcel.map_sheet_no !== null || parcel.area_m2 !== null || parcel.origin_text !== null,
+  { error: PARCEL_UNIDENTIFIED },
+);
 export type Parcel = z.output<typeof parcelSchema>;
 
 export const structureSchema = z.strictObject({

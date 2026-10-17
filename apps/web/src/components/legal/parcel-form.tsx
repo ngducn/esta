@@ -2,7 +2,7 @@
 
 import { formatArea } from '@esta/core/format';
 import { parseAreaInput, purposesMismatch } from '@esta/core/properties/area';
-import { PARCEL_UNIDENTIFIED, USE_FORMS, parcelSchema, type Parcel } from '@esta/core/schemas/legal';
+import { PARCEL_UNIDENTIFIED, USE_FORMS, newParcelSchema, type Parcel } from '@esta/core/schemas/legal';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Group, TextField } from '@/components/form-parts';
@@ -64,8 +64,8 @@ export function ParcelForm({
       purposes: read.value,
       origin_text: originText,
     };
-    const checked = parcelSchema.safeParse(input);
-    if (!checked.success && checked.error.issues.some((issue) => issue.message === PARCEL_UNIDENTIFIED)) {
+    const checked = itemId === null ? newParcelSchema.safeParse(input) : null;
+    if (checked !== null && !checked.success && checked.error.issues.some((issue) => issue.message === PARCEL_UNIDENTIFIED)) {
       setInvalid('identity');
       return null;
     }

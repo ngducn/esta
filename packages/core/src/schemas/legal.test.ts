@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CERTIFICATE_FORMS, PARCEL_UNIDENTIFIED, certificateSchema, parcelSchema, purposeSchema } from './legal';
+import { CERTIFICATE_FORMS, PARCEL_UNIDENTIFIED, certificateSchema, newParcelSchema, parcelSchema, purposeSchema } from './legal';
 
 const bank = '5f2b7c1e-0b7a-5c39-9d0e-2a4b6c8d0e1f';
 const holder = '0c1d2e3f-4a5b-5c6d-8e7f-8091a2b3c4d5';
@@ -75,27 +75,46 @@ describe('parcelSchema', () => {
 
   const empty = { ...parcel, parcel_no: '', map_sheet_no: '', area_m2: null };
 
-  it.each([
-    ['nothing', empty],
-    ['blanks only', { ...empty, parcel_no: '  ', map_sheet_no: '\t', origin_text: ' ' }],
-    ['a use form and purposes but no identity', { ...empty, purposes: [{ land_use_code: 'ODT' }] }],
-  ])('refuses a parcel with %s to identify it', (_, input) => {
-    const result = parcelSchema.safeParse(input);
-    expect(result.success).toBe(false);
-    expect(result.error?.issues.map((issue) => issue.message)).toEqual([PARCEL_UNIDENTIFIED]);
+  it('reads the seeded Long An row, which has no number, sheet, area or note', () => {
+    const seeded = { certificate_id: null, parcel_no: null, map_sheet_no: null, area_m2: null, use_form: null, purposes: [], origin_text: null };
+    expect(parcelSchema.safeParse(seeded).success).toBe(true);
   });
 
-  it.each([
-    ['a parcel number', { ...empty, parcel_no: '412' }],
-    ['a map sheet', { ...empty, map_sheet_no: '18' }],
-    ['an area', { ...empty, area_m2: 350.5 }],
-    ['a note on a paper-only parcel', { ...empty, origin_text: 'Giấy tay mua năm 2003' }],
-  ])('accepts a parcel with only %s', (_, input) => {
-    expect(parcelSchema.safeParse(input).success).toBe(true);
+  it('accepts an edit that leaves an existing parcel empty', () => {
+    expect(parcelSchema.safeParse({ ...empty, use_form: 'private', purposes: [{ land_use_code: 'ODT' }] }).success).toBe(true);
+  });
+
+  it('accepts a restore payload of an empty parcel', () => {
+    const { certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes, origin_text } = empty;
+    const restored = { certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes, origin_text };
+    expect(parcelSchema.safeParse(restored).success).toBe(true);
   });
 
   it('refuses an area with three decimals', () => {
     expect(parcelSchema.safeParse({ ...parcel, area_m2: 120.555 }).success).toBe(false);
     expect(parcelSchema.safeParse({ ...parcel, area_m2: 20.51 }).success).toBe(true);
+  });
+});
+
+describe('newParcelSchema', () => {
+  const parcel = { certificate_id: null, parcel_no: '', map_sheet_no: '', area_m2: null, use_form: 'private', purposes: [], origin_text: null };
+
+  it.each([
+    ['nothing', parcel],
+    ['blanks only', { ...parcel, parcel_no: '  ', map_sheet_no: '\t', origin_text: ' ' }],
+    ['a use form and purposes but no identity', { ...parcel, purposes: [{ land_use_code: 'ODT' }] }],
+  ])('refuses a new parcel with %s to identify it', (_, input) => {
+    const result = newParcelSchema.safeParse(input);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((issue) => issue.message)).toEqual([PARCEL_UNIDENTIFIED]);
+  });
+
+  it.each([
+    ['a parcel number', { ...parcel, parcel_no: '412' }],
+    ['a map sheet', { ...parcel, map_sheet_no: '18' }],
+    ['an area', { ...parcel, area_m2: 350.5 }],
+    ['a note on a paper-only parcel', { ...parcel, origin_text: 'Giấy tay mua năm 2003' }],
+  ])('accepts a new parcel with only %s', (_, input) => {
+    expect(newParcelSchema.safeParse(input).success).toBe(true);
   });
 });

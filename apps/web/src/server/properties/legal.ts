@@ -1,24 +1,27 @@
 import 'server-only';
 import { compareVietnameseNames } from '@esta/core/names';
-import { certificateSchema, parcelSchema, structureSchema } from '@esta/core/schemas/legal';
+import { certificateSchema, newParcelSchema, parcelSchema, structureSchema } from '@esta/core/schemas/legal';
 import { ownershipShareSchema, type OwnershipShare } from '@esta/core/schemas/ownership';
 import { cache } from 'react';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 
-/** One entry per legal table: the columns a read selects and the schema that parses both a row and a save. */
+/** One entry per legal table: the columns a read selects, the schema that parses a row, an edit and a restore, and the one a create adds. */
 export const LEGAL_KINDS = {
   parcels: {
     schema: parcelSchema,
+    createSchema: newParcelSchema,
     columns: 'id, certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes, origin_text',
   },
   structures: {
     schema: structureSchema,
+    createSchema: structureSchema,
     columns: 'id, certificate_id, kind, footprint_m2, floor_area_m2, floors, structure_text, completed_year, ownership_term',
   },
   certificates: {
     schema: certificateSchema,
+    createSchema: certificateSchema,
     columns: 'id, form, serial_no, book_entry_no, issued_on, issued_by, holder_party_ids, status, mortgage, annotations',
   },
 } as const;
