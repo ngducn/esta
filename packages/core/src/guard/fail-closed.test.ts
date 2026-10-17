@@ -163,10 +163,84 @@ describe('list markers, code words, years and hidden digits', () => {
     expect(passes('Bảo hiểm cháy nổ 2026 còn 23 ngày.')).toBe(true);
   });
 
-  it('reads digits split by an invisible character, or written as a fraction, as unparseable', () => {
-    const ZWSP = '\u200B';
-    expect(offending(`Nợ 1${ZWSP}2 triệu.`, { member_count: 1, v: 2_000_000 })).toEqual([`1${ZWSP}2:unparseable`]);
+  it('reads digits written as a fraction as unparseable', () => {
     expect(offending('Giá ½ tỷ.', {})).toEqual(['½:unparseable']);
     expect(passes('Diện tích 125,5 m², giá mỗi m² theo bảng giá.', { area_m2: 125.5 })).toBe(true);
+  });
+});
+
+describe('every digit token is read whole by one grammar or is unparseable', () => {
+  it('gives the lower bound of a range only the unit word of the upper bound', () => {
+    expect(values('từ 3 đến 3 triệu rưỡi')).toEqual([
+      { kind: 'compact', vnd: 3_000_000, unit: 'tr' },
+      { kind: 'compact', vnd: 3_500_000, unit: 'tr' },
+    ]);
+    expect(offending('Giá 2–2 triệu rưỡi.', { unit_label: 'Phòng 2', v: 2_500_000 })).toEqual(['2–2 triệu rưỡi:unknown']);
+    expect(offending('Giá từ 1 đến 1 tỷ 2.', { n: 1, v: 1_200_000_000 })).toEqual(['1 đến 1 tỷ 2:unknown']);
+    expect(offending('Khoảng 8–12 triệu 5.', { v8: 8_500_000, v12: 12_500_000 })).toEqual(['8–12 triệu 5:unknown']);
+    expect(offending('Từ 3–3 triệu 5.', { v: 3_500_000, n: 3 })).toEqual(['3–3 triệu 5:unknown']);
+    expect(passes('Phí 5–7 trăm nghìn.', { a: 500_000, v: 700_000 })).toBe(true);
+  });
+
+  it('never reads the lower bound of a date range as a bare count', () => {
+    expect(offending('Từ 12-15/10/2026.', { days: 12, d: '2026-10-15' })).toEqual(['12-15/10/2026:unparseable']);
+  });
+
+  it.each(['5 000.000 ₫', '5.000 000 ₫', '5 000,000 ₫', '5,000 000 ₫', '5 000 00 vnđ', "5'000'000 ₫", '5_000_000 ₫'])(
+    'reads %s, whose separators disagree, as unparseable',
+    (amount) => {
+      expect(offending(`Phòng 5 còn nợ ${amount}.`, { unit_label: 'Phòng 5', fee: 5_000, paid: 0 })).toEqual([`${amount}:unparseable`]);
+    },
+  );
+
+  it('reads a separator after a currency word the same way', () => {
+    expect(offending('Owes VND 5 000.000.', { fee: 5_000, paid: 0 })).toEqual(['5 000.000:unparseable']);
+  });
+
+  it.each([
+    ['figure space', ' '],
+    ['en space', ' '],
+    ['ideographic space', '　'],
+    ['tab', '\t'],
+  ])('groups digits split by the %s as one number', (_name, space) => {
+    expect(values(`5${space}000${space}000 ₫`)).toEqual([{ kind: 'amount', vnd: 5_000_000 }]);
+  });
+
+  it.each(['3 triệu 50', '1 triệu 20', '1 tỷ 25'])('reads the two-digit tail in %s as unparseable', (text) => {
+    expect(values(text)).toEqual([{ kind: 'invalid' }]);
+  });
+
+  it('reads a magnitude word with or without diacritics', () => {
+    expect(values('25 mil VND, 2 ty dong, 25 trieu, 25 nghin dong, 25 ngan')).toEqual([
+      { kind: 'compact', vnd: 25_000_000, unit: 'tr' },
+      { kind: 'compact', vnd: 2_000_000_000, unit: 'ty' },
+      { kind: 'compact', vnd: 25_000_000, unit: 'tr' },
+      { kind: 'compact', vnd: 25_000, unit: 'nghin' },
+      { kind: 'compact', vnd: 25_000, unit: 'nghin' },
+    ]);
+    expect(offending('Rent is 25 mil VND.')).toEqual(['25 mil VND:unknown']);
+    expect(offending('Gia 2 ty dong.')).toEqual(['2 ty dong:unknown']);
+  });
+
+  it('reads a magnitude word after a complete amount as unparseable', () => {
+    expect(offending('Giá 3 trăm nghìn tỷ.', { v: 300_000 })).toEqual(['3 trăm nghìn tỷ:unparseable']);
+  });
+
+  it.each([
+    ['combining grapheme joiner', '͏'],
+    ['variation selector 16', '️'],
+    ['zero-width space', '​'],
+  ])('reads digits split by the %s as the digits around it', (_name, mark) => {
+    expect(offending(`Nợ 1${mark}2 triệu.`, { member_count: 1, v: 2_000_000 })).toEqual([`1${mark}2 triệu:unknown`]);
+  });
+
+  it('reads 8000 spaced digits as one unparseable token in linear time', () => {
+    const allowed = allowedFor({ v: 1 });
+    for (const text of [`${'1 '.repeat(8000)}x`, `${'1'.repeat(8000)} ₫`, `1${' 000'.repeat(8000)} x`]) {
+      const started = performance.now();
+      const report = checkNumbers(text, allowed);
+      expect(performance.now() - started).toBeLessThan(50);
+      expect(report.violations.map((violation) => violation.status)).toEqual(['unparseable']);
+    }
   });
 });
