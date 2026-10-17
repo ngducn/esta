@@ -115,3 +115,31 @@ describe('digits mixed with number words read as their whole value or as unparse
     expect(passes('Doanh thu 412 triệu năm 2026.')).toBe(true);
   });
 });
+
+describe('sign rule: an unsigned number claims a magnitude, a signed number claims its sign', () => {
+  it('passes an unsigned amount or percentage against a value of either sign', () => {
+    expect(passes('Chi 1.500.000 ₫.', { amount: -1_500_000 })).toBe(true);
+    expect(passes('Chi 1,5 tr.', { amount: -1_500_000 })).toBe(true);
+    expect(passes('Giảm 3,2%.', { change_bp: -320 })).toBe(true);
+  });
+
+  it('fails a signed number against the opposite sign', () => {
+    expect(offending('Lỗ -1.500.000 ₫.', { amount: 1_500_000 })).toEqual(['-1.500.000 ₫:unknown']);
+    expect(offending('Giảm −3,2%.', { change_bp: 320 })).toEqual(['−3,2%:unknown']);
+    expect(offending('Tăng +5%.', { change_bp: -500 })).toEqual(['+5%:unknown']);
+  });
+});
+
+describe('memo codes and identifier values from the run', () => {
+  it('normalizes the ESTA prefix on both sides', () => {
+    expect(passes('Mã chuyển khoản ESTA 7K2QX9MP.', { description: 'MBVCB.1234567.ESTA7K2QX9MP.CT TU 0903' })).toBe(true);
+    expect(passes('Mã ESTA7K2QX9MP.', { memo_code: '7K2QX9MP' })).toBe(true);
+    expect(passes('Mã ESTA7K2QX9MP.')).toBe(true);
+    expect(offending('Mã ESTA 7K2QX9MQ.', { memo_code: '7K2QX9MP' })).toEqual(['7K2QX9MQ:unknown']);
+  });
+
+  it('allows quoting a code-shaped identifier value, and no number inside one', () => {
+    expect(passes('MST 0312345678.', { tax_id: '0312345678' })).toBe(true);
+    expect(offending('Mã 777.', { unit_id: 'unit-777' })).toEqual(['777:unknown']);
+  });
+});
