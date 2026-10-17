@@ -2,17 +2,19 @@
 
 Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (every 2026-10-17 update; 11:25 and 11:55 are the newest), `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, and `docs/plan/STATUS.md`. Briefs for every owner and lane of this session are in `~/.claude/orchestrate/esta/briefs/`; the root's checklist is `~/.claude/orchestrate/esta/todo.md`.
 
-## Where the run is (2026-10-17, about 23:30 +07)
+## Where the run is (paused 2026-10-17 about 23:55 +07 at the operator's request)
 
-Merged 2026-10-17 (22): #57 P3-05, #60, #59 P3-02, #64, #52 P1-04, #58 P3-06, #67 P2-01, #73, #74, #75, #69, #72 P1-09, #77, #81, #84, #87, #86, #89, #80 P1-06, #90, #93, #92 P1-05. Phase 1 is at 5 of 9 (P1-01, P1-04, P1-09, P1-06, P1-05).
+Paused cleanly: no agents, CI runs, servers or watchers are running; only `esta-1` is up. Slots 2, 3 and 5 are free.
+
+Merged 2026-10-17 (22): #57 P3-05, #60, #59 P3-02, #64, #52 P1-04, #58 P3-06, #67 P2-01, #73, #74, #75, #69, #72 P1-09, #77, #81, #84, #87, #86, #89, #80 P1-06, #90, #93, #92 P1-05. Phase 1 is at 5 of 9.
 
 Open, with the next step for each:
 
-- P1-07 (Pháp lý tab): owner running on slot 2 from 07b095a, brief ~/.claude/orchestrate/esta/briefs/p1-07.md. Then a Sonnet live lane plus an Opus data audit (certificates and holders, SPEC D11), CI, merge.
-- After P1-07, one at a time: P1-10, P1-08, P1-03 (its speed gate is met over HTTP/2; #68 closed).
-- #61 P5-11 parked; P5-03 rebuilds the guard over rendered text.
-- #82 diagnosed: supautils 3.2.0 in the local image (CLI 2.90.0); the operator chose not to upgrade the CLI yet; P6-07 must confirm the cloud image is 17.6.1.155 or later and that private.local_stack is empty on production.
-- Open issues to pick up: #94 (hover contrast on primary buttons).
+- #95 P1-07 (Pháp lý tab: parcels, structures, certificates; migration 20261007201900; closes #18) at f7f4bc4. Opus data audit PASS with three lows: (a) existence oracle in `private.check_certificate_parties` (a BEFORE trigger answers 23503 vs 42501 before RLS; fix: return `new` early when `not private.is_member(new.household_id,'member')`); (b) `verified_by` and `verified_at` are member-writable (stamp server-side; P2 adds composite FKs for document_id and extraction_id); (c) per-table viewer and household-freeze pgTAP gaps. The Sonnet live lane was stopped unfinished at the pause; rerun it from `~/.claude/orchestrate/esta/briefs/lane-pr95-live.md` (it also measures the trunk detail-route baseline the owner skipped). Root's plan: one fix-forward with (a) and (b) plus any live finding, scoped review, full CI, merge.
+- After P1-07, one at a time: P1-10, P1-08, P1-03. Write each brief from `briefs/p1-07.md` the way p1-05.md and p1-07.md were derived.
+- #61 P5-11 parked; P5-03 rebuilds the guard over rendered text (standing orders 16:00).
+- #82 diagnosed (supautils 3.2.0 in the local image pinned by CLI 2.90.0; PostgREST is not exposed); operator chose no CLI upgrade yet. P6-07 must confirm the cloud image is 17.6.1.155 or later and that `private.local_stack` is empty on production.
+- Open issue to pick up when a slot is free: #94 (hover contrast on primary buttons).
 
 ## How CI runs now
 
