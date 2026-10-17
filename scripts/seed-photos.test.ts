@@ -34,6 +34,12 @@ describe('planPhotoUploads', () => {
     expect(planPhotoUploads([path ?? null, path ?? null, null])).toHaveLength(1);
     expect(() => planPhotoUploads(['demo/q7/nha-pho.webp'])).toThrow('not a cover photo path');
   });
+
+  it('skips a cover uploaded through the app, which has no seed file', () => {
+    const [path = ''] = seededPaths(0).filter((seeded) => seeded !== null);
+    const uploaded = path.replace(/[^/]+$/, '227839a1-d5b7-48dd-89ae-8beae8d1fe35.webp');
+    expect(planPhotoUploads([path, uploaded]).map((upload) => upload.path)).toEqual([path]);
+  });
 });
 
 describe('retrying', () => {
