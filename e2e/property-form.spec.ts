@@ -46,9 +46,10 @@ async function listPhotos(page: Page, lane: number, id: string): Promise<{ name:
   return (await listed.json()) as { name: string; metadata: { size: number } }[];
 }
 
-/** Waits for hydration, which enables the save button, and turns transitions off, so axe never reads a color mid-fade. */
+/** Waits for hydration, which enables the save button, turns transitions off and parks the pointer, so axe never reads a hover state or a color mid-fade. */
 async function seriousAxeViolations(page: Page): Promise<string[]> {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.mouse.move(0, 0);
   const save = page.getByTestId('save-property');
   if ((await save.count()) > 0) await expect(save).toBeEnabled();
   const { violations } = await new AxeBuilder({ page }).analyze();

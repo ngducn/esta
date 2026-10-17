@@ -12,6 +12,7 @@ colors:
   rule-strong: "oklch(90.3% 0.009 265)"
   field: "oklch(62% 0.022 265)"
   accent: "oklch(53% 0.166 32)"
+  accent-pressed: "oklch(47% 0.166 32)"
   accent-tint: "oklch(95% 0.014 28)"
   on-accent: "oklch(99% 0.004 32)"
   paid: "oklch(46.9% 0.112 153)"
@@ -32,6 +33,7 @@ colors:
   rule-strong-dark: "oklch(36% 0.014 265)"
   field-dark: "oklch(56% 0.02 265)"
   accent-dark: "oklch(72% 0.14 32)"
+  accent-pressed-dark: "oklch(66% 0.14 32)"
   accent-tint-dark: "oklch(27% 0.04 30)"
   on-accent-dark: "oklch(18% 0.02 30)"
   paid-dark: "oklch(80% 0.12 155)"
@@ -124,7 +126,7 @@ Cool neutrals at hue 265, one lacquer red, and four status pairs. Every value is
 
 ### Primary
 
-- **Accent** (`accent`, `#B83A26` in light): the primary button fill, the active navigation item (on `accent-tint`), the brand mark, the focus ring and the text caret. Text on an accent fill uses `on-accent`. Never a status color.
+- **Accent** (`accent`, `#B83A26` in light): the primary button fill, the active navigation item (on `accent-tint`), the brand mark, the focus ring and the text caret. Text on an accent fill uses `on-accent`. Pressed, the fill turns to `accent-pressed` (`#A3250F` in light), because a translucent press state would drop `on-accent` below 4.5:1. Never a status color.
 
 ### Neutral
 

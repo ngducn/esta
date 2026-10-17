@@ -8,18 +8,19 @@ const repo = fileURLToPath(new URL('..', import.meta.url));
 const webSrc = join(repo, 'apps/web/src');
 
 const tokenNames = Object.keys(colors).sort((a, b) => b.length - a.length);
-const colorUtility = new RegExp(`^(text|bg)-(${tokenNames.join('|')})(?:/\\d+)?$`);
+const colorUtility = new RegExp(`^(text|bg)-(${tokenNames.join('|')})(?:/(\\d+))?$`);
 const stringLiteral = /'([^'\n]*)'|"([^"\n]*)"|`([^`]*)`/g;
 
 const isToken = (name: string): name is ColorToken => name in colors;
 
-type Layer = { text?: ColorToken; bg?: ColorToken };
+type Layer = { text?: ColorToken; bg?: ColorToken; bgOpacity?: number | undefined };
 
 /**
  * Reads every class list in the source and returns the color pairs it draws. Each variant
  * (`hover:`, `group-data-checked/box:`) pairs its text with its own background, falling back
  * to the base class, then to the grounds. Disabled variants are skipped: WCAG 1.4.3 exempts
- * inactive controls. A pair split across parent and child elements is out of reach.
+ * inactive controls. So are `backdrop:` variants:
+ * a backdrop carries no text. A pair split across parent and child elements is out of reach.
  */
 export function usedColorPairs(source: string): ColorPair[] {
   return [...source.matchAll(stringLiteral)].flatMap((match) => {
@@ -28,18 +29,24 @@ export function usedColorPairs(source: string): ColorPair[] {
       const cut = className.lastIndexOf(':') + 1;
       const variant = className.slice(0, cut);
       const utility = colorUtility.exec(className.slice(cut));
-      if (utility === null || variant.includes('disabled')) continue;
-      const [, kind, token = ''] = utility;
+      if (utility === null || variant.includes('disabled') || variant.includes('backdrop')) continue;
+      const [, kind, token = '', opacity] = utility;
       if (!isToken(token)) continue;
       const layer = layers.get(variant) ?? {};
-      layers.set(variant, kind === 'text' ? { ...layer, text: token } : { ...layer, bg: token });
+      layers.set(
+        variant,
+        kind === 'text' ? { ...layer, text: token } : { ...layer, bg: token, bgOpacity: opacity === undefined ? undefined : Number(opacity) },
+      );
     }
     const base = layers.get('');
     return [...layers.values()].flatMap((layer) => {
       const foreground = layer.text ?? base?.text;
       if (foreground === undefined) return [];
-      const background = layer.bg ?? base?.bg;
-      return (background === undefined ? grounds : [background]).map((ground): ColorPair => ({ kind: 'text', foreground, background: ground }));
+      const own = layer.bg === undefined ? base : layer;
+      const background = own?.bg;
+      if (background === undefined) return grounds.map((ground): ColorPair => ({ kind: 'text', foreground, background: ground }));
+      const pair: ColorPair = { kind: 'text', foreground, background };
+      return [own?.bgOpacity === undefined ? pair : { ...pair, opacity: own.bgOpacity }];
     });
   });
 }
@@ -53,7 +60,7 @@ function webSources(dir = webSrc): { path: string; source: string }[] {
   });
 }
 
-const keyOf = (pair: ColorPair) => `${pair.foreground} ${pair.kind} on ${pair.background}`;
+const keyOf = (pair: ColorPair) => `${pair.foreground} ${pair.kind} on ${pair.background}${pair.opacity === undefined ? '' : `/${pair.opacity}`}`;
 
 /** Names each pair the web app draws that `text-pairs.ts` leaves out of the contrast check. */
 export function findUnlistedPairs(files = webSources()): string[] {

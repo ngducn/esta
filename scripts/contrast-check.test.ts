@@ -27,6 +27,17 @@ describe('checkPairs', () => {
     expect(light?.minimum).toBe(3);
   });
 
+  it('blends a translucent background into each ground and reports the lowest ratio', () => {
+    const solid = checkPairs(colors, [{ foreground: 'on-accent', background: 'accent', kind: 'text' }])[0];
+    const hover = checkPairs(colors, [{ foreground: 'on-accent', background: 'accent', kind: 'text', opacity: 90 }])[0];
+    expect(hover?.ratio).toBeLessThan(solid?.ratio ?? 0);
+  });
+
+  it('fails a translucent press state that thins the accent below 4.5:1 in light', () => {
+    const [light] = checkPairs(colors, [{ foreground: 'on-accent', background: 'accent', kind: 'text', opacity: 82 }]);
+    expect(light).toMatchObject({ theme: 'light', ok: false });
+  });
+
   it('passes every pair the UI draws, in both themes', () => {
     const failures = checkPairs(colors, colorPairs).filter((r) => !r.ok);
     expect(failures).toEqual([]);
