@@ -11,13 +11,13 @@ const DECODE_BUDGET_MS = 100;
 
 const NAMES = ['Nguyễn Thị Hường Demo', 'Trần Văn Khoa Demo', 'Lê Minh Demo', 'Phạm Thu Hà Demo', 'Hoàng Anh Demo'];
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const code = (n: number): string => Array.from({ length: 8 }, (_, i) => ALPHABET[(n * 7 + i * 13) % ALPHABET.length]).join('');
-const day = (n: number): string => `2026-10-${String((n % 28) + 1).padStart(2, '0')}`;
+const code = (n: number): string => Array.from({ length: 8 }, (_, i) => ALPHABET[Math.floor(n / 32 ** i) % 32]).join('');
+const day = (n: number, after = 0): string => `2026-10-${String((n % 20) + 1 + after).padStart(2, '0')}`;
 
 const invoices: InvoiceCandidate[] = Array.from({ length: 500 }, (_, i) => ({
   id: `inv-${i}`,
   memoCode: code(i),
-  tenantName: NAMES[i % NAMES.length] as string,
+  tenantName: `${NAMES[i % NAMES.length] as string} P${String(i).padStart(3, '0')}`,
   dueDate: isoDate(day(i)),
   outstanding: vnd(((i % 9) + 1) * 500_000),
 }));
@@ -30,10 +30,18 @@ const rows: StatementRow[] = Array.from({ length: 1000 }, (_, i) => {
       : i % 3 === 1
         ? `${invoice.tenantName.toUpperCase()} CHUYEN TIEN PHONG ${i}`
         : `PHI DICH VU ${i}`;
-  return { index: i + 1, date: isoDate(day(i + 3)), amount: vnd(i % 3 === 2 ? -11_000 : invoice.outstanding), description, bankRef: `FT${i}` };
+  return { index: i + 1, date: isoDate(day(i % invoices.length, 3)), amount: vnd(i % 3 === 2 ? -11_000 : invoice.outstanding), description, bankRef: `FT${i}` };
 });
 
 const gridB = renderStatementGrid(STATEMENT_LAYOUTS.b, rows);
+
+test('the bench statement holds a third memo matches, a third suggestions and a third debits', () => {
+  const statuses = matchRows(rows, invoices).map(({ match }) => match.status);
+  const count = (status: string) => statuses.filter((s) => s === status).length;
+  expect([count('memo_match'), count('suggested'), count('ignored')]).toEqual([334, 333, 333]);
+  const decoded = decodeStatement(gridB);
+  expect(decoded.ok && decoded.value.rows).toEqual(rows);
+});
 
 test('matchRows on 1,000 rows against 500 invoices and decoding the layout B grid stay under budget', async ({ bench }) => {
   const results = await bench.compare(
