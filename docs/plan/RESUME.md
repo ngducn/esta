@@ -4,21 +4,21 @@ Paused 2026-10-16 about 00:35 +07 at about 45% of one 5-hour block, the pause li
 
 ## Where the run is
 
-- Paused 2026-10-17 about 01:10 +07 at 73.7% of the block that started 2026-10-16T16:00Z, over the operator's 70% cap (standing orders, 2026-10-16 10:30). The overshoot came from a long Opus owner and verifier lanes between two usage checks; check usage at every drain, not only at spawn time.
-- Phase 0 is complete: P0-01 to P0-16 merged (P0-13 removed). `main` is at `d8bfb41` plus this pause commit.
-- Phase 1: P1-01 merged (`47d79f3`, Maps link parsing behind SSRF guards). P1-04 (properties list with cover photos, Seq 02) was in build on slot 5 and got a stop order: its branch `esta/p1-04-properties-list` holds the pushed work and a final `wip(p1-04)` commit; read its owner's final report in the trail and `/tmp/owner-p1-04/`.
-- Merged this run: #43, #44, #42 (P0-15), #47, #50 (P1-01), #48 (P0-16). The system design and release estimate wait for the operator's decisions: https://claude.ai/artifact/9Bufn7L33HmJueDyXVvqGB.
-
-## Next, in order
-
-1. P1-04 (PR #52): if it is not merged yet, finish its verdict. Open items at handoff: the live verifier's report, local CI green at a load average under 5, and the LCP call (head 3390 ms against trunk 2573 ms; the page's own floor is 2.8 to 3.0 s from shell causes now tracked in #56, so the root's default is to accept the miss for P1-04 and fix the floor in #56 before P3-16). Low audit findings for a follow-up: search scans every household instead of filtering by household first, archived properties keep signable photos, one pgTAP update/delete scoping test cannot fail alone, and Lighthouse JSON holds signed URLs.
-2. Phase 1 on two parallel UI tracks (dependencies are real code dependencies, not only Seq): P1-09 and P1-06 together after P1-04; then P1-05, P1-07 and P1-08, two at a time; then P1-10; then P1-03 (Phase 1 exit). Stop the operator's slot 2 app while two stacks build.
-3. A pure-core track with no Supabase stack, in parallel with step 2: P3-05 (VietQR encode and decode from spike S4's vectors) and P3-02 (lease schedule core). Both are risk-first exceptions to vertical slicing and sit directly under their Phase 3 UI slices; P3-02 is on the interrogate list and gets an Opus audit.
-4. Issues to fold in where they fit: #49, #51 (add a machine-wide lock to ci-local), #54 (trim agent tool paths before P2-03), #55, #56; and move pr-media.sh from ~/.claude/orchestrate/esta/bin into tools/.
+- 2026-10-17 05:20 +07 the session limit stopped every agent mid-run. Nothing pushed was lost; the root saved unpushed work as `wip:` commits at 09:25.
+- main is at the latest docs commit; Phase 0 complete, P1-01 merged.
+- Open PRs and branches, with the next step for each:
+  - #52 P1-04 at eb62881: round 1 verdict done (ISSUES). Next: a fresh Opus fix-forward owner from `~/.claude/orchestrate/esta/briefs/p1-04-ff.md`, then a scoped review and local CI at load under 5.
+  - #57 P3-05 VietQR at 89e8e50: code-ready, owner's live /dev/core check and local CI not done, verifier died. Next: Opus verify-and-audit lane (money), then local CI on a free slot.
+  - #59 P3-02 lease schedule at c73e035: code-ready, verifier died. Next: Opus verify-and-audit lane (interrogate list), then local CI.
+  - #58 P3-06 statement matching at b4eee5c (wip): owner died mid-build. Next: fresh Opus owner to finish from the branch and its trail.
+  - `esta/p5-11-number-guard` at 43f64ca (wip, no PR): fresh Opus owner to finish and open the PR.
+  - `esta/p2-01-extraction-spike` at c9e8cba (wip, no PR): fresh Opus owner to finish (live calls allowed for the spike).
+  - #60 Phase 2 re-cut at 2210e72: verifier died. Next: Opus or Sonnet verifier, then merge.
+- Owner trails for the dead agents are in `~/.claude/orchestrate/esta/trails/<agent>/decisions.tsv`.
 
 ## Model policy (operator, 2026-10-17: "check weekly usage and fable usage, please think ahead until reset and utilize the best tokens you can until reset of this week, please speed this up a bit")
 
-- Owners on Fable (`model: "fable"`), which had no use this week; verifiers on Sonnet; audits on Opus.
+- Superseded 2026-10-17 09:25: no Fable. Owners on Opus, verifiers on Sonnet, audits on Opus.
 - Measure Fable's cost per PR on the first two owners with ccusage. If a Fable owner moves a block more than 25 points, return owners to Opus.
 - The plan's weekly limit and reset time are not visible locally; ask the operator for the numbers from /usage and plan the week's remaining runs from them.
 

@@ -88,3 +88,11 @@ Operator's words, 2026-10-17: "no, lets maxed it out up to 98% , i want to juice
 
 Budget until the weekly reset today: up to 98% of each 5-hour block. Stop spawning at about 90%, pause at 96%. Owners stay on Fable; verifiers on Sonnet; audits on Opus. Maximize parallel owners: pure-core PRs that need no Supabase stack run alongside the UI track.
 7. Defaults for the Phase 2 re-cut (PR #60), agent interpretation: the landing grant extends to Phase 2 on the same reading as Phase 1; P2-07 gets an Opus audit lane because accepting extracted fields writes certificates, parcels, ownership and parties; members see document extraction state through the `document_status` view, not `agent_jobs` rows.
+
+## Update 2026-10-17 09:25 +07
+
+Operator's words, 2026-10-17, after the session limit stopped every agent at about 05:20: "ok so limit is back, maybe tone down a little, lets not fable at this stage, go for 90% this time, continiue".
+
+Models: no Fable. Owners on Opus, verifiers on Sonnet, audits on Opus.
+
+Budget: 90% of each block. The block that hit the limit (2026-10-16T21:00Z, heavy Fable) stopped at $64.22 and 134M tokens while the ccusage meter read about 50%, so the old calibration ($121.11 and 379.9M = 100%, from an Opus-only block) undercounts Fable. With Fable off, keep that calibration, but stop spawning at 80% and pause at 86%, because the highest Opus-only block that did not hit the limit reached $95.32 (about 79%). Watch usage with `~/.claude/orchestrate/esta/bin/wait-usage.sh <pct>` in the background instead of manual checks.
