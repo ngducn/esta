@@ -62,7 +62,8 @@ describe('DOMAIN-VN formatters round-trip through the guard', () => {
         const text = formatVndCompact(claimed, loc);
         const rule = COMPACT_RULES[compactUnitOf(text)];
         if (formatVndCompact(actual, loc) === text) expect(passes(text, { actual })).toBe(true);
-        if (Math.abs(actual - claimed) > rule.step) expect(passes(text, { actual })).toBe(false);
+        const distance = claimed < 0 ? Math.abs(actual - claimed) : Math.abs(Math.abs(actual) - claimed);
+        if (distance > rule.step) expect(passes(text, { actual })).toBe(false);
       }),
       params,
     );

@@ -173,7 +173,7 @@ describe('collectAllowed indexes tool results and context', () => {
     expect(allowed.get('n:5')).toEqual([{ tool: 'get_lease', path: 'unit_label', ids: [], text: '5' }]);
   });
 
-  it('carries the ids of every record on the path, and takes no numbers from ids, keys, UUIDs or URLs', () => {
+  it('carries the ids of every record on the path, and takes ids and keys whole, with no numbers from them, UUIDs or URLs', () => {
     const allowed = allowedWith({
       id: 'lease-2026-01',
       unit_id: IDS.room5,
@@ -185,7 +185,13 @@ describe('collectAllowed indexes tool results and context', () => {
     expect(allowed.get('n:3500000')).toEqual([
       { tool: 'tool', path: 'periods[0].amount', ids: ['lease-2026-01', IDS.room5, 'period-77'], text: '3500000' },
     ]);
-    expect([...allowed.keys()].filter((key) => key !== 'n:3500000' && !key.startsWith('c:'))).toEqual([
+    expect([...allowed.keys()].filter((key) => key.startsWith('code:'))).toEqual([
+      'code:LEASE-2026-01',
+      'code:INVOICE:DI-AN:PHONG-5:2026-09',
+      'code:WATCH:W1:PHONG-5:2026-10-07',
+      'code:PERIOD-77',
+    ]);
+    expect([...allowed.keys()].filter((key) => key !== 'n:3500000' && !key.startsWith('c:') && !key.startsWith('code:'))).toEqual([
       'd:2026-10-07',
       'dm:10-07',
       'my:2026-10',
@@ -305,9 +311,9 @@ describe('checkNumbers against the run (AGENT.md §6.3)', () => {
     expect(offending('diện tích 125 m²', { area_m2: 125.5 })).toEqual(['125 m²']);
   });
 
-  it('matches a negative amount only with its sign', () => {
+  it('matches an unsigned amount by magnitude and a signed amount only with its sign', () => {
     expect(check(`chi -1.500.000${NBSP}₫`, { amount: -1_500_000 }).ok).toBe(true);
-    expect(offending(`chi 1.500.000${NBSP}₫`, { amount: -1_500_000 })).toEqual([`1.500.000${NBSP}₫`]);
+    expect(check(`chi 1.500.000${NBSP}₫`, { amount: -1_500_000 }).ok).toBe(true);
     expect(offending('chi -1,5 tr', { amount: 1_500_000 })).toEqual(['-1,5 tr']);
   });
 });

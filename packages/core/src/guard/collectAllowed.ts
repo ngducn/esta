@@ -21,7 +21,7 @@ export const CONTEXT_TOOL = 'context';
 
 /** `id`, `unit_id` and `property_ids` name the records a value belongs to. */
 const ID_KEY = /(?:^|_)ids?$/;
-/** Ids and keys such as `subject_key` are identifiers, whose digits are not numbers the model may quote. */
+/** Ids and keys such as `subject_key` and `tax_id` are identifiers: the model may quote one whole, never a number inside it. */
 const IDENTIFIER_KEY = /(?:^|_)(?:ids?|keys?)$/;
 /** Rates are stored in basis points under `_bp` keys (`vat_rate_bp: 500` reads as `5%`); no other number is a percentage. */
 const BASIS_POINT_KEY = /(?:^|_)bp$/;
@@ -79,7 +79,11 @@ export function collectAllowed(toolResults: readonly ToolResult[], context: Guar
     if (!isRecord(value)) return;
     const recordIds = [...ids, ...idsOf(value)];
     for (const [key, child] of Object.entries(value)) {
-      if (!IDENTIFIER_KEY.test(key)) walk(tool, child, path === '' ? key : `${path}.${key}`, recordIds, key);
+      const childPath = path === '' ? key : `${path}.${key}`;
+      if (!IDENTIFIER_KEY.test(key)) walk(tool, child, childPath, recordIds, key);
+      else if (typeof child === 'string' && !UUID.test(child) && !URL_LIKE.test(child)) {
+        add({ kind: 'code', code: child.toUpperCase() }, { tool, path: childPath, ids: recordIds, text: child });
+      }
     }
   };
 

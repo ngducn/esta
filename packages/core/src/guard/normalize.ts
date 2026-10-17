@@ -85,7 +85,31 @@ export function indexKeys(value: CanonicalNumber): readonly string[] {
     case 'count':
       return [`n:${value.value}`, ...(Number.isInteger(value.value) ? compactKeys(value.value) : [])];
     case 'code':
-      return [`code:${value.code}`];
+      return [`code:${memoless(value.code)}`, ...[...value.code.matchAll(MEMO)].map(([, memo = '']) => `code:${memo}`)];
+  }
+}
+
+/** A bank keeps `ESTA7K2QX9MP` glued inside its own references (DOMAIN-VN §9), so a code is compared without the prefix. */
+const MEMO = /ESTA([A-Z0-9]{8})/gu;
+const memoless = (code: string): string => (code.startsWith('ESTA') && code.length > 4 ? code.slice(4) : code);
+
+/**
+ * The same value with the other sign, which an unsigned claim also matches: prose carries the direction
+ * in words such as chi, lỗ or giảm, so `chi 1.500.000 ₫` states the run's -1500000.
+ */
+export function negated(value: CanonicalNumber): CanonicalNumber | null {
+  switch (value.kind) {
+    case 'amount':
+    case 'compact':
+      return value.vnd === 0 ? null : { ...value, vnd: -value.vnd };
+    case 'ratio':
+      return value.bp === 0 ? null : { ...value, bp: -value.bp };
+    case 'area':
+      return value.m2 === 0 ? null : { ...value, m2: -value.m2 };
+    case 'count':
+      return value.value === 0 ? null : { ...value, value: -value.value };
+    default:
+      return null;
   }
 }
 
@@ -117,7 +141,7 @@ export function lookupKeys(claim: CanonicalNumber): readonly string[] {
       return yearish ? [`n:${claim.value}`, `y:${claim.value}`] : [`n:${claim.value}`];
     }
     case 'code':
-      return [`code:${claim.code}`];
+      return [`code:${memoless(claim.code)}`];
   }
 }
 
@@ -164,27 +188,29 @@ export function readShorthand(whole: string, fraction: string, unit: CompactUnit
   return vnd === null ? invalid : { kind: 'compact', vnd, unit };
 }
 
-export function readRatio(digits: string, bpPerUnit: bigint): ExtractedValue {
+export function readRatio(digits: string, sign: 1 | -1, bpPerUnit: bigint): ExtractedValue {
   const decimal = decimalOf(digits);
-  const bp = decimal === null ? null : wholeNumber(decimal, bpPerUnit, 1);
+  const bp = decimal === null ? null : wholeNumber(decimal, bpPerUnit, sign);
   return bp === null ? invalid : { kind: 'ratio', bp };
 }
 
 /** Every form follows parseDecimal's grouping rule: `1.500` and `1,500` are both 1500, `3,5` and `3.5` are 3.5. */
-function toNumber(digits: string): number | null {
+function toNumber(digits: string, sign: 1 | -1): number | null {
   const decimal = decimalOf(digits);
   if (decimal === null) return null;
   const integer = toSafeNumber(decimal.digits);
-  return integer.ok ? integer.value / 10 ** decimal.scale : null;
+  if (!integer.ok) return null;
+  const magnitude = integer.value / 10 ** decimal.scale;
+  return magnitude === 0 ? 0 : sign * magnitude;
 }
 
-export function readArea(digits: string): ExtractedValue {
-  const m2 = toNumber(digits);
+export function readArea(digits: string, sign: 1 | -1): ExtractedValue {
+  const m2 = toNumber(digits, sign);
   return m2 === null ? invalid : { kind: 'area', m2 };
 }
 
-export function readCount(digits: string): ExtractedValue {
-  const value = toNumber(digits);
+export function readCount(digits: string, sign: 1 | -1): ExtractedValue {
+  const value = toNumber(digits, sign);
   return value === null ? invalid : { kind: 'count', value };
 }
 

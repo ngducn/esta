@@ -39,7 +39,7 @@ type Pattern = {
 
 const BUSINESS_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
-const SIGN = '([-−]?)';
+const SIGN = '([-−+]?)';
 const GROUP_SPACE = String.raw`[ \u00A0\u202F\u2009]`;
 /** `5 000 000` grouped by a space, NBSP, narrow NBSP or thin space, else `1.500.000` and `3,5` for parseDecimal. */
 const NUMBER = String.raw`(\d{1,3}(?:${GROUP_SPACE}\d{3})+(?:[.,]\d{1,2})?(?![\p{N}])|\d+(?:[.,]\d+)*)`;
@@ -122,7 +122,7 @@ const MONTH_NUMBERS: Readonly<Record<string, string>> = Object.fromEntries(
 );
 const monthNumber = (name: string): string => MONTH_NUMBERS[name.slice(0, 3).toLowerCase()] ?? '';
 
-const sign = (text: string): 1 | -1 => (text === '' ? 1 : -1);
+const sign = (text: string): 1 | -1 => (text === '-' || text === '−' ? -1 : 1);
 const orNull = (value: ExtractedValue): readonly ExtractedValue[] | null => (value.kind === 'invalid' ? null : [value]);
 const re = (source: string, flags = ''): RegExp => new RegExp(source, `yu${flags}`);
 
@@ -192,12 +192,12 @@ const DATE_PATTERNS: readonly Pattern[] = [
 const VALUE_PATTERNS: readonly Pattern[] = [
   {
     regex: re(String.raw`${SIGN}${NUMBER}\s*${RATIO_UNIT}`, 'i'),
-    read: ([, , digits = '', word = '']) => {
+    read: ([, s = '', digits = '', word = '']) => {
       const multiplier = ratioUnit(word);
-      return multiplier === undefined ? null : [readRatio(digits, multiplier)];
+      return multiplier === undefined ? null : [readRatio(digits, sign(s), multiplier)];
     },
   },
-  { regex: re(String.raw`${SIGN}${NUMBER}\s*m(?:²|2)(?![\p{L}\p{N}])`), read: ([, , digits = '']) => [readArea(digits)] },
+  { regex: re(String.raw`${SIGN}${NUMBER}\s*m(?:²|2)(?![\p{L}\p{N}])`), read: ([, s = '', digits = '']) => [readArea(digits, sign(s))] },
   {
     regex: re(String.raw`${SIGN}${NUMBER}\s*(trăm|chục)${NOT_LETTER}(?:${GAP}+${WORD_UNIT})?`, 'i'),
     read: ([, s = '', digits = '', word = '', unit]) => {
@@ -229,7 +229,7 @@ const VALUE_PATTERNS: readonly Pattern[] = [
   },
   { regex: re(String.raw`${SIGN}${NUMBER}\s*${CURRENCY}`), read: ([, s = '', digits = '']) => [readAmount(digits, sign(s))] },
   { regex: re(String.raw`${SIGN}\d+(?:${GROUP_SPACE}+\d+)+\s*${CURRENCY}`), read: () => [{ kind: 'invalid' }] },
-  { regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`), read: ([, , digits = '']) => [readCount(digits)] },
+  { regex: re(String.raw`${SIGN}${NUMBER}${COUNT_UNIT}`), read: ([, s = '', digits = '']) => [readCount(digits, sign(s))] },
 ];
 
 const DIGIT = /\p{Nd}/gu;
@@ -277,7 +277,7 @@ function readAt(text: string, at: number, patterns: readonly Pattern[]): Found |
   return null;
 }
 
-const RANGE = re(String.raw`${SIGN}${NUMBER}(?:\s*[–—~−-]\s*|\s+(?:đến|tới|to|and|và|hoặc|hay|or)\s+)(?=[-−]?\p{Nd})`, 'i');
+const RANGE = re(String.raw`${SIGN}${NUMBER}(?:\s*[–—~−-]\s*|\s+(?:đến|tới|to|and|và|hoặc|hay|or)\s+)(?=[-−+]?\p{Nd})`, 'i');
 const BOUND = re(String.raw`${SIGN}${NUMBER}`);
 
 /** `8–12 triệu`, `từ 8 đến 12 triệu` and `8 and 12M ₫`: the lower bound is read with the upper bound's unit, and the upper bound on its own. */
@@ -307,7 +307,7 @@ function sentenceAt(boundaries: readonly number[], position: number): number {
 }
 
 const isSignStart = (text: string, at: number): boolean =>
-  at > 0 && (text[at - 1] === '-' || text[at - 1] === '−') && (at === 1 || /[\s(]/u.test(text.charAt(at - 2)));
+  at > 0 && /[-−+]/u.test(text.charAt(at - 1)) && (at === 1 || /[\s(]/u.test(text.charAt(at - 2)));
 
 export function scan(text: string): Scan {
   const boundaries = [...text.matchAll(SENTENCE_END)].map((match) => match.index);

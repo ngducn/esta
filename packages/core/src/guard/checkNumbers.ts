@@ -1,6 +1,6 @@
 import type { AllowedIndex, Source } from './collectAllowed';
 import { scan, type ExtractedNumber } from './extractNumbers';
-import { lookupKeys, neighbourKeys } from './normalize';
+import { lookupKeys, negated, neighbourKeys } from './normalize';
 
 /**
  * `cited`: found in a record the same sentence links with `esta://`. `elsewhere`: the sentence links
@@ -24,6 +24,11 @@ export type GuardReport = {
   readonly violations: readonly Violation[];
 };
 
+/** A sign written in front of a number makes it claim that sign; see `negated`. */
+const SIGNED = /^[-−+]/u;
+/** A bare digit run may quote a code-shaped value from the run as written, such as a tax_id `0312345678`. */
+const DIGITS_ONLY = /^\d+$/u;
+
 const isViolation = (number: CheckedNumber): number is Violation => number.status !== 'matched';
 
 export function checkNumbers(text: string, allowed: AllowedIndex): GuardReport {
@@ -38,7 +43,9 @@ export function checkNumbers(text: string, allowed: AllowedIndex): GuardReport {
   const checked = numbers.map((number): CheckedNumber => {
     const { value } = number;
     if (value.kind === 'invalid') return { ...number, status: 'unparseable' };
-    const sources = lookupKeys(value).flatMap((key) => allowed.get(key) ?? []);
+    const claims = SIGNED.test(number.text) ? [value] : [value, negated(value) ?? value];
+    const literal = DIGITS_ONLY.test(number.text) ? [`code:${number.text}`] : [];
+    const sources = [...new Set([...claims.flatMap(lookupKeys), ...literal])].flatMap((key) => allowed.get(key) ?? []);
     const cited = citedBySentence.get(number.sentence);
     const [first] = sources;
     if (first !== undefined) {
@@ -47,7 +54,7 @@ export function checkNumbers(text: string, allowed: AllowedIndex): GuardReport {
       return { ...number, status: 'matched', source: inCited ?? first, citation };
     }
     if (value.kind === 'compact') {
-      const [nearest] = neighbourKeys(value).flatMap((key) => allowed.get(key) ?? []);
+      const [nearest] = claims.flatMap((claim) => (claim.kind === 'compact' ? neighbourKeys(claim) : [])).flatMap((key) => allowed.get(key) ?? []);
       if (nearest !== undefined) return { ...number, status: 'rounding', nearest };
     }
     return { ...number, status: 'unknown' };
