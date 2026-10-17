@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(28);
+select plan(33);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -91,10 +91,23 @@ select tests.act_as('admin.a@test.esta.test');
 select isnt_empty($$ delete from storage.objects where name = current_setting('tests.a_path') returning 1 $$,
   'an admin of A deletes A''s photo, since admin passes the member write role');
 
+select tests.act_as('member.a@test.esta.test');
+select lives_ok(format($$ update public.properties set deleted_at = '2026-10-07 09:00+07' where id = %L $$, :'pa'),
+  'a member of A archives Nhà A');
+select isnt_empty(format($$ select 1 from storage.objects where name = '%s/%s/front.jpg' $$, :'a', :'pa'),
+  'an archived property keeps a readable photo, since its row stays readable and restorable');
+-- No where clause and no returning, so no select policy hides B's rows: only the update and delete using clauses do.
+select lives_ok($$ update storage.objects set metadata = '{"touched": true}' $$,
+  'a blanket update by a member of A reaches only rows her update policy allows');
+select lives_ok($$ delete from storage.objects $$,
+  'a blanket delete by a member of A reaches only rows her delete policy allows');
+
 reset role;
 select tests.clear_request();
+select is((select metadata from storage.objects where name = current_setting('tests.b_path')), null,
+  'the blanket update left B''s photo unchanged');
 select isnt_empty($$ select 1 from storage.objects where name = current_setting('tests.b_path') $$,
-  'B''s photo is untouched by everything household A tried');
+  'B''s photo is untouched by everything household A tried, the blanket delete included');
 select ok(not has_function_privilege('anon', 'private.property_photo_household(text)', 'execute'),
   'anon cannot call property_photo_household');
 

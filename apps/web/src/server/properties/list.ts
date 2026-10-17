@@ -60,10 +60,10 @@ const PAGE_SIZE = 1000;
 
 type SessionClient = Awaited<ReturnType<typeof createSessionClient>>;
 
-async function readMatchingRows(supabase: SessionClient, tokens: readonly string[]): Promise<PropertyListRow[]> {
+async function readMatchingRows(supabase: SessionClient, householdId: string, tokens: readonly string[]): Promise<PropertyListRow[]> {
   const rows: PropertyListRow[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    let query = supabase.from('property_list_rows').select(COLUMNS);
+    let query = supabase.from('property_list_rows').select(COLUMNS).eq('household_id', householdId);
     for (const token of tokens) query = query.ilike('search_text', likeToken(token));
     const { data, error } = await query.order('id').range(from, from + PAGE_SIZE - 1);
     if (error) throw new Error(`Reading the property list failed: ${error.message}`);
@@ -74,12 +74,13 @@ async function readMatchingRows(supabase: SessionClient, tokens: readonly string
 
 export type PropertyList = FilteredProperties & { householdCount: number; provinceNames: ReadonlyMap<string, string> };
 
-export async function listProperties(filters: PropertyFilters): Promise<PropertyList> {
+/** RLS already limits the rows to the member's households; the household predicate keeps a member of two to one list. */
+export async function listProperties(householdId: string, filters: PropertyFilters): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
   const [rows, count] = await Promise.all([
-    readMatchingRows(supabase, tokens),
-    tokens.length === 0 ? null : supabase.from('property_list_rows').select('id', { count: 'exact', head: true }),
+    readMatchingRows(supabase, householdId, tokens),
+    tokens.length === 0 ? null : supabase.from('property_list_rows').select('id', { count: 'exact', head: true }).eq('household_id', householdId),
   ]);
   if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
   const matches = preferPhrase(rows, tokens);

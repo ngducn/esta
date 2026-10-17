@@ -8,6 +8,7 @@ alter table public.properties add constraint properties_cover_photo_path check (
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('property-photos', 'property-photos', false, 5242880, array['image/webp', 'image/jpeg', 'image/png']);
 
+-- deleted_at is ignored on purpose: an archived property stays readable and restorable (PRP-1), so its photo stays signable.
 create function private.property_photo_household(p_name text)
 returns uuid
 language plpgsql

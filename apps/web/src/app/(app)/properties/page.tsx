@@ -18,6 +18,7 @@ import { SortSelect } from '@/components/properties/sort-select';
 import { sectionIcons } from '@/components/shell/section-icons';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button';
+import { requireMember } from '@/server/member';
 import { listProperties } from '@/server/properties/list';
 import { signCoverPhotos } from '@/server/properties/photos';
 
@@ -26,8 +27,8 @@ export const generateMetadata = () => sectionMetadata('properties');
 const comparable = (address: string) => address.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('vi');
 
 export default async function PropertiesPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
-  const filters = parsePropertyFilters(await searchParams);
-  const [list, nav, t] = await Promise.all([listProperties(filters), getTranslations('nav'), getTranslations('properties')]);
+  const [filters, member] = await Promise.all([searchParams.then(parsePropertyFilters), requireMember()]);
+  const [list, nav, t] = await Promise.all([listProperties(member.household.id, filters), getTranslations('nav'), getTranslations('properties')]);
   const photos = await signCoverPhotos(list.rows.flatMap((row) => (row.coverPhotoPath === null ? [] : [row.coverPhotoPath])));
 
   const toCard = (row: PropertyListRow): PropertyCardData => {
