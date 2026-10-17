@@ -14,12 +14,14 @@ type MoneyInputProps = {
   /** The text in the field at first render, as a person would type it, for example `3tr5`. */
   defaultText?: string;
   onValueChange?: (value: Vnd | null) => void;
+  /** The raw text, for a form that parses it again on submit and must tell an empty field from a wrong one. */
+  onTextChange?: (text: string) => void;
   name?: string;
   disabled?: boolean;
 };
 
 /** Reads Vietnamese shorthand through `parseVndInput` and shows the full amount it read under the field. */
-export function MoneyInput({ label, defaultText = '', onValueChange, name, disabled = false }: MoneyInputProps) {
+export function MoneyInput({ label, defaultText = '', onValueChange, onTextChange, name, disabled = false }: MoneyInputProps) {
   const t = useTranslations('components.money');
   const locale = useLocale();
   const id = useId();
@@ -42,6 +44,7 @@ export function MoneyInput({ label, defaultText = '', onValueChange, name, disab
         value={text}
         onChange={(event) => {
           setText(event.target.value);
+          onTextChange?.(event.target.value);
           const next = parseVndInput(event.target.value);
           onValueChange?.(next.ok ? next.value : null);
         }}

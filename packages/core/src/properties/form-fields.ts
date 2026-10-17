@@ -72,7 +72,8 @@ export function readKindDetails<K extends PropertyKind>(kind: K, texts: KindFiel
   return { ok: true, value: details as DetailsOf<K> };
 }
 
-const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+/** An amount as Mẹ types it back into a money field, `1.200.000`; `parseVndInput` reads it unchanged. */
+export const vndInputText = (amount: number) => String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 /** The text each field starts with on the edit page, as Mẹ would type it back: `1.200.000`, `4,5`. */
 export function kindDetailsText(kind: PropertyKind, details: Readonly<Record<string, unknown>>): KindFieldTexts {
@@ -80,7 +81,7 @@ export function kindDetailsText(kind: PropertyKind, details: Readonly<Record<str
   for (const { key, input } of KIND_FIELDS[kind]) {
     const value = details[key];
     if (typeof value === 'string') texts[key] = value;
-    else if (typeof value === 'number') texts[key] = input === 'vnd' ? grouped(value) : input === 'meters' ? String(value).replace('.', ',') : String(value);
+    else if (typeof value === 'number') texts[key] = input === 'vnd' ? vndInputText(value) : input === 'meters' ? String(value).replace('.', ',') : String(value);
   }
   return texts;
 }

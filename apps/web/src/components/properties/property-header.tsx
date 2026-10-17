@@ -1,5 +1,8 @@
 import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
+import { Pencil } from 'lucide-react';
+import Link from 'next/link';
 import { AddressBlock } from '@/components/address-block';
+import { buttonVariants } from '@/components/ui/button';
 import { CoverPhoto } from './cover-photo';
 import { kindIcons } from './kind-icons';
 import { LegalPill, UsePill } from './property-pills';
@@ -15,6 +18,8 @@ export type PropertyHeaderData = {
   currentAddress: string | null;
   certificateAddress: string | null;
   photoUrl: string | null;
+  /** `null` for a viewer, who cannot edit. */
+  edit: { href: string; label: string } | null;
 };
 
 /** The photo leads, because Mẹ knows a house by sight before its nickname; the kind tile stands in when there is none. */
@@ -41,7 +46,15 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
         </span>
       </div>
       <div className="flex min-w-0 flex-col gap-4 p-5 lg:p-6">
-        <h1 className="text-h2 break-words text-balance text-ink lg:text-h1">{property.nickname}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h1 className="min-w-0 text-h2 break-words text-balance text-ink lg:text-h1">{property.nickname}</h1>
+          {property.edit === null ? null : (
+            <Link href={property.edit.href} data-testid="edit-property" className={buttonVariants({ variant: 'outline' })}>
+              <Pencil aria-hidden="true" />
+              {property.edit.label}
+            </Link>
+          )}
+        </div>
         <div className="flex flex-wrap gap-1.5">
           <UsePill useMode={property.useMode} label={property.useLabel} />
           <LegalPill legalStatus={property.legalStatus} label={property.legalLabel} />
