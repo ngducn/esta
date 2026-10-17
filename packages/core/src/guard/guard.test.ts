@@ -114,7 +114,7 @@ describe('extractNumbers reads every form', () => {
     ['15 trống', [count(15)]],
     ['5 kỳ', [count(5)]],
     ['3 Bảo Lộc', [count(3)]],
-    ['7 K', [count(7)]],
+    ['7 K', [compact(7_000, 'nghin')]],
     ['7/13', [count(7), count(13)]],
     ['25:99', [count(25), count(99)]],
     [`1.500.00${NBSP}₫`, [invalid]],

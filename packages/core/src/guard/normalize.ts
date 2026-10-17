@@ -154,9 +154,9 @@ export function readShorthand(whole: string, fraction: string, unit: CompactUnit
   return vnd === null ? invalid : { kind: 'compact', vnd, unit };
 }
 
-export function readRatio(digits: string): ExtractedValue {
+export function readRatio(digits: string, bpPerUnit: bigint): ExtractedValue {
   const decimal = parseDecimal(digits);
-  const bp = decimal === null ? null : wholeNumber(decimal, 100n, 1);
+  const bp = decimal === null ? null : wholeNumber(decimal, bpPerUnit, 1);
   return bp === null ? invalid : { kind: 'ratio', bp };
 }
 

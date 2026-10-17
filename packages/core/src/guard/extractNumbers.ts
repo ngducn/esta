@@ -45,8 +45,8 @@ const MONTH = '(January|February|March|April|May|June|July|August|September|Octo
 const ORDINAL = '(?:st|nd|rd|th)?';
 const COUNT_UNIT = String.raw`(?:\s(?:ngày|tháng|năm|phòng|căn|lần|days?|months?|years?|rooms?|units?|times?)${NOT_LETTER})?`;
 
-/** Vietnamese unit words may follow a space; the letter units are glued, as `850K ₫` and `850k` are written. */
-const VI_UNITS: Readonly<Record<string, CompactUnit>> = {
+/** Unit words may follow a space, as may the letter units in `850 K ₫` and `15 M ₫`. */
+const WORD_UNITS: Readonly<Record<string, CompactUnit>> = {
   tỷ: 'ty',
   tỉ: 'ty',
   triệu: 'tr',
@@ -54,10 +54,40 @@ const VI_UNITS: Readonly<Record<string, CompactUnit>> = {
   tr: 'tr',
   nghìn: 'nghin',
   ngàn: 'nghin',
+  billions: 'ty',
+  billion: 'ty',
+  bn: 'ty',
+  millions: 'tr',
+  million: 'tr',
+  mln: 'tr',
+  mn: 'tr',
+  thousands: 'nghin',
+  thousand: 'nghin',
 };
-const EN_UNITS: Readonly<Record<string, CompactUnit>> = { B: 'ty', M: 'tr', K: 'nghin', k: 'nghin' };
-const VI_UNIT = String.raw`(${Object.keys(VI_UNITS).join('|')})${NOT_LETTER}`;
-const EN_UNIT = String.raw`(${Object.keys(EN_UNITS).join('|')})(?![\p{L}\p{N}])`;
+const LETTER_UNITS: Readonly<Record<string, CompactUnit>> = { B: 'ty', M: 'tr', K: 'nghin', k: 'nghin' };
+const WORD_UNIT = String.raw`(${Object.keys(WORD_UNITS).join('|')})${NOT_LETTER}`;
+const LETTER_UNIT = String.raw`(${Object.keys(LETTER_UNITS).join('|')})(?![\p{L}\p{N}])`;
+
+/** Basis points per unit of each percentage word. */
+const RATIO_UNITS: Readonly<Record<string, bigint>> = {
+  '%': 100n,
+  'phần trăm': 100n,
+  percent: 100n,
+  'per cent': 100n,
+  pct: 100n,
+  '‰': 10n,
+  'phần nghìn': 10n,
+  'phần ngàn': 10n,
+  'điểm cơ bản': 1n,
+  'basis points': 1n,
+  'basis point': 1n,
+  bps: 1n,
+  bp: 1n,
+};
+const RATIO_UNIT = String.raw`(${Object.keys(RATIO_UNITS)
+  .map((word) => word.replaceAll(' ', String.raw`\s+`))
+  .join('|')})${NOT_LETTER}`;
+const ratioUnit = (word: string): bigint | undefined => RATIO_UNITS[word.toLowerCase().replace(/\s+/gu, ' ')];
 
 const MONTH_NUMBERS: Readonly<Record<string, string>> = Object.fromEntries(
   ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].map((name, i) => [name, String(i + 1)]),
@@ -83,7 +113,7 @@ function readTimestamp(match: RegExpExecArray): readonly ExtractedValue[] {
   return [date, time, { kind: 'date', iso: localDate }, { kind: 'time', hhmm: localTime }];
 }
 
-const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { ...VI_UNITS, ty: 'ty', k: 'nghin' };
+const SHORTHAND_UNITS: Readonly<Record<string, CompactUnit>> = { tỷ: 'ty', tỉ: 'ty', ty: 'ty', triệu: 'tr', trđ: 'tr', tr: 'tr', nghìn: 'nghin', ngàn: 'nghin', k: 'nghin' };
 
 /** `3tr5`, `1ty2` and `1k5` alternate digits and letters like a code, so they are read before the code rule. */
 const SHORTHAND: Pattern = {
@@ -129,19 +159,25 @@ const PATTERNS: readonly Pattern[] = [
   { regex: re(String.raw`(\d{1,2})/(\d{4})${NOT_DIGIT}`), read: ([, month = '', year = '']) => orNull(readMonthYear(month, year)) },
   { regex: re(String.raw`(\d{1,2})/(\d{1,2})(?![\p{N}/])`), read: ([, day = '', month = '']) => orNull(readDayMonth(day, month)) },
   { regex: re(String.raw`(\d{1,2}):(\d{2})${NOT_DIGIT}`), read: ([, hour = '', minute = '']) => orNull(readTime(hour, minute)) },
-  { regex: re(String.raw`${SIGN}${NUMBER}\s*%`), read: ([, , digits = '']) => [readRatio(digits)] },
+  {
+    regex: re(String.raw`${SIGN}${NUMBER}\s*${RATIO_UNIT}`, 'i'),
+    read: ([, , digits = '', word = '']) => {
+      const multiplier = ratioUnit(word);
+      return multiplier === undefined ? null : [readRatio(digits, multiplier)];
+    },
+  },
   { regex: re(String.raw`${SIGN}${NUMBER}\s*m(?:²|2)(?![\p{L}\p{N}])`), read: ([, , digits = '']) => [readArea(digits)] },
   {
-    regex: re(String.raw`${SIGN}${NUMBER}\s*${VI_UNIT}(?:\s*${CURRENCY})?`, 'i'),
+    regex: re(String.raw`${SIGN}${NUMBER}\s*${WORD_UNIT}(?:\s*${CURRENCY})?`, 'i'),
     read: ([, s = '', digits = '', unit = '']) => {
-      const compact = VI_UNITS[unit.toLowerCase()];
+      const compact = WORD_UNITS[unit.toLowerCase()];
       return compact === undefined ? null : [readCompact(digits, sign(s), compact)];
     },
   },
   {
-    regex: re(String.raw`${SIGN}${NUMBER}${EN_UNIT}(?:\s*₫)?`),
+    regex: re(String.raw`${SIGN}${NUMBER}\s*${LETTER_UNIT}(?:\s*${CURRENCY})?`),
     read: ([, s = '', digits = '', unit = '']) => {
-      const compact = EN_UNITS[unit];
+      const compact = LETTER_UNITS[unit];
       return compact === undefined ? null : [readCompact(digits, sign(s), compact)];
     },
   },
