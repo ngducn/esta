@@ -74,6 +74,7 @@ test('rule 2: Ryan finds Đất Bảo Lộc by typing bao loc and reads its mort
   await open(page, 'ryan.lane2@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
   await page.getByRole('searchbox').fill('bao loc');
+  await expect(page).toHaveURL(/\?q=bao\+loc$/);
   await page.getByTestId('property-card').getByRole('link', { name: 'Đất Bảo Lộc', exact: true }).click();
   await page.getByRole('navigation', { name: 'Các mục của tài sản' }).getByRole('link', { name: 'Pháp lý' }).click();
   await expect(page).toHaveURL(new RegExp(`${legalPath(2, 'bao-loc')}$`));
