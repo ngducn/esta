@@ -521,7 +521,7 @@
     "add": "Thêm chủ sở hữu",
     "edit": "Sửa chủ sở hữu",
     "sheetTitle": "Chủ sở hữu và tỷ lệ",
-    "sheetBody": "Có thể lưu khi tỷ lệ chưa đủ 100%. Esta sẽ nhắc cho đến khi đủ.",
+    "sheetBody": "Có thể lưu khi tỷ lệ chưa đủ 100%. Trang Pháp lý sẽ hiện cảnh báo cho đến khi đủ.",
     "shareLabel": "Tỷ lệ (%)",
     "shareInvalid": "Ghi số phần trăm, tối đa 2 chữ số sau dấu phẩy, ví dụ 33,33.",
     "shareRange": "Tỷ lệ phải lớn hơn 0 và không quá 100.",

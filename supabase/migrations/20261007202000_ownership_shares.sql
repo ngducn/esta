@@ -78,8 +78,12 @@ begin
     raise exception 'shares must be an array of distinct parties with share_bp, named_on_certificate and since'
       using errcode = '22023';
   end if;
-  -- Two saves of the same property run one after the other, so neither keeps a party the other removed.
-  perform 1 from public.properties p where p.id = p_property_id for no key update;
+  -- Two saves of the same property run one after the other, so neither keeps a party the other removed. The lock
+  -- rereads the row, so a property archived while this call waited is not found either.
+  perform 1 from public.properties p where p.id = p_property_id and p.deleted_at is null for no key update;
+  if not found then
+    raise exception 'property not found' using errcode = 'P0002';
+  end if;
 
   delete from public.ownership_shares o
   where o.property_id = p_property_id

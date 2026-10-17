@@ -521,7 +521,7 @@
     "add": "Add an owner",
     "edit": "Edit owners",
     "sheetTitle": "Owners and shares",
-    "sheetBody": "You can save shares that do not reach 100%. Esta keeps reminding you until they do.",
+    "sheetBody": "You can save shares that do not reach 100%. The Legal tab shows a warning until they do.",
     "shareLabel": "Share (%)",
     "shareInvalid": "Enter a percent with at most 2 decimals, such as 33.33.",
     "shareRange": "A share must be above 0 and at most 100.",

@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(38);
+select plan(40);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -145,6 +145,15 @@ select throws_ok(
   'P0002', 'property not found', 'a property that does not exist fails the same way');
 select is((select count(*) from public.ownership_shares where household_id = :'b'), 0::bigint,
   'a member sees no share of another household');
+
+update public.properties set deleted_at = now() where id = '00000000-0000-4000-8000-0000000000a2';
+select throws_ok(
+  format($$ select public.set_ownership_shares('00000000-0000-4000-8000-0000000000a2', %L) $$,
+         jsonb_build_array(jsonb_build_object('party_id', :'ryan_a', 'share_bp', 10000, 'named_on_certificate', true))),
+  'P0002', 'property not found', 'an archived property is not found');
+select is(
+  (select array_agg(party_id) from public.ownership_shares where property_id = '00000000-0000-4000-8000-0000000000a2'),
+  array[:'owner_a'::uuid], 'the archived property keeps the shares it had');
 
 select tests.sees_household('public.ownership_shares', :'a', true);
 select tests.cannot_write('public.ownership_shares', :'b',
