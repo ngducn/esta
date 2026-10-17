@@ -2,6 +2,7 @@
 
 import type { IsoDate } from '@esta/core/date';
 import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, type Certificate } from '@esta/core/schemas/legal';
+import { usedNewParties } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { DateInput } from '@/components/date-input';
@@ -13,6 +14,7 @@ import { AnnotationList, annotationDraft, readAnnotations, type AnnotationDraft 
 import { LegalFormShell } from './legal-form-shell';
 import { MortgageFields, mortgageDraft, readMortgage, type MortgageInvalid } from './mortgage-fields';
 import { HolderPicker } from './party-picker';
+import { useNewParties } from './use-new-parties';
 
 export function CertificateForm({
   propertyId,
@@ -26,7 +28,7 @@ export function CertificateForm({
   parties: readonly PartyOption[];
 }) {
   const t = useTranslations('propertyLegal');
-  const [parties, setParties] = useState(initialParties);
+  const { parties, pending, add: addParty } = useNewParties(initialParties);
   const [form, setForm] = useState<string>(initial?.form ?? 'gcn_2009_2024');
   const [serialNo, setSerialNo] = useState(initial?.serial_no ?? '');
   const [bookEntryNo, setBookEntryNo] = useState(initial?.book_entry_no ?? '');
@@ -39,10 +41,11 @@ export function CertificateForm({
   const [annotations, setAnnotations] = useState<readonly AnnotationDraft[]>(() => (initial?.annotations ?? []).map((annotation, index) => annotationDraft(index, annotation)));
   const [nextKey, setNextKey] = useState(annotations.length);
   const [invalid, setInvalid] = useState<MortgageInvalid | null>(null);
-  const addParty = (party: PartyOption) => setParties((current) => [...current, party]);
+
+  const activeMortgage = status === 'mortgaged' || showMortgage ? mortgage : mortgageDraft(null);
 
   const submit = () => {
-    const read = readMortgage(status, status === 'mortgaged' || showMortgage ? mortgage : mortgageDraft(null));
+    const read = readMortgage(status, activeMortgage);
     if (!read.ok) {
       setInvalid(read.invalid);
       return null;
@@ -62,7 +65,13 @@ export function CertificateForm({
   };
 
   return (
-    <LegalFormShell propertyId={propertyId} kind="certificates" itemId={itemId} read={submit}>
+    <LegalFormShell
+      propertyId={propertyId}
+      kind="certificates"
+      itemId={itemId}
+      read={submit}
+      newParties={() => usedNewParties(pending, [...holders, activeMortgage.bankId])}
+    >
       <Group title={t('groupCertificate')}>
         <FormSelect
           label={t('formLabel')}

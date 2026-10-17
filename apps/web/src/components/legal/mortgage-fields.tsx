@@ -4,6 +4,7 @@ import type { IsoDate } from '@esta/core/date';
 import type { Vnd } from '@esta/core/money';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import type { CertificateStatus, Mortgage } from '@esta/core/schemas/legal';
+import type { NewParty } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
 import { MoneyInput } from '@/components/money/money-input';
@@ -58,7 +59,7 @@ export function MortgageFields({
   draft: MortgageDraft;
   onChange: (draft: MortgageDraft) => void;
   parties: readonly PartyOption[];
-  onParty: (party: PartyOption) => void;
+  onParty: (party: NewParty) => void;
   invalid: MortgageInvalid | null;
 }) {
   const t = useTranslations('propertyLegal');

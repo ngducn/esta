@@ -122,6 +122,24 @@ test('rule 3: Mẹ quick-adds Lê Văn Demo on Kho Biên Hòa and splits it 33,3
   await expect(page.getByTestId('ownership-total')).toHaveText('Tổng cộng 100%');
 });
 
+test('rule 3b: Mẹ quick-adds an owner, closes the sheet, and the person is not in the picker', async ({ page }) => {
+  await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
+  const abandoned = 'Mồ Côi Demo';
+  await page.goto(legalPath(3, 'bien-hoa'));
+  await page.getByTestId('edit-owners').click();
+  await page.getByTestId('add-holder').click();
+  await page.getByTestId('quick-add-name').fill(abandoned);
+  await page.getByTestId('quick-add-save').click();
+  await expect(draft(page, abandoned)).toHaveCount(1);
+  await page.getByRole('button', { name: 'Thôi', exact: true }).click();
+  await expect(page.getByTestId('ownership-sheet')).toHaveCount(0);
+
+  await page.reload();
+  await page.getByTestId('edit-owners').click();
+  await expect(page.getByTestId('add-holder')).toBeVisible();
+  await expect(page.getByTestId('holder-select').locator('option', { hasText: abandoned })).toHaveCount(0);
+});
+
 test('rule 4: Ryan unmarks Trần Minh Demo as named and saves 70% and 40%, and the over-100% warning shows', async ({ page }) => {
   await open(page, 'ryan.lane4@demo.esta.test', 'light', DESKTOP);
   await resetFiftyFifty(page, 4, 'thu-duc', '2019-11-20');

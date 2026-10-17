@@ -3,6 +3,7 @@
 import type { IsoDate } from '@esta/core/date';
 import { bpToPercentText, formatShareBp, ownershipStatus, percentToBp, FULL_SHARE_BP } from '@esta/core/properties/ownership';
 import type { OwnershipShare } from '@esta/core/schemas/ownership';
+import { usedNewParties } from '@esta/core/schemas/party';
 import { X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId, useState, useTransition, type FormEvent, type RefObject } from 'react';
@@ -15,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import type { PartyOption } from '@/server/properties/legal';
 import { PartyAdder } from './party-picker';
+import { useNewParties } from './use-new-parties';
 
 export type OwnershipSheetProps = {
   propertyId: string;
@@ -100,7 +102,7 @@ function OwnerRow({
 function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds, onSaved }: OwnershipSheetProps & { onSaved: () => void }) {
   const t = useTranslations('propertyOwners');
   const locale = useLocale();
-  const [parties, setParties] = useState(initialParties);
+  const { parties, pending: newParties, add: addParty } = useNewParties(initialParties);
   const [drafts, setDrafts] = useState<readonly Draft[]>(() =>
     shares.map((share, index) => ({
       key: index,
@@ -141,7 +143,7 @@ function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds,
     setShowErrors(false);
     setFailed(false);
     startTransition(async () => {
-      const result = await saveOwnershipShares(propertyId, values).catch(() => ({ ok: false, reason: 'failed' }) as const);
+      const result = await saveOwnershipShares(propertyId, values, usedNewParties(newParties, values.map((value) => value.party_id))).catch(() => ({ ok: false, reason: 'failed' }) as const);
       if (result.ok) onSaved();
       else if (result.reason === 'invalid') setShowErrors(true);
       else setFailed(true);
@@ -182,7 +184,7 @@ function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds,
           parties={available}
           labels={{ choose: t('choose'), add: t('addPerson') }}
           onPick={add}
-          onParty={(party) => setParties((current) => [...current, party])}
+          onParty={addParty}
         />
       </div>
       <div className="sticky -bottom-[max(--spacing(6),env(safe-area-inset-bottom))] -mx-6 -mb-6 flex flex-col gap-3 border-t border-rule bg-surface px-6 pt-4 pb-[max(--spacing(6),env(safe-area-inset-bottom))]">

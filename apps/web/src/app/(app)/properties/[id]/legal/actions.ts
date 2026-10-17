@@ -2,10 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { ownershipSharesSchema } from '@esta/core/schemas/ownership';
+import { newPartiesSchema, type NewParty } from '@esta/core/schemas/party';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import type { TablesInsert } from '@esta/db';
-import { LEGAL_KINDS, legalKindSchema, legalTable, type LegalKind, type PartyOption } from '@/server/properties/legal';
+import { LEGAL_KINDS, legalKindSchema, legalTable, type LegalKind } from '@/server/properties/legal';
 import { createSessionClient } from '@/server/supabase/server';
 
 export type LegalWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'failed' };
@@ -37,7 +38,7 @@ function parseValue(kind: LegalKind, raw: unknown, creating: boolean): LegalInse
   return parsed.success ? (parsed.data as LegalInsert) : null;
 }
 
-export async function saveLegalItem(propertyId: unknown, kind: unknown, itemId: unknown, raw: unknown): Promise<LegalWrite> {
+export async function saveLegalItem(propertyId: unknown, kind: unknown, itemId: unknown, raw: unknown, newParties: unknown = []): Promise<LegalWrite> {
   const property = uuid.safeParse(propertyId);
   const table = legalKindSchema.safeParse(kind);
   const item = itemId === null ? { success: true as const, data: null } : uuid.safeParse(itemId);
@@ -46,20 +47,22 @@ export async function saveLegalItem(propertyId: unknown, kind: unknown, itemId: 
   if (value === null) return { ok: false, reason: 'invalid' };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: property.data };
-  const { data, error } =
-    item.data === null
-      ? await legalTable(supabase, table.data).insert({ ...value, ...scope }).select('id').single()
-      : await legalTable(supabase, table.data)
-          .update(value)
-          .eq('household_id', scope.household_id)
-          .eq('property_id', scope.property_id)
-          .eq('id', item.data)
-          .select('id')
-          .maybeSingle();
-  if (error) return { ok: false, reason: error.code === FOREIGN_KEY_VIOLATION || error.code === CHECK_VIOLATION ? 'invalid' : 'failed' };
-  if (data === null) return { ok: false, reason: 'failed' };
-  revalidateLegal(property.data);
-  return { ok: true, id: data.id };
+  return savingWithParties<LegalWrite>(supabase, scope.household_id, newParties, async () => {
+    const { data, error } =
+      item.data === null
+        ? await legalTable(supabase, table.data).insert({ ...value, ...scope }).select('id').single()
+        : await legalTable(supabase, table.data)
+            .update(value)
+            .eq('household_id', scope.household_id)
+            .eq('property_id', scope.property_id)
+            .eq('id', item.data)
+            .select('id')
+            .maybeSingle();
+    if (error) return { ok: false, reason: error.code === FOREIGN_KEY_VIOLATION || error.code === CHECK_VIOLATION ? 'invalid' : 'failed' };
+    if (data === null) return { ok: false, reason: 'failed' };
+    revalidateLegal(property.data);
+    return { ok: true, id: data.id };
+  });
 }
 
 async function linkedIds(table: 'parcels' | 'structures', householdId: string, certificateId: string): Promise<string[] | null> {
@@ -130,54 +133,61 @@ export async function restoreLegalItem(raw: unknown): Promise<LegalWrite> {
   return { ok: true, id };
 }
 
-const partyInputSchema = z.discriminatedUnion('kind', [
-  z.object({
-    kind: z.literal('individual'),
-    full_name: z.string().trim().min(1).max(200),
-    id_last4: z
-      .string()
-      .regex(/^[0-9]{4}$/)
-      .nullable(),
-  }),
-  z.object({ kind: z.literal('organization'), full_name: z.string().trim().min(1).max(200), bank: z.boolean() }),
-]);
+type SessionClient = Awaited<ReturnType<typeof createSessionClient>>;
+type PartiesRejected = { readonly ok: false; readonly reason: 'invalid' | 'failed' };
 
-export type PartyWrite = { readonly ok: true; readonly party: PartyOption } | { readonly ok: false };
+function partyRow(householdId: string, party: NewParty): TablesInsert<'parties'> {
+  const base = { id: party.id, household_id: householdId, kind: party.kind, full_name: party.full_name.normalize('NFC') };
+  return party.kind === 'individual'
+    ? { ...base, id_last4: party.id_last4, tags: ['owner'] }
+    : { ...base, tags: party.bank ? ['bank'] : ['other'] };
+}
 
-/** Quick-add from a picker: a name and, for a person, only the last 4 ID digits (SPEC D11). */
-export async function quickAddParty(raw: unknown): Promise<PartyWrite> {
-  const parsed = partyInputSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false };
-  const input = parsed.data;
-  const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
-  const fullName = input.full_name.normalize('NFC');
-  const { data, error } = await supabase
+/**
+ * Quick-added parties exist only in the form until a save names them. They go in just before the save, under their
+ * client-made ids so a retry changes nothing, and the ones this call created are deleted again if the save fails, so
+ * an abandoned or failed form leaves no one behind.
+ */
+async function savingWithParties<T extends { readonly ok: boolean }>(
+  supabase: SessionClient,
+  householdId: string,
+  raw: unknown,
+  save: () => Promise<T>,
+): Promise<T | PartiesRejected> {
+  const parsed = newPartiesSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, reason: 'invalid' };
+  if (parsed.data.length === 0) return save();
+  const created = await supabase
     .from('parties')
-    .insert({
-      household_id: member.household.id,
-      kind: input.kind,
-      full_name: fullName,
-      ...(input.kind === 'individual' ? { id_last4: input.id_last4, tags: ['owner'] } : { tags: input.bank ? ['bank'] : ['other'] }),
-    })
-    .select('id')
-    .single();
-  if (error) return { ok: false };
-  return { ok: true, party: { id: data.id, fullName, kind: input.kind, isBank: input.kind === 'organization' && input.bank } };
+    .upsert(parsed.data.map((party) => partyRow(householdId, party)), { onConflict: 'id', ignoreDuplicates: true })
+    .select('id');
+  if (created.error) return { ok: false, reason: 'failed' };
+  const rollBack = () => supabase.from('parties').delete().eq('household_id', householdId).in('id', created.data.map((row) => row.id));
+  try {
+    const result = await save();
+    if (!result.ok) await rollBack();
+    return result;
+  } catch (error) {
+    await rollBack();
+    throw error;
+  }
 }
 
 export type OwnershipWrite = { readonly ok: true } | { readonly ok: false; readonly reason: 'invalid' | 'failed' };
 
 /** Replaces the property's whole set in one call; an incomplete set saves, and the page warns from the saved rows. */
-export async function saveOwnershipShares(propertyId: unknown, raw: unknown): Promise<OwnershipWrite> {
+export async function saveOwnershipShares(propertyId: unknown, raw: unknown, newParties: unknown = []): Promise<OwnershipWrite> {
   const property = uuid.safeParse(propertyId);
   const shares = ownershipSharesSchema.safeParse(raw);
   if (!property.success || !shares.success) return { ok: false, reason: 'invalid' };
-  const supabase = await createSessionClient();
-  const { error } = await supabase.rpc('set_ownership_shares', { p_property_id: property.data, p_shares: shares.data });
-  if (error) {
-    const invalid = [FOREIGN_KEY_VIOLATION, CHECK_VIOLATION, INVALID_PARAMETER].includes(error.code);
-    return { ok: false, reason: invalid ? 'invalid' : 'failed' };
-  }
-  revalidateLegal(property.data);
-  return { ok: true };
+  const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
+  return savingWithParties<OwnershipWrite>(supabase, member.household.id, newParties, async () => {
+    const { error } = await supabase.rpc('set_ownership_shares', { p_property_id: property.data, p_shares: shares.data });
+    if (error) {
+      const invalid = [FOREIGN_KEY_VIOLATION, CHECK_VIOLATION, INVALID_PARAMETER].includes(error.code);
+      return { ok: false, reason: invalid ? 'invalid' : 'failed' };
+    }
+    revalidateLegal(property.data);
+    return { ok: true };
+  });
 }
