@@ -42,8 +42,49 @@ export function planPhotoUploads(paths: readonly (string | null)[], photosDir = 
   });
 }
 
+/** Objects in the bucket that the seed would not upload. */
+export function stalePaths(existing: readonly string[], wanted: readonly string[]): string[] {
+  const keep = new Set(wanted);
+  return existing.filter((path) => !keep.has(path)).toSorted();
+}
+
+type Headers = Record<string, string>;
+
+async function listObjects(url: string, headers: Headers, prefix = ''): Promise<string[]> {
+  const response = await retrying(
+    () =>
+      fetch(`${url}/storage/v1/object/list/${BUCKET}`, {
+        method: 'POST',
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify({ prefix, limit: 1000 }),
+      }),
+    { attempts: 5, firstDelayMs: 250 },
+  );
+  if (!response.ok) throw new Error(`seed-photos: listing ${prefix || BUCKET} failed: ${response.status} ${await response.text()}`);
+  const entries = (await response.json()) as { name: string; id: string | null }[];
+  const nested = await Promise.all(
+    entries.map(async ({ name, id }) => (id === null ? listObjects(url, headers, `${prefix}${name}/`) : [`${prefix}${name}`])),
+  );
+  return nested.flat();
+}
+
+async function removeObjects(url: string, headers: Headers, paths: readonly string[]): Promise<void> {
+  for (let start = 0; start < paths.length; start += 100) {
+    const response = await retrying(
+      () =>
+        fetch(`${url}/storage/v1/object/${BUCKET}`, {
+          method: 'DELETE',
+          headers: { ...headers, 'content-type': 'application/json' },
+          body: JSON.stringify({ prefixes: paths.slice(start, start + 100) }),
+        }),
+      { attempts: 5, firstDelayMs: 250 },
+    );
+    if (!response.ok) throw new Error(`seed-photos: deleting objects failed: ${response.status} ${await response.text()}`);
+  }
+}
+
 async function run(): Promise<void> {
-  const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
+  const env = slotEnv(process.env.ESTA_SLOT_ROOT ?? join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
   const host = URL.parse(env.SUPABASE_URL ?? '')?.hostname;
   if (host === undefined || !LOCAL_HOSTS.has(host)) {
     throw new Error(`seed-photos uploads only to a local stack, not ${host ?? env.SUPABASE_URL}`);
@@ -52,8 +93,16 @@ async function run(): Promise<void> {
   if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is unknown: start the slot with pnpm db:start or export it');
   const headers = { apikey: key, authorization: `Bearer ${key}`, 'x-esta-actor': 'system:seed-photos' };
 
+  const url = env.SUPABASE_URL ?? '';
   const ready = await retrying(() => fetch(`${env.SUPABASE_URL}/storage/v1/bucket/${BUCKET}`, { headers }), { attempts: 9, firstDelayMs: 250 });
   if (!ready.ok) throw new Error(`seed-photos: Storage is not ready: ${ready.status} ${await ready.text()}`);
+
+  if (process.argv.includes('--empty')) {
+    const existing = await listObjects(url, headers);
+    await removeObjects(url, headers, existing);
+    console.log(`seed-photos: removed ${existing.length} objects from ${BUCKET}`);
+    return;
+  }
 
   const response = await retrying(() => fetch(`${env.SUPABASE_URL}/rest/v1/properties?select=cover_photo_path&cover_photo_path=not.is.null`, { headers }), {
     attempts: 5,
@@ -80,7 +129,9 @@ async function run(): Promise<void> {
       if (!upload.ok) throw new Error(`seed-photos: ${path} failed: ${upload.status} ${await upload.text()}`);
     }),
   );
-  console.log(`seed-photos: ${uploads.length} objects in ${BUCKET}`);
+  const stale = stalePaths(await listObjects(url, headers), uploads.map((upload) => upload.path));
+  await removeObjects(url, headers, stale);
+  console.log(`seed-photos: ${uploads.length} objects in ${BUCKET}, removed ${stale.length} stale`);
 }
 
 if (import.meta.main) {

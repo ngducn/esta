@@ -26,6 +26,13 @@
 # second waiter that judged the same lock cannot move its successor; a lock
 # with no pid gets a file first so that its graveyard is not empty.
 #
+# The db and e2e jobs empty the slot's property-photos bucket before the reset,
+# because `db reset` keeps Storage objects from the previous branch. They run
+# this checkout's scripts/seed-photos.ts --empty so that older PR heads work.
+#
+# The e2e job retries a failed test once. Tests that failed and then passed
+# are reported as "flaky: N" with their titles, in the job log and the comment.
+#
 # The db and e2e jobs rerun a reset once when the Supabase CLI answers 502
 # during its container restart, after Kong and Storage report healthy.
 set -uo pipefail
@@ -101,6 +108,7 @@ fi
 
 logdir=/tmp/ci-local/pr-$pr-${sha:0:7}
 mkdir -p "$logdir"
+rm -f "$logdir/e2e.flaky"
 export ESTA_SLOT=$slot
 
 tree=$(mktemp -d /tmp/ci-local/tree.XXXXXX) || exit 2
@@ -134,6 +142,19 @@ gateway_healthy() {
 	[ "$(docker inspect --format '{{.State.Health.Status}}' "supabase_kong_esta-$slot" "supabase_storage_esta-$slot" 2>/dev/null | grep -cx healthy)" = 2 ]
 }
 
+ci_root=$(cd "$(dirname "$0")/.." && pwd)
+empty_photos() {
+	(cd "$ci_root" && ESTA_SLOT_ROOT=$tree node_modules/.bin/tsx scripts/seed-photos.ts --empty)
+}
+
+run_e2e() {
+	local report=$logdir/e2e-report.json
+	CI=1 PLAYWRIGHT_JSON_OUTPUT_NAME=$report pnpm e2e --retries=1 --reporter=list,json
+	local code=$?
+	[ -f "$report" ] && node "$ci_root/tools/flaky-report.mjs" "$report" | tee "$logdir/e2e.flaky"
+	return "$code"
+}
+
 reset_db() {
 	"$@" 2>&1 | tee "$logdir/reset.log"
 	local code=${PIPESTATUS[0]}
@@ -156,13 +177,13 @@ run_job() {
 		;;
 	db)
 		pnpm install --frozen-lockfile &&
-			pnpm db:start &&
+			pnpm db:start && empty_photos &&
 			{ if node -e 'process.exit(require("./package.json").scripts["db:seed:check"]?0:1)'; then reset_db pnpm db:seed:check; else reset_db pnpm db:reset; fi; } &&
 			pnpm db:test &&
 			pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
 		;;
 	e2e)
-		pnpm install --frozen-lockfile && pnpm db:start && reset_db pnpm db:reset && pnpm e2e
+		pnpm install --frozen-lockfile && pnpm db:start && empty_photos && reset_db pnpm db:reset && run_e2e
 		;;
 	prod-build)
 		pnpm install --frozen-lockfile && pnpm run --if-present e2e:prod && pnpm run --if-present check:build-env
@@ -197,9 +218,14 @@ body="$marker
 | --- | --- |"
 for job in "${jobs[@]}"; do body="$body
 | \`$job\` | $(cat "$logdir/$job.result") |"; done
+flaky=
+[ -s "$logdir/e2e.flaky" ] && flaky="E2E $(head -1 "$logdir/e2e.flaky") (each passed on its one retry)
+$(tail -n +2 "$logdir/e2e.flaky")
+
+"
 body="$body
 
-Ran \`tools/ci-local.sh\` in a fresh worktree on $(hostname -s) with ESTA_SLOT=$slot at $(date '+%Y-%m-%d %H:%M %z'). Logs stay on that machine in \`$logdir/\`."
+${flaky}Ran \`tools/ci-local.sh\` in a fresh worktree on $(hostname -s) with ESTA_SLOT=$slot at $(date '+%Y-%m-%d %H:%M %z'). Logs stay on that machine in \`$logdir/\`."
 
 if [ -n "${CI_LOCAL_NO_POST:-}" ]; then
 	echo "$body"

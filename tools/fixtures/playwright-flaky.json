@@ -1,0 +1,1 @@
+{"suites":[{"title":"leases.spec.ts","specs":[],"suites":[{"title":"rent","specs":[{"title":"marks an invoice paid","tests":[{"status":"flaky","results":[{"status":"failed"},{"status":"passed"}]}]},{"title":"lists invoices","tests":[{"status":"expected","results":[{"status":"passed"}]}]}]}]}]}
