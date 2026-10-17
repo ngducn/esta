@@ -1061,6 +1061,96 @@ export type Database = {
         }
         Relationships: []
       }
+      units: {
+        Row: {
+          area_m2: number | null
+          available_from: string | null
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          kind: string
+          label: string
+          list_rent_vnd: number | null
+          property_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          area_m2?: number | null
+          available_from?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          kind: string
+          label: string
+          list_rent_vnd?: number | null
+          property_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          area_m2?: number | null
+          available_from?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          kind?: string
+          label?: string
+          list_rent_vnd?: number | null
+          property_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      utility_accounts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_code: string | null
+          holder_name: string | null
+          household_id: string
+          id: string
+          kind: string
+          note: string | null
+          property_id: string
+          provider: string | null
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_code?: string | null
+          holder_name?: string | null
+          household_id: string
+          id?: string
+          kind: string
+          note?: string | null
+          property_id: string
+          provider?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_code?: string | null
+          holder_name?: string | null
+          household_id?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          property_id?: string
+          provider?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       property_list_rows: {
@@ -1078,12 +1168,14 @@ export type Database = {
           legacy_province_names: string[] | null
           legal_status: string | null
           lng: number | null
+          monthly_rent_vnd: number | null
           nickname: string | null
           owner_party_ids: string[] | null
           province_code: string | null
           province_name: string | null
           search_text: string | null
           use_mode: string | null
+          vacant_since: string | null
         }
         Relationships: [
           {

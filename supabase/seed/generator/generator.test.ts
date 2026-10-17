@@ -157,6 +157,35 @@ describe('ownership seed', () => {
   });
 });
 
+describe('units seed', () => {
+  const sql = generate({ ...DEFAULT_OPTIONS, lanes: 1 });
+  const units = insertedRows(sql, 'public.units').filter((row) => row.includes(`'${seedId('seed:household:lane-1')}'`));
+  const ofProperty = (key: string) => units.filter((row) => row.includes(`'${seedId(`seed:property:lane-1:${key}`)}'`));
+  const rent = (row: string) => Number(/'(?:whole|room|floor|shop|lot)', (?:[0-9.]+|null), ([0-9]+|null),/.exec(row)?.[1]);
+
+  it('gives Dĩ An Phòng 1 to Phòng 8 at 21.400.000 VND in all, with Phòng 8 free from 2026-08-01', () => {
+    const rooms = ofProperty('di-an');
+    expect(rooms.map((row) => /'(Phòng [0-9]+)'/.exec(row)?.[1])).toEqual(['Phòng 1', 'Phòng 2', 'Phòng 3', 'Phòng 4', 'Phòng 5', 'Phòng 6', 'Phòng 7', 'Phòng 8']);
+    expect(rooms.reduce((sum, row) => sum + rent(row), 0)).toBe(21_400_000);
+    expect(rooms.filter((row) => row.includes("'2026-08-01'"))).toEqual([rooms[7]]);
+  });
+
+  it('writes the rents of q7, thu-duc and bien-hoa onto the whole unit the property trigger creates', () => {
+    for (const [key, amount] of [['q7', 15_000_000], ['thu-duc', 9_000_000], ['bien-hoa', 12_000_000]] as const) {
+      const [row] = ofProperty(key);
+      expect(row).toContain(`'${seedId(`esta:unit:whole:${seedId(`seed:property:lane-1:${key}`)}`)}'`);
+      expect(rent(row ?? '')).toBe(amount);
+    }
+    expect(sql).toMatch(/insert into public\.units [^;]*\non conflict \(id\) do update set household_id = excluded\.household_id, [^;]*list_rent_vnd = excluded\.list_rent_vnd/);
+  });
+
+  it('seeds an electricity and a water account for every property except Quận 1, whose tenant holds them', () => {
+    const accounts = insertedRows(sql, 'public.utility_accounts').filter((row) => row.includes(`'${seedId('seed:household:lane-1')}'`));
+    expect(accounts).toHaveLength(8);
+    expect(accounts.some((row) => row.includes(`'${seedId('seed:property:lane-1:q1')}'`))).toBe(false);
+  });
+});
+
 describe('renderSeed', () => {
   it('escapes quotes and renders arrays, jsonb, nulls and defaults', () => {
     const sql = renderSeed(

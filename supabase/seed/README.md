@@ -95,12 +95,19 @@ Keys added by the generator:
 | `notification_preferences` row | `seed:notification-preference:<person>-<household>:<channel>` | `seed:notification-preference:me-demo:inapp` |
 | `auth.identities` row | `seed:identity:<person>-<household>` | `seed:identity:ryan-lane-2` |
 | Property | `seed:property:<household>:<property>` | `seed:property:lane-3:di-an` |
+| Unit other than `whole` | `seed:unit:<household>:<property>:<n>` | `seed:unit:lane-1:di-an:8` |
+| `whole` unit | `esta:unit:whole:<property id>`, the key `private.whole_unit_id` uses | `esta:unit:whole:` followed by the id of `seed:property:demo:q7` |
+| Utility account | `seed:utility-account:<household>:<property>:<kind>` | `seed:utility-account:demo:di-an:water` |
 
 `<property>` is a SPEC §9.3 seed key: `q7`, `thu-duc`, `di-an`, `q1`, `bien-hoa`, `long-an` or `bao-loc`. A property's `code` is that key in uppercase without hyphens, such as `DIAN`.
 
 ## Acquisition
 
 Every seeded property except `long-an` carries `acquired_on`, `acquisition_kind` and, for a purchase, `acquisition_price_vnd` in integer đồng: `q7`, `thu-duc`, `di-an` and `bien-hoa` were bought, `q1` was inherited and `bao-loc` was a gift, so neither has a price. `long-an` has none, so the completeness check in P1-03 flags its missing acquisition.
+
+## Units and utility accounts
+
+Inserting a property makes its `whole` unit `Toàn bộ` (migration `20261007202000_units.sql`), and a unit of another kind replaces it. The `units` emitter is an upsert (`publicTable(..., { upsert: true })`, rendered as `on conflict (id) do update`), so the `whole` units of `q7`, `thu-duc` and `bien-hoa` take their list rents of 15.000.000, 9.000.000 and 12.000.000 VND onto the rows the trigger made. `di-an` gets `Phòng 1` to `Phòng 8` (21.400.000 VND in all, `Phòng 8` available from 2026-08-01), `q1` one `shop` at 30.000.000, and `long-an` and `bao-loc` one `lot` each with no rent. `q7`, `thu-duc`, `di-an` and `bien-hoa` get one electricity and one water account at property level; `q1` has none, because its tenant holds them.
 
 ## Cover photos and bulk properties
 
