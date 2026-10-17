@@ -8,25 +8,17 @@ import { scaleRoundHalfUp } from './rounding';
 import type { Amendment, AmendmentRefusal, BillingCycleMonths, LeaseTerms, Period } from './types';
 
 type Cursor = {
-  origin: IsoDate;
-  index: number;
+  offsetMonths: number;
   cycle: BillingCycleMonths;
   rent: { from: IsoDate; vnd: Vnd };
 };
 
-function gridStart(anchor: LeaseTerms['periodAnchor'], cursor: Cursor, index: number): IsoDate {
-  if (anchor === 'lease_start' || index === 0) return addMonths(cursor.origin, index * cursor.cycle);
-  return addMonths(firstOfMonth(cursor.origin), index * cursor.cycle);
-}
-
 function amend(cursor: Cursor, amendment: Amendment): Cursor {
   const { rentVnd, billingCycleMonths } = amendment.changes;
-  const start = amendment.effectivePeriodStart;
   return {
-    origin: billingCycleMonths === undefined ? cursor.origin : start,
-    index: billingCycleMonths === undefined ? cursor.index : 0,
+    offsetMonths: cursor.offsetMonths,
     cycle: billingCycleMonths ?? cursor.cycle,
-    rent: rentVnd === undefined ? cursor.rent : { from: start, vnd: rentVnd },
+    rent: rentVnd === undefined ? cursor.rent : { from: amendment.effectivePeriodStart, vnd: rentVnd },
   };
 }
 
@@ -43,22 +35,22 @@ export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendme
   const sorted = [...amendments].sort(byEffectiveStart);
   const lastStart = terms.endDate !== null && terms.endDate < until ? terms.endDate : until;
   const periods: Period[] = [];
+  const origin = terms.periodAnchor === 'lease_start' ? terms.startDate : firstOfMonth(terms.startDate);
   let cursor: Cursor = {
-    origin: terms.startDate,
-    index: 0,
+    offsetMonths: 0,
     cycle: terms.billingCycleMonths,
     rent: { from: terms.startDate, vnd: terms.rentVnd },
   };
   let applied = 0;
+  let fullStart = origin;
   let start = terms.startDate;
   while (start <= lastStart) {
     for (let next = sorted[applied]; next !== undefined && next.effectivePeriodStart === start; next = sorted[applied]) {
       cursor = amend(cursor, next);
       applied += 1;
     }
-    const naturalEnd = addDays(gridStart(terms.periodAnchor, cursor, cursor.index + 1), -1);
+    const naturalEnd = addDays(addMonths(origin, cursor.offsetMonths + cursor.cycle), -1);
     const end = terms.endDate !== null && terms.endDate < naturalEnd ? terms.endDate : naturalEnd;
-    const fullStart = cursor.index === 0 && terms.periodAnchor === 'calendar_month' ? firstOfMonth(cursor.origin) : start;
     const chargeStart = fullStart !== start && terms.firstPeriodProration === 'none' ? fullStart : start;
     const daysInFullPeriod = daysBetween(fullStart, naturalEnd) + 1;
     const days = daysBetween(chargeStart, end) + 1;
@@ -77,8 +69,9 @@ export function generateSchedule(terms: LeaseTerms, amendments: readonly Amendme
       prorated,
       coveredByPaidThrough: terms.paidThroughDate !== null && end <= terms.paidThroughDate,
     });
-    cursor = { ...cursor, index: cursor.index + 1 };
-    start = gridStart(terms.periodAnchor, cursor, cursor.index);
+    cursor = { ...cursor, offsetMonths: cursor.offsetMonths + cursor.cycle };
+    fullStart = addMonths(origin, cursor.offsetMonths);
+    start = fullStart;
   }
   const unapplied = sorted[applied];
   if (unapplied !== undefined && unapplied.effectivePeriodStart <= lastStart) {
