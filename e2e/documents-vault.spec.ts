@@ -46,6 +46,16 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
+/** What the vault's search returns for a lane's household now; other specs upload to the same lanes. */
+async function searchCount(page: Page, lane: number, query: string): Promise<number> {
+  const response = await page.request.post(`${rest}/rpc/search_documents?household_id=eq.${household(lane)}&select=id`, {
+    headers: { ...service, 'content-type': 'application/json' },
+    data: { p_query: query },
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  return ((await response.json()) as unknown[]).length;
+}
+
 const accessCount = async (page: Page, id: string, action: string) => (await serviceGet<unknown[]>(page, `document_access_log?select=id&document_id=eq.${id}&action=eq.${action}`)).length;
 const results = (page: Page) => page.getByTestId('vault-results').getByTestId('document-tile');
 const expiring = (page: Page, title: string) => page.getByTestId('expiring-item').filter({ hasText: title });
@@ -88,7 +98,10 @@ test('rule 1: Mẹ opens Tài liệu from Home, types bao loc so and opens Sổ 
   expect(page.url()).toMatch(/\/documents\?q=bao\+loc\+so$/);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
-  await results(page).first().getByTestId('document-link').click();
+  // documents-extract.spec.ts rule 1 uploads a second Sổ hồng Bảo Lộc to this lane, which can rank first on its id.
+  const seeded = results(page).and(page.locator(`[data-document-id="${certificate}"]`));
+  await expect(seeded).toHaveAttribute('data-blurred', 'true');
+  await seeded.getByTestId('document-link').click();
   await expect(page).toHaveURL(new RegExp(`/documents/${certificate}$`), COLD_ROUTE);
   await expect(page.locator('img[data-testid="document-page"]')).toBeVisible(COLD_ROUTE);
   await page.locator('img[data-testid="document-page"]').evaluate((img: HTMLImageElement) => img.decode());
@@ -190,7 +203,10 @@ test('rule 6: in English at 130% and dark, bao loc so still finds Sổ hồng B�
     await search(page, 'bao loc so');
     await expect(results(page).first().getByTestId('document-link')).toHaveText('Sổ hồng Bảo Lộc');
     await expect(results(page).first()).toHaveAttribute('data-blurred', 'true');
-    await expect(page.getByTestId('vault-results').getByRole('heading')).toHaveText('1 result');
+    // documents-extract.spec.ts rule 9 uploads a second Sổ hồng Bảo Lộc to this lane, so count what is there now.
+    const matches = await searchCount(page, 10, 'bao loc so');
+    expect(matches).toBeGreaterThanOrEqual(1);
+    await expect(page.getByTestId('vault-results').getByRole('heading')).toHaveText(matches === 1 ? '1 result' : `${matches} results`);
     expect(await noSideScroll(page)).toBe(true);
   } finally {
     await serviceWrite(page, 'PATCH', member('me', 10), { locale: 'vi', text_scale: 100 });
