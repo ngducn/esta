@@ -8,7 +8,6 @@ import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { PropertyDetailFrame } from '../detail-frame';
 
-/** The vault of one property, where its documents are added (DOC-1, DOC-3). */
 export default async function PropertyDocumentsPage({
   params,
   searchParams,

@@ -50,7 +50,6 @@ export async function loadVault(householdId: string, propertyId: string | null, 
   };
 }
 
-/** `?q=` as one trimmed string; anything else reads as no query. */
 export function queryParam(value: string | string[] | undefined): string {
   return typeof value === 'string' ? value.trim().slice(0, 200) : '';
 }

@@ -25,21 +25,17 @@ function subscribeColumns(onChange: () => void): () => void {
 
 type Row =
   | { readonly kind: 'group'; readonly key: string; readonly label: string; readonly count: number }
-  | { readonly kind: 'section'; readonly key: string; readonly label: string }
   | { readonly kind: 'tiles'; readonly key: string; readonly tiles: readonly VaultTile[] };
 
-/** Headings and tile rows in reading order, a tile row holding one tile per column. */
+/** Each group's heading, then its tiles in rows of one tile per column. */
 function flatten(groups: readonly VaultGroup[], columns: number): Row[] {
   return groups.flatMap((group): Row[] => [
-    { kind: 'group', key: group.key, label: group.label, count: group.count },
-    ...group.sections.flatMap((section): Row[] => [
-      ...(section.label === null ? [] : [{ kind: 'section' as const, key: section.key, label: section.label }]),
-      ...Array.from({ length: Math.ceil(section.tiles.length / columns) }, (_, row) => ({
-        kind: 'tiles' as const,
-        key: `${section.key}:${row}`,
-        tiles: section.tiles.slice(row * columns, (row + 1) * columns),
-      })),
-    ]),
+    { kind: 'group', key: group.key, label: group.label, count: group.tiles.length },
+    ...Array.from({ length: Math.ceil(group.tiles.length / columns) }, (_, row) => ({
+      kind: 'tiles' as const,
+      key: `${group.key}:${row}`,
+      tiles: group.tiles.slice(row * columns, (row + 1) * columns),
+    })),
   ]);
 }
 
@@ -86,8 +82,6 @@ export function VirtualVaultRows({
                   {countLabel(row.count)}
                 </span>
               </h3>
-            ) : row.kind === 'section' ? (
-              <h4 className="text-small font-semibold text-ink-2">{row.label}</h4>
             ) : (
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{row.tiles.map(renderTile)}</ul>
             )}

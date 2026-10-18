@@ -9,8 +9,7 @@ import type { VaultTile } from '@/server/documents/list';
 
 export type GroupBy = 'property' | 'category';
 
-export type VaultSection = { readonly key: string; readonly label: string | null; readonly tiles: readonly VaultTile[] };
-export type VaultGroup = { readonly key: string; readonly label: string; readonly count: number; readonly sections: readonly VaultSection[] };
+export type VaultGroup = { readonly key: string; readonly label: string; readonly tiles: readonly VaultTile[] };
 
 /** SPEC §7.2: a vault this large renders only the rows on screen. */
 export const VIRTUALIZE_ABOVE = 100;
@@ -24,32 +23,21 @@ function byKey(tiles: readonly VaultTile[], keyOf: (tile: VaultTile) => string):
 }
 
 /**
- * `Theo tài sản`: each property by name, documents without one last, and inside each the categories in the registry's
- * order. `Theo loại`: each category in that order. Every group carries its count.
+ * `Theo tài sản`: each property by name, documents without one last, each property's tiles in the category registry's
+ * order, since every tile names its category. `Theo loại`: each category in that order. Every group carries its count.
  */
 export function groupTiles(tiles: readonly VaultTile[], by: GroupBy, noProperty: string): VaultGroup[] {
   const sorted = tiles.toSorted((a, b) => categoryOrder(a) - categoryOrder(b));
   if (by === 'category') {
-    return [...byKey(sorted, (tile) => tile.category)].map(([key, group]) => ({
-      key,
-      label: group[0]?.categoryLabel ?? key,
-      count: group.length,
-      sections: [{ key, label: null, tiles: group }],
-    }));
+    return [...byKey(sorted, (tile) => tile.category)].map(([key, group]) => ({ key, label: group[0]?.categoryLabel ?? key, tiles: group }));
   }
   return [...byKey(sorted, (tile) => tile.propertyId ?? '')]
     .toSorted(([a, x], [b, y]) => (a === '' ? 1 : b === '' ? -1 : (x[0]?.propertyName ?? '').localeCompare(y[0]?.propertyName ?? '', 'vi')))
-    .map(([key, group]) => ({
-      key: key === '' ? 'none' : key,
-      label: group[0]?.propertyName ?? noProperty,
-      count: group.length,
-      sections: [...byKey(group, (tile) => tile.category)].map(([category, inside]) => ({ key: `${key}:${category}`, label: inside[0]?.categoryLabel ?? category, tiles: inside })),
-    }));
+    .map(([key, group]) => ({ key: key === '' ? 'none' : key, label: group[0]?.propertyName ?? noProperty, tiles: group }));
 }
 
 const LazyVirtualVault = dynamic(() => import('./virtual-vault-rows').then((module) => module.VirtualVaultRows));
 
-/** The vault below search, by property or by kind. The toggle is two pressed-state buttons, each with its word. */
 export function VaultGroups({
   tiles,
   initialBy = 'property',
@@ -95,17 +83,12 @@ export function VaultGroups({
             <h3 id={`group-${group.key}`} className="flex flex-wrap items-baseline gap-x-2 text-lead font-bold break-words text-ink">
               <span data-testid="group-label">{group.label}</span>
               <span data-testid="group-count" className="text-small font-normal text-ink-muted">
-                {t('groupCount', { count: group.count })}
+                {t('groupCount', { count: group.tiles.length })}
               </span>
             </h3>
-            {group.sections.map((section) => (
-              <div key={section.key} className="flex flex-col gap-2">
-                {section.label === null ? null : <h4 className="text-small font-semibold text-ink-2">{section.label}</h4>}
-                <ul aria-label={section.label ?? group.label} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {section.tiles.map((tile) => renderTile(tile, by === 'category'))}
-                </ul>
-              </div>
-            ))}
+            <ul aria-label={group.label} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {group.tiles.map((tile) => renderTile(tile, by === 'category'))}
+            </ul>
           </section>
         ))
       )}

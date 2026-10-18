@@ -60,7 +60,13 @@ async function search(page: Page, query: string) {
 async function shot(page: Page, name: string) {
   if (evidence === undefined) return;
   mkdirSync(evidence, { recursive: true });
-  await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => document.querySelector('[data-testid="reveal-thumbnail"][disabled]') === null);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    const images = [...document.images];
+    for (const image of images) image.loading = 'eager';
+    await Promise.all(images.map((image) => image.decode().catch(() => undefined)));
+  });
   await page.screenshot({ path: join(evidence, `${name}.png`), fullPage: true });
 }
 
@@ -188,6 +194,34 @@ test('rule 6: in English at 130% and dark, bao loc so still finds Sổ hồng B�
     expect(await noSideScroll(page)).toBe(true);
   } finally {
     await serviceWrite(page, 'PATCH', member('me', 10), { locale: 'vi', text_scale: 100 });
+  }
+});
+
+test('a vault above 100 documents mounts only the rows on screen (SPEC §7.2)', async ({ page }) => {
+  await open(page, 'ryan.lane7@demo.esta.test', 'light', DESKTOP);
+  const ids = Array.from({ length: 150 }, (_, n) => seedId(`e2e:document:vault-virtual:${n}`));
+  const rows = ids.map((id, n) => ({
+    id,
+    household_id: household(7),
+    category: 'other',
+    title: `Giấy tờ Demo ${n + 1}`,
+    storage_path: `${household(7)}/${id}/giay-to.pdf`,
+    mime: 'application/pdf',
+    size_bytes: 1000,
+    sha256: n.toString(16).padStart(64, '0'),
+    sensitivity: 'normal',
+  }));
+  await serviceWrite(page, 'POST', 'documents', rows);
+  try {
+    await page.goto('/documents');
+    await expect(page.getByTestId('virtual-vault')).toBeVisible(COLD_ROUTE);
+    await expect(page.getByTestId('document-count')).toHaveText(/^1\d\d tài liệu$/);
+    const mounted = await page.getByTestId('vault-groups').getByTestId('document-tile').count();
+    expect(mounted, 'only the tiles near the screen are in the DOM').toBeLessThan(40);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.getByTestId('vault-groups').getByTestId('document-tile').last(), 'the rows at the end mount on scroll').toBeInViewport();
+  } finally {
+    await serviceWrite(page, 'DELETE', `documents?id=in.(${ids.join(',')})`);
   }
 });
 
