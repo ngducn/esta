@@ -18,6 +18,8 @@ Seed rows use fixed ids so tests, screenshots and lanes can name them. Each id i
 
 Emails follow the same split. In `Gia đình Demo` they are `me@demo.esta.test` and `ryan@demo.esta.test`. In lane n they are `me.lane<n>@demo.esta.test` and `ryan.lane<n>@demo.esta.test`.
 
+Every seeded account signs in either with a code from the slot's Inbucket mailbox or with the password `Esta.Demo.2026` (`DEMO_PASSWORD` in `generator/households.ts`). The password exists only in local seeds: production runs no seed, and the `.esta.test` addresses receive no real mail.
+
 To get an id in SQL, run `select extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:household:lane-3')`.
 
 Keep these shapes when the seed generator replaces `bootstrap.sql`, so ids stay stable across resets and PRs.

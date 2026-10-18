@@ -9,6 +9,11 @@ export const PEOPLE = [
 
 export type Person = (typeof PEOPLE)[number]['person'];
 
+/** Local stacks only, documented in supabase/seed/README.md. Every seeded account signs in with it or with a code. */
+export const DEMO_PASSWORD = 'Esta.Demo.2026';
+/** bcrypt of DEMO_PASSWORD with a fixed salt, so two resets write the same row and `pnpm db:seed:check` holds. */
+const DEMO_PASSWORD_HASH = '$2a$10$u1mv4wjbn6w/SSL9RjrAf.LYsbPVWP/onnlzESyk11NTt3hHDZ/6i';
+
 export function householdSeeds(laneCount: number): HouseholdSeed[] {
   const lanes = Array.from({ length: laneCount }, (_, index): HouseholdSeed => ({
     key: `lane-${index + 1}`,
@@ -47,7 +52,7 @@ const authUsers: Emitter = {
       aud: 'authenticated',
       role: 'authenticated',
       email: email(person, household),
-      encrypted_password: '',
+      encrypted_password: DEMO_PASSWORD_HASH,
       email_confirmed_at: asOf,
       raw_app_meta_data: { provider: 'email', providers: ['email'] },
       raw_user_meta_data: {},
