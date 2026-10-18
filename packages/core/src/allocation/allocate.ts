@@ -74,3 +74,24 @@ export function allocatePayment(
   const allocated = allocations.reduce((sum, { amountVnd: part }) => sum + part, 0);
   return { ok: true, value: { allocations, creditVnd: vnd(amountVnd - allocated) } };
 }
+
+/**
+ * What a collections row asks for when Mẹ records a payment from it: that invoice and every open invoice of the same
+ * lease due before it, in the order allocatePayment would settle them. Zero when the invoice is not among them.
+ */
+export function owedThrough(openInvoices: readonly OpenInvoice[], invoiceId: string): Vnd {
+  const ordered = [...openInvoices].sort(oldestFirst);
+  const end = ordered.findIndex((invoice) => invoice.id === invoiceId);
+  if (end < 0) return vnd(0);
+  return vnd(ordered.slice(0, end + 1).reduce((sum, invoice) => sum + invoice.outstandingVnd, 0));
+}
+
+/**
+ * What a payment sheet saw owed when it opened: owedThrough its row, or the total of the invoices Mẹ chose.
+ * `record_payment` refuses the payment when the database no longer agrees, because the sheet's amount and allocation
+ * were worked out from those numbers.
+ */
+export function owedFor(openInvoices: readonly OpenInvoice[], invoiceId: string, chosen: readonly string[] | null): Vnd {
+  if (chosen === null) return owedThrough(openInvoices, invoiceId);
+  return vnd(openInvoices.filter((invoice) => chosen.includes(invoice.id)).reduce((sum, invoice) => sum + invoice.outstandingVnd, 0));
+}

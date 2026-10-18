@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { allocatePayment, type Allocation, type OpenInvoice } from './allocate';
+import { allocatePayment, owedFor, owedThrough, type Allocation, type OpenInvoice } from './allocate';
 
 const d = isoDate;
 
@@ -102,5 +102,32 @@ describe('allocatePayment', () => {
 
   it.each([0, -1])('refuses a payment of %i', (amount) => {
     expect(allocatePayment(vnd(amount), [september])).toEqual({ ok: false, reason: 'non_positive_payment' });
+  });
+});
+
+describe('owedThrough', () => {
+  it('asks for the row and every older open invoice of the lease, never a later one', () => {
+    expect(owedThrough([october, august, september], 'sep')).toBe(7_000_000);
+    expect(owedThrough([october, august, september], 'aug')).toBe(3_500_000);
+    expect(owedThrough([october, august, september], 'oct')).toBe(10_500_000);
+  });
+
+  it('asks for nothing when the row is no longer open', () => {
+    expect(owedThrough([august, september], 'oct')).toBe(0);
+  });
+});
+
+describe('owedFor', () => {
+  it('is owedThrough the row when Mẹ chose nothing', () => {
+    expect(owedFor([october, august, september], 'sep', null)).toBe(7_000_000);
+  });
+
+  it('is the total of the chosen invoices, whatever the row', () => {
+    expect(owedFor([october, august, september], 'sep', ['oct'])).toBe(3_500_000);
+    expect(owedFor([october, august, september], 'sep', ['aug', 'oct'])).toBe(7_000_000);
+  });
+
+  it('counts nothing for a chosen invoice that is no longer open', () => {
+    expect(owedFor([august, september], 'sep', ['oct'])).toBe(0);
   });
 });

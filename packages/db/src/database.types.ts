@@ -1518,6 +1518,7 @@ export type Database = {
           created_by: string | null
           household_id: string
           id: string
+          idempotency_key: string | null
           memo: string | null
           method: string
           payer_party_id: string | null
@@ -1532,6 +1533,7 @@ export type Database = {
           created_by?: string | null
           household_id: string
           id?: string
+          idempotency_key?: string | null
           memo?: string | null
           method: string
           payer_party_id?: string | null
@@ -1546,6 +1548,7 @@ export type Database = {
           created_by?: string | null
           household_id?: string
           id?: string
+          idempotency_key?: string | null
           memo?: string | null
           method?: string
           payer_party_id?: string | null
@@ -2239,6 +2242,22 @@ export type Database = {
         }[]
       }
       property_boundary: { Args: { p_property_id: string }; Returns: Json }
+      record_payment: {
+        Args: {
+          p_amount_vnd: number
+          p_idempotency_key: string
+          p_invoice_id: string
+          p_invoice_ids?: string[]
+          p_method: string
+          p_owed_vnd: number
+          p_received_on: string
+        }
+        Returns: {
+          allocated_vnd: number
+          amount_vnd: number
+          id: string
+        }[]
+      }
       set_my_locale: { Args: { p_locale: string }; Returns: undefined }
       set_ownership_shares: {
         Args: { p_property_id: string; p_shares: Json }
@@ -2265,6 +2284,7 @@ export type Database = {
           source: string
         }[]
       }
+      undo_payment: { Args: { p_payment_id: string }; Returns: undefined }
       update_my_display_settings: {
         Args: { p_density: string; p_locale: string; p_text_scale: number }
         Returns: undefined

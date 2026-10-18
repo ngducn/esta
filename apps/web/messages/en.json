@@ -1037,6 +1037,47 @@
     "offline": "You are offline. The board below is from the last load; choose another month once you are back online.",
     "errorTitle": "The collections board did not load",
     "errorBody": "Check the connection and try again. Recorded amounts are safe.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "recordPayment": "Record",
+    "partial": "Part paid"
+  },
+  "payments": {
+    "title": "Record payment",
+    "amount": "Amount received",
+    "allocation": "Pays",
+    "allocationSettled": "{month}: {amount}, paid in full",
+    "allocationShort": "{month}: {amount}, {rest} still owed",
+    "credit": "{amount} over, kept as credit for {tenant}.",
+    "creditNoTenant": "{amount} over, kept as credit for the tenant.",
+    "choose": "Choose invoices",
+    "chooseHint": "Untick an invoice this payment does not cover.",
+    "invoiceOption": "{month}, due {date}",
+    "invoiceOwed": "{amount} owed",
+    "chooseDone": "Done",
+    "method": "Method",
+    "cash": "Cash",
+    "transfer": "Bank transfer",
+    "date": "Received on",
+    "dateToday": "Today, {date}",
+    "changeDate": "Change date",
+    "save": "Save",
+    "saving": "Saving",
+    "cancel": "Cancel",
+    "saved": "Recorded {amount} from {place}.",
+    "undone": "Undid the payment from {place}.",
+    "undoFailed": "Could not undo. The payment is still recorded; reload the page to see it.",
+    "offline": "You are offline. The payment can be saved once you are back online.",
+    "errors": {
+      "amountMissing": "Enter the amount received.",
+      "amountInvalid": "The amount is not right. Write it as 3.500.000, 3tr5 or 850k.",
+      "method": "Choose Cash or Bank transfer.",
+      "dateMissing": "Enter the date it was received.",
+      "dateInvalid": "The date is not right. Use day/month/year, for example 07/10/2026.",
+      "dateAfterToday": "The date cannot be after today.",
+      "choice": "Choose at least one invoice that is still owed.",
+      "stale": "{place} was just recorded, so this payment was not saved. See the new amounts on the board.",
+      "nothingOwed": "{place} owes nothing now, so this payment was not saved. See the new amounts on the board.",
+      "failed": "Not saved yet. Check the connection and try again."
+    }
   }
 }

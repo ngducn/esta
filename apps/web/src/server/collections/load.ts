@@ -1,5 +1,5 @@
 import 'server-only';
-import { PAYMENT_STATUSES } from '@esta/core/allocation';
+import { PAYMENT_STATUSES, type OpenInvoice } from '@esta/core/allocation';
 import { collectionState, worstCollectionState, type CollectionCandidate, type CollectionState } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
 import { firstOfMonth } from '@esta/core/schedule';
@@ -81,4 +81,34 @@ export async function loadCollectionStates(householdId: string, asOf: IsoDate, p
       return worst === null ? [] : [[id, worst] as const];
     }),
   );
+}
+
+/** An invoice a payment from the board may settle. */
+export type PaymentInvoice = OpenInvoice & { readonly leaseId: string };
+
+const openInvoiceSchema = z
+  .object({ id: z.uuid(), lease_id: z.uuid(), due_date: isoDateSchema, period_start: isoDateSchema, outstanding_vnd: money })
+  .transform(
+    (row): PaymentInvoice => ({
+      id: row.id,
+      leaseId: row.lease_id,
+      dueDate: row.due_date,
+      periodStart: row.period_start,
+      outstandingVnd: row.outstanding_vnd,
+    }),
+  );
+
+/** Every issued invoice still owed, grouped by lease: what `record_payment` settles, oldest due first. */
+export async function loadOpenInvoices(householdId: string): Promise<Map<string, PaymentInvoice[]>> {
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase
+    .from('invoice_balances')
+    .select('id, lease_id, due_date, period_start, outstanding_vnd')
+    .eq('household_id', householdId)
+    .eq('status', 'issued')
+    .gt('outstanding_vnd', 0);
+  if (error) throw new Error(`Reading the open invoices failed: ${error.message}`);
+  const byLease = new Map<string, PaymentInvoice[]>();
+  for (const invoice of z.array(openInvoiceSchema).parse(data)) byLease.set(invoice.leaseId, [...(byLease.get(invoice.leaseId) ?? []), invoice]);
+  return byLease;
 }
