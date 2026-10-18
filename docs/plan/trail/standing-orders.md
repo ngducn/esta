@@ -191,3 +191,16 @@ Verification is tiered by risk, as `docs/plan/trail/verification-tiers.md` defin
 Operator's words, 2026-10-18: "seems like critical path is lowering the tokens by a lot, can you speed up the progress by parallel work then or is the dependency not allowing u to do that".
 
 Two tracks run in parallel while their dependencies allow it. Track A is the Phase 2 chain: P2-02, P2-03, P2-07, P2-05, P2-06, then P2-08. Track B is Phase 3 rent collection, starting with P3-07. Its pure core is merged, and pr-inventory moved on-activation issuance from P3-04 into P3-07. Each track keeps its own plan order. Each runs one heavy owner at a time, which keeps the machine at two stacks besides esta-1. Lanes take the heavy lock.
+
+## Update 2026-10-19 00:20 +07
+
+Operator's words, 2026-10-19, before going to bed: "1 thing i feel like i don't like about the app is that it is logged in so differently than any other app? can we just for now create account and log in like any other apps?" and "think with me, and give me a resume doc".
+
+This changes locked decision D8 (email one-time code). The operator raised it himself, so the root reads it as his go to change D8, with these defaults (agent interpretation; the operator can change any of them in his own words):
+
+1. Accounts use email and password, the way most apps do: "Tạo tài khoản" (email, password, show-password toggle) and "Đăng nhập" (email, password), plus "Quên mật khẩu?" that emails a reset. Sessions stay 30 days, so Mẹ signs in rarely, and the phone's password manager can save and fill the password.
+2. A new account confirms its email once, with the 6-digit code already built, before it can sign in. This keeps household invites safe: an invited email is claimed only by someone who can read that inbox.
+3. The emailed code stays as a secondary way in ("Đăng nhập bằng mã gửi qua email") and as the reset path. Tests and review lanes keep signing in with codes, so the existing e2e suite is not rewritten.
+4. Passwords need at least 8 characters, with no other complexity rules. No paid Supabase features (leaked-password checks are a paid plan feature and are not used).
+5. Google sign-in stays as SPEC D8 already plans it: behind `ESTA_GOOGLE_AUTH`, at the Phase 6 gate, once Ryan creates the OAuth client.
+6. It is rigorous tier (sign-in is a security boundary). It runs as the next item on track A after #150 merges, before P2-06. The PR edits SPEC D8 and FND-1 to record this ruling with its date.

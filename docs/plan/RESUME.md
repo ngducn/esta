@@ -2,25 +2,45 @@
 
 Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (every 2026-10-18 update), `verification-tiers.md`, `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, and `docs/plan/STATUS.md`. Briefs for every owner and lane are in `~/.claude/orchestrate/esta/briefs/`; the root's checklist is `~/.claude/orchestrate/esta/todo.md` (newest section at the bottom).
 
-## Where the run is (handoff written 2026-10-18 22:55 +07)
+## Where the run is (handoff written 2026-10-19 00:25 +07, Ryan going to bed)
 
-Merged this session (session esta-78, from 15:10): #123 P3-07 leases (cb72c18), #132 P3-09 collections board (f8599dc), #124 P2-03 the assistant reads documents (8a306f4), #136 P3-10 record payments (148dec1). `main` is at 148dec1 plus docs.
+Merged in session esta-78 (2026-10-18 15:10 to 00:25): #123 P3-07 leases (cb72c18), #132 P3-09 collections board (f8599dc), #124 P2-03 the assistant reads documents (8a306f4), #136 P3-10 record payments (148dec1), #141 P2-07 review and accept extracted fields (38413b4). `main` is at 38413b4 plus docs.
+
+**Ryan's new request (do this next on track A): accounts like other apps.** His words, 00:20: "can we just for now create account and log in like any other apps?" It changes locked decision D8, and he raised it himself, so it is his go. The defaults are in standing-orders.md (2026-10-19 00:20):
+- email and password sign-up, sign-in and forgot-password;
+- a one-time email confirmation by the existing code, which keeps invites safe;
+- the code kept as a secondary way in and for tests;
+- an 8-character minimum;
+- Google sign-in stays at Phase 6.
+
+Brief: `~/.claude/orchestrate/esta/briefs/auth-password.md` (rigorous). Start it as soon as #150 merges, on slot 3, before P2-06. If Ryan changes a default in the morning, update the brief before the owner starts, or send it to a running owner.
 
 Open, with the next step for each:
 
-- **#141 P2-07 merged as 38413b4** (round 3 PASS, CI 5/5 at 89b1b6d). Ryan did not answer the speed-budget question; the posted default was applied and #148 is a P2-08 entry requirement.
-- **P2-05: the documents vault (track A, rigorous) is PR #150**, code-ready at 9d6d941 (base af1fa31, migration 306100). At 00:05 on 2026-10-19 root CI ran on slot 5 (`/tmp/root-ci/pr150-9d6d941.log`) and round 1 started from `briefs/lane-pr150.md`: lane L (Sonnet, slot 5 after CI), lane A (Opus, slot 3), lane S (Sonnet, no stack); evidence in `/tmp/swarm-pr150-ev/{live,audit,math}/`. Collect the verdict, send blocking findings in one fix-forward, then a scoped round, CI and merge.
+- **#150 P2-05: the documents vault (track A, rigorous).** Code-ready at 9d6d941 (base af1fa31, migration 306100).
+  - At 00:05, root CI started on slot 5 (`/tmp/root-ci/pr150-9d6d941.log`, job logs `/tmp/ci-local/pr-150-9d6d941/`). Round 1 also started from `briefs/lane-pr150.md` with three lanes:
+    - lane L: Sonnet live and regression, slot 5 after CI;
+    - lane A: Opus audit, slot 3;
+    - lane S: Sonnet second opinion on search and expiry, no stack.
+  - Their evidence lands in `/tmp/swarm-pr150-ev/{live,audit,math}/`.
+  - **These were still running at the handoff.** Their reports may not reach the next session. If they do not, read each evidence folder. A lane whose folder has no report after its timebox (80, 75 and 45 minutes from 00:05) is stuck: rerun only that lane's section. Check `docker ps` and `bin/slot-free.sh` first, so you do not start a duplicate on a slot a lane still holds.
+  - **Already known for the fix-forward:** `/documents` LCP is 2.72 s against the 2.5 s budget. The cause is the first tile's lazy thumbnail. The fix is in one file: load the first tiles eagerly with high priority, as the property list does (owner report).
+  - Also confirm that CI ran `documents-extract` and `extraction-review`. The owner changed one tile selector in each and could not run them.
+  - Send every blocking finding in one fix-forward: a fresh Opus owner in `/tmp/owner-p2-05/wt`. Then run a scoped round, CI and the merge.
 - **#142 P3-04: the nightly invoice and lease-status job (track B, rigorous, interrogate list).**
-  - Round 2 PASS at 65f9bc9; the root rebased it onto 38413b4 as **ef5de0d** (no conflicts, range-diff identical) and reran CI on slot 5 (`/tmp/root-ci/pr142-rebased.log`). **Waiting for Ryan's merge click** at ef5de0d once CI is green (PR comments 6251656881 and the new-head note). If main moves again before he clicks, rebase and rerun CI, then tell him the new head.
+  - Merge-ready at **ef5de0d**: round 2 PASS, rebased onto 38413b4 with an identical range-diff, CI 5/5 there. **Waiting for Ryan's merge click** (PR comments 6251656881 and 6252413044).
+  - If main moves before he clicks, rebase again. Scripted resolvers: `/tmp/root-pr124/resolve-messages.py` and `resolve-playwright.py`. Rerun CI and post the new head for him.
 - **Next on each track.**
-  - Track A after P2-05: P2-06 (multi-page capture into one PDF), then P2-08 (add a property from a certificate photo, the Phase 2 exit; it must include #148, and #147 and #149 should land before it).
-  - Track B after #142 merges: P3-08 (lease detail, amend, terminate, renew). Its brief must include #144: terminate and renew through a security definer function that sets end_date to the real termination date, with direct lease status writes revoked (this also closes the cron's early-end gap). Write it from `briefs/p3-04.md`. P3-08 changes the billing SQL, so it cannot start before #142 merges.
+  - Track A: #150, then accounts like other apps, then P2-06 (multi-page capture into one PDF), then P2-08 (the Phase 2 exit).
+    - P2-08 must include #148: a review-size photo copy and a lazily loaded PDF viewer. Ryan never answered the speed question on #141, and the posted default was applied.
+    - #147 and #149 should land before P2-08.
+  - Track B after Ryan merges #142: P3-08 (lease detail, amend, terminate, renew). Its brief must include #144: terminate and renew through a security definer function that sets end_date to the real termination date, with direct lease status writes revoked. Write it from `briefs/p3-04.md`. P3-08 changes the billing SQL, so it cannot start before #142 merges.
 - **Open issues.**
-  - `[low]` for cleanup rounds: #114, #115, #118, #119, #121, #125, #126, #129, #131, #133, #134, #135, #137, #138, #140, #143, #144 (P3-08), #145, #146, #147 (D11 on the legal tab forms; do before P2-08).
-  - #130 closes when #142 merges.
+  - `[low]` for cleanup rounds: #114, #115, #118, #119, #121, #125, #126, #129, #131, #133, #134, #135, #137, #138, #140, #143, #144 (P3-08), #145, #146, #147 (D11 on the legal tab forms; before P2-08), #149 (dash-range terms; before real certificates).
+  - #130 closes when #142 merges. #148 is a P2-08 entry requirement.
   - Decision for Ryan, no rush: #139 (advance payments when nothing is owed).
   - CI: #122. Local dev: #127, #128. Deploy: #20 and #82 for P6-07.
-  - **Slot 2's database volume is broken** (a failed reset left it without `schema_migrations`, #131). Removing its volumes was refused by the permission check; it is waiting for Ryan. Never use slot 2 until then.
+  - **Slot 2's database volume is broken**: a failed reset left it without `schema_migrations` (#131). Removing its volumes was refused by the permission check. Ryan can run `docker volume rm supabase_db_esta-2 supabase_storage_esta-2` while slot 2 is stopped. Never use slot 2 until then.
 
 ## Rules added this session (read before acting)
 
@@ -40,7 +60,7 @@ Open, with the next step for each:
 
 ## Budget
 
-- `~/.claude/orchestrate/esta/bin/usage-pct.sh` reads the current block. Up to 95% per block: stop spawning at 90%, pause at 95%. The block 13:00Z to 18:00Z (20:00 to 01:00 +07) was at about 50% at this handoff.
+- `~/.claude/orchestrate/esta/bin/usage-pct.sh` reads the current block. Up to 95% per block: stop spawning at 90%, pause at 95%. The block 13:00Z to 18:00Z (20:00 to 01:00 +07) was at about 77% at this handoff; a new block starts at 01:00 +07.
 - Opus owners cost about 6 to 10 points an hour; Sonnet lanes 2 to 4.
 
 ## Gotchas learned this run
