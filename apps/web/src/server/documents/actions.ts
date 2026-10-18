@@ -1,5 +1,6 @@
 'use server';
 
+import { reduceNationalIds } from '@esta/core/agent-schemas';
 import {
   acceptsMime,
   DOCUMENT_CATEGORIES,
@@ -192,12 +193,18 @@ const editSchema = z.object({
 
 export type DocumentEdit = z.output<typeof editSchema>;
 
-export type DocumentUpdate = { readonly ok: true; readonly previous: DocumentEdit } | { readonly ok: false; readonly reason: 'invalid' | 'forbidden' | 'failed' };
+export type TypedField = 'title' | 'tags';
+
+export type DocumentUpdate =
+  | { readonly ok: true; readonly previous: DocumentEdit }
+  | { readonly ok: false; readonly reason: 'national_id'; readonly fields: readonly TypedField[] }
+  | { readonly ok: false; readonly reason: 'invalid' | 'forbidden' | 'failed' };
 
 /**
  * `Sửa thông tin`: writes what the row says about the document and returns what it said before, so the undo toast
- * writes that back through this same action. A document turned sensitive drops its read text, which the database
- * refuses to keep on a sensitive row (D11).
+ * writes that back through this same action. Before any write the ID reducer and the database judge read the typed
+ * title and every tag, and one holding a full ID refuses the save with its field named (D11). A document turned
+ * sensitive drops its read text, which the database refuses to keep on a sensitive row.
  */
 export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
   const parsed = editSchema.safeParse(input);
@@ -207,6 +214,12 @@ export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
   const { documentId, title, category, propertyId, expiresOn, tags, sensitive } = parsed.data;
   const household = member.household.id;
   const supabase = await createSessionClient();
+  const typed = [title, ...tags];
+  const { data: held, error: judgeError } = await supabase.rpc('national_id_indexes', { p_values: typed });
+  if (judgeError) return { ok: false, reason: 'failed' };
+  const holding = typed.map((text, index) => held.includes(index) || reduceNationalIds(text) !== text);
+  const fields = (['title', 'tags'] as const).filter((field) => (field === 'title' ? holding[0] : holding.slice(1).includes(true)));
+  if (fields.length > 0) return { ok: false, reason: 'national_id', fields };
   const { data: row, error: readError } = await supabase
     .from('documents')
     .select('title, category, property_id, expires_on, tags, sensitivity, mime')

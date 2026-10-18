@@ -1039,6 +1039,8 @@
     "tagsHint": "Separate with commas, for example: insurance, 2026.",
     "updated": "Saved the details of {title}.",
     "updateFailed": "Not saved. Check the network connection and try again.",
+    "nationalIdField": "This field still holds a full ID number. Keep only its last 4 digits.",
+    "editInvalid": "Not saved: a field is not right yet. Fix the field marked in red, then press Save.",
     "categoryMismatch": "This type does not accept the document's file. Choose another type.",
     "pages": "{count, plural, one {# page} other {# pages}}",
     "expiresOn": "Expires on {date}",

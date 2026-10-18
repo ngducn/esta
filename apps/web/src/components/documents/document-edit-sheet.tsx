@@ -1,8 +1,9 @@
 'use client';
 
 import { acceptsMime, DOCUMENT_CATEGORY_IDS, isDocumentCategory, type DocumentCategory } from '@esta/core/documents';
-import type { IsoDate } from '@esta/core/date';
-import { useTranslations } from 'next-intl';
+import { formatDate } from '@esta/core/format';
+import { parseOptionalDateInput } from '@esta/core/parse/date-input';
+import { useLocale, useTranslations } from 'next-intl';
 import { useId, useState, useTransition, type FormEvent } from 'react';
 import { DateInput } from '@/components/date-input';
 import { TextField } from '@/components/form-parts';
@@ -10,12 +11,14 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
-import { updateDocument, type DocumentEdit } from '@/server/documents/actions';
+import { updateDocument, type DocumentEdit, type TypedField } from '@/server/documents/actions';
 import type { DocumentDetail } from '@/server/documents/detail';
 
 const NO_PROPERTY = 'none';
 
 const splitTags = (text: string) => text.split(',').map((tag) => tag.trim()).filter((tag) => tag !== '');
+
+type Refusal = { readonly kind: 'failed' } | { readonly kind: 'invalid' } | { readonly kind: 'national_id'; readonly fields: readonly TypedField[] } | null;
 
 /** `Sửa thông tin`: the row's own facts only. The file never changes, so neither does the checksum (DOC-4). */
 export default function DocumentEditSheet({
@@ -30,33 +33,45 @@ export default function DocumentEditSheet({
   onSaved: (title: string, previous: DocumentEdit) => void;
 }) {
   const t = useTranslations('documents');
+  const locale = useLocale();
   const fieldId = useId();
   const [title, setTitle] = useState(document.title);
   const [category, setCategory] = useState<DocumentCategory>(document.category);
   const [propertyId, setPropertyId] = useState(document.propertyId ?? NO_PROPERTY);
-  const [expiresOn, setExpiresOn] = useState<IsoDate | null>(document.expiresOn);
+  const [expiresText, setExpiresText] = useState(document.expiresOn === null ? '' : formatDate(document.expiresOn, locale));
   const [tags, setTags] = useState(document.tags.join(', '));
   const [sensitive, setSensitive] = useState(document.sensitive);
-  const [failed, setFailed] = useState(false);
+  const [refusal, setRefusal] = useState<Refusal>(null);
   const [pending, startSave] = useTransition();
   const titleMissing = title.trim() === '';
   const wrongCategory = !acceptsMime(category, document.mime);
+  const holdsId = (field: TypedField) => refusal?.kind === 'national_id' && refusal.fields.includes(field);
 
   const save = (event: FormEvent) => {
     event.preventDefault();
     if (titleMissing || wrongCategory) return;
+    // An emptied field clears the date on purpose; one that does not read as a date must not clear it.
+    const expiresOn = parseOptionalDateInput(expiresText);
+    if (!expiresOn.ok) {
+      setRefusal({ kind: 'invalid' });
+      return;
+    }
     startSave(async () => {
       const result = await updateDocument({
         documentId: document.id,
         title: title.trim(),
         category,
         propertyId: propertyId === NO_PROPERTY ? null : propertyId,
-        expiresOn,
+        expiresOn: expiresOn.value,
         tags: splitTags(tags),
         sensitive,
-      }).catch(() => ({ ok: false }) as const);
-      setFailed(!result.ok);
-      if (result.ok) onSaved(title.trim(), result.previous);
+      }).catch(() => ({ ok: false, reason: 'failed' }) as const);
+      if (result.ok) {
+        setRefusal(null);
+        onSaved(title.trim(), result.previous);
+      } else {
+        setRefusal(result.reason === 'national_id' ? { kind: 'national_id', fields: result.fields } : { kind: 'failed' });
+      }
     });
   };
 
@@ -74,7 +89,7 @@ export default function DocumentEditSheet({
             testId="edit-title"
             value={title}
             maxLength={200}
-            error={titleMissing ? t('titleRequired') : null}
+            error={titleMissing ? t('titleRequired') : holdsId('title') ? t('nationalIdField') : null}
             onChange={setTitle}
           />
           <div className="flex flex-col gap-1">
@@ -98,8 +113,17 @@ export default function DocumentEditSheet({
             options={[...properties.map((property) => ({ value: property.id, label: property.nickname })), { value: NO_PROPERTY, label: t('noProperty') }]}
             onChange={setPropertyId}
           />
-          <DateInput label={t('expiresField')} {...(document.expiresOn === null ? {} : { defaultValue: document.expiresOn })} onValueChange={setExpiresOn} />
-          <TextField label={t('tagsField')} hint={t('tagsHint')} inputId={`${fieldId}-tags`} testId="edit-tags" value={tags} maxLength={400} error={null} onChange={setTags} />
+          <DateInput label={t('expiresField')} {...(document.expiresOn === null ? {} : { defaultValue: document.expiresOn })} onTextChange={setExpiresText} />
+          <TextField
+            label={t('tagsField')}
+            hint={t('tagsHint')}
+            inputId={`${fieldId}-tags`}
+            testId="edit-tags"
+            value={tags}
+            maxLength={400}
+            error={holdsId('tags') ? t('nationalIdField') : null}
+            onChange={setTags}
+          />
           <div className="flex items-start gap-1">
             <Checkbox
               id={`${fieldId}-sensitive`}
@@ -118,11 +142,15 @@ export default function DocumentEditSheet({
               </p>
             </div>
           </div>
-          {failed ? (
+          {refusal === null ? null : refusal.kind === 'failed' ? (
             <p role="alert" data-testid="edit-error" className="text-body font-semibold text-overdue">
               {t('updateFailed')}
             </p>
-          ) : null}
+          ) : (
+            <p role="alert" data-testid="edit-invalid" className="text-body font-semibold text-overdue">
+              {t('editInvalid')}
+            </p>
+          )}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <SheetClose render={<Button type="button" variant="outline" disabled={pending} />}>{t('cancel')}</SheetClose>
             <Button type="submit" data-testid="save-edit" disabled={pending}>

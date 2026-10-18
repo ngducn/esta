@@ -1039,6 +1039,8 @@
     "tagsHint": "Cách nhau bằng dấu phẩy, ví dụ: bảo hiểm, 2026.",
     "updated": "Đã lưu thông tin {title}.",
     "updateFailed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
+    "nationalIdField": "Ô này còn số CCCD/CMND đầy đủ. Chỉ ghi 4 số cuối.",
+    "editInvalid": "Chưa lưu: còn ô chưa đúng. Sửa ô có thông báo đỏ rồi bấm Lưu.",
     "categoryMismatch": "Loại này không nhận tệp của tài liệu. Chọn loại khác.",
     "pages": "{count, plural, other {# trang}}",
     "expiresOn": "Hết hạn ngày {date}",
