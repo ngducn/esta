@@ -40,6 +40,30 @@ select private.enable_household_rls('public.documents', 'member');
 select private.enable_audit('public.documents');
 select private.enable_soft_delete('public.documents');
 
+-- The storage policies treat a folder as saved while a row carries its id, so a member who could rename the row would
+-- free the folder, overwrite its file and rename the row back: new bytes under the old checksum. A user never changes
+-- what the row says about its file. The seed only inserts and the agent never touches these columns, so the service
+-- role and migrations stay unguarded, as in the tenancy guards.
+create function private.freeze_document_file()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if current_user = 'authenticated'
+     and (new.id, new.household_id, new.storage_path, new.mime, new.size_bytes, new.sha256)
+       is distinct from (old.id, old.household_id, old.storage_path, old.mime, old.size_bytes, old.sha256) then
+    raise exception 'documents: id, household_id, storage_path, mime, size_bytes and sha256 never change' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.freeze_document_file() from public;
+
+create trigger freeze_document_file
+  before update of id, household_id, storage_path, mime, size_bytes, sha256 on public.documents
+  for each row execute function private.freeze_document_file();
+
 -- Keyed on the household too: a foreign key check ignores RLS, so a bare document id could name another household's.
 alter table public.certificates
   add constraint certificates_document_id_fkey foreign key (household_id, document_id)
