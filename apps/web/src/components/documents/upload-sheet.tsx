@@ -112,7 +112,9 @@ export default function UploadSheet({
   const preview = useObjectUrl(prepared === null ? null : sensitive ? prepared.thumbnails.blurred : prepared.thumbnails.thumb);
 
   // The capture view and the form differ in length, so each opens at its top rather than at the other's scroll.
-  useEffect(() => sheet.current?.scrollTo({ top: 0 }), [capturing]);
+  useEffect(() => {
+    sheet.current?.scrollTo({ top: 0 });
+  }, [capturing]);
 
   const unsaved = capturing ? capturedPages : prepared?.captured === true ? prepared.thumbnails.pageCount : 0;
   const leave = (target: 'back' | 'close', confirmed = false) => {

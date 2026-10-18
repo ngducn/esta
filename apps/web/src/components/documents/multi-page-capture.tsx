@@ -27,7 +27,9 @@ export function LeaveConfirm({ count, onKeep, onDiscard }: { count: number; onKe
   const t = useTranslations('documents');
   const id = useId();
   const keep = useRef<HTMLButtonElement>(null);
-  useEffect(() => keep.current?.focus(), []);
+  useEffect(() => {
+    keep.current?.focus();
+  }, []);
   return (
     <div
       role="alertdialog"
@@ -91,7 +93,9 @@ export function MultiPageCapture({
     };
   }, []);
 
-  useEffect(() => onCount(pages.length), [pages.length, onCount]);
+  useEffect(() => {
+    onCount(pages.length);
+  }, [pages.length, onCount]);
 
   useLayoutEffect(() => {
     const target = focusAfter.current;
