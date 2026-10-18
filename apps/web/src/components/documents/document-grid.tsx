@@ -9,7 +9,7 @@ import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
 import { archiveDocument } from '@/server/documents/actions';
-import type { DocumentStatuses } from '@/server/documents/status';
+import type { DocumentStatuses } from '@/server/documents/extraction-status';
 import { DocumentTile, type DocumentTileData } from './document-tile';
 import { useDocumentStatuses } from './use-document-status';
 

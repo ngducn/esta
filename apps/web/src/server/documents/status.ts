@@ -6,11 +6,8 @@ import { getWorkerHeartbeat } from '@/server/assistant';
 import { readRequestClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { createSessionClient } from '@/server/supabase/server';
+import { EXTRACTION_STATUSES, type DocumentStatuses, type ExtractionStatus } from './extraction-status';
 
-export const EXTRACTION_STATUSES = ['none', 'queued', 'running', 'needs_review', 'accepted', 'rejected', 'failed'] as const;
-export type ExtractionStatus = (typeof EXTRACTION_STATUSES)[number];
-
-export type DocumentStatuses = { readonly statuses: Readonly<Record<string, ExtractionStatus>>; readonly workerOffline: boolean };
 
 const status = z.enum(EXTRACTION_STATUSES);
 

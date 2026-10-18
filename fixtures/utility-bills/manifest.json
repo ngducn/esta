@@ -1,10 +1,10 @@
 {
   "electricity-q7-scan": {
     "document.pdf": "a26d7a61e7d36ad849451afe9dcc7c524cefe1ef1d81b601a596617d5b0178d3",
-    "truth.json": "33a28b6285e4bf72b40d7161c5ec1c85c9f011f10bd82f7635c2ade40d4af644"
+    "truth.json": "db2ff62ff935d2c0ba3a0f7fc3b8aa3f66abde673085828da399519b126390e2"
   },
   "water-q7-photo": {
     "page-1.jpg": "a66b45f0cd61080e7f7d652c15e5fddb0ade348edce6bbc1b1258c52fc84bfeb",
-    "truth.json": "3fd90c122dab06c359a83e04ae1dac62ba216c1e3df2d5d7572ccd5804ede3be"
+    "truth.json": "44c8889474fc863573d6e3750d190cc4ba68ce140a000c5a97d4fca6df70c011"
   }
 }

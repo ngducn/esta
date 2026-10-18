@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { readDocumentStatuses, type DocumentStatuses } from '@/server/documents/status';
+import type { DocumentStatuses } from '@/server/documents/extraction-status';
+import { readDocumentStatuses } from '@/server/documents/status';
 
 /** Within the 2 s the status change may take to reach the tile (P2-03 perf rule). */
 export const STATUS_POLL_MS = 1_000;

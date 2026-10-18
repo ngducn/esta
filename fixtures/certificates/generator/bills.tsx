@@ -77,7 +77,7 @@ function billPage(bill: BillFacts): ReactElement {
   return (
     <Page palette={palette}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', fontWeight: 700, fontSize: 26 }}>{bill.provider.toUpperCase()}</div>
+        <div style={{ display: 'flex', fontWeight: 700, fontSize: 26 }}>{printedProvider(bill)}</div>
         <div style={{ display: 'flex', justifyContent: 'center', fontWeight: 700, fontSize: 32, margin: '24px 0' }}>
           {bill.kind === 'electricity' ? 'HÓA ĐƠN TIỀN ĐIỆN' : 'HÓA ĐƠN TIỀN NƯỚC'}
         </div>
@@ -102,10 +102,13 @@ function billPage(bill: BillFacts): ReactElement {
 
 const leaf = <T,>(value: T) => ({ value, confidence: 1, page: 1 });
 
+/** Bills print the provider in capitals, and the truth is what the page prints. */
+const printedProvider = (bill: BillFacts) => bill.provider.toLocaleUpperCase('vi');
+
 export function billTruth(bill: BillFacts): UtilityBillV1 {
   return {
     kind: leaf(bill.kind),
-    provider: leaf(bill.provider),
+    provider: leaf(printedProvider(bill)),
     customer_code: leaf(bill.customer_code),
     holder_name: leaf(bill.holder_name),
     address_text: leaf(bill.address_text),

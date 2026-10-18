@@ -4,7 +4,7 @@ import { Eye, FileText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { revealThumbnail } from '@/server/documents/actions';
-import type { ExtractionStatus } from '@/server/documents/status';
+import type { ExtractionStatus } from '@/server/documents/extraction-status';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { useHydrated } from '@/lib/use-hydrated';
