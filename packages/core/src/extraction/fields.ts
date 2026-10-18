@@ -38,12 +38,21 @@ const choice = <T extends string>(options: readonly T[]) => ({
 });
 
 const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
-const TERM_END = /(?<!\p{L})đến(?!\p{L})/iu;
-const TERM_START = /(?<!\p{L})từ(?!\p{L})/iu;
+/** `đến` read without its accents, or a dash of any width right after a date or a month. */
+const TERM_END = /(?<!\p{L})den(?!\p{L})|(?:\d{4}-\d{2}-\d{2}|(?:\d{1,2}[./-]){1,2}\d{4})\s*[-‐-―]/iu;
+const TERM_START = /(?<!\p{L})tu(?!\p{L})/iu;
+
+/** Accents dropped and đ read as d, so `Tu ... den ...` reads as `Từ ... đến ...`; digits and separators are unchanged. */
+const unaccented = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[đĐ]/gu, (letter) => (letter === 'đ' ? 'd' : 'D'));
 
 /**
- * The part of a term that names its end. A range such as `Từ tháng 10/1993 đến tháng 10/2043` ends after `đến`; a term
- * that names only its start, such as `50 năm kể từ ngày 15/10/1993`, has no end to read.
+ * The part of a term that names its end. A range such as `Từ tháng 10/1993 đến tháng 10/2043` or `15/10/1993 -
+ * 15/10/2043` ends after `đến` or the dash; a term that names only its start, such as `50 năm kể từ ngày 15/10/1993`,
+ * has no end to read.
  */
 function termEnd(text: string): string | null {
   const end = TERM_END.exec(text);
@@ -152,7 +161,7 @@ export const INPUT_KINDS = {
       const text = asText(raw);
       if (text === null) return nothing;
       if (text === LONG_TERM || text.toLocaleLowerCase('vi').includes('lâu dài')) return accept(LONG_TERM);
-      const end = termEnd(text);
+      const end = termEnd(unaccented(text));
       if (end === null) return refused;
       const found = TERM_DATE.exec(end)?.[1];
       const date = found === undefined ? readMonthEnd(end) : readDate(found);
