@@ -1,13 +1,17 @@
 'use client';
 
-import { formatArea, formatDate } from '@esta/core/format';
+import { formatArea, formatDate, formatVnd } from '@esta/core/format';
+import type { LeaseMark } from '@esta/core/lease';
+import type { Vnd } from '@esta/core/money';
 import type { Unit } from '@esta/core/schemas/units';
-import { ArrowDown, ArrowUp, Pencil, Plus } from 'lucide-react';
+import { ArrowDown, ArrowUp, FileSignature, FilePen, FileText, Pencil, Plus } from 'lucide-react';
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { lazy, Suspense, useState, useTransition } from 'react';
 import { deleteUnit, moveUnitAction, restoreUnit } from '@/app/(app)/properties/[id]/rental/actions';
 import { MoneyDisplay } from '@/components/money/money-display';
+import { StatusMark } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { cn } from '@/lib/utils';
@@ -16,6 +20,9 @@ const loadUnitSheet = () => import('./unit-sheet');
 const loadAddRoomsSheet = () => import('./add-rooms-sheet');
 const UnitSheet = lazy(loadUnitSheet);
 const AddRoomsSheet = lazy(loadAddRoomsSheet);
+
+ /** A unit's live lease as the Cho thuê tab shows it: the active one, else a draft. */
+export type UnitLease = { readonly mark: LeaseMark; readonly leaseId: string | null; readonly tenantName: string | null; readonly rentVnd: Vnd | null };
 
 type Open = { readonly sheet: 'unit'; readonly unit: Unit | null } | { readonly sheet: 'rooms'; readonly existing: readonly string[] } | null;
 
@@ -26,7 +33,19 @@ const small = 'min-h-touch px-3 text-small';
  * phone held in one hand. Delete sits in the edit sheet, away from the row, and the `whole` unit has none: the database
  * brings it back whenever none is left.
  */
-export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propertyId: string; units: readonly Unit[]; canEdit: boolean; roomingHouse: boolean }) {
+export function UnitList({
+  propertyId,
+  units,
+  leases,
+  canEdit,
+  roomingHouse,
+}: {
+  propertyId: string;
+  units: readonly Unit[];
+  leases: Readonly<Record<string, UnitLease>>;
+  canEdit: boolean;
+  roomingHouse: boolean;
+}) {
   const t = useTranslations('propertyRental');
   const locale = useLocale();
   const router = useRouter();
@@ -49,7 +68,7 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
       setError(null);
       const result = await deleteUnit(propertyId, unit.id).catch(() => ({ ok: false }) as const);
       if (!result.ok) {
-        setError(t('deleteFailed'));
+        setError('hasLeases' in result ? t('deleteHasLeases', { label: unit.label }) : t('deleteFailed'));
         return;
       }
       router.refresh();
@@ -116,14 +135,17 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
                   )}
                 </div>
                 <p className="text-small text-ink-muted">{facts.join(' · ')}</p>
-                {unit.available_from === null ? null : (
+                <UnitLeaseLine lease={leases[unit.id]} />
+                {unit.available_from === null || (leases[unit.id]?.mark.kind ?? 'vacant') !== 'vacant' ? null : (
                   <p data-testid="unit-available" className="text-small text-ink-2">
                     {t('availableFrom', { date: formatDate(unit.available_from, locale) })}
                   </p>
                 )}
               </div>
+              <div className="flex flex-wrap gap-2 sm:justify-end">
+                <LeaseLink propertyId={propertyId} unit={unit} lease={leases[unit.id]} canEdit={canEdit} />
               {canEdit ? (
-                <div className="flex flex-wrap gap-2 sm:justify-end">
+                <>
                   {units.length > 1 ? (
                     <>
                       <button
@@ -159,8 +181,9 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
                     <Pencil aria-hidden="true" />
                     {t('edit')}
                   </button>
-                </div>
+                </>
               ) : null}
+              </div>
             </li>
           );
         })}
@@ -178,5 +201,56 @@ export function UnitList({ propertyId, units, canEdit, roomingHouse }: { propert
         {open?.sheet === 'rooms' ? <AddRoomsSheet propertyId={propertyId} existing={open.existing} onClose={close} /> : null}
       </Suspense>
     </div>
+  );
+}
+
+function UnitLeaseLine({ lease }: { lease: UnitLease | undefined }) {
+  const t = useTranslations('propertyRental');
+  const locale = useLocale();
+  if (lease === undefined) return null;
+  const { mark } = lease;
+  return (
+    <div data-testid="unit-lease" data-mark={mark.kind} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1">
+      {mark.kind === 'overdue' ? <StatusMark status="overdue" days={mark.days} /> : null}
+      {mark.kind === 'due' ? <StatusMark status="due" /> : null}
+      {mark.kind === 'draft' ? <StatusMark status="draft" /> : null}
+      {mark.kind === 'vacant' ? <StatusMark status="vacant" /> : null}
+      {lease.tenantName === null ? null : (
+        <p data-testid="unit-tenant" className="text-body font-semibold break-words text-ink">
+          {lease.tenantName}
+        </p>
+      )}
+      {lease.rentVnd === null || mark.kind === 'vacant' ? null : (
+        <p className="text-small text-ink-2">{t('tenantRent', { rent: formatVnd(lease.rentVnd, locale) })}</p>
+      )}
+      {mark.kind === 'upcoming' ? <p className="text-small text-ink-2">{t('nextDue', { date: formatDate(mark.dueDate, locale) })}</p> : null}
+    </div>
+  );
+}
+
+/** `Thêm hợp đồng` on a unit with no live lease, `Tiếp tục` on a draft, and the lease itself otherwise. */
+function LeaseLink({ propertyId, unit, lease, canEdit }: { propertyId: string; unit: Unit; lease: UnitLease | undefined; canEdit: boolean }) {
+  const t = useTranslations('propertyRental');
+  const base = `/properties/${propertyId}/rental/leases`;
+  if (lease?.leaseId == null) {
+    if (!canEdit) return null;
+    return (
+      <Link href={`${base}/new?unit=${unit.id}`} data-testid="add-lease" aria-label={t('addLeaseLabel', { label: unit.label })} className={cn(buttonVariants({ variant: 'primary' }), small)}>
+        <FileSignature aria-hidden="true" />
+        {t('addLease')}
+      </Link>
+    );
+  }
+  const draft = lease.mark.kind === 'draft';
+  return (
+    <Link
+      href={`${base}/${lease.leaseId}`}
+      data-testid={draft ? 'continue-lease' : 'open-lease'}
+      aria-label={draft && canEdit ? t('continueLeaseLabel', { label: unit.label }) : t('openLeaseLabel', { label: unit.label })}
+      className={cn(buttonVariants({ variant: 'outline' }), small)}
+    >
+      {draft ? <FilePen aria-hidden="true" /> : <FileText aria-hidden="true" />}
+      {draft && canEdit ? t('continueLease') : t('openLease')}
+    </Link>
   );
 }

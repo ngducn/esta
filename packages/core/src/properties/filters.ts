@@ -29,10 +29,12 @@ export type PropertyViewRow = {
   hasBoundary: boolean;
   /** Parties holding a share of the property (`ownership_shares`), sorted by id. */
   ownerPartyIds: readonly string[];
-  /** The sum of the units' list rents, `null` when no unit has one. */
+  /** The monthly rent of the property's active leases on the Clock's date, `null` when none is active. */
   monthlyRentVnd: Vnd | null;
-  /** The earliest `available_from` among the units, `null` when none has one. */
+  /** The day the earliest unleased unit became free: its last lease's end, else its `available_from`. */
   vacantSince: IsoDate | null;
+  leasedUnitCount: number;
+  unitCount: number;
 };
 
 /** A list row: the view row with its completeness score and the number of failing checks. */

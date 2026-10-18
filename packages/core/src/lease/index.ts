@@ -13,3 +13,4 @@ export {
   type TaxPayer,
   type UtilitiesMode,
 } from './types';
+export { unitLeaseMark, type LeaseMark } from './marks';

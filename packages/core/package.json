@@ -27,6 +27,7 @@
     "./properties/ownership": "./src/properties/ownership.ts",
     "./result": "./src/result.ts",
     "./schedule": "./src/schedule/index.ts",
+    "./schemas/lease": "./src/schemas/lease.ts",
     "./schemas/legal": "./src/schemas/legal.ts",
     "./schemas/ownership": "./src/schemas/ownership.ts",
     "./schemas/party": "./src/schemas/party.ts",

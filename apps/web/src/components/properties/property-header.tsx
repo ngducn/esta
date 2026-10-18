@@ -7,6 +7,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { CoverPhoto } from './cover-photo';
 import { kindIcons } from './kind-icons';
 import { LegalPill, StatusPill, UsePill } from './property-pills';
+import type { StatusPillData } from './status-pills';
 
 export type PropertyHeaderData = {
   nickname: string;
@@ -19,8 +20,8 @@ export type PropertyHeaderData = {
   currentAddress: string | null;
   certificateAddress: string | null;
   photoUrl: string | null;
-  /** The `propertyStatus` mark's word, such as `Trống từ 01/08`. */
-  vacant: string | null;
+  /** The `propertyStatus` pills, such as `Đang cho thuê 6/8` and `Trống từ 01/08`. */
+  statuses: readonly StatusPillData[];
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
   /** The score, already translated: `title` is the word `Mức đầy đủ`, `score` such as `29%`. */
@@ -63,7 +64,9 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
         <div className="flex flex-wrap gap-1.5">
           <UsePill useMode={property.useMode} label={property.useLabel} />
           <LegalPill legalStatus={property.legalStatus} label={property.legalLabel} />
-          {property.vacant === null ? null : <StatusPill status="vacant" label={property.vacant} />}
+          {property.statuses.map((pill) => (
+            <StatusPill key={pill.status} status={pill.status} label={pill.label} />
+          ))}
           <p data-testid="property-completeness" className="flex items-center gap-2 px-1 text-small text-ink-2">
             <span className="sr-only sm:not-sr-only">{property.completeness.title}</span>
             <CompletenessRingView percent={property.completeness.percent} label={property.completeness.score} />

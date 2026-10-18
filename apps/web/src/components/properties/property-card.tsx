@@ -5,6 +5,7 @@ import { IntentLink } from '@/components/shell/intent-link';
 import { CoverPhoto, type CoverPhotoPriority } from './cover-photo';
 import { kindIcons } from './kind-icons';
 import { LegalPill, StatusPill, UsePill } from './property-pills';
+import type { StatusPillData } from './status-pills';
 
 /** Everything a card shows, already translated and signed on the server, so the card renders the same on either side. */
 export type PropertyCardData = {
@@ -19,10 +20,10 @@ export type PropertyCardData = {
   address: string;
   certificateLine: string | null;
   photoUrl: string | null;
-  /** `Giá niêm yết` and the compact sum of the units' list rents, `null` when no unit has one. */
+  /** `Tiền thuê mỗi tháng` and the compact sum of the active leases' rents, `null` when none is active. */
   rent: { label: string; amount: string } | null;
-  /** The `propertyStatus` mark's word, such as `Trống từ 01/08`. */
-  vacant: string | null;
+  /** The `propertyStatus` pills, such as `Đang cho thuê 6/8` and `Trống từ 01/08`. */
+  statuses: readonly StatusPillData[];
   completeness: { percent: number; label: string; srLabel: string };
 };
 
@@ -58,7 +59,9 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
         <div className="flex flex-wrap gap-1.5">
           <UsePill useMode={card.useMode} label={card.useLabel} />
           <LegalPill legalStatus={card.legalStatus} label={card.legalLabel} />
-          {card.vacant === null ? null : <StatusPill status="vacant" label={card.vacant} />}
+          {card.statuses.map((pill) => (
+            <StatusPill key={pill.status} status={pill.status} label={pill.label} />
+          ))}
         </div>
         <h2 className="text-lead font-bold break-words text-ink">
           <IntentLink href={`/properties/${card.id}`} className="outline-none after:absolute after:inset-0">
