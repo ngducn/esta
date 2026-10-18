@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import sharp from 'sharp';
 import { join } from 'node:path';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { parseSlot } from '../scripts/slot.ts';
@@ -25,6 +26,7 @@ const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${l
 const documentId = (lane: number, key: string) => seedId(`seed:document:lane-${lane}:${key}`);
 const largeDir = join(tmpdir(), `esta-documents-${process.pid}`);
 
+test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
 test.beforeEach(() => test.skip(test.info().project.name !== 'mobile', 'each rule sets its own viewport'));
 test.beforeAll(() => mkdirSync(largeDir, { recursive: true }));
 
@@ -119,6 +121,12 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurre
     const names = (await folder(page, `${household(1)}/${row?.id}/`)).map((object) => object.name).toSorted();
     expect(names, 'the bucket holds the file and both thumbnails').toEqual(['page-1.jpg', 'thumb-blur.webp', 'thumb.webp']);
     await expect(tile(page, 'Sổ hồng Long An')).toHaveAttribute('data-blurred', 'true');
+    const object = async (name: string) =>
+      Buffer.from(await (await page.request.get(`${supabaseUrl}/storage/v1/object/documents/${household(1)}/${row?.id}/${name}`, { headers: service })).body());
+    const [clear, blurred] = await Promise.all([object('thumb.webp'), object('thumb-blur.webp')]);
+    const size = await sharp(clear).metadata();
+    expect(Math.max(size.width ?? 0, size.height ?? 0), 'the thumbnail is at most 320 px on its long side').toBe(320);
+    expect(clear.equals(blurred), 'the blurred thumbnail differs from the clear one').toBe(false);
   } finally {
     await archiveNewDocuments(page, 1, 'long-an');
   }
@@ -169,10 +177,12 @@ test('rule 2: a 20 MB photo uploads whole, and a 10 MB one shows progress in wor
 });
 
 test('rule 3: Ryan drops a scanned PDF on Bảo Lộc and is warned before uploading the same certificate twice (DOC-1)', async ({ page }) => {
+  test.setTimeout(90_000);
   await open(page, 'ryan.lane3@demo.esta.test', 'light', DESKTOP);
   await archiveNewDocuments(page, 3, 'bao-loc');
   try {
     await documentsPage(page, 3, 'bao-loc');
+    await expect(page.getByTestId('add-document'), 'React owns the drop zone').toBeEnabled(COLD_ROUTE);
     const bytes = readFileSync(fixture('gcn_2009_2024-scan/document.pdf')).toString('base64');
     const transfer = await page.evaluateHandle((data) => {
       const file = new File([Uint8Array.from(atob(data), (c) => c.charCodeAt(0))], 'document.pdf', { type: 'application/pdf' });

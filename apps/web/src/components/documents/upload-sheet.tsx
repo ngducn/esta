@@ -291,23 +291,24 @@ export default function UploadSheet({
               {t('networkError')}
             </p>
           ) : null}
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <SheetClose render={<Button type="button" variant="outline" disabled={busy} />}>{t('cancel')}</SheetClose>
-            <Button type="submit" data-testid="save-document" disabled={busy}>
-              {phase.step === 'failed' ? <RotateCw aria-hidden="true" /> : null}
-              {phase.step === 'failed' ? t('retry') : t('save')}
-            </Button>
-          </div>
+          {phase.step === 'duplicate' ? (
+            <DuplicateDialog
+              title={phase.ticket.duplicates.map((duplicate) => duplicate.title).join(', ')}
+              onCancel={() => setPhase({ step: 'editing' })}
+              onContinue={() => {
+                if (prepared !== null) void upload(phase.ticket, prepared);
+              }}
+            />
+          ) : (
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <SheetClose render={<Button type="button" variant="outline" disabled={busy} />}>{t('cancel')}</SheetClose>
+              <Button type="submit" data-testid="save-document" disabled={busy}>
+                {phase.step === 'failed' ? <RotateCw aria-hidden="true" /> : null}
+                {phase.step === 'failed' ? t('retry') : t('save')}
+              </Button>
+            </div>
+          )}
         </form>
-        {phase.step === 'duplicate' ? (
-          <DuplicateDialog
-            title={phase.ticket.duplicates.map((duplicate) => duplicate.title).join(', ')}
-            onCancel={() => setPhase({ step: 'editing' })}
-            onContinue={() => {
-              if (prepared !== null) void upload(phase.ticket, prepared);
-            }}
-          />
-        ) : null}
       </SheetContent>
     </Sheet>
   );
