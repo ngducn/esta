@@ -2,7 +2,7 @@ import type { IsoDate } from '@esta/core/date';
 import type { LeaseFormDefaults, TaxPayer, UtilitiesMode } from '@esta/core/lease';
 import { parsePercentBps } from '@esta/core/parse/percent';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
-import { vndInputText } from '@esta/core/properties';
+import { vndInputText } from '@esta/core/properties/form';
 import type { EscalationJson, LeaseDraft, LeaseRow } from '@esta/core/schemas/lease';
 import type { BillingCycleMonths, FirstPeriodProration, PeriodAnchor } from '@esta/core/schedule';
 
