@@ -1,4 +1,4 @@
-import { allocatePayment, type OpenInvoice } from '@esta/core/allocation';
+import { allocatePayment, owedFor, type OpenInvoice } from '@esta/core/allocation';
 import { isoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
 import type { Database } from '@esta/db';
@@ -40,7 +40,9 @@ const { recordPayment, undoPayment } = await import('./payments');
 const balanceSchema = z.object({ id: z.uuid(), number: z.string(), lease_id: z.uuid(), due_date: z.string(), period_start: z.string(), outstanding_vnd: z.number() });
 
 /** The seeded lane household's open invoices, read under RLS as the member records them. */
-async function openInvoices(number: string): Promise<{ leaseId: string; invoiceId: string; open: OpenInvoice[] }> {
+type Sheet = { leaseId: string; invoiceId: string; open: OpenInvoice[] };
+
+async function openInvoices(number: string): Promise<Sheet> {
   const { data, error } = await client.from('invoice_balances').select('id, number, lease_id, due_date, period_start, outstanding_vnd').eq('status', 'issued').gt('outstanding_vnd', 0);
   if (error) throw error;
   const rows = z.array(balanceSchema).parse(data);
@@ -67,8 +69,10 @@ function generatedAmounts(count: number, seed: number): number[] {
   });
 }
 
-const input = (invoiceId: string, amount: string, invoiceIds: string[] | null = null, receivedOn = '07/10/2026'): PaymentInput => ({
-  invoiceId,
+/** What a sheet opened on `sheet` sends: its row, and what it saw owed for the invoices it settles. */
+const input = (sheet: Sheet, amount: string, invoiceIds: string[] | null = null, receivedOn = '07/10/2026'): PaymentInput => ({
+  invoiceId: sheet.invoiceId,
+  owedVnd: owedFor(sheet.open, sheet.invoiceId, invoiceIds),
   amount,
   method: 'bank_transfer',
   receivedOn,
@@ -96,8 +100,9 @@ beforeAll(async () => {
 
 describe('payment actions against local Supabase (LSE-7)', () => {
   it('records a full cash payment on Phòng 3, which reads paid, and undo removes it with its allocation', async () => {
-    const { invoiceId } = await openInvoices('DIAN-202610-003');
-    const payment = await record({ ...input(invoiceId, '2.500.000'), method: 'cash' });
+    const sheet = await openInvoices('DIAN-202610-003');
+    const { invoiceId } = sheet;
+    const payment = await record({ ...input(sheet, '2.500.000'), method: 'cash' });
     expect(payment).toMatchObject({ amountVnd: 2_500_000, allocatedVnd: 2_500_000 });
     const { data } = await client.from('invoice_balances').select('payment_status').eq('id', invoiceId).single();
     expect(data?.payment_status).toBe('paid');
@@ -109,18 +114,17 @@ describe('payment actions against local Supabase (LSE-7)', () => {
   });
 
   it('records 3tr5 as a partial transfer and an overpayment with the rest left as credit', async () => {
-    const { invoiceId } = await openInvoices('DIAN-202610-005');
-    const partial = await record(input(invoiceId, '3tr5'));
+    const sheet = await openInvoices('DIAN-202610-005');
+    const partial = await record(input(sheet, '3tr5'));
     expect(partial).toMatchObject({ amountVnd: 3_500_000, allocatedVnd: 3_500_000 });
     await undo(partial.id);
-    const over = await record(input(invoiceId, '7tr'));
+    const over = await record(input(sheet, '7tr'));
     expect(over, 'September and October settle, 1.400.000 is credit').toMatchObject({ amountVnd: 7_000_000, allocatedVnd: 5_600_000 });
     await undo(over.id);
   });
 
   it('returns the same payment for a repeated key and writes one', async () => {
-    const { invoiceId } = await openInvoices('DIAN-202610-006');
-    const raw = input(invoiceId, '2tr8');
+    const raw = input(await openInvoices('DIAN-202610-006'), '2tr8');
     const [first, second] = await Promise.all([record(raw), record(raw)]);
     expect(second.id).toBe(first.id);
     const { count } = await client.from('payments').select('id', { count: 'exact', head: true }).eq('idempotency_key', raw.idempotencyKey);
@@ -128,15 +132,32 @@ describe('payment actions against local Supabase (LSE-7)', () => {
     await undo(first.id);
   });
 
-  it('refuses an unreadable amount, an impossible date and a date after the clock, writing nothing', async () => {
-    const { invoiceId } = await openInvoices('DIAN-202610-004');
+  it('refuses a sheet left open on Phòng 5 September once that row is recorded elsewhere, so October stays owed', async () => {
+    const stale = await openInvoices('DIAN-202609-005');
+    const october = await openInvoices('DIAN-202610-005');
+    const elsewhere = await record(input(await openInvoices('DIAN-202609-005'), '2.800.000'));
     const before = await client.from('payments').select('id', { count: 'exact', head: true });
-    expect(await recordPayment(input(invoiceId, '3tr5x'))).toEqual({ ok: false, reason: 'amount' });
-    expect(await recordPayment(input(invoiceId, ''))).toEqual({ ok: false, reason: 'amount' });
-    expect(await recordPayment(input(invoiceId, '2tr5', null, '31/09/2026'))).toEqual({ ok: false, reason: 'date' });
-    expect(await recordPayment(input(invoiceId, '2tr5', null, ''))).toEqual({ ok: false, reason: 'date' });
-    expect(await recordPayment(input(invoiceId, '2tr5', null, '08/10/2026'))).toEqual({ ok: false, reason: 'dateAfterToday' });
-    expect(await recordPayment(input(invoiceId, '2tr5', []))).toEqual({ ok: false, reason: 'choice' });
+    expect(await recordPayment(input(stale, '2.800.000')), 'the row is paid').toEqual({ ok: false, reason: 'stale' });
+    expect(await recordPayment(input(stale, '2.800.000', [stale.invoiceId])), 'the chosen September is paid').toEqual({ ok: false, reason: 'stale' });
+    const after = await client.from('payments').select('id', { count: 'exact', head: true });
+    expect(after.count).toBe(before.count);
+    const { data } = await client.from('invoice_balances').select('payment_status').eq('id', october.invoiceId).single();
+    expect(data?.payment_status).toBe('unpaid');
+    const chosen = await record(input(stale, '2.800.000', [october.invoiceId]));
+    expect(chosen, 'a choice of October, which nobody touched, still records').toMatchObject({ allocatedVnd: 2_800_000 });
+    await undo(chosen.id);
+    await undo(elsewhere.id);
+  });
+
+  it('refuses an unreadable amount, an impossible date and a date after the clock, writing nothing', async () => {
+    const sheet = await openInvoices('DIAN-202610-004');
+    const before = await client.from('payments').select('id', { count: 'exact', head: true });
+    expect(await recordPayment(input(sheet, '3tr5x'))).toEqual({ ok: false, reason: 'amount' });
+    expect(await recordPayment(input(sheet, ''))).toEqual({ ok: false, reason: 'amount' });
+    expect(await recordPayment(input(sheet, '2tr5', null, '31/09/2026'))).toEqual({ ok: false, reason: 'date' });
+    expect(await recordPayment(input(sheet, '2tr5', null, ''))).toEqual({ ok: false, reason: 'date' });
+    expect(await recordPayment(input(sheet, '2tr5', null, '08/10/2026'))).toEqual({ ok: false, reason: 'dateAfterToday' });
+    expect(await recordPayment(input(sheet, '2tr5', []))).toEqual({ ok: false, reason: 'choice' });
     const after = await client.from('payments').select('id', { count: 'exact', head: true });
     expect(after.count).toBe(before.count);
   });
@@ -146,16 +167,17 @@ describe('payment actions against local Supabase (LSE-7)', () => {
     const edges = [1, 2_799_999, 2_800_000, 2_800_001, 5_599_999, 5_600_000, 5_600_001];
     let compared = 0;
     for (const start of [0, 1_000_000, 2_800_000]) {
-      const { invoiceId, open: seeded } = await openInvoices('DIAN-202610-005');
-      const setup = start === 0 ? null : await record(input(invoiceId, String(start)));
-      const { open } = await openInvoices('DIAN-202610-005');
+      const seeded = await openInvoices('DIAN-202610-005');
+      const setup = start === 0 ? null : await record(input(seeded, String(start)));
+      const sheet = await openInvoices('DIAN-202610-005');
+      const { open } = sheet;
       const choices = [null, ...open.map((invoice) => [invoice.id]), ...(open.length > 1 ? [open.map((invoice) => invoice.id)] : [])];
       for (const amount of [...edges, ...amounts]) {
         for (const choice of choices) {
           const pool = choice === null ? open : open.filter((invoice) => choice.includes(invoice.id));
           const plan = allocatePayment(vnd(amount), pool);
           if (!plan.ok) throw new Error(plan.reason);
-          const payment = await record(input(invoiceId, String(amount), choice));
+          const payment = await record(input(sheet, String(amount), choice));
           const expected = plan.value.allocations.map((part) => ({ invoiceId: part.invoiceId, amountVnd: part.amountVnd })).toSorted((a, b) => a.invoiceId.localeCompare(b.invoiceId));
           expect(await allocationsOf(payment.id), JSON.stringify({ start, amount, choice })).toEqual(expected);
           expect(amount - payment.allocatedVnd).toBe(plan.value.creditVnd);
@@ -164,7 +186,7 @@ describe('payment actions against local Supabase (LSE-7)', () => {
         }
       }
       if (setup !== null) await undo(setup.id);
-      expect((await openInvoices('DIAN-202610-005')).open).toEqual(seeded);
+      expect((await openInvoices('DIAN-202610-005')).open).toEqual(seeded.open);
     }
     expect(compared).toBeGreaterThan(100);
   }, 120_000);

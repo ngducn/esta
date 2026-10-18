@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(36);
+select plan(43);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -67,15 +67,48 @@ grant select on allocations to authenticated;
 select tests.act_as('member.a@test.esta.test');
 
 select results_eq(
-  $$ select amount_vnd, allocated_vnd from public.record_payment('00000000-0000-4000-8000-0000000f0509', 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c001') $$,
+  $$ select amount_vnd, allocated_vnd from public.record_payment('00000000-0000-4000-8000-0000000f0509', 2800000, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c001') $$,
   $$ values (1000000::bigint, 1000000::bigint) $$,
   'a partial payment settles part of the oldest invoice (LSE-7)');
 select results_eq(
   $$ select number, amount_vnd from allocations where idempotency_key = '00000000-0000-4000-8000-00000000c001' $$,
   $$ values ('DIAN-202609-005', 1000000::bigint) $$,
   'the partial payment goes to September, the oldest due');
+
+-- Each sheet sends what it saw owed when it opened. A sheet opened before the partial payment above still saw
+-- 2.800.000 for September.
+select throws_ok(
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0509', 2800000, 2800000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c005') $$,
+  '23514', 'ESTA_PAYMENT_STALE', 'a sheet whose owed total has changed since it opened is refused');
+select is_empty($$ select 1 from public.payments where idempotency_key = '00000000-0000-4000-8000-00000000c005' $$, 'and records nothing');
+
+select tests.act_as('admin.a@test.esta.test');
+select lives_ok(
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0509', 1800000, 1800000, 'bank_transfer', '2026-10-07', '00000000-0000-4000-8000-00000000c006') $$,
+  'another member records the rest of September');
+select tests.act_as('member.a@test.esta.test');
+select throws_ok(
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0509', 0, 1800000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c007') $$,
+  '23514', 'ESTA_PAYMENT_STALE', 'a sheet still open on September, now paid, is refused rather than settling October');
+select throws_ok(
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0510', 1800000, 1800000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c008',
+       array['00000000-0000-4000-8000-0000000f0509']::uuid[]) $$,
+  '23514', 'ESTA_PAYMENT_STALE', 'a manual choice of an invoice paid since the sheet opened is refused');
+select throws_ok(
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0510', 2700000, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c009',
+       array['00000000-0000-4000-8000-0000000f0510']::uuid[]) $$,
+  '23514', 'ESTA_PAYMENT_STALE', 'a manual choice whose owed total has changed is refused');
+select is(
+  (select count(*)::integer from public.payments where household_id = :'a' and idempotency_key in ('00000000-0000-4000-8000-00000000c007', '00000000-0000-4000-8000-00000000c008', '00000000-0000-4000-8000-00000000c009')),
+  0,
+  'the refused sheets record nothing');
+
+-- September owes 1.800.000 again for the overpayment below.
+reset role;
+delete from public.payments where idempotency_key = '00000000-0000-4000-8000-00000000c006';
+select tests.act_as('member.a@test.esta.test');
 select results_eq(
-  $$ select amount_vnd, allocated_vnd from public.record_payment('00000000-0000-4000-8000-0000000f0510', 7000000, 'bank_transfer', '2026-10-06', '00000000-0000-4000-8000-00000000c002') $$,
+  $$ select amount_vnd, allocated_vnd from public.record_payment('00000000-0000-4000-8000-0000000f0510', 4600000, 7000000, 'bank_transfer', '2026-10-06', '00000000-0000-4000-8000-00000000c002') $$,
   $$ values (7000000::bigint, 4600000::bigint) $$,
   'an overpayment settles everything owed and leaves 2.400.000 as credit');
 select results_eq(
@@ -88,20 +121,20 @@ select results_eq(
   'the payer is the lease''s tenant and the recorder is the member, never a caller''s choice');
 
 select results_eq(
-  $$ select id, amount_vnd, allocated_vnd from public.record_payment('00000000-0000-4000-8000-0000000f0510', 9999, 'cash', '2026-10-01', '00000000-0000-4000-8000-00000000c002') $$,
+  $$ select id, amount_vnd, allocated_vnd from public.record_payment('00000000-0000-4000-8000-0000000f0510', 0, 9999, 'cash', '2026-10-01', '00000000-0000-4000-8000-00000000c002') $$,
   $$ select id, amount_vnd, 4600000::bigint from public.payments where idempotency_key = '00000000-0000-4000-8000-00000000c002' $$,
-  'a repeated key returns the payment it recorded (SPEC §7.4)');
+  'a repeated key returns the payment it recorded, whatever its sheet saw owed (SPEC §7.4)');
 select is(
   (select count(*)::integer from public.payments where household_id = :'a'),
   3,
   'and writes nothing');
 
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0509', 100000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c003') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0509', 2800000, 100000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c003') $$,
   '23514', 'ESTA_NOTHING_OWED', 'a lease that owes nothing takes no new payment');
 
 select lives_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c004',
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 2800000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c004',
        array['00000000-0000-4000-8000-0000000f0610']::uuid[]) $$,
   'a manual choice of the lease''s own open invoice is accepted');
 select results_eq(
@@ -115,37 +148,37 @@ delete from public.payments where idempotency_key = '00000000-0000-4000-8000-000
 select tests.act_as('member.a@test.esta.test');
 
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0b10', 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c010') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0b10', 1800000, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c010') $$,
   'P0002', 'ESTA_INVOICE_NOT_FOUND', 'another household''s invoice takes no payment from this member');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0511', 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c011') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0511', 2800000, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c011') $$,
   'P0002', 'ESTA_INVOICE_NOT_FOUND', 'a draft invoice takes no payment');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c012',
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1800000, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c012',
        array['00000000-0000-4000-8000-0000000f0b10']::uuid[]) $$,
   '23514', 'ESTA_ALLOCATION_CHOICE', 'a manual choice cannot name another household''s invoice');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c013',
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c013',
        array['00000000-0000-4000-8000-0000000f0709']::uuid[]) $$,
   '23514', 'ESTA_ALLOCATION_CHOICE', 'a manual choice cannot name another lease''s invoice');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c014', array[]::uuid[]) $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 0, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c014', array[]::uuid[]) $$,
   '23514', 'ESTA_ALLOCATION_CHOICE', 'a manual choice names at least one invoice');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1000000, 'cash', '2026-10-08', '00000000-0000-4000-8000-00000000c015') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 1000000, 'cash', '2026-10-08', '00000000-0000-4000-8000-00000000c015') $$,
   '22023', 'ESTA_PAYMENT_DATE_AFTER_TODAY', 'a payment cannot be dated after the database clock''s day');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1000000, 'deposit', '2026-10-07', '00000000-0000-4000-8000-00000000c016') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 1000000, 'deposit', '2026-10-07', '00000000-0000-4000-8000-00000000c016') $$,
   '22023', 'ESTA_PAYMENT_METHOD', 'only cash and transfer are recorded here; deposits apply through their own path');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 0, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c017') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 0, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c017') $$,
   '23514', null, 'a payment is positive');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1000000, 'cash', '2026-10-07', null) $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 1000000, 'cash', '2026-10-07', null) $$,
   '22023', 'ESTA_PAYMENT_KEY_MISSING', 'every payment carries its idempotency key');
 
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1234, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c018') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 1234, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c018') $$,
   '23514', 'test refusal', 'an allocation that fails fails the whole call');
 select is_empty(
   $$ select 1 from public.payments where idempotency_key = '00000000-0000-4000-8000-00000000c018' $$,
@@ -156,7 +189,7 @@ select ok(
 
 select tests.act_as('viewer.a@test.esta.test');
 select throws_ok(
-  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c020') $$,
+  $$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 2800000, 1000000, 'cash', '2026-10-07', '00000000-0000-4000-8000-00000000c020') $$,
   'P0002', 'ESTA_INVOICE_NOT_FOUND', 'a viewer records no payment');
 
 select tests.act_as('admin.a@test.esta.test');
@@ -191,15 +224,15 @@ select tests.clear_request();
 reset role;
 select is((select count(*)::integer from public.payments where id = '00000000-0000-4000-8000-0000000c0b10'), 1, 'household b''s payment is untouched');
 select ok(
-  not has_function_privilege('anon', 'public.record_payment(uuid, bigint, text, date, uuid, uuid[])', 'execute')
+  not has_function_privilege('anon', 'public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[])', 'execute')
     and not has_function_privilege('anon', 'public.undo_payment(uuid)', 'execute'),
   'anon cannot execute record_payment or undo_payment');
 select ok(
-  has_function_privilege('authenticated', 'public.record_payment(uuid, bigint, text, date, uuid, uuid[])', 'execute')
+  has_function_privilege('authenticated', 'public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[])', 'execute')
     and has_function_privilege('authenticated', 'public.undo_payment(uuid)', 'execute'),
   'authenticated can execute both');
 select ok(
-  (select bool_and(p.prosecdef) from pg_proc p where p.oid in ('public.record_payment(uuid, bigint, text, date, uuid, uuid[])'::regprocedure, 'public.undo_payment(uuid)'::regprocedure)),
+  (select bool_and(p.prosecdef) from pg_proc p where p.oid in ('public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[])'::regprocedure, 'public.undo_payment(uuid)'::regprocedure)),
   'both run as security definer, so members still hold no write grant on payments');
 
 select * from finish();

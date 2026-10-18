@@ -114,6 +114,27 @@ test('rule 2: SPEC §9.4 seed 2, Phòng 5 in three taps with the prefilled amoun
   await holdForRecording(page);
 });
 
+test('a sheet left open on Phòng 5 while another tab records it is refused in words, and one payment exists', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  await page.goto('/collections');
+  await row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
+  await sheet(page).getByRole('radio', { name: 'Tiền mặt' }).click();
+
+  const other = await page.context().newPage();
+  await other.goto('/collections');
+  await row(group(other, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
+  await sheet(other).getByRole('radio', { name: 'Chuyển khoản' }).click();
+  await sheet(other).getByTestId('payment-save').click();
+  await expect(toast(other)).toContainText(`Đã ghi nhận ${vnd('2.800.000')} từ Phòng 5.`);
+
+  await sheet(page).getByTestId('payment-save').click();
+  await expect(toast(page)).toContainText('Phòng 5 vừa được ghi nhận tiền nên khoản này chưa lưu. Xem số mới trên bảng.');
+  await expect(sheet(page)).toBeHidden();
+  await expect(row(group(page, 'paid'), 'Phòng 5, Dãy trọ Dĩ An')).toBeVisible();
+  expect(await rest<unknown[]>(page, 'GET', `payments?household_id=eq.${householdId(2)}&idempotency_key=not.is.null&select=id`)).toHaveLength(1);
+  expect(await allocationsOf(page, invoiceId(2, 5, '2026-10-25')), 'October is not paid by the refused sheet').toEqual([]);
+});
+
 test('rule 3: Phòng 3 prefills its October amount and moves from Chưa đến hạn to Đã thu', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
   const [balance] = await rest<{ outstanding_vnd: number }[]>(page, 'GET', `invoice_balances?id=eq.${invoiceId(3, 3, '2026-10-25')}&select=outstanding_vnd`);
