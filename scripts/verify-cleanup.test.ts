@@ -7,17 +7,15 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 const cleanup = join(import.meta.dirname, '..', '.claude', 'skills', 'verify', 'scripts', 'cleanup.sh');
 // No lane uses slot 97, and a refused cleanup touches nothing on it.
 const slot = '97';
-const runDir = `/tmp/esta-verify/slot-${slot}`;
-const marker = join(runDir, 'stack');
-
 const fake = mkdtempSync(join(tmpdir(), 'esta-cleanup-'));
+const runDir = join(fake, `slot-${slot}`);
+const marker = join(runDir, 'stack');
 const browseCalls = join(fake, 'calls.log');
 const browse = join(fake, 'browse');
 writeFileSync(browse, `#!/usr/bin/env bash\necho "$*" >> "${browseCalls}"\n`);
 chmodSync(browse, 0o755);
 afterAll(() => {
   rmSync(fake, { recursive: true, force: true });
-  rmSync(runDir, { recursive: true, force: true });
 });
 
 beforeEach(() => {
@@ -27,7 +25,7 @@ beforeEach(() => {
 });
 
 function runCleanup() {
-  return spawnSync('bash', [cleanup], { env: { ...process.env, ESTA_SLOT: slot, B: browse }, encoding: 'utf8' });
+  return spawnSync('bash', [cleanup], { env: { ...process.env, ESTA_SLOT: slot, ESTA_VERIFY_DIR: fake, B: browse }, encoding: 'utf8' });
 }
 
 const calls = () => (existsSync(browseCalls) ? readFileSync(browseCalls, 'utf8').trim().split('\n') : []);
