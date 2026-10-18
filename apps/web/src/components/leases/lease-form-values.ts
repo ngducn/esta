@@ -1,5 +1,6 @@
-import type { IsoDate } from '@esta/core/date';
 import type { LeaseFormDefaults, TaxPayer, UtilitiesMode } from '@esta/core/lease';
+import { formatDate } from '@esta/core/format';
+import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { parsePercentBps } from '@esta/core/parse/percent';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { vndInputText } from '@esta/core/properties/form';
@@ -9,8 +10,8 @@ import type { BillingCycleMonths, FirstPeriodProration, PeriodAnchor } from '@es
 export type LeaseFormValues = {
   unitId: string;
   tenantId: string;
-  start: IsoDate | null;
-  end: IsoDate | null;
+  startText: string;
+  endText: string;
   rentText: string;
   cycle: BillingCycleMonths;
   anchor: PeriodAnchor;
@@ -24,7 +25,7 @@ export type LeaseFormValues = {
   noticeText: string;
 };
 
-export type Invalid = 'rent' | 'rentZero' | 'deposit' | 'end' | 'escalationValue' | 'escalationEvery' | 'notice' | null;
+export type Invalid = 'start' | 'end' | 'endBeforeStart' | 'rent' | 'rentZero' | 'deposit' | 'escalationValue' | 'escalationEvery' | 'notice' | null;
 const WHOLE = /^\d{1,3}$/;
 
 function readEscalation(values: LeaseFormValues): { ok: true; value: EscalationJson } | { ok: false; field: Invalid } {
@@ -40,12 +41,16 @@ function readEscalation(values: LeaseFormValues): { ok: true; value: EscalationJ
 }
 
 export function readDraft(values: LeaseFormValues): { ok: true; value: LeaseDraft } | { ok: false; field: Invalid } {
+  const start = parseOptionalDateInput(values.startText);
+  if (!start.ok) return { ok: false, field: 'start' };
+  const end = parseOptionalDateInput(values.endText);
+  if (!end.ok) return { ok: false, field: 'end' };
+  if (start.value !== null && end.value !== null && end.value < start.value) return { ok: false, field: 'endBeforeStart' };
   const rent = values.rentText.trim() === '' ? null : parseVndInput(values.rentText);
   if (rent !== null && !rent.ok) return { ok: false, field: 'rent' };
   if (rent?.value === 0) return { ok: false, field: 'rentZero' };
   const deposit = values.depositText.trim() === '' ? null : parseVndInput(values.depositText);
   if (deposit !== null && !deposit.ok) return { ok: false, field: 'deposit' };
-  if (values.start !== null && values.end !== null && values.end < values.start) return { ok: false, field: 'end' };
   const notice = values.noticeText.trim();
   if (notice !== '' && (!WHOLE.test(notice) || Number(notice) > 365)) return { ok: false, field: 'notice' };
   const escalation = readEscalation(values);
@@ -55,8 +60,8 @@ export function readDraft(values: LeaseFormValues): { ok: true; value: LeaseDraf
     value: {
       unit_id: values.unitId,
       tenant_party_id: values.tenantId === '' ? null : values.tenantId,
-      start_date: values.start,
-      end_date: values.end,
+      start_date: start.value,
+      end_date: end.value,
       rent_vnd: rent === null ? null : rent.value,
       billing_cycle_months: values.cycle,
       period_anchor: values.anchor,
@@ -90,8 +95,8 @@ export function valuesFromRow(row: LeaseRow): LeaseFormValues {
   return {
     unitId: row.unit_id,
     tenantId: row.tenant_party_id ?? '',
-    start: row.start_date,
-    end: row.end_date,
+    startText: row.start_date === null ? '' : formatDate(row.start_date, 'vi'),
+    endText: row.end_date === null ? '' : formatDate(row.end_date, 'vi'),
     rentText: row.rent_vnd === null ? '' : vndInputText(row.rent_vnd),
     cycle: row.billing_cycle_months,
     anchor: row.period_anchor,
@@ -111,8 +116,8 @@ export function newLeaseValues(unitId: string, defaults: LeaseFormDefaults): Lea
   const blank: LeaseFormValues = {
     unitId,
     tenantId: '',
-    start: null,
-    end: null,
+    startText: '',
+    endText: '',
     rentText: '',
     cycle: 1,
     anchor: 'calendar_month',

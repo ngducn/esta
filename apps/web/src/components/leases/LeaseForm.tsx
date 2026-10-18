@@ -1,6 +1,7 @@
 'use client';
 
 import { BILLING_CYCLES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS, UTILITIES_MODES, activationRefusals, type ActivationRefusal, type LeaseFormDefaults } from '@esta/core/lease';
+import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -22,6 +23,11 @@ const loadDialog = () => import('./ActivateLeaseDialog');
 const ActivateLeaseDialog = lazy(loadDialog);
 
 type FormError = 'invalid' | 'notDraft' | 'network' | null;
+
+const asDefault = (text: string) => {
+  const date = parseOptionalDateInput(text);
+  return date.ok && date.value !== null ? { defaultValue: date.value } : {};
+};
 
 export type LeaseFormUnit = { readonly id: string; readonly label: string; readonly defaults: LeaseFormDefaults };
 
@@ -140,11 +146,11 @@ export function LeaseForm({
         </Group>
         <Group title={t('groupTerm')}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <DateInput label={t('startField')} {...(values.start === null ? {} : { defaultValue: values.start })} onValueChange={(start) => set('start', start)} />
+            <DateInput label={t('startField')} {...asDefault(initial.startText)} onTextChange={(text) => set('startText', text)} />
             <div className="flex flex-col gap-1">
-              <DateInput label={t('endField')} {...(values.end === null ? {} : { defaultValue: values.end })} onValueChange={(end) => set('end', end)} />
-              <p className="text-small text-ink-muted">{invalid === 'end' ? null : t('endHint')}</p>
-              {invalid === 'end' ? (
+              <DateInput label={t('endField')} {...asDefault(initial.endText)} onTextChange={(text) => set('endText', text)} />
+              <p className="text-small text-ink-muted">{invalid === 'endBeforeStart' ? null : t('endHint')}</p>
+              {invalid === 'endBeforeStart' ? (
                 <p role="alert" className="text-small text-overdue">
                   {t('endBeforeStart')}
                 </p>

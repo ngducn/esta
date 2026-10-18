@@ -14,12 +14,14 @@ type DateInputProps = {
   label: string;
   defaultValue?: IsoDate;
   onValueChange?: (value: IsoDate | null) => void;
+  /** The text as typed, for a form that must tell an empty field from one that does not read as a date. */
+  onTextChange?: (text: string) => void;
   name?: string;
   disabled?: boolean;
 };
 
 /** Takes `dd/mm/yyyy` typed or picked from the device's own calendar, and emits an `IsoDate`. */
-export function DateInput({ label, defaultValue, onValueChange, name, disabled = false }: DateInputProps) {
+export function DateInput({ label, defaultValue, onValueChange, onTextChange, name, disabled = false }: DateInputProps) {
   const t = useTranslations('components.date');
   const locale = useLocale();
   const id = useId();
@@ -32,6 +34,7 @@ export function DateInput({ label, defaultValue, onValueChange, name, disabled =
 
   const change = (next: string) => {
     setText(next);
+    onTextChange?.(next);
     const parsed = parseDateInput(next);
     onValueChange?.(parsed.ok ? parsed.value : null);
   };

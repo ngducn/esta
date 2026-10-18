@@ -19,3 +19,10 @@ export function parseDateInput(text: string): Result<IsoDate, DateInputReason> {
   const [, day = '', month = '', year = ''] = match;
   return isoFromParts(year, month, day);
 }
+
+/** A date field Mẹ may leave empty: empty is no date, and anything typed must be a day on the calendar. */
+export function parseOptionalDateInput(text: string): Result<IsoDate | null, Exclude<DateInputReason, 'empty'>> {
+  const parsed = parseDateInput(text);
+  if (parsed.ok) return parsed;
+  return parsed.reason === 'empty' ? { ok: true, value: null } : { ok: false, reason: parsed.reason };
+}

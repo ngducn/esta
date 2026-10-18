@@ -1,8 +1,8 @@
 'use client';
 
-import type { IsoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import type { ActivationRefusal } from '@esta/core/lease';
+import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { activateLease, previewActivation, type ActivationRefusalReason, type BillPreview } from '@/server/actions/leases';
@@ -32,14 +32,17 @@ export default function ActivateLeaseDialog({
   const t = useTranslations('leases');
   const locale = useLocale();
   const notice = useNoticeToast();
-  const [paidThrough, setPaidThrough] = useState<IsoDate | null>(null);
-  const [preview, setPreview] = useState<{ readonly paidThrough: IsoDate | null; readonly bills: readonly BillPreview[] | null } | null>(null);
+  const [paidThrough, setPaidThrough] = useState('');
+  const [preview, setPreview] = useState<{ readonly paidThrough: string; readonly bills: readonly BillPreview[] | null } | null>(null);
   const [refusals, setRefusals] = useState<readonly ActivationRefusalReason[]>(blocked);
   const [pending, startTransition] = useTransition();
-  const bills = preview?.paidThrough === paidThrough ? preview.bills : undefined;
+  const readable = parseOptionalDateInput(paidThrough).ok;
+  const bills = readable && preview?.paidThrough === paidThrough ? preview.bills : undefined;
+  const dateRefused = refusals.includes('paid_through_invalid');
+  const listed = refusals.filter((reason) => reason !== 'paid_through_invalid');
 
   useEffect(() => {
-    if (blocked.length > 0) return;
+    if (blocked.length > 0 || !readable) return;
     let live = true;
     void previewActivation(leaseId, paidThrough)
       .catch(() => null)
@@ -49,7 +52,7 @@ export default function ActivateLeaseDialog({
     return () => {
       live = false;
     };
-  }, [blocked.length, leaseId, paidThrough]);
+  }, [blocked.length, leaseId, paidThrough, readable]);
 
   const activate = () =>
     startTransition(async () => {
@@ -71,13 +74,28 @@ export default function ActivateLeaseDialog({
           <AlertDialogDescription>{t('activateBody')}</AlertDialogDescription>
         </div>
         <div className="flex flex-col gap-1">
-          <DateInput label={t('paidThroughField')} onValueChange={setPaidThrough} />
-          <p className="text-small text-ink-muted">{t('paidThroughHint')}</p>
+          <DateInput
+            label={t('paidThroughField')}
+            onTextChange={(text) => {
+              setPaidThrough(text);
+              setRefusals((current) => current.filter((reason) => reason !== 'paid_through_invalid'));
+            }}
+          />
+          {dateRefused ? (
+            <p role="alert" data-testid="paid-through-refused" className="flex items-start gap-2 text-small text-overdue">
+              <StatusShape status="overdue" className="mt-0.5 size-4" />
+              <span>{t('refusal', { reason: 'paid_through_invalid' })}</span>
+            </p>
+          ) : (
+            <p className="text-small text-ink-muted">{t('paidThroughHint')}</p>
+          )}
         </div>
         {blocked.length > 0 ? null : (
           <section aria-live="polite" data-testid="activation-preview" className="flex flex-col gap-2">
             <h3 className="text-body font-semibold text-ink">{t('previewTitle')}</h3>
-            {bills === undefined ? (
+            {!readable ? (
+              <p className="text-small text-ink-muted">{t('previewNeedsDate')}</p>
+            ) : bills === undefined ? (
               <p className="text-small text-ink-muted">{t('previewLoading')}</p>
             ) : bills === null ? (
               <p className="text-small text-overdue">{t('previewFailed')}</p>
@@ -100,10 +118,10 @@ export default function ActivateLeaseDialog({
             )}
           </section>
         )}
-        {refusals.length === 0 ? null : (
+        {listed.length === 0 ? null : (
           <div role="alert" data-testid="activate-refusals">
             <ul className="flex flex-col gap-2">
-            {refusals.map((reason) => (
+            {listed.map((reason) => (
               <li key={reason} className="flex items-start gap-2 text-body text-overdue">
                 <StatusShape status="overdue" className="mt-1 size-4" />
                 <span>{t('refusal', { reason })}</span>

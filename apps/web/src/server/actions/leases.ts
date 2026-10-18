@@ -4,7 +4,9 @@ import { isoDate, type IsoDate } from '@esta/core/date';
 import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
 import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema, tenantSchema } from '@esta/core/schemas/lease';
 import { isoDateSchema } from '@esta/core/schemas/legal';
+import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { formatPhone } from '@esta/core/phone';
+import type { Result } from '@esta/core/result';
 import { vnd, type Vnd } from '@esta/core/money';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -54,11 +56,15 @@ export async function saveLease(propertyId: unknown, leaseId: unknown, raw: unkn
   return { ok: true, id: data.id };
 }
 
-export type ActivationRefusalReason = ActivationRefusal | 'already_active' | 'overlap' | 'failed';
+export type ActivationRefusalReason = ActivationRefusal | 'paid_through_invalid' | 'already_active' | 'overlap' | 'failed';
 
 export type ActivationResult = { readonly ok: true; readonly issuedMonth: IsoDate | null } | { readonly ok: false; readonly reasons: readonly ActivationRefusalReason[] };
 
-const paidThroughSchema = isoDateSchema.nullable();
+/** `Đã thu tiền đến hết ngày` as typed: empty is nothing collected, and anything else must be a day on the calendar. */
+function readPaidThrough(raw: unknown): Result<IsoDate | null, 'paid_through_invalid'> {
+  const typed = typeof raw === 'string' ? parseOptionalDateInput(raw) : null;
+  return typed?.ok === true ? typed : { ok: false, reason: 'paid_through_invalid' };
+}
 
 export type BillPreview = {
   readonly periodStart: IsoDate;
@@ -79,10 +85,10 @@ const previewRowSchema = z.object({
 /** What activation would bill with this paid-through date, planned by the same database function that writes it. */
 export async function previewActivation(leaseId: unknown, paidThrough: unknown): Promise<readonly BillPreview[] | null> {
   const id = uuid.safeParse(leaseId);
-  const through = paidThroughSchema.safeParse(paidThrough);
-  if (!id.success || !through.success) return null;
+  const through = readPaidThrough(paidThrough);
+  if (!id.success || !through.ok) return null;
   const supabase = await createSessionClient();
-  const { data, error } = await supabase.rpc('preview_activation', { p_lease_id: id.data, ...(through.data === null ? {} : { p_paid_through: through.data }) });
+  const { data, error } = await supabase.rpc('preview_activation', { p_lease_id: id.data, ...(through.value === null ? {} : { p_paid_through: through.value }) });
   if (error) return null;
   return z
     .array(previewRowSchema)
@@ -102,9 +108,10 @@ function refusalOf(error: { readonly code: string; readonly message: string }): 
  */
 export async function activateLease(leaseId: unknown, paidThrough: unknown): Promise<ActivationResult> {
   const id = uuid.safeParse(leaseId);
-  const through = paidThroughSchema.safeParse(paidThrough);
-  if (!id.success || !through.success) return { ok: false, reasons: ['failed'] };
-  const paidThroughDate = through.data;
+  if (!id.success) return { ok: false, reasons: ['failed'] };
+  const through = readPaidThrough(paidThrough);
+  if (!through.ok) return { ok: false, reasons: [through.reason] };
+  const paidThroughDate = through.value;
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const read = await supabase.from('leases').select(LEASE_COLUMNS).eq('household_id', member.household.id).eq('id', id.data).maybeSingle();
   if (read.error || read.data === null) return { ok: false, reasons: ['failed'] };
