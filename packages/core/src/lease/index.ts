@@ -1,3 +1,4 @@
+export { collectedThrough, type BilledPeriod } from './collected';
 export { LEASE_DEFAULTS, leaseDefaultKey, leaseDefaults, type LeaseDefault, type LeaseDefaultKey, type LeaseFormDefaults } from './defaults';
 export { GENERATION_HORIZON_DAYS, planInvoices, type CompletedReadings, type InvoicingLease, type PlannedInvoice, type PlannedLine } from './invoicing';
 export { currentMonthlyRent } from './monthlyRent';

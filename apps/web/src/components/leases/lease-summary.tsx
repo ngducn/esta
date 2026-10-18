@@ -1,5 +1,6 @@
 import { formatDate, formatVnd } from '@esta/core/format';
 import type { IsoDate } from '@esta/core/date';
+import { collectedThrough } from '@esta/core/lease';
 import type { Vnd } from '@esta/core/money';
 import { FileText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -25,6 +26,7 @@ export function LeaseSummary({ lease, unitLabel, invoices, asOf }: { lease: Leas
   const locale = useLocale();
   const money = (amount: Vnd | null) => (amount === null ? t('none') : formatVnd(amount, locale));
   const start = lease.start_date === null ? t('none') : formatDate(lease.start_date, locale);
+  const collected = collectedThrough(lease.paid_through_date, invoices);
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
       <section aria-labelledby="lease-terms" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
@@ -46,7 +48,9 @@ export function LeaseSummary({ lease, unitLabel, invoices, asOf }: { lease: Leas
           <Fact label={t('depositLabel')}>
             <span className="figures">{money(lease.deposit_vnd)}</span>
           </Fact>
-          <Fact label={t('paidThroughLabel')}>{lease.paid_through_date === null ? t('none') : formatDate(lease.paid_through_date, locale)}</Fact>
+          <Fact label={t('paidThroughLabel')}>
+            <span data-testid="lease-paid-through">{collected === null ? t('none') : formatDate(collected, locale)}</span>
+          </Fact>
           <Fact label={t('utilitiesLabel')}>{t('utilities', { mode: lease.utilities_mode })}</Fact>
           <Fact label={t('taxLabel')}>{t('taxPayer', { payer: lease.tax_payer })}</Fact>
         </dl>

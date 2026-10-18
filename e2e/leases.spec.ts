@@ -92,6 +92,22 @@ test('rule 1: Cho thuê on Dĩ An shows tenants on Phòng 1 to 6, Phòng 5 overd
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
+test('Đã thu đến reads the end of the paid periods: Q7 31/12/2026, Thủ Đức 31/10/2026, Phòng 1 to 3 24/10/2026 and Phòng 5 24/09/2026 (SPEC §9.3)', async ({ page }) => {
+  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
+  const expected = [
+    ['q7', 1, '31/12/2026'],
+    ['thu-duc', 1, '31/10/2026'],
+    ['di-an', 1, '24/10/2026'],
+    ['di-an', 2, '24/10/2026'],
+    ['di-an', 3, '24/10/2026'],
+    ['di-an', 5, '24/09/2026'],
+  ] as const;
+  for (const [property, unit, date] of expected) {
+    await page.goto(`${rentalPath(1, property)}/leases/${seedId(`seed:lease:lane-1:${property}:${unit}`)}`);
+    await expect(page.getByTestId('lease-paid-through'), `${property} ${unit}`).toHaveText(date);
+  }
+});
+
 test('rule 7: the properties list shows the rent of active leases, Đang cho thuê 6/8 on Dĩ An, and no rent on Biên Hòa', async ({ page }) => {
   await open(page, 'ryan.lane7@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
