@@ -11,6 +11,7 @@ import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-m
 import { Button } from '@/components/ui/button';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
+import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
 
 /** [app rule] A revealed sensitive thumbnail blurs again after a minute, or as soon as the tab is hidden (DOC-5). */
 export const REVEAL_MS = 60_000;
@@ -76,6 +77,12 @@ export function ExtractionPill({
   );
 }
 
+/** The first row of the first group lands on screen, so its thumbnails load at once and the first one first (LCP). */
+export function tilePriority(index: number): CoverPhotoPriority {
+  if (index === 0) return 'high';
+  return index < 3 ? 'eager' : 'lazy';
+}
+
 /**
  * DESIGN-BRIEF §7: thumbnail, category, title and the expiry line, with the property name in the household vault. A
  * sensitive tile reveals only on `Xem`. The title opens the document page.
@@ -85,11 +92,13 @@ export function DocumentTile({
   extraction = 'none',
   workerOffline = false,
   showProperty = false,
+  priority = 'lazy',
 }: {
   document: VaultTile;
   extraction?: ExtractionStatus;
   workerOffline?: boolean;
   showProperty?: boolean;
+  priority?: CoverPhotoPriority;
 }) {
   const t = useTranslations('documents');
   const [clearUrl, setClearUrl] = useState<string | null>(null);
@@ -128,7 +137,14 @@ export function DocumentTile({
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
-          <img src={src} alt="" className="absolute inset-0 size-full object-cover object-top" loading="lazy" decoding="async" />
+          <img
+            src={src}
+            alt=""
+            className="absolute inset-0 size-full object-cover object-top"
+            loading={priority === 'lazy' ? 'lazy' : 'eager'}
+            fetchPriority={priority === 'high' ? 'high' : 'auto'}
+            decoding="async"
+          />
         )}
         {blurred ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ground/40 p-3">

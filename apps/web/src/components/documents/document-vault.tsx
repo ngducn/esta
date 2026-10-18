@@ -18,6 +18,7 @@ import { useDocumentStatuses } from './use-document-status';
 import { VaultGroups } from './vault-groups';
 import type { SearchState } from '@/server/documents/vault';
 import { VaultSearch } from './vault-search';
+import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
 
 const UploadSheet = lazy(() => import('./upload-sheet'));
 
@@ -125,13 +126,14 @@ export function DocumentVault({
   const propertyId = scope.kind === 'property' ? scope.propertyId : null;
   const uploads = scope.kind === 'property' && canEdit;
 
-  const tile = (document: VaultTile, showProperty: boolean) => (
+  const tile = (document: VaultTile, showProperty: boolean, priority?: CoverPhotoPriority) => (
     <DocumentTile
       key={document.id}
       document={document}
       extraction={extraction.statuses[document.id] ?? 'none'}
       workerOffline={extraction.workerOffline}
       showProperty={showProperty}
+      {...(priority === undefined ? {} : { priority })}
     />
   );
 
@@ -210,7 +212,7 @@ export function DocumentVault({
           <VaultGroups
             tiles={tiles}
             initialBy={scope.kind === 'property' ? 'category' : 'property'}
-            renderTile={(document, showProperty) => tile(document, showProperty && scope.kind === 'household')}
+            renderTile={(document, showProperty, priority) => tile(document, showProperty && scope.kind === 'household', priority)}
           />
         </>
       )}

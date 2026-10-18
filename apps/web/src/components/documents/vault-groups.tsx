@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic';
 import { useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { VaultTile } from '@/server/documents/list';
+import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
+import { tilePriority } from './document-tile';
 
 export type GroupBy = 'property' | 'category';
 
@@ -45,7 +47,7 @@ export function VaultGroups({
 }: {
   tiles: readonly VaultTile[];
   initialBy?: GroupBy;
-  renderTile: (tile: VaultTile, showProperty: boolean) => ReactNode;
+  renderTile: (tile: VaultTile, showProperty: boolean, priority?: CoverPhotoPriority) => ReactNode;
 }) {
   const t = useTranslations('documents');
   const [by, setBy] = useState<GroupBy>(initialBy);
@@ -78,7 +80,7 @@ export function VaultGroups({
       {tiles.length > VIRTUALIZE_ABOVE ? (
         <LazyVirtualVault groups={groups} renderTile={(tile) => renderTile(tile, by === 'category')} countLabel={(count) => t('groupCount', { count })} />
       ) : (
-        groups.map((group) => (
+        groups.map((group, groupIndex) => (
           <section key={group.key} data-testid="vault-group" data-group={group.key} aria-labelledby={`group-${group.key}`} className="flex flex-col gap-3">
             <h3 id={`group-${group.key}`} className="flex flex-wrap items-baseline gap-x-2 text-lead font-bold break-words text-ink">
               <span data-testid="group-label">{group.label}</span>
@@ -87,7 +89,7 @@ export function VaultGroups({
               </span>
             </h3>
             <ul aria-label={group.label} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {group.tiles.map((tile) => renderTile(tile, by === 'category'))}
+              {group.tiles.map((tile, index) => renderTile(tile, by === 'category', groupIndex === 0 ? tilePriority(index) : 'lazy'))}
             </ul>
           </section>
         ))
