@@ -394,6 +394,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "certificates_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "certificates_household_id_fkey"
             columns: ["household_id"]
             isOneToOne: false
@@ -416,6 +423,147 @@ export type Database = {
           },
           {
             foreignKeyName: "certificates_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      document_access_log: {
+        Row: {
+          action: string
+          at: string
+          document_id: string
+          household_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          at?: string
+          document_id: string
+          household_id: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          action?: string
+          at?: string
+          document_id?: string
+          household_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_log_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "document_access_log_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_on: string | null
+          household_id: string
+          id: string
+          mime: string
+          page_count: number | null
+          party_id: string | null
+          property_id: string | null
+          sensitivity: string
+          sha256: string
+          size_bytes: number
+          storage_path: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_on?: string | null
+          household_id: string
+          id?: string
+          mime: string
+          page_count?: number | null
+          party_id?: string | null
+          property_id?: string | null
+          sensitivity: string
+          sha256: string
+          size_bytes: number
+          storage_path: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_on?: string | null
+          household_id?: string
+          id?: string
+          mime?: string
+          page_count?: number | null
+          party_id?: string | null
+          property_id?: string | null
+          sensitivity?: string
+          sha256?: string
+          size_bytes?: number
+          storage_path?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_household_id_party_id_fkey"
+            columns: ["household_id", "party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "documents_household_id_property_id_fkey"
             columns: ["household_id", "property_id"]
             isOneToOne: false
             referencedRelation: "property_list_rows"
@@ -1248,6 +1396,7 @@ export type Database = {
     Views: {
       property_completeness_facts: {
         Row: {
+          certificate_document_count: number | null
           has_acquisition: boolean | null
           has_current_address: boolean | null
           has_location: boolean | null
@@ -1256,6 +1405,7 @@ export type Database = {
           parcel_count: number | null
           parcel_without_area_id: string | null
           parcel_without_number_id: string | null
+          photo_count: number | null
           property_id: string | null
           share_total_bp: number | null
           structure_count: number | null

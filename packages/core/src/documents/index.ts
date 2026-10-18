@@ -14,3 +14,4 @@ export {
 } from './categories';
 export { documentExpiry, EXPIRY_WINDOW_DAYS, type DocumentExpiry } from './expiry';
 export { DOCUMENT_OBJECT_NAME, documentObjectName, storagePath, thumbBlurPath, thumbPath } from './storage-path';
+export { defaultDocumentTitle, placeName } from './title';
