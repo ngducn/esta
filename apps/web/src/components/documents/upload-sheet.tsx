@@ -108,7 +108,11 @@ export default function UploadSheet({
   const [capturedPages, setCapturedPages] = useState(0);
   const [leaving, setLeaving] = useState<'back' | 'close' | null>(null);
   const choice = useRef(0);
+  const sheet = useRef<HTMLDivElement>(null);
   const preview = useObjectUrl(prepared === null ? null : sensitive ? prepared.thumbnails.blurred : prepared.thumbnails.thumb);
+
+  // The capture view and the form differ in length, so each opens at its top rather than at the other's scroll.
+  useEffect(() => sheet.current?.scrollTo({ top: 0 }), [capturing]);
 
   const unsaved = capturing ? capturedPages : prepared?.captured === true ? prepared.thumbnails.pageCount : 0;
   const leave = (target: 'back' | 'close', confirmed = false) => {
@@ -230,7 +234,7 @@ export default function UploadSheet({
   const megabytes = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   return (
     <Sheet open onOpenChange={(open) => (open || busy ? undefined : leave('close'))}>
-      <SheetContent data-testid="upload-sheet">
+      <SheetContent ref={sheet} data-testid="upload-sheet">
         <div className="flex flex-col gap-1">
           <SheetTitle>{capturing ? t('captureTitle') : t('sheetTitle')}</SheetTitle>
           <SheetDescription>{capturing ? t('captureBody') : t('sheetBody')}</SheetDescription>
