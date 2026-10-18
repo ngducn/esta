@@ -33,7 +33,8 @@ const stackUp = anonKey !== '' && (await fetch(`${url}/auth/v1/health`, { header
 const LANE = 9;
 const household = seedId(`seed:household:lane-${LANE}`);
 const propertyId = seedId(`seed:property:lane-${LANE}:bao-loc`);
-const memberUser = seedId(`seed:user:me-lane-${LANE}`);
+// Ryan's emails, so a sign-in code never races the documents test, which signs in Mẹ of lanes 8 and 9.
+const memberUser = seedId(`seed:user:ryan-lane-${LANE}`);
 const documents: string[] = [];
 const acceptAll = Object.fromEntries(reviewFields('certificate_v1', truthFile.certificate).map((field) => [field.path, { kind: 'accepted' }]));
 
@@ -127,8 +128,8 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
   let outsider: SupabaseClient;
 
   beforeAll(async () => {
-    member = await signedInAs(`me.lane${LANE}@demo.esta.test`);
-    outsider = await signedInAs('me.lane8@demo.esta.test');
+    member = await signedInAs(`ryan.lane${LANE}@demo.esta.test`);
+    outsider = await signedInAs('ryan.lane8@demo.esta.test');
   });
 
   afterAll(async () => {
