@@ -23,7 +23,7 @@ import { PropertyDetailFrame } from '../detail-frame';
 
 const roomCountSchema = z.object({ room_count: z.number().int().min(1) });
 
-/** Each unit's live lease on the Clock's date; until payments exist (P3-09) every issued invoice is still owed. */
+/** Each unit's live lease on the Clock's date, marked by its oldest issued invoice still owed. */
 function unitLeases(units: readonly { id: string }[], { leases, invoices }: PropertyLeases, asOf: IsoDate): Record<string, UnitLease> {
   return Object.fromEntries(
     units.map((unit) => {
@@ -32,7 +32,9 @@ function unitLeases(units: readonly { id: string }[], { leases, invoices }: Prop
       const mark = unitLeaseMark(
         own.map((lease) => ({
           status: lease.status,
-          openDueDates: invoices.filter((invoice) => invoice.leaseId === lease.id && invoice.status === 'issued').map((invoice) => invoice.dueDate),
+          openDueDates: invoices
+            .filter((invoice) => invoice.leaseId === lease.id && invoice.status === 'issued' && invoice.outstandingVnd > 0)
+            .map((invoice) => invoice.dueDate),
         })),
         asOf,
       );

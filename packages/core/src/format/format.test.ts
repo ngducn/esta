@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { formatArea, formatDate, formatDateLong, formatRelativeDue, formatVnd, formatVndCompact } from './index';
+import { formatArea, formatDate, formatDateLong, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact } from './index';
 
 const NBSP = '\u00a0';
 
@@ -131,5 +131,19 @@ describe('formatRelativeDue', () => {
 
   it('counts across a leap day', () => {
     expect(formatRelativeDue(isoDate('2024-02-28'), isoDate('2024-03-01'), 'vi')).toBe('quá hạn 2 ngày');
+  });
+});
+
+describe('month labels', () => {
+  it('reads the board month as Tháng 10/2026 or October 2026', () => {
+    expect(formatMonthYear(isoDate('2026-10-01'), 'vi')).toBe('10/2026');
+    expect(formatMonthYear(isoDate('2024-12-15'), 'en')).toBe('December 2024');
+  });
+
+  it('drops the year of a carried month inside the board year only', () => {
+    expect(formatMonthWithin(isoDate('2026-09-01'), isoDate('2026-10-01'), 'vi')).toBe('9');
+    expect(formatMonthWithin(isoDate('2026-09-01'), isoDate('2026-10-01'), 'en')).toBe('September');
+    expect(formatMonthWithin(isoDate('2025-12-01'), isoDate('2026-01-01'), 'vi')).toBe('12/2025');
+    expect(formatMonthWithin(isoDate('2025-12-01'), isoDate('2026-01-01'), 'en')).toBe('December 2025');
   });
 });

@@ -78,3 +78,18 @@ export function formatRelativeDue(due: IsoDate, today: IsoDate, locale: Locale):
   if (days < 0) return `${count} overdue`;
   return days === 0 ? 'due today' : `due in ${count}`;
 }
+
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
+
+/** `10/2026` (read after `tháng`) or `October 2026`, for the month that holds `date`. */
+export function formatMonthYear(date: IsoDate, locale: Locale): string {
+  const { year, month } = dateParts(date);
+  return locale === 'vi' ? `${month}/${year}` : `${MONTHS_EN[month - 1] ?? ''} ${year}`;
+}
+
+/** `9` or `September` inside `context`'s year, else with the year, as in the carry marker `từ tháng 12/2025`. */
+export function formatMonthWithin(date: IsoDate, context: IsoDate, locale: Locale): string {
+  if (date.slice(0, 4) !== context.slice(0, 4)) return formatMonthYear(date, locale);
+  const { month } = dateParts(date);
+  return locale === 'vi' ? String(month) : (MONTHS_EN[month - 1] ?? '');
+}

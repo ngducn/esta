@@ -1940,6 +1940,7 @@ export type Database = {
           tenant_party_id: string
           total_vnd: number
           unit_id: string
+          unit_kind: string
           unit_label: string
         }[]
       }

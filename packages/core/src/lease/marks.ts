@@ -12,7 +12,7 @@ export type LeaseMark =
 
 /**
  * The mark a unit shows on the Cho thuê tab: its live lease's oldest open invoice, else draft or vacant. An open invoice
- * is an issued one still owed; until payments exist (P3-09) that is every issued invoice.
+ * is an issued one still owed (`invoice_balances.outstanding_vnd` above zero).
  */
 export function unitLeaseMark(leases: readonly { readonly status: LeaseStatus; readonly openDueDates: readonly IsoDate[] }[], asOf: IsoDate): LeaseMark {
   const active = leases.find((lease) => lease.status === 'active');

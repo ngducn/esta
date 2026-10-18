@@ -1,7 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
-export const markStatuses = ['paid', 'due', 'overdue', 'vacant', 'draft', 'ended'] as const;
+export const markStatuses = ['paid', 'due', 'upcoming', 'overdue', 'vacant', 'draft', 'ended'] as const;
 export type MarkStatus = (typeof markStatuses)[number];
 
 type Shape = { d: string; fill: boolean; dashed: boolean; stroke: number };
@@ -16,6 +16,11 @@ export const statusMarks = {
     shape: { d: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7v5l3.5 2', fill: false, dashed: false, stroke: 2.25 },
     color: 'text-due',
     pill: 'bg-due-fill text-due',
+  },
+  upcoming: {
+    shape: { d: 'M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16z', fill: false, dashed: false, stroke: 2.25 },
+    color: 'text-ink-muted',
+    pill: 'border border-rule bg-surface-2 text-ink-muted',
   },
   overdue: {
     shape: { d: 'M12 2.5L21.5 12L12 21.5L2.5 12z', fill: true, dashed: false, stroke: 2.25 },

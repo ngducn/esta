@@ -51,10 +51,14 @@ begin
   if tg_op = 'UPDATE' and (new.payment_id, new.invoice_id) is distinct from (old.payment_id, old.invoice_id) then
     raise exception 'ESTA_ALLOCATION_IDENTITY' using errcode = '23514';
   end if;
-  if not exists (select 1 from public.invoices i where i.id = new.invoice_id and i.status = 'issued') then
+  if not exists (select 1 from public.invoices i where i.id = new.invoice_id and i.household_id = new.household_id and i.status = 'issued') then
     raise exception 'ESTA_ALLOCATION_INVOICE_NOT_ISSUED' using errcode = '23514';
   end if;
-  select p.amount_vnd into v_amount from public.payments p where p.id = new.payment_id for no key update;
+  select p.amount_vnd into v_amount from public.payments p where p.id = new.payment_id and p.household_id = new.household_id for no key update;
+  if not found then
+    -- payment_allocations' foreign key refuses it.
+    return new;
+  end if;
   select coalesce(sum(a.amount_vnd), 0) into v_allocated
   from public.payment_allocations a
   where a.payment_id = new.payment_id and a.id <> new.id;
@@ -142,6 +146,7 @@ cross join lateral (
     coalesce((select sum(l.amount_vnd) from public.invoice_lines l where l.invoice_id = i.id), 0)::bigint as total_vnd,
     coalesce((select sum(a.amount_vnd) from public.payment_allocations a where a.invoice_id = i.id), 0)::bigint as allocated_vnd
 ) totals;
+revoke all on public.invoice_balances from anon, authenticated;
 grant select on public.invoice_balances to authenticated;
 
 -- LSE-10: the issued invoices due in p_month, and every earlier issued invoice still owed, with the unit, the tenant
@@ -154,6 +159,7 @@ returns table (
   property_nickname text,
   unit_id uuid,
   unit_label text,
+  unit_kind text,
   lease_id uuid,
   tenant_party_id uuid,
   tenant_name text,
@@ -172,7 +178,7 @@ security invoker
 set search_path = ''
 as $$
   select
-    b.id, b.household_id, l.property_id, p.nickname, l.unit_id, u.label, b.lease_id, l.tenant_party_id, t.full_name,
+    b.id, b.household_id, l.property_id, p.nickname, l.unit_id, u.label, u.kind, b.lease_id, l.tenant_party_id, t.full_name,
     b.number, b.period_start, b.period_end, b.due_date, b.total_vnd, b.allocated_vnd, b.outstanding_vnd, b.payment_status
   from public.invoice_balances b
   join public.leases l on l.id = b.lease_id

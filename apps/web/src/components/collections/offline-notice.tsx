@@ -1,0 +1,29 @@
+'use client';
+
+import { WifiOff } from 'lucide-react';
+import { useSyncExternalStore } from 'react';
+
+function subscribe(onChange: () => void) {
+  window.addEventListener('online', onChange);
+  window.addEventListener('offline', onChange);
+  return () => {
+    window.removeEventListener('online', onChange);
+    window.removeEventListener('offline', onChange);
+  };
+}
+
+/** The board is server-rendered, so offline it is the last load; this says so instead of letting a month change fail silently. */
+export function OfflineNotice({ message }: { message: string }) {
+  const offline = useSyncExternalStore(
+    subscribe,
+    () => !navigator.onLine,
+    () => false,
+  );
+  if (!offline) return null;
+  return (
+    <p role="status" data-testid="collections-offline" className="flex items-start gap-3 rounded-md border border-rule bg-surface-2 px-4 py-3 text-body text-ink">
+      <WifiOff className="mt-0.5 size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+      {message}
+    </p>
+  );
+}
