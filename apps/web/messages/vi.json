@@ -531,6 +531,9 @@
     "cancel": "Hủy",
     "errorInvalid": "Còn ô chưa đúng. Sửa các ô có thông báo đỏ rồi lưu lại.",
     "errorNetwork": "Chưa lưu được. Kiểm tra kết nối rồi thử lại.",
+    "errorNationalId": "Chưa lưu: còn ô có số CCCD/CMND đầy đủ. Sửa ô có thông báo đỏ, chỉ ghi 4 số cuối.",
+    "errorPartyNationalId": "Chưa lưu: tên người vừa thêm còn số CCCD/CMND đầy đủ. Bỏ số khỏi tên, 4 số cuối ghi ở ô riêng.",
+    "nationalIdField": "Ô này còn số CCCD/CMND đầy đủ. Chỉ ghi 4 số cuối.",
     "formLoading": "Đang chuẩn bị biểu mẫu",
     "itemName": "{kind, select, parcels {{name, select, none {thửa đất chưa có số} other {thửa đất số {name}}}} structures {{name}} other {{name, select, none {giấy chứng nhận} other {giấy chứng nhận số {name}}}}}"
   },
@@ -736,6 +739,7 @@
     "cancel": "Thôi",
     "invalid": "Có ô chưa đúng. Sửa các ô có ghi chú rồi lưu lại.",
     "failed": "Chưa lưu được. Kiểm tra kết nối rồi thử lại.",
+    "partyNationalId": "Chưa lưu: tên người vừa thêm còn số CCCD/CMND đầy đủ. Bỏ số khỏi tên, 4 số cuối ghi ở ô riêng.",
     "unknownParty": "Người không còn trong danh sách"
   },
   "propertyForm": {

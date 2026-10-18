@@ -114,6 +114,7 @@ function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds,
   );
   const [showErrors, setShowErrors] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [partyHoldsId, setPartyHoldsId] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const byId = new Map(parties.map((party) => [party.id, party]));
@@ -142,10 +143,12 @@ function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds,
     }
     setShowErrors(false);
     setFailed(false);
+    setPartyHoldsId(false);
     startTransition(async () => {
       const result = await saveOwnershipShares(propertyId, values, usedNewParties(newParties, values.map((value) => value.party_id))).catch(() => ({ ok: false, reason: 'failed' }) as const);
       if (result.ok) onSaved();
       else if (result.reason === 'invalid') setShowErrors(true);
+      else if (result.reason === 'national_id') setPartyHoldsId(true);
       else setFailed(true);
     });
   };
@@ -193,10 +196,10 @@ function OwnershipForm({ propertyId, shares, parties: initialParties, holderIds,
           <span className="figures font-semibold">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
           {running === null ? null : <span className="figures text-ink-2">{running}</span>}
         </p>
-        {showErrors || failed ? (
+        {showErrors || failed || partyHoldsId ? (
           <p role="alert" data-testid="ownership-error" className="flex items-start gap-2 text-body text-overdue">
             <StatusShape status="overdue" className="mt-1 size-4" />
-            <span>{failed ? t('failed') : t('invalid')}</span>
+            <span className="wrap-anywhere">{partyHoldsId ? t('partyNationalId') : failed ? t('failed') : t('invalid')}</span>
           </p>
         ) : null}
         <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">

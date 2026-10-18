@@ -11,7 +11,7 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import type { PartyOption } from '@/server/properties/legal';
 import { AnnotationList, annotationDraft, readAnnotations, type AnnotationDraft } from './annotation-list';
-import { LegalFormShell } from './legal-form-shell';
+import { LegalFormShell, type HeldFields } from './legal-form-shell';
 import { MortgageFields, mortgageDraft, readMortgage, type MortgageInvalid } from './mortgage-fields';
 import { HolderPicker } from './party-picker';
 import { useNewParties } from './use-new-parties';
@@ -41,6 +41,7 @@ export function CertificateForm({
   const [annotations, setAnnotations] = useState<readonly AnnotationDraft[]>(() => (initial?.annotations ?? []).map((annotation, index) => annotationDraft(index, annotation)));
   const [nextKey, setNextKey] = useState(annotations.length);
   const [invalid, setInvalid] = useState<MortgageInvalid | null>(null);
+  const [held, setHeld] = useState<HeldFields>([]);
 
   const activeMortgage = status === 'mortgaged' || showMortgage ? mortgage : mortgageDraft(null);
 
@@ -71,6 +72,7 @@ export function CertificateForm({
       itemId={itemId}
       read={submit}
       newParties={() => usedNewParties(pending, [...holders, activeMortgage.bankId])}
+      onHeld={setHeld}
     >
       <Group title={t('groupCertificate')}>
         <FormSelect
@@ -81,10 +83,33 @@ export function CertificateForm({
           onChange={setForm}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label={t('serialNo')} inputId="serial-no" value={serialNo} maxLength={40} className="figures" error={null} onChange={setSerialNo} />
-          <TextField label={t('bookEntryNo')} value={bookEntryNo} maxLength={40} className="figures" error={null} onChange={setBookEntryNo} />
+          <TextField
+            label={t('serialNo')}
+            inputId="serial-no"
+            value={serialNo}
+            maxLength={40}
+            className="figures"
+            error={held.includes('serial_no') ? t('nationalIdField') : null}
+            onChange={setSerialNo}
+          />
+          <TextField
+            label={t('bookEntryNo')}
+            inputId="book-entry-no"
+            value={bookEntryNo}
+            maxLength={40}
+            className="figures"
+            error={held.includes('book_entry_no') ? t('nationalIdField') : null}
+            onChange={setBookEntryNo}
+          />
           <DateInput label={t('issuedOn')} {...(issuedOn === null ? {} : { defaultValue: issuedOn })} onValueChange={setIssuedOn} />
-          <TextField label={t('issuedByLabel')} value={issuedBy} maxLength={300} error={null} onChange={setIssuedBy} />
+          <TextField
+            label={t('issuedByLabel')}
+            inputId="issued-by"
+            value={issuedBy}
+            maxLength={300}
+            error={held.includes('issued_by') ? t('nationalIdField') : null}
+            onChange={setIssuedBy}
+          />
         </div>
         <FormSelect
           label={t('statusLabel')}
@@ -115,6 +140,7 @@ export function CertificateForm({
             setAnnotations([...annotations, annotationDraft(nextKey)]);
             setNextKey(nextKey + 1);
           }}
+          held={held}
         />
       </Group>
     </LegalFormShell>

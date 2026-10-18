@@ -8,6 +8,7 @@ import { DateInput } from '@/components/date-input';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
+import type { HeldFields } from './legal-form-shell';
 
 export type AnnotationDraft = { readonly key: number; readonly date: IsoDate | null; readonly text: string; readonly kind: string };
 
@@ -24,8 +25,19 @@ export function readAnnotations(drafts: readonly AnnotationDraft[]): Annotation[
   });
 }
 
-export function AnnotationList({ drafts, onChange, onAdd }: { drafts: readonly AnnotationDraft[]; onChange: (drafts: readonly AnnotationDraft[]) => void; onAdd: () => void }) {
+export function AnnotationList({
+  drafts,
+  onChange,
+  onAdd,
+  held,
+}: {
+  drafts: readonly AnnotationDraft[];
+  onChange: (drafts: readonly AnnotationDraft[]) => void;
+  onAdd: () => void;
+  held: HeldFields;
+}) {
   const t = useTranslations('propertyLegal');
+  const saved = drafts.filter((draft) => draft.text.trim() !== '');
   const update = (key: number, patch: Partial<AnnotationDraft>) => onChange(drafts.map((draft) => (draft.key === key ? { ...draft, ...patch } : draft)));
   return (
     <div className="flex flex-col gap-3">
@@ -41,7 +53,13 @@ export function AnnotationList({ drafts, onChange, onAdd }: { drafts: readonly A
                 onChange={(kind) => update(draft.key, { kind })}
               />
             </div>
-            <TextField label={t('annotationText')} value={draft.text} maxLength={2000} error={null} onChange={(text) => update(draft.key, { text })} />
+            <TextField
+              label={t('annotationText')}
+              value={draft.text}
+              maxLength={2000}
+              error={held.includes(`annotations.${saved.indexOf(draft)}`) ? t('nationalIdField') : null}
+              onChange={(text) => update(draft.key, { text })}
+            />
             <Button type="button" variant="quiet" className="self-start" onClick={() => onChange(drafts.filter((other) => other.key !== draft.key))}>
               <X aria-hidden="true" />
               {t('removeAnnotation', { index: index + 1 })}

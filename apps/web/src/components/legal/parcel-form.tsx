@@ -9,7 +9,7 @@ import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { StatusShape } from '@/components/status-mark';
 import type { LandUseCode } from '@/server/properties/legal';
-import { LegalFormShell } from './legal-form-shell';
+import { LegalFormShell, type HeldFields } from './legal-form-shell';
 import { PurposeRows, purposeDraft, readPurposes, type PurposeDraft, type PurposeInvalid } from './purpose-rows';
 
 export type CertificateOption = { readonly id: string; readonly label: string };
@@ -40,6 +40,7 @@ export function ParcelForm({
   const [purposes, setPurposes] = useState<readonly PurposeDraft[]>(() => (initial?.purposes ?? []).map((purpose, index) => purposeDraft(index, purpose)));
   const [nextKey, setNextKey] = useState(purposes.length);
   const [invalid, setInvalid] = useState<'area' | 'identity' | PurposeInvalid | null>(null);
+  const [held, setHeld] = useState<HeldFields>([]);
 
   const parsedArea = area.trim() === '' ? null : parseAreaInput(area);
   const read = readPurposes(purposes);
@@ -74,7 +75,7 @@ export function ParcelForm({
   };
 
   return (
-    <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit}>
+    <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit} onHeld={setHeld}>
       <Group title={t('groupParcel')}>
         {invalid === 'identity' ? (
           <p data-testid="parcel-unidentified" role="alert" className="flex items-start gap-2 text-body text-overdue">
@@ -83,8 +84,22 @@ export function ParcelForm({
           </p>
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label={t('parcelNo')} inputId="parcel-no" value={parcelNo} maxLength={20} error={null} onChange={setParcelNo} />
-          <TextField label={t('mapSheetNo')} inputId="map-sheet-no" value={mapSheetNo} maxLength={20} error={null} onChange={setMapSheetNo} />
+          <TextField
+            label={t('parcelNo')}
+            inputId="parcel-no"
+            value={parcelNo}
+            maxLength={20}
+            error={held.includes('parcel_no') ? t('nationalIdField') : null}
+            onChange={setParcelNo}
+          />
+          <TextField
+            label={t('mapSheetNo')}
+            inputId="map-sheet-no"
+            value={mapSheetNo}
+            maxLength={20}
+            error={held.includes('map_sheet_no') ? t('nationalIdField') : null}
+            onChange={setMapSheetNo}
+          />
         </div>
         <TextField
           label={t('area')}
@@ -111,7 +126,14 @@ export function ParcelForm({
             onChange={setCertificateId}
           />
         </div>
-        <TextField label={t('originText')} value={originText} maxLength={500} error={null} onChange={setOriginText} />
+        <TextField
+          label={t('originText')}
+          inputId="origin-text"
+          value={originText}
+          maxLength={500}
+          error={held.includes('origin_text') ? t('nationalIdField') : null}
+          onChange={setOriginText}
+        />
       </Group>
       <Group title={t('groupPurposes')}>
         <PurposeRows
@@ -124,6 +146,7 @@ export function ParcelForm({
           codes={codes}
           locale={locale}
           invalid={typeof invalid === 'object' ? invalid : null}
+          held={held}
         />
         {mismatch === null ? null : (
           <p data-testid="purposes-mismatch" role="status" className="flex items-start gap-2 text-body text-ink">

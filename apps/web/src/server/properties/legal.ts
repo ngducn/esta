@@ -7,24 +7,52 @@ import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 
-/** One entry per legal table: the columns a read selects, the schema that parses a row, an edit and a restore, and the one a create adds. */
+/**
+ * One entry per legal table: the columns a read selects, the schema that parses a row, an edit and a restore, the one a
+ * create adds, and the typed text a save judges for a full ID: the text columns, and the text key of each item of a
+ * list column. They are the columns `<table>_no_national_id` reads.
+ */
 export const LEGAL_KINDS = {
   parcels: {
     schema: parcelSchema,
     createSchema: newParcelSchema,
     columns: 'id, certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes, origin_text',
+    typedText: { columns: ['parcel_no', 'map_sheet_no', 'origin_text'], lists: { purposes: 'land_use_code' } },
   },
   structures: {
     schema: structureSchema,
     createSchema: structureSchema,
     columns: 'id, certificate_id, kind, footprint_m2, floor_area_m2, floors, structure_text, completed_year, ownership_term',
+    typedText: { columns: ['kind', 'structure_text', 'ownership_term'], lists: {} },
   },
   certificates: {
     schema: certificateSchema,
     createSchema: certificateSchema,
     columns: 'id, form, serial_no, book_entry_no, issued_on, issued_by, holder_party_ids, status, mortgage, annotations',
+    typedText: { columns: ['serial_no', 'book_entry_no', 'issued_by'], lists: { annotations: 'text' } },
   },
 } as const;
+
+type TypedText = { readonly columns: readonly string[]; readonly lists: Readonly<Record<string, string>> };
+
+/** A save's typed text by field: a text column by its name, a list item's text as `purposes.0` or `annotations.2`. */
+export function legalTypedText(kind: LegalKind, value: Readonly<Record<string, unknown>>): [field: string, text: string][] {
+  const { columns, lists }: TypedText = LEGAL_KINDS[kind].typedText;
+  const typed: [string, string][] = [];
+  for (const column of columns) {
+    const text = value[column];
+    if (typeof text === 'string') typed.push([column, text]);
+  }
+  for (const [list, key] of Object.entries(lists)) {
+    const items: unknown = value[list];
+    if (!Array.isArray(items)) continue;
+    items.forEach((item: Readonly<Record<string, unknown>>, index) => {
+      const text = item[key];
+      if (typeof text === 'string') typed.push([`${list}.${index}`, text]);
+    });
+  }
+  return typed;
+}
 
 export type LegalKind = keyof typeof LEGAL_KINDS;
 export const legalKindSchema = z.enum(Object.keys(LEGAL_KINDS) as [LegalKind, ...LegalKind[]]);

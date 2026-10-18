@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
-import { LegalFormShell } from './legal-form-shell';
+import { LegalFormShell, type HeldFields } from './legal-form-shell';
 import type { CertificateOption } from './parcel-form';
 
 type Field = 'kind' | 'floorArea' | 'footprint' | 'floors' | 'completedYear';
@@ -48,6 +48,7 @@ export function StructureForm({
     certificateId: initial === null ? (certificates[0]?.id ?? '') : (initial.certificate_id ?? ''),
   });
   const [invalid, setInvalid] = useState<Field | null>(null);
+  const [held, setHeld] = useState<HeldFields>([]);
   const set = (key: keyof typeof values) => (value: string) => setValues((current) => ({ ...current, [key]: value }));
 
   const submit = () => {
@@ -72,7 +73,7 @@ export function StructureForm({
   };
 
   return (
-    <LegalFormShell propertyId={propertyId} kind="structures" itemId={itemId} read={submit}>
+    <LegalFormShell propertyId={propertyId} kind="structures" itemId={itemId} read={submit} onHeld={setHeld}>
       <Group title={t('groupStructure')}>
         <TextField
           label={t('structureKind')}
@@ -80,7 +81,7 @@ export function StructureForm({
           inputId="structure-kind"
           value={values.kind}
           maxLength={120}
-          error={invalid === 'kind' ? t('structureKindRequired') : null}
+          error={invalid === 'kind' ? t('structureKindRequired') : held.includes('kind') ? t('nationalIdField') : null}
           onChange={set('kind')}
         />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -123,8 +124,22 @@ export function StructureForm({
             onChange={set('completedYear')}
           />
         </div>
-        <TextField label={t('structureText')} value={values.structureText} maxLength={500} error={null} onChange={set('structureText')} />
-        <TextField label={t('ownershipTerm')} value={values.ownershipTerm} maxLength={120} error={null} onChange={set('ownershipTerm')} />
+        <TextField
+          label={t('structureText')}
+          inputId="structure-text"
+          value={values.structureText}
+          maxLength={500}
+          error={held.includes('structure_text') ? t('nationalIdField') : null}
+          onChange={set('structureText')}
+        />
+        <TextField
+          label={t('ownershipTerm')}
+          inputId="ownership-term"
+          value={values.ownershipTerm}
+          maxLength={120}
+          error={held.includes('ownership_term') ? t('nationalIdField') : null}
+          onChange={set('ownershipTerm')}
+        />
         <FormSelect
           label={t('certificateLink')}
           value={values.certificateId}

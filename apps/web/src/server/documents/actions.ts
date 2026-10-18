@@ -1,6 +1,5 @@
 'use server';
 
-import { reduceNationalIds } from '@esta/core/agent-schemas';
 import {
   acceptsMime,
   DOCUMENT_CATEGORIES,
@@ -19,6 +18,7 @@ import { z } from 'zod';
 import { readRequestClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
+import { fieldsHoldingIds } from '@/server/national-id';
 import { createSessionClient } from '@/server/supabase/server';
 import { DOCUMENTS_BUCKET, signDocumentUrl } from './sign';
 
@@ -31,11 +31,12 @@ const fileSchema = z.object({
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
-const uploadSchema = fileSchema.extend({ propertyId: id, category: z.enum(DOCUMENT_CATEGORY_IDS) });
+const titleSchema = z.string().trim().min(1).max(200);
+
+const uploadSchema = fileSchema.extend({ propertyId: id, category: z.enum(DOCUMENT_CATEGORY_IDS), title: titleSchema });
 
 const registerSchema = uploadSchema.extend({
   documentId: id,
-  title: z.string().trim().min(1).max(200),
   expiresOn: z.string().refine(isIsoDate).nullable(),
   sensitive: z.boolean(),
   pageCount: z.number().int().min(1).max(2000),
@@ -52,12 +53,13 @@ export type UploadTicket =
       readonly thumbBlur: UploadTarget;
       readonly duplicates: readonly { readonly id: string; readonly title: string }[];
     }
-  | { readonly ok: false };
+  | { readonly ok: false; readonly reason?: 'national_id' };
 
 /**
  * Picks the document id and signs one upload URL for the file and one for each thumbnail. The browser sends the bytes
  * straight to Storage; the session client signs, so the storage insert policy decides. Upsert lets a retry rewrite
- * the same path. Same-household rows with the same SHA-256 come back for the duplicate warning.
+ * the same path. Same-household rows with the same SHA-256 come back for the duplicate warning. A title holding a full
+ * ID is refused here, before any byte is sent (D11).
  */
 export async function createDocumentUpload(input: unknown): Promise<UploadTicket> {
   const parsed = uploadSchema.safeParse(input);
@@ -65,8 +67,11 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
   const member = await requireMember();
   if (member.role === 'viewer') return { ok: false };
   const household = member.household.id;
-  const documentId = randomUUID();
   const supabase = await createSessionClient();
+  const held = await fieldsHoldingIds(supabase, [['title', parsed.data.title]]);
+  if (held === null) return { ok: false };
+  if (held.length > 0) return { ok: false, reason: 'national_id' };
+  const documentId = randomUUID();
   const sign = async (path: string): Promise<UploadTarget | null> => {
     const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).createSignedUploadUrl(path, { upsert: true });
     return error ? null : { path: data.path, url: data.signedUrl };
@@ -87,9 +92,9 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
   return { ok: true, documentId, file, thumb, thumbBlur, duplicates: duplicates.data };
 }
 
-export type Registered = { readonly ok: true; readonly title: string } | { readonly ok: false };
+export type Registered = { readonly ok: true; readonly title: string } | { readonly ok: false; readonly reason?: 'national_id' };
 
-/** Writes the row once the file is in Storage. A retry with the same id converges on one row. */
+/** Writes the row once the file is in Storage, judging the title again (D11). A retry with the same id converges on one row. */
 export async function registerDocument(input: unknown): Promise<Registered> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success || !acceptsMime(parsed.data.category, parsed.data.mime)) return { ok: false };
@@ -98,6 +103,9 @@ export async function registerDocument(input: unknown): Promise<Registered> {
   const household = member.household.id;
   const name = documentObjectName(filename);
   const supabase = await createSessionClient();
+  const held = await fieldsHoldingIds(supabase, [['title', title]]);
+  if (held === null) return { ok: false };
+  if (held.length > 0) return { ok: false, reason: 'national_id' };
   const { data: objects, error: listError } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .list(`${household}/${documentId}`, { search: name, limit: 10 });
@@ -183,7 +191,7 @@ const tagSchema = z.string().trim().min(1).max(40);
 
 const editSchema = z.object({
   documentId: id,
-  title: z.string().trim().min(1).max(200),
+  title: titleSchema,
   category: z.enum(DOCUMENT_CATEGORY_IDS),
   propertyId: id.nullable(),
   expiresOn: z.string().refine(isIsoDate).nullable(),
@@ -214,11 +222,8 @@ export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
   const { documentId, title, category, propertyId, expiresOn, tags, sensitive } = parsed.data;
   const household = member.household.id;
   const supabase = await createSessionClient();
-  const typed = [title, ...tags];
-  const { data: held, error: judgeError } = await supabase.rpc('national_id_indexes', { p_values: typed });
-  if (judgeError) return { ok: false, reason: 'failed' };
-  const holding = typed.map((text, index) => held.includes(index) || reduceNationalIds(text) !== text);
-  const fields = (['title', 'tags'] as const).filter((field) => (field === 'title' ? holding[0] : holding.slice(1).includes(true)));
+  const fields = await fieldsHoldingIds<TypedField>(supabase, [['title', title], ...tags.map((tag) => ['tags', tag] as const)]);
+  if (fields === null) return { ok: false, reason: 'failed' };
   if (fields.length > 0) return { ok: false, reason: 'national_id', fields };
   const { data: row, error: readError } = await supabase
     .from('documents')

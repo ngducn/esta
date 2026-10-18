@@ -531,6 +531,9 @@
     "cancel": "Cancel",
     "errorInvalid": "Some fields are not right. Fix the fields marked in red and save again.",
     "errorNetwork": "Could not save. Check the connection and try again.",
+    "errorNationalId": "Not saved: a field still holds a full ID number. Fix the field marked in red and keep only the last 4 digits.",
+    "errorPartyNationalId": "Not saved: the name of a person you just added still holds a full ID number. Take the number out of the name; the last 4 digits go in their own field.",
+    "nationalIdField": "This field still holds a full ID number. Keep only its last 4 digits.",
     "formLoading": "Preparing the form",
     "itemName": "{kind, select, parcels {{name, select, none {the parcel without a number} other {parcel {name}}}} structures {{name}} other {{name, select, none {the certificate} other {certificate {name}}}}}"
   },
@@ -736,6 +739,7 @@
     "cancel": "Cancel",
     "invalid": "Some fields need fixing. Correct the marked fields and save again.",
     "failed": "Not saved. Check the connection and try again.",
+    "partyNationalId": "Not saved: the name of a person you just added still holds a full ID number. Take the number out of the name; the last 4 digits go in their own field.",
     "unknownParty": "Person no longer on the list"
   },
   "propertyForm": {

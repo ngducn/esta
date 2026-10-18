@@ -103,6 +103,7 @@ export default function UploadSheet({
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [problem, setProblem] = useState<FileProblem>(() => (initialFile === null ? null : checkFile(initialFile)));
   const [titleMissing, setTitleMissing] = useState(false);
+  const [titleHoldsId, setTitleHoldsId] = useState(false);
   const [phase, setPhase] = useState<Phase>(() => (initialFile !== null && checkFile(initialFile) === null ? { step: 'preparing' } : { step: 'editing' }));
   const [capturing, setCapturing] = useState(false);
   const [capturedPages, setCapturedPages] = useState(0);
@@ -195,6 +196,11 @@ export default function UploadSheet({
         sha256: file.sha256,
         pageCount: file.thumbnails.pageCount,
       });
+      if (!registered.ok && registered.reason === 'national_id') {
+        setTitleHoldsId(true);
+        setPhase({ step: 'editing' });
+        return;
+      }
       if (!registered.ok) throw new Error('register');
       onSaved({ documentId: ticket.documentId, title: registered.title });
     } catch {
@@ -206,6 +212,7 @@ export default function UploadSheet({
     event?.preventDefault();
     const missingTitle = title.trim() === '';
     setTitleMissing(missingTitle);
+    setTitleHoldsId(false);
     if (prepared === null) setProblem((current) => current ?? 'fileRequired');
     if (prepared === null || missingTitle || problem !== null) return;
     if (phase.step === 'failed' && phase.ticket !== null) {
@@ -216,13 +223,15 @@ export default function UploadSheet({
     const ticket = await createDocumentUpload({
       propertyId,
       category,
+      title,
       filename: prepared.file.name,
       mime: prepared.file.type,
       size: prepared.file.size,
       sha256: prepared.sha256,
-    }).catch(() => ({ ok: false }) as const);
+    }).catch((): UploadTicket => ({ ok: false }));
     if (!ticket.ok) {
-      setPhase({ step: 'failed', ticket: null });
+      setTitleHoldsId(ticket.reason === 'national_id');
+      setPhase(ticket.reason === 'national_id' ? { step: 'editing' } : { step: 'failed', ticket: null });
       return;
     }
     if (ticket.duplicates.length > 0) {
@@ -325,7 +334,7 @@ export default function UploadSheet({
             testId="document-title"
             value={title}
             maxLength={200}
-            error={titleMissing ? t('titleRequired') : null}
+            error={titleMissing ? t('titleRequired') : titleHoldsId ? t('nationalIdField') : null}
             onChange={(next) => {
               setTitle(next);
               setTitleEdited(true);

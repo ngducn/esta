@@ -6,10 +6,17 @@ import { newPartiesSchema, type NewParty } from '@esta/core/schemas/party';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import type { TablesInsert } from '@esta/db';
-import { LEGAL_KINDS, legalKindSchema, legalTable, type LegalKind } from '@/server/properties/legal';
+import { fieldsHoldingIds, type Typed } from '@/server/national-id';
+import { LEGAL_KINDS, legalKindSchema, legalTable, legalTypedText, type LegalKind } from '@/server/properties/legal';
 import { createSessionClient } from '@/server/supabase/server';
 
-export type LegalWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'failed' };
+/**
+ * A refused save names every field whose typed text holds a full ID: a column such as `origin_text`, a list item such as
+ * `annotations.1`, or `parties` for the name of a party added in the form (D11).
+ */
+export type NationalIdRefusal = { readonly ok: false; readonly reason: 'national_id'; readonly fields: readonly string[] };
+
+export type LegalWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'failed' } | NationalIdRefusal;
 
 /** What a delete hands back, so `Hoàn tác` can put the row back and re-link what it unlinked. */
 export type DeletedLegalItem = {
@@ -47,7 +54,7 @@ export async function saveLegalItem(propertyId: unknown, kind: unknown, itemId: 
   if (value === null) return { ok: false, reason: 'invalid' };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: property.data };
-  return savingWithParties<LegalWrite>(supabase, scope.household_id, newParties, async () => {
+  return savingWithParties<LegalWrite>(supabase, scope.household_id, newParties, legalTypedText(table.data, value), async () => {
     const { data, error } =
       item.data === null
         ? await legalTable(supabase, table.data).insert({ ...value, ...scope }).select('id').single()
@@ -134,7 +141,7 @@ export async function restoreLegalItem(raw: unknown): Promise<LegalWrite> {
 }
 
 type SessionClient = Awaited<ReturnType<typeof createSessionClient>>;
-type PartiesRejected = { readonly ok: false; readonly reason: 'invalid' | 'failed' };
+type PartiesRejected = { readonly ok: false; readonly reason: 'invalid' | 'failed' } | NationalIdRefusal;
 
 function partyRow(householdId: string, party: NewParty): TablesInsert<'parties'> {
   const base = { id: party.id, household_id: householdId, kind: party.kind, full_name: party.full_name.normalize('NFC') };
@@ -144,18 +151,23 @@ function partyRow(householdId: string, party: NewParty): TablesInsert<'parties'>
 }
 
 /**
- * Quick-added parties exist only in the form until a save names them. They go in just before the save, under their
- * client-made ids so a retry changes nothing, and the ones this call created are deleted again if the save fails, so
- * an abandoned or failed form leaves no one behind.
+ * Quick-added parties exist only in the form until a save names them. Before anything is written, the typed text and
+ * every new party's name are judged, and a full ID in any refuses the save with its fields named (D11). The parties
+ * go in just before the save, under their client-made ids so a retry changes nothing, and the ones this call created
+ * are deleted again if the save fails, so an abandoned or failed form leaves no one behind.
  */
 async function savingWithParties<T extends { readonly ok: boolean }>(
   supabase: SessionClient,
   householdId: string,
   raw: unknown,
+  typed: Typed<string>,
   save: () => Promise<T>,
 ): Promise<T | PartiesRejected> {
   const parsed = newPartiesSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, reason: 'invalid' };
+  const held = await fieldsHoldingIds(supabase, [...typed, ...parsed.data.map((party) => ['parties', party.full_name] as const)]);
+  if (held === null) return { ok: false, reason: 'failed' };
+  if (held.length > 0) return { ok: false, reason: 'national_id', fields: held };
   if (parsed.data.length === 0) return save();
   const created = await supabase
     .from('parties')
@@ -173,7 +185,7 @@ async function savingWithParties<T extends { readonly ok: boolean }>(
   }
 }
 
-export type OwnershipWrite = { readonly ok: true } | { readonly ok: false; readonly reason: 'invalid' | 'failed' };
+export type OwnershipWrite = { readonly ok: true } | { readonly ok: false; readonly reason: 'invalid' | 'failed' } | NationalIdRefusal;
 
 /** Replaces the property's whole set in one call; an incomplete set saves, and the page warns from the saved rows. */
 export async function saveOwnershipShares(propertyId: unknown, raw: unknown, newParties: unknown = []): Promise<OwnershipWrite> {
@@ -181,7 +193,7 @@ export async function saveOwnershipShares(propertyId: unknown, raw: unknown, new
   const shares = ownershipSharesSchema.safeParse(raw);
   if (!property.success || !shares.success) return { ok: false, reason: 'invalid' };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
-  return savingWithParties<OwnershipWrite>(supabase, member.household.id, newParties, async () => {
+  return savingWithParties<OwnershipWrite>(supabase, member.household.id, newParties, [], async () => {
     const { error } = await supabase.rpc('set_ownership_shares', { p_property_id: property.data, p_shares: shares.data });
     if (error) {
       const invalid = [FOREIGN_KEY_VIOLATION, CHECK_VIOLATION, INVALID_PARAMETER].includes(error.code);

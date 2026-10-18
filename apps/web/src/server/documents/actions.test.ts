@@ -61,7 +61,7 @@ const put = (signedUrl: string, body: Buffer, type: string) =>
   fetch(signedUrl, { method: 'PUT', body: new Blob([new Uint8Array(body)]), headers: { 'content-type': type, 'x-upsert': 'true' } });
 
 async function uploadAndRegister() {
-  const ticket = await createDocumentUpload({ ...file, propertyId, category: 'other' });
+  const ticket = await createDocumentUpload({ ...file, propertyId, category: 'other', title: 'Giấy tờ Demo' });
   if (!ticket.ok) throw new Error('createDocumentUpload refused');
   created.push(ticket.documentId);
   expect((await put(ticket.file.url, bytes, file.mime)).status).toBe(200);
@@ -92,7 +92,7 @@ describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.
     expect(await registerDocument(input)).toEqual({ ok: true, title: 'Giấy tờ Demo' });
     expect(await registerDocument(input)).toEqual({ ok: true, title: 'Giấy tờ Demo' });
     expect(await service<unknown[]>(`/rest/v1/documents?id=eq.${ticket.documentId}&select=id`)).toHaveLength(1);
-    const again = await createDocumentUpload({ ...file, propertyId, category: 'other' });
+    const again = await createDocumentUpload({ ...file, propertyId, category: 'other', title: 'Giấy tờ Demo' });
     expect(again.ok && again.duplicates).toEqual([{ id: ticket.documentId, title: 'Giấy tờ Demo' }]);
   });
 
@@ -128,6 +128,17 @@ describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.
       session.client = member;
     }
     expect(await service<unknown[]>(`/rest/v1/document_access_log?document_id=eq.${ticket.documentId}&select=id`)).toEqual([]);
+  });
+
+  test('an upload titled with a full ID is refused before any URL is signed, and again when it registers (D11)', async () => {
+    const titles = ['CCCD mẹ 079123456789', 'C\u1E3FND 023456789', 'Giấy tờ 079123456789'];
+    for (const title of titles) {
+      expect(await createDocumentUpload({ ...file, propertyId, category: 'other', title }), title).toEqual({ ok: false, reason: 'national_id' });
+    }
+    const { ticket, input } = await uploadAndRegister();
+    expect(await registerDocument({ ...input, title: titles[0] })).toEqual({ ok: false, reason: 'national_id' });
+    expect(await service<unknown[]>(`/rest/v1/documents?id=eq.${ticket.documentId}&select=id`)).toEqual([]);
+    expect(await registerDocument({ ...input, title: 'CCCD mẹ 9789' })).toEqual({ ok: true, title: 'CCCD mẹ 9789' });
   });
 
   test('Sửa thông tin refuses a title or a tag holding a full ID, names the field and writes nothing (D11)', async () => {

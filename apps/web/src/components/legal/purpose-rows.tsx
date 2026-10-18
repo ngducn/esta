@@ -11,6 +11,7 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import type { LandUseCode } from '@/server/properties/legal';
 import { LandUseCodePicker } from './land-use-code-picker';
+import type { HeldFields } from './legal-form-shell';
 
 export type PurposeDraft = { readonly key: number; readonly code: string; readonly areaText: string; readonly term: '' | 'long_term' | 'until'; readonly until: IsoDate | null };
 
@@ -51,6 +52,7 @@ export function PurposeRows({
   codes,
   locale,
   invalid,
+  held,
 }: {
   drafts: readonly PurposeDraft[];
   onChange: (drafts: readonly PurposeDraft[]) => void;
@@ -58,6 +60,7 @@ export function PurposeRows({
   codes: readonly LandUseCode[];
   locale: string;
   invalid: PurposeInvalid | null;
+  held: HeldFields;
 }) {
   const t = useTranslations('propertyLegal');
   const update = (key: number, patch: Partial<PurposeDraft>) => onChange(drafts.map((draft) => (draft.key === key ? { ...draft, ...patch } : draft)));
@@ -73,7 +76,7 @@ export function PurposeRows({
                 codes={codes}
                 locale={locale}
                 label={t('purposeCode')}
-                invalid={invalid?.key === draft.key && invalid.field === 'code'}
+                invalid={(invalid?.key === draft.key && invalid.field === 'code') || held.includes(`purposes.${index}`)}
               />
               <TextField
                 label={t('purposeArea')}
