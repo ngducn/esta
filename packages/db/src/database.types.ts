@@ -395,10 +395,10 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "certificates_document_id_fkey"
-            columns: ["document_id"]
+            columns: ["household_id", "document_id"]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["id"]
+            referencedColumns: ["household_id", "id"]
           },
           {
             foreignKeyName: "certificates_household_id_fkey"
