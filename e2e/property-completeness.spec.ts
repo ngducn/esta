@@ -15,6 +15,8 @@ const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
 const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
 const party = (person: 'me' | 'ryan', lane: number) => seedId(`seed:party:${person}-lane-${lane}`);
+/** `next dev` compiles a route on its first visit, which on a loaded CI machine outlasts the default 5 s. */
+const COLD_ROUTE = { timeout: 15_000 };
 
 // Each rule reads or writes its own lane household, so the spec runs at one project's viewport and sets the rule's own.
 test.beforeEach(() => test.skip(test.info().project.name !== 'mobile', 'each rule sets its own viewport'));
@@ -70,7 +72,7 @@ const noSideScroll = (page: Page) => page.evaluate(() => document.documentElemen
 async function openFromSearch(page: Page, query: string, nickname: string) {
   await page.goto('/properties');
   await page.getByRole('searchbox').fill(query);
-  await expect(page).toHaveURL(new RegExp(`\\?q=${query.replace(' ', '\\+')}$`));
+  await expect(page).toHaveURL(new RegExp(`\\?q=${query.replace(' ', '\\+')}$`), COLD_ROUTE);
   await page.getByTestId('property-card').getByRole('link', { name: nickname, exact: true }).click();
 }
 
@@ -79,7 +81,7 @@ test('rules 1 and 2: Mẹ finds Đất vườn Long An below 60%, taps the parce
   await blankLongAnParcel(page, 1);
   try {
     await openFromSearch(page, 'long an', 'Đất vườn Long An');
-    await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'long-an')}$`));
+    await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'long-an')}$`), COLD_ROUTE);
     const before = await headerPercent(page);
     expect(before).toBeLessThan(60);
     await expect(items(page)).toHaveCount(3);
@@ -91,16 +93,16 @@ test('rules 1 and 2: Mẹ finds Đất vườn Long An below 60%, taps the parce
     expect(await seriousAxeViolations(page)).toEqual([]);
 
     await items(page).first().getByRole('link').click();
-    await expect(page).toHaveURL(new RegExp(`/legal/parcels/${seedId('seed:parcel:lane-1:long-an:1')}#parcel-no$`));
+    await expect(page).toHaveURL(new RegExp(`/legal/parcels/${seedId('seed:parcel:lane-1:long-an:1')}#parcel-no$`), COLD_ROUTE);
     await expectFocusLanded(page.locator('#parcel-no'));
     expect(await seriousAxeViolations(page)).toEqual([]);
     await page.keyboard.type('906');
     await page.locator('#map-sheet-no').fill('96');
     await page.getByTestId('save-legal-item').click();
-    await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'long-an')}/legal$`));
+    await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'long-an')}/legal$`), COLD_ROUTE);
 
     await page.getByRole('navigation', { name: 'Các mục của tài sản' }).getByRole('link', { name: 'Tổng quan' }).click();
-    await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'long-an')}$`));
+    await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(1, 'long-an')}$`), COLD_ROUTE);
     await expect.poll(() => headerPercent(page)).toBeGreaterThan(before);
     await expect(items(page).filter({ hasText: 'Thêm số thửa và số tờ bản đồ' })).toHaveCount(0);
     await expect(items(page).first()).toHaveText('Thêm diện tích thửa đất');
@@ -113,7 +115,7 @@ test('rule 3: Ryan sorts Tài sản by Mức đầy đủ, Đất vườn Long A
   await open(page, 'ryan.lane2@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
   await page.getByRole('combobox', { name: /^Sắp xếp/ }).selectOption({ label: 'Mức đầy đủ' });
-  await expect(page).toHaveURL(/[?&]sort=completeness/);
+  await expect(page).toHaveURL(/[?&]sort=completeness/, COLD_ROUTE);
   const cards = page.getByTestId('property-card');
   await expect(cards.first().getByRole('heading', { level: 2 })).toHaveText('Đất vườn Long An');
   await expect(cardRings(page)).toHaveCount(7);
@@ -124,7 +126,7 @@ test('rule 3: Ryan sorts Tài sản by Mức đầy đủ, Đất vườn Long A
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await cards.getByRole('link', { name: 'Mặt bằng Quận 1', exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(2, 'q1')}$`));
+  await expect(page).toHaveURL(new RegExp(`/properties/${propertyId(2, 'q1')}$`), COLD_ROUTE);
   await expect(items(page)).toHaveText(['Thêm tài khoản điện, nước']);
   await expect(items(page).getByRole('link')).toHaveAttribute('href', `/properties/${propertyId(2, 'q1')}/rental/accounts/new#account-kind`);
   await items(page).getByRole('link').click();
@@ -171,7 +173,7 @@ test('rule 5: in English at 130% and dark, Dĩ An, its tabs and the map read in 
     expect(await seriousAxeViolations(page)).toEqual([]);
     for (const tab of ['Legal', 'Rental']) {
       await page.getByRole('link', { name: tab, exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/${tab.toLowerCase()}$`));
+      await expect(page).toHaveURL(new RegExp(`/${tab.toLowerCase()}$`), COLD_ROUTE);
       await expect(block(page)).toContainText('Completeness');
       await expect(block(page)).not.toContainText(/[ăâđêôơư]/i);
       expect(await noSideScroll(page), tab).toBe(true);
