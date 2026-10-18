@@ -2,12 +2,36 @@
 -- extract_document job and one extraction row; the worker reads the file, fills the row and leaves an item for Mẹ.
 -- Members see a document's state through document_status, never through the operator-only agent_jobs and agent_runs.
 
+-- Overwrites every match of p_pattern with as many # signs, so a date or an amount stops being digits and every
+-- distance from an ID label stays what the reducer measures.
+create function private.blank_matches(p_text text, p_pattern text, p_flags text)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_out text := p_text;
+  v_from integer;
+  v_to integer;
+begin
+  for v_n in 1 .. regexp_count(p_text, p_pattern, 1, p_flags) loop
+    v_from := regexp_instr(p_text, p_pattern, 1, v_n, 0, p_flags);
+    v_to := regexp_instr(p_text, p_pattern, 1, v_n, 1, p_flags);
+    v_out := overlay(v_out placing repeat('#', v_to - v_from) from v_from for v_to - v_from);
+  end loop;
+  return v_out;
+end;
+$$;
+revoke all on function private.blank_matches(text, text, text) from public;
+grant execute on function private.blank_matches(text, text, text) to authenticated, service_role;
+
 -- SPEC D11: the worker keeps only the last four digits of a national ID (reduceNationalIds). This refuses any string or
 -- number in an extraction that still holds one, in case a later path skips the reduction, by the reducer's rules: 9 to
--- 12 digits directly after an ID label (words such as số in between), or 12 digits anywhere, grouped by the same
--- separators, with zero-width characters removed, and dates and amounts in đồng never part of a number. Without a
--- label, a run after a utility code's prefix (PE012345678901) passes. supabase/tests/national_id.test.sql runs the
--- reducer's vectors.
+-- 12 digits starting within 40 characters after an ID label, whatever stands between, or 12 digits anywhere, grouped
+-- by the same separators, with zero-width characters removed, and dates and amounts in đồng never part of a number.
+-- Without a label, a run after a utility code's prefix (PE012345678901) passes. supabase/tests/national_id.test.sql
+-- runs the reducer's vectors.
 create function private.holds_national_id(p_value jsonb)
 returns boolean
 language sql
@@ -15,16 +39,16 @@ immutable
 set search_path = ''
 as $$
   select coalesce(bool_or(
-    plain ~* '(cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\yid\y)(?:[[:space:]:.#(-]|số|sô|no|nhân dân|công dân|cá nhân|thư)*(?<![0-9])(?<![0-9]\.)[0-9](?:(?:[[:space:]]{1,3}|[./,_\u2010-\u2015-])?[0-9]){8,11}(?![0-9])(?!\.[0-9])'
+    plain ~* '(cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\yid\y).{0,40}(?<![0-9])(?<![0-9]\.)[0-9](?:(?:[[:space:]]{1,3}|[./,_\u2010-\u2015-])?[0-9]){8,11}(?![0-9])(?!\.[0-9])'
     or plain ~* '(?<![0-9])(?<![0-9]\.)(?<![^[:alpha:]](?:pa|pb|pc|pd|pe))[0-9](?:(?:[ \t\u000B\u000C\u1680\u2028\u2029]{1,3}|\r?\n|[.,_\u2010-\u2015-])?[0-9]){11}(?![0-9])(?!\.[0-9])'
   ), false)
   from jsonb_path_query(coalesce(p_value, 'null'::jsonb), 'strict $.**') as scalar
   cross join lateral (
-    select regexp_replace(
-      regexp_replace(
+    select private.blank_matches(
+      private.blank_matches(
         ' ' || regexp_replace(normalize(scalar #>> '{}', NFKC), '[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]', '', 'g') || ' ',
-        '(?<![0-9])(?:(?:0?[1-9]|[12][0-9]|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)?[0-9]{2}|(?:19|20)[0-9]{2}([./-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12][0-9]|3[01])|(?:19|20)[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))(?![0-9])', '#', 'g'),
-      '(?<![0-9])(?<![0-9][.,])[1-9][0-9]{0,2}(?:(?:\.[0-9]{3})+|(?:,[0-9]{3})+)?(?![0-9])(?![.,][0-9])(?=[[:space:]]?(?:đ|đồng|vnd|vnđ)(?![[:alnum:]]))', '#', 'gi') as plain
+        '(?<![0-9])(?:(?:0?[1-9]|[12][0-9]|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)?[0-9]{2}|(?:19|20)[0-9]{2}([./-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12][0-9]|3[01])|(?:19|20)[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))(?![0-9])', ''),
+      '(?<![0-9])(?<![0-9][.,])[1-9][0-9]{0,2}(?:(?:\.[0-9]{3})+|(?:,[0-9]{3})+)?(?![0-9])(?![.,][0-9])(?=[[:space:]]?(?:đ|đồng|vnd|vnđ)(?![[:alnum:]]))', 'i') as plain
   ) as cleaned
   where jsonb_typeof(scalar) in ('string', 'number');
 $$;

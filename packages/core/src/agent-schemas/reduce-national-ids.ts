@@ -1,12 +1,12 @@
 /** A key that holds an ID number by name, such as `id_last4`, `id_number` or `cccd`. */
 const ID_KEY = /(?:^|_)(?:id|cccd|cmnd|cmtnd|idno|identity)(?:_|$)/i;
 
-/** Words that announce an ID number. A 9- to 11-digit run counts as an ID only when it directly follows one. */
+/**
+ * Words that announce an ID number. A 9- to 11-digit run counts as an ID when it starts within `LABEL_REACH` characters
+ * after one, whatever stands between, so a phone number or a price that close is cut too.
+ */
 const ID_LABEL = /cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\bid\b/giu;
-/** What may stand between a label and its number, as in `CCCD số:` or `Căn cước công dân số`. */
-const FILLER = /^(?:[\s:.#(-]|số|sô|no|nhân dân|công dân|cá nhân|thư)*$/iu;
-/** What may stand between two numbers that share one label, as in `CCCD/CMND: 012345678901/123456789`. */
-const CHAIN = /^\s*(?:\/|và|hoặc)\s*$/iu;
+const LABEL_REACH = 40;
 const LABELLED_LENGTHS = [12, 11, 10, 9] as const;
 
 /**
@@ -34,7 +34,7 @@ const AMOUNT =
 const LETTERS_BEFORE = /\p{L}+$/u;
 
 type Group = { readonly start: number; readonly end: number; readonly digits: string; readonly gap: string | null };
-type Span = { readonly from: number; readonly to: number; readonly last4: string; readonly labelled: boolean };
+type Span = { readonly from: number; readonly to: number; readonly last4: string };
 
 /** Full-width digits become ASCII; NFKC maps them and leaves every other character as NFC has it. */
 const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.normalize('NFKC'));
@@ -46,18 +46,13 @@ function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): Read
 }
 
 /**
- * Finds every national ID in one string: 12 digits anywhere, or 9 to 12 digits directly after an ID label or in an ID
+ * Finds every national ID in one string: 12 digits anywhere, or 9 to 12 digits within reach of an ID label or in an ID
  * field, the digits possibly grouped. A match spans whole digit groups and stops at the first total that reaches the
  * length, and never takes in a date or an amount, so the date, year or amount after a number stays out of it.
  */
 function idSpans(text: string, idField: boolean): Span[] {
   const labelEnds = [...text.matchAll(ID_LABEL)].map((m) => m.index + m[0].length);
-  const spans: Span[] = [];
-  const afterLabel = (at: number) => {
-    if (idField || labelEnds.some((end) => end <= at && FILLER.test(text.slice(end, at)))) return true;
-    const previous = spans.at(-1);
-    return previous !== undefined && previous.labelled && CHAIN.test(text.slice(previous.to, at));
-  };
+  const afterLabel = (at: number) => idField || labelEnds.some((end) => end <= at && at - end <= LABEL_REACH);
 
   const groups: Group[] = [];
   for (const m of text.matchAll(/\p{Nd}+/gu)) {
@@ -81,6 +76,7 @@ function idSpans(text: string, idField: boolean): Span[] {
   };
   const codePrefixed = (first: Group) => CODE_PREFIXES.has(LETTERS_BEFORE.exec(text.slice(0, first.start))?.[0].toUpperCase() ?? '');
 
+  const spans: Span[] = [];
   for (let from = 0; from < groups.length; from++) {
     const first = groups[from];
     if (first === undefined || first.gap === '.') continue;
@@ -91,7 +87,7 @@ function idSpans(text: string, idField: boolean): Span[] {
       if (run === undefined || last === undefined) continue;
       if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
       if (!labelled && codePrefixed(first)) continue;
-      spans.push({ from: first.start, to: last.end, last4: run.map((group) => group.digits).join('').slice(-4), labelled });
+      spans.push({ from: first.start, to: last.end, last4: run.map((group) => group.digits).join('').slice(-4) });
       from += run.length - 1;
       break;
     }
@@ -101,20 +97,27 @@ function idSpans(text: string, idField: boolean): Span[] {
 
 type Found = { readonly last4: string };
 
-function reduceText(text: string, idField: boolean, found: Found[]): string {
-  const nfc = text.normalize('NFC').replace(INVISIBLE, '');
-  const spans = idSpans(nfc, idField);
+function cutOnce(text: string, idField: boolean, found: Found[]): string {
+  const spans = idSpans(text, idField);
   const [firstSpan] = spans;
   if (firstSpan === undefined) return text;
   found.push(...spans.map(({ last4 }) => ({ last4 })));
   if (idField) return firstSpan.last4;
   let cursor = 0;
   const parts = spans.map(({ from, to, last4 }) => {
-    const part = nfc.slice(cursor, from) + last4;
+    const part = text.slice(cursor, from) + last4;
     cursor = to;
     return part;
   });
-  return parts.join('') + nfc.slice(cursor);
+  return parts.join('') + text.slice(cursor);
+}
+
+/** Cuts until nothing is left to cut: a cut ID ends closer to the label, and its last four can join the next number. */
+function reduceText(text: string, idField: boolean, found: Found[]): string {
+  const nfc = text.normalize('NFC').replace(INVISIBLE, '');
+  let current = nfc;
+  for (let next = cutOnce(current, idField, found); next !== current; next = cutOnce(current, idField, found)) current = next;
+  return current === nfc ? text : current;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -146,9 +149,9 @@ function reduceNode(node: unknown, key: string, found: Found[]): unknown {
 /**
  * Keeps only the last four digits of every national ID number in an extraction, whatever the model returned
  * (AGENT.md §5.1 step 5, SPEC D11). Every string is read, labelled or not: a 12-digit run becomes its last four
- * digits, and so does a 9- to 12-digit run directly after an ID label or in an ID field, glued to letters or not. An
- * unlabelled run after a utility code's prefix, such as `PE012345678901`, a date and an amount in đồng stay. Reducing
- * twice changes nothing more. An empty `id_last4` is filled from the text beside it.
+ * digits, and so does a 9- to 12-digit run within 40 characters after an ID label or in an ID field, glued to letters
+ * or not. An unlabelled run after a utility code's prefix, such as `PE012345678901`, a date and an amount in đồng
+ * stay. Reducing twice changes nothing more. An empty `id_last4` is filled from the text beside it.
  */
 export function reduceNationalIds<T>(result: T): T {
   return reduceNode(result, '', []) as T;
