@@ -1,5 +1,6 @@
 -- Documents (SPEC §5.5, DOC-1, DOC-4, DOC-5). The row is written after the browser has put the file in Storage, so
--- the bucket policies key on the household folder and refuse only a document id another household already uses.
+-- the bucket policies let a member write a document's folder only until its row exists. A registered file is then
+-- immutable, and no user deletes one: deleting a document archives its row.
 -- P2-05 adds search_vector and ocr_text, and P3-07 adds lease_id with its key.
 
 create table public.documents (
@@ -39,8 +40,10 @@ select private.enable_household_rls('public.documents', 'member');
 select private.enable_audit('public.documents');
 select private.enable_soft_delete('public.documents');
 
+-- Keyed on the household too: a foreign key check ignores RLS, so a bare document id could name another household's.
 alter table public.certificates
-  add constraint certificates_document_id_fkey foreign key (document_id) references public.documents (id) on delete set null;
+  add constraint certificates_document_id_fkey foreign key (household_id, document_id)
+  references public.documents (household_id, id) on delete set null (document_id);
 
 -- Insert-only: every open of a document by anyone who can read it (DOC-4). Nobody updates or deletes a row.
 create table public.document_access_log (
@@ -63,6 +66,28 @@ create policy document_access_log_select on public.document_access_log for selec
   using (private.is_member(household_id, 'viewer'));
 create policy document_access_log_insert on public.document_access_log for insert to authenticated
   with check (user_id = auth.uid() and private.is_member(household_id, 'viewer'));
+
+-- A user's row names that user and the injected clock (FND-9), whatever the request sends.
+create function private.stamp_document_access()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role' is distinct from 'authenticated' then
+    return new;
+  end if;
+  new.user_id := (select auth.uid());
+  new.at := private.audit_now();
+  return new;
+end;
+$$;
+revoke all on function private.stamp_document_access() from public;
+
+create trigger stamp_document_access
+  before insert on public.document_access_log
+  for each row execute function private.stamp_document_access();
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('documents', 'documents', false, 26214400, array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
@@ -92,21 +117,62 @@ begin
 end;
 $$;
 
+-- The household a user may still write a document file for: none once the document's row exists.
+create function private.document_upload_household(p_name text)
+returns uuid
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_household uuid := private.document_household(p_name);
+begin
+  if v_household is null then
+    return null;
+  end if;
+  if exists (select 1 from public.documents d where d.id = split_part(p_name, '/', 2)::uuid) then
+    return null;
+  end if;
+  return v_household;
+end;
+$$;
+
 revoke all on function private.document_household(text) from public;
-grant execute on function private.document_household(text) to authenticated, service_role;
+revoke all on function private.document_upload_household(text) from public;
+grant execute on function private.document_household(text), private.document_upload_household(text) to authenticated, service_role;
 
 create policy documents_objects_select on storage.objects for select to authenticated
   using (bucket_id = 'documents' and private.is_member(private.document_household(name), 'viewer'));
 
 create policy documents_objects_insert on storage.objects for insert to authenticated
-  with check (bucket_id = 'documents' and private.is_member(private.document_household(name), 'member'));
+  with check (bucket_id = 'documents' and private.is_member(private.document_upload_household(name), 'member'));
 
 create policy documents_objects_update on storage.objects for update to authenticated
-  using (bucket_id = 'documents' and private.is_member(private.document_household(name), 'member'))
-  with check (bucket_id = 'documents' and private.is_member(private.document_household(name), 'member'));
+  using (bucket_id = 'documents' and private.is_member(private.document_upload_household(name), 'member'))
+  with check (bucket_id = 'documents' and private.is_member(private.document_upload_household(name), 'member'));
 
-create policy documents_objects_delete on storage.objects for delete to authenticated
-  using (bucket_id = 'documents' and private.is_member(private.document_household(name), 'member'));
+-- An upload URL signed before the row existed writes as the storage superuser, past the policies above, for as long
+-- as the URL lives. Every user write carries its owner, so this refuses any user's file landing on a registered
+-- document; the seed and the agent write as the service role, with no owner.
+create function private.refuse_registered_document_write()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.bucket_id = 'documents' and new.owner_id is not null and private.document_upload_household(new.name) is null then
+    raise exception 'documents: % is registered or not writable', new.name using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.refuse_registered_document_write() from public;
+
+create trigger refuse_registered_document_write
+  before insert or update on storage.objects
+  for each row execute function private.refuse_registered_document_write();
 
 -- The P1-03 facts plus the two document facts (PRP-6).
 create or replace view public.property_completeness_facts with (security_invoker = true) as
