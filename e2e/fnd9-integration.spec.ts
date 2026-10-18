@@ -115,7 +115,11 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
   test.setTimeout(60_000);
   await open(page, 'ryan.lane3@demo.esta.test', '/assistant', { viewport: [390, 844], theme: 'dark' });
   const ping = async () => {
-    await page.getByRole('button', { name: 'Chạy kiểm tra' }).click();
+    // Reloading before the action answers shows the previous check's Xong, and the job then starts on the next clock.
+    await Promise.all([
+      page.waitForResponse((response) => response.request().method() === 'POST' && response.url() === page.url()),
+      page.getByRole('button', { name: 'Chạy kiểm tra' }).click(),
+    ]);
     await expect(async () => {
       await page.reload();
       await expect(page.getByTestId('ping-status')).toHaveText('Xong', { timeout: 1_000 });
