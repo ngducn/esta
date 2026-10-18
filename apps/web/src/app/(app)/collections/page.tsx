@@ -3,12 +3,10 @@ import { isoDate, type IsoDate } from '@esta/core/date';
 import { formatMonthWithin, formatMonthYear } from '@esta/core/format';
 import { addMonths, firstOfMonth } from '@esta/core/schedule';
 import { getLocale, getTranslations } from 'next-intl/server';
-import Link from 'next/link';
 import { CollectionsBoard } from '@/components/collections/CollectionsBoard';
 import { MonthSelector } from '@/components/collections/MonthSelector';
 import { OfflineNotice } from '@/components/collections/offline-notice';
 import { sectionMetadata } from '@/components/shell/section-page';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { getClock } from '@/server/clock';
 import { loadCollectionRows } from '@/server/collections/load';
 import { requireMember } from '@/server/member';
@@ -43,28 +41,23 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-h2 break-words lg:text-h1">{nav('collections')}</h1>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <MonthSelector
-          label={t('monthPicker')}
-          value={boardMonthParam(month)}
-          options={pickerMonths(today, month).map((value) => ({ value: boardMonthParam(value), label: t('monthTitle', { month: formatMonthYear(value, locale) }) }))}
-          previous={step(-1)}
-          next={step(1)}
-        />
-        {month === firstOfMonth(today) ? null : (
-          <Link href="/collections" data-testid="month-this" className={buttonVariants({ variant: 'quiet' })}>
-            {t('thisMonth')}
-          </Link>
-        )}
-      </div>
       <OfflineNotice message={t('offline')} />
-      {rows.length === 0 ? (
-        <p data-testid="collections-empty" className="max-w-3xl rounded-lg border border-rule bg-surface p-5 text-lead font-semibold text-ink shadow-card sm:p-6">
-          {t('empty', { month: monthLabel })}
-        </p>
-      ) : (
-        <CollectionsBoard board={groupCollections(rows, month, today)} month={month} monthLabel={monthLabel} asOf={today} canEdit={member.role !== 'viewer'} />
-      )}
+      <MonthSelector
+        label={t('monthPicker')}
+        value={boardMonthParam(month)}
+        options={pickerMonths(today, month).map((value) => ({ value: boardMonthParam(value), label: t('monthTitle', { month: formatMonthYear(value, locale) }) }))}
+        previous={step(-1)}
+        next={step(1)}
+        thisMonth={month === firstOfMonth(today) ? null : { href: '/collections', label: t('thisMonth') }}
+      >
+        {rows.length === 0 ? (
+          <p data-testid="collections-empty" className="max-w-3xl rounded-lg border border-rule bg-surface p-5 text-lead font-semibold text-ink shadow-card sm:p-6">
+            {t('empty', { month: monthLabel })}
+          </p>
+        ) : (
+          <CollectionsBoard board={groupCollections(rows, month, today)} month={month} monthLabel={monthLabel} asOf={today} canEdit={member.role !== 'viewer'} />
+        )}
+      </MonthSelector>
     </div>
   );
 }

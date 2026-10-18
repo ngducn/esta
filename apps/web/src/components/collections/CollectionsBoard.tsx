@@ -51,7 +51,7 @@ function CollectionsRow({ item, month, asOf, canEdit }: { item: CollectionItem<C
       data-group={item.state.group}
       className="max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-1.5 max-sm:border-b max-sm:border-rule max-sm:px-4 max-sm:py-3.5 max-sm:last:border-b-0"
     >
-      <TableCell className={cn('max-sm:border-0 max-sm:p-0', cell.place)}>
+      <TableCell className={cn('lg:min-w-60 max-sm:border-0 max-sm:p-0', cell.place)}>
         <span data-testid="row-place" className="block min-w-0 text-body font-semibold break-words text-ink">
           {row.wholeUnit ? row.propertyName : t('place', { unit: row.unitLabel, property: row.propertyName })}
         </span>
@@ -78,7 +78,7 @@ function CollectionsRow({ item, month, asOf, canEdit }: { item: CollectionItem<C
       <TableCell className={cn('text-end max-sm:border-0 max-sm:p-0 max-sm:text-start', cell.actions)}>
         <span className="inline-flex flex-wrap gap-2">
           {collectionRowActions(item, canEdit).map((action) => (
-            <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'outline' })}>
+            <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'quiet', className: 'max-sm:-ml-2' })}>
               {t(action.label)}
             </Link>
           ))}
@@ -105,7 +105,7 @@ function GroupHeader({ group }: { group: CollectionGroup<CollectionRow> }) {
         </span>
       </TableHead>
       <TableCell className="bg-surface-2 py-3 text-end max-sm:border-0 max-sm:p-0">
-        <MoneyDisplay amount={group.totalVnd} className="text-lead font-bold text-ink" />
+        {group.items.length === 0 ? null : <MoneyDisplay amount={group.totalVnd} className="text-lead font-bold text-ink" />}
       </TableCell>
       <TableCell aria-hidden="true" className="bg-surface-2 py-3 max-sm:hidden" />
     </TableRow>
