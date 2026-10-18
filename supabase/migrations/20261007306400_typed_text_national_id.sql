@@ -1,3 +1,5 @@
+-- SPEC D11 for every path that writes typed text, not only the assistant's (#147).
+--
 -- The judge reads a middle dot as a dot, so it groups an amount or a date as a dot does, and matches ID labels with
 -- accents dropped, so `CḾND`, OCR's `CMNĐ` and `Chung minh nhan dan` announce an ID as `CMND` does (#140). It drops the
 -- marks reduceNationalIds drops and recomposes what is left, so a letter neither can fold, such as a Hangul syllable,
@@ -25,3 +27,32 @@ as $$
   ) as unaccented
   where jsonb_typeof(scalar) in ('string', 'number');
 $$;
+
+-- Every free-text column Mẹ can type into refuses a full ID by the same rule, through any form or a direct write.
+-- NOT VALID: rows written before this migration are not read, and a row is judged again whenever it is written.
+alter table public.parcels
+  add constraint parcels_no_national_id check (not private.holds_national_id(
+    jsonb_build_array(parcel_no, map_sheet_no, origin_text, jsonb_path_query_array(purposes, '$[*].land_use_code'))
+  )) not valid;
+alter table public.certificates
+  add constraint certificates_no_national_id check (not private.holds_national_id(
+    jsonb_build_array(serial_no, book_entry_no, issued_by, jsonb_path_query_array(annotations, '$[*].text'))
+  )) not valid;
+alter table public.structures
+  add constraint structures_no_national_id check (not private.holds_national_id(
+    jsonb_build_array(kind, structure_text, ownership_term)
+  )) not valid;
+alter table public.parties
+  add constraint parties_no_national_id check (not private.holds_national_id(
+    jsonb_build_array(full_name, short_name, email, tax_code, address_text, notes)
+  )) not valid;
+alter table public.documents
+  add constraint documents_title_no_national_id check (not private.holds_national_id(jsonb_build_array(title, tags))) not valid;
+
+-- A landline in E.164, such as +842838123456, has 12 digits like a CCCD, so the judge cannot read a phone. A phone
+-- column holds only what normalizePhone writes, and no CCCD fits that shape: every CCCD starts with 0.
+alter table public.parties
+  add constraint parties_phone_e164 check (
+    (phone is null or phone ~ '^\+84(?:[35789][0-9]{8}|2[0-9]{9})$')
+    and (zalo_phone is null or zalo_phone ~ '^\+84(?:[35789][0-9]{8}|2[0-9]{9})$')
+  ) not valid;
