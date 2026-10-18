@@ -118,11 +118,11 @@ export function UnitList({
           {error}
         </p>
       )}
-      <ol data-testid="unit-list" className="flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+      <ol data-testid="unit-list" className="@container flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
         {units.map((unit, index) => {
           const facts = [t('unitKind', { kind: unit.kind }), unit.area_m2 === null ? null : formatArea(unit.area_m2, locale)].filter((fact) => fact !== null);
           return (
-            <li key={unit.id} data-testid="unit-row" data-id={unit.id} data-kind={unit.kind} className="flex flex-col gap-3 border-b border-rule p-4 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-5">
+            <li key={unit.id} data-testid="unit-row" data-id={unit.id} data-kind={unit.kind} className="flex flex-col gap-3 border-b border-rule p-4 last:border-b-0 sm:px-5 @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-4">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <h3 data-testid="unit-label" className="min-w-0 text-lead font-bold break-words text-ink">
@@ -142,7 +142,7 @@ export function UnitList({
                   </p>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2 sm:justify-end">
+              <div className="flex flex-wrap gap-2 @3xl:justify-end">
                 <LeaseLink propertyId={propertyId} unit={unit} lease={leases[unit.id]} canEdit={canEdit} />
               {canEdit ? (
                 <>
