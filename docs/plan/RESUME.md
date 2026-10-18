@@ -9,7 +9,7 @@ Merged this session (session esta-78, from 15:10): #123 P3-07 leases (cb72c18), 
 Open, with the next step for each:
 
 - **#141 P2-07 merged as 38413b4** (round 3 PASS, CI 5/5 at 89b1b6d). Ryan did not answer the speed-budget question; the posted default was applied and #148 is a P2-08 entry requirement.
-- **P2-05: the documents vault (track A, rigorous).** Owner spawned 23:30 from 38413b4 with `briefs/p2-05.md` (Opus, slot 3, worktree /tmp/owner-p2-05/wt, migration 306100). Next: code-ready, then the rigorous swarm (live and regression on main, Opus audit with rule 2's no-thumbnail check and the ocr_text D11 path, second opinion on search), CI, merge. If no PR exists for it, rerun the brief.
+- **P2-05: the documents vault (track A, rigorous) is PR #150**, code-ready at 9d6d941 (base af1fa31, migration 306100). At 00:05 on 2026-10-19 root CI ran on slot 5 (`/tmp/root-ci/pr150-9d6d941.log`) and round 1 started from `briefs/lane-pr150.md`: lane L (Sonnet, slot 5 after CI), lane A (Opus, slot 3), lane S (Sonnet, no stack); evidence in `/tmp/swarm-pr150-ev/{live,audit,math}/`. Collect the verdict, send blocking findings in one fix-forward, then a scoped round, CI and merge.
 - **#142 P3-04: the nightly invoice and lease-status job (track B, rigorous, interrogate list).**
   - Round 2 PASS at 65f9bc9; the root rebased it onto 38413b4 as **ef5de0d** (no conflicts, range-diff identical) and reran CI on slot 5 (`/tmp/root-ci/pr142-rebased.log`). **Waiting for Ryan's merge click** at ef5de0d once CI is green (PR comments 6251656881 and the new-head note). If main moves again before he clicks, rebase and rerun CI, then tell him the new head.
 - **Next on each track.**
