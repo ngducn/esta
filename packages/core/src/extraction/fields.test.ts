@@ -56,6 +56,34 @@ describe('INPUT_KINDS', () => {
     expect(INPUT_KINDS.money.parse('1.234.567')).toEqual({ ok: true, value: 1234567 });
   });
 
+  it.each([
+    ['a dash between two dates', '15/10/1993 - 15/10/2043', '2043-10-15'],
+    ['an en dash between two dates', '15/10/1993 – 15/10/2043', '2043-10-15'],
+    ['an em dash with no spaces', '15/10/1993—15/10/2043', '2043-10-15'],
+    ['a dash with no spaces', '15/10/1993-15/10/2043', '2043-10-15'],
+    ['dashed dates joined by a dash', '15-10-1993 - 15-10-2043', '2043-10-15'],
+    ['ISO dates joined by an en dash', '1993-10-15 – 2043-10-15', '2043-10-15'],
+    ['Từ before a dash range', 'Từ 15/10/1993 - 15/10/2043', '2043-10-15'],
+    ['a range without accents', 'Tu 15/10/1993 den 15/10/2043', '2043-10-15'],
+    ['a range in capitals without accents', 'TU NGAY 15/10/1993 DEN NGAY 15/10/2043', '2043-10-15'],
+    ['two dates joined by đến', '15/10/1993 đến 15/10/2043', '2043-10-15'],
+    ['two dates joined by den', '15/10/1993 den 15/10/2043', '2043-10-15'],
+    ['months joined by a dash', '10/1993 - 10/2043', '2043-10-31'],
+    ['months joined by an en dash', 'Tháng 10/1993 – tháng 10/2043', '2043-10-31'],
+    ['months joined by den', 'Tu thang 10/1993 den thang 10/2043', '2043-10-31'],
+    ['an end month without accents', 'Den thang 10/2043', '2043-10-31'],
+  ] as const)('reads a term written as %s as its end', (_, text, end) => {
+    expect(INPUT_KINDS.term.parse(text)).toEqual({ ok: true, value: end });
+  });
+
+  it.each([
+    ['a start without accents', 'Tu 15/10/1993'],
+    ['a start date and a dash with no end date after it', '15/10/1993 - 50 năm'],
+    ['a period from a start without accents', '50 nam ke tu ngay 15/10/1993'],
+  ] as const)('refuses a term that names only %s', (_, text) => {
+    expect(INPUT_KINDS.term.parse(text)).toEqual({ ok: false });
+  });
+
   it('keeps only the last four digits of a typed ID number (D11)', () => {
     expect(INPUT_KINDS.id_last4.parse('079 160 018 829')).toEqual({ ok: true, value: '8829' });
     expect(INPUT_KINDS.id_last4.parse('12')).toEqual({ ok: false });
