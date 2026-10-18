@@ -39,7 +39,7 @@ const choice = <T extends string>(options: readonly T[]) => ({
 
 const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
 /** `đến` read without its accents, or a dash of any width right after a date or a month. */
-const TERM_END = /(?<!\p{L})den(?!\p{L})|(?:\d{4}-\d{2}-\d{2}|(?:\d{1,2}[./-]){1,2}\d{4})\s*[-‐-―]/iu;
+const TERM_END = /(?<!\p{L})den(?!\p{L})|(?:\d{4}-\d{2}-\d{2}|(?:\d{1,2}[./-]){1,2}\d{4})\s*[-\u2010-\u2015]/iu;
 const TERM_START = /(?<!\p{L})tu(?!\p{L})/iu;
 
 /** Accents dropped and đ read as d, so `Tu ... den ...` reads as `Từ ... đến ...`; digits and separators are unchanged. */
