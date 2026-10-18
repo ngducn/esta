@@ -5,7 +5,7 @@ import type { CronClient } from './supabase';
 
 export type InvoicesRun = { ok: true; as_of: IsoDate; drafted: number; issued: number; households: number };
 
-/** SPEC §5.4 nightly: public.run_invoicing drafts and issues each household's invoices, so nothing here writes them. */
+/** Invoices are written only in SQL: public.run_invoicing drafts and issues one household's. */
 export async function runInvoices(client: CronClient, clock: Clock): Promise<InvoicesRun> {
   const asOf = clock.today();
   const issuedAt = clock.now();

@@ -89,7 +89,7 @@ $$;
 revoke all on function public.run_invoicing(uuid, date, timestamptz) from public, anon, authenticated;
 grant execute on function public.run_invoicing(uuid, date, timestamptz) to service_role;
 
--- LSE-2: a lease whose last day is before p_as_of has ended. guard_lease allows only active to ended here.
+-- LSE-2: an active lease whose last day is before p_as_of has ended.
 create function public.end_expired_leases(p_as_of date)
 returns integer
 language plpgsql
