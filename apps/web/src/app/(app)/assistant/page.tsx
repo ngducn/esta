@@ -4,15 +4,15 @@ import { formatDate } from '@esta/core/format';
 import { History, Play, PlugZap, type LucideIcon } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { NewItems } from '@/components/assistant/new-items';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
-import { EmptyState } from '@/components/empty-state';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
-import { sectionIcons } from '@/components/shell/section-icons';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { listNewItems } from '@/server/agent/items';
 import { getConnectionCheck, getWorkerHeartbeat, type AgentRun, type PingCheck } from '@/server/assistant';
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
@@ -162,11 +162,11 @@ async function ConnectionCheck({ householdId, sendFailed, workerOnline }: { hous
 
 export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ check?: string }> }) {
   const clock = await getClock();
-  const [member, lastSeenAt, nav, sections, { check }] = await Promise.all([
-    requireMember(),
+  const member = await requireMember();
+  const [lastSeenAt, items, nav, { check }] = await Promise.all([
     getWorkerHeartbeat(clock.now()),
+    listNewItems(member.household.id),
     getTranslations('nav'),
-    getTranslations('sections'),
     searchParams,
   ]);
   const status = workerStatus(lastSeenAt, clock.now(), env.ESTA_TIMEZONE);
@@ -176,7 +176,7 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
         <h1 className="text-h2 break-words lg:text-h1">{nav('assistant')}</h1>
         <WorkerStatusLine status={status} />
       </div>
-      <EmptyState icon={sectionIcons.assistant} title={sections('soonTitle')} body={sections('assistant')} />
+      <NewItems items={items} timeOf={(item) => dateTime(item.createdAt)} />
       {member.isOperator ? (
         <ConnectionCheck householdId={member.household.id} sendFailed={check === 'failed'} workerOnline={status.kind === 'online'} />
       ) : null}

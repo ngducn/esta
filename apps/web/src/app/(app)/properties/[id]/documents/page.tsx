@@ -7,6 +7,7 @@ import { PropertyIntl } from '@/components/properties/property-intl';
 import { UndoToastProvider } from '@/components/undo-toast';
 import { getClock } from '@/server/clock';
 import { listDocuments } from '@/server/documents/list';
+import { readDocumentStatuses } from '@/server/documents/status';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { PropertyDetailFrame } from '../detail-frame';
@@ -16,8 +17,9 @@ export default async function PropertyDocumentsPage({ params }: { params: Promis
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
   const member = await requireMember();
-  const [rows, clock, t, locale, messages] = await Promise.all([
+  const [rows, statuses, clock, t, locale, messages] = await Promise.all([
     listDocuments(member.household.id, id),
+    readDocumentStatuses(id),
     getClock(),
     getTranslations('documents'),
     getLocale(),
@@ -46,7 +48,13 @@ export default async function PropertyDocumentsPage({ params }: { params: Promis
     <PropertyDetailFrame property={property} tab="documents">
       <PropertyIntl locale={locale} messages={{ documents: messages.documents, components: { date, toast } }}>
         <UndoToastProvider>
-          <DocumentGrid propertyId={id} nickname={property.nickname} documents={documents} canEdit={member.role !== 'viewer'} />
+          <DocumentGrid
+            propertyId={id}
+            nickname={property.nickname}
+            documents={documents}
+            canEdit={member.role !== 'viewer'}
+            statuses={statuses ?? { statuses: {}, workerOffline: false }}
+          />
         </UndoToastProvider>
       </PropertyIntl>
     </PropertyDetailFrame>

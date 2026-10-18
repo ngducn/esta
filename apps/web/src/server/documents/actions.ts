@@ -2,6 +2,7 @@
 
 import {
   acceptsMime,
+  DOCUMENT_CATEGORIES,
   DOCUMENT_CATEGORY_IDS,
   DOCUMENT_MIME_TYPES,
   documentObjectName,
@@ -117,7 +118,12 @@ export async function registerDocument(input: unknown): Promise<Registered> {
     },
     { onConflict: 'id', ignoreDuplicates: true },
   );
-  return error ? { ok: false } : { ok: true, title };
+  if (error) return { ok: false };
+  // The file is saved either way; a failed enqueue leaves the tile without a reading state rather than losing the upload.
+  if (DOCUMENT_CATEGORIES[category].extractionSchema !== null) {
+    await supabase.rpc('enqueue_extract_document', { p_document_id: documentId, p_as_of: (await readRequestClock()).now() });
+  }
+  return { ok: true, title };
 }
 
 type AccessAction = 'view' | 'download' | 'share';

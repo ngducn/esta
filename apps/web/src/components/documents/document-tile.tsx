@@ -4,6 +4,8 @@ import { Eye, FileText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { revealThumbnail } from '@/server/documents/actions';
+import type { ExtractionStatus } from '@/server/documents/status';
+import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
@@ -21,8 +23,33 @@ export type DocumentTileData = {
   readonly thumbUrl: string | null;
 };
 
+type Pill = { readonly mark: MarkStatus; readonly label: 'extractionReading' | 'extractionOffline' | 'extractionWaiting' | 'extractionFailed' };
+
+/** What the assistant is doing with the document. Nothing shows before an extraction or after its review. */
+function extractionPill(status: ExtractionStatus, workerOffline: boolean): Pill | null {
+  switch (status) {
+    case 'queued':
+    case 'running':
+      return workerOffline ? { mark: 'ended', label: 'extractionOffline' } : { mark: 'draft', label: 'extractionReading' };
+    case 'needs_review':
+      return { mark: 'due', label: 'extractionWaiting' };
+    case 'failed':
+      return { mark: 'overdue', label: 'extractionFailed' };
+    default:
+      return null;
+  }
+}
+
 /** DESIGN-BRIEF §7: thumbnail, category, title and the expiry line. A sensitive tile reveals only on `Xem`. */
-export function DocumentTile({ document }: { document: DocumentTileData }) {
+export function DocumentTile({
+  document,
+  extraction = 'none',
+  workerOffline = false,
+}: {
+  document: DocumentTileData;
+  extraction?: ExtractionStatus;
+  workerOffline?: boolean;
+}) {
   const t = useTranslations('documents');
   const [clearUrl, setClearUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -49,6 +76,7 @@ export function DocumentTile({ document }: { document: DocumentTileData }) {
     });
 
   const blurred = document.sensitive && clearUrl === null;
+  const pill = extractionPill(extraction, workerOffline);
   const src = clearUrl ?? document.thumbUrl;
   return (
     <li data-testid="document-tile" data-blurred={blurred} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
@@ -74,6 +102,14 @@ export function DocumentTile({ document }: { document: DocumentTileData }) {
       </div>
       <div className="flex min-w-0 flex-col gap-1 p-4">
         <p className="text-small font-semibold text-ink-muted">{document.categoryLabel}</p>
+        <p role="status" data-testid="extraction-status" data-status={extraction} className="flex min-h-0 empty:hidden">
+          {pill === null ? null : (
+            <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[pill.mark].pill)}>
+              <StatusShape status={pill.mark} className="size-4" />
+              <span>{t(pill.label)}</span>
+            </span>
+          )}
+        </p>
         <a
           href={`/api/documents/${document.id}/view`}
           target="_blank"

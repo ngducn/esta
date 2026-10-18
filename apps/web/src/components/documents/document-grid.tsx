@@ -9,7 +9,9 @@ import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
 import { archiveDocument } from '@/server/documents/actions';
+import type { DocumentStatuses } from '@/server/documents/status';
 import { DocumentTile, type DocumentTileData } from './document-tile';
+import { useDocumentStatuses } from './use-document-status';
 
 const UploadSheet = lazy(() => import('./upload-sheet'));
 
@@ -24,11 +26,13 @@ export function DocumentGrid({
   nickname,
   documents,
   canEdit,
+  statuses,
 }: {
   propertyId: string;
   nickname: string;
   documents: readonly DocumentTileData[];
   canEdit: boolean;
+  statuses: DocumentStatuses;
 }) {
   const t = useTranslations('documents');
   const router = useRouter();
@@ -37,6 +41,7 @@ export function DocumentGrid({
   const notice = useNoticeToast();
   const [opened, setOpened] = useState<Opened>(null);
   const [dragging, setDragging] = useState(false);
+  const extraction = useDocumentStatuses(propertyId, statuses);
 
   const drop = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
@@ -97,7 +102,12 @@ export function DocumentGrid({
       ) : (
         <ul aria-label={t('gridLabel', { nickname })} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {documents.map((document) => (
-            <DocumentTile key={document.id} document={document} />
+            <DocumentTile
+              key={document.id}
+              document={document}
+              extraction={extraction.statuses[document.id] ?? 'none'}
+              workerOffline={extraction.workerOffline}
+            />
           ))}
         </ul>
       )}
