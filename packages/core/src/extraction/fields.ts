@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { AGENT_SCHEMAS } from '../agent-schemas';
 import { ANNOTATION_KINDS, CERTIFICATE_FORMS, parseArea } from '../agent-schemas/certificate_v1';
 import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
 import { UTILITY_BILL_KINDS } from '../agent-schemas/utility_bill_v1';
@@ -36,6 +38,18 @@ const choice = <T extends string>(options: readonly T[]) => ({
 });
 
 const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
+const TERM_END = /(?<!\p{L})đến(?!\p{L})/iu;
+const TERM_START = /(?<!\p{L})từ(?!\p{L})/iu;
+
+/**
+ * The part of a term that names its end. A range such as `Từ tháng 10/1993 đến tháng 10/2043` ends after `đến`; a term
+ * that names only its start, such as `50 năm kể từ ngày 15/10/1993`, has no end to read.
+ */
+function termEnd(text: string): string | null {
+  const end = TERM_END.exec(text);
+  if (end !== null) return text.slice(end.index + end[0].length);
+  return TERM_START.test(text) ? null : text;
+}
 const TERM_MONTH = /(?<![\d./-])(\d{1,2})[./-](\d{4})(?!\d)/u;
 
 /** [app rule] A term printed to the month, as pre-2009 certificates print `Đến tháng 10/2043`, runs to its last day. */
@@ -128,15 +142,20 @@ export const INPUT_KINDS = {
       return refused;
     },
   },
-  /** `Lâu dài` is long term; a term with an end date keeps the date, and one with an end month that month's last day. */
+  /**
+   * `Lâu dài` is long term; a term with an end date keeps the date, and one with an end month that month's last day. A
+   * range keeps its end, whether it is printed to the month or to the day.
+   */
   term: {
     options: null,
     parse(raw: unknown): Parsed<string> {
       const text = asText(raw);
       if (text === null) return nothing;
       if (text === LONG_TERM || text.toLocaleLowerCase('vi').includes('lâu dài')) return accept(LONG_TERM);
-      const found = TERM_DATE.exec(text)?.[1];
-      const date = found === undefined ? readMonthEnd(text) : readDate(found);
+      const end = termEnd(text);
+      if (end === null) return refused;
+      const found = TERM_DATE.exec(end)?.[1];
+      const date = found === undefined ? readMonthEnd(end) : readDate(found);
       return date === null ? refused : accept(date);
     },
   },
@@ -157,13 +176,36 @@ export const INPUT_KINDS = {
 export type InputKind = keyof typeof INPUT_KINDS;
 
 /**
- * One field's value, printed or typed, read as its kind, with every national ID in the text it yields cut to its last
- * four digits (SPEC D11). The reducer runs on the parse's output because the parse squeezes spaces, which can join two
- * digit groups into one ID; what this returns is what the review shows and acceptance stores.
+ * One field's value, printed or typed, read as its kind, with every national ID cut to its last four digits (SPEC D11):
+ * in the text before the parse, and again in the text the parse yields, which squeezes spaces and so can join two digit
+ * groups into one ID. A number typed with an ID in its text is refused, as its last four would be a wrong number. What
+ * this returns is what the review shows and acceptance stores.
  */
 export function readInput(kind: InputKind, raw: unknown): Parsed<string | number | boolean> {
-  const parsed: Parsed<string | number | boolean> = INPUT_KINDS[kind].parse(raw);
-  return parsed.ok && typeof parsed.value === 'string' ? accept(reduceNationalIds(parsed.value)) : parsed;
+  const reduced = typeof raw === 'string' ? reduceNationalIds(raw) : raw;
+  const parsed: Parsed<string | number | boolean> = INPUT_KINDS[kind].parse(reduced);
+  if (!parsed.ok) return parsed;
+  if (typeof parsed.value === 'number') return reduced === raw ? parsed : refused;
+  return typeof parsed.value === 'string' ? accept(reduceNationalIds(parsed.value)) : parsed;
+}
+
+/** The value schema of one leaf of an extraction schema, named by a descriptor path such as `parcels[].area_m2`. */
+function leafValue(schemaName: SchemaName, path: string): z.core.$ZodType | undefined {
+  let node: z.core.$ZodType | undefined = AGENT_SCHEMAS[schemaName].schema;
+  for (const segment of [...path.split('.'), 'value']) {
+    const child: z.core.$ZodType | undefined = node instanceof z.ZodObject ? node.shape[segment.replace(/\[\]$/u, '')] : undefined;
+    node = child instanceof z.ZodArray ? child.element : child;
+  }
+  return node;
+}
+
+/**
+ * Whether a number keeps the bounds its leaf schema sets on what the assistant reads, such as an area of at most
+ * 100.000.000 m² or a year from 1800 to 2100, so a typed number is held to the same bounds.
+ */
+export function withinLeafBounds(schemaName: SchemaName, path: string, value: number): boolean {
+  const schema = leafValue(schemaName, path);
+  return schema !== undefined && z.safeParse(schema, value).success;
 }
 
 export type TargetTable = 'parties' | 'certificates' | 'parcels' | 'structures' | 'properties' | 'utility_accounts';

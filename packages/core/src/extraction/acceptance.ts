@@ -1,8 +1,7 @@
 import type { z } from 'zod';
-import { holdsNationalId } from '../agent-schemas/reduce-national-ids';
 import { certificateSchema, newParcelSchema, PARCEL_UNIDENTIFIED, type parcelSchema, structureSchema } from '../schemas/legal';
 import { utilityAccountSchema } from '../schemas/units';
-import { readInput, reviewFields, type ReviewField } from './fields';
+import { readInput, reviewFields, withinLeafBounds, type ReviewField } from './fields';
 import type { SchemaName } from './required-fields';
 import { uuidV5 } from './uuid-v5';
 
@@ -59,12 +58,12 @@ export type PlanStep =
 export type AcceptancePlan = { readonly steps: readonly PlanStep[]; readonly acceptedFields: AcceptedFields };
 
 /**
- * `invalid`: a decided value does not read as its kind, or would still be refused as a full national ID. `missing`: a
- * row has values but not the field it needs.
+ * `invalid`: a decided value does not read as its kind. `out_of_range`: a number lies outside the bounds its leaf schema
+ * keeps. `missing`: a row has values but not the field it needs.
  */
 export type PlanResult =
   | { readonly ok: true; readonly plan: AcceptancePlan }
-  | { readonly ok: false; readonly reason: 'invalid' | 'missing'; readonly paths: readonly string[] };
+  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing'; readonly paths: readonly string[] };
 
 type Value = string | number | boolean;
 
@@ -84,6 +83,7 @@ type Decided = {
   readonly values: ReadonlyMap<string, Value>;
   readonly acceptedFields: AcceptedFields;
   readonly invalid: readonly string[];
+  readonly outOfRange: readonly string[];
 };
 
 /** Reads every decided field as its kind, as the review shows it. */
@@ -92,6 +92,7 @@ function decide(schemaName: SchemaName, result: unknown, decisions: Decisions): 
   const values = new Map<string, Value>();
   const accepted: Record<string, AcceptedFields[string]> = {};
   const invalid: string[] = [];
+  const outOfRange: string[] = [];
   for (const field of fields) {
     const decision = decisions[field.path];
     if (decision === undefined) continue;
@@ -101,10 +102,14 @@ function decide(schemaName: SchemaName, result: unknown, decisions: Decisions): 
       continue;
     }
     if (parsed.value === null) continue;
+    if (typeof parsed.value === 'number' && !withinLeafBounds(schemaName, field.descriptor.path, parsed.value)) {
+      outOfRange.push(field.path);
+      continue;
+    }
     values.set(field.path, parsed.value);
     accepted[field.path] = { decision: decision.kind, value: parsed.value };
   }
-  return { fields, values, acceptedFields: accepted, invalid };
+  return { fields, values, acceptedFields: accepted, invalid, outOfRange };
 }
 
 function itemCount(fields: readonly ReviewField[], key: (index: number) => string): number {
@@ -133,25 +138,34 @@ function issuePaths(prefix: string, error: z.ZodError): string[] {
 
 type Collected = { steps: PlanStep[]; missing: string[]; invalid: string[] };
 
+function finish(collected: Collected, decided: Decided): PlanResult {
+  if (collected.invalid.length > 0) return { ok: false, reason: 'invalid', paths: collected.invalid };
+  if (decided.outOfRange.length > 0) return { ok: false, reason: 'out_of_range', paths: decided.outOfRange };
+  if (collected.missing.length > 0) return { ok: false, reason: 'missing', paths: collected.missing };
+  return { ok: true, plan: { steps: collected.steps, acceptedFields: decided.acceptedFields } };
+}
+
 const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu;
 
-/** Every string and number in a plan but the UUIDs that key its rows, which the ID rule would misread. */
+/** Every string and number in a row but the UUIDs that key the rows, which the ID rule would misread. */
 function scalars(node: unknown): (string | number)[] {
   if (typeof node === 'number') return [node];
   if (typeof node === 'string') return UUID.test(node) ? [] : [node];
   return typeof node === 'object' && node !== null ? Object.values(node).flatMap(scalars) : [];
 }
 
+/** One value a plan writes, and the field it came from; null when no decided field holds it, such as a party's tag. */
+export type PlannedValue = { readonly path: string | null; readonly value: string | number };
+
 /**
- * Fails closed on SPEC D11: a plan that would write a value the extraction CHECK refuses as a full national ID is
- * refused before any write, naming the decided fields that hold one.
+ * Every value a plan writes, into `accepted_fields` and into its rows, for the database to judge against SPEC D11 by the
+ * extraction CHECK's own rule before anything is written.
  */
-function finish(collected: Collected, acceptedFields: AcceptedFields): PlanResult {
-  if (collected.invalid.length > 0) return { ok: false, reason: 'invalid', paths: collected.invalid };
-  if (collected.missing.length > 0) return { ok: false, reason: 'missing', paths: collected.missing };
-  const held = Object.keys(acceptedFields).filter((path) => scalars(acceptedFields[path]?.value).some(holdsNationalId));
-  if (held.length > 0 || scalars(collected.steps).some(holdsNationalId)) return { ok: false, reason: 'invalid', paths: held };
-  return { ok: true, plan: { steps: collected.steps, acceptedFields } };
+export function plannedValues(plan: AcceptancePlan): PlannedValue[] {
+  const decided = Object.entries(plan.acceptedFields).flatMap(([path, { value }]) => (typeof value === 'boolean' ? [] : [{ path, value }]));
+  const pathOf = new Map<string | number, string>();
+  for (const { path, value } of decided) if (!pathOf.has(value)) pathOf.set(value, path);
+  return [...decided, ...scalars(plan.steps).map((value) => ({ path: pathOf.get(value) ?? null, value }))];
 }
 
 /**
@@ -289,7 +303,7 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
   if (address !== null) {
     collected.steps.push({ table: 'properties', row: { id: extraction.propertyId, household_id: extraction.householdId, certificate_address_text: address } });
   }
-  return finish(collected, decided.acceptedFields);
+  return finish(collected, decided);
 }
 
 const normalizeCode = (code: string) => code.replace(/\s+/gu, '').toUpperCase();
@@ -328,7 +342,7 @@ export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, deci
       row: { id: rowId(extraction.id, 'utility_account'), household_id: extraction.householdId, property_id: extraction.propertyId, ...account.data },
     });
   } else collected.invalid.push(...issuePaths('', account.error));
-  return finish(collected, decided.acceptedFields);
+  return finish(collected, decided);
 }
 
 export const PLANNERS = {

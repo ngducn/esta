@@ -17,7 +17,14 @@ import { cn } from '@/lib/utils';
 import type { FieldView } from '@/server/extraction/field-views';
 import type { LandUseCode } from '@/server/properties/legal';
 
-export type RowError = 'invalid' | 'missing';
+export type RowError = 'invalid' | 'out_of_range' | 'missing' | 'national_id';
+
+const ROW_ERRORS = {
+  invalid: 'invalidField',
+  out_of_range: 'outOfRangeField',
+  missing: 'missingField',
+  national_id: 'nationalIdField',
+} as const satisfies Record<RowError, string>;
 
 type Editor = 'select' | 'code' | 'date' | 'money' | { readonly inputMode: 'text' | 'decimal' | 'numeric'; readonly maxLength?: number };
 
@@ -85,7 +92,7 @@ export function ExtractionFieldRow({
   const unknownCode = input === 'land_use_code' && value !== null && !landUseCodes.some((option) => option.code === value);
   const unreadable = !field.readable && decision?.kind !== 'edited';
   const editor = EDITORS[input];
-  const message = error === 'missing' ? t('missingField') : error === 'invalid' ? t('invalidField') : unreadable ? t('notReadable') : null;
+  const message = error !== null ? t(ROW_ERRORS[error]) : unreadable ? t('notReadable') : null;
   const edit = (text: string) => onDecide({ kind: 'edited', value: text });
   const startText = decision?.kind === 'edited' ? decision.value : field.editValue;
 

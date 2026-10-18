@@ -97,9 +97,7 @@ export function ReviewPanel({
 
   const sections = useMemo(() => sectionsOf(fields), [fields]);
   const errors: Readonly<Record<string, RowError>> =
-    outcome !== null && !outcome.ok && (outcome.reason === 'invalid' || outcome.reason === 'missing')
-      ? Object.fromEntries(outcome.paths.map((path) => [path, outcome.reason as RowError]))
-      : {};
+    outcome !== null && !outcome.ok && 'paths' in outcome ? Object.fromEntries(outcome.paths.map((path) => [path, outcome.reason])) : {};
   const decided = fields.filter((field) => decisions[field.path] !== undefined).length;
   const valueOf = (path: string) => {
     const field = fields.find((candidate) => candidate.path === path);
@@ -143,13 +141,17 @@ export function ReviewPanel({
       ? null
       : outcome.reason === 'invalid'
         ? t('saveInvalid', { count: outcome.paths.length })
-        : outcome.reason === 'missing'
-          ? t('saveMissing')
-          : outcome.reason === 'no_property'
-            ? t('saveNoProperty')
-            : outcome.reason === 'reject_failed'
-              ? t('rejectFailed')
-              : t('saveFailed');
+        : outcome.reason === 'out_of_range'
+          ? t('saveOutOfRange', { count: outcome.paths.length })
+          : outcome.reason === 'national_id'
+            ? t('saveNationalId')
+            : outcome.reason === 'missing'
+              ? t('saveMissing')
+              : outcome.reason === 'no_property'
+                ? t('saveNoProperty')
+                : outcome.reason === 'reject_failed'
+                  ? t('rejectFailed')
+                  : t('saveFailed');
 
   const notice =
     mode === 'waiting' ? (

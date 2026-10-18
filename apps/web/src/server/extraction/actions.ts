@@ -1,6 +1,6 @@
 'use server';
 
-import { manualEntryId, PLANNERS, type Decisions, type PlanStep } from '@esta/core/extraction/acceptance';
+import { manualEntryId, plannedValues, PLANNERS, type Decisions, type PlanStep } from '@esta/core/extraction/acceptance';
 import { isSchemaName } from '@esta/core/extraction/fields';
 import type { Json, TablesInsert } from '@esta/db';
 import { revalidatePath } from 'next/cache';
@@ -10,7 +10,7 @@ import { createSessionClient } from '@/server/supabase/server';
 
 export type ReviewSave =
   | { readonly ok: true; readonly propertyId: string }
-  | { readonly ok: false; readonly reason: 'invalid' | 'missing'; readonly paths: readonly string[] }
+  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing' | 'national_id'; readonly paths: readonly string[] }
   | { readonly ok: false; readonly reason: 'no_property' | 'not_reviewable' | 'forbidden' | 'failed' };
 
 const uuid = z.uuid();
@@ -80,10 +80,11 @@ async function closeItems(supabase: Session, householdId: string, keys: readonly
 }
 
 /**
- * Accepts the reviewed fields of an extraction (DOC-6): builds the plan, upserts each step on the member's session,
- * then marks the extraction accepted with `accepted_fields`. A failed read is saved as a manual entry, inserted
- * accepted with no model before its rows so the certificate can name it. Every step is keyed by the extraction, so a
- * retry after a partial failure converges on the same rows.
+ * Accepts the reviewed fields of an extraction (DOC-6): builds the plan, has the database judge every value in it by
+ * the extraction CHECK's rule and stops before any write when one holds a full ID (SPEC D11), upserts each step on the
+ * member's session, then marks the extraction accepted with `accepted_fields`. A failed read is saved as a manual
+ * entry, inserted accepted with no model before its rows so the certificate can name it. Every step is keyed by the
+ * extraction, so a retry after a partial failure converges on the same rows.
  */
 export async function saveExtractionReview(extractionId: unknown, decisions: unknown, propertyId: unknown = null): Promise<ReviewSave> {
   const id = uuid.safeParse(extractionId);
@@ -109,6 +110,10 @@ export async function saveExtractionReview(extractionId: unknown, decisions: unk
     accounts: accounts.data.map((row) => ({ id: row.id, propertyId: row.property_id, kind: row.kind, customerCode: row.customer_code })),
   });
   if (!planned.ok) return planned;
+  const values = plannedValues(planned.plan);
+  const { data: held, error: judgeError } = await supabase.rpc('national_id_indexes', { p_values: values.map(({ value }) => value) });
+  if (judgeError) return { ok: false, reason: 'failed' };
+  if (held.length > 0) return { ok: false, reason: 'national_id', paths: [...new Set(held.flatMap((index) => values[index]?.path ?? []))] };
   const acceptedFields = asJson(planned.plan.acceptedFields);
 
   if (target.manualOf !== null) {
