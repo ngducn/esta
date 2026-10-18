@@ -62,7 +62,7 @@ async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome
   let session: SessionRun | null = null;
   try {
     const resolvedDir = realpathSync(jobDir);
-    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir });
+    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, clock: () => worker.clock() });
     const bound = [...prepared.tools.keys()].toSorted().join(',');
     if (bound !== spec.mcpTools.map(mcpToolName).toSorted().join(',')) throw new Error(`${job.kind} bound the tools ${bound}, not its kind's`);
     const request = {
@@ -128,7 +128,7 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant): Pro
       ? ownJob({ status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null })
       : ownJob({ status: 'failed', error: failure.message, finished_at: finishedAt }),
   );
-  if (next.status === 'failed') await spec?.handler.onFailed?.({ db, job }, failure.message);
+  if (next.status === 'failed') await spec?.handler.onFailed?.({ db, job, clock: () => worker.clock() }, failure.message);
   return { ok: false, failure };
 }
 

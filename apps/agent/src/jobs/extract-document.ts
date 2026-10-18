@@ -72,7 +72,7 @@ async function loadRows(db: AgentDb, job: AgentJob) {
  * Downloads only the job's file into the job directory, marks the extraction running and binds save_extraction to it.
  * The model sees one file and one write tool (DOC-5).
  */
-export async function prepareExtractDocument({ db, job, jobDir }: JobContext): Promise<PreparedJob> {
+export async function prepareExtractDocument({ db, job, jobDir, clock }: JobContext): Promise<PreparedJob> {
   const { document, extraction } = await loadRows(db, job);
   const download = await db.storage.from('documents').download(document.storage_path);
   if (download.error) throw new Error(`Downloading the document failed: ${download.error.message}`);
@@ -91,6 +91,7 @@ export async function prepareExtractDocument({ db, job, jobDir }: JobContext): P
     documentTitle: document.title,
     schemaName,
     locale: await householdLocale(db, job.household_id),
+    clock,
   });
   return {
     prompt: extractDocumentPrompt({ schemaName, schemaVersion: AGENT_SCHEMAS[schemaName].version, filePath, sha256 }),
@@ -111,7 +112,7 @@ export async function prepareExtractDocument({ db, job, jobDir }: JobContext): P
 }
 
 /** After the last attempt: the extraction reads failed and admins get one item with a Retry action (AGENT.md §9). */
-export async function failExtractDocument({ db, job }: Omit<JobContext, 'jobDir'>): Promise<void> {
+export async function failExtractDocument({ db, job, clock }: Omit<JobContext, 'jobDir'>): Promise<void> {
   const payload = payloadSchema.safeParse(job.payload);
   if (!payload.success) return;
   const { data: failed, error } = await db
@@ -144,6 +145,7 @@ export async function failExtractDocument({ db, job }: Omit<JobContext, 'jobDir'
       proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' },
       dedupe_key: `extract_failed:${payload.data.extraction_id}`,
       job_id: job.id,
+      created_at: (await clock()).now(),
     },
     { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true },
   );

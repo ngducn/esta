@@ -1,3 +1,4 @@
+import type { Clock } from '@esta/core';
 import type { Json, Tables } from '@esta/db';
 import type { AgentDb } from '../supabase';
 import type { EstaToolName, EstaTools } from '../tools/server';
@@ -13,6 +14,8 @@ export type JobContext = {
   readonly job: AgentJob;
   /** Already resolved through symlinks, empty, and deleted after the job on every exit path. */
   readonly jobDir: string;
+  /** The worker's clock, read when a row's time is written, so a frozen test clock dates it (FND-9). */
+  clock(): Promise<Clock>;
 };
 
 export type PreparedJob = {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Recorded } from '../test/fake-db';
-import { A, attempt, DOCUMENT_A, DOCUMENT_B, EXTRACTION_A, EXTRACTION_B, extractJob, twoHouseholds } from '../../test/extract-job';
+import { A, attempt, clock, DOCUMENT_A, DOCUMENT_B, EXTRACTION_A, EXTRACTION_B, extractJob, NOW, twoHouseholds } from '../../test/extract-job';
 import { failExtractDocument, InvalidJobError } from './extract-document';
 
 describe('extract_document on the fake service client', () => {
@@ -17,6 +17,7 @@ describe('extract_document on the fake service client', () => {
         audience: 'all',
         title: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.',
         dedupe_key: `extract_review:${EXTRACTION_A}`,
+        created_at: NOW,
       }),
     ]);
   });
@@ -39,8 +40,8 @@ describe('extract_document on the fake service client', () => {
   it('marks the extraction failed after the last attempt and offers admins a retry, once', async () => {
     const { db, tables } = twoHouseholds();
     const job = extractJob({ document_id: DOCUMENT_A, extraction_id: EXTRACTION_A });
-    await failExtractDocument({ db, job });
-    await failExtractDocument({ db, job });
+    await failExtractDocument({ db, job, clock });
+    await failExtractDocument({ db, job, clock });
     expect(tables.document_extractions[0]).toMatchObject({ status: 'failed' });
     expect(tables.agent_items).toEqual([
       expect.objectContaining({
@@ -48,6 +49,7 @@ describe('extract_document on the fake service client', () => {
         title: 'Trợ lý không đọc được Sổ hồng Bảo Lộc. Bạn có thể thử lại hoặc nhập tay.',
         proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' },
         dedupe_key: `extract_failed:${EXTRACTION_A}`,
+        created_at: NOW,
       }),
     ]);
   });

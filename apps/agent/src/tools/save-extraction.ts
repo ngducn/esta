@@ -1,3 +1,4 @@
+import type { Clock } from '@esta/core';
 import { AGENT_SCHEMAS, reduceNationalIds, type AgentSchemaName } from '@esta/core/agent-schemas';
 import { flattenLeaves } from '@esta/core/extraction';
 import type { Json } from '@esta/db';
@@ -43,6 +44,7 @@ export type ExtractionBinding = {
   readonly documentTitle: string;
   readonly schemaName: AgentSchemaName;
   readonly locale: Locale;
+  clock(): Promise<Clock>;
 };
 
 const input = z.object({ result: z.unknown() });
@@ -104,6 +106,7 @@ export function saveExtraction(binding: ExtractionBinding): (raw: Record<string,
           related: { document_id: binding.documentId, extraction_id: extractionId },
           dedupe_key: `extract_review:${extractionId}`,
           job_id: binding.jobId,
+          created_at: (await binding.clock()).now(),
         },
         { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true },
       ),

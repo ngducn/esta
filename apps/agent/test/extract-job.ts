@@ -1,3 +1,4 @@
+import { isoDate, parseInstant, type Clock } from '@esta/core';
 import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { prepareExtractDocument } from '../src/jobs/extract-document';
@@ -15,6 +16,10 @@ export const DOCUMENT_B = 'bbbbbbbb-0000-5000-8000-0000000000d2';
 export const EXTRACTION_A = 'aaaaaaaa-0000-5000-8000-0000000000e1';
 export const EXTRACTION_B = 'bbbbbbbb-0000-5000-8000-0000000000e2';
 export const JOB_A = 'aaaaaaaa-0000-5000-8000-0000000000f1';
+
+/** The frozen test clock, a day after the database's real time would put the item. */
+export const NOW = parseInstant('2026-10-07T09:00:00+07:00');
+export const clock = (): Promise<Clock> => Promise.resolve({ source: 'table', now: () => NOW, today: () => isoDate('2026-10-07') });
 
 const SCAN = readFileSync(join(import.meta.dirname, '../../../fixtures/certificates/gcn_2009_2024-scan/document.pdf'));
 
@@ -46,7 +51,7 @@ export const extractJob = (payload: { document_id: string; extraction_id: string
 export async function attempt(db: ReturnType<typeof fakeDb>, job: AgentJob, { crash = false } = {}) {
   const jobDir = newJobDir();
   try {
-    const prepared = await prepareExtractDocument({ db, job, jobDir });
+    const prepared = await prepareExtractDocument({ db, job, jobDir, clock });
     const run = await replaySession(
       { spec: JOBS.extract_document, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo 1', jobDir }) },
       DEFAULT_REPLAY_DIR,

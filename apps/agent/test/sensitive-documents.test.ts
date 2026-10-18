@@ -5,14 +5,14 @@ import { prepareExtractDocument } from '../src/jobs/extract-document';
 import { JOBS } from '../src/jobs/registry';
 import { decideToolUse } from '../src/sdk/path-policy';
 import { mcpToolName } from '../src/tools/server';
-import { attempt, B, DOCUMENT_A, DOCUMENT_B, EXTRACTION_A, EXTRACTION_B, extractJob, twoHouseholds } from './extract-job';
+import { attempt, B, clock, DOCUMENT_A, DOCUMENT_B, EXTRACTION_A, EXTRACTION_B, extractJob, twoHouseholds } from './extract-job';
 import { newJobDir } from './extract-session';
 
 describe('sensitive documents reach the agent only through their own extraction job (DOC-5)', () => {
   it('puts only the target file in the job directory', async () => {
     const jobDir = newJobDir();
     try {
-      await prepareExtractDocument({ db: twoHouseholds().db, job: extractJob({ document_id: DOCUMENT_A, extraction_id: EXTRACTION_A }), jobDir });
+      await prepareExtractDocument({ db: twoHouseholds().db, job: extractJob({ document_id: DOCUMENT_A, extraction_id: EXTRACTION_A }), jobDir, clock });
       expect(readdirSync(jobDir)).toEqual(['document.pdf']);
     } finally {
       rmSync(jobDir, { recursive: true, force: true });
