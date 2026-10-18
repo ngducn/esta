@@ -73,7 +73,12 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 }
 
 async function shot(page: Page, name: string) {
-  if (evidence !== undefined) await page.screenshot({ path: join(evidence, `${name}.png`), fullPage: true });
+  if (evidence === undefined) return;
+  const pager = page.getByTestId('document-pager');
+  if ((await pager.count()) > 0 && (await pager.isVisible())) {
+    await expect(pager.locator('[data-testid="document-page"]:not([data-drawn="false"])')).toBeVisible({ timeout: 15_000 });
+  }
+  await page.screenshot({ path: join(evidence, `${name}.png`), fullPage: true });
 }
 
 /** Uploads through the sheet and returns the new document's id. */
@@ -127,7 +132,9 @@ async function acceptEvery(page: Page) {
 
 async function editField(page: Page, path: string, text: string) {
   await row(page, path).getByTestId('field-edit').click();
-  await row(page, path).getByTestId('field-input').fill(text);
+  const input = row(page, path).getByTestId('field-input');
+  await input.fill('');
+  await input.pressSequentially(text);
   await row(page, path).getByTestId('field-done').click();
 }
 
@@ -347,7 +354,7 @@ test('main flow: Mẹ opens the waiting review from the Trợ lý item, fixes th
   const documentId = await uploadAndRead(page, 7, 'long-an', 'gcn_2024-photo', 'Sổ hồng Long An lane 7');
   await page.goto('/assistant');
   const item = page.getByTestId('new-item').filter({ hasText: 'Đã đọc xong Sổ hồng Long An lane 7. Mời bạn kiểm tra lại.' });
-  await item.getByTestId('item-review').click();
+  await item.first().getByTestId('item-review').click();
   await expect(page).toHaveURL(`/documents/${documentId}/review`);
   const marked = page.locator('[data-testid="extraction-field"][data-needs-check="true"]').first();
   const path = (await marked.getAttribute('data-path')) ?? '';
@@ -360,7 +367,7 @@ test('main flow: Mẹ opens the waiting review from the Trợ lý item, fixes th
   await expect(page).toHaveURL(`/properties/${propertyId(7, 'long-an')}/legal`, { timeout: 15_000 });
   await expect(page.getByText(/Thửa số 56\b/).first()).toBeVisible();
   await page.goto('/assistant');
-  await expect(page.getByTestId('new-item').filter({ hasText: 'Sổ hồng Long An lane 7' }), 'the item leaves the new list once reviewed').toHaveCount(0);
+  await expect(page.locator(`[data-testid="new-item"]:has(a[href="/documents/${documentId}/review"])`), 'the item leaves the new list once reviewed').toHaveCount(0);
 });
 
 test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ page, request }) => {
@@ -377,6 +384,8 @@ test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ p
   expect((await page.request.patch(`${rest}/document_extractions?id=eq.${queued?.id}`, { headers: { ...service, 'content-type': 'application/json' }, data: { status: 'failed' } })).ok()).toBe(true);
   const member = `household_members?invited_email=eq.${encodeURIComponent('me.lane8@demo.esta.test')}`;
   const role = (value: string) => page.request.patch(`${rest}/${member}`, { headers: { ...service, 'content-type': 'application/json' }, data: { role: value } });
+  const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
+  const offlineAt = new Date(Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse(START)) + 6 * 60_000).toISOString();
   const combos = [PHONE, DESKTOP].flatMap((viewport) => (['light', 'dark'] as const).map((theme) => ({ viewport, theme, name: `${viewport.width}x${viewport.height}-${theme}` })));
   const theme = async (value: 'light' | 'dark') => page.context().addCookies([{ name: 'esta_theme', value, url: test.info().project.use.baseURL ?? '' }]);
 
@@ -387,7 +396,7 @@ test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ p
     await page.goto(`/documents/${reading}/review`);
     await expect(page.getByTestId('review-reading')).toBeVisible();
     await shot(page, `p2-07-reading-${combo.name}`);
-    await setClock(request, '2026-10-07T09:06:30+07:00');
+    await setClock(request, offlineAt);
     await page.reload();
     await expect(page.getByTestId('review-offline')).toBeVisible();
     await shot(page, `p2-07-offline-${combo.name}`);
