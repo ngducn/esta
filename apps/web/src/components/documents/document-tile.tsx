@@ -2,6 +2,7 @@
 
 import { Eye, FileText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 import { revealThumbnail } from '@/server/documents/actions';
 import type { ExtractionStatus } from '@/server/documents/extraction-status';
@@ -23,18 +24,23 @@ export type DocumentTileData = {
   readonly thumbUrl: string | null;
 };
 
-type Pill = { readonly mark: MarkStatus; readonly label: 'extractionReading' | 'extractionOffline' | 'extractionWaiting' | 'extractionFailed' };
+type Pill = {
+  readonly mark: MarkStatus;
+  readonly label: 'extractionReading' | 'extractionOffline' | 'extractionWaiting' | 'extractionFailed';
+  /** Opens the review: a waiting read to check, or a failed one to enter by hand. */
+  readonly reviewable: boolean;
+};
 
 /** What the assistant is doing with the document. Nothing shows before an extraction or after its review. */
 function extractionPill(status: ExtractionStatus, workerOffline: boolean): Pill | null {
   switch (status) {
     case 'queued':
     case 'running':
-      return workerOffline ? { mark: 'ended', label: 'extractionOffline' } : { mark: 'draft', label: 'extractionReading' };
+      return workerOffline ? { mark: 'ended', label: 'extractionOffline', reviewable: false } : { mark: 'draft', label: 'extractionReading', reviewable: false };
     case 'needs_review':
-      return { mark: 'due', label: 'extractionWaiting' };
+      return { mark: 'due', label: 'extractionWaiting', reviewable: true };
     case 'failed':
-      return { mark: 'overdue', label: 'extractionFailed' };
+      return { mark: 'overdue', label: 'extractionFailed', reviewable: true };
     default:
       return null;
   }
@@ -103,7 +109,16 @@ export function DocumentTile({
       <div className="flex min-w-0 flex-col gap-1 p-4">
         <p className="text-small font-semibold text-ink-muted">{document.categoryLabel}</p>
         <p role="status" data-testid="extraction-status" data-status={extraction} className="flex min-h-0 empty:hidden">
-          {pill === null ? null : (
+          {pill === null ? null : pill.reviewable ? (
+            <Link
+              href={`/documents/${document.id}/review`}
+              data-testid="review-link"
+              className={cn('inline-flex min-h-touch items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
+            >
+              <StatusShape status={pill.mark} className="size-4" />
+              <span>{t(pill.label)}</span>
+            </Link>
+          ) : (
             <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[pill.mark].pill)}>
               <StatusShape status={pill.mark} className="size-4" />
               <span>{t(pill.label)}</span>
