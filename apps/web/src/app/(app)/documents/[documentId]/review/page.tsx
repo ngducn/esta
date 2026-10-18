@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { ReviewPanel, type ReviewMode } from '@/components/extraction/review-panel';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import type { ExtractionStatus } from '@/server/documents/extraction-status';
+import { fieldViews } from '@/server/extraction/field-views';
 import { loadReview } from '@/server/extraction/review';
 import { loadLandUseCodes } from '@/server/properties/legal';
 
@@ -34,7 +35,8 @@ export default async function DocumentReviewPage({ params }: { params: Promise<{
   const { document, extraction } = review;
   const status = extraction?.status ?? 'none';
   const mode = MODES[status];
-  const fields = extraction === null ? [] : mode === 'review' ? reviewFields(extraction.schemaName, extraction.result) : mode === 'manual' ? reviewFields(extraction.schemaName, null) : [];
+  const reviewed = extraction === null ? [] : mode === 'review' ? reviewFields(extraction.schemaName, extraction.result) : mode === 'manual' ? reviewFields(extraction.schemaName, null) : [];
+  const fields = await fieldViews(reviewed, extraction?.schemaName === 'utility_bill_v1' ? 'bill' : 'certificate');
   const { purposeCodeHint, unknownCode } = messages.propertyLegal;
   const { date, money, confirm } = messages.components;
   const back = document.propertyId === null ? '/documents' : `/properties/${document.propertyId}/documents`;
@@ -53,6 +55,7 @@ export default async function DocumentReviewPage({ params }: { params: Promise<{
           mime={document.mime}
           pageCount={document.pageCount}
           fileUrl={review.fileUrl}
+          thumbUrl={review.thumbUrl}
           mode={mode}
           extractionId={extraction?.id ?? null}
           schemaName={extraction?.schemaName ?? 'certificate_v1'}

@@ -1,7 +1,10 @@
 import 'server-only';
 import { isSchemaName, type SchemaName } from '@esta/core/extraction/fields';
 import { z } from 'zod';
+import { thumbPath } from '@esta/core/documents';
 import { openDocument } from '@/server/documents/actions';
+import { signDocumentUrl } from '@/server/documents/sign';
+import { env } from '@/server/env';
 import type { DocumentStatuses, ExtractionStatus } from '@/server/documents/extraction-status';
 import { readDocumentStatuses } from '@/server/documents/status';
 import { requireMember } from '@/server/member';
@@ -23,6 +26,7 @@ export type ReviewData = {
   readonly extraction: ReviewExtraction | null;
   /** A signed URL to the file; null when Storage refused it. Signing it logs a view (DOC-4). */
   readonly fileUrl: string | null;
+  readonly thumbUrl: string | null;
   readonly statuses: DocumentStatuses;
   readonly canEdit: boolean;
   /** Only for a document filed without a property, which needs one before it is saved. */
@@ -42,7 +46,7 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
     .is('deleted_at', null)
     .maybeSingle();
   if (document === null) return null;
-  const [latest, fileUrl, statuses, properties] = await Promise.all([
+  const [latest, fileUrl, thumbUrl, statuses, properties] = await Promise.all([
     supabase
       .from('document_extractions')
       .select('id, status, schema_name, result')
@@ -53,6 +57,7 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
       .limit(1)
       .maybeSingle(),
     openDocument(documentId, 'view'),
+    signDocumentUrl(thumbPath(member.household.id, documentId), env.ESTA_SIGNED_URL_TTL_SECONDS),
     readDocumentStatuses(documentId, 'document'),
     document.property_id === null
       ? supabase.from('properties').select('id, nickname').eq('household_id', member.household.id).order('nickname')
@@ -71,6 +76,7 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
     },
     extraction,
     fileUrl,
+    thumbUrl,
     statuses: statuses ?? { statuses: {}, workerOffline: false, offlineSince: null },
     canEdit: member.role !== 'viewer',
     properties: properties.data ?? [],

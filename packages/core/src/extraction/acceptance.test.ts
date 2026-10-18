@@ -4,12 +4,12 @@ import truthFile from '../../../../fixtures/certificates/gcn_2024-photo/truth.js
 import {
   planCertificateAcceptance,
   planUtilityBillAcceptance,
-  purposeAreaMismatch,
   rowId,
   type AcceptanceExtraction,
   type Decisions,
   type PlanResult,
 } from './acceptance';
+import { purposeAreaMismatch, readArea } from './area-check';
 import { reviewFields } from './fields';
 
 const extraction: AcceptanceExtraction = {
@@ -185,5 +185,7 @@ describe('purposeAreaMismatch', () => {
     expect(purposeAreaMismatch(125.5, [100, 20.5])).toEqual({ parcel: 125.5, purposes: 120.5 });
     expect(purposeAreaMismatch(125.5, [100, 25.5])).toBeNull();
     expect(purposeAreaMismatch(125.5, [null])).toBeNull();
+    expect(readArea('125,5 m²')).toBe(125.5);
+    expect(readArea('một trăm')).toBeNull();
   });
 });

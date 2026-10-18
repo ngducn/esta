@@ -43,15 +43,16 @@ function PdfPageCanvas({ pdf, page, label }: { pdf: PdfDocument; page: number; l
       live = false;
     };
   }, [pdf, page]);
-  return <canvas ref={canvas} role="img" aria-label={label} data-testid="document-page" data-drawn={drawn} className="block h-auto w-full bg-surface" />;
+  return <canvas ref={canvas} role="img" aria-label={label} data-testid="document-page" data-drawn={drawn} className="absolute inset-0 size-full object-contain" />;
 }
 
 /**
  * The document beside its fields: page tabs, zoom, and the page a field was read from. A photo is one page; a PDF's
- * pages are drawn by pdf.js on demand.
+ * pages are drawn by pdf.js on demand. Pages sit in a sheet-shaped box, so nothing below moves when one loads.
  */
 export function DocumentPager({
   fileUrl: renderedUrl,
+  thumbUrl,
   mime,
   pageCount,
   title,
@@ -59,6 +60,8 @@ export function DocumentPager({
   onPage,
 }: {
   fileUrl: string | null;
+  /** The upload's 320 px first-page thumbnail, shown under a PDF's page 1 while pdf.js loads and draws it. */
+  thumbUrl: string | null;
   mime: string;
   pageCount: number;
   title: string;
@@ -132,22 +135,30 @@ export function DocumentPager({
         </div>
       </div>
       <div tabIndex={0} aria-label={label} className="max-h-[70vh] overflow-auto rounded-md border border-rule bg-surface-2 lg:max-h-[calc(100vh-12rem)]">
-        <div style={{ width: `${(ZOOMS[zoom] ?? 1) * 100}%` }}>
+        <div className="relative aspect-[5/7]" style={{ width: `${(ZOOMS[zoom] ?? 1) * 100}%` }}>
           {failed || fileUrl === null ? (
             <p role="alert" className="p-4 text-body text-overdue">
               {t('documentUnavailable')}
             </p>
-          ) : isPdf ? (
-            pdf === null ? (
-              <p role="status" className="p-4 text-body text-ink-muted">
-                {t('pageLoading', { page: shown })}
-              </p>
-            ) : (
-              <PdfPageCanvas pdf={pdf} page={shown} label={label} />
-            )
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
-            <img src={fileUrl} alt={label} data-testid="document-page" className="block h-auto w-full" onError={() => setFailed(true)} />
+            <>
+              {isPdf && thumbUrl !== null && shown === 1 ? (
+                // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
+                <img src={thumbUrl} alt="" className="absolute inset-0 size-full object-contain" />
+              ) : null}
+              {isPdf ? (
+                pdf === null ? (
+                  <p role="status" className="relative p-4 text-body text-ink-muted">
+                    {t('pageLoading', { page: shown })}
+                  </p>
+                ) : (
+                  <PdfPageCanvas pdf={pdf} page={shown} label={label} />
+                )
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
+                <img src={fileUrl} alt={label} data-testid="document-page" fetchPriority="high" className="absolute inset-0 size-full object-contain" onError={() => setFailed(true)} />
+              )}
+            </>
           )}
         </div>
       </div>

@@ -1,7 +1,8 @@
 'use client';
 
-import { purposeAreaMismatch, type FieldDecision } from '@esta/core/extraction/acceptance';
-import type { ReviewField, SchemaName } from '@esta/core/extraction/fields';
+import type { FieldDecision } from '@esta/core/extraction/acceptance';
+import { purposeAreaMismatch } from '@esta/core/extraction/area-check';
+import type { SchemaName } from '@esta/core/extraction/fields';
 import { formatArea } from '@esta/core/format';
 import { CircleCheck, CloudOff, FileSearch, Images, Save } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -15,7 +16,8 @@ import type { DocumentStatuses, ExtractionStatus } from '@/server/documents/extr
 import { rejectExtraction, saveExtractionReview, type ReviewSave } from '@/server/extraction/actions';
 import type { LandUseCode } from '@/server/properties/legal';
 import { DocumentPager } from './document-pager';
-import { currentValue, ExtractionFieldRow, type RowError } from './extraction-field-row';
+import type { FieldView } from '@/server/extraction/field-views';
+import { ExtractionFieldRow, rowArea, type RowError } from './extraction-field-row';
 
 export type ReviewMode = 'waiting' | 'review' | 'manual' | 'accepted' | 'rejected' | 'none';
 
@@ -26,23 +28,17 @@ const REVIEW_POLL: readonly PollStep[] = [
   { everyMs: 10_000, times: 24 },
 ];
 
-type Section = { readonly key: string; readonly list: string; readonly number: number; readonly fields: readonly ReviewField[] };
+type Section = { readonly key: string; readonly list: string; readonly number: number; readonly fields: readonly FieldView[] };
 
-function sectionsOf(fields: readonly ReviewField[], schemaName: SchemaName): Section[] {
+function sectionsOf(fields: readonly FieldView[]): Section[] {
   const sections: Section[] = [];
   for (const field of fields) {
     const last = sections.at(-1);
-    if (last?.key === field.section.key) {
-      sections[sections.length - 1] = { ...last, fields: [...last.fields, field] };
-    } else {
-      const list = field.section.list ?? (schemaName === 'utility_bill_v1' ? 'bill' : 'certificate');
-      sections.push({ key: field.section.key, list, number: field.section.numbers.at(-1) ?? 0, fields: [field] });
-    }
+    if (last?.key === field.section.key) sections[sections.length - 1] = { ...last, fields: [...last.fields, field] };
+    else sections.push({ ...field.section, fields: [field] });
   }
   return sections;
 }
-
-const asNumber = (value: unknown) => (typeof value === 'number' ? value : null);
 
 export function ReviewPanel({
   documentId,
@@ -50,6 +46,7 @@ export function ReviewPanel({
   mime,
   pageCount,
   fileUrl,
+  thumbUrl,
   mode,
   extractionId,
   schemaName,
@@ -66,10 +63,11 @@ export function ReviewPanel({
   mime: string;
   pageCount: number;
   fileUrl: string | null;
+  thumbUrl: string | null;
   mode: ReviewMode;
   extractionId: string | null;
   schemaName: SchemaName;
-  fields: readonly ReviewField[];
+  fields: readonly FieldView[];
   statuses: DocumentStatuses;
   renderedStatus: ExtractionStatus;
   canEdit: boolean;
@@ -92,10 +90,12 @@ export function ReviewPanel({
   const polled = useDocumentStatuses(documentId, statuses, { by: 'document', steps: REVIEW_POLL });
   const liveStatus = polled.statuses[documentId] ?? renderedStatus;
   useEffect(() => {
-    if (liveStatus !== renderedStatus) router.refresh();
+    // queued and running render the same waiting notice, so only a read that ends fetches the page again.
+    const reading = (status: ExtractionStatus) => status === 'queued' || status === 'running';
+    if (liveStatus !== renderedStatus && !(reading(liveStatus) && reading(renderedStatus))) router.refresh();
   }, [liveStatus, renderedStatus, router]);
 
-  const sections = useMemo(() => sectionsOf(fields, schemaName), [fields, schemaName]);
+  const sections = useMemo(() => sectionsOf(fields), [fields]);
   const errors: Readonly<Record<string, RowError>> =
     outcome !== null && !outcome.ok && (outcome.reason === 'invalid' || outcome.reason === 'missing')
       ? Object.fromEntries(outcome.paths.map((path) => [path, outcome.reason as RowError]))
@@ -103,9 +103,7 @@ export function ReviewPanel({
   const decided = fields.filter((field) => decisions[field.path] !== undefined).length;
   const valueOf = (path: string) => {
     const field = fields.find((candidate) => candidate.path === path);
-    if (field === undefined) return null;
-    const { parsed } = currentValue(field, decisions[path]);
-    return parsed.ok ? asNumber(parsed.value) : null;
+    return field === undefined ? null : rowArea(field, decisions[path]);
   };
 
   const goToPage = (next: number) => {
@@ -187,7 +185,7 @@ export function ReviewPanel({
           </Button>
         </div>
         <div className={cn(!showDocument && 'max-lg:hidden')}>
-          <DocumentPager fileUrl={fileUrl} mime={mime} pageCount={pageCount} title={title} page={page} onPage={setPage} />
+          <DocumentPager fileUrl={fileUrl} thumbUrl={thumbUrl} mime={mime} pageCount={pageCount} title={title} page={page} onPage={setPage} />
         </div>
       </section>
 

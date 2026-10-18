@@ -1,14 +1,12 @@
 'use client';
 
 import type { FieldDecision } from '@esta/core/extraction/acceptance';
-import { needsCheck } from '@esta/core/extraction/confidence';
-import { INPUT_KINDS, type InputKind, type ReviewField } from '@esta/core/extraction/fields';
+import { readArea } from '@esta/core/extraction/area-check';
+import type { InputKind } from '@esta/core/extraction/fields';
 import { isIsoDate } from '@esta/core/date';
-import { formatArea, formatDate, formatVnd } from '@esta/core/format';
-import { vnd } from '@esta/core/money';
+import { formatArea } from '@esta/core/format';
 import { Check, Pencil, Undo2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useId } from 'react';
 import { DateInput } from '@/components/date-input';
 import { LandUseCodePicker } from '@/components/legal/land-use-code-picker';
 import { MoneyInput } from '@/components/money/money-input';
@@ -16,13 +14,14 @@ import { StatusShape, statusMarks } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import type { FieldView } from '@/server/extraction/field-views';
 import type { LandUseCode } from '@/server/properties/legal';
 
 export type RowError = 'invalid' | 'missing';
 
 type Editor = 'select' | 'code' | 'date' | 'money' | { readonly inputMode: 'text' | 'decimal' | 'numeric'; readonly maxLength?: number };
 
-/** How each kind of field is typed. A choice reads from the kind's options; an ID keeps four digits at most (D11). */
+/** How each kind of field is typed. A choice picks from its options; an ID keeps four digits at most (D11). */
 const EDITORS: Readonly<Record<InputKind, Editor>> = {
   text: { inputMode: 'text' },
   term: { inputMode: 'text' },
@@ -40,33 +39,22 @@ const EDITORS: Readonly<Record<InputKind, Editor>> = {
   boolean: 'select',
 };
 
-const OPTION_KINDS = new Set<InputKind>(['form', 'use_form', 'annotation_kind', 'utility_kind', 'term']);
-
-/** The value the field would save: what Mẹ typed when she edited it, else what the assistant read. */
-export function currentValue(field: ReviewField, decision: FieldDecision | undefined) {
-  const raw = decision?.kind === 'edited' ? decision.value : (field.leaf?.value ?? null);
-  return { raw, parsed: INPUT_KINDS[field.descriptor.input].parse(raw) };
+/** The area the row would save, for the parcel's area-sum check: what Mẹ typed, else what was read. */
+export function rowArea(field: FieldView, decision: FieldDecision | undefined): number | null {
+  return decision?.kind === 'edited' ? readArea(decision.value) : field.area;
 }
 
-function useFormat() {
-  const t = useTranslations('extraction');
-  const locale = useLocale() === 'en' ? 'en' : 'vi';
-  return (kind: InputKind, value: unknown): string => {
-    if (kind === 'area' && typeof value === 'number') return formatArea(value, locale);
-    if (kind === 'money' && typeof value === 'number') return formatVnd(vnd(value), locale);
-    if (kind === 'date' && typeof value === 'string' && isIsoDate(value)) return formatDate(value, locale);
-    if (kind === 'term' && typeof value === 'string' && isIsoDate(value)) return formatDate(value, locale);
-    if (OPTION_KINDS.has(kind)) return t('option', { kind, value: String(value) });
-    return String(value);
-  };
-}
-
-/** Text for the editor to start from, in the form Mẹ would type it. */
-function editText(kind: InputKind, value: unknown, format: (kind: InputKind, value: unknown) => string): string {
-  if (value === null || value === undefined) return '';
-  if (kind === 'area' || kind === 'number') return format('area', value).replace(/\s*m²$/u, '');
-  if (kind === 'term' && typeof value === 'string' && isIsoDate(value)) return format('date', value);
-  return String(value);
+/** What the row shows: Mẹ's edit, shown the way a read value would be, else the value read. */
+function shown(field: FieldView, decision: FieldDecision | undefined, locale: 'vi' | 'en'): string | null {
+  if (decision?.kind !== 'edited') return field.display;
+  const text = decision.value.trim();
+  if (text === '') return null;
+  if (field.input === 'area') {
+    const area = readArea(text);
+    return area === null ? text : formatArea(area, locale);
+  }
+  if (field.input === 'land_use_code') return text.toUpperCase();
+  return field.options?.find((option) => option.value === text)?.label ?? text;
 }
 
 export function ExtractionFieldRow({
@@ -80,7 +68,7 @@ export function ExtractionFieldRow({
   onEdit,
   onPage,
 }: {
-  field: ReviewField;
+  field: FieldView;
   decision: FieldDecision | undefined;
   editing: boolean;
   error: RowError | null;
@@ -91,38 +79,29 @@ export function ExtractionFieldRow({
   onPage: (page: number) => void;
 }) {
   const t = useTranslations('extraction');
-  const locale = useLocale();
-  const format = useFormat();
-  const id = useId();
-  const { input, label: labelKey } = field.descriptor;
-  const label = t(`fields.${labelKey}` as 'fields.form');
-  const { raw, parsed } = currentValue(field, decision);
-  const value = parsed.ok ? parsed.value : null;
-  const marked = needsCheck(field) && decision === undefined;
-  const page = field.leaf?.page ?? null;
-  const unknownCode = input === 'land_use_code' && typeof value === 'string' && !landUseCodes.some((option) => option.code === value);
-  const unreadable = !parsed.ok;
+  const locale = useLocale() === 'en' ? 'en' : 'vi';
+  const { input, label, page } = field;
+  const value = shown(field, decision, locale);
+  const unknownCode = input === 'land_use_code' && value !== null && !landUseCodes.some((option) => option.code === value);
+  const unreadable = !field.readable && decision?.kind !== 'edited';
   const editor = EDITORS[input];
   const message = error === 'missing' ? t('missingField') : error === 'invalid' ? t('invalidField') : unreadable ? t('notReadable') : null;
-
   const edit = (text: string) => onDecide({ kind: 'edited', value: text });
-  const startText = editText(input, decision?.kind === 'edited' ? decision.value : value, format);
+  const startText = decision?.kind === 'edited' ? decision.value : field.editValue;
 
   return (
     <li
       data-testid="extraction-field"
       data-path={field.path}
-      data-needs-check={needsCheck(field)}
+      data-needs-check={field.marked}
       data-decision={decision?.kind ?? 'none'}
       className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-1 basis-48 flex-col gap-0.5">
-          <p id={`${id}-label`} className="text-small font-semibold text-ink-muted">
-            {label}
-          </p>
-          <p data-testid="field-value" className={cn('text-body break-words', value === null && !unreadable ? 'text-ink-muted' : 'text-ink')}>
-            {value !== null ? format(input, value) : unreadable ? String(raw) : t('empty')}
+          <p className="text-small font-semibold text-ink-muted">{label}</p>
+          <p data-testid="field-value" className={cn('text-body break-words', value === null ? 'text-ink-muted' : 'text-ink')}>
+            {value ?? t('empty')}
           </p>
           {unknownCode ? (
             <p data-testid="unknown-code" className="text-small text-ink-2 italic">
@@ -136,7 +115,7 @@ export function ExtractionFieldRow({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {marked ? (
+          {field.marked && decision === undefined ? (
             <span data-testid="needs-check" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks.due.pill)}>
               <StatusShape status="due" className="size-4" />
               <span>{t('needsCheck')}</span>
@@ -163,7 +142,7 @@ export function ExtractionFieldRow({
             data-testid="field-correct"
             aria-label={t('correctLabel', { field: label })}
             aria-pressed={decision?.kind === 'accepted'}
-            disabled={unreadable && decision?.kind !== 'edited'}
+            disabled={unreadable}
             onClick={() => {
               onDecide(decision?.kind === 'edited' ? decision : { kind: 'accepted' });
               onEdit(false);
@@ -191,28 +170,21 @@ export function ExtractionFieldRow({
               <span className="text-body font-semibold text-ink">{label}</span>
               <select
                 className="min-h-touch rounded-md border border-field bg-surface px-3 text-body text-ink"
-                defaultValue={typeof value === 'string' ? value : ''}
+                defaultValue={startText}
                 onChange={(event) => edit(event.target.value)}
               >
                 <option value="">{t('optionNone')}</option>
-                {(INPUT_KINDS[input].options ?? []).map((option) => (
-                  <option key={option} value={option}>
-                    {t('option', { kind: input, value: option })}
+                {(field.options ?? []).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
             </label>
           ) : editor === 'code' ? (
-            <LandUseCodePicker
-              value={decision?.kind === 'edited' ? decision.value : startText}
-              onChange={edit}
-              codes={landUseCodes}
-              locale={locale}
-              label={label}
-              invalid={error !== null}
-            />
+            <LandUseCodePicker value={startText} onChange={edit} codes={landUseCodes} locale={locale} label={label} invalid={error !== null} />
           ) : editor === 'date' ? (
-            <DateInput label={label} {...(typeof value === 'string' && isIsoDate(value) ? { defaultValue: value } : {})} onTextChange={edit} />
+            <DateInput label={label} {...(isIsoDate(field.editValue) ? { defaultValue: field.editValue } : {})} onTextChange={edit} />
           ) : editor === 'money' ? (
             <MoneyInput label={label} defaultText={startText} onTextChange={edit} />
           ) : (

@@ -318,14 +318,3 @@ export const PLANNERS = {
   certificate_v1: planCertificateAcceptance,
   utility_bill_v1: planUtilityBillAcceptance,
 } as const satisfies Record<SchemaName, (extraction: AcceptanceExtraction, decisions: Decisions, context: PlanContext) => PlanResult>;
-
-/**
- * DOMAIN-VN §2.1: a parcel's area and the sum of its purposes' areas, when both are known and differ by more than
- * rounding. Both are kept and shown with a warning; neither is corrected.
- */
-export function purposeAreaMismatch(parcelArea: number | null, purposeAreas: readonly (number | null)[]): { readonly parcel: number; readonly purposes: number } | null {
-  const known = purposeAreas.filter((area): area is number => area !== null);
-  if (parcelArea === null || known.length === 0) return null;
-  const sum = Math.round(known.reduce((total, area) => total + area, 0) * 100) / 100;
-  return Math.abs(sum - parcelArea) >= 0.005 ? { parcel: parcelArea, purposes: sum } : null;
-}
