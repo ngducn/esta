@@ -23,7 +23,11 @@ const evidence = process.env.ESTA_EVIDENCE_DIR;
 
 test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
 
-const fixture = (id: string) => extractionFixtures().find((candidate) => candidate.id === id) ?? expect.fail(`no fixture ${id}`);
+function fixture(id: string) {
+  const found = extractionFixtures().find((candidate) => candidate.id === id);
+  if (found === undefined) throw new Error(`no fixture ${id}`);
+  return found;
+}
 const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
 
 let worker: AgentWorker | undefined;
