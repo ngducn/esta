@@ -635,6 +635,7 @@
     "saveTenant": "Save tenant",
     "savingTenant": "Saving…",
     "tenantNameRequired": "Enter the tenant's full name.",
+    "nationalIdField": "This field still holds a full ID number. Keep only its last 4 digits.",
     "tenantPhoneInvalid": "That phone number isn't right. Use 10 digits, for example 0903 123 456.",
     "tenantFailed": "The tenant wasn't saved. Try again.",
     "tenantAdded": "Added {name}.",

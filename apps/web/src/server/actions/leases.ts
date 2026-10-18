@@ -12,17 +12,23 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { Tenant } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
+import { fieldsHoldingIds } from '@/server/national-id';
 import { createSessionClient } from '@/server/supabase/server';
 
 const uuid = z.uuid();
 
-export type TenantWrite = { readonly ok: true; readonly tenant: Tenant } | { readonly ok: false; readonly reason: 'name' | 'phone' | 'failed' };
+export type TenantWrite =
+  | { readonly ok: true; readonly tenant: Tenant }
+  | { readonly ok: false; readonly reason: 'name' | 'phone' | 'national_id' | 'failed' };
 
-/** LSE-1: a party tagged `tenant`, its phone stored the way `normalizePhone` writes it. */
+/** LSE-1: a party tagged `tenant`, its phone stored the way `normalizePhone` writes it. A name holding a full ID is refused before the write (D11). */
 export async function createTenant(raw: unknown): Promise<TenantWrite> {
   const value = tenantSchema.safeParse(raw);
   if (!value.success) return { ok: false, reason: value.error.issues.some((issue) => issue.path[0] === 'full_name') ? 'name' : 'phone' };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
+  const held = await fieldsHoldingIds(supabase, [['full_name', value.data.full_name]]);
+  if (held === null) return { ok: false, reason: 'failed' };
+  if (held.length > 0) return { ok: false, reason: 'national_id' };
   const { data, error } = await supabase
     .from('parties')
     .insert({ household_id: member.household.id, kind: 'individual', full_name: value.data.full_name, phone: value.data.phone, tags: ['tenant'] })

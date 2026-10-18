@@ -635,6 +635,7 @@
     "saveTenant": "Lưu người thuê",
     "savingTenant": "Đang lưu…",
     "tenantNameRequired": "Nhập họ tên người thuê.",
+    "nationalIdField": "Ô này còn số CCCD/CMND đầy đủ. Chỉ ghi 4 số cuối.",
     "tenantPhoneInvalid": "Số điện thoại chưa đúng. Viết 10 số, ví dụ 0903 123 456.",
     "tenantFailed": "Chưa lưu được người thuê. Thử lại.",
     "tenantAdded": "Đã thêm {name}.",

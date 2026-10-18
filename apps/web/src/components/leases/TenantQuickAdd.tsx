@@ -9,7 +9,7 @@ import type { Tenant } from '@/server/leases/load';
 import { TextField } from '@/components/form-parts';
 import { Button } from '@/components/ui/button';
 
-type Invalid = 'name' | 'phone' | null;
+type Invalid = 'name' | 'phone' | 'national_id' | null;
 
 /** LSE-1: name and phone only, inside the lease form, so Mẹ never leaves the lease to add who rents. */
 export function TenantQuickAdd({ onAdded }: { onAdded: (tenant: Tenant) => void }) {
@@ -52,7 +52,7 @@ export function TenantQuickAdd({ onAdded }: { onAdded: (tenant: Tenant) => void 
   return (
     <div data-testid="tenant-quick-add" className="flex flex-col gap-4 rounded-md border border-rule bg-surface-2 p-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label={t('tenantName')} inputId="tenant-name" value={name} maxLength={200} error={invalid === 'name' ? t('tenantNameRequired') : null} onChange={setName} />
+        <TextField label={t('tenantName')} inputId="tenant-name" value={name} maxLength={200} error={invalid === 'name' ? t('tenantNameRequired') : invalid === 'national_id' ? t('nationalIdField') : null} onChange={setName} />
         <TextField
           label={t('tenantPhone')}
           hint={t('tenantPhoneHint')}
