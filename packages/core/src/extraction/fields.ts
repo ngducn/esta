@@ -38,26 +38,32 @@ const choice = <T extends string>(options: readonly T[]) => ({
 });
 
 const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
-/** `đến` read without its accents, or a dash of any width right after a date or a month. */
-const TERM_END = /(?<!\p{L})den(?!\p{L})|(?:\d{4}-\d{2}-\d{2}|(?:\d{1,2}[./-]){1,2}\d{4})\s*[-\u2010-\u2015]/iu;
-const TERM_START = /(?<!\p{L})tu(?!\p{L})/iu;
-
-/** Accents dropped and đ read as d, so `Tu ... den ...` reads as `Từ ... đến ...`; digits and separators are unchanged. */
-const unaccented = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .replace(/[đĐ]/gu, (letter) => (letter === 'đ' ? 'd' : 'D'));
+const DATE_OR_MONTH = String.raw`(?:\d{4}-\d{2}-\d{2}|(?:\d{1,2}[./-]){1,2}\d{4})`;
+const JOINER = String.raw`[-\u2010-\u2015\u2212\u2192~]`;
+/**
+ * `đến` and `tới` as written, and `den` and `toi` typed without accents. A word that only folds onto them, such as
+ * `đền`, is no range word, and neither is `tư`, `tự` or `tứ` a start.
+ */
+const RANGE_WORD = /(?<![\p{L}\p{M}])(?:đến|tới|den|toi)(?![\p{L}\p{M}])/giu;
+const TERM_START = /(?<![\p{L}\p{M}])(?:từ|tu)(?![\p{L}\p{M}])/iu;
+/** A dash, a minus sign, an arrow or a tilde between two dates or months, the second perhaps after `ngày` or `tháng`. */
+const BETWEEN_DATES = new RegExp(
+  String.raw`${DATE_OR_MONTH}(?:\s*${JOINER})+\s*(?=(?:(?:ngày|tháng|ngay|thang)\s*)?(?:\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[./-](?:\d{1,2}[./-])?\d{4}))`,
+  'giu',
+);
+/** A date or month and a dash with no date after it, as in `15/10/1993 - 50 năm`, names a start. */
+const DATE_THEN_JOINER = new RegExp(String.raw`${DATE_OR_MONTH}\s*${JOINER}`, 'u');
 
 /**
- * The part of a term that names its end. A range such as `Từ tháng 10/1993 đến tháng 10/2043` or `15/10/1993 -
- * 15/10/2043` ends after `đến` or the dash; a term that names only its start, such as `50 năm kể từ ngày 15/10/1993`,
- * has no end to read.
+ * The part of a term that names its end: what follows the last range word, or the last joiner between two dates, so
+ * `Từ tháng 10/1993 đến tháng 10/2043`, `15/10/1993 tới 15/10/2043` and `15/10/1993 - 15/10/2043` end in 2043, and an
+ * issue date written before the range is passed over. A term that names only its start, such as `50 năm kể từ ngày
+ * 15/10/1993`, has no end to read.
  */
 function termEnd(text: string): string | null {
-  const end = TERM_END.exec(text);
-  if (end !== null) return text.slice(end.index + end[0].length);
-  return TERM_START.test(text) ? null : text;
+  const last = [...text.matchAll(RANGE_WORD), ...text.matchAll(BETWEEN_DATES)].sort((a, b) => a.index - b.index).at(-1);
+  if (last !== undefined) return text.slice(last.index + last[0].length);
+  return TERM_START.test(text) || DATE_THEN_JOINER.test(text) ? null : text;
 }
 const TERM_MONTH = /(?<![\d./-])(\d{1,2})[./-](\d{4})(?!\d)/u;
 
@@ -161,7 +167,7 @@ export const INPUT_KINDS = {
       const text = asText(raw);
       if (text === null) return nothing;
       if (text === LONG_TERM || text.toLocaleLowerCase('vi').includes('lâu dài')) return accept(LONG_TERM);
-      const end = termEnd(unaccented(text));
+      const end = termEnd(text.normalize('NFC'));
       if (end === null) return refused;
       const found = TERM_DATE.exec(end)?.[1];
       const date = found === undefined ? readMonthEnd(end) : readDate(found);
