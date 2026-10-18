@@ -672,7 +672,7 @@
     "previewTitle": "Esta will bill",
     "previewLoading": "Working out the invoices…",
     "previewFailed": "The invoices couldn't be worked out. Check the connection and try again.",
-    "previewNeedsDate": "Fix the collected-through date above to see the invoices Esta will issue.",
+    "previewNeedsDate": "Enter the collected-through date as a real day/month/year to see the invoices Esta will issue.",
     "previewNone": "Nothing is due in the next 35 days.",
     "previewIssuesNow": "Issued now · due {date}",
     "previewLater": "Draft · due {date}",

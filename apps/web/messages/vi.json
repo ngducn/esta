@@ -672,7 +672,7 @@
     "previewTitle": "Esta sẽ lập các hóa đơn này",
     "previewLoading": "Đang tính hóa đơn…",
     "previewFailed": "Chưa tính được hóa đơn. Kiểm tra kết nối rồi thử lại.",
-    "previewNeedsDate": "Sửa ngày đã thu ở trên để xem các hóa đơn Esta sẽ lập.",
+    "previewNeedsDate": "Nhập ngày đã thu đúng ngày/tháng/năm để xem các hóa đơn Esta sẽ lập.",
     "previewNone": "Chưa có kỳ nào cần thu trong 35 ngày tới.",
     "previewIssuesNow": "Phát hành ngay · hạn thu {date}",
     "previewLater": "Bản nháp · hạn thu {date}",
