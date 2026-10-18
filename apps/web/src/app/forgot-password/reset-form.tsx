@@ -15,7 +15,6 @@ export type ResetCopy = {
   password: PasswordCopy;
   invalidEmail: string;
   sendFailed: string;
-  rateLimited: string;
   missingCode: string;
   wrongCode: string;
   shortPassword: string;
@@ -31,7 +30,6 @@ export type ResetCopy = {
 const ERRORS = {
   'invalid-email': { copy: 'invalidEmail', field: 'email' },
   'send-failed': { copy: 'sendFailed', field: null },
-  'rate-limited': { copy: 'rateLimited', field: null },
   'missing-code': { copy: 'missingCode', field: 'code' },
   'wrong-code': { copy: 'wrongCode', field: 'code' },
   'short-password': { copy: 'shortPassword', field: 'password' },

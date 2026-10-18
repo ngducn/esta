@@ -3,7 +3,7 @@
 import { parseNewPassword, parseOtpInput } from '@esta/core/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { emailSchema, finishSignIn, formSecret, formText, savePassword, sendSignInCode, type SendFailure } from '@/server/sign-in';
+import { emailSchema, finishSignIn, formSecret, formText, savePassword, sendAccountCode } from '@/server/sign-in';
 import { createSessionClient } from '@/server/supabase/server';
 
 /**
@@ -11,8 +11,8 @@ import { createSessionClient } from '@/server/supabase/server';
  * (the drop_unconfirmed_password trigger refuses it anyway). The form carries it from the first step to the second.
  */
 export type SignUpState =
-  | { step: 'details'; email: string; error: 'invalid-email' | 'short-password' | 'long-password' | SendFailure | 'failed' | null }
-  | { step: 'code'; email: string; code: string; error: 'missing-code' | 'wrong-code' | SendFailure | null; sentCount: number };
+  | { step: 'details'; email: string; error: 'invalid-email' | 'short-password' | 'long-password' | 'send-failed' | 'failed' | null }
+  | { step: 'code'; email: string; code: string; error: 'missing-code' | 'wrong-code' | 'send-failed' | null; sentCount: number };
 
 export type SignUpError = NonNullable<SignUpState['error']>;
 
@@ -32,7 +32,7 @@ export async function signUp(previous: SignUpState, formData: FormData): Promise
   const sentCount = previous.step === 'code' ? previous.sentCount : 0;
 
   if (intent === 'send' || intent === 'resend') {
-    const failure = await sendSignInCode(email);
+    const failure = await sendAccountCode(email);
     if (failure !== null) {
       return intent === 'send'
         ? { step: 'details', email, error: failure }

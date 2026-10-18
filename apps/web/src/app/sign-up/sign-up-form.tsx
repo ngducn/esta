@@ -16,7 +16,6 @@ export type SignUpCopy = {
   shortPassword: string;
   longPassword: string;
   sendFailed: string;
-  rateLimited: string;
   failed: string;
   missingCode: string;
   wrongCode: string;
@@ -28,7 +27,6 @@ const ERRORS = {
   'short-password': { copy: 'shortPassword', field: 'password' },
   'long-password': { copy: 'longPassword', field: 'password' },
   'send-failed': { copy: 'sendFailed', field: null },
-  'rate-limited': { copy: 'rateLimited', field: null },
   failed: { copy: 'failed', field: null },
   'missing-code': { copy: 'missingCode', field: 'code' },
   'wrong-code': { copy: 'wrongCode', field: 'code' },

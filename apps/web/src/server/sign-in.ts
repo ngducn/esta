@@ -31,10 +31,23 @@ export async function sendSignInCode(email: string): Promise<SendFailure | null>
   return sendFailure(error);
 }
 
+/**
+ * Auth refuses a quick repeat send only to an address that has an account, and a reset mails nothing to one without,
+ * so a refusal on the screens that set a password would tell the two apart. They count it as sent; the code sent
+ * moments before still works. The code sign-in form keeps showing the refusal, as before passwords.
+ */
+function sentAlike(failure: SendFailure | null): 'send-failed' | null {
+  return failure === 'rate-limited' ? null : failure;
+}
+
+export async function sendAccountCode(email: string): Promise<'send-failed' | null> {
+  return sentAlike(await sendSignInCode(email));
+}
+
 /** Auth answers the same whether or not the address has an account, and sends mail only when it has one. */
-export async function sendResetCode(email: string): Promise<SendFailure | null> {
+export async function sendResetCode(email: string): Promise<'send-failed' | null> {
   const { error } = await createCodeSender().auth.resetPasswordForEmail(email);
-  return sendFailure(error);
+  return sentAlike(sendFailure(error));
 }
 
 /**

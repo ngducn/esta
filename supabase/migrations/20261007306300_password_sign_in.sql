@@ -4,6 +4,7 @@
 -- to every invite it claims.
 drop trigger drop_password on auth.users;
 drop function private.drop_password();
+drop function private.blank_passwords();
 
 create function private.drop_unconfirmed_password()
 returns trigger

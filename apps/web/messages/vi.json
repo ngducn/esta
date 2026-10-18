@@ -54,7 +54,7 @@
     "submit": "Tạo tài khoản",
     "shortPassword": "Mật khẩu cần ít nhất 8 ký tự.",
     "longPassword": "Mật khẩu dài quá. Chọn mật khẩu ngắn hơn.",
-    "codeSent": "Đã gửi mã đến {email}. Nhập mã để xác nhận email và hoàn tất tài khoản. Mã nằm trong email có tiêu đề “Mã đăng nhập Esta” và dùng được trong một giờ. Không thấy email thì xem thư mục Spam.",
+    "codeSent": "Đã gửi mã đến {email}. Nhập mã để xác nhận email và hoàn tất tài khoản. Mã nằm trong email có tiêu đề “Mã đăng nhập Esta” và dùng được trong một giờ. Đã xin mã nhiều lần thì dùng mã trong email mới nhất. Không thấy email thì xem thư mục Spam.",
     "confirm": "Xác nhận email",
     "confirming": "Đang xác nhận…",
     "failed": "Chưa tạo được tài khoản. Thử lại.",
@@ -64,7 +64,7 @@
   "resetPassword": {
     "title": "Đặt lại mật khẩu",
     "intro": "Nhập email của tài khoản. Esta sẽ gửi một mã gồm 6 chữ số để bạn đặt mật khẩu mới.",
-    "codeSent": "Nếu {email} có tài khoản Esta, mã đã được gửi đến đó. Mã nằm trong email có tiêu đề “Mã đặt lại mật khẩu Esta” và dùng được trong một giờ. Không thấy email thì xem thư mục Spam.",
+    "codeSent": "Nếu {email} có tài khoản Esta, mã đã được gửi đến đó. Mã nằm trong email có tiêu đề “Mã đặt lại mật khẩu Esta” và dùng được trong một giờ. Đã xin mã nhiều lần thì dùng mã trong email mới nhất. Không thấy email thì xem thư mục Spam.",
     "newPasswordLabel": "Mật khẩu mới",
     "submit": "Đổi mật khẩu",
     "saving": "Đang lưu…",

@@ -2,16 +2,16 @@
 
 import { parseNewPassword, parseOtpInput } from '@esta/core/auth';
 import { z } from 'zod';
-import { emailSchema, finishSignIn, formSecret, formText, savePassword, sendResetCode, type SendFailure } from '@/server/sign-in';
+import { emailSchema, finishSignIn, formSecret, formText, savePassword, sendResetCode } from '@/server/sign-in';
 import { createSessionClient } from '@/server/supabase/server';
 
 export type ResetState =
-  | { step: 'email'; email: string; error: 'invalid-email' | SendFailure | null }
+  | { step: 'email'; email: string; error: 'invalid-email' | 'send-failed' | null }
   | {
       step: 'code';
       email: string;
       code: string;
-      error: 'missing-code' | 'wrong-code' | 'short-password' | 'long-password' | 'failed' | SendFailure | null;
+      error: 'missing-code' | 'wrong-code' | 'short-password' | 'long-password' | 'failed' | 'send-failed' | null;
       sentCount: number;
     }
   | { step: 'done'; next: '/' | '/onboarding' };

@@ -28,7 +28,6 @@ export default async function ForgotPasswordPage() {
     password,
     invalidEmail: signIn('invalidEmail'),
     sendFailed: signIn('sendFailed'),
-    rateLimited: signIn('rateLimited'),
     missingCode: signIn('missingCode'),
     wrongCode: signIn('wrongCode'),
     shortPassword: signUp('shortPassword'),

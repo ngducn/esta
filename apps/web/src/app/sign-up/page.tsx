@@ -31,7 +31,6 @@ export default async function SignUpPage() {
     shortPassword: t('shortPassword'),
     longPassword: t('longPassword'),
     sendFailed: signIn('sendFailed'),
-    rateLimited: signIn('rateLimited'),
     failed: t('failed'),
     missingCode: signIn('missingCode'),
     wrongCode: signIn('wrongCode'),
