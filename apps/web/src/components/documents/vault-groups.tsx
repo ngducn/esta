@@ -1,7 +1,6 @@
 'use client';
 
 import { DOCUMENT_CATEGORY_IDS } from '@esta/core/documents';
-import { compareVietnameseNames } from '@esta/core/names';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { useState, type ReactNode } from 'react';
@@ -39,7 +38,7 @@ export function groupTiles(tiles: readonly VaultTile[], by: GroupBy, noProperty:
     }));
   }
   return [...byKey(sorted, (tile) => tile.propertyId ?? '')]
-    .toSorted(([a, x], [b, y]) => (a === '' ? 1 : b === '' ? -1 : compareVietnameseNames(x[0]?.propertyName ?? '', y[0]?.propertyName ?? '')))
+    .toSorted(([a, x], [b, y]) => (a === '' ? 1 : b === '' ? -1 : (x[0]?.propertyName ?? '').localeCompare(y[0]?.propertyName ?? '', 'vi')))
     .map(([key, group]) => ({
       key: key === '' ? 'none' : key,
       label: group[0]?.propertyName ?? noProperty,
