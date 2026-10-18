@@ -157,6 +157,7 @@ async function captureReorderSave(page: Page, { lane, title, shots }: { lane: nu
     await photograph(page, [pageFixture(1), pageFixture(2), pageFixture(3)]);
     await expect(page.getByTestId('capture-page-number')).toHaveText(lane === 10 ? ['Page 1', 'Page 2', 'Page 3'] : ['Trang 1', 'Trang 2', 'Trang 3']);
     expect(await stripSizes(page)).toEqual(['1200x1600', '1080x1500', '1300x1700']);
+    await expect(page.getByTestId('combine-pages'), 'every photo is ready').toBeEnabled();
     await expect(strip(page).first().getByRole('button')).toHaveText(lane === 10 ? ['Up', 'Down', 'Remove'] : ['Lên', 'Xuống', 'Xóa']);
     const clipped = await page
       .getByTestId('upload-sheet')
@@ -165,7 +166,7 @@ async function captureReorderSave(page: Page, { lane, title, shots }: { lane: nu
     expect(clipped, 'no strip text is cut').toEqual([]);
     expect(await page.getByTestId('upload-sheet').evaluate((sheet) => sheet.scrollWidth <= sheet.clientWidth), 'nothing scrolls sideways').toBe(true);
     if (shots !== undefined) await shot(page, `p2-06-strip-${shots}`);
-    expect(await seriousAxeViolations(page)).toEqual([]);
+    await expect.poll(() => seriousAxeViolations(page), { message: 'axe settles with no serious issue' }).toEqual([]);
 
     await stripButton(page, 3, lane === 10 ? 'Up' : 'Lên').click();
     expect(await stripSizes(page), 'page 3 now sits second').toEqual(['1200x1600', '1300x1700', '1080x1500']);
@@ -249,7 +250,7 @@ test('rule 3: leaving with three pages taken asks Bỏ 3 trang đã chụp?, and
   await expect(confirm.getByRole('heading')).toHaveText('Bỏ 3 trang đã chụp?');
   await expect(confirm.getByTestId('keep-pages')).toBeFocused();
   await shot(page, 'p2-06-leave-confirm-390x844-dark');
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  await expect.poll(() => seriousAxeViolations(page), { message: 'axe settles with no serious issue' }).toEqual([]);
   await confirm.getByTestId('keep-pages').click();
   await expect(confirm).toBeHidden();
   await expect(page.getByTestId('capture-page-number')).toHaveText(['Trang 1', 'Trang 2', 'Trang 3']);
