@@ -1,0 +1,249 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page } from '@playwright/test';
+import { join } from 'node:path';
+import { parseSlot } from '../scripts/slot.ts';
+import { slotEnv } from '../scripts/slot-env.ts';
+import { seedId } from '../supabase/seed/generator/ids.ts';
+import { signIn } from './helpers/inbucket';
+import { accessToken } from './helpers/session';
+
+const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const PHONE = { width: 390, height: 844 };
+const DESKTOP = { width: 1440, height: 900 };
+const NBSP = ' ';
+const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
+const householdId = (lane: number) => seedId(`seed:household:lane-${lane}`);
+const unitId = (lane: number, key: string, n: number) => seedId(`seed:unit:lane-${lane}:${key}:${n}`);
+const wholeUnitId = (lane: number, key: string) => seedId(`esta:unit:whole:${propertyId(lane, key)}`);
+const rentalPath = (lane: number, key: string) => `/properties/${propertyId(lane, key)}/rental`;
+const newLeasePath = (lane: number, key: string, unit: string) => `${rentalPath(lane, key)}/leases/new?unit=${unit}`;
+
+// `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of the main flow (rule 2).
+test.use({ video: process.env.ESTA_E2E_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
+
+// Each rule writes to its own lane household, so the spec runs at one project's viewport and sets the rule's own.
+test.beforeEach(() => test.skip(test.info().project.name !== 'mobile', 'each rule sets its own viewport'));
+
+async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
+  await page.setViewportSize(viewport);
+  await page.context().addCookies([{ name: 'esta_theme', value: theme, url: test.info().project.use.baseURL ?? '' }]);
+  await signIn(page, email);
+}
+
+async function rest<T>(page: Page, method: 'GET' | 'POST' | 'PATCH', path: string, data?: Record<string, unknown>): Promise<T> {
+  const response = await page.request.fetch(`${supabaseUrl}/rest/v1/${path}`, {
+    method,
+    headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}`, 'content-type': 'application/json', prefer: 'return=representation' },
+    ...(data === undefined ? {} : { data }),
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  return (await response.json()) as T;
+}
+
+async function seriousAxeViolations(page: Page): Promise<string[]> {
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+}
+
+const unitRow = (page: Page, label: string) => page.getByTestId('unit-row').filter({ has: page.getByRole('heading', { name: label, exact: true }) });
+const toast = (page: Page) => page.getByRole('region', { name: /Thông báo|Notifications/ });
+const noSideScroll = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
+
+/** A room no lease has touched, named as `Thêm phòng` would name it, so the rule passes again without a reset. */
+async function freshRoom(page: Page, lane: number): Promise<string> {
+  const units = await rest<{ label: string }[]>(page, 'GET', `units?property_id=eq.${propertyId(lane, 'di-an')}&select=label`);
+  const next = Math.max(...units.map((unit) => Number(/^Phòng (\d+)$/.exec(unit.label)?.[1] ?? 0))) + 1;
+  const label = `Phòng ${next}`;
+  await rest(page, 'POST', 'units', { household_id: householdId(lane), property_id: propertyId(lane, 'di-an'), label, kind: 'room', list_rent_vnd: 3_000_000, sort_order: next });
+  return label;
+}
+
+test('rule 1: Cho thuê on Dĩ An shows tenants on Phòng 1 to 6, Phòng 5 overdue 12 days, and Thêm hợp đồng on Phòng 7 and 8', async ({ page }) => {
+  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
+  await page.goto(rentalPath(1, 'di-an'));
+  const tenants = ['Nguyễn Văn An Demo', 'Trần Thị Bình Demo', 'Lê Văn Cường Demo', 'Võ Thị Dung Demo', 'Hoàng Văn Em Demo', 'Đặng Thị Giang Demo'];
+  for (const [index, name] of tenants.entries()) await expect(unitRow(page, `Phòng ${index + 1}`).getByTestId('unit-tenant')).toHaveText(name);
+  await expect(unitRow(page, 'Phòng 5').locator('[data-status="overdue"]')).toHaveText('Quá hạn 12 ngày');
+  await expect(unitRow(page, 'Phòng 1').getByTestId('unit-lease')).toContainText('Hạn thu 25/10/2026');
+  for (const label of ['Phòng 7', 'Phòng 8']) {
+    await expect(unitRow(page, label).getByTestId('add-lease')).toHaveText('Thêm hợp đồng');
+    await expect(unitRow(page, label).locator('[data-status="vacant"]')).toHaveText('Phòng trống');
+  }
+  await expect(page.getByTestId('add-lease')).toHaveCount(2);
+  await expect(page.locator('[data-status="paid"]').filter({ hasText: 'Đang cho thuê 6/8' })).toBeVisible();
+  expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('rule 7: the properties list shows the rent of active leases, Đang cho thuê 6/8 on Dĩ An, and no rent on Biên Hòa', async ({ page }) => {
+  await open(page, 'ryan.lane7@demo.esta.test', 'dark', DESKTOP);
+  await page.goto('/properties');
+  const card = (name: string) => page.getByTestId('property-card').filter({ has: page.getByRole('link', { name, exact: true }) });
+  await expect(card('Dãy trọ Dĩ An').getByTestId('property-rent')).toHaveText(/^Tiền thuê mỗi tháng\s*15,6\str$/);
+  await expect(card('Dãy trọ Dĩ An').locator('[data-status="paid"]')).toHaveText('Đang cho thuê 6/8');
+  await expect(card('Dãy trọ Dĩ An').locator('[data-status="vacant"]')).toHaveText('Trống từ 01/08');
+  await expect(card('Kho Biên Hòa').getByTestId('property-rent')).toHaveCount(0);
+  await expect(card('Kho Biên Hòa').locator('[data-status="vacant"]')).toHaveText('Trống từ 30/07');
+  for (const name of ['Nhà phố Q7', 'Căn hộ Thủ Đức', 'Mặt bằng Quận 1']) await expect(card(name).getByTestId('property-rent')).toBeVisible();
+  expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease paid through 30/09/2026 and sees October issued, due 01/10/2026', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  const room = await freshRoom(page, 2);
+  await page.goto(rentalPath(2, 'di-an'));
+  await unitRow(page, room).getByTestId('add-lease').click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Hợp đồng mới cho ${room}`);
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+
+  await page.getByTestId('add-tenant').click();
+  await page.locator('#tenant-name').fill('Lê Văn Demo');
+  await page.locator('#tenant-phone').fill('0903 123 456');
+  await page.getByTestId('save-tenant').click();
+  await expect(page.getByTestId('lease-tenant').locator('option:checked')).toHaveText('Lê Văn Demo · 0903 123 456');
+  await page.getByRole('textbox', { name: 'Ngày bắt đầu' }).fill('01/08/2026');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+
+  await page.getByTestId('activate-lease').click();
+  const dialog = page.getByTestId('activate-dialog');
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }).fill('30/09/2026');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await dialog.getByTestId('confirm-activate').click();
+
+  await expect(toast(page)).toContainText('Đã kích hoạt hợp đồng. Hóa đơn tháng 10 đã phát hành.');
+  await expect(page.getByTestId('lease-status')).toHaveText('Đang thuê');
+  const october = page.getByTestId('invoice-row').filter({ hasText: 'Kỳ 01/10/2026 – 31/10/2026' });
+  await expect(october).toContainText('Hạn thu 01/10/2026');
+  await expect(october.locator('[data-status="overdue"]')).toHaveText('Quá hạn 6 ngày');
+  await expect(october.locator('data')).toHaveText(`3.000.000${NBSP}₫`);
+  await expect(page.getByTestId('invoice-row').filter({ hasText: 'Kỳ 01/11/2026 – 30/11/2026' }).locator('[data-status="draft"]')).toBeVisible();
+
+  const leaseId = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+  const invoices = await rest<{ period_start: string; due_date: string; status: string; invoice_lines: { kind: string; amount_vnd: number }[] }[]>(
+    page,
+    'GET',
+    `invoices?lease_id=eq.${leaseId}&status=eq.issued&select=period_start,due_date,status,invoice_lines(kind,amount_vnd)`,
+  );
+  expect(invoices).toEqual([{ period_start: '2026-10-01', due_date: '2026-10-01', status: 'issued', invoice_lines: [{ kind: 'rent', amount_vnd: 3_000_000 }] }]);
+  const [lease] = await rest<{ tenant_party_id: string }[]>(page, 'GET', `leases?id=eq.${leaseId}&select=tenant_party_id`);
+  expect(await rest(page, 'GET', `parties?id=eq.${lease?.tenant_party_id}&select=phone,tags`)).toEqual([{ phone: '+84903123456', tags: ['tenant'] }]);
+
+  await page.goto(rentalPath(2, 'di-an'));
+  await expect(unitRow(page, room).getByTestId('unit-tenant')).toHaveText('Lê Văn Demo');
+  await expect(unitRow(page, room).locator('[data-status="overdue"]')).toHaveText('Quá hạn 6 ngày');
+});
+
+test('rule 4: the new lease form prefills DOMAIN-VN §7 defaults, 1 tháng and metered utilities for a room, 3 tháng for the warehouse', async ({ page }) => {
+  await open(page, 'me.lane4@demo.esta.test', 'dark', PHONE);
+  await page.goto(newLeasePath(4, 'di-an', unitId(4, 'di-an', 8)));
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await expect(page.getByTestId('lease-cycle').locator('option:checked')).toHaveText('1 tháng');
+  await expect(page.getByTestId('lease-utilities').locator('option:checked')).toHaveText('Điện nước theo đồng hồ');
+  await expect(page.getByTestId('lease-anchor').locator('option:checked')).toHaveText('Ngày bắt đầu thuê');
+  await expect(page.getByRole('textbox', { name: 'Tiền thuê mỗi tháng' })).toHaveValue('3.000.000');
+  await expect(page.getByRole('textbox', { name: 'Tiền cọc' })).toHaveValue('3.000.000');
+  expect(await noSideScroll(page)).toBe(true);
+
+  await page.goto(newLeasePath(4, 'bien-hoa', wholeUnitId(4, 'bien-hoa')));
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await expect(page.getByTestId('lease-cycle').locator('option:checked')).toHaveText('3 tháng');
+  await expect(page.getByTestId('lease-utilities').locator('option:checked')).toHaveText('Người thuê tự trả');
+  await expect(page.getByRole('textbox', { name: 'Tiền cọc' })).toHaveValue('24.000.000');
+});
+
+test('rule 5: a draft without rent is refused at activation in Vietnamese and stays a draft (LSE-2)', async ({ page }) => {
+  await open(page, 'ryan.lane5@demo.esta.test', 'light', DESKTOP);
+  await page.goto(newLeasePath(5, 'bien-hoa', wholeUnitId(5, 'bien-hoa')));
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Tiền thuê mỗi tháng' }).fill('');
+  await page.getByRole('textbox', { name: 'Ngày bắt đầu' }).fill('01/11/2026');
+  await page.getByTestId('activate-lease').click();
+  const dialog = page.getByTestId('activate-dialog');
+  await expect(dialog.getByTestId('activate-refusals')).toContainText('Chưa có tiền thuê. Nhập tiền thuê mỗi tháng rồi lưu nháp.');
+  await expect(dialog.getByTestId('activate-refusals')).toContainText('Chưa chọn người thuê.');
+  await expect(dialog.getByTestId('confirm-activate')).toBeDisabled();
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+
+  const leaseId = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+  await expect(page.locator('[data-status="draft"]').first()).toHaveText('Bản nháp');
+  expect(await rest(page, 'GET', `leases?id=eq.${leaseId}&select=status,rent_vnd`)).toEqual([{ status: 'draft', rent_vnd: null }]);
+});
+
+test('rule 6: a draft on Phòng 7 reopens, takes 4tr rent and a 2-month deposit, and issues no invoice', async ({ page }) => {
+  await open(page, 'me.lane6@demo.esta.test', 'light', PHONE);
+  await page.goto(newLeasePath(6, 'di-an', unitId(6, 'di-an', 7)));
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Ngày bắt đầu' }).fill('15/10/2026');
+  await page.getByTestId('save-lease').click();
+  await expect(page).toHaveURL(/\/rental\/leases\/[0-9a-f-]{36}$/);
+  await expect(toast(page)).toContainText('Đã lưu nháp.');
+  const leasePath = new URL(page.url()).pathname;
+
+  await page.goto(rentalPath(6, 'di-an'));
+  await expect(unitRow(page, 'Phòng 7').locator('[data-status="draft"]')).toHaveText('Bản nháp');
+  await page.goto(leasePath);
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Tiền thuê mỗi tháng' }).fill('4tr');
+  await page.getByRole('textbox', { name: 'Tiền cọc' }).fill('8tr');
+  await page.getByTestId('save-lease').click();
+  await expect(toast(page)).toContainText('Đã lưu nháp.');
+
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Tiền thuê mỗi tháng' })).toHaveValue('4.000.000');
+  await expect(page.getByRole('textbox', { name: 'Tiền cọc' })).toHaveValue('8.000.000');
+  await expect(page.locator('h1 + [data-status="draft"]')).toHaveText('Bản nháp');
+  const leaseId = leasePath.split('/').at(-1) ?? '';
+  expect(await rest(page, 'GET', `invoices?lease_id=eq.${leaseId}&select=id`)).toEqual([]);
+});
+
+test('rule 9: adding a room to Thủ Đức, let as a whole, is refused and adds no unit', async ({ page }) => {
+  await open(page, 'ryan.lane9@demo.esta.test', 'light', DESKTOP);
+  await page.goto(rentalPath(9, 'thu-duc'));
+  await page.getByTestId('add-unit').click();
+  const sheet = page.getByTestId('unit-sheet');
+  await sheet.locator('#unit-label').fill('Phòng 1');
+  await sheet.getByTestId('unit-kind').selectOption('room');
+  await sheet.getByTestId('save-unit').click();
+  await expect(sheet.getByTestId('form-error')).toHaveText('Không thể chia nhỏ tài sản khi đang cho thuê nguyên căn.');
+  expect(await rest(page, 'GET', `units?property_id=eq.${propertyId(9, 'thu-duc')}&select=label`)).toEqual([{ label: 'Toàn bộ' }]);
+});
+
+test('rule 10: in English at 130% text, the overdue room reads Overdue 12 days and the lease form stacks without clipping', async ({ page }) => {
+  await open(page, 'me.lane10@demo.esta.test', 'dark', PHONE);
+  const memberId = seedId('seed:member:me-lane-10');
+  await rest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'en', text_scale: 130 });
+  try {
+    await page.goto(rentalPath(10, 'di-an'));
+    await expect(unitRow(page, 'Phòng 5').locator('[data-status="overdue"]')).toHaveText('12 days overdue');
+    await expect(unitRow(page, 'Phòng 8').getByTestId('add-lease')).toHaveText('Add lease');
+    await unitRow(page, 'Phòng 8').getByTestId('add-lease').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('New lease for Phòng 8');
+    await expect(page.getByTestId('form-loading')).toHaveCount(0);
+    await expect(page.getByText('Monthly rent', { exact: true })).toBeVisible();
+    expect(await noSideScroll(page)).toBe(true);
+    expect(await seriousAxeViolations(page)).toEqual([]);
+  } finally {
+    await rest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'vi', text_scale: 100 });
+  }
+});
+
+test('a viewer sees leases and invoices but no way to add or edit one', async ({ page }) => {
+  await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
+  const invited = 'viewer.lane8@demo.esta.test';
+  const existing = await rest<unknown[]>(page, 'GET', `household_members?invited_email=eq.${invited}&select=id`);
+  if (existing.length === 0) await rest(page, 'POST', 'household_members', { household_id: householdId(8), invited_email: invited, role: 'viewer' });
+  await page.context().clearCookies();
+  await open(page, invited, 'light', PHONE);
+  await page.goto(rentalPath(8, 'di-an'));
+  await expect(unitRow(page, 'Phòng 5').getByTestId('unit-tenant')).toHaveText('Hoàng Văn Em Demo');
+  await expect(page.getByTestId('add-lease')).toHaveCount(0);
+  await unitRow(page, 'Phòng 5').getByTestId('open-lease').click();
+  await expect(page.getByText('Bạn đang xem. Chỉ thành viên trong gia đình được sửa hợp đồng.')).toBeVisible();
+  await expect(page.getByTestId('lease-form')).toHaveCount(0);
+  await expect(page.getByTestId('invoice-row')).toHaveCount(2);
+  const response = await page.goto(newLeasePath(8, 'di-an', unitId(8, 'di-an', 8)));
+  expect(response?.status()).toBe(404);
+});

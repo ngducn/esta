@@ -2,6 +2,7 @@ import 'server-only';
 import type { IsoDate } from '@esta/core/date';
 import { LEASE_COLUMNS, leaseRowSchema, type LeaseRow } from '@esta/core/schemas/lease';
 import { vnd, type Vnd } from '@esta/core/money';
+import { formatPhone, normalizePhone } from '@esta/core/phone';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { cache } from 'react';
 import { z } from 'zod';
@@ -55,9 +56,16 @@ const invoiceRowSchema = z
     }),
   );
 
+/** Phones are stored as `normalizePhone` writes them and shown as Mẹ reads them, `0903 123 456`. */
+function phoneText(stored: string | null): string | null {
+  if (stored === null) return null;
+  const phone = normalizePhone(stored);
+  return phone.ok ? formatPhone(phone.value) : stored;
+}
+
 const tenantRowSchema = z
   .object({ id: z.uuid(), full_name: z.string(), phone: z.string().nullable() })
-  .transform((row): Tenant => ({ id: row.id, fullName: row.full_name, phone: row.phone }));
+  .transform((row): Tenant => ({ id: row.id, fullName: row.full_name, phone: phoneText(row.phone) }));
 
 const INVOICE_COLUMNS = 'id, lease_id, number, period_start, period_end, due_date, issue_on, status, invoice_lines(amount_vnd)';
 

@@ -1,6 +1,7 @@
 import { isoDate, type IsoDate } from '../../../packages/core/src/date/iso-date.ts';
 import { planInvoices, type CompletedReadings, type InvoicingLease, type PlannedInvoice } from '../../../packages/core/src/lease/invoicing.ts';
 import { vnd } from '../../../packages/core/src/money/vnd.ts';
+import { normalizePhone } from '../../../packages/core/src/phone/index.ts';
 import { publicTable, type HouseholdSeed, type SeedContext } from './context.ts';
 import { householdId } from './households.ts';
 import { seedId } from './ids.ts';
@@ -142,6 +143,13 @@ function seededInvoices({ properties }: SeedContext): SeededInvoice[] {
   });
 }
 
+/** The form `createTenant` stores, so seeded and quick-added tenants read the same. */
+function storedPhone(text: string): string {
+  const phone = normalizePhone(text);
+  if (!phone.ok) throw new Error(`Seed phone ${text} is ${phone.reason}`);
+  return phone.value;
+}
+
 const leasesIn = ({ properties }: SeedContext) => {
   const keys = new Set(properties.map((property) => property.key));
   return LEASE_SEEDS.filter((seed) => keys.has(seed.property));
@@ -153,7 +161,7 @@ export const tenants = publicTable('parties', (ctx) =>
     household_id: householdId(ctx.household),
     kind: seed.tenant.kind,
     full_name: seed.tenant.fullName,
-    phone: seed.tenant.phone.replaceAll(' ', ''),
+    phone: storedPhone(seed.tenant.phone),
     tags: ['tenant'],
     member_id: null,
   })),

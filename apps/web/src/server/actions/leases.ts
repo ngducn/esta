@@ -3,6 +3,7 @@
 import { isoDate, isIsoDate, type IsoDate } from '@esta/core/date';
 import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
 import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema, tenantSchema } from '@esta/core/schemas/lease';
+import { formatPhone } from '@esta/core/phone';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { readRequestClock } from '@/server/clock';
@@ -26,7 +27,7 @@ export async function createTenant(raw: unknown): Promise<TenantWrite> {
     .select('id, full_name, phone')
     .single();
   if (error) return { ok: false, reason: 'failed' };
-  return { ok: true, tenant: { id: data.id, fullName: data.full_name, phone: data.phone } };
+  return { ok: true, tenant: { id: data.id, fullName: data.full_name, phone: formatPhone(value.data.phone) } };
 }
 
 export type LeaseWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'notDraft' | 'failed' };

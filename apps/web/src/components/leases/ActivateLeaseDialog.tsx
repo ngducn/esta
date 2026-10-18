@@ -58,14 +58,16 @@ export default function ActivateLeaseDialog({
           <p className="text-small text-ink-muted">{t('paidThroughHint')}</p>
         </div>
         {refusals.length === 0 ? null : (
-          <ul role="alert" data-testid="activate-refusals" className="flex flex-col gap-2">
+          <div role="alert" data-testid="activate-refusals">
+            <ul className="flex flex-col gap-2">
             {refusals.map((reason) => (
               <li key={reason} className="flex items-start gap-2 text-body text-overdue">
                 <StatusShape status="overdue" className="mt-1 size-4" />
                 <span>{t('refusal', { reason })}</span>
               </li>
             ))}
-          </ul>
+            </ul>
+          </div>
         )}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <AlertDialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</AlertDialogClose>
