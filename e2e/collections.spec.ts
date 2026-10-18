@@ -20,8 +20,8 @@ const householdId = (lane: number) => seedId(`seed:household:lane-${lane}`);
 
 // `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of the main flow.
 const recording = process.env.ESTA_E2E_VIDEO === '1';
-test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 700 } } : { video: 'off' });
-const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
+test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 1200 } } : { video: 'off' });
+const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(3500) : Promise.resolve());
 
 // Overdue days count from the Clock, so the spec runs in the `clock` project on SPEC §9.3's day; rule 4 moves the clock
 // and puts it back. Each rule reads its own lane household.
@@ -84,9 +84,12 @@ test('rule 1 and 2: in October Mẹ finds only Phòng 5 overdue, 12 days from Se
   await expect(page).toHaveURL(/\/collections$/);
   await expect(page.getByTestId('month-select')).toHaveValue('2026-10');
   await expectOctoberBoard(page);
+  await holdForRecording(page);
   await expect(group(page, 'overdue').getByTestId('group-count')).toHaveText('1 hóa đơn');
   await expect(group(page, 'notDue').getByTestId('group-count')).toHaveText('6 hóa đơn');
+  await group(page, 'paid').scrollIntoViewIfNeeded();
   await holdForRecording(page);
+  await page.getByTestId('month-select').scrollIntoViewIfNeeded();
   expect(await noSideScroll(page)).toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
