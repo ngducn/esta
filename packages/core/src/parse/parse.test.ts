@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDateInput } from './date-input';
+import { parseDateInput, parseOptionalDateInput } from './date-input';
 import { parseStatementAmount, parseStatementDate } from './statement';
 import { parseVndInput } from './vnd-input';
 
@@ -107,6 +107,20 @@ describe('parseDateInput', () => {
     ['07/13/2026', 'impossible'],
   ])('rejects %s as %s', (text, reason) => {
     expect(parseDateInput(text)).toEqual({ ok: false, reason });
+  });
+});
+
+describe('parseOptionalDateInput', () => {
+  it('reads an empty field as no date and 30/09/2026 as 2026-09-30', () => {
+    expect(parseOptionalDateInput('  ')).toEqual({ ok: true, value: null });
+    expect(parseOptionalDateInput('30/09/2026')).toEqual({ ok: true, value: '2026-09-30' });
+  });
+
+  it.each([
+    ['31/09/2026', 'impossible'],
+    ['30/09', 'invalid'],
+  ])('refuses %s as %s instead of reading it as no date', (text, reason) => {
+    expect(parseOptionalDateInput(text)).toEqual({ ok: false, reason });
   });
 });
 

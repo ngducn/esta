@@ -124,7 +124,14 @@ test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease pa
   await page.getByTestId('activate-lease').click();
   const dialog = page.getByTestId('activate-dialog');
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }).fill('30/09/2026');
+  const paidThrough = dialog.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' });
+  await paidThrough.fill('31/09/2026');
+  await paidThrough.blur();
+  await expect(dialog.getByTestId('confirm-activate')).toBeDisabled();
+  await expect(dialog.getByTestId('preview-bill')).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('activate-invalid-date-390-light.png') });
+  expect(await rest(page, 'GET', `invoices?lease_id=eq.${new URL(page.url()).pathname.split('/').at(-1) ?? ''}&select=id`)).toEqual([]);
+  await paidThrough.fill('30/09/2026');
   await previewSettled(dialog);
   await expect(dialog.getByTestId('preview-bill').first()).toContainText(`Kỳ 01/10/2026 – 31/10/2026Phát hành ngay · hạn thu 01/10/2026${'3.000.000'}${NBSP}₫`);
   expect(await seriousAxeViolations(page)).toEqual([]);

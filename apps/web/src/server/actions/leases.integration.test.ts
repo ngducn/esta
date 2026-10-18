@@ -1,4 +1,5 @@
 import { isoDate } from '@esta/core/date';
+import { formatDate } from '@esta/core/format';
 import { planInvoices } from '@esta/core/lease';
 import { leaseRowSchema, leaseTerms, LEASE_COLUMNS } from '@esta/core/schemas/lease';
 import type { Database } from '@esta/db';
@@ -101,9 +102,19 @@ describe('lease actions against local Supabase (LSE-1 to LSE-3)', () => {
   it('refuses to activate a draft without rent and leaves it a draft', async () => {
     const saved = await saveLease(propertyId, null, draft(unitId, tenantId, null));
     if (!saved.ok) throw new Error(saved.reason);
-    expect(await activateLease(saved.id, '2026-09-30')).toEqual({ ok: false, reasons: ['missing_rent'] });
+    expect(await activateLease(saved.id, '30/09/2026')).toEqual({ ok: false, reasons: ['missing_rent'] });
     const { data } = await client.from('leases').select('status').eq('id', saved.id).single();
     expect(data?.status).toBe('draft');
+    expect(await invoicesOf(saved.id)).toEqual([]);
+    await client.from('leases').delete().eq('id', saved.id);
+  });
+
+  it('refuses a paid-through date of 31/09/2026 and leaves the lease a draft with no invoice', async () => {
+    const saved = await saveLease(propertyId, null, draft(unitId, tenantId, 3_000_000));
+    if (!saved.ok) throw new Error(saved.reason);
+    expect(await activateLease(saved.id, '31/09/2026')).toEqual({ ok: false, reasons: ['paid_through_invalid'] });
+    const { data } = await client.from('leases').select('status, paid_through_date').eq('id', saved.id).single();
+    expect(data).toEqual({ status: 'draft', paid_through_date: null });
     expect(await invoicesOf(saved.id)).toEqual([]);
     await client.from('leases').delete().eq('id', saved.id);
   });
@@ -111,14 +122,14 @@ describe('lease actions against local Supabase (LSE-1 to LSE-3)', () => {
   it('LSE-3: activating on 2026-10-07 paid through 2026-09-30 issues one October invoice due 2026-10-01, and a second call inserts nothing', async () => {
     const saved = await saveLease(propertyId, null, draft(unitId, tenantId, 3_000_000));
     if (!saved.ok) throw new Error(saved.reason);
-    expect(await activateLease(saved.id, '2026-09-30')).toEqual({ ok: true, issuedMonth: '2026-10-01' });
+    expect(await activateLease(saved.id, '30/09/2026')).toEqual({ ok: true, issuedMonth: '2026-10-01' });
     const first = await invoicesOf(saved.id);
     expect(first.filter((invoice) => invoice.status === 'issued').map(({ period_start, due_date }) => ({ period_start, due_date }))).toEqual([
       { period_start: '2026-10-01', due_date: '2026-10-01' },
     ]);
     expect(first.map((invoice) => invoice.status)).toEqual(['issued', 'draft']);
 
-    expect(await activateLease(saved.id, '2026-10-31')).toEqual({ ok: false, reasons: ['already_active'] });
+    expect(await activateLease(saved.id, '31/10/2026')).toEqual({ ok: false, reasons: ['already_active'] });
     expect(await invoicesOf(saved.id)).toEqual(first);
     const { data } = await client.from('leases').select('paid_through_date').eq('id', saved.id).single();
     expect(data?.paid_through_date).toBe('2026-09-30');
@@ -162,7 +173,8 @@ describe('lease actions against local Supabase (LSE-1 to LSE-3)', () => {
         const expected = planInvoices({ ...terms, paidThroughDate: paidThrough === null ? null : isoDate(paidThrough), utilitiesMode: row.utilities_mode }, [], AS_OF).map(
           (invoice) => ({ periodStart: invoice.periodStart, periodEnd: invoice.periodEnd, dueDate: invoice.dueDate, rentVnd: invoice.lines[0]?.amountVnd, issuesNow: invoice.issueOn <= AS_OF }),
         );
-        expect(await previewActivation(row.id, paidThrough), `${JSON.stringify({ ...terms, paidThrough })}`).toEqual(expected);
+        const typed = paidThrough === null ? '' : formatDate(isoDate(paidThrough), 'vi');
+        expect(await previewActivation(row.id, typed), `${JSON.stringify({ ...terms, paidThrough })}`).toEqual(expected);
         compared += expected.length;
       }
     }
