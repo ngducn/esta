@@ -42,6 +42,7 @@ describe('buildSdkOptions', () => {
       allowedTools: ['mcp__esta__household_info'],
       permissionMode: 'default',
       maxTurns: 3,
+      persistSession: false,
     });
     expect(options.hooks?.PreToolUse).toHaveLength(1);
     expect(Object.keys(options.mcpServers ?? {})).toEqual(['esta']);

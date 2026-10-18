@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -31,5 +31,15 @@ describe('replay store', () => {
     };
     expect(writeRecording(dir, recording)).toBe(join(dir, 'ping', `${inputHash(input)}.json`));
     expect(readRecording(dir, input)).toEqual(recording);
+  });
+
+  it.each([
+    ['a tool call', { toolCalls: [{ name: 'mcp__esta__save_extraction', input: { result: { holders: [{ id_last4: { value: '079062118340' } }] } } }] }],
+    ['the reply', { reply: 'Chủ sở hữu Demo, CMND số 024518377.' }],
+  ])('refuses to write a recording with a full national ID in %s (SPEC D11)', (_where, part) => {
+    const other = { ...input, prompt: `p ${_where}` };
+    const recording = { version: 1 as const, kind: 'ping', inputHash: inputHash(other), input: other, model: 'm', numTurns: 1, toolCalls: [], reply: 'ok', ...part };
+    expect(() => writeRecording(dir, recording)).toThrow('holds a full national ID number');
+    expect(existsSync(recordingPath(dir, 'ping', inputHash(other)))).toBe(false);
   });
 });

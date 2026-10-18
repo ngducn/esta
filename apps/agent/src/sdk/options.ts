@@ -31,6 +31,7 @@ export type SdkOptionsInputs = {
   readonly abortController: AbortController;
 };
 
+/** `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to disk. */
 export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, abortController }: SdkOptionsInputs): Options {
   return {
     model,
@@ -45,5 +46,6 @@ export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, 
     permissionMode: 'default',
     maxTurns: spec.maxTurns,
     abortController,
+    persistSession: false,
   };
 }
