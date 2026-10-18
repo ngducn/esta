@@ -1,9 +1,10 @@
 import { publicTable, type Emitter, type HouseholdSeed } from './context.ts';
 import { seedId } from './ids.ts';
 
+/** Mẹ's `idLast4` is the one the north-star certificate prints for her, so accepting it matches her party. */
 export const PEOPLE = [
-  { person: 'me', fullName: 'Nguyễn Thị Demo', isOperator: false },
-  { person: 'ryan', fullName: 'Trần Minh Demo', isOperator: true },
+  { person: 'me', fullName: 'Nguyễn Thị Demo', isOperator: false, idLast4: '8829' },
+  { person: 'ryan', fullName: 'Trần Minh Demo', isOperator: true, idLast4: null },
 ] as const;
 
 export type Person = (typeof PEOPLE)[number]['person'];
