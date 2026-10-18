@@ -31,7 +31,8 @@ const FOLDED = new RegExp(`[\\u00AD\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]|${MARK
  */
 const unaccented = (text: string) =>
   text.replace(/[^\0-\x7F]/gu, (char) => {
-    if (char === 'đ' || char === 'Đ') return char === 'đ' ? 'd' : 'D';
+    if (char === 'đ') return 'd';
+    if (char === 'Đ') return 'D';
     const base = char.normalize('NFD').replace(MARKS, '');
     return base.length === char.length ? base : char;
   });
