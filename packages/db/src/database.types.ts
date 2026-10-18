@@ -750,6 +750,13 @@ export type Database = {
             foreignKeyName: "invoice_lines_household_id_invoice_id_fkey"
             columns: ["household_id", "invoice_id"]
             isOneToOne: false
+            referencedRelation: "invoice_balances"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["household_id", "id"]
           },
@@ -1256,6 +1263,128 @@ export type Database = {
           },
         ]
       }
+      payment_allocations: {
+        Row: {
+          amount_vnd: number
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          invoice_id: string
+          payment_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_vnd: number
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          invoice_id: string
+          payment_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_vnd?: number
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          invoice_id?: string
+          payment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_balances"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_payment_id_fkey"
+            columns: ["household_id", "payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_vnd: number
+          bank_ref: string | null
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          memo: string | null
+          method: string
+          payer_party_id: string | null
+          received_on: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          amount_vnd: number
+          bank_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          memo?: string | null
+          method: string
+          payer_party_id?: string | null
+          received_on: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_vnd?: number
+          bank_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          memo?: string | null
+          method?: string
+          payer_party_id?: string | null
+          received_on?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_household_id_payer_party_id_fkey"
+            columns: ["household_id", "payer_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       properties: {
         Row: {
           acquired_on: string | null
@@ -1649,6 +1778,39 @@ export type Database = {
       }
     }
     Views: {
+      invoice_balances: {
+        Row: {
+          allocated_vnd: number | null
+          due_date: string | null
+          household_id: string | null
+          id: string | null
+          issue_on: string | null
+          lease_id: string | null
+          number: string | null
+          outstanding_vnd: number | null
+          payment_status: string | null
+          period_end: string | null
+          period_start: string | null
+          status: string | null
+          total_vnd: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       property_completeness_facts: {
         Row: {
           certificate_document_count: number | null
@@ -1759,6 +1921,28 @@ export type Database = {
         }
       }
       claim_pending_invites: { Args: never; Returns: number }
+      collection_candidates: {
+        Args: { p_month: string }
+        Returns: {
+          allocated_vnd: number
+          due_date: string
+          household_id: string
+          invoice_id: string
+          lease_id: string
+          number: string
+          outstanding_vnd: number
+          payment_status: string
+          period_end: string
+          period_start: string
+          property_id: string
+          property_nickname: string
+          tenant_name: string
+          tenant_party_id: string
+          total_vnd: number
+          unit_id: string
+          unit_label: string
+        }[]
+      }
       create_household: {
         Args: { p_display_name: string; p_name: string }
         Returns: string
