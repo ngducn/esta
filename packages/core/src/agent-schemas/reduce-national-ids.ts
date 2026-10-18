@@ -2,11 +2,15 @@
 const ID_KEY = /(?:^|_)(?:id|cccd|cmnd|cmtnd|idno|identity)(?:_|$)/i;
 
 /**
- * Words that announce an ID number, matched with accents dropped, so `CḾND`, OCR's `CMNĐ` and `Chung minh` count. A
- * 9- to 11-digit run counts as an ID when it starts within `LABEL_REACH` characters after one, whatever stands
- * between, so a phone number or a price that close is cut too.
+ * Words that announce an ID number. A 9- to 11-digit run counts as an ID when it starts within `LABEL_REACH` characters
+ * after one, whatever stands between, so a phone number or a price that close is cut too.
+ *
+ * The acronyms and the long unaccented phrases are matched with accents dropped, so `CḾND` and OCR's `CMNĐ` count; no
+ * Vietnamese word folds onto them. The short word labels are matched as written: with accents dropped, `số thẻ` would
+ * also match `sổ thế chấp` and `hồ sơ thể hiện`, and `chứng minh` would match `chúng mình`.
  */
-const ID_LABEL = /cccd|cmtnd|cmnd|cmt|can cuoc|chung minh|dinh danh|ddcn|so the|\bid\b/giu;
+const FOLDED_LABEL = /cccd|cmtnd|cmnd|cmt|ddcn|chung minh nhan dan|can cuoc cong dan|so dinh danh ca nhan/giu;
+const WORD_LABEL = /căn cước|chứng minh|định danh|số thẻ|\bid\b/giu;
 const LABEL_REACH = 40;
 const LABELLED_LENGTHS = [12, 11, 10, 9] as const;
 
@@ -74,7 +78,7 @@ function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): Read
  */
 function idSpans(original: string, idField: boolean): Span[] {
   const text = asDots(original);
-  const labelEnds = [...unaccented(text).matchAll(ID_LABEL)].map((m) => m.index + m[0].length);
+  const labelEnds = [...unaccented(text).matchAll(FOLDED_LABEL), ...text.matchAll(WORD_LABEL)].map((m) => m.index + m[0].length);
   const afterLabel = (at: number) => idField || labelEnds.some((end) => end <= at && at - end <= LABEL_REACH);
 
   const groups: Group[] = [];

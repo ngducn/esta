@@ -1,9 +1,11 @@
 -- SPEC D11 for every path that writes typed text, not only the assistant's (#147).
 --
--- The judge reads a middle dot as a dot, so it groups an amount or a date as a dot does, and matches ID labels with
--- accents dropped, so `CḾND`, OCR's `CMNĐ` and `Chung minh nhan dan` announce an ID as `CMND` does (#140). It drops the
--- marks reduceNationalIds drops and recomposes what is left, so a letter neither can fold, such as a Hangul syllable,
--- counts as one character in both.
+-- The judge reads a middle dot as a dot, so it groups an amount or a date as a dot does, and matches the ID acronyms
+-- and the long unaccented label phrases with accents dropped, so `CḾND`, OCR's `CMNĐ` and `Chung minh nhan dan`
+-- announce an ID as `CMND` does (#140). The short word labels are matched as written, as before: with accents dropped,
+-- `số thẻ` would also match `sổ thế chấp` and `chứng minh` would match `chúng mình`. It drops the marks
+-- reduceNationalIds drops and recomposes what is left, so a letter neither can fold, such as a Hangul syllable, counts
+-- as one character in both.
 create or replace function private.holds_national_id(p_value jsonb)
 returns boolean
 language sql
@@ -11,7 +13,8 @@ immutable
 set search_path = ''
 as $$
   select coalesce(bool_or(
-    folded ~* '(cccd|cmtnd|cmnd|cmt|can cuoc|chung minh|dinh danh|ddcn|so the|\yid\y).{0,40}(?<![0-9])(?<![0-9]\.)[0-9](?:(?:[[:space:]]{1,3}|[./,_\u2010-\u2015-])?[0-9]){8,11}(?![0-9])(?!\.[0-9])'
+    folded ~* '(cccd|cmtnd|cmnd|cmt|ddcn|chung minh nhan dan|can cuoc cong dan|so dinh danh ca nhan).{0,40}(?<![0-9])(?<![0-9]\.)[0-9](?:(?:[[:space:]]{1,3}|[./,_\u2010-\u2015-])?[0-9]){8,11}(?![0-9])(?!\.[0-9])'
+    or plain ~* '(căn cước|chứng minh|định danh|số thẻ|\yid\y).{0,40}(?<![0-9])(?<![0-9]\.)[0-9](?:(?:[[:space:]]{1,3}|[./,_\u2010-\u2015-])?[0-9]){8,11}(?![0-9])(?!\.[0-9])'
     or plain ~* '(?<![0-9])(?<![0-9]\.)(?<![^[:alpha:]](?:pa|pb|pc|pd|pe))[0-9](?:(?:[ \t\u000B\u000C\u1680\u2028\u2029]{1,3}|\r?\n|[.,_\u2010-\u2015-])?[0-9]){11}(?![0-9])(?!\.[0-9])'
   ), false)
   from jsonb_path_query(coalesce(p_value, 'null'::jsonb), 'strict $.**') as scalar
