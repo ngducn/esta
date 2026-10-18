@@ -1,6 +1,31 @@
 -- The documents vault search (SPEC §5.5, DOC-3). ocr_text holds the text the assistant read from a normal document,
 -- copied on review acceptance; search_vector covers it with the title and tags, accent-insensitive.
 
+-- The search index unaccents its text, which strips combining marks, so a mark between two digit groups would hide
+-- from the judge an ID the index then holds whole. The judge drops combining marks with the invisible characters
+-- before it looks, as reduceNationalIds does, and a middle dot joins groups as a dot does. Every CHECK and the review
+-- save's judge call this one function.
+create or replace function private.holds_national_id(p_value jsonb)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(bool_or(
+    plain ~* '(cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\yid\y).{0,40}(?<![0-9])(?<![0-9]\.)[0-9](?:(?:[[:space:]]{1,3}|[./,_\u00B7\u2010-\u2015-])?[0-9]){8,11}(?![0-9])(?!\.[0-9])'
+    or plain ~* '(?<![0-9])(?<![0-9]\.)(?<![^[:alpha:]](?:pa|pb|pc|pd|pe))[0-9](?:(?:[ \t\u000B\u000C\u1680\u2028\u2029]{1,3}|\r?\n|[.,_\u00B7\u2010-\u2015-])?[0-9]){11}(?![0-9])(?!\.[0-9])'
+  ), false)
+  from jsonb_path_query(coalesce(p_value, 'null'::jsonb), 'strict $.**') as scalar
+  cross join lateral (
+    select private.blank_matches(
+      private.blank_matches(
+        ' ' || regexp_replace(normalize(scalar #>> '{}', NFKC), '[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]', '', 'g') || ' ',
+        '(?<![0-9])(?:(?:0?[1-9]|[12][0-9]|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)?[0-9]{2}|(?:19|20)[0-9]{2}([./-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12][0-9]|3[01])|(?:19|20)[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))(?![0-9])', ''),
+      '(?<![0-9])(?<![0-9][.,])[1-9][0-9]{0,2}(?:(?:\.[0-9]{3})+|(?:,[0-9]{3})+)?(?![0-9])(?![.,][0-9])(?=[[:space:]]?(?:đ|đồng|vnd|vnđ)(?![[:alnum:]]))', 'i') as plain
+  ) as cleaned
+  where jsonb_typeof(scalar) in ('string', 'number');
+$$;
+
 -- SPEC D11: the same rule as the extraction CHECK, so search text can never hold a full national ID. A sensitive
 -- document keeps no text at all.
 alter table public.documents
