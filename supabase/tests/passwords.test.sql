@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(16);
+select plan(19);
 
 select tests.create_user('confirmed@test.esta.test') as confirmed \gset
 update auth.users set encrypted_password = '$2a$10$demo.hash.one' where id = :'confirmed';
@@ -69,6 +69,10 @@ select is(
 
 select ok(not has_function_privilege('authenticated', 'private.drop_unconfirmed_password()', 'execute'),
   'a signed-in user cannot run the password trigger function');
+select ok(not has_function_privilege('anon', 'private.drop_unconfirmed_password()', 'execute'),
+  'a visitor who is not signed in cannot run the password trigger function');
+select hasnt_function('private', 'blank_passwords', 'the backfill that blanked every password is gone');
+select hasnt_function('private', 'drop_password', 'the trigger function that dropped every password is gone');
 select ok(not exists (select 1 from pg_trigger where tgname = 'drop_password' and tgrelid = 'auth.users'::regclass),
   'the trigger that dropped every password is gone');
 

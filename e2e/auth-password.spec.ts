@@ -5,8 +5,10 @@ import { setTimeout } from 'node:timers/promises';
 import * as mail from '../scripts/inbucket-code.ts';
 import { parseSlot } from '../scripts/slot.ts';
 import { authApi } from './helpers/auth-api';
-import { clearMail, latestCode, latestMail } from './helpers/inbucket';
+import { ageSessions, markCodeJustSent } from './helpers/auth-db';
+import { clearMail, latestCode, latestMail, signIn } from './helpers/inbucket';
 import { createAccount, DEMO_PASSWORD, signInWithPassword } from './helpers/password';
+import { accessToken } from './helpers/session';
 
 const WRONG_PASSWORD = 'Email hoặc mật khẩu chưa đúng. Kiểm tra lại rồi thử lại.';
 const SHORT_PASSWORD = 'Mật khẩu cần ít nhất 8 ký tự.';
@@ -219,4 +221,70 @@ test('a wrong reset code changes nothing', async ({ page, request }) => {
   expect(await sessionCookies(page)).toEqual([]);
   const grant = await request.post(`${authApi.url}/token?grant_type=password`, { headers: authApi.headers, data: { email, password } });
   expect(grant.status(), 'the password stays as it was').toBe(200);
+});
+
+test('a session older than a day cannot set a password without a new code, so signing out everywhere ends it', async ({ page, request }) => {
+  const email = uniqueEmail('oldsession');
+  const password = `Demo-later-${randomUUID().slice(0, 6)}`;
+  await signIn(page, email);
+  const bearer = { ...authApi.headers, authorization: `Bearer ${await accessToken(page)}` };
+  expect(ageSessions(email), 'the code sign-in left one session').toBe(1);
+
+  const update = await request.put(`${authApi.url}/user`, { headers: bearer, data: { password } });
+  expect(update.status(), 'a day-old session cannot set a password').toBe(400);
+  expect(((await update.json()) as { error_code?: string }).error_code).toBe('reauthentication_needed');
+
+  expect((await request.post(`${authApi.url}/logout?scope=global`, { headers: bearer })).status()).toBe(204);
+  const grant = await request.post(`${authApi.url}/token?grant_type=password`, { headers: authApi.headers, data: { email, password } });
+  expect(grant.status(), 'after signing out everywhere, nothing from the old session signs in').toBe(400);
+});
+
+type SendPage = '/forgot-password' | '/sign-up';
+
+async function sendFrom(page: Page, path: SendPage, email: string): Promise<void> {
+  await page.goto(path);
+  await page.getByLabel('Email').fill(email);
+  if (path === '/sign-up') await page.getByLabel('Mật khẩu', { exact: true }).fill('Demo-repeat-1');
+  await page.locator('button[value="send"]').click();
+}
+
+async function resend(page: Page): Promise<void> {
+  await page.clock.runFor('01:01');
+  await page.getByRole('button', { name: 'Gửi lại mã', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Gửi lại mã sau/ }), 'the countdown restarts, as after any send').toBeVisible();
+}
+
+/** The code step as a visitor reads it, with the address taken out so two addresses compare. */
+async function codeStepSeen(page: Page, email: string): Promise<string[]> {
+  await expect(page.getByLabel('Mã 6 chữ số'), 'the code step shows').toBeVisible();
+  const alerts = (await page.getByRole('main').getByRole('alert').allInnerTexts()).filter((text) => text.trim() !== '');
+  return [await page.locator('#code-sent').innerText(), ...alerts].map((text) => text.replaceAll(email, '<email>'));
+}
+
+/** Each send twice in quick succession, reset first, as someone probing an address would. */
+async function probe(page: Page, email: string): Promise<string[][]> {
+  const seen: string[][] = [];
+  for (const path of ['/forgot-password', '/sign-up'] as const) {
+    await sendFrom(page, path, email);
+    seen.push(await codeStepSeen(page, email));
+    markCodeJustSent(email);
+    await resend(page);
+    seen.push(await codeStepSeen(page, email));
+    await sendFrom(page, path, email);
+    seen.push(await codeStepSeen(page, email));
+  }
+  return seen;
+}
+
+test('quick repeat code requests look the same whether or not the address has an account', async ({ page }) => {
+  const known = uniqueEmail('repeat');
+  await createAccount(page, known, `Demo-repeat-${randomUUID().slice(0, 6)}`);
+  await page.context().clearCookies();
+  await setTimeout(SEND_SPACING_MS);
+  await page.clock.install();
+
+  const seenKnown = await probe(page, known);
+  const seenNobody = await probe(page, uniqueEmail('repeat.nobody'));
+  expect(seenKnown).toEqual(seenNobody);
+  expect(seenKnown.filter((step) => step.length > 1), 'no step shows an error').toEqual([]);
 });
