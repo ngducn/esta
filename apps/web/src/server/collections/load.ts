@@ -62,10 +62,17 @@ export async function loadCollectionRows(householdId: string, month: IsoDate, pr
   return z.array(candidateSchema).parse(data);
 }
 
-/** Each property's worst state on the board for the Clock's month, for its status pill. */
+/**
+ * Each property's worst state on the board for the Clock's month, for its status pill. The pill only adds to the list
+ * and the property tabs, so a failed read leaves them without it instead of failing them.
+ */
 export async function loadCollectionStates(householdId: string, asOf: IsoDate, propertyId?: string): Promise<Map<string, CollectionState>> {
+  const rows = await loadCollectionRows(householdId, firstOfMonth(asOf), propertyId).catch((error: unknown) => {
+    console.error(error);
+    return [];
+  });
   const byProperty = new Map<string, CollectionState[]>();
-  for (const row of await loadCollectionRows(householdId, firstOfMonth(asOf), propertyId)) {
+  for (const row of rows) {
     byProperty.set(row.propertyId, [...(byProperty.get(row.propertyId) ?? []), collectionState(row, asOf)]);
   }
   return new Map(
