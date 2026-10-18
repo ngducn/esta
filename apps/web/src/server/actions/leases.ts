@@ -5,10 +5,9 @@ import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
 import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema, tenantSchema } from '@esta/core/schemas/lease';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { formatPhone } from '@esta/core/phone';
+import { vnd, type Vnd } from '@esta/core/money';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { readRequestClock } from '@/server/clock';
-import { runInvoicing } from '@/server/leases/invoicing';
 import type { Tenant } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
@@ -55,43 +54,74 @@ export async function saveLease(propertyId: unknown, leaseId: unknown, raw: unkn
   return { ok: true, id: data.id };
 }
 
-export type ActivationResult =
-  | { readonly ok: true; readonly issuedMonth: IsoDate | null }
-  | { readonly ok: false; readonly reasons: readonly (ActivationRefusal | 'overlap' | 'failed')[] };
+export type ActivationRefusalReason = ActivationRefusal | 'already_active' | 'overlap' | 'failed';
+
+export type ActivationResult = { readonly ok: true; readonly issuedMonth: IsoDate | null } | { readonly ok: false; readonly reasons: readonly ActivationRefusalReason[] };
 
 const paidThroughSchema = isoDateSchema.nullable();
 
+export type BillPreview = {
+  readonly periodStart: IsoDate;
+  readonly periodEnd: IsoDate;
+  readonly dueDate: IsoDate;
+  readonly rentVnd: Vnd;
+  readonly issuesNow: boolean;
+};
+
+const previewRowSchema = z.object({
+  period_start: isoDateSchema,
+  period_end: isoDateSchema,
+  due_date: isoDateSchema,
+  rent_vnd: z.number().int().transform((amount) => vnd(amount)),
+  issues_now: z.boolean(),
+});
+
+/** What activation would bill with this paid-through date, planned by the same database function that writes it. */
+export async function previewActivation(leaseId: unknown, paidThrough: unknown): Promise<readonly BillPreview[] | null> {
+  const id = uuid.safeParse(leaseId);
+  const through = paidThroughSchema.safeParse(paidThrough);
+  if (!id.success || !through.success) return null;
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase.rpc('preview_activation', { p_lease_id: id.data, ...(through.data === null ? {} : { p_paid_through: through.data }) });
+  if (error) return null;
+  return z
+    .array(previewRowSchema)
+    .parse(data)
+    .map((row) => ({ periodStart: row.period_start, periodEnd: row.period_end, dueDate: row.due_date, rentVnd: row.rent_vnd, issuesNow: row.issues_now }));
+}
+
+function refusalOf(error: { readonly code: string; readonly message: string }): ActivationRefusalReason {
+  if (error.message === 'ESTA_LEASE_ALREADY_ACTIVE') return 'already_active';
+  return error.code === '23P01' ? 'overlap' : 'failed';
+}
+
 /**
- * LSE-2 and LSE-3. Moves a draft to `active` with its paid-through date, then runs invoicing on the Clock's date. A lease
- * already active skips straight to invoicing, so a retry after a lost response converges and inserts nothing new.
+ * LSE-2 and LSE-3. `activate_lease` moves the draft to `active` with its paid-through date and writes the invoices it
+ * owes on the database clock's date, in one transaction. A lease another tab activated first is reported as such, and
+ * this call's paid-through date is not applied.
  */
 export async function activateLease(leaseId: unknown, paidThrough: unknown): Promise<ActivationResult> {
   const id = uuid.safeParse(leaseId);
   const through = paidThroughSchema.safeParse(paidThrough);
   if (!id.success || !through.success) return { ok: false, reasons: ['failed'] };
   const paidThroughDate = through.data;
-  const [member, supabase, clock] = await Promise.all([requireMember(), createSessionClient(), readRequestClock()]);
+  const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const read = await supabase.from('leases').select(LEASE_COLUMNS).eq('household_id', member.household.id).eq('id', id.data).maybeSingle();
   if (read.error || read.data === null) return { ok: false, reasons: ['failed'] };
   const lease = leaseRowSchema.parse(read.data);
-  if (lease.status !== 'active') {
-    const refusals = activationRefusals(
-      { status: lease.status, tenantPartyId: lease.tenant_party_id, startDate: lease.start_date, rentVnd: lease.rent_vnd },
-      paidThroughDate,
-    );
-    if (refusals.length > 0) return { ok: false, reasons: refusals };
-    const { error } = await supabase
-      .from('leases')
-      .update({ status: 'active', paid_through_date: paidThroughDate })
-      .eq('id', lease.id)
-      .eq('status', 'draft');
-    if (error) return { ok: false, reasons: [error.code === '23P01' ? 'overlap' : 'failed'] };
-  }
-  const asOf = clock.today();
-  const written = await runInvoicing(supabase, lease.id, asOf, clock.now()).catch(() => null);
+  if (lease.status === 'active') return { ok: false, reasons: ['already_active'] };
+  const refusals = activationRefusals(
+    { status: lease.status, tenantPartyId: lease.tenant_party_id, startDate: lease.start_date, rentVnd: lease.rent_vnd },
+    paidThroughDate,
+  );
+  if (refusals.length > 0) return { ok: false, reasons: refusals };
+  const { data, error } = await supabase.rpc('activate_lease', { p_lease_id: lease.id, ...(paidThroughDate === null ? {} : { p_paid_through: paidThroughDate }) });
   revalidateLeases();
-  if (written === null) return { ok: false, reasons: ['failed'] };
-  const issued = written.filter((invoice) => invoice.status === 'issued' && invoice.period_start <= asOf).map((invoice) => invoice.period_start);
-  const latest = issued.toSorted().at(-1);
+  if (error) return { ok: false, reasons: [refusalOf(error)] };
+  const latest = data
+    .filter((invoice) => invoice.status === 'issued')
+    .map((invoice) => invoice.period_start)
+    .toSorted()
+    .at(-1);
   return { ok: true, issuedMonth: latest === undefined ? null : isoDate(latest) };
 }

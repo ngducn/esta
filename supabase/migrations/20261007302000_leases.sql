@@ -1,6 +1,7 @@
--- Leases, invoices and invoice lines (SPEC §5.4, LSE-1 to LSE-3). packages/core/src/lease plans each invoice; this file
--- holds the invariants a bug in any caller must not break: the lease state machine, frozen terms once active, one
--- invoice per lease period, unique numbers and memo codes, and issued invoices that never change.
+-- Leases, invoices and invoice lines (SPEC §5.4, LSE-1 to LSE-3). This file holds the invariants a bug in any caller
+-- must not break: the lease state machine, frozen terms once active, one invoice per stretch of a lease, unique numbers
+-- and memo codes, and issued invoices that never change. Members write invoices only through activate_lease, which
+-- plans them here from the lease on the database clock, so no caller chooses amounts, periods or issue times.
 
 create table public.leases (
   id uuid primary key default gen_random_uuid(),
@@ -11,7 +12,7 @@ create table public.leases (
   start_date date,
   end_date date,
   -- Monthly rent (docs/plan/STATUS.md, P3-02). [app rule] The same ceiling as units.list_rent_vnd.
-  rent_vnd bigint check (rent_vnd between 0 and 1000000000000),
+  rent_vnd bigint check (rent_vnd between 1 and 1000000000000),
   billing_cycle_months smallint not null default 1 check (billing_cycle_months in (1, 3, 6, 12)),
   period_anchor text not null default 'calendar_month' check (period_anchor in ('lease_start', 'calendar_month')),
   first_period_proration text not null default 'by_days' check (first_period_proration in ('none', 'by_days')),
@@ -59,7 +60,8 @@ create table public.invoices (
   -- The day the draft issues, from packages/core planInvoices; P3-14 moves it earlier when meter readings complete.
   issue_on date not null,
   number text not null check (number ~ '^[A-Z0-9]{1,12}-[0-9]{6}-[0-9]{3,}$'),
-  memo_code text not null check (memo_code ~ '^[A-Z0-9]{8}$'),
+  -- 31 characters: no 0, O, 1, I or L, which read alike on a phone.
+  memo_code text not null check (memo_code ~ '^[A-HJKMNP-Z2-9]{8}$'),
   status text not null default 'draft' check (status in ('draft', 'issued', 'void')),
   issued_at timestamptz,
   voided_reason text check (btrim(voided_reason) <> '' and char_length(voided_reason) <= 1000),
@@ -109,6 +111,10 @@ begin
     end if;
     return new;
   end if;
+  -- A member activates only through public.activate_lease, which issues the first invoices in the same transaction.
+  if old.status = 'draft' and new.status = 'active' and current_user = 'authenticated' then
+    raise exception 'ESTA_LEASE_ACTIVATE_THROUGH_FUNCTION' using errcode = '42501';
+  end if;
   if new.status <> old.status and not (old.status, new.status) in (('draft', 'active'), ('active', 'ended'), ('active', 'terminated')) then
     raise exception 'ESTA_LEASE_TRANSITION' using errcode = '23514', detail = format('%s to %s', old.status, new.status);
   end if;
@@ -143,8 +149,31 @@ create trigger guard_lease
   before insert or update on public.leases
   for each row execute function private.guard_lease();
 
--- The property lock serializes numbering per property. Memo codes skip I, O, 0 and 1, which read alike on a phone; 32
--- letters keep each byte uniform.
+create function private.new_memo_code()
+returns text
+language plpgsql
+volatile
+set search_path = ''
+as $$
+declare
+  v_alphabet constant text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  v_code text := '';
+  v_byte integer;
+begin
+  while char_length(v_code) < 8 loop
+    v_byte := get_byte(extensions.gen_random_bytes(1), 0);
+    -- 248 is 8 × 31; a byte above it would favour the first eight characters.
+    if v_byte < 248 then
+      v_code := v_code || substr(v_alphabet, v_byte % 31 + 1, 1);
+    end if;
+  end loop;
+  return v_code;
+end;
+$$;
+revoke all on function private.new_memo_code() from public;
+
+-- The property lock serializes numbering per property. A memo code that collides raises a unique violation, which
+-- private.issue_invoices retries.
 create function private.number_invoice()
 returns trigger
 language plpgsql
@@ -152,12 +181,7 @@ set search_path = ''
 as $$
 declare
   v_prefix text;
-  v_alphabet constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  v_bytes bytea;
 begin
-  if new.status <> 'draft' and current_user = 'authenticated' then
-    raise exception 'ESTA_INVOICE_NOT_DRAFT' using errcode = '23514';
-  end if;
   if new.number is null then
     select p.code || '-' || to_char(new.period_start, 'YYYYMM') into v_prefix
     from public.leases l join public.properties p on p.id = l.property_id
@@ -168,15 +192,7 @@ begin
     from public.invoices i
     where i.household_id = new.household_id and i.number like v_prefix || '-%';
   end if;
-  while new.memo_code is null loop
-    v_bytes := extensions.gen_random_bytes(8);
-    new.memo_code := (
-      select string_agg(substr(v_alphabet, get_byte(v_bytes, n) % 32 + 1, 1), '' order by n) from generate_series(0, 7) as n
-    );
-    if exists (select 1 from public.invoices i where i.household_id = new.household_id and i.memo_code = new.memo_code) then
-      new.memo_code := null;
-    end if;
-  end loop;
+  new.memo_code := coalesce(new.memo_code, private.new_memo_code());
   return new;
 end;
 $$;
@@ -263,68 +279,232 @@ select private.enable_audit('public.invoices');
 select private.enable_household_rls('public.invoice_lines', 'member');
 select private.enable_audit('public.invoice_lines');
 
--- Only drafts can be deleted or written by a member; an active lease ends through its state machine, and an issued
--- invoice only through a void (P3-11).
+-- Only drafts can be deleted by a member; an active lease ends through its state machine. Invoices and their lines
+-- change only through the functions below and P3-11's void, never by a direct member write.
 drop policy leases_delete on public.leases;
 create policy leases_delete on public.leases for delete to authenticated
   using (status = 'draft' and private.is_member(household_id, 'member'));
+revoke insert, update, delete on table public.invoices, public.invoice_lines from authenticated;
+drop policy invoices_insert on public.invoices;
 drop policy invoices_update on public.invoices;
-create policy invoices_update on public.invoices for update to authenticated
-  using (status = 'draft' and private.is_member(household_id, 'member'))
-  with check (private.is_member(household_id, 'member'));
 drop policy invoices_delete on public.invoices;
-create policy invoices_delete on public.invoices for delete to authenticated
-  using (status = 'draft' and private.is_member(household_id, 'member'));
+drop policy invoice_lines_insert on public.invoice_lines;
+drop policy invoice_lines_update on public.invoice_lines;
+drop policy invoice_lines_delete on public.invoice_lines;
 
--- Generation and issuance for one active lease (SPEC §5.4). `p_invoices` is packages/core planInvoices as JSON:
--- [{period_start, period_end, due_date, issue_on, lines: [{kind, description, quantity, unit_price_vnd, amount_vnd}]}].
--- A period that already has an invoice is skipped with its lines, so a rerun inserts nothing; then every draft whose
--- issue_on has come issues. Runs as the caller, so RLS decides who may write. Returns the lease's invoices.
-create function public.write_invoices(p_lease_id uuid, p_invoices jsonb, p_as_of date, p_issued_at timestamptz)
-returns table (id uuid, period_start date, due_date date, status text, created boolean)
+-- packages/core/src/schedule/rounding.ts: amount × numerator ÷ denominator, half up to a multiple, in exact integers.
+create function private.scale_round_half_up(p_amount numeric, p_numerator numeric, p_denominator numeric, p_multiple numeric)
+returns numeric
+language sql
+immutable
+set search_path = ''
+as $$
+  select div(2 * p_amount * p_numerator + p_denominator * p_multiple, 2 * p_denominator * p_multiple) * p_multiple;
+$$;
+revoke all on function private.scale_round_half_up(numeric, numeric, numeric, numeric) from public;
+
+-- packages/core/src/schedule/dates.ts monthsUntil: the largest n with p_from + n months on or before p_to.
+create function private.months_until(p_from date, p_to date)
+returns integer
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when p_from + make_interval(months => n) <= p_to then n else n - 1 end
+  from (select ((extract(year from p_to) - extract(year from p_from)) * 12 + extract(month from p_to) - extract(month from p_from))::integer as n) c;
+$$;
+revoke all on function private.months_until(date, date) from public;
+
+-- The SQL twin of packages/core/src/lease/invoicing.ts planInvoices over generateSchedule, without amendments (P3-08)
+-- or meter readings (P3-14): every period ending on or after p_as_of and starting within 35 days of it, less what
+-- paid_through_date covers. A paid-through date inside a period bills the days after it at the period's daily rate.
+-- leases.integration.test.ts compares the two.
+create function private.plan_invoices(p_lease public.leases, p_as_of date)
+returns table (period_start date, period_end date, due_date date, issue_on date, rent_vnd bigint)
 language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_horizon date := p_as_of + 35;
+  v_last_start date := least(coalesce(p_lease.end_date, v_horizon), v_horizon);
+  v_origin date := case when p_lease.period_anchor = 'lease_start' then p_lease.start_date else date_trunc('month', p_lease.start_date)::date end;
+  v_cycle integer := p_lease.billing_cycle_months;
+  v_kind text := p_lease.escalation ->> 'kind';
+  v_every integer := (p_lease.escalation ->> 'every_months')::integer;
+  v_step_value numeric := (p_lease.escalation ->> 'value')::numeric;
+  v_rounding numeric := coalesce((p_lease.escalation ->> 'rounding_vnd')::numeric, 100000);
+  v_paid date := p_lease.paid_through_date;
+  v_offset integer := 0;
+  v_full_start date := v_origin;
+  v_start date := p_lease.start_date;
+  v_natural_end date;
+  v_end date;
+  v_charge_start date;
+  v_full_days integer;
+  v_days integer;
+  v_monthly numeric;
+  v_rent numeric;
+  v_rate_vnd numeric;
+  v_rate_days integer;
+begin
+  while v_start <= v_last_start loop
+    v_natural_end := (v_origin + make_interval(months => v_offset + v_cycle))::date - 1;
+    v_end := least(v_natural_end, coalesce(p_lease.end_date, v_natural_end));
+    v_charge_start := case when p_lease.first_period_proration = 'none' and v_end = v_natural_end then v_full_start else v_start end;
+    v_full_days := v_natural_end - v_full_start + 1;
+    v_days := v_end - v_charge_start + 1;
+    v_monthly := p_lease.rent_vnd;
+    if v_kind <> 'none' then
+      for i in 1 .. private.months_until(p_lease.start_date, v_start) / v_every loop
+        v_monthly := case v_kind
+          when 'percent' then private.scale_round_half_up(v_monthly, 10000 + v_step_value, 10000, v_rounding)
+          else private.scale_round_half_up(v_monthly + v_step_value, 1, 1, v_rounding)
+        end;
+      end loop;
+    end if;
+    if v_days < v_full_days then
+      v_rent := private.scale_round_half_up(v_monthly, v_cycle * v_days, v_full_days, 1);
+      v_rate_vnd := v_monthly * v_cycle;
+      v_rate_days := v_full_days;
+    else
+      v_rent := v_monthly * v_cycle;
+      v_rate_vnd := v_rent;
+      v_rate_days := v_end - v_start + 1;
+    end if;
+    if v_end >= p_as_of and (v_paid is null or v_paid < v_end) then
+      period_start := case when v_paid is null or v_paid < v_start then v_start else v_paid + 1 end;
+      period_end := v_end;
+      due_date := period_start + p_lease.due_offset_days;
+      issue_on := case when p_lease.utilities_mode = 'metered_by_owner' then due_date else period_start end;
+      rent_vnd := case when period_start = v_start then v_rent
+        else private.scale_round_half_up(v_rate_vnd, v_end - period_start + 1, v_rate_days, 1) end;
+      return next;
+    end if;
+    v_offset := v_offset + v_cycle;
+    v_full_start := (v_origin + make_interval(months => v_offset))::date;
+    v_start := v_full_start;
+  end loop;
+end;
+$$;
+revoke all on function private.plan_invoices(public.leases, date) from public;
+
+-- The business date of the database clock: the test_clock row on a seeded local stack (FND-9), the wall clock elsewhere.
+create function private.business_date(p_at timestamptz)
+returns date
+language sql
+stable
+set search_path = ''
+as $$
+  select (p_at at time zone 'Asia/Ho_Chi_Minh')::date;
+$$;
+revoke all on function private.business_date(timestamptz) from public;
+
+-- Generation and issuance for one active lease (SPEC §5.4). A planned stretch that overlaps any invoice of the lease is
+-- skipped, so a rerun inserts nothing; then every draft whose issue_on has come issues at p_issued_at.
+create function private.issue_invoices(p_lease_id uuid, p_as_of date, p_issued_at timestamptz)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_lease public.leases;
+  v_plan record;
+  v_id uuid;
+  v_constraint text;
+begin
+  select * into v_lease from public.leases l where l.id = p_lease_id for no key update;
+  if v_lease.status is distinct from 'active' then
+    raise exception 'ESTA_LEASE_NOT_ACTIVE' using errcode = '55000';
+  end if;
+  for v_plan in select * from private.plan_invoices(v_lease, p_as_of) loop
+    continue when exists (
+      select 1 from public.invoices i
+      where i.lease_id = v_lease.id and daterange(i.period_start, i.period_end, '[]') && daterange(v_plan.period_start, v_plan.period_end, '[]')
+    );
+    for attempt in 1 .. 5 loop
+      begin
+        insert into public.invoices (household_id, lease_id, period_start, period_end, due_date, issue_on)
+        values (v_lease.household_id, v_lease.id, v_plan.period_start, v_plan.period_end, v_plan.due_date, v_plan.issue_on)
+        returning id into v_id;
+        exit;
+      exception when unique_violation then
+        get stacked diagnostics v_constraint = constraint_name;
+        if v_constraint <> 'invoices_household_id_memo_code_key' or attempt = 5 then
+          raise;
+        end if;
+      end;
+    end loop;
+    insert into public.invoice_lines (household_id, invoice_id, kind, quantity, unit_price_vnd, amount_vnd)
+    values (v_lease.household_id, v_id, 'rent', 1, v_plan.rent_vnd, v_plan.rent_vnd);
+  end loop;
+  update public.invoices i set status = 'issued', issued_at = p_issued_at
+  where i.lease_id = p_lease_id and i.status = 'draft' and i.issue_on <= p_as_of;
+end;
+$$;
+revoke all on function private.issue_invoices(uuid, date, timestamptz) from public;
+
+-- What activation would bill: the lease's plan with p_paid_through on the database clock's date.
+create function public.preview_activation(p_lease_id uuid, p_paid_through date default null)
+returns table (period_start date, period_end date, due_date date, rent_vnd bigint, issues_now boolean)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_lease public.leases;
+  v_today date := private.business_date(private.audit_now());
+begin
+  select * into v_lease from public.leases l where l.id = p_lease_id and private.is_member(l.household_id, 'member');
+  if not found then
+    raise exception 'ESTA_LEASE_NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if v_lease.start_date is null or v_lease.rent_vnd is null then
+    return;
+  end if;
+  v_lease.paid_through_date := p_paid_through;
+  return query
+    select p.period_start, p.period_end, p.due_date, p.rent_vnd, p.issue_on <= v_today
+    from private.plan_invoices(v_lease, v_today) p;
+end;
+$$;
+revoke all on function public.preview_activation(uuid, date) from public, anon;
+grant execute on function public.preview_activation(uuid, date) to authenticated;
+
+-- LSE-2 and LSE-3 in one transaction: the draft becomes active with its paid-through date, and the invoices it owes on
+-- the database clock's date are written and issued. Any failure leaves the lease a draft. guard_lease and the lease
+-- checks refuse missing terms, overlaps and every other transition.
+create function public.activate_lease(p_lease_id uuid, p_paid_through date default null)
+returns table (id uuid, period_start date, period_end date, due_date date, status text)
+language plpgsql
+security definer
 set search_path = ''
 as $$
 #variable_conflict use_column
 declare
-  v_lease public.leases;
-  v_item jsonb;
-  v_id uuid;
-  v_created uuid[] := '{}';
+  v_status text;
+  v_now timestamptz := private.audit_now();
 begin
-  select * into v_lease from public.leases l where l.id = p_lease_id for no key update;
+  select l.status into v_status from public.leases l
+  where l.id = p_lease_id and private.is_member(l.household_id, 'member')
+  for no key update;
   if not found then
     raise exception 'ESTA_LEASE_NOT_FOUND' using errcode = 'P0002';
   end if;
-  if v_lease.status <> 'active' then
-    raise exception 'ESTA_LEASE_NOT_ACTIVE' using errcode = '55000';
+  if v_status = 'active' then
+    raise exception 'ESTA_LEASE_ALREADY_ACTIVE' using errcode = '55000';
   end if;
-  for v_item in select value from jsonb_array_elements(p_invoices) loop
-    insert into public.invoices (household_id, lease_id, period_start, period_end, due_date, issue_on)
-    values (v_lease.household_id, v_lease.id, (v_item ->> 'period_start')::date, (v_item ->> 'period_end')::date,
-            (v_item ->> 'due_date')::date, (v_item ->> 'issue_on')::date)
-    on conflict on constraint invoices_lease_id_period_start_key do nothing
-    returning invoices.id into v_id;
-    if v_id is not null then
-      v_created := v_created || v_id;
-      insert into public.invoice_lines (household_id, invoice_id, kind, description, quantity, unit_price_vnd, amount_vnd, sort_order)
-      select v_lease.household_id, v_id, line ->> 'kind', line ->> 'description', (line ->> 'quantity')::numeric,
-             (line ->> 'unit_price_vnd')::bigint, (line ->> 'amount_vnd')::bigint, (ordinality - 1)::integer
-      from jsonb_array_elements(v_item -> 'lines') with ordinality as x(line, ordinality);
-    end if;
-    v_id := null;
-  end loop;
-  update public.invoices i set status = 'issued', issued_at = p_issued_at
-  where i.lease_id = p_lease_id and i.status = 'draft' and i.issue_on <= p_as_of;
+  update public.leases l set status = 'active', paid_through_date = p_paid_through where l.id = p_lease_id;
+  perform private.issue_invoices(p_lease_id, private.business_date(v_now), v_now);
   return query
-    select i.id, i.period_start, i.due_date, i.status, i.id = any (v_created)
-    from public.invoices i
+    select i.id, i.period_start, i.period_end, i.due_date, i.status from public.invoices i
     where i.lease_id = p_lease_id
     order by i.period_start;
 end;
 $$;
-revoke all on function public.write_invoices(uuid, jsonb, date, timestamptz) from public, anon;
-grant execute on function public.write_invoices(uuid, jsonb, date, timestamptz) to authenticated, service_role;
+revoke all on function public.activate_lease(uuid, date) from public, anon;
+grant execute on function public.activate_lease(uuid, date) to authenticated;
 
 -- Units under an active lease are not vacant, and a unit whose last lease ended is vacant from the day after it ended
 -- (SPEC §5.3), else from available_from. Every Phase 1 column keeps its place.

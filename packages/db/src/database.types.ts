@@ -1715,6 +1715,16 @@ export type Database = {
       }
     }
     Functions: {
+      activate_lease: {
+        Args: { p_lease_id: string; p_paid_through?: string }
+        Returns: {
+          due_date: string
+          id: string
+          period_end: string
+          period_start: string
+          status: string
+        }[]
+      }
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
       claim_agent_job: {
@@ -1762,6 +1772,16 @@ export type Database = {
         }
         Returns: string
       }
+      preview_activation: {
+        Args: { p_lease_id: string; p_paid_through?: string }
+        Returns: {
+          due_date: string
+          issues_now: boolean
+          period_end: string
+          period_start: string
+          rent_vnd: number
+        }[]
+      }
       property_activity: {
         Args: { p_limit?: number; p_property_id: string }
         Returns: {
@@ -1804,21 +1824,6 @@ export type Database = {
       update_my_display_settings: {
         Args: { p_density: string; p_locale: string; p_text_scale: number }
         Returns: undefined
-      }
-      write_invoices: {
-        Args: {
-          p_as_of: string
-          p_invoices: Json
-          p_issued_at: string
-          p_lease_id: string
-        }
-        Returns: {
-          created: boolean
-          due_date: string
-          id: string
-          period_start: string
-          status: string
-        }[]
       }
     }
     Enums: {

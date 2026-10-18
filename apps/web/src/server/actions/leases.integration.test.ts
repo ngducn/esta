@@ -1,10 +1,13 @@
-import { clockAt, parseInstant } from '@esta/core';
+import { isoDate } from '@esta/core/date';
+import { planInvoices } from '@esta/core/lease';
+import { leaseRowSchema, leaseTerms, LEASE_COLUMNS } from '@esta/core/schemas/lease';
 import type { Database } from '@esta/db';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-// `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack; run against a fresh `pnpm db:reset`.
+// `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
+// AS_OF_INSTANT; run against a fresh `pnpm db:reset`.
 const { ESTA_IT_SUPABASE_URL: url, ESTA_IT_ANON_KEY: anonKey, ESTA_IT_MAILBOX: mailbox } = z
   .object({ ESTA_IT_SUPABASE_URL: z.url(), ESTA_IT_ANON_KEY: z.string().min(1), ESTA_IT_MAILBOX: z.url() })
   .parse(process.env);
@@ -30,11 +33,11 @@ async function latestCode(): Promise<string> {
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/clock', () => ({ readRequestClock: async () => clockAt({ kind: 'env', now: parseInstant('2026-10-07T09:00:00+07:00') }, 'Asia/Ho_Chi_Minh') }));
 vi.mock('@/server/member', () => ({ requireMember: async () => ({ household: { id: HOUSEHOLD } }) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => client }));
 
-const { activateLease, createTenant, saveLease } = await import('./leases');
+const { activateLease, createTenant, previewActivation, saveLease } = await import('./leases');
+const AS_OF = isoDate('2026-10-07');
 
 const draft = (unitId: string, tenantId: string, rent: number | null) => ({
   unit_id: unitId,
@@ -115,7 +118,55 @@ describe('lease actions against local Supabase (LSE-1 to LSE-3)', () => {
     ]);
     expect(first.map((invoice) => invoice.status)).toEqual(['issued', 'draft']);
 
-    expect(await activateLease(saved.id, '2026-09-30')).toEqual({ ok: true, issuedMonth: '2026-10-01' });
+    expect(await activateLease(saved.id, '2026-10-31')).toEqual({ ok: false, reasons: ['already_active'] });
     expect(await invoicesOf(saved.id)).toEqual(first);
+    const { data } = await client.from('leases').select('paid_through_date').eq('id', saved.id).single();
+    expect(data?.paid_through_date).toBe('2026-09-30');
+  });
+
+  it('refuses a rent of 0', async () => {
+    expect(await saveLease(propertyId, null, draft(unitId, tenantId, 0))).toEqual({ ok: false, reason: 'invalid' });
+  });
+
+  it('previews on the database clock exactly what packages/core planInvoices plans, across cycles, anchors, prorations, increases and paid-through dates', async () => {
+    const { data: clock } = await client.from('test_clock').select('frozen_now').maybeSingle();
+    expect(clock?.frozen_now, 'scripts/web-integration.ts sets the database clock').toBe('2026-10-07T02:00:00+00:00');
+    const cases = [1, 3, 12].flatMap((billing_cycle_months) =>
+      (['calendar_month', 'lease_start'] as const).flatMap((period_anchor) =>
+        (
+          [
+            ['2025-01-31', null, { kind: 'none' }],
+            ['2026-08-10', '2027-01-15', { kind: 'percent', value: 500, every_months: 12 }],
+            ['2026-10-16', null, { kind: 'fixed', value: 250_000, every_months: 6 }],
+          ] as const
+        ).map(([start_date, end_date, escalation]) => ({
+          ...draft(unitId, tenantId, 3_333_333),
+          start_date,
+          end_date,
+          billing_cycle_months,
+          period_anchor,
+          first_period_proration: billing_cycle_months === 3 ? 'none' : 'by_days',
+          escalation,
+          utilities_mode: period_anchor === 'lease_start' ? 'metered_by_owner' : 'tenant_direct',
+        })),
+      ),
+    );
+    const { data, error } = await client.from('leases').insert(cases.map((value) => ({ ...value, household_id: HOUSEHOLD, property_id: propertyId }))).select(LEASE_COLUMNS);
+    if (error) throw error;
+    const rows = data.map((row) => leaseRowSchema.parse(row));
+    let compared = 0;
+    for (const row of rows) {
+      for (const paidThrough of [null, '2026-09-30', '2026-10-20', '2026-11-30'] as const) {
+        const terms = leaseTerms(row);
+        if (terms === null) throw new Error('every case has its start and rent');
+        const expected = planInvoices({ ...terms, paidThroughDate: paidThrough === null ? null : isoDate(paidThrough), utilitiesMode: row.utilities_mode }, [], AS_OF).map(
+          (invoice) => ({ periodStart: invoice.periodStart, periodEnd: invoice.periodEnd, dueDate: invoice.dueDate, rentVnd: invoice.lines[0]?.amountVnd, issuesNow: invoice.issueOn <= AS_OF }),
+        );
+        expect(await previewActivation(row.id, paidThrough), `${JSON.stringify({ ...terms, paidThrough })}`).toEqual(expected);
+        compared += expected.length;
+      }
+    }
+    expect(compared).toBeGreaterThan(50);
+    await client.from('leases').delete().in('id', rows.map((row) => row.id));
   });
 });

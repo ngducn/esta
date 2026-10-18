@@ -7,6 +7,9 @@ import { slotEnv } from './slot-env.ts';
 const root = join(import.meta.dirname, '..');
 const slot = parseSlot(process.env.ESTA_SLOT);
 const env = slotEnv(root, slot);
+const AS_OF_INSTANT = '2026-10-07T09:00:00+07:00';
+const clock = (target: string) => spawnSync('pnpm', ['clock:set', target], { cwd: root, stdio: 'inherit', env: { ...process.env, ESTA_SLOT: String(slot) } });
+if (clock(AS_OF_INSTANT).status !== 0) process.exit(1);
 const result = spawnSync('pnpm', ['exec', 'vitest', 'run', '--project', 'node', 'integration'], {
   cwd: join(root, 'apps', 'web'),
   stdio: 'inherit',
@@ -18,4 +21,5 @@ const result = spawnSync('pnpm', ['exec', 'vitest', 'run', '--project', 'node', 
     ESTA_IT_MAILBOX: `http://127.0.0.1:${slotPorts(slot).inbucket}/api/v1`,
   },
 });
+clock('off');
 process.exit(result.status ?? 1);

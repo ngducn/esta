@@ -154,7 +154,14 @@ export function LeaseForm({
         </Group>
         <Group title={t('groupMoney')}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <MoneyInput key={`rent-${values.unitId}`} label={t('rentField')} defaultText={values.rentText} onTextChange={(text) => set('rentText', text)} />
+            <div className="flex flex-col gap-1">
+              <MoneyInput key={`rent-${values.unitId}`} label={t('rentField')} defaultText={values.rentText} onTextChange={(text) => set('rentText', text)} />
+              {invalid === 'rentZero' ? (
+                <p role="alert" data-testid="rent-zero" className="text-small text-overdue">
+                  {t('rentZero')}
+                </p>
+              ) : null}
+            </div>
             <MoneyInput key={`deposit-${values.unitId}`} label={t('depositField')} defaultText={values.depositText} onTextChange={(text) => set('depositText', text)} />
             <FormSelect
               label={t('cycleField')}
@@ -283,6 +290,7 @@ export function LeaseForm({
             onClose={() => {
               setActivating(false);
               if (activateOnOpen) router.replace(leaseHref(leaseId));
+              else router.refresh();
             }}
             onActivated={() => router.replace(leaseHref(leaseId))}
           />

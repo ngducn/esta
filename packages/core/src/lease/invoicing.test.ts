@@ -59,6 +59,33 @@ describe('planInvoices (SPEC §5.4 generation)', () => {
     );
   });
 
+  describe('a paid-through date inside a period bills only the uncollected days, due on the first of them', () => {
+    const quarterly = { ...monthly, rentVnd: vnd(10_000_000), billingCycleMonths: 3 } as const;
+    const annual = { ...monthly, startDate: d('2026-03-01'), rentVnd: vnd(30_000_000), billingCycleMonths: 12 } as const;
+    const room = { ...monthly, startDate: d('2026-08-10'), periodAnchor: 'lease_start', utilitiesMode: 'metered_by_owner' } as const;
+
+    it.each([
+      ['monthly, on the period end', monthly, '2026-09-30', ['2026-10-01..2026-10-31 due 2026-10-01 issue 2026-10-01 3000000', '2026-11-01..2026-11-30 due 2026-11-01 issue 2026-11-01 3000000']],
+      ['monthly, before the period end', monthly, '2026-10-15', ['2026-10-16..2026-10-31 due 2026-10-16 issue 2026-10-16 1548387', '2026-11-01..2026-11-30 due 2026-11-01 issue 2026-11-01 3000000']],
+      ['monthly, after the period end', monthly, '2026-11-10', ['2026-11-11..2026-11-30 due 2026-11-11 issue 2026-11-11 2000000']],
+      ['quarterly, on the period end', quarterly, '2026-10-31', ['2026-11-01..2027-01-31 due 2026-11-01 issue 2026-11-01 30000000']],
+      ['quarterly, before the period end (lane 3)', quarterly, '2026-09-30', ['2026-10-01..2026-10-31 due 2026-10-01 issue 2026-10-01 10108696', '2026-11-01..2027-01-31 due 2026-11-01 issue 2026-11-01 30000000']],
+      ['quarterly, after the period end', quarterly, '2026-11-15', ['2026-11-16..2027-01-31 due 2026-11-16 issue 2026-11-16 25108696']],
+      ['annual, on the period end', annual, '2027-02-28', []],
+      ['annual, before the period end', annual, '2026-09-30', ['2026-10-01..2027-02-28 due 2026-10-01 issue 2026-10-01 148931507']],
+      ['annual, after the period end', annual, '2027-03-31', []],
+      ['room from move-in, on the period end', room, '2026-10-09', ['2026-10-10..2026-11-09 due 2026-10-10 issue 2026-10-10 3000000', '2026-11-10..2026-12-09 due 2026-11-10 issue 2026-11-10 3000000']],
+      ['room from move-in, before the period end', room, '2026-09-30', ['2026-10-01..2026-10-09 due 2026-10-01 issue 2026-10-01 900000', '2026-10-10..2026-11-09 due 2026-10-10 issue 2026-10-10 3000000', '2026-11-10..2026-12-09 due 2026-11-10 issue 2026-11-10 3000000']],
+      ['room from move-in, after the period end', room, '2026-10-20', ['2026-10-21..2026-11-09 due 2026-10-21 issue 2026-10-21 1935484', '2026-11-10..2026-12-09 due 2026-11-10 issue 2026-11-10 3000000']],
+    ] as const)('%s', (_, lease, paidThrough, expected) => {
+      expect(spans({ ...lease, paidThroughDate: d(paidThrough) }, '2026-10-07')).toEqual(expected);
+    });
+
+    it('keeps the due offset on the remainder', () => {
+      expect(spans({ ...quarterly, paidThroughDate: d('2026-09-30'), dueOffsetDays: 5 }, '2026-10-07')[0]).toBe('2026-10-01..2026-10-31 due 2026-10-06 issue 2026-10-01 10108696');
+    });
+  });
+
   it('plans the same drafts on a second run, so the unique (lease_id, period_start) insert adds nothing', () => {
     expect(planInvoices(monthly, [], d('2026-10-07'))).toEqual(planInvoices(monthly, [], d('2026-10-07')));
   });

@@ -111,7 +111,7 @@ const READINGS: Partial<Record<PropertySeedKey, CompletedReadings>> = {
   'di-an': { month: d('2026-09-01'), completeOn: d('2026-10-03') },
 };
 
-const MEMO_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const MEMO_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 const leaseKey = (household: HouseholdSeed, seed: LeaseSeed) => `${household.key}:${seed.property}:${seed.unit}`;
 const leaseId = (household: HouseholdSeed, seed: LeaseSeed) => seedId(`seed:lease:${leaseKey(household, seed)}`);

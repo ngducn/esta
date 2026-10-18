@@ -118,7 +118,9 @@ test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease pa
   const dialog = page.getByTestId('activate-dialog');
   await expect(dialog).toBeVisible();
   await dialog.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }).fill('30/09/2026');
+  await expect(dialog.getByTestId('preview-bill').first()).toContainText(`Kỳ 01/10/2026 – 31/10/2026Phát hành ngay · hạn thu 01/10/2026${'3.000.000'}${NBSP}₫`);
   expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('activate-preview-390-light.png') });
   await dialog.getByTestId('confirm-activate').click();
 
   await expect(toast(page)).toContainText('Đã kích hoạt hợp đồng. Hóa đơn tháng 10 đã phát hành.');
@@ -144,6 +146,61 @@ test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease pa
   await expect(unitRow(page, room).getByTestId('unit-tenant')).toHaveText('Lê Văn Demo');
   await expect(unitRow(page, room).locator('[data-status="overdue"]')).toHaveText('Quá hạn 6 ngày');
   await holdForRecording(page);
+});
+
+test('lane 3: a quarterly lease paid through 30/09 bills only October, says so before Mẹ confirms, and a second tab is told it is already active', async ({ page, context }) => {
+  await open(page, 'ryan.lane3@demo.esta.test', 'dark', DESKTOP);
+  const room = await freshRoom(page, 3);
+  const [unit] = await rest<{ id: string }[]>(page, 'GET', `units?property_id=eq.${propertyId(3, 'di-an')}&label=eq.${encodeURIComponent(room)}&select=id`);
+  const [tenant] = await rest<{ id: string }[]>(page, 'POST', 'parties', { household_id: householdId(3), kind: 'organization', full_name: 'Công ty Demo Quý', tags: ['tenant'] });
+  const [lease] = await rest<{ id: string }[]>(page, 'POST', 'leases', {
+    household_id: householdId(3),
+    property_id: propertyId(3, 'di-an'),
+    unit_id: unit?.id,
+    tenant_party_id: tenant?.id,
+    start_date: '2026-08-01',
+    rent_vnd: 10_000_000,
+    billing_cycle_months: 3,
+  });
+  const activatePath = `${rentalPath(3, 'di-an')}/leases/${lease?.id ?? ''}?activate=1`;
+  const other = await context.newPage();
+  await other.setViewportSize(DESKTOP);
+  await other.goto(activatePath);
+  await expect(other.getByTestId('preview-bill')).toHaveCount(1);
+
+  await page.goto(activatePath);
+  const dialog = page.getByTestId('activate-dialog');
+  await dialog.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }).fill('30/09/2026');
+  const bills = dialog.getByTestId('preview-bill');
+  await expect(bills).toHaveText([
+    `Kỳ 01/10/2026 – 31/10/2026Phát hành ngay · hạn thu 01/10/2026${'10.108.696'}${NBSP}₫`,
+    `Kỳ 01/11/2026 – 31/01/2027Bản nháp · hạn thu 01/11/2026${'30.000.000'}${NBSP}₫`,
+  ]);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('activate-preview-1440-dark.png') });
+  await dialog.getByTestId('confirm-activate').click();
+  await expect(toast(page)).toContainText('Đã kích hoạt hợp đồng. Hóa đơn tháng 10 đã phát hành.');
+  await expect(page.getByTestId('invoice-row').first()).toContainText('Kỳ 01/10/2026 – 31/10/2026');
+
+  const late = other.getByTestId('activate-dialog');
+  await late.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }).fill('31/10/2026');
+  await late.getByTestId('confirm-activate').click();
+  await expect(late.getByTestId('activate-refusals')).toContainText('Hợp đồng này đã được kích hoạt ở thẻ hoặc máy khác');
+  await other.screenshot({ path: test.info().outputPath('activate-already-active-1440-dark.png') });
+  await expect(toast(other)).not.toContainText('Đã kích hoạt hợp đồng');
+
+  const [stored] = await rest<{ paid_through_date: string; invoices: { period_start: string; due_date: string; status: string; invoice_lines: { amount_vnd: number }[] }[] }[]>(
+    page,
+    'GET',
+    `leases?id=eq.${lease?.id ?? ''}&select=paid_through_date,invoices(period_start,due_date,status,invoice_lines(amount_vnd))&invoices.order=period_start`,
+  );
+  expect(stored).toEqual({
+    paid_through_date: '2026-09-30',
+    invoices: [
+      { period_start: '2026-10-01', due_date: '2026-10-01', status: 'issued', invoice_lines: [{ amount_vnd: 10_108_696 }] },
+      { period_start: '2026-11-01', due_date: '2026-11-01', status: 'draft', invoice_lines: [{ amount_vnd: 30_000_000 }] },
+    ],
+  });
 });
 
 test('rule 4: the new lease form prefills DOMAIN-VN §7 defaults, 1 tháng and metered utilities for a room, 3 tháng for the warehouse', async ({ page }) => {

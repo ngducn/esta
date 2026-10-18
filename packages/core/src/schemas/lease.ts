@@ -35,7 +35,7 @@ export const leaseDraftSchema = z
     tenant_party_id: z.uuid().nullable(),
     start_date: isoDateSchema.nullable(),
     end_date: isoDateSchema.nullable(),
-    rent_vnd: moneySchema.nullable(),
+    rent_vnd: moneySchema.refine((amount) => amount > 0).nullable(),
     billing_cycle_months: cycleSchema,
     period_anchor: z.enum(PERIOD_ANCHORS),
     first_period_proration: z.enum(PRORATIONS),

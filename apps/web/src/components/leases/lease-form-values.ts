@@ -24,7 +24,7 @@ export type LeaseFormValues = {
   noticeText: string;
 };
 
-export type Invalid = 'rent' | 'deposit' | 'end' | 'escalationValue' | 'escalationEvery' | 'notice' | null;
+export type Invalid = 'rent' | 'rentZero' | 'deposit' | 'end' | 'escalationValue' | 'escalationEvery' | 'notice' | null;
 const WHOLE = /^\d{1,3}$/;
 
 function readEscalation(values: LeaseFormValues): { ok: true; value: EscalationJson } | { ok: false; field: Invalid } {
@@ -42,6 +42,7 @@ function readEscalation(values: LeaseFormValues): { ok: true; value: EscalationJ
 export function readDraft(values: LeaseFormValues): { ok: true; value: LeaseDraft } | { ok: false; field: Invalid } {
   const rent = values.rentText.trim() === '' ? null : parseVndInput(values.rentText);
   if (rent !== null && !rent.ok) return { ok: false, field: 'rent' };
+  if (rent?.value === 0) return { ok: false, field: 'rentZero' };
   const deposit = values.depositText.trim() === '' ? null : parseVndInput(values.depositText);
   if (deposit !== null && !deposit.ok) return { ok: false, field: 'deposit' };
   if (values.start !== null && values.end !== null && values.end < values.start) return { ok: false, field: 'end' };
