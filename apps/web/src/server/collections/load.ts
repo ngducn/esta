@@ -83,16 +83,15 @@ export async function loadCollectionStates(householdId: string, asOf: IsoDate, p
   );
 }
 
-/** An invoice a payment from the board may settle, with the number Mẹ sees on it. */
-export type PaymentInvoice = OpenInvoice & { readonly leaseId: string; readonly number: string };
+/** An invoice a payment from the board may settle. */
+export type PaymentInvoice = OpenInvoice & { readonly leaseId: string };
 
 const openInvoiceSchema = z
-  .object({ id: z.uuid(), lease_id: z.uuid(), number: z.string(), due_date: isoDateSchema, period_start: isoDateSchema, outstanding_vnd: money })
+  .object({ id: z.uuid(), lease_id: z.uuid(), due_date: isoDateSchema, period_start: isoDateSchema, outstanding_vnd: money })
   .transform(
     (row): PaymentInvoice => ({
       id: row.id,
       leaseId: row.lease_id,
-      number: row.number,
       dueDate: row.due_date,
       periodStart: row.period_start,
       outstandingVnd: row.outstanding_vnd,
@@ -104,7 +103,7 @@ export async function loadOpenInvoices(householdId: string): Promise<Map<string,
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('invoice_balances')
-    .select('id, lease_id, number, due_date, period_start, outstanding_vnd')
+    .select('id, lease_id, due_date, period_start, outstanding_vnd')
     .eq('household_id', householdId)
     .eq('status', 'issued')
     .gt('outstanding_vnd', 0);
