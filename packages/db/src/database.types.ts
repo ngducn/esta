@@ -2212,6 +2212,7 @@ export type Database = {
         Args: { p_display_name: string; p_name: string }
         Returns: string
       }
+      end_expired_leases: { Args: { p_as_of: string }; Returns: number }
       enqueue_extract_document: {
         Args: { p_as_of: string; p_document_id: string }
         Returns: string
@@ -2263,6 +2264,13 @@ export type Database = {
           allocated_vnd: number
           amount_vnd: number
           id: string
+        }[]
+      }
+      run_invoicing: {
+        Args: { p_as_of: string; p_household_id: string; p_issued_at: string }
+        Returns: {
+          drafted: number
+          issued: number
         }[]
       }
       search_documents: {
