@@ -52,6 +52,31 @@ export function SkeletonCards({ count = 3 }: { count?: number }) {
   );
 }
 
+/** The vault as it lands: the title, the search bar, the expiring card and a row of 4:3 document tiles. */
+export function SkeletonVault() {
+  return (
+    <Loading className="flex flex-col gap-5">
+      <Block className="h-9 w-40 max-w-full" />
+      <Block className="h-touch w-full" />
+      <div className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card sm:p-5">
+        <Block className="h-7 w-36" />
+        <Block className="h-6 w-full max-w-md" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }, (_, index) => (
+          <div key={index} className="flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+            <Block className="aspect-[4/3] w-full rounded-none" />
+            <div className="flex flex-col gap-2.5 p-4">
+              <Block className="h-5 w-28" />
+              <Block className="h-6 w-48 max-w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Loading>
+  );
+}
+
 /** The detail header in the grid it draws, then the tab row, so the page lands without a shift. */
 export function SkeletonPropertyHeader() {
   return (
