@@ -309,11 +309,20 @@ test('on a slow phone the form takes no typing until it is ready, then keeps wha
   test.setTimeout(180_000);
   await signIn(page, 'me.lane6@demo.esta.test');
   const cdp = await context.newCDPSession(page);
-  await cdp.send('Network.enable');
-  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 800, downloadThroughput: 50_000, uploadThroughput: 30_000 });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  // A production build hydrates within the time the HTML takes to arrive, so a slow network no longer leaves a
+  // window to look in. Holding the scripts back opens that window for as long as the test needs it.
+  let held: Promise<void> = Promise.resolve();
+  await page.route(/\/_next\/static\/chunks\/.+\.js(\?.*)?$/, async (route) => {
+    await held;
+    await route.continue();
+  });
 
   for (const path of ['/properties/new', `/properties/${propertyId(6, 'thu-duc')}/edit`]) {
+    let release = () => {};
+    held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     await page.goto(path, { waitUntil: 'commit' });
     const nickname = page.getByTestId('nickname');
     await nickname.waitFor({ timeout: 60_000 });
@@ -324,6 +333,7 @@ test('on a slow phone the form takes no typing until it is ready, then keeps wha
     expect(states.every(Boolean), `${path}: every field waits for the page`).toBe(true);
     await expect(page.getByTestId('form-loading')).toHaveText('Đang tải…');
 
+    release();
     await expect(nickname).toBeEnabled({ timeout: 90_000 });
     await expect(page.getByTestId('form-loading')).toHaveCount(0);
     await nickname.fill('Nhà Demo chậm mạng');

@@ -30,6 +30,9 @@
 # because `db reset` keeps Storage objects from the previous branch. They run
 # this checkout's scripts/seed-photos.ts --empty so that older PR heads work.
 #
+# The e2e job serves a production build (ESTA_E2E_SERVER=build in playwright.config.ts)
+# rather than `pnpm dev`, so no test waits for a page to compile.
+#
 # The e2e job retries a failed test once. Tests that failed and then passed
 # are reported as "flaky: N" with their titles, in the job log and the comment.
 #
@@ -150,7 +153,7 @@ empty_photos() {
 
 run_e2e() {
 	local report=$logdir/e2e-report.json
-	CI=1 PLAYWRIGHT_JSON_OUTPUT_NAME=$report pnpm e2e --retries=1 --reporter=list,json
+	CI=1 ESTA_E2E_SERVER=build PLAYWRIGHT_JSON_OUTPUT_NAME=$report pnpm e2e --retries=1 --reporter=list,json
 	local code=$?
 	[ -f "$report" ] && node "$ci_root/tools/flaky-report.mjs" "$report" | tee "$logdir/e2e.flaky"
 	return "$code"

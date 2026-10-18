@@ -1,8 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 import { parseSlot, slotPorts } from './scripts/slot.ts';
 
-const port = Number(process.env.PORT ?? slotPorts(parseSlot(process.env.ESTA_SLOT)).web);
+const slot = parseSlot(process.env.ESTA_SLOT);
+const port = Number(process.env.PORT ?? slotPorts(slot).web);
 const baseURL = `http://localhost:${port}`;
+
+// CI serves a production build, which compiles every page before the first test and keeps first visits fast.
+// `ESTA_E2E_SERVER=dev` serves `pnpm dev` instead, which starts quicker when a developer reruns one spec.
+const servers = ['build', 'dev'] as const;
+const server = process.env.ESTA_E2E_SERVER ?? (process.env.CI ? 'build' : 'dev');
+if (!servers.some((name) => name === server)) throw new Error(`ESTA_E2E_SERVER must be one of ${servers.join(', ')}, got "${server}"`);
 const sharedClock = ['clock.spec.ts', 'assistant-status.spec.ts', 'fnd9-integration.spec.ts', 'property-detail.spec.ts'];
 
 export default defineConfig({
@@ -10,7 +17,8 @@ export default defineConfig({
   testIgnore: 'prod/**',
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? 'github' : 'list',
-  globalSetup: './e2e/warm-routes.ts',
+  // Only `next dev` compiles a page on its first visit, so only it needs the routes warmed before the tests.
+  ...(server === 'dev' ? { globalSetup: './e2e/warm-routes.ts' } : {}),
   use: { baseURL, trace: 'retain-on-failure' },
   projects: [
     { name: 'mobile', testIgnore: ['prod/**', ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
@@ -18,10 +26,15 @@ export default defineConfig({
     // The slot has one test clock and one worker, so the specs that move them run one at a time.
     { name: 'clock', testMatch: sharedClock, workers: 1, use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
   ],
-  webServer: {
-    command: 'pnpm dev',
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer:
+    server === 'dev'
+      ? { command: 'pnpm dev', url: baseURL, reuseExistingServer: !process.env.CI, timeout: 120_000 }
+      : {
+          // ESTA_ENV=test keeps /dev/* and /api/test/* on, which the clock specs need; ESTA_ENV=production hides them.
+          command: 'node scripts/web.ts build && node scripts/web.ts start',
+          env: { ESTA_ENV: 'test', ESTA_NEXT_DIST_DIR: `.next/e2e-slot-${slot}` },
+          url: baseURL,
+          reuseExistingServer: false,
+          timeout: 600_000,
+        },
 });

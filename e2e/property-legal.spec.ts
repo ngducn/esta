@@ -26,10 +26,15 @@ async function open(page: Page, email: string, theme: 'light' | 'dark', viewport
 }
 
 /** Puts a lane row back to its seed values first, so the rule passes again without a reset. */
-async function rest(page: Page, method: 'PATCH' | 'DELETE', path: string, data?: Record<string, unknown>) {
+async function rest(page: Page, method: 'POST' | 'PATCH' | 'DELETE', path: string, data?: Record<string, unknown>) {
   const response = await page.request.fetch(`${supabaseUrl}/rest/v1/${path}`, {
     method,
-    headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}`, 'content-type': 'application/json' },
+    headers: {
+      apikey: anonKey,
+      authorization: `Bearer ${await accessToken(page)}`,
+      'content-type': 'application/json',
+      ...(method === 'POST' ? { prefer: 'resolution=ignore-duplicates' } : {}),
+    },
     ...(data === undefined ? {} : { data }),
   });
   expect(response.ok(), await response.text()).toBe(true);
@@ -170,6 +175,18 @@ test('rule 4b: Mẹ quick-adds a holder, leaves the certificate form, and the pe
 
 test('rule 5: Mẹ deletes the Q7 structure and Hoàn tác brings it back', async ({ page }) => {
   await open(page, 'me.lane5@demo.esta.test', 'light', PHONE);
+  // An attempt that stopped after the delete leaves the row gone, so the rule puts the seed structure back before it starts.
+  await rest(page, 'POST', 'structures?on_conflict=id', {
+    id: seedId('seed:structure:lane-5:q7:1'),
+    household_id: seedId('seed:household:lane-5'),
+    property_id: propertyId(5, 'q7'),
+    certificate_id: seedId('seed:certificate:lane-5:q7'),
+    kind: 'Nhà ở riêng lẻ',
+    footprint_m2: 80,
+    floor_area_m2: 240,
+    floors: 3,
+    completed_year: 2004,
+  });
   await page.goto(legalPath(5, 'q7'));
   const structure = page.getByTestId('structures-card');
   await expect(structure).toHaveCount(1);

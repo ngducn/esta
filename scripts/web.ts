@@ -8,12 +8,14 @@ import { slotEnv } from './slot-env.ts';
 const repoRoot = join(import.meta.dirname, '..');
 const webDir = join(repoRoot, 'apps', 'web');
 const [command, ...extra] = process.argv.slice(2);
-if (command !== 'dev' && command !== 'start') {
-  console.error('Usage: node scripts/web.ts <dev|start> [next flags]');
+if (command !== 'dev' && command !== 'build' && command !== 'start') {
+  console.error('Usage: node scripts/web.ts <dev|build|start> [next flags]');
   process.exit(2);
 }
 
-if (command === 'dev') {
+// `build` is the slot-aware build that the browser tests serve (`pnpm e2e`): it bakes the slot's Supabase URL into the
+// client bundle and, like `dev`, makes the env file a fresh checkout lacks. `pnpm build` stays as it is for deploys.
+if (command === 'dev' || command === 'build') {
   cpSync(join(repoRoot, '.env.example'), join(webDir, '.env.local'), { force: false });
 }
 
