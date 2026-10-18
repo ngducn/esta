@@ -168,6 +168,11 @@ describe('reduceNationalIds', () => {
     expect(reduceNationalIds({ notes_text: leaf(text) }).notes_text.value).toBe(text);
   });
 
+  it.each(NATIONAL_ID_VECTORS.squeezed)('keeps the shared vector %s as read, and reduces it once squeezed', (_name, text, stored) => {
+    expect(reduceNationalIds({ notes_text: leaf(text) }).notes_text.value).toBe(text);
+    expect(reduceNationalIds({ notes_text: leaf(text.replace(/\s+/gu, ' ')) }).notes_text.value).toBe(stored);
+  });
+
   it('never lets a 12-digit run with any separators through, unless its grouping reads as a date', () => {
     const separator = fc.constantFrom('', ' ', '  ', NBSP, ' ', '\t', '.', '-');
     const run = fc

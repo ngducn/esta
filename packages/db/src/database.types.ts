@@ -2219,6 +2219,7 @@ export type Database = {
         }
         Returns: string
       }
+      national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
       preview_activation: {
         Args: { p_lease_id: string; p_paid_through?: string }
         Returns: {

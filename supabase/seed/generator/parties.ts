@@ -8,11 +8,12 @@ export function bankPartyId(household: HouseholdSeed) {
 }
 
 export const parties = publicTable('parties', ({ household }) => [
-  ...PEOPLE.map(({ person, fullName }) => ({
+  ...PEOPLE.map(({ person, fullName, idLast4 }) => ({
     id: seedId(`seed:party:${personKey(person, household)}`),
     household_id: householdId(household),
     kind: 'individual',
     full_name: fullName,
+    id_last4: idLast4,
     tags: ['owner'],
     member_id: memberId(person, household),
   })),
