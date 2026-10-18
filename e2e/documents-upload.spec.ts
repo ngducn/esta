@@ -282,6 +282,38 @@ test('rule 6: the Bảo Lộc certificate stays blurred until Xem, then blurs ag
   await expect(certificate).toHaveAttribute('data-blurred', 'true');
 });
 
+test('rule 11: a certificate tile holds its 4:3 box on a phone and a computer, and Xem waits for hydration (DOC-5)', async ({ page }) => {
+  await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  let release = () => {};
+  const scripts = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(/\/_next\/static\/chunks\/.+\.js(\?.*)?$/, async (route) => {
+    await scripts;
+    await route.continue();
+  });
+  await page.goto(`/properties/${propertyId(3, 'bao-loc')}/documents`, { waitUntil: 'commit' });
+  const certificate = tile(page, 'Sổ hồng Bảo Lộc');
+  const xem = certificate.getByTestId('reveal-thumbnail');
+  await expect(xem, 'Xem waits for hydration, so an early tap is never lost').toBeDisabled(COLD_ROUTE);
+  release();
+  await expect(xem).toBeEnabled({ timeout: 60_000 });
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+
+  const image = certificate.locator('img');
+  for (const viewport of [PHONE, DESKTOP]) {
+    await page.setViewportSize(viewport);
+    await image.scrollIntoViewIfNeeded();
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    const box = await image.boundingBox();
+    expect(box === null ? null : Math.abs(box.width / box.height - 4 / 3), `the thumbnail keeps 4:3 at ${viewport.width} px, not ${box?.width}x${box?.height}`).toBeLessThan(0.02);
+  }
+  await xem.click();
+  await expect(certificate).toHaveAttribute('data-blurred', 'false');
+});
+
 test('rule 7: a member of household 7 reaches nothing of household 8 (FND-2)', async ({ page }) => {
   await open(page, 'me.lane7@demo.esta.test', 'light', DESKTOP);
   const other = documentId(8, 'bao-loc:certificate');
