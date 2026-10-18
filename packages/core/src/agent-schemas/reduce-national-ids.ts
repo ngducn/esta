@@ -15,8 +15,8 @@ const JOIN_AFTER_LABEL = /^(?:\s{1,3}|[.\-/])$/u;
 const CURRENCY_AFTER = /^\s?(?:đ|đồng|vnd|vnđ)(?![\p{L}\p{N}])/iu;
 const ASCII_LETTER = /[A-Za-z]/;
 
-type Group = { readonly start: number; readonly end: number; readonly digits: string };
-type Span = { readonly from: number; readonly to: number };
+type Group = { readonly start: number; readonly end: number; readonly digits: string; readonly joined: boolean; readonly dotJoined: boolean };
+type Span = { readonly from: number; readonly to: number; readonly last4: string };
 
 /** Full-width digits become ASCII; NFKC maps them and leaves every other character as NFC has it. */
 const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.normalize('NFKC'));
@@ -27,42 +27,51 @@ const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.
  * that reaches the length, so a date or a year after the number stays out of it.
  */
 function idSpans(text: string, idField: boolean): Span[] {
-  const groups: Group[] = [...text.matchAll(/\p{Nd}+/gu)].map((m) => ({ start: m.index, end: m.index + m[0].length, digits: asciiDigits(m[0]) }));
   const labelEnds = [...text.matchAll(ID_LABEL)].map((m) => m.index + m[0].length);
   const afterLabel = (at: number) => idField || labelEnds.some((end) => end <= at && at - end <= LABEL_REACH);
-  const gap = (i: number) => text.slice(groups[i - 1]!.end, groups[i]!.start);
-  const joined = (i: number) => i > 0 && i < groups.length && (afterLabel(groups[i - 1]!.start) ? JOIN_AFTER_LABEL : JOIN).test(gap(i));
-  const dotJoined = (i: number) => joined(i) && gap(i) === '.';
 
-  const gluedToCode = (from: number, to: number) => {
-    const before = text.slice(0, groups[from]!.start);
-    return (ASCII_LETTER.test(before.at(-1) ?? '') && !GLUED_LABEL.test(before)) || ASCII_LETTER.test(text[groups[to]!.end] ?? '');
-  };
-  const isAmount = (from: number, to: number) => {
-    const first = groups[from]!.digits;
-    if (first.startsWith('0') || first.length > 3) return false;
-    for (let i = from + 1; i <= to; i++) if (groups[i]!.digits.length !== 3 || gap(i) !== '.') return false;
-    return CURRENCY_AFTER.test(text.slice(groups[to]!.end));
-  };
-  const matchAt = (from: number, length: number): number | undefined => {
+  const groups: Group[] = [];
+  for (const m of text.matchAll(/\p{Nd}+/gu)) {
+    const previous = groups.at(-1);
+    const gap = previous === undefined ? '' : text.slice(previous.end, m.index);
+    const joined = previous !== undefined && (afterLabel(previous.start) ? JOIN_AFTER_LABEL : JOIN).test(gap);
+    groups.push({ start: m.index, end: m.index + m[0].length, digits: asciiDigits(m[0]), joined, dotJoined: joined && gap === '.' });
+  }
+
+  const runOf = (from: number, length: number): Group[] | undefined => {
+    const run: Group[] = [];
     let total = 0;
-    for (let to = from; to < groups.length && total < length; to++) {
-      if (to > from && !joined(to)) return undefined;
-      total += groups[to]!.digits.length;
-      if (total === length) return to;
+    for (const group of groups.slice(from)) {
+      if (run.length > 0 && !group.joined) return undefined;
+      run.push(group);
+      total += group.digits.length;
+      if (total >= length) return total === length ? run : undefined;
     }
     return undefined;
   };
+  const gluedToCode = (first: Group, last: Group) => {
+    const before = text.slice(0, first.start);
+    return (ASCII_LETTER.test(before.at(-1) ?? '') && !GLUED_LABEL.test(before)) || ASCII_LETTER.test(text.charAt(last.end));
+  };
+  const isAmount = ([first, ...rest]: Group[], last: Group) =>
+    first !== undefined &&
+    !first.digits.startsWith('0') &&
+    first.digits.length <= 3 &&
+    rest.every((group) => group.dotJoined && group.digits.length === 3) &&
+    CURRENCY_AFTER.test(text.slice(last.end));
 
   const spans: Span[] = [];
   for (let from = 0; from < groups.length; from++) {
-    if (dotJoined(from)) continue;
-    const labelled = afterLabel(groups[from]!.start);
+    const first = groups[from];
+    if (first === undefined || first.dotJoined) continue;
+    const labelled = afterLabel(first.start);
     for (const length of labelled ? [12, 9] : [12]) {
-      const to = matchAt(from, length);
-      if (to === undefined || dotJoined(to + 1) || gluedToCode(from, to) || (!labelled && isAmount(from, to))) continue;
-      spans.push({ from: groups[from]!.start, to: groups[to]!.end });
-      from = to;
+      const run = runOf(from, length);
+      const last = run?.at(-1);
+      if (run === undefined || last === undefined) continue;
+      if (groups[from + run.length]?.dotJoined === true || gluedToCode(first, last) || (!labelled && isAmount(run, last))) continue;
+      spans.push({ from: first.start, to: last.end, last4: run.map((group) => group.digits).join('').slice(-4) });
+      from += run.length - 1;
       break;
     }
   }
@@ -74,13 +83,13 @@ type Found = { readonly last4: string };
 function reduceText(text: string, idField: boolean, found: Found[]): string {
   const nfc = text.normalize('NFC');
   const spans = idSpans(nfc, idField);
-  if (spans.length === 0) return text;
-  const last4s = spans.map(({ from, to }) => asciiDigits(nfc.slice(from, to)).replace(/\D/g, '').slice(-4));
-  found.push(...last4s.map((last4) => ({ last4 })));
-  if (idField) return last4s[0]!;
+  const [firstSpan] = spans;
+  if (firstSpan === undefined) return text;
+  found.push(...spans.map(({ last4 }) => ({ last4 })));
+  if (idField) return firstSpan.last4;
   let cursor = 0;
-  const parts = spans.map(({ from, to }, i) => {
-    const part = nfc.slice(cursor, from) + last4s[i];
+  const parts = spans.map(({ from, to, last4 }) => {
+    const part = nfc.slice(cursor, from) + last4;
     cursor = to;
     return part;
   });
