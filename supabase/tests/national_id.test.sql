@@ -3,7 +3,7 @@
 begin;
 \ir _harness.psql
 
-select plan(78);
+select plan(120);
 
 select ok(private.holds_national_id(to_jsonb(U&'012345678901'::text)), 'refuses a bare ID');
 select ok(not private.holds_national_id(to_jsonb(U&'8901'::text)), 'accepts a bare ID once reduced');
@@ -63,6 +63,42 @@ select ok(private.holds_national_id(to_jsonb(U&'CMND 123456789 2015'::text)), 'r
 select ok(not private.holds_national_id(to_jsonb(U&'CMND 6789 2015'::text)), 'accepts a CMND and a year once reduced');
 select ok(private.holds_national_id(to_jsonb(U&'CCCD 012345678901\000A1.234.764 đ'::text)), 'refuses an ID and an amount on the next line');
 select ok(not private.holds_national_id(to_jsonb(U&'CCCD 8901\000A1.234.764 đ'::text)), 'accepts an ID and an amount on the next line once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'Chuyển nhượng cho bà Demo, CCCD số 079180001234, giá 1.500.000.000'::text)), 'refuses an ID and a price after it');
+select ok(not private.holds_national_id(to_jsonb(U&'Chuyển nhượng cho bà Demo, CCCD số 1234, giá 1.500.000.000'::text)), 'accepts an ID and a price after it once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD số 079070001234, ĐT 0901 234 567'::text)), 'refuses an ID and a phone number after it');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD số 1234, ĐT 0901 234 567'::text)), 'accepts an ID and a phone number after it once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD 079070001234, MST 0312345678'::text)), 'refuses an ID and a tax code after it');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD 1234, MST 0312345678'::text)), 'accepts an ID and a tax code after it once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD 079070001234, STK 0123456789'::text)), 'refuses an ID and a bank account after it');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD 1234, STK 0123456789'::text)), 'accepts an ID and a bank account after it once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CMND 023456789; điện thoại 0901234567'::text)), 'refuses a CMND and a phone number after it');
+select ok(not private.holds_national_id(to_jsonb(U&'CMND 6789; điện thoại 0901234567'::text)), 'accepts a CMND and a phone number after it once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'Số CCCD: 079070001234 Mã KH: PE012345678901'::text)), 'refuses an ID and an electricity code after it');
+select ok(not private.holds_national_id(to_jsonb(U&'Số CCCD: 1234 Mã KH: PE012345678901'::text)), 'accepts an ID and an electricity code after it once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD số 079070001234 2021-03-12'::text)), 'refuses an ID and an ISO date');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD số 1234 2021-03-12'::text)), 'accepts an ID and an ISO date once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CMND 123456789 2021-03-12'::text)), 'refuses a CMND and an ISO date');
+select ok(not private.holds_national_id(to_jsonb(U&'CMND 6789 2021-03-12'::text)), 'accepts a CMND and an ISO date once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD 079070001234\000A2021-03-12'::text)), 'refuses an ID and an ISO date on the next line');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD 1234\000A2021-03-12'::text)), 'accepts an ID and an ISO date on the next line once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD 079070001234 20210312'::text)), 'refuses an ID and a compact date');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD 1234 20210312'::text)), 'accepts an ID and a compact date once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD số 079070001234 12/03/21'::text)), 'refuses an ID and a date with a two-digit year');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD số 1234 12/03/21'::text)), 'accepts an ID and a date with a two-digit year once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CMND 123456789 15/03/15'::text)), 'refuses a CMND and a date with a two-digit year');
+select ok(not private.holds_national_id(to_jsonb(U&'CMND 6789 15/03/15'::text)), 'accepts a CMND and a date with a two-digit year once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'CCCD 079070001234\000A1,234,764 đ'::text)), 'refuses an ID and a comma-grouped amount on the next line');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD 1234\000A1,234,764 đ'::text)), 'accepts an ID and a comma-grouped amount on the next line once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'012\2028345\2028678\2028901'::text)), 'refuses line separators between groups');
+select ok(not private.holds_national_id(to_jsonb(U&'8901'::text)), 'accepts line separators between groups once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'012\2029345\2029678\2029901'::text)), 'refuses paragraph separators between groups');
+select ok(not private.holds_national_id(to_jsonb(U&'8901'::text)), 'accepts paragraph separators between groups once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'012\000B345\000B678\000B901'::text)), 'refuses vertical tabs between groups');
+select ok(not private.holds_national_id(to_jsonb(U&'8901'::text)), 'accepts vertical tabs between groups once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'012\000C345\000C678\000C901'::text)), 'refuses form feeds between groups');
+select ok(not private.holds_national_id(to_jsonb(U&'8901'::text)), 'accepts form feeds between groups once reduced');
+select ok(private.holds_national_id(to_jsonb(U&'012\1680345\1680678\1680901'::text)), 'refuses Ogham spaces between groups');
+select ok(not private.holds_national_id(to_jsonb(U&'8901'::text)), 'accepts Ogham spaces between groups once reduced');
 select ok(not private.holds_national_id(to_jsonb(U&'PE012345678901'::text)), 'accepts an electricity customer code');
 select ok(not private.holds_national_id(to_jsonb(U&'Mã khách hàng: PE012345678901'::text)), 'accepts an electricity code after its label');
 select ok(not private.holds_national_id(to_jsonb(U&'Mã khách hàng PE012345678901, kỳ 09/2026'::text)), 'accepts an electricity code and its period');
@@ -83,6 +119,12 @@ select ok(not private.holds_national_id(to_jsonb(U&'\000A12480\000A12892\000A412
 select ok(not private.holds_national_id(to_jsonb(U&'Diện tích 68,4 m2'::text)), 'accepts an area with a decimal comma');
 select ok(not private.holds_national_id(to_jsonb(U&'CCCD 8340'::text)), 'accepts the last four digits after a label');
 select ok(not private.holds_national_id(to_jsonb(U&'CCCD 8340\000A1.234.764 đ\000ASTK 0123456789012'::text)), 'accepts an amount on the line after the last four digits');
+select ok(not private.holds_national_id(to_jsonb(U&'Số định danh: chưa có. ĐT: 0901 234 567'::text)), 'accepts a phone number after a label with no ID');
+select ok(not private.holds_national_id(to_jsonb(U&'ID HĐ: 12345678901'::text)), 'accepts an invoice ID on a bill');
+select ok(not private.holds_national_id(to_jsonb(U&'Giá 123,456,789,012 đ'::text)), 'accepts a 12-digit comma-grouped amount with đ');
+select ok(not private.holds_national_id(to_jsonb(U&'Giá 1,500,000,000 VND'::text)), 'accepts a comma-grouped amount in VND');
+select ok(not private.holds_national_id(to_jsonb(U&'Ngày 20210312'::text)), 'accepts a compact date');
+select ok(not private.holds_national_id(to_jsonb(U&'Ngày 12/03/21'::text)), 'accepts a date with a two-digit year');
 
 select * from finish();
 rollback;

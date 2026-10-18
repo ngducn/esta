@@ -1,9 +1,12 @@
 /** A key that holds an ID number by name, such as `id_last4`, `id_number` or `cccd`. */
 const ID_KEY = /(?:^|_)(?:id|cccd|cmnd|cmtnd|idno|identity)(?:_|$)/i;
 
-/** Words that announce an ID number. A 9- to 11-digit run counts as an ID only within `LABEL_REACH` characters after one. */
+/** Words that announce an ID number. A 9- to 11-digit run counts as an ID only when it directly follows one. */
 const ID_LABEL = /cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\bid\b/giu;
-const LABEL_REACH = 40;
+/** What may stand between a label and its number, as in `CCCD số:` or `Căn cước công dân số`. */
+const FILLER = /^(?:[\s:.#(-]|số|sô|no|nhân dân|công dân|cá nhân|thư)*$/iu;
+/** What may stand between two numbers that share one label, as in `CCCD/CMND: 012345678901/123456789`. */
+const CHAIN = /^\s*(?:\/|và|hoặc)\s*$/iu;
 const LABELLED_LENGTHS = [12, 11, 10, 9] as const;
 
 /**
@@ -19,14 +22,19 @@ const INVISIBLE = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]/gu;
 const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[.,_\-\u2010-\u2015])$/u;
 /** After a label the number may also break across lines or use slashes. */
 const JOIN_AFTER_LABEL = /^(?:\s{1,3}|[./,_\-\u2010-\u2015])$/u;
-/** A date such as 12/03/2021. It never belongs to an ID, so the last four digits of a reduced ID never join one. */
-export const DATE = /(?<!\p{Nd})(?:0?[1-9]|[12]\d|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)\d{2}(?!\p{Nd})/gu;
-/** A Vietnamese amount groups thousands with dots, never starts with 0 (every CCCD does) and names its currency. */
-const AMOUNT = /(?<!\p{Nd}|\p{Nd}\.)(?![0０])\p{Nd}{1,3}(?:\.\p{Nd}{3})*(?!\p{Nd}|\.\p{Nd})(?=\s?(?:đ|đồng|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
+/**
+ * A date such as 12/03/2021, 12/03/21, 2021-03-12 or 20210312. It never belongs to an ID, so the last four digits of a
+ * reduced ID never join one.
+ */
+export const DATE =
+  /(?<!\p{Nd})(?:(?:0?[1-9]|[12]\d|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)?\d{2}|(?:19|20)\d{2}([./-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12]\d|3[01])|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))(?!\p{Nd})/gu;
+/** A Vietnamese amount groups thousands with dots or commas, never starts with 0 (every CCCD does) and names its currency. */
+const AMOUNT =
+  /(?<!\p{Nd}|\p{Nd}[.,])(?![0０])\p{Nd}{1,3}(?:(?:\.\p{Nd}{3})+|(?:,\p{Nd}{3})+)?(?!\p{Nd}|[.,]\p{Nd})(?=\s?(?:đ|đồng|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
 const LETTERS_BEFORE = /\p{L}+$/u;
 
-type Group = { readonly start: number; readonly end: number; readonly digits: string; readonly joinedBy: string | null };
-type Span = { readonly from: number; readonly to: number; readonly last4: string };
+type Group = { readonly start: number; readonly end: number; readonly digits: string; readonly gap: string | null };
+type Span = { readonly from: number; readonly to: number; readonly last4: string; readonly labelled: boolean };
 
 /** Full-width digits become ASCII; NFKC maps them and leaves every other character as NFC has it. */
 const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.normalize('NFKC'));
@@ -38,29 +46,33 @@ function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): Read
 }
 
 /**
- * Finds every national ID in one string: 12 digits anywhere, or 9 to 12 digits after an ID label or in an ID field,
- * the digits possibly grouped. A match spans whole digit groups and stops at the first total that reaches the length,
- * and never takes in a date or an amount, so the date, year or amount after a number stays out of it.
+ * Finds every national ID in one string: 12 digits anywhere, or 9 to 12 digits directly after an ID label or in an ID
+ * field, the digits possibly grouped. A match spans whole digit groups and stops at the first total that reaches the
+ * length, and never takes in a date or an amount, so the date, year or amount after a number stays out of it.
  */
 function idSpans(text: string, idField: boolean): Span[] {
   const labelEnds = [...text.matchAll(ID_LABEL)].map((m) => m.index + m[0].length);
-  const afterLabel = (at: number) => idField || labelEnds.some((end) => end <= at && at - end <= LABEL_REACH);
+  const spans: Span[] = [];
+  const afterLabel = (at: number) => {
+    if (idField || labelEnds.some((end) => end <= at && FILLER.test(text.slice(end, at)))) return true;
+    const previous = spans.at(-1);
+    return previous !== undefined && previous.labelled && CHAIN.test(text.slice(previous.to, at));
+  };
 
   const groups: Group[] = [];
   for (const m of text.matchAll(/\p{Nd}+/gu)) {
     const previous = groups.at(-1);
-    const gap = previous === undefined ? '' : text.slice(previous.end, m.index);
-    const joins = previous !== undefined && (afterLabel(previous.start) ? JOIN_AFTER_LABEL : JOIN).test(gap);
-    groups.push({ start: m.index, end: m.index + m[0].length, digits: asciiDigits(m[0]), joinedBy: joins ? gap : null });
+    const gap = previous === undefined ? null : text.slice(previous.end, m.index);
+    groups.push({ start: m.index, end: m.index + m[0].length, digits: asciiDigits(m[0]), gap });
   }
   const dates = groupsIn(text, groups, DATE);
   const amounts = groupsIn(text, groups, AMOUNT);
 
-  const runOf = (from: number, length: number): Group[] | undefined => {
+  const runOf = (from: number, length: number, join: RegExp): Group[] | undefined => {
     const run: Group[] = [];
     let total = 0;
     for (const group of groups.slice(from)) {
-      if (run.length > 0 && group.joinedBy === null) return undefined;
+      if (run.length > 0 && (group.gap === null || !join.test(group.gap))) return undefined;
       run.push(group);
       total += group.digits.length;
       if (total >= length) return total === length ? run : undefined;
@@ -69,18 +81,17 @@ function idSpans(text: string, idField: boolean): Span[] {
   };
   const codePrefixed = (first: Group) => CODE_PREFIXES.has(LETTERS_BEFORE.exec(text.slice(0, first.start))?.[0].toUpperCase() ?? '');
 
-  const spans: Span[] = [];
   for (let from = 0; from < groups.length; from++) {
     const first = groups[from];
-    if (first === undefined || first.joinedBy === '.') continue;
+    if (first === undefined || first.gap === '.') continue;
     const labelled = afterLabel(first.start);
     for (const length of labelled ? LABELLED_LENGTHS : [12]) {
-      const run = runOf(from, length);
+      const run = runOf(from, length, labelled ? JOIN_AFTER_LABEL : JOIN);
       const last = run?.at(-1);
       if (run === undefined || last === undefined) continue;
-      if (groups[from + run.length]?.joinedBy === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
+      if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
       if (!labelled && codePrefixed(first)) continue;
-      spans.push({ from: first.start, to: last.end, last4: run.map((group) => group.digits).join('').slice(-4) });
+      spans.push({ from: first.start, to: last.end, last4: run.map((group) => group.digits).join('').slice(-4), labelled });
       from += run.length - 1;
       break;
     }
@@ -135,9 +146,9 @@ function reduceNode(node: unknown, key: string, found: Found[]): unknown {
 /**
  * Keeps only the last four digits of every national ID number in an extraction, whatever the model returned
  * (AGENT.md §5.1 step 5, SPEC D11). Every string is read, labelled or not: a 12-digit run becomes its last four
- * digits, and so does a 9- to 12-digit run after an ID label or in an ID field, glued to letters or not. An unlabelled
- * run after a utility code's prefix, such as `PE012345678901`, a date and a dotted amount in đồng stay. Reducing twice
- * changes nothing more. An empty `id_last4` is filled from the text beside it.
+ * digits, and so does a 9- to 12-digit run directly after an ID label or in an ID field, glued to letters or not. An
+ * unlabelled run after a utility code's prefix, such as `PE012345678901`, a date and an amount in đồng stay. Reducing
+ * twice changes nothing more. An empty `id_last4` is filled from the text beside it.
  */
 export function reduceNationalIds<T>(result: T): T {
   return reduceNode(result, '', []) as T;
