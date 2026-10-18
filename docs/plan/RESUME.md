@@ -2,7 +2,7 @@
 
 Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (every 2026-10-17 update; 11:25 and 11:55 are the newest), `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, and `docs/plan/STATUS.md`. Briefs for every owner and lane of this session are in `~/.claude/orchestrate/esta/briefs/`; the root's checklist is `~/.claude/orchestrate/esta/todo.md`.
 
-## Where the run is (handoff written 2026-10-18 15:10 +07)
+## Where the run is (handoff written 2026-10-18 15:10 +07; the operator then stopped the two in-flight agents before either pushed or reported, so rerun both briefs)
 
 **Phase 1 is complete** (#107 merged as b09d79d). Phase 2 and Phase 3 run as two parallel tracks (standing orders 10:55).
 
