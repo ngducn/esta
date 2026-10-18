@@ -54,6 +54,12 @@ describe('decideToolUse', () => {
     }
   });
 
+  it('denies a path that differs from its trimmed form before any other check (#54)', () => {
+    for (const file_path of [' ~/.ssh/id_rsa', '~/.ssh/id_rsa\n', '\t~/.ssh/id_rsa', ' page-1.png', 'page-1.png ', '\npage-1.png', `${join(jobDir, 'page-1.png')}\t`]) {
+      expect(decideToolUse(policy, 'Read', { file_path })).toEqual({ allow: false, reason: `${JSON.stringify(file_path)} has leading or trailing whitespace` });
+    }
+  });
+
   it('denies a Read with no path', () => {
     expect(decideToolUse(policy, 'Read', {}).allow).toBe(false);
   });
