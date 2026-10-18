@@ -8,19 +8,12 @@ Merged this session (session esta-78, from 15:10): #123 P3-07 leases (cb72c18), 
 
 Open, with the next step for each:
 
-- **#141 P2-07: review extracted fields and accept them (track A, rigorous).**
-  - Head 1ca0e56 after fix-forward 1. Round 2 found three blocking items; **fix-forward 2, the last, was started at 22:45 from `briefs/p2-07-ff2.md`** (Opus, slot 3):
-    1. the pre-write ID guard is a TypeScript copy that disagrees with the database CHECK; make Postgres judge every plan string before any write;
-    2. an ID typed into an area box keeps its digits; reduce before parse and bound numbers like the leaf schemas;
-    3. a term range stores its start month; read the end.
-  - **Update 23:05:** fix-forward 2 pushed 89b1b6d (Postgres judges every value through `public.national_id_indexes(jsonb)` before any write; numbers reduced before parse and bounded like the leaf schemas; ranges store their end). Root CI runs on slot 5 (`/tmp/root-ci/pr141-89b1b6d.log`, job logs `/tmp/ci-local/pr-141-89b1b6d/`) and a scoped Opus round 3 runs on slot 3 (`briefs/lane-pr141-r3.md`, evidence `/tmp/swarm-pr141-ev/r3/`). If the evidence folder has no report, rerun that brief.
-  - Clean round 3 and green CI: compare files with main since 148dec1 (only docs moved so far), rebase if needed (conflicts recur in `apps/web/messages/*.json`, `packages/db/src/database.types.ts` and `playwright.config.ts`; scripted resolvers in `/tmp/root-pr124/resolve-messages.py` and `resolve-playwright.py`; regenerate the types on a free slot when git cannot merge them), rerun CI if rebased, then merge, unless Ryan asked to fix the speed budgets in this PR.
-  - A blocking finding that survives fix-forward 2 parks the PR for Ryan.
-  - **Waiting for Ryan:** two speed budgets (photo review LCP 3.3 to 3.7 s against 2.5 s, PDF review 317 KB of script against 200 KB). Default on the PR (comment 6251748949): accept here, require a review-size photo copy at upload and a lazily loaded PDF viewer before P2-08. If he accepts, file that issue and put it in the P2-08 brief.
+- **#141 P2-07 merged as 38413b4** (round 3 PASS, CI 5/5 at 89b1b6d). Ryan did not answer the speed-budget question; the posted default was applied and #148 is a P2-08 entry requirement.
+- **P2-05: the documents vault (track A, rigorous).** Owner spawned 23:30 from 38413b4 with `briefs/p2-05.md` (Opus, slot 3, worktree /tmp/owner-p2-05/wt, migration 306100). Next: code-ready, then the rigorous swarm (live and regression on main, Opus audit with rule 2's no-thumbnail check and the ocr_text D11 path, second opinion on search), CI, merge. If no PR exists for it, rerun the brief.
 - **#142 P3-04: the nightly invoice and lease-status job (track B, rigorous, interrogate list).**
-  - Merge-ready at 65f9bc9: round 2 PASS, CI 5/5 there, base is main 148dec1. **Waiting for Ryan's merge click** (PR comment 6251656881). If main moves before he clicks, rebase and rerun CI, then tell him the new head.
+  - Round 2 PASS at 65f9bc9; the root rebased it onto 38413b4 as **ef5de0d** (no conflicts, range-diff identical) and reran CI on slot 5 (`/tmp/root-ci/pr142-rebased.log`). **Waiting for Ryan's merge click** at ef5de0d once CI is green (PR comments 6251656881 and the new-head note). If main moves again before he clicks, rebase and rerun CI, then tell him the new head.
 - **Next on each track.**
-  - Track A after #141: P2-05 (documents vault with search, sensitive blur and expiring soon). Write its brief from `briefs/p2-07.md`.
+  - Track A after P2-05: P2-06 (multi-page capture into one PDF), then P2-08 (add a property from a certificate photo, the Phase 2 exit; it must include #148, and #147 and #149 should land before it).
   - Track B after #142 merges: P3-08 (lease detail, amend, terminate, renew). Its brief must include #144: terminate and renew through a security definer function that sets end_date to the real termination date, with direct lease status writes revoked (this also closes the cron's early-end gap). Write it from `briefs/p3-04.md`. P3-08 changes the billing SQL, so it cannot start before #142 merges.
 - **Open issues.**
   - `[low]` for cleanup rounds: #114, #115, #118, #119, #121, #125, #126, #129, #131, #133, #134, #135, #137, #138, #140, #143, #144 (P3-08), #145, #146, #147 (D11 on the legal tab forms; do before P2-08).
