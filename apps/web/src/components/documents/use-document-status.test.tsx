@@ -17,7 +17,6 @@ async function advance(ms: number) {
   });
 }
 
-/** Fake-clock times at which the hook asked the server. */
 let asks: number[] = [];
 
 describe('useDocumentStatuses', () => {

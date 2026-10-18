@@ -8,7 +8,6 @@ import { env } from '@/server/env';
 import { createSessionClient } from '@/server/supabase/server';
 import { EXTRACTION_STATUSES, type DocumentStatuses, type ExtractionStatus } from './extraction-status';
 
-
 const status = z.enum(EXTRACTION_STATUSES);
 
 /**
