@@ -1,3 +1,4 @@
+-- PRP-3: ownership shares with the named-on-certificate flag.
 begin;
 \ir _harness.psql
 

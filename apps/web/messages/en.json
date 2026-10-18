@@ -328,7 +328,7 @@
     "unknownOwner": "Person no longer on the list",
     "legacyProvince": "{name} (former)",
     "sort": "Sort",
-    "sortOption": "{sort, select, name {Name} area {Area} rent {Rent} other {Name}}",
+    "sortOption": "{sort, select, name {Name} area {Area} rent {Rent} completeness {Completeness} other {Name}}",
     "certificateAddress": "On the certificate: {address}",
     "noAddress": "No address yet",
     "empty": "No properties yet.",
@@ -378,6 +378,22 @@
     "notFoundBody": "It may have been archived, or it belongs to another household.",
     "notFoundAction": "Back to properties",
     "edit": "Edit details"
+  },
+  "completeness": {
+    "title": "Completeness",
+    "score": "{percent}%",
+    "nextTitle": "Still missing",
+    "complete": "Everything is filled in",
+    "checks": {
+      "parcelIds": "Add the parcel and map sheet numbers",
+      "landArea": "Add the parcel’s land area",
+      "floorArea": "Add the floor area",
+      "ownersComplete": "Fix the ownership shares to reach 100%",
+      "currentAddress": "Add the current address",
+      "pin": "Pin the location on the map",
+      "acquisition": "Add when and how it was acquired",
+      "utilityAccounts": "Add the electricity and water accounts"
+    }
   },
   "propertyLegal": {
     "certificatesTitle": "Certificates",

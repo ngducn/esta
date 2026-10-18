@@ -1,11 +1,21 @@
 import { useTranslations } from 'next-intl';
 
-/** `percent` is the weighted completeness score; the count of missing items is the part people act on, so it is the text. */
 export function CompletenessRing({ percent, missing }: { percent: number; missing: number }) {
   const t = useTranslations('components.completeness');
-  const filled = Math.min(100, Math.max(0, Math.round(percent)));
+  return <CompletenessRingView percent={percent} srLabel={t('percent', { percent: clamp(percent) })} label={t('missing', { count: missing })} />;
+}
+
+const clamp = (percent: number) => Math.min(100, Math.max(0, Math.round(percent)));
+
+/**
+ * `percent` is the weighted completeness score. On a card the count of missing items is the part people act on, so it
+ * is the `label` and the percent is `srLabel`. Labels come translated, so a card renders it on either side of the client
+ * boundary.
+ */
+export function CompletenessRingView({ percent, label, srLabel }: { percent: number; label: string; srLabel?: string }) {
+  const filled = clamp(percent);
   return (
-    <span data-percent={filled} className="inline-flex items-center gap-2">
+    <span data-testid="completeness-ring" data-percent={filled} className="inline-flex items-center gap-2">
       <svg viewBox="0 0 24 24" className="size-6 shrink-0 -rotate-90" fill="none" strokeWidth={3} aria-hidden="true">
         <circle cx="12" cy="12" r="9.5" className="stroke-rule" />
         {filled > 0 ? (
@@ -20,8 +30,8 @@ export function CompletenessRing({ percent, missing }: { percent: number; missin
           />
         ) : null}
       </svg>
-      <span className="sr-only">{t('percent', { percent: filled })}</span>
-      <span className="text-body text-ink">{t('missing', { count: missing })}</span>
+      {srLabel === undefined ? null : <span className="sr-only">{srLabel}</span>}
+      <span className="text-body text-ink">{label}</span>
     </span>
   );
 }

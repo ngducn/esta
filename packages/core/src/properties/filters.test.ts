@@ -32,6 +32,7 @@ function row(nickname: string, fields: Partial<PropertyListRow> = {}): PropertyL
     ownerPartyIds: [],
     monthlyRentVnd: null,
     vacantSince: null,
+    completeness: { percent: 100, missing: 0 },
     ...fields,
   };
 }
@@ -264,5 +265,19 @@ describe('currentAddressText', () => {
     );
     expect(currentAddressText({ addressLine: '', communeName: null, provinceName: 'Tỉnh Long An' })).toBe('Long An');
     expect(currentAddressText({ addressLine: null, communeName: null, provinceName: null })).toBeNull();
+  });
+});
+
+describe('sort by completeness (PRP-8)', () => {
+  const scored = (percent: number) => ({ completeness: { percent, missing: percent === 100 ? 0 : 1 } });
+
+  it('puts the least complete first and ties by name', () => {
+    const rows = [row('Nhà phố Q7', scored(100)), row('Đất vườn Long An', scored(29)), row('Mặt bằng Quận 1', scored(91)), row('Căn hộ Thủ Đức', scored(100))];
+    expect(names(applyPropertyFilters(rows, { ...none, sort: 'completeness' }).rows)).toEqual(['Đất vườn Long An', 'Mặt bằng Quận 1', 'Căn hộ Thủ Đức', 'Nhà phố Q7']);
+  });
+
+  it('round-trips sort=completeness through the URL', () => {
+    expect(parsePropertyFilters({ sort: 'completeness' }).sort).toBe('completeness');
+    expect(propertyFiltersQuery({ ...none, sort: 'completeness' })).toBe('?sort=completeness');
   });
 });

@@ -7,7 +7,12 @@ import { z } from 'zod';
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
 export type PhaseCheck =
-  | { readonly id: string; readonly commands: readonly (readonly string[])[] }
+  | {
+      readonly id: string;
+      readonly commands: readonly (readonly string[])[];
+      /** Test files, from the repo root, that must name `id`; the row fails before running when one does not. */
+      readonly cites?: readonly string[];
+    }
   | { readonly id: string; readonly verify: (repoRoot: string) => Outcome };
 
 /** The redacted record of one live ping: no token, no session id, so any other key fails the parse. */
@@ -41,7 +46,41 @@ export function verifyPingRecord(text: string): Outcome {
   return { pass, detail: `auth ${auth_mode}, agent ${agent_mode}, household_info × ${calls}` };
 }
 
-const e2e = (spec: string) => ['pnpm', 'e2e', spec];
+/** Local CI's policy: a test that fails gets one retry, and a test that fails twice fails its row. */
+const e2e = (spec: string) => ['pnpm', 'e2e', '--retries=1', '--reporter=list', spec];
+
+/** The titles Playwright's list reporter prints under its `N flaky` line: tests that failed once and then passed. */
+export function flakyTests(log: string): string[] {
+  const lines = log.split('\n');
+  const start = lines.findIndex((line) => /^\s+\d+ flaky$/.test(line));
+  if (start === -1) return [];
+  const titles: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (!/^\s{4}\S/.test(line)) break;
+    titles.push(line.trim());
+  }
+  return titles;
+}
+
+type CitedFiles = { core?: readonly string[]; web?: readonly string[]; pgtap?: readonly string[]; e2e?: readonly string[] };
+
+/** An acceptance row runs exactly the tests that cite its id, and checks that each one does. */
+function cited(id: string, files: CitedFiles): PhaseCheck {
+  const core = (files.core ?? []).map((file) => `src/${file}`);
+  const web = (files.web ?? []).map((file) => `src/${file}`);
+  const pgtap = (files.pgtap ?? []).map((name) => `supabase/tests/${name}.test.sql`);
+  const specs = (files.e2e ?? []).map((name) => `e2e/${name}.spec.ts`);
+  return {
+    id,
+    cites: [...core.map((file) => `packages/core/${file}`), ...web.map((file) => `apps/web/${file}`), ...pgtap, ...specs],
+    commands: [
+      ...(core.length === 0 ? [] : [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', ...core]]),
+      ...(web.length === 0 ? [] : [['pnpm', '--filter', '@esta/web', 'exec', 'vitest', 'run', ...web]]),
+      ...(pgtap.length === 0 ? [] : [['pnpm', 'db:test', ...pgtap]]),
+      ...specs.map(e2e),
+    ],
+  };
+}
 
 /** Each phase-final PR adds its phase's rows. */
 export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
@@ -57,6 +96,43 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'FND-9', commands: [e2e('e2e/fnd9-integration.spec.ts')] },
     { id: 'S1', verify: (repoRoot) => verifyPingRecord(readFileSync(join(repoRoot, S1_RECORD), 'utf8')) },
   ],
+  // PRP-7 moved to P2-08. The e2e rows need the slot's web server, as `pnpm e2e` does; Lighthouse starts its own build.
+  '1': [
+    cited('PRP-1', { core: ['properties/form-fields.test.ts'], e2e: ['property-form', 'property-units'] }),
+    cited('PRP-2', { core: ['properties/area.test.ts'], pgtap: ['property_legal'], e2e: ['property-legal'] }),
+    cited('PRP-3', {
+      core: ['properties/ownership.test.ts', 'completeness/score.test.ts'],
+      pgtap: ['ownership_shares', 'completeness_facts'],
+      e2e: ['property-owners', 'property-completeness'],
+    }),
+    cited('PRP-4', { pgtap: ['suggest_current_unit'], e2e: ['property-form'] }),
+    cited('PRP-5', { core: ['maps/parse-maps-url.test.ts'], web: ['server/maps/resolve-short-maps-link.test.ts'], e2e: ['properties-map'] }),
+    cited('PRP-6', { core: ['completeness/registry.test.ts', 'completeness/score.test.ts'], pgtap: ['completeness_facts'], e2e: ['property-completeness'] }),
+    cited('PRP-8', { core: ['properties/filters.test.ts'], pgtap: ['property_list'], e2e: ['properties-list', 'property-units', 'property-completeness'] }),
+    // Every public table has RLS and a pgTAP file naming it, which `pnpm db:test` checks after the tests.
+    { id: 'RLS', commands: [['pnpm', 'db:test']] },
+    { id: 'Lighthouse', commands: [['node', 'scripts/perf/phase-budget.ts']] },
+  ],
+};
+
+export function uncited(repoRoot: string, check: PhaseCheck): string[] {
+  if (!('cites' in check) || check.cites === undefined) return [];
+  const id = new RegExp(`\\b${check.id}\\b`);
+  return check.cites.filter((file) => {
+    try {
+      return !id.test(readFileSync(join(repoRoot, file), 'utf8'));
+    } catch {
+      return true;
+    }
+  });
+}
+
+const readLog = (path: string) => {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch {
+    return '';
+  }
 };
 
 export type RunCommand = (command: readonly string[], log: string) => number;
@@ -92,20 +168,25 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
   for (const check of rows) {
     const started = performance.now();
     let outcome: Outcome;
+    let log: string | undefined;
     if ('verify' in check) {
       try {
         outcome = check.verify(repoRoot);
       } catch (error) {
         outcome = { pass: false, detail: error instanceof Error ? error.message : String(error) };
       }
+    } else if (uncited(repoRoot, check).length > 0) {
+      outcome = { pass: false, detail: `${uncited(repoRoot, check).join(', ')} never names ${check.id}` };
     } else {
-      const log = join(logs, `${check.id}.log`);
-      writeFileSync(log, '');
-      const failedCommand = check.commands.find((command) => run(command, log) !== 0);
-      outcome = { pass: failedCommand === undefined, detail: failedCommand === undefined ? log : `${failedCommand.join(' ')} failed, log ${log}` };
+      const rowLog = join(logs, `${check.id}.log`);
+      log = rowLog;
+      writeFileSync(rowLog, '');
+      const failedCommand = check.commands.find((command) => run(command, rowLog) !== 0);
+      outcome = { pass: failedCommand === undefined, detail: failedCommand === undefined ? rowLog : `${failedCommand.join(' ')} failed, log ${rowLog}` };
     }
     const seconds = Math.round((performance.now() - started) / 1000);
     print(`${outcome.pass ? 'PASS' : 'FAIL'}  ${check.id.padEnd(6)} ${String(seconds).padStart(4)} s  ${outcome.detail}`);
+    if (log !== undefined) for (const title of flakyTests(readLog(log))) print(`       flaky  ${title}`);
     if (!outcome.pass) failed++;
   }
   return failed === 0 ? 0 : 1;

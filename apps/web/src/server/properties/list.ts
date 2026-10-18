@@ -11,11 +11,13 @@ import {
   type PropertyFilters,
   type PropertyListRow,
   type PropertyStatusMark,
+  type PropertyViewRow,
 } from '@esta/core/properties';
 import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
+import { loadCompleteness, type PropertyCompleteness } from './completeness';
 
 export const PROPERTY_ROW_COLUMNS =
   'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary, owner_party_ids, monthly_rent_vnd, vacant_since';
@@ -44,7 +46,7 @@ export const propertyRowSchema = z
     vacant_since: z.string().refine(isIsoDate).nullable().catch(null),
   })
   .transform(
-    (row): PropertyListRow => ({
+    (row): PropertyViewRow => ({
       id: row.id,
       nickname: row.nickname,
       code: row.code,
@@ -75,8 +77,8 @@ const PAGE_SIZE = 1000;
 
 type SessionClient = Awaited<ReturnType<typeof createSessionClient>>;
 
-async function readMatchingRows(supabase: SessionClient, householdId: string, tokens: readonly string[]): Promise<PropertyListRow[]> {
-  const rows: PropertyListRow[] = [];
+async function readMatchingRows(supabase: SessionClient, householdId: string, tokens: readonly string[]): Promise<PropertyViewRow[]> {
+  const rows: PropertyViewRow[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = supabase.from('property_list_rows').select(PROPERTY_ROW_COLUMNS).eq('household_id', householdId);
     for (const token of tokens) query = query.ilike('search_text', likeToken(token));
@@ -101,16 +103,23 @@ async function readOwnerNames(supabase: SessionClient, householdId: string): Pro
   return new Map(data.map((party) => [party.id, party.full_name]));
 }
 
+/** A property created between the two reads has no facts yet; it shows as complete until the next load. */
+function summary(score: PropertyCompleteness | undefined): PropertyListRow['completeness'] {
+  return score === undefined ? { percent: 100, missing: 0 } : { percent: score.percent, missing: score.failing.length };
+}
+
 /** RLS already limits the rows to the member's households; the household predicate keeps a member of two to one list. */
 export async function listProperties(householdId: string, filters: PropertyFilters, asOf: IsoDate): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
-  const [rows, count, ownerNames] = await Promise.all([
+  const [viewRows, count, ownerNames, scores] = await Promise.all([
     readMatchingRows(supabase, householdId, tokens),
     tokens.length === 0 ? null : supabase.from('property_list_rows').select('id', { count: 'exact', head: true }).eq('household_id', householdId),
     readOwnerNames(supabase, householdId),
+    loadCompleteness(householdId),
   ]);
   if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
+  const rows = viewRows.map((row): PropertyListRow => ({ ...row, completeness: summary(scores.get(row.id)) }));
   const matches = preferPhrase(rows, tokens);
   const filtered = applyPropertyFilters(matches, filters);
   return {

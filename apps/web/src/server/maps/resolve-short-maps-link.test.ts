@@ -105,7 +105,7 @@ describe('resolveShortMapsLink over fixtures/maps/links.json', () => {
   });
 });
 
-describe('resolveShortMapsLink', () => {
+describe('resolveShortMapsLink SSRF guards (PRP-5)', () => {
   test('logs one line per hop and one outcome line', async () => {
     const { agent } = scriptedAgent('https://maps.app.goo.gl/DemoLog', [
       { status: 302, location: 'https://goo.gl/maps/DemoLog2' },

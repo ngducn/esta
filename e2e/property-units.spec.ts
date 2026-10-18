@@ -55,7 +55,7 @@ async function expectRuleOne(page: Page, available: string) {
   await expect(page.getByTestId('unit-available')).toHaveCount(1);
 }
 
-test('rule 1: Cho thuê on Dãy trọ Dĩ An lists Phòng 1 to Phòng 8 with list rents, and Phòng 8 is free from 01/08/2026', async ({ page }) => {
+test('rule 1: Cho thuê on Dãy trọ Dĩ An lists Phòng 1 to Phòng 8 with list rents, and Phòng 8 is free from 01/08/2026 (PRP-1)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   await page.goto(`/properties/${propertyId(1, 'di-an')}`);
   await page.getByRole('link', { name: 'Cho thuê', exact: true }).click();
@@ -125,7 +125,7 @@ test('rule 3: an electricity account on Phòng 2 lists under Phòng 2 and a wate
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('rule 4: Tài sản sorted by Giá thuê leads with Mặt bằng Quận 1 at 30 tr and leaves the land without rent last', async ({ page }) => {
+test('rule 4: Tài sản sorted by Giá thuê leads with Mặt bằng Quận 1 at 30 tr and leaves the land without rent last (PRP-8)', async ({ page }) => {
   await open(page, 'ryan.lane4@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
   await page.getByRole('combobox', { name: /^Sắp xếp/ }).selectOption({ label: 'Giá thuê' });

@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { EmptyState } from '@/components/empty-state';
 import { CertificateCard } from '@/components/legal/certificate-card';
+import { FocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { OwnersSection } from '@/components/legal/owners-section';
 import { OwnershipSheet } from '@/components/legal/ownership-sheet';
 import { ParcelList, ParcelTotal } from '@/components/legal/parcel-list';
@@ -92,6 +93,7 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
 
   return (
     <PropertyDetailFrame property={property} tab="legal">
+      <FocusAnchor />
       <PropertyIntl locale={locale} messages={{ components: { date, toast }, propertyLegal: partyMessages, propertyOwners: messages.propertyOwners }}>
         <UndoToastProvider>
           <div className="grid gap-8 lg:grid-cols-2 lg:items-start">

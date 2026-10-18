@@ -328,7 +328,7 @@
     "unknownOwner": "Người không còn trong danh sách",
     "legacyProvince": "{name} (cũ)",
     "sort": "Sắp xếp",
-    "sortOption": "{sort, select, name {Tên} area {Khu vực} rent {Giá thuê} other {Tên}}",
+    "sortOption": "{sort, select, name {Tên} area {Khu vực} rent {Giá thuê} completeness {Mức đầy đủ} other {Tên}}",
     "certificateAddress": "Theo sổ: {address}",
     "noAddress": "Chưa có địa chỉ",
     "empty": "Chưa có tài sản nào.",
@@ -378,6 +378,22 @@
     "notFoundBody": "Tài sản có thể đã được lưu trữ, hoặc không thuộc gia đình này.",
     "notFoundAction": "Về danh sách tài sản",
     "edit": "Sửa thông tin"
+  },
+  "completeness": {
+    "title": "Mức đầy đủ",
+    "score": "{percent}%",
+    "nextTitle": "Còn thiếu",
+    "complete": "Đã đủ thông tin",
+    "checks": {
+      "parcelIds": "Thêm số thửa và số tờ bản đồ",
+      "landArea": "Thêm diện tích thửa đất",
+      "floorArea": "Thêm diện tích sàn",
+      "ownersComplete": "Sửa tỷ lệ sở hữu cho đủ 100%",
+      "currentAddress": "Thêm địa chỉ hiện nay",
+      "pin": "Ghim vị trí trên bản đồ",
+      "acquisition": "Thêm ngày và hình thức nhận tài sản",
+      "utilityAccounts": "Thêm tài khoản điện, nước"
+    }
   },
   "propertyLegal": {
     "certificatesTitle": "Giấy chứng nhận",

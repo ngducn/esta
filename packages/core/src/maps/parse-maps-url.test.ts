@@ -9,7 +9,7 @@ describe('parseMapsUrl over fixtures/maps/links.json', () => {
   });
 });
 
-describe('the DOMAIN-VN §9 rows', () => {
+describe('the DOMAIN-VN §9 rows (PRP-5)', () => {
   test('!3d and !4d give a place point even when @ disagrees', () => {
     const parsed = parseMapsUrl('https://www.google.com/maps/place/X/@1.5,100.5,9z/data=!3d10.7769!4d106.7009');
     expect(parsed).toMatchObject({ kind: 'point', source: 'place', point: { lat: 10.7769, lng: 106.7009 } });

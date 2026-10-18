@@ -64,7 +64,7 @@ async function expectRule2Results(page: Page) {
   await expect(nicknames(page)).toHaveText(['Nhà phố Q7']);
 }
 
-test('rule 1: Mẹ sees seven cards, each led by its photo or its kind tile, with both addresses', async ({ page }) => {
+test('rule 1: Mẹ sees seven cards, each led by its photo or its kind tile, with both addresses (PRP-8)', async ({ page }) => {
   onlyOn('mobile');
   await open(page, 'me.lane1@demo.esta.test', 'light');
   await expect(nicknames(page)).toHaveText(LANE_SEVEN);
@@ -235,11 +235,11 @@ test('no match names the query and offers Xóa bộ lọc', async ({ page }) => 
   await expect(search(page)).toHaveValue('');
 });
 
-test('sort offers name, area and rent in a 44 px control, and the URL keeps the choice', async ({ page }) => {
+test('sort offers name, area, rent and completeness in a 44 px control, and the URL keeps the choice', async ({ page }) => {
   onlyOn('mobile');
   await open(page, 'me.lane1@demo.esta.test', 'light');
   const sort = page.getByRole('combobox', { name: /^Sắp xếp/ });
-  await expect(sort.locator('option')).toHaveText(['Tên', 'Khu vực', 'Giá thuê']);
+  await expect(sort.locator('option')).toHaveText(['Tên', 'Khu vực', 'Giá thuê', 'Mức đầy đủ']);
   const box = await sort.boundingBox();
   expect(box?.height, 'the select itself is a 44 px target').toBeGreaterThanOrEqual(44);
   expect(box?.width, 'the select itself is a 44 px target').toBeGreaterThanOrEqual(44);

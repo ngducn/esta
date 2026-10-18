@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { checkPhase, PHASE_CHECKS, S1_RECORD, verifyPingRecord, type PhaseCheck } from './phase-exit.ts';
+import { checkPhase, flakyTests, PHASE_CHECKS, S1_RECORD, uncited, verifyPingRecord, type PhaseCheck } from './phase-exit.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const logDir = mkdtempSync(join(tmpdir(), 'esta-phase-test-'));
@@ -59,6 +59,70 @@ describe('checkPhase', () => {
 
   it('lists FND-1 to FND-7, FND-9 and S1 for phase 0', () => {
     expect(PHASE_CHECKS['0']?.map((check) => check.id)).toEqual(['FND-1', 'FND-2', 'FND-3', 'FND-4', 'FND-5', 'FND-6', 'FND-7', 'FND-9', 'S1']);
+  });
+
+  it('lists PRP-1 to PRP-6, PRP-8, RLS and Lighthouse for phase 1, with PRP-7 left to Phase 2', () => {
+    expect(PHASE_CHECKS['1']?.map((check) => check.id)).toEqual(['PRP-1', 'PRP-2', 'PRP-3', 'PRP-4', 'PRP-5', 'PRP-6', 'PRP-8', 'RLS', 'Lighthouse']);
+  });
+
+  it('runs only files that cite their row id, at least one per row', () => {
+    for (const check of PHASE_CHECKS['1'] ?? []) {
+      if (!('commands' in check) || check.cites === undefined) continue;
+      expect(check.cites.length, check.id).toBeGreaterThan(0);
+      expect(uncited(repoRoot, check), check.id).toEqual([]);
+    }
+  });
+
+  it('fails a row whose file does not cite its id, or is missing, without running it', () => {
+    const { code, lines } = runPhase('9', {
+      '9': [
+        { id: 'PRP-2', cites: ['scripts/slot.ts'], commands: [node('process.exit(0)')] },
+        { id: 'PRP-9', cites: ['e2e/missing.spec.ts'], commands: [node('process.exit(0)')] },
+      ],
+    });
+    expect(code).toBe(1);
+    expect(lines).toEqual([
+      expect.stringMatching(/^FAIL {2}PRP-2 .*scripts\/slot\.ts never names PRP-2$/),
+      expect.stringMatching(/^FAIL {2}PRP-9 .*e2e\/missing\.spec\.ts never names PRP-9$/),
+    ]);
+  });
+
+  it('runs every phase 1 spec with one retry, as local CI does', () => {
+    const specCommands = (PHASE_CHECKS['1'] ?? []).flatMap((check) => ('commands' in check ? check.commands : [])).filter((command) => command[1] === 'e2e');
+    expect(specCommands.length).toBeGreaterThan(0);
+    for (const command of specCommands) expect(command, command.join(' ')).toEqual(expect.arrayContaining(['--retries=1', '--reporter=list']));
+  });
+
+  it('passes a row whose test needed its retry and names that test as flaky', () => {
+    const epilogue = '  1 flaky\n    [mobile] › e2e/a.spec.ts:3:1 › opens the page\n  4 passed (9.1s)\n';
+    const { code, lines } = runPhase('9', { '9': [{ id: 'A', commands: [node(`process.stdout.write(${JSON.stringify(epilogue)})`)] }] });
+    expect(code).toBe(0);
+    expect(lines).toEqual([expect.stringMatching(/^PASS {2}A /), '       flaky  [mobile] › e2e/a.spec.ts:3:1 › opens the page']);
+  });
+
+  it('fails a row whose test failed on its retry too', () => {
+    const epilogue = '  1 failed\n    [mobile] › e2e/a.spec.ts:3:1 › opens the page\n';
+    const { code, lines } = runPhase('9', { '9': [{ id: 'A', commands: [node(`process.stdout.write(${JSON.stringify(epilogue)}); process.exit(1)`)] }] });
+    expect(code).toBe(1);
+    expect(lines).toEqual([expect.stringMatching(/^FAIL {2}A /)]);
+  });
+
+  it('exits 1 when one phase 1 row fails', () => {
+    const rows = (PHASE_CHECKS['1'] ?? []).map((check, index): PhaseCheck => ({ id: check.id, commands: [node(`process.exit(${index === 7 ? 1 : 0})`)] }));
+    const { code, lines } = runPhase('1', { '1': rows });
+    expect(code).toBe(1);
+    expect(lines.filter((line) => line.startsWith('FAIL'))).toEqual([expect.stringMatching(/^FAIL {2}RLS /)]);
+  });
+});
+
+describe('flakyTests', () => {
+  it('reads the titles under the flaky count and stops at the next count', () => {
+    const log = ['Running 6 tests', '  1 failed', '    [mobile] › e2e/b.spec.ts:9:1 › broke', '  2 flaky', '    [mobile] › e2e/a.spec.ts:3:1 › one', '    [mobile] › e2e/a.spec.ts:20:1 › two', '  3 passed (9s)'].join('\n');
+    expect(flakyTests(log)).toEqual(['[mobile] › e2e/a.spec.ts:3:1 › one', '[mobile] › e2e/a.spec.ts:20:1 › two']);
+  });
+
+  it('finds none in a clean run', () => {
+    expect(flakyTests('  8 passed (30s)\n')).toEqual([]);
   });
 });
 

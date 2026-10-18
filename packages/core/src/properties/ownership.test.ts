@@ -42,7 +42,7 @@ describe('formatShareBp', () => {
   });
 });
 
-describe('ownershipStatus', () => {
+describe('ownershipStatus (PRP-3)', () => {
   const shares = (...bps: number[]) => bps.map((share_bp) => ({ share_bp }));
 
   it('is complete at exactly 10000 bp', () => {

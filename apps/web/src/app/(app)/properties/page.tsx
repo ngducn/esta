@@ -46,10 +46,11 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const [params, member, clock] = await Promise.all([searchParams, requireMember(), getClock()]);
   const filters = parsePropertyFilters(params);
   const archivedId = locateParam.safeParse(params[ARCHIVED_PARAM]).data ?? null;
-  const [list, nav, t, locale, archived] = await Promise.all([
+  const [list, nav, t, tc, locale, archived] = await Promise.all([
     listProperties(member.household.id, filters, clock.today()),
     getTranslations('nav'),
     getTranslations('properties'),
+    getTranslations('components.completeness'),
     getLocale(),
     archivedId === null ? null : loadArchivedNickname(member.household.id, archivedId),
   ]);
@@ -76,6 +77,11 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
       photoUrl: row.coverPhotoPath === null ? null : (photos.get(row.coverPhotoPath) ?? null),
       rent: row.monthlyRentVnd === null ? null : { label: t('listRent'), amount: formatVndCompact(row.monthlyRentVnd, locale) },
       vacant: status === undefined ? null : t('vacantSince', { date: formatDayMonth(status.since, locale) }),
+      completeness: {
+        percent: row.completeness.percent,
+        label: tc('missing', { count: row.completeness.missing }),
+        srLabel: tc('percent', { percent: row.completeness.percent }),
+      },
     };
   };
 

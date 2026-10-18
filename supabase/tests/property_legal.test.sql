@@ -1,3 +1,4 @@
+-- PRP-2: parcels, structures and certificates per property, several parcels each.
 begin;
 \ir _harness.psql
 
