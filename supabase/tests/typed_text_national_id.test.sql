@@ -3,7 +3,7 @@
 begin;
 \ir _harness.psql
 
-select plan(37);
+select plan(64);
 
 select tests.create_household('a') as a \gset
 
@@ -115,6 +115,35 @@ select lives_ok($$ update public.parties set notes = 'CMND 6789 cấp ngày 15·
 
 select is((select origin_text from public.parcels where id = '00000000-0000-4000-8000-00000000f0a1'), 'Nhận chuyển nhượng từ ông Demo, CCCD 6789',
   'a refused write leaves the parcel as the last accepted write left it');
+
+-- ordinary family wording that main kept: an unaccented word label must not turn it into an ID
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Thế chấp tại Ngân hàng Demo theo hồ sơ thế chấp số 123456789')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Thế chấp tại Ngân hàng Demo theo hồ sơ thế chấp số 123456789');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Đăng ký thế chấp ngày 12/03/2021, số hồ sơ 0123456789')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Đăng ký thế chấp ngày 12/03/2021, số hồ sơ 0123456789');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Xóa thế chấp theo hồ sơ số 001234567')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Xóa thế chấp theo hồ sơ số 001234567');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Sổ thế chấp ở ngân hàng, gọi anh Demo 0903123456')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Sổ thế chấp ở ngân hàng, gọi anh Demo 0903123456');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Hồ sơ thể hiện chủ cũ, ĐT 0903123456')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Hồ sơ thể hiện chủ cũ, ĐT 0903123456');
+select lives_ok($$ update public.parcels set origin_text = 'Cập nhật hồ sơ theo đơn số 123456789' where id = '00000000-0000-4000-8000-00000000f0a1' $$, 'parcels.origin_text keeps Cập nhật hồ sơ theo đơn số 123456789');
+select lives_ok($$ update public.parties set notes = 'Sổ theo dõi thuê nhà, gọi 0903123456' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps Sổ theo dõi thuê nhà, gọi 0903123456');
+select lives_ok($$ update public.parties set notes = 'Nhà chúng mình, gọi Demo 0903123456' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps Nhà chúng mình, gọi Demo 0903123456');
+select lives_ok($$ update public.parties set address_text = 'Sở Thể thao Demo, ĐT 0283812345' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.address_text keeps Sở Thể thao Demo, ĐT 0283812345');
+select lives_ok($$ update public.documents set title = 'Hồ sơ thế chấp HĐ 0123456789' where id = '00000000-0000-4000-8000-00000000d0a1' $$, 'documents.title keeps Hồ sơ thế chấp HĐ 0123456789');
+select lives_ok($$ update public.parties set notes = 'Hồ sơ thế chấp tại Ngân hàng Demo, MST 0312345678' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps Hồ sơ thế chấp tại Ngân hàng Demo, MST 0312345678');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Giá chuyển nhượng 1.500.000.000 đồng')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Giá chuyển nhượng 1.500.000.000 đồng');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Giá 125·000·000·000 đồng')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Giá 125·000·000·000 đồng');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Ngày 15·03·2015')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Ngày 15·03·2015');
+select lives_ok($$ update public.parties set notes = 'Gọi 0903 123 456' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps Gọi 0903 123 456');
+select lives_ok($$ update public.parcels set origin_text = 'Thửa 123, tờ bản đồ 45' where id = '00000000-0000-4000-8000-00000000f0a1' $$, 'parcels.origin_text keeps Thửa 123, tờ bản đồ 45');
+select lives_ok($$ update public.parties set address_text = 'Số 12 đường Demo, phường Demo, quận 1' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.address_text keeps Số 12 đường Demo, phường Demo, quận 1');
+select lives_ok($$ update public.parties set tax_code = '0312345678' where id = '00000000-0000-4000-8000-00000000aa02' $$, 'parties.tax_code keeps 0312345678');
+select lives_ok($$ update public.parties set notes = 'CCCD 6789' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps CCCD 6789');
+select lives_ok($$ update public.structures set structure_text = 'Nhà 3 tầng, cửa sổ thép, ĐT chủ 0903123456' where id = '00000000-0000-4000-8000-00000000e0a1' $$, 'structures.structure_text keeps Nhà 3 tầng, cửa sổ thép, ĐT chủ 0903123456');
+select lives_ok($$ update public.parties set notes = 'Thêm số thêm 0903123456' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps Thêm số thêm 0903123456');
+select lives_ok($$ update public.parties set notes = 'Tiền chung mình góp, STK 0123456789' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps Tiền chung mình góp, STK 0123456789');
+select lives_ok($$ update public.documents set title = 'Sổ đỏ, liên hệ 0903123456' where id = '00000000-0000-4000-8000-00000000d0a1' $$, 'documents.title keeps Sổ đỏ, liên hệ 0903123456');
+select lives_ok($$ update public.certificates set annotations = jsonb_build_array(jsonb_build_object('kind', 'other', 'text', 'Hồ sơ địa chính, ĐT 0903123456')) where id = '00000000-0000-4000-8000-00000000c0a1' $$, 'certificates.annotations keeps Hồ sơ địa chính, ĐT 0903123456');
+select lives_ok($$ update public.parcels set origin_text = 'Theo hồ sơ số 0123456789' where id = '00000000-0000-4000-8000-00000000f0a1' $$, 'parcels.origin_text keeps Theo hồ sơ số 0123456789');
+select lives_ok($$ update public.parties set notes = 'số thứ tự 0123456789' where id = '00000000-0000-4000-8000-00000000aa01' $$, 'parties.notes keeps số thứ tự 0123456789');
+select lives_ok($$ update public.parcels set origin_text = 'Số tờ 12, số thửa 123456789' where id = '00000000-0000-4000-8000-00000000f0a1' $$, 'parcels.origin_text keeps Số tờ 12, số thửa 123456789');
 
 select is(
   (select array_agg(conname::text order by conname) from pg_constraint where conname in (

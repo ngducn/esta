@@ -71,7 +71,29 @@ describe('INPUT_KINDS', () => {
     ['months joined by a dash', '10/1993 - 10/2043', '2043-10-31'],
     ['months joined by an en dash', 'Tháng 10/1993 – tháng 10/2043', '2043-10-31'],
     ['months joined by den', 'Tu thang 10/1993 den thang 10/2043', '2043-10-31'],
+    ['two dates joined by tới', '15/10/1993 tới 15/10/2043', '2043-10-15'],
+    ['a range with tới', 'Từ 15/10/1993 tới 15/10/2043', '2043-10-15'],
+    ['a range with toi, without accents', 'Tu 15/10/1993 toi 15/10/2043', '2043-10-15'],
+    ['an end date after tới ngày', 'Tới ngày 15/10/2043', '2043-10-15'],
     ['an end month without accents', 'Den thang 10/2043', '2043-10-31'],
+    ['an arrow between two dates', '15/10/1993 → 15/10/2043', '2043-10-15'],
+    ['an arrow before an end month', 'Từ 25-9-2098 → 8-2041', '2041-08-31'],
+    ['a tilde between ISO dates', '1951-03-05 ~ 1954-06-04', '1954-06-04'],
+    ['a minus sign between two dates', '15/10/1993 \u2212 15/10/2043', '2043-10-15'],
+    ['a minus sign after TU NGAY', 'TU NGAY 28.10.1978 \u2212 6/4/2096', '2096-04-06'],
+    ['an issue date and a dash before Từ … đến', 'Cấp ngày 12/03/2005 - Từ 15/10/1993 đến 15/10/2043', '2043-10-15'],
+    ['an issue date and an en dash before Từ ngày … đến ngày', 'Ngày cấp 12/03/2005 – Từ ngày 15/10/1993 đến ngày 15/10/2043', '2043-10-15'],
+    ['a decision month and a dash before Từ … đến', 'QĐ 12/2020 - Từ 15/10/1993 đến 15/10/2043', '2043-10-15'],
+    ['a decision number and date before Từ … đến', 'Số 45/2019/QĐ-UBND ngày 12/03/2019 - Từ 15/10/1993 đến 15/10/2043', '2043-10-15'],
+    ['an ISO issue date and a dash before Từ … đến', 'GCN cấp 2005-03-12 - Từ 15/10/1993 đến 15/10/2043', '2043-10-15'],
+    ['an issue date and an em dash before a dash range', 'Cấp ngày 12/03/2005 — Từ 27/02/1973 - 29/05/1953', '1953-05-29'],
+    ['a range and then a dash before an issue date', 'Từ 15/10/1993 đến 15/10/2043 - cấp ngày 12/03/2005', '2043-10-15'],
+    ['an end date before a note naming its start', 'Đến 15/10/2043 (gia hạn từ 15/10/1993)', '2043-10-15'],
+    ['a date before tư nhân', '01/12/2066 (sở hữu tư nhân)', '2066-12-01'],
+    ['a date before tự động', '15/10/2043 (tự động gia hạn)', '2043-10-15'],
+    ['a date before đền bù', '15/10/2043 (đền bù)', '2043-10-15'],
+    ['a date after tứ', 'tứ 27/02/1973', '1973-02-27'],
+    ['a range written in NFD', 'T\u01B0\u0300 15/10/1993 \u0111e\u0302\u0301n 15/10/2043', '2043-10-15'],
   ] as const)('reads a term written as %s as its end', (_, text, end) => {
     expect(INPUT_KINDS.term.parse(text)).toEqual({ ok: true, value: end });
   });
@@ -80,6 +102,7 @@ describe('INPUT_KINDS', () => {
     ['a start without accents', 'Tu 15/10/1993'],
     ['a start date and a dash with no end date after it', '15/10/1993 - 50 năm'],
     ['a period from a start without accents', '50 nam ke tu ngay 15/10/1993'],
+    ['a date and a dash before words, read as a start', '15/10/2043 - gia hạn'],
   ] as const)('refuses a term that names only %s', (_, text) => {
     expect(INPUT_KINDS.term.parse(text)).toEqual({ ok: false });
   });

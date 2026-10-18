@@ -99,6 +99,13 @@ describe('lease actions against local Supabase (LSE-1 to LSE-3)', () => {
     expect(data).toEqual({ phone: '+84903123456', tags: ['tenant'] });
   });
 
+  it('refuses a tenant name holding a full ID before any write, naming the name (D11)', async () => {
+    const name = 'Lê Văn Demo CCCD 079123456789';
+    expect(await createTenant({ full_name: name, phone: '0903 123 456' })).toEqual({ ok: false, reason: 'national_id' });
+    const { data } = await client.from('parties').select('id').eq('household_id', HOUSEHOLD).eq('full_name', name);
+    expect(data).toEqual([]);
+  });
+
   it('refuses to activate a draft without rent and leaves it a draft', async () => {
     const saved = await saveLease(propertyId, null, draft(unitId, tenantId, null));
     if (!saved.ok) throw new Error(saved.reason);
