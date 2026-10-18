@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -54,6 +54,13 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 }
 
 /** Keeps a result on screen long enough to read in the PR video; a normal run does not wait. */
+/** The confirm button waits for the preview of the date on screen, then fades its colors in; axe reads it once settled. */
+async function previewSettled(dialog: Locator) {
+  const confirm = dialog.getByTestId('confirm-activate');
+  await expect(confirm).toBeEnabled();
+  await confirm.evaluate((button) => Promise.all(button.getAnimations().map((animation) => animation.finished)));
+}
+
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
 
 const unitRow = (page: Page, label: string) => page.getByTestId('unit-row').filter({ has: page.getByRole('heading', { name: label, exact: true }) });
@@ -118,6 +125,7 @@ test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease pa
   const dialog = page.getByTestId('activate-dialog');
   await expect(dialog).toBeVisible();
   await dialog.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }).fill('30/09/2026');
+  await previewSettled(dialog);
   await expect(dialog.getByTestId('preview-bill').first()).toContainText(`Kỳ 01/10/2026 – 31/10/2026Phát hành ngay · hạn thu 01/10/2026${'3.000.000'}${NBSP}₫`);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('activate-preview-390-light.png') });
@@ -166,7 +174,7 @@ test('lane 3: a quarterly lease paid through 30/09 bills only October, says so b
   const other = await context.newPage();
   await other.setViewportSize(DESKTOP);
   await other.goto(activatePath);
-  await expect(other.getByTestId('preview-bill')).toHaveCount(1);
+  await expect(other.getByTestId('preview-bill')).toHaveCount(2);
 
   await page.goto(activatePath);
   const dialog = page.getByTestId('activate-dialog');
@@ -176,14 +184,16 @@ test('lane 3: a quarterly lease paid through 30/09 bills only October, says so b
     `Kỳ 01/10/2026 – 31/10/2026Phát hành ngay · hạn thu 01/10/2026${'10.108.696'}${NBSP}₫`,
     `Kỳ 01/11/2026 – 31/01/2027Bản nháp · hạn thu 01/11/2026${'30.000.000'}${NBSP}₫`,
   ]);
+  await previewSettled(dialog);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('activate-preview-1440-dark.png') });
   await dialog.getByTestId('confirm-activate').click();
   await expect(toast(page)).toContainText('Đã kích hoạt hợp đồng. Hóa đơn tháng 10 đã phát hành.');
-  await expect(page.getByTestId('invoice-row').first()).toContainText('Kỳ 01/10/2026 – 31/10/2026');
+  await expect(page.getByTestId('invoice-row').filter({ hasText: 'Kỳ 01/10/2026 – 31/10/2026' }).locator('data')).toHaveText(`10.108.696${NBSP}₫`);
 
   const late = other.getByTestId('activate-dialog');
   await late.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }).fill('31/10/2026');
+  await previewSettled(late);
   await late.getByTestId('confirm-activate').click();
   await expect(late.getByTestId('activate-refusals')).toContainText('Hợp đồng này đã được kích hoạt ở thẻ hoặc máy khác');
   await other.screenshot({ path: test.info().outputPath('activate-already-active-1440-dark.png') });
