@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { existsSync, mkdtempSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { parseSlot } from '../scripts/slot.ts';
@@ -115,6 +117,12 @@ test('rule 1: Mẹ uploads the Bảo Lộc scan, sees Đang đọc, then Chờ x
   await expect(pill(page, documentId)).toHaveText('Chờ xem lại', { timeout: 10_000 });
   await shot(page, 'p2-03-waiting-390x844-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
+  const asked: string[] = [];
+  page.on('request', (sent) => {
+    if (sent.method() === 'POST' && sent.headers()['next-action'] !== undefined) asked.push(sent.url());
+  });
+  await page.waitForTimeout(6_000);
+  expect(asked, 'no status request once nothing on screen is being read').toEqual([]);
 
   const [extraction] = await extractions(page, documentId);
   expect(extraction?.status).toBe('needs_review');
@@ -122,7 +130,9 @@ test('rule 1: Mẹ uploads the Bảo Lộc scan, sees Đang đọc, then Chờ x
   expect(items).toEqual([{ title: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }]);
 
   await page.goto('/assistant');
-  await expect(page.getByTestId('new-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first()).toBeVisible();
+  const item = page.getByTestId('new-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first();
+  await expect(item).toBeVisible();
+  await expect(item, 'dated by the frozen test clock').toContainText('07/10/2026');
   await shot(page, 'p2-03-new-items-390x844-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
@@ -146,6 +156,30 @@ test('rule 2: only the certificate queues a job keyed by its bytes; the photo an
   await shot(page, 'p2-03-reading-1440x900-dark');
 });
 
+test('rule 3: a worker killed right after save_extraction re-runs the job and leaves one extraction and one item (AGT-1)', async ({ page, request }) => {
+  await stopWorker();
+  await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
+  await page.goto(`/properties/${propertyId(3, 'bao-loc')}/documents`);
+  const documentId = await upload(page, await fixture('gcn_2024-low-light').upload(), { category: 'certificate', title: 'Sổ hồng lane 3' });
+  const [queued] = await extractions(page, documentId);
+  const jobOf = async () => (await serviceGet<{ status: string; attempts: number }[]>(page, `agent_jobs?id=eq.${queued?.job_id}&select=status,attempts`))[0];
+
+  // Earlier rules may leave other households' jobs queued, so the crash waits for this extraction's save.
+  const crashed = await startAgentWorker({ crashOn: new RegExp(`save_extraction ok ${queued?.id}`) });
+  await expect.poll(() => crashed.running(), { timeout: 15_000 }).toBe(false);
+  await crashed.exited();
+  expect(await jobOf(), 'the worker died after save_extraction and before it finished the job').toEqual({ status: 'running', attempts: 1 });
+
+  // The claim takes back a running job only after its 5 minute timeout and 2 minutes of grace.
+  await setClock(request, '2026-10-07T09:08:00+07:00');
+  await startWorker();
+  await expect.poll(jobOf, { timeout: 10_000 }).toEqual({ status: 'done', attempts: 2 });
+  expect((await extractions(page, documentId)).map((row) => row.status)).toEqual(['needs_review']);
+  expect(await serviceGet<unknown[]>(page, `agent_items?dedupe_key=eq.extract_review:${queued?.id}&select=id`)).toHaveLength(1);
+  await page.reload();
+  await expect(pill(page, documentId)).toHaveText('Chờ xem lại');
+});
+
 test('rule 4: the saved result of a photographed sổ hồng keeps only the last four digits of each ID (D11)', async ({ page }) => {
   await startWorker();
   await open(page, 'ryan.lane4@demo.esta.test', 'light', DESKTOP);
@@ -159,6 +193,58 @@ test('rule 4: the saved result of a photographed sổ hồng keeps only the last
   expect(text).not.toMatch(/[0-9]{12}/);
   const holders = (extraction?.result as { holders: { id_last4: { value: string } }[] }).holders;
   expect(holders.map((holder) => holder.id_last4.value).toSorted()).toEqual(photo.printedIdNumbers.map((number) => number.slice(-4)).toSorted());
+});
+
+type Run = { num_turns: number; tool_calls: Record<string, number>; usage: { permission_denials?: { tool_name: string; tool_input: { file_path?: string } }[] } };
+
+test('rule 5: a repair turn saves area_m2 as a number, a read outside the job directory is denied, and no job directory is left (DOC-5)', async ({ page }) => {
+  const home = mkdtempSync(join(tmpdir(), 'esta-e2e-agent-'));
+  await stopWorker();
+  worker = await startAgentWorker({ home });
+  await open(page, 'me.lane5@demo.esta.test', 'light', PHONE);
+  await page.goto(`/properties/${propertyId(5, 'bao-loc')}/documents`);
+  const repaired = await upload(page, await CRAFTED['repair-invalid-area'].upload(), { category: 'certificate', title: 'Sổ hồng lane 5' });
+  const denied = await upload(page, await CRAFTED['deny-outside-read'].upload(), { category: 'certificate', title: 'Sổ đỏ lane 5' });
+  for (const id of [repaired, denied]) await expect(pill(page, id)).toHaveText('Chờ xem lại', { timeout: 10_000 });
+
+  const runOf = async (documentId: string) => {
+    const [extraction] = await extractions(page, documentId);
+    const runs = await serviceGet<Run[]>(page, `agent_runs?job_id=eq.${extraction?.job_id}&select=num_turns,tool_calls,usage`);
+    return { extraction, runs, jobId: extraction?.job_id ?? '' };
+  };
+  const repair = await runOf(repaired);
+  expect(repair.extraction?.status).toBe('needs_review');
+  expect(repair.runs).toEqual([expect.objectContaining({ num_turns: 4, tool_calls: expect.objectContaining({ mcp__esta__save_extraction: 2 }) })]);
+  const parcels = (repair.extraction?.result as { parcels: { area_m2: { value: unknown } }[] }).parcels;
+  expect(parcels[0]?.area_m2.value).toBe(68.4);
+
+  const deny = await runOf(denied);
+  expect(deny.extraction?.status).toBe('needs_review');
+  expect(deny.runs[0]?.usage.permission_denials).toEqual([expect.objectContaining({ tool_name: 'Read', tool_input: { file_path: '/etc/hosts' } })]);
+
+  for (const jobId of [repair.jobId, deny.jobId]) expect(existsSync(join(home, 'jobs', jobId)), `jobs/${jobId}`).toBe(false);
+  expect(readdirSync(join(home, 'jobs'))).toEqual([]);
+});
+
+test('rule 6: with the worker stopped the tile says the assistant is offline, the job waits, and the document is read once it starts', async ({ page, request }) => {
+  await stopWorker();
+  await open(page, 'ryan.lane6@demo.esta.test', 'dark', DESKTOP);
+  await page.goto(`/properties/${propertyId(6, 'bao-loc')}/documents`);
+  const documentId = await upload(page, await fixture('gcn_2024-photo').upload(), { category: 'certificate', title: 'Sổ hồng lane 6' });
+
+  // Six minutes past the last beat of any worker, earlier rules' included, so no heartbeat is fresh.
+  const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
+  const lastBeat = Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse('2026-10-07T09:00:00+07:00'));
+  await setClock(request, new Date(lastBeat + 6 * 60_000).toISOString());
+  await expect(pill(page, documentId)).toHaveText('Trợ lý ngoại tuyến', { timeout: 10_000 });
+  await shot(page, 'p2-03-offline-1440x900-dark');
+  const [queued] = await extractions(page, documentId);
+  expect(queued?.status).toBe('queued');
+  expect(await serviceGet(page, `agent_jobs?id=eq.${queued?.job_id}&select=status`)).toEqual([{ status: 'queued' }]);
+
+  await startWorker();
+  await expect(pill(page, documentId)).toHaveText('Chờ xem lại', { timeout: 20_000 });
+  expect((await extractions(page, documentId)).map((row) => row.status)).toEqual(['needs_review']);
 });
 
 test('rule 7: a blank page fails after every attempt, the tile reads Không đọc được and admins get a retry item', async ({ page, request }) => {

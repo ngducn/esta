@@ -5,10 +5,13 @@ import { join } from 'node:path';
 const repoRoot = join(import.meta.dirname, '..', '..');
 const STARTED = /^\[agent\] worker \S+ started/m;
 
-export type AgentWorker = { readonly pid: number; running(): boolean; stop(): Promise<void>; log(): string };
+export type AgentWorker = { readonly pid: number; running(): boolean; stop(): Promise<void>; exited(): Promise<void>; log(): string };
 
-/** A replay worker on this slot, run in-process by `scripts/agent-dev.ts` so stopping its pid stops the worker. */
-export async function startAgentWorker({ replayDir, home }: { replayDir?: string; home?: string } = {}): Promise<AgentWorker> {
+/**
+ * A replay worker on this slot, run in-process by `scripts/agent-dev.ts` so stopping its pid stops the worker.
+ * `crashOn` kills it with SIGKILL from the output handler the moment its log matches, as a crash mid-job would.
+ */
+export async function startAgentWorker({ replayDir, home, crashOn }: { replayDir?: string; home?: string; crashOn?: RegExp } = {}): Promise<AgentWorker> {
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', 'scripts/agent-dev.ts'], {
     cwd: repoRoot,
     env: {
@@ -19,9 +22,11 @@ export async function startAgentWorker({ replayDir, home }: { replayDir?: string
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+  const exit = once(child, 'exit').then(() => undefined);
   let output = '';
   const collect = (chunk: Buffer) => {
     output += chunk.toString();
+    if (crashOn?.test(output) === true && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
   };
   child.stdout?.on('data', collect);
   child.stderr?.on('data', collect);
@@ -44,11 +49,11 @@ export async function startAgentWorker({ replayDir, home }: { replayDir?: string
     pid: child.pid ?? -1,
     running: () => child.exitCode === null && child.signalCode === null,
     log: () => output,
+    exited: () => exit,
     async stop() {
       if (child.exitCode !== null || child.signalCode !== null) return;
-      const exited = once(child, 'exit');
       child.kill('SIGTERM');
-      await exited;
+      await exit;
     },
   };
 }

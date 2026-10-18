@@ -17,7 +17,7 @@ export const EXTRACTION_A = 'aaaaaaaa-0000-5000-8000-0000000000e1';
 export const EXTRACTION_B = 'bbbbbbbb-0000-5000-8000-0000000000e2';
 export const JOB_A = 'aaaaaaaa-0000-5000-8000-0000000000f1';
 
-/** The frozen test clock, a day after the database's real time would put the item. */
+/** A frozen test clock far from the database's real time, so a row dated by now() instead fails the test. */
 export const NOW = parseInstant('2026-10-07T09:00:00+07:00');
 export const clock = (): Promise<Clock> => Promise.resolve({ source: 'table', now: () => NOW, today: () => isoDate('2026-10-07') });
 
