@@ -5,6 +5,11 @@ const medians = { protocol: 'h2', route: '/properties', runs: 5, lcpMs: 2100, tb
 const [list, map, detail] = PHASE_1_BUDGETS;
 
 describe('the Phase 1 Lighthouse budgets', () => {
+  it('judge the map by the median of nine runs and keep the operator limits', () => {
+    expect(map).toMatchObject({ runs: 9, limits: { tbtMs: 500 }, addedScriptKb: 300, pinsMs: 8000 });
+    expect([list, detail].map((budget) => budget?.runs)).toEqual([undefined, undefined]);
+  });
+
   it('cover the list, the map and a detail page', () => {
     expect(PHASE_1_BUDGETS.map((budget) => budget.route)).toEqual(['/properties', '/properties?view=map', expect.stringMatching(/^\/properties\/[0-9a-f-]{36}$/)]);
   });

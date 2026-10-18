@@ -13,9 +13,10 @@ type Metric = 'lcpMs' | 'tbtMs' | 'cls' | 'scriptKb';
  * `addedScriptKb` limits the script a route loads beyond the list view's, and `pinsMs` the time until every pinned
  * property shows on the map under Lighthouse's mobile throttling.
  */
-export type Budget = { route: string; limits: Partial<Record<Metric, number>>; addedScriptKb?: number; pinsMs?: number };
+export type Budget = { route: string; limits: Partial<Record<Metric, number>>; addedScriptKb?: number; pinsMs?: number; runs?: number };
 export type Extras = { listScriptKb?: number; pinsMs?: number };
 
+export const MAP_RUNS = 9;
 const GENERAL = { lcpMs: 2500, tbtMs: 200, cls: 0.05, scriptKb: 200 };
 const EMAIL = 'me.lane1@demo.esta.test';
 const HOUSEHOLD = seedId('seed:household:lane-1');
@@ -26,7 +27,8 @@ const HOUSEHOLD = seedId('seed:household:lane-1');
  */
 export const PHASE_1_BUDGETS: readonly Budget[] = [
   { route: '/properties', limits: GENERAL },
-  { route: '/properties?view=map', limits: { tbtMs: 500, cls: GENERAL.cls }, addedScriptKb: 300, pinsMs: 8000 },
+  // TBT on the map swings between 190 and 860 ms from run to run on one machine, so its median needs more runs than the five the other routes take.
+  { route: '/properties?view=map', limits: { tbtMs: 500, cls: GENERAL.cls }, addedScriptKb: 300, pinsMs: 8000, runs: MAP_RUNS },
   { route: `/properties/${seedId('seed:property:lane-1:di-an')}`, limits: GENERAL },
 ];
 
@@ -100,7 +102,7 @@ async function run(): Promise<number> {
     let failed = 0;
     let listScriptKb: number | undefined;
     for (const budget of PHASE_1_BUDGETS) {
-      const medians = await measure({ route: budget.route, email: EMAIL, slot, base: origin, runs, label: 'phase-1' });
+      const medians = await measure({ route: budget.route, email: EMAIL, slot, base: origin, runs: budget.runs ?? runs, label: 'phase-1' });
       let pinsMs: number | undefined;
       if (budget.pinsMs !== undefined) {
         const cookie = await sessionCookie(origin, EMAIL, slot);
