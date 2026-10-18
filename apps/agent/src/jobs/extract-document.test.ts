@@ -39,8 +39,8 @@ describe('extract_document on the fake service client', () => {
   it('marks the extraction failed after the last attempt and offers admins a retry, once', async () => {
     const { db, tables } = twoHouseholds();
     const job = extractJob({ document_id: DOCUMENT_A, extraction_id: EXTRACTION_A });
-    await failExtractDocument({ db, job }, 'The model ended without saving a valid extraction');
-    await failExtractDocument({ db, job }, 'again');
+    await failExtractDocument({ db, job });
+    await failExtractDocument({ db, job });
     expect(tables.document_extractions[0]).toMatchObject({ status: 'failed' });
     expect(tables.agent_items).toEqual([
       expect.objectContaining({
