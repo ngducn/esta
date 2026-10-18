@@ -1,6 +1,6 @@
 'use client';
 
-import { allocatePayment, owedThrough } from '@esta/core/allocation';
+import { allocatePayment, owedFor, owedThrough } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, formatMonthWithin, formatVnd } from '@esta/core/format';
 import { firstOfMonth } from '@esta/core/schedule';
@@ -39,14 +39,17 @@ const METHODS = [
   { value: 'bank_transfer', label: 'transfer', Icon: Landmark },
 ] as const satisfies readonly { value: PaymentMethod; label: 'cash' | 'transfer'; Icon: typeof Banknote }[];
 
+/** Refusals that mean the board was out of date close the sheet onto the refreshed board, with a notice saying why. */
+type BoardChanged = 'stale' | 'nothingOwed';
+const isBoardChanged = (reason: RecordPaymentRefusal): reason is BoardChanged => reason === 'stale' || reason === 'nothingOwed';
+
 const REFUSAL_MESSAGES = {
   amount: 'amountInvalid',
   date: 'dateInvalid',
   dateAfterToday: 'dateAfterToday',
   choice: 'choice',
-  nothingOwed: 'nothingOwed',
   failed: 'failed',
-} as const satisfies Record<RecordPaymentRefusal, string>;
+} as const satisfies Record<Exclude<RecordPaymentRefusal, BoardChanged>, string>;
 
 /** The prefilled text, grouped the way Mẹ writes amounts, which `parseVndInput` reads back in either language. */
 function amountText(amount: Vnd): string {
@@ -65,7 +68,9 @@ function subscribeOnline(onChange: () => void) {
 /**
  * LSE-7 from a collections row: the amount the row owes is already in the field, so `Tiền mặt` then `Lưu` records it.
  * The preview runs allocatePayment over the same open invoices `record_payment` settles, so what it shows is what is
- * written. One opening of the sheet carries one idempotency key, so a second tap or a retry records nothing new.
+ * written. One opening of the sheet carries one idempotency key, so a second tap or a retry records nothing new. The
+ * sheet keeps the open invoices it opened with and sends what they owed, so `record_payment` can refuse it once someone
+ * else has recorded the row.
  */
 export default function RecordPaymentSheet({ open, onOpenChange, target }: { open: boolean; onOpenChange: (open: boolean) => void; target: PaymentTarget }) {
   const t = useTranslations('payments');
@@ -75,7 +80,8 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
   const showNotice = useNoticeToast();
   const title = useRef<HTMLHeadingElement>(null);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
-  const [amount, setAmount] = useState(() => amountText(owedThrough(target.openInvoices, target.invoiceId)));
+  const [openInvoices] = useState(() => target.openInvoices);
+  const [amount, setAmount] = useState(() => amountText(owedThrough(openInvoices, target.invoiceId)));
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [date, setDate] = useState(() => formatDate(target.today, locale));
   const [editingDate, setEditingDate] = useState(false);
@@ -86,16 +92,16 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
   const offline = useSyncExternalStore(subscribeOnline, () => !navigator.onLine, () => false);
 
   const parsed = parseVndInput(amount);
-  const pool = chosen === null ? target.openInvoices : target.openInvoices.filter((invoice) => chosen.includes(invoice.id));
+  const pool = chosen === null ? openInvoices : openInvoices.filter((invoice) => chosen.includes(invoice.id));
   const plan = parsed.ok && pool.length > 0 ? allocatePayment(parsed.value, pool) : null;
-  const byId = new Map(target.openInvoices.map((invoice) => [invoice.id, invoice]));
+  const byId = new Map(openInvoices.map((invoice) => [invoice.id, invoice]));
   const month = (invoice: PaymentInvoice) => formatMonthWithin(firstOfMonth(invoice.dueDate), firstOfMonth(target.today), locale);
   const money = (value: Vnd) => formatVnd(value, locale);
 
   const toggle = (id: string, checked: boolean) => {
-    const current = chosen ?? target.openInvoices.map((invoice) => invoice.id);
+    const current = chosen ?? openInvoices.map((invoice) => invoice.id);
     const next = checked ? [...current, id] : current.filter((value) => value !== id);
-    setChosen(next.length === target.openInvoices.length ? null : next);
+    setChosen(next.length === openInvoices.length ? null : next);
   };
 
   const refuse = (): string | null => {
@@ -113,11 +119,18 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
     setError(refusal);
     if (refusal !== null || method === null) return;
     startTransition(async () => {
-      const result = await recordPayment({ invoiceId: target.invoiceId, amount, method, receivedOn: date, idempotencyKey, invoiceIds: chosen }).catch(
+      const owedVnd = owedFor(openInvoices, target.invoiceId, chosen);
+      const result = await recordPayment({ invoiceId: target.invoiceId, owedVnd, amount, method, receivedOn: date, idempotencyKey, invoiceIds: chosen }).catch(
         () => ({ ok: false, reason: 'failed' }) as const,
       );
       if (!result.ok) {
-        setError(t(`errors.${REFUSAL_MESSAGES[result.reason]}`));
+        if (isBoardChanged(result.reason)) {
+          onOpenChange(false);
+          router.refresh();
+          showNotice(t(`errors.${result.reason}`, { place: target.shortPlace }));
+        } else {
+          setError(t(`errors.${REFUSAL_MESSAGES[result.reason]}`));
+        }
         return;
       }
       onOpenChange(false);
@@ -185,7 +198,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
             </div>
           ) : null}
 
-          {target.openInvoices.length > 1 ? (
+          {openInvoices.length > 1 ? (
             <div className="flex flex-col gap-2">
               <button
                 type="button"
@@ -199,7 +212,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
               {choosing ? (
                 <fieldset className="flex flex-col gap-1">
                   <legend className="text-small text-ink-muted">{t('chooseHint')}</legend>
-                  {target.openInvoices.map((invoice) => (
+                  {openInvoices.map((invoice) => (
                     <label key={invoice.id} className="flex min-h-touch items-center gap-2 text-body text-ink">
                       <Checkbox
                         checked={chosen === null || chosen.includes(invoice.id)}

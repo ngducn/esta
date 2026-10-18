@@ -2249,6 +2249,7 @@ export type Database = {
           p_invoice_id: string
           p_invoice_ids?: string[]
           p_method: string
+          p_owed_vnd: number
           p_received_on: string
         }
         Returns: {

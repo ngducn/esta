@@ -6,11 +6,15 @@ alter table public.payments add column idempotency_key uuid;
 alter table public.payments add constraint payments_household_id_idempotency_key_key unique (household_id, idempotency_key);
 
 -- p_invoice_id is the board row's invoice. With p_invoice_ids null the payment settles the lease's open issued invoices
--- oldest due first; with a choice it settles only those, still oldest first, and each must be an open invoice of the
+-- oldest due first; with a choice it settles only those, still oldest first, and each must be an issued invoice of the
 -- same lease. packages/core allocatePayment does the same over the same rows, and payments.integration.test.ts holds the
 -- two equal. What is left is the tenant's credit. A key seen before returns that payment and writes nothing.
+-- p_owed_vnd is what the sheet saw owed when it opened (packages/core owedFor): through the row's invoice, or over the
+-- chosen ones. When the database disagrees, or the row or a chosen invoice is paid, someone recorded or undid a payment
+-- on this lease since then, and the sheet's amount would be sent on to a later invoice, so nothing is written.
 create function public.record_payment(
   p_invoice_id uuid,
+  p_owed_vnd bigint,
   p_amount_vnd bigint,
   p_method text,
   p_received_on date,
@@ -25,6 +29,7 @@ as $$
 #variable_conflict use_column
 declare
   v_lease public.leases;
+  v_row record;
   v_payment uuid;
   v_left bigint := p_amount_vnd;
   v_open record;
@@ -58,7 +63,7 @@ begin
         select from unnest(p_invoice_ids) chosen (invoice_id)
         where not exists (
           select from public.invoice_balances b
-          where b.id = chosen.invoice_id and b.lease_id = v_lease.id and b.status = 'issued' and b.outstanding_vnd > 0
+          where b.id = chosen.invoice_id and b.lease_id = v_lease.id and b.status = 'issued'
         )
       )
     ) then
@@ -66,6 +71,19 @@ begin
     end if;
     if not exists (select from public.invoice_balances b where b.lease_id = v_lease.id and b.status = 'issued' and b.outstanding_vnd > 0) then
       raise exception 'ESTA_NOTHING_OWED' using errcode = '23514';
+    end if;
+    select b.id, b.due_date, b.period_start into v_row from public.invoice_balances b where b.id = p_invoice_id;
+    if exists (
+      select from public.invoice_balances b
+      where b.outstanding_vnd <= 0 and ((p_invoice_ids is null and b.id = p_invoice_id) or b.id = any (p_invoice_ids))
+    ) or p_owed_vnd is distinct from (
+      select coalesce(sum(b.outstanding_vnd), 0) from public.invoice_balances b
+      where b.lease_id = v_lease.id and b.status = 'issued' and b.outstanding_vnd > 0
+        and case when p_invoice_ids is null
+          then (b.due_date, b.period_start, b.id) <= (v_row.due_date, v_row.period_start, v_row.id)
+          else b.id = any (p_invoice_ids) end
+    ) then
+      raise exception 'ESTA_PAYMENT_STALE' using errcode = '23514';
     end if;
 
     insert into public.payments (household_id, payer_party_id, amount_vnd, received_on, method, source, idempotency_key)
@@ -92,8 +110,8 @@ begin
     where p.id = v_payment;
 end;
 $$;
-revoke all on function public.record_payment(uuid, bigint, text, date, uuid, uuid[]) from public, anon;
-grant execute on function public.record_payment(uuid, bigint, text, date, uuid, uuid[]) to authenticated;
+revoke all on function public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[]) from public, anon;
+grant execute on function public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[]) to authenticated;
 
 -- `Hoàn tác` on the saved toast. Only the member who recorded a manual payment removes it, and only shortly after: the
 -- toast shows for 6 s, and the window allows for a slow network. It compares wall-clock moments on both sides, because

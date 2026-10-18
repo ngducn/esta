@@ -1075,7 +1075,8 @@
       "dateInvalid": "Ngày chưa đúng. Nhập theo dạng 07/10/2026.",
       "dateAfterToday": "Ngày nhận không được sau hôm nay.",
       "choice": "Chọn ít nhất một hóa đơn còn nợ.",
-      "nothingOwed": "Hóa đơn này đã thu đủ. Tải lại bảng để xem số mới.",
+      "stale": "{place} vừa được ghi nhận tiền nên khoản này chưa lưu. Xem số mới trên bảng.",
+      "nothingOwed": "{place} không còn khoản nào phải thu nên khoản này chưa lưu. Xem số mới trên bảng.",
       "failed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
     }
   }

@@ -14,6 +14,7 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 /** The sheet as Mẹ filled it. Amount and date stay text, so a value that does not read is refused, never taken as 0 or today. */
 const paymentInputSchema = z.object({
   invoiceId: z.uuid(),
+  owedVnd: z.number().int().nonnegative(),
   amount: z.string(),
   method: z.enum(PAYMENT_METHODS),
   receivedOn: z.string(),
@@ -22,7 +23,8 @@ const paymentInputSchema = z.object({
 });
 export type PaymentInput = z.input<typeof paymentInputSchema>;
 
-export type RecordPaymentRefusal = 'amount' | 'date' | 'dateAfterToday' | 'choice' | 'nothingOwed' | 'failed';
+/** `stale` and `nothingOwed` mean the board Mẹ opened the sheet from is out of date. */
+export type RecordPaymentRefusal = 'amount' | 'date' | 'dateAfterToday' | 'choice' | 'stale' | 'nothingOwed' | 'failed';
 export type RecordPaymentResult =
   | { readonly ok: true; readonly payment: { readonly id: string; readonly amountVnd: Vnd; readonly allocatedVnd: Vnd } }
   | { readonly ok: false; readonly reason: RecordPaymentRefusal };
@@ -30,6 +32,7 @@ export type RecordPaymentResult =
 const REFUSALS: Readonly<Record<string, RecordPaymentRefusal>> = {
   ESTA_PAYMENT_DATE_AFTER_TODAY: 'dateAfterToday',
   ESTA_ALLOCATION_CHOICE: 'choice',
+  ESTA_PAYMENT_STALE: 'stale',
   ESTA_NOTHING_OWED: 'nothingOwed',
 };
 
@@ -43,7 +46,8 @@ function revalidatePayments() {
 /**
  * LSE-7. `record_payment` writes the payment and its allocations in one transaction: oldest due first over the lease's
  * open invoices, or over the invoices Mẹ chose. The key comes from the sheet, so a second tap or a retry after a cut
- * response returns the payment already recorded (SPEC §7.4).
+ * response returns the payment already recorded (SPEC §7.4). `owedVnd` is what the sheet saw owed when it opened, so a
+ * sheet left open while someone else records the row is refused rather than paying a later invoice.
  */
 export async function recordPayment(raw: unknown): Promise<RecordPaymentResult> {
   const input = paymentInputSchema.safeParse(raw);
@@ -56,6 +60,7 @@ export async function recordPayment(raw: unknown): Promise<RecordPaymentResult> 
   const [, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const { data, error } = await supabase.rpc('record_payment', {
     p_invoice_id: input.data.invoiceId,
+    p_owed_vnd: input.data.owedVnd,
     p_amount_vnd: amount.value,
     p_method: input.data.method,
     p_received_on: receivedOn.value,

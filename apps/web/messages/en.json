@@ -1075,7 +1075,8 @@
       "dateInvalid": "The date is not right. Use day/month/year, for example 07/10/2026.",
       "dateAfterToday": "The date cannot be after today.",
       "choice": "Choose at least one invoice that is still owed.",
-      "nothingOwed": "This invoice is already paid. Reload the board to see the latest amounts.",
+      "stale": "{place} was just recorded, so this payment was not saved. See the new amounts on the board.",
+      "nothingOwed": "{place} owes nothing now, so this payment was not saved. See the new amounts on the board.",
       "failed": "Not saved yet. Check the connection and try again."
     }
   }
