@@ -179,6 +179,12 @@ export const NATIONAL_ID_VECTORS: {
     ['a street address', 'Số 12 đường Demo, phường Demo, quận 1'],
     ['a 10-digit tax code', '0312345678'],
     ['the last four digits of a CCCD', 'CCCD 6789'],
+    ['hồ sơ thế chấp số before a 9-digit number', 'Hồ sơ thế chấp số 123456789'],
+    ['số theo dõi before a 9-digit number', 'Số theo dõi 123456789'],
+    ['số thể tích before a 9-digit number', 'Số thể tích 123456789'],
+    ['số thép before a 10-digit number', 'Số thép 0123456789'],
+    ['số thế chấp before a phone number and a bank', 'Số thế chấp 0912345678 (VPBank)'],
+    ['a mortgage receipt with a date and a 9-digit number', 'Biên nhận hồ sơ thế chấp ngày 12/03/2021 số 123456789'],
   ],
   squeezed: [
     ['four spaces inside an unlabelled ID', 'Nhận chuyển nhượng 079123    456789', 'Nhận chuyển nhượng 6789'],
