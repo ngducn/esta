@@ -14,7 +14,6 @@ export type ActivationFacts = {
   readonly status: LeaseStatus;
   readonly tenantPartyId: string | null;
   readonly startDate: IsoDate | null;
-  readonly endDate: IsoDate | null;
   readonly rentVnd: Vnd | null;
 };
 

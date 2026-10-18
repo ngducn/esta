@@ -1,8 +1,9 @@
 'use server';
 
-import { isoDate, isIsoDate, type IsoDate } from '@esta/core/date';
+import { isoDate, type IsoDate } from '@esta/core/date';
 import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
 import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema, tenantSchema } from '@esta/core/schemas/lease';
+import { isoDateSchema } from '@esta/core/schemas/legal';
 import { formatPhone } from '@esta/core/phone';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -58,7 +59,7 @@ export type ActivationResult =
   | { readonly ok: true; readonly issuedMonth: IsoDate | null }
   | { readonly ok: false; readonly reasons: readonly (ActivationRefusal | 'overlap' | 'failed')[] };
 
-const paidThroughSchema = z.string().refine(isIsoDate).nullable();
+const paidThroughSchema = isoDateSchema.nullable();
 
 /**
  * LSE-2 and LSE-3. Moves a draft to `active` with its paid-through date, then runs invoicing on the Clock's date. A lease
@@ -68,14 +69,14 @@ export async function activateLease(leaseId: unknown, paidThrough: unknown): Pro
   const id = uuid.safeParse(leaseId);
   const through = paidThroughSchema.safeParse(paidThrough);
   if (!id.success || !through.success) return { ok: false, reasons: ['failed'] };
-  const paidThroughDate = through.data === null ? null : isoDate(through.data);
+  const paidThroughDate = through.data;
   const [member, supabase, clock] = await Promise.all([requireMember(), createSessionClient(), readRequestClock()]);
   const read = await supabase.from('leases').select(LEASE_COLUMNS).eq('household_id', member.household.id).eq('id', id.data).maybeSingle();
   if (read.error || read.data === null) return { ok: false, reasons: ['failed'] };
   const lease = leaseRowSchema.parse(read.data);
   if (lease.status !== 'active') {
     const refusals = activationRefusals(
-      { status: lease.status, tenantPartyId: lease.tenant_party_id, startDate: lease.start_date, endDate: lease.end_date, rentVnd: lease.rent_vnd },
+      { status: lease.status, tenantPartyId: lease.tenant_party_id, startDate: lease.start_date, rentVnd: lease.rent_vnd },
       paidThroughDate,
     );
     if (refusals.length > 0) return { ok: false, reasons: refusals };
@@ -87,14 +88,9 @@ export async function activateLease(leaseId: unknown, paidThrough: unknown): Pro
     if (error) return { ok: false, reasons: [error.code === '23P01' ? 'overlap' : 'failed'] };
   }
   const asOf = clock.today();
-  let written;
-  try {
-    written = await runInvoicing(supabase, lease.id, asOf, clock.now());
-  } catch {
-    revalidateLeases();
-    return { ok: false, reasons: ['failed'] };
-  }
+  const written = await runInvoicing(supabase, lease.id, asOf, clock.now()).catch(() => null);
   revalidateLeases();
+  if (written === null) return { ok: false, reasons: ['failed'] };
   const issued = written.filter((invoice) => invoice.status === 'issued' && invoice.period_start <= asOf).map((invoice) => invoice.period_start);
   const latest = issued.toSorted().at(-1);
   return { ok: true, issuedMonth: latest === undefined ? null : isoDate(latest) };

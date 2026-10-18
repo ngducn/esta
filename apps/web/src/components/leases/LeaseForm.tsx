@@ -99,8 +99,8 @@ export function LeaseForm({
   const blocked = (): ActivationRefusal[] => {
     const draft = readDraft(values);
     if (!draft.ok) return [];
-    const { tenant_party_id, start_date, end_date, rent_vnd } = draft.value;
-    return activationRefusals({ status: 'draft', tenantPartyId: tenant_party_id, startDate: start_date, endDate: end_date, rentVnd: rent_vnd }, null);
+    const { tenant_party_id, start_date, rent_vnd } = draft.value;
+    return activationRefusals({ status: 'draft', tenantPartyId: tenant_party_id, startDate: start_date, rentVnd: rent_vnd }, null);
   };
 
   const option = <T extends string | number>(list: readonly T[], label: (value: T) => string) => list.map((value) => ({ value: String(value), label: label(value) }));

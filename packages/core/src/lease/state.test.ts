@@ -3,7 +3,7 @@ import { isoDate as d } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import { LEASE_TRANSITIONS, activationRefusals, type ActivationFacts } from './state';
 
-const draft: ActivationFacts = { status: 'draft', tenantPartyId: 'tenant', startDate: d('2026-08-01'), endDate: null, rentVnd: vnd(3_000_000) };
+const draft: ActivationFacts = { status: 'draft', tenantPartyId: 'tenant', startDate: d('2026-08-01'), rentVnd: vnd(3_000_000) };
 
 describe('lease state machine (LSE-2)', () => {
   it('allows draft to active, active to ended or terminated, and nothing out of ended or terminated', () => {

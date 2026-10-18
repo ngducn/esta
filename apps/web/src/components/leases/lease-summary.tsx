@@ -16,7 +16,10 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/** A lease that is no longer a draft, or any lease a viewer opens: its terms and its invoices (P3-08 adds the timeline). */
+/**
+ * A lease that is no longer a draft, or any lease a viewer opens: its terms and its invoices (P3-08 adds the timeline).
+ * On a phone the invoices come first, because they are what Mẹ acts on right after activating.
+ */
 export function LeaseSummary({ lease, unitLabel, invoices, asOf }: { lease: LeaseWithTenant; unitLabel: string; invoices: readonly InvoiceSummary[]; asOf: IsoDate }) {
   const t = useTranslations('leases');
   const locale = useLocale();
@@ -48,7 +51,7 @@ export function LeaseSummary({ lease, unitLabel, invoices, asOf }: { lease: Leas
           <Fact label={t('taxLabel')}>{t('taxPayer', { payer: lease.tax_payer })}</Fact>
         </dl>
       </section>
-      <section aria-labelledby="lease-invoices" className="flex flex-col gap-3">
+      <section aria-labelledby="lease-invoices" className="order-first flex flex-col gap-3 lg:order-none">
         <h2 id="lease-invoices" className="text-h3 text-ink">
           {t('invoicesTitle')}
         </h2>
