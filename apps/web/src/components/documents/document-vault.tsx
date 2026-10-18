@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lazy, Suspense, useState, type DragEvent, type ReactNode } from 'react';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape, statusMarks } from '@/components/status-mark';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { useHydrated } from '@/lib/use-hydrated';
@@ -49,7 +49,7 @@ function ExpiringSoon({ items }: { items: readonly ExpiringItem[] }) {
                 </Link>
                 {item.propertyName === null ? null : <span className="text-small break-words text-ink-muted">{item.propertyName}</span>}
               </div>
-              <span data-testid="expiring-days" className="inline-flex items-center gap-1.5 rounded-full bg-due-fill px-3 py-1 text-small font-semibold text-due">
+              <span data-testid="expiring-days" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks.due.pill)}>
                 <StatusShape status="due" className="size-4" />
                 {item.text}
               </span>
@@ -85,7 +85,7 @@ function SearchResults({ state, render }: { state: SearchState; render: (tile: V
         </p>
       ) : (
         <section aria-labelledby="results-title" data-testid="vault-results" className="flex flex-col gap-3">
-          <h2 id="results-title" role="status" className="text-lead font-bold text-ink">
+          <h2 id="results-title" aria-live="polite" className="text-lead font-bold text-ink">
             {t('results', { count: state.tiles.length })}
           </h2>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{state.tiles.map(render)}</ul>

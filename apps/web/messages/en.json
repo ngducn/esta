@@ -1013,7 +1013,7 @@
     "extractionFailed": "Could not read",
     "extractionOffline": "Assistant offline",
     "searchLabel": "Search documents",
-    "searchPlaceholder": "Search by name, tag or the words on the paper",
+    "searchPlaceholder": "Search by name or the words on the paper",
     "searching": "Searching…",
     "results": "{count, plural, one {# result} other {# results}}",
     "noMatch": "No documents found for \"{query}\".",
