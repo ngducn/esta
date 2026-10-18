@@ -7,6 +7,7 @@ import { NATIONAL_ID_VECTORS } from '../agent-schemas/national-id-vectors';
 import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
 import {
   planCertificateAcceptance,
+  plannedValues,
   planUtilityBillAcceptance,
   rowId,
   type AcceptanceExtraction,
@@ -177,9 +178,59 @@ describe('planCertificateAcceptance', () => {
     }
   });
 
-  it('refuses a plan that would still write a full national ID, naming the field, so nothing is written (D11)', () => {
-    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].area_m2': { kind: 'edited', value: '9999999999,99' } }, none);
-    expect(result).toEqual({ ok: false, reason: 'invalid', paths: ['parcels[0].area_m2'] });
+  it.each([
+    ['parcels[0].area_m2', '0791234567,89'],
+    ['parcels[0].area_m2', '001123456789'],
+    ['parcels[0].area_m2', '9999999999,99'],
+    ['parcels[0].purposes[0].area_m2', '0011234567,89'],
+    ['structures[0].floor_area_m2', '001123456789'],
+    ['structures[0].footprint_m2', '0791234567,89 m²'],
+  ])('refuses %s typed as %s, an ID, and plans nothing (D11)', (path, value) => {
+    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), [path]: { kind: 'edited', value } }, none);
+    expect(result).toEqual({ ok: false, reason: 'invalid', paths: [path] });
+  });
+
+  it.each([
+    ['parcels[0].area_m2', '123456789'],
+    ['parcels[0].purposes[0].area_m2', '100000000,01'],
+    ['structures[0].floor_area_m2', '100.000.001'],
+    ['structures[0].completed_year', '2101'],
+    ['structures[0].completed_year', '1799'],
+  ])('refuses %s typed as %s, outside the bounds the assistant itself must keep', (path, value) => {
+    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), [path]: { kind: 'edited', value } }, none);
+    expect(result).toEqual({ ok: false, reason: 'out_of_range', paths: [path] });
+  });
+
+  it('keeps an area of exactly 100.000.000 m² and the year 2100', () => {
+    const typed = { 'parcels[0].area_m2': '100.000.000', 'structures[0].completed_year': '2100' };
+    const edits = Object.fromEntries(Object.entries(typed).map(([path, value]) => [path, { kind: 'edited' as const, value }]));
+    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), ...edits }, none);
+    expect(rowsOf(result, 'parcels')[0]?.area_m2).toBe(100_000_000);
+    expect(rowsOf(result, 'structures')[0]?.completed_year).toBe(2100);
+  });
+
+  it('stores the end of a term range, month or full date', () => {
+    for (const [typed, term] of [['Từ tháng 10/1993 đến tháng 10/2043', '2043-10-31'], ['Từ 15/10/1993 đến 15/10/2043', '2043-10-15']] as const) {
+      const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].purposes[0].term': { kind: 'edited', value: typed } }, none);
+      expect(rowsOf(result, 'parcels')[0]?.purposes, typed).toEqual([{ land_use_code: 'ODT', area_m2: 82.7, term }]);
+    }
+  });
+
+  it('lists every value a plan writes with the field it came from, for the database to judge, row ids left out (D11)', () => {
+    const [[, origin], [, issuer]] = [NATIONAL_ID_VECTORS.refused[0] ?? ['', ''], NATIONAL_ID_VECTORS.refused[3] ?? ['', '']];
+    const plan = planOf(
+      planCertificateAcceptance(
+        extraction,
+        { ...acceptAll(extraction.result), 'parcels[0].origin_text': { kind: 'edited', value: origin }, issued_by: { kind: 'edited', value: issuer } },
+        none,
+      ),
+    );
+    const values = plannedValues(plan);
+    expect(values).toContainEqual({ path: 'parcels[0].origin_text', value: origin });
+    expect(values).toContainEqual({ path: 'issued_by', value: issuer });
+    expect(values).toContainEqual({ path: 'parcels[0].area_m2', value: 82.7 });
+    expect(values.filter(({ value }) => value === origin).every(({ path }) => path === 'parcels[0].origin_text')).toBe(true);
+    expect(values.some(({ value }) => value === extraction.id || value === rowId(extraction.id, 'certificate'))).toBe(false);
   });
 
   it('plans a manual entry from typed values alone', () => {

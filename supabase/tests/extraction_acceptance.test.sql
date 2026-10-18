@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(20);
+select plan(22);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -104,6 +104,15 @@ select lives_ok(
   format($$ insert into public.certificates (household_id, property_id, form) values (%L, '00000000-0000-4000-8000-0000000000a1', 'paper_only'), (%L, '00000000-0000-4000-8000-0000000000a1', 'paper_only') $$, :'a', :'a'),
   'certificates entered by hand have no extraction and are not limited');
 select has_index('public', 'certificates', 'certificates_extraction_idx', 'certificates have the extraction index');
+
+-- The review save's ID judge (national_id.test.sql runs the shared vectors through it as a member).
+select ok(
+  has_function_privilege('authenticated', 'public.national_id_indexes(jsonb)', 'execute')
+    and not has_function_privilege('anon', 'public.national_id_indexes(jsonb)', 'execute'),
+  'members may ask the ID judge and anonymous callers may not');
+select is(
+  (select (provolatile, prosecdef) from pg_proc where oid = 'public.national_id_indexes(jsonb)'::regprocedure)::text,
+  '(i,f)', 'the ID judge is immutable and runs as its caller');
 
 select * from finish();
 rollback;

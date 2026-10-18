@@ -5,11 +5,15 @@
  *
  * A `squeezed` text holds an ID only once a review field squeezes its spaces, so the reducer and the CHECK keep it as
  * read; the acceptance test stores it as `stored` whether Mẹ presses Đúng or types it, and the CHECK accepts that.
+ *
+ * A `refused` text is one the reducer leaves whole and the CHECK refuses. A review save asks the database, which judges
+ * by the CHECK's own rule, and writes nothing when any value would be refused.
  */
 export const NATIONAL_ID_VECTORS: {
   readonly reduced: readonly (readonly [name: string, text: string, reduced: string])[];
   readonly kept: readonly (readonly [name: string, text: string])[];
   readonly squeezed: readonly (readonly [name: string, text: string, stored: string])[];
+  readonly refused: readonly (readonly [name: string, text: string])[];
 } = {
   reduced: [
     ['a bare ID', '012345678901', '8901'],
@@ -125,5 +129,13 @@ export const NATIONAL_ID_VECTORS: {
     ['four spaces inside an unlabelled ID', 'Nhận chuyển nhượng 079123    456789', 'Nhận chuyển nhượng 6789'],
     ['45 spaces between a label and a CMND', `Sở Demo, CCCD${' '.repeat(45)}123456789`, 'Sở Demo, CCCD 6789'],
     ['four spaces before the last group of a labelled ID', 'CCCD 0790 5800    4217, Ấp Demo', 'CCCD 4217, Ấp Demo'],
+  ],
+  refused: [
+    ['an ID after a date and a dot', 'Ngày 12/03/2021.079123456789'],
+    ['a labelled ID before a dot and a date', 'CCCD 079123456789.12/03/2021'],
+    ['an ID before a dot and a date', 'Số 079123456789.12/03/2021 cấp'],
+    ['a next-line character inside a labelled ID', 'Sở Demo, CCCD 079123\u0085456789'],
+    ['a unit separator inside a labelled ID', 'CCCD 079123\u001F456789'],
+    ['a CMND 27 characters after its label, 52 code units in UTF-16', `CCCD ${'\u{1F600}'.repeat(25)} 123456789`],
   ],
 };

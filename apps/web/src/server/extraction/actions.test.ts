@@ -256,15 +256,48 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     }
   });
 
-  test('a value that would still hold a full ID is refused before anything is written (D11)', async () => {
+  test('a number typed with an ID in it, or past its bounds, is refused before anything is written (D11)', async () => {
     asMember();
-    const { extractionId } = await waitingExtraction();
     const parties = await count(`parties?household_id=eq.${household}&select=id`);
-    const decisions = { ...acceptAll, 'parcels[0].area_m2': { kind: 'edited', value: '9999999999,99' } };
-    expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: false, reason: 'invalid', paths: ['parcels[0].area_m2'] });
-    expect(await written(extractionId)).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
-    expect(await service(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
-  }, 15_000);
+    const cases = [
+      { path: 'parcels[0].area_m2', value: '9999999999,99', reason: 'invalid' },
+      { path: 'parcels[0].area_m2', value: '001123456789', reason: 'invalid' },
+      { path: 'structures[0].floor_area_m2', value: '0791234567,89', reason: 'invalid' },
+      { path: 'parcels[0].area_m2', value: '123456789', reason: 'out_of_range' },
+    ];
+    for (const { path, value, reason } of cases) {
+      const { extractionId } = await waitingExtraction();
+      expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value } }), value).toEqual({ ok: false, reason, paths: [path] });
+      expect(await written(extractionId), value).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
+      expect(await service(`document_extractions?id=eq.${extractionId}&select=status`), value).toEqual([{ status: 'needs_review' }]);
+    }
+  }, 30_000);
+
+  test('a term typed as a range saves its end, month or full date', async () => {
+    asMember();
+    for (const [typed, term] of [['Từ tháng 10/1993 đến tháng 10/2043', '2043-10-31'], ['Từ 15/10/1993 đến 15/10/2043', '2043-10-15']] as const) {
+      const { extractionId } = await waitingExtraction();
+      expect(await saveExtractionReview(extractionId, { ...acceptAll, 'parcels[0].purposes[0].term': { kind: 'edited', value: typed } }), typed).toEqual({ ok: true, propertyId });
+      const [parcel] = await service<{ purposes: { term: string }[] }[]>(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=purposes`);
+      expect(parcel?.purposes.map((purpose) => purpose.term), typed).toEqual([term]);
+    }
+  }, 30_000);
+
+  test('a value the database would refuse as a full ID is refused by the database before anything is written, naming the field (D11)', async () => {
+    asMember();
+    const parties = await count(`parties?household_id=eq.${household}&select=id`);
+    const [, nextLine] = NATIONAL_ID_VECTORS.refused.find(([name]) => name.startsWith('a next-line')) ?? [];
+    const cases = [
+      ...NATIONAL_ID_VECTORS.refused.map(([name, text]) => ({ name, path: 'parcels[0].origin_text', text })),
+      { name: 'the issuer with a next-line character', path: 'issued_by', text: nextLine ?? '' },
+    ];
+    for (const { name, path, text } of cases) {
+      const { extractionId } = await waitingExtraction();
+      expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value: text } }), name).toEqual({ ok: false, reason: 'national_id', paths: [path] });
+      expect(await written(extractionId), name).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
+      expect(await service(`document_extractions?id=eq.${extractionId}&select=status,accepted_fields`), name).toEqual([{ status: 'needs_review', accepted_fields: null }]);
+    }
+  }, 60_000);
 
   test('a viewer and a member of another household write nothing', async () => {
     const { extractionId } = await waitingExtraction();

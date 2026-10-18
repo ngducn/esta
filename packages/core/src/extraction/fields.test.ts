@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import { certificateV1Schema } from '../agent-schemas/certificate_v1';
 import { utilityBillV1Schema } from '../agent-schemas/utility_bill_v1';
 import truthFile from '../../../../fixtures/certificates/gcn_2024-photo/truth.json';
-import { EXTRACTION_FIELDS, INPUT_KINDS, reviewFields } from './fields';
+import { EXTRACTION_FIELDS, INPUT_KINDS, readInput, reviewFields } from './fields';
 
 type Shape = { readonly shape: Record<string, z.ZodType> };
 
@@ -47,6 +47,11 @@ describe('INPUT_KINDS', () => {
     expect(INPUT_KINDS.term.parse('Đến tháng 10/2043')).toEqual({ ok: true, value: '2043-10-31' });
     expect(INPUT_KINDS.term.parse('đến tháng 2/2024')).toEqual({ ok: true, value: '2024-02-29' });
     expect(INPUT_KINDS.term.parse('Đến tháng 13/2043')).toEqual({ ok: false });
+    expect(INPUT_KINDS.term.parse('Từ tháng 10/1993 đến tháng 10/2043')).toEqual({ ok: true, value: '2043-10-31' });
+    expect(INPUT_KINDS.term.parse('Từ 15/10/1993 đến 15/10/2043')).toEqual({ ok: true, value: '2043-10-15' });
+    expect(INPUT_KINDS.term.parse('Từ năm 1993 đến tháng 10/2043')).toEqual({ ok: true, value: '2043-10-31' });
+    expect(INPUT_KINDS.term.parse('50 năm kể từ ngày 15/10/1993')).toEqual({ ok: false });
+    expect(INPUT_KINDS.term.parse('Từ tháng 10/1993')).toEqual({ ok: false });
     expect(INPUT_KINDS.use_form.parse('Sử dụng chung')).toEqual({ ok: true, value: 'shared' });
     expect(INPUT_KINDS.money.parse('1.234.567')).toEqual({ ok: true, value: 1234567 });
   });
@@ -54,6 +59,11 @@ describe('INPUT_KINDS', () => {
   it('keeps only the last four digits of a typed ID number (D11)', () => {
     expect(INPUT_KINDS.id_last4.parse('079 160 018 829')).toEqual({ ok: true, value: '8829' });
     expect(INPUT_KINDS.id_last4.parse('12')).toEqual({ ok: false });
+  });
+
+  it('refuses a typed number whose text holds an ID instead of keeping its digits (D11)', () => {
+    for (const typed of ['001123456789', '0791234567,89', '07912345678,9', '0791234567,89 m²']) expect(readInput('area', typed), typed).toEqual({ ok: false });
+    expect(readInput('area', '1.250,5')).toEqual({ ok: true, value: 1250.5 });
   });
 
   it('keeps a land use code missing from the list, upper case', () => {
