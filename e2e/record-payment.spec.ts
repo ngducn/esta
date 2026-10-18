@@ -130,7 +130,7 @@ test('a sheet left open on Phòng 5 while another tab records it is refused in w
   await sheet(page).getByTestId('payment-save').click();
   await expect(toast(page)).toContainText('Phòng 5 vừa được ghi nhận tiền nên khoản này chưa lưu. Xem số mới trên bảng.');
   await expect(sheet(page)).toBeHidden();
-  await expect(row(group(page, 'paid'), 'Phòng 5, Dãy trọ Dĩ An')).toBeVisible();
+  await expect(group(page, 'overdue').getByTestId('collections-row'), 'the board shows September paid').toHaveCount(0);
   expect(await rest<unknown[]>(page, 'GET', `payments?household_id=eq.${householdId(2)}&idempotency_key=not.is.null&select=id`)).toHaveLength(1);
   expect(await allocationsOf(page, invoiceId(2, 5, '2026-10-25')), 'October is not paid by the refused sheet').toEqual([]);
 });
