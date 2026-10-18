@@ -235,10 +235,10 @@ test('rule 10: in English at 130% text Phòng 5 sits in Overdue at 12 days and n
 });
 
 test('a viewer reads the board and opens a lease, with no other action', async ({ page }) => {
-  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
-  const invited = 'viewer.lane1@demo.esta.test';
+  await open(page, 'me.lane7@demo.esta.test', 'light', PHONE);
+  const invited = 'viewer.lane7@demo.esta.test';
   const existing = await rest<unknown[]>(page, 'GET', `household_members?invited_email=eq.${invited}&select=id`);
-  if (existing.length === 0) await rest(page, 'POST', 'household_members', { household_id: householdId(1), invited_email: invited, role: 'viewer' });
+  if (existing.length === 0) await rest(page, 'POST', 'household_members', { household_id: householdId(7), invited_email: invited, role: 'viewer' });
   await page.context().clearCookies();
   await open(page, invited, 'light', PHONE);
   await page.goto('/collections');
@@ -248,7 +248,7 @@ test('a viewer reads the board and opens a lease, with no other action', async (
 });
 
 test('offline, the board says it is the last load', async ({ page }) => {
-  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
+  await open(page, 'ryan.lane8@demo.esta.test', 'light', PHONE);
   await page.goto('/collections');
   await expect(page.getByTestId('collections-offline')).toHaveCount(0);
   await page.context().setOffline(true);
@@ -258,7 +258,7 @@ test('offline, the board says it is the last load', async ({ page }) => {
 });
 
 test('the property cards show each property worst payment state for the month (LSE-10)', async ({ page }) => {
-  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
+  await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
   await page.goto('/properties');
   const card = (name: string) => page.getByRole('article').filter({ has: page.getByRole('heading', { name, exact: true }) });
   await expect(card('Dãy trọ Dĩ An').locator('[data-status="overdue"]')).toHaveText('Quá hạn 12 ngày');

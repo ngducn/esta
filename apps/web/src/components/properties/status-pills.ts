@@ -32,7 +32,6 @@ export function statusPills(marks: readonly PropertyStatusMark[], words: Words, 
   return marks.map((mark) => pill(mark, words, locale));
 }
 
-/** The words of every mark, from the `properties` messages. */
 export function statusWords(t: (key: 'leased' | 'vacantSince' | 'paymentOverdue' | 'paymentDue' | 'paymentPaid', values?: Record<string, string | number>) => string): Words {
   return {
     leased: (values) => t('leased', values),
