@@ -162,7 +162,7 @@ export function MultiPageCapture({
   return (
     <div data-testid="multi-page-capture" className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className={cn(pickerClass, 'bg-ink text-surface')}>
             <Camera className="size-5 shrink-0" aria-hidden="true" />
             {t('nextPage')}
