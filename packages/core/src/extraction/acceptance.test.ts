@@ -1,6 +1,10 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import billFile from '../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
 import truthFile from '../../../../fixtures/certificates/gcn_2024-photo/truth.json';
+import { NATIONAL_ID_VECTORS } from '../agent-schemas/national-id-vectors';
+import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
 import {
   planCertificateAcceptance,
   planUtilityBillAcceptance,
@@ -21,6 +25,11 @@ const extraction: AcceptanceExtraction = {
 };
 
 const none = { parties: [], accounts: [] };
+
+const FIXTURES = join(import.meta.dirname, '../../../../fixtures/certificates');
+const truths = readdirSync(FIXTURES, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && entry.name !== 'generator')
+  .map((entry) => ({ id: entry.name, certificate: (JSON.parse(readFileSync(join(FIXTURES, entry.name, 'truth.json'), 'utf8')) as { certificate: unknown }).certificate }));
 
 const acceptAll = (result: unknown, schema: 'certificate_v1' | 'utility_bill_v1' = 'certificate_v1'): Record<string, Decisions[string]> =>
   Object.fromEntries(reviewFields(schema, result).map((field) => [field.path, { kind: 'accepted' as const }]));
@@ -128,6 +137,49 @@ describe('planCertificateAcceptance', () => {
     expect(text).not.toMatch(/\d{9}/);
     expect(text).not.toMatch(/\d{3} \d{3} \d{3}/);
     expect(rowsOf(result, 'parties')[0]?.id_last4).toBe('1776');
+  });
+
+  it('plans every field of each of the 16 certificate truths accepted as read', () => {
+    expect(truths).toHaveLength(16);
+    for (const { id, certificate } of truths) {
+      const result = planCertificateAcceptance({ ...extraction, result: certificate }, acceptAll(certificate), none);
+      expect(result.ok ? 'ok' : `${result.reason}: ${result.paths.join(', ')}`, id).toBe('ok');
+    }
+  });
+
+  it('stores a pre-2009 term printed to the month as the last day of that month', () => {
+    const certificate = truths.find(({ id }) => id === 'so_do_pre2009-photo')?.certificate;
+    const result = planCertificateAcceptance({ ...extraction, result: certificate }, acceptAll(certificate), none);
+    expect(rowsOf(result, 'parcels')[0]?.purposes).toEqual([
+      { land_use_code: 'ONT', area_m2: 300, term: 'long_term' },
+      { land_use_code: 'CLN', area_m2: 950.5, term: '2043-10-31' },
+    ]);
+  });
+
+  it.each(NATIONAL_ID_VECTORS.squeezed)('stores the shared vector %s by its last four digits, typed or read (D11)', (_name, text, stored) => {
+    const typed = planCertificateAcceptance(
+      extraction,
+      { ...acceptAll(extraction.result), issued_by: { kind: 'edited', value: text }, 'parcels[0].origin_text': { kind: 'edited', value: text } },
+      none,
+    );
+    const certificate = truthFile.certificate;
+    const read = reduceNationalIds({
+      ...certificate,
+      issued_by: { ...certificate.issued_by, value: text },
+      parcels: [{ ...certificate.parcels[0], origin_text: { ...certificate.parcels[0]?.origin_text, value: text } }],
+    });
+    const accepted = planCertificateAcceptance({ ...extraction, result: read }, acceptAll(read), none);
+    for (const result of [typed, accepted]) {
+      expect(rowsOf(result, 'certificates')[0]?.issued_by).toBe(stored);
+      expect(rowsOf(result, 'parcels')[0]?.origin_text).toBe(stored);
+      expect(planOf(result).acceptedFields.issued_by?.value).toBe(stored);
+      expect(planOf(result).acceptedFields['parcels[0].origin_text']?.value).toBe(stored);
+    }
+  });
+
+  it('refuses a plan that would still write a full national ID, naming the field, so nothing is written (D11)', () => {
+    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].area_m2': { kind: 'edited', value: '9999999999,99' } }, none);
+    expect(result).toEqual({ ok: false, reason: 'invalid', paths: ['parcels[0].area_m2'] });
   });
 
   it('plans a manual entry from typed values alone', () => {

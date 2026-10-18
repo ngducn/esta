@@ -44,6 +44,9 @@ describe('INPUT_KINDS', () => {
     expect(INPUT_KINDS.date.parse('05/11/2024')).toEqual({ ok: true, value: '2024-11-05' });
     expect(INPUT_KINDS.term.parse('Lâu dài')).toEqual({ ok: true, value: 'long_term' });
     expect(INPUT_KINDS.term.parse('Đến ngày 15/10/2064')).toEqual({ ok: true, value: '2064-10-15' });
+    expect(INPUT_KINDS.term.parse('Đến tháng 10/2043')).toEqual({ ok: true, value: '2043-10-31' });
+    expect(INPUT_KINDS.term.parse('đến tháng 2/2024')).toEqual({ ok: true, value: '2024-02-29' });
+    expect(INPUT_KINDS.term.parse('Đến tháng 13/2043')).toEqual({ ok: false });
     expect(INPUT_KINDS.use_form.parse('Sử dụng chung')).toEqual({ ok: true, value: 'shared' });
     expect(INPUT_KINDS.money.parse('1.234.567')).toEqual({ ok: true, value: 1234567 });
   });

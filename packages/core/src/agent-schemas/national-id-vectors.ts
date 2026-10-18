@@ -2,10 +2,14 @@
  * Shared test vectors for SPEC D11. The reducer test checks each one against `reduceNationalIds`, and
  * `scripts/national-id-vectors.ts` writes them into `supabase/tests/national_id.test.sql`, where the CHECK on
  * extractions must refuse every `reduced` input and accept every reduced output and every `kept` text.
+ *
+ * A `squeezed` text holds an ID only once a review field squeezes its spaces, so the reducer and the CHECK keep it as
+ * read; the acceptance test stores it as `stored` whether Mẹ presses Đúng or types it, and the CHECK accepts that.
  */
 export const NATIONAL_ID_VECTORS: {
   readonly reduced: readonly (readonly [name: string, text: string, reduced: string])[];
   readonly kept: readonly (readonly [name: string, text: string])[];
+  readonly squeezed: readonly (readonly [name: string, text: string, stored: string])[];
 } = {
   reduced: [
     ['a bare ID', '012345678901', '8901'],
@@ -116,5 +120,10 @@ export const NATIONAL_ID_VECTORS: {
     ['a comma-grouped amount in VND', 'Giá 1,500,000,000 VND'],
     ['a compact date', 'Ngày 20210312'],
     ['a date with a two-digit year', 'Ngày 12/03/21'],
+  ],
+  squeezed: [
+    ['four spaces inside an unlabelled ID', 'Nhận chuyển nhượng 079123    456789', 'Nhận chuyển nhượng 6789'],
+    ['45 spaces between a label and a CMND', `Sở Demo, CCCD${' '.repeat(45)}123456789`, 'Sở Demo, CCCD 6789'],
+    ['four spaces before the last group of a labelled ID', 'CCCD 0790 5800    4217, Ấp Demo', 'CCCD 4217, Ấp Demo'],
   ],
 };

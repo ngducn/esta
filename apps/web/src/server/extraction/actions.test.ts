@@ -1,7 +1,10 @@
+import { NATIONAL_ID_VECTORS } from '../../../../../packages/core/src/agent-schemas/national-id-vectors';
+import { reduceNationalIds } from '@esta/core/agent-schemas';
 import { manualEntryId, rowId } from '@esta/core/extraction/acceptance';
 import { reviewFields } from '@esta/core/extraction/fields';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
@@ -36,12 +39,22 @@ const propertyId = seedId(`seed:property:lane-${LANE}:bao-loc`);
 // Ryan's emails, so a sign-in code never races the documents test, which signs in Mẹ of lanes 8 and 9.
 const memberUser = seedId(`seed:user:ryan-lane-${LANE}`);
 const documents: string[] = [];
-const acceptAll = Object.fromEntries(reviewFields('certificate_v1', truthFile.certificate).map((field) => [field.path, { kind: 'accepted' }]));
+const acceptAllOf = (result: unknown) => Object.fromEntries(reviewFields('certificate_v1', result).map((field) => [field.path, { kind: 'accepted' }]));
+const acceptAll = acceptAllOf(truthFile.certificate);
+
+const FIXTURES = join(import.meta.dirname, '../../../../../fixtures/certificates');
+const truths = readdirSync(FIXTURES, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && entry.name !== 'generator')
+  .map((entry) => ({ id: entry.name, certificate: (JSON.parse(readFileSync(join(FIXTURES, entry.name, 'truth.json'), 'utf8')) as { certificate: unknown }).certificate }));
+
+// Each call of e2eServiceHeaders runs `supabase status`; one key per run keeps a hundred saves from racing it.
+let headers: Record<string, string> | undefined;
+const serviceHeaders = () => (headers ??= e2eServiceHeaders());
 
 async function signedInAs(email: string): Promise<SupabaseClient> {
   const link = await fetch(`${url}/auth/v1/admin/generate_link`, {
     method: 'POST',
-    headers: { ...e2eServiceHeaders(), 'content-type': 'application/json' },
+    headers: { ...serviceHeaders(), 'content-type': 'application/json' },
     body: JSON.stringify({ type: 'magiclink', email }),
   });
   const { email_otp: token } = (await link.json()) as { email_otp: string };
@@ -54,7 +67,7 @@ async function signedInAs(email: string): Promise<SupabaseClient> {
 async function service<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${url}/rest/v1/${path}`, {
     ...init,
-    headers: { ...e2eServiceHeaders(), 'content-type': 'application/json', prefer: 'return=representation', ...init.headers },
+    headers: { ...serviceHeaders(), 'content-type': 'application/json', prefer: 'return=representation', ...init.headers },
   });
   expect(response.ok, await response.clone().text()).toBe(true);
   return (await response.json().catch(() => null)) as T;
@@ -63,7 +76,7 @@ async function service<T>(path: string, init: RequestInit = {}): Promise<T> {
 const patch = (path: string, body: unknown) => service(path, { method: 'PATCH', body: JSON.stringify(body) });
 
 /** A certificate document whose extraction the worker has read and left waiting, written as the worker writes it. */
-async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_review'): Promise<{ documentId: string; extractionId: string }> {
+async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_review', result: unknown = truthFile.certificate): Promise<{ documentId: string; extractionId: string }> {
   const documentId = randomUUID();
   const extractionId = randomUUID();
   documents.push(documentId);
@@ -91,7 +104,7 @@ async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_revi
     return { documentId, extractionId };
   }
   await patch(`document_extractions?id=eq.${extractionId}`, { status: 'running' });
-  await patch(`document_extractions?id=eq.${extractionId}`, { status: 'needs_review', result: truthFile.certificate, model: 'replay' });
+  await patch(`document_extractions?id=eq.${extractionId}`, { status: 'needs_review', result, model: 'replay' });
   return { documentId, extractionId };
 }
 
@@ -207,6 +220,51 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     ]);
     expect(await service(`parcels?id=eq.${rowId(manual, 'parcels[0]')}&select=parcel_no,area_m2`)).toEqual([{ parcel_no: '12', area_m2: 300.5 }]);
   });
+
+  test('each of the 16 certificate truths saves with every field accepted as read', async () => {
+    asMember();
+    expect(truths).toHaveLength(16);
+    for (const { id, certificate } of truths) {
+      const { extractionId } = await waitingExtraction('needs_review', certificate);
+      expect(await saveExtractionReview(extractionId, acceptAllOf(certificate)), id).toEqual({ ok: true, propertyId });
+    }
+  }, 60_000);
+
+  test('an ID that reads as one only once its spaces are squeezed is stored by its last four digits, typed or read (D11)', async () => {
+    asMember();
+    const [origin, label] = NATIONAL_ID_VECTORS.squeezed;
+    if (origin === undefined || label === undefined) throw new Error('squeezed vectors');
+    const typed = await waitingExtraction();
+    const decisions = { ...acceptAll, 'parcels[0].origin_text': { kind: 'edited', value: origin[1] }, issued_by: { kind: 'edited', value: label[1] } };
+    const certificate = truthFile.certificate;
+    const read = await waitingExtraction(
+      'needs_review',
+      reduceNationalIds({ ...certificate, parcels: [{ ...certificate.parcels[0], origin_text: { ...certificate.parcels[0]?.origin_text, value: origin[1] } }] }),
+    );
+    const saves = [
+      { extractionId: typed.extractionId, decisions, issuedBy: label[2] },
+      { extractionId: read.extractionId, decisions: acceptAll, issuedBy: certificate.issued_by.value },
+    ];
+    for (const { extractionId, decisions: decided, issuedBy } of saves) {
+      expect(await saveExtractionReview(extractionId, decided)).toEqual({ ok: true, propertyId });
+      const rows = [rowId(extractionId, 'certificate'), rowId(extractionId, 'parcels[0]')];
+      expect(await service(`certificates?id=eq.${rows[0]}&select=issued_by`)).toEqual([{ issued_by: issuedBy }]);
+      expect(await service(`parcels?id=eq.${rows[1]}&select=origin_text`)).toEqual([{ origin_text: origin[2] }]);
+      const audit = await service<unknown[]>(`audit_log?row_id=in.(${rows.join(',')})&select=diff`);
+      expect(audit.length).toBeGreaterThanOrEqual(2);
+      expect(JSON.stringify(audit)).not.toMatch(/\d{6} \d{6}|CCCD \d{9}/u);
+    }
+  });
+
+  test('a value that would still hold a full ID is refused before anything is written (D11)', async () => {
+    asMember();
+    const { extractionId } = await waitingExtraction();
+    const parties = await count(`parties?household_id=eq.${household}&select=id`);
+    const decisions = { ...acceptAll, 'parcels[0].area_m2': { kind: 'edited', value: '9999999999,99' } };
+    expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: false, reason: 'invalid', paths: ['parcels[0].area_m2'] });
+    expect(await written(extractionId)).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
+    expect(await service(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
+  }, 15_000);
 
   test('a viewer and a member of another household write nothing', async () => {
     const { extractionId } = await waitingExtraction();

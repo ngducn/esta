@@ -3,7 +3,7 @@
 begin;
 \ir _harness.psql
 
-select plan(188);
+select plan(194);
 
 select ok(private.holds_national_id(to_jsonb(U&'012345678901'::text)), 'refuses a bare ID');
 select ok(not private.holds_national_id(to_jsonb(U&'8901'::text)), 'accepts a bare ID once reduced');
@@ -193,6 +193,12 @@ select ok(not private.holds_national_id(to_jsonb(U&'Giá 123,456,789,012 đ'::te
 select ok(not private.holds_national_id(to_jsonb(U&'Giá 1,500,000,000 VND'::text)), 'accepts a comma-grouped amount in VND');
 select ok(not private.holds_national_id(to_jsonb(U&'Ngày 20210312'::text)), 'accepts a compact date');
 select ok(not private.holds_national_id(to_jsonb(U&'Ngày 12/03/21'::text)), 'accepts a date with a two-digit year');
+select ok(not private.holds_national_id(to_jsonb(U&'Nhận chuyển nhượng 079123    456789'::text)), 'accepts four spaces inside an unlabelled ID as read');
+select ok(not private.holds_national_id(to_jsonb(U&'Nhận chuyển nhượng 6789'::text)), 'accepts four spaces inside an unlabelled ID as acceptance stores it');
+select ok(not private.holds_national_id(to_jsonb(U&'Sở Demo, CCCD                                             123456789'::text)), 'accepts 45 spaces between a label and a CMND as read');
+select ok(not private.holds_national_id(to_jsonb(U&'Sở Demo, CCCD 6789'::text)), 'accepts 45 spaces between a label and a CMND as acceptance stores it');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD 0790 5800    4217, Ấp Demo'::text)), 'accepts four spaces before the last group of a labelled ID as read');
+select ok(not private.holds_national_id(to_jsonb(U&'CCCD 4217, Ấp Demo'::text)), 'accepts four spaces before the last group of a labelled ID as acceptance stores it');
 
 select * from finish();
 rollback;
