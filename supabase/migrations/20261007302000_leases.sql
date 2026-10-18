@@ -208,7 +208,8 @@ create trigger freeze_issued_invoice
   before update on public.invoices
   for each row execute function private.freeze_issued_invoice();
 
--- During a household or lease delete the invoice row is already gone, so the cascade passes.
+-- During a household or lease delete the invoice row is already gone, so the cascade passes. Direct database
+-- connections (the seed, a backup restore) write issued invoices whole, so the guard covers API roles.
 create function private.freeze_issued_lines()
 returns trigger
 language plpgsql
@@ -220,7 +221,8 @@ begin
   if tg_op = 'UPDATE' and new.invoice_id <> old.invoice_id then
     raise exception 'ESTA_INVOICE_IDENTITY' using errcode = '23514';
   end if;
-  if exists (select 1 from public.invoices i where i.id = v_invoice and i.status <> 'draft') then
+  if current_user in ('authenticated', 'service_role')
+    and exists (select 1 from public.invoices i where i.id = v_invoice and i.status <> 'draft') then
     raise exception 'ESTA_INVOICE_ISSUED' using errcode = '23514';
   end if;
   return case when tg_op = 'DELETE' then old else new end;
