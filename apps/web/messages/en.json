@@ -836,7 +836,7 @@
     "toolCall": "{name} × {count}",
     "newItems": "New items",
     "noNewItems": "No new items",
-    "retrySelf": "You can try again or enter it by hand.",
+    "retrySelf": "You can enter it by hand.",
     "retryAsk": "An admin can have the assistant read it again."
   },
   "settings": {

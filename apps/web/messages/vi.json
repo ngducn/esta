@@ -836,7 +836,7 @@
     "toolCall": "{name} × {count}",
     "newItems": "Việc mới",
     "noNewItems": "Chưa có việc mới",
-    "retrySelf": "Bạn có thể thử lại hoặc nhập tay.",
+    "retrySelf": "Bạn có thể nhập tay.",
     "retryAsk": "Người quản trị có thể cho trợ lý đọc lại."
   },
   "settings": {

@@ -1,0 +1,63 @@
+/**
+ * Shared test vectors for SPEC D11. The reducer test checks each one against `reduceNationalIds`, and
+ * `scripts/national-id-vectors.ts` writes them into `supabase/tests/national_id.test.sql`, where the CHECK on
+ * extractions must refuse every `reduced` input and accept every reduced output and every `kept` text.
+ */
+export const NATIONAL_ID_VECTORS: {
+  readonly reduced: readonly (readonly [name: string, text: string, reduced: string])[];
+  readonly kept: readonly (readonly [name: string, text: string])[];
+} = {
+  reduced: [
+    ['a bare ID', '012345678901', '8901'],
+    ['an ID after a label', 'CCCD 012345678901', 'CCCD 8901'],
+    ['11 digits after a label, the leading 0 lost', 'CCCD 12345678901', 'CCCD 8901'],
+    ['11 grouped digits after a label', 'CCCD 12 345 678 901', 'CCCD 8901'],
+    ['10 digits after a label', 'CCCD 1234567890', 'CCCD 7890'],
+    ['9 digits after a CMND label', 'CMND 123456789', 'CMND 6789'],
+    ['an ID glued to the next word after a label', 'CCCD 012345678901Ngày cấp', 'CCCD 8901Ngày cấp'],
+    ['an ID glued to a letter after a label', 'CCCD a012345678901', 'CCCD a8901'],
+    ['an ID glued inside an email', 'nguyen012345678901@gmail.com', 'nguyen8901@gmail.com'],
+    ['an ID glued to a letter after it', '012345678901a', '8901a'],
+    ['an ID glued to letters that are no code prefix', 'KH012345678901', 'KH8901'],
+    ['zero-width spaces between groups', '012\u200B345\u200B678\u200B901', '8901'],
+    ['a zero-width space inside a labelled ID', 'CCCD 0123\u200B45678901', 'CCCD 8901'],
+    ['soft hyphens between groups', '012\u00AD345\u00AD678\u00AD901', '8901'],
+    ['en dashes between groups', '012\u2013345\u2013678\u2013901', '8901'],
+    ['em dashes between groups', '012\u2014345\u2014678\u2014901', '8901'],
+    ['commas between groups', '012,345,678,901', '8901'],
+    ['underscores between groups', '012_345_678_901', '8901'],
+    ['a newline with no label', '012345\n678901', '8901'],
+    ['newlines between groups of three', '012\n345\n678\n901', '8901'],
+    ['a CRLF with no label', 'Ông Demo\r\n012345\r\n678901', 'Ông Demo\r\n8901'],
+    ['NBSP grouping', 'CCCD 012\u00A0345\u00A0678\u00A0901', 'CCCD 8901'],
+    ['full-width digits', 'CCCD \uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17\uFF18\uFF19\uFF10\uFF11', 'CCCD 8901'],
+    ['a labelled ID and a date', 'CCCD số 012345678901 12/03/2021', 'CCCD số 8901 12/03/2021'],
+    ['a labelled ID and a dotted date', 'CCCD 012345678901 12.03.2021', 'CCCD 8901 12.03.2021'],
+    ['an unlabelled ID and a dotted date', 'Ông Demo 012345678901 12.03.2021', 'Ông Demo 8901 12.03.2021'],
+    ['a CMND and a date', 'CMND 123456789 15/03/2015', 'CMND 6789 15/03/2015'],
+    ['a CMND and a year', 'CMND 123456789 2015', 'CMND 6789 2015'],
+    ['an ID and an amount on the next line', 'CCCD 012345678901\n1.234.764 đ', 'CCCD 8901\n1.234.764 đ'],
+  ],
+  kept: [
+    ['an electricity customer code', 'PE012345678901'],
+    ['an electricity code after its label', 'Mã khách hàng: PE012345678901'],
+    ['an electricity code and its period', 'Mã khách hàng PE012345678901, kỳ 09/2026'],
+    ['a code prefix in lower case', 'pe012345678901'],
+    ['an 11-digit electricity code', 'Mã KH: PE01234567890'],
+    ['a water customer code', 'NB0901000001'],
+    ['a date', '12/03/2021'],
+    ['a date in a sentence', 'cấp ngày 12/03/2021'],
+    ['an ISO date', '2021-03-12'],
+    ['a dotted date', '12.03.2021'],
+    ['a dotted amount in đồng', '1.234.567.890 đồng'],
+    ['a dotted amount with đ', '1.234.567.890 đ'],
+    ['a dotted amount in VND', 'Tổng 1.234.567.890 VND'],
+    ['a 12-digit amount in đồng', 'Giá chuyển nhượng 125.000.000.000 đồng'],
+    ['a 13-digit bank account', 'STK 0123456789012'],
+    ['a grouped phone number', '0912 345 678'],
+    ['meter readings on separate lines', '\n12480\n12892\n412\n2.997 đ\n1.234.764 đ\n'],
+    ['an area with a decimal comma', 'Diện tích 68,4 m2'],
+    ['the last four digits after a label', 'CCCD 8340'],
+    ['an amount on the line after the last four digits', 'CCCD 8340\n1.234.764 đ\nSTK 0123456789012'],
+  ],
+};

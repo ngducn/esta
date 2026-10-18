@@ -1,18 +1,30 @@
--- Document extraction (SPEC §5.5, AGENT.md §5.1, DOC-6). An upload in an extractable category queues one
+-- Document extraction (SPEC \u00A75.5, AGENT.md \u00A75.1, DOC-6). An upload in an extractable category queues one
 -- extract_document job and one extraction row; the worker reads the file, fills the row and leaves an item for Mẹ.
 -- Members see a document's state through document_status, never through the operator-only agent_jobs and agent_runs.
 
 -- SPEC D11: the worker keeps only the last four digits of a national ID (reduceNationalIds). This refuses any string or
--- number in an extraction that still holds a bare 12-digit run, in case a later path skips the reduction. A run glued to
--- a code's letters, such as PE012345678901, passes, as the reduction leaves it.
+-- number in an extraction that still holds one, in case a later path skips the reduction, by the reducer's rules: 9 to
+-- 12 digits within 40 characters after an ID label, or 12 digits anywhere, grouped by the same separators, with
+-- zero-width characters removed, and dates and dotted amounts in đồng never part of a number. Without a label, a run
+-- after a utility code's prefix (PE012345678901) passes. supabase/tests/national_id.test.sql runs the reducer's vectors.
 create function private.holds_national_id(p_value jsonb)
 returns boolean
 language sql
 immutable
 set search_path = ''
 as $$
-  select coalesce(bool_or((scalar #>> '{}') ~ '(^|[^0-9A-Za-z])[0-9]{12}([^0-9A-Za-z]|$)'), false)
+  select coalesce(bool_or(
+    plain ~* '(cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\yid\y).{0,40}(?<![0-9])(?<![0-9]\.)[0-9](?:(?:[[:space:]]{1,3}|[./,_\u2010-\u2015-])?[0-9]){8,11}(?![0-9])(?!\.[0-9])'
+    or plain ~* '(?<![0-9])(?<![0-9]\.)(?<![^[:alpha:]](?:pa|pb|pc|pd|pe))[0-9](?:(?:[ \t]{1,3}|\r?\n|[.,_\u2010-\u2015-])?[0-9]){11}(?![0-9])(?!\.[0-9])'
+  ), false)
   from jsonb_path_query(coalesce(p_value, 'null'::jsonb), 'strict $.**') as scalar
+  cross join lateral (
+    select regexp_replace(
+      regexp_replace(
+        ' ' || regexp_replace(normalize(scalar #>> '{}', NFKC), '[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]', '', 'g') || ' ',
+        '(?<![0-9])(?:0?[1-9]|[12][0-9]|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)[0-9]{2}(?![0-9])', '#', 'g'),
+      '(?<![0-9])(?<![0-9]\.)[1-9][0-9]{0,2}(?:\.[0-9]{3})*(?![0-9])(?!\.[0-9])(?=[[:space:]]?(?:đ|đồng|vnd|vnđ)(?![[:alnum:]]))', '#', 'gi') as plain
+  ) as cleaned
   where jsonb_typeof(scalar) in ('string', 'number');
 $$;
 revoke all on function private.holds_national_id(jsonb) from public;

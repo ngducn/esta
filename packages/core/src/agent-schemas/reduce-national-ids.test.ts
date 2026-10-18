@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { reduceNationalIds } from './reduce-national-ids';
+import { NATIONAL_ID_VECTORS } from './national-id-vectors';
+import { DATE, reduceNationalIds } from './reduce-national-ids';
 
 const leaf = (value: unknown) => ({ value, confidence: 0.95, page: 1 });
 const NBSP = ' ';
@@ -157,7 +158,17 @@ describe('reduceNationalIds', () => {
     expect(reduceNationalIds(input)).toEqual(input);
   });
 
-  it('never lets a 12-digit run with any separators through', () => {
+  it.each(NATIONAL_ID_VECTORS.reduced)('reduces the shared vector %s, and reducing again changes nothing', (_name, text, reduced) => {
+    const once = reduceNationalIds({ notes_text: leaf(text) }).notes_text.value;
+    expect(once).toBe(reduced);
+    expect(reduceNationalIds({ notes_text: leaf(once) }).notes_text.value).toBe(reduced);
+  });
+
+  it.each(NATIONAL_ID_VECTORS.kept)('keeps the shared vector %s', (_name, text) => {
+    expect(reduceNationalIds({ notes_text: leaf(text) }).notes_text.value).toBe(text);
+  });
+
+  it('never lets a 12-digit run with any separators through, unless its grouping reads as a date', () => {
     const separator = fc.constantFrom('', ' ', '  ', NBSP, ' ', '\t', '.', '-');
     const run = fc
       .tuple(fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 12, maxLength: 12 }), fc.array(separator, { minLength: 11, maxLength: 11 }))
@@ -165,6 +176,7 @@ describe('reduceNationalIds', () => {
     const context = fc.constantFrom(['', ''], ['Ông Demo ', ', 12 Lê Lợi'], ['CCCD: ', ''], ['Số ', ' cấp 12/03/2021'], ['(', ')'], ['\n', '\n']);
     fc.assert(
       fc.property(run, context, fc.boolean(), (number, [before, after], asLeaf) => {
+        fc.pre(!new RegExp(DATE.source, 'u').test(number));
         const text = `${before}${number}${after}`;
         const reduced = reduceNationalIds(asLeaf ? { notes_text: leaf(text) } : { full_text: text });
         const out = asLeaf ? (reduced as { notes_text: { value: string } }).notes_text.value : (reduced as { full_text: string }).full_text;
