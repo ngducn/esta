@@ -19,6 +19,14 @@ export function latestMail(email: string): Promise<mail.Mail> {
   return mail.latestMail(email, mailbox);
 }
 
+export function latestCode(email: string): Promise<string> {
+  return mail.latestCode(email, mailbox);
+}
+
+export function clearMail(email: string): Promise<void> {
+  return mail.clearMailbox(email, mailbox);
+}
+
 export async function requestCode(page: Page, email: string): Promise<void> {
   await mail.clearMailbox(email, mailbox);
   await page.goto('/sign-in/code');

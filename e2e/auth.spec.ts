@@ -3,9 +3,14 @@ import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import config from '../playwright.config';
-import { authApi } from './helpers/auth-api';
+import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
+import { authApi, restUrl } from './helpers/auth-api';
 import { latestMail, requestCode, signIn } from './helpers/inbucket';
+import { createAccount, startAccount } from './helpers/password';
 
+const WRONG_PASSWORD = 'Email hoặc mật khẩu chưa đúng. Kiểm tra lại rồi thử lại.';
+/** Auth refuses a second send to one address within its 1 s max_frequency. */
+const SEND_SPACING_MS = 1_200;
 const SLOWER_THAN_AN_ASSERTION_WAITS_MS = (config.expect?.timeout ?? 5_000) + 1_000;
 /** Above the slow-answer test's delay, so only a POST that never answers runs out. */
 const CREATE_ANSWER_TIMEOUT_MS = SLOWER_THAN_AN_ASSERTION_WAITS_MS + 10_000;
@@ -36,14 +41,31 @@ async function createHousehold(page: Page, name: string, displayName: string) {
   });
 }
 
-test('/ sends a signed-out visitor to /sign-in', async ({ page }) => {
+test('/ sends a signed-out visitor to /sign-in, which asks for an email and a password', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL(/\/sign-in$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đăng nhập');
-  await expect(page.getByLabel('Email')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Gửi mã' })).toBeVisible();
+  await expect(page.getByLabel('Email')).toHaveAttribute('autocomplete', 'email');
+  const password = page.getByLabel('Mật khẩu', { exact: true });
+  await expect(password).toHaveAttribute('autocomplete', 'current-password');
+  await expect(password).toHaveAttribute('type', 'password');
+  await expect(page.getByRole('button', { name: 'Đăng nhập', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAttribute('href', '/forgot-password');
+  await expect(page.getByRole('link', { name: 'Tạo tài khoản' })).toHaveAttribute('href', '/sign-up');
+  await expect(page.getByRole('link', { name: 'Đăng nhập bằng mã gửi qua email' })).toHaveAttribute('href', '/sign-in/code');
   await expect(page.getByRole('button', { name: 'Đăng nhập bằng Google' })).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('the code sign-in is one tap away from /sign-in and still signs in', async ({ page }) => {
+  await page.goto('/sign-in');
+  await page.getByRole('link', { name: 'Đăng nhập bằng mã gửi qua email' }).click();
+  await expect(page).toHaveURL(/\/sign-in\/code$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đăng nhập bằng mã');
+  await expect(page.getByRole('button', { name: 'Gửi mã' })).toBeVisible();
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await signIn(page, uniqueEmail('code'));
+  await expect(page).toHaveURL(/\/onboarding$/);
 });
 
 test('FND-1: a new email reads its code from Inbucket, signs in and creates a household', async ({ page }) => {
@@ -116,14 +138,11 @@ test('FND-1: an invited email lands in the inviting household with the invited r
   await inviteeContext.close();
 });
 
-test('a password signup for an invited address gets no session, and the password never signs in', async ({
-  page,
-  browser,
-  request,
-}) => {
+test('an invited address claims its invite only after its email is confirmed by the code', async ({ page, browser, request }) => {
   const household = `Gia đình Chiếm Demo ${randomUUID().slice(0, 4)}`;
   const invitee = uniqueEmail('takeover');
-  const password = `Demo-${randomUUID()}`;
+  const squatter = `Demo-${randomUUID()}`;
+  const owner = `Owner-${randomUUID()}`;
   await signIn(page, uniqueEmail('admin'));
   await createHousehold(page, household, 'Demo Quản Trị');
   await page.getByLabel('Email người được mời').fill(invitee);
@@ -133,22 +152,56 @@ test('a password signup for an invited address gets no session, and the password
 
   const signup = await request.post(`${authApi.url}/signup`, {
     headers: authApi.headers,
-    data: { email: invitee.toUpperCase(), password },
+    data: { email: invitee.toUpperCase(), password: squatter },
   });
   expect(await signup.json(), 'a password signup never yields a session').not.toHaveProperty('access_token');
 
-  const inviteeContext = await browser.newContext();
-  const inviteePage = await inviteeContext.newPage();
-  await expect(async () => signIn(inviteePage, invitee)).toPass({ timeout: 15_000 });
-  await expect(inviteePage.getByRole('heading', { level: 1 })).toHaveText(household);
-  await expect(inviteePage.getByText('Quyền: Quản trị')).toBeVisible();
-  await inviteeContext.close();
+  await setTimeout(SEND_SPACING_MS);
+  const squatterContext = await browser.newContext();
+  const squatterPage = await squatterContext.newPage();
+  await startAccount(squatterPage, invitee, squatter);
+  expect((await squatterContext.cookies()).filter((cookie) => cookie.name.startsWith('sb-')), 'the code step holds no session').toEqual([]);
+  await squatterPage.goto('/');
+  await expect(squatterPage, 'an unconfirmed account reaches no app page').toHaveURL(/\/sign-in$/);
+  await squatterPage.getByLabel('Email').fill(invitee);
+  await squatterPage.getByLabel('Mật khẩu', { exact: true }).fill(squatter);
+  await squatterPage.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
+  await expect(squatterPage.getByRole('main').getByRole('alert')).toHaveText(WRONG_PASSWORD);
+  await expect(squatterPage).toHaveURL(/\/sign-in$/);
+  await squatterContext.close();
 
-  const grant = await request.post(`${authApi.url}/token?grant_type=password`, {
+  const unconfirmedGrant = await request.post(`${authApi.url}/token?grant_type=password`, {
     headers: authApi.headers,
-    data: { email: invitee, password },
+    data: { email: invitee, password: squatter },
   });
-  expect(grant.status(), 'the password set before the owner confirmed never signs in').toBe(400);
+  expect(unconfirmedGrant.status(), 'an unconfirmed account holds no password').toBe(400);
+  const invite = await request.get(`${restUrl}/household_members?invited_email=eq.${encodeURIComponent(invitee)}&select=user_id`, {
+    headers: e2eServiceHeaders(),
+  });
+  expect(await invite.json(), 'nobody has claimed the invite before the email is confirmed').toEqual([{ user_id: null }]);
+
+  const ownerContext = await browser.newContext();
+  const ownerPage = await ownerContext.newPage();
+  await expect(async () => signIn(ownerPage, invitee)).toPass({ timeout: 15_000 });
+  await expect(ownerPage.getByRole('heading', { level: 1 })).toHaveText(household);
+  await expect(ownerPage.getByText('Quyền: Quản trị')).toBeVisible();
+  const squatterGrant = await request.post(`${authApi.url}/token?grant_type=password`, {
+    headers: authApi.headers,
+    data: { email: invitee, password: squatter },
+  });
+  expect(squatterGrant.status(), 'a password set before the owner confirmed by code never signs in').toBe(400);
+
+  await ownerContext.clearCookies();
+  await setTimeout(SEND_SPACING_MS);
+  await createAccount(ownerPage, invitee, owner);
+  await expect(ownerPage, 'creating an account on a confirmed address sets its password and signs in').toHaveURL(/\/$/);
+  await expect(ownerPage.getByRole('heading', { level: 1 })).toHaveText(household);
+  await ownerContext.close();
+  const ownerGrant = await request.post(`${authApi.url}/token?grant_type=password`, {
+    headers: authApi.headers,
+    data: { email: invitee, password: owner },
+  });
+  expect(ownerGrant.status(), 'the password the owner chose signs in').toBe(200);
 });
 
 test('a wrong code shows the error and creates no session', async ({ page }) => {
@@ -175,7 +228,7 @@ test('a send that is refused is not blamed on the email', async ({ page, request
   // which a loaded machine can miss, so each attempt takes a fresh address until one lands inside it.
   await expect(async () => {
     const email = uniqueEmail('refused');
-    await page.goto('/sign-in');
+    await page.goto('/sign-in/code');
     await page.getByLabel('Email').fill(email);
     const first = await request.post(`${authApi.url}/otp`, { headers: authApi.headers, data: { email, create_user: true } });
     expect(first.ok(), 'the first send lands just before the form sends').toBe(true);
@@ -244,7 +297,8 @@ test('a language chosen on sign-in carries into the member and the English chrom
   await page.context().addCookies([{ name: 'NEXT_LOCALE', value: 'en', url: baseURL ?? '' }]);
   await page.goto('/sign-in');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in');
-  await expect(page.getByRole('button', { name: 'Send code' })).toBeVisible();
+  await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Sign in with a code sent by email' })).toBeVisible();
 
   await signIn(page, uniqueEmail('english'));
   await page.getByLabel('Household name').fill('Gia đình English Demo');
@@ -280,6 +334,6 @@ test('a phone never requests the sign-in photo', async ({ page }, testInfo) => {
   const requests = await watchSignInPhoto(page);
   await page.goto('/sign-in');
   await page.waitForLoadState('load');
-  await expect(page.getByRole('button', { name: 'Gửi mã' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Đăng nhập', exact: true })).toBeVisible();
   expect(requests).toEqual([]);
 });
