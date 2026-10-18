@@ -21,7 +21,7 @@ export function latestMail(email: string): Promise<mail.Mail> {
 
 export async function requestCode(page: Page, email: string): Promise<void> {
   await mail.clearMailbox(email, mailbox);
-  await page.goto('/sign-in');
+  await page.goto('/sign-in/code');
   await page.locator('input[name="email"]').fill(email);
   await page.locator('button[value="send"]').click();
   const codeStep = page.locator('input[name="code"]');
@@ -62,6 +62,6 @@ export async function signIn(page: Page, email: string, typeCode = (code: string
     await requestCode(page, email);
     await page.locator('input[name="code"]').fill(typeCode(await mail.latestCode(email, mailbox)));
     await page.locator('button[value="verify"]').click();
-    await page.waitForURL((url) => url.pathname !== '/sign-in');
+    await page.waitForURL((url) => url.pathname !== '/sign-in/code');
   });
 }
