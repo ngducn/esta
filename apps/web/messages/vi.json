@@ -1037,6 +1037,46 @@
     "offline": "Đang mất mạng. Bảng bên dưới là lần tải gần nhất; chọn tháng khác khi có mạng lại.",
     "errorTitle": "Chưa tải được bảng thu tiền",
     "errorBody": "Kiểm tra mạng rồi thử lại. Số tiền đã ghi nhận vẫn an toàn.",
-    "retry": "Thử lại"
+    "retry": "Thử lại",
+    "recordPayment": "Ghi nhận",
+    "partial": "Thu một phần"
+  },
+  "payments": {
+    "title": "Ghi nhận tiền",
+    "amount": "Số tiền nhận",
+    "allocation": "Trả cho",
+    "allocationSettled": "Tháng {month}: {amount}, trả đủ",
+    "allocationShort": "Tháng {month}: {amount}, còn thiếu {rest}",
+    "credit": "Dư {amount}, ghi thành tiền trả trước của {tenant}.",
+    "creditNoTenant": "Dư {amount}, ghi thành tiền trả trước của người thuê.",
+    "choose": "Chọn hóa đơn",
+    "chooseHint": "Bỏ chọn hóa đơn mà khoản này không trả.",
+    "invoiceOption": "Tháng {month}, hạn {date}",
+    "invoiceOwed": "còn {amount}",
+    "chooseDone": "Xong",
+    "method": "Hình thức",
+    "cash": "Tiền mặt",
+    "transfer": "Chuyển khoản",
+    "date": "Ngày nhận",
+    "dateToday": "Hôm nay, {date}",
+    "changeDate": "Đổi ngày",
+    "save": "Lưu",
+    "saving": "Đang lưu",
+    "cancel": "Hủy",
+    "saved": "Đã ghi nhận {amount} từ {place}.",
+    "undone": "Đã hoàn tác khoản thu từ {place}.",
+    "undoFailed": "Chưa hoàn tác được. Khoản thu vẫn được giữ; tải lại trang để xem.",
+    "offline": "Đang mất mạng. Khoản thu chỉ lưu được khi có mạng lại.",
+    "errors": {
+      "amountMissing": "Nhập số tiền đã nhận.",
+      "amountInvalid": "Số tiền chưa đúng. Viết số tiền như 3.500.000, 3tr5 hoặc 850k.",
+      "method": "Chọn Tiền mặt hoặc Chuyển khoản.",
+      "dateMissing": "Nhập ngày nhận tiền.",
+      "dateInvalid": "Ngày chưa đúng. Nhập theo dạng 07/10/2026.",
+      "dateAfterToday": "Ngày nhận không được sau hôm nay.",
+      "choice": "Chọn ít nhất một hóa đơn còn nợ.",
+      "nothingOwed": "Hóa đơn này đã thu đủ. Tải lại bảng để xem số mới.",
+      "failed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
+    }
   }
 }

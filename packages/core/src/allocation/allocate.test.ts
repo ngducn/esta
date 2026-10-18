@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { allocatePayment, type Allocation, type OpenInvoice } from './allocate';
+import { allocatePayment, owedThrough, type Allocation, type OpenInvoice } from './allocate';
 
 const d = isoDate;
 
@@ -102,5 +102,17 @@ describe('allocatePayment', () => {
 
   it.each([0, -1])('refuses a payment of %i', (amount) => {
     expect(allocatePayment(vnd(amount), [september])).toEqual({ ok: false, reason: 'non_positive_payment' });
+  });
+});
+
+describe('owedThrough', () => {
+  it('asks for the row and every older open invoice of the lease, never a later one', () => {
+    expect(owedThrough([october, august, september], 'sep')).toBe(7_000_000);
+    expect(owedThrough([october, august, september], 'aug')).toBe(3_500_000);
+    expect(owedThrough([october, august, september], 'oct')).toBe(10_500_000);
+  });
+
+  it('asks for nothing when the row is no longer open', () => {
+    expect(owedThrough([august, september], 'oct')).toBe(0);
   });
 });

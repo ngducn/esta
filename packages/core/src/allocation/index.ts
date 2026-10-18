@@ -1,5 +1,6 @@
 export {
   allocatePayment,
+  owedThrough,
   type Allocation,
   type AllocationPlan,
   type AllocationRefusal,

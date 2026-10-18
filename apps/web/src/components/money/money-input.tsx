@@ -8,6 +8,7 @@ import { useId, useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { Input } from '@/components/ui/input';
 import { useSettled } from '@/components/use-settled';
+import { cn } from '@/lib/utils';
 
 type MoneyInputProps = {
   label: string;
@@ -18,10 +19,12 @@ type MoneyInputProps = {
   onTextChange?: (text: string) => void;
   name?: string;
   disabled?: boolean;
+  /** The figure-sized field of a sheet whose whole job is one amount, such as recording a payment. */
+  large?: boolean;
 };
 
 /** Reads Vietnamese shorthand through `parseVndInput` and shows the full amount it read under the field. */
-export function MoneyInput({ label, defaultText = '', onValueChange, onTextChange, name, disabled = false }: MoneyInputProps) {
+export function MoneyInput({ label, defaultText = '', onValueChange, onTextChange, name, disabled = false, large = false }: MoneyInputProps) {
   const t = useTranslations('components.money');
   const locale = useLocale();
   const id = useId();
@@ -57,7 +60,7 @@ export function MoneyInput({ label, defaultText = '', onValueChange, onTextChang
         enterKeyHint="done"
         aria-invalid={error !== null}
         aria-describedby={`${id}-hint ${id}-message`}
-        className="mt-1"
+        className={cn('mt-1', large && 'min-h-16 text-h2 font-bold figures')}
       />
       {name === undefined ? null : <input type="hidden" name={name} value={result.ok ? result.value : ''} />}
       <FieldMessage id={`${id}-message`} error={error}>

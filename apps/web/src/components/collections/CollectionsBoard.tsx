@@ -4,16 +4,19 @@ import { formatDate, formatMonthWithin, formatRelativeDue, type Locale } from '@
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { MoneyDisplay } from '@/components/money/money-display';
+import { RecordPaymentAction } from '@/components/payments/RecordPaymentAction';
 import { StatusMark, StatusShape, type MarkStatus } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import type { CollectionRow } from '@/server/collections/load';
+import type { CollectionRow, PaymentInvoice } from '@/server/collections/load';
 import { collectionRowActions } from './rowActions';
 
 const GROUP_MARKS = { overdue: 'overdue', due: 'due', notDue: 'upcoming', paid: 'paid' } as const satisfies Record<CollectionGroupKey, MarkStatus>;
 
 type Board = readonly CollectionGroup<CollectionRow>[];
+/** Each lease's open invoices, which `Ghi nhận` prefills from and settles. */
+type OpenInvoices = ReadonlyMap<string, readonly PaymentInvoice[]>;
 
 /** Below 640 px every row stacks: place and amount, tenant and due date, the status, then the actions. */
 const cell = {
@@ -37,14 +40,32 @@ function StatusCell({ item, month, asOf, locale }: { item: CollectionItem<Collec
         </span>
       )}
       {state.group === 'notDue' ? <span className="text-small text-ink-muted">{formatRelativeDue(item.row.dueDate, asOf, locale)}</span> : null}
+      {item.row.paymentStatus === 'partial' ? (
+        <span data-testid="row-partial" className="text-small font-semibold text-ink-2">
+          {t('partial')}
+        </span>
+      ) : null}
     </span>
   );
 }
 
-function CollectionsRow({ item, month, asOf, canEdit }: { item: CollectionItem<CollectionRow>; month: IsoDate; asOf: IsoDate; canEdit: boolean }) {
+function CollectionsRow({
+  item,
+  month,
+  asOf,
+  canEdit,
+  openInvoices,
+}: {
+  item: CollectionItem<CollectionRow>;
+  month: IsoDate;
+  asOf: IsoDate;
+  canEdit: boolean;
+  openInvoices: OpenInvoices;
+}) {
   const t = useTranslations('collections');
   const locale = useLocale();
   const { row } = item;
+  const place = row.wholeUnit ? row.propertyName : t('place', { unit: row.unitLabel, property: row.propertyName });
   return (
     <TableRow
       data-testid="collections-row"
@@ -53,7 +74,7 @@ function CollectionsRow({ item, month, asOf, canEdit }: { item: CollectionItem<C
     >
       <TableCell className={cn('lg:min-w-60 max-sm:border-0 max-sm:p-0', cell.place)}>
         <span data-testid="row-place" className="block min-w-0 text-body font-semibold break-words text-ink">
-          {row.wholeUnit ? row.propertyName : t('place', { unit: row.unitLabel, property: row.propertyName })}
+          {place}
         </span>
       </TableCell>
       <TableCell className={cn('text-body text-ink-2 max-sm:border-0 max-sm:p-0', cell.tenant)}>
@@ -77,11 +98,26 @@ function CollectionsRow({ item, month, asOf, canEdit }: { item: CollectionItem<C
       </TableCell>
       <TableCell className={cn('text-end max-sm:border-0 max-sm:p-0 max-sm:text-start', cell.actions)}>
         <span className="inline-flex flex-wrap gap-2">
-          {collectionRowActions(item, canEdit).map((action) => (
-            <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'quiet', className: 'max-sm:-ml-2' })}>
-              {t(action.label)}
-            </Link>
-          ))}
+          {collectionRowActions(item, canEdit).map((action) =>
+            action.kind === 'link' ? (
+              <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'quiet', className: 'max-sm:first:-ml-2' })}>
+                {t(action.label)}
+              </Link>
+            ) : (
+              <RecordPaymentAction
+                key={action.id}
+                label={t(action.label)}
+                target={{
+                  invoiceId: row.invoiceId,
+                  place,
+                  shortPlace: row.wholeUnit ? row.propertyName : row.unitLabel,
+                  tenantName: row.tenantName,
+                  openInvoices: openInvoices.get(row.leaseId) ?? [],
+                  today: asOf,
+                }}
+              />
+            ),
+          )}
         </span>
       </TableCell>
     </TableRow>
@@ -113,7 +149,21 @@ function GroupHeader({ group }: { group: CollectionGroup<CollectionRow> }) {
 }
 
 /** LSE-10: four groups in the order Mẹ reads them, each with its count and total, in one table whose header stays put. */
-export function CollectionsBoard({ board, month, monthLabel, asOf, canEdit }: { board: Board; month: IsoDate; monthLabel: string; asOf: IsoDate; canEdit: boolean }) {
+export function CollectionsBoard({
+  board,
+  month,
+  monthLabel,
+  asOf,
+  canEdit,
+  openInvoices,
+}: {
+  board: Board;
+  month: IsoDate;
+  monthLabel: string;
+  asOf: IsoDate;
+  canEdit: boolean;
+  openInvoices: OpenInvoices;
+}) {
   const t = useTranslations('collections');
   return (
     <div data-testid="collections-board" className="rounded-lg border border-rule bg-surface shadow-card">
@@ -142,7 +192,7 @@ export function CollectionsBoard({ board, month, monthLabel, asOf, canEdit }: { 
                 </TableCell>
               </TableRow>
             ) : (
-              group.items.map((item) => <CollectionsRow key={item.row.invoiceId} item={item} month={month} asOf={asOf} canEdit={canEdit} />)
+              group.items.map((item) => <CollectionsRow key={item.row.invoiceId} item={item} month={month} asOf={asOf} canEdit={canEdit} openInvoices={openInvoices} />)
             )}
           </TableBody>
         ))}
