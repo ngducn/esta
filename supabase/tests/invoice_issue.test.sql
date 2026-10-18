@@ -1,9 +1,9 @@
 begin;
 \ir _harness.psql
 
-select plan(31);
+select plan(36);
 
-select tests.create_household('a') as a, tests.create_household('b') as b \gset
+select tests.create_household('a') as a, tests.create_household('b') as b, tests.create_household('c') as c \gset
 
 -- Household a holds the SPEC §9.3 shapes the nightly run meets on 02/11/2026: Thủ Đức's last day is 01/11 and its
 -- one-day draft waits for that day, Q7 bills by quarter and has paid through 31/12, Dĩ An's Phòng 5 bills from the 25th
@@ -49,6 +49,39 @@ insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd
   (:'a', '00000000-0000-4000-8000-0000000f0003', 'rent', 2800000, 2800000),
   (:'a', '00000000-0000-4000-8000-0000000f0004', 'rent', 632258, 632258),
   (:'a', '00000000-0000-4000-8000-0000000f0005', 'rent', 2800000, 2800000);
+
+-- Household c holds ended leases the run must not bill past their end. Phòng 1 C reaches its last day on 31/10 with a
+-- 10-day due offset, so its last draft issues on 04/11, after the lease has ended; a stray draft starts after that last
+-- day. A member set Phòng 2 C to ended with a direct write before its 24/06/2027 end date (round 1 found the run then
+-- billed its later periods), and Phòng 3 C, which has no end date, the same way.
+insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
+  ('00000000-0000-4000-8000-0000000000c1', :'c', 'Dãy trọ Demo C', 'DEMOC', 'rooming_house', 'rental');
+insert into public.units (id, household_id, property_id, label, kind) values
+  ('00000000-0000-4000-8000-000000000c11', :'c', '00000000-0000-4000-8000-0000000000c1', 'Phòng 1 C', 'room'),
+  ('00000000-0000-4000-8000-000000000c12', :'c', '00000000-0000-4000-8000-0000000000c1', 'Phòng 2 C', 'room'),
+  ('00000000-0000-4000-8000-000000000c13', :'c', '00000000-0000-4000-8000-0000000000c1', 'Phòng 3 C', 'room');
+insert into public.parties (id, household_id, kind, full_name, tags) values
+  ('00000000-0000-4000-8000-00000000c0c1', :'c', 'individual', 'Trần Văn Demo C', array['tenant']);
+insert into public.leases (
+  id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
+  due_offset_days, utilities_mode, paid_through_date, status
+) values
+  ('00000000-0000-4000-8000-00000000ec01', :'c', '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000c11',
+   '00000000-0000-4000-8000-00000000c0c1', '2026-01-25', '2026-10-31', 3100000, 1, 'lease_start', 10, 'metered_by_owner', '2026-10-24', 'active'),
+  ('00000000-0000-4000-8000-00000000ec02', :'c', '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000c12',
+   '00000000-0000-4000-8000-00000000c0c1', '2026-02-25', '2027-06-24', 2800000, 1, 'lease_start', 0, 'metered_by_owner', '2026-10-24', 'ended'),
+  ('00000000-0000-4000-8000-00000000ec03', :'c', '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000c13',
+   '00000000-0000-4000-8000-00000000c0c1', '2026-01-01', null, 2500000, 1, 'calendar_month', 0, 'tenant_direct', '2026-10-31', 'ended');
+insert into public.invoices (id, household_id, lease_id, period_start, period_end, due_date, issue_on, status, issued_at) values
+  ('00000000-0000-4000-8000-0000000fc011', :'c', '00000000-0000-4000-8000-00000000ec01', '2026-10-25', '2026-10-31', '2026-11-04', '2026-11-04', 'draft', null),
+  ('00000000-0000-4000-8000-0000000fc012', :'c', '00000000-0000-4000-8000-00000000ec01', '2026-11-01', '2026-11-24', '2026-11-01', '2026-11-01', 'draft', null),
+  ('00000000-0000-4000-8000-0000000fc021', :'c', '00000000-0000-4000-8000-00000000ec02', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-25', 'draft', null),
+  ('00000000-0000-4000-8000-0000000fc031', :'c', '00000000-0000-4000-8000-00000000ec03', '2026-11-01', '2026-11-30', '2026-11-01', '2026-11-01', 'draft', null);
+insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd, amount_vnd) values
+  (:'c', '00000000-0000-4000-8000-0000000fc011', 'rent', 700000, 700000),
+  (:'c', '00000000-0000-4000-8000-0000000fc012', 'rent', 2400000, 2400000),
+  (:'c', '00000000-0000-4000-8000-0000000fc021', 'rent', 2800000, 2800000),
+  (:'c', '00000000-0000-4000-8000-0000000fc031', 'rent', 2500000, 2500000);
 
 select ok(not has_function_privilege('anon', 'public.run_invoicing(uuid, date, timestamptz)', 'execute'), 'anon cannot run invoicing');
 select ok(not has_function_privilege('authenticated', 'public.run_invoicing(uuid, date, timestamptz)', 'execute'), 'a member cannot run invoicing');
@@ -127,6 +160,21 @@ select results_eq(
   format($$ select actor_kind, actor_id, diff -> 'status' from public.audit_log where id > %s and table_name = 'leases' and household_id = %L $$, :audit_before, :'a'),
   $$ values ('system'::text, 'cron'::text, '{"old": "active", "new": "ended"}'::jsonb) $$,
   'the audit log records the lease end as system:cron');
+
+select is((select status from public.leases where id = '00000000-0000-4000-8000-00000000ec01'), 'ended',
+  'Phòng 1 C''s lease ended on its own once 31/10 passed');
+select results_eq(
+  format($$ select drafted, issued from public.run_invoicing(%L, '2026-11-04', '2026-11-04T09:00:00+07:00') $$, :'c'),
+  $$ values (0, 1) $$,
+  'on 04/11 the run in household c issues one draft and drafts nothing for its ended leases');
+select is((select issued_at from public.invoices where id = '00000000-0000-4000-8000-0000000fc011'), '2026-11-04T09:00:00+07:00'::timestamptz,
+  'Phòng 1 C''s last period, due after the lease ended, issues on its due date');
+select is((select status from public.invoices where id = '00000000-0000-4000-8000-0000000fc012'), 'draft',
+  'a draft that starts after an ended lease''s last day never issues');
+select results_eq(
+  $$ select id, status from public.invoices where id in ('00000000-0000-4000-8000-0000000fc021', '00000000-0000-4000-8000-0000000fc031') order by id $$,
+  $$ values ('00000000-0000-4000-8000-0000000fc021'::uuid, 'draft'::text), ('00000000-0000-4000-8000-0000000fc031'::uuid, 'draft'::text) $$,
+  'a lease set to ended before its end date, or with none, issues nothing new');
 
 select results_eq(
   format($$ select drafted, issued from public.run_invoicing(%L, '2026-12-31', '2026-12-31T09:00:00+07:00') $$, :'a'),
