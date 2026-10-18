@@ -64,6 +64,9 @@ type Value = string | number | boolean;
 /** Row ids are UUIDv5 of `extraction:<id>:<path>`, so running a plan twice names the same rows. */
 export const rowId = (extractionId: string, path: string) => uuidV5(`extraction:${extractionId}:${path}`);
 
+/** The manual entry for a failed read is named by that read, so a retried save inserts it once. */
+export const manualEntryId = (failedExtractionId: string) => uuidV5(`manual:${failedExtractionId}`);
+
 /** NFC, one space, lower case: `Nguyễn  Thị Demo` and `NGUYỄN THỊ DEMO` are one name. */
 export function normalizeName(name: string): string {
   return name.normalize('NFC').replace(/\s+/gu, ' ').trim().toLocaleLowerCase('vi');

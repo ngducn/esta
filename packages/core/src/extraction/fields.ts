@@ -7,6 +7,8 @@ import { parseVndInput } from '../parse/vnd-input';
 import { areaSchema, LONG_TERM, USE_FORMS } from '../schemas/legal';
 import type { SchemaName } from './required-fields';
 
+export { isSchemaName, type SchemaName } from './required-fields';
+
 /** A leaf as the worker saves it (DOMAIN-VN §2.1): the value read, the model's confidence, the page it came from. */
 export type Leaf = { readonly value: unknown; readonly confidence: number; readonly page: number | null };
 
