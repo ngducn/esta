@@ -2,7 +2,7 @@ export type IsoDate = string & { readonly __brand: 'IsoDate' };
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-function daysInMonth(year: number, month: number): number {
+export function daysInMonth(year: number, month: number): number {
   if (month === 2) return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 29 : 28;
   return [4, 6, 9, 11].includes(month) ? 30 : 31;
 }

@@ -1,8 +1,9 @@
 import { ANNOTATION_KINDS, CERTIFICATE_FORMS, parseArea } from '../agent-schemas/certificate_v1';
+import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
 import { UTILITY_BILL_KINDS } from '../agent-schemas/utility_bill_v1';
-import { isIsoDate, type IsoDate } from '../date/iso-date';
+import { daysInMonth, isIsoDate, type IsoDate } from '../date/iso-date';
 import { idLast4 } from '../names';
-import { parseDateInput } from '../parse/date-input';
+import { isoFromParts, parseDateInput } from '../parse/date-input';
 import { parseVndInput } from '../parse/vnd-input';
 import { areaSchema, LONG_TERM, USE_FORMS } from '../schemas/legal';
 import type { SchemaName } from './required-fields';
@@ -35,6 +36,15 @@ const choice = <T extends string>(options: readonly T[]) => ({
 });
 
 const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
+const TERM_MONTH = /(?<![\d./-])(\d{1,2})[./-](\d{4})(?!\d)/u;
+
+/** [app rule] A term printed to the month, as pre-2009 certificates print `Đến tháng 10/2043`, runs to its last day. */
+function readMonthEnd(text: string): IsoDate | null {
+  const [, month, year] = TERM_MONTH.exec(text) ?? [];
+  if (month === undefined || year === undefined) return null;
+  const parsed = isoFromParts(year, month, String(daysInMonth(Number(year), Number(month))));
+  return parsed.ok ? parsed.value : null;
+}
 
 function readDate(text: string): IsoDate | null {
   if (isIsoDate(text)) return text;
@@ -118,7 +128,7 @@ export const INPUT_KINDS = {
       return refused;
     },
   },
-  /** `Lâu dài` is long term; a term with an end date keeps the date. */
+  /** `Lâu dài` is long term; a term with an end date keeps the date, and one with an end month that month's last day. */
   term: {
     options: null,
     parse(raw: unknown): Parsed<string> {
@@ -126,7 +136,7 @@ export const INPUT_KINDS = {
       if (text === null) return nothing;
       if (text === LONG_TERM || text.toLocaleLowerCase('vi').includes('lâu dài')) return accept(LONG_TERM);
       const found = TERM_DATE.exec(text)?.[1];
-      const date = found === undefined ? null : readDate(found);
+      const date = found === undefined ? readMonthEnd(text) : readDate(found);
       return date === null ? refused : accept(date);
     },
   },
@@ -145,6 +155,16 @@ export const INPUT_KINDS = {
 } as const;
 
 export type InputKind = keyof typeof INPUT_KINDS;
+
+/**
+ * One field's value, printed or typed, read as its kind, with every national ID in the text it yields cut to its last
+ * four digits (SPEC D11). The reducer runs on the parse's output because the parse squeezes spaces, which can join two
+ * digit groups into one ID; what this returns is what the review shows and acceptance stores.
+ */
+export function readInput(kind: InputKind, raw: unknown): Parsed<string | number | boolean> {
+  const parsed: Parsed<string | number | boolean> = INPUT_KINDS[kind].parse(raw);
+  return parsed.ok && typeof parsed.value === 'string' ? accept(reduceNationalIds(parsed.value)) : parsed;
+}
 
 export type TargetTable = 'parties' | 'certificates' | 'parcels' | 'structures' | 'properties' | 'utility_accounts';
 

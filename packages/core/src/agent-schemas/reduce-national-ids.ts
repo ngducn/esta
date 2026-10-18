@@ -120,6 +120,14 @@ function reduceText(text: string, idField: boolean, found: Found[]): string {
   return current === nfc ? text : current;
 }
 
+/**
+ * Whether one string or number still holds a full national ID by the rule of the extraction CHECK
+ * `private.holds_national_id`, which reads every value as NFKC with no field name to go by.
+ */
+export function holdsNationalId(scalar: string | number): boolean {
+  return idSpans(String(scalar).normalize('NFKC').replace(INVISIBLE, ''), false).length > 0;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

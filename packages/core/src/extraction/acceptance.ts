@@ -1,8 +1,8 @@
 import type { z } from 'zod';
-import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
+import { holdsNationalId } from '../agent-schemas/reduce-national-ids';
 import { certificateSchema, newParcelSchema, PARCEL_UNIDENTIFIED, type parcelSchema, structureSchema } from '../schemas/legal';
 import { utilityAccountSchema } from '../schemas/units';
-import { INPUT_KINDS, reviewFields, type ReviewField } from './fields';
+import { readInput, reviewFields, type ReviewField } from './fields';
 import type { SchemaName } from './required-fields';
 import { uuidV5 } from './uuid-v5';
 
@@ -58,7 +58,10 @@ export type PlanStep =
 
 export type AcceptancePlan = { readonly steps: readonly PlanStep[]; readonly acceptedFields: AcceptedFields };
 
-/** `invalid`: a decided value does not read as its kind. `missing`: a row has values but not the field it needs. */
+/**
+ * `invalid`: a decided value does not read as its kind, or would still be refused as a full national ID. `missing`: a
+ * row has values but not the field it needs.
+ */
 export type PlanResult =
   | { readonly ok: true; readonly plan: AcceptancePlan }
   | { readonly ok: false; readonly reason: 'invalid' | 'missing'; readonly paths: readonly string[] };
@@ -83,7 +86,7 @@ type Decided = {
   readonly invalid: readonly string[];
 };
 
-/** Reads every decided field as its kind. Typed text goes through the ID reducer first (SPEC D11). */
+/** Reads every decided field as its kind, as the review shows it. */
 function decide(schemaName: SchemaName, result: unknown, decisions: Decisions): Decided {
   const fields = reviewFields(schemaName, result);
   const values = new Map<string, Value>();
@@ -92,8 +95,7 @@ function decide(schemaName: SchemaName, result: unknown, decisions: Decisions): 
   for (const field of fields) {
     const decision = decisions[field.path];
     if (decision === undefined) continue;
-    const raw = decision.kind === 'edited' ? reduceNationalIds(decision.value) : (field.leaf?.value ?? null);
-    const parsed = INPUT_KINDS[field.descriptor.input].parse(raw);
+    const parsed = readInput(field.descriptor.input, decision.kind === 'edited' ? decision.value : (field.leaf?.value ?? null));
     if (!parsed.ok) {
       invalid.push(field.path);
       continue;
@@ -131,10 +133,25 @@ function issuePaths(prefix: string, error: z.ZodError): string[] {
 
 type Collected = { steps: PlanStep[]; missing: string[]; invalid: string[] };
 
-function failed(collected: Collected): PlanResult | null {
+const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu;
+
+/** Every string and number in a plan but the UUIDs that key its rows, which the ID rule would misread. */
+function scalars(node: unknown): (string | number)[] {
+  if (typeof node === 'number') return [node];
+  if (typeof node === 'string') return UUID.test(node) ? [] : [node];
+  return typeof node === 'object' && node !== null ? Object.values(node).flatMap(scalars) : [];
+}
+
+/**
+ * Fails closed on SPEC D11: a plan that would write a value the extraction CHECK refuses as a full national ID is
+ * refused before any write, naming the decided fields that hold one.
+ */
+function finish(collected: Collected, acceptedFields: AcceptedFields): PlanResult {
   if (collected.invalid.length > 0) return { ok: false, reason: 'invalid', paths: collected.invalid };
   if (collected.missing.length > 0) return { ok: false, reason: 'missing', paths: collected.missing };
-  return null;
+  const held = Object.keys(acceptedFields).filter((path) => scalars(acceptedFields[path]?.value).some(holdsNationalId));
+  if (held.length > 0 || scalars(collected.steps).some(holdsNationalId)) return { ok: false, reason: 'invalid', paths: held };
+  return { ok: true, plan: { steps: collected.steps, acceptedFields } };
 }
 
 /**
@@ -272,7 +289,7 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
   if (address !== null) {
     collected.steps.push({ table: 'properties', row: { id: extraction.propertyId, household_id: extraction.householdId, certificate_address_text: address } });
   }
-  return failed(collected) ?? { ok: true, plan: { steps: collected.steps, acceptedFields: decided.acceptedFields } };
+  return finish(collected, decided.acceptedFields);
 }
 
 const normalizeCode = (code: string) => code.replace(/\s+/gu, '').toUpperCase();
@@ -311,7 +328,7 @@ export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, deci
       row: { id: rowId(extraction.id, 'utility_account'), household_id: extraction.householdId, property_id: extraction.propertyId, ...account.data },
     });
   } else collected.invalid.push(...issuePaths('', account.error));
-  return failed(collected) ?? { ok: true, plan: { steps: collected.steps, acceptedFields: decided.acceptedFields } };
+  return finish(collected, decided.acceptedFields);
 }
 
 export const PLANNERS = {

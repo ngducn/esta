@@ -1,6 +1,6 @@
 import 'server-only';
 import { needsCheck } from '@esta/core/extraction/confidence';
-import { INPUT_KINDS, type InputKind, type ReviewField } from '@esta/core/extraction/fields';
+import { INPUT_KINDS, readInput, type InputKind, type ReviewField } from '@esta/core/extraction/fields';
 import { isIsoDate } from '@esta/core/date';
 import { formatArea, formatDate, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
@@ -49,7 +49,7 @@ export async function fieldViews(fields: readonly ReviewField[], rootList: 'cert
   return fields.map((field) => {
     const { input } = field.descriptor;
     const raw = field.leaf?.value ?? null;
-    const parsed = INPUT_KINDS[input].parse(raw);
+    const parsed = readInput(input, raw);
     const value = parsed.ok ? parsed.value : null;
     const options = INPUT_KINDS[input].options;
     return {
