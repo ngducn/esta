@@ -219,7 +219,7 @@ async function liveRun(fixtures: readonly EvalFixture[], concurrency: number, on
   if (mode.agentMode !== 'live') throw new Error('extraction:eval --mode live needs a live agent mode');
   if (/fable/iu.test(mode.model)) throw new Error(`Refusing to run: ESTA_MODEL_ROUTINE=${mode.model} is a Fable model, which this spike may not use`);
   console.log(`auth=${mode.authMode} model=${mode.model}`);
-  const spec = { kind: 'extraction_eval', builtInTools: ['Read'], mcpTools: [], maxTurns: 12, timeoutMs: 180_000, modelRole: 'routine', handler: { prompt: () => '', result: () => null } } as const;
+  const spec = { kind: 'extraction_eval', builtInTools: ['Read'], mcpTools: [], maxTurns: 12, timeoutMs: 180_000, modelRole: 'routine', handler: { prepare: () => Promise.reject(new Error('extraction:eval runs no worker job')) } } as const;
   const canon = canonicalizer({ householdName: 'Gia đình Demo' });
   const queue = [...fixtures];
   const worker = async (): Promise<void> => {

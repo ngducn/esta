@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "kind": "extract_document",
+  "inputHash": "ac6836214bf4c33016a2baa5f9cad9b812007e437c137d77ced507b85d780b38",
+  "input": {
+    "version": 1,
+    "kind": "extract_document",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never invent amounts, dates, names or codes.\nRead the file <jobdir>/document.pdf with the Read tool. It is a Vietnamese electricity, water or internet bill. Its SHA-256 is a26d7a61e7d36ad849451afe9dcc7c524cefe1ef1d81b601a596617d5b0178d3.\nThen call save_extraction once with {\"result\": <one JSON object for schema utility_bill_v1 version 1>}. If it lists errors, fix exactly those fields and call it again. When it answers {\"saved\": true}, reply with one short sentence and nothing else.\nThe shape: {\"kind\", \"provider\", \"customer_code\", \"holder_name\", \"address_text\", \"period\", \"amount_vnd\", \"consumption\", \"full_text\"}\nRules:\n- Every leaf is {\"value\": ..., \"confidence\": <0 to 1>, \"page\": <page number or null>}. Page numbers count the pages of the file from 1; an image is page 1.\n- Copy names, addresses, codes and other text exactly as printed, with every Vietnamese diacritic.\n- A value that is absent or unreadable, or printed as a lone \"-\" or a blank after its label, is {\"value\": null, \"confidence\": 0, \"page\": null}. An empty list is [].\n- confidence is your probability that the value is exactly right. Handwritten values get confidence at most 0.6.\n- Never write a full national ID number (CCCD, CMND, số định danh) anywhere: keep only its last 4 digits.\n- kind is one of electricity, water, internet, other. provider is the company that issued the bill. customer_code is the \"Mã khách hàng\" exactly as printed.\n- period is the month the bill charges for, as YYYY-MM. amount_vnd is the total to pay (\"Tổng cộng tiền thanh toán\") as an integer number of đồng, so \"1.234.567 đ\" is 1234567.\n- consumption is the number of kWh or m³ used, as a number, or null for internet.\n- full_text is a plain string, not a leaf: every line of printed text on the bill, in reading order, joined with newlines.",
+    "builtInTools": [
+      "Read"
+    ],
+    "mcpTools": [
+      "save_extraction"
+    ],
+    "maxTurns": 8
+  },
+  "label": "electricity-q7-scan",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 3,
+  "wallMs": 13756,
+  "toolCalls": [
+    {
+      "name": "Read",
+      "input": {
+        "file_path": "<jobdir>/document.pdf"
+      }
+    },
+    {
+      "name": "mcp__esta__save_extraction",
+      "input": {
+        "result": {
+          "kind": {
+            "value": "electricity",
+            "confidence": 0.98,
+            "page": 1
+          },
+          "provider": {
+            "value": "ĐIỆN LỰC DEMO TÂN THUẬN",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "customer_code": {
+            "value": "PE0901000001",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "holder_name": {
+            "value": "Nguyễn Thị Demo",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "address_text": {
+            "value": "Số 901 Demo, đường số 15, phường Tân Phong, TP. Hồ Chí Minh",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "period": {
+            "value": "2026-09",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "amount_vnd": {
+            "value": 1234764,
+            "confidence": 0.97,
+            "page": 1
+          },
+          "consumption": {
+            "value": 412,
+            "confidence": 0.97,
+            "page": 1
+          },
+          "full_text": "ĐIỆN LỰC DEMO TÂN THUẬN\nHÓA ĐƠN TIỀN ĐIỆN\nKỳ hóa đơn: Tháng 09/2026 (từ 15/08/2026 đến 14/09/2026)\nThông tin khách hàng\nTên khách hàng: Nguyễn Thị Demo\nMã khách hàng: PE0901000001\nĐịa chỉ sử dụng: Số 901 Demo, đường số 15, phường Tân Phong, TP. Hồ Chí Minh\nChỉ số\nChỉ số cũ\nChỉ số mới\nTiêu thụ (kWh)\nĐơn giá\nThành tiền\n12480\n12892\n412\n2.997 đ\n1.234.764 đ\nTổng cộng tiền thanh toán: 1.234.764 đ\nQuý khách vui lòng thanh toán trước ngày 25 của tháng."
+        }
+      }
+    }
+  ],
+  "reply": "Đã lưu hóa đơn tiền điện tháng 09/2026 với tổng thanh toán 1.234.764 đ."
+}

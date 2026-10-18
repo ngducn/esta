@@ -1,0 +1,49 @@
+{
+  "fixture_id": "water-q7-photo",
+  "variant": "photo",
+  "files": [
+    "page-1.jpg"
+  ],
+  "bill": {
+    "kind": {
+      "value": "water",
+      "confidence": 1,
+      "page": 1
+    },
+    "provider": {
+      "value": "CẤP NƯỚC DEMO NHÀ BÈ",
+      "confidence": 1,
+      "page": 1
+    },
+    "customer_code": {
+      "value": "NB0901000001",
+      "confidence": 1,
+      "page": 1
+    },
+    "holder_name": {
+      "value": "Nguyễn Thị Demo",
+      "confidence": 1,
+      "page": 1
+    },
+    "address_text": {
+      "value": "Số 901 Demo, đường số 15, phường Tân Phong, TP. Hồ Chí Minh",
+      "confidence": 1,
+      "page": 1
+    },
+    "period": {
+      "value": "2026-09",
+      "confidence": 1,
+      "page": 1
+    },
+    "amount_vnd": {
+      "value": 414154,
+      "confidence": 1,
+      "page": 1
+    },
+    "consumption": {
+      "value": 26,
+      "confidence": 1,
+      "page": 1
+    }
+  }
+}

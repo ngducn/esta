@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 import QRCode from 'qrcode';
+import type { ReactElement } from 'react';
 import satori from 'satori';
 import type { CertificateForm, CertificateV1Input } from '../../../packages/core/src/agent-schemas/certificate_v1.ts';
 import { flattenLeaves } from '../../../packages/core/src/extraction/score.ts';
@@ -137,14 +138,19 @@ async function renderPage(template: CertificateTemplate, index: number, facts: C
   const page = template.pages[index];
   if (page === undefined) throw new Error(`${facts.form} has no page ${index + 1}`);
   const qr = page.sections.includes('qr') && facts.qr_payload !== null ? await QRCode.toDataURL(facts.qr_payload, { margin: 1, width: 300 }) : null;
-  const svg = await satori(page.render(facts, qr), { width: PAGE_WIDTH, height: PAGE_HEIGHT, fonts: [...FONTS] });
+  return rasterize(page.render(facts, qr));
+}
+
+/** Renders one page-sized element with the fixture fonts, as a raster for the camera effects and a PNG for a scan. */
+export async function rasterize(element: ReactElement): Promise<{ raster: Raster; png: Uint8Array }> {
+  const svg = await satori(element, { width: PAGE_WIDTH, height: PAGE_HEIGHT, fonts: [...FONTS] });
   const rendered = new Resvg(svg, { font: { loadSystemFonts: false } }).render();
   return { raster: { width: rendered.width, height: rendered.height, data: new Uint8Array(rendered.pixels) }, png: new Uint8Array(rendered.asPng()) };
 }
 
 const A4_POINTS = [595.28, 841.89] as const;
 
-async function scanPdf(pngs: readonly Uint8Array[]): Promise<Uint8Array> {
+export async function scanPdf(pngs: readonly Uint8Array[]): Promise<Uint8Array> {
   const pdf = await PDFDocument.create({ updateMetadata: false });
   for (const png of pngs) {
     const image = await pdf.embedPng(png);

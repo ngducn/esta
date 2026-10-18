@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { reduceNationalIds } from '@esta/core/agent-schemas';
 import { z } from 'zod';
 import { inputHash, type CanonicalInput } from './canonicalize';
 
@@ -17,8 +18,12 @@ const recordingSchema = z.object({
     mcpTools: z.array(z.string()),
     maxTurns: z.number().int(),
   }),
+  /** What the recording is of, such as a fixture id, for the person reviewing recording diffs. */
+  label: z.string().optional(),
   model: z.string().min(1),
   numTurns: z.number().int().nonnegative(),
+  /** The live run's wall time, kept for the perf budget (any live recording within 120 s). */
+  wallMs: z.number().int().nonnegative().optional(),
   toolCalls: z.array(z.object({ name: z.string(), input: z.record(z.string(), z.unknown()) })),
   reply: z.string(),
 });
@@ -53,7 +58,12 @@ export function readRecording(dir: string, input: CanonicalInput): Recording {
   return recording;
 }
 
+/** Recordings are committed, so one that holds a full ID, which only a real document would give, is never written (SPEC D11). */
 export function writeRecording(dir: string, recording: Recording): string {
+  const modelOutput = { toolCalls: recording.toolCalls, reply: recording.reply };
+  if (JSON.stringify(reduceNationalIds(modelOutput)) !== JSON.stringify(modelOutput)) {
+    throw new Error(`The ${recording.label ?? recording.kind} recording holds a full national ID number, so it was not written`);
+  }
   const path = recordingPath(dir, recording.kind, recording.inputHash);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(recordingSchema.parse(recording), null, 2)}\n`);

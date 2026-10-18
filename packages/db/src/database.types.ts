@@ -122,6 +122,84 @@ export type Database = {
           },
         ]
       }
+      agent_items: {
+        Row: {
+          audience: string
+          body_md: string | null
+          citations: Json
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          dedupe_key: string
+          household_id: string
+          id: string
+          job_id: string | null
+          kind: string
+          proposal: Json | null
+          related: Json
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          body_md?: string | null
+          citations?: Json
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key: string
+          household_id: string
+          id?: string
+          job_id?: string | null
+          kind: string
+          proposal?: Json | null
+          related?: Json
+          severity: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          body_md?: string | null
+          citations?: Json
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key?: string
+          household_id?: string
+          id?: string
+          job_id?: string | null
+          kind?: string
+          proposal?: Json | null
+          related?: Json
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_items_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_items_household_id_job_id_fkey"
+            columns: ["household_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "agent_jobs"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       agent_jobs: {
         Row: {
           attempts: number
@@ -397,7 +475,21 @@ export type Database = {
             foreignKeyName: "certificates_document_id_fkey"
             columns: ["household_id", "document_id"]
             isOneToOne: false
+            referencedRelation: "document_status"
+            referencedColumns: ["household_id", "document_id"]
+          },
+          {
+            foreignKeyName: "certificates_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "certificates_extraction_id_fkey"
+            columns: ["household_id", "extraction_id"]
+            isOneToOne: false
+            referencedRelation: "document_extractions"
             referencedColumns: ["household_id", "id"]
           },
           {
@@ -460,6 +552,13 @@ export type Database = {
             foreignKeyName: "document_access_log_household_id_document_id_fkey"
             columns: ["household_id", "document_id"]
             isOneToOne: false
+            referencedRelation: "document_status"
+            referencedColumns: ["household_id", "document_id"]
+          },
+          {
+            foreignKeyName: "document_access_log_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["household_id", "id"]
           },
@@ -469,6 +568,92 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "households"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_extractions: {
+        Row: {
+          accepted_fields: Json | null
+          created_at: string
+          created_by: string | null
+          document_id: string
+          field_confidence: Json | null
+          household_id: string
+          id: string
+          job_id: string | null
+          model: string | null
+          result: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          schema_name: string
+          schema_version: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_fields?: Json | null
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          field_confidence?: Json | null
+          household_id: string
+          id?: string
+          job_id?: string | null
+          model?: string | null
+          result?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          schema_name: string
+          schema_version: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_fields?: Json | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          field_confidence?: Json | null
+          household_id?: string
+          id?: string
+          job_id?: string | null
+          model?: string | null
+          result?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          schema_name?: string
+          schema_version?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_extractions_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
+            referencedRelation: "document_status"
+            referencedColumns: ["household_id", "document_id"]
+          },
+          {
+            foreignKeyName: "document_extractions_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "document_extractions_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_extractions_household_id_job_id_fkey"
+            columns: ["household_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "agent_jobs"
+            referencedColumns: ["household_id", "id"]
           },
         ]
       }
@@ -1778,6 +1963,45 @@ export type Database = {
       }
     }
     Views: {
+      document_status: {
+        Row: {
+          document_id: string | null
+          extraction_id: string | null
+          household_id: string | null
+          property_id: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "documents_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       invoice_balances: {
         Row: {
           allocated_vnd: number | null
@@ -1889,6 +2113,37 @@ export type Database = {
       }
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
+      claim_abandoned_agent_job: {
+        Args: { p_as_of: string; worker_id: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          created_by: string | null
+          error: string | null
+          finished_at: string | null
+          household_id: string
+          id: string
+          idempotency_key: string | null
+          kind: string
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          requested_by: string | null
+          result: Json | null
+          run_after: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_agent_job: {
         Args: { p_as_of: string; worker_id: string }
         Returns: {
@@ -1946,6 +2201,10 @@ export type Database = {
       }
       create_household: {
         Args: { p_display_name: string; p_name: string }
+        Returns: string
+      }
+      enqueue_extract_document: {
+        Args: { p_as_of: string; p_document_id: string }
         Returns: string
       }
       esta_unaccent: { Args: { p_text: string }; Returns: string }

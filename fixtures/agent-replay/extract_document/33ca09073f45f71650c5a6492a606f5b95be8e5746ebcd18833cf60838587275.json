@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "kind": "extract_document",
+  "inputHash": "33ca09073f45f71650c5a6492a606f5b95be8e5746ebcd18833cf60838587275",
+  "input": {
+    "version": 1,
+    "kind": "extract_document",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never invent amounts, dates, names or codes.\nRead the file <jobdir>/document.jpg with the Read tool. It is a Vietnamese land use right certificate (sổ đỏ, sổ hồng, giấy chứng nhận) or a handwritten land paper. Its SHA-256 is 382324990141b25d846fc5d134c848132e23669511c2aab034fb5dcc8fa45720.\nThen call save_extraction once with {\"result\": <one JSON object for schema certificate_v1 version 1>}. If it lists errors, fix exactly those fields and call it again. When it answers {\"saved\": true}, reply with one short sentence and nothing else.\nThe shape: {\"form\", \"holders\": [{\"full_name\", \"birth_year\", \"id_last4\", \"address_text\", \"relation\"}], \"parcels\": [{\"parcel_no\", \"map_sheet_no\", \"address_text\", \"area_m2\", \"use_form\", \"purposes\": [{\"land_use_code\", \"area_m2\", \"term\"}], \"origin_text\"}], \"structures\": [{\"kind\", \"footprint_m2\", \"floor_area_m2\", \"floors\", \"structure_text\", \"completed_year\", \"ownership_term\"}], \"serial_no\", \"book_entry_no\", \"issued_on\", \"issued_by\", \"annotations\": [{\"date\", \"text\", \"kind\"}], \"has_qr\", \"notes_text\"}\nRules:\n- Every leaf is {\"value\": ..., \"confidence\": <0 to 1>, \"page\": <page number or null>}. Page numbers count the pages of the file from 1; an image is page 1.\n- Copy names, addresses, codes and other text exactly as printed, with every Vietnamese diacritic.\n- A value that is absent or unreadable, or printed as a lone \"-\" or a blank after its label, is {\"value\": null, \"confidence\": 0, \"page\": null}. An empty list is [].\n- confidence is your probability that the value is exactly right. Handwritten values get confidence at most 0.6.\n- Never write a full national ID number (CCCD, CMND, số định danh) anywhere: keep only its last 4 digits.\n- form is one of so_do_pre2009 (red \"Giấy chứng nhận quyền sử dụng đất\", land only, before 2009), so_hong_pre2009 (\"Giấy chứng nhận quyền sở hữu nhà ở và quyền sử dụng đất ở\", before 2009), gcn_2009_2024 (unified \"Giấy chứng nhận quyền sử dụng đất, quyền sở hữu nhà ở và tài sản khác gắn liền với đất\"), gcn_2024 (\"Giấy chứng nhận quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất\", with a QR code), paper_only (no certificate: a handwritten or notarized paper).\n- Holder names leave out titles such as Ông, Bà or Hộ ông. On paper_only, the holder is the person who receives the land. id_last4 is the last 4 digits of the holder's ID number.\n- Areas are numbers in square metres; a decimal comma is a decimal point, so \"125,5 m²\" is 125.5 and \"1.250,5 m²\" is 1250.5. birth_year, floors and completed_year are integers.\n- Dates are YYYY-MM-DD. issued_on is the date the authority issued the certificate; it is null when there is no certificate.\n- land_use_code is the code as printed, such as ODT, ONT or CLN. term is the term of use as printed.\n- annotations are the entries under \"Những thay đổi sau khi cấp\", with kind one of mortgage, mortgage_release, transfer, change_of_area, other. has_qr is true when a page carries a QR code. notes_text is the \"Ghi chú\" text verbatim, or null.",
+    "builtInTools": [
+      "Read"
+    ],
+    "mcpTools": [
+      "save_extraction"
+    ],
+    "maxTurns": 8
+  },
+  "label": "so_hong_pre2009-photo",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 3,
+  "wallMs": 18597,
+  "toolCalls": [
+    {
+      "name": "Read",
+      "input": {
+        "file_path": "<jobdir>/document.jpg"
+      }
+    },
+    {
+      "name": "mcp__esta__save_extraction",
+      "input": {
+        "result": {
+          "form": {
+            "value": "so_hong_pre2009",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "holders": [
+            {
+              "full_name": {
+                "value": "Phạm Minh Demo",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "birth_year": {
+                "value": 1962,
+                "confidence": 0.9,
+                "page": 1
+              },
+              "id_last4": {
+                "value": "8340",
+                "confidence": 0.85,
+                "page": 1
+              },
+              "address_text": {
+                "value": "12/45 đường Lê Văn Sỹ, phường 13, quận 3, TP. Hồ Chí Minh",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "relation": {
+                "value": "Vợ chồng",
+                "confidence": 0.85,
+                "page": 1
+              }
+            },
+            {
+              "full_name": {
+                "value": "Nguyễn Thị Demo Lan",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "birth_year": {
+                "value": 1965,
+                "confidence": 0.9,
+                "page": 1
+              },
+              "id_last4": {
+                "value": "0913",
+                "confidence": 0.85,
+                "page": 1
+              },
+              "address_text": {
+                "value": "12/45 đường Lê Văn Sỹ, phường 13, quận 3, TP. Hồ Chí Minh",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "relation": {
+                "value": "Vợ chồng",
+                "confidence": 0.85,
+                "page": 1
+              }
+            }
+          ],
+          "parcels": [
+            {
+              "parcel_no": {
+                "value": "87",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "map_sheet_no": {
+                "value": "5",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "address_text": {
+                "value": "12/45 đường Lê Văn Sỹ, phường 13, quận 3, TP. Hồ Chí Minh",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "area_m2": {
+                "value": 68.4,
+                "confidence": 0.85,
+                "page": 1
+              },
+              "use_form": {
+                "value": "Riêng",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "purposes": [
+                {
+                  "land_use_code": {
+                    "value": "ODT",
+                    "confidence": 0.9,
+                    "page": 1
+                  },
+                  "area_m2": {
+                    "value": 68.4,
+                    "confidence": 0.8,
+                    "page": 1
+                  },
+                  "term": {
+                    "value": "Lâu dài",
+                    "confidence": 0.9,
+                    "page": 1
+                  }
+                }
+              ],
+              "origin_text": {
+                "value": null,
+                "confidence": 0,
+                "page": null
+              }
+            }
+          ],
+          "structures": [
+            {
+              "kind": {
+                "value": "Nhà ở",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "footprint_m2": {
+                "value": 68.4,
+                "confidence": 0.9,
+                "page": 1
+              },
+              "floor_area_m2": {
+                "value": 205.2,
+                "confidence": 0.9,
+                "page": 1
+              },
+              "floors": {
+                "value": 3,
+                "confidence": 0.9,
+                "page": 1
+              },
+              "structure_text": {
+                "value": "Tường gạch, sàn bê tông cốt thép, mái tôn",
+                "confidence": 0.9,
+                "page": 1
+              },
+              "completed_year": {
+                "value": 2001,
+                "confidence": 0.9,
+                "page": 1
+              },
+              "ownership_term": {
+                "value": null,
+                "confidence": 0,
+                "page": null
+              }
+            }
+          ],
+          "serial_no": {
+            "value": "0012345",
+            "confidence": 0.9,
+            "page": 1
+          },
+          "book_entry_no": {
+            "value": "5678/2004",
+            "confidence": 0.9,
+            "page": 1
+          },
+          "issued_on": {
+            "value": "2004-09-20",
+            "confidence": 0.92,
+            "page": 1
+          },
+          "issued_by": {
+            "value": "UBND TP. Hồ Chí Minh",
+            "confidence": 0.9,
+            "page": 1
+          },
+          "annotations": [],
+          "has_qr": {
+            "value": false,
+            "confidence": 0.9,
+            "page": 1
+          },
+          "notes_text": {
+            "value": null,
+            "confidence": 0,
+            "page": null
+          }
+        }
+      }
+    }
+  ],
+  "reply": "Đã lưu thông tin của giấy chứng nhận (sổ hồng trước 2009, số 0012345) vào hệ thống."
+}

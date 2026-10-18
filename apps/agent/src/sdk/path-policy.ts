@@ -46,6 +46,8 @@ export function decideToolUse(policy: ToolPolicy, toolName: string, input: Reado
   if (field === undefined) return { allow: false, reason: `${toolName} has no input rule` };
   const raw = input[field];
   if (typeof raw !== 'string' || raw === '') return { allow: false, reason: `${toolName} needs a ${field}` };
+  // Whether Read trims before it expands `~` is unproven, so a padded path never reaches the checks below (#54).
+  if (raw !== raw.trim()) return { allow: false, reason: `${JSON.stringify(raw)} has leading or trailing whitespace` };
   // The SDK's Read expands a leading `~` to a home directory, which no job directory contains.
   if (raw.startsWith('~')) return { allow: false, reason: `${raw} is outside the job directory` };
   const target = realTarget(policy.jobDir, raw);

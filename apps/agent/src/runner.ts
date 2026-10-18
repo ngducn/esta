@@ -1,17 +1,18 @@
 import type { Clock, Instant } from '@esta/core';
-import type { Tables } from '@esta/db';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import type { Json } from '@esta/db';
+import { mkdirSync, realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { RunMode } from './env';
-import { jobSpec } from './jobs/registry';
+import { InvalidJobError } from './jobs/extract-document';
+import { jobSpec, type AgentJob } from './jobs/registry';
 import { canonicalizer } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
 import { liveSession, replaySession, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
-import { buildTools } from './tools/server';
+import { mcpToolName } from './tools/server';
 
-export type AgentJob = Tables<'agent_jobs'>;
+export type { AgentJob } from './jobs/registry';
 
 export type Worker = {
   readonly db: AgentDb;
@@ -25,8 +26,8 @@ export type Worker = {
 
 const BACKOFF_MINUTES = [1, 5, 25] as const;
 
-/** A retry cannot fix a missing recording or a rejected credential (AGT-1). */
-const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording']);
+/** A retry cannot fix a missing recording, a rejected credential or a job whose rows do not line up (AGT-1). */
+const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording', 'invalid_job']);
 
 export type NextStep = { readonly status: 'queued'; readonly runAfter: Instant } | { readonly status: 'failed' };
 
@@ -39,8 +40,11 @@ export function nextAttempt(job: Pick<AgentJob, 'attempts' | 'max_attempts'>, fa
 
 function failureOf(error: unknown): Failure {
   const message = error instanceof Error ? error.message : String(error);
-  return { kind: error instanceof MissingRecordingError ? 'missing_recording' : 'error', message };
+  if (error instanceof MissingRecordingError) return { kind: 'missing_recording', message };
+  return { kind: error instanceof InvalidJobError ? 'invalid_job' : 'error', message };
 }
+
+type SessionOutcome = { readonly outcome: Outcome & { readonly result?: Json }; readonly session: SessionRun | null };
 
 async function householdName(db: AgentDb, householdId: string): Promise<string> {
   const { data, error } = await db.from('households').select('name').eq('id', householdId).single();
@@ -48,25 +52,33 @@ async function householdName(db: AgentDb, householdId: string): Promise<string> 
   return data.name;
 }
 
-async function runSession(worker: Worker, job: AgentJob): Promise<{ outcome: Outcome; session: SessionRun | null }> {
+/** The job's own directory, `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5). */
+async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'error', message: `Unknown job kind ${job.kind}` } }, session: null };
-  mkdirSync(worker.jobsDir, { recursive: true });
-  const jobDir = realpathSync(mkdtempSync(join(worker.jobsDir, `${job.kind}-`)));
+  const jobDir = join(worker.jobsDir, job.id);
+  rmSync(jobDir, { recursive: true, force: true });
+  mkdirSync(jobDir, { recursive: true });
+  let session: SessionRun | null = null;
   try {
+    const resolvedDir = realpathSync(jobDir);
+    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, clock: () => worker.clock() });
+    const bound = [...prepared.tools.keys()].toSorted().join(',');
+    if (bound !== spec.mcpTools.map(mcpToolName).toSorted().join(',')) throw new Error(`${job.kind} bound the tools ${bound}, not its kind's`);
     const request = {
       spec,
-      prompt: spec.handler.prompt(job.payload),
-      jobDir,
+      prompt: prepared.prompt,
+      jobDir: resolvedDir,
       configDir: worker.configDir,
-      tools: buildTools(worker.db, job.household_id, spec.mcpTools),
-      canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id) }),
+      tools: prepared.tools,
+      canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: resolvedDir }),
     };
-    const session =
-      worker.mode.agentMode === 'live' ? await liveSession(request, worker.mode) : await replaySession(request, worker.replayDir);
-    return { outcome: judgeResult(session.result), session };
+    session = worker.mode.agentMode === 'live' ? await liveSession(request, worker.mode) : await replaySession(request, worker.replayDir);
+    const outcome = judgeResult(session.result);
+    if (!outcome.ok) return { outcome, session };
+    return { outcome: { ...outcome, result: await prepared.finish({ reply: outcome.reply, model: session.model }) }, session };
   } catch (error) {
-    return { outcome: { ok: false, failure: failureOf(error) }, session: null };
+    return { outcome: { ok: false, failure: failureOf(error) }, session };
   } finally {
     rmSync(jobDir, { recursive: true, force: true });
   }
@@ -102,25 +114,47 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant): Pro
   );
 
   const spec = jobSpec(job.kind);
-  const ownJob = (update: Partial<AgentJob>) =>
-    db.from('agent_jobs').update(update).eq('id', job.id).eq('locked_by', worker.workerId).eq('status', 'running');
   if (outcome.ok && spec !== undefined) {
-    await check('Finishing the job', ownJob({ status: 'done', result: spec.handler.result(outcome.reply), error: null, finished_at: finishedAt }));
+    await check('Finishing the job', ownJob(worker, job, { status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt }));
     return outcome;
   }
   const failure = outcome.ok ? { kind: 'error' as const, message: `Unknown job kind ${job.kind}` } : outcome.failure;
   const next = nextAttempt(job, failure, finishedAt);
-  await check(
-    'Failing the job',
-    next.status === 'queued'
-      ? ownJob({ status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null })
-      : ownJob({ status: 'failed', error: failure.message, finished_at: finishedAt }),
-  );
+  if (next.status === 'failed') {
+    await failJob(worker, job, failure.message);
+    return { ok: false, failure };
+  }
+  await check('Requeueing the job', ownJob(worker, job, { status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null }));
   return { ok: false, failure };
 }
 
+function ownJob(worker: Worker, job: AgentJob, update: Partial<AgentJob>) {
+  return worker.db.from('agent_jobs').update(update).eq('id', job.id).eq('locked_by', worker.workerId).eq('status', 'running');
+}
+
+/**
+ * Runs the kind's failure step before the job reads failed, and deletes the job's files, so a worker that stops in
+ * between leaves a running job that `claim_abandoned_agent_job` hands to the next worker (AGENT.md §9). The failure
+ * step is idempotent.
+ */
+async function failJob(worker: Worker, job: AgentJob, error: string): Promise<void> {
+  rmSync(join(worker.jobsDir, job.id), { recursive: true, force: true });
+  await jobSpec(job.kind)?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, error);
+  await check('Failing the job', ownJob(worker, job, { status: 'failed', error, finished_at: (await worker.clock()).now() }));
+}
+
+const ABANDONED = 'The worker stopped during the last attempt';
+
 export async function pollOnce(worker: Worker): Promise<boolean> {
   const asOf = (await worker.clock()).now();
+  const abandoned = await worker.db.rpc('claim_abandoned_agent_job', { worker_id: worker.workerId, p_as_of: asOf });
+  if (abandoned.error) throw new Error(`Claiming an abandoned job failed: ${abandoned.error.message}`);
+  const stopped = abandoned.data[0];
+  if (stopped !== undefined) {
+    await failJob(worker, stopped, ABANDONED);
+    console.log(`[agent] ${stopped.kind} ${stopped.id} attempt ${stopped.attempts}: failed, its worker stopped`);
+    return true;
+  }
   const { data, error } = await worker.db.rpc('claim_agent_job', { worker_id: worker.workerId, p_as_of: asOf });
   if (error) throw new Error(`Claiming a job failed: ${error.message}`);
   const job = data[0];

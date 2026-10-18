@@ -833,7 +833,11 @@
     },
     "unknown": "Không rõ",
     "noToolCalls": "Không gọi công cụ",
-    "toolCall": "{name} × {count}"
+    "toolCall": "{name} × {count}",
+    "newItems": "Việc mới",
+    "noNewItems": "Chưa có việc mới",
+    "retrySelf": "Bạn có thể nhập tay.",
+    "retryAsk": "Người quản trị có thể cho trợ lý đọc lại."
   },
   "settings": {
     "display": "Hiển thị",
@@ -1004,7 +1008,11 @@
     "open": "Mở {title} trong thẻ mới",
     "noPreview": "Chưa có ảnh xem trước",
     "expiry": "{days, plural, =0 {Hết hạn hôm nay} other {Hết hạn sau # ngày}}",
-    "expired": "Đã hết hạn"
+    "expired": "Đã hết hạn",
+    "extractionReading": "Đang đọc",
+    "extractionWaiting": "Chờ xem lại",
+    "extractionFailed": "Không đọc được",
+    "extractionOffline": "Trợ lý ngoại tuyến"
   },
   "collections": {
     "monthTitle": "Tháng {month}",

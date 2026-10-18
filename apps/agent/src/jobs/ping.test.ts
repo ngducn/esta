@@ -7,7 +7,7 @@ import { DEFAULT_REPLAY_DIR, MissingRecordingError } from '../replay/store';
 import { judgeResult } from '../sdk/result';
 import { replaySession, type SessionRequest } from '../sdk/session';
 import { fakeDb } from '../test/fake-db';
-import { buildTools } from '../tools/server';
+import { PING_PROMPT, pingTools } from './ping';
 import { JOBS } from './registry';
 
 const HOUSEHOLD = 'aaaaaaaa-0000-5000-8000-000000000004';
@@ -26,10 +26,10 @@ function pingRequest(householdName: string): SessionRequest {
   });
   return {
     spec: JOBS.ping,
-    prompt: JOBS.ping.handler.prompt(),
+    prompt: PING_PROMPT,
     jobDir: emptyDir,
     configDir: emptyDir,
-    tools: buildTools(db, HOUSEHOLD, JOBS.ping.mcpTools),
+    tools: pingTools(db, HOUSEHOLD),
     canon: canonicalizer({ householdName }),
   };
 }
@@ -49,7 +49,7 @@ describe('ping golden test, replay mode (AGENT.md §7)', () => {
   });
 
   it('keeps the ping prompt free of dates, ids and names', () => {
-    const prompt = JOBS.ping.handler.prompt();
+    const prompt = PING_PROMPT;
     expect(prompt).not.toMatch(/\d/);
     expect(prompt).not.toContain('Gia đình');
   });

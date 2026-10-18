@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "kind": "extract_document",
+  "inputHash": "18fafeab922cfa5a0f4f1e03f19af5eb5025cbfa59e474b27ee4d9003a8fb98a",
+  "input": {
+    "version": 1,
+    "kind": "extract_document",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never invent amounts, dates, names or codes.\nRead the file <jobdir>/document.jpg with the Read tool. It is a Vietnamese electricity, water or internet bill. Its SHA-256 is a66b45f0cd61080e7f7d652c15e5fddb0ade348edce6bbc1b1258c52fc84bfeb.\nThen call save_extraction once with {\"result\": <one JSON object for schema utility_bill_v1 version 1>}. If it lists errors, fix exactly those fields and call it again. When it answers {\"saved\": true}, reply with one short sentence and nothing else.\nThe shape: {\"kind\", \"provider\", \"customer_code\", \"holder_name\", \"address_text\", \"period\", \"amount_vnd\", \"consumption\", \"full_text\"}\nRules:\n- Every leaf is {\"value\": ..., \"confidence\": <0 to 1>, \"page\": <page number or null>}. Page numbers count the pages of the file from 1; an image is page 1.\n- Copy names, addresses, codes and other text exactly as printed, with every Vietnamese diacritic.\n- A value that is absent or unreadable, or printed as a lone \"-\" or a blank after its label, is {\"value\": null, \"confidence\": 0, \"page\": null}. An empty list is [].\n- confidence is your probability that the value is exactly right. Handwritten values get confidence at most 0.6.\n- Never write a full national ID number (CCCD, CMND, số định danh) anywhere: keep only its last 4 digits.\n- kind is one of electricity, water, internet, other. provider is the company that issued the bill. customer_code is the \"Mã khách hàng\" exactly as printed.\n- period is the month the bill charges for, as YYYY-MM. amount_vnd is the total to pay (\"Tổng cộng tiền thanh toán\") as an integer number of đồng, so \"1.234.567 đ\" is 1234567.\n- consumption is the number of kWh or m³ used, as a number, or null for internet.\n- full_text is a plain string, not a leaf: every line of printed text on the bill, in reading order, joined with newlines.",
+    "builtInTools": [
+      "Read"
+    ],
+    "mcpTools": [
+      "save_extraction"
+    ],
+    "maxTurns": 8
+  },
+  "label": "water-q7-photo",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 3,
+  "wallMs": 10264,
+  "toolCalls": [
+    {
+      "name": "Read",
+      "input": {
+        "file_path": "<jobdir>/document.jpg"
+      }
+    },
+    {
+      "name": "mcp__esta__save_extraction",
+      "input": {
+        "result": {
+          "kind": {
+            "value": "water",
+            "confidence": 0.97,
+            "page": 1
+          },
+          "provider": {
+            "value": "CẤP NƯỚC DEMO NHÀ BÈ",
+            "confidence": 0.9,
+            "page": 1
+          },
+          "customer_code": {
+            "value": "NB0901000001",
+            "confidence": 0.9,
+            "page": 1
+          },
+          "holder_name": {
+            "value": "Nguyễn Thị Demo",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "address_text": {
+            "value": "Số 901 Demo, đường số 15, phường Tân Phong, TP. Hồ Chí Minh",
+            "confidence": 0.92,
+            "page": 1
+          },
+          "period": {
+            "value": "2026-09",
+            "confidence": 0.96,
+            "page": 1
+          },
+          "amount_vnd": {
+            "value": 414154,
+            "confidence": 0.96,
+            "page": 1
+          },
+          "consumption": {
+            "value": 26,
+            "confidence": 0.95,
+            "page": 1
+          },
+          "full_text": "CẤP NƯỚC DEMO NHÀ BÈ\nHÓA ĐƠN TIỀN NƯỚC\nKỳ hóa đơn: Tháng 09/2026 (từ 01/09/2026 đến 30/09/2026)\nThông tin khách hàng\nTên khách hàng: Nguyễn Thị Demo\nMã khách hàng: NB0901000001\nĐịa chỉ sử dụng: Số 901 Demo, đường số 15, phường Tân Phong, TP. Hồ Chí Minh\nChỉ số\nChỉ số cũ\nChỉ số mới\nTiêu thụ (m³)\nĐơn giá\nThành tiền\n3105\n3131\n26\n15.929 đ\n414.154 đ\nTổng cộng tiền thanh toán: 414.154 đ\nQuý khách vui lòng thanh toán trước ngày 25 của tháng."
+        }
+      }
+    }
+  ],
+  "reply": "Đã lưu hóa đơn tiền nước tháng 09/2026, tổng cộng 414.154 đ."
+}

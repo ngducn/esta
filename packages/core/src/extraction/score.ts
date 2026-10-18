@@ -1,4 +1,5 @@
 import { certificateV1Schema, parseArea } from '../agent-schemas/certificate_v1';
+import { utilityBillV1Schema } from '../agent-schemas/utility_bill_v1';
 import { parseDateInput } from '../parse/date-input';
 import { REQUIRED_FIELDS, type SchemaName } from './required-fields';
 
@@ -17,7 +18,7 @@ export type ExtractionScore = {
 
 type Leaf = { readonly value: unknown; readonly confidence: number };
 
-const SCHEMAS = { certificate_v1: certificateV1Schema } as const satisfies Record<SchemaName, unknown>;
+const SCHEMAS = { certificate_v1: certificateV1Schema, utility_bill_v1: utilityBillV1Schema } as const satisfies Record<SchemaName, unknown>;
 
 const AREA_LEAVES = new Set(['area_m2', 'footprint_m2', 'floor_area_m2']);
 const DATE_LEAVES = new Set(['issued_on', 'date']);

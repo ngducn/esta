@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "kind": "extract_document",
+  "inputHash": "2c17c9349130ef594ceab2f405cb263bade063fbaba29189e96ada0420c6de83",
+  "input": {
+    "version": 1,
+    "kind": "extract_document",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never invent amounts, dates, names or codes.\nRead the file <jobdir>/document.pdf with the Read tool. It is a Vietnamese land use right certificate (sổ đỏ, sổ hồng, giấy chứng nhận) or a handwritten land paper. Its SHA-256 is 28a8fb310b31f132df4393a00893bf9eaaa7b24722646420caf285af8ed6f727.\nThen call save_extraction once with {\"result\": <one JSON object for schema certificate_v1 version 1>}. If it lists errors, fix exactly those fields and call it again. When it answers {\"saved\": true}, reply with one short sentence and nothing else.\nThe shape: {\"form\", \"holders\": [{\"full_name\", \"birth_year\", \"id_last4\", \"address_text\", \"relation\"}], \"parcels\": [{\"parcel_no\", \"map_sheet_no\", \"address_text\", \"area_m2\", \"use_form\", \"purposes\": [{\"land_use_code\", \"area_m2\", \"term\"}], \"origin_text\"}], \"structures\": [{\"kind\", \"footprint_m2\", \"floor_area_m2\", \"floors\", \"structure_text\", \"completed_year\", \"ownership_term\"}], \"serial_no\", \"book_entry_no\", \"issued_on\", \"issued_by\", \"annotations\": [{\"date\", \"text\", \"kind\"}], \"has_qr\", \"notes_text\"}\nRules:\n- Every leaf is {\"value\": ..., \"confidence\": <0 to 1>, \"page\": <page number or null>}. Page numbers count the pages of the file from 1; an image is page 1.\n- Copy names, addresses, codes and other text exactly as printed, with every Vietnamese diacritic.\n- A value that is absent or unreadable, or printed as a lone \"-\" or a blank after its label, is {\"value\": null, \"confidence\": 0, \"page\": null}. An empty list is [].\n- confidence is your probability that the value is exactly right. Handwritten values get confidence at most 0.6.\n- Never write a full national ID number (CCCD, CMND, số định danh) anywhere: keep only its last 4 digits.\n- form is one of so_do_pre2009 (red \"Giấy chứng nhận quyền sử dụng đất\", land only, before 2009), so_hong_pre2009 (\"Giấy chứng nhận quyền sở hữu nhà ở và quyền sử dụng đất ở\", before 2009), gcn_2009_2024 (unified \"Giấy chứng nhận quyền sử dụng đất, quyền sở hữu nhà ở và tài sản khác gắn liền với đất\"), gcn_2024 (\"Giấy chứng nhận quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất\", with a QR code), paper_only (no certificate: a handwritten or notarized paper).\n- Holder names leave out titles such as Ông, Bà or Hộ ông. On paper_only, the holder is the person who receives the land. id_last4 is the last 4 digits of the holder's ID number.\n- Areas are numbers in square metres; a decimal comma is a decimal point, so \"125,5 m²\" is 125.5 and \"1.250,5 m²\" is 1250.5. birth_year, floors and completed_year are integers.\n- Dates are YYYY-MM-DD. issued_on is the date the authority issued the certificate; it is null when there is no certificate.\n- land_use_code is the code as printed, such as ODT, ONT or CLN. term is the term of use as printed.\n- annotations are the entries under \"Những thay đổi sau khi cấp\", with kind one of mortgage, mortgage_release, transfer, change_of_area, other. has_qr is true when a page carries a QR code. notes_text is the \"Ghi chú\" text verbatim, or null.",
+    "builtInTools": [
+      "Read"
+    ],
+    "mcpTools": [
+      "save_extraction"
+    ],
+    "maxTurns": 8
+  },
+  "label": "gcn_2009_2024-photo",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 3,
+  "wallMs": 19751,
+  "toolCalls": [
+    {
+      "name": "Read",
+      "input": {
+        "file_path": "<jobdir>/document.pdf"
+      }
+    },
+    {
+      "name": "mcp__esta__save_extraction",
+      "input": {
+        "result": {
+          "form": {
+            "value": "gcn_2009_2024",
+            "confidence": 0.9,
+            "page": 1
+          },
+          "holders": [
+            {
+              "full_name": {
+                "value": "Võ Thị Demo Mai",
+                "confidence": 0.95,
+                "page": 1
+              },
+              "birth_year": {
+                "value": 1971,
+                "confidence": 0.95,
+                "page": 1
+              },
+              "id_last4": {
+                "value": "5582",
+                "confidence": 0.95,
+                "page": 1
+              },
+              "address_text": {
+                "value": "phường Phú Hòa, thành phố Thủ Dầu Một, tỉnh Bình Dương",
+                "confidence": 0.95,
+                "page": 1
+              },
+              "relation": {
+                "value": null,
+                "confidence": 0,
+                "page": null
+              }
+            }
+          ],
+          "parcels": [
+            {
+              "parcel_no": {
+                "value": "1023",
+                "confidence": 0.95,
+                "page": 2
+              },
+              "map_sheet_no": {
+                "value": "34",
+                "confidence": 0.95,
+                "page": 2
+              },
+              "address_text": {
+                "value": "phường Phú Hòa, thành phố Thủ Dầu Một, tỉnh Bình Dương",
+                "confidence": 0.95,
+                "page": 2
+              },
+              "area_m2": {
+                "value": 125.5,
+                "confidence": 0.95,
+                "page": 2
+              },
+              "use_form": {
+                "value": "Sử dụng riêng",
+                "confidence": 0.95,
+                "page": 2
+              },
+              "purposes": [
+                {
+                  "land_use_code": {
+                    "value": "ODT",
+                    "confidence": 0.95,
+                    "page": 2
+                  },
+                  "area_m2": {
+                    "value": 125.5,
+                    "confidence": 0.95,
+                    "page": 2
+                  },
+                  "term": {
+                    "value": "Lâu dài",
+                    "confidence": 0.95,
+                    "page": 2
+                  }
+                }
+              ],
+              "origin_text": {
+                "value": "Nhận chuyển nhượng đất được Công nhận QSDĐ như giao đất có thu tiền sử dụng đất",
+                "confidence": 0.9,
+                "page": 2
+              }
+            }
+          ],
+          "structures": [
+            {
+              "kind": {
+                "value": "Nhà ở riêng lẻ",
+                "confidence": 0.95,
+                "page": 2
+              },
+              "footprint_m2": {
+                "value": 98.2,
+                "confidence": 0.95,
+                "page": 2
+              },
+              "floor_area_m2": {
+                "value": 196.4,
+                "confidence": 0.95,
+                "page": 2
+              },
+              "floors": {
+                "value": 2,
+                "confidence": 0.95,
+                "page": 2
+              },
+              "structure_text": {
+                "value": "Bê tông cốt thép",
+                "confidence": 0.95,
+                "page": 2
+              },
+              "completed_year": {
+                "value": 2016,
+                "confidence": 0.95,
+                "page": 2
+              },
+              "ownership_term": {
+                "value": "Lâu dài",
+                "confidence": 0.95,
+                "page": 2
+              }
+            }
+          ],
+          "serial_no": {
+            "value": "CS 254817",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "book_entry_no": {
+            "value": "CS 01234",
+            "confidence": 0.95,
+            "page": 2
+          },
+          "issued_on": {
+            "value": "2018-03-12",
+            "confidence": 0.95,
+            "page": 2
+          },
+          "issued_by": {
+            "value": "Sở Tài nguyên và Môi trường tỉnh Bình Dương",
+            "confidence": 0.95,
+            "page": 2
+          },
+          "annotations": [
+            {
+              "date": {
+                "value": "2020-06-15",
+                "confidence": 0.9,
+                "page": 3
+              },
+              "text": {
+                "value": "Thế chấp bằng quyền sử dụng đất và tài sản gắn liền với đất tại Ngân hàng TMCP Demo theo hợp đồng số 123/2020/HĐTC",
+                "confidence": 0.9,
+                "page": 3
+              },
+              "kind": {
+                "value": "mortgage",
+                "confidence": 0.95,
+                "page": 3
+              }
+            },
+            {
+              "date": {
+                "value": "2023-08-01",
+                "confidence": 0.9,
+                "page": 3
+              },
+              "text": {
+                "value": "Xóa thế chấp theo hợp đồng số 123/2020/HĐTC",
+                "confidence": 0.9,
+                "page": 3
+              },
+              "kind": {
+                "value": "mortgage_release",
+                "confidence": 0.95,
+                "page": 3
+              }
+            }
+          ],
+          "has_qr": {
+            "value": false,
+            "confidence": 0.9,
+            "page": null
+          },
+          "notes_text": {
+            "value": null,
+            "confidence": 0,
+            "page": null
+          }
+        }
+      }
+    }
+  ],
+  "reply": "Tôi đã trích xuất và lưu giấy chứng nhận (sổ hồng) của bà Võ Thị Demo Mai, thửa 1023, tờ bản đồ 34."
+}

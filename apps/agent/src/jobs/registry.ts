@@ -1,8 +1,30 @@
-import type { Json } from '@esta/db';
-import type { EstaToolName } from '../tools/server';
-import { PING_PROMPT, pingResult } from './ping';
+import type { Clock } from '@esta/core';
+import type { Json, Tables } from '@esta/db';
+import type { AgentDb } from '../supabase';
+import type { EstaToolName, EstaTools } from '../tools/server';
+import { failExtractDocument, prepareExtractDocument } from './extract-document';
+import { preparePing } from './ping';
 
 export type ModelRole = 'routine' | 'deep';
+
+export type AgentJob = Tables<'agent_jobs'>;
+
+export type JobContext = {
+  readonly db: AgentDb;
+  readonly job: AgentJob;
+  /** Already resolved through symlinks, empty, and deleted after the job on every exit path. */
+  readonly jobDir: string;
+  /** The worker's clock, read when a row's time is written, so a frozen test clock dates it (FND-9). */
+  clock(): Promise<Clock>;
+};
+
+export type PreparedJob = {
+  readonly prompt: string;
+  /** Exactly the kind's `mcpTools`, each bound to the job's household. */
+  readonly tools: EstaTools;
+  /** Checks the job's effects and returns `agent_jobs.result`; throws when the model did not do the task. */
+  finish(run: { readonly reply: string; readonly model: string }): Promise<Json>;
+};
 
 export type JobSpec = {
   readonly kind: string;
@@ -13,8 +35,9 @@ export type JobSpec = {
   readonly timeoutMs: number;
   readonly modelRole: ModelRole;
   readonly handler: {
-    prompt(payload: unknown): string;
-    result(reply: string): Json;
+    prepare(context: JobContext): Promise<PreparedJob>;
+    /** Runs once the job has no attempt left, so the household sees the failure (AGENT.md §9). */
+    onFailed?(context: Omit<JobContext, 'jobDir'>, error: string): Promise<void>;
   };
 };
 
@@ -27,7 +50,16 @@ export const JOBS = {
     maxTurns: 3,
     timeoutMs: 60_000,
     modelRole: 'routine',
-    handler: { prompt: () => PING_PROMPT, result: pingResult },
+    handler: { prepare: preparePing },
+  },
+  extract_document: {
+    kind: 'extract_document',
+    builtInTools: ['Read'],
+    mcpTools: ['save_extraction'],
+    maxTurns: 8,
+    timeoutMs: 5 * 60_000,
+    modelRole: 'routine',
+    handler: { prepare: prepareExtractDocument, onFailed: failExtractDocument },
   },
 } as const satisfies Record<string, JobSpec>;
 

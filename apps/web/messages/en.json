@@ -833,7 +833,11 @@
     },
     "unknown": "Unknown",
     "noToolCalls": "No tool calls",
-    "toolCall": "{name} × {count}"
+    "toolCall": "{name} × {count}",
+    "newItems": "New items",
+    "noNewItems": "No new items",
+    "retrySelf": "You can enter it by hand.",
+    "retryAsk": "An admin can have the assistant read it again."
   },
   "settings": {
     "display": "Display",
@@ -1004,7 +1008,11 @@
     "open": "Open {title} in a new tab",
     "noPreview": "No preview yet",
     "expiry": "{days, plural, =0 {Expires today} one {Expires in # day} other {Expires in # days}}",
-    "expired": "Expired"
+    "expired": "Expired",
+    "extractionReading": "Reading",
+    "extractionWaiting": "Ready for review",
+    "extractionFailed": "Could not read",
+    "extractionOffline": "Assistant offline"
   },
   "collections": {
     "monthTitle": "{month}",

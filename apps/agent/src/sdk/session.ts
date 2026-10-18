@@ -1,9 +1,10 @@
 import { query, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { Json } from '@esta/db';
 import type { RunMode } from '../env';
 import type { JobSpec } from '../jobs/registry';
 import type { CanonicalInput, Canonicalizer } from '../replay/canonicalize';
 import { readRecording } from '../replay/store';
-import { estaServer, type EstaTool } from '../tools/server';
+import { estaServer, type EstaTools } from '../tools/server';
 import { buildSdkEnv, buildSdkOptions } from './options';
 import { decideToolUse, pathPolicyHook, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
@@ -17,7 +18,7 @@ export type SessionRequest = {
   readonly prompt: string;
   readonly jobDir: string;
   readonly configDir: string;
-  readonly tools: ReadonlyMap<string, EstaTool>;
+  readonly tools: EstaTools;
   readonly canon: Canonicalizer;
 };
 
@@ -70,17 +71,26 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   return { result: fromSdkResult(result), model: mode.model, toolCalls };
 }
 
-/** Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). */
+/**
+ * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the
+ * policy denies is booked as a permission denial, as the SDK books a PreToolUse deny, and the replay goes on.
+ */
 export async function replaySession(request: SessionRequest, replayDir: string): Promise<SessionRun> {
   const recording = readRecording(replayDir, canonicalInput(request));
   const policy = toolPolicy(request);
   const toolCalls: ToolCall[] = [];
-  for (const call of recording.toolCalls) {
+  const permissionDenials: { tool_name: string; tool_use_id: string; tool_input: Json }[] = [];
+  for (const [index, call] of recording.toolCalls.entries()) {
     const input = JSON.parse(request.canon.restore(JSON.stringify(call.input))) as Record<string, unknown>;
-    const decision = decideToolUse(policy, call.name, input);
-    if (!decision.allow) throw new Error(`The ${recording.kind} recording calls ${call.name}, which the policy denies: ${decision.reason}`);
-    await request.tools.get(call.name)?.run();
     toolCalls.push({ name: call.name, input });
+    const decision = decideToolUse(policy, call.name, input);
+    if (!decision.allow) {
+      console.warn(`[agent] denied ${call.name}: ${decision.reason}`);
+      permissionDenials.push({ tool_name: call.name, tool_use_id: `replay-${index + 1}`, tool_input: input as Json });
+      continue;
+    }
+    // A rejected call is the answer the recorded model read before its next turn, not a failure of the replay.
+    await request.tools.get(call.name)?.run(input).catch(() => undefined);
   }
   return {
     result: {
@@ -92,7 +102,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
       costUsd: 0,
       usage: {},
       modelUsage: {},
-      permissionDenials: [],
+      permissionDenials,
     },
     model: recording.model,
     toolCalls,
