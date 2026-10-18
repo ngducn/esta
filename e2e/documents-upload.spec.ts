@@ -408,6 +408,7 @@ test('Mẹ titles an upload with a full CCCD, the title is refused before any by
     await expect(page.getByTestId('upload-sheet').getByText('Ô này còn số CCCD/CMND đầy đủ. Chỉ ghi 4 số cuối.')).toBeVisible();
     await expect(page.getByTestId('document-title')).toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByTestId('upload-error')).toHaveCount(0);
+    await page.mouse.move(0, 0);
     expect(await seriousAxeViolations(page)).toEqual([]);
     const folder = process.env.ESTA_SHOTS;
     if (folder !== undefined) await page.screenshot({ path: join(folder, `upload-title-refused-${look.name}.png`) });
