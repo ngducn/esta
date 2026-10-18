@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run --exclude '**/*.live.test.ts'",
+    "test": "vitest run --exclude '**/*.live.test.ts' --exclude '**/*.integration.test.ts'",
+    "test:integration": "node ../../scripts/web-integration.ts",
     "test:live": "vitest run --project node live.test"
   },
   "dependencies": {

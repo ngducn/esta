@@ -23,7 +23,7 @@ function Rooms() {
       <button type="button" onClick={() => setUnits(rooms.slice(1))}>
         row gone
       </button>
-      <UnitList propertyId="p1" units={units} canEdit roomingHouse />
+      <UnitList propertyId="p1" units={units} leases={{}} canEdit roomingHouse />
     </>
   );
 }

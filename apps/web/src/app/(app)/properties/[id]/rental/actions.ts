@@ -10,7 +10,7 @@ import { createSessionClient } from '@/server/supabase/server';
 
 export type RentalWrite =
   | { readonly ok: true; readonly id: string }
-  | { readonly ok: false; readonly reason: 'invalid' | 'duplicate' | 'failed' };
+  | { readonly ok: false; readonly reason: 'invalid' | 'duplicate' | 'wholeLeased' | 'failed' };
 
 /** What a delete hands back, so `Hoàn tác` puts the row back under its own id and re-links its accounts. */
 export type DeletedUnit = { readonly propertyId: string; readonly row: { readonly id: string } & Record<string, unknown>; readonly accounts: readonly string[] };
@@ -20,7 +20,9 @@ const uuid = z.uuid();
 const UNIQUE_VIOLATION = '23505';
 const REFUSED = new Set(['23503', '23514', '22P02']);
 
-function failure(code: string | undefined): RentalWrite {
+/** `ESTA_WHOLE_UNIT_LEASED` comes from the leases migration: a room would replace a whole unit that has a lease. */
+function failure({ code, message }: { code?: string; message?: string }): RentalWrite {
+  if (message === 'ESTA_WHOLE_UNIT_LEASED') return { ok: false, reason: 'wholeLeased' };
   if (code === UNIQUE_VIOLATION) return { ok: false, reason: 'duplicate' };
   return { ok: false, reason: code !== undefined && REFUSED.has(code) ? 'invalid' : 'failed' };
 }
@@ -56,7 +58,7 @@ export async function saveUnit(propertyId: unknown, unitId: unknown, raw: unknow
           .select('id')
           .single()
       : await supabase.from('units').update(value.data).match(match).eq('id', item.data).select('id').maybeSingle();
-  if (error) return failure(error.code);
+  if (error) return failure(error);
   if (data === null) return { ok: false, reason: 'failed' };
   revalidateRental();
   return { ok: true, id: data.id };
@@ -80,7 +82,7 @@ export async function addRooms(propertyId: unknown, raw: unknown): Promise<Renta
     sort_order: first + index,
   }));
   const { error } = await supabase.from('units').upsert(rows, { onConflict: 'property_id,label', ignoreDuplicates: true });
-  if (error) return failure(error.code);
+  if (error) return failure(error);
   revalidateRental();
   return { ok: true, id: match.property_id };
 }
@@ -96,13 +98,13 @@ export async function moveUnitAction(propertyId: unknown, unitId: unknown, direc
   const { units } = await loadPropertyRental(match.property_id);
   for (const change of moveUnit(units, item.data, way.data)) {
     const { error } = await supabase.from('units').update({ sort_order: change.sort_order }).match(match).eq('id', change.id);
-    if (error) return failure(error.code);
+    if (error) return failure(error);
   }
   revalidateRental();
   return { ok: true, id: item.data };
 }
 
-export type UnitDelete = { readonly ok: true; readonly deleted: DeletedUnit } | { readonly ok: false };
+export type UnitDelete = { readonly ok: true; readonly deleted: DeletedUnit } | { readonly ok: false; readonly hasLeases?: true };
 
 /** The `whole` unit has no delete: the database brings it back whenever a property would be left with none. */
 export async function deleteUnit(propertyId: unknown, unitId: unknown): Promise<UnitDelete> {
@@ -113,6 +115,7 @@ export async function deleteUnit(propertyId: unknown, unitId: unknown): Promise<
   const linked = await supabase.from('utility_accounts').select('id').match(match).eq('unit_id', item.data);
   if (linked.error) return { ok: false };
   const { data, error } = await supabase.from('units').delete().match(match).eq('id', item.data).neq('kind', 'whole').select(UNIT_COLUMNS).maybeSingle();
+  if (error?.message === 'ESTA_UNIT_HAS_LEASES') return { ok: false, hasLeases: true };
   if (error || data === null) return { ok: false };
   revalidateRental();
   return { ok: true, deleted: { propertyId: match.property_id, row: data, accounts: linked.data.map((row) => row.id) } };
@@ -133,10 +136,10 @@ export async function restoreUnit(raw: unknown): Promise<RentalWrite> {
   const { supabase, match } = target;
   const { row, accounts } = deleted.data;
   const { error } = await supabase.from('units').upsert({ ...row, ...match }, { onConflict: 'id', ignoreDuplicates: true });
-  if (error) return failure(error.code);
+  if (error) return failure(error);
   if (accounts.length > 0) {
     const relink = await supabase.from('utility_accounts').update({ unit_id: row.id }).match(match).in('id', accounts).is('unit_id', null);
-    if (relink.error) return failure(relink.error.code);
+    if (relink.error) return failure(relink.error);
   }
   revalidateRental();
   return { ok: true, id: row.id };
@@ -152,7 +155,7 @@ export async function saveAccount(propertyId: unknown, accountId: unknown, raw: 
     item.data === null
       ? await supabase.from('utility_accounts').insert({ ...value.data, ...match }).select('id').single()
       : await supabase.from('utility_accounts').update(value.data).match(match).eq('id', item.data).select('id').maybeSingle();
-  if (error) return failure(error.code);
+  if (error) return failure(error);
   if (data === null) return { ok: false, reason: 'failed' };
   revalidateRental();
   return { ok: true, id: data.id };
@@ -185,7 +188,7 @@ export async function restoreAccount(raw: unknown): Promise<RentalWrite> {
     supabase.from('utility_accounts').upsert({ ...row, unit_id: unitId, ...match }, { onConflict: 'id', ignoreDuplicates: true });
   let { error } = await insert(row.unit_id);
   if (error?.code === '23503' && row.unit_id !== null) ({ error } = await insert(null));
-  if (error) return failure(error.code);
+  if (error) return failure(error);
   revalidateRental();
   return { ok: true, id: row.id };
 }

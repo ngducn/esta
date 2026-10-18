@@ -11,8 +11,8 @@ import { PROPERTY_ROW_COLUMNS, propertyRowSchema } from './list';
 
 export type PropertyDetail = PropertyViewRow & {
   readonly kindDetails: Readonly<Record<string, unknown>>;
-  /** The `propertyStatus` mark on the Clock's date. */
-  readonly status: PropertyStatusMark | null;
+  /** The `propertyStatus` marks on the Clock's date. */
+  readonly statuses: readonly PropertyStatusMark[];
 };
 
 const kindDetailsSchema = z.object({ kind_details: z.record(z.string(), z.unknown()) });
@@ -32,7 +32,7 @@ export const loadPropertyDetail = cache(async (id: string): Promise<PropertyDeta
   if (details.error) throw new Error(`Reading the property details failed: ${details.error.message}`);
   if (row.data === null || details.data === null) return null;
   const property = propertyRowSchema.parse(row.data);
-  return { ...property, kindDetails: kindDetailsSchema.parse(details.data).kind_details, status: propertyStatus(property, clock.today()) };
+  return { ...property, kindDetails: kindDetailsSchema.parse(details.data).kind_details, statuses: propertyStatus(property, clock.today()) };
 });
 
 const activitySchema = z

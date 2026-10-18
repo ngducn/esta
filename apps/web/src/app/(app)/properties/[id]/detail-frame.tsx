@@ -1,4 +1,4 @@
-import { formatDayMonth } from '@esta/core/format';
+import { statusPills } from '@/components/properties/status-pills';
 import { nextMissing } from '@esta/core/completeness';
 import { currentAddressText } from '@esta/core/properties';
 import { ChevronLeft } from 'lucide-react';
@@ -47,7 +47,7 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           currentAddress: currentAddressText(property),
           certificateAddress: property.certificateAddressText,
           photoUrl: property.coverPhotoPath === null ? null : (photos.get(property.coverPhotoPath) ?? null),
-          vacant: property.status === null ? null : tp('vacantSince', { date: formatDayMonth(property.status.since, locale) }),
+          statuses: statusPills(property.statuses, { leased: (values) => tp('leased', values), vacantSince: (values) => tp('vacantSince', values) }, locale),
           edit: member.role === 'viewer' ? null : { href: `/properties/${property.id}/edit`, label: t('edit') },
           completeness: {
             title: tc('title'),

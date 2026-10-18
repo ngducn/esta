@@ -32,6 +32,8 @@ function row(nickname: string, fields: Partial<PropertyListRow> = {}): PropertyL
     ownerPartyIds: [],
     monthlyRentVnd: null,
     vacantSince: null,
+    leasedUnitCount: 0,
+    unitCount: 1,
     completeness: { percent: 100, missing: 0 },
     ...fields,
   };

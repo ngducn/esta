@@ -695,6 +695,135 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_lines: {
+        Row: {
+          amount_vnd: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          household_id: string
+          id: string
+          invoice_id: string
+          kind: string
+          quantity: number
+          sort_order: number
+          unit_price_vnd: number
+          updated_at: string
+        }
+        Insert: {
+          amount_vnd: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          household_id: string
+          id?: string
+          invoice_id: string
+          kind: string
+          quantity?: number
+          sort_order?: number
+          unit_price_vnd: number
+          updated_at?: string
+        }
+        Update: {
+          amount_vnd?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          household_id?: string
+          id?: string
+          invoice_id?: string
+          kind?: string
+          quantity?: number
+          sort_order?: number
+          unit_price_vnd?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          due_date: string
+          household_id: string
+          id: string
+          issue_on: string
+          issued_at: string | null
+          lease_id: string
+          memo_code: string
+          number: string
+          period_end: string
+          period_start: string
+          status: string
+          updated_at: string
+          voided_reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          due_date: string
+          household_id: string
+          id?: string
+          issue_on: string
+          issued_at?: string | null
+          lease_id: string
+          memo_code: string
+          number: string
+          period_end: string
+          period_start: string
+          status?: string
+          updated_at?: string
+          voided_reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string
+          household_id?: string
+          id?: string
+          issue_on?: string
+          issued_at?: string | null
+          lease_id?: string
+          memo_code?: string
+          number?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+          updated_at?: string
+          voided_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       land_use_codes: {
         Row: {
           code: string
@@ -715,6 +844,132 @@ export type Database = {
           name_vi?: string
         }
         Relationships: []
+      }
+      leases: {
+        Row: {
+          billing_cycle_months: number
+          created_at: string
+          created_by: string | null
+          declaring_party_id: string | null
+          deposit_vnd: number | null
+          due_offset_days: number
+          end_date: string | null
+          escalation: Json
+          first_period_proration: string
+          household_id: string
+          id: string
+          notes: string | null
+          notice_days: number | null
+          paid_through_date: string | null
+          period_anchor: string
+          property_id: string
+          renewal_of_lease_id: string | null
+          rent_vnd: number | null
+          start_date: string | null
+          status: string
+          tax_payer: string
+          tenant_party_id: string | null
+          terminated_on: string | null
+          termination_reason: string | null
+          unit_id: string
+          updated_at: string
+          utilities_mode: string
+        }
+        Insert: {
+          billing_cycle_months?: number
+          created_at?: string
+          created_by?: string | null
+          declaring_party_id?: string | null
+          deposit_vnd?: number | null
+          due_offset_days?: number
+          end_date?: string | null
+          escalation?: Json
+          first_period_proration?: string
+          household_id: string
+          id?: string
+          notes?: string | null
+          notice_days?: number | null
+          paid_through_date?: string | null
+          period_anchor?: string
+          property_id: string
+          renewal_of_lease_id?: string | null
+          rent_vnd?: number | null
+          start_date?: string | null
+          status?: string
+          tax_payer?: string
+          tenant_party_id?: string | null
+          terminated_on?: string | null
+          termination_reason?: string | null
+          unit_id: string
+          updated_at?: string
+          utilities_mode?: string
+        }
+        Update: {
+          billing_cycle_months?: number
+          created_at?: string
+          created_by?: string | null
+          declaring_party_id?: string | null
+          deposit_vnd?: number | null
+          due_offset_days?: number
+          end_date?: string | null
+          escalation?: Json
+          first_period_proration?: string
+          household_id?: string
+          id?: string
+          notes?: string | null
+          notice_days?: number | null
+          paid_through_date?: string | null
+          period_anchor?: string
+          property_id?: string
+          renewal_of_lease_id?: string | null
+          rent_vnd?: number | null
+          start_date?: string | null
+          status?: string
+          tax_payer?: string
+          tenant_party_id?: string | null
+          terminated_on?: string | null
+          termination_reason?: string | null
+          unit_id?: string
+          updated_at?: string
+          utilities_mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leases_household_id_declaring_party_id_fkey"
+            columns: ["household_id", "declaring_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "leases_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leases_household_id_property_id_unit_id_fkey"
+            columns: ["household_id", "property_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["household_id", "property_id", "id"]
+          },
+          {
+            foreignKeyName: "leases_household_id_renewal_of_lease_id_fkey"
+            columns: ["household_id", "renewal_of_lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "leases_household_id_tenant_party_id_fkey"
+            columns: ["household_id", "tenant_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
       }
       notification_preferences: {
         Row: {
@@ -1434,6 +1689,7 @@ export type Database = {
           id: string | null
           kind: string | null
           lat: number | null
+          leased_unit_count: number | null
           legacy_province_names: string[] | null
           legal_status: string | null
           lng: number | null
@@ -1443,6 +1699,7 @@ export type Database = {
           province_code: string | null
           province_name: string | null
           search_text: string | null
+          unit_count: number | null
           use_mode: string | null
           vacant_since: string | null
         }
@@ -1458,6 +1715,16 @@ export type Database = {
       }
     }
     Functions: {
+      activate_lease: {
+        Args: { p_lease_id: string; p_paid_through?: string }
+        Returns: {
+          due_date: string
+          id: string
+          period_end: string
+          period_start: string
+          status: string
+        }[]
+      }
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
       claim_agent_job: {
@@ -1504,6 +1771,16 @@ export type Database = {
           p_role: Database["public"]["Enums"]["member_role"]
         }
         Returns: string
+      }
+      preview_activation: {
+        Args: { p_lease_id: string; p_paid_through?: string }
+        Returns: {
+          due_date: string
+          issues_now: boolean
+          period_end: string
+          period_start: string
+          rent_vnd: number
+        }[]
       }
       property_activity: {
         Args: { p_limit?: number; p_property_id: string }

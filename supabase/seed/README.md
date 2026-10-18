@@ -98,6 +98,10 @@ Keys added by the generator:
 | Unit other than `whole` | `seed:unit:<household>:<property>:<n>` | `seed:unit:lane-1:di-an:8` |
 | `whole` unit | `esta:unit:whole:<property id>`, the key `private.whole_unit_id` uses | `esta:unit:whole:` followed by the id of `seed:property:demo:q7` |
 | Utility account | `seed:utility-account:<household>:<property>:<kind>` | `seed:utility-account:demo:di-an:water` |
+| Tenant party | `seed:party:tenant-<household>:<property>:<n>` | `seed:party:tenant-demo:di-an:5` |
+| Lease | `seed:lease:<household>:<property>:<n>` | `seed:lease:lane-2:di-an:5` |
+| Invoice | `seed:invoice:<household>:<property>:<n>:<period start>` | `seed:invoice:demo:di-an:5:2026-09-25` |
+| Invoice line | `seed:invoice-line:<household>:<property>:<n>:<period start>:<line>` | `seed:invoice-line:demo:di-an:5:2026-09-25:1` |
 
 `<property>` is a SPEC §9.3 seed key: `q7`, `thu-duc`, `di-an`, `q1`, `bien-hoa`, `long-an` or `bao-loc`. A property's `code` is that key in uppercase without hyphens, such as `DIAN`.
 
@@ -108,6 +112,10 @@ Every seeded property except `long-an` carries `acquired_on`, `acquisition_kind`
 ## Units and utility accounts
 
 Inserting a property makes its `whole` unit `Toàn bộ` (migration `20261007202000_units.sql`), and a unit of another kind replaces it. The `units` emitter is an upsert (`publicTable(..., { upsert: true })`, rendered as `on conflict (id) do update`), so the `whole` units of `q7`, `thu-duc` and `bien-hoa` take their list rents of 15.000.000, 9.000.000 and 12.000.000 VND onto the rows the trigger made. `di-an` gets `Phòng 1` to `Phòng 8` (21.400.000 VND in all, `Phòng 8` available from 2026-08-01), `q1` one `shop` at 30.000.000, and `long-an` and `bao-loc` one `lot` each with no rent. `q7`, `thu-duc`, `di-an` and `bien-hoa` get one electricity and one water account at property level; `q1` has none, because its tenant holds them.
+
+## Leases and invoices
+
+`leasing.ts` seeds the SPEC §9.3 leases, `<n>` being the unit's position on its property: `q7` quarterly from 2025-01-01 with the tenant company withholding tax, `thu-duc` monthly to 2026-11-01, Dĩ An Phòng 1 to 6 monthly from the 25th, Phòng 7 ended 2026-09-15, `q1` annual from 2026-03-01, and `bien-hoa` ended 2026-07-29. Rent before Esta counts as paid through each lease's `paid_through_date`, so the invoices are exactly what generation owes on 2026-10-07, planned by `planInvoices` in `packages/core/src/lease`: the six Dĩ An invoices due 2026-10-25 (issued 2026-10-03, when September's readings were complete), Phòng 5's unpaid invoice due 2026-09-25, and a draft for Thủ Đức's last day, 2026-11-01. They are that day's state whatever `--as-of` says. Payments and deposits arrive with their tables (P3-09, P3-18).
 
 ## Cover photos and bulk properties
 
