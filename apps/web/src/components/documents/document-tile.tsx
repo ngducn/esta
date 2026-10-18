@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { revealThumbnail } from '@/server/documents/actions';
 import { Button } from '@/components/ui/button';
+import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
 
 /** [app rule] A revealed sensitive thumbnail blurs again after a minute, or as soon as the tab is hidden (DOC-5). */
@@ -26,6 +27,7 @@ export function DocumentTile({ document }: { document: DocumentTileData }) {
   const [clearUrl, setClearUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
 
   useEffect(() => {
     if (clearUrl === null) return;
@@ -58,12 +60,12 @@ export function DocumentTile({ document }: { document: DocumentTileData }) {
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
-          <img src={src} alt="" className="size-full object-cover" loading="lazy" decoding="async" />
+          <img src={src} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" decoding="async" />
         )}
         {blurred ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ground/40 p-3">
             <span className="rounded-sm bg-surface px-2 py-0.5 text-small font-semibold text-ink-2">{t('blurred')}</span>
-            <Button type="button" variant="secondary" data-testid="reveal-thumbnail" disabled={pending} aria-label={t('viewLabel', { title: document.title })} onClick={reveal}>
+            <Button type="button" variant="secondary" data-testid="reveal-thumbnail" disabled={pending || !hydrated} aria-label={t('viewLabel', { title: document.title })} onClick={reveal}>
               <Eye aria-hidden="true" />
               {t('view')}
             </Button>
