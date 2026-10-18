@@ -2,19 +2,25 @@
 
 Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (every 2026-10-17 update; 11:25 and 11:55 are the newest), `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, and `docs/plan/STATUS.md`. Briefs for every owner and lane of this session are in `~/.claude/orchestrate/esta/briefs/`; the root's checklist is `~/.claude/orchestrate/esta/todo.md`.
 
-## Where the run is (paused 2026-10-17 about 23:55 +07 at the operator's request)
+## Where the run is (updated 2026-10-18 09:55 +07, run still active)
 
-Paused cleanly: no agents, CI runs, servers or watchers are running; only `esta-1` is up. Slots 2, 3 and 5 are free.
+**Phase 1 is complete** (#107 merged as b09d79d; `pnpm phase:check 1` passes all 9 rows).
 
-Merged 2026-10-17 (22): #57 P3-05, #60, #59 P3-02, #64, #52 P1-04, #58 P3-06, #67 P2-01, #73, #74, #75, #69, #72 P1-09, #77, #81, #84, #87, #86, #89, #80 P1-06, #90, #93, #92 P1-05. Phase 1 is at 5 of 9.
+Merged since the 2026-10-17 pause: #99 P3-03 allocation, #102, #101, #95 P1-07, #100 P1-10, #108, #105 P1-08, #104, #106, #103 P4-01 tax (operator grant), #110, #107 P1-03, #112 cleanup, #113 `pnpm verify:tier`.
 
 Open, with the next step for each:
 
-- #95 P1-07 (Pháp lý tab: parcels, structures, certificates; migration 20261007201900; closes #18) at f7f4bc4. Opus data audit PASS with three lows: (a) existence oracle in `private.check_certificate_parties` (a BEFORE trigger answers 23503 vs 42501 before RLS; fix: return `new` early when `not private.is_member(new.household_id,'member')`); (b) `verified_by` and `verified_at` are member-writable (stamp server-side; P2 adds composite FKs for document_id and extraction_id); (c) per-table viewer and household-freeze pgTAP gaps. The Sonnet live lane was stopped unfinished at the pause; rerun it from `~/.claude/orchestrate/esta/briefs/lane-pr95-live.md` (it also measures the trunk detail-route baseline the owner skipped). Root's plan: one fix-forward with (a) and (b) plus any live finding, scoped review, full CI, merge.
-- After P1-07, one at a time: P1-10, P1-08, P1-03. Write each brief from `briefs/p1-07.md` the way p1-05.md and p1-07.md were derived.
-- #61 P5-11 parked; P5-03 rebuilds the guard over rendered text (standing orders 16:00).
-- #82 diagnosed (supautils 3.2.0 in the local image pinned by CLI 2.90.0; PostgREST is not exposed); operator chose no CLI upgrade yet. P6-07 must confirm the cloud image is 17.6.1.155 or later and that `private.local_stack` is empty on production.
-- Open issue to pick up when a slot is free: #94 (hover contrast on primary buttons).
+- **#117 P2-02 documents (rigorous tier).** Three lanes ran at 4aeeac1: the Opus audit, the Sonnet second opinion and the Sonnet live lane with perf. Fix-forward 1 (an Opus owner, slot 5) is in progress. It covers the property-detail spec's four-tab expectation, a composite FK on certificates.document_id, immutable stored files, stamped access-log columns, the missing actions and EXIF tests, 4:3 thumbnails, Xem gated on hydration, the STATUS iPhone line, and a video that ends on the opened document. Next: a scoped round 2, then CI, then merge, then P2-03.
+- **#120 (closes #116): CI e2e on a production build.** A Sonnet review and CI are running. Merge when both are clean; it cuts e2e from about 7 to 4 minutes and removes most flakes.
+- **Issues open:** `[low]` #111 (closed by #112), #114, #115, #118, #119 and #121, plus #20 and #82 for P6-07.
+
+## Rules added on 2026-10-18 (read before acting)
+
+- CLAUDE.md "Execution priority (80/20)" and "Writing issues and PRs". Memory has `execution-80-20` and `plain-language-issues-prs`.
+- `docs/plan/trail/verification-tiers.md`: lean, standard and rigorous, with a planned tier for every remaining PR. Set each brief's tier as the higher of the planned tier and `pnpm verify:tier`.
+- Standing orders 05:15, 05:45 and 06:00. The operator granted tax merges and issue closing. The heavy audit round waits for the Phase 3 boundary by default.
+- The coordinator does conflict-free rebases itself. It makes no commits to main that touch files of a PR in CI.
+- Heavy jobs go through `bin/heavy.sh`. `bin/lock.sh` clears a lock whose owner process died. `bin/ci-watch.sh` labels each CI line with its PR. The coordinator wakes only on run endings and failures.
 
 ## How CI runs now
 
