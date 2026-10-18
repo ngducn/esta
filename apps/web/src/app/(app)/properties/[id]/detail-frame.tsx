@@ -64,6 +64,7 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           overview: t('tab', { tab: 'overview' }),
           legal: t('tab', { tab: 'legal' }),
           rental: t('tab', { tab: 'rental' }),
+          documents: t('tab', { tab: 'documents' }),
           activity: t('tab', { tab: 'activity' }),
         }}
       />
