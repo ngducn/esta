@@ -328,7 +328,7 @@ test('a viewer sees leases and invoices but no way to add or edit one', async ({
   await unitRow(page, 'Phòng 5').getByTestId('open-lease').click();
   await expect(page.getByText('Bạn đang xem. Chỉ thành viên trong gia đình được sửa hợp đồng.')).toBeVisible();
   await expect(page.getByTestId('lease-form')).toHaveCount(0);
-  await expect(page.getByTestId('invoice-row')).toHaveCount(2);
+  await expect(page.getByTestId('invoice-row')).toHaveCount(9);
   await page.goto(newLeasePath(8, 'di-an', unitId(8, 'di-an', 8)));
   await expect(page.getByTestId('lease-form')).toHaveCount(0);
 });

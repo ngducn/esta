@@ -17,6 +17,7 @@ const sharedClock = [
   'property-detail.spec.ts',
   'documents-upload.spec.ts',
   'leases.spec.ts',
+  'collections.spec.ts',
 ];
 
 export default defineConfig({
