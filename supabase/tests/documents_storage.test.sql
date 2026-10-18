@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(34);
+select plan(36);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -57,10 +57,10 @@ select throws_ok(
   $$ insert into storage.objects (bucket_id, name) values ('documents', current_setting('tests.a_with_b_doc')) $$,
   '42501', null, 'a member of A cannot upload under a document id that B uses');
 select throws_ok(
-  $$ update storage.objects set name = current_setting('tests.b_prefix') || 'moved.jpg' where name = current_setting('tests.a_path') $$,
-  '42501', null, 'a member of A cannot rename A''s document under B''s prefix');
-select isnt_empty($$ select 1 from storage.objects where name = current_setting('tests.a_path') $$,
-  'the refused rename leaves the document in place');
+  $$ update storage.objects set name = current_setting('tests.b_prefix') || 'moved.jpg' where name = current_setting('tests.a_new') $$,
+  '42501', null, 'a member of A cannot move an upload of A under B''s prefix');
+select isnt_empty($$ select 1 from storage.objects where name = current_setting('tests.a_new') $$,
+  'the refused move leaves the upload in place');
 select is_empty($$ update storage.objects set metadata = '{}' where name = current_setting('tests.b_path') returning 1 $$,
   'a member of A updates none of B''s objects');
 select is_empty($$ delete from storage.objects where name = current_setting('tests.b_path') returning 1 $$,
@@ -99,6 +99,12 @@ select tests.clear_request();
 select is((select metadata from storage.objects where name = current_setting('tests.b_path')), null, 'B''s object is unchanged');
 select isnt_empty($$ select 1 from storage.objects where name = current_setting('tests.b_path') $$, 'B''s object is still there');
 select is((select metadata from storage.objects where name = current_setting('tests.a_path')), null, 'A''s registered file is unchanged');
+select throws_ok(format($$ insert into storage.objects (bucket_id, name, owner_id) values ('documents', %L, %L) $$,
+    :'a' || '/00000000-0000-4000-8000-00000000d0a1/qua-url-ky.jpg', tests.user_id('member.a@test.esta.test')),
+  '42501', null, 'a user''s write to a registered document is refused past the policies, as a signed upload URL writes');
+select lives_ok(format($$ insert into storage.objects (bucket_id, name) values ('documents', %L) $$,
+    :'a' || '/00000000-0000-4000-8000-00000000d0a1/seed.jpg'),
+  'a write with no owner, the seed or the agent on the service role, still lands');
 select ok(not has_function_privilege('anon', 'private.document_household(text)', 'execute'), 'anon cannot call document_household');
 
 select * from finish();
