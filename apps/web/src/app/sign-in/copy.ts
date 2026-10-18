@@ -4,7 +4,6 @@ import type { Around, PasswordCopy } from './auth-fields';
 
 const SLOT = '\u0000';
 
-/** Formats a message with its one argument left as a gap, so the client fills it without the ICU runtime. */
 export function around(format: (slot: string) => string): Around {
   const [before = '', after = ''] = format(SLOT).split(SLOT);
   return [before, after];

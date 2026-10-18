@@ -12,13 +12,13 @@ export const fieldClass =
   'min-h-touch w-full rounded-md border border-field bg-surface px-3.5 text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted aria-invalid:border-overdue';
 export const primaryClass =
   'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
-export const secondaryClass =
+const secondaryClass =
   'min-h-touch px-2 font-semibold text-ink underline decoration-ink-muted underline-offset-4 disabled:no-underline disabled:opacity-60';
 export const outlineClass =
-  'inline-flex min-h-touch w-full items-center justify-center rounded-sm border border-rule-strong bg-surface px-4 text-center font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2';
+  'inline-flex min-h-touch w-full items-center justify-center rounded-sm border border-rule-strong bg-surface px-4 py-2 text-center font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2';
 export const linkClass = 'inline-flex min-h-touch items-center font-semibold text-ink underline decoration-ink-muted underline-offset-4';
 
-export function ResendButton({ copy, pending }: { copy: { resend: string; resendIn: Around }; pending: boolean }) {
+function ResendButton({ copy, pending }: { copy: { resend: string; resendIn: Around }; pending: boolean }) {
   const [seconds, setSeconds] = useState(RESEND_WAIT_SECONDS);
   useEffect(() => {
     const timer = setInterval(() => setSeconds((left) => Math.max(0, left - 1)), 1000);
@@ -40,7 +40,6 @@ type PasswordFieldProps = {
   copy: PasswordCopy;
   autoComplete: 'current-password' | 'new-password';
   invalid: boolean;
-  /** Ids of the hint and error lines that describe the field. */
   describedBy: readonly string[];
   inputRef?: Ref<HTMLInputElement>;
   /** Controlled when the form must keep the password across steps; otherwise the browser owns it. */
@@ -112,7 +111,6 @@ type CodeStepProps = {
   pending: boolean;
   copy: CodeStepCopy;
   codeInput: Ref<HTMLInputElement>;
-  /** Fields the step submits beside the code, such as the password chosen on the step before. */
   children?: ReactNode;
 };
 
