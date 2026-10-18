@@ -11,7 +11,7 @@ export const ANNOTATION_KINDS = ['mortgage', 'mortgage_release', 'transfer', 'ch
 export type AnnotationKind = (typeof ANNOTATION_KINDS)[number];
 
 const confidence = z.number().min(0).max(1);
-const page = z.number().int().min(1).nullable();
+const page = z.number().int().min(1).max(999).nullable();
 
 /** Every leaf carries the model's confidence and the page it read the value from, null when the value is absent (DOMAIN-VN §2.1). */
 export function leaf<T extends z.ZodType>(value: T) {
@@ -27,14 +27,15 @@ export function parseArea(raw: unknown): unknown {
   return decimal === null ? raw : Number(decimal.digits) / 10 ** decimal.scale;
 }
 
-const area = z.preprocess(parseArea, z.number().nonnegative());
+/** Bounded, as every number in a result is, so a national ID cannot pass as one (SPEC D11). */
+const area = z.preprocess(parseArea, z.number().nonnegative().max(100_000_000));
 
 const text = leaf(z.string());
 const isoDate = leaf(z.string().refine(isIsoDate, 'expected YYYY-MM-DD'));
 
 export const holderSchema = z.object({
   full_name: text,
-  birth_year: leaf(z.number().int()),
+  birth_year: leaf(z.number().int().min(1900).max(2100)),
   id_last4: leaf(z.string().regex(/^\d{4}$/, 'exactly four digits')),
   address_text: text,
   relation: text,
@@ -60,9 +61,9 @@ export const structureSchema = z.object({
   kind: text,
   footprint_m2: leaf(area),
   floor_area_m2: leaf(area),
-  floors: leaf(z.number().int()),
+  floors: leaf(z.number().int().min(0).max(200)),
   structure_text: text,
-  completed_year: leaf(z.number().int()),
+  completed_year: leaf(z.number().int().min(1800).max(2100)),
   ownership_term: text,
 });
 

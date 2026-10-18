@@ -32,6 +32,12 @@ describe('utilityBillV1Schema', () => {
     expect(utilityBillV1Schema.safeParse({ ...bill, kind: leaf('gas') }).success).toBe(false);
   });
 
+  it('rejects an ID number hidden in the amount or the consumption, because both are bounded', () => {
+    expect(utilityBillV1Schema.safeParse({ ...bill, amount_vnd: leaf(999_999_999) }).success).toBe(true);
+    expect(utilityBillV1Schema.safeParse({ ...bill, amount_vnd: leaf(1_062_118_340) }).success).toBe(false);
+    expect(utilityBillV1Schema.safeParse({ ...bill, consumption: leaf(79_062_118_340) }).success).toBe(false);
+  });
+
   it('keeps full_text out of the leaves, so the review form shows no row for it', () => {
     expect(utilityBillV1Schema.safeParse({ ...bill, full_text: leaf('x') }).success).toBe(false);
   });

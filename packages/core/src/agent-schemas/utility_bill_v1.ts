@@ -31,8 +31,8 @@ export const utilityBillV1Schema = z.object({
   holder_name: text,
   address_text: text,
   period: leaf(z.string().regex(MONTH, 'expected YYYY-MM')),
-  amount_vnd: leaf(z.preprocess(parseAmount, z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER))),
-  consumption: leaf(z.preprocess(parseConsumption, z.number().nonnegative())),
+  amount_vnd: leaf(z.preprocess(parseAmount, z.number().int().nonnegative().max(999_999_999))),
+  consumption: leaf(z.preprocess(parseConsumption, z.number().nonnegative().max(100_000_000))),
   /** The bill's printed text, not a reviewed field: P2-05 copies it into `documents.ocr_text` for search. */
   full_text: z.string().optional(),
 });
