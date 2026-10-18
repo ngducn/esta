@@ -25,6 +25,11 @@ Open, with the next step for each:
   - Their evidence lands in `/tmp/swarm-pr150-ev/{live,audit,math}/`.
   - **These were still running at the handoff.** Their reports may not reach the next session. If they do not, read each evidence folder. A lane whose folder has no report after its timebox (80, 75 and 45 minutes from 00:05) is stuck: rerun only that lane's section. Check `docker ps` and `bin/slot-free.sh` first, so you do not start a duplicate on a slot a lane still holds.
   - **Already known for the fix-forward:** `/documents` LCP is 2.72 s against the 2.5 s budget. The cause is the first tile's lazy thumbnail. The fix is in one file: load the first tiles eagerly with high priority, as the property list does (owner report).
+  - **Lane S reported at 00:30 (ISSUES):**
+    - **Blocking:** Sửa thông tin sends expiresOn null when the date cannot be read. 31/02/2027, 30-10-26, 30/10 and abc each erase q7's 2026-10-30, and it drops out of Sắp hết hạn. Cause: document-edit-sheet.tsx lines 54 and 101. Fix it like LeaseForm and RecordPaymentSheet: refuse an unreadable date. Repro: /tmp/swarm-pr150-ev/math/web/edit-sheet.dom.test.tsx and run1.log.
+    - **Not blocking:** typed queries such as `Q.7`, `TP.HCM`, `07/10/2026` and `1.234.000` miss, because to_tsvector('simple') keeps them as one lexeme while the query splits on punctuation. File it as `[low]`. The suggested fix is to replace `[^[:alnum:]]+` with a space in document_search_vector. Also not blocking: turning a document sensitive drops its ocr_text, and Hoàn tác does not restore it. Add that to the same `[low]`.
+    - **Passed:** accent folding and expiry, over 5,000 generated cases each.
+    - Lanes L and A were still running.
   - Also confirm that CI ran `documents-extract` and `extraction-review`. The owner changed one tile selector in each and could not run them.
   - Send every blocking finding in one fix-forward: a fresh Opus owner in `/tmp/owner-p2-05/wt`. Then run a scoped round, CI and the merge.
 - **#142 P3-04: the nightly invoice and lease-status job (track B, rigorous, interrogate list).**
