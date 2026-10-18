@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 
-/** One document holds at most this many captured pages. */
 export const MAX_CAPTURE_PAGES = 20;
 
 /** A downscaled photo in the strip. Its object URL is also its identity, since no two pages share one. */

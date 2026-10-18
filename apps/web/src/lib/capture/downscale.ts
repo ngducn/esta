@@ -1,6 +1,6 @@
-/** A 2000 px long side keeps printed text legible and a 20-page PDF well under the 25 MB upload limit. */
+/** Printed text on an A4 page stays legible at 2000 px, and a page of a paper photo stays under half a megabyte. */
 export const MAX_LONG_SIDE = 2000;
-export const JPEG_QUALITY = 0.85;
+const JPEG_QUALITY = 0.85;
 
 export type DownscaledImage = { readonly blob: Blob; readonly width: number; readonly height: number };
 
