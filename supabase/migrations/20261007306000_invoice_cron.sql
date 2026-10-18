@@ -2,7 +2,8 @@
 -- written only here: apps/web/src/server/cron passes the date and instant of its Clock and never plans or inserts.
 
 -- issue_invoices now reports what it did, and an ended lease still issues a draft it owes: a metered lease's last
--- period issues on its due date, which can fall after end_date, and lease-status runs before invoices each night.
+-- period issues on its due date, which can fall after end_date, and lease-status runs before invoices each night. It
+-- owes only periods that start by its end_date, and only once that date has passed; with no end_date it owes none.
 drop function private.issue_invoices(uuid, date, timestamptz);
 
 create function private.issue_invoices(p_lease_id uuid, p_as_of date, p_issued_at timestamptz, out drafted integer, out issued integer)
@@ -45,7 +46,8 @@ begin
     end loop;
   end if;
   update public.invoices i set status = 'issued', issued_at = p_issued_at
-  where i.lease_id = p_lease_id and i.status = 'draft' and i.issue_on <= p_as_of;
+  where i.lease_id = p_lease_id and i.status = 'draft' and i.issue_on <= p_as_of
+    and (v_lease.status = 'active' or (v_lease.end_date < p_as_of and i.period_start <= v_lease.end_date));
   get diagnostics issued = row_count;
 end;
 $$;
