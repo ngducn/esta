@@ -22,6 +22,7 @@ export async function NewItems({ items, timeOf }: { items: readonly NewItem[]; t
           {items.map((item) => (
             <li key={item.id} data-testid="new-item" className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
               <p className="text-body font-semibold break-words text-ink">{item.title}</p>
+              {item.retry === null ? null : <p className="text-body break-words text-ink-2">{t(item.retry === 'self' ? 'retrySelf' : 'retryAsk')}</p>}
               <p className="text-small text-ink-muted figures">{timeOf(item)}</p>
             </li>
           ))}

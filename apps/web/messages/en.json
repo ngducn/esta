@@ -835,7 +835,9 @@
     "noToolCalls": "No tool calls",
     "toolCall": "{name} × {count}",
     "newItems": "New items",
-    "noNewItems": "No new items"
+    "noNewItems": "No new items",
+    "retrySelf": "You can try again or enter it by hand.",
+    "retryAsk": "An admin can have the assistant read it again."
   },
   "settings": {
     "display": "Display",

@@ -165,7 +165,7 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
   const member = await requireMember();
   const [lastSeenAt, items, nav, { check }] = await Promise.all([
     getWorkerHeartbeat(clock.now()),
-    listNewItems(member.household.id),
+    listNewItems(member),
     getTranslations('nav'),
     searchParams,
   ]);

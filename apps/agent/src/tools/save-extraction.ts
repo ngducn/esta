@@ -14,8 +14,8 @@ type Locale = 'vi' | 'en';
 export const ITEM_TITLES = {
   review: { vi: (title: string) => `Đã đọc xong ${title}. Mời bạn kiểm tra lại.`, en: (title: string) => `Finished reading ${title}. Please check it.` },
   failed: {
-    vi: (title: string) => `Trợ lý không đọc được ${title}. Bạn có thể thử lại hoặc nhập tay.`,
-    en: (title: string) => `The assistant could not read ${title}. You can try again or enter it by hand.`,
+    vi: (title: string) => `Trợ lý không đọc được ${title}.`,
+    en: (title: string) => `The assistant could not read ${title}.`,
   },
 } as const satisfies Record<string, Record<Locale, (title: string) => string>>;
 

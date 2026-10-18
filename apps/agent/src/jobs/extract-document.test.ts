@@ -46,7 +46,7 @@ describe('extract_document on the fake service client', () => {
     expect(tables.agent_items).toEqual([
       expect.objectContaining({
         severity: 'info',
-        title: 'Trợ lý không đọc được Sổ hồng Bảo Lộc. Bạn có thể thử lại hoặc nhập tay.',
+        title: 'Trợ lý không đọc được Sổ hồng Bảo Lộc.',
         proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' },
         dedupe_key: `extract_failed:${EXTRACTION_A}`,
         created_at: NOW,
