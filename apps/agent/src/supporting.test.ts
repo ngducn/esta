@@ -4,7 +4,8 @@ import { readClock } from './clock';
 import { beat } from './heartbeat';
 import { jobSpec, JOBS } from './jobs/registry';
 import { fakeDb, type Recorded } from './test/fake-db';
-import { buildTools, isEstaToolName } from './tools/server';
+import { pingTools } from './jobs/ping';
+import { isEstaToolName } from './tools/server';
 
 const env = { ESTA_ENV: 'development', ESTA_FROZEN_NOW: undefined, ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' } as const;
 
@@ -43,12 +44,16 @@ describe('job registry', () => {
     for (const spec of Object.values(JOBS)) expect(spec.mcpTools.every(isEstaToolName)).toBe(true);
   });
 
+  it('defines extract_document with Read, save_extraction, 8 turns and 5 minutes', () => {
+    expect(JOBS.extract_document).toMatchObject({ builtInTools: ['Read'], mcpTools: ['save_extraction'], maxTurns: 8, timeoutMs: 300_000, modelRole: 'routine' });
+  });
+
   it('knows no other kind', () => {
-    expect(jobSpec('extract_document')).toBeUndefined();
+    expect(jobSpec('research_scan')).toBeUndefined();
     expect(jobSpec('toString')).toBeUndefined();
   });
 
   it('names MCP tools as mcp__esta__<name>', () => {
-    expect([...buildTools(fakeDb({}), 'h', ['household_info']).keys()]).toEqual(['mcp__esta__household_info']);
+    expect([...pingTools(fakeDb({}), 'h').keys()]).toEqual(['mcp__esta__household_info']);
   });
 });

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
 const MEMO = /\bESTA ?([0-9A-Z]{8})\b/g;
 const TIMESTAMP = /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})/g;
-const PLACEHOLDER = /<(household|id:\d+|memo:\d+|time:\d+)>/g;
+const PLACEHOLDER = /<(household|jobdir|id:\d+|memo:\d+|time:\d+)>/g;
 
 /**
  * Maps run-specific values to placeholders before hashing and recording, and back when a recording replays,
@@ -14,9 +14,10 @@ export type Canonicalizer = {
   restore(text: string): string;
 };
 
-export function canonicalizer({ householdName }: { readonly householdName: string }): Canonicalizer {
+/** `jobDir` holds the job's id, so it becomes `<jobdir>` before ids do; a recorded Read path then replays in any job. */
+export function canonicalizer({ householdName, jobDir }: { readonly householdName: string; readonly jobDir?: string }): Canonicalizer {
   const toPlaceholder = new Map<string, string>();
-  const toValue = new Map<string, string>([['<household>', householdName]]);
+  const toValue = new Map<string, string>([['<household>', householdName], ...(jobDir === undefined ? [] : [['<jobdir>', jobDir] as const])]);
   const counters = { id: 0, memo: 0, time: 0 };
 
   const placeholder = (kind: keyof typeof counters, value: string): string => {
@@ -33,7 +34,7 @@ export function canonicalizer({ householdName }: { readonly householdName: strin
 
   return {
     canonical: (text) =>
-      text
+      (jobDir === undefined ? text : text.replaceAll(jobDir, '<jobdir>'))
         .replaceAll(householdName, '<household>')
         .replace(UUID, (id) => placeholder('id', id.toLowerCase()))
         .replace(MEMO, (_, code: string) => `ESTA ${placeholder('memo', code)}`)

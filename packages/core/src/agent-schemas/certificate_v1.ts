@@ -14,7 +14,7 @@ const confidence = z.number().min(0).max(1);
 const page = z.number().int().min(1).nullable();
 
 /** Every leaf carries the model's confidence and the page it read the value from, null when the value is absent (DOMAIN-VN §2.1). */
-function leaf<T extends z.ZodType>(value: T) {
+export function leaf<T extends z.ZodType>(value: T) {
   return z.object({ value: value.nullable(), confidence, page });
 }
 

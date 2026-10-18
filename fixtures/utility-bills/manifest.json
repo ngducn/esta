@@ -1,0 +1,10 @@
+{
+  "electricity-q7-scan": {
+    "document.pdf": "a26d7a61e7d36ad849451afe9dcc7c524cefe1ef1d81b601a596617d5b0178d3",
+    "truth.json": "33a28b6285e4bf72b40d7161c5ec1c85c9f011f10bd82f7635c2ade40d4af644"
+  },
+  "water-q7-photo": {
+    "page-1.jpg": "a66b45f0cd61080e7f7d652c15e5fddb0ade348edce6bbc1b1258c52fc84bfeb",
+    "truth.json": "3fd90c122dab06c359a83e04ae1dac62ba216c1e3df2d5d7572ccd5804ede3be"
+  }
+}
