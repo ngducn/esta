@@ -219,7 +219,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-body font-semibold text-ink">{t('method')}</legend>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
               {METHODS.map(({ value, label, Icon }) => (
                 <label
                   key={value}

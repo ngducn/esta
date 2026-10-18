@@ -8,16 +8,24 @@ import type { PaymentTarget } from './RecordPaymentSheet';
 const loadSheet = () => import('./RecordPaymentSheet');
 const RecordPaymentSheet = lazy(loadSheet);
 
+let warming = false;
+
 /**
- * `Ghi nhận` on a collections row. The sheet's code loads once the board is interactive, so the first tap opens it
- * without a wait. Each opening mounts a fresh sheet, which gives it its own idempotency key and the row's prefill.
+ * Fetches the sheet's code on the first sign that someone is using the board (a touch, a key, a scroll), so the first
+ * `Ghi nhận` opens without a wait while the board's own load carries none of it.
  */
+function warmSheetOnFirstIntent() {
+  if (warming) return;
+  warming = true;
+  const warm = () => void loadSheet();
+  for (const type of ['pointerdown', 'keydown', 'scroll'] as const) window.addEventListener(type, warm, { once: true, passive: true });
+}
+
+/** `Ghi nhận` on a collections row. Each opening mounts a fresh sheet, with its own idempotency key and the row's prefill. */
 export function RecordPaymentAction({ label, target }: { label: string; target: PaymentTarget }) {
   const [open, setOpen] = useState(false);
   const [opening, setOpening] = useState(0);
-  useEffect(() => {
-    void loadSheet();
-  }, []);
+  useEffect(warmSheetOnFirstIntent, []);
   return (
     <>
       <button
