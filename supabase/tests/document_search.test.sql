@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(20);
+select plan(38);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -63,12 +63,56 @@ select throws_ok($$ update public.documents set ocr_text = 'mã 079123456789' wh
   '23514', null, 'ocr_text refuses an unlabelled 12-digit run (D11)');
 select lives_ok($$ update public.documents set ocr_text = 'Số CCCD ...6789 của chủ hộ' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
   'ocr_text keeps the last four digits of an ID');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'số 079123' || U&'\0301' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses an ID with a combining acute between its groups (D11)');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'CCCD 079123' || U&'\0301' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses a labelled ID with a combining acute inside (D11)');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'số 079123' || U&'\034F' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses an ID with a combining grapheme joiner between its groups (D11)');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'CCCD 079123' || U&'\034F' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses a labelled ID with a combining grapheme joiner inside (D11)');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'số 079123' || U&'\0323' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses an ID with a combining dot below between its groups (D11)');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'CCCD 079123' || U&'\0323' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses a labelled ID with a combining dot below inside (D11)');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'số 079123' || U&'\00B7' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses an ID with a middle dot between its groups (D11)');
+select throws_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'số ' || U&'\FF10\FF17\FF19\FF11\FF12\FF13\FF14\FF15\FF16\FF17\FF18\FF19' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  '23514', null, 'ocr_text refuses an ID in full-width digits (D11)');
+select lives_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'Nhận chuyển nhượng 079123    456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  'ocr_text keeps four spaces inside an ID, the known gap of #140, as read');
+select is_empty($$ select 1 from public.search_documents('079123456789') $$,
+  'the 12 digits of four spaces inside an ID, the known gap of #140, find no document');
+select lives_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'số 079123' || E'\t\t\t\t' || '456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  'ocr_text keeps four tabs inside an ID, the known gap of #140, as read');
+select is_empty($$ select 1 from public.search_documents('079123456789') $$,
+  'the 12 digits of four tabs inside an ID, the known gap of #140, find no document');
+select lives_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'số 079123/456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  'ocr_text keeps two groups split by a slash with no label as read');
+select is_empty($$ select 1 from public.search_documents('079123456789') $$,
+  'the 12 digits of two groups split by a slash with no label find no document');
+select lives_ok($$ update public.documents set ocr_text = 'Hóa đơn ' || 'Mã KH PE079123456789' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  'ocr_text keeps an electricity code as read');
+select is_empty($$ select 1 from public.search_documents('079123456789') $$,
+  'the 12 digits of an electricity code find no document');
+select lives_ok($$ update public.documents set ocr_text = 'Số CCCD ...6789 của chủ hộ' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
+  'ocr_text takes the last four digits again');
 select throws_ok($$ update public.documents set ocr_text = 'Giấy chứng nhận' where id = '00000000-0000-4000-8000-00000000d0a1' $$,
   '23514', null, 'a sensitive document keeps no ocr_text');
 select throws_ok($$ update public.documents set sensitivity = 'sensitive' where id = '00000000-0000-4000-8000-00000000d0a4' $$,
   '23514', null, 'a document with ocr_text cannot turn sensitive without dropping it');
 
 reset role;
+-- As the test owner: a member calling a private function directly crashes local Postgres (#128).
+select is_empty($$
+  select to_hex(c) || ' after ' || shape.head
+  from generate_series(1, 65535) as c
+  cross join (values ('số 079123', '456789', '079123456789'), ('CCCD 079123', '456789', '079123456789'), ('CMND 0791', '23456', '079123456')) as shape (head, tail, digits)
+  where c not between 55296 and 57343
+    and private.document_search_vector('', '{}', shape.head || chr(c) || shape.tail) @@ to_tsquery('simple', shape.digits || ':*')
+    and not private.holds_national_id(to_jsonb(shape.head || chr(c) || shape.tail))
+$$, 'no character between the groups of an ID lets the search index hold the whole ID while the CHECK keeps the text (D11)');
+
 select ok(not (select prosecdef from pg_proc where oid = 'public.search_documents(text)'::regprocedure),
   'search_documents runs as the caller, so RLS decides');
 select ok(not has_function_privilege('anon', 'public.search_documents(text)', 'execute')

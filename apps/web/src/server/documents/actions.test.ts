@@ -1,3 +1,4 @@
+import { NATIONAL_ID_VECTORS } from '../../../../../packages/core/src/agent-schemas/national-id-vectors';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomBytes } from 'node:crypto';
 import { join } from 'node:path';
@@ -13,12 +14,13 @@ const session = vi.hoisted(() => ({
 }));
 
 vi.mock('server-only', () => ({}));
+vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('@/server/env', () => ({ env: { ESTA_SIGNED_URL_TTL_SECONDS: 2 } }));
 vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-07T09:00:00+07:00' }) }));
 vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
-const { createDocumentUpload, openDocument, registerDocument } = await import('./actions');
+const { createDocumentUpload, openDocument, registerDocument, updateDocument } = await import('./actions');
 
 // The vitest config's placeholder Supabase URL and key would shadow the slot's real ones.
 vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', undefined);
@@ -126,5 +128,21 @@ describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.
       session.client = member;
     }
     expect(await service<unknown[]>(`/rest/v1/document_access_log?document_id=eq.${ticket.documentId}&select=id`)).toEqual([]);
+  });
+
+  test('Sửa thông tin refuses a title or a tag holding a full ID, names the field and writes nothing (D11)', async () => {
+    const { ticket, input } = await uploadAndRegister();
+    expect(await registerDocument(input)).toMatchObject({ ok: true });
+    const edit = { documentId: ticket.documentId, title: 'Giấy tờ Demo', category: 'other', propertyId, expiresOn: null, tags: ['demo'], sensitive: false };
+    const [, judgedOnly] = NATIONAL_ID_VECTORS.refused.find(([name]) => name.startsWith('a next-line')) ?? [];
+    const titles = ['CCCD mẹ 079123456789', 'số 079123\u0301456789', judgedOnly ?? ''];
+    for (const title of titles) {
+      expect(await updateDocument({ ...edit, title }), title).toEqual({ ok: false, reason: 'national_id', fields: ['title'] });
+    }
+    expect(await updateDocument({ ...edit, tags: ['demo', '079123456789'] })).toEqual({ ok: false, reason: 'national_id', fields: ['tags'] });
+    expect(await updateDocument({ ...edit, title: titles[0], tags: ['CMND 023456789'] })).toEqual({ ok: false, reason: 'national_id', fields: ['title', 'tags'] });
+    expect(await service(`/rest/v1/documents?id=eq.${ticket.documentId}&select=title,tags`)).toEqual([{ title: 'Giấy tờ Demo', tags: [] }]);
+    expect(await updateDocument({ ...edit, title: 'Giấy tờ Demo CCCD 6789' })).toMatchObject({ ok: true });
+    expect(await service(`/rest/v1/documents?id=eq.${ticket.documentId}&select=title,tags`)).toEqual([{ title: 'Giấy tờ Demo CCCD 6789', tags: ['demo'] }]);
   });
 });

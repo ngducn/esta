@@ -197,6 +197,23 @@ test('rule 6: in English at 130% and dark, bao loc so still finds Sổ hồng B�
   }
 });
 
+test('the document page and the review screen keep the app\'s loading state, and the review screen its error state, not the vault list\'s', async ({ page }) => {
+  await open(page, 'ryan.lane1@demo.esta.test', 'light', DESKTOP);
+  const html = async (path: string) => {
+    const response = await page.request.get(path);
+    expect(response.ok(), path).toBe(true);
+    return response.text();
+  };
+  const vault = await html('/documents');
+  expect(vault, 'the vault list streams its own skeleton').toContain('skeleton-vault');
+  expect(vault, 'and its own error copy').toContain('Chưa tải được danh sách');
+  const certificate = documentId(1, 'bao-loc:certificate');
+  expect(await html(`/documents/${certificate}`), 'the document page').not.toContain('skeleton-vault');
+  const review = await html(`/documents/${certificate}/review`);
+  expect(review, 'the review screen').not.toContain('skeleton-vault');
+  expect(review, 'the review screen').not.toContain('Chưa tải được danh sách');
+});
+
 test('a vault above 100 documents mounts only the rows on screen (SPEC §7.2)', async ({ page }) => {
   await open(page, 'ryan.lane7@demo.esta.test', 'light', DESKTOP);
   const ids = Array.from({ length: 150 }, (_, n) => seedId(`e2e:document:vault-virtual:${n}`));

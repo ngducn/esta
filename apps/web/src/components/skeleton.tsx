@@ -7,10 +7,10 @@ function Block({ className }: { className: string }) {
 }
 
 /** One status region per loading area, so a screen reader hears "Đang tải" once rather than per block. */
-function Loading({ children, className }: { children: ReactNode; className?: string }) {
+function Loading({ children, className, testId }: { children: ReactNode; className?: string; testId?: string }) {
   const t = useTranslations('components');
   return (
-    <div role="status" data-slot="skeleton" className={className}>
+    <div role="status" data-slot="skeleton" data-testid={testId} className={className}>
       <span className="sr-only">{t('loading')}</span>
       {children}
     </div>
@@ -55,7 +55,7 @@ export function SkeletonCards({ count = 3 }: { count?: number }) {
 /** The vault as it lands: the title, the search bar, the expiring card and a row of 4:3 document tiles. */
 export function SkeletonVault() {
   return (
-    <Loading className="flex flex-col gap-5">
+    <Loading testId="skeleton-vault" className="flex flex-col gap-5">
       <Block className="h-9 w-40 max-w-full" />
       <Block className="h-touch w-full" />
       <div className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card sm:p-5">
