@@ -2,10 +2,11 @@
 const ID_KEY = /(?:^|_)(?:id|cccd|cmnd|cmtnd|idno|identity)(?:_|$)/i;
 
 /**
- * Words that announce an ID number. A 9- to 11-digit run counts as an ID when it starts within `LABEL_REACH` characters
- * after one, whatever stands between, so a phone number or a price that close is cut too.
+ * Words that announce an ID number, matched with accents dropped, so `CḾND`, OCR's `CMNĐ` and `Chung minh` count. A
+ * 9- to 11-digit run counts as an ID when it starts within `LABEL_REACH` characters after one, whatever stands
+ * between, so a phone number or a price that close is cut too.
  */
-const ID_LABEL = /cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\bid\b/giu;
+const ID_LABEL = /cccd|cmtnd|cmnd|cmt|can cuoc|chung minh|dinh danh|ddcn|so the|\bid\b/giu;
 const LABEL_REACH = 40;
 const LABELLED_LENGTHS = [12, 11, 10, 9] as const;
 
@@ -21,12 +22,27 @@ const CODE_PREFIXES: ReadonlySet<string> = new Set(['PA', 'PB', 'PC', 'PD', 'PE'
  * search index holds, so a mark between two digit groups cannot hide an ID the index would hold whole.
  * `holds_national_id` drops the same ranges.
  */
-const FOLDED = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]|[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
+const MARKS = /[\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/gu;
+const FOLDED = new RegExp(`[\\u00AD\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]|${MARKS.source}`, 'gu');
 
-/** Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one dot, middle dot, dash, comma or underscore. */
-const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[.,_\-\u00B7\u2010-\u2015])$/u;
+/**
+ * Each letter without its marks, and đ as d, one code unit for one so a label's position is its position in the text.
+ * A letter whose base differs in length, such as a Hangul syllable, stays as it is. `holds_national_id` folds the same way.
+ */
+const unaccented = (text: string) =>
+  text.replace(/[^\0-\x7F]/gu, (char) => {
+    if (char === 'đ' || char === 'Đ') return char === 'đ' ? 'd' : 'D';
+    const base = char.normalize('NFD').replace(MARKS, '');
+    return base.length === char.length ? base : char;
+  });
+
+/** A middle dot is read as a dot, so it groups an amount or a date as a dot does and joins ID groups as a dot does. */
+const asDots = (text: string) => text.replaceAll('\u00B7', '.');
+
+/** Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one dot, dash, comma or underscore. */
+const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[.,_\-\u2010-\u2015])$/u;
 /** After a label the number may also break across lines or use slashes. */
-const JOIN_AFTER_LABEL = /^(?:\s{1,3}|[./,_\-\u00B7\u2010-\u2015])$/u;
+const JOIN_AFTER_LABEL = /^(?:\s{1,3}|[./,_\-\u2010-\u2015])$/u;
 /**
  * A date such as 12/03/2021, 12/03/21, 2021-03-12 or 20210312. It never belongs to an ID, so the last four digits of a
  * reduced ID never join one.
@@ -55,8 +71,9 @@ function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): Read
  * field, the digits possibly grouped. A match spans whole digit groups and stops at the first total that reaches the
  * length, and never takes in a date or an amount, so the date, year or amount after a number stays out of it.
  */
-function idSpans(text: string, idField: boolean): Span[] {
-  const labelEnds = [...text.matchAll(ID_LABEL)].map((m) => m.index + m[0].length);
+function idSpans(original: string, idField: boolean): Span[] {
+  const text = asDots(original);
+  const labelEnds = [...unaccented(text).matchAll(ID_LABEL)].map((m) => m.index + m[0].length);
   const afterLabel = (at: number) => idField || labelEnds.some((end) => end <= at && at - end <= LABEL_REACH);
 
   const groups: Group[] = [];
