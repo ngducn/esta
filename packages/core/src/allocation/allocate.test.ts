@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { allocatePayment, owedThrough, type Allocation, type OpenInvoice } from './allocate';
+import { allocatePayment, owedFor, owedThrough, type Allocation, type OpenInvoice } from './allocate';
 
 const d = isoDate;
 
@@ -114,5 +114,20 @@ describe('owedThrough', () => {
 
   it('asks for nothing when the row is no longer open', () => {
     expect(owedThrough([august, september], 'oct')).toBe(0);
+  });
+});
+
+describe('owedFor', () => {
+  it('is owedThrough the row when Mẹ chose nothing', () => {
+    expect(owedFor([october, august, september], 'sep', null)).toBe(7_000_000);
+  });
+
+  it('is the total of the chosen invoices, whatever the row', () => {
+    expect(owedFor([october, august, september], 'sep', ['oct'])).toBe(3_500_000);
+    expect(owedFor([october, august, september], 'sep', ['aug', 'oct'])).toBe(7_000_000);
+  });
+
+  it('counts nothing for a chosen invoice that is no longer open', () => {
+    expect(owedFor([august, september], 'sep', ['oct'])).toBe(0);
   });
 });

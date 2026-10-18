@@ -85,3 +85,13 @@ export function owedThrough(openInvoices: readonly OpenInvoice[], invoiceId: str
   if (end < 0) return vnd(0);
   return vnd(ordered.slice(0, end + 1).reduce((sum, invoice) => sum + invoice.outstandingVnd, 0));
 }
+
+/**
+ * What a payment sheet saw owed when it opened: owedThrough its row, or the total of the invoices Mẹ chose.
+ * `record_payment` refuses the payment when the database no longer agrees, because the sheet's amount and allocation
+ * were worked out from those numbers.
+ */
+export function owedFor(openInvoices: readonly OpenInvoice[], invoiceId: string, chosen: readonly string[] | null): Vnd {
+  if (chosen === null) return owedThrough(openInvoices, invoiceId);
+  return vnd(openInvoices.filter((invoice) => chosen.includes(invoice.id)).reduce((sum, invoice) => sum + invoice.outstandingVnd, 0));
+}
