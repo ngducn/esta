@@ -1951,6 +1951,37 @@ export type Database = {
       }
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
+      claim_abandoned_agent_job: {
+        Args: { p_as_of: string; worker_id: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          created_by: string | null
+          error: string | null
+          finished_at: string | null
+          household_id: string
+          id: string
+          idempotency_key: string | null
+          kind: string
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          requested_by: string | null
+          result: Json | null
+          run_after: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_agent_job: {
         Args: { p_as_of: string; worker_id: string }
         Returns: {

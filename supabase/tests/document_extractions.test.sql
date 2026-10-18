@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(30);
+select plan(36);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -83,6 +83,15 @@ select lives_ok(format($$ update public.document_extractions set status = 'runni
 select lives_ok(format($$ update public.document_extractions set status = 'needs_review', result = '{"form": null}' where id = %L $$, :'extraction_a'), 'the worker moves running > needs_review');
 select lives_ok(format($$ update public.document_extractions set result = '{"form": null}' where id = %L $$, :'extraction_a'), 'a re-run rewrites a waiting extraction');
 select throws_ok(format($$ update public.document_extractions set status = 'running' where id = %L $$, :'extraction_a'), '23514', null, 'needs_review never goes back to running');
+select throws_ok(
+  format($$ update public.document_extractions set result = '{"holders": [{"address_text": {"value": "CCCD 079062118340", "confidence": 1, "page": 1}}]}' where id = %L $$, :'extraction_a'),
+  '23514', null, 'a result that holds a 12-digit run is refused (SPEC D11)');
+select throws_ok(
+  format($$ update public.document_extractions set result = '{"holders": [{"birth_year": {"value": 790621183401}}]}' where id = %L $$, :'extraction_a'),
+  '23514', null, 'so is a 12-digit number');
+select lives_ok(
+  format($$ update public.document_extractions set result = '{"customer_code": {"value": "PE012345678901"}, "full_text": "CCCD 8340\n1.234.764 đ\nSTK 0123456789012"}' where id = %L $$, :'extraction_a'),
+  'a code, the last four digits, an amount and a 13-digit run pass');
 
 select tests.act_as('viewer.a@test.esta.test');
 select tests.sees_household('public.document_extractions', :'a', true);
@@ -95,12 +104,22 @@ select is_empty(format($$ select 1 from public.document_status where household_i
 select tests.act_as('member.a@test.esta.test');
 select lives_ok($$ update public.document_extractions set status = 'accepted', accepted_fields = '{"form": true}' $$, 'a member accepts a waiting extraction');
 select throws_ok($$ update public.document_extractions set status = 'rejected' $$, '23514', null, 'accepted is final');
+select throws_ok($$ update public.document_extractions set accepted_fields = '{"notes_text": "Demo 079062118340"}' $$, '23514', null,
+  'a reviewed value cannot hold a 12-digit run either');
 
 select tests.clear_request();
 reset role;
 select is(
   (select count(*)::int from public.audit_log where table_name = 'document_extractions' and row_id = :'extraction_a'),
-  4, 'every change to the extraction is audited, and a rewrite with the same result adds no row');
+  5, 'every change to the extraction is audited, and a rewrite with the same result adds no row');
+select throws_ok(
+  format($$ insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
+    values (%L, 'document_extractions', %L, 'update', 'system', 'test', '{"result": {"old": null, "new": {"x": "079062118340"}}}') $$, :'a', :'extraction_a'),
+  '23514', null, 'an extraction''s audit diff cannot hold a 12-digit run');
+select lives_ok(
+  format($$ insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
+    values (%L, 'leases', %L, 'update', 'system', 'test', '{"bank_account": {"old": null, "new": "079062118340"}}') $$, :'a', :'extraction_a'),
+  'the guard reads only extractions, so a 12-digit bank account elsewhere is kept');
 
 select * from finish();
 rollback;

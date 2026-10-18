@@ -2,6 +2,22 @@
 -- extract_document job and one extraction row; the worker reads the file, fills the row and leaves an item for Mẹ.
 -- Members see a document's state through document_status, never through the operator-only agent_jobs and agent_runs.
 
+-- SPEC D11: the worker keeps only the last four digits of a national ID (reduceNationalIds). This refuses any string or
+-- number in an extraction that still holds a bare 12-digit run, in case a later path skips the reduction. A run glued to
+-- a code's letters, such as PE012345678901, passes, as the reduction leaves it.
+create function private.holds_national_id(p_value jsonb)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(bool_or((scalar #>> '{}') ~ '(^|[^0-9A-Za-z])[0-9]{12}([^0-9A-Za-z]|$)'), false)
+  from jsonb_path_query(coalesce(p_value, 'null'::jsonb), 'strict $.**') as scalar
+  where jsonb_typeof(scalar) in ('string', 'number');
+$$;
+revoke all on function private.holds_national_id(jsonb) from public;
+grant execute on function private.holds_national_id(jsonb) to authenticated, service_role;
+
 create table public.document_extractions (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households (id) on delete cascade,
@@ -22,13 +38,23 @@ create table public.document_extractions (
   created_by uuid default auth.uid() references auth.users (id) on delete set null,
   unique (household_id, id),
   foreign key (household_id, document_id) references public.documents (household_id, id) on delete cascade,
-  foreign key (household_id, job_id) references public.agent_jobs (household_id, id) on delete set null (job_id)
+  foreign key (household_id, job_id) references public.agent_jobs (household_id, id) on delete set null (job_id),
+  constraint document_extractions_no_national_id
+    check (not private.holds_national_id(result) and not private.holds_national_id(accepted_fields))
 );
 create index document_extractions_latest_idx on public.document_extractions (household_id, document_id, created_at desc, id desc);
 create unique index document_extractions_job_idx on public.document_extractions (job_id) where job_id is not null;
 
 select private.enable_household_rls('public.document_extractions', 'member');
 select private.enable_audit('public.document_extractions');
+
+-- The same guard on the extraction's history, so a full ID cannot reach the audit diff by any path either.
+alter table public.audit_log
+  add constraint audit_log_extraction_no_national_id
+  check (
+    table_name <> 'document_extractions'
+    or not (private.holds_national_id(diff -> 'result') or private.holds_national_id(diff -> 'accepted_fields'))
+  );
 
 -- Only enqueue_extract_document inserts a member's row, and a member changes only the review columns. The worker
 -- writes the rest through the service role. Nobody deletes an extraction; it goes with its document.
@@ -194,6 +220,70 @@ as $$
     else interval '10 minutes'
   end;
 $$;
+
+-- A job whose last attempt's worker stopped stays running until a worker claims it with claim_abandoned_agent_job and
+-- fails it through its kind's failure step, which marks the extraction failed, leaves the Retry item and deletes the
+-- job's files. Failing it here in SQL skipped that step and left the extraction reading forever.
+create or replace function public.claim_agent_job(worker_id text, p_as_of timestamptz)
+returns setof public.agent_jobs
+language plpgsql
+volatile
+set search_path = ''
+as $$
+begin
+  return query
+  with candidate as (
+    select j.id
+    from public.agent_jobs j
+    where j.attempts < j.max_attempts
+      and ((j.status = 'queued' and j.run_after <= p_as_of)
+        or (j.status = 'running' and j.locked_at < p_as_of - private.agent_job_timeout(j.kind) - interval '2 minutes'))
+    order by j.priority, j.run_after
+    limit 1
+    for update skip locked
+  )
+  update public.agent_jobs j
+  set status = 'running',
+      locked_by = claim_agent_job.worker_id,
+      locked_at = p_as_of,
+      started_at = p_as_of,
+      attempts = j.attempts + 1
+  from candidate
+  where j.id = candidate.id
+  returning j.*;
+end;
+$$;
+
+-- Locks the job to the worker that fails it. A worker that stops while failing it leaves it to the next claim, and the
+-- failure step is idempotent, so the job still ends failed exactly once.
+create function public.claim_abandoned_agent_job(worker_id text, p_as_of timestamptz)
+returns setof public.agent_jobs
+language plpgsql
+volatile
+set search_path = ''
+as $$
+begin
+  return query
+  with candidate as (
+    select j.id
+    from public.agent_jobs j
+    where j.status = 'running'
+      and j.attempts >= j.max_attempts
+      and j.locked_at < p_as_of - private.agent_job_timeout(j.kind) - interval '2 minutes'
+    order by j.locked_at
+    limit 1
+    for update skip locked
+  )
+  update public.agent_jobs j
+  set locked_by = claim_abandoned_agent_job.worker_id,
+      locked_at = p_as_of
+  from candidate
+  where j.id = candidate.id
+  returning j.*;
+end;
+$$;
+revoke all on function public.claim_abandoned_agent_job(text, timestamptz) from public, anon, authenticated;
+grant execute on function public.claim_abandoned_agent_job(text, timestamptz) to service_role;
 
 create function private.latest_extraction(p_household_id uuid, p_document_id uuid)
 returns uuid

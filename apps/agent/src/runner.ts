@@ -114,26 +114,47 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant): Pro
   );
 
   const spec = jobSpec(job.kind);
-  const ownJob = (update: Partial<AgentJob>) =>
-    db.from('agent_jobs').update(update).eq('id', job.id).eq('locked_by', worker.workerId).eq('status', 'running');
   if (outcome.ok && spec !== undefined) {
-    await check('Finishing the job', ownJob({ status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt }));
+    await check('Finishing the job', ownJob(worker, job, { status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt }));
     return outcome;
   }
   const failure = outcome.ok ? { kind: 'error' as const, message: `Unknown job kind ${job.kind}` } : outcome.failure;
   const next = nextAttempt(job, failure, finishedAt);
-  await check(
-    'Failing the job',
-    next.status === 'queued'
-      ? ownJob({ status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null })
-      : ownJob({ status: 'failed', error: failure.message, finished_at: finishedAt }),
-  );
-  if (next.status === 'failed') await spec?.handler.onFailed?.({ db, job, clock: () => worker.clock() }, failure.message);
+  if (next.status === 'failed') {
+    await failJob(worker, job, failure.message);
+    return { ok: false, failure };
+  }
+  await check('Requeueing the job', ownJob(worker, job, { status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null }));
   return { ok: false, failure };
 }
 
+function ownJob(worker: Worker, job: AgentJob, update: Partial<AgentJob>) {
+  return worker.db.from('agent_jobs').update(update).eq('id', job.id).eq('locked_by', worker.workerId).eq('status', 'running');
+}
+
+/**
+ * Runs the kind's failure step before the job reads failed, and deletes the job's files, so a worker that stops in
+ * between leaves a running job that `claim_abandoned_agent_job` hands to the next worker (AGENT.md §9). The failure
+ * step is idempotent.
+ */
+async function failJob(worker: Worker, job: AgentJob, error: string): Promise<void> {
+  rmSync(join(worker.jobsDir, job.id), { recursive: true, force: true });
+  await jobSpec(job.kind)?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, error);
+  await check('Failing the job', ownJob(worker, job, { status: 'failed', error, finished_at: (await worker.clock()).now() }));
+}
+
+const ABANDONED = 'The worker stopped during the last attempt';
+
 export async function pollOnce(worker: Worker): Promise<boolean> {
   const asOf = (await worker.clock()).now();
+  const abandoned = await worker.db.rpc('claim_abandoned_agent_job', { worker_id: worker.workerId, p_as_of: asOf });
+  if (abandoned.error) throw new Error(`Claiming an abandoned job failed: ${abandoned.error.message}`);
+  const stopped = abandoned.data[0];
+  if (stopped !== undefined) {
+    await failJob(worker, stopped, ABANDONED);
+    console.log(`[agent] ${stopped.kind} ${stopped.id} attempt ${stopped.attempts}: failed, its worker stopped`);
+    return true;
+  }
   const { data, error } = await worker.db.rpc('claim_agent_job', { worker_id: worker.workerId, p_as_of: asOf });
   if (error) throw new Error(`Claiming a job failed: ${error.message}`);
   const job = data[0];

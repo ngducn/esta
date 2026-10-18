@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(37);
+select plan(41);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as operator_a \gset
@@ -151,9 +151,21 @@ select is_empty(
   $$ select 1 from public.claim_agent_job('w4', '2026-10-07T02:40:00Z') $$,
   'a stale running job that used its last attempt is not reclaimed');
 select results_eq(
-  $$ select status, finished_at, error is not null from public.agent_jobs where id = '00000000-0000-0000-0000-0000000000a5' $$,
-  $$ values ('failed', '2026-10-07T02:40:00Z'::timestamptz, true) $$,
-  'the claim fails a stale running job that has no attempt left');
+  $$ select status, locked_by from public.agent_jobs where id = '00000000-0000-0000-0000-0000000000a5' $$,
+  $$ values ('running', 'w9') $$,
+  'the claim leaves it running, so a worker fails it through its kind''s failure step');
+select is_empty(
+  $$ select 1 from public.claim_abandoned_agent_job('w4', '2026-10-07T01:02:00Z') $$,
+  'within its timeout the last attempt is still running, not abandoned');
+select results_eq(
+  $$ select id, locked_by, locked_at, status, attempts::int from public.claim_abandoned_agent_job('w4', '2026-10-07T02:40:00Z') $$,
+  $$ values ('00000000-0000-0000-0000-0000000000a5'::uuid, 'w4', '2026-10-07T02:40:00Z'::timestamptz, 'running', 4) $$,
+  'a worker claims the abandoned job to fail it, without a new attempt');
+select is_empty(
+  $$ select 1 from public.claim_abandoned_agent_job('w5', '2026-10-07T02:41:00Z') $$,
+  'another worker does not take it while the first fails it');
+select ok(not has_function_privilege('authenticated', 'public.claim_abandoned_agent_job(text, timestamptz)', 'execute'),
+  'a member cannot claim an abandoned job');
 insert into public.agent_jobs (id, household_id, kind, run_after, status, attempts, max_attempts, locked_by, locked_at)
 values ('00000000-0000-0000-0000-0000000000a6', :'a', 'ping', '2026-10-07T01:00:00Z', 'running', 3, 4, 'w9', '2026-10-07T01:00:00Z');
 select results_eq(
