@@ -73,7 +73,7 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 }
 
 const documentsPage = (page: Page, lane: number, key: string) => page.goto(`/properties/${propertyId(lane, key)}/documents`);
-const tile = (page: Page, title: string) => page.getByTestId('document-tile').filter({ has: page.getByRole('link', { name: new RegExp(title) }) });
+const tile = (page: Page, title: string) => page.getByTestId('document-tile').filter({ has: page.getByTestId('document-link').filter({ hasText: title }) });
 const noSideScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
 /** Every server action request body, so a test can prove no file bytes went through one. */
@@ -128,11 +128,13 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurre
     expect(Math.max(size.width ?? 0, size.height ?? 0), 'the thumbnail is at most 320 px on its long side').toBe(320);
     expect(clear.equals(blurred), 'the blurred thumbnail differs from the clear one').toBe(false);
 
-    const [opened] = await Promise.all([page.waitForEvent('popup'), tile(page, 'Sổ hồng Long An').getByRole('link').click()]);
-    await expect(opened.locator('img')).toBeVisible(COLD_ROUTE);
-    await opened.locator('img').evaluate((img: HTMLImageElement) => img.decode());
-    if (process.env.ESTA_VIDEO === '1') await opened.screenshot({ path: test.info().outputPath('opened.png') });
-    expect(opened.url(), 'Mẹ opens her upload through a signed URL').toMatch(new RegExp(`/storage/v1/object/sign/documents/${household(1)}/${row?.id}/page-1\\.jpg\\?token=`));
+    await tile(page, 'Sổ hồng Long An').getByTestId('document-link').first().click();
+    await expect(page).toHaveURL(new RegExp(`/documents/${row?.id}$`), COLD_ROUTE);
+    const image = page.locator('img[data-testid="document-page"]');
+    await expect(image).toBeVisible(COLD_ROUTE);
+    await image.evaluate((img: HTMLImageElement) => img.decode());
+    if (process.env.ESTA_VIDEO === '1') await page.screenshot({ path: test.info().outputPath('opened.png') });
+    expect(await image.getAttribute('src'), 'Mẹ opens her upload through a signed URL').toMatch(new RegExp(`/storage/v1/object/sign/documents/${household(1)}/${row?.id}/page-1\\.jpg\\?token=`));
   } finally {
     await archiveNewDocuments(page, 1, 'long-an');
   }

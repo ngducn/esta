@@ -15,13 +15,18 @@ const LABELLED_LENGTHS = [12, 11, 10, 9] as const;
  */
 const CODE_PREFIXES: ReadonlySet<string> = new Set(['PA', 'PB', 'PC', 'PD', 'PE']);
 
-/** Invisible characters OCR leaves inside a number: zero-width spaces and joiners, direction marks, the soft hyphen, the BOM. */
-const INVISIBLE = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]/gu;
+/**
+ * Dropped before either judge looks: invisible characters OCR leaves inside a number (zero-width spaces and joiners,
+ * direction marks, the soft hyphen, the BOM), and combining marks, which `esta_unaccent` strips from the text the
+ * search index holds, so a mark between two digit groups cannot hide an ID the index would hold whole.
+ * `holds_national_id` drops the same ranges.
+ */
+const FOLDED = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]|[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
 
-/** Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one dot, dash, comma or underscore. */
-const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[.,_\-\u2010-\u2015])$/u;
+/** Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one dot, middle dot, dash, comma or underscore. */
+const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[.,_\-\u00B7\u2010-\u2015])$/u;
 /** After a label the number may also break across lines or use slashes. */
-const JOIN_AFTER_LABEL = /^(?:\s{1,3}|[./,_\-\u2010-\u2015])$/u;
+const JOIN_AFTER_LABEL = /^(?:\s{1,3}|[./,_\-\u00B7\u2010-\u2015])$/u;
 /**
  * A date such as 12/03/2021, 12/03/21, 2021-03-12 or 20210312. It never belongs to an ID, so the last four digits of a
  * reduced ID never join one.
@@ -114,7 +119,7 @@ function cutOnce(text: string, idField: boolean, found: Found[]): string {
 
 /** Cuts until nothing is left to cut: a cut ID ends closer to the label, and its last four can join the next number. */
 function reduceText(text: string, idField: boolean, found: Found[]): string {
-  const nfc = text.normalize('NFC').replace(INVISIBLE, '');
+  const nfc = text.normalize('NFC').replace(FOLDED, '');
   let current = nfc;
   for (let next = cutOnce(current, idField, found); next !== current; next = cutOnce(current, idField, found)) current = next;
   return current === nfc ? text : current;

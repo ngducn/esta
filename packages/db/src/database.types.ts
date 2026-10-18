@@ -667,9 +667,11 @@ export type Database = {
           household_id: string
           id: string
           mime: string
+          ocr_text: string | null
           page_count: number | null
           party_id: string | null
           property_id: string | null
+          search_vector: unknown
           sensitivity: string
           sha256: string
           size_bytes: number
@@ -687,9 +689,11 @@ export type Database = {
           household_id: string
           id?: string
           mime: string
+          ocr_text?: string | null
           page_count?: number | null
           party_id?: string | null
           property_id?: string | null
+          search_vector?: unknown
           sensitivity: string
           sha256: string
           size_bytes: number
@@ -707,9 +711,11 @@ export type Database = {
           household_id?: string
           id?: string
           mime?: string
+          ocr_text?: string | null
           page_count?: number | null
           party_id?: string | null
           property_id?: string | null
+          search_vector?: unknown
           sensitivity?: string
           sha256?: string
           size_bytes?: number
@@ -2258,6 +2264,37 @@ export type Database = {
           amount_vnd: number
           id: string
         }[]
+      }
+      search_documents: {
+        Args: { p_query: string }
+        Returns: {
+          category: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_on: string | null
+          household_id: string
+          id: string
+          mime: string
+          ocr_text: string | null
+          page_count: number | null
+          party_id: string | null
+          property_id: string | null
+          search_vector: unknown
+          sensitivity: string
+          sha256: string
+          size_bytes: number
+          storage_path: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "documents"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       set_my_locale: { Args: { p_locale: string }; Returns: undefined }
       set_ownership_shares: {

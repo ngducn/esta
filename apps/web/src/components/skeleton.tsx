@@ -7,10 +7,10 @@ function Block({ className }: { className: string }) {
 }
 
 /** One status region per loading area, so a screen reader hears "Đang tải" once rather than per block. */
-function Loading({ children, className }: { children: ReactNode; className?: string }) {
+function Loading({ children, className, testId }: { children: ReactNode; className?: string; testId?: string }) {
   const t = useTranslations('components');
   return (
-    <div role="status" data-slot="skeleton" className={className}>
+    <div role="status" data-slot="skeleton" data-testid={testId} className={className}>
       <span className="sr-only">{t('loading')}</span>
       {children}
     </div>
@@ -44,6 +44,31 @@ export function SkeletonCards({ count = 3 }: { count?: number }) {
               <Block className="h-7 w-40" />
               <Block className="h-6 w-56 max-w-full" />
               <Block className="h-5 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Loading>
+  );
+}
+
+/** The vault as it lands: the title, the search bar, the expiring card and a row of 4:3 document tiles. */
+export function SkeletonVault() {
+  return (
+    <Loading testId="skeleton-vault" className="flex flex-col gap-5">
+      <Block className="h-9 w-40 max-w-full" />
+      <Block className="h-touch w-full" />
+      <div className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card sm:p-5">
+        <Block className="h-7 w-36" />
+        <Block className="h-6 w-full max-w-md" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }, (_, index) => (
+          <div key={index} className="flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+            <Block className="aspect-[4/3] w-full rounded-none" />
+            <div className="flex flex-col gap-2.5 p-4">
+              <Block className="h-5 w-28" />
+              <Block className="h-6 w-48 max-w-full" />
             </div>
           </div>
         ))}

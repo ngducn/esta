@@ -8,6 +8,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
+import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
 import { e2eServiceHeaders } from '../../../../../scripts/e2e-service';
 import { parseSlot } from '../../../../../scripts/slot';
 import { slotEnv } from '../../../../../scripts/slot-env';
@@ -110,6 +111,41 @@ async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_revi
 
 const count = async (path: string) => (await service<unknown[]>(path)).length;
 
+const BILL_TEXT = 'ĐIỆN LỰC DEMO TÂN THUẬN. HÓA ĐƠN TIỀN ĐIỆN tháng 9/2026. Tổng cộng 1.234.764 đ';
+const billResult = (fullText: string) => ({ ...billTruth.bill, full_text: fullText });
+const acceptBill = Object.fromEntries(reviewFields('utility_bill_v1', billTruth.bill).map((field) => [field.path, { kind: 'accepted' }]));
+
+/** A utility bill whose read waits for review, with the printed text the worker keeps beside the fields. */
+async function waitingBill(sensitivity: 'normal' | 'sensitive', fullText = BILL_TEXT): Promise<{ documentId: string; extractionId: string }> {
+  const documentId = randomUUID();
+  const extractionId = randomUUID();
+  documents.push(documentId);
+  await service('documents', {
+    method: 'POST',
+    body: JSON.stringify({
+      id: documentId,
+      household_id: household,
+      property_id: propertyId,
+      category: 'utility_bill',
+      title: 'Hóa đơn điện Demo',
+      storage_path: `${household}/${documentId}/hoa-don.pdf`,
+      mime: 'application/pdf',
+      size_bytes: 1000,
+      sha256: randomBytes(32).toString('hex'),
+      sensitivity,
+    }),
+  });
+  await service('document_extractions', {
+    method: 'POST',
+    body: JSON.stringify({ id: extractionId, household_id: household, document_id: documentId, schema_name: 'utility_bill_v1', schema_version: 1 }),
+  });
+  await patch(`document_extractions?id=eq.${extractionId}`, { status: 'running' });
+  await patch(`document_extractions?id=eq.${extractionId}`, { status: 'needs_review', result: billResult(fullText), model: 'replay' });
+  return { documentId, extractionId };
+}
+
+const ocrText = async (documentId: string) => (await service<{ ocr_text: string | null }[]>(`documents?id=eq.${documentId}&select=ocr_text`))[0]?.ocr_text;
+
 /** Counts what one extraction wrote: its certificate, the parcels and structures under it, and the household's parties. */
 async function written(extractionId: string) {
   const certificate = rowId(extractionId, 'certificate');
@@ -157,6 +193,9 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     }
     const created = certificates.flatMap((row) => row.holder_party_ids).filter((id) => id !== seedId(`seed:party:me-lane-${LANE}`));
     if (created.length > 0) await service(`parties?id=in.(${[...new Set(created)].join(',')})`, { method: 'DELETE' });
+    const extractions = await service<{ id: string }[]>(`document_extractions?document_id=in.(${ids})&select=id`);
+    const accounts = extractions.map((row) => rowId(row.id, 'utility_account')).join(',');
+    if (accounts !== '') await service(`utility_accounts?id=in.(${accounts})`, { method: 'DELETE' });
     await service(`documents?id=in.(${ids})`, { method: 'DELETE' });
   });
 
@@ -298,6 +337,27 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
       expect(await service(`document_extractions?id=eq.${extractionId}&select=status,accepted_fields`), name).toEqual([{ status: 'needs_review', accepted_fields: null }]);
     }
   }, 60_000);
+
+  test('accepting a normal utility bill copies its printed text into ocr_text for search (DOC-3)', async () => {
+    asMember();
+    const { documentId, extractionId } = await waitingBill('normal');
+    expect(await saveExtractionReview(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
+    expect(await ocrText(documentId)).toBe(BILL_TEXT);
+  });
+
+  test('the same bill marked sensitive keeps ocr_text null', async () => {
+    asMember();
+    const { documentId, extractionId } = await waitingBill('sensitive');
+    expect(await saveExtractionReview(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
+    expect(await ocrText(documentId)).toBeNull();
+  });
+
+  test('accepting a certificate leaves ocr_text null', async () => {
+    asMember();
+    const { documentId, extractionId } = await waitingExtraction();
+    expect(await saveExtractionReview(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
+    expect(await ocrText(documentId)).toBeNull();
+  });
 
   test('a viewer and a member of another household write nothing', async () => {
     const { extractionId } = await waitingExtraction();

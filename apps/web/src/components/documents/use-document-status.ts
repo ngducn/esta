@@ -21,8 +21,9 @@ const delays = (steps: readonly PollStep[]): readonly number[] => steps.flatMap(
 const isPending = (statuses: DocumentStatuses['statuses']) => Object.values(statuses).some((status) => status === 'queued' || status === 'running');
 
 /**
- * The extraction state of a property's documents, asked again on `POLL_DELAYS_MS` while any is queued or running and
- * never otherwise. A server render (after an upload) or the page being shown again starts the schedule over.
+ * The extraction state of the documents in a household, a property or one document, asked again on `POLL_DELAYS_MS`
+ * while any is queued or running and never otherwise. A server render (after an upload) or the page being shown again
+ * starts the schedule over.
  *
  * Polling, not Realtime: a Realtime subscription under RLS needs the member's access token in the browser, and the
  * session cookie is httpOnly so that page scripts never hold it (`server/supabase/session.ts`).
@@ -30,7 +31,7 @@ const isPending = (statuses: DocumentStatuses['statuses']) => Object.values(stat
 export function useDocumentStatuses(
   id: string,
   rendered: DocumentStatuses,
-  { by = 'property', steps = POLL_STEPS }: { by?: 'property' | 'document'; steps?: readonly PollStep[] } = {},
+  { by = 'property', steps = POLL_STEPS }: { by?: 'household' | 'property' | 'document'; steps?: readonly PollStep[] } = {},
 ): DocumentStatuses {
   const [polled, setPolled] = useState<{ readonly from: DocumentStatuses; readonly value: DocumentStatuses } | null>(null);
   const current = polled !== null && polled.from === rendered ? polled.value : rendered;

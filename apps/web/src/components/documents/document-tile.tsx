@@ -6,33 +6,28 @@ import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 import { revealThumbnail } from '@/server/documents/actions';
 import type { ExtractionStatus } from '@/server/documents/extraction-status';
+import type { VaultTile } from '@/server/documents/list';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
+import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
 
 /** [app rule] A revealed sensitive thumbnail blurs again after a minute, or as soon as the tab is hidden (DOC-5). */
 export const REVEAL_MS = 60_000;
 
-export type DocumentTileData = {
-  readonly id: string;
-  readonly title: string;
-  readonly categoryLabel: string;
-  readonly expiry: { readonly text: string; readonly expired: boolean } | null;
-  readonly sensitive: boolean;
-  /** The blurred thumbnail for a sensitive document, the clear one otherwise. */
-  readonly thumbUrl: string | null;
-};
-
 type Pill = {
   readonly mark: MarkStatus;
-  readonly label: 'extractionReading' | 'extractionOffline' | 'extractionWaiting' | 'extractionFailed';
+  readonly label: 'extractionReading' | 'extractionOffline' | 'extractionWaiting' | 'extractionFailed' | 'extractionAccepted';
   /** Opens the review: a waiting read to check, or a failed one to enter by hand. */
   readonly reviewable: boolean;
 };
 
-/** What the assistant is doing with the document. Nothing shows before an extraction or after its review. */
-function extractionPill(status: ExtractionStatus, workerOffline: boolean): Pill | null {
+/**
+ * What the assistant is doing with the document. Nothing shows before an extraction; a tile also stays quiet after
+ * its review, while the document page says it was reviewed and links back to it.
+ */
+function extractionPill(status: ExtractionStatus, workerOffline: boolean, showAccepted: boolean): Pill | null {
   switch (status) {
     case 'queued':
     case 'running':
@@ -41,20 +36,69 @@ function extractionPill(status: ExtractionStatus, workerOffline: boolean): Pill 
       return { mark: 'due', label: 'extractionWaiting', reviewable: true };
     case 'failed':
       return { mark: 'overdue', label: 'extractionFailed', reviewable: true };
+    case 'accepted':
+      return showAccepted ? { mark: 'paid', label: 'extractionAccepted', reviewable: true } : null;
     default:
       return null;
   }
 }
 
-/** DESIGN-BRIEF §7: thumbnail, category, title and the expiry line. A sensitive tile reveals only on `Xem`. */
+export function ExtractionPill({
+  documentId,
+  status,
+  workerOffline,
+  showAccepted = false,
+}: {
+  documentId: string;
+  status: ExtractionStatus;
+  workerOffline: boolean;
+  showAccepted?: boolean;
+}) {
+  const t = useTranslations('documents');
+  const pill = extractionPill(status, workerOffline, showAccepted);
+  return (
+    <p role="status" data-testid="extraction-status" data-status={status} className="flex min-h-0 empty:hidden">
+      {pill === null ? null : pill.reviewable ? (
+        <Link
+          href={`/documents/${documentId}/review`}
+          data-testid="review-link"
+          className={cn('inline-flex min-h-touch items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
+        >
+          <StatusShape status={pill.mark} className="size-4" />
+          <span>{t(pill.label)}</span>
+        </Link>
+      ) : (
+        <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[pill.mark].pill)}>
+          <StatusShape status={pill.mark} className="size-4" />
+          <span>{t(pill.label)}</span>
+        </span>
+      )}
+    </p>
+  );
+}
+
+/** The first row of the first group lands on screen, so its thumbnails load at once and the first one first (LCP). */
+export function tilePriority(index: number): CoverPhotoPriority {
+  if (index === 0) return 'high';
+  return index < 3 ? 'eager' : 'lazy';
+}
+
+/**
+ * DESIGN-BRIEF §7: thumbnail, category, title and the expiry line, with the property name in the household vault. A
+ * sensitive tile reveals only on `Xem`. The title opens the document page.
+ */
 export function DocumentTile({
   document,
   extraction = 'none',
   workerOffline = false,
+  showProperty = false,
+  priority = 'lazy',
 }: {
-  document: DocumentTileData;
+  document: VaultTile;
   extraction?: ExtractionStatus;
   workerOffline?: boolean;
+  showProperty?: boolean;
+  priority?: CoverPhotoPriority;
 }) {
   const t = useTranslations('documents');
   const [clearUrl, setClearUrl] = useState<string | null>(null);
@@ -82,10 +126,9 @@ export function DocumentTile({
     });
 
   const blurred = document.sensitive && clearUrl === null;
-  const pill = extractionPill(extraction, workerOffline);
   const src = clearUrl ?? document.thumbUrl;
   return (
-    <li data-testid="document-tile" data-blurred={blurred} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+    <li data-testid="document-tile" data-document-id={document.id} data-blurred={blurred} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
       <div className="relative aspect-[4/3] bg-surface-2">
         {src === null ? (
           <div className="flex size-full flex-col items-center justify-center gap-2 text-ink-muted">
@@ -94,7 +137,14 @@ export function DocumentTile({
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
-          <img src={src} alt="" className="absolute inset-0 size-full object-cover object-top" loading="lazy" decoding="async" />
+          <img
+            src={src}
+            alt=""
+            className="absolute inset-0 size-full object-cover object-top"
+            loading={priority === 'lazy' ? 'lazy' : 'eager'}
+            fetchPriority={priority === 'high' ? 'high' : 'auto'}
+            decoding="async"
+          />
         )}
         {blurred ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ground/40 p-3">
@@ -108,32 +158,20 @@ export function DocumentTile({
       </div>
       <div className="flex min-w-0 flex-col gap-1 p-4">
         <p className="text-small font-semibold text-ink-muted">{document.categoryLabel}</p>
-        <p role="status" data-testid="extraction-status" data-status={extraction} className="flex min-h-0 empty:hidden">
-          {pill === null ? null : pill.reviewable ? (
-            <Link
-              href={`/documents/${document.id}/review`}
-              data-testid="review-link"
-              className={cn('inline-flex min-h-touch items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
-            >
-              <StatusShape status={pill.mark} className="size-4" />
-              <span>{t(pill.label)}</span>
-            </Link>
-          ) : (
-            <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[pill.mark].pill)}>
-              <StatusShape status={pill.mark} className="size-4" />
-              <span>{t(pill.label)}</span>
-            </span>
-          )}
-        </p>
-        <a
-          href={`/api/documents/${document.id}/view`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t('open', { title: document.title })}
+        <ExtractionPill documentId={document.id} status={extraction} workerOffline={workerOffline} />
+        <Link
+          href={`/documents/${document.id}`}
+          prefetch={false}
+          data-testid="document-link"
           className="text-body font-bold break-words text-ink underline-offset-4 hover:underline"
         >
           {document.title}
-        </a>
+        </Link>
+        {showProperty ? (
+          <p data-testid="document-property-name" className="text-small break-words text-ink-2">
+            {document.propertyName ?? t('noProperty')}
+          </p>
+        ) : null}
         {document.expiry === null ? null : (
           <p data-testid="document-expiry" className={cn('text-small font-semibold', document.expiry.expired ? 'text-overdue' : 'text-due')}>
             {document.expiry.text}

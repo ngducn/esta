@@ -104,7 +104,7 @@ async function upload(page: Page, file: UploadFile, { category, title }: { categ
   return row?.id ?? '';
 }
 
-const pill = (page: Page, documentId: string) => page.locator(`[data-testid="document-tile"]:has(a[href="/api/documents/${documentId}/view"]) [data-testid="extraction-status"]`);
+const pill = (page: Page, documentId: string) => page.locator(`[data-testid="document-tile"][data-document-id="${documentId}"] [data-testid="extraction-status"]`);
 
 type Extraction = { id: string; status: string; model: string | null; result: unknown; accepted_fields: Record<string, { decision: string; value: unknown }> | null };
 const extractions = (page: Page, documentId: string) =>

@@ -21,6 +21,7 @@ const sharedClock = [
   'documents-extract.spec.ts',
   'record-payment.spec.ts',
   'extraction-review.spec.ts',
+  'documents-vault.spec.ts',
 ];
 
 export default defineConfig({
