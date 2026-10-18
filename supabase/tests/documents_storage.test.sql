@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(24);
+select plan(34);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -18,6 +18,8 @@ select set_config('tests.b_path', :'b' || '/00000000-0000-4000-8000-00000000d0b1
 select set_config('tests.b_prefix', :'b' || '/00000000-0000-4000-8000-00000000d0b1/', true);
 select set_config('tests.a_with_b_doc', :'a' || '/00000000-0000-4000-8000-00000000d0b1/so-hong.jpg', true);
 select set_config('tests.a_new', format('%s/%s/giay.pdf', :'a', gen_random_uuid()), true);
+select set_config('tests.a_new_thumb', regexp_replace(current_setting('tests.a_new'), 'giay\.pdf$', 'thumb.webp'), true);
+select set_config('tests.a_registered_extra', :'a' || '/00000000-0000-4000-8000-00000000d0a1/thay.jpg', true);
 select set_config('storage.allow_delete_query', 'true', true);
 
 insert into storage.objects (bucket_id, name) values
@@ -63,6 +65,23 @@ select is_empty($$ update storage.objects set metadata = '{}' where name = curre
   'a member of A updates none of B''s objects');
 select is_empty($$ delete from storage.objects where name = current_setting('tests.b_path') returning 1 $$,
   'a member of A deletes none of B''s objects');
+select is_empty($$ delete from storage.objects where name = current_setting('tests.a_path') returning 1 $$,
+  'a member deletes no file of a registered document, since deleting a document archives its row');
+select is_empty($$ delete from storage.objects where name = current_setting('tests.a_new') returning 1 $$,
+  'a member deletes no file of a document still being uploaded');
+select is_empty($$ update storage.objects set metadata = '{"size": 1}' where name = current_setting('tests.a_path') returning 1 $$,
+  'a member cannot overwrite a registered document''s file');
+select throws_ok(
+  $$ insert into storage.objects (bucket_id, name) values ('documents', current_setting('tests.a_registered_extra')) $$,
+  '42501', null, 'a member cannot add a file to a registered document''s folder');
+select throws_ok(
+  $$ insert into storage.objects (bucket_id, name) values ('documents', current_setting('tests.a_thumb'))
+     on conflict (bucket_id, name) do update set metadata = '{"size": 1}' $$,
+  '42501', null, 'a member cannot upsert a registered document''s thumbnail');
+select lives_ok($$ insert into storage.objects (bucket_id, name) values ('documents', current_setting('tests.a_new_thumb')) $$,
+  'a member adds the thumbnail of a document still being uploaded');
+select isnt_empty($$ update storage.objects set metadata = '{"size": 2}' where name = current_setting('tests.a_new') returning 1 $$,
+  'a retried upload rewrites the file while no row is registered');
 
 select tests.act_as('viewer.a@test.esta.test');
 select isnt_empty($$ select 1 from storage.objects where name = current_setting('tests.a_thumb') $$, 'a viewer of A reads A''s thumbnail');
@@ -70,11 +89,16 @@ select throws_ok(format($$ insert into storage.objects (bucket_id, name) values 
   '42501', null, 'a viewer cannot upload');
 select is_empty($$ update storage.objects set metadata = '{}' where name = current_setting('tests.a_path') returning 1 $$, 'a viewer updates no document');
 select is_empty($$ delete from storage.objects where name = current_setting('tests.a_path') returning 1 $$, 'a viewer deletes no document');
+select is_empty($$ update storage.objects set metadata = '{}' where name = current_setting('tests.a_new') returning 1 $$,
+  'a viewer rewrites no file of a document still being uploaded');
+select is_empty($$ delete from storage.objects where name = current_setting('tests.a_new') returning 1 $$,
+  'a viewer deletes no file of a document still being uploaded');
 
 reset role;
 select tests.clear_request();
 select is((select metadata from storage.objects where name = current_setting('tests.b_path')), null, 'B''s object is unchanged');
 select isnt_empty($$ select 1 from storage.objects where name = current_setting('tests.b_path') $$, 'B''s object is still there');
+select is((select metadata from storage.objects where name = current_setting('tests.a_path')), null, 'A''s registered file is unchanged');
 select ok(not has_function_privilege('anon', 'private.document_household(text)', 'execute'), 'anon cannot call document_household');
 
 select * from finish();

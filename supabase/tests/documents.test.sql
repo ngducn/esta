@@ -1,9 +1,10 @@
 begin;
 \ir _harness.psql
 
-select plan(29);
+select plan(34);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
+select private.audit_now() as clock \gset
 
 select set_config('esta.actor', 'system:test', true);
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
@@ -78,9 +79,13 @@ select isnt_empty($$ update public.documents set deleted_at = null where id = '0
 select lives_ok(format($$ insert into public.document_access_log (household_id, document_id, user_id, action)
   values (%L, '00000000-0000-4000-8000-00000000d0a1', %L, 'view') $$, :'a', tests.user_id('member.a@test.esta.test')),
   'a member logs her own view');
-select throws_ok(format($$ insert into public.document_access_log (household_id, document_id, user_id, action)
-  values (%L, '00000000-0000-4000-8000-00000000d0a1', %L, 'view') $$, :'a', tests.user_id('admin.a@test.esta.test')),
-  '42501', null, 'a member cannot log a view in another member''s name');
+select lives_ok(format($$ insert into public.document_access_log (household_id, document_id, user_id, action, at)
+  values (%L, '00000000-0000-4000-8000-00000000d0a1', %L, 'download', '2000-01-01 00:00+07') $$, :'a', tests.user_id('admin.a@test.esta.test')),
+  'a member''s log row naming another member and another time is accepted, then stamped');
+select results_eq(
+  $$ select user_id, at from public.document_access_log where document_id = '00000000-0000-4000-8000-00000000d0a1' and action = 'download' $$,
+  format($$ values (%L::uuid, %L::timestamptz) $$, tests.user_id('member.a@test.esta.test'), :'clock'),
+  'the access log stamps the signed-in member and the clock, never the values she sends');
 select throws_ok(format($$ insert into public.document_access_log (household_id, document_id, user_id, action)
   values (%L, '00000000-0000-4000-8000-00000000d0b1', %L, 'view') $$, :'b', tests.user_id('member.a@test.esta.test')),
   '42501', null, 'a member of A cannot log a view of B''s document');
@@ -95,13 +100,22 @@ select tests.cannot_write('public.documents', :'a', format($$
 select lives_ok(format($$ insert into public.document_access_log (household_id, document_id, user_id, action)
   values (%L, '00000000-0000-4000-8000-00000000d0a1', %L, 'view') $$, :'a', tests.user_id('viewer.a@test.esta.test')),
   'a viewer logs her own view, since she can open documents');
-select is((select count(*)::int from public.document_access_log where document_id = '00000000-0000-4000-8000-00000000d0a1'), 2,
+select is((select count(*)::int from public.document_access_log where document_id = '00000000-0000-4000-8000-00000000d0a1'), 3,
   'a viewer reads the household''s access log');
 
 reset role;
 select tests.clear_request();
 select throws_ok(format($$ update public.certificates set document_id = gen_random_uuid() where household_id = %L $$, :'a'),
   '23503', null, 'certificates.document_id refuses a missing document (FND-2)');
+select throws_ok(format($$ update public.certificates set document_id = '00000000-0000-4000-8000-00000000d0b1' where household_id = %L $$, :'a'),
+  '23503', null, 'a certificate of A cannot link a document of B, even for a writer that bypasses RLS (FND-2)');
+select lives_ok(format($$ update public.certificates set document_id = '00000000-0000-4000-8000-00000000d0a1' where household_id = %L $$, :'a'),
+  'a certificate links a document of its own household');
+select lives_ok($$ delete from public.documents where id = '00000000-0000-4000-8000-00000000d0a1' $$,
+  'removing a linked document is allowed for the service role');
+select results_eq(format($$ select household_id, document_id from public.certificates where household_id = %L $$, :'a'),
+  format($$ values (%L::uuid, null::uuid) $$, :'a'),
+  'removing the document clears only the certificate''s link and keeps its household');
 select ok(not has_table_privilege('authenticated', 'public.document_access_log', 'update')
           and not has_table_privilege('authenticated', 'public.document_access_log', 'delete'),
   'authenticated holds no update or delete privilege on the access log');
