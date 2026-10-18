@@ -55,38 +55,38 @@ export function stalePaths(existing: readonly string[], wanted: readonly string[
   return existing.filter((path) => !keep.has(path)).toSorted();
 }
 
-type Headers = Record<string, string>;
+export type Headers = Record<string, string>;
 
-async function listObjects(url: string, headers: Headers, prefix = ''): Promise<string[]> {
+export async function listObjects(url: string, headers: Headers, prefix = '', bucket = BUCKET): Promise<string[]> {
   const response = await retrying(
     () =>
-      fetch(`${url}/storage/v1/object/list/${BUCKET}`, {
+      fetch(`${url}/storage/v1/object/list/${bucket}`, {
         method: 'POST',
         headers: { ...headers, 'content-type': 'application/json' },
         body: JSON.stringify({ prefix, limit: 1000 }),
       }),
     { attempts: 5, firstDelayMs: 250 },
   );
-  if (!response.ok) throw new Error(`seed-photos: listing ${prefix || BUCKET} failed: ${response.status} ${await response.text()}`);
+  if (!response.ok) throw new Error(`listing ${prefix || bucket} failed: ${response.status} ${await response.text()}`);
   const entries = (await response.json()) as { name: string; id: string | null }[];
   const nested = await Promise.all(
-    entries.map(async ({ name, id }) => (id === null ? listObjects(url, headers, `${prefix}${name}/`) : [`${prefix}${name}`])),
+    entries.map(async ({ name, id }) => (id === null ? listObjects(url, headers, `${prefix}${name}/`, bucket) : [`${prefix}${name}`])),
   );
   return nested.flat();
 }
 
-async function removeObjects(url: string, headers: Headers, paths: readonly string[]): Promise<void> {
+export async function removeObjects(url: string, headers: Headers, paths: readonly string[], bucket = BUCKET): Promise<void> {
   for (let start = 0; start < paths.length; start += 100) {
     const response = await retrying(
       () =>
-        fetch(`${url}/storage/v1/object/${BUCKET}`, {
+        fetch(`${url}/storage/v1/object/${bucket}`, {
           method: 'DELETE',
           headers: { ...headers, 'content-type': 'application/json' },
           body: JSON.stringify({ prefixes: paths.slice(start, start + 100) }),
         }),
       { attempts: 5, firstDelayMs: 250 },
     );
-    if (!response.ok) throw new Error(`seed-photos: deleting objects failed: ${response.status} ${await response.text()}`);
+    if (!response.ok) throw new Error(`deleting objects from ${bucket} failed: ${response.status} ${await response.text()}`);
   }
 }
 

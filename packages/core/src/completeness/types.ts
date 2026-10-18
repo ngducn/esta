@@ -17,6 +17,10 @@ export type CompletenessFacts = {
   readonly structureWithoutFloorAreaId: string | null;
   readonly shareTotalBp: number;
   readonly utilityAccountCount: number;
+  /** Live `certificate` documents of the property. */
+  readonly certificateDocumentCount: number;
+  /** Live `photo` documents, plus one when the property has a cover photo. */
+  readonly photoCount: number;
 };
 
 /** Where a failing check sends Mẹ: `path` under `/properties/<id>` (empty for the overview) and the id of the field. */

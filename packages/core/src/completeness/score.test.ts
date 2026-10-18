@@ -20,6 +20,8 @@ const complete: CompletenessFacts = {
   structureWithoutFloorAreaId: null,
   shareTotalBp: 10_000,
   utilityAccountCount: 1,
+  certificateDocumentCount: 1,
+  photoCount: 1,
 };
 
 const empty: CompletenessFacts = {
@@ -31,6 +33,8 @@ const empty: CompletenessFacts = {
   structureCount: 0,
   shareTotalBp: 0,
   utilityAccountCount: 0,
+  certificateDocumentCount: 0,
+  photoCount: 0,
 };
 
 const score = (facts: CompletenessFacts) => scoreProperty(facts, COMPLETENESS_CHECKS);
@@ -47,10 +51,12 @@ describe('scoreProperty', () => {
       `/properties/${PROPERTY}/legal/parcels/new#parcel-no`,
       `/properties/${PROPERTY}/legal/parcels/new#parcel-area`,
       `/properties/${PROPERTY}/legal#owners`,
+      `/properties/${PROPERTY}/documents#upload`,
       `/properties/${PROPERTY}/edit#current-address`,
       `/properties/${PROPERTY}#location`,
       `/properties/${PROPERTY}/edit#acquisition`,
       `/properties/${PROPERTY}/rental/accounts/new#account-kind`,
+      `/properties/${PROPERTY}/documents#upload`,
     ]);
   });
 
@@ -65,7 +71,7 @@ describe('scoreProperty', () => {
 
   it('fails ownersComplete at 9000 bp and lowers the score (PRP-3)', () => {
     const result = score({ ...complete, shareTotalBp: 9000 });
-    expect(result.percent).toBe(84);
+    expect(result.percent).toBe(86);
     expect(result.failing).toEqual([{ id: 'ownersComplete', href: `/properties/${PROPERTY}/legal#owners` }]);
     expect(score({ ...complete, shareTotalBp: 10_500 }).failing.map((item) => item.id)).toEqual(['ownersComplete']);
   });
@@ -80,16 +86,16 @@ describe('scoreProperty', () => {
     const extra: CompletenessCheck = { id: 'extra', weight: 30, kinds: ['warehouse'], passes: () => false, link: () => ({ path: '', anchor: 'x' }) };
     const registry = [...COMPLETENESS_CHECKS, extra];
     expect(scoreProperty(complete, registry).percent).toBe(100);
-    expect(scoreProperty({ ...complete, kind: 'warehouse' }, registry).percent).toBe(76);
+    expect(scoreProperty({ ...complete, kind: 'warehouse' }, registry).percent).toBe(79);
   });
 });
 
 describe('the Gia đình Demo 1 seed (PRP-6)', () => {
-  it('scores Đất vườn Long An below 60 with its parcel number and area first', () => {
+  it('scores Đất vườn Long An below 60 with its parcel number, area and certificate photo first', () => {
     const longAn = SEED_FACTS['long-an'];
     const result = score(longAn);
     expect(result.percent).toBeLessThan(60);
-    expect(nextMissing(result, 3).map((item) => item.id)).toEqual(['parcelIds', 'landArea', 'pin']);
+    expect(nextMissing(result, 3).map((item) => item.id)).toEqual(['parcelIds', 'landArea', 'certificateDocument']);
     expect(nextMissing(result, 1)[0]?.href).toBe(`/properties/${longAn.propertyId}/legal/parcels/${longAn.parcelWithoutNumberId}#parcel-no`);
   });
 

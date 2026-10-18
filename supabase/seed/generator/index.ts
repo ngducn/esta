@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import { businessDate, parseInstant, type Instant } from '../../../packages/core/src/index.ts';
 import type { Emitter } from './context.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
+import { documents } from './documents.ts';
 import { certificates, parcels, structures } from './legal.ts';
 import { ownershipShares } from './ownership.ts';
 import { parties } from './parties.ts';
@@ -24,6 +25,7 @@ const EMITTERS: readonly Emitter[] = [
   ownershipShares,
   units,
   utilityAccounts,
+  documents,
   agentJobs,
   agentRuns,
 ];

@@ -19,6 +19,8 @@ const thousand: CompletenessFacts[] = Array.from({ length: 1000 }, (_, i) => ({
   structureWithoutFloorAreaId: null,
   shareTotalBp: i % 6 === 0 ? 9000 : 10_000,
   utilityAccountCount: i % 3,
+  certificateDocumentCount: i % 2,
+  photoCount: i % 4,
 }));
 
 test('scoring 1,000 properties stays under 10 ms', async ({ bench }) => {

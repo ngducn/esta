@@ -6,6 +6,7 @@ import { COMPLETENESS_FACT_COLUMNS, completenessFactsRowSchema } from './facts';
 import { COMPLETENESS_CHECKS } from './registry';
 import { appliesTo } from './score';
 import { SEED_FACTS } from './seed-facts.fixture';
+import type { CompletenessCheck } from './types';
 
 const repoRoot = join(import.meta.dirname, '../../../..');
 const applicable = (kind: PropertyKind) => COMPLETENESS_CHECKS.filter((check) => appliesTo(check, kind));
@@ -40,6 +41,23 @@ describe('COMPLETENESS_CHECKS', () => {
     expect(ids('residential_land')).not.toContain('utilityAccounts');
     expect(ids('agricultural_land')).not.toContain('utilityAccounts');
     expect(ids('rooming_house')).toContain('utilityAccounts');
+  });
+
+  it.each(PROPERTY_KINDS)('asks every %s for a certificate photo and a photo (PRP-6)', (kind) => {
+    expect(applicable(kind).filter((check) => check.id === 'certificateDocument' || check.id === 'photo').map((check) => [check.id, check.weight])).toEqual([
+      ['certificateDocument', 10],
+      ['photo', 5],
+    ]);
+  });
+
+  it('sends both document checks to the upload on the Tài liệu tab', () => {
+    const facts = SEED_FACTS['long-an'];
+    const checks: readonly CompletenessCheck[] = COMPLETENESS_CHECKS;
+    for (const check of checks.filter((c) => c.id === 'certificateDocument' || c.id === 'photo')) {
+      expect(check.link(facts)).toEqual({ path: 'documents', anchor: 'upload' });
+      expect(check.passes({ ...facts, certificateDocumentCount: 0, photoCount: 0 })).toBe(false);
+      expect(check.passes({ ...facts, certificateDocumentCount: 1, photoCount: 1 })).toBe(true);
+    }
   });
 
   it('links each check to an id a page renders, so the tap lands on the field', () => {

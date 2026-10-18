@@ -110,16 +110,19 @@ if (result.status === 0 && command === 'test' && !reportTableCoverage(repoRoot, 
 if (result.status === 0 && command === 'start') {
   const pending = slotPendingMigrations(repoRoot, workdir);
   if (pending.length > 0) {
-    console.error(`ESTA_SLOT=${slot}: the database predates ${pending.length} migration(s), from ${pending[0]}. Run pnpm db:reset to apply them and seed the photos.`);
+    console.error(`ESTA_SLOT=${slot}: the database predates ${pending.length} migration(s), from ${pending[0]}. Run pnpm db:reset to apply them and seed the photos and documents.`);
     process.exit(0);
   }
 }
 if (result.status === 0 && seeds) {
-  const photos = spawnSync(join(repoRoot, 'node_modules', '.bin', 'tsx'), [join(repoRoot, 'scripts', 'seed-photos.ts')], {
-    stdio: 'inherit',
-    env: { ...process.env, ESTA_SLOT: String(slot) },
-  });
-  if (photos.error) throw photos.error;
-  process.exit(photos.status ?? 1);
+  for (const script of ['seed-photos.ts', 'seed-documents.ts']) {
+    const seeded = spawnSync(join(repoRoot, 'node_modules', '.bin', 'tsx'), [join(repoRoot, 'scripts', script)], {
+      stdio: 'inherit',
+      env: { ...process.env, ESTA_SLOT: String(slot) },
+    });
+    if (seeded.error) throw seeded.error;
+    if (seeded.status !== 0) process.exit(seeded.status ?? 1);
+  }
+  process.exit(0);
 }
 process.exit(result.status ?? 1);

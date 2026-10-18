@@ -52,6 +52,7 @@
   - When the end date cuts a first calendar period, the period bills only the days from the lease start to the end date, under `first_period_proration` `none` as under `by_days`. A one-day lease on 15 July bills 1/31 of the month.
   - An amended rent escalates at the lease's next anniversary, because an amendment changes rent and cycle but not the escalation terms (SPEC §5 `lease_amendments.changes`). A rent change from July 2027 on a lease from 1 January 2026 steps on 1 January 2028, not in July 2028.
 - Confirm the cover photo URL lifetime `[app rule]` from #77. Cover photo signed URLs live 24 hours so a return visit reuses them, while document URLs stay at 300 seconds per DOC-4. A member removed from a household keeps the covers already in hand for up to a day. P1-05 must give each new upload its own object name, so a replaced photo never answers to an old signed URL. Say if covers should expire sooner.
+- Check one thing on your iPhone for P2-02 when you next test over `pnpm dev:lan`. Open a property, tap `Tài liệu`, then `Thêm tài liệu`, and pick a photo from your library. Save it and tap its title. Esta expects iPhone to hand over library photos as JPEG and has not seen it do so. If the photo shows up the right way round and opens, nothing more is needed. If the upload is refused or the picture is sideways, tell me which.
 
 ## Needs professional confirmation
 
