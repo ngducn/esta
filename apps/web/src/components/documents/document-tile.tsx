@@ -60,7 +60,7 @@ export function DocumentTile({ document }: { document: DocumentTileData }) {
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
-          <img src={src} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" decoding="async" />
+          <img src={src} alt="" className="absolute inset-0 size-full object-cover object-top" loading="lazy" decoding="async" />
         )}
         {blurred ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ground/40 p-3">
