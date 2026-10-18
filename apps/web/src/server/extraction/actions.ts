@@ -98,10 +98,16 @@ export async function saveExtractionReview(extractionId: unknown, decisions: unk
   const property = await documentProperty(supabase, target, chosen.data);
   if (property === null) return { ok: false, reason: 'no_property' };
 
-  const parties = await supabase.from('parties').select('id, full_name, id_last4').eq('household_id', target.householdId);
-  if (parties.error) return { ok: false, reason: 'failed' };
+  const [parties, accounts] = await Promise.all([
+    supabase.from('parties').select('id, full_name, id_last4').eq('household_id', target.householdId),
+    supabase.from('utility_accounts').select('id, property_id, kind, customer_code').eq('household_id', target.householdId).eq('property_id', property),
+  ]);
+  if (parties.error || accounts.error) return { ok: false, reason: 'failed' };
   const extraction = { id: target.id, householdId: target.householdId, propertyId: property, documentId: target.documentId, result: target.result };
-  const planned = PLANNERS[target.schemaName](extraction, parsed.data as Decisions, parties.data.map((row) => ({ id: row.id, fullName: row.full_name, idLast4: row.id_last4 })));
+  const planned = PLANNERS[target.schemaName](extraction, parsed.data as Decisions, {
+    parties: parties.data.map((row) => ({ id: row.id, fullName: row.full_name, idLast4: row.id_last4 })),
+    accounts: accounts.data.map((row) => ({ id: row.id, propertyId: row.property_id, kind: row.kind, customerCode: row.customer_code })),
+  });
   if (!planned.ok) return planned;
   const acceptedFields = asJson(planned.plan.acceptedFields);
 

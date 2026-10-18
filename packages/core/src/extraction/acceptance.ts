@@ -25,6 +25,10 @@ export type AcceptanceExtraction = {
 };
 
 export type ExistingParty = { readonly id: string; readonly fullName: string; readonly idLast4: string | null };
+export type ExistingAccount = { readonly id: string; readonly propertyId: string; readonly kind: string; readonly customerCode: string | null };
+
+/** The household's rows a plan may reuse instead of writing a second copy. */
+export type PlanContext = { readonly parties: readonly ExistingParty[]; readonly accounts: readonly ExistingAccount[] };
 
 type Scoped = { readonly id: string; readonly household_id: string };
 type OnProperty = Scoped & { readonly property_id: string };
@@ -138,7 +142,7 @@ function failed(collected: Collected): PlanResult | null {
  * same normalized name and `id_last4` is reused, never rewritten), the certificate keyed by the extraction, its
  * parcels and structures, and the property's certificate address. Only decided fields enter it.
  */
-export function planCertificateAcceptance(extraction: AcceptanceExtraction, decisions: Decisions, parties: readonly ExistingParty[]): PlanResult {
+export function planCertificateAcceptance(extraction: AcceptanceExtraction, decisions: Decisions, { parties }: Pick<PlanContext, 'parties'>): PlanResult {
   const decided = decide('certificate_v1', extraction.result, decisions);
   const { values, fields } = decided;
   const scope = { household_id: extraction.householdId, property_id: extraction.propertyId };
@@ -271,8 +275,13 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
   return failed(collected) ?? { ok: true, plan: { steps: collected.steps, acceptedFields: decided.acceptedFields } };
 }
 
-/** A bill writes one utility account on the document's property, keyed by the extraction. */
-export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, decisions: Decisions): PlanResult {
+const normalizeCode = (code: string) => code.replace(/\s+/gu, '').toUpperCase();
+
+/**
+ * A bill writes one utility account on the document's property, keyed by the extraction. An account of the same kind
+ * and customer code already on the property is the same account: it is reused, never rewritten.
+ */
+export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, decisions: Decisions, { accounts }: Pick<PlanContext, 'accounts'>): PlanResult {
   const decided = decide('utility_bill_v1', extraction.result, decisions);
   const root = itemOf(decided.values, '');
   const collected: Collected = { steps: [], missing: [], invalid: [...decided.invalid] };
@@ -284,8 +293,19 @@ export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, deci
     holder_name: text(root.read('holder_name')),
     note: null,
   });
+  const code = text(root.read('customer_code'));
+  const known = accounts.some(
+    (existing) =>
+      existing.propertyId === extraction.propertyId &&
+      existing.kind === root.read('kind') &&
+      code !== null &&
+      existing.customerCode !== null &&
+      normalizeCode(existing.customerCode) === normalizeCode(code),
+  );
   if (root.read('kind') === null) collected.missing.push('kind');
-  else if (account.success) {
+  else if (known) {
+    // Accepting the bill confirms the account Mẹ already has; nothing new is written.
+  } else if (account.success) {
     collected.steps.push({
       table: 'utility_accounts',
       row: { id: rowId(extraction.id, 'utility_account'), household_id: extraction.householdId, property_id: extraction.propertyId, ...account.data },
@@ -296,8 +316,8 @@ export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, deci
 
 export const PLANNERS = {
   certificate_v1: planCertificateAcceptance,
-  utility_bill_v1: (extraction: AcceptanceExtraction, decisions: Decisions) => planUtilityBillAcceptance(extraction, decisions),
-} as const satisfies Record<SchemaName, (extraction: AcceptanceExtraction, decisions: Decisions, parties: readonly ExistingParty[]) => PlanResult>;
+  utility_bill_v1: planUtilityBillAcceptance,
+} as const satisfies Record<SchemaName, (extraction: AcceptanceExtraction, decisions: Decisions, context: PlanContext) => PlanResult>;
 
 /**
  * DOMAIN-VN §2.1: a parcel's area and the sum of its purposes' areas, when both are known and differ by more than

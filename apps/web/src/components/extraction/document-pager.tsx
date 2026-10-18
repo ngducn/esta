@@ -10,17 +10,18 @@ const ZOOMS = [1, 1.5, 2, 3] as const;
 /** Rendered once at this width and scaled by CSS, so zooming never re-renders a page. */
 const RENDER_WIDTH = 1600;
 
-type PdfDocument = { numPages: number; getPage(n: number): Promise<PdfPage>; destroy(): Promise<void> };
+type PdfDocument = { numPages: number; getPage(n: number): Promise<PdfPage> };
+type PdfTask = { promise: Promise<PdfDocument>; destroy(): Promise<void> };
 type PdfPage = {
   getViewport(options: { scale: number }): { width: number; height: number };
   render(options: { canvas: HTMLCanvasElement; viewport: { width: number; height: number } }): { promise: Promise<void> };
 };
 
 /** pdf.js loads only here, by dynamic import, so it never reaches the route's initial chunk. */
-async function openPdf(url: string): Promise<PdfDocument> {
+async function openPdf(url: string): Promise<PdfTask> {
   const pdfjs = await import('pdfjs-dist');
   pdfjs.GlobalWorkerOptions.workerPort ??= new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' });
-  return (await pdfjs.getDocument({ url }).promise) as unknown as PdfDocument;
+  return pdfjs.getDocument({ url }) as unknown as PdfTask;
 }
 
 function PdfPageCanvas({ pdf, page, label }: { pdf: PdfDocument; page: number; label: string }) {
@@ -50,7 +51,7 @@ function PdfPageCanvas({ pdf, page, label }: { pdf: PdfDocument; page: number; l
  * pages are drawn by pdf.js on demand.
  */
 export function DocumentPager({
-  fileUrl,
+  fileUrl: renderedUrl,
   mime,
   pageCount,
   title,
@@ -65,6 +66,8 @@ export function DocumentPager({
   onPage: (page: number) => void;
 }) {
   const t = useTranslations('extraction');
+  // Each server render signs a new URL; the first one stays, so a refresh never reloads the pages already drawn.
+  const [fileUrl] = useState(renderedUrl);
   const [zoom, setZoom] = useState(0);
   const [pdf, setPdf] = useState<PdfDocument | null>(null);
   const [failed, setFailed] = useState(fileUrl === null);
@@ -75,19 +78,20 @@ export function DocumentPager({
 
   useEffect(() => {
     if (!isPdf || fileUrl === null) return;
-    let open: PdfDocument | null = null;
+    let task: PdfTask | null = null;
     let live = true;
-    openPdf(fileUrl).then(
-      (loaded) => {
-        open = loaded;
-        if (live) setPdf(loaded);
-        else void loaded.destroy();
-      },
-      () => live && setFailed(true),
-    );
+    openPdf(fileUrl)
+      .then((opened) => {
+        task = opened;
+        return opened.promise;
+      })
+      .then(
+        (loaded) => live && setPdf(loaded),
+        () => live && setFailed(true),
+      );
     return () => {
       live = false;
-      void open?.destroy();
+      void task?.destroy();
     };
   }, [fileUrl, isPdf]);
 

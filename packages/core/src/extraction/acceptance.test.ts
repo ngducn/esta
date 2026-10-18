@@ -20,6 +20,8 @@ const extraction: AcceptanceExtraction = {
   result: truthFile.certificate,
 };
 
+const none = { parties: [], accounts: [] };
+
 const acceptAll = (result: unknown, schema: 'certificate_v1' | 'utility_bill_v1' = 'certificate_v1'): Record<string, Decisions[string]> =>
   Object.fromEntries(reviewFields(schema, result).map((field) => [field.path, { kind: 'accepted' as const }]));
 
@@ -34,7 +36,7 @@ const rowsOf = <T extends string>(result: PlanResult, table: T) =>
 
 describe('planCertificateAcceptance', () => {
   it('plans the gcn_2024 truth: two new owners, the certificate, its parcel and structure, then the address', () => {
-    const result = planCertificateAcceptance(extraction, acceptAll(extraction.result), []);
+    const result = planCertificateAcceptance(extraction, acceptAll(extraction.result), none);
     expect(tables(result)).toEqual(['parties', 'parties', 'certificates', 'parcels', 'structures', 'properties']);
     const [certificate] = rowsOf(result, 'certificates');
     expect(certificate).toMatchObject({
@@ -71,11 +73,11 @@ describe('planCertificateAcceptance', () => {
 
   it('plans identical rows and ids when run twice', () => {
     const decisions = acceptAll(extraction.result);
-    expect(planCertificateAcceptance(extraction, decisions, [])).toEqual(planCertificateAcceptance(extraction, decisions, []));
+    expect(planCertificateAcceptance(extraction, decisions, none)).toEqual(planCertificateAcceptance(extraction, decisions, none));
   });
 
   it('writes an edited value over the one read and records the field as edited', () => {
-    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].area_m2': { kind: 'edited', value: '125,5' } }, []);
+    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].area_m2': { kind: 'edited', value: '125,5' } }, none);
     expect(rowsOf(result, 'parcels')[0]?.area_m2).toBe(125.5);
     expect(planOf(result).acceptedFields['parcels[0].area_m2']).toEqual({ decision: 'edited', value: 125.5 });
     expect(planOf(result).acceptedFields['parcels[0].parcel_no']).toEqual({ decision: 'accepted', value: '56' });
@@ -84,7 +86,7 @@ describe('planCertificateAcceptance', () => {
   it('leaves out every field without a decision', () => {
     const { 'serial_no': _serial, 'structures[0].kind': _kind, ...rest } = acceptAll(extraction.result);
     const decisions = Object.fromEntries(Object.entries(rest).filter(([path]) => !path.startsWith('structures[0]')));
-    const result = planCertificateAcceptance(extraction, decisions, []);
+    const result = planCertificateAcceptance(extraction, decisions, none);
     expect(rowsOf(result, 'certificates')[0]?.serial_no).toBeNull();
     expect(tables(result)).not.toContain('structures');
     expect(planOf(result).acceptedFields).not.toHaveProperty('serial_no');
@@ -92,20 +94,20 @@ describe('planCertificateAcceptance', () => {
 
   it('asks for the field a row needs when the row has other values', () => {
     const { form: _form, ...withoutForm } = acceptAll(extraction.result);
-    expect(planCertificateAcceptance(extraction, withoutForm, [])).toEqual({ ok: false, reason: 'missing', paths: ['form'] });
+    expect(planCertificateAcceptance(extraction, withoutForm, none)).toEqual({ ok: false, reason: 'missing', paths: ['form'] });
     const { 'structures[0].kind': _kind, ...withoutKind } = acceptAll(extraction.result);
-    expect(planCertificateAcceptance(extraction, withoutKind, [])).toEqual({ ok: false, reason: 'missing', paths: ['structures[0].kind'] });
+    expect(planCertificateAcceptance(extraction, withoutKind, none)).toEqual({ ok: false, reason: 'missing', paths: ['structures[0].kind'] });
   });
 
   it('refuses an edit that does not read as its kind', () => {
-    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].area_m2': { kind: 'edited', value: 'một trăm' } }, []);
+    const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].area_m2': { kind: 'edited', value: 'một trăm' } }, none);
     expect(result).toEqual({ ok: false, reason: 'invalid', paths: ['parcels[0].area_m2'] });
   });
 
   it('reuses a party with the same normalized name and id_last4 and never rewrites it', () => {
     const existing = { id: '00000000-0000-4000-8000-00000000aa01', fullName: 'ĐẶNG  QUỐC demo', idLast4: '1776' };
     const sameNameOtherId = { id: '00000000-0000-4000-8000-00000000aa02', fullName: 'Huỳnh Ngọc Demo Thảo', idLast4: '0000' };
-    const result = planCertificateAcceptance(extraction, acceptAll(extraction.result), [existing, sameNameOtherId]);
+    const result = planCertificateAcceptance(extraction, acceptAll(extraction.result), { parties: [existing, sameNameOtherId] });
     expect(rowsOf(result, 'parties').map((row) => row.full_name)).toEqual(['Huỳnh Ngọc Demo Thảo']);
     expect(rowsOf(result, 'certificates')[0]?.holder_party_ids).toEqual([existing.id, rowId(extraction.id, 'holders[1]')]);
   });
@@ -119,7 +121,7 @@ describe('planCertificateAcceptance', () => {
         'holders[0].address_text': { kind: 'edited', value: 'CCCD 079184001776, phường An Phú' },
         'parcels[0].origin_text': { kind: 'edited', value: 'Nhận chuyển nhượng từ ông Demo, số định danh 079 184 001 777' },
       },
-      [],
+      none,
     );
     const text = JSON.stringify(planOf(result)).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, 'uuid');
     expect(text).toContain('CCCD 1776');
@@ -138,7 +140,7 @@ describe('planCertificateAcceptance', () => {
         'parcels[0].area_m2': { kind: 'edited', value: '300' },
         'holders[0].full_name': { kind: 'accepted' },
       },
-      [],
+      none,
     );
     expect(tables(result)).toEqual(['certificates', 'parcels']);
     expect(rowsOf(result, 'parcels')[0]).toMatchObject({ parcel_no: '12', area_m2: 300, purposes: [] });
@@ -148,7 +150,7 @@ describe('planCertificateAcceptance', () => {
 describe('planUtilityBillAcceptance', () => {
   it('writes one utility account from the bill', () => {
     const bill = { ...extraction, result: billFile.bill };
-    const result = planUtilityBillAcceptance(bill, acceptAll(billFile.bill, 'utility_bill_v1'));
+    const result = planUtilityBillAcceptance(bill, acceptAll(billFile.bill, 'utility_bill_v1'), none);
     expect(planOf(result).steps).toEqual([
       {
         table: 'utility_accounts',
@@ -165,6 +167,16 @@ describe('planUtilityBillAcceptance', () => {
         },
       },
     ]);
+  });
+
+  it('reuses an account of the same kind and customer code on the property, and writes nothing', () => {
+    const bill = { ...extraction, result: billFile.bill };
+    const accounts = [{ id: '00000000-0000-4000-8000-00000000ac01', propertyId: extraction.propertyId, kind: 'electricity', customerCode: 'pe 0901000001' }];
+    const result = planUtilityBillAcceptance(bill, acceptAll(billFile.bill, 'utility_bill_v1'), { accounts });
+    expect(planOf(result).steps).toEqual([]);
+    expect(planOf(result).acceptedFields['customer_code']).toEqual({ decision: 'accepted', value: 'PE0901000001' });
+    const elsewhere = accounts.map((account) => ({ ...account, propertyId: '00000000-0000-4000-8000-0000000000b9' }));
+    expect(tables(planUtilityBillAcceptance(bill, acceptAll(billFile.bill, 'utility_bill_v1'), { accounts: elsewhere }))).toEqual(['utility_accounts']);
   });
 });
 
