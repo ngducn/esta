@@ -9,6 +9,7 @@
     "./address": "./src/address/format-current.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./auth": "./src/auth/otp.ts",
+    "./collections": "./src/collections/index.ts",
     "./completeness": "./src/completeness/index.ts",
     "./date": "./src/date/iso-date.ts",
     "./documents": "./src/documents/index.ts",

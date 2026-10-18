@@ -19,6 +19,7 @@ import { vnd, type Vnd } from '@esta/core/money';
 import { leaseTerms } from '@esta/core/schemas/lease';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
+import { loadCollectionStates } from '@/server/collections/load';
 import { loadActiveLeases } from '@/server/leases/load';
 import { loadCompleteness, type PropertyCompleteness } from './completeness';
 
@@ -129,12 +130,13 @@ async function activeRentByProperty(householdId: string, asOf: IsoDate): Promise
 export async function listProperties(householdId: string, filters: PropertyFilters, asOf: IsoDate): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
-  const [viewRows, count, ownerNames, scores, rents] = await Promise.all([
+  const [viewRows, count, ownerNames, scores, rents, collections] = await Promise.all([
     readMatchingRows(supabase, householdId, tokens),
     tokens.length === 0 ? null : supabase.from('property_list_rows').select('id', { count: 'exact', head: true }).eq('household_id', householdId),
     readOwnerNames(supabase, householdId),
     loadCompleteness(householdId),
     activeRentByProperty(householdId, asOf),
+    loadCollectionStates(householdId, asOf),
   ]);
   if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
   const rows = viewRows.map((row): PropertyListRow => ({ ...row, monthlyRentVnd: rents.get(row.id) ?? null, completeness: summary(scores.get(row.id)) }));
@@ -144,7 +146,7 @@ export async function listProperties(householdId: string, filters: PropertyFilte
     ...filtered,
     statuses: new Map(
       filtered.rows.flatMap((row) => {
-        const marks = propertyStatus(row, asOf);
+        const marks = propertyStatus({ ...row, collection: collections.get(row.id) ?? null }, asOf);
         return marks.length === 0 ? [] : [[row.id, marks] as const];
       }),
     ),

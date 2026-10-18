@@ -13,7 +13,7 @@ import { compareVietnameseNames } from '@esta/core/names';
 import { Archive, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { formatVndCompact } from '@esta/core/format';
-import { statusPills } from '@/components/properties/status-pills';
+import { statusPills, statusWords } from '@/components/properties/status-pills';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
@@ -76,7 +76,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
         certificate === null || comparable(certificate) === comparable(address) ? null : t('certificateAddress', { address: certificate }),
       photoUrl: row.coverPhotoPath === null ? null : (photos.get(row.coverPhotoPath) ?? null),
       rent: row.monthlyRentVnd === null ? null : { label: t('leaseRent'), amount: formatVndCompact(row.monthlyRentVnd, locale) },
-      statuses: statusPills(list.statuses.get(row.id) ?? [], { leased: (values) => t('leased', values), vacantSince: (values) => t('vacantSince', values) }, locale),
+      statuses: statusPills(list.statuses.get(row.id) ?? [], statusWords(t), locale),
       completeness: {
         percent: row.completeness.percent,
         label: tc('missing', { count: row.completeness.missing }),

@@ -99,6 +99,7 @@
     "status": {
       "paid": "Đã thu",
       "due": "Đến hạn",
+      "upcoming": "Chưa đến hạn",
       "overdue": "Quá hạn {days, plural, other {# ngày}}",
       "vacant": "Phòng trống",
       "draft": "Bản nháp",
@@ -307,7 +308,6 @@
     "more": "Khác"
   },
   "sections": {
-    "collections": "Thu tiền sẽ cho biết tháng này phòng nào đã trả, phòng nào chưa, và ghi nhận tiền chỉ với vài lần chạm.",
     "documents": "Tài liệu sẽ cất sổ đỏ, hợp đồng và CCCD ở một chỗ, tìm được ngay bằng một ô tìm kiếm.",
     "assistant": "Trợ lý sẽ để lại ghi chú mỗi sáng về tiền thu chậm, hợp đồng sắp hết hạn và giấy tờ còn thiếu.",
     "reports": "Báo cáo sẽ có thẻ thuế cho thuê nhà và thu chi của từng tài sản theo năm.",
@@ -353,7 +353,10 @@
     "listRent": "Giá niêm yết",
     "vacantSince": "Trống từ {date}",
     "leaseRent": "Tiền thuê mỗi tháng",
-    "leased": "Đang cho thuê {leased}/{total}"
+    "leased": "Đang cho thuê {leased}/{total}",
+    "paymentOverdue": "Quá hạn {days, plural, other {# ngày}}",
+    "paymentDue": "Đến hạn hôm nay",
+    "paymentPaid": "Đã thu tháng {month}"
   },
   "propertyDetail": {
     "back": "Tài sản",
@@ -1002,5 +1005,30 @@
     "noPreview": "Chưa có ảnh xem trước",
     "expiry": "{days, plural, =0 {Hết hạn hôm nay} other {Hết hạn sau # ngày}}",
     "expired": "Đã hết hạn"
+  },
+  "collections": {
+    "monthTitle": "Tháng {month}",
+    "monthPicker": "Chọn tháng",
+    "thisMonth": "Về tháng này",
+    "caption": "Hóa đơn tháng {month}",
+    "group": "{group, select, overdue {Quá hạn} due {Đến hạn} notDue {Chưa đến hạn} other {Đã thu}}",
+    "groupCount": "{count, plural, other {# hóa đơn}}",
+    "groupEmpty": "{group, select, overdue {Không ai quá hạn.} due {Không có hóa đơn đến hạn hôm nay.} notDue {Không còn hóa đơn chờ đến hạn.} other {Chưa thu hóa đơn nào.}}",
+    "empty": "Không có hóa đơn nào trong tháng {month}.",
+    "place": "{unit}, {property}",
+    "noTenant": "Chưa có người thuê",
+    "carriedFrom": "từ tháng {month}",
+    "dueOn": "Hạn {date}",
+    "colPlace": "Phòng",
+    "colTenant": "Người thuê",
+    "colDue": "Hạn thu",
+    "colStatus": "Trạng thái",
+    "colAmount": "Số tiền",
+    "colActions": "Thao tác",
+    "openLease": "Xem hợp đồng",
+    "offline": "Đang mất mạng. Bảng bên dưới là lần tải gần nhất; chọn tháng khác khi có mạng lại.",
+    "errorTitle": "Chưa tải được bảng thu tiền",
+    "errorBody": "Kiểm tra mạng rồi thử lại. Số tiền đã ghi nhận vẫn an toàn.",
+    "retry": "Thử lại"
   }
 }

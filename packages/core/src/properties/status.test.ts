@@ -3,7 +3,7 @@ import { isoDate } from '../date/iso-date';
 import { propertyStatus, type PropertyStatusFacts } from './status';
 
 const asOf = isoDate('2026-10-07');
-const rental = (facts: Partial<PropertyStatusFacts>): PropertyStatusFacts => ({ useMode: 'rental', vacantSince: null, leasedUnitCount: 0, unitCount: 1, ...facts });
+const rental = (facts: Partial<PropertyStatusFacts>): PropertyStatusFacts => ({ useMode: 'rental', vacantSince: null, leasedUnitCount: 0, unitCount: 1, collection: null, ...facts });
 
 describe('propertyStatus', () => {
   it.each([
@@ -35,7 +35,23 @@ describe('propertyStatus', () => {
   it.each(['owner_occupied', 'family_use', 'own_business', 'held', 'under_renovation'] as const)(
     'shows no mark for %s, whose pill already says what it is',
     (useMode) => {
-      expect(propertyStatus({ useMode, vacantSince: isoDate('2026-08-01'), leasedUnitCount: 1, unitCount: 2 }, asOf)).toEqual([]);
+      expect(propertyStatus({ useMode, vacantSince: isoDate('2026-08-01'), leasedUnitCount: 1, unitCount: 2, collection: { group: 'overdue', days: 3 } }, asOf)).toEqual([]);
     },
   );
+
+  it('reads Dãy trọ Dĩ An on 2026-10-07 as Quá hạn 12 ngày before its occupancy (LSE-10)', () => {
+    expect(propertyStatus(rental({ leasedUnitCount: 6, unitCount: 8, vacantSince: isoDate('2026-08-01'), collection: { group: 'overdue', days: 12 } }), asOf)).toEqual([
+      { kind: 'overdue', days: 12 },
+      { kind: 'leased', leased: 6, total: 8 },
+      { kind: 'vacant', since: '2026-08-01' },
+    ]);
+  });
+
+  it.each([
+    [{ group: 'due' }, [{ kind: 'due' }]],
+    [{ group: 'paid' }, [{ kind: 'paid', month: '2026-10-01' }]],
+    [{ group: 'notDue' }, []],
+  ] as const)('maps a %o month to %o', (collection, marks) => {
+    expect(propertyStatus(rental({ collection }), asOf)).toEqual(marks);
+  });
 });

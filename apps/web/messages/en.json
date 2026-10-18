@@ -99,6 +99,7 @@
     "status": {
       "paid": "Paid",
       "due": "Due",
+      "upcoming": "Not due yet",
       "overdue": "{days, plural, one {# day} other {# days}} overdue",
       "vacant": "Vacant",
       "draft": "Draft",
@@ -307,7 +308,6 @@
     "more": "More"
   },
   "sections": {
-    "collections": "Collections will show which rooms have paid this month and which have not, and record a payment in a few taps.",
     "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",
     "assistant": "The assistant will leave a note every morning about late rent, leases ending soon and missing papers.",
     "reports": "Reports will hold the rental tax card and each property’s income and costs by year.",
@@ -353,7 +353,10 @@
     "listRent": "Listed rent",
     "vacantSince": "Vacant since {date}",
     "leaseRent": "Monthly rent",
-    "leased": "Let {leased}/{total}"
+    "leased": "Let {leased}/{total}",
+    "paymentOverdue": "{days, plural, one {# day} other {# days}} overdue",
+    "paymentDue": "Due today",
+    "paymentPaid": "Paid for {month}"
   },
   "propertyDetail": {
     "back": "Properties",
@@ -1002,5 +1005,30 @@
     "noPreview": "No preview yet",
     "expiry": "{days, plural, =0 {Expires today} one {Expires in # day} other {Expires in # days}}",
     "expired": "Expired"
+  },
+  "collections": {
+    "monthTitle": "{month}",
+    "monthPicker": "Choose a month",
+    "thisMonth": "Back to this month",
+    "caption": "Invoices for {month}",
+    "group": "{group, select, overdue {Overdue} due {Due today} notDue {Not due yet} other {Paid}}",
+    "groupCount": "{count, plural, one {# invoice} other {# invoices}}",
+    "groupEmpty": "{group, select, overdue {Nobody is overdue.} due {No invoice is due today.} notDue {No invoice is waiting to fall due.} other {No invoice is paid yet.}}",
+    "empty": "No invoices in {month}.",
+    "place": "{unit}, {property}",
+    "noTenant": "No tenant",
+    "carriedFrom": "from {month}",
+    "dueOn": "Due {date}",
+    "colPlace": "Unit",
+    "colTenant": "Tenant",
+    "colDue": "Due date",
+    "colStatus": "Status",
+    "colAmount": "Amount",
+    "colActions": "Actions",
+    "openLease": "Open lease",
+    "offline": "You are offline. The board below is from the last load; choose another month once you are back online.",
+    "errorTitle": "The collections board did not load",
+    "errorBody": "Check the connection and try again. Recorded amounts are safe.",
+    "retry": "Try again"
   }
 }

@@ -6,11 +6,13 @@ import { MoneyDisplay } from '@/components/money/money-display';
 import { StatusMark } from '@/components/status-mark';
 import type { InvoiceSummary } from '@/server/leases/load';
 
-/** One invoice: its number, period, due date, total and where it stands on the Clock's date. Issued invoices are open until payments arrive (P3-09). */
+/** One invoice: its number, period, due date, total and where it stands on the Clock's date. */
 export function InvoiceRow({ invoice, asOf }: { invoice: InvoiceSummary; asOf: IsoDate }) {
   const t = useTranslations('leases');
   const locale = useLocale();
-  const mark = invoice.status === 'draft' ? { kind: 'draft' as const } : unitLeaseMark([{ status: 'active', openDueDates: [invoice.dueDate] }], asOf);
+  const settled = invoice.status === 'issued' && invoice.outstandingVnd === 0;
+  const mark =
+    invoice.status === 'draft' ? { kind: 'draft' as const } : unitLeaseMark([{ status: 'active', openDueDates: settled ? [] : [invoice.dueDate] }], asOf);
   return (
     <li data-testid="invoice-row" data-status={invoice.status} className="flex flex-col gap-2 border-b border-rule p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5">
       <div className="flex min-w-0 flex-col gap-1">
@@ -27,6 +29,7 @@ export function InvoiceRow({ invoice, asOf }: { invoice: InvoiceSummary; asOf: I
         {mark.kind === 'overdue' ? <StatusMark status="overdue" days={mark.days} /> : null}
         {mark.kind === 'due' ? <StatusMark status="due" /> : null}
         {mark.kind === 'draft' ? <StatusMark status="draft" /> : null}
+        {settled ? <StatusMark status="paid" /> : null}
         <MoneyDisplay amount={invoice.totalVnd} className="text-lead font-bold text-ink" />
       </div>
     </li>

@@ -5,6 +5,7 @@ import { propertyStatus, type PropertyStatusMark, type PropertyViewRow } from '@
 import { cache } from 'react';
 import { z } from 'zod';
 import { getClock } from '@/server/clock';
+import { loadCollectionStates } from '@/server/collections/load';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { PROPERTY_ROW_COLUMNS, propertyRowSchema } from './list';
@@ -24,15 +25,16 @@ const kindDetailsSchema = z.object({ kind_details: z.record(z.string(), z.unknow
 export const loadPropertyDetail = cache(async (id: string): Promise<PropertyDetail | null> => {
   if (!z.uuid().safeParse(id).success) return null;
   const [member, supabase, clock] = await Promise.all([requireMember(), createSessionClient(), getClock()]);
-  const [row, details] = await Promise.all([
+  const [row, details, collections] = await Promise.all([
     supabase.from('property_list_rows').select(PROPERTY_ROW_COLUMNS).eq('household_id', member.household.id).eq('id', id).maybeSingle(),
     supabase.from('properties').select('kind_details').eq('household_id', member.household.id).eq('id', id).maybeSingle(),
+    loadCollectionStates(member.household.id, clock.today(), id),
   ]);
   if (row.error) throw new Error(`Reading the property failed: ${row.error.message}`);
   if (details.error) throw new Error(`Reading the property details failed: ${details.error.message}`);
   if (row.data === null || details.data === null) return null;
   const property = propertyRowSchema.parse(row.data);
-  return { ...property, kindDetails: kindDetailsSchema.parse(details.data).kind_details, statuses: propertyStatus(property, clock.today()) };
+  return { ...property, kindDetails: kindDetailsSchema.parse(details.data).kind_details, statuses: propertyStatus({ ...property, collection: collections.get(id) ?? null }, clock.today()) };
 });
 
 const activitySchema = z

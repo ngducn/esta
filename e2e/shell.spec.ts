@@ -122,7 +122,7 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
 test('lane 11: a placeholder section shows no control, because none of its actions works yet', async ({ page }) => {
   onlyOn('mobile');
   await signIn(page, 'me.lane1@demo.esta.test');
-  for (const path of ['/collections', '/documents', '/assistant', '/reports']) {
+  for (const path of ['/documents', '/assistant', '/reports']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 }), path).toBeVisible();
     await expect(page.getByRole('main').getByRole('link'), `${path} links`).toHaveCount(0);

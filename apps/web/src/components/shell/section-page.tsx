@@ -4,7 +4,7 @@ import { EmptyState } from '@/components/empty-state';
 import type { SectionKey } from './nav';
 import { sectionIcons } from './section-icons';
 
-type LaterSection = Exclude<SectionKey, 'home' | 'settings' | 'properties'>;
+type LaterSection = Exclude<SectionKey, 'home' | 'settings' | 'properties' | 'collections'>;
 
 export async function sectionMetadata(section: Exclude<SectionKey, 'home'>): Promise<Metadata> {
   const nav = await getTranslations('nav');

@@ -20,7 +20,7 @@ export type PropertyHeaderData = {
   currentAddress: string | null;
   certificateAddress: string | null;
   photoUrl: string | null;
-  /** The `propertyStatus` pills, such as `Đang cho thuê 6/8` and `Trống từ 01/08`. */
+  /** The `propertyStatus` pills, such as `Quá hạn 12 ngày`, `Đang cho thuê 6/8` and `Trống từ 01/08`. */
   statuses: readonly StatusPillData[];
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
@@ -65,7 +65,7 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
           <UsePill useMode={property.useMode} label={property.useLabel} />
           <LegalPill legalStatus={property.legalStatus} label={property.legalLabel} />
           {property.statuses.map((pill) => (
-            <StatusPill key={pill.status} status={pill.status} label={pill.label} />
+            <StatusPill key={pill.label} status={pill.status} label={pill.label} />
           ))}
           <p data-testid="property-completeness" className="flex items-center gap-2 px-1 text-small text-ink-2">
             <span className="sr-only sm:not-sr-only">{property.completeness.title}</span>

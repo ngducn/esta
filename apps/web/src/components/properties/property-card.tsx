@@ -22,7 +22,7 @@ export type PropertyCardData = {
   photoUrl: string | null;
   /** `Tiền thuê mỗi tháng` and the compact sum of the active leases' rents, `null` when none is active. */
   rent: { label: string; amount: string } | null;
-  /** The `propertyStatus` pills, such as `Đang cho thuê 6/8` and `Trống từ 01/08`. */
+  /** The `propertyStatus` pills, such as `Quá hạn 12 ngày`, `Đang cho thuê 6/8` and `Trống từ 01/08`. */
   statuses: readonly StatusPillData[];
   completeness: { percent: number; label: string; srLabel: string };
 };
@@ -60,7 +60,7 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
           <UsePill useMode={card.useMode} label={card.useLabel} />
           <LegalPill legalStatus={card.legalStatus} label={card.legalLabel} />
           {card.statuses.map((pill) => (
-            <StatusPill key={pill.status} status={pill.status} label={pill.label} />
+            <StatusPill key={pill.label} status={pill.status} label={pill.label} />
           ))}
         </div>
         <h2 className="text-lead font-bold break-words text-ink">

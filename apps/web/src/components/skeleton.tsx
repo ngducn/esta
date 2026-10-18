@@ -156,3 +156,32 @@ export function SkeletonButton() {
     </Loading>
   );
 }
+
+/** The board as it lands: title, the month selector, then group headers with their rows. */
+export function SkeletonCollections() {
+  return (
+    <Loading className="flex flex-col gap-5">
+      <Block className="h-9 w-40 max-w-full" />
+      <Block className="h-touch w-80 max-w-full" />
+      <div className="flex flex-col rounded-lg border border-rule bg-surface shadow-card">
+        {[1, 6].map((rows, group) => (
+          <div key={group} className="flex flex-col">
+            <div className="flex items-center justify-between gap-3 border-b border-rule bg-surface-2 px-4 py-3">
+              <Block className="h-7 w-44" />
+              <Block className="h-7 w-28" />
+            </div>
+            {Array.from({ length: rows }, (_, index) => (
+              <div key={index} className="flex flex-col gap-2 border-b border-rule px-4 py-3.5">
+                <div className="flex justify-between gap-3">
+                  <Block className="h-6 w-52 max-w-full" />
+                  <Block className="h-6 w-24" />
+                </div>
+                <Block className="h-5 w-40" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </Loading>
+  );
+}

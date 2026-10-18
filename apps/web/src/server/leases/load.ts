@@ -1,4 +1,5 @@
 import 'server-only';
+import { PAYMENT_STATUSES, type PaymentStatus } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
 import { LEASE_COLUMNS, leaseRowSchema, type LeaseRow } from '@esta/core/schemas/lease';
 import { vnd, type Vnd } from '@esta/core/money';
@@ -21,6 +22,9 @@ export type InvoiceSummary = {
   readonly issueOn: IsoDate;
   readonly status: 'draft' | 'issued' | 'void';
   readonly totalVnd: Vnd;
+  /** Still owed after allocated payments; an issued invoice with none left is settled. */
+  readonly outstandingVnd: Vnd;
+  readonly paymentStatus: PaymentStatus;
 };
 
 export type LeaseWithTenant = LeaseRow & { readonly tenant: Tenant | null };
@@ -40,7 +44,9 @@ const invoiceRowSchema = z
     due_date: isoDateSchema,
     issue_on: isoDateSchema,
     status: z.enum(['draft', 'issued', 'void']),
-    invoice_lines: z.array(z.object({ amount_vnd: z.number().int() })),
+    total_vnd: z.number().int(),
+    outstanding_vnd: z.number().int().min(0),
+    payment_status: z.enum(PAYMENT_STATUSES),
   })
   .transform(
     (row): InvoiceSummary => ({
@@ -52,7 +58,9 @@ const invoiceRowSchema = z
       dueDate: row.due_date,
       issueOn: row.issue_on,
       status: row.status,
-      totalVnd: vnd(row.invoice_lines.reduce((sum, line) => sum + line.amount_vnd, 0)),
+      totalVnd: vnd(row.total_vnd),
+      outstandingVnd: vnd(row.outstanding_vnd),
+      paymentStatus: row.payment_status,
     }),
   );
 
@@ -67,7 +75,7 @@ const tenantRowSchema = z
   .object({ id: z.uuid(), full_name: z.string(), phone: z.string().nullable() })
   .transform((row): Tenant => ({ id: row.id, fullName: row.full_name, phone: phoneText(row.phone) }));
 
-const INVOICE_COLUMNS = 'id, lease_id, number, period_start, period_end, due_date, issue_on, status, invoice_lines(amount_vnd)';
+const INVOICE_COLUMNS = 'id, lease_id, number, period_start, period_end, due_date, issue_on, status, total_vnd, outstanding_vnd, payment_status';
 
 type SessionClient = Awaited<ReturnType<typeof createSessionClient>>;
 
@@ -78,7 +86,7 @@ async function readTenants(supabase: SessionClient, householdId: string, ids: re
   return new Map(z.array(tenantRowSchema).parse(data).map((tenant) => [tenant.id, tenant]));
 }
 
-/** Every lease of the property with its tenant, and every invoice of those leases. RLS scopes both to the member. */
+/** Every lease of the property with its tenant, and every invoice of those leases with its balance. RLS scopes both to the member. */
 export const loadPropertyLeases = cache(async (propertyId: string): Promise<PropertyLeases> => {
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: propertyId };
@@ -90,7 +98,7 @@ export const loadPropertyLeases = cache(async (propertyId: string): Promise<Prop
     readTenants(supabase, member.household.id, rows.flatMap((row) => (row.tenant_party_id === null ? [] : [row.tenant_party_id]))),
     ids.length === 0
       ? { data: [], error: null }
-      : supabase.from('invoices').select(INVOICE_COLUMNS).eq('household_id', member.household.id).in('lease_id', ids).order('period_start'),
+      : supabase.from('invoice_balances').select(INVOICE_COLUMNS).eq('household_id', member.household.id).in('lease_id', ids).order('period_start'),
   ]);
   if (invoices.error) throw new Error(`Reading invoices failed: ${invoices.error.message}`);
   return {

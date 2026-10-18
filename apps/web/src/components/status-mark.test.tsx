@@ -5,6 +5,7 @@ import { markStatuses, StatusMark, statusMarks, type StatusMarkProps } from './s
 const words = {
   paid: 'Đã thu',
   due: 'Đến hạn',
+  upcoming: 'Chưa đến hạn',
   overdue: 'Quá hạn 12 ngày',
   vacant: 'Phòng trống',
   draft: 'Bản nháp',
