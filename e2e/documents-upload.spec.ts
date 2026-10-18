@@ -387,3 +387,32 @@ test('rule 10: a viewer sees the seeded certificate and no way to add one (FND-2
   await expect(page.getByTestId('add-document')).toHaveCount(0);
   await expect(page.getByTestId('drop-zone')).toHaveCount(0);
 });
+
+test('Mẹ titles an upload with a full CCCD, the title is refused before any byte is sent, and nothing is saved (D11)', async ({ page }) => {
+  test.skip(test.info().project.name !== 'mobile', 'the test sets each viewport itself');
+  await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
+  const storagePuts: string[] = [];
+  page.on('request', (request) => (request.method() === 'PUT' && request.url().startsWith(`${supabaseUrl}/storage/`) ? storagePuts.push(request.url()) : undefined));
+  const before = await liveDocuments(page, 3, 'long-an');
+  for (const look of [
+    { name: '390-light', theme: 'light', viewport: PHONE },
+    { name: '390-dark', theme: 'dark', viewport: PHONE },
+    { name: '1440-light', theme: 'light', viewport: DESKTOP },
+    { name: '1440-dark', theme: 'dark', viewport: DESKTOP },
+  ] as const) {
+    await page.setViewportSize(look.viewport);
+    await page.context().addCookies([{ name: 'esta_theme', value: look.theme, url: test.info().project.use.baseURL ?? '' }]);
+    await documentsPage(page, 3, 'long-an');
+    await uploadThroughCamera(page, fixture('gcn_2024-photo/page-1.jpg'));
+    await page.getByTestId('document-title').fill('CCCD của mẹ 079123456789');
+    await page.getByTestId('save-document').click();
+    await expect(page.getByTestId('upload-sheet').getByText('Ô này còn số CCCD/CMND đầy đủ. Chỉ ghi 4 số cuối.')).toBeVisible();
+    await expect(page.getByTestId('document-title')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByTestId('upload-error')).toHaveCount(0);
+    expect(await seriousAxeViolations(page)).toEqual([]);
+    const folder = process.env.ESTA_SHOTS;
+    if (folder !== undefined) await page.screenshot({ path: join(folder, `upload-title-refused-${look.name}.png`) });
+  }
+  expect(storagePuts, 'no byte reaches Storage').toEqual([]);
+  expect(await liveDocuments(page, 3, 'long-an')).toEqual(before);
+});

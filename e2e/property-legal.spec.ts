@@ -283,3 +283,65 @@ test('a bad kind or item id is not found, and the tab renders its empty states',
   await expect(page.getByTestId('legal-structures')).toContainText('Chưa ghi nhà hay công trình');
   await expect(page.getByTestId('legal-structures').getByRole('link', { name: 'Thêm nhà, công trình' })).toBeVisible();
 });
+
+const LOOKS = [
+  { name: '390-light', theme: 'light', viewport: PHONE },
+  { name: '390-dark', theme: 'dark', viewport: PHONE },
+  { name: '1440-light', theme: 'light', viewport: DESKTOP },
+  { name: '1440-dark', theme: 'dark', viewport: DESKTOP },
+] as const;
+
+/** Saved only when `ESTA_SHOTS` names a folder, for the PR's screenshots. */
+async function shot(page: Page, name: string) {
+  const folder = process.env.ESTA_SHOTS;
+  if (folder !== undefined) await page.screenshot({ path: join(folder, `${name}.png`), fullPage: true });
+}
+
+test('Mẹ types a full CCCD into a parcel, a certificate or a new holder, and each save is refused with the field named (D11)', async ({ page }) => {
+  await open(page, 'me.lane6@demo.esta.test', 'light', PHONE);
+  const certificate = seedId('seed:certificate:lane-6:long-an');
+  const read = async (path: string) => {
+    const response = await page.request.get(`${supabaseUrl}/rest/v1/${path}`, { headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}` } });
+    expect(response.ok(), await response.text()).toBe(true);
+    return (await response.json()) as unknown[];
+  };
+  const before = await read(`certificates?id=eq.${certificate}&select=issued_by,holder_party_ids`);
+  for (const look of LOOKS) {
+    await page.setViewportSize(look.viewport);
+    await page.context().addCookies([{ name: 'esta_theme', value: look.theme, url: test.info().project.use.baseURL ?? '' }]);
+
+    await page.goto(`${legalPath(6, 'long-an')}/parcels/new`);
+    await expect(page.getByTestId('form-loading')).toHaveCount(0);
+    await page.locator('#origin-text').fill('Nhận chuyển nhượng từ bà Demo, CCCD 079123456789');
+    await page.getByTestId('save-legal-item').click();
+    await expect(page.getByTestId('form-error')).toHaveText('Chưa lưu: còn ô có số CCCD/CMND đầy đủ. Sửa ô có thông báo đỏ, chỉ ghi 4 số cuối.');
+    await expect(page.locator('#origin-text')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByText('Ô này còn số CCCD/CMND đầy đủ. Chỉ ghi 4 số cuối.')).toHaveCount(1);
+    await expect(page).toHaveURL(/\/parcels\/new$/);
+    expect(await seriousAxeViolations(page)).toEqual([]);
+    await shot(page, `parcel-refused-${look.name}`);
+
+    await page.goto(`${legalPath(6, 'long-an')}/certificates/${certificate}`);
+    await expect(page.getByTestId('form-loading')).toHaveCount(0);
+    await page.locator('#issued-by').fill('UBND Demo, CMND 023456789');
+    await page.getByTestId('save-legal-item').click();
+    await expect(page.locator('#issued-by')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByTestId('form-error')).toHaveText('Chưa lưu: còn ô có số CCCD/CMND đầy đủ. Sửa ô có thông báo đỏ, chỉ ghi 4 số cuối.');
+    await shot(page, `certificate-refused-${look.name}`);
+
+    await page.locator('#issued-by').fill('UBND huyện Demo');
+    await page.getByTestId('add-holder').click();
+    await page.getByTestId('quick-add-name').fill('Lê Văn Demo 079201005582');
+    await page.getByTestId('quick-add-save').click();
+    await page.getByTestId('save-legal-item').click();
+    await expect(page.getByTestId('form-error')).toHaveText(
+      'Chưa lưu: tên người vừa thêm còn số CCCD/CMND đầy đủ. Bỏ số khỏi tên, 4 số cuối ghi ở ô riêng.',
+    );
+    await expect(page.locator('#issued-by')).not.toHaveAttribute('aria-invalid', 'true');
+    await shot(page, `holder-refused-${look.name}`);
+  }
+  expect(await read(`certificates?id=eq.${certificate}&select=issued_by,holder_party_ids`), 'a refused save leaves the certificate as it was').toEqual(before);
+  expect(await read('parties?full_name=like.*Demo%20079201005582*&select=id'), 'a refused save creates no party').toEqual([]);
+  await page.goto(legalPath(6, 'long-an'));
+  await expect(parcels(page)).toHaveCount(1);
+});
