@@ -409,6 +409,8 @@ test('Mẹ titles an upload with a full CCCD, the title is refused before any by
     await expect(page.getByTestId('document-title')).toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByTestId('upload-error')).toHaveCount(0);
     await page.mouse.move(0, 0);
+    // The save button fades from its busy and hover colours back to its own; axe reads it once that fade ends.
+    await page.getByTestId('save-document').evaluate((button) => Promise.all(button.getAnimations().map((animation) => animation.finished)));
     expect(await seriousAxeViolations(page)).toEqual([]);
     const folder = process.env.ESTA_SHOTS;
     if (folder !== undefined) await page.screenshot({ path: join(folder, `upload-title-refused-${look.name}.png`) });
