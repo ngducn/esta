@@ -79,14 +79,12 @@ export function MultiPageCapture({
   const live = useRef(true);
   const strip = useRef<HTMLOListElement>(null);
   const camera = useRef<HTMLInputElement>(null);
-  const focusAfter = useRef<{
-    readonly url: string | null;
-    readonly action: Move;
-  } | null>(null);
+  const focusAfter = useRef<{ readonly url: string | null; readonly action: Move } | null>(null);
   const full = pages.length + pending >= MAX_CAPTURE_PAGES;
 
   useEffect(() => {
     live.current = true;
+    // Fetched while Mẹ photographs, so a connection lost before Gộp thành PDF no longer matters.
     void import('pdf-lib').catch(() => undefined);
     return () => {
       live.current = false;
@@ -133,6 +131,8 @@ export function MultiPageCapture({
   };
 
   const combine = async () => {
+    const [first] = pages;
+    if (first === undefined) return;
     setProblem(null);
     setCombining(true);
     try {
@@ -142,15 +142,8 @@ export function MultiPageCapture({
         setProblem('combinedTooLarge');
         return;
       }
-      const [first] = pages;
-      if (first === undefined) return;
-      onCombined({
-        pdf: new File([pdf], t('captureFilename', { count: pages.length }), {
-          type: 'application/pdf',
-        }),
-        firstPage: first.blob,
-        pageCount: pages.length,
-      });
+      const file = new File([pdf], t('captureFilename', { count: pages.length }), { type: 'application/pdf' });
+      onCombined({ pdf: file, firstPage: first.blob, pageCount: pages.length });
     } catch {
       if (live.current) setProblem('combineFailed');
     } finally {
@@ -196,7 +189,7 @@ export function MultiPageCapture({
         </p>
       </div>
       {pages.length === 0 ? null : (
-        <ol ref={strip} aria-label={t('stripLabel')} data-testid="capture-strip" className="flex flex-col gap-2">
+        <ol ref={strip} aria-label={t('stripLabel')} className="flex flex-col gap-2">
           {pages.map((page, index) => {
             const label = t('pageNumber', { number: index + 1 });
             return (
