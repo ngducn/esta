@@ -135,12 +135,14 @@ test('rule 4: Tài sản sorted by Giá thuê leads with Mặt bằng Quận 1 a
     'Mặt bằng Quận 1',
     'Dãy trọ Dĩ An',
     'Nhà phố Q7',
-    'Kho Biên Hòa',
     'Căn hộ Thủ Đức',
     'Đất Bảo Lộc',
     'Đất vườn Long An',
+    'Kho Biên Hòa',
   ]);
-  await expect(cards.getByTestId('property-rent')).toHaveText(['Giá niêm yết30 tr', 'Giá niêm yết21,4 tr', 'Giá niêm yết15 tr', 'Giá niêm yết12 tr', 'Giá niêm yết9 tr']);
+  // Since P3-07 the card shows the rent of active leases; Kho Biên Hòa's last lease ended on 2026-07-29.
+  const rent = 'Tiền thuê mỗi tháng';
+  await expect(cards.getByTestId('property-rent')).toHaveText([`${rent}30 tr`, `${rent}15,6 tr`, `${rent}15 tr`, `${rent}9 tr`]);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -193,18 +195,18 @@ test('rule 6: in English at 130% and dark the tab translates, room labels stay V
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('rule 7: the Dĩ An card and header show the open square with Trống từ 01/08, and no other card shows Trống', async ({ page }) => {
+test('rule 7: the Dĩ An card and header show the open square with Trống từ 01/08, and only Kho Biên Hòa, empty since its lease ended, also shows Trống', async ({ page }) => {
   await open(page, 'me.lane7@demo.esta.test', 'light', PHONE);
   await page.goto('/properties');
   const cards = page.getByTestId('property-card');
   const marks = cards.locator('[data-status="vacant"]');
-  await expect(marks).toHaveCount(1);
+  await expect(marks).toHaveText(['Trống từ 01/08', 'Trống từ 30/07']);
   const diAn = cards.filter({ has: page.getByRole('heading', { name: 'Dãy trọ Dĩ An', exact: true }) });
   const cardMark = diAn.locator('[data-status="vacant"]');
   await expect(cardMark).toHaveText('Trống từ 01/08');
   await expect(cardMark.locator('svg[data-shape="vacant"]')).toBeVisible();
   await expect(cardMark).toHaveClass(/\btext-vacant\b/);
-  await expect(cards.filter({ hasText: 'Trống' })).toHaveCount(1);
+  await expect(cards.filter({ hasText: 'Trống' })).toHaveCount(2);
 
   await diAn.getByRole('link', { name: 'Dãy trọ Dĩ An' }).click();
   const headerMark = page.getByTestId('property-header').locator('[data-status="vacant"]');

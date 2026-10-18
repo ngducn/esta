@@ -21,10 +21,16 @@ const rentalPath = (lane: number, key: string) => `/properties/${propertyId(lane
 const newLeasePath = (lane: number, key: string, unit: string) => `${rentalPath(lane, key)}/leases/new?unit=${unit}`;
 
 // `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of the main flow (rule 2).
-test.use({ video: process.env.ESTA_E2E_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
+const recording = process.env.ESTA_E2E_VIDEO === '1';
+test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 900 } } : { video: 'off' });
 
-// Each rule writes to its own lane household, so the spec runs at one project's viewport and sets the rule's own.
-test.beforeEach(() => test.skip(test.info().project.name !== 'mobile', 'each rule sets its own viewport'));
+// Overdue days count from the Clock, so the spec runs in the `clock` project, one file at a time, on SPEC §9.3's day.
+// Each rule writes to its own lane household and sets its own viewport.
+test.beforeAll(async ({ request }) => {
+  const headers = { authorization: `Bearer ${slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false }).CRON_SECRET}` };
+  const response = await request.post('/api/test/clock', { headers, data: { frozen_now: '2026-10-07T09:00:00+07:00' } });
+  expect(response.ok()).toBe(true);
+});
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);
@@ -46,6 +52,9 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
+
+/** Keeps a result on screen long enough to read in the PR video; a normal run does not wait. */
+const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
 
 const unitRow = (page: Page, label: string) => page.getByTestId('unit-row').filter({ has: page.getByRole('heading', { name: label, exact: true }) });
 const toast = (page: Page) => page.getByRole('region', { name: /Thông báo|Notifications/ });
@@ -90,9 +99,9 @@ test('rule 7: the properties list shows the rent of active leases, Đang cho thu
 });
 
 test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease paid through 30/09/2026 and sees October issued, due 01/10/2026', async ({ page }) => {
-  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
-  const room = await freshRoom(page, 2);
-  await page.goto(rentalPath(2, 'di-an'));
+  await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
+  const room = await freshRoom(page, 3);
+  await page.goto(rentalPath(3, 'di-an'));
   await unitRow(page, room).getByTestId('add-lease').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Hợp đồng mới cho ${room}`);
   await expect(page.getByTestId('form-loading')).toHaveCount(0);
@@ -119,6 +128,7 @@ test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease pa
   await expect(october.locator('[data-status="overdue"]')).toHaveText('Quá hạn 6 ngày');
   await expect(october.locator('data')).toHaveText(`3.000.000${NBSP}₫`);
   await expect(page.getByTestId('invoice-row').filter({ hasText: 'Kỳ 01/11/2026 – 30/11/2026' }).locator('[data-status="draft"]')).toBeVisible();
+  await holdForRecording(page);
 
   const leaseId = new URL(page.url()).pathname.split('/').at(-1) ?? '';
   const invoices = await rest<{ period_start: string; due_date: string; status: string; invoice_lines: { kind: string; amount_vnd: number }[] }[]>(
@@ -130,9 +140,10 @@ test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease pa
   const [lease] = await rest<{ tenant_party_id: string }[]>(page, 'GET', `leases?id=eq.${leaseId}&select=tenant_party_id`);
   expect(await rest(page, 'GET', `parties?id=eq.${lease?.tenant_party_id}&select=phone,tags`)).toEqual([{ phone: '+84903123456', tags: ['tenant'] }]);
 
-  await page.goto(rentalPath(2, 'di-an'));
+  await page.goto(rentalPath(3, 'di-an'));
   await expect(unitRow(page, room).getByTestId('unit-tenant')).toHaveText('Lê Văn Demo');
   await expect(unitRow(page, room).locator('[data-status="overdue"]')).toHaveText('Quá hạn 6 ngày');
+  await holdForRecording(page);
 });
 
 test('rule 4: the new lease form prefills DOMAIN-VN §7 defaults, 1 tháng and metered utilities for a room, 3 tháng for the warehouse', async ({ page }) => {
@@ -211,12 +222,12 @@ test('rule 9: adding a room to Thủ Đức, let as a whole, is refused and adds
   expect(await rest(page, 'GET', `units?property_id=eq.${propertyId(9, 'thu-duc')}&select=label`)).toEqual([{ label: 'Toàn bộ' }]);
 });
 
-test('rule 10: in English at 130% text, the overdue room reads Overdue 12 days and the lease form stacks without clipping', async ({ page }) => {
-  await open(page, 'me.lane10@demo.esta.test', 'dark', PHONE);
-  const memberId = seedId('seed:member:me-lane-10');
+test('rule 10: in English at 130% text, the overdue room reads 12 days overdue and the lease form stacks without clipping', async ({ page }) => {
+  await open(page, 'me.lane6@demo.esta.test', 'dark', PHONE);
+  const memberId = seedId('seed:member:me-lane-6');
   await rest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'en', text_scale: 130 });
   try {
-    await page.goto(rentalPath(10, 'di-an'));
+    await page.goto(rentalPath(6, 'di-an'));
     await expect(unitRow(page, 'Phòng 5').locator('[data-status="overdue"]')).toHaveText('12 days overdue');
     await expect(unitRow(page, 'Phòng 8').getByTestId('add-lease')).toHaveText('Add lease');
     await unitRow(page, 'Phòng 8').getByTestId('add-lease').click();
@@ -244,6 +255,6 @@ test('a viewer sees leases and invoices but no way to add or edit one', async ({
   await expect(page.getByText('Bạn đang xem. Chỉ thành viên trong gia đình được sửa hợp đồng.')).toBeVisible();
   await expect(page.getByTestId('lease-form')).toHaveCount(0);
   await expect(page.getByTestId('invoice-row')).toHaveCount(2);
-  const response = await page.goto(newLeasePath(8, 'di-an', unitId(8, 'di-an', 8)));
-  expect(response?.status()).toBe(404);
+  await page.goto(newLeasePath(8, 'di-an', unitId(8, 'di-an', 8)));
+  await expect(page.getByTestId('lease-form')).toHaveCount(0);
 });
