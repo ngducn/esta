@@ -22,7 +22,7 @@ const CODE_PREFIXES: ReadonlySet<string> = new Set(['PA', 'PB', 'PC', 'PD', 'PE'
  * search index holds, so a mark between two digit groups cannot hide an ID the index would hold whole.
  * `holds_national_id` drops the same ranges.
  */
-const MARKS = /[\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/gu;
+const MARKS = /[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
 const FOLDED = new RegExp(`[\\u00AD\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]|${MARKS.source}`, 'gu');
 
 /**
