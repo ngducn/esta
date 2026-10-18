@@ -389,7 +389,6 @@ test('rule 10: a viewer sees the seeded certificate and no way to add one (FND-2
 });
 
 test('Mẹ titles an upload with a full CCCD, the title is refused before any byte is sent, and nothing is saved (D11)', async ({ page }) => {
-  test.skip(test.info().project.name !== 'mobile', 'the test sets each viewport itself');
   await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
   const storagePuts: string[] = [];
   page.on('request', (request) => (request.method() === 'PUT' && request.url().startsWith(`${supabaseUrl}/storage/`) ? storagePuts.push(request.url()) : undefined));

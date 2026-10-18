@@ -3,7 +3,7 @@
 begin;
 \ir _harness.psql
 
-select plan(39);
+select plan(37);
 
 select tests.create_household('a') as a \gset
 
@@ -82,16 +82,12 @@ select throws_ok($$ update public.parties set address_text = '12 đường Demo,
   '23514', null, 'address_text refuses a labelled full ID');
 select throws_ok($$ update public.parties set notes = 'Số định danh 079123456789' where id = '00000000-0000-4000-8000-00000000aa01' $$,
   '23514', null, 'notes refuses a labelled full ID');
-select throws_ok($$ update public.parties set phone = '079123456789' where id = '00000000-0000-4000-8000-00000000aa01' $$,
-  '23514', null, 'phone refuses anything but a Vietnamese number in E.164');
-select throws_ok($$ update public.parties set zalo_phone = '0912345678' where id = '00000000-0000-4000-8000-00000000aa01' $$,
-  '23514', null, 'zalo_phone refuses anything but a Vietnamese number in E.164');
 select throws_ok(format($$ insert into public.parties (household_id, kind, full_name, tags) values (%L, 'individual', 'Ông Demo CCCD 079123456789', array['owner']) $$, :'a'),
   '23514', null, 'a new party refuses a full ID in its name');
 select lives_ok($$ update public.parties set full_name = 'Bà Nguyễn Thị Demo', short_name = 'Bà Demo', email = 'demo@test.esta.test',
                    address_text = '12 đường Demo, Phường Demo', notes = 'CCCD 6789', phone = '+842838123456', zalo_phone = '+84903123456'
                  where id = '00000000-0000-4000-8000-00000000aa01' $$,
-  'a party keeps a landline and a mobile in E.164 and the last four digits of an ID');
+  'a party keeps a landline in E.164, which has 12 digits, and the last four digits of an ID');
 select lives_ok($$ update public.parties set tax_code = '0312345678-001' where id = '00000000-0000-4000-8000-00000000aa02' $$,
   'an organization keeps a 13-digit tax code');
 
@@ -123,9 +119,9 @@ select is((select origin_text from public.parcels where id = '00000000-0000-4000
 select is(
   (select array_agg(conname::text order by conname) from pg_constraint where conname in (
      'parcels_no_national_id', 'certificates_no_national_id', 'structures_no_national_id', 'parties_no_national_id',
-     'parties_phone_e164', 'documents_title_no_national_id') and not convalidated),
+     'documents_title_no_national_id') and not convalidated),
   array['certificates_no_national_id', 'documents_title_no_national_id', 'parcels_no_national_id', 'parties_no_national_id',
-        'parties_phone_e164', 'structures_no_national_id'],
+        'structures_no_national_id'],
   'every new CHECK is NOT VALID, so rows written before it are not read');
 
 select is(

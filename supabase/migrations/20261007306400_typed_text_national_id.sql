@@ -29,7 +29,8 @@ as $$
 $$;
 
 -- Every free-text column Mẹ can type into refuses a full ID by the same rule, through any form or a direct write.
--- NOT VALID: rows written before this migration are not read, and a row is judged again whenever it is written.
+-- NOT VALID: rows written before this migration are not read, and a row is judged again whenever it is written. A
+-- party's phones are left out: a landline in E.164, such as +842838123456, has 12 digits like a CCCD.
 alter table public.parcels
   add constraint parcels_no_national_id check (not private.holds_national_id(
     jsonb_build_array(parcel_no, map_sheet_no, origin_text, jsonb_path_query_array(purposes, '$[*].land_use_code'))
@@ -48,11 +49,3 @@ alter table public.parties
   )) not valid;
 alter table public.documents
   add constraint documents_title_no_national_id check (not private.holds_national_id(jsonb_build_array(title, tags))) not valid;
-
--- A landline in E.164, such as +842838123456, has 12 digits like a CCCD, so the judge cannot read a phone. A phone
--- column holds only what normalizePhone writes, and no CCCD fits that shape: every CCCD starts with 0.
-alter table public.parties
-  add constraint parties_phone_e164 check (
-    (phone is null or phone ~ '^\+84(?:[35789][0-9]{8}|2[0-9]{9})$')
-    and (zalo_phone is null or zalo_phone ~ '^\+84(?:[35789][0-9]{8}|2[0-9]{9})$')
-  ) not valid;
