@@ -11,7 +11,7 @@ import {
   MAX_DOCUMENT_BYTES,
   type DocumentCategory,
 } from '@esta/core/documents';
-import { Camera, FolderOpen, RotateCw } from 'lucide-react';
+import { Camera, Files, FolderOpen, RotateCw } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { DateInput } from '@/components/date-input';
@@ -27,10 +27,12 @@ import { makeThumbnails, type Thumbnails } from '@/lib/upload/thumbnail';
 import { uploadWithProgress } from '@/lib/upload/upload-with-progress';
 import { createDocumentUpload, registerDocument, type UploadTicket } from '@/server/documents/actions';
 import { DuplicateDialog } from './duplicate-dialog';
+import { LeaveConfirm, MultiPageCapture, type CombinedCapture } from './multi-page-capture';
 import { UploadProgress } from './upload-progress';
 
 type Ticket = Extract<UploadTicket, { ok: true }>;
-type Prepared = { readonly file: File; readonly sha256: string; readonly thumbnails: Thumbnails };
+/** `captured` marks a PDF combined from photos taken in this tab, which exist nowhere else until it is saved. */
+type Prepared = { readonly file: File; readonly sha256: string; readonly thumbnails: Thumbnails; readonly captured: boolean };
 type FileProblem = 'tooLarge' | 'wrongType' | 'unreadable' | 'fileRequired' | null;
 
 /** The save flow as one state: each step names what the sheet shows. A failed step keeps its ticket for `Thử lại`. */
@@ -49,10 +51,20 @@ export function checkFile(file: File): FileProblem {
   return (DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type) ? null : 'wrongType';
 }
 
+/** The combined PDF, with its thumbnails drawn from the page 1 photo rather than by rendering the PDF again. */
+async function prepareCapture({ pdf, firstPage, pageCount }: CombinedCapture): Promise<Prepared | null> {
+  try {
+    const [digest, thumbnails] = await Promise.all([sha256(pdf), makeThumbnails(firstPage)]);
+    return { file: pdf, sha256: digest, thumbnails: { ...thumbnails, pageCount }, captured: true };
+  } catch {
+    return null;
+  }
+}
+
 async function prepare(file: File): Promise<Prepared | null> {
   try {
     const [digest, thumbnails] = await Promise.all([sha256(file), makeThumbnails(file)]);
-    return { file, sha256: digest, thumbnails };
+    return { file, sha256: digest, thumbnails, captured: false };
   } catch {
     return null;
   }
@@ -92,8 +104,44 @@ export default function UploadSheet({
   const [problem, setProblem] = useState<FileProblem>(() => (initialFile === null ? null : checkFile(initialFile)));
   const [titleMissing, setTitleMissing] = useState(false);
   const [phase, setPhase] = useState<Phase>(() => (initialFile !== null && checkFile(initialFile) === null ? { step: 'preparing' } : { step: 'editing' }));
+  const [capturing, setCapturing] = useState(false);
+  const [capturedPages, setCapturedPages] = useState(0);
+  const [leaving, setLeaving] = useState<'back' | 'close' | null>(null);
   const choice = useRef(0);
+  const sheet = useRef<HTMLDivElement>(null);
   const preview = useObjectUrl(prepared === null ? null : sensitive ? prepared.thumbnails.blurred : prepared.thumbnails.thumb);
+
+  // The capture view and the form differ in length, so each opens at its top rather than at the other's scroll.
+  useEffect(() => {
+    sheet.current?.scrollTo({ top: 0 });
+  }, [capturing]);
+
+  const unsaved = capturing ? capturedPages : prepared?.captured === true ? prepared.thumbnails.pageCount : 0;
+  const leave = (target: 'back' | 'close', confirmed = false) => {
+    if (unsaved > 0 && !confirmed) {
+      setLeaving(target);
+      return;
+    }
+    setLeaving(null);
+    if (target === 'close') onClose();
+    else setCapturing(false);
+  };
+
+  const combined = async (capture: CombinedCapture) => {
+    const ticket = ++choice.current;
+    setCapturing(false);
+    setPrepared(null);
+    setProblem(null);
+    setPhase({ step: 'preparing' });
+    const result = await prepareCapture(capture);
+    if (choice.current !== ticket) return;
+    if (result === null) setProblem('unreadable');
+    else {
+      setPrepared(result);
+      if (!acceptsMime(category, result.file.type)) setProblem('wrongType');
+    }
+    setPhase({ step: 'editing' });
+  };
 
   const choose = async (file: File | undefined) => {
     if (file === undefined) return;
@@ -187,13 +235,19 @@ export default function UploadSheet({
   const busy = phase.step === 'preparing' || phase.step === 'uploading';
   const megabytes = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   return (
-    <Sheet open onOpenChange={(open) => (open || busy ? undefined : onClose())}>
-      <SheetContent data-testid="upload-sheet">
+    <Sheet open onOpenChange={(open) => (open || busy ? undefined : leave('close'))}>
+      <SheetContent ref={sheet} data-testid="upload-sheet">
         <div className="flex flex-col gap-1">
-          <SheetTitle>{t('sheetTitle')}</SheetTitle>
-          <SheetDescription>{t('sheetBody')}</SheetDescription>
+          <SheetTitle>{capturing ? t('captureTitle') : t('sheetTitle')}</SheetTitle>
+          <SheetDescription>{capturing ? t('captureBody') : t('sheetBody')}</SheetDescription>
         </div>
-        <form noValidate onSubmit={(event) => void save(event)} className="flex flex-col gap-5">
+        {capturing ? (
+          <>
+            <MultiPageCapture confirming={leaving !== null} onCount={setCapturedPages} onBack={() => leave('back')} onCombined={(capture) => void combined(capture)} />
+            {leaving === null ? null : <LeaveConfirm count={unsaved} onKeep={() => setLeaving(null)} onDiscard={() => leave(leaving, true)} />}
+          </>
+        ) : null}
+        <form noValidate hidden={capturing} onSubmit={(event) => void save(event)} className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
               <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm bg-ink px-4 text-body font-semibold text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
@@ -221,6 +275,20 @@ export default function UploadSheet({
                   onChange={(event) => void choose(event.target.files?.[0])}
                 />
               </label>
+              <Button
+                type="button"
+                variant="outline"
+                data-testid="capture-pages"
+                disabled={busy}
+                className="min-[22rem]:col-span-2"
+                onClick={() => {
+                  setCapturedPages(0);
+                  setCapturing(true);
+                }}
+              >
+                <Files aria-hidden="true" />
+                {t('multiPage')}
+              </Button>
             </div>
             <p className="text-small text-ink-muted">{t('fileRule')}</p>
             {prepared === null ? null : (
@@ -291,7 +359,9 @@ export default function UploadSheet({
               {t('networkError')}
             </p>
           ) : null}
-          {phase.step === 'duplicate' ? (
+          {leaving !== null && !capturing ? (
+            <LeaveConfirm count={unsaved} onKeep={() => setLeaving(null)} onDiscard={() => leave(leaving, true)} />
+          ) : phase.step === 'duplicate' ? (
             <DuplicateDialog
               title={phase.ticket.duplicates.map((duplicate) => duplicate.title).join(', ')}
               onCancel={() => setPhase({ step: 'editing' })}
