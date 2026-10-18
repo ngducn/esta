@@ -19,6 +19,8 @@ export const completenessFactsRowSchema = z
     structure_without_floor_area_id: z.string().nullable(),
     share_total_bp: count,
     utility_account_count: count,
+    certificate_document_count: count,
+    photo_count: count,
   })
   .transform(
     (row): CompletenessFacts => ({
@@ -34,9 +36,11 @@ export const completenessFactsRowSchema = z
       structureWithoutFloorAreaId: row.structure_without_floor_area_id,
       shareTotalBp: row.share_total_bp,
       utilityAccountCount: row.utility_account_count,
+      certificateDocumentCount: row.certificate_document_count,
+      photoCount: row.photo_count,
     }),
   );
 
 /** The schema's keys as one literal, so the PostgREST client can type the select. */
 export const COMPLETENESS_FACT_COLUMNS =
-  'property_id, kind, has_current_address, has_location, has_acquisition, parcel_count, parcel_without_number_id, parcel_without_area_id, structure_count, structure_without_floor_area_id, share_total_bp, utility_account_count';
+  'property_id, kind, has_current_address, has_location, has_acquisition, parcel_count, parcel_without_number_id, parcel_without_area_id, structure_count, structure_without_floor_area_id, share_total_bp, utility_account_count, certificate_document_count, photo_count';

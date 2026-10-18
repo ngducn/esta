@@ -42,6 +42,22 @@ describe('COMPLETENESS_CHECKS', () => {
     expect(ids('rooming_house')).toContain('utilityAccounts');
   });
 
+  it.each(PROPERTY_KINDS)('asks every %s for a certificate photo and a photo (PRP-6)', (kind) => {
+    expect(applicable(kind).filter((check) => check.id === 'certificateDocument' || check.id === 'photo').map((check) => [check.id, check.weight])).toEqual([
+      ['certificateDocument', 10],
+      ['photo', 5],
+    ]);
+  });
+
+  it('sends both document checks to the upload on the Tài liệu tab', () => {
+    const facts = SEED_FACTS['long-an'];
+    for (const check of COMPLETENESS_CHECKS.filter((c) => c.id === 'certificateDocument' || c.id === 'photo')) {
+      expect(check.link(facts)).toEqual({ path: 'documents', anchor: 'upload' });
+      expect(check.passes({ ...facts, certificateDocumentCount: 0, photoCount: 0 })).toBe(false);
+      expect(check.passes({ ...facts, certificateDocumentCount: 1, photoCount: 1 })).toBe(true);
+    }
+  });
+
   it('links each check to an id a page renders, so the tap lands on the field', () => {
     const web = sources(join(repoRoot, 'apps/web/src')).join('\n');
     const anchors = [...new Set(COMPLETENESS_CHECKS.map((check) => check.link(SEED_FACTS['long-an']).anchor))];
