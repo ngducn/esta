@@ -10,7 +10,7 @@ const baseURL = `http://localhost:${port}`;
 const servers = ['build', 'dev'] as const;
 const server = process.env.ESTA_E2E_SERVER ?? (process.env.CI ? 'build' : 'dev');
 if (!servers.some((name) => name === server)) throw new Error(`ESTA_E2E_SERVER must be one of ${servers.join(', ')}, got "${server}"`);
-const sharedClock = ['clock.spec.ts', 'assistant-status.spec.ts', 'fnd9-integration.spec.ts', 'property-detail.spec.ts'];
+const sharedClock = ['clock.spec.ts', 'assistant-status.spec.ts', 'fnd9-integration.spec.ts', 'property-detail.spec.ts', 'documents-upload.spec.ts'];
 
 export default defineConfig({
   testDir: 'e2e',

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
@@ -7,6 +7,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { stubTiles } from './helpers/map-tiles';
+import { setClock } from './helpers/test-clock';
 import { accessToken } from './helpers/session';
 
 const repoRoot = join(import.meta.dirname, '..');
@@ -20,13 +21,6 @@ const MAPLIBRE_BODY = 'maplibregl-canvas';
 const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
-
-async function setClock(request: APIRequestContext, frozenNow: string | null) {
-  const headers = { authorization: `Bearer ${slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT), { withKeys: false }).CRON_SECRET}` };
-  const response =
-    frozenNow === null ? await request.delete('/api/test/clock', { headers }) : await request.post('/api/test/clock', { headers, data: { frozen_now: frozenNow } });
-  expect(response.ok()).toBe(true);
-}
 
 async function setLocation(page: Page, id: string, location: { lat: number; lng: number } | null) {
   const response = await page.request.post(`${supabaseUrl}/rest/v1/rpc/set_property_location`, {

@@ -11,6 +11,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { makeLargeImage } from './helpers/make-large-image';
 import { accessToken } from './helpers/session';
+import { setClock } from './helpers/test-clock';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -27,7 +28,6 @@ const documentId = (lane: number, key: string) => seedId(`seed:document:lane-${l
 const largeDir = join(tmpdir(), `esta-documents-${process.pid}`);
 
 test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
-test.beforeEach(() => test.skip(test.info().project.name !== 'mobile', 'each rule sets its own viewport'));
 test.beforeAll(() => mkdirSync(largeDir, { recursive: true }));
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
@@ -127,6 +127,12 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurre
     const size = await sharp(clear).metadata();
     expect(Math.max(size.width ?? 0, size.height ?? 0), 'the thumbnail is at most 320 px on its long side').toBe(320);
     expect(clear.equals(blurred), 'the blurred thumbnail differs from the clear one').toBe(false);
+
+    const [opened] = await Promise.all([page.waitForEvent('popup'), tile(page, 'Sổ hồng Long An').getByRole('link').click()]);
+    await expect(opened.locator('img')).toBeVisible(COLD_ROUTE);
+    await opened.locator('img').evaluate((img: HTMLImageElement) => img.decode());
+    if (process.env.ESTA_VIDEO === '1') await opened.screenshot({ path: test.info().outputPath('opened.png') });
+    expect(opened.url(), 'Mẹ opens her upload through a signed URL').toMatch(new RegExp(`/storage/v1/object/sign/documents/${household(1)}/${row?.id}/page-1\\.jpg\\?token=`));
   } finally {
     await archiveNewDocuments(page, 1, 'long-an');
   }
@@ -327,14 +333,19 @@ test('rule 7: a member of household 7 reaches nothing of household 8 (FND-2)', a
   expect(await accessCount(page, `household_id=eq.${household(8)}`)).toBe(before);
 });
 
-test('rule 8: the Q7 insurance counts down on the test clock and Long An asks for its certificate photo (PRP-6)', async ({ page }) => {
+test('rule 8: the Q7 insurance counts down on the test clock and Long An asks for its certificate photo (PRP-6)', async ({ page, request }) => {
   await open(page, 'ryan.lane8@demo.esta.test', 'dark', DESKTOP);
-  await documentsPage(page, 8, 'q7');
-  await expect(tile(page, 'Bảo hiểm cháy nổ Nhà phố Q7').getByTestId('document-expiry')).toHaveText('Hết hạn sau 23 ngày', COLD_ROUTE);
-  await page.goto(`/properties/${propertyId(8, 'long-an')}`);
-  const item = page.getByTestId('missing-items').getByRole('listitem').filter({ hasText: 'Thêm ảnh sổ' });
-  await expect(item).toHaveCount(1, COLD_ROUTE);
-  await expect(item.getByRole('link')).toHaveAttribute('href', `/properties/${propertyId(8, 'long-an')}/documents#upload`);
+  await setClock(request, '2026-10-07T09:00:00+07:00');
+  try {
+    await documentsPage(page, 8, 'q7');
+    await expect(tile(page, 'Bảo hiểm cháy nổ Nhà phố Q7').getByTestId('document-expiry')).toHaveText('Hết hạn sau 23 ngày', COLD_ROUTE);
+    await page.goto(`/properties/${propertyId(8, 'long-an')}`);
+    const item = page.getByTestId('missing-items').getByRole('listitem').filter({ hasText: 'Thêm ảnh sổ' });
+    await expect(item).toHaveCount(1, COLD_ROUTE);
+    await expect(item.getByRole('link')).toHaveAttribute('href', `/properties/${propertyId(8, 'long-an')}/documents#upload`);
+  } finally {
+    await setClock(request, null);
+  }
 });
 
 test('rule 9: in English at 130% text and dark, the sheet reads in English and nothing scrolls sideways', async ({ page }) => {
