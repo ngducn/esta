@@ -618,8 +618,7 @@
     "formLoading": "Loading the form…",
     "groupTenant": "Room and tenant",
     "groupTerm": "Term",
-    "groupMoney": "Rent",
-    "groupOther": "Utilities and tax",
+    "groupMoney": "Rent and utilities",
     "unitField": "Room or unit",
     "tenantField": "Tenant",
     "tenantPlaceholder": "Choose a tenant",
@@ -693,7 +692,9 @@
     "invoiceDue": "Due {date}",
     "invoiceDraft": "Issues on {date}",
     "viewerNote": "You are viewing. Only household members can edit leases.",
-    "backToRental": "Rental"
+    "backToRental": "Rental",
+    "groupMore": "More terms",
+    "groupMoreHint": "Periods, a part-month start, increases, tax and notice. Filled in with the usual terms."
   },
   "propertyOwners": {
     "title": "Owners",

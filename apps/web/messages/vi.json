@@ -618,8 +618,7 @@
     "formLoading": "Đang tải biểu mẫu…",
     "groupTenant": "Phòng và người thuê",
     "groupTerm": "Thời hạn",
-    "groupMoney": "Tiền thuê",
-    "groupOther": "Điện nước và thuế",
+    "groupMoney": "Tiền thuê và điện nước",
     "unitField": "Phòng hoặc đơn vị",
     "tenantField": "Người thuê",
     "tenantPlaceholder": "Chọn người thuê",
@@ -693,7 +692,9 @@
     "invoiceDue": "Hạn thu {date}",
     "invoiceDraft": "Phát hành ngày {date}",
     "viewerNote": "Bạn đang xem. Chỉ thành viên trong gia đình được sửa hợp đồng.",
-    "backToRental": "Cho thuê"
+    "backToRental": "Cho thuê",
+    "groupMore": "Điều khoản khác",
+    "groupMoreHint": "Kỳ thu, tháng đầu lẻ ngày, tăng giá, thuế và báo trước. Đã điền sẵn theo thói quen cho thuê."
   },
   "propertyOwners": {
     "title": "Chủ sở hữu",

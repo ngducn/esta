@@ -223,8 +223,19 @@ Practice, not law. Defaults in forms follow these.
 - Rent is paid at the start of the period, commonly within the first 5 days.
 - Rooming houses: the landlord reads electricity and water meters monthly and bills consumption in arrears with a flat per-unit price. Rules limit what landlords may charge renters for electricity `[verify]`; the app stores what the owner charges and shows a neutral note linking to current rules.
 - Tết matters. Tenants often move out around Tết; vacancies cluster in the first quarter; owners collect before the holiday. The agent uses this as a seasonal signal.
-- Residential leases do not require notarization unless the parties want it `[verify]`.
-- Rooming house tenants must be registered for temporary residence `[verify]`. P2 suggestion: a per-lease `residence_registered` checkbox.
+- Residential leases do not require notarization or certification unless the parties want it: Luật Nhà ở 2023, Điều 164 khoản 2, for "thuê, mượn, ở nhờ, ủy quyền quản lý nhà ở" (checked 2026-10-18, <https://thuvienphapluat.vn/chinh-sach-phap-luat-moi/vn/ho-tro-phap-luat/tu-van-phap-luat/71831/theo-luat-nha-o-2023-thi-hop-dong-cho-thue-nha-o-co-phai-cong-chung-chung-thuc-hay-khong>). The lease form asks for neither.
+- A tenant who lives at a rented place outside the commune of their permanent residence for 30 days or more must register temporary residence, within 30 days of moving in: Luật Cư trú 2020 (68/2020/QH14), Điều 27. The duty is the tenant's, and the landlord may register for them (checked 2026-10-18, <https://luatvietnam.vn/hanh-chinh/nguoi-thue-hay-cho-thue-phai-di-dang-ky-tam-tru-570-25585-article.html>). P2 suggestion: a per-lease `residence_registered` checkbox.
+
+Lease form defaults by unit, `LEASE_DEFAULTS` in `packages/core/src/lease/defaults.ts` (`[app rule]`, from the customs above). Rent starts at the unit's list rent and the deposit at that rent times the deposit months. Every default bills on day 0 of the period (`due_offset_days` 0), prorates a part-month first period by days, has the owner file tax and asks 30 days' notice.
+
+| Unit | Billed every | Deposit | Periods follow | Utilities |
+| --- | --- | --- | --- | --- |
+| Room | 1 month | 1 month | The lease start day, as rooming houses bill from move-in | Metered by the owner |
+| Apartment (the whole unit of an apartment) | 1 month | 2 months | Calendar months | Tenant pays directly |
+| Whole house or other whole property | 3 months | 2 months | Calendar months | Tenant pays directly |
+| Shop | 3 months | 2 months | Calendar months | Tenant pays directly |
+| Floor | 1 month | 2 months | Calendar months | Metered by the owner |
+| Lot | 12 months | 3 months | Calendar months | Tenant pays directly |
 
 ## 8. Personal data
 

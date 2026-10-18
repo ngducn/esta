@@ -1,6 +1,7 @@
 'use client';
 
 import { BILLING_CYCLES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS, UTILITIES_MODES, activationRefusals, type ActivationRefusal, type LeaseFormDefaults } from '@esta/core/lease';
+import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -52,6 +53,7 @@ export function LeaseForm({
   const [invalid, setInvalid] = useState<Invalid>(null);
   const [error, setError] = useState<FormError>(null);
   const [activating, setActivating] = useState(activateOnOpen && leaseId !== null);
+  const [more, setMore] = useState(false);
   const [pending, startTransition] = useTransition();
   const set = <K extends keyof LeaseFormValues>(key: K, value: LeaseFormValues[K]) => setValues((current) => ({ ...current, [key]: value }));
   const rentalHref = `/properties/${propertyId}/rental`;
@@ -163,6 +165,30 @@ export function LeaseForm({
               onChange={(cycle) => set('cycle', BILLING_CYCLES.find((months) => String(months) === cycle) ?? 1)}
             />
             <FormSelect
+              label={t('utilitiesField')}
+              testId="lease-utilities"
+              selectId="lease-utilities"
+              value={values.utilities}
+              options={option(UTILITIES_MODES, (mode) => t('utilities', { mode }))}
+              onChange={(mode) => set('utilities', UTILITIES_MODES.find((value) => value === mode) ?? 'tenant_direct')}
+            />
+          </div>
+        </Group>
+        <details
+          data-testid="lease-more"
+          open={more || invalid === 'escalationValue' || invalid === 'escalationEvery' || invalid === 'notice'}
+          onToggle={(event) => setMore(event.currentTarget.open)}
+          className="group rounded-lg border border-rule bg-surface shadow-card"
+        >
+          <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between gap-4 p-5 sm:px-6">
+            <span className="flex flex-col gap-0.5">
+              <span className="text-lead font-bold text-ink">{t('groupMore')}</span>
+              <span className="text-small text-ink-muted">{t('groupMoreHint')}</span>
+            </span>
+            <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-ink-muted transition-transform duration-(--duration-fast) group-open:rotate-180" />
+          </summary>
+          <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 sm:px-6 sm:pb-6">
+            <FormSelect
               label={t('anchorField')}
               testId="lease-anchor"
               selectId="lease-anchor"
@@ -213,18 +239,6 @@ export function LeaseForm({
                 />
               </>
             )}
-          </div>
-        </Group>
-        <Group title={t('groupOther')}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormSelect
-              label={t('utilitiesField')}
-              testId="lease-utilities"
-              selectId="lease-utilities"
-              value={values.utilities}
-              options={option(UTILITIES_MODES, (mode) => t('utilities', { mode }))}
-              onChange={(mode) => set('utilities', UTILITIES_MODES.find((value) => value === mode) ?? 'tenant_direct')}
-            />
             <FormSelect
               label={t('taxField')}
               selectId="lease-tax"
@@ -243,7 +257,7 @@ export function LeaseForm({
               onChange={(text) => set('noticeText', text)}
             />
           </div>
-        </Group>
+        </details>
         {error === null ? null : (
           <p role="alert" data-testid="form-error" className="text-body text-overdue">
             {{ invalid: t('errorInvalid'), notDraft: t('errorNotDraft'), network: t('errorNetwork') }[error]}
