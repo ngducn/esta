@@ -1,9 +1,9 @@
 'use client';
 
 import type { FieldDecision } from '@esta/core/extraction/acceptance';
-import { purposeAreaMismatch } from '@esta/core/extraction/area-check';
 import type { SchemaName } from '@esta/core/extraction/fields';
 import { formatArea } from '@esta/core/format';
+import { purposesMismatch } from '@esta/core/properties/area';
 import { CircleCheck, CloudOff, FileSearch, Images, Save } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -228,10 +228,12 @@ export function ReviewPanel({
             {sections.map((section) => {
               const mismatch =
                 section.list === 'parcels'
-                  ? purposeAreaMismatch(
-                      valueOf(`${section.key}.area_m2`),
-                      fields.filter((field) => field.path.startsWith(`${section.key}.purposes[`) && field.path.endsWith('.area_m2')).map((field) => valueOf(field.path)),
-                    )
+                  ? purposesMismatch({
+                      area_m2: valueOf(`${section.key}.area_m2`),
+                      purposes: fields
+                        .filter((field) => field.path.startsWith(`${section.key}.purposes[`) && field.path.endsWith('.area_m2'))
+                        .map((field) => ({ area_m2: valueOf(field.path) ?? undefined })),
+                    })
                   : null;
               const heading = `${section.key || 'root'}-heading`;
               return (

@@ -14,7 +14,6 @@ import {
   type Decisions,
   type PlanResult,
 } from './acceptance';
-import { purposeAreaMismatch, readArea } from './area-check';
 import { reviewFields } from './fields';
 
 const extraction: AcceptanceExtraction = {
@@ -280,15 +279,5 @@ describe('planUtilityBillAcceptance', () => {
     expect(planOf(result).acceptedFields['customer_code']).toEqual({ decision: 'accepted', value: 'PE0901000001' });
     const elsewhere = accounts.map((account) => ({ ...account, propertyId: '00000000-0000-4000-8000-0000000000b9' }));
     expect(tables(planUtilityBillAcceptance(bill, acceptAll(billFile.bill, 'utility_bill_v1'), { accounts: elsewhere }))).toEqual(['utility_accounts']);
-  });
-});
-
-describe('purposeAreaMismatch', () => {
-  it('flags a parcel whose purposes add up to another area, and nothing when they agree', () => {
-    expect(purposeAreaMismatch(125.5, [100, 20.5])).toEqual({ parcel: 125.5, purposes: 120.5 });
-    expect(purposeAreaMismatch(125.5, [100, 25.5])).toBeNull();
-    expect(purposeAreaMismatch(125.5, [null])).toBeNull();
-    expect(readArea('125,5 m²')).toBe(125.5);
-    expect(readArea('một trăm')).toBeNull();
   });
 });

@@ -4,6 +4,7 @@ import { INPUT_KINDS, readInput, type InputKind, type ReviewField } from '@esta/
 import { isIsoDate } from '@esta/core/date';
 import { formatArea, formatDate, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
+import type { AreaInputReason } from '@esta/core/properties/area';
 import { getLocale, getTranslations } from 'next-intl/server';
 
 /**
@@ -18,8 +19,8 @@ export type FieldView = {
   readonly marked: boolean;
   /** The value read, formatted; null when nothing was read. */
   readonly display: string | null;
-  /** False when the value read does not fit its kind, so it must be edited before it is accepted. */
-  readonly readable: boolean;
+  /** Why the value read does not fit its kind, so it must be edited before it is accepted; null when it fits. */
+  readonly refusal: AreaInputReason | null;
   /** The value read as the editor takes it: an ISO date for a date, an option value for a choice, else the text. */
   readonly editValue: string;
   readonly options: readonly { readonly value: string; readonly label: string }[] | null;
@@ -59,7 +60,7 @@ export async function fieldViews(fields: readonly ReviewField[], rootList: 'cert
       page: field.leaf?.page ?? null,
       marked: needsCheck(field),
       display: value !== null ? format(input, value) : parsed.ok ? null : String(raw),
-      readable: parsed.ok,
+      refusal: parsed.ok ? null : parsed.reason,
       editValue: parsed.ok ? editable(input, value) : String(raw ?? ''),
       options: options === null ? null : options.map((option) => ({ value: option, label: t('option', { kind: input, value: option }) })),
       area: typeof value === 'number' && input === 'area' ? value : null,

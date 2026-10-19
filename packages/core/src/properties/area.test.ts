@@ -31,7 +31,7 @@ describe('every screen and the assistant read an area the same way (DOMAIN-VN §
     ['12.345,67', 12345.67],
     ['1 255', 1255],
     ['', null],
-  ])('%j stores %s m² everywhere', (text, expected) => {
+  ])('%j reads as %s on every surface', (text, expected) => {
     const read = Object.fromEntries(Object.entries(SURFACES).map(([surface, parse]) => [surface, parse(text)]));
     expect(read).toEqual({ legalTab: expected, reviewScreen: expected, assistant: expected });
   });

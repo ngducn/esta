@@ -1,10 +1,10 @@
 'use client';
 
 import type { FieldDecision } from '@esta/core/extraction/acceptance';
-import { readArea } from '@esta/core/extraction/area-check';
 import type { InputKind } from '@esta/core/extraction/fields';
 import { isIsoDate } from '@esta/core/date';
 import { formatArea } from '@esta/core/format';
+import { parseAreaInput } from '@esta/core/properties/area';
 import { Check, Pencil, Undo2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
@@ -48,7 +48,9 @@ const EDITORS: Readonly<Record<InputKind, Editor>> = {
 
 /** The area the row would save, for the parcel's area-sum check: what Mẹ typed, else what was read. */
 export function rowArea(field: FieldView, decision: FieldDecision | undefined): number | null {
-  return decision?.kind === 'edited' ? readArea(decision.value) : field.area;
+  if (decision?.kind !== 'edited') return field.area;
+  const area = parseAreaInput(decision.value);
+  return area.ok ? area.value : null;
 }
 
 /** What the row shows: Mẹ's edit, shown the way a read value would be, else the value read. */
@@ -57,8 +59,8 @@ function shown(field: FieldView, decision: FieldDecision | undefined, locale: 'v
   const text = decision.value.trim();
   if (text === '') return null;
   if (field.input === 'area') {
-    const area = readArea(text);
-    return area === null ? text : formatArea(area, locale);
+    const area = parseAreaInput(text);
+    return area.ok ? formatArea(area.value, locale) : text;
   }
   if (field.input === 'land_use_code') return text.toUpperCase();
   return field.options?.find((option) => option.value === text)?.label ?? text;
@@ -90,9 +92,9 @@ export function ExtractionFieldRow({
   const { input, label, page } = field;
   const value = shown(field, decision, locale);
   const unknownCode = input === 'land_use_code' && value !== null && !landUseCodes.some((option) => option.code === value);
-  const unreadable = !field.readable && decision?.kind !== 'edited';
+  const unreadable = field.refusal !== null && decision?.kind !== 'edited';
   const editor = EDITORS[input];
-  const message = error !== null ? t(ROW_ERRORS[error]) : unreadable ? t('notReadable') : null;
+  const message = error !== null ? t(ROW_ERRORS[error]) : unreadable ? t('notReadable', { reason: field.refusal }) : null;
   const edit = (text: string) => onDecide({ kind: 'edited', value: text });
   const startText = decision?.kind === 'edited' ? decision.value : field.editValue;
 

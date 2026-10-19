@@ -1335,7 +1335,7 @@
     "page": "Trang {page}",
     "pageLabel": "Xem trang {page} của ảnh, nơi có {field}",
     "empty": "Trống",
-    "notReadable": "Giá trị đọc được chưa đúng dạng. Bấm Sửa để nhập lại.",
+    "notReadable": "{reason, select, too_precise {Diện tích chỉ ghi tới 2 số lẻ. Bấm Sửa để nhập lại.} other {Giá trị đọc được chưa đúng dạng. Bấm Sửa để nhập lại.}}",
     "invalidField": "Giá trị này chưa đúng dạng.",
     "outOfRangeField": "Số này nằm ngoài khoảng hợp lệ. Hãy kiểm tra lại.",
     "missingField": "Cần có trường này để lưu.",

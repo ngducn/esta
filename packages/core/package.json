@@ -11,7 +11,6 @@
     "./agent-schemas": "./src/agent-schemas/index.ts",
     "./extraction": "./src/extraction/score.ts",
     "./extraction/acceptance": "./src/extraction/acceptance.ts",
-    "./extraction/area-check": "./src/extraction/area-check.ts",
     "./extraction/confidence": "./src/extraction/confidence.ts",
     "./extraction/fields": "./src/extraction/fields.ts",
     "./auth": "./src/auth/index.ts",
