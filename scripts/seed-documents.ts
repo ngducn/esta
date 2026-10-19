@@ -13,7 +13,7 @@ const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
 /** The browser's `makePreviews` uses the same long sides, blur radius and review quality. */
 export const THUMB_SIZE = 320;
 export const BLUR_SIGMA = 24;
-export const REVIEW_SIZE = 1600;
+export const REVIEW_SIZE = 1024;
 
 const thumb = (bytes: Buffer) => sharp(bytes).rotate().resize(THUMB_SIZE, THUMB_SIZE, { fit: 'inside' });
 

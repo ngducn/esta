@@ -3,8 +3,11 @@ export const THUMB_SIZE = 320;
 /** The blur radius in CSS pixels at thumbnail size, as in `scripts/seed-documents.ts`. */
 export const BLUR_RADIUS = 24;
 const BLUR_SAMPLE = 12;
-/** The long side of the review copy, as in `scripts/seed-documents.ts`: a portrait page fills a phone at 3x. */
-export const REVIEW_SIZE = 1600;
+/**
+ * The long side of the review copy, as in `scripts/seed-documents.ts`: a portrait page fills a phone's review column at
+ * 2x, and zooming in loads the original for finer print.
+ */
+export const REVIEW_SIZE = 1024;
 const REVIEW_QUALITY = 0.75;
 
 export type Previews = { readonly thumb: Blob; readonly blurred: Blob; readonly review: Blob; readonly pageCount: number };
@@ -68,7 +71,7 @@ async function pdfSource(file: Blob): Promise<Source> {
 
 /**
  * From a photo, upright from its EXIF orientation, or from a PDF's first page: a 320 px WebP thumbnail, a blurred
- * variant, and a 1600 px review copy that the review screen shows until Mẹ zooms in. The blurred one is drawn from a
+ * variant, and a 1024 px review copy that the review screen shows until Mẹ zooms in. The blurred one is drawn from a
  * 12 px sample, so no detail of the clear image survives in it.
  */
 export async function makePreviews(file: Blob): Promise<Previews> {

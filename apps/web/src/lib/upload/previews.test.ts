@@ -36,7 +36,7 @@ async function rotatedPhoto(): Promise<string> {
   return jpeg.toString('base64');
 }
 
-test('an EXIF-rotated photo comes out upright as a 320 px thumbnail, a blurred variant that differs, and a 1600 px review copy', async () => {
+test('an EXIF-rotated photo comes out upright as a 320 px thumbnail, a blurred variant that differs, and a 1024 px review copy', async () => {
   const result = await page.evaluate(async (base64) => {
     const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
     type Made = { thumb: Blob; blurred: Blob; review: Blob };
