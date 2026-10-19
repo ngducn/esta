@@ -8,11 +8,13 @@ type Filter = (row: Row) => boolean;
 
 /**
  * An in-memory stand-in for the service client: filters, single reads, updates that mutate the rows in place, upserts
- * that honour `onConflict` with `ignoreDuplicates`, and Storage downloads from `files`.
+ * that honour `onConflict` with `ignoreDuplicates`, and Storage downloads from `files`. A write to a table named in
+ * `refuse` answers that table's error message and changes nothing, as RLS or a lost connection would.
  */
-export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], files: Record<string, Uint8Array> = {}): AgentDb {
+export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], files: Record<string, Uint8Array> = {}, refuse: Record<string, string> = {}): AgentDb {
   const from = (table: string) => {
     const all = (tables[table] ??= []);
+    const refusal = refuse[table] === undefined ? null : { message: refuse[table] };
     const filters: Filter[] = [];
     let head = false;
     let patch: Row | null = null;
@@ -51,7 +53,14 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
         return rows.length === 1 ? { data: rows[0], error: null } : { data: null, error: { message: `${rows.length} rows` } };
       },
       maybeSingle: async () => ({ data: run()[0] ?? null, error: null }),
+      insert: async (row: Row) => {
+        if (refusal !== null) return { error: refusal };
+        writes.push({ table, op: 'insert', row });
+        all.push({ ...row });
+        return { error: null };
+      },
       upsert: async (row: Row, options?: { onConflict?: string; ignoreDuplicates?: boolean }) => {
+        if (refusal !== null) return { error: refusal };
         const keys = options?.onConflict?.split(',') ?? ['id'];
         const existing = all.find((other) => keys.every((key) => other[key] === row[key]));
         writes.push({ table, op: 'upsert', row });
@@ -65,7 +74,8 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
           return { error: null };
         },
       }),
-      then<T>(resolve: (value: { data: Row[] | null; count: number; error: null }) => T) {
+      then<T>(resolve: (value: { data: Row[] | null; count: number | null; error: { message: string } | null }) => T) {
+        if (patch !== null && refusal !== null) return Promise.resolve({ data: null, count: null, error: refusal }).then(resolve);
         const rows = run();
         return Promise.resolve({ data: head ? null : rows, count: rows.length, error: null }).then(resolve);
       },
