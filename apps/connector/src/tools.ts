@@ -45,7 +45,7 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
 
   server.registerTool(
     'get_property',
-    { description: 'Read one property as its form shows it, with its units; every amount comes with a display string.', inputSchema: z.object({ id: z.uuid() }) },
+    { description: 'Read one property as its detail page shows it, with its kind details; every amount comes with a display string.', inputSchema: z.object({ id: z.uuid() }) },
     guarded('get_property', deps, async (ctx, { id }: { id: string }) => {
       const property = await getProperty(ctx, id);
       return property === null ? { data: { error: 'not_found' }, log: 'count=0', isError: true } : { data: property, log: 'count=1' };

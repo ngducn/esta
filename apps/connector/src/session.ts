@@ -1,7 +1,7 @@
 import type { Locale } from '@esta/core/format';
 import type { Result } from '@esta/core/result';
 import type { Database } from '@esta/db';
-import type { Db } from '@esta/ops';
+import { readMembership, type Db } from '@esta/ops';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import type { SecretStore } from './store';
@@ -30,18 +30,11 @@ export type Operator = { readonly userId: string; readonly householdId: string; 
 
 export type OperatorRefusal = 'signed_out' | 'no_household' | 'not_operator';
 
-/** The household the web app opens for this user (its first membership), and only when the user is its operator (CONNECTOR §3.3). */
+/** The household Esta opens for this user, and only when the user is its operator (CONNECTOR §3.3). */
 export async function currentOperator(db: Db): Promise<Result<Operator, OperatorRefusal>> {
   const { data: claims } = await db.auth.getClaims();
   if (claims === null) return { ok: false, reason: 'signed_out' };
-  const { data, error } = await db
-    .from('household_members')
-    .select('is_operator, household:households!inner(id, name, locale)')
-    .eq('user_id', claims.claims.sub)
-    .order('created_at')
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(`Reading the membership failed: ${error.message}`);
+  const data = await readMembership(db, claims.claims.sub);
   if (data === null) return { ok: false, reason: 'no_household' };
   if (!data.is_operator) return { ok: false, reason: 'not_operator' };
   return {

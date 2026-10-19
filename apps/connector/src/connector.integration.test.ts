@@ -1,6 +1,8 @@
 import { existsSync, mkdtempSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { formatVnd } from '@esta/core/format';
+import { vnd } from '@esta/core/money';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -82,12 +84,9 @@ describe('the connector over stdio, signed in as the household operator', () => 
     expect(ids).not.toContain(property(8, 'bao-loc'));
   });
 
-  it('shows every amount of a property beside its display string', async () => {
-    const { units } = z
-      .object({ units: z.array(z.object({ list_rent_vnd: z.number().nullable(), list_rent_display: z.string().nullable() })) })
-      .parse((await call(connector, 'get_property', { id: property(9, 'di-an') })).json());
-    expect(units.every((unit) => (unit.list_rent_vnd === null) === (unit.list_rent_display === null))).toBe(true);
-    expect(units.some((unit) => unit.list_rent_display?.endsWith('₫'))).toBe(true);
+  it('shows an amount in the kind details beside its display string', async () => {
+    const { kindDetails } = z.object({ kindDetails: z.record(z.string(), z.unknown()) }).parse((await call(connector, 'get_property', { id: property(9, 'thu-duc') })).json());
+    expect(kindDetails).toMatchObject({ management_fee_vnd: 1_200_000, management_fee_vnd_display: formatVnd(vnd(1_200_000), 'vi') });
   });
 
   it('finds a property by nickname without diacritics, and by its exact code first', async () => {
@@ -97,10 +96,9 @@ describe('the connector over stdio, signed in as the household operator', () => 
     expect(byCode[0]).toMatchObject({ id: property(9, 'di-an'), reasons: ['code'] });
   });
 
-  it("reads one property with its units, and refuses another household's property as not found", async () => {
-    const own = z.object({ id: z.string(), nickname: z.string(), units: z.array(z.object({ id: z.string() })) }).parse((await call(connector, 'get_property', { id: property(9, 'di-an') })).json());
-    expect(own.nickname).toBe('Dãy trọ Dĩ An');
-    expect(own.units.length).toBeGreaterThan(0);
+  it("reads one property, and refuses another household's property as not found", async () => {
+    const own = z.object({ id: z.string(), nickname: z.string(), unitCount: z.number() }).parse((await call(connector, 'get_property', { id: property(9, 'di-an') })).json());
+    expect(own).toMatchObject({ nickname: 'Dãy trọ Dĩ An', unitCount: 8 });
     const foreign = await call(connector, 'get_property', { id: property(8, 'di-an') });
     expect(foreign).toMatchObject({ isError: true, text: '{"error":"not_found"}' });
   });

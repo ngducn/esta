@@ -7,8 +7,8 @@ An MCP server that lets Claude Code on Ryan's Mac read the household's propertie
 | Tool | Returns |
 | --- | --- |
 | `list_properties` | Every property with its kind, use, legal status, addresses and unit count |
-| `get_property(id)` | One property as its form shows it, with its units |
-| `find_property(text)` | Properties whose nickname, code, current or certificate address, or pre-2025 ward, district and province names match, each with what matched |
+| `get_property(id)` | One property as its detail page shows it, with its kind details |
+| `find_property(text)` | The properties the property list's search finds for the same text, each with the field every word matched |
 | `resolve_address(text)` | The current ward and province for an address written with old names, best first |
 
 Every amount comes with a `_display` string in the household's locale, so Claude copies it rather than formatting money itself.
@@ -28,7 +28,7 @@ Every amount comes with a `_display` string in the household's locale, so Claude
    ESTA_SLOT=0 pnpm connector:login
    ```
 
-   The session goes to the macOS Keychain under the service `esta-connector`, one entry per Supabase URL. Set `ESTA_SESSION_FILE` to keep it in a file only you can read instead (the default on other systems is `~/.config/esta/connector-session.json`).
+   The session goes to the macOS Keychain under the service `esta-connector`, one entry per Supabase URL. Set `ESTA_SESSION_FILE` to keep it in a file only you can read instead, which is also the default on systems without the Keychain.
 
 3. Add the server to Claude Code, with the path of your checkout.
 
