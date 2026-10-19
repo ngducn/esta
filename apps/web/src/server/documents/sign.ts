@@ -1,10 +1,9 @@
 import 'server-only';
 import { reviewPath, thumbPath } from '@esta/core/documents';
+import { DOCUMENTS_BUCKET } from '@esta/ops';
 import { env } from '@/server/env';
 import { sameOrigin } from '@/server/supabase/same-origin';
 import { createSessionClient } from '@/server/supabase/server';
-
-export const DOCUMENTS_BUCKET = 'documents';
 
 type SignOptions = { readonly download?: boolean; readonly appOrigin?: boolean };
 

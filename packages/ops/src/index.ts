@@ -16,6 +16,15 @@ export {
   type PlanRequest,
 } from './batch';
 export { readClock, type ClockEnv } from './clock';
+export {
+  documentRegister,
+  documentRow,
+  documentsWithHash,
+  DOCUMENTS_BUCKET,
+  signDocumentUploads,
+  type DocumentSaved,
+  type NewDocument,
+} from './documents';
 export { dbRefusal, idSchema, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
 export type { Db } from './db';
 export { readMembership } from './member';
