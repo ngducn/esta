@@ -5,6 +5,7 @@ import { setClock } from './helpers/test-clock';
 import {
   acceptEvery,
   DESKTOP,
+  editField,
   fixture,
   followReadyNotice,
   noSidewaysScroll,
@@ -174,17 +175,25 @@ test('rule 4: with the worker stopped and its heartbeat six minutes old, the wiz
   await expect(page.getByTestId('extraction-field').first()).toBeVisible();
 });
 
-test('rule 5: Ryan adds the old Quận 3 sổ hồng; every current ward is offered, the chosen one is saved and the married couple own 50% each', async ({ page }) => {
+test('rule 5: Ryan adds the old Quận 3 sổ hồng; every current ward is offered, the chosen one is saved and the married couple own 50% each, not an older party of the same name', async ({ page }) => {
   await startWorker();
   await openNewHousehold(page, 'dark', DESKTOP);
   await page.goto('/properties/new');
   await expect(page.getByTestId('wizard-photo')).toBeVisible();
   await shot(page, 'p2-08-step-photo-1440x900-dark');
   const { propertyId } = await startWizard(page, { nickname: 'Nhà Lê Văn Sỹ Demo', kind: 'townhouse', photo: await fixture('so_hong_pre2009-scan').upload() });
+  const [household] = await serviceGet<{ household_id: string }[]>(page, `properties?id=eq.${propertyId}&select=household_id`);
+  const created = await page.request.post(`${rest}/parties`, {
+    headers: { ...e2eServiceHeaders(), 'content-type': 'application/json', prefer: 'return=representation' },
+    data: { household_id: household?.household_id, kind: 'individual', full_name: 'Phạm Minh Demo', tags: ['owner'] },
+  });
+  expect(created.ok(), await created.text()).toBe(true);
+  const [older] = (await created.json()) as { id: string }[];
   await expect(notice(page)).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await shot(page, 'p2-08-review-ready-1440x900-dark');
   await followReadyNotice(page);
   await expectAxeClean(page, 'step review');
+  await editField(page, 'holders[0].id_last4', '');
   await acceptEvery(page);
   await page.getByTestId('review-submit').click();
   await expect(page.getByTestId('address-confirm')).toBeVisible({ timeout: 15_000 });
@@ -216,6 +225,10 @@ test('rule 5: Ryan adds the old Quận 3 sổ hồng; every current ward is offe
   await expect(page.getByTestId('ownership-running-total')).toHaveText(/100%/);
   await finishFromOwners(page);
   await shot(page, 'p2-08-finish-1440x900-dark');
+  const [certificate] = await serviceGet<{ holder_party_ids: string[] }[]>(page, `certificates?property_id=eq.${propertyId}&select=holder_party_ids`);
+  const owners = await serviceGet<{ party_id: string }[]>(page, `ownership_shares?property_id=eq.${propertyId}&select=party_id`);
+  expect(certificate?.holder_party_ids, 'the holder without ID digits got a party of their own').not.toContain(older?.id);
+  expect(owners.map((owner) => owner.party_id).toSorted(), 'the owners are the holders the review linked').toEqual(certificate?.holder_party_ids.toSorted());
   await page.goto(`/properties/${propertyId}/legal`);
   await expect(page.getByTestId('owner-row')).toHaveCount(2);
   await expect(page.getByTestId('owner-named-mark')).toHaveCount(2);
