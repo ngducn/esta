@@ -2,22 +2,11 @@ import { expect, test, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { query } from '../scripts/db-checksum.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
-import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
-import { accessToken } from './helpers/session';
+import { memberCall, memberRest } from './helpers/auth-api';
+import { laneLease, laneLeasePath, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, settled, toast } from './helpers/wizard';
-
-const root = join(import.meta.dirname, '..');
-const slot = parseSlot(process.env.ESTA_SLOT);
-const env = slotEnv(root, slot);
-const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const NBSP = String.fromCharCode(160);
-const vnd = (text: string) => `${text}${NBSP}₫`;
-const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
-const seedLease = (lane: number, key: string, unit: number) => seedId(`seed:lease:lane-${lane}:${key}:${unit}`);
-const leasePath = (lane: number, key: string, unit: number) => `/properties/${propertyId(lane, key)}/rental/leases/${seedLease(lane, key, unit)}`;
+import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, settled, toast, vnd } from './helpers/wizard';
 
 // `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of the deposit settled after Phòng 7 left.
 const recording = process.env.ESTA_E2E_VIDEO === '1';
@@ -30,20 +19,6 @@ test.beforeEach(async ({ request }) => {
   await setClock(request, '2026-10-07T09:00:00+07:00');
 });
 
-async function call(page: Page, method: 'GET' | 'POST' | 'PATCH', path: string, data?: Record<string, unknown>) {
-  return page.request.fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    method,
-    headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}`, 'content-type': 'application/json', prefer: 'return=representation' },
-    ...(data === undefined ? {} : { data }),
-  });
-}
-
-async function rest<T>(page: Page, path: string, method: 'GET' | 'POST' | 'PATCH' = 'GET', data?: Record<string, unknown>): Promise<T> {
-  const response = await call(page, method, path, data);
-  expect(response.ok(), await response.text()).toBe(true);
-  return (await response.json()) as T;
-}
-
 const ledger = (page: Page) => page.getByTestId('deposit-ledger');
 const held = (page: Page) => ledger(page).getByTestId('deposit-held').locator('data');
 const entries = (page: Page) => ledger(page).getByTestId('deposit-entry');
@@ -54,8 +29,8 @@ const entries = (page: Page) => ledger(page).getByTestId('deposit-entry');
  * 1.500.000 ₫ and anything an earlier run applied, deducted or refunded is removed. Run against the slot's local stack only.
  */
 function owePartOfPhong7LastMonth() {
-  const workdir = slotWorkdir(root, slot);
-  const lease = seedLease(8, 'di-an', 7);
+  const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
+  const lease = laneLease(8, 'di-an', 7);
   const payment = seedId('seed:payment:lane-8:di-an:7:2026-08-16:1');
   query(workdir, `delete from public.deposit_entries where lease_id = '${lease}' and kind <> 'received' returning id`);
   query(
@@ -70,7 +45,7 @@ function owePartOfPhong7LastMonth() {
 
 test('rule 1: the ended Phòng 7 lease holds its 2.800.000 ₫ deposit in one received row, offers deduct and refund, and Tài sản shows the household total', async ({ page }) => {
   await open(page, 'ryan.lane7@demo.esta.test', 'dark', DESKTOP);
-  await page.goto(leasePath(7, 'di-an', 7));
+  await page.goto(laneLeasePath(7, 'di-an', 7));
   await expect(page.getByTestId('lease-status')).toHaveText('Đã kết thúc');
   await expect(held(page)).toHaveText(vnd('2.800.000'));
   await expect(entries(page)).toHaveCount(1);
@@ -91,7 +66,7 @@ test('rule 1: the ended Phòng 7 lease holds its 2.800.000 ₫ deposit in one re
 test('rule 2: Mẹ uses Phòng 7 deposit for the 1.300.000 ₫ the last month still owes, deducts 300.000 ₫ for paint with a note, and refunds the rest', async ({ page }) => {
   owePartOfPhong7LastMonth();
   await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
-  await page.goto(leasePath(8, 'di-an', 7));
+  await page.goto(laneLeasePath(8, 'di-an', 7));
   await expect(held(page)).toHaveText(vnd('2.800.000'));
   await expect(ledger(page).getByTestId('deposit-actions').getByRole('button')).toHaveText(['Trừ vào tiền thuê', 'Khấu trừ', 'Trả lại cọc']);
   await holdForRecording(page);
@@ -118,9 +93,9 @@ test('rule 2: Mẹ uses Phòng 7 deposit for the 1.300.000 ₫ the last month st
   await expect(applied).toContainText('Cho hóa đơn kỳ từ 16/08/2026');
   await expect(applied).toContainText(`−${vnd('1.300.000')}`);
   const lastInvoice = seedId('seed:invoice:lane-8:di-an:7:2026-08-16');
-  expect(await rest(page, `invoice_balances?id=eq.${lastInvoice}&select=outstanding_vnd,payment_status`)).toEqual([{ outstanding_vnd: 0, payment_status: 'paid' }]);
+  expect(await memberRest(page, 'GET', `invoice_balances?id=eq.${lastInvoice}&select=outstanding_vnd,payment_status`)).toEqual([{ outstanding_vnd: 0, payment_status: 'paid' }]);
   expect(
-    await rest(page, `payment_allocations?invoice_id=eq.${lastInvoice}&select=amount_vnd,payments(method,source,amount_vnd)&order=amount_vnd`),
+    await memberRest(page, 'GET', `payment_allocations?invoice_id=eq.${lastInvoice}&select=amount_vnd,payments(method,source,amount_vnd)&order=amount_vnd`),
   ).toEqual([
     { amount_vnd: 1_300_000, payments: { method: 'deposit', source: 'deposit_application', amount_vnd: 1_300_000 } },
     { amount_vnd: 1_500_000, payments: { method: 'bank_transfer', source: 'manual', amount_vnd: 1_500_000 } },
@@ -158,8 +133,8 @@ test('rule 2: Mẹ uses Phòng 7 deposit for the 1.300.000 ₫ the last month st
 
 test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet before saving, and by the database for a direct call or write', async ({ page }) => {
   await open(page, 'me.lane9@demo.esta.test', 'dark', PHONE);
-  const lease = seedLease(9, 'di-an', 7);
-  await page.goto(leasePath(9, 'di-an', 7));
+  const lease = laneLease(9, 'di-an', 7);
+  await page.goto(laneLeasePath(9, 'di-an', 7));
   await ledger(page).getByTestId('deposit-refunded').click();
   const sheet = page.getByTestId('deposit-sheet');
   const amount = sheet.getByRole('textbox', { name: 'Số tiền trả lại' });
@@ -169,7 +144,7 @@ test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet befor
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('refund-refused-390-dark.png') });
 
-  const refused = await call(page, 'POST', 'rpc/record_deposit_entry', {
+  const refused = await memberCall(page, 'POST', 'rpc/record_deposit_entry', {
     p_lease_id: lease,
     p_kind: 'refunded',
     p_amount_vnd: 2_800_001,
@@ -177,7 +152,7 @@ test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet befor
     p_idempotency_key: crypto.randomUUID(),
   });
   expect(await refused.json()).toMatchObject({ code: '23514', message: 'ESTA_DEPOSIT_EXCEEDS_HELD' });
-  const direct = await call(page, 'POST', 'deposit_entries', {
+  const direct = await memberCall(page, 'POST', 'deposit_entries', {
     household_id: seedId('seed:household:lane-9'),
     lease_id: lease,
     kind: 'refunded',
@@ -185,7 +160,7 @@ test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet befor
     on_date: '2026-10-07',
   });
   expect(direct.status()).toBe(403);
-  expect(await rest(page, `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: 2_800_000 }]);
+  expect(await memberRest(page, 'GET', `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: 2_800_000 }]);
 
   await amount.fill('2tr8');
   await expect(sheet.getByTestId('deposit-held-after')).toHaveText(`Sau khi lưu, còn giữ ${vnd('0')}`);
@@ -194,14 +169,14 @@ test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet befor
   await expect(sheet.getByTestId('deposit-error')).toHaveText('Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.');
   await page.screenshot({ path: test.info().outputPath('refund-offline-390-dark.png') });
   await page.unrouteAll();
-  expect(await rest(page, `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: 2_800_000 }]);
+  expect(await memberRest(page, 'GET', `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: 2_800_000 }]);
 });
 
 test('rule 4: an active lease takes another deposit payment, and the sheet refuses a date after today', async ({ page }) => {
   await open(page, 'ryan.lane9@demo.esta.test', 'light', DESKTOP);
-  const lease = seedLease(9, 'di-an', 1);
-  const [{ held_vnd: before }] = await rest<[{ held_vnd: number }]>(page, `lease_deposits?lease_id=eq.${lease}&select=held_vnd`);
-  await page.goto(leasePath(9, 'di-an', 1));
+  const lease = laneLease(9, 'di-an', 1);
+  const [{ held_vnd: before }] = await memberRest<[{ held_vnd: number }]>(page, 'GET', `lease_deposits?lease_id=eq.${lease}&select=held_vnd`);
+  await page.goto(laneLeasePath(9, 'di-an', 1));
   await expect(ledger(page).getByTestId('deposit-actions').getByRole('button')).toHaveText(['Nhận cọc', 'Trừ vào tiền thuê', 'Khấu trừ', 'Trả lại cọc']);
   await ledger(page).getByTestId('deposit-received').click();
   const sheet = page.getByTestId('deposit-sheet');
@@ -216,18 +191,18 @@ test('rule 4: an active lease takes another deposit payment, and the sheet refus
   await page.screenshot({ path: test.info().outputPath('receive-sheet-1440-light.png') });
   await sheet.getByTestId('deposit-save').click();
   await expect(toast(page)).toContainText(`Đã ghi nhận ${vnd('500.000')} tiền cọc.`);
-  expect(await rest(page, `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: before + 500_000 }]);
+  expect(await memberRest(page, 'GET', `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: before + 500_000 }]);
   await expect(page.locator('[data-testid="deposit-entry"]').last()).toContainText('Người thuê đóng thêm cọc Demo');
   await page.screenshot({ path: test.info().outputPath('received-1440-light.png'), fullPage: true });
 });
 
 test('rule 5: a new lease with nothing recorded shows the empty deposit, and Nhận cọc opens prefilled with the deposit its terms name', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
-  const property = propertyId(3, 'di-an');
-  const units = await rest<{ label: string }[]>(page, `units?property_id=eq.${property}&select=label`);
+  const property = laneProperty(3, 'di-an');
+  const units = await memberRest<{ label: string }[]>(page, 'GET', `units?property_id=eq.${property}&select=label`);
   const label = `Phòng ${Math.max(...units.map((unit) => Number(/^Phòng (\d+)$/.exec(unit.label)?.[1] ?? 0))) + 1}`;
-  const [unit] = await rest<{ id: string }[]>(page, 'units', 'POST', { household_id: seedId('seed:household:lane-3'), property_id: property, label, kind: 'room', list_rent_vnd: 3_000_000 });
-  const [lease] = await rest<{ id: string }[]>(page, 'leases', 'POST', {
+  const [unit] = await memberRest<{ id: string }[]>(page, 'POST', 'units', { household_id: seedId('seed:household:lane-3'), property_id: property, label, kind: 'room', list_rent_vnd: 3_000_000 });
+  const [lease] = await memberRest<{ id: string }[]>(page, 'POST', 'leases', {
     household_id: seedId('seed:household:lane-3'),
     property_id: property,
     unit_id: unit?.id,
@@ -237,7 +212,7 @@ test('rule 5: a new lease with nothing recorded shows the empty deposit, and Nh�
     rent_vnd: 3_000_000,
     deposit_vnd: 6_000_000,
   });
-  await rest(page, 'rpc/activate_lease', 'POST', { p_lease_id: lease?.id });
+  await memberRest(page, 'POST', 'rpc/activate_lease', { p_lease_id: lease?.id });
   await page.goto(`/properties/${property}/rental/leases/${lease?.id ?? ''}`);
   await expect(ledger(page)).toContainText('Chưa ghi nhận tiền cọc');
   await expect(ledger(page).getByTestId('deposit-actions').getByRole('button')).toHaveText(['Nhận cọc']);
@@ -259,10 +234,10 @@ test('rule 5: a new lease with nothing recorded shows the empty deposit, and Nh�
 test('rule 6: in English at 130% text, a long deduction note and every ledger row wrap without clipping', async ({ page }) => {
   await open(page, 'me.lane10@demo.esta.test', 'light', PHONE);
   const memberId = seedId('seed:member:me-lane-10');
-  const lease = seedLease(10, 'di-an', 6);
-  await rest(page, `household_members?id=eq.${memberId}`, 'PATCH', { locale: 'en', text_scale: 130 });
+  const lease = laneLease(10, 'di-an', 6);
+  await memberRest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'en', text_scale: 130 });
   try {
-    await rest(page, 'rpc/record_deposit_entry', 'POST', {
+    await memberRest(page, 'POST', 'rpc/record_deposit_entry', {
       p_lease_id: lease,
       p_kind: 'deduction',
       p_amount_vnd: 150_000,
@@ -270,7 +245,7 @@ test('rule 6: in English at 130% text, a long deduction note and every ledger ro
       p_idempotency_key: crypto.randomUUID(),
       p_note: 'Thay bóng đèn, sửa vòi nước và vệ sinh lại máy lạnh phòng sau khi người thuê báo hỏng vào cuối tuần trước, có hóa đơn của thợ Demo',
     });
-    await page.goto(leasePath(10, 'di-an', 6));
+    await page.goto(laneLeasePath(10, 'di-an', 6));
     await expect(ledger(page).getByRole('heading')).toHaveText('Deposit');
     await expect(page.locator('[data-testid="deposit-entry"][data-kind="deduction"]').last()).toContainText('Deducted');
     const clipped = await entries(page).evaluateAll((rows) => rows.filter((row) => row.scrollWidth > row.clientWidth).length);
@@ -280,6 +255,6 @@ test('rule 6: in English at 130% text, a long deduction note and every ledger ro
     await ledger(page).scrollIntoViewIfNeeded();
     await page.screenshot({ path: test.info().outputPath('long-note-en-130-390-light.png') });
   } finally {
-    await rest(page, `household_members?id=eq.${memberId}`, 'PATCH', { locale: 'vi', text_scale: 100 });
+    await memberRest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'vi', text_scale: 100 });
   }
 });

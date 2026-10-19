@@ -1,20 +1,15 @@
 import { deriveDepositLedger } from '@esta/core/allocation';
-import type { Database } from '@esta/db';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { clearMailbox, latestCode } from '../../../../../scripts/inbucket-code.ts';
+import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
 // 2026-10-07; run against a fresh `pnpm db:reset`. Every write uses lane 6's Kho Biên Hòa lease, whose deposit the seed
 // already refunded, so the lane households other specs read keep the seed's deposits.
-const { ESTA_IT_SUPABASE_URL: url, ESTA_IT_ANON_KEY: anonKey, ESTA_IT_MAILBOX: api } = z
-  .object({ ESTA_IT_SUPABASE_URL: z.url(), ESTA_IT_ANON_KEY: z.string().min(1), ESTA_IT_MAILBOX: z.url() })
-  .parse(process.env);
-const EMAIL = 'ryan.lane6@demo.esta.test';
+
 // seedId('seed:household:lane-6'), supabase/seed/README.md
 const HOUSEHOLD = '7a44c0c3-e063-5cf0-b56d-c33c5f915ddd';
-const client: SupabaseClient<Database> = createClient<Database>(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+const { client, signIn } = memberClient('ryan.lane6@demo.esta.test');
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
@@ -27,11 +22,7 @@ const { loadDepositLines, loadHeldDepositTotal } = await import('@/server/leases
 let leaseId = '';
 
 beforeAll(async () => {
-  await clearMailbox(EMAIL, { api });
-  const sent = await client.auth.signInWithOtp({ email: EMAIL, options: { shouldCreateUser: false } });
-  if (sent.error) throw sent.error;
-  const verified = await client.auth.verifyOtp({ email: EMAIL, token: await latestCode(EMAIL, { api }), type: 'email' });
-  if (verified.error) throw verified.error;
+  await signIn();
   const lease = await client.from('leases').select('id').eq('household_id', HOUSEHOLD).eq('status', 'ended').eq('deposit_vnd', 24_000_000).single();
   if (lease.error) throw lease.error;
   leaseId = lease.data.id;
