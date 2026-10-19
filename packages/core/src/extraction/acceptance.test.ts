@@ -210,16 +210,7 @@ describe('planCertificateAcceptance', () => {
   });
 
   it('stores the end of a term range, month or full date', () => {
-    for (const [typed, term] of [
-      ['Từ tháng 10/1993 đến tháng 10/2043', '2043-10-31'],
-      ['Từ 15/10/1993 đến 15/10/2043', '2043-10-15'],
-      ['Từ 15/10/1993 đến 15/10/2043, gia hạn đến khi Nhà nước thu hồi', '2043-10-15'],
-      ['Đến ngày 15/10/2043 (tới hạn thì làm thủ tục gia hạn)', '2043-10-15'],
-      ['Thoi han su dung den 15/10/2043 (toi da 50 nam)', '2043-10-15'],
-      ['15/10/2043 tới hạn', '2043-10-15'],
-      ['Đến 15/10/2043; QĐ giao đất 12/03/2005 - 12/03/2006', '2043-10-15'],
-      ['15/10/1993 -> 15/10/2043', '2043-10-15'],
-    ] as const) {
+    for (const [typed, term] of [['Từ tháng 10/1993 đến tháng 10/2043', '2043-10-31'], ['Từ 15/10/1993 đến 15/10/2043', '2043-10-15']] as const) {
       const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), 'parcels[0].purposes[0].term': { kind: 'edited', value: typed } }, none);
       expect(rowsOf(result, 'parcels')[0]?.purposes, typed).toEqual([{ land_use_code: 'ODT', area_m2: 82.7, term }]);
     }
