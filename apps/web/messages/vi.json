@@ -1293,7 +1293,7 @@
     "qrAccountNo": "Số tài khoản",
     "qrAccountName": "Chủ tài khoản",
     "qrAssumption": "Giả định",
-    "qrSplitNote": "Số tiền từ 500 triệu đồng trở lên. Mã QR không kèm số tiền, hãy chia thành nhiều lần chuyển.",
+    "qrSplitNote": "Số tiền từ {cap} trở lên. Mã QR không kèm số tiền, hãy chia thành nhiều lần chuyển.",
     "qrSave": "Lưu ảnh",
     "qrSaveFailed": "Chưa lưu được ảnh. Thử lại.",
     "qrClose": "Đóng",

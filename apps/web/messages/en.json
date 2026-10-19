@@ -1293,7 +1293,7 @@
     "qrAccountNo": "Account number",
     "qrAccountName": "Account holder",
     "qrAssumption": "Assumption",
-    "qrSplitNote": "The amount is 500 million dong or more. The QR code carries no amount, so split it into several transfers.",
+    "qrSplitNote": "The amount is {cap} or more. The QR code carries no amount, so split it into several transfers.",
     "qrSave": "Save image",
     "qrSaveFailed": "The image was not saved. Try again.",
     "qrClose": "Close",

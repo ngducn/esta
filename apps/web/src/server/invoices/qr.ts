@@ -1,8 +1,8 @@
 import 'server-only';
 import { formatVnd, vndInWords, type Locale } from '@esta/core/format';
 import type { Vnd } from '@esta/core/money';
-import { buildInvoiceQr, invoiceMemo, type ReceivingAccount } from '@esta/core/vietqr';
-import { getTranslations } from 'next-intl/server';
+import { buildInvoiceQr, invoiceMemo, VIETQR_RULES, type ReceivingAccount } from '@esta/core/vietqr';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import type { QrSheetLabels } from '@/components/invoices/QrSheet';
 import { createSessionClient } from '@/server/supabase/server';
@@ -15,8 +15,8 @@ export type InvoiceQrView = {
   readonly payload: string;
   readonly number: string;
   readonly amountText: string;
-  /** At or above the NAPAS 247 cap the code carries no amount, so the words and the split note stand in. */
-  readonly split: { readonly amountWords: string; readonly capText: string } | null;
+  /** At or above the NAPAS 247 cap the code carries no amount, so the amount in words and the split note stand in. */
+  readonly amountWords: string | null;
   readonly memo: string;
   readonly bankName: string;
   readonly accountNo: string;
@@ -49,7 +49,7 @@ export function invoiceQrView(invoice: QrSource, account: ReceivingAccountView |
     payload: qr.payload,
     number: invoice.number,
     amountText: formatVnd(invoice.outstandingVnd, locale),
-    split: qr.amountInQr ? null : { amountWords: vndInWords(invoice.outstandingVnd, locale), capText: formatVnd(qr.splitNote.capVnd, locale) },
+    amountWords: qr.amountInQr ? null : vndInWords(invoice.outstandingVnd, locale),
     memo: invoiceMemo(invoice.memoCode),
     bankName: account.bankName,
     accountNo: account.accountNo,
@@ -81,7 +81,7 @@ export async function loadBoardQrs(householdId: string, rows: readonly BoardRow[
 
 /** The QR sheet's and the bill's words, translated on the server and handed to the client sheet as props. */
 export async function loadQrLabels(): Promise<QrSheetLabels> {
-  const t = await getTranslations('invoices');
+  const [t, locale] = await Promise.all([getTranslations('invoices'), getLocale()]);
   return {
     code: t('qrCode'),
     amount: t('qrAmount'),
@@ -91,7 +91,7 @@ export async function loadQrLabels(): Promise<QrSheetLabels> {
     accountNo: t('qrAccountNo'),
     accountName: t('qrAccountName'),
     assumption: t('qrAssumption'),
-    splitNote: t('qrSplitNote'),
+    splitNote: t('qrSplitNote', { cap: formatVnd(VIETQR_RULES.singleTransferCapVnd, locale) }),
     save: t('qrSave'),
     saveFailed: t('qrSaveFailed'),
     close: t('qrClose'),

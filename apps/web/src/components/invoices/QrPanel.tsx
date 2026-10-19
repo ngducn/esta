@@ -40,9 +40,9 @@ export function QrPanel({ qr, matrix, labels }: { qr: InvoiceQrView; matrix: QrM
         <Fact label={labels.amount} testId="qr-amount">
           <span className="figures text-h3 font-bold">{qr.amountText}</span>
         </Fact>
-        {qr.split === null ? null : (
+        {qr.amountWords === null ? null : (
           <Fact label={labels.amountWords} testId="qr-amount-words">
-            {qr.split.amountWords}
+            {qr.amountWords}
           </Fact>
         )}
         <Fact label={labels.memo} testId="qr-memo">
@@ -58,7 +58,7 @@ export function QrPanel({ qr, matrix, labels }: { qr: InvoiceQrView; matrix: QrM
           {qr.accountName}
         </Fact>
       </dl>
-      {qr.split === null ? null : (
+      {qr.amountWords === null ? null : (
         <p data-testid="qr-split-note" className="rounded-md border border-rule bg-surface-2 p-3 text-body text-ink">
           <span className="mr-2 inline-flex rounded-full bg-due-fill px-2.5 py-0.5 text-small font-semibold text-due">{labels.assumption}</span>
           {labels.splitNote}
