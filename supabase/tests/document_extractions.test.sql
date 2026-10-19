@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(36);
+select plan(40);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -106,12 +106,16 @@ select lives_ok($$ update public.document_extractions set status = 'accepted', a
 select throws_ok($$ update public.document_extractions set status = 'rejected' $$, '23514', null, 'accepted is final');
 select throws_ok($$ update public.document_extractions set accepted_fields = '{"notes_text": "Demo 079062118340"}' $$, '23514', null,
   'a reviewed value cannot hold a 12-digit run either');
+select lives_ok($$ update public.document_extractions set accepted_fields = '{"notes_text": {"decision": "edited", "value": "CCCD 079062118340"}}' $$,
+  'a value Mẹ typed is kept as typed, a full ID included (D11, amended 2026-10-19)');
+select throws_ok($$ update public.document_extractions set accepted_fields = '{"notes_text": {"decision": "accepted", "value": "Demo 079062118340"}}' $$, '23514', null,
+  'a value the assistant read and Mẹ accepted unchanged still cannot hold a full ID');
 
 select tests.clear_request();
 reset role;
 select is(
   (select count(*)::int from public.audit_log where table_name = 'document_extractions' and row_id = :'extraction_a'),
-  5, 'every change to the extraction is audited, and a rewrite with the same result adds no row');
+  6, 'every change to the extraction is audited, and a rewrite with the same result adds no row');
 select throws_ok(
   format($$ insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
     values (%L, 'document_extractions', %L, 'update', 'system', 'test', '{"result": {"old": null, "new": {"x": "079062118340"}}}') $$, :'a', :'extraction_a'),
@@ -120,6 +124,16 @@ select lives_ok(
   format($$ insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
     values (%L, 'leases', %L, 'update', 'system', 'test', '{"bank_account": {"old": null, "new": "079062118340"}}') $$, :'a', :'extraction_a'),
   'the guard reads only extractions, so a 12-digit bank account elsewhere is kept');
+select lives_ok(
+  format($$ insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
+    values (%L, 'document_extractions', %L, 'update', 'system', 'test',
+      '{"accepted_fields": {"old": null, "new": {"issued_by": {"decision": "edited", "value": "CCCD 079062118340"}}}}') $$, :'a', :'extraction_a'),
+  'an extraction''s audit diff keeps a typed value as typed');
+select throws_ok(
+  format($$ insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
+    values (%L, 'document_extractions', %L, 'update', 'system', 'test',
+      '{"accepted_fields": {"old": {"issued_by": {"decision": "accepted", "value": "Demo 079062118340"}}, "new": null}}') $$, :'a', :'extraction_a'),
+  '23514', null, 'an extraction''s audit diff cannot hold a full ID the assistant read, old or new');
 
 select * from finish();
 rollback;

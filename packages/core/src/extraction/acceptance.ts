@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import { certificateSchema, newParcelSchema, PARCEL_UNIDENTIFIED, type parcelSchema, structureSchema } from '../schemas/legal';
 import { utilityAccountSchema } from '../schemas/units';
-import { readInput, reviewFields, withinLeafBounds, type ReviewField } from './fields';
+import { INPUT_KINDS, readInput, reviewFields, withinLeafBounds, type ReviewField } from './fields';
 import type { SchemaName } from './required-fields';
 import { uuidV5 } from './uuid-v5';
 
@@ -86,7 +86,7 @@ type Decided = {
   readonly outOfRange: readonly string[];
 };
 
-/** Reads every decided field as its kind, as the review shows it. */
+/** Reads every decided field as its kind: a value read as the review shows it, a typed one as typed (D11). */
 function decide(schemaName: SchemaName, result: unknown, decisions: Decisions): Decided {
   const fields = reviewFields(schemaName, result);
   const values = new Map<string, Value>();
@@ -96,7 +96,8 @@ function decide(schemaName: SchemaName, result: unknown, decisions: Decisions): 
   for (const field of fields) {
     const decision = decisions[field.path];
     if (decision === undefined) continue;
-    const parsed = readInput(field.descriptor.input, decision.kind === 'edited' ? decision.value : (field.leaf?.value ?? null));
+    const { input } = field.descriptor;
+    const parsed = decision.kind === 'edited' ? INPUT_KINDS[input].parse(decision.value) : readInput(input, field.leaf?.value ?? null);
     if (!parsed.ok) {
       invalid.push(field.path);
       continue;
@@ -145,27 +146,15 @@ function finish(collected: Collected, decided: Decided): PlanResult {
   return { ok: true, plan: { steps: collected.steps, acceptedFields: decided.acceptedFields } };
 }
 
-const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu;
-
-/** Every string and number in a row but the UUIDs that key the rows, which the ID rule would misread. */
-function scalars(node: unknown): (string | number)[] {
-  if (typeof node === 'number') return [node];
-  if (typeof node === 'string') return UUID.test(node) ? [] : [node];
-  return typeof node === 'object' && node !== null ? Object.values(node).flatMap(scalars) : [];
-}
-
-/** One value a plan writes, and the field it came from; null when no decided field holds it, such as a party's tag. */
-export type PlannedValue = { readonly path: string | null; readonly value: string | number };
+/** One value a plan keeps as the assistant read it, and the field it came from. */
+export type ReadValue = { readonly path: string; readonly value: string | number };
 
 /**
- * Every value a plan writes, into `accepted_fields` and into its rows, for the database to judge against SPEC D11 by the
- * extraction CHECK's own rule before anything is written.
+ * The values a plan keeps as the assistant read them, for the database to judge by the `accepted_fields` CHECK's own
+ * rule (SPEC D11) before anything is written. A typed value is kept as typed and not judged.
  */
-export function plannedValues(plan: AcceptancePlan): PlannedValue[] {
-  const decided = Object.entries(plan.acceptedFields).flatMap(([path, { value }]) => (typeof value === 'boolean' ? [] : [{ path, value }]));
-  const pathOf = new Map<string | number, string>();
-  for (const { path, value } of decided) if (!pathOf.has(value)) pathOf.set(value, path);
-  return [...decided, ...scalars(plan.steps).map((value) => ({ path: pathOf.get(value) ?? null, value }))];
+export function readValues(plan: AcceptancePlan): ReadValue[] {
+  return Object.entries(plan.acceptedFields).flatMap(([path, { decision, value }]) => (decision === 'accepted' && typeof value !== 'boolean' ? [{ path, value }] : []));
 }
 
 /**

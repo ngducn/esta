@@ -269,10 +269,11 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     }
   }, 60_000);
 
-  test('an ID that reads as one only once its spaces are squeezed is stored by its last four digits, typed or read (D11)', async () => {
+  test('an ID that reads as one only once its spaces are squeezed is stored by its last four digits when read, and as typed when typed (D11)', async () => {
     asMember();
     const [origin, label] = NATIONAL_ID_VECTORS.squeezed;
     if (origin === undefined || label === undefined) throw new Error('squeezed vectors');
+    const asTyped = (text: string) => text.replace(/\s+/gu, ' ').trim();
     const typed = await waitingExtraction();
     const decisions = { ...acceptAll, 'parcels[0].origin_text': { kind: 'edited', value: origin[1] }, issued_by: { kind: 'edited', value: label[1] } };
     const certificate = truthFile.certificate;
@@ -281,32 +282,32 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
       reduceNationalIds({ ...certificate, parcels: [{ ...certificate.parcels[0], origin_text: { ...certificate.parcels[0]?.origin_text, value: origin[1] } }] }),
     );
     const saves = [
-      { extractionId: typed.extractionId, decisions, issuedBy: label[2] },
-      { extractionId: read.extractionId, decisions: acceptAll, issuedBy: certificate.issued_by.value },
+      { extractionId: typed.extractionId, decisions, issuedBy: asTyped(label[1]), originText: asTyped(origin[1]) },
+      { extractionId: read.extractionId, decisions: acceptAll, issuedBy: certificate.issued_by.value, originText: origin[2] },
     ];
-    for (const { extractionId, decisions: decided, issuedBy } of saves) {
+    for (const { extractionId, decisions: decided, issuedBy, originText } of saves) {
       expect(await saveExtractionReview(extractionId, decided)).toEqual({ ok: true, propertyId });
       const rows = [rowId(extractionId, 'certificate'), rowId(extractionId, 'parcels[0]')];
       expect(await service(`certificates?id=eq.${rows[0]}&select=issued_by`)).toEqual([{ issued_by: issuedBy }]);
-      expect(await service(`parcels?id=eq.${rows[1]}&select=origin_text`)).toEqual([{ origin_text: origin[2] }]);
-      const audit = await service<unknown[]>(`audit_log?row_id=in.(${rows.join(',')})&select=diff`);
-      expect(audit.length).toBeGreaterThanOrEqual(2);
-      expect(JSON.stringify(audit)).not.toMatch(/\d{6} \d{6}|CCCD \d{9}/u);
+      expect(await service(`parcels?id=eq.${rows[1]}&select=origin_text`)).toEqual([{ origin_text: originText }]);
     }
+    const audit = await service<unknown[]>(`audit_log?row_id=in.(${[rowId(read.extractionId, 'certificate'), rowId(read.extractionId, 'parcels[0]')].join(',')})&select=diff`);
+    expect(audit.length).toBeGreaterThanOrEqual(2);
+    expect(JSON.stringify(audit)).not.toMatch(/\d{6} \d{6}|CCCD \d{9}/u);
   });
 
-  test('a number typed with an ID in it, or past its bounds, is refused before anything is written (D11)', async () => {
+  test('a number typed past its bounds is refused before anything is written, an ID-like run read as the number typed', async () => {
     asMember();
     const parties = await count(`parties?household_id=eq.${household}&select=id`);
     const cases = [
-      { path: 'parcels[0].area_m2', value: '9999999999,99', reason: 'invalid' },
-      { path: 'parcels[0].area_m2', value: '001123456789', reason: 'invalid' },
-      { path: 'structures[0].floor_area_m2', value: '0791234567,89', reason: 'invalid' },
-      { path: 'parcels[0].area_m2', value: '123456789', reason: 'out_of_range' },
+      { path: 'parcels[0].area_m2', value: '9999999999,99' },
+      { path: 'parcels[0].area_m2', value: '001123456789' },
+      { path: 'structures[0].floor_area_m2', value: '0791234567,89' },
+      { path: 'parcels[0].area_m2', value: '123456789' },
     ];
-    for (const { path, value, reason } of cases) {
+    for (const { path, value } of cases) {
       const { extractionId } = await waitingExtraction();
-      expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value } }), value).toEqual({ ok: false, reason, paths: [path] });
+      expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value } }), value).toEqual({ ok: false, reason: 'out_of_range', paths: [path] });
       expect(await written(extractionId), value).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
       expect(await service(`document_extractions?id=eq.${extractionId}&select=status`), value).toEqual([{ status: 'needs_review' }]);
     }
@@ -322,19 +323,23 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     }
   }, 30_000);
 
-  test('a value the database would refuse as a full ID is refused by the database before anything is written, naming the field (D11)', async () => {
+  test('a full ID Mẹ types on the review screen is saved as typed, in the rows, the review record and its history (D11)', async () => {
     asMember();
-    const parties = await count(`parties?household_id=eq.${household}&select=id`);
     const [, nextLine] = NATIONAL_ID_VECTORS.refused.find(([name]) => name.startsWith('a next-line')) ?? [];
     const cases = [
       ...NATIONAL_ID_VECTORS.refused.map(([name, text]) => ({ name, path: 'parcels[0].origin_text', text })),
       { name: 'the issuer with a next-line character', path: 'issued_by', text: nextLine ?? '' },
+      { name: 'a bare CCCD in the issuer', path: 'issued_by', text: 'CCCD 079184001776' },
     ];
     for (const { name, path, text } of cases) {
       const { extractionId } = await waitingExtraction();
-      expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value: text } }), name).toEqual({ ok: false, reason: 'national_id', paths: [path] });
-      expect(await written(extractionId), name).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
-      expect(await service(`document_extractions?id=eq.${extractionId}&select=status,accepted_fields`), name).toEqual([{ status: 'needs_review', accepted_fields: null }]);
+      const typed = text.normalize('NFC').replace(/\s+/gu, ' ').trim();
+      expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value: text } }), name).toEqual({ ok: true, propertyId });
+      const [review] = await service<{ status: string; accepted_fields: Record<string, unknown> }[]>(`document_extractions?id=eq.${extractionId}&select=status,accepted_fields`);
+      expect(review?.status, name).toBe('accepted');
+      expect(review?.accepted_fields[path], name).toEqual({ decision: 'edited', value: typed });
+      const row = path === 'issued_by' ? await service(`certificates?id=eq.${rowId(extractionId, 'certificate')}&select=issued_by`) : await service(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=origin_text`);
+      expect(row, name).toEqual([path === 'issued_by' ? { issued_by: typed } : { origin_text: typed }]);
     }
   }, 60_000);
 

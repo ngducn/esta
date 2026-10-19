@@ -7,7 +7,7 @@ import { NATIONAL_ID_VECTORS } from '../agent-schemas/national-id-vectors';
 import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
 import {
   planCertificateAcceptance,
-  plannedValues,
+  readValues,
   planUtilityBillAcceptance,
   rowId,
   type AcceptanceExtraction,
@@ -122,7 +122,7 @@ describe('planCertificateAcceptance', () => {
     expect(rowsOf(result, 'certificates')[0]?.holder_party_ids).toEqual([existing.id, rowId(extraction.id, 'holders[1]')]);
   });
 
-  it('puts no full national ID in any planned row or accepted field (DOC-6, D11)', () => {
+  it('keeps a full ID typed in a text field as typed, and only the last four in the holder ID field (DOC-6, D11)', () => {
     const result = planCertificateAcceptance(
       extraction,
       {
@@ -133,11 +133,10 @@ describe('planCertificateAcceptance', () => {
       },
       none,
     );
-    const text = JSON.stringify(planOf(result)).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, 'uuid');
-    expect(text).toContain('CCCD 1776');
-    expect(text).not.toMatch(/\d{9}/);
-    expect(text).not.toMatch(/\d{3} \d{3} \d{3}/);
-    expect(rowsOf(result, 'parties')[0]?.id_last4).toBe('1776');
+    expect(rowsOf(result, 'parties')[0]).toMatchObject({ id_last4: '1776', address_text: 'CCCD 079184001776, phường An Phú' });
+    expect(rowsOf(result, 'parcels')[0]?.origin_text).toBe('Nhận chuyển nhượng từ ông Demo, số định danh 079 184 001 777');
+    expect(planOf(result).acceptedFields['holders[0].address_text']).toEqual({ decision: 'edited', value: 'CCCD 079184001776, phường An Phú' });
+    expect(planOf(result).acceptedFields['holders[0].id_last4']).toEqual({ decision: 'edited', value: '1776' });
   });
 
   it('plans every field of each of the 16 certificate truths accepted as read', () => {
@@ -157,7 +156,8 @@ describe('planCertificateAcceptance', () => {
     ]);
   });
 
-  it.each(NATIONAL_ID_VECTORS.squeezed)('stores the shared vector %s by its last four digits, typed or read (D11)', (_name, text, stored) => {
+  it.each(NATIONAL_ID_VECTORS.squeezed)('stores the shared vector %s by its last four digits when read, and as typed when typed (D11)', (_name, text, stored) => {
+    const asTyped = text.replace(/\s+/gu, ' ').trim();
     const typed = planCertificateAcceptance(
       extraction,
       { ...acceptAll(extraction.result), issued_by: { kind: 'edited', value: text }, 'parcels[0].origin_text': { kind: 'edited', value: text } },
@@ -170,24 +170,24 @@ describe('planCertificateAcceptance', () => {
       parcels: [{ ...certificate.parcels[0], origin_text: { ...certificate.parcels[0]?.origin_text, value: text } }],
     });
     const accepted = planCertificateAcceptance({ ...extraction, result: read }, acceptAll(read), none);
-    for (const result of [typed, accepted]) {
-      expect(rowsOf(result, 'certificates')[0]?.issued_by).toBe(stored);
-      expect(rowsOf(result, 'parcels')[0]?.origin_text).toBe(stored);
-      expect(planOf(result).acceptedFields.issued_by?.value).toBe(stored);
-      expect(planOf(result).acceptedFields['parcels[0].origin_text']?.value).toBe(stored);
+    for (const [result, value] of [[typed, asTyped], [accepted, stored]] as const) {
+      expect(rowsOf(result, 'certificates')[0]?.issued_by).toBe(value);
+      expect(rowsOf(result, 'parcels')[0]?.origin_text).toBe(value);
+      expect(planOf(result).acceptedFields.issued_by?.value).toBe(value);
+      expect(planOf(result).acceptedFields['parcels[0].origin_text']?.value).toBe(value);
     }
+    expect(asTyped).not.toBe(stored);
   });
 
   it.each([
     ['parcels[0].area_m2', '0791234567,89'],
     ['parcels[0].area_m2', '001123456789'],
     ['parcels[0].area_m2', '9999999999,99'],
-    ['parcels[0].purposes[0].area_m2', '0011234567,89'],
     ['structures[0].floor_area_m2', '001123456789'],
     ['structures[0].footprint_m2', '0791234567,89 m²'],
-  ])('refuses %s typed as %s, an ID, and plans nothing (D11)', (path, value) => {
+  ])('reads %s typed as %s as the number typed, refused past its bounds (D11)', (path, value) => {
     const result = planCertificateAcceptance(extraction, { ...acceptAll(extraction.result), [path]: { kind: 'edited', value } }, none);
-    expect(result).toEqual({ ok: false, reason: 'invalid', paths: [path] });
+    expect(result).toEqual({ ok: false, reason: 'out_of_range', paths: [path] });
   });
 
   it.each([
@@ -216,7 +216,7 @@ describe('planCertificateAcceptance', () => {
     }
   });
 
-  it('lists every value a plan writes with the field it came from, for the database to judge, row ids left out (D11)', () => {
+  it('lists only the values the assistant read, each with its field, for the database to judge (D11)', () => {
     const [[, origin], [, issuer]] = [NATIONAL_ID_VECTORS.refused[0] ?? ['', ''], NATIONAL_ID_VECTORS.refused[3] ?? ['', '']];
     const plan = planOf(
       planCertificateAcceptance(
@@ -225,12 +225,12 @@ describe('planCertificateAcceptance', () => {
         none,
       ),
     );
-    const values = plannedValues(plan);
-    expect(values).toContainEqual({ path: 'parcels[0].origin_text', value: origin });
-    expect(values).toContainEqual({ path: 'issued_by', value: issuer });
+    const values = readValues(plan);
     expect(values).toContainEqual({ path: 'parcels[0].area_m2', value: 82.7 });
-    expect(values.filter(({ value }) => value === origin).every(({ path }) => path === 'parcels[0].origin_text')).toBe(true);
+    expect(values.map(({ path }) => path)).not.toContain('parcels[0].origin_text');
+    expect(values.map(({ path }) => path)).not.toContain('issued_by');
     expect(values.some(({ value }) => value === extraction.id || value === rowId(extraction.id, 'certificate'))).toBe(false);
+    expect(plan.acceptedFields['parcels[0].origin_text']).toEqual({ decision: 'edited', value: origin.replace(/\s+/gu, ' ').trim() });
   });
 
   it('plans a manual entry from typed values alone', () => {
