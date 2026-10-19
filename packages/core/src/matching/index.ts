@@ -4,7 +4,6 @@ export {
   decodeStatementCsv,
   decodeStatementRows,
   type AmountRefusal,
-  type CsvReason,
   type DecodedRows,
   type DecodedStatement,
   type RejectedRow,

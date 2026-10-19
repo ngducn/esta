@@ -4,6 +4,8 @@ import type { Json } from '@esta/db';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
+import { documentAttach } from './document-attach';
+import type { LocalContext } from './files';
 import { idSchema, invalid, type Refusal } from './kit';
 import { refuse, settle, type Op, type OpContext } from './op';
 import { propertyCreate, propertyEdit } from './property-ops';
@@ -27,13 +29,13 @@ export type ItemOutcome =
 /** Each op as a batch sees it, JSON in and JSON out, with the op's own types closed over. */
 type Step = {
   readonly creates: boolean;
-  plan(ctx: OpContext, raw: unknown): Promise<ItemPlan>;
-  settle(ctx: OpContext, raw: unknown, approved: unknown): Promise<ItemOutcome>;
+  plan(ctx: LocalContext, raw: unknown): Promise<ItemPlan>;
+  settle(ctx: LocalContext, raw: unknown, approved: unknown): Promise<ItemOutcome>;
 };
 
 const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null));
 
-function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R>): Step {
+function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>): Step {
   return {
     creates: op.creates !== null,
     async plan(ctx, raw) {
@@ -60,13 +62,14 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R>): Step {
   };
 }
 
-export const OP_KINDS = ['property.create', 'property.edit'] as const;
+export const OP_KINDS = ['property.create', 'property.edit', 'document.attach'] as const;
 export type OpKind = (typeof OP_KINDS)[number];
 
 /** The one list of what a batch can hold; `satisfies` fails the build when it and `OP_KINDS` disagree. */
 const OPS = {
   'property.create': batchStep(propertyCreate),
   'property.edit': batchStep(propertyEdit),
+  'document.attach': batchStep(documentAttach),
 } as const satisfies Record<OpKind, Step>;
 
 export const planRequestSchema = z.strictObject({
@@ -95,14 +98,16 @@ export type ApplyRefusal =
 const minutesFrom = (instant: string, minutes: number) => new Date(Date.parse(instant) + minutes * 60_000).toISOString();
 
 /**
- * Keeps only the last four digits of any national ID number Ryan typed in chat (SPEC D11). Ids are set aside first:
- * a uuid whose last group is twelve digits reads as an ID number.
+ * Keeps only the last four digits of any national ID number Ryan typed in chat (SPEC D11). References are set aside
+ * first and kept whole: ids, since a uuid whose last group is twelve digits reads as an ID number, and file paths, since
+ * a cut path names another file. The import folders refuse a path that holds an ID number, so no plan stores one.
  */
 export function reduceTypedIds(raw: unknown): unknown {
-  const ids: string[] = [];
-  const masked = JSON.parse(JSON.stringify(raw ?? null), (_key, value: unknown) => (typeof value === 'string' && idSchema.safeParse(value).success ? `\u0000${ids.push(value) - 1}` : value));
+  const kept: string[] = [];
+  const reference = (key: string, value: string) => key === 'path' || idSchema.safeParse(value).success;
+  const masked = JSON.parse(JSON.stringify(raw ?? null), (key, value: unknown) => (typeof value === 'string' && reference(key, value) ? `\u0000${kept.push(value) - 1}` : value));
   const reduced: unknown = reduceNationalIds(masked);
-  return JSON.parse(JSON.stringify(reduced), (_key, value: unknown) => (typeof value === 'string' && value.startsWith('\u0000') ? ids[Number(value.slice(1))] : value));
+  return JSON.parse(JSON.stringify(reduced), (_key, value: unknown) => (typeof value === 'string' && value.startsWith('\u0000') ? kept[Number(value.slice(1))] : value));
 }
 
 function withId(raw: unknown, id: string): unknown {
@@ -113,7 +118,7 @@ function withId(raw: unknown, id: string): unknown {
  * Plans every item in order and stores the batch only when none was refused, so Ryan's OK covers all of it. A create
  * gets its id here; Claude never invents one.
  */
-export async function planChanges(ctx: OpContext, request: PlanRequest): Promise<Result<PlannedBatch, PlanRefusal>> {
+export async function planChanges(ctx: LocalContext, request: PlanRequest): Promise<Result<PlannedBatch, PlanRefusal>> {
   const now = ctx.clock.now();
   const { count, error } = await ctx.db
     .from('change_batches')
@@ -178,7 +183,7 @@ const failed: ItemOutcome = { status: 'refused', refusal: { kind: 'failed' } };
  * recording the outcomes, the next one after the lease plans every item again: what already landed plans as unchanged
  * and counts as landed, and the rest apply.
  */
-export async function applyPlan(ctx: OpContext, planId: string): Promise<Result<AppliedBatch, ApplyRefusal>> {
+export async function applyPlan(ctx: LocalContext, planId: string): Promise<Result<AppliedBatch, ApplyRefusal>> {
   const claimed = await claim(ctx, planId, ctx.clock.now());
   if (claimed === null) return refuse(await unclaimable(ctx, planId));
 

@@ -1,39 +1,21 @@
 'use server';
 
-import {
-  acceptsMime,
-  DOCUMENT_CATEGORIES,
-  DOCUMENT_CATEGORY_IDS,
-  documentFileSchema,
-  documentTitleSchema,
-  reviewPath,
-  sentDocumentSchema,
-  storagePath,
-  thumbPath,
-} from '@esta/core/documents';
+import { acceptsMime, DOCUMENT_CATEGORIES, DOCUMENT_CATEGORY_IDS, documentFileSchema, documentTitleSchema } from '@esta/core/documents';
 import { isIsoDate } from '@esta/core/date';
+import { documentRegister, documentsWithHash, runOp, signDocumentUploads } from '@esta/ops';
 import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { readRequestClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
+import { webOpContext } from '@/server/ops';
 import { setDeletedAt } from '@/server/soft-delete';
 import { createSessionClient } from '@/server/supabase/server';
-import { documentRow } from './register';
-import { DOCUMENTS_BUCKET, signDocumentUrl } from './sign';
+import { signDocumentUrl } from './sign';
 
 const id = z.uuid();
 
-const target = { propertyId: id, category: z.enum(DOCUMENT_CATEGORY_IDS) };
-const uploadSchema = documentFileSchema.extend(target);
-
-const registerSchema = sentDocumentSchema.extend({
-  ...target,
-  title: documentTitleSchema,
-  expiresOn: z.string().refine(isIsoDate).nullable(),
-  leaseId: id.nullable().default(null),
-});
+const uploadSchema = documentFileSchema.extend({ propertyId: id, category: z.enum(DOCUMENT_CATEGORY_IDS) });
 
 export type UploadTarget = { readonly path: string; readonly url: string };
 
@@ -49,9 +31,8 @@ export type UploadTicket =
   | { readonly ok: false };
 
 /**
- * Picks the document id and signs one upload URL for the file and one for each preview made from it. The browser
- * sends the bytes straight to Storage; the session client signs, so the storage insert policy decides. Upsert lets a
- * retry rewrite the same path. Same-household rows with the same SHA-256 come back for the duplicate warning.
+ * Picks the document id and signs the uploads for the file and its previews (`signDocumentUploads`). The browser sends
+ * the bytes straight to Storage. Same-household rows with the same SHA-256 come back for the duplicate warning.
  */
 export async function createDocumentUpload(input: unknown): Promise<UploadTicket> {
   const parsed = uploadSchema.safeParse(input);
@@ -61,43 +42,20 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
   const household = member.household.id;
   const documentId = randomUUID();
   const supabase = await createSessionClient();
-  const sign = async (path: string): Promise<UploadTarget | null> => {
-    const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).createSignedUploadUrl(path, { upsert: true });
-    return error ? null : { path: data.path, url: data.signedUrl };
-  };
-  const [file, thumb, review, duplicates] = await Promise.all([
-    sign(storagePath(household, documentId, parsed.data.filename)),
-    sign(thumbPath(household, documentId)),
-    sign(reviewPath(household, documentId)),
-    supabase
-      .from('documents')
-      .select('id, title')
-      .eq('household_id', household)
-      .eq('sha256', parsed.data.sha256)
-      .is('deleted_at', null)
-      .order('created_at'),
+  const [uploads, duplicates] = await Promise.all([
+    signDocumentUploads(supabase, household, documentId, parsed.data.filename),
+    documentsWithHash(supabase, household, parsed.data.sha256),
   ]);
-  if (file === null || thumb === null || review === null || duplicates.error) return { ok: false };
-  return { ok: true, documentId, file, thumb, review, duplicates: duplicates.data };
+  if (uploads === null || duplicates === null) return { ok: false };
+  return { ok: true, documentId, ...uploads, duplicates };
 }
 
 export type Registered = { readonly ok: true; readonly title: string } | { readonly ok: false };
 
-/** Writes the row once the file is in Storage. A retry with the same id converges on one row. */
+/** Writes the row once the file is in Storage (`documentRegister`). A retry with the same id converges on one row. */
 export async function registerDocument(input: unknown): Promise<Registered> {
-  const parsed = registerSchema.safeParse(input);
-  if (!parsed.success) return { ok: false };
-  const member = await requireMember();
-  const row = await documentRow(member.household.id, parsed.data);
-  if (row === null) return { ok: false };
-  const supabase = await createSessionClient();
-  const { error } = await supabase.from('documents').upsert(row, { onConflict: 'id', ignoreDuplicates: true });
-  if (error) return { ok: false };
-  // The file is saved either way; a failed enqueue leaves the tile without a reading state rather than losing the upload.
-  if (DOCUMENT_CATEGORIES[parsed.data.category].extractionSchema !== null) {
-    await supabase.rpc('enqueue_extract_document', { p_document_id: parsed.data.documentId, p_as_of: (await readRequestClock()).now() });
-  }
-  return { ok: true, title: parsed.data.title };
+  const registered = await runOp(documentRegister, await webOpContext(), input);
+  return registered.ok ? { ok: true, title: registered.value.title } : { ok: false };
 }
 
 type AccessAction = 'view' | 'download' | 'share';

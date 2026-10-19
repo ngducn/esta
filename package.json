@@ -49,6 +49,7 @@
     "reference:build": "node scripts/reference/build-csvs.ts && node scripts/reference/build-migration.ts",
     "cron:run": "node scripts/cron-run.ts",
     "fixtures:certificates": "tsx fixtures/certificates/generator/generate.ts",
+    "fixtures:connector-demo": "tsx fixtures/connector-demo/generate.ts",
     "extraction:eval": "tsx scripts/extraction-eval.ts"
   },
   "devDependencies": {
@@ -80,6 +81,7 @@
     "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3",
     "wawoff2": "^2.0.1",
+    "write-excel-file": "4.1.1",
     "zod": "^4.6.5"
   }
 }

@@ -14,5 +14,6 @@ export {
 } from './categories';
 export { documentFileSchema, documentTitleSchema, sentDocumentSchema, type SentDocument } from './file';
 export { documentExpiry, EXPIRY_WINDOW_DAYS, expiringSoon, type DocumentExpiry, type ExpiringSoon } from './expiry';
-export { DOCUMENT_OBJECT_NAME, documentObjectName, reviewPath, storagePath, thumbPath } from './storage-path';
+export { DOCUMENT_OBJECT_NAME, documentObjectName, reviewPath, signedUploadHeaders, storagePath, thumbPath } from './storage-path';
+export { sniffDocumentMime } from './sniff';
 export { defaultDocumentTitle, placeName } from './title';

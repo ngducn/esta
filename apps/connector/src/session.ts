@@ -13,6 +13,8 @@ export const connectorEnvSchema = z.object({
   ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
   ESTA_FROZEN_NOW: z.string().min(1).optional(),
   ESTA_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
+  /** Folders beside `~/Esta-import` that the file tools may read, separated like PATH. */
+  ESTA_IMPORT_ROOTS: z.string().optional(),
 });
 
 export type ConnectorEnv = z.infer<typeof connectorEnvSchema>;
