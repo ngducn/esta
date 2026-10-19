@@ -117,12 +117,14 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
   server.registerTool(
     'list_folder',
     {
-      description: `List one level of a folder Ryan set aside for Esta (~/Esta-import, or a folder he added): each entry's name, kind (folder, file or other) and file size in bytes, never its contents. A relative path starts at the first import folder. Read photos and PDFs yourself; read spreadsheets with read_spreadsheet.`,
+      description: `List one level of a folder Ryan set aside for Esta (~/Esta-import, or a folder he added): each entry's name and kind: a folder, a file with its size in bytes, or refused with the problem a read of it would meet, never its contents. A relative path starts at the first import folder. Read photos and PDFs yourself; read spreadsheets with read_spreadsheet.`,
       inputSchema: z.object({ path: z.string().trim().min(1).max(1000) }),
     },
     guarded('list_folder', deps, async (ctx, { path }: { path: string }) => {
       const listed = await ctx.folders.list(path);
-      return listed.ok ? { data: { entries: listed.value }, log: `count=${listed.value.length}` } : { data: listed.reason, log: `refused=${listed.reason.problem}`, isError: true };
+      if (!listed.ok) return { data: listed.reason, log: `refused=${listed.reason.problem}`, isError: true };
+      const refused = listed.value.filter((entry) => entry.kind === 'refused').length;
+      return { data: { entries: listed.value }, log: `count=${listed.value.length} refused=${refused}` };
     }),
   );
 

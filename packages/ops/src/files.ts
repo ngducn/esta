@@ -15,7 +15,8 @@ export type LocalFile = {
 /** The two copies the vault shows before the file itself (`@esta/core/documents/previews`), as WebP bytes. */
 export type LocalPreviews = { readonly thumb: Uint8Array; readonly review: Uint8Array };
 
-export type FileProblem = 'outside_import_folders' | 'missing' | 'not_a_file' | 'too_large' | 'unsupported_type';
+/** `unreadable`: the Mac refuses to open it, or its links loop. */
+export type FileProblem = 'outside_import_folders' | 'missing' | 'not_a_file' | 'unreadable' | 'too_large' | 'unsupported_type';
 export type FileRefusal = { readonly kind: 'file'; readonly problem: FileProblem };
 
 /** What the connector can do with files on Ryan's Mac, and only inside the import folders he configured. */
