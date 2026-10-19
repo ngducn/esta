@@ -292,7 +292,7 @@ test('evidence: every vault state at 390x844 and 1440x900, light and dark', asyn
 
       await page.goto(`/documents/${insurance}`);
       await expect(page.getByTestId('document-detail')).toBeVisible(COLD_ROUTE);
-      await expect(page.locator('canvas[data-testid="document-page"][data-drawn="true"]')).toBeVisible(COLD_ROUTE);
+      await expect(page.locator('[data-testid="document-page"][data-drawn="true"]')).toBeVisible(COLD_ROUTE);
       await shot(page, `p2-05-document-${combo.name}`);
       await page.getByTestId('edit-document').click();
       await expect(page.getByTestId('edit-sheet')).toBeVisible();
