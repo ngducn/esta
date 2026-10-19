@@ -1,6 +1,5 @@
 import type { IsoDate } from '../date/iso-date';
-import { vnd, type Vnd } from '../money/vnd';
-import { MAX_LIST_RENT_VND } from '../schemas/units';
+import { MAX_AMOUNT_VND, vnd, type Vnd } from '../money/vnd';
 
 export const DEPOSIT_KINDS = ['received', 'applied', 'deduction', 'refunded'] as const;
 
@@ -83,7 +82,7 @@ export type DepositPreview =
  * or taking out more than is held at its date.
  */
 export function previewDepositEntry(entries: readonly DepositEntry[], entry: DepositEntry, owedVnd: Vnd | null): DepositPreview {
-  if (entry.amountVnd > MAX_LIST_RENT_VND) return { ok: false, reason: 'too_large', limitVnd: vnd(MAX_LIST_RENT_VND) };
+  if (entry.amountVnd > MAX_AMOUNT_VND) return { ok: false, reason: 'too_large', limitVnd: vnd(MAX_AMOUNT_VND) };
   if (entry.kind === 'applied' && owedVnd !== null && entry.amountVnd > owedVnd) return { ok: false, reason: 'exceeds_outstanding', limitVnd: owedVnd };
   const after = deriveDepositLedger([...entries, entry]);
   if (after.ok) return { ok: true, heldVnd: after.value.heldVnd };
