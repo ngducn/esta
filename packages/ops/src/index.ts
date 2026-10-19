@@ -17,6 +17,7 @@ export {
   type PlanRequest,
 } from './batch';
 export { readClock, type ClockEnv } from './clock';
+export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';
 export {
   documentRegister,
