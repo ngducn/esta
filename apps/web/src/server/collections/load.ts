@@ -97,10 +97,18 @@ const invoiceSchema = z
     outstandingVnd: row.outstanding_vnd,
   }));
 
-/** Every invoice `openInvoicesOldestFirst` counts as still owed, grouped by lease: what `record_payment` settles, in its order. */
+/**
+ * Every invoice `openInvoicesOldestFirst` counts as still owed, grouped by lease: what `record_payment` settles, in its
+ * order. Paid invoices, nearly all of a household's history, never count, so the read leaves them behind instead of
+ * growing with every month toward PostgREST's 1,000-row cap.
+ */
 export async function loadOpenInvoices(householdId: string): Promise<Map<string, PaymentInvoice[]>> {
   const supabase = await createSessionClient();
-  const { data, error } = await supabase.from('invoice_balances').select('id, lease_id, due_date, period_start, status, outstanding_vnd').eq('household_id', householdId);
+  const { data, error } = await supabase
+    .from('invoice_balances')
+    .select('id, lease_id, due_date, period_start, status, outstanding_vnd')
+    .eq('household_id', householdId)
+    .gt('outstanding_vnd', 0);
   if (error) throw new Error(`Reading the open invoices failed: ${error.message}`);
   const byLease = new Map<string, PaymentInvoice[]>();
   for (const invoice of openInvoicesOldestFirst(z.array(invoiceSchema).parse(data))) byLease.set(invoice.leaseId, [...(byLease.get(invoice.leaseId) ?? []), invoice]);
