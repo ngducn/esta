@@ -87,7 +87,7 @@ No target missed, so no schema change is needed. P2-03 reuses `certificateV1Sche
 
 ## Private run
 
-`pnpm extraction:eval --mode live --set private` printed `no private fixtures measured`. Ryan places scans and hand-written `truth.json` files under `fixtures-private/certificates/<any name>/`. The run prints field names, counts and percentages only, never a form, a folder name or a value, and saves nothing.
+`pnpm extraction:eval --mode live --set private` printed `no private fixtures measured`. Ryan places scans and hand-written `truth.json` files under `fixtures-private/certificates/<any name>/`, one PDF or the JPEG photos of the pages per folder. The run prints field names, counts and percentages only, never a form, a folder name or a value, and saves nothing.
 
 ## DOMAIN-VN
 
@@ -95,9 +95,10 @@ No target missed, so no schema change is needed. P2-03 reuses `certificateV1Sche
 
 ## Reproduce
 
+The numbers above came from the spike's own prompt. Since issue #185, `extraction:eval` sends the worker's extract_document request and scores what `save_extraction` keeps, so a run now measures the prompt the worker ships. The spike prompt and the `--from` rescore are gone, and `s5/outputs/` stays as the record of this run. The golden test (`apps/agent/test/golden/extract.test.ts`) scores the shipped prompt on these fixtures in replay.
+
 ```sh
 pnpm fixtures:certificates                                      # 16 fixtures, manifest unchanged
-pnpm extraction:eval --from docs/plan/spikes/s5/outputs          # auth=none, then the tables above
 ESTA_ENV=development ESTA_MODEL_ROUTINE=claude-sonnet-5-5 \
   pnpm extraction:eval --mode live --set synthetic              # live, about 0.55 USD
 pnpm extraction:eval --mode live --set private                  # counts only

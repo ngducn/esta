@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { REQUIRED_FIELDS } from '../packages/core/src/extraction/required-fields.ts';
 import type { ExtractionScore } from '../packages/core/src/extraction/score.ts';
-import { buildReport, formatReport, parseReply, scoreOutput, summaryLine, syntheticFixtures, type FixtureResult } from './extraction-eval.ts';
+import { buildReport, formatReport, scoreOutput, summaryLine, syntheticFixtures, type FixtureResult } from './extraction-eval.ts';
 
 const FIELDS = REQUIRED_FIELDS.certificate_v1;
 
@@ -10,7 +10,7 @@ function score(valid: boolean, hits: number, highConfidence: { total: number; co
 }
 
 function result(id: string, form: FixtureResult['form'], extraction: ExtractionScore): FixtureResult {
-  return { id, form, variant: 'scan', score: extraction, numTurns: 3, wallMs: 20_000, costUsd: 0.05, isError: false };
+  return { id, form, score: extraction, numTurns: 3, wallMs: 20_000, costUsd: 0.05, isError: false };
 }
 
 describe('extraction eval report', () => {
@@ -30,7 +30,7 @@ describe('extraction eval report', () => {
   it('keeps every truth value and fixture name out of the private report', () => {
     const fixtures = syntheticFixtures();
     const results = fixtures.map((fixture) => ({
-      ...result(`private-${fixture.id}`, fixture.form, scoreOutput(fixture, { is_error: false, reply: JSON.stringify(fixture.truth) })),
+      ...result(`private-${fixture.id}`, fixture.form, scoreOutput(fixture, fixture.truth as Record<string, unknown>)),
     }));
     const output = formatReport(buildReport(results), 'private');
     expect(output).toContain('schema-valid 100.0%, required exact 100.0%');
@@ -45,21 +45,13 @@ describe('extraction eval report', () => {
     for (const fixture of fixtures) expect(output).not.toContain(fixture.id);
   });
 
-  it('scores an unparseable or failed reply as invalid with every required field missed', () => {
+  it('scores a run that saved nothing as invalid with every required field missed', () => {
     const [fixture] = syntheticFixtures().filter((candidate) => candidate.form === 'paper_only');
     if (fixture === undefined) return expect.fail('no paper_only fixture');
-    for (const output of [{ is_error: false, reply: 'Tôi không đọc được.' }, { is_error: true, reply: JSON.stringify(fixture.truth) }]) {
-      const missed = scoreOutput(fixture, output);
-      expect(missed.schemaValid).toBe(false);
-      expect(missed.required.some((field) => field.hit)).toBe(false);
-      expect(missed.nullTruth).toHaveLength(2);
-      expect(missed.nullTruth.some((field) => field.hit)).toBe(false);
-    }
-  });
-
-  it('reads a reply wrapped in a json code fence', () => {
-    expect(parseReply('```json\n{"a": 1}\n```')).toEqual({ a: 1 });
-    expect(parseReply('Here it is: {"a": 1}')).toEqual({ a: 1 });
-    expect(parseReply('no json')).toBeNull();
+    const missed = scoreOutput(fixture, null);
+    expect(missed.schemaValid).toBe(false);
+    expect(missed.required.some((field) => field.hit)).toBe(false);
+    expect(missed.nullTruth).toHaveLength(2);
+    expect(missed.nullTruth.some((field) => field.hit)).toBe(false);
   });
 });

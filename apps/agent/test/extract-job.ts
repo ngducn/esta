@@ -1,5 +1,6 @@
 import { isoDate, parseInstant, type Clock } from '@esta/core';
-import { readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { prepareExtractDocument } from '../src/jobs/extract-document';
 import { JOBS, type AgentJob } from '../src/jobs/registry';
@@ -7,7 +8,6 @@ import { canonicalizer } from '../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../src/replay/store';
 import { replaySession } from '../src/sdk/session';
 import { fakeDb, type Recorded } from '../src/test/fake-db';
-import { newJobDir } from './extract-session';
 
 export const A = 'aaaaaaaa-0000-5000-8000-000000000001';
 export const B = 'bbbbbbbb-0000-5000-8000-000000000002';
@@ -16,6 +16,8 @@ export const DOCUMENT_B = 'bbbbbbbb-0000-5000-8000-0000000000d2';
 export const EXTRACTION_A = 'aaaaaaaa-0000-5000-8000-0000000000e1';
 export const EXTRACTION_B = 'bbbbbbbb-0000-5000-8000-0000000000e2';
 export const JOB_A = 'aaaaaaaa-0000-5000-8000-0000000000f1';
+
+export const newJobDir = (): string => realpathSync(mkdtempSync(join(tmpdir(), 'esta-extract-test-')));
 
 /** A frozen test clock far from the database's real time, so a row dated by now() instead fails the test. */
 export const NOW = parseInstant('2026-10-07T09:00:00+07:00');
