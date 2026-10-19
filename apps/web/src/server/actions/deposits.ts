@@ -1,6 +1,7 @@
 'use server';
 
 import { DEPOSIT_KINDS } from '@esta/core/allocation';
+import { MAX_AMOUNT_VND } from '@esta/core/money';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import type { Result } from '@esta/core/result';
@@ -20,6 +21,8 @@ const depositInputSchema = z.object({
   idempotencyKey: z.uuid(),
 });
 export type DepositInput = z.input<typeof depositInputSchema>;
+
+const amountSchema = z.number().int().min(1).max(MAX_AMOUNT_VND);
 
 export type RecordDepositRefusal =
   | 'amount'
@@ -56,15 +59,16 @@ export async function recordDeposit(raw: unknown): Promise<RecordDepositResult> 
   const input = depositInputSchema.safeParse(raw);
   if (!input.success) return { ok: false, reason: 'failed' };
   const { leaseId, kind, invoiceId, note, idempotencyKey } = input.data;
-  const amount = parseVndInput(input.data.amount);
-  if (!amount.ok) return { ok: false, reason: 'amount' };
+  const typed = parseVndInput(input.data.amount);
+  const amount = amountSchema.safeParse(typed.ok ? typed.value : null);
+  if (!amount.success) return { ok: false, reason: 'amount' };
   const onDate = parseDateInput(input.data.onDate);
   if (!onDate.ok) return { ok: false, reason: 'date' };
   if (kind === 'applied' && invoiceId === null) return { ok: false, reason: 'invoice' };
   const [, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const common = {
     p_lease_id: leaseId,
-    p_amount_vnd: amount.value,
+    p_amount_vnd: amount.data,
     p_on_date: onDate.value,
     p_idempotency_key: idempotencyKey,
     ...(note.trim() === '' ? {} : { p_note: note }),
