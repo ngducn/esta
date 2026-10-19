@@ -1,19 +1,21 @@
 import type { IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
 
-export type DepositKind = 'received' | 'applied' | 'deduction' | 'refunded';
+export const DEPOSIT_KINDS = ['received', 'applied', 'deduction', 'refunded'] as const;
+
+export type DepositKind = (typeof DEPOSIT_KINDS)[number];
 
 export type DepositEntry = { id: string; kind: DepositKind; amountVnd: Vnd; onDate: IsoDate };
 
-export type DepositRow = DepositEntry & { heldVnd: Vnd };
+export type DepositRow<E extends DepositEntry = DepositEntry> = E & { heldVnd: Vnd };
 
-export type DepositLedger = { rows: readonly DepositRow[]; heldVnd: Vnd };
+export type DepositLedger<E extends DepositEntry = DepositEntry> = { rows: readonly DepositRow<E>[]; heldVnd: Vnd };
 
 export type DepositRefusal =
   | { reason: 'non_positive_amount'; entryId: string }
   | { reason: 'exceeds_held'; entryId: string; heldVnd: Vnd };
 
-export type DepositLedgerResult = { ok: true; value: DepositLedger } | ({ ok: false } & DepositRefusal);
+export type DepositLedgerResult<E extends DepositEntry = DepositEntry> = { ok: true; value: DepositLedger<E> } | ({ ok: false } & DepositRefusal);
 
 const SIGN: Readonly<Record<DepositKind, 1 | -1>> = { received: 1, applied: -1, deduction: -1, refunded: -1 };
 
@@ -22,9 +24,9 @@ const SIGN: Readonly<Record<DepositKind, 1 | -1>> = { received: 1, applied: -1, 
  * given order). Applying, deducting or refunding more than is held refuses the whole ledger and
  * names the entry and the balance it met.
  */
-export function deriveDepositLedger(entries: readonly DepositEntry[]): DepositLedgerResult {
+export function deriveDepositLedger<E extends DepositEntry>(entries: readonly E[]): DepositLedgerResult<E> {
   const sorted = [...entries].sort((a, b) => (a.onDate < b.onDate ? -1 : a.onDate > b.onDate ? 1 : 0));
-  const rows: DepositRow[] = [];
+  const rows: DepositRow<E>[] = [];
   let held = vnd(0);
   for (const entry of sorted) {
     if (entry.amountVnd <= 0) return { ok: false, reason: 'non_positive_amount', entryId: entry.id };

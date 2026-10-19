@@ -8,6 +8,7 @@ export {
   type OpenInvoice,
 } from './allocate';
 export {
+  DEPOSIT_KINDS,
   deriveDepositLedger,
   type DepositEntry,
   type DepositKind,

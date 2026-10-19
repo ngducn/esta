@@ -1,3 +1,4 @@
+import { deriveDepositLedger } from '@esta/core/allocation';
 import { addDays, addMonths } from '@esta/core/date/calendar';
 import { amendmentStarts, currentMonthlyRent, holdsUnit, leaseDefaults, renewalStart } from '@esta/core/lease';
 import type { Metadata } from 'next';
@@ -6,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { LeaseForm, type LeaseFormUnit } from '@/components/leases/LeaseForm';
 import { newLeaseValues, valuesFromRow } from '@/components/leases/lease-form-values';
+import { DepositLedger, type DepositOffer } from '@/components/leases/DepositLedger';
 import { LeaseActions, type RenewalOffer } from '@/components/leases/LeaseActions';
 import { LeaseDocuments } from '@/components/leases/LeaseDocuments';
 import { LeaseTerms } from '@/components/leases/LeaseTerms';
@@ -14,6 +16,7 @@ import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { StatusMark, StatusShape } from '@/components/status-mark';
 import { getClock } from '@/server/clock';
+import { loadDepositLines } from '@/server/leases/deposits';
 import { loadLeaseDocuments } from '@/server/leases/detail';
 import { loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
@@ -104,7 +107,9 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   }
 
   const leasesHref = `${backHref}/leases`;
-  const documents = await loadLeaseDocuments(summary.id);
+  const [documents, depositLines] = await Promise.all([loadLeaseDocuments(summary.id), loadDepositLines(summary.id)]);
+  const deposit = deriveDepositLedger(depositLines);
+  if (!deposit.ok) throw new Error(`Deposit ledger of lease ${summary.id} refused at entry ${deposit.entryId}: ${deposit.reason}`);
   const schedule = leases.schedule.filter((period) => period.leaseId === summary.id);
   const amendments = leases.amendments.filter((amendment) => amendment.leaseId === summary.id);
   const invoices = leases.invoices.filter((invoice) => invoice.leaseId === summary.id);
@@ -120,6 +125,18 @@ export default async function LeasePage({ params, searchParams }: { params: Para
     ? amendmentStarts(schedule, amendments, { asOf, billedThrough: latestIssuedEnd(invoices), paidThrough: summary.paid_through_date }).slice(0, AMEND_STARTS_SHOWN)
     : [];
   const ended = summary.status === 'ended' || summary.status === 'terminated';
+  const depositOffer: DepositOffer | null = canEdit
+    ? {
+        leaseId: summary.id,
+        unitLabel: name,
+        today: asOf,
+        active: summary.status === 'active',
+        openInvoices: invoices
+          .filter((invoice) => invoice.status === 'issued' && invoice.outstandingVnd > 0)
+          .toSorted((a, b) => a.dueDate.localeCompare(b.dueDate) || a.periodStart.localeCompare(b.periodStart))
+          .map(({ id: invoiceId, periodStart, periodEnd, outstandingVnd }) => ({ id: invoiceId, periodStart, periodEnd, outstandingVnd })),
+      }
+    : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -144,6 +161,9 @@ export default async function LeasePage({ params, searchParams }: { params: Para
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex flex-col gap-6">
           <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} schedule={schedule} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} />
+          <PropertyIntl locale={locale} messages={{ deposits: messages.deposits, components: { money, date, status, toast } }}>
+            <DepositLedger rows={deposit.value.rows} held={deposit.value.heldVnd} contractVnd={summary.deposit_vnd} offer={depositOffer} />
+          </PropertyIntl>
           <PropertyIntl locale={locale} messages={{ leases: messages.leases, documents: messages.documents, components: { money, date, status, toast } }}>
             <LeaseDocuments leaseId={summary.id} propertyId={id} nickname={property.nickname} documents={documents} canEdit={canEdit} />
           </PropertyIntl>
