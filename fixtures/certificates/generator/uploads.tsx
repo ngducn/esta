@@ -21,7 +21,7 @@ export type ExtractionFixture = {
 const A4_POINTS = [595.28, 841.89] as const;
 
 /** Photos of a multi-page certificate go up as one PDF, page order kept, as the capture flow builds it (DOC-2). */
-async function photosPdf(pages: readonly Buffer[]): Promise<Buffer> {
+export async function photosPdf(pages: readonly Buffer[]): Promise<Buffer> {
   const pdf = await PDFDocument.create({ updateMetadata: false });
   for (const jpeg of pages) {
     const image = await pdf.embedJpg(jpeg);

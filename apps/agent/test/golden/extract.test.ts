@@ -1,11 +1,10 @@
 import { scoreExtraction, type ExtractionScore } from '@esta/core/extraction';
-import { rmSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CRAFTED, extractionFixtures } from '../../../../fixtures/certificates/generator/uploads.tsx';
+import { CRAFTED, extractionFixtures, type UploadFile } from '../../../../fixtures/certificates/generator/uploads.tsx';
+import { withExtractSession } from '../../src/jobs/extract-session';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { judgeResult } from '../../src/sdk/result';
 import { replaySession } from '../../src/sdk/session';
-import { extractSession, newJobDir } from '../extract-session';
 
 type Ratio = { hits: number; total: number };
 const percent = ({ hits, total }: Ratio) => (total === 0 ? 100 : (100 * hits) / total);
@@ -13,16 +12,8 @@ const add = (a: Ratio, b: Ratio): Ratio => ({ hits: a.hits + b.hits, total: a.to
 
 const fixtures = extractionFixtures();
 
-async function replay(schemaName: 'certificate_v1' | 'utility_bill_v1', upload: Parameters<typeof extractSession>[1]) {
-  const jobDir = newJobDir();
-  try {
-    const { request, saved } = extractSession(schemaName, upload, jobDir);
-    const run = await replaySession(request, DEFAULT_REPLAY_DIR);
-    return { run, saved: saved() };
-  } finally {
-    rmSync(jobDir, { recursive: true, force: true });
-  }
-}
+const replay = (schemaName: 'certificate_v1' | 'utility_bill_v1', upload: UploadFile) =>
+  withExtractSession(schemaName, upload, async ({ request, saved }) => ({ run: await replaySession(request, DEFAULT_REPLAY_DIR), saved: saved() }));
 
 describe('extract_document golden test, replay mode (AGENT.md §7.2)', () => {
   it('scores sixteen certificates and two bills at the §7.2 targets', async () => {

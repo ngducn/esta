@@ -1,10 +1,10 @@
-import { AGENT_SCHEMAS, isAgentSchemaName } from '@esta/core/agent-schemas';
+import { AGENT_SCHEMAS, isAgentSchemaName, type AgentSchemaName } from '@esta/core/agent-schemas';
 import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { extractDocumentPrompt } from '../prompts/extract-document';
-import { itemTitle, localeOf, saveExtraction } from '../tools/save-extraction';
+import { extractionSaver, itemTitle, localeOf, writeExtraction, type PersistExtraction } from '../tools/save-extraction';
 import { estaTool } from '../tools/server';
 import type { AgentDb } from '../supabase';
 import type { AgentJob, JobContext, PreparedJob } from './registry';
@@ -21,16 +21,30 @@ const payloadSchema = z.object({ document_id: z.uuid(), extraction_id: z.uuid() 
 
 const EXTENSIONS: Readonly<Record<string, string>> = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
+type ExtractInput = {
+  readonly schemaName: AgentSchemaName;
+  readonly bytes: Uint8Array;
+  readonly mime: string;
+  readonly jobDir: string;
+  readonly persist: PersistExtraction;
+};
+
 /**
- * Writes the file as `document.<ext>` whatever its upload name, so the prompt, and so the replay hash, depends only on
- * the bytes and the type. The recorder and the tests stage files the same way.
+ * The extract_document request: the file staged in the job directory, the prompt and save_extraction, which runs
+ * `persist` on a valid answer. The worker and every caller outside a job build it here, so each replay recording hashes
+ * the prompt the worker ships (AGENT.md §8). The file is `document.<ext>` whatever its upload name, so the prompt, and
+ * so the hash, depends only on the bytes and the type.
  */
-export function stageDocument(jobDir: string, bytes: Uint8Array, mime: string): { readonly filePath: string; readonly sha256: string } {
+export function extractRequest({ schemaName, bytes, mime, jobDir, persist }: ExtractInput): Pick<PreparedJob, 'prompt' | 'tools'> {
   const extension = EXTENSIONS[mime];
   if (extension === undefined) throw new InvalidJobError(`The type ${mime} cannot be read`);
   const filePath = join(jobDir, `document.${extension}`);
   writeFileSync(filePath, bytes);
-  return { filePath, sha256: createHash('sha256').update(bytes).digest('hex') };
+  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  return {
+    prompt: extractDocumentPrompt({ schemaName, schemaVersion: AGENT_SCHEMAS[schemaName].version, filePath, sha256 }),
+    tools: new Map([estaTool('save_extraction', extractionSaver(schemaName, persist))]),
+  };
 }
 
 function payloadOf(job: AgentJob) {
@@ -76,26 +90,28 @@ export async function prepareExtractDocument({ db, job, jobDir, clock }: JobCont
   const { document, extraction } = await loadRows(db, job);
   const download = await db.storage.from('documents').download(document.storage_path);
   if (download.error) throw new Error(`Downloading the document failed: ${download.error.message}`);
-  const { filePath, sha256 } = stageDocument(jobDir, new Uint8Array(await download.data.arrayBuffer()), document.mime);
+  const request = extractRequest({
+    schemaName: extraction.schema_name,
+    bytes: new Uint8Array(await download.data.arrayBuffer()),
+    mime: document.mime,
+    jobDir,
+    persist: writeExtraction({
+      db,
+      householdId: job.household_id,
+      jobId: job.id,
+      extractionId: extraction.id,
+      documentId: document.id,
+      documentTitle: document.title,
+      locale: await householdLocale(db, job.household_id),
+      clock,
+    }),
+  });
 
   const running = await db.from('document_extractions').update({ status: 'running' }).eq('id', extraction.id).eq('household_id', job.household_id).eq('status', 'queued');
   if (running.error) throw new Error(`Starting the extraction failed: ${running.error.message}`);
 
-  const schemaName = extraction.schema_name;
-  const save = saveExtraction({
-    db,
-    householdId: job.household_id,
-    jobId: job.id,
-    extractionId: extraction.id,
-    documentId: document.id,
-    documentTitle: document.title,
-    schemaName,
-    locale: await householdLocale(db, job.household_id),
-    clock,
-  });
   return {
-    prompt: extractDocumentPrompt({ schemaName, schemaVersion: AGENT_SCHEMAS[schemaName].version, filePath, sha256 }),
-    tools: new Map([estaTool('save_extraction', save)]),
+    ...request,
     async finish({ model }) {
       const { data, error } = await db
         .from('document_extractions')

@@ -1,5 +1,6 @@
 import { isoDate, parseInstant, type Clock } from '@esta/core';
-import { readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { prepareExtractDocument } from '../src/jobs/extract-document';
 import { JOBS, type AgentJob } from '../src/jobs/registry';
@@ -7,7 +8,6 @@ import { canonicalizer } from '../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../src/replay/store';
 import { replaySession } from '../src/sdk/session';
 import { fakeDb, type Recorded } from '../src/test/fake-db';
-import { newJobDir } from './extract-session';
 
 export const A = 'aaaaaaaa-0000-5000-8000-000000000001';
 export const B = 'bbbbbbbb-0000-5000-8000-000000000002';
@@ -17,6 +17,8 @@ export const EXTRACTION_A = 'aaaaaaaa-0000-5000-8000-0000000000e1';
 export const EXTRACTION_B = 'bbbbbbbb-0000-5000-8000-0000000000e2';
 export const JOB_A = 'aaaaaaaa-0000-5000-8000-0000000000f1';
 
+export const newJobDir = (): string => realpathSync(mkdtempSync(join(tmpdir(), 'esta-extract-test-')));
+
 /** A frozen test clock far from the database's real time, so a row dated by now() instead fails the test. */
 export const NOW = parseInstant('2026-10-07T09:00:00+07:00');
 export const clock = (): Promise<Clock> => Promise.resolve({ source: 'table', now: () => NOW, today: () => isoDate('2026-10-07') });
@@ -24,7 +26,7 @@ export const clock = (): Promise<Clock> => Promise.resolve({ source: 'table', no
 const SCAN = readFileSync(join(import.meta.dirname, '../../../fixtures/certificates/gcn_2009_2024-scan/document.pdf'));
 
 /** Two households with one certificate each, as the service client sees them. */
-export function twoHouseholds(writes: Recorded[] = [], titleA = 'Sổ hồng Bảo Lộc') {
+export function twoHouseholds(writes: Recorded[] = [], titleA = 'Sổ hồng Bảo Lộc', refuse: Record<string, string> = {}) {
   const tables = {
     households: [
       { id: A, name: 'Gia đình Demo 1', locale: 'vi' },
@@ -41,7 +43,7 @@ export function twoHouseholds(writes: Recorded[] = [], titleA = 'Sổ hồng B�
     agent_items: [] as Record<string, unknown>[],
   };
   const files = { [`documents/${A}/${DOCUMENT_A}/so-hong.pdf`]: SCAN, [`documents/${B}/${DOCUMENT_B}/so-hong.pdf`]: SCAN };
-  return { tables, db: fakeDb(tables, writes, files) };
+  return { tables, db: fakeDb(tables, writes, files, refuse) };
 }
 
 export const extractJob = (payload: { document_id: string; extraction_id: string }, householdId = A): AgentJob =>

@@ -11,9 +11,9 @@ schema-valid 100.0%, required exact 100.0%, high-confidence precision 100.0%
 ## Setup
 
 - Fixtures. `pnpm fixtures:certificates` renders the five DOMAIN-VN §2 forms as a clean scan PDF, a skewed photo with a glare band, and a dim, blurred, noisy low-light photo, plus the north-star Dĩ An sổ hồng (`fixtures/certificates/README.md`). Names contain "Demo" and ID numbers are invented.
-- Model and path. `claude-sonnet-5-5`, the routine model the P0-15 ping recording ran on, on subscription auth. Each fixture runs through the worker's own `liveSession` (`apps/agent/src/sdk/session.ts`): only the `Read` tool, a fresh temp job dir holding only the page files, the `PreToolUse` path policy, `settingSources: []`, `permissionMode: 'default'` and an empty config dir. The prompt is `extractionPrompt` in `scripts/extraction-eval.ts`.
+- Model and path. `claude-sonnet-5-5`, the routine model the P0-15 ping recording ran on, on subscription auth. Each fixture runs through the worker's own `liveSession` (`apps/agent/src/sdk/session.ts`): only the `Read` tool, a fresh temp job dir holding only the page files, the `PreToolUse` path policy, `settingSources: []`, `permissionMode: 'default'` and an empty config dir. The prompt was the spike's own `extractionPrompt` in `scripts/extraction-eval.ts`, since removed (see Reproduce).
 - Scoring. `scoreExtraction` in `packages/core/src/extraction/score.ts`: zod validity, exact match on the required fields the truth fills after normalization (NFC, collapsed whitespace, upper-case land use codes, areas to two decimals, dates to `IsoDate`), and precision of fields with confidence at or above 0.9. A schema-invalid reply scores no hit. Required slots whose truth is null (`serial_no` and `issued_on` on the three `paper_only` fixtures) are counted apart as `nullTruth`, so an empty reply cannot earn them.
-- One live run on 2026-10-17 (04:18Z), four fixtures at a time. The raw replies are in `s5/outputs/`. `pnpm extraction:eval --from docs/plan/spikes/s5/outputs` rescores them with no credential and prints the tables below.
+- One live run on 2026-10-17 (04:18Z), four fixtures at a time. The raw replies are in `s5/outputs/`, and the tables below were scored from them.
 
 ## AGENT.md §7.2 targets
 
@@ -87,7 +87,7 @@ No target missed, so no schema change is needed. P2-03 reuses `certificateV1Sche
 
 ## Private run
 
-`pnpm extraction:eval --mode live --set private` printed `no private fixtures measured`. Ryan places scans and hand-written `truth.json` files under `fixtures-private/certificates/<any name>/`. The run prints field names, counts and percentages only, never a form, a folder name or a value, and saves nothing.
+`pnpm extraction:eval --mode live --set private` printed `no private fixtures measured`. Ryan places scans and hand-written `truth.json` files under `fixtures-private/certificates/<any name>/`, one PDF or the JPEG photos of the pages per folder. The run prints field names, counts and percentages only, never a form, a folder name or a value, and saves nothing.
 
 ## DOMAIN-VN
 
@@ -95,9 +95,10 @@ No target missed, so no schema change is needed. P2-03 reuses `certificateV1Sche
 
 ## Reproduce
 
+The numbers above came from the spike's own prompt. Since issue #185, `extraction:eval` sends the worker's extract_document request and scores what `save_extraction` keeps, so a run now measures the prompt the worker ships. The spike prompt and the `--from` rescore are gone, and `s5/outputs/` stays as the record of this run. The golden test (`apps/agent/test/golden/extract.test.ts`) scores the shipped prompt on these fixtures in replay.
+
 ```sh
 pnpm fixtures:certificates                                      # 16 fixtures, manifest unchanged
-pnpm extraction:eval --from docs/plan/spikes/s5/outputs          # auth=none, then the tables above
 ESTA_ENV=development ESTA_MODEL_ROUTINE=claude-sonnet-5-5 \
   pnpm extraction:eval --mode live --set synthetic              # live, about 0.55 USD
 pnpm extraction:eval --mode live --set private                  # counts only

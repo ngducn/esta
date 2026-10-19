@@ -1,21 +1,17 @@
-import { AGENT_SCHEMAS } from '../packages/core/src/agent-schemas/index.ts';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { assertStartAllowed, parseAgentEnv, type RunMode } from '../apps/agent/src/env.ts';
-import { stageDocument } from '../apps/agent/src/jobs/extract-document.ts';
+import { withExtractSession } from '../apps/agent/src/jobs/extract-session.ts';
 import { PING_PROMPT, pingTools } from '../apps/agent/src/jobs/ping.ts';
 import { JOBS } from '../apps/agent/src/jobs/registry.ts';
-import { extractDocumentPrompt } from '../apps/agent/src/prompts/extract-document.ts';
 import { canonicalizer, inputHash } from '../apps/agent/src/replay/canonicalize.ts';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../apps/agent/src/replay/store.ts';
 import { judgeResult } from '../apps/agent/src/sdk/result.ts';
-import { canonicalInput, liveSession, type SessionRequest } from '../apps/agent/src/sdk/session.ts';
+import { canonicalInput, liveSession } from '../apps/agent/src/sdk/session.ts';
 import { serviceClient } from '../apps/agent/src/supabase.ts';
-import { extractionSaver } from '../apps/agent/src/tools/save-extraction.ts';
-import { estaTool } from '../apps/agent/src/tools/server.ts';
-import { CRAFTED, extractionFixtures, type CraftedId, type ExtractionFixture, type UploadFile } from '../fixtures/certificates/generator/uploads.tsx';
+import { CRAFTED, extractionFixtures, type CraftedId, type ExtractionFixture } from '../fixtures/certificates/generator/uploads.tsx';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { parseSlot } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
@@ -80,31 +76,13 @@ async function recordPing(): Promise<void> {
   }
 }
 
-/** The worker's exact prompt and session for one upload, in a fresh job directory; the canonical form names it `<jobdir>`. */
-function extractRequest(schemaName: ExtractionFixture['schemaName'], upload: UploadFile, jobDir: string, configDir: string, onSaved: () => void): SessionRequest {
-  const { filePath, sha256 } = stageDocument(jobDir, upload.buffer, upload.mimeType);
-  return {
-    spec: JOBS.extract_document,
-    prompt: extractDocumentPrompt({ schemaName, schemaVersion: AGENT_SCHEMAS[schemaName].version, filePath, sha256 }),
-    jobDir,
-    configDir,
-    tools: new Map([estaTool('save_extraction', extractionSaver(schemaName, async () => onSaved()))]),
-    canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }),
-  };
-}
-
 async function recordFixture(fixture: ExtractionFixture, mode: LiveMode): Promise<Recording> {
-  const { jobDir, configDir } = tempDirs();
-  try {
-    let saved = false;
-    const request = extractRequest(fixture.schemaName, await fixture.upload(), jobDir, configDir, () => {
-      saved = true;
-    });
+  return withExtractSession(fixture.schemaName, await fixture.upload(), async ({ request, saved }) => {
     const started = performance.now();
     const run = await liveSession(request, mode);
     const wallMs = Math.round(performance.now() - started);
     const outcome = judgeResult(run.result);
-    if (!outcome.ok || !saved) throw new Error(`${fixture.id} saved no valid extraction: ${outcome.ok ? outcome.reply : outcome.failure.message}`);
+    if (!outcome.ok || saved() === null) throw new Error(`${fixture.id} saved no valid extraction: ${outcome.ok ? outcome.reply : outcome.failure.message}`);
     const input = canonicalInput(request);
     const toolCalls = run.toolCalls.map((call) => ({ name: call.name, input: JSON.parse(request.canon.canonical(JSON.stringify(call.input))) as Record<string, unknown> }));
     for (const call of toolCalls) {
@@ -114,10 +92,7 @@ async function recordFixture(fixture: ExtractionFixture, mode: LiveMode): Promis
     const recording = { version: 1 as const, kind: 'extract_document', inputHash: inputHash(input), input, label: fixture.id, model: run.model, numTurns: run.result.numTurns, wallMs, toolCalls, reply: request.canon.canonical(outcome.reply) };
     console.log(`${fixture.id} turns=${run.result.numTurns} wall_s=${(wallMs / 1000).toFixed(1)} cost_usd=${run.result.costUsd.toFixed(4)} calls=${toolCalls.map((call) => call.name).join(',')}`);
     return recording;
-  } finally {
-    rmSync(jobDir, { recursive: true, force: true });
-    rmSync(configDir, { recursive: true, force: true });
-  }
+  });
 }
 
 const AREA_IN_WORDS = 'khoảng sáu mươi tám mét vuông';
@@ -147,15 +122,8 @@ async function craft(id: CraftedId, recordings: ReadonlyMap<string, Recording>):
   const crafted = CRAFTED[id];
   const base = recordings.get(crafted.base);
   if (base === undefined) throw new Error(`${id} needs the ${crafted.base} recording`);
-  const { jobDir, configDir } = tempDirs();
-  try {
-    const request = extractRequest('certificate_v1', await crafted.upload(), jobDir, configDir, () => {});
-    const input = canonicalInput(request);
-    return { version: 1, kind: 'extract_document', inputHash: inputHash(input), input, label: `crafted ${id} from ${crafted.base}`, model: base.model, ...CRAFTS[id](base) };
-  } finally {
-    rmSync(jobDir, { recursive: true, force: true });
-    rmSync(configDir, { recursive: true, force: true });
-  }
+  const input = await withExtractSession('certificate_v1', await crafted.upload(), async ({ request }) => canonicalInput(request));
+  return { version: 1, kind: 'extract_document', inputHash: inputHash(input), input, label: `crafted ${id} from ${crafted.base}`, model: base.model, ...CRAFTS[id](base) };
 }
 
 async function recordExtractions(): Promise<void> {

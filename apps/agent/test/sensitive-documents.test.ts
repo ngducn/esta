@@ -5,8 +5,7 @@ import { prepareExtractDocument } from '../src/jobs/extract-document';
 import { JOBS } from '../src/jobs/registry';
 import { decideToolUse } from '../src/sdk/path-policy';
 import { mcpToolName } from '../src/tools/server';
-import { attempt, B, clock, DOCUMENT_A, DOCUMENT_B, EXTRACTION_A, EXTRACTION_B, extractJob, twoHouseholds } from './extract-job';
-import { newJobDir } from './extract-session';
+import { attempt, B, clock, DOCUMENT_A, DOCUMENT_B, EXTRACTION_A, EXTRACTION_B, extractJob, newJobDir, twoHouseholds } from './extract-job';
 
 describe('sensitive documents reach the agent only through their own extraction job (DOC-5)', () => {
   it('puts only the target file in the job directory', async () => {

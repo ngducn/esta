@@ -4,7 +4,7 @@ import type { RunMode } from '../env';
 import type { JobSpec } from '../jobs/registry';
 import type { CanonicalInput, Canonicalizer } from '../replay/canonicalize';
 import { readRecording } from '../replay/store';
-import { estaServer, type EstaTools } from '../tools/server';
+import { estaServer, runTool, type EstaTools } from '../tools/server';
 import { buildSdkEnv, buildSdkOptions } from './options';
 import { decideToolUse, pathPolicyHook, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
@@ -40,12 +40,16 @@ function toolPolicy({ spec, jobDir, tools }: SessionRequest): ToolPolicy {
 export async function liveSession(request: SessionRequest, mode: Extract<RunMode, { agentMode: 'live' }>): Promise<SessionRun> {
   const abortController = new AbortController();
   const timer = setTimeout(() => abortController.abort(), request.spec.timeoutMs);
+  const toolFailures: unknown[] = [];
   const options = buildSdkOptions({
     spec: request.spec,
     jobDir: request.jobDir,
     model: mode.model,
     env: buildSdkEnv({ credential: mode.credential, configDir: request.configDir, path: process.env.PATH ?? '/usr/bin:/bin' }),
-    server: estaServer(request.tools),
+    server: estaServer(request.tools, (error) => {
+      toolFailures.push(error);
+      abortController.abort();
+    }),
     preToolUse: pathPolicyHook(toolPolicy(request), (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
     abortController,
   });
@@ -62,11 +66,12 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
       }
     }
   } catch (error) {
-    // The SDK throws after it has yielded an error result; that result already says what failed.
-    if (result === undefined) throw error;
+    // The SDK throws after it has yielded an error result, or once a tool failure aborted it; either already says what failed.
+    if (result === undefined && toolFailures.length === 0) throw error;
   } finally {
     clearTimeout(timer);
   }
+  if (toolFailures.length > 0) throw toolFailures[0];
   if (result === undefined) throw new Error('The model session ended without a result');
   return { result: fromSdkResult(result), model: mode.model, toolCalls };
 }
@@ -89,8 +94,9 @@ export async function replaySession(request: SessionRequest, replayDir: string):
       permissionDenials.push({ tool_name: call.name, tool_use_id: `replay-${index + 1}`, tool_input: input as Json });
       continue;
     }
-    // A rejected call is the answer the recorded model read before its next turn, not a failure of the replay.
-    await request.tools.get(call.name)?.run(input).catch(() => undefined);
+    // The recording already holds the model's next turn, so the answer is dropped; an error other than a rejection fails the job.
+    const tool = request.tools.get(call.name);
+    if (tool !== undefined) await runTool(tool, input);
   }
   return {
     result: {

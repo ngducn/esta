@@ -39,6 +39,8 @@ export function validateExtraction(schemaName: AgentSchemaName, raw: unknown): V
   return { ok: true, result, fieldConfidence };
 }
 
+export type PersistExtraction = (validated: Extract<Validated, { ok: true }>) => Promise<void>;
+
 export type ExtractionBinding = {
   readonly db: AgentDb;
   readonly householdId: string;
@@ -46,7 +48,6 @@ export type ExtractionBinding = {
   readonly extractionId: string;
   readonly documentId: string;
   readonly documentTitle: string;
-  readonly schemaName: AgentSchemaName;
   readonly locale: Locale;
   clock(): Promise<Clock>;
 };
@@ -60,12 +61,9 @@ async function check(step: string, request: PromiseLike<{ error: { message: stri
 
 /**
  * Counts the model's answers and tells it what to fix, at most `MAX_SAVE_ATTEMPTS` times. `persist` runs only for a
- * valid result; the recorder passes one that writes nothing, so a live recording sees the worker's exact replies.
+ * valid result; outside a job it keeps the result in memory, so a live recording sees the worker's exact replies.
  */
-export function extractionSaver(
-  schemaName: AgentSchemaName,
-  persist: (validated: Extract<Validated, { ok: true }>) => Promise<void>,
-): (raw: Record<string, unknown>) => Promise<{ saved: true }> {
+export function extractionSaver(schemaName: AgentSchemaName, persist: PersistExtraction): (raw: Record<string, unknown>) => Promise<{ saved: true }> {
   let rejected = 0;
   return async (raw) => {
     if (rejected >= MAX_SAVE_ATTEMPTS) throw new ToolRejection('No attempts are left. Stop and reply that the document could not be read.');
@@ -81,13 +79,13 @@ export function extractionSaver(
 }
 
 /**
- * The model's only write. Bound to one extraction of the job's household, it validates, keeps only the last four digits
- * of ID numbers, fills the row for review and leaves one item for the household. A re-run after a crash rewrites the
- * same row and meets the same dedupe key, so its effects exist once (AGT-1).
+ * The model's only write. Bound to one extraction of the job's household, it fills the row for review and leaves one
+ * item for the household. A re-run after a crash rewrites the same row and meets the same dedupe key, so its effects
+ * exist once (AGT-1).
  */
-export function saveExtraction(binding: ExtractionBinding): (raw: Record<string, unknown>) => Promise<{ saved: true }> {
+export function writeExtraction(binding: ExtractionBinding): PersistExtraction {
   const { db, householdId, extractionId } = binding;
-  return extractionSaver(binding.schemaName, async (validated) => {
+  return async (validated) => {
     const { data, error } = await db
       .from('document_extractions')
       .update({ status: 'needs_review', result: validated.result as Json, field_confidence: validated.fieldConfidence, job_id: binding.jobId })
@@ -116,5 +114,5 @@ export function saveExtraction(binding: ExtractionBinding): (raw: Record<string,
       ),
     );
     console.log(`[agent] save_extraction ok ${extractionId}`);
-  });
+  };
 }

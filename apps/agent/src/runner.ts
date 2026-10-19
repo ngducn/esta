@@ -55,7 +55,7 @@ async function householdName(db: AgentDb, householdId: string): Promise<string> 
 /** The job's own directory, `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5). */
 async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
-  if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'error', message: `Unknown job kind ${job.kind}` } }, session: null };
+  if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
   const jobDir = join(worker.jobsDir, job.id);
   rmSync(jobDir, { recursive: true, force: true });
   mkdirSync(jobDir, { recursive: true });
@@ -84,52 +84,45 @@ async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome
   }
 }
 
-async function check(step: string, request: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
-  const { error } = await request;
-  if (error) throw new Error(`${step} failed: ${error.message}`);
-}
-
 async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant): Promise<Outcome> {
   const { outcome, session } = await runSession(worker, job);
   const finishedAt = (await worker.clock()).now();
   const { mode, db } = worker;
-  await check(
-    'Writing the run',
-    db.from('agent_runs').insert({
-      household_id: job.household_id,
-      job_id: job.id,
-      auth_mode: mode.authMode,
-      agent_mode: mode.agentMode,
-      model: session?.model ?? (mode.agentMode === 'live' ? mode.model : null),
-      num_turns: session?.result.numTurns ?? null,
-      session_id: session?.result.sessionId ?? null,
-      cost_estimate_usd: session?.result.costUsd ?? 0,
-      usage: session
-        ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.result.permissionDenials }
-        : {},
-      tool_calls: countToolCalls(session?.toolCalls.map((call) => call.name) ?? []),
-      started_at: startedAt,
-      finished_at: finishedAt,
-    }),
-  );
+  const run = await db.from('agent_runs').insert({
+    household_id: job.household_id,
+    job_id: job.id,
+    auth_mode: mode.authMode,
+    agent_mode: mode.agentMode,
+    model: session?.model ?? (mode.agentMode === 'live' ? mode.model : null),
+    num_turns: session?.result.numTurns ?? null,
+    session_id: session?.result.sessionId ?? null,
+    cost_estimate_usd: session?.result.costUsd ?? 0,
+    usage: session ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.result.permissionDenials } : {},
+    tool_calls: countToolCalls(session?.toolCalls.map((call) => call.name) ?? []),
+    started_at: startedAt,
+    finished_at: finishedAt,
+  });
+  if (run.error) throw new Error(`Writing the run failed: ${run.error.message}`);
 
-  const spec = jobSpec(job.kind);
-  if (outcome.ok && spec !== undefined) {
-    await check('Finishing the job', ownJob(worker, job, { status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt }));
+  if (outcome.ok) {
+    await ownJob(worker, job, 'Finishing the job', { status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt });
     return outcome;
   }
-  const failure = outcome.ok ? { kind: 'error' as const, message: `Unknown job kind ${job.kind}` } : outcome.failure;
+  const { failure } = outcome;
   const next = nextAttempt(job, failure, finishedAt);
   if (next.status === 'failed') {
     await failJob(worker, job, failure.message);
-    return { ok: false, failure };
+    return outcome;
   }
-  await check('Requeueing the job', ownJob(worker, job, { status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null }));
-  return { ok: false, failure };
+  await ownJob(worker, job, 'Requeueing the job', { status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null });
+  return outcome;
 }
 
-function ownJob(worker: Worker, job: AgentJob, update: Partial<AgentJob>) {
-  return worker.db.from('agent_jobs').update(update).eq('id', job.id).eq('locked_by', worker.workerId).eq('status', 'running');
+/** Writes the job only while this worker still holds its lock; a worker that reclaimed it owns the job's outcome now. */
+async function ownJob(worker: Worker, job: AgentJob, step: string, update: Partial<AgentJob>): Promise<void> {
+  const { data, error } = await worker.db.from('agent_jobs').update(update).eq('id', job.id).eq('locked_by', worker.workerId).eq('status', 'running').select('id');
+  if (error) throw new Error(`${step} failed: ${error.message}`);
+  if (data.length !== 1) throw new Error(`${step} failed: job ${job.id} is no longer locked by this worker`);
 }
 
 /**
@@ -140,7 +133,7 @@ function ownJob(worker: Worker, job: AgentJob, update: Partial<AgentJob>) {
 async function failJob(worker: Worker, job: AgentJob, error: string): Promise<void> {
   rmSync(join(worker.jobsDir, job.id), { recursive: true, force: true });
   await jobSpec(job.kind)?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, error);
-  await check('Failing the job', ownJob(worker, job, { status: 'failed', error, finished_at: (await worker.clock()).now() }));
+  await ownJob(worker, job, 'Failing the job', { status: 'failed', error, finished_at: (await worker.clock()).now() });
 }
 
 const ABANDONED = 'The worker stopped during the last attempt';

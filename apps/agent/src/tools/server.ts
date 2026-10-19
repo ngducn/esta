@@ -24,7 +24,7 @@ export function isEstaToolName(name: string): name is EstaToolName {
   return Object.hasOwn(CATALOG, name);
 }
 
-/** An answer the model reads and acts on, such as a validation error, rather than a failure of the job. */
+/** An answer the model reads and acts on, such as a validation error. Any other error a tool throws fails the job. */
 export class ToolRejection extends Error {
   constructor(message: string) {
     super(message);
@@ -44,7 +44,23 @@ export function estaTool(name: EstaToolName, run: (input: Record<string, unknown
   return [mcpToolName(name), { name, description: CATALOG[name].description, run }];
 }
 
-export function estaServer(tools: EstaTools): McpSdkServerConfigWithInstance {
+/** Runs one call in live and replay alike: the answer or a rejection is text for the model, and any other error propagates. */
+export async function runTool(estaTool: EstaTool, input: Record<string, unknown>): Promise<{ readonly text: string; readonly isError: boolean }> {
+  try {
+    return { text: JSON.stringify(await estaTool.run(input)), isError: false };
+  } catch (error) {
+    if (error instanceof ToolRejection) return { text: error.message, isError: true };
+    throw error;
+  }
+}
+
+const JOB_STOPPED = 'This call failed outside your control, and the job has stopped.';
+
+/**
+ * A job failure goes to `fail`, which ends the session with the real cause. The model reads only that the call failed,
+ * because the MCP server would hand a thrown error's own text to the model.
+ */
+export function estaServer(tools: EstaTools, fail: (error: unknown) => void): McpSdkServerConfigWithInstance {
   return createSdkMcpServer({
     name: SERVER_NAME,
     version: '1.0.0',
@@ -52,9 +68,11 @@ export function estaServer(tools: EstaTools): McpSdkServerConfigWithInstance {
     tools: [...tools.values()].map((estaTool) =>
       tool(estaTool.name, estaTool.description, CATALOG[estaTool.name].input, async (args: Record<string, unknown>) => {
         try {
-          return { content: [{ type: 'text' as const, text: JSON.stringify(await estaTool.run(args)) }] };
+          const { text, isError } = await runTool(estaTool, args);
+          return { content: [{ type: 'text' as const, text }], isError };
         } catch (error) {
-          return { content: [{ type: 'text' as const, text: error instanceof Error ? error.message : String(error) }], isError: true };
+          fail(error);
+          return { content: [{ type: 'text' as const, text: JOB_STOPPED }], isError: true };
         }
       }),
     ),
