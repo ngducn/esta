@@ -6,7 +6,8 @@ import { propertyInputSchema, type PropertyInput } from '@esta/core/schemas/prop
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { isCommuneOf, listCommunes, suggestCurrentUnits, type AdminUnitOption, type CurrentUnitSuggestion } from '@/server/address/suggest';
+import type { CurrentUnitSuggestion } from '@esta/ops';
+import { isCommuneOf, listCommunes, suggestCurrentUnits, type AdminUnitOption } from '@/server/address/suggest';
 import { readRequestClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 import { PROPERTY_PHOTOS_BUCKET } from '@/server/properties/photos';

@@ -47,6 +47,21 @@ A server action takes `unknown`, parses it with zod, writes through the session 
 
 Until #188 lands, a new server action that parses an id adds to `local-id-schema` (a `z.uuid()` bound to its own name or parsed on the spot), and one that reads a database refusal adds to `sqlstate-literal` (a code such as `'23505'` compared with or looked up by an error's `code`). Such a change needs `pnpm quality --update --allow-raise "<why> (until #188)"`, which the root countersigns.
 
+## Shared server reads: packages/ops
+
+`packages/ops` is the one home for server code that the web app and the connector share. A function there takes the member's session client (`Db`) and the household id. It never builds a client, reads a cookie or calls a Next.js API. The web wraps it with `createSessionClient()` and `requireMember()` and adds what needs the Clock or a web-only loader. The connector passes Ryan's session.
+
+- **Properties.** `searchProperties(db, householdId, tokens)` in `packages/ops/src/properties.ts` reads `property_list_rows` with core's `searchTokens` and `preferPhrase`, for the property list and for `find_property`, so both find the same properties. `readPropertyDetail` reads one property for its detail page and for `get_property`. Lease facts and status marks need the Clock's date, so the web loaders add them on top.
+- **Membership.** `readMembership(db, userId)` in `packages/ops/src/member.ts` is the one read of the membership Esta opens for a user, the first one they joined. `getCurrentMember` and the connector's operator check both call it.
+- **Addresses.** `suggestCurrentUnits` in `packages/ops/src/address.ts` maps an old address to the current ward and province.
+- **Tool results.** `packages/ops/src/read.ts` shapes these reads for a model: display strings for amounts and the reason each search candidate matched. The daily assistant's tools reuse it rather than query again.
+
+A read moves here before a second surface uses it. A read that only one surface needs stays with that surface.
+
+## The connector: apps/connector
+
+`apps/connector` is the MCP surface only: sign-in, the session store, the operator check on every call, and tool definitions that call `packages/ops`. It holds no query, parser or rule of its own (`docs/spec/CONNECTOR.md`).
+
 ## Multi-row writes
 
 A user action that writes more than one row runs as one `security definer` function in SQL, in one transaction, and checks membership itself. `record_payment` in `supabase/migrations/20261007305000_record_payment.sql` and `amend_lease` in `supabase/migrations/20261007306700_lease_changes.sql` are the template. Never orchestrate several writes from TypeScript with compensating deletes or a loop of updates.

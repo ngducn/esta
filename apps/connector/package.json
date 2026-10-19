@@ -1,0 +1,20 @@
+{
+  "name": "@esta/connector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "node ../../scripts/connector-integration.ts"
+  },
+  "dependencies": {
+    "@esta/core": "workspace:*",
+    "@esta/db": "workspace:*",
+    "@esta/ops": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@supabase/supabase-js": "^2.117.2",
+    "zod": "^4.6.5"
+  }
+}

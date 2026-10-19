@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { SuggestionList } from '@/components/properties/legacy-address-suggest';
 import { buttonVariants } from '@/components/ui/button-variants';
-import type { CurrentUnitSuggestion } from '@/server/address/suggest';
+import type { CurrentUnitSuggestion } from '@esta/ops';
 import { confirmCurrentAddress } from '@/server/properties/wizard';
 
 /** `Theo sổ` as accepted, and every ward it may belong to today as `Hiện nay`; a tap saves the one the user picks. */

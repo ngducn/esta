@@ -2,6 +2,7 @@ import 'server-only';
 import { AUDIT_ACTIONS, AUDIT_ACTOR_KINDS, type ActivityRow } from '@esta/core/activity';
 import { parseInstant, type Instant } from '@esta/core';
 import { propertyStatus, type PropertyStatusMark, type PropertyViewRow } from '@esta/core/properties';
+import { readPropertyDetail } from '@esta/ops';
 import { cache } from 'react';
 import { z } from 'zod';
 import { getClock } from '@/server/clock';
@@ -9,15 +10,13 @@ import { loadCollectionStates } from '@/server/collections/load';
 import { loadHoldingLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
-import { PROPERTY_ROW_COLUMNS, leaseFacts, propertyRowSchema } from './list';
+import { leaseFacts } from './list';
 
 export type PropertyDetail = PropertyViewRow & {
   readonly kindDetails: Readonly<Record<string, unknown>>;
   /** The `propertyStatus` marks on the Clock's date. */
   readonly statuses: readonly PropertyStatusMark[];
 };
-
-const kindDetailsSchema = z.object({ kind_details: z.record(z.string(), z.unknown()) });
 
 /**
  * The layout and each tab call this for the same id, so `cache` makes it one read per request. RLS limits the row to
@@ -26,17 +25,14 @@ const kindDetailsSchema = z.object({ kind_details: z.record(z.string(), z.unknow
 export const loadPropertyDetail = cache(async (id: string): Promise<PropertyDetail | null> => {
   if (!z.uuid().safeParse(id).success) return null;
   const [member, supabase, clock] = await Promise.all([requireMember(), createSessionClient(), getClock()]);
-  const [row, details, collections, holding] = await Promise.all([
-    supabase.from('property_list_rows').select(PROPERTY_ROW_COLUMNS).eq('household_id', member.household.id).eq('id', id).maybeSingle(),
-    supabase.from('properties').select('kind_details').eq('household_id', member.household.id).eq('id', id).maybeSingle(),
+  const [detail, collections, holding] = await Promise.all([
+    readPropertyDetail(supabase, member.household.id, id),
     loadCollectionStates(member.household.id, clock.today(), id),
     loadHoldingLeases(member.household.id, clock.today(), id),
   ]);
-  if (row.error) throw new Error(`Reading the property failed: ${row.error.message}`);
-  if (details.error) throw new Error(`Reading the property details failed: ${details.error.message}`);
-  if (row.data === null || details.data === null) return null;
-  const property = { ...propertyRowSchema.parse(row.data), ...leaseFacts(id, holding, clock.today()) };
-  return { ...property, kindDetails: kindDetailsSchema.parse(details.data).kind_details, statuses: propertyStatus({ ...property, collection: collections.get(id) ?? null }, clock.today()) };
+  if (detail === null) return null;
+  const property = { ...detail, ...leaseFacts(id, holding, clock.today()) };
+  return { ...property, statuses: propertyStatus({ ...property, collection: collections.get(id) ?? null }, clock.today()) };
 });
 
 const activitySchema = z
