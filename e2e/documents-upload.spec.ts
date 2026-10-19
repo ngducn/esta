@@ -87,7 +87,7 @@ function actionBodies(page: Page): number[] {
 }
 
 const isFilePut = (request: Request) =>
-  request.method() === 'PUT' && request.url().includes('/storage/v1/object/upload/sign/documents/') && !/\/(thumb(-blur)?|review)\.webp\?/.test(request.url());
+  request.method() === 'PUT' && request.url().includes('/storage/v1/object/upload/sign/documents/') && !/\/(thumb|review)\.webp\?/.test(request.url());
 
 async function uploadThroughCamera(page: Page, file: string) {
   await page.getByTestId('add-document').click();
@@ -96,7 +96,7 @@ async function uploadThroughCamera(page: Page, file: string) {
   await expect(page.getByTestId('upload-preview')).toBeVisible({ timeout: 30_000 });
 }
 
-test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurred, and the bytes go straight to Storage (DOC-1)', async ({ page }) => {
+test('rule 1: Mẹ photographs the Long An certificate, sees it saved and clear, and the bytes go straight to Storage (DOC-1, DOC-5)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   await archiveNewDocuments(page, 1, 'long-an');
   const bodies = actionBodies(page);
@@ -109,7 +109,7 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurre
     await expect(page.getByTestId('document-category')).toHaveValue('certificate');
     await expect(page.getByTestId('document-category').locator('option:checked')).toHaveText('Sổ đỏ / sổ hồng');
     await expect(page.getByTestId('document-title')).toHaveValue('Sổ hồng Long An');
-    await expect(page.getByTestId('upload-preview')).toHaveAttribute('data-blurred', 'true');
+    await expect(page.getByTestId('document-sensitive'), 'no sensitivity switch: the category sets it').toHaveCount(0);
     expect(await seriousAxeViolations(page)).toEqual([]);
     await page.getByTestId('save-document').click();
     await expect(page.getByRole('region', { name: /Thông báo/ }).getByText('Đã lưu Sổ hồng Long An.')).toBeVisible({ timeout: 30_000 });
@@ -120,14 +120,13 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurre
     expect(puts, 'the file went in one PUT to a signed upload URL').toHaveLength(1);
     expect(Math.max(...bodies), 'no server action body carries file bytes').toBeLessThan(10 * 1024);
     const names = (await folder(page, `${household(1)}/${row?.id}/`)).map((object) => object.name).toSorted();
-    expect(names, 'the bucket holds the file, both thumbnails and the review copy').toEqual(['page-1.jpg', 'review.webp', 'thumb-blur.webp', 'thumb.webp']);
-    await expect(tile(page, 'Sổ hồng Long An')).toHaveAttribute('data-blurred', 'true');
+    expect(names, 'the bucket holds the file, its thumbnail and the review copy, and no blurred copy').toEqual(['page-1.jpg', 'review.webp', 'thumb.webp']);
+    await expect(tile(page, 'Sổ hồng Long An').locator('img')).toHaveAttribute('src', new RegExp(`${row?.id}/thumb\\.webp`));
     const object = async (name: string) =>
       Buffer.from(await (await page.request.get(`${supabaseUrl}/storage/v1/object/documents/${household(1)}/${row?.id}/${name}`, { headers: service })).body());
-    const [clear, blurred, review, original] = await Promise.all([object('thumb.webp'), object('thumb-blur.webp'), object('review.webp'), object('page-1.jpg')]);
+    const [clear, review, original] = await Promise.all([object('thumb.webp'), object('review.webp'), object('page-1.jpg')]);
     const size = await sharp(clear).metadata();
     expect(Math.max(size.width ?? 0, size.height ?? 0), 'the thumbnail is at most 320 px on its long side').toBe(320);
-    expect(clear.equals(blurred), 'the blurred thumbnail differs from the clear one').toBe(false);
     const [reviewSize, originalSize] = await Promise.all([sharp(review).metadata(), sharp(original).metadata()]);
     const longSide = (size: { width?: number; height?: number }) => Math.max(size.width ?? 0, size.height ?? 0);
     expect(reviewSize.format).toBe('webp');
@@ -275,60 +274,38 @@ test('rule 5: the view route answers a no-store redirect to a signed URL and log
   expect(await accessCount(page, `document_id=eq.${id}&user_id=eq.${user}&action=eq.view`)).toBe(before + 1);
 });
 
-test('rule 6: the Bảo Lộc certificate stays blurred until Xem, then blurs again when the tab is hidden (DOC-5)', async ({ page }) => {
+test('rule 6: the Bảo Lộc certificate shows clear on its tile and its page, and only opening the page logs a view (DOC-5, DOC-4)', async ({ page }) => {
   await open(page, 'me.lane6@demo.esta.test', 'dark', PHONE);
   const id = documentId(6, 'bao-loc:certificate');
-  const clearThumbs: string[] = [];
-  page.on('request', (request) => (request.url().includes(`${id}/thumb.webp`) ? clearThumbs.push(request.url()) : undefined));
   const before = await accessCount(page, `document_id=eq.${id}&action=eq.view`);
   await documentsPage(page, 6, 'bao-loc');
   const certificate = tile(page, 'Sổ hồng Bảo Lộc');
-  await expect(certificate).toHaveAttribute('data-blurred', 'true', COLD_ROUTE);
-  await expect(certificate.locator('img')).toHaveAttribute('src', /thumb-blur\.webp/);
-  expect(clearThumbs, 'no clear thumbnail before the tap').toEqual([]);
-  await certificate.getByTestId('reveal-thumbnail').click();
-  await expect(certificate).toHaveAttribute('data-blurred', 'false');
-  await expect(certificate.locator('img')).toHaveAttribute('src', /\/thumb\.webp/);
-  expect(await accessCount(page, `document_id=eq.${id}&action=eq.view`)).toBe(before + 1);
-  await page.evaluate(() => {
-    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
-    document.dispatchEvent(new Event('visibilitychange'));
-    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
-    document.dispatchEvent(new Event('visibilitychange'));
-  });
-  await expect(certificate).toHaveAttribute('data-blurred', 'true');
+  const thumbnail = certificate.locator('img');
+  await expect(thumbnail).toHaveAttribute('src', new RegExp(`${id}/thumb\\.webp`), COLD_ROUTE);
+  await expect.poll(() => thumbnail.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(certificate.getByText('Đã che mờ')).toHaveCount(0);
+  await expect(certificate.getByRole('button')).toHaveCount(0);
+  expect(await accessCount(page, `document_id=eq.${id}&action=eq.view`), 'a tile logs no view').toBe(before);
+  await certificate.getByTestId('document-link').click();
+  await expect(page).toHaveURL(new RegExp(`/documents/${id}$`), COLD_ROUTE);
+  const shown = page.locator('img[data-testid="document-page"]');
+  await expect(shown).toBeVisible(COLD_ROUTE);
+  await shown.evaluate((img: HTMLImageElement) => img.decode());
+  expect(await shown.evaluate((img) => getComputedStyle(img).filter), 'the page draws the document unfiltered').toBe('none');
+  expect(await accessCount(page, `document_id=eq.${id}&action=eq.view`), 'opening the page logs one view').toBe(before + 1);
 });
 
-test('rule 11: a certificate tile holds its 4:3 box on a phone and a computer, and Xem waits for hydration (DOC-5)', async ({ page }) => {
+test('rule 11: a certificate tile holds its 4:3 box on a phone and a computer', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-  let release = () => {};
-  const scripts = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  await page.route(/\/_next\/static\/chunks\/.+\.js(\?.*)?$/, async (route) => {
-    await scripts;
-    await route.continue();
-  });
-  await page.goto(`/properties/${propertyId(3, 'bao-loc')}/documents`, { waitUntil: 'commit' });
-  const certificate = tile(page, 'Sổ hồng Bảo Lộc');
-  const xem = certificate.getByTestId('reveal-thumbnail');
-  await expect(xem, 'Xem waits for hydration, so an early tap is never lost').toBeDisabled(COLD_ROUTE);
-  release();
-  await expect(xem).toBeEnabled({ timeout: 60_000 });
-  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-
-  const image = certificate.locator('img');
+  await page.goto(`/properties/${propertyId(3, 'bao-loc')}/documents`);
+  const image = tile(page, 'Sổ hồng Bảo Lộc').locator('img');
   for (const viewport of [PHONE, DESKTOP]) {
     await page.setViewportSize(viewport);
-    await image.scrollIntoViewIfNeeded();
+    await image.scrollIntoViewIfNeeded(COLD_ROUTE);
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     const box = await image.boundingBox();
     expect(box === null ? null : Math.abs(box.width / box.height - 4 / 3), `the thumbnail keeps 4:3 at ${viewport.width} px, not ${box?.width}x${box?.height}`).toBeLessThan(0.02);
   }
-  await xem.click();
-  await expect(certificate).toHaveAttribute('data-blurred', 'false');
 });
 
 test('rule 7: a member of household 7 reaches nothing of household 8 (FND-2)', async ({ page }) => {

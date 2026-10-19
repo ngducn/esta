@@ -70,7 +70,6 @@ async function search(page: Page, query: string) {
 async function shot(page: Page, name: string) {
   if (evidence === undefined) return;
   mkdirSync(evidence, { recursive: true });
-  await page.waitForFunction(() => document.querySelector('[data-testid="reveal-thumbnail"][disabled]') === null);
   await page.evaluate(async () => {
     await document.fonts.ready;
     const images = [...document.images];
@@ -80,7 +79,7 @@ async function shot(page: Page, name: string) {
   await page.screenshot({ path: join(evidence, `${name}.png`), fullPage: true });
 }
 
-test('rule 1: Mẹ opens Tài liệu from Home, types bao loc so and opens Sổ hồng Bảo Lộc, blurred first, within 10 s (DOC-3, DOC-7)', async ({ page }) => {
+test('rule 1: Mẹ opens Tài liệu from Home, types bao loc so and opens Sổ hồng Bảo Lộc, shown clear, within 10 s (DOC-3, DOC-5, DOC-7)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   const certificate = documentId(1, 'bao-loc:certificate');
   const views = await accessCount(page, certificate, 'view');
@@ -92,15 +91,16 @@ test('rule 1: Mẹ opens Tài liệu from Home, types bao loc so and opens Sổ 
   await expect(expiring(page, 'Bảo hiểm cháy nổ Nhà phố Q7').getByTestId('expiring-days')).toHaveText('Hết hạn sau 23 ngày');
   await search(page, 'bao loc so');
   await expect(results(page).first().getByTestId('document-link')).toHaveText('Sổ hồng Bảo Lộc');
-  await expect(results(page).first()).toHaveAttribute('data-blurred', 'true');
-  await expect(results(page).first().getByTestId('reveal-thumbnail')).toHaveText('Xem');
+  await expect(results(page).first().locator('img')).toHaveAttribute('src', /\/thumb\.webp\?/);
+  await expect(results(page).first().getByRole('button')).toHaveCount(0);
   expect(Date.now() - started, 'from the tab tap to the first result').toBeLessThan(10_000);
   expect(page.url()).toMatch(/\/documents\?q=bao\+loc\+so$/);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   // documents-extract.spec.ts rule 1 uploads a second Sổ hồng Bảo Lộc to this lane, which can rank first on its id.
   const seeded = results(page).and(page.locator(`[data-document-id="${certificate}"]`));
-  await expect(seeded).toHaveAttribute('data-blurred', 'true');
+  await expect(seeded.locator('img')).toHaveAttribute('src', new RegExp(`${certificate}/thumb\\.webp`));
+  expect(await accessCount(page, certificate, 'view'), 'a search result logs no view').toBe(views);
   await seeded.getByTestId('document-link').click();
   await expect(page).toHaveURL(new RegExp(`/documents/${certificate}$`), COLD_ROUTE);
   await expect(page.locator('img[data-testid="document-page"]')).toBeVisible(COLD_ROUTE);
@@ -108,11 +108,12 @@ test('rule 1: Mẹ opens Tài liệu from Home, types bao loc so and opens Sổ 
   expect(await accessCount(page, certificate, 'view'), 'opening the page logs one view').toBe(views + 1);
 });
 
-test('rule 2: on a slow phone no request names a sensitive thumbnail before a tap (DOC-5)', async ({ page }) => {
+test('rule 2: on a slow phone the vault fetches each clear thumbnail once, sensitive ones too, and logs no view (DOC-5, DOC-4)', async ({ page }) => {
   test.setTimeout(120_000);
   await open(page, 'me.lane2@demo.esta.test', 'dark', PHONE);
   const sensitive = (await serviceGet<{ id: string }[]>(page, `documents?household_id=eq.${household(2)}&sensitivity=eq.sensitive&deleted_at=is.null&select=id`)).map((row) => row.id);
   expect(sensitive.length).toBeGreaterThan(0);
+  const views = await serviceGet<unknown[]>(page, `document_access_log?select=id&household_id=eq.${household(2)}&action=eq.view`);
   await page.goto('/');
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
@@ -123,11 +124,13 @@ test('rule 2: on a slow phone no request names a sensitive thumbnail before a ta
   await page.getByRole('navigation').getByRole('link', { name: 'Tài liệu' }).click();
   await expect(page.getByTestId('vault-groups')).toBeVisible({ timeout: 60_000 });
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await expect.poll(() => requested.filter((url) => url.includes('/thumb-blur.webp')).length, { timeout: 30_000 }).toBeGreaterThan(0);
-  const clear = requested.filter((url) => sensitive.some((id) => url.includes(`/${id}/thumb.webp`)));
-  expect(clear, 'no sensitive thumb.webp before Xem').toEqual([]);
+  const thumbnails = () => requested.filter((url) => /\/thumb\.webp\?/.test(url)).map((url) => new URL(url).pathname);
+  await expect.poll(() => sensitive.filter((id) => thumbnails().some((path) => path.includes(`/${id}/`))).length, { timeout: 30_000 }).toBeGreaterThan(0);
+  expect(thumbnails().length, 'no thumbnail is fetched twice').toBe(new Set(thumbnails()).size);
+  expect(requested.filter((url) => url.includes('/thumb-blur.webp')), 'no blurred thumbnail').toEqual([]);
   expect(requested.filter((url) => url.includes('/review.webp')), 'the vault never fetches a review copy').toEqual([]);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  expect(await serviceGet<unknown[]>(page, `document_access_log?select=id&household_id=eq.${household(2)}&action=eq.view`), 'a list logs no view').toHaveLength(views.length);
 });
 
 test('rule 3: Ryan finds the Thủ Đức lease with hop dong and Theo loại counts every certificate (DOC-3)', async ({ page }) => {
@@ -203,7 +206,7 @@ test('rule 6: in English at 130% and dark, bao loc so still finds Sổ hồng B�
     await expect(page.getByRole('heading', { name: 'Expiring soon' })).toBeVisible();
     await search(page, 'bao loc so');
     await expect(results(page).first().getByTestId('document-link')).toHaveText('Sổ hồng Bảo Lộc');
-    await expect(results(page).first()).toHaveAttribute('data-blurred', 'true');
+    await expect(results(page).first().locator('img')).toHaveAttribute('src', /\/thumb\.webp\?/);
     // documents-extract.spec.ts rule 9 uploads a second Sổ hồng Bảo Lộc to this lane, so count what is there now.
     const matches = await searchCount(page, 10, 'bao loc so');
     expect(matches).toBeGreaterThanOrEqual(1);
@@ -265,6 +268,7 @@ test('evidence: every vault state at 390x844 and 1440x900, light and dark', asyn
   const LANE = 6;
   await open(page, `me.lane${LANE}@demo.esta.test`, 'light', PHONE);
   const insurance = documentId(LANE, 'q7:insurance');
+  const certificate = documentId(LANE, 'bao-loc:certificate');
   const live = (await serviceGet<{ id: string }[]>(page, `documents?household_id=eq.${household(LANE)}&deleted_at=is.null&select=id`)).map((row) => row.id);
   const theme = async (value: 'light' | 'dark') => page.context().addCookies([{ name: 'esta_theme', value, url: test.info().project.use.baseURL ?? '' }]);
   const combos = [PHONE, DESKTOP].flatMap((viewport) => (['light', 'dark'] as const).map((value) => ({ viewport, theme: value, name: `${viewport.width}x${viewport.height}-${value}` })));
@@ -279,10 +283,15 @@ test('evidence: every vault state at 390x844 and 1440x900, light and dark', asyn
       await search(page, 'bao loc so');
       await expect(results(page).first()).toBeVisible();
       await shot(page, `p2-05-search-bao-loc-${combo.name}`);
-      await results(page).first().getByTestId('reveal-thumbnail').click();
-      await expect(results(page).first()).toHaveAttribute('data-blurred', 'false');
+      await search(page, 'cccd');
+      await expect(results(page).first().getByTestId('document-link')).toHaveText('CCCD Nguyễn Thị Demo');
       await results(page).first().locator('img').evaluate((img: HTMLImageElement) => img.decode());
-      await shot(page, `p2-05-revealed-${combo.name}`);
+      await shot(page, `rulings-cccd-tile-${combo.name}`);
+      await page.goto(`/documents/${certificate}`);
+      await expect(page.locator('[data-testid="document-page"][data-drawn="true"]')).toBeVisible(COLD_ROUTE);
+      await shot(page, `rulings-certificate-page-${combo.name}`);
+      await page.goto('/documents');
+      await expect(page.getByTestId('vault-search')).toBeVisible(COLD_ROUTE);
       await search(page, 'giay phep xay dung 1999');
       await expect(page.getByTestId('search-empty')).toBeVisible();
       await shot(page, `p2-05-no-results-${combo.name}`);

@@ -277,7 +277,7 @@ function replayDirFor(sha256: string): string {
   return dir;
 }
 
-test('rule 4: the Dĩ An certificate photographed page by page is blurred and reaches Chờ xem lại with one extraction', async ({ page }) => {
+test('rule 4: the Dĩ An certificate photographed page by page shows clear and reaches Chờ xem lại with one extraction', async ({ page }) => {
   test.setTimeout(120_000);
   await open(page, 'ryan.lane4@demo.esta.test', 'dark', DESKTOP);
   const property = propertyId(4, 'di-an');
@@ -288,7 +288,8 @@ test('rule 4: the Dĩ An certificate photographed page by page is blurred and re
     await page.getByTestId('capture-files-input').setInputFiles(photos);
     await expect(strip(page)).toHaveCount(3, { timeout: 15_000 });
     await page.getByTestId('combine-pages').click();
-    await expect(page.getByTestId('upload-preview')).toHaveAttribute('data-blurred', 'true', { timeout: 30_000 });
+    await expect(page.getByTestId('upload-preview')).toBeVisible({ timeout: 30_000 });
+    await expect.poll(() => page.getByTestId('upload-preview').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     await expect(page.getByTestId('document-category')).toHaveValue('certificate');
     await page.getByTestId('document-title').fill('Sổ hồng Dĩ An chụp');
     await page.getByTestId('save-document').click();
@@ -299,7 +300,7 @@ test('rule 4: the Dĩ An certificate photographed page by page is blurred and re
     // The replay key holds the file's SHA-256, which exists only once the browser has built the PDF.
     worker = await startAgentWorker({ replayDir: replayDirFor(row?.sha256 ?? '') });
     const tile = page.locator(`[data-testid="document-tile"][data-document-id="${row?.id}"]`);
-    await expect(tile).toHaveAttribute('data-blurred', 'true');
+    await expect(tile.locator('img')).toHaveAttribute('src', new RegExp(`${row?.id}/thumb\\.webp`));
     await expect(tile.getByTestId('extraction-status')).toHaveText('Chờ xem lại', { timeout: 20_000 });
     const extractions = await rest<{ status: string }[]>(page, 'GET', `document_extractions?document_id=eq.${row?.id}&select=status`);
     expect(extractions).toEqual([{ status: 'needs_review' }]);
