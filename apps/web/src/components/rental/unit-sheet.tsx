@@ -1,10 +1,11 @@
 'use client';
 
 import type { IsoDate } from '@esta/core/date';
+import { MAX_AMOUNT_VND } from '@esta/core/money';
 import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { vndInputText } from '@esta/core/properties';
-import { MAX_LIST_RENT_VND, UNIT_KINDS, type Unit, type UnitKind } from '@esta/core/schemas/units';
+import { UNIT_KINDS, type Unit, type UnitKind } from '@esta/core/schemas/units';
 import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -51,7 +52,7 @@ export default function UnitSheet({
     event.preventDefault();
     const areaValue = area.trim() === '' ? { ok: true as const, value: null } : parseMeasureInput(area, 'area');
     const rent = rentText.trim() === '' ? { ok: true as const, value: null } : parseVndInput(rentText);
-    const rentOk = rent.ok && (rent.value === null || rent.value <= MAX_LIST_RENT_VND);
+    const rentOk = rent.ok && (rent.value === null || rent.value <= MAX_AMOUNT_VND);
     const wrong: Invalid = label.trim() === '' ? 'label' : !areaValue.ok ? 'area' : !rentOk ? 'rent' : null;
     setInvalid(wrong);
     if (wrong !== null || !areaValue.ok || !rent.ok) {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { IsoDate } from '../date/iso-date';
-import type { Vnd } from '../money/vnd';
+import { MAX_AMOUNT_VND, type Vnd } from '../money/vnd';
 import { areaSchema, isoDateSchema, optionalText, text } from './legal';
 import { vndSchema } from './property';
 
@@ -11,9 +11,7 @@ export type UnitKind = (typeof UNIT_KINDS)[number];
 export const UTILITY_KINDS = ['electricity', 'water', 'internet', 'other'] as const;
 export type UtilityKind = (typeof UTILITY_KINDS)[number];
 
-/** `[app rule]` A ceiling far above any real monthly rent, so a property's summed rent stays a safe integer. */
-export const MAX_LIST_RENT_VND = 1_000_000_000_000;
-const listRentSchema = vndSchema.refine((amount) => amount <= MAX_LIST_RENT_VND);
+const listRentSchema = vndSchema.refine((amount) => amount <= MAX_AMOUNT_VND);
 
 export const unitSchema = z.strictObject({
   label: text(80),
