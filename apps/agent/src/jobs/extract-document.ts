@@ -4,7 +4,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { extractDocumentPrompt } from '../prompts/extract-document';
-import { ITEM_TITLES, localeOf, saveExtraction } from '../tools/save-extraction';
+import { itemTitle, localeOf, saveExtraction } from '../tools/save-extraction';
 import { estaTool } from '../tools/server';
 import type { AgentDb } from '../supabase';
 import type { AgentJob, JobContext, PreparedJob } from './registry';
@@ -140,7 +140,7 @@ export async function failExtractDocument({ db, job, clock }: Omit<JobContext, '
       kind: 'alert',
       severity: 'info',
       audience: 'all',
-      title: ITEM_TITLES.failed[locale](document.title),
+      title: itemTitle('failed', locale, document.title),
       related: { document_id: payload.data.document_id, extraction_id: payload.data.extraction_id },
       proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' },
       dedupe_key: `extract_failed:${payload.data.extraction_id}`,

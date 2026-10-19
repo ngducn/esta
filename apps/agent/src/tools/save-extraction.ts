@@ -11,13 +11,17 @@ export const MAX_SAVE_ATTEMPTS = 3;
 
 type Locale = 'vi' | 'en';
 
-export const ITEM_TITLES = {
+const ITEM_TITLES = {
   review: { vi: (title: string) => `Đã đọc xong ${title}. Mời bạn kiểm tra lại.`, en: (title: string) => `Finished reading ${title}. Please check it.` },
   failed: {
     vi: (title: string) => `Trợ lý không đọc được ${title}.`,
     en: (title: string) => `The assistant could not read ${title}.`,
   },
 } as const satisfies Record<string, Record<Locale, (title: string) => string>>;
+
+/** The document title is typed text and may hold a full ID; an item the assistant writes keeps only its last four (D11). */
+export const itemTitle = (item: keyof typeof ITEM_TITLES, locale: Locale, documentTitle: string): string =>
+  ITEM_TITLES[item][locale](reduceNationalIds(documentTitle));
 
 export const localeOf = (locale: string): Locale => (locale === 'en' ? 'en' : 'vi');
 
@@ -102,7 +106,7 @@ export function saveExtraction(binding: ExtractionBinding): (raw: Record<string,
           kind: 'alert',
           severity: 'info',
           audience: 'all',
-          title: ITEM_TITLES.review[binding.locale](binding.documentTitle),
+          title: itemTitle('review', binding.locale, binding.documentTitle),
           related: { document_id: binding.documentId, extraction_id: extractionId },
           dedupe_key: `extract_review:${extractionId}`,
           job_id: binding.jobId,
