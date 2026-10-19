@@ -35,6 +35,12 @@ describe('readSpreadsheet', () => {
     });
   });
 
+  it('keeps a quoted line break inside its cell, and refuses a CSV whose quotes it cannot split rather than guess its cells', async () => {
+    const read = await readSpreadsheet(csv('Mã,Ghi chú\nDEMOQ3,"dòng 1\ndòng 2"\n'));
+    expect(read.ok && read.value[0]?.rows[1]).toEqual([{ type: 'text', text: 'DEMOQ3' }, { type: 'text', text: 'dòng 1\ndòng 2' }]);
+    expect(await readSpreadsheet(csv('Mã,Ghi chú\nDEMOQ3,nhà "Demo\nDEMOGV,x\n'))).toEqual({ ok: false, reason: 'stray_quote' });
+  });
+
   it('cuts a sheet past the cell limit at a whole row and says so', async () => {
     const read = await readSpreadsheet(csv(`${'a,b\n'.repeat(MAX_CELLS / 2 + 5)}`));
     expect(read.ok && read.value[0]).toMatchObject({ truncated: true, rows: { length: MAX_CELLS / 2 } });

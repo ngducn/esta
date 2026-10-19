@@ -2,6 +2,7 @@ import type { IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
 import type { AmountReason } from '../parse/decimal';
 import type { DateInputReason } from '../parse/date-input';
+import { parseCsv, type CsvReason } from '../parse/csv';
 import { parseStatementAmount, parseStatementDate } from '../parse/statement';
 import type { Result } from '../result';
 import {
@@ -25,8 +26,6 @@ export type StatementRow = {
 
 export type AmountRefusal = AmountReason | 'credit_and_debit';
 
-/** A CSV record that cannot be split into cells with certainty. */
-export type CsvReason = 'stray_quote' | 'unterminated_quote';
 /** A `row` refusal covers the record as a whole: a malformed CSV record, or one whose cell count differs from the header. */
 export type RowRefusal = CsvReason | 'cell_count';
 
@@ -41,85 +40,6 @@ export type DecodedStatement = DetectedHeader & DecodedRows;
 export function cellText(cell: StatementCell | undefined): string {
   if (cell === null || cell === undefined) return '';
   return typeof cell === 'number' ? String(cell) : cell.trim();
-}
-
-const DELIMITERS = [',', ';', '\t'] as const;
-
-function detectDelimiter(firstLine: string): string {
-  let best: string = DELIMITERS[0];
-  let bestCount = -1;
-  for (const delimiter of DELIMITERS) {
-    const count = firstLine.split(delimiter).length - 1;
-    if (count > bestCount) [best, bestCount] = [delimiter, count];
-  }
-  return best;
-}
-
-export type CsvRecord = Result<string[], CsvReason>;
-
-const isLineEnd = (char: string | undefined): boolean => char === '\n' || char === '\r';
-
-function afterLineEnd(body: string, at: number): number {
-  return body[at] === '\r' && body[at + 1] === '\n' ? at + 2 : at + 1;
-}
-
-/** The index of the quote that closes, on the same line, a quoted field opened just before `from`, or -1. */
-function closingQuote(body: string, from: number): number {
-  for (let at = from; at < body.length && !isLineEnd(body[at]); at++) {
-    if (body[at] !== '"') continue;
-    if (body[at + 1] !== '"') return at;
-    at++;
-  }
-  return -1;
-}
-
-function readRecord(body: string, start: number, delimiter: string): { record: CsvRecord; next: number } {
-  const cells: string[] = [];
-  let stray = false;
-  let at = start;
-  for (;;) {
-    let field = '';
-    if (body[at] === '"') {
-      const close = closingQuote(body, at + 1);
-      if (close === -1) {
-        const lineEnd = body.slice(at).search(/[\r\n]/);
-        const next = lineEnd === -1 ? body.length : afterLineEnd(body, at + lineEnd);
-        return { record: { ok: false, reason: 'unterminated_quote' }, next };
-      }
-      field = body.slice(at + 1, close).replaceAll('""', '"');
-      at = close + 1;
-      if (at < body.length && body[at] !== delimiter && !isLineEnd(body[at])) stray = true;
-    }
-    for (; at < body.length && body[at] !== delimiter && !isLineEnd(body[at]); at++) {
-      if (body[at] === '"') stray = true;
-      field += body[at];
-    }
-    cells.push(field);
-    if (body[at] === delimiter) {
-      at++;
-      continue;
-    }
-    return { record: stray ? { ok: false, reason: 'stray_quote' } : { ok: true, value: cells }, next: afterLineEnd(body, at) };
-  }
-}
-
-/**
- * RFC 4180 text to records, one per line: a leading BOM, CRLF, quoted fields and doubled quotes are
- * handled. A statement carries one transaction per line, so a quoted field may not span a line
- * break. A quote opens a field only at its start. A record with a quote anywhere else, or whose
- * quote does not close on its line, is refused and reading resumes on the next line, so one bad
- * line costs one row.
- */
-export function decodeCsv(text: string): CsvRecord[] {
-  const body = text.startsWith('\uFEFF') ? text.slice(1) : text;
-  const delimiter = detectDelimiter(body.slice(0, body.search(/\r?\n|$/)));
-  const records: CsvRecord[] = [];
-  for (let at = 0; at < body.length; ) {
-    const { record, next } = readRecord(body, at, delimiter);
-    records.push(record);
-    at = next;
-  }
-  return records;
 }
 
 function splitAmount(creditText: string, debitText: string): Result<Vnd, AmountRefusal> {
@@ -196,7 +116,7 @@ export function decodeStatement(grid: StatementGrid): Result<DecodedStatement, H
  * `1,500,000` in a comma file splits into extra cells and would otherwise read as 1.
  */
 export function decodeStatementCsv(text: string): Result<DecodedStatement, HeaderReason> {
-  const records = decodeCsv(text);
+  const records = parseCsv(text, { spanLines: false });
   const grid = records.map((record) => (record.ok ? record.value : []));
   const header = detectColumnMapping(grid);
   if (!header.ok) return header;

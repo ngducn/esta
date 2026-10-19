@@ -1,4 +1,4 @@
-import { parseCsv } from '@esta/core/parse/csv';
+import { parseCsv, type CsvReason } from '@esta/core/parse/csv';
 import type { Result } from '@esta/core/result';
 import readXlsxFile from 'read-excel-file/node';
 import type { ReadFile } from './files';
@@ -43,13 +43,17 @@ function capped(name: string, rows: readonly (readonly Cell[])[]): Sheet {
   return { name, rows: kept, truncated: false };
 }
 
-export async function readSpreadsheet(file: ReadFile): Promise<Result<readonly Sheet[], 'unsupported_type'>> {
+export async function readSpreadsheet(file: ReadFile): Promise<Result<readonly Sheet[], 'unsupported_type' | CsvReason>> {
   if (ZIP.every((byte, index) => file.bytes[index] === byte)) {
     const sheets = await readXlsxFile<StoredNumber>(file.bytes, { parseNumber: (stored) => ({ stored }) }).catch(() => null);
     if (sheets === null) return { ok: false, reason: 'unsupported_type' };
     return { ok: true, value: sheets.map((sheet) => capped(sheet.sheet, sheet.data.map((row) => row.map(cell)))) };
   }
   if (!file.name.toLowerCase().endsWith('.csv')) return { ok: false, reason: 'unsupported_type' };
-  const rows = parseCsv(new TextDecoder('utf-8').decode(file.bytes)).map((row) => row.map(cell));
+  const rows: (readonly Cell[])[] = [];
+  for (const record of parseCsv(new TextDecoder('utf-8').decode(file.bytes), { spanLines: true })) {
+    if (!record.ok) return record;
+    rows.push(record.value.map(cell));
+  }
   return { ok: true, value: [capped(file.name, rows)] };
 }

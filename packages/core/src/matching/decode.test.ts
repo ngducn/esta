@@ -1,60 +1,8 @@
-import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { cellText, decodeCsv, decodeStatement, decodeStatementCsv, decodeStatementRows } from './decode';
+import { cellText, decodeStatement, decodeStatementCsv, decodeStatementRows } from './decode';
 import type { DetectedHeader } from './layouts';
 import { matchRows } from './match';
 import { SCENARIO_INVOICES } from './statement-scenario';
-
-const read = (...cells: string[]) => ({ ok: true, value: cells });
-const refused = (reason: string) => ({ ok: false, reason });
-
-describe('decodeCsv', () => {
-  it('reads comma-separated rows with a BOM, CRLF line ends and a trailing newline', () => {
-    expect(decodeCsv('\uFEFFa,b\r\n1,2\r\n')).toEqual([read('a', 'b'), read('1', '2')]);
-  });
-
-  it('keeps delimiters and doubled quotes inside quoted fields', () => {
-    expect(decodeCsv('x,y\n"3,500,000","he said ""hi"", then left"')).toEqual([read('x', 'y'), read('3,500,000', 'he said "hi", then left')]);
-  });
-
-  it('refuses a quoted field that would span a line break, then reads the next line as its own record', () => {
-    expect(decodeCsv('x,y\n"3,500,000","he said ""hi""\nthen left"')).toEqual([read('x', 'y'), refused('unterminated_quote'), refused('stray_quote')]);
-    expect(decodeCsv('a,b\r\n1,"open\r\n2,x\r\n3,"y"\r\n')).toEqual([read('a', 'b'), refused('unterminated_quote'), read('2', 'x'), read('3', 'y')]);
-  });
-
-  it('returns one record per line, whatever quotes the lines hold', () => {
-    const line = fc.string({ unit: fc.constantFrom('"', ',', ';', '\t', ' ', 'a', '7') });
-    fc.assert(
-      fc.property(fc.array(line, { minLength: 1, maxLength: 12 }), fc.constantFrom('\n', '\r\n'), (lines, end) => {
-        expect(decodeCsv(lines.map((text) => text + end).join(''))).toHaveLength(lines.length);
-      }),
-      { seed: 20261017, numRuns: 1000 },
-    );
-  });
-
-  it.each([
-    ['semicolons', 'a;b;c\n1;2;3', read('1', '2', '3')],
-    ['tabs', 'a\tb\tc\n1\t2\t3', read('1', '2', '3')],
-    ['commas when all three appear', 'a,b;c\td\n1,2;3\t4', read('1', '2;3\t4')],
-  ])('detects %s from the first line', (_label, text, secondRecord) => {
-    expect(decodeCsv(text)[1]).toEqual(secondRecord);
-  });
-
-  it('returns no records for empty text and keeps empty fields', () => {
-    expect(decodeCsv('')).toEqual([]);
-    expect(decodeCsv('a,,c\n,,\n')).toEqual([read('a', '', 'c'), read('', '', '')]);
-  });
-
-  it('opens a quoted field only at the start of a field, and refuses a record with a quote anywhere else', () => {
-    expect(decodeCsv('a,b\r\n1,CK "PHONG 5\r\n2,x\r\n')).toEqual([read('a', 'b'), refused('stray_quote'), read('2', 'x')]);
-    expect(decodeCsv('a,b\n"1"2,x\n3,y')).toEqual([read('a', 'b'), refused('stray_quote'), read('3', 'y')]);
-    expect(decodeCsv('a,b\n1, "x"\n')).toEqual([read('a', 'b'), refused('stray_quote')]);
-  });
-
-  it('refuses a record whose quote never closes and reads on from the next line', () => {
-    expect(decodeCsv('a,b\n1,"open\r\n2,x\n3,y\n')).toEqual([read('a', 'b'), refused('unterminated_quote'), read('2', 'x'), read('3', 'y')]);
-  });
-});
 
 describe('decodeStatementCsv', () => {
   const header = 'Date,Reference,Amount,Description\r\n';
