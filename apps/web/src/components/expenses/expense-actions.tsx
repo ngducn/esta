@@ -16,7 +16,7 @@ export function ExpenseActions({ labels, primary = false }: { labels: { add: str
   const open = useOpenExpense();
   const hydrated = useHydrated();
   return (
-    <div className="grid grid-cols-1 gap-2 min-[22rem]:grid-cols-2 sm:flex sm:flex-wrap" onPointerEnter={warmExpenseSheet} onFocus={warmExpenseSheet}>
+    <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap" onPointerEnter={warmExpenseSheet} onFocus={warmExpenseSheet}>
       <button
         type="button"
         data-testid="add-expense"
