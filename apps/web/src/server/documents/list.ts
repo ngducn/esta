@@ -13,7 +13,6 @@ export type DocumentListItem = {
   readonly expiresOn: IsoDate | null;
   readonly propertyId: string | null;
   readonly propertyName: string | null;
-  /** The clear thumbnail, for every document alike (DOC-5). */
   readonly thumbUrl: string | null;
 };
 

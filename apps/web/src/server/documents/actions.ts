@@ -87,7 +87,7 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
 
 export type Registered = { readonly ok: true; readonly title: string } | { readonly ok: false };
 
-/** Writes the row once the file is in Storage, sensitive when its category is (DOC-5). A retry converges on one row. */
+/** Writes the row once the file is in Storage. A retry with the same id converges on one row. */
 export async function registerDocument(input: unknown): Promise<Registered> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success || !acceptsMime(parsed.data.category, parsed.data.mime)) return { ok: false };

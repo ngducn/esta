@@ -146,7 +146,6 @@ function finish(collected: Collected, decided: Decided): PlanResult {
   return { ok: true, plan: { steps: collected.steps, acceptedFields: decided.acceptedFields } };
 }
 
-/** One value a plan keeps as the assistant read it, and the field it came from. */
 export type ReadValue = { readonly path: string; readonly value: string | number };
 
 /**
