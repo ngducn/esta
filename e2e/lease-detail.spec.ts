@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -53,6 +53,12 @@ async function rest<T>(page: Page, method: 'GET' | 'POST' | 'PATCH', path: strin
 async function seriousAxeViolations(page: Page): Promise<string[]> {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+}
+
+/** An enabled button fades its colors in; axe reads it once the fade has finished. */
+async function settled(button: Locator) {
+  await expect(button).toBeEnabled();
+  await button.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
 }
 
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
@@ -128,6 +134,7 @@ test('rule 2: amending Phòng 2 offers only starts after 07/10/2026, bills the n
   if (first === undefined) throw new Error('no amendable start');
   await sheet.getByRole('textbox', { name: 'Tiền thuê mới mỗi tháng' }).fill('2700000');
   await sheet.getByTestId('amend-reason').fill('Phụ lục Demo tăng giá');
+  await settled(sheet.getByTestId('amend-save'));
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('amend-sheet-1440-light.png') });
   await sheet.getByTestId('amend-save').click();
@@ -165,6 +172,7 @@ test('rule 3: terminating from 31/10/2026 asks the exact question, keeps the iss
   await dialog.getByTestId('terminate-confirm').click();
   await expect(dialog.getByTestId('lease-change-refusal')).toHaveText('Nhập lý do kết thúc.');
   await dialog.getByTestId('terminate-reason').fill('Người thuê chuyển đi');
+  await settled(dialog.getByTestId('terminate-confirm'));
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('terminate-390-dark.png') });
   await dialog.getByTestId('terminate-confirm').click();
@@ -196,6 +204,7 @@ test('rule 4: renewing by 5% previews 9.500.000 ₫ and opens the new lease from
   await sheet.getByTestId('renew-increase').fill('5');
   await expect(sheet.getByTestId('renew-preview').locator('data')).toHaveText(`9.500.000${NBSP}₫`);
   await expect(sheet.getByTestId('renew-preview')).toContainText(`Đang là 9.000.000${NBSP}₫`);
+  await settled(sheet.getByTestId('renew-save'));
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('renew-sheet-1440-dark.png') });
   await sheet.getByTestId('renew-save').click();

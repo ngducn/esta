@@ -289,7 +289,7 @@ begin
 end;
 $$;
 
--- The active lease a member may change, locked for the rest of the transaction.
+-- The lease when the caller is a member of its household, locked for the rest of the transaction.
 create function private.member_lease(p_lease_id uuid)
 returns public.leases
 language plpgsql
