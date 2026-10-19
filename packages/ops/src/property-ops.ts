@@ -1,10 +1,9 @@
 import { formatCurrentAddress } from '@esta/core/address';
 import { propertyInputSchema, type PropertyInput } from '@esta/core/schemas/property';
 import type { Tables } from '@esta/db';
-import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
 import { isCommuneOf } from './address';
-import { dbRefusal, idSchema, invalid, type CommonRefusal } from './kit';
+import { changedColumns, dbRefusal, idSchema, invalid, type CommonRefusal } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 import { readPropertyForm, type StoredProperty } from './properties';
 
@@ -122,12 +121,11 @@ export const propertyEdit = defineOp({
     const ward = await wardRefusal(ctx, property.data);
     if (ward !== null) return refuse(ward);
     const next = toRow(property.data);
-    const keys = ROW_KEYS.filter((key) => !isDeepStrictEqual(current[key], next[key]));
-    if (keys.length === 0) return unchanged<PropertySaved>({ id, nickname: current.nickname });
-    const taken = keys.includes('code') ? await codeHolder(ctx, next.code, id) : null;
+    const changed = changedColumns<PropertyColumns>(current, next, ROW_KEYS);
+    if (changed === null) return unchanged<PropertySaved>({ id, nickname: current.nickname });
+    const taken = 'code' in changed.set ? await codeHolder(ctx, next.code, id) : null;
     if (taken !== null) return refuse(taken);
-    const pick = (row: PropertyColumns) => Object.fromEntries(keys.map((key) => [key, row[key]])) as Partial<PropertyColumns>;
-    return change({ id, before: pick(current), set: pick(next) });
+    return change({ id, ...changed });
   },
   async apply(ctx, { id, set }) {
     const { data, error } = await ctx.db

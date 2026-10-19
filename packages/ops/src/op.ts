@@ -1,6 +1,6 @@
 import type { Clock } from '@esta/core';
 import type { Result } from '@esta/core/result';
-import type { Database } from '@esta/db';
+import type { Database, Json } from '@esta/db';
 import type { z } from 'zod';
 import type { Db } from './db';
 import { invalid, type CommonRefusal, type Refusal } from './kit';
@@ -24,8 +24,10 @@ export type Op<I, C, O, R extends Refusal, X extends OpContext = OpContext> = {
   readonly input: z.ZodType<I, unknown>;
   readonly plan: (ctx: X, input: I) => Promise<Result<Planned<C, O>, R | CommonRefusal>>;
   readonly apply: (ctx: X, change: C) => Promise<Result<O, R | CommonRefusal>>;
-  /** The rows the change creates, as a later item in the batch reads them before they land. */
+  /** The rows the change creates or sets, as a later item in the batch reads them before they land. */
   readonly writes?: (change: C) => readonly Write[];
+  /** What Ryan sees beside the change, with Vietnamese display strings. Only `planChanges` asks; it is never stored or compared. */
+  readonly preview?: (ctx: X, change: C) => Promise<Json>;
 };
 
 export function defineOp<I, C, O, R extends Refusal = never, X extends OpContext = OpContext>(op: Op<I, C, O, R, X>): Op<I, C, O, R, X> {

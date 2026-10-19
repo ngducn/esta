@@ -21,7 +21,7 @@ export const MAX_ITEMS = 200;
 export const MAX_BATCHES_PER_HOUR = 20;
 
 export type ItemPlan =
-  | { readonly status: 'change'; readonly change: Json }
+  | { readonly status: 'change'; readonly change: Json; readonly preview?: Json }
   | { readonly status: 'unchanged'; readonly current: Json }
   | { readonly status: 'refused'; readonly refusal: Refusal };
 
@@ -51,9 +51,9 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
       const planned = await op.plan(ctx, input.data);
       if (!planned.ok) return refused(planned.reason);
       const { value } = planned;
-      return value.kind === 'change'
-        ? { plan: { status: 'change', change: asJson(value.change) }, writes: op.writes?.(value.change) ?? [] }
-        : { plan: { status: 'unchanged', current: asJson(value.current) }, writes: [] };
+      if (value.kind === 'unchanged') return { plan: { status: 'unchanged', current: asJson(value.current) }, writes: [] };
+      const preview = await op.preview?.(ctx, value.change);
+      return { plan: { status: 'change', change: asJson(value.change), ...(preview === undefined ? {} : { preview }) }, writes: op.writes?.(value.change) ?? [] };
     },
     async settle(ctx, raw, approved) {
       const input = op.input.safeParse(raw);
