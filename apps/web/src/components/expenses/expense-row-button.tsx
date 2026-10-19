@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import type { ExpenseRow } from '@/server/expenses/load';
 import { useOpenExpense, warmExpenseSheet } from './expense-host';
 
-/** A row of the Thu chi list opens its expense in the sheet, to edit or delete it. */
 export function ExpenseRowButton({ expense, label, children }: { expense: ExpenseRow; label: string; children: ReactNode }) {
   const open = useOpenExpense();
   return (

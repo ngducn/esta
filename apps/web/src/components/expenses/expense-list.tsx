@@ -8,7 +8,6 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import { ExpenseRowButton } from './expense-row-button';
 
-/** One year of a property's expenses, newest first. A member opens a row to edit it; a viewer reads it. */
 export async function ExpenseList({ rows, canEdit }: { rows: readonly ExpenseRow[]; canEdit: boolean }) {
   const [t, locale] = await Promise.all([getTranslations('expenses'), getLocale()]);
   return (

@@ -6,7 +6,6 @@ import { propertyId } from './units.ts';
 
 type VendorSeed = { readonly key: string; readonly kind: 'individual' | 'organization'; readonly fullName: string; readonly tags: readonly string[] };
 
-/** The people and firms the seeded expenses pay, offered by the vendor picker. */
 const VENDOR_SEEDS = [
   { key: 'tho-sua', kind: 'individual', fullName: 'Thợ sửa nhà Demo', tags: ['contractor'] },
   { key: 'tho-dien-nuoc', kind: 'individual', fullName: 'Thợ điện nước Demo', tags: ['contractor'] },

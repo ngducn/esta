@@ -5,7 +5,6 @@ import type { AbstractIntlMessages, Locale } from 'next-intl';
 import { createContext, lazy, Suspense, useCallback, useContext, useState, type ReactNode } from 'react';
 import type { ExpenseRow, ExpenseVendorOption } from '@/server/expenses/load';
 
-/** What every expense sheet of one property needs, read on the server. */
 export type ExpenseScope = {
   readonly propertyId: string;
   readonly nickname: string;

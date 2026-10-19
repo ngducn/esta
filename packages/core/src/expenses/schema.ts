@@ -58,7 +58,6 @@ export type ExpenseInput = z.output<ReturnType<typeof expenseInputSchema>>;
 
 export type ExpenseProblems = { readonly amount?: AmountProblem; readonly paidOn?: PaidOnProblem; readonly form?: 'invalid' };
 
-/** The refusals of a failed parse by field, for the sheet's inline messages. */
 export function expenseProblems(error: z.ZodError): ExpenseProblems {
   const problems: { amount?: AmountProblem; paidOn?: PaidOnProblem; form?: 'invalid' } = {};
   for (const issue of error.issues) {
