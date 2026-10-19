@@ -104,6 +104,8 @@ Keys added by the generator:
 | Lease | `seed:lease:<household>:<property>:<n>` | `seed:lease:lane-2:di-an:5` |
 | Invoice | `seed:invoice:<household>:<property>:<n>:<period start>` | `seed:invoice:demo:di-an:5:2026-09-25` |
 | Invoice line | `seed:invoice-line:<household>:<property>:<n>:<period start>:<line>` | `seed:invoice-line:demo:di-an:5:2026-09-25:1` |
+| Vendor party | `seed:party:vendor-<household>:<vendor>` | `seed:party:vendor-demo:tho-sua` |
+| Expense | `seed:expense:<household>:<property>:<yyyy-mm>:<n>`, `<n>` counting the property's expenses in that month | `seed:expense:lane-1:q7:2026-08:1` |
 
 `<property>` is a SPEC §9.3 seed key: `q7`, `thu-duc`, `di-an`, `q1`, `bien-hoa`, `long-an` or `bao-loc`. A property's `code` is that key in uppercase without hyphens, such as `DIAN`.
 
@@ -118,6 +120,12 @@ Inserting a property makes its `whole` unit `Toàn bộ` (migration `20261007202
 ## Leases and invoices
 
 `leasing.ts` seeds the SPEC §9.3 leases, `<n>` being the unit's position on its property: `q7` quarterly from 2025-01-01 with the tenant company withholding tax, `thu-duc` monthly to 2026-11-01, Dĩ An Phòng 1 to 6 monthly from the 25th, Phòng 7 to 2026-09-15, `q1` annual from 2026-03-01, and `bien-hoa` to 2026-07-29. Rent before Esta counts as paid through each lease's `paid_through_date`. The database writes the invoices: after the tables, `billingSql` runs `end_expired_leases` and `run_invoicing` for every night from 2025-10-01 to 2026-10-07, as the daily cron does, so the seed holds exactly what nightly billing writes, and Phòng 7 and `bien-hoa` end when their end dates pass. One step stands in for meter entry until P3-14: on 2026-10-03 it issues Dĩ An's October drafts through `private.issue_invoice`, the path meter entry will take, because September's readings were complete that day (SPEC §9.3). So the invoices are the six Dĩ An invoices due 2026-10-25 issued on 2026-10-03, Phòng 5's unpaid invoice due 2026-09-25, a draft for Thủ Đức's last day, 2026-11-01, and every earlier one. They are that day's state whatever `--as-of` says. A seed-only trigger gives each invoice and line its seed id and a memo code drawn from its key, and the invoice numbers are the ones the numbering trigger gives in billing order. Every issued invoice due before 2026-10-07 other than Phòng 5's is paid in full; payment dates, the cash share and Phòng 2's second transfer are drawn from `md5` of `payment:<property>:<unit>:<period start>`, so two resets write the same rows. `lease_amendments` holds one rent change, `q7` to 16,000,000 VND from 2027-01-01, after every billed period, and `documents.lease_id` files the Thủ Đức contract under its lease (P3-08).
+
+## Expenses
+
+`expenses.ts` seeds twelve months of expenses, October 2025 to September 2026, the same in every household (SPEC §9.3): repairs, upkeep and the fire insurance on `q7`, the monthly management fee of 1.200.000 VND on `thu-duc`, repairs on `di-an`, the broker and notary fees of the `q1` lease, a clean-out of `bien-hoa`, and the 2026 land tax on `bao-loc`. `long-an` has none, so its Thu chi tab shows the empty year. Four vendor parties (`Thợ sửa nhà Demo`, `Thợ điện nước Demo`, `Ban quản lý Chung cư Demo Bình Thọ` and `Môi giới Demo Quận 1`) are the payees.
+
+Nhà phố Q7's `repair` expenses paid in 2026 total **8.650.000 VND** (3.200.000 on 2026-02-20, 950.000 on 2026-05-14 and 4.500.000 on 2026-08-22). AGENT.md §7.4 question 7 and P4-02's lane 7 read this figure; `generator.test.ts` fails when the seed and this line disagree.
 
 ## Cover photos and bulk properties
 

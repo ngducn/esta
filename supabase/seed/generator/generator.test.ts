@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseInstant } from '../../../packages/core/src/index.ts';
 import { NON_BUSINESS_COLUMNS, SEEDED_AUTH_COLUMNS } from '../../../scripts/db-checksum.ts';
 import { seedId } from './ids.ts';
+import { EXPENSE_SEEDS } from './expenses.ts';
 import { DEFAULT_OPTIONS, generate, parseOptions } from './index.ts';
 import { PROPERTY_SEEDS } from './properties.ts';
 import { createRng, rngFor } from './rng.ts';
@@ -224,5 +227,28 @@ describe('rng', () => {
     expect(draws(createRng(42))).toEqual(draws(createRng(42)));
     expect(draws(rngFor('payments'))).toEqual(draws(rngFor('payments')));
     expect(draws(rngFor('payments'))).not.toEqual(draws(rngFor('invoices')));
+  });
+});
+
+describe('expenses', () => {
+  it('seeds twelve months of expenses with the Q7 2026 repair total the README records', () => {
+    const months = new Set(EXPENSE_SEEDS.map((seed) => seed.paidOn.slice(0, 7)));
+    expect([...months].toSorted()).toEqual([
+      '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09',
+    ]);
+    const total = EXPENSE_SEEDS.filter((seed) => seed.property === 'q7' && seed.category === 'repair' && seed.paidOn.startsWith('2026-')).reduce(
+      (sum, seed) => sum + seed.amountVnd,
+      0,
+    );
+    expect(total).toBe(8_650_000);
+    const readme = readFileSync(join(import.meta.dirname, '..', 'README.md'), 'utf8');
+    expect(readme).toContain(`repair\` expenses paid in 2026 total **${new Intl.NumberFormat('vi-VN').format(total)} VND**`);
+  });
+
+  it('gives every household its own expense ids', () => {
+    const sql = generate({ ...DEFAULT_OPTIONS, lanes: 2 });
+    const ids = insertedRows(sql, 'public.expenses').map((row) => row.split("'")[1]);
+    expect(ids).toHaveLength(EXPENSE_SEEDS.length * 3);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
