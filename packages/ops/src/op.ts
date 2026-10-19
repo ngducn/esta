@@ -4,8 +4,10 @@ import type { Database } from '@esta/db';
 import type { z } from 'zod';
 import type { Db } from './db';
 import { invalid, type CommonRefusal, type Refusal } from './kit';
+import type { Pending, Write } from './view';
 
-export type OpContext = { readonly db: Db; readonly householdId: string; readonly clock: Clock };
+/** `pending` is the batch planned so far; only `planChanges` sets it, so apply and every screen read the database alone. */
+export type OpContext = { readonly db: Db; readonly householdId: string; readonly clock: Clock; readonly pending?: Pending };
 
 /** The change to approve, or nothing to do because the database already holds what the input asks for. */
 export type Planned<C, O> = { readonly kind: 'change'; readonly change: C } | { readonly kind: 'unchanged'; readonly current: O };
@@ -22,6 +24,8 @@ export type Op<I, C, O, R extends Refusal, X extends OpContext = OpContext> = {
   readonly input: z.ZodType<I, unknown>;
   readonly plan: (ctx: X, input: I) => Promise<Result<Planned<C, O>, R | CommonRefusal>>;
   readonly apply: (ctx: X, change: C) => Promise<Result<O, R | CommonRefusal>>;
+  /** The rows the change creates, as a later item in the batch reads them before they land. */
+  readonly writes?: (change: C) => readonly Write[];
 };
 
 export function defineOp<I, C, O, R extends Refusal = never, X extends OpContext = OpContext>(op: Op<I, C, O, R, X>): Op<I, C, O, R, X> {
