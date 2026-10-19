@@ -38,7 +38,16 @@ async function rest(page: Page, method: 'POST' | 'PATCH' | 'DELETE', path: strin
   expect(response.ok(), await response.text()).toBe(true);
 }
 
+/** Lets running transitions end first, so axe never reads a color mid-fade, such as Xong turning from outline to filled. */
 async function seriousAxeViolations(page: Page): Promise<string[]> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
