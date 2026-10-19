@@ -23,6 +23,8 @@ You own one PR of Esta v1 from build to merge-ready (see the 2026-10-15 update i
 
 ## Rules
 
+- Evidence budget (standing orders 2026-10-19 18:00): two to four key screenshots in the PR body, no videos or full screenshot matrices; Lighthouse only when the change touches a budgeted route's loading path or bundle, three runs per side; run only the specs your change touches. These override any older brief or plan box that asks for more.
+
 - GitHub Actions is off. CI is `/Users/ngducn/Workplace/esta/tools/ci-local.sh <worktree> <pr> <slot>`, which runs the five jobs in a fresh throwaway worktree at your pushed PR head (uncommitted and gitignored files in yours never count, so commit and push first), then posts `local-ci/*` statuses and a summary comment; `gh pr checks` shows them. Run it once at code-ready (owners) or at the verdict head (gates lane), never in a loop.
 - Screenshots in a PR body or comment must render on GitHub. Publish them with `~/.claude/orchestrate/esta/bin/pr-media.sh <pr> <image>...` (it pushes them to the `pr-media` branch) and paste the Markdown it prints. Never list `/tmp` paths as evidence a reviewer is meant to see.
 - Write temporary files (PR bodies, logs, probes) under `/tmp/owner-<pr id>/`, never in a shared scratchpad, so parallel owners never overwrite each other.

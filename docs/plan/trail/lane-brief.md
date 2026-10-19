@@ -12,6 +12,8 @@ You are one independent verifier lane for one PR of the Esta v1 stack (github.co
 
 ## Rules
 
+- Probe the risk (standing orders 2026-10-19 18:00): test the risky behavior directly (money, refusals, state transitions, the defect classes your brief names) instead of re-screenshotting every plan lane in four combinations; build trunk only when a difference must be shown; screenshot only what your report cites.
+
 - GitHub Actions is off. CI is `/Users/ngducn/Workplace/esta/tools/ci-local.sh <worktree> <pr> <slot>`, which runs the five jobs in a fresh throwaway worktree at your pushed PR head (uncommitted and gitignored files in yours never count, so commit and push first), then posts `local-ci/*` statuses and a summary comment; `gh pr checks` shows them. Run it once at code-ready (owners) or at the verdict head (gates lane), never in a loop.
 - When a lane switches one slot between trunk and head, run `pnpm db:stop` then `pnpm db:start` from the checkout you switch to before `pnpm db:reset`. A reset alone keeps the previous checkout's auth config and email templates.
 - Many agents share this machine. Stop only processes you started, by the PID you recorded when you started them (`kill <pid>`). Never use `pkill`, `killall` or `kill` by name or pattern, which kills other agents' servers.

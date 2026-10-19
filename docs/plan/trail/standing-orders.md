@@ -237,3 +237,18 @@ Rules from this update (agent interpretation; the operator can change them in hi
 1. Quality gate in CI. `pnpm check`, which the local CI's check job runs on every PR, gains a ratchet: duplicated code, oversized files and a registry of known smells, each pinned in a committed baseline that may only go down, with `ARCHITECTURE.md` naming the one home for each concern. Built as its own PR now.
 2. Every verification round, at every tier, includes a codebase-health lane (Sonnet, no stack) that applies the thermo-nuclear standard and `ARCHITECTURE.md` to the diff. A diff that adds a second way to do something with a home, a duplicated rule, logic in the wrong layer, a multi-row write outside one transaction, or a file over the size limit is blocked. Lane and owner briefs carry the same scope.
 3. The consolidation round starts now, beside the critical path, instead of at the Phase 3 boundary: correctness first (#182, #184, #183, #185), then the shared action kit and operations layer, the shared UI hooks, the e2e helpers, the single SQL billing planner, and the migration squash before the first deploy. Each PR lowers the baseline. The outsider review reruns when the round ends, with a target of 8.5 or better in every column.
+
+## Update 2026-10-19 18:00 +07
+
+Operator's words, 2026-10-19: "is there a way we can speed this up? is there steps of the checks that is not absolutely necessary or slowed us down historically but add no value?"
+
+Evidence from today's runs: the no-stack second-opinion and codebase-health lanes caught most blocking defects (#169, #172, #177, #187, #201); live lanes found one in five runs (#172's two display bugs) at 16 to 61 minutes each with two production builds; round-2 lanes found nothing in four of four; CI never failed a PR in seven runs; owners' screenshot matrices, videos and 5-to-10-run Lighthouse comparisons took heavy-lock time and served a merge click Ryan has since delegated. The bottleneck is the heavy lock and the two slots.
+
+Rules from this update (agent interpretation; the operator can change them):
+
+1. Owners: two to four key screenshots in the PR body, no videos or full screenshot matrices; Lighthouse only when the change touches a budgeted route's loading path or bundle, three runs per side; run only the specs the change touches (CI runs the full suite).
+2. Live lanes probe the risky behavior (money, refusals, state transitions, the defect classes in the brief) rather than re-screenshotting every plan lane in four combinations; build trunk only when a difference must be shown; screenshot only what the report cites.
+3. Round 2 after a fix-forward of about 150 lines or fewer whose findings came with repro scripts: the root reruns those scripts on the new head plus CI; an LLM lane runs only for larger fix-forwards or ones that change SQL money paths.
+4. CI after a rebase: when main's new commits touch none of the PR's files and the range-diff is identical, run the check and db jobs only; the full suite reruns when files overlap.
+5. Engineering: a per-household test clock so the clock-bound Playwright specs run in parallel, as the next cleanup PR.
+The quality bar (codebase-health lane, no-stack second opinions, the two-fix-forward ceiling) is unchanged.
