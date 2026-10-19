@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { PROPERTY_KINDS, kindDetailsSchema, type PropertyKind } from '../schemas/property';
 import { KIND_FIELDS, kindDetailsText, readKindDetails, type KindFieldTexts } from './form-fields';
@@ -35,6 +36,15 @@ describe('KIND_FIELDS', () => {
 
   it.each(PROPERTY_KINDS)('round-trips %s details through the edit text', (kind) => {
     expect(readKindDetails(kind, kindDetailsText(kind, typed[kind].details))).toEqual({ ok: true, value: typed[kind].details });
+  });
+
+  it('opens every frontage and road width the schema keeps in the editor as text that saves as the same length', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 999_999 }), (hundredths) => {
+        const details = { frontage_m: hundredths / 100, road_width_m: hundredths / 100 };
+        expect(readKindDetails('residential_land', kindDetailsText('residential_land', details))).toEqual({ ok: true, value: details });
+      }),
+    );
   });
 });
 
