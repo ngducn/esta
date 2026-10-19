@@ -104,6 +104,7 @@ export const propertyCreate = defineOp({
       .single();
     return error ? refuse(dbRefusal(error)) : { ok: true, value: data };
   },
+  writes: ({ id, row }) => [{ kind: 'create', table: 'properties', row: { id, nickname: row.nickname } }],
 });
 
 /**
