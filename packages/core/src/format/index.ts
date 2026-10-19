@@ -93,3 +93,4 @@ export function formatMonthWithin(date: IsoDate, context: IsoDate, locale: Local
   const { month } = dateParts(date);
   return locale === 'vi' ? String(month) : (MONTHS_EN[month - 1] ?? '');
 }
+export { vndInWords } from './words';

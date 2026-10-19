@@ -25,6 +25,9 @@ export const colors = {
   'due-fill': { light: [97.2, 0.022, 80], dark: [28, 0.04, 70] },
   'overdue-fill': { light: [96, 0.017, 27], dark: [27, 0.05, 28] },
   'vacant-fill': { light: [96, 0.005, 258], dark: [27, 0.012, 265] },
+  // A QR code stays dark on light in both themes, because many bank apps cannot read an inverted code.
+  'qr-paper': { light: [99.5, 0.002, 265], dark: [99.5, 0.002, 265] },
+  'qr-ink': { light: [20.9, 0.01, 268], dark: [20.9, 0.01, 268] },
 } as const satisfies Record<string, Record<Theme, Oklch>>;
 
 export type ColorToken = keyof typeof colors;
