@@ -126,6 +126,7 @@ test('rule 2: on a slow phone no request names a sensitive thumbnail before a ta
   await expect.poll(() => requested.filter((url) => url.includes('/thumb-blur.webp')).length, { timeout: 30_000 }).toBeGreaterThan(0);
   const clear = requested.filter((url) => sensitive.some((id) => url.includes(`/${id}/thumb.webp`)));
   expect(clear, 'no sensitive thumb.webp before Xem').toEqual([]);
+  expect(requested.filter((url) => url.includes('/review.webp')), 'the vault never fetches a review copy').toEqual([]);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 });
 

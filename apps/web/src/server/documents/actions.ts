@@ -57,9 +57,9 @@ export type UploadTicket =
   | { readonly ok: false };
 
 /**
- * Picks the document id and signs one upload URL for the file and one for each preview made from it. The browser sends the bytes
- * straight to Storage; the session client signs, so the storage insert policy decides. Upsert lets a retry rewrite
- * the same path. Same-household rows with the same SHA-256 come back for the duplicate warning.
+ * Picks the document id and signs one upload URL for the file and one for each preview made from it. The browser
+ * sends the bytes straight to Storage; the session client signs, so the storage insert policy decides. Upsert lets a
+ * retry rewrite the same path. Same-household rows with the same SHA-256 come back for the duplicate warning.
  */
 export async function createDocumentUpload(input: unknown): Promise<UploadTicket> {
   const parsed = uploadSchema.safeParse(input);
