@@ -7,7 +7,7 @@ import type { SessionRequest } from '../sdk/session';
 import { extractRequest } from './extract-document';
 import { JOBS } from './registry';
 
-export type ExtractSession = { readonly request: SessionRequest; saved(): Record<string, unknown> | null };
+type ExtractSession = { readonly request: SessionRequest; saved(): Record<string, unknown> | null };
 
 /**
  * The worker's extract_document request for one file outside a job, for the recorder, the golden test and the accuracy

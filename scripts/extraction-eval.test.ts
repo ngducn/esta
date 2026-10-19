@@ -1,7 +1,11 @@
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { REQUIRED_FIELDS } from '../packages/core/src/extraction/required-fields.ts';
 import type { ExtractionScore } from '../packages/core/src/extraction/score.ts';
-import { buildReport, formatReport, scoreOutput, summaryLine, syntheticFixtures, type FixtureResult } from './extraction-eval.ts';
+import { buildReport, formatReport, privateFixtures, scoreOutput, summaryLine, syntheticFixtures, type FixtureResult } from './extraction-eval.ts';
 
 const FIELDS = REQUIRED_FIELDS.certificate_v1;
 
@@ -53,5 +57,27 @@ describe('extraction eval report', () => {
     expect(missed.required.some((field) => field.hit)).toBe(false);
     expect(missed.nullTruth).toHaveLength(2);
     expect(missed.nullTruth.some((field) => field.hit)).toBe(false);
+  });
+
+  it('uploads each private folder as the one file the app would store', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'esta-private-'));
+    const synthetic = join(import.meta.dirname, '..', 'fixtures', 'certificates');
+    const folder = (name: string, files: Record<string, string>) => {
+      mkdirSync(join(root, name));
+      writeFileSync(join(root, name, 'truth.json'), JSON.stringify({ certificate: { form: { value: 'so_do_pre2009' } } }));
+      for (const [file, from] of Object.entries(files)) copyFileSync(join(synthetic, from), join(root, name, file));
+    };
+    try {
+      folder('a-scan', { 'scan.pdf': 'so_do_pre2009-scan/document.pdf' });
+      folder('b-photos', { '1.jpg': 'so_do_pre2009-photo/page-1.jpg', '2.jpg': 'so_do_pre2009-photo/page-2.jpg' });
+      const [scan, photos] = await Promise.all(privateFixtures(root).map((fixture) => fixture.upload()));
+      expect(scan?.mimeType).toBe('application/pdf');
+      expect(photos?.mimeType).toBe('application/pdf');
+      expect((await PDFDocument.load(photos?.buffer ?? new Uint8Array())).getPageCount()).toBe(2);
+      folder('c-png', { 'page.png': 'so_do_pre2009-scan/document.pdf' });
+      expect(() => privateFixtures(root)).toThrow('private-3 needs one PDF, or JPEG photos of its pages, beside truth.json');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

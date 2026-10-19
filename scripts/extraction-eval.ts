@@ -142,13 +142,14 @@ function privateUpload(id: string, dir: string, files: readonly string[]): () =>
 }
 
 /** Ryan's folders hold page files plus a truth.json that is either a certificate_v1 object or `{ "certificate": ... }`. */
-function privateFixtures(): EvalFixture[] {
-  if (!existsSync(PRIVATE_DIR)) return [];
-  return readdirSync(PRIVATE_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && existsSync(join(PRIVATE_DIR, entry.name, 'truth.json')))
+export function privateFixtures(root = PRIVATE_DIR): EvalFixture[] {
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(join(root, entry.name, 'truth.json')))
+    .toSorted((a, b) => a.name.localeCompare(b.name))
     .map((entry, index) => {
       const id = `private-${index + 1}`;
-      const dir = join(PRIVATE_DIR, entry.name);
+      const dir = join(root, entry.name);
       const raw = readJson(join(dir, 'truth.json')) as { certificate?: unknown };
       const truth = raw.certificate ?? raw;
       const files = readdirSync(dir).filter((name) => name !== 'truth.json' && !name.startsWith('.')).sort();

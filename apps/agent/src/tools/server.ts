@@ -54,7 +54,7 @@ export async function runTool(estaTool: EstaTool, input: Record<string, unknown>
   }
 }
 
-/** The MCP server hands a thrown error back to the model as text, so a job failure goes to `fail`, which ends the session. */
+/** The MCP server hands a thrown error back to the model as text, so a job failure also goes to `fail` for the caller to end the session. */
 export function estaServer(tools: EstaTools, fail: (error: unknown) => void): McpSdkServerConfigWithInstance {
   return createSdkMcpServer({
     name: SERVER_NAME,
