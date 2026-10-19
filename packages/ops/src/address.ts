@@ -38,3 +38,9 @@ export async function suggestCurrentUnits(db: Db, text: string): Promise<Current
   if (error) throw new Error(`Suggesting the current unit failed: ${error.message}`);
   return z.array(suggestionSchema).parse(data);
 }
+
+export async function isCommuneOf(db: Db, communeCode: string, provinceCode: string): Promise<boolean> {
+  const { data, error } = await db.from('admin_units').select('code').eq('code', communeCode).eq('parent_code', provinceCode).maybeSingle();
+  if (error) throw new Error(`Reading the ward failed: ${error.message}`);
+  return data !== null;
+}

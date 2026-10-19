@@ -1,6 +1,6 @@
 # Esta connector
 
-An MCP server that lets Claude Code on Ryan's Mac read the household's properties in Esta, signed in as Ryan. The design is `docs/spec/CONNECTOR.md`. For now it talks only to a local Supabase stack with Demo data.
+An MCP server that lets Claude Code on Ryan's Mac read and change the household's properties in Esta, signed in as Ryan. The design is `docs/spec/CONNECTOR.md`. For now it talks only to a local Supabase stack with Demo data.
 
 ## Tools
 
@@ -10,8 +10,12 @@ An MCP server that lets Claude Code on Ryan's Mac read the household's propertie
 | `get_property(id)` | One property as its detail page shows it, with its kind details |
 | `find_property(text)` | The properties the property list's search finds for the same text, each with the field every word matched |
 | `resolve_address(text)` | The current ward and province for an address written with old names, best first |
+| `plan_changes(summary, items)` | The exact change each item would make, or why it is refused; stores the plan when nothing is refused |
+| `apply_plan(plan_id)` | Applies a stored plan once, after Ryan said OK, checking each item again |
 
 Every amount comes with a `_display` string in the household's locale, so Claude copies it rather than formatting money itself.
+
+Nothing is written until Ryan approves. Claude plans, shows him a short summary, and applies only on his OK. A plan expires 30 minutes after it was made, applies at most once, and an item whose change is no longer what he saw is refused as stale.
 
 ## Set it up
 

@@ -1,8 +1,11 @@
+import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
+import { propertyCreate, propertyEdit, readClock, runOp } from '@esta/ops';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -131,4 +134,110 @@ describe('the connector for anyone but the operator', () => {
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('pnpm connector:login');
   }, 60_000);
+});
+
+const demoProperty = (code: string) => ({
+  nickname: `Demo Nhà phố ${code}`,
+  code,
+  kind: 'townhouse',
+  kind_details: {},
+  use_mode: 'rental',
+  legal_status: 'certified',
+  current_address: { house_no: '12 Demo', street: 'Đường số 5', commune_code: '27475', province_code: '79' },
+  certificate_address_text: 'Thửa 12, tờ bản đồ 5, Phường Tân Kiểng, Quận 7',
+  acquired_on: '2020-05-01',
+  acquisition_kind: 'purchase',
+  acquisition_price_vnd: 3_500_000_000,
+  notes: 'Demo, mua qua môi giới',
+});
+
+const FORM_COLUMNS = 'nickname, kind, kind_details, use_mode, legal_status, current_address, certificate_address_text, acquired_on, acquisition_kind, acquisition_price_vnd, notes, created_by';
+
+const plannedSchema = z.object({ planId: z.string(), items: z.array(z.object({ status: z.string(), id: z.string().nullable(), change: z.unknown().optional() })) });
+const appliedSchema = z.object({ status: z.string(), items: z.array(z.object({ status: z.string(), refusal: z.unknown().optional() })) });
+
+describe('plans and applies the changes Ryan approved', () => {
+  const file = sessionFile();
+  const otherFile = sessionFile();
+  let connector: Connector;
+  let other: Connector;
+  let db: ReturnType<typeof connectorClient>;
+
+  beforeAll(async () => {
+    expect(await signIn(OPERATOR, file)).toMatchObject({ ok: true });
+    expect(await signIn('ryan.lane8@demo.esta.test', otherFile)).toMatchObject({ ok: true });
+    db = connectorClient({ ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY }, storeAt(file));
+    [connector, other] = await Promise.all([startConnector(file), startConnector(otherFile)]);
+  }, 60_000);
+
+  afterAll(async () => {
+    await Promise.all([connector.client.close(), other.client.close()]);
+  });
+
+  const plan = async (items: unknown[]) => call(connector, 'plan_changes', { summary: 'Demo: thêm nhà phố', items });
+
+  it('writes the same row the property form writes, once', async () => {
+    const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE1') } }])).json());
+    expect(planned.items).toMatchObject([{ status: 'change' }]);
+    const applied = await call(connector, 'apply_plan', { plan_id: planned.planId });
+    expect(appliedSchema.parse(applied.json())).toMatchObject({ status: 'applied', items: [{ status: 'landed' }] });
+    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'already_applied', status: 'applied' });
+
+    const ctx = { db, householdId: seedId('seed:household:lane-9'), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) };
+    const formId = randomUUID();
+    expect(await runOp(propertyCreate, ctx, { id: formId, property: demoProperty('FORM1') })).toMatchObject({ ok: true });
+    const rows = await db.from('properties').select(FORM_COLUMNS).in('id', [planned.items[0]?.id ?? '', formId]);
+    expect(rows.data).toHaveLength(2);
+    const [viaClaude, viaForm] = rows.data ?? [];
+    expect({ ...viaClaude, nickname: '' }).toEqual({ ...viaForm, nickname: '' });
+  });
+
+  it('plans an edit as only the fields that change, with their values before', async () => {
+    const planned = plannedSchema.parse((await plan([{ op: 'property.edit', input: { id: property(9, 'q7'), set: { notes: 'Demo: đã sơn lại' } } }])).json());
+    expect(planned.items[0]).toMatchObject({ status: 'change', change: { id: property(9, 'q7'), before: { notes: expect.anything() }, set: { notes: 'Demo: đã sơn lại' } } });
+    expect(Object.keys(z.object({ change: z.object({ set: z.record(z.string(), z.unknown()) }) }).parse(planned.items[0]).change.set)).toEqual(['notes']);
+  });
+
+  it('stores nothing when an item is refused, and says why', async () => {
+    const refused = await plan([
+      { op: 'property.create', input: { property: demoProperty('CLAUDE2') } },
+      { op: 'property.create', input: { property: { ...demoProperty('Q7'), nickname: 'Demo trùng mã' } } },
+    ]);
+    expect(refused.isError).toBe(true);
+    expect(refused.json()).toMatchObject({ kind: 'items_refused', items: [{ status: 'change' }, { status: 'refused', refusal: { kind: 'code_taken', code: 'Q7', takenBy: 'Nhà phố Q7' } }] });
+  });
+
+  it('refuses a stale item and applies the rest, ending partial', async () => {
+    const planned = plannedSchema.parse(
+      (
+        await plan([
+          { op: 'property.edit', input: { id: property(9, 'thu-duc'), set: { notes: 'Demo: Claude' } } },
+          { op: 'property.create', input: { property: demoProperty('CLAUDE3') } },
+        ])
+      ).json(),
+    );
+    const ctx = { db, householdId: seedId('seed:household:lane-9'), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) };
+    expect(await runOp(propertyEdit, ctx, { id: property(9, 'thu-duc'), set: { notes: 'Demo: Mẹ sửa trước' } })).toMatchObject({ ok: true });
+    const applied = appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json());
+    expect(applied).toMatchObject({ status: 'partial', items: [{ status: 'refused', refusal: { kind: 'stale' } }, { status: 'landed' }] });
+  });
+
+  it("refuses another household's plan as not found", async () => {
+    const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE4') } }])).json());
+    expect((await call(other, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'not_found' });
+    expect(appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).status).toBe('applied');
+  });
+
+  it('says plainly that a batch a crash left half done is in progress', async () => {
+    const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE5') } }])).json());
+    const claimed = await db.from('change_batches').update({ status: 'applying', applied_at: '2026-10-07T02:00:00Z' }).eq('id', planned.planId).select('id');
+    expect(claimed.data).toHaveLength(1);
+    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'in_progress' });
+  });
+
+  it('refuses a plan older than 30 minutes as expired', async () => {
+    const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE6') } }])).json());
+    expect(spawnSync('pnpm', ['--silent', 'clock:set', '2026-10-07T09:31:00+07:00'], { cwd: ROOT, env: { ...process.env, ESTA_SLOT: env.ESTA_SLOT } }).status).toBe(0);
+    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'expired', expiredAt: '2026-10-07T02:30:00.000Z' });
+  });
 });

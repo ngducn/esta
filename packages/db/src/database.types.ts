@@ -522,6 +522,62 @@ export type Database = {
           },
         ]
       }
+      change_batches: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          outcomes: Json | null
+          plan: Json
+          planned_at: string
+          status: string
+          summary: string
+          undone_at: string | null
+          updated_at: string
+          via: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          outcomes?: Json | null
+          plan: Json
+          planned_at: string
+          status?: string
+          summary: string
+          undone_at?: string | null
+          updated_at?: string
+          via?: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          outcomes?: Json | null
+          plan?: Json
+          planned_at?: string
+          status?: string
+          summary?: string
+          undone_at?: string | null
+          updated_at?: string
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_batches_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_access_log: {
         Row: {
           action: string

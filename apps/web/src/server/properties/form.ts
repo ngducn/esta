@@ -2,6 +2,7 @@ import 'server-only';
 import { isIsoDate } from '@esta/core/date';
 import { kindDetailsText, PROPERTY_KINDS, vndInputText } from '@esta/core/properties';
 import { ACQUISITION_KINDS, LEGAL_STATUSES, USE_MODES } from '@esta/core/schemas/property';
+import { readPropertyForm } from '@esta/ops';
 import { z } from 'zod';
 import type { PropertyFormValues } from '@/components/properties/property-form-values';
 import { createSessionClient } from '@/server/supabase/server';
@@ -41,14 +42,10 @@ const rowSchema = z.object({
   cover_photo_path: z.string().nullable(),
 });
 
-const COLUMNS =
-  'id, nickname, code, kind, kind_details, use_mode, legal_status, current_address, certificate_address_text, acquired_on, acquisition_kind, acquisition_price_vnd, notes, cover_photo_path';
-
 export async function loadEditableProperty(householdId: string, id: string): Promise<EditableProperty | null> {
   if (!z.uuid().safeParse(id).success) return null;
   const supabase = await createSessionClient();
-  const { data, error } = await supabase.from('properties').select(COLUMNS).eq('household_id', householdId).eq('id', id).is('deleted_at', null).maybeSingle();
-  if (error) throw new Error(`Reading the property failed: ${error.message}`);
+  const data = await readPropertyForm(supabase, householdId, id);
   if (data === null) return null;
   const row = rowSchema.parse(data);
   const communeCode = row.current_address?.commune_code ?? null;

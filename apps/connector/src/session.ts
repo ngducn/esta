@@ -10,6 +10,9 @@ export const connectorEnvSchema = z.object({
   ESTA_SUPABASE_URL: z.url(),
   ESTA_SUPABASE_ANON_KEY: z.string().min(1),
   ESTA_SESSION_FILE: z.string().min(1).optional(),
+  ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
+  ESTA_FROZEN_NOW: z.string().min(1).optional(),
+  ESTA_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });
 
 export type ConnectorEnv = z.infer<typeof connectorEnvSchema>;

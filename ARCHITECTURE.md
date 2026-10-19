@@ -37,21 +37,23 @@ All parsing of what Mẹ types or what the assistant reads lives in `packages/co
 
 ## Results
 
-A function that can fail in an expected way returns `Result<T, Reason>` from `packages/core/src/result.ts`. Do not spell out another failure arm, an object type or interface with `ok: false`, whether it sits in a union, a named member or an intersection (`ad-hoc-result-type`). Issue #196 widens `Result` to carry a structured error, so the five core siblings (`Parsed`, `PlanResult`, `TlvResult`, `DecodeResult`, `DepositLedgerResult`) fold into it. Issue #188 moves the server actions onto it.
+A function that can fail in an expected way returns `Result<T, Reason>` from `packages/core/src/result.ts`. `Reason` defaults to a string and may be a refusal object, as the ops layer's are (`{ kind: 'code_taken', code, takenBy }`). Do not spell out another failure arm, an object type or interface with `ok: false`, whether it sits in a union, a named member or an intersection (`ad-hoc-result-type`). Issue #196 folds the five core siblings (`Parsed`, `PlanResult`, `TlvResult`, `DecodeResult`, `DepositLedgerResult`) into it.
 
-## Server action kit
+## Server writes: the ops layer
 
-A server action takes `unknown`, parses it with zod, writes through the session client, and maps a database refusal to a reason the screen can show. It returns `Result<T, Reason>` from `@esta/core/result`, which exists today.
+Every write a screen or the connector performs is an op in `packages/ops` (`docs/spec/CONNECTOR.md` §3.1): `input` parses with zod, `plan` reads and returns the change or `unchanged`, `apply` writes that change through the session client or one definer function. A server action builds `OpContext` from the cookie session, calls `runOp(op, ctx, raw)`, revalidates, and maps the result to the type its screen reads. `createProperty` and `updateProperty` in `apps/web/src/app/(app)/properties/actions.ts` are the template. The connector runs the same ops through `planChanges` and `applyPlan`.
 
-**Home.** `apps/web/src/server/actions/kit.ts`, with `idSchema`, `optionalIdSchema` and `dbRefusal(error, sentinels)`. It does not exist yet. Issue #188 creates it and moves the `ESTA_*` sentinel strings into one core module. No action on main follows the whole recipe yet. Most declare their own id schema, and many compare SQLSTATE codes and spell out their own result type.
+**Home.** `packages/ops`: `idSchema` and `optionalIdSchema` in `src/kit.ts` parse every id, and `dbRefusal(error, sentinels)` in the same file is the only reader of SQLSTATE codes, followed by a per-feature table of `ESTA_*` sentinels. An op's refusals are objects in `Result`'s `reason`. The other server actions move onto ops in one cleanup round after the connector's document slice, which closes issue #188.
 
-Until #188 lands, a new server action that parses an id adds to `local-id-schema` (a `z.uuid()` bound to its own name or parsed on the spot), and one that reads a database refusal adds to `sqlstate-literal` (a code such as `'23505'` compared with or looked up by an error's `code`). Such a change needs `pnpm quality --update --allow-raise "<why> (until #188)"`, which the root countersigns.
+Until then, an action outside the ops layer that parses an id adds to `local-id-schema` (a `z.uuid()` bound to its own name or parsed on the spot), and one that reads a database refusal adds to `sqlstate-literal` (a code such as `'23505'` compared with or looked up by an error's `code`). Such a change needs `pnpm quality --update --allow-raise "<why> (until #188)"`, which the root countersigns. A new write is an op instead.
 
 ## Shared server reads: packages/ops
 
 `packages/ops` is the one home for server code that the web app and the connector share. A function there takes the member's session client (`Db`) and the household id. It never builds a client, reads a cookie or calls a Next.js API. The web wraps it with `createSessionClient()` and `requireMember()` and adds what needs the Clock or a web-only loader. The connector passes Ryan's session.
 
 - **Properties.** `searchProperties(db, householdId, tokens)` in `packages/ops/src/properties.ts` reads `property_list_rows` with core's `searchTokens` and `preferPhrase`, for the property list and for `find_property`, so both find the same properties. `readPropertyDetail` reads one property for its detail page and for `get_property`. Lease facts and status marks need the Clock's date, so the web loaders add them on top.
+- **Property form.** `readPropertyForm` reads the columns the property form edits, for its edit page and for an edit's plan.
+- **Clock.** `readClock(db, env)` in `packages/ops/src/clock.ts` reads the test clock row on every call outside production (SPEC FND-9). The web passes a cookieless client, the agent and the connector their own.
 - **Membership.** `readMembership(db, userId)` in `packages/ops/src/member.ts` is the one read of the membership Esta opens for a user, the first one they joined. `getCurrentMember` and the connector's operator check both call it.
 - **Addresses.** `suggestCurrentUnits` in `packages/ops/src/address.ts` maps an old address to the current ward and province.
 - **Tool results.** `packages/ops/src/read.ts` shapes these reads for a model: display strings for amounts and the reason each search candidate matched. The daily assistant's tools reuse it rather than query again.
@@ -66,7 +68,7 @@ A read moves here before a second surface uses it. A read that only one surface 
 
 A user action that writes more than one row runs as one `security definer` function in SQL, in one transaction, and checks membership itself. `record_payment` in `supabase/migrations/20261007305000_record_payment.sql` and `amend_lease` in `supabase/migrations/20261007306700_lease_changes.sql` are the template. Never orchestrate several writes from TypeScript with compensating deletes or a loop of updates.
 
-Four flows still break this rule. Issue #184 moves extraction acceptance into one function. Issue #189 moves the room reorder, the legal save with quick-added owners, and delete-and-undo.
+A connector batch is not one user action: it is a sequence of ops, each atomic on its own, and it ends `partial` with what landed (`docs/spec/CONNECTOR.md` §3.4). Four flows still break this rule. Issue #184 moves extraction acceptance into one function. Issue #189 moves the room reorder, the legal save with quick-added owners, and delete-and-undo.
 
 ## Rules in SQL and rules in TypeScript
 

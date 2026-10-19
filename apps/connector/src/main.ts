@@ -1,3 +1,4 @@
+import { readClock } from '@esta/ops';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import connectorPackage from '../package.json' with { type: 'json' };
@@ -13,7 +14,9 @@ const server = new McpServer({ name: 'esta', version: connectorPackage.version }
 registerTools(server, {
   async context() {
     const operator = await currentOperator(db);
-    return operator.ok ? { ok: true, value: { db, householdId: operator.value.householdId, locale: operator.value.locale } } : operator;
+    if (!operator.ok) return operator;
+    const clock = await readClock(db, env);
+    return { ok: true, value: { db, householdId: operator.value.householdId, locale: operator.value.locale, clock } };
   },
   log: (line) => console.error(`[connector] ${line}`),
 });
