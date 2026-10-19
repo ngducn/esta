@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fakeDb, opContext as context } from './test/fake-db';
+import { fakeDb, opContext as context, trashedProperty } from './test/fake-db';
 import { unitCreate } from './unit-ops';
 import { NO_PENDING, withWrites } from './view';
 
@@ -31,6 +31,12 @@ describe('unitCreate', () => {
 
   it('reads the property as not found when nothing is pending, as apply does before the property lands', async () => {
     const { db } = fakeDb();
+    const planned = await unitCreate.plan(context(db), parse({ id: ROOM, property_id: PROPERTY, unit: phong2 }));
+    expect(planned).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'property_id', code: 'not_found' }] } });
+  });
+
+  it('refuses a room on a property in the trash as not found, as no screen reaches it', async () => {
+    const { db } = fakeDb(trashedProperty());
     const planned = await unitCreate.plan(context(db), parse({ id: ROOM, property_id: PROPERTY, unit: phong2 }));
     expect(planned).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'property_id', code: 'not_found' }] } });
   });

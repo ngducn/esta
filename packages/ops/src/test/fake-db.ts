@@ -43,6 +43,14 @@ export const ROOM = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0003';
 export const TENANT = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0004';
 export const LEASE = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0005';
 
+/** PostgREST with PROPERTY in the trash: it comes back to any read that does not ask for live properties only. */
+export function trashedProperty(rows: (sent: Sent) => readonly unknown[] = () => []) {
+  return (sent: Sent): readonly unknown[] => {
+    if (sent.table !== 'properties') return rows(sent);
+    return sent.query.get('deleted_at') === 'is.null' ? [] : [{ id: PROPERTY, nickname: 'Demo Nhà Q1' }];
+  };
+}
+
 /** Chị Lan Demo's room from 2026-03-01 at 9,000,000 a month with two months' deposit, as the lease form sends it. */
 export const demoDraft = {
   unit_id: ROOM,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { leaseCreate, leaseEdit } from './lease-ops';
-import { demoDraft, fakeDb, LEASE, opContext as context, PROPERTY, ROOM, storedLease, TENANT } from './test/fake-db';
+import { demoDraft, fakeDb, LEASE, opContext as context, PROPERTY, ROOM, storedLease, TENANT, trashedProperty } from './test/fake-db';
 import { NO_PENDING, withWrites } from './view';
 
 const OTHER_PROPERTY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0006';
@@ -42,6 +42,13 @@ describe('leaseCreate', () => {
     const roomOnly = withWrites(NO_PENDING, [{ kind: 'create', table: 'units', row: { id: ROOM, property_id: PROPERTY, label: 'Phòng 2' } }]);
     const missingTenant = await leaseCreate.plan(context(db, roomOnly), parsed(leaseCreate.input, { id: LEASE, lease: demoDraft }));
     expect(missingTenant).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'lease.tenant_party_id', code: 'not_found' }] } });
+  });
+
+  it('refuses a stored room on a property in the trash as not found', async () => {
+    const stored = { units: [{ id: ROOM, property_id: PROPERTY, label: 'Phòng 2' }], parties: [{ id: TENANT, full_name: 'Lan Demo', phone: null, id_last4: '4567' }] };
+    const { db } = fakeDb(trashedProperty((request) => (request.table === 'units' || request.table === 'parties' ? stored[request.table] : [])));
+    const planned = await leaseCreate.plan(context(db), parsed(leaseCreate.input, { id: LEASE, property_id: PROPERTY, lease: demoDraft }));
+    expect(planned).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'lease.unit_id', code: 'not_found' }] } });
   });
 
   it('plans unchanged once its minted id is stored', async () => {

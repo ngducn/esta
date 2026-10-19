@@ -285,6 +285,25 @@ describe('a lease with its deposit and paid-through started by talking to Claude
     expect((await db.from('leases').select('rent_vnd').eq('id', lease).single()).data).toEqual({ rent_vnd: 9_200_000 });
   });
 
+  it('refuses a room and a lease on a property in the trash as not found, at plan and at apply', async () => {
+    const ctx = await laneContext(db, LANE);
+    const [house, unit] = [randomUUID(), randomUUID()];
+    expect(await runOp(propertyCreate, ctx, { id: house, property: demoProperty('C2TRASH') })).toMatchObject({ ok: true });
+    expect(await runOp(unitCreate, ctx, { id: unit, property_id: house, unit: room('Phòng 1') })).toMatchObject({ ok: true });
+    const items = [
+      { op: 'unit.create', input: { property_id: house, unit: room('Phòng 2') } },
+      { op: 'lease.create', input: { lease: draft(unit, SEEDED_TENANT.id) } },
+    ];
+    const notFound = (path: string) => ({ status: 'refused', refusal: { kind: 'invalid', issues: [{ path, code: 'not_found' }] } });
+    const planned = plannedSchema.parse((await plan('Demo: phòng 2 và hợp đồng phòng 1 ở nhà C2TRASH', items)).json());
+    const trashed = await db.from('properties').update({ deleted_at: '2026-10-07T09:00:00+07:00' }).eq('id', house).select('id');
+    expect(trashed.data).toEqual([{ id: house }]);
+    expect(await apply(planned.planId)).toMatchObject({ status: 'partial', items: [notFound('property_id'), notFound('lease.unit_id')] });
+    expect((await plan('Demo: phòng 2 và hợp đồng phòng 1 sau khi xóa nhà', items)).json()).toMatchObject({ kind: 'items_refused', items: [notFound('property_id'), notFound('lease.unit_id')] });
+    const landed = await Promise.all([db.from('units').select('id').eq('property_id', house), db.from('leases').select('id').eq('property_id', house)]);
+    expect(landed.map((read) => read.data), 'only the room stored before the trash').toEqual([[{ id: unit }], []]);
+  });
+
   it("refuses another household's lease for an activation and a deposit, and get_lease does not find it", async () => {
     const refused = await plan('Demo: hợp đồng nhà khác', [
       { op: 'lease.activate', input: { lease_id: OTHER_LEASE, paid_through: null } },
