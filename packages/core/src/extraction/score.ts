@@ -1,6 +1,7 @@
-import { certificateV1Schema, parseArea } from '../agent-schemas/certificate_v1';
+import { certificateV1Schema } from '../agent-schemas/certificate_v1';
 import { utilityBillV1Schema } from '../agent-schemas/utility_bill_v1';
 import { parseDateInput } from '../parse/date-input';
+import { INPUT_KINDS } from './fields';
 import { REQUIRED_FIELDS, type SchemaName } from './required-fields';
 
 export const HIGH_CONFIDENCE = 0.9;
@@ -36,8 +37,8 @@ function isLeaf(value: unknown): value is Leaf {
 export function normalizeValue(leafName: string, value: unknown): string | null {
   if (value === null || value === undefined) return null;
   if (AREA_LEAVES.has(leafName)) {
-    const area = parseArea(value);
-    return typeof area === 'number' && Number.isFinite(area) ? area.toFixed(2) : null;
+    const area = INPUT_KINDS.area.parse(value);
+    return area.ok && area.value !== null ? area.value.toFixed(2) : null;
   }
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (typeof value !== 'string') return null;

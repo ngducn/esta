@@ -4,6 +4,7 @@ import { INPUT_KINDS, readInput, type InputKind, type ReviewField } from '@esta/
 import { isIsoDate } from '@esta/core/date';
 import { formatArea, formatDate, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
+import { measureInputText, type MeasureReason } from '@esta/core/parse/measure';
 import { getLocale, getTranslations } from 'next-intl/server';
 
 /**
@@ -18,9 +19,9 @@ export type FieldView = {
   readonly marked: boolean;
   /** The value read, formatted; null when nothing was read. */
   readonly display: string | null;
-  /** False when the value read does not fit its kind, so it must be edited before it is accepted. */
-  readonly readable: boolean;
-  /** The value read as the editor takes it: an ISO date for a date, an option value for a choice, else the text. */
+  /** Why the value read does not fit its kind, so it must be edited before it is accepted; null when it fits. */
+  readonly refusal: MeasureReason | null;
+  /** The value read as the editor takes it: an area as the area parser reads it in every language, an ISO date for a date, an option value for a choice, else the text. */
   readonly editValue: string;
   readonly options: readonly { readonly value: string; readonly label: string }[] | null;
   /** The area read, for the parcel's area-sum check. */
@@ -29,6 +30,9 @@ export type FieldView = {
 };
 
 const CHOICES = new Set<InputKind>(['form', 'use_form', 'annotation_kind', 'utility_kind']);
+
+/** How the review shows a value it cannot read. A number takes the decimal comma, so 1.255 shows as `1,255`, never as `1.255`, which reads as 1255. */
+const unread = (raw: unknown): string => (typeof raw === 'number' ? measureInputText(raw) : String(raw ?? ''));
 
 export async function fieldViews(fields: readonly ReviewField[], rootList: 'certificate' | 'bill'): Promise<FieldView[]> {
   const [t, locale] = await Promise.all([getTranslations('extraction'), getLocale()]);
@@ -42,7 +46,8 @@ export async function fieldViews(fields: readonly ReviewField[], rootList: 'cert
   };
   const editable = (kind: InputKind, value: unknown): string => {
     if (value === null || value === undefined) return '';
-    if (kind === 'area' || kind === 'number') return format(kind, value).replace(/\s*m²$/u, '');
+    if (kind === 'area' && typeof value === 'number') return measureInputText(value);
+    if (kind === 'number') return format(kind, value).replace(/\s*m²$/u, '');
     if (kind === 'term' && typeof value === 'string' && isIsoDate(value)) return formatDate(value, lang);
     return String(value);
   };
@@ -58,9 +63,9 @@ export async function fieldViews(fields: readonly ReviewField[], rootList: 'cert
       input,
       page: field.leaf?.page ?? null,
       marked: needsCheck(field),
-      display: value !== null ? format(input, value) : parsed.ok ? null : String(raw),
-      readable: parsed.ok,
-      editValue: parsed.ok ? editable(input, value) : String(raw ?? ''),
+      display: value !== null ? format(input, value) : parsed.ok ? null : unread(raw),
+      refusal: parsed.ok ? null : parsed.reason,
+      editValue: parsed.ok ? editable(input, value) : unread(raw),
       options: options === null ? null : options.map((option) => ({ value: option, label: t('option', { kind: input, value: option }) })),
       area: typeof value === 'number' && input === 'area' ? value : null,
       section: { key: field.section.key, list: field.section.list ?? rootList, number: field.section.numbers.at(-1) ?? 0 },

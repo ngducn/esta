@@ -1,33 +1,3 @@
-import type { Result } from '../result';
-
-export type AreaInputReason = 'empty' | 'invalid' | 'too_precise' | 'too_large';
-
-/** numeric(12,2): at most ten integer digits. */
-const MAX_HUNDREDTHS = 999_999_999_999;
-const UNIT_SUFFIX = /(?:m²|m2|m)$/i;
-const DOT_GROUPED = /^(\d{1,3}(?:\.\d{3})+)(?:,(\d+))?$/;
-const PLAIN = /^(\d+)(?:[.,](\d+))?$/;
-
-/**
- * Reads an area as Vietnamese people write it: `350,5`, `1.250,75 m²`, and also `350.5`. A dot before three-digit
- * groups is thousands grouping; a lone comma or dot is the decimal mark. More than two decimals is refused, because
- * the column keeps hundredths.
- */
-export function parseAreaInput(text: string): Result<number, AreaInputReason> {
-  const trimmed = text.replace(/\s+/g, '').replace(UNIT_SUFFIX, '');
-  if (trimmed === '') return { ok: false, reason: 'empty' };
-  const grouped = DOT_GROUPED.exec(trimmed);
-  const match = grouped ?? PLAIN.exec(trimmed);
-  if (match === null) return { ok: false, reason: 'invalid' };
-  const integer = (match[1] ?? '').replace(/\./g, '');
-  const fraction = match[2] ?? '';
-  if (fraction.length > 2) return { ok: false, reason: 'too_precise' };
-  const hundredths = Number(integer) * 100 + Number(fraction.padEnd(2, '0'));
-  if (hundredths === 0) return { ok: false, reason: 'invalid' };
-  if (hundredths > MAX_HUNDREDTHS) return { ok: false, reason: 'too_large' };
-  return { ok: true, value: hundredths / 100 };
-}
-
 function hundredths(squareMeters: number): number {
   return Math.round(squareMeters * 100);
 }

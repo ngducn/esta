@@ -1,6 +1,6 @@
 'use client';
 
-import { parseAreaInput } from '@esta/core/properties/area';
+import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
 import type { Structure } from '@esta/core/schemas/legal';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -11,11 +11,11 @@ import type { CertificateOption } from './parcel-form';
 
 type Field = 'kind' | 'floorArea' | 'footprint' | 'floors' | 'completedYear';
 
-const text = (value: number | null) => (value === null ? '' : String(value).replace('.', ','));
+const text = (value: number | null) => (value === null ? '' : measureInputText(value));
 const WHOLE = /^[0-9]{1,4}$/;
 
 function readArea(value: string) {
-  return value.trim() === '' ? { ok: true as const, value: null } : parseAreaInput(value);
+  return value.trim() === '' ? { ok: true as const, value: null } : parseMeasureInput(value, 'area');
 }
 
 function readWhole(value: string, min: number, max: number): { ok: true; value: number | null } | { ok: false } {

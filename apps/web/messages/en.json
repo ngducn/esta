@@ -1335,7 +1335,7 @@
     "page": "Page {page}",
     "pageLabel": "Show page {page} of the image, where {field} is",
     "empty": "Empty",
-    "notReadable": "The value read is not in the right form. Press Edit to type it.",
+    "notReadable": "{reason, select, too_precise {Areas keep at most 2 decimals. Press Edit to type it.} other {The value read is not in the right form. Press Edit to type it.}}",
     "invalidField": "This value is not in the right form.",
     "outOfRangeField": "This number is outside the allowed range. Check it again.",
     "missingField": "This field is needed to save.",

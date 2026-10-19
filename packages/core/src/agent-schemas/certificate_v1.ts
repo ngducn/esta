@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isIsoDate } from '../date/iso-date';
-import { parseDecimal } from '../parse/decimal';
+import { parseMeasureInput } from '../parse/measure';
 
 export const CERTIFICATE_FORMS = ['so_do_pre2009', 'so_hong_pre2009', 'gcn_2009_2024', 'gcn_2024', 'paper_only'] as const;
 
@@ -18,17 +18,21 @@ export function leaf<T extends z.ZodType>(value: T) {
   return z.object({ value: value.nullable(), confidence, page });
 }
 
-const AREA_UNIT = /\s*m(?:²|2)\s*$/u;
-
-/** Reads an area printed the Vietnamese way, so `125,5 m²` is 125.5 and `1.250,5` is 1250.5. */
-export function parseArea(raw: unknown): unknown {
+/**
+ * Reads printed text as every screen reads an area, so `125,5 m²` is 125.5. Text with more decimals than an area
+ * keeps, such as `1,255 m²`, stays as printed for Mẹ to settle on review; other text goes back to the model.
+ */
+function readPrintedArea(raw: unknown, context: z.RefinementCtx): unknown {
   if (typeof raw !== 'string') return raw;
-  const decimal = parseDecimal(raw.trim().replace(AREA_UNIT, ''));
-  return decimal === null ? raw : Number(decimal.digits) / 10 ** decimal.scale;
+  const area = parseMeasureInput(raw, 'area');
+  if (area.ok) return area.value;
+  if (area.reason === 'too_precise') return raw;
+  context.addIssue({ code: 'custom', message: `expected an area in square metres, such as 125.5 (${area.reason})` });
+  return z.NEVER;
 }
 
 /** Bounded, as every number in a result is, so a national ID cannot pass as one (SPEC D11). */
-const area = z.preprocess(parseArea, z.number().nonnegative().max(100_000_000));
+const area = z.preprocess(readPrintedArea, z.union([z.number().nonnegative().max(100_000_000), z.string()]));
 
 const text = leaf(z.string());
 const isoDate = leaf(z.string().refine(isIsoDate, 'expected YYYY-MM-DD'));

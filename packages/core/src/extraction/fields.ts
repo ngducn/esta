@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import { AGENT_SCHEMAS } from '../agent-schemas';
-import { ANNOTATION_KINDS, CERTIFICATE_FORMS, parseArea } from '../agent-schemas/certificate_v1';
+import { ANNOTATION_KINDS, CERTIFICATE_FORMS } from '../agent-schemas/certificate_v1';
 import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
-import { UTILITY_BILL_KINDS } from '../agent-schemas/utility_bill_v1';
+import { parseConsumption, UTILITY_BILL_KINDS } from '../agent-schemas/utility_bill_v1';
 import { daysInMonth, isIsoDate, type IsoDate } from '../date/iso-date';
 import { idLast4 } from '../names';
 import { isoFromParts, parseDateInput } from '../parse/date-input';
+import { measureInputText, parseMeasureInput, type MeasureReason } from '../parse/measure';
 import { parseVndInput } from '../parse/vnd-input';
-import { areaSchema, LONG_TERM, USE_FORMS } from '../schemas/legal';
+import { LONG_TERM, USE_FORMS } from '../schemas/legal';
 import type { SchemaName } from './required-fields';
 
 export { isSchemaName, type SchemaName } from './required-fields';
@@ -15,10 +16,11 @@ export { isSchemaName, type SchemaName } from './required-fields';
 /** A leaf as the worker saves it (DOMAIN-VN §2.1): the value read, the model's confidence, the page it came from. */
 export type Leaf = { readonly value: unknown; readonly confidence: number; readonly page: number | null };
 
-export type Parsed<T> = { readonly ok: true; readonly value: T | null } | { readonly ok: false };
+/** A value that does not read as its kind is `invalid`; an area also says when it is too precise or too large. */
+export type Parsed<T> = { readonly ok: true; readonly value: T | null } | { readonly ok: false; readonly reason: MeasureReason };
 
 const nothing = { ok: true, value: null } as const;
-const refused = { ok: false } as const;
+const refused = { ok: false, reason: 'invalid' } as const;
 const accept = <T>(value: T): Parsed<T> => ({ ok: true, value });
 
 function asText(raw: unknown): string | null {
@@ -78,9 +80,11 @@ export const INPUT_KINDS = {
   area: {
     options: null,
     parse(raw: unknown): Parsed<number> {
-      if (asText(raw) === null) return nothing;
-      const area = areaSchema.safeParse(parseArea(typeof raw === 'string' ? raw.trim() : raw));
-      return area.success ? accept(area.data) : refused;
+      // A number the assistant returns meets the rule typed text meets, so 1.255 is too precise, not invalid.
+      const text = typeof raw === 'number' ? measureInputText(raw) : asText(raw);
+      if (text === null) return nothing;
+      const area = parseMeasureInput(text, 'area');
+      return area.ok ? accept(area.value) : area;
     },
   },
   date: {
@@ -123,7 +127,7 @@ export const INPUT_KINDS = {
     options: null,
     parse(raw: unknown): Parsed<number> {
       if (asText(raw) === null) return nothing;
-      const value = parseArea(raw);
+      const value = parseConsumption(raw);
       return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? accept(value) : refused;
     },
   },

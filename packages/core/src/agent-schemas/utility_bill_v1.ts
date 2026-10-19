@@ -15,7 +15,7 @@ function parseAmount(raw: unknown): unknown {
   return parsed.ok ? parsed.value : raw;
 }
 
-function parseConsumption(raw: unknown): unknown {
+export function parseConsumption(raw: unknown): unknown {
   if (typeof raw !== 'string') return raw;
   const decimal = parseDecimal(raw.trim().replace(CONSUMPTION_UNIT, ''));
   return decimal === null ? raw : Number(decimal.digits) / 10 ** decimal.scale;

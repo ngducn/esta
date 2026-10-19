@@ -1,32 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAreaInput, purposesMismatch, sumLandArea } from './area';
-
-describe('parseAreaInput', () => {
-  it.each([
-    ['350,5', 350.5],
-    ['350.5', 350.5],
-    ['80,25 m²', 80.25],
-    ['150m2', 150],
-    ['1.250,75', 1250.75],
-    ['1.250', 1250],
-    [' 12 ', 12],
-  ])('reads %s as %d m²', (text, expected) => {
-    expect(parseAreaInput(text)).toEqual({ ok: true, value: expected });
-  });
-
-  it.each([
-    ['', 'empty'],
-    ['   ', 'empty'],
-    ['120,555', 'too_precise'],
-    ['0', 'invalid'],
-    ['-5', 'invalid'],
-    ['12,5,5', 'invalid'],
-    ['abc', 'invalid'],
-    ['99999999999', 'too_large'],
-  ])('refuses %j as %s', (text, reason) => {
-    expect(parseAreaInput(text)).toEqual({ ok: false, reason });
-  });
-});
+import { purposesMismatch, sumLandArea } from './area';
 
 describe('sumLandArea (PRP-2)', () => {
   it('sums 120,5 and 80,25 to exactly 200,75', () => {

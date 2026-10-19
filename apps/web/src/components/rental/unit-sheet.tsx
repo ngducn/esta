@@ -1,9 +1,9 @@
 'use client';
 
 import type { IsoDate } from '@esta/core/date';
+import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { vndInputText } from '@esta/core/properties';
-import { parseAreaInput } from '@esta/core/properties/area';
 import { MAX_LIST_RENT_VND, UNIT_KINDS, type Unit, type UnitKind } from '@esta/core/schemas/units';
 import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -39,7 +39,7 @@ export default function UnitSheet({
   const router = useRouter();
   const [label, setLabel] = useState(unit?.label ?? '');
   const [kind, setKind] = useState<UnitKind>(unit?.kind ?? 'room');
-  const [area, setArea] = useState(unit === null || unit.area_m2 === null ? '' : String(unit.area_m2).replace('.', ','));
+  const [area, setArea] = useState(unit === null || unit.area_m2 === null ? '' : measureInputText(unit.area_m2));
   const [rentText, setRentText] = useState(unit === null || unit.list_rent_vnd === null ? '' : vndInputText(unit.list_rent_vnd));
   const [availableFrom, setAvailableFrom] = useState<IsoDate | null>(unit?.available_from ?? null);
   const [invalid, setInvalid] = useState<Invalid>(null);
@@ -49,7 +49,7 @@ export default function UnitSheet({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const areaValue = area.trim() === '' ? { ok: true as const, value: null } : parseAreaInput(area);
+    const areaValue = area.trim() === '' ? { ok: true as const, value: null } : parseMeasureInput(area, 'area');
     const rent = rentText.trim() === '' ? { ok: true as const, value: null } : parseVndInput(rentText);
     const rentOk = rent.ok && (rent.value === null || rent.value <= MAX_LIST_RENT_VND);
     const wrong: Invalid = label.trim() === '' ? 'label' : !areaValue.ok ? 'area' : !rentOk ? 'rent' : null;

@@ -1,10 +1,10 @@
-import { parseDecimal } from '../parse/decimal';
+import { measureInputText, parseMeasureInput } from '../parse/measure';
 import { parseVndInput } from '../parse/vnd-input';
 import type { Result } from '../result';
 import type { DetailsOf } from '../schemas/property';
 import { KIND_DETAIL_KEYS, type KindDetailKey, type PropertyKind } from './kinds';
 
-/** How a detail is typed: `vnd` reads shorthand such as `1tr2`, `meters` takes a decimal comma or point. */
+/** How a detail is typed: `vnd` reads shorthand such as `1tr2`, `meters` reads a length as every area is read, `4,5`. */
 export type KindFieldInput = 'text' | 'integer' | 'meters' | 'vnd';
 
 export type KindField = { readonly key: KindDetailKey; readonly input: KindFieldInput };
@@ -46,8 +46,8 @@ function readValue(input: KindFieldInput, text: string): string | number | null 
     case 'integer':
       return INTEGER.test(text) ? Number(text) : null;
     case 'meters': {
-      const decimal = parseDecimal(text);
-      return decimal === null ? null : Number(decimal.digits) / 10 ** decimal.scale;
+      const length = parseMeasureInput(text, 'length');
+      return length.ok ? length.value : null;
     }
     case 'vnd': {
       const amount = parseVndInput(text);
@@ -81,7 +81,7 @@ export function kindDetailsText(kind: PropertyKind, details: Readonly<Record<str
   for (const { key, input } of KIND_FIELDS[kind]) {
     const value = details[key];
     if (typeof value === 'string') texts[key] = value;
-    else if (typeof value === 'number') texts[key] = input === 'vnd' ? vndInputText(value) : input === 'meters' ? String(value).replace('.', ',') : String(value);
+    else if (typeof value === 'number') texts[key] = input === 'vnd' ? vndInputText(value) : input === 'meters' ? measureInputText(value) : String(value);
   }
   return texts;
 }
