@@ -1,6 +1,6 @@
 'use client';
 
-import { depositActions, type DepositKind } from '@esta/core/allocation';
+import { depositActions, type DepositKind, type DepositState } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, formatVnd } from '@esta/core/format';
 import { vnd, type Vnd } from '@esta/core/money';
@@ -27,6 +27,17 @@ export type DepositOffer = {
 };
 
 /**
+ * An action with the ledger as it stood when the action was offered. Its sheet works against that ledger while it is
+ * open and while it closes, when the save's revalidation has already redrawn the page with the new entry.
+ */
+type DepositAction = { readonly kind: DepositKind; readonly offer: DepositOffer; readonly state: DepositState; readonly rows: readonly DepositRowView[] };
+
+function depositActionsOn(offer: DepositOffer, rows: readonly DepositRowView[], heldVnd: Vnd): DepositAction[] {
+  const state = { active: offer.active, heldVnd, hasEntries: rows.length > 0, owesInvoice: offer.openInvoices.length > 0 };
+  return depositActions(state).map((kind) => ({ kind, offer, state, rows }));
+}
+
+/**
  * LSE-9 on lease detail: what this lease holds as its tenant's deposit, every movement in date order with the balance
  * after it, and the actions `depositActions` allows. They are outline buttons, so the accent keeps marking the page's one
  * primary action (DESIGN.md One Accent Rule).
@@ -35,9 +46,8 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
   const t = useTranslations('deposits');
   const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const [opening, setOpening] = useState<{ readonly kind: DepositKind; readonly count: number } | null>(null);
-  const state = offer === null ? null : { active: offer.active, heldVnd: held, hasEntries: rows.length > 0, owesInvoice: offer.openInvoices.length > 0 };
-  const actions = state === null ? [] : depositActions(state);
+  const [opening, setOpening] = useState<(DepositAction & { readonly count: number }) | null>(null);
+  const actions = offer === null ? [] : depositActionsOn(offer, rows, held);
 
   return (
     <section aria-labelledby="lease-deposit-ledger" data-testid="deposit-ledger" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
@@ -91,27 +101,36 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
       )}
       {actions.length === 0 ? null : (
         <div data-testid="deposit-actions" className="flex flex-wrap gap-3">
-          {actions.map((kind) => (
+          {actions.map((action) => (
             <Button
-              key={kind}
+              key={action.kind}
               type="button"
               variant="outline"
-              data-testid={`deposit-${kind}`}
+              data-testid={`deposit-${action.kind}`}
               aria-haspopup="dialog"
-              aria-expanded={open && opening?.kind === kind}
+              aria-expanded={open && opening?.kind === action.kind}
               onClick={() => {
-                setOpening((last) => ({ kind, count: (last?.count ?? 0) + 1 }));
+                setOpening((last) => ({ ...action, count: (last?.count ?? 0) + 1 }));
                 setOpen(true);
               }}
             >
-              {t('action', { kind })}
+              {t('action', { kind: action.kind })}
             </Button>
           ))}
         </div>
       )}
-      {offer === null || state === null || opening === null ? null : (
+      {opening === null ? null : (
         <Suspense fallback={null}>
-          <DepositSheet key={opening.count} kind={opening.kind} open={open} onOpenChange={setOpen} offer={offer} state={state} rows={rows} contractVnd={contractVnd} />
+          <DepositSheet
+            key={opening.count}
+            kind={opening.kind}
+            open={open}
+            onOpenChange={setOpen}
+            offer={opening.offer}
+            state={opening.state}
+            rows={opening.rows}
+            contractVnd={contractVnd}
+          />
         </Suspense>
       )}
     </section>

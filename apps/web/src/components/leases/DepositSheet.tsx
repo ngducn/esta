@@ -43,7 +43,8 @@ const OVERDRAW_ERRORS = { too_large: 'tooLarge', exceeds_held: 'exceedsHeld', ex
 /**
  * One sheet for the four deposit actions. It opens with `depositPrefill`'s amount, and `previewDepositEntry` shows the
  * held balance after this entry or the refusal `record_deposit_entry` and `apply_deposit` would give, before saving.
- * One opening carries one idempotency key, so a second tap or a retry writes nothing new.
+ * One opening carries one idempotency key, so a second tap or a retry writes nothing new. A save's revalidation redraws
+ * the ledger behind the sheet; a refusal because the ledger changed refreshes it, so Mẹ sees the new numbers there.
  */
 export default function DepositSheet({
   kind,
@@ -114,7 +115,6 @@ export default function DepositSheet({
         return;
       }
       notice(t('saved', { kind, amount: money(parsedAmount.value) }));
-      router.refresh();
       onOpenChange(false);
     });
   };

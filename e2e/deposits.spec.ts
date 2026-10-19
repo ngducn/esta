@@ -120,6 +120,7 @@ test('rule 2: Mẹ uses Phòng 7 deposit for the 1.300.000 ₫ the last month st
   await holdForRecording(page);
   await sheet.getByTestId('deposit-save').click();
   await expect(toast(page)).toContainText(`Đã ghi trả lại ${vnd('1.200.000')} tiền cọc.`);
+  await expect(sheet).toHaveCount(0);
   await expect(held(page)).toHaveText(vnd('0'));
   await expect(ledger(page)).toContainText('Không còn giữ tiền cọc nào cho hợp đồng này.');
   await expect(entries(page)).toHaveCount(4);
