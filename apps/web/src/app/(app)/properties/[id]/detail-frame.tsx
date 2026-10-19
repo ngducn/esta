@@ -2,17 +2,16 @@ import { statusPills, statusWords } from '@/components/properties/status-pills';
 import { nextMissing } from '@esta/core/completeness';
 import { currentAddressText } from '@esta/core/properties';
 import { ChevronLeft } from 'lucide-react';
-import { getLocale, getMessages, getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { MissingItems } from '@/components/completeness/missing-items';
 import { ExpenseActions } from '@/components/expenses/expense-actions';
 import { ExpenseHost } from '@/components/expenses/expense-host';
 import { PropertyHeader } from '@/components/properties/property-header';
-import { PropertyIntl } from '@/components/properties/property-intl';
 import { PropertyTabBar } from '@/components/properties/property-tab-bar';
 import type { PropertyTabId } from '@/components/properties/property-tabs';
 import { IntentLink } from '@/components/shell/intent-link';
-import { UndoToastProvider } from '@/components/undo-toast';
+import { ToastHost } from '@/components/undo-toast';
 import type { PropertyDetail } from '@/server/properties/detail';
 import { expenseScope } from '@/server/expenses/scope';
 import { requireMember } from '@/server/member';
@@ -37,13 +36,13 @@ export async function PropertyDetailFrame({
   children: ReactNode;
 }) {
   const member = await requireMember();
-  const [t, tp, tc, te, locale, messages, photos, scores, scope] = await Promise.all([
+  const [t, tp, tc, te, tt, locale, photos, scores, scope] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
     getTranslations('completeness'),
     getTranslations('expenses'),
+    getTranslations('components.toast'),
     getLocale(),
-    getMessages(),
     signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
     loadCompleteness(member.household.id, property.id),
     member.role === 'viewer' ? null : expenseScope(member, property),
@@ -107,8 +106,6 @@ export async function PropertyDetailFrame({
     </div>
   );
   return (
-    <PropertyIntl locale={locale} messages={{ components: { toast: messages.components.toast } }}>
-      <UndoToastProvider>{scope === null ? screen : <ExpenseHost scope={scope}>{screen}</ExpenseHost>}</UndoToastProvider>
-    </PropertyIntl>
+    <ToastHost labels={{ region: tt('region'), undo: tt('undo') }}>{scope === null ? screen : <ExpenseHost scope={scope}>{screen}</ExpenseHost>}</ToastHost>
   );
 }
