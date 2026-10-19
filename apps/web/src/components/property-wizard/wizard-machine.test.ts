@@ -4,7 +4,7 @@ import { INITIAL_WIZARD, readWizard, wizardHref, wizardMachine, wizardPath, type
 const run = (events: readonly WizardEvent[], context: { photo?: boolean; reviewReady?: boolean } = {}): WizardState =>
   events.reduce((state, event) => wizardMachine(state, event, context), INITIAL_WIZARD);
 
-describe('wizardMachine', () => {
+describe('wizardMachine (PRP-7)', () => {
   it('walks photo, details, owners, use and finish, and back from finish to details', () => {
     const steps: string[] = [];
     let state = INITIAL_WIZARD;

@@ -32,6 +32,14 @@ export const PHASE_1_BUDGETS: readonly Budget[] = [
   { route: `/properties/${seedId('seed:property:lane-1:di-an')}`, limits: GENERAL },
 ];
 
+/** SPEC §7.2 on the Phase 2 user routes: the documents vault and the add-property wizard's first step. */
+export const PHASE_2_BUDGETS: readonly Budget[] = [
+  { route: '/documents', limits: GENERAL },
+  { route: '/properties/new', limits: GENERAL },
+];
+
+const PHASE_BUDGETS: Readonly<Record<string, readonly Budget[]>> = { '1': PHASE_1_BUDGETS, '2': PHASE_2_BUDGETS };
+
 export function misses(budget: Budget, medians: Medians, { listScriptKb, pinsMs }: Extras = {}): string[] {
   const metrics = (Object.keys(budget.limits) as Metric[]).flatMap((key) => {
     const limit = budget.limits[key];
@@ -82,7 +90,9 @@ async function waitForServer(url: string, timeoutMs: number): Promise<void> {
 }
 
 async function run(): Promise<number> {
-  const { values } = parseArgs({ options: { 'skip-build': { type: 'boolean' }, runs: { type: 'string' } } });
+  const { values } = parseArgs({ options: { 'skip-build': { type: 'boolean' }, runs: { type: 'string' }, phase: { type: 'string', default: '1' } } });
+  const budgets = PHASE_BUDGETS[values.phase];
+  if (budgets === undefined) throw new Error(`No budgets for phase ${values.phase}; known: ${Object.keys(PHASE_BUDGETS).join(', ')}`);
   const repoRoot = join(import.meta.dirname, '../..');
   const slot = parseSlot(process.env.ESTA_SLOT);
   const runs = Number(values.runs ?? '5');
@@ -101,8 +111,8 @@ async function run(): Promise<number> {
     );
     let failed = 0;
     let listScriptKb: number | undefined;
-    for (const budget of PHASE_1_BUDGETS) {
-      const medians = await measure({ route: budget.route, email: EMAIL, slot, base: origin, runs: budget.runs ?? runs, label: 'phase-1' });
+    for (const budget of budgets) {
+      const medians = await measure({ route: budget.route, email: EMAIL, slot, base: origin, runs: budget.runs ?? runs, label: `phase-${values.phase}` });
       let pinsMs: number | undefined;
       if (budget.pinsMs !== undefined) {
         const cookie = await sessionCookie(origin, EMAIL, slot);
@@ -117,7 +127,7 @@ async function run(): Promise<number> {
         ...(budget.addedScriptKb === undefined || listScriptKb === undefined ? {} : { addedScriptKb: medians.scriptKb - listScriptKb }),
         ...(pinsMs === undefined ? {} : { pinsMs, pins: pinned?.count }),
       };
-      console.log(`${missed.length === 0 ? 'PASS' : 'FAIL'}  ${JSON.stringify(shown)}${missed.length === 0 ? '' : `  ${missed.join(', ')}`}`);
+      console.log(`${missed.length === 0 ? 'PASS' : 'FAIL'}  ${budget.route}  ${JSON.stringify(shown)}${missed.length === 0 ? '' : `  ${missed.join(', ')}`}`);
       if (missed.length > 0) failed++;
     }
     return failed === 0 ? 0 : 1;

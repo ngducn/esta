@@ -30,6 +30,7 @@
     "lint": "eslint .",
     "e2e": "playwright test",
     "e2e:prod": "playwright test --config playwright.prod.config.ts",
+    "e2e:northstar": "node scripts/db.ts reset --variant northstar && ESTA_NORTHSTAR=1 playwright test e2e/northstar.spec.ts",
     "check:build-env": "scripts/check-build-env.sh",
     "design:detect": ".claude/skills/impeccable/scripts/impeccable detect --json apps/web/src",
     "db:start": "node scripts/db.ts start",

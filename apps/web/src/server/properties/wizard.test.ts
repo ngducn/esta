@@ -60,7 +60,7 @@ const put = (signedUrl: string, body: Buffer, type: string) =>
 
 const code = () => `WZ${String(Date.now()).slice(-6)}`;
 
-describe.skipIf(!stackUp)(`startPropertyWizard against the ESTA_SLOT=${process.env.ESTA_SLOT ?? 0} stack`, () => {
+describe.skipIf(!stackUp)(`startPropertyWizard (PRP-7) against the ESTA_SLOT=${process.env.ESTA_SLOT ?? 0} stack`, () => {
   beforeAll(async () => {
     session.client = await signedInAs(`me.lane${LANE}@demo.esta.test`);
     session.member = { role: 'admin', household: { id: household } };
