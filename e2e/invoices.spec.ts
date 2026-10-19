@@ -170,8 +170,18 @@ test('rule 4: a paid bill, a draft and a household without a receiving account s
       values ('${account}', '${laneHousehold(4)}', '${ACCOUNT.bin}', '${ACCOUNT.accountNo}', '${ACCOUNT.accountName}', '${seedId('seed:party:me-lane-4')}', true) returning id`);
   }
 
-  const response = await page.goto(invoicePath(invoiceId(5, 'di-an', 3, '2026-10-25')));
-  expect(response?.status()).toBe(404);
+  // The bill page streams behind its loading skeleton, so Next answers 200 and streams the not-found page with noindex.
+  const other = invoiceId(5, 'di-an', 3, '2026-10-25');
+  const [{ memo_code: otherMemo } = { memo_code: '' }] = query<{ memo_code: string }>(workdir, `select memo_code from public.invoices where id = '${other}'`);
+  expect(otherMemo).not.toBe('');
+  const response = await page.goto(invoicePath(other));
+  await expect(page.getByTestId('invoice-not-found')).toBeVisible();
+  await expect(page.getByTestId('invoice-not-found')).toContainText('Không tìm thấy hóa đơn này');
+  await expect(page.getByTestId('invoice-place')).toHaveCount(0);
+  const html = (await response?.text()) ?? '';
+  expect(html).toContain('noindex');
+  expect(html).not.toContain(otherMemo);
+  expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
 test('rule 5: the lease timeline links each bill, and Phòng 5’s overdue bill opens from there with its code', async ({ page }) => {

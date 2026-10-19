@@ -1299,7 +1299,10 @@
     "qrClose": "Close",
     "openInvoice": "View invoice",
     "print": "Print invoice",
-    "openLease": "View lease"
+    "openLease": "View lease",
+    "notFoundTitle": "Invoice not found",
+    "notFoundBody": "The link may be out of date, or the invoice belongs to another household.",
+    "notFoundAction": "Back to Collections"
   },
   "payments": {
     "title": "Record payment",

@@ -1299,7 +1299,10 @@
     "qrClose": "Đóng",
     "openInvoice": "Xem hóa đơn",
     "print": "In hóa đơn",
-    "openLease": "Xem hợp đồng"
+    "openLease": "Xem hợp đồng",
+    "notFoundTitle": "Không tìm thấy hóa đơn này",
+    "notFoundBody": "Đường dẫn có thể đã cũ, hoặc hóa đơn không thuộc gia đình này.",
+    "notFoundAction": "Về trang Thu tiền"
   },
   "payments": {
     "title": "Ghi nhận tiền",
