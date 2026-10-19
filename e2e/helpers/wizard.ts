@@ -50,6 +50,16 @@ export async function serviceGet<T>(page: Page, path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+export async function storedNames(page: Page, documentId: string): Promise<string[]> {
+  const [row] = await serviceGet<{ storage_path: string }[]>(page, `documents?id=eq.${documentId}&select=storage_path`);
+  const response = await page.request.post(`${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/list/documents`, {
+    headers: { ...service, 'content-type': 'application/json' },
+    data: { prefix: row?.storage_path.replace(/[^/]+$/, ''), limit: 100 },
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  return ((await response.json()) as { name: string }[]).map((object) => object.name).toSorted();
+}
+
 export async function servicePatch(page: Page, path: string, data: unknown) {
   const response = await page.request.patch(`${rest}/${path}`, { headers: { ...service, 'content-type': 'application/json' }, data });
   expect(response.ok(), await response.text()).toBe(true);

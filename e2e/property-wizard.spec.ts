@@ -18,6 +18,7 @@ import {
   START,
   startWizard,
   step,
+  storedNames,
 } from './helpers/wizard';
 
 // PRP-7 and DOC-6 through the wizard. One worker and one test clock per slot, so the rules run in order in the `clock` project.
@@ -72,7 +73,12 @@ async function finishFromOwners(page: Page) {
 
 async function runRule2(page: Page, label: string, evidence: string | null) {
   await stopWorker();
-  const { propertyId } = await startWizard(page, { nickname: `Nhà phố An Phú Demo ${label}`, kind: 'townhouse', photo: await fixture('gcn_2024-photo').upload(), via: 'camera' });
+  const { propertyId, documentId } = await startWizard(page, { nickname: `Nhà phố An Phú Demo ${label}`, kind: 'townhouse', photo: await fixture('gcn_2024-photo').upload(), via: 'camera' });
+  expect(await storedNames(page, documentId ?? ''), 'the wizard stores what the upload sheet does: the photo, its thumbnail and its review copy').toEqual([
+    'page-1.jpg',
+    'review.webp',
+    'thumb.webp',
+  ]);
   await page.getByTestId('skip-step').click();
   await step(page, 'owners');
   await expect(notice(page)).toHaveAttribute('data-state', 'reading');
@@ -84,6 +90,7 @@ async function runRule2(page: Page, label: string, evidence: string | null) {
   expect(await page.evaluate(() => 'wizardNotReloaded' in window), 'the notice changed without a reload').toBe(true);
   if (evidence !== null) await shot(page, `p2-08-review-ready-${evidence}`);
   await followReadyNotice(page);
+  await expect(page.locator('img[data-testid="document-page"]'), 'the review opens the signed review copy').toHaveAttribute('src', new RegExp(`/${documentId}/review\\.webp\\?token=`));
   await acceptAndConfirm(page);
   await page.getByTestId('review-continue').click();
   await step(page, 'owners');
