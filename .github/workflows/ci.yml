@@ -101,13 +101,6 @@ jobs:
           PROJECTS: ${{ matrix.projects }}
           SHARD: ${{ matrix.shard }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: ${{ matrix.id }}.zip
-      - name: DIAG
-        if: ${{ !cancelled() && matrix.id == 'clock-1' }}
-        continue-on-error: true
-        run: |
-          set +e
-          fc-match sans-serif
-          pnpm e2e --project=desktop e2e/zz-diag.spec.ts --reporter=line 2>&1 | grep -E 'DIAG|passed|failed' | cut -c1-1500
       - id: strip
         if: ${{ !cancelled() }}
         run: tools/ci/strip-key-traces.sh blob-report

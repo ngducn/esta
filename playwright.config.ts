@@ -35,7 +35,13 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
   // Only `next dev` compiles a page on its first visit, so only it needs the routes warmed before the tests.
   ...(server === 'dev' ? { globalSetup: './e2e/warm-routes.ts' } : {}),
-  use: { baseURL, trace: 'retain-on-failure' },
+  use: {
+    baseURL,
+    trace: 'retain-on-failure',
+    // Linux Chromium hints glyph outlines, which rounds each digit's advance differently (a 7 px gap between two
+    // tabular amounts) and widens text at 130%. macOS does not hint, so turn it off to measure the same layout.
+    launchOptions: { args: process.platform === 'linux' ? ['--font-render-hinting=none'] : [] },
+  },
   projects: [
     { name: 'mobile', testIgnore: ['prod/**', ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
     { name: 'desktop', testIgnore: ['prod/**', ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
