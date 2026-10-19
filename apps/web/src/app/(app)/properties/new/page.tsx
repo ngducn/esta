@@ -10,7 +10,7 @@ import { StepDetails } from '@/components/property-wizard/step-details';
 import { StepOwners } from '@/components/property-wizard/step-owners';
 import { StepPhoto } from '@/components/property-wizard/step-photo';
 import { StepReview } from '@/components/property-wizard/step-review';
-import { readWizard, wizardHref, wizardMachine, wizardPath, type WizardEvent, type WizardIds, type WizardState } from '@/components/property-wizard/wizard-machine';
+import { readWizard, wizardHref, wizardMachine, wizardPath, type WizardEvent, type WizardIds } from '@/components/property-wizard/wizard-machine';
 import { cn } from '@/lib/utils';
 import { readDocumentStatuses } from '@/server/documents/status';
 import { requireMember } from '@/server/member';
@@ -59,13 +59,13 @@ async function loadWizardProperty(householdId: string, ids: WizardIds): Promise<
 export default async function NewPropertyPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const member = await requireMember();
   if (member.role === 'viewer') notFound();
-  const route = readWizard(await searchParams);
+  const params = await searchParams;
   const [t, nav, locale, messages] = await Promise.all([getTranslations('propertyWizard'), getTranslations('nav'), getLocale(), getMessages()]);
-  const property = route.ids === null ? null : await loadWizardProperty(member.household.id, route.ids);
-  if (route.ids !== null && property === null) notFound();
-  const ids: WizardIds | null = route.ids === null || property === null ? null : { propertyId: route.ids.propertyId, documentId: property.documentId };
-  const state: WizardState =
-    ids === null ? route.state : ids.documentId === null ? (route.state.step === 'review' ? { step: 'details', photo: false } : { step: route.state.step, photo: false }) : route.state;
+  const named = readWizard(params);
+  const property = named.ids === null ? null : await loadWizardProperty(member.household.id, named.ids);
+  if (named.ids !== null && property === null) notFound();
+  // A document that is not this property's certificate is read as no photo at all.
+  const { state, ids } = named.ids?.documentId != null && property?.documentId === null ? readWizard({ ...params, document: undefined }) : named;
   const go = (event: WizardEvent) => wizardHref(wizardMachine(state, event, { reviewReady: true }), ids);
 
   const path = wizardPath(state.photo);
