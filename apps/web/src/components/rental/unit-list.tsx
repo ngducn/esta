@@ -70,28 +70,33 @@ export function UnitList({
     const before = units[index - 1];
     return before === undefined || compareRoomLabels(before.label, unit.label) <= 0;
   });
-  const lastMove = useRef<{ readonly id: string; readonly direction: Direction } | null>(null);
+  const lastMove = useRef<{ readonly id: string; readonly direction: Direction; readonly before: readonly Unit[] } | null>(null);
   const list = useRef<HTMLOListElement>(null);
 
-  // React moves one of the two swapped rows in the DOM, which drops focus when it is the row that moved down.
+  // A pending move disables the button it came from, and React moves one of the two swapped rows in the DOM, so focus
+  // can fall to the page. Once the new order arrives, it goes back to the moved room.
   useEffect(() => {
     const moved = lastMove.current;
+    if (moved === null || pending || units === moved.before) return;
     lastMove.current = null;
-    if (moved === null || (document.activeElement !== null && document.activeElement !== document.body)) return;
-    const buttons = [...(list.current?.querySelectorAll<HTMLButtonElement>(`[data-id="${moved.id}"] [data-move]`) ?? [])];
-    (buttons.find((button) => button.dataset.move === moved.direction && !button.disabled) ?? buttons.find((button) => !button.disabled))?.focus();
-  }, [units]);
+    if (document.activeElement !== null && document.activeElement !== document.body) return;
+    const buttons = [...(list.current?.querySelectorAll<HTMLButtonElement>(`[data-id="${moved.id}"] [data-move]`) ?? [])].filter((button) => !button.disabled);
+    (buttons.find((button) => button.dataset.move === moved.direction) ?? buttons[0])?.focus();
+  }, [units, pending]);
 
   const reorder = (write: () => Promise<{ readonly ok: boolean }>) =>
     startTransition(async () => {
       setError(null);
       const result = await write().catch(() => ({ ok: false }) as const);
       if (result.ok) router.refresh();
-      else setError(t('moveFailed'));
+      else {
+        lastMove.current = null;
+        setError(t('moveFailed'));
+      }
     });
 
   const move = (unit: Unit, direction: Direction) => {
-    lastMove.current = { id: unit.id, direction };
+    lastMove.current = { id: unit.id, direction, before: units };
     reorder(() => moveUnitAction(propertyId, unit.id, direction));
   };
 
