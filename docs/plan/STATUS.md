@@ -11,19 +11,21 @@
 
 ## Work added outside the original plan
 
-The plan's count (41 of 73 PRs merged on 2026-10-19) covers only the plan's own PRs. This table tracks everything added since, with where each lives. Update it whenever work is added, merged or dropped.
+The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and deposits #181 joined) covers only the plan's own PRs. This table tracks everything added since, with where each lives. Update it whenever work is added, merged or dropped.
 
-| Work | Why it was added | Tracked in | State (2026-10-19 23:20) |
+| Work | Why it was added | Tracked in | State (2026-10-20 04:30) |
 | --- | --- | --- | --- |
 | Quality gate and ARCHITECTURE.md (one home for each kind of code) | Outsider review rated quality 6.5; Ryan: "unacceptable" | #187 | Merged |
 | One area and length parser | Review: three parsers disagreed (1,255 m² read as 1255) | #201 (closes #182, #199, #200) | Merged |
 | One extraction request and its real failure cause | Review | #205 (closes #183, #185) | Merged |
-| Rent bills planned in one place, the database | Review: billing rules written twice and drifting | #209 (closes #195) | Both lanes clean; CI running |
-| Connector: manage the portfolio by talking to Claude | Ryan, 2026-10-19: "tell you populate my portfolio using MCP connector" | `docs/plan/connector-track.md`, `docs/spec/CONNECTOR.md` | C1a #213 in fix-forward; C1b being built; C2 to C4 queued |
-| CI on GitHub Actions | Ryan made the repo public for free CI minutes | Owner running (branch esta/actions-ci) | Building; Actions runs are stuck in the queue |
+| Rent bills planned in one place, the database | Review: billing rules written twice and drifting | #209 (closes #195) | Merged |
+| Connector: manage the portfolio by talking to Claude | Ryan, 2026-10-19: "tell you populate my portfolio using MCP connector" | `docs/plan/connector-track.md`, `docs/spec/CONNECTOR.md` | C1 merged: #213 ask about properties, #217 add a property. C3 (load a folder) and C2 (a rented room with its lease) building |
+| CI on GitHub Actions | Ryan made the repo public for free CI minutes | #216 | Merged; the Actions `ci` check is the merge gate, local CI the fallback |
+| Local stacks keep Esta's own emails after a reset | Docker 29.2.0 broke mounted email templates after `db:reset` | #218 | Merged |
+| Decision for Ryan: may Claude's change history copy a full ID Mẹ typed? | Lane finding on #217 | #223 | Waiting for Ryan (default keep, recommend reduce) |
 | Public-repo safety: secret scanning, push protection, interaction limits, CI guard | Repo made public | Standing orders 23:30; #215 | Done, except #215 before the deploy |
 | Cleanup round (server action kit, action hook, test clock, gate follow-ups, extraction acceptance, smaller duplicates) | Review | #188 (folds into the connector's ops layer), #193, #208, #210, #184, #189 to #192, #194, #196, #198 | Queued |
-| Lows found by review lanes | Lanes | #207, #211, #212, #214 | Queued |
+| Lows found by review lanes | Lanes | #207, #211, #212, #214, #219, #220, #222, #225, #226 | Queued; #220 before real data |
 | Squash migrations before the first deploy | Review | #197 | Before the deploy |
 | Rerun the outsider code review | Target 8.5 or better | Standing orders 16:45 | After the cleanup round |
 
