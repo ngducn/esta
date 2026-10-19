@@ -57,7 +57,7 @@ Four flows still break this rule. Issue #184 moves extraction acceptance into on
 
 A rule that decides what gets written lives in SQL, because SQL is the writer: billing periods, invoice issue, payment allocation, payment status, lease transitions and the national-ID check. A rule that only shapes what a screen shows lives in `packages/core`. When both sides need a rule, one side is the source and the other reads it.
 
-- The billing planner exists twice today (`private.lease_periods` and `generateSchedule`), and the copies drift. Issue #195 makes SQL the single planner behind a guarded `lease_schedule` function.
+- `private.lease_periods` is the one billing planner. Screens and tax read its periods through `public.lease_schedule`, which checks membership per lease, and the seed bills through `run_invoicing` as the nightly job does. `packages/core/src/lease` keeps only pure readers of those rows, such as `currentMonthlyRent` and `leaseTimeline`.
 - When a TypeScript twin must stay, prove parity with golden vectors that pgTAP replays, as `supabase/tests/fixtures/payment_status.csv` does.
 - An invariant over rows belongs in a constraint, not in a check inside one function. Issue #198 adds exclusion constraints for overlapping leases and invoices.
 - Issue #197 squashes the migrations into one baseline before the first deploy, so each function has one current body.
@@ -96,7 +96,7 @@ Server components translate with `getTranslations` and pass strings to client co
 
 ## One declaration per concept in core
 
-Each enum, schema, date helper and type in `packages/core` is declared once, in the module that owns the concept. Other modules import it. An auto-import cannot pick the wrong copy of a name that exists once (`duplicate-core-export`). Issue #196 removes the current copies: `TaxPayer`, the certificate schemas, `daysInMonth` and `OwnershipShare`.
+Each enum, schema, date helper and type in `packages/core` is declared once, in the module that owns the concept. Other modules import it. An auto-import cannot pick the wrong copy of a name that exists once (`duplicate-core-export`). Issue #196 removes the current copies: `TaxPayer`, the certificate schemas and `OwnershipShare`.
 
 ## Types at boundaries
 
