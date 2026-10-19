@@ -189,8 +189,9 @@ export type DocumentUpdate = { readonly ok: true; readonly previous: DocumentEdi
 
 /**
  * `Sửa thông tin`: writes what the row says about the document, the title and tags as typed (D11), and returns what it
- * said before, so the undo toast writes that back through this same action. The category sets the sensitivity, and a
- * document turned sensitive drops its read text, which the database refuses to keep on a sensitive row.
+ * said before, so the undo toast writes that back through this same action. A new category sets the sensitivity, and
+ * a document turned sensitive drops its read text, which the database refuses to keep on a sensitive row; an edit that
+ * keeps the category keeps the stored sensitivity.
  */
 export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
   const parsed = editSchema.safeParse(input);
@@ -227,8 +228,7 @@ export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
       property_id: propertyId,
       expires_on: expiresOn,
       tags: [...new Set(tags)],
-      sensitivity,
-      ...(sensitivity === 'sensitive' ? { ocr_text: null } : {}),
+      ...(category === row.category ? {} : { sensitivity, ...(sensitivity === 'sensitive' ? { ocr_text: null } : {}) }),
     })
     .eq('household_id', household)
     .eq('id', documentId)
