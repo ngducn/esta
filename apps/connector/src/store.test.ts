@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -78,6 +78,16 @@ describe('fileStore', () => {
     slot0.removeItem('session');
     expect(slot0.getItem('session')).toBeNull();
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ 'http://127.0.0.1:54421#session': 'other' });
+  });
+
+  it('reads a file cut off mid-write as signed out, and writes a whole file over it', () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'esta-connector-')), 'session.json');
+    writeFileSync(file, JSON.stringify({ 'http://127.0.0.1:54321#session': SECRET }).slice(0, -12), { mode: 0o600 });
+    const store = fileStore('http://127.0.0.1:54321', file);
+    expect(store.getItem('session')).toBeNull();
+    store.setItem('session', SECRET);
+    expect(store.getItem('session')).toBe(SECRET);
+    expect(readdirSync(join(file, '..'))).toEqual(['session.json']);
   });
 });
 
