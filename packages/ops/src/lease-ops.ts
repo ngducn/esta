@@ -20,11 +20,13 @@ export type LeaseRefusal = { readonly kind: 'not_draft'; readonly status: LeaseS
 
 const issue = (path: string, code: string): CommonRefusal => ({ kind: 'invalid', issues: [{ path, code }] });
 
-/** The property of the unit the lease names, which must be the one the caller expects when it names one. */
+/** The property of the unit the lease names, which must be out of the trash and the one the caller expects when it names one. */
 async function propertyOf(ctx: OpContext, path: string, unitId: string, expected: string | undefined): Promise<Result<string, CommonRefusal>> {
   const [unit] = await viewRows(ctx, 'units', { id: unitId });
   if (unit === undefined) return refuse(issue(path, 'not_found'));
-  return expected === undefined || unit.property_id === expected ? { ok: true, value: unit.property_id } : refuse(issue(path, 'other_property'));
+  if (expected !== undefined && unit.property_id !== expected) return refuse(issue(path, 'other_property'));
+  const [property] = await viewRows(ctx, 'properties', { id: unit.property_id });
+  return property === undefined ? refuse(issue(path, 'not_found')) : { ok: true, value: unit.property_id };
 }
 
 async function tenantRefusal(ctx: OpContext, path: string, tenantId: string | null): Promise<CommonRefusal | null> {

@@ -6,7 +6,8 @@ import { NO_PENDING, withWrites } from './view';
 const OTHER_PROPERTY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0006';
 const OTHER_ROOM = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0007';
 
-const roomAndTenant = withWrites(NO_PENDING, [
+const house = withWrites(NO_PENDING, [{ kind: 'create', table: 'properties', row: { id: PROPERTY, nickname: 'Demo Nhà Q1' } }]);
+const roomAndTenant = withWrites(house, [
   { kind: 'create', table: 'units', row: { id: ROOM, property_id: PROPERTY, label: 'Phòng 2' } },
   { kind: 'create', table: 'parties', row: { id: TENANT, full_name: 'Lan Demo', phone: null, id_last4: '4567' } },
 ]);
@@ -39,7 +40,7 @@ describe('leaseCreate', () => {
     expect(onOther).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'lease.unit_id', code: 'other_property' }] } });
     const missingUnit = await leaseCreate.plan(context(db), parsed(leaseCreate.input, { id: LEASE, lease: demoDraft }));
     expect(missingUnit).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'lease.unit_id', code: 'not_found' }] } });
-    const roomOnly = withWrites(NO_PENDING, [{ kind: 'create', table: 'units', row: { id: ROOM, property_id: PROPERTY, label: 'Phòng 2' } }]);
+    const roomOnly = withWrites(house, [{ kind: 'create', table: 'units', row: { id: ROOM, property_id: PROPERTY, label: 'Phòng 2' } }]);
     const missingTenant = await leaseCreate.plan(context(db, roomOnly), parsed(leaseCreate.input, { id: LEASE, lease: demoDraft }));
     expect(missingTenant).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'lease.tenant_party_id', code: 'not_found' }] } });
   });
