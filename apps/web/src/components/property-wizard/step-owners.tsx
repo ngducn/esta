@@ -28,8 +28,8 @@ function holdersOf(acceptedFields: unknown): CertificateHolder[] {
 }
 
 /**
- * Step `owners`: the saved set when there is one, else the holders of the accepted certificate split equally
- * (`ownersFromHolders`), saved through the P1-10 ownership action.
+ * Step `owners`: the saved set when there is one, else the holders the accepted certificate's review linked, split
+ * equally (`ownersFromHolders`), saved through the P1-10 ownership action.
  */
 export async function StepOwners({ propertyId, documentId, next, back }: { propertyId: string; documentId: string | null; next: string; back: string }) {
   const [member, supabase, t, saved, parties, legal] = await Promise.all([
@@ -46,7 +46,7 @@ export async function StepOwners({ propertyId, documentId, next, back }: { prope
       : (
           await supabase
             .from('document_extractions')
-            .select('status, accepted_fields')
+            .select('id, status, accepted_fields')
             .eq('household_id', member.household.id)
             .eq('document_id', documentId)
             .order('created_at', { ascending: false })
@@ -55,8 +55,15 @@ export async function StepOwners({ propertyId, documentId, next, back }: { prope
         ).data;
   let proposed = saved;
   if (saved.length === 0 && read?.status === 'accepted') {
-    const { data } = await supabase.from('parties').select('id, full_name, id_last4').eq('household_id', member.household.id);
-    proposed = ownersFromHolders(holdersOf(read.accepted_fields), (data ?? []).map((row) => ({ id: row.id, fullName: row.full_name, idLast4: row.id_last4 })));
+    const [{ data: rows }, { data: certificate }] = await Promise.all([
+      supabase.from('parties').select('id, full_name, id_last4').eq('household_id', member.household.id),
+      supabase.from('certificates').select('holder_party_ids').eq('household_id', member.household.id).eq('extraction_id', read.id).maybeSingle(),
+    ]);
+    proposed = ownersFromHolders(
+      holdersOf(read.accepted_fields),
+      (rows ?? []).map((row) => ({ id: row.id, fullName: row.full_name, idLast4: row.id_last4 })),
+      certificate?.holder_party_ids ?? [],
+    );
   }
   const note =
     saved.length === 0 && proposed.length > 0
