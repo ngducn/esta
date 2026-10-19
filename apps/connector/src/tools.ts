@@ -3,15 +3,18 @@ import { formatVnd } from '@esta/core/format';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { KIND_DETAIL_KEYS, propertyInputSchema } from '@esta/core/schemas/property';
+import { unitSchema } from '@esta/core/schemas/units';
 import type { Result } from '@esta/core/result';
 import {
   applyPlan,
+  findPerson,
   findProperty,
   getProperty,
   idSchema,
   listProperties,
   MAX_ITEMS,
   OP_KINDS,
+  personQuerySchema,
   planChanges,
   planRequestSchema,
   PLAN_TTL_MINUTES,
@@ -57,6 +60,7 @@ function guarded<A>(name: string, deps: ToolDeps, handler: (ctx: ToolContext, ar
 }
 
 const propertySchema = JSON.stringify(z.toJSONSchema(propertyInputSchema, { io: 'input', unrepresentable: 'any' }));
+const unitJsonSchema = JSON.stringify(z.toJSONSchema(unitSchema, { io: 'input', unrepresentable: 'any' }));
 const detailKeys = Object.entries(KIND_DETAIL_KEYS)
   .filter(([, keys]) => keys.length > 0)
   .map(([kind, keys]) => `${kind}: ${keys.join(', ')}`)
@@ -68,6 +72,9 @@ const PLAN_DESCRIPTION = `Plan changes to Esta for Ryan to approve; nothing is w
 - property.create: input { property }. Esta mints the new property's id; never send one.
 - property.edit: input { id, set } where set holds only the fields to change, with the keys and rules of property below; the rest keep their stored values, and the change lists only the fields that differ.
 - document.attach: input { path, property_id, category, title, lease_id?, expires_on?, allow_duplicate? } files a JPEG, PNG, WebP or PDF of at most ${MAX_DOCUMENT_BYTES / 1024 / 1024} MB from the import folders into the vault, as an upload there would. Categories: ${DOCUMENT_CATEGORY_IDS.join(', ')}. title is Vietnamese, as the vault titles it: the paper and the place, such as "Sổ hồng Bảo Lộc". property_id must name a property Esta already has: to file papers for a property created in this conversation, apply its plan first. A file already in the vault is refused as duplicate with the documents that hold it; set allow_duplicate only when Ryan wants a second copy. The change holds the file's size and SHA-256; apply sends it only if it is still the same file. ${ID_IN_NAME}
+- unit.create: input { property_id, unit } adds a room, floor, shop or lot to a property, last in its list, as the rental tab does. property_id names a property Esta has, or one planned earlier in the batch by $ref. A label the property already has is refused as label_taken with the unit that holds it. unit is this JSON Schema: ${unitJsonSchema}
+- person.create: input { person: { full_name, phone, id_last4 }, allow_duplicate? } adds a tenant. Call find_person first, and name a person Esta already has by id instead of creating them again. phone is null when Ryan gave none. id_last4 is only the last four digits of an ID number (CCCD), or null: never type the whole number. A person who may already be in Esta is refused as possible_duplicate with the people and what matched; set allow_duplicate: true only after Ryan says it is a different person.
+Refs: an item that creates a row may carry ref, a label you choose (a letter, then up to 39 letters, digits, - or _), and a later item writes { "$ref": "<label>" } wherever that row's id belongs, such as a unit's property_id. Only creates carry ref, and a $ref names only an earlier item. When an item is refused, at plan or at apply, every item that names it is refused as blocked and nothing of it is written.
 property is this JSON Schema: ${propertySchema}
 kind_details keys by kind (others take {}): ${detailKeys}. Amounts are whole đồng. current_address codes come from resolve_address.
 Returns each item's change (or unchanged, or a refusal). When nothing is refused it stores the plan and returns plan_id; show Ryan a short Vietnamese summary of every change and call apply_plan only after he says OK. A plan expires ${PLAN_TTL_MINUTES} minutes after planning. At most ${MAX_ITEMS} items.`;
@@ -100,6 +107,19 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
     guarded('find_property', deps, async (ctx, { text }: { text: string }) => {
       const candidates = await findProperty(ctx, text);
       return { data: { candidates }, log: `count=${candidates.length}` };
+    }),
+  );
+
+  server.registerTool(
+    'find_person',
+    {
+      description:
+        'Find people in the household (tenants, owners, companies) by name, phone or the last four digits of an ID number, at least one; each candidate says what matched. A name matches when it holds every word given, accents and case aside: give the name without anh, chị, cô or chú.',
+      inputSchema: personQuerySchema,
+    },
+    guarded('find_person', deps, async (ctx, query: z.output<typeof personQuerySchema>) => {
+      const found = await findPerson(ctx, query);
+      return found.ok ? { data: { candidates: found.value }, log: `count=${found.value.length}` } : { data: { error: found.reason }, log: `refused=${found.reason}`, isError: true };
     }),
   );
 
