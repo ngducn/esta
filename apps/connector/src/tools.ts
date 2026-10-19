@@ -122,7 +122,7 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
     'apply_plan',
     {
       description:
-        'Apply a stored plan after Ryan said OK. Each item is checked again; an item whose change is no longer what Ryan saw is refused as stale and nothing of it is written. Ends applied or partial with every outcome.',
+        'Apply a stored plan after Ryan said OK. Each item is checked again; an item whose change is no longer what Ryan saw is refused as stale and nothing of it is written. Ends applied or partial with every outcome. in_progress means an earlier apply was cut off: call again at retryAt and it finishes the batch, landing nothing twice.',
       inputSchema: z.object({ plan_id: idSchema }),
     },
     guarded('apply_plan', deps, async (ctx, { plan_id }: { plan_id: string }) => {

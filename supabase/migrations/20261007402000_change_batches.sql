@@ -1,7 +1,8 @@
 -- Connector change batches (CONNECTOR.md §3.4): one row per plan Claude shows Ryan. The connector stores the plan as
--- `planned`, claims it once with `applying` so a second apply finds nothing to claim, and ends it `applied` or
--- `partial` with what landed. `undone` arrives with batch undo. A plan expires 30 minutes after `planned_at`, which
--- comes from the injected clock. Only an operator plans, only the planner applies (§3.3), and every member reads.
+-- `planned`, claims it with `applying` so a second apply finds nothing to claim until an apply that died has held it
+-- five minutes, and ends it `applied` or `partial` with what landed. `undone` arrives with batch undo. A plan expires
+-- 30 minutes after `planned_at`, which comes from the injected clock. Only an operator plans, only the planner applies
+-- (§3.3), and every member reads.
 create table public.change_batches (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households (id) on delete cascade,

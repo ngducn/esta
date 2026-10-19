@@ -68,7 +68,7 @@ A read moves here before a second surface uses it. A read that only one surface 
 
 A user action that writes more than one row runs as one `security definer` function in SQL, in one transaction, and checks membership itself. `record_payment` in `supabase/migrations/20261007305000_record_payment.sql` and `amend_lease` in `supabase/migrations/20261007306700_lease_changes.sql` are the template. Never orchestrate several writes from TypeScript with compensating deletes or a loop of updates.
 
-A connector batch is not one user action: it is a sequence of ops, each atomic on its own, and it ends `partial` with what landed (`docs/spec/CONNECTOR.md` §3.4). Four flows still break this rule. Issue #184 moves extraction acceptance into one function. Issue #189 moves the room reorder, the legal save with quick-added owners, and delete-and-undo.
+A connector batch is not one user action: it is a sequence of ops, each atomic on its own, and it ends `partial` with what landed (`docs/spec/CONNECTOR.md` §3.4). It converges without a transaction: an apply that dies is taken over after a five-minute lease, and the takeover plans each item again, so what landed plans as unchanged and nothing lands twice. Four flows still break this rule. Issue #184 moves extraction acceptance into one function. Issue #189 moves the room reorder, the legal save with quick-added owners, and delete-and-undo.
 
 ## Rules in SQL and rules in TypeScript
 
