@@ -2,6 +2,8 @@
 
 The assistant watches the portfolio, reads documents, researches the market, and answers questions. It runs as a worker on a machine Ryan controls, using the Claude Agent SDK on Ryan's Claude subscription.
 
+Ryan's own Claude chats reach Esta through the connector, which docs/spec/CONNECTOR.md specifies (agreed 2026-10-19). This file governs the unattended assistant.
+
 ## 1. Principles
 
 1. **The agent proposes, people dispose.** The agent never writes business tables (properties, leases, invoices, payments, expenses, certificates, documents). It writes only agent-owned tables (§10) and `document_extractions`. Anything that changes business data is a proposal a person approves; the web app executes approvals under that person's session so RLS and the audit log attribute the change to them.
