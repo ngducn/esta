@@ -243,9 +243,9 @@ Lease form defaults by unit, `LEASE_DEFAULTS` in `packages/core/src/lease/defaul
 
 App consequences `[app rule]`:
 
-- No structured national ID numbers anywhere (decision D11). ID card images are `sensitive` documents. Text keeps the last 4 digits only.
+- No structured national ID numbers anywhere (decision D11). ID card images are `sensitive` documents. What the assistant reads keeps the last 4 digits only; text a person types is saved as typed (D11, amended 2026-10-19).
 - Tenant data is used only to manage the lease. Export and delete exist per party.
-- Sensitive documents are blurred until tapped, every access is logged, and they reach the AI only through the extraction job that targets them.
+- Sensitive documents show clear like every other (DOC-5, amended 2026-10-19), every access is logged, and they reach the AI only through the extraction job that targets them.
 - Whether household-only use is exempt from parts of the law is unknown `[verify]`; build to the stricter reading.
 
 ## 9. Formatting and parsing conventions

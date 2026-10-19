@@ -41,7 +41,7 @@ No exclamation marks in UI copy. No emoji in UI. Numbers always formatted (DOMAI
 - Every action has a visible text label. Icons support labels; they never replace them on mobile.
 - No hover-only and no swipe-only affordances.
 - Reversible actions use undo, not confirmation dialogs. Irreversible actions confirm in words that name the object.
-- Sensitive content (ID cards, certificates by default) is blurred until tapped.
+- Every document shows clear, sensitive ones included (Ryan's ruling of 2026-10-19, DOC-5).
 - Full Vietnamese glyph coverage in every font at every weight used (spike S2).
 
 ## 5. Visual direction: bright and calm
@@ -125,7 +125,7 @@ Run `/impeccable shape` for each before building it. Mobile layout first, then d
 7. **Invoice and receipt.** A5 receipt layout with the household's header, tenant, period, lines, total in words in Vietnamese, VietQR, and the receipt image for Zalo.
 8. **Lease detail.** Terms summary, period timeline with payment marks, deposit ledger, documents, Renew and Terminate actions.
 9. **Meter entry.** All rooms of a rooming house on one screen, previous reading shown beside the input, numeric keypad, anomaly warning inline.
-10. **Tài liệu (Documents).** Search bar first. Groups by property and category. Sensitive items blurred. Expiring soon section.
+10. **Tài liệu (Documents).** Search bar first. Groups by property and category. Expiring soon section.
 11. **Trợ lý.** Tabs: Hộp thư (brief, alerts, proposals), Thị trường (research items with sources, filter by property), Hỏi (Ask).
 12. **Báo cáo (Reports).** Owner annual tax card, property P&L, rent roll, occupancy. Export buttons.
 13. **Cài đặt (Settings).** Household, members, receiving bank accounts, notifications, research topics, assistant status, language, text size, density, data export.
@@ -140,7 +140,7 @@ Build these in Phase 0 and show every state on `/dev/components`, light and dark
 - Status mark (shape + word + color) for paid, due, overdue, vacant, draft, ended.
 - Completeness ring with the count of missing items.
 - Address block showing "Theo sổ" and "Hiện nay".
-- Document tile (thumbnail, blurred state, category, expiry).
+- Document tile (thumbnail, category, expiry).
 - Extraction field row (value, confidence marker, source page link, accept, edit).
 - Invoice row and collections row with actions.
 - QR sheet (large QR, amount, memo, bank, account name, save image).

@@ -43,7 +43,7 @@ v1 serves one household. Other families are a confirmed future audience, so the 
 - Modules: properties and certificates, documents vault, leases and rent, money and tax, the assistant, settings and export (`SPEC.md` §4).
 - Money is exact integer VND. Every tax figure is labelled an estimate, never advice.
 - Vietnamese is the default language, with an English toggle. Every string is translatable.
-- Personal data minimization: no full national ID numbers stored anywhere. ID card scans and certificates are sensitive documents, blurred until tapped, and every access is logged.
+- Personal data minimization: the app never writes a full national ID number by itself; what the assistant reads keeps the last 4 digits, and text a person types is saved as typed (D11, 2026-10-19). ID card scans and certificates are sensitive documents that the assistant reads only through their extraction job. Every document shows clear, and every access is logged.
 - Real family data never enters the repository, screenshots or fixtures. Demo data uses synthetic names containing "Demo".
 - Out of scope for v1: tenant portal, other families, Zalo Official Account messaging, bank API integration, native apps, double-entry accounting, legal or tax advice.
 
