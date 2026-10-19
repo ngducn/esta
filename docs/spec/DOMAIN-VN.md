@@ -89,7 +89,7 @@ Fields the extraction job returns (schema `certificate_v1`). Every field carries
 - `has_qr`: boolean.
 - `notes_text`: the "Ghi chú" section verbatim.
 
-Rules `[app rule]`: numbers keep Vietnamese decimal commas converted to dots internally ("125,5 m²" → 125.5). Handwritten annotations get confidence ≤ 0.6 unless they are printed stamps. If two areas disagree (parcel vs. purposes sum), keep both and flag.
+Rules `[app rule]`: numbers keep Vietnamese decimal commas converted to dots internally ("125,5 m²" → 125.5); areas follow the §9 rule. Handwritten annotations get confidence ≤ 0.6 unless they are printed stamps. If two areas disagree (parcel vs. purposes sum), keep both and flag.
 
 ## 3. Land use purpose codes
 
@@ -263,6 +263,12 @@ Implemented in `packages/core/format` and `packages/core/parse`. FND-4 tests use
 | 15500000 | `formatVndCompact` | `15,5 tr` |
 | 850000 | `formatVndCompact` | `850 nghìn` |
 | 125.5 | `formatArea` | `125,5 m²` |
+| `125,5 m²`, `350.5` | `parseMeasureInput` | 125.5, 350.5 |
+| `1.250,75`, `1 250,75` | `parseMeasureInput` | 1250.75 |
+| `1.250`, `1 250` | `parseMeasureInput` | 1250 |
+| `1,255`, `4,500` | `parseMeasureInput` | refused as too precise |
+| `12 5`, `1,5 5` | `parseMeasureInput` | refused as invalid |
+| 350.5 | `measureInputText` | `350,5` |
 | 2026-10-07 | `formatDate` | `07/10/2026` |
 | 2026-10-07 | `formatDateLong` | `Thứ Tư, 07/10/2026` |
 | due 2026-09-25, today 2026-10-07 | `formatRelativeDue` | `quá hạn 12 ngày` |
@@ -271,6 +277,15 @@ Implemented in `packages/core/format` and `packages/core/parse`. FND-4 tests use
 | `+84903123456` | `phoneForZaloLink` | `0903123456` (local format for `https://zalo.me/{phone}`) `[verify]` |
 
 English compact forms: `3.2B ₫`, `15.5M ₫`, `850K ₫`. tỷ keeps up to 2 decimals, tr up to 1, trailing zeros trimmed.
+
+Areas and lengths `[app rule]`. Every screen and the assistant read a typed or printed area or length with `parseMeasureInput`, in both languages:
+
+- The comma is the decimal mark. A dot that is not followed by groups of three digits is also a decimal mark, so `350.5` is 350.5.
+- A dot, a space or a no-break space before groups of three digits is thousands grouping, with the same mark throughout. Any other space makes the text invalid, so `12 5` is never 125.
+- At most two decimals, because the area columns keep hundredths. `1,255` is refused as too precise, never read as 1255. The review screen shows such a reading for Mẹ to correct.
+- An area may end in `m²`, `m2` or `m`, and a length in `m`.
+- The value is greater than 0. An area is at most 9.999.999.999,99 m², the `numeric(12,2)` column, and an area the assistant reads is at most 100.000.000 m², so a national ID number cannot pass as one (SPEC D11). A frontage or road width is under 10.000 m (`kindDetailsSchema`).
+- Every editor pre-fills an area or length with `measureInputText`: the decimal comma and no grouping, such as `350,5` or `1250`. The text reads back as the same number in both languages.
 
 Names: Vietnamese names are family name, middle, given name ("Nguyễn Thị Hường"). Sort by given name, then middle, then family, using `vi` collation. `sortKeyVietnameseName("Nguyễn Thị Hường")` sorts before `"Trần Văn Khoa"` (H before K).
 

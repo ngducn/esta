@@ -44,6 +44,7 @@ describe('kindDetailsSchema', () => {
     ['apartment', { management_fee_vnd: -1 }],
     ['apartment', { block: '  ' }],
     ['agricultural_land', { frontage_m: 0 }],
+    ['residential_land', { road_width_m: 10_000 }],
   ] as const)('refuses %s with %o', (kind, details) => {
     expect(kindDetailsSchema(kind).safeParse(details).success).toBe(false);
   });
