@@ -90,7 +90,8 @@ test('steps 1 and 2: Mẹ signs in with the emailed code and adds Dãy trọ Dĩ
   await expect(addresses.locator('[data-line="legal"] dt')).toHaveText('Theo sổ');
   await expect(addresses.locator('[data-line="legal"] dd')).toContainText('tỉnh Bình Dương');
   await expect(addresses.locator('[data-line="current"] dt')).toHaveText('Hiện nay');
-  await expect(addresses.locator('[data-line="current"] dd')).toContainText('Phường Dĩ An, Thành phố Hồ Chí Minh');
+  // Thành phố Hồ Chí Minh (79) shows as `TP. Hồ Chí Minh`, the short form DOMAIN-VN §4 uses on every address line.
+  await expect(addresses.locator('[data-line="current"] dd')).toContainText('Phường Dĩ An, TP. Hồ Chí Minh');
   await shot(page, 'p2-08-northstar-header-390x844-light');
 
   const [property] = await serviceGet<{ current_address: { commune_code: string; province_code: string } }[]>(page, `properties?id=eq.${propertyId}&select=current_address`);
