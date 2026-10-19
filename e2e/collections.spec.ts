@@ -234,7 +234,7 @@ test('rule 10: in English at 130% text Phòng 5 sits in Overdue at 12 days and n
   }
 });
 
-test('a viewer reads the board and opens a lease, with no other action', async ({ page }) => {
+test('a viewer reads the board, opens a lease and shows a bill’s code, with no write action', async ({ page }) => {
   await open(page, 'me.lane7@demo.esta.test', 'light', PHONE);
   const invited = 'viewer.lane7@demo.esta.test';
   const existing = await rest<unknown[]>(page, 'GET', `household_members?invited_email=eq.${invited}&select=id`);
@@ -243,8 +243,9 @@ test('a viewer reads the board and opens a lease, with no other action', async (
   await open(page, invited, 'light', PHONE);
   await page.goto('/collections');
   await expectOctoberBoard(page);
-  const actions = row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An').locator('a');
-  await expect(actions).toHaveText(['Xem hợp đồng']);
+  const phong5 = row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An');
+  await expect(phong5.locator('a')).toHaveText(['Xem hợp đồng']);
+  await expect(phong5.getByRole('button')).toHaveText(['Mã QR']);
 });
 
 test('offline, the board says it is the last load', async ({ page }) => {
