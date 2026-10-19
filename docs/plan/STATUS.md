@@ -59,6 +59,12 @@
 - Confirm the utility code prefixes `[app rule]` from P2-03. A 12-digit run glued to letters counts as a national ID number and is cut to its last four digits, unless the letters are PA, PB, PC, PD or PE, the prefixes of the five EVN power corporations' customer codes (`CODE_PREFIXES` in `packages/core/src/agent-schemas/reduce-national-ids.ts`, and the same list in the database check). Say if a water or power company you use prints 12 digits after other letters.
 - Check one thing on your iPhone for P2-02 when you next test over `pnpm dev:lan`. Open a property, tap `Tài liệu`, then `Thêm tài liệu`, and pick a photo from your library. Save it and tap its title. Esta expects iPhone to hand over library photos as JPEG and has not seen it do so. If the photo shows up the right way round and opens, nothing more is needed. If the upload is refused or the picture is sideways, tell me which.
 
+- Defaults the root chose on 2026-10-19 under your full-autonomy grant. Each works now; say the word to change any of them.
+  - Ending a lease (#172): Mẹ cannot end a lease before a bill that has already gone out. The bill stays as issued until voiding arrives with the VietQR bills (P3-11). This follows LSE-2, "issued bills are never edited".
+  - Late renewal (#172): a renewal whose start date is already past bills like a new lease does, from the current period onward, with the same "Đã thu tiền đến hết ngày" field. Earlier months count as settled outside Esta.
+  - Renewal rent change (#172, `[app rule]`): between −50% and +100% of the old rent, rounded half up to 100.000 ₫.
+  - Documents (#173): no manual "sensitive" switch. The document's type decides, so Mẹ cannot keep one bill's read text out of search.
+
 ## Needs professional confirmation
 
 - Whether the 2026 rental PIT applies from 1 January or 1 July 2026 (DOMAIN-VN §5). The `tax_rules` row from P0-06 uses 1 January and carries a note that says so. The UI shows "Giả định: Ngày áp dụng thuế TNCN: " followed by the row's note (`TAX_NOTES.pit_effective_date`).
