@@ -217,7 +217,8 @@ const sqlText = (text: string) => `'${text.replaceAll("'", "''")}'`;
  * October drafts on 2026-10-03. A seed-only trigger gives each invoice and line its seed id and a memo code drawn from its
  * seed key, so two resets write the same rows. Then every issued invoice due before SPEC_TODAY is paid in full except
  * UNPAID: rooms from two days early to a week late, three in ten in cash, companies by transfer up to six days early.
- * Draws come from md5 of a scope string, the SQL side of `rngFor`.
+ * Draws come from md5 of a scope string, the SQL side of `rngFor`. `supabase db reset` prepares every seed statement
+ * before it runs the first, so each statement that reads a table this file creates sits inside the DO block.
  */
 export function billingSql(households: readonly HouseholdSeed[], ctx: Pick<SeedContext, 'properties'>, stamp: Instant): string {
   const rows = households.flatMap((household) =>
@@ -225,8 +226,6 @@ export function billingSql(households: readonly HouseholdSeed[], ctx: Pick<SeedC
   );
   if (rows.length === 0) return '';
   return `create temporary table seed_lease (lease_id uuid primary key, key text not null, property text not null, unit integer not null);
-insert into seed_lease values
-  ${rows.join(',\n  ')};
 
 create function pg_temp.seed_draw(p_scope text, p_n integer) returns double precision language sql immutable
 as $$ select ('x' || substr(md5(p_scope || '#' || p_n), 1, 8))::bit(32)::bigint / 4294967296.0 $$;
@@ -258,6 +257,9 @@ declare
   v_night date;
   v_household uuid;
 begin
+  insert into pg_temp.seed_lease values
+    ${rows.join(',\n    ')};
+
   for v_night in select n::date from generate_series(date '${HISTORY_FROM}', date '${SPEC_TODAY}', interval '1 day') n loop
     perform public.end_expired_leases(v_night);
     for v_household in select h.id from public.households h order by h.id loop
@@ -269,47 +271,46 @@ begin
       where k.property = '${METER_ENTRY.property}' and i.status = 'draft' and i.period_start between '${METER_ENTRY.periodsFrom}' and '${METER_ENTRY.periodsTo}';
     end if;
   end loop;
+  drop trigger seed_invoice on public.invoices;
+  drop trigger seed_invoice_line on public.invoice_lines;
+
+  create temporary table seed_payment as
+  select
+    k.key || ':' || i.period_start as key, i.id as invoice_id, i.household_id, l.tenant_party_id, i.memo_code, total.vnd as total_vnd,
+    least(i.due_date + case when p.kind = 'organization' then -6 + floor(pg_temp.seed_draw(scope, 1) * 8)::integer else -2 + floor(pg_temp.seed_draw(scope, 1) * 10)::integer end,
+          date '${SPEC_TODAY}' - 1) as received_on,
+    case when p.kind = 'individual' and pg_temp.seed_draw(scope, 2) < 0.3 then 'cash' else 'bank_transfer' end as method,
+    (k.property, k.unit) = ('${TWO_TRANSFERS.property}', ${TWO_TRANSFERS.unit}) as split,
+    3 + floor(pg_temp.seed_draw(scope, 3) * 7)::integer as second_after
+  from public.invoices i
+  join pg_temp.seed_lease k on k.lease_id = i.lease_id
+  join public.leases l on l.id = i.lease_id
+  join public.parties p on p.id = l.tenant_party_id
+  cross join lateral (select sum(line.amount_vnd)::bigint as vnd from public.invoice_lines line where line.invoice_id = i.id) total
+  cross join lateral (select 'payment:' || k.property || ':' || k.unit || ':' || i.period_start as scope) draw
+  where i.status = 'issued' and i.due_date < date '${SPEC_TODAY}'
+    and not ((k.property, k.unit, i.due_date) = ('${UNPAID.property}', ${UNPAID.unit}, date '${UNPAID.dueDate}'));
+
+  create temporary table seed_transfer as
+  select key || ':1' as key, invoice_id, household_id, tenant_party_id, memo_code, received_on,
+    case when split then 'bank_transfer' else method end as method,
+    case when split then round(total_vnd * 0.6 / 100000) * 100000 else total_vnd end::bigint as amount_vnd
+  from pg_temp.seed_payment
+  union all
+  select key || ':2', invoice_id, household_id, tenant_party_id, memo_code, least(received_on + second_after, date '${SPEC_TODAY}' - 1), 'bank_transfer',
+    (total_vnd - round(total_vnd * 0.6 / 100000) * 100000)::bigint
+  from pg_temp.seed_payment where split;
+
+  insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method, memo, source, created_at, updated_at)
+  select extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:payment:' || key), household_id, tenant_party_id, amount_vnd, received_on, method,
+    case when method = 'bank_transfer' then 'ESTA ' || memo_code end, 'manual', '${stamp}', '${stamp}'
+  from pg_temp.seed_transfer;
+  insert into public.payment_allocations (id, household_id, payment_id, invoice_id, amount_vnd, created_at, updated_at)
+  select extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:payment-allocation:' || key), household_id,
+    extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:payment:' || key), invoice_id, amount_vnd, '${stamp}', '${stamp}'
+  from pg_temp.seed_transfer;
 end;
 $$;
-
-drop trigger seed_invoice on public.invoices;
-drop trigger seed_invoice_line on public.invoice_lines;
-
-create temporary table seed_payment as
-select
-  k.key || ':' || i.period_start as key, i.id as invoice_id, i.household_id, l.tenant_party_id, i.memo_code, total.vnd as total_vnd,
-  least(i.due_date + case when p.kind = 'organization' then -6 + floor(pg_temp.seed_draw(scope, 1) * 8)::integer else -2 + floor(pg_temp.seed_draw(scope, 1) * 10)::integer end,
-        date '${SPEC_TODAY}' - 1) as received_on,
-  case when p.kind = 'individual' and pg_temp.seed_draw(scope, 2) < 0.3 then 'cash' else 'bank_transfer' end as method,
-  (k.property, k.unit) = ('${TWO_TRANSFERS.property}', ${TWO_TRANSFERS.unit}) as split,
-  3 + floor(pg_temp.seed_draw(scope, 3) * 7)::integer as second_after
-from public.invoices i
-join pg_temp.seed_lease k on k.lease_id = i.lease_id
-join public.leases l on l.id = i.lease_id
-join public.parties p on p.id = l.tenant_party_id
-cross join lateral (select sum(line.amount_vnd)::bigint as vnd from public.invoice_lines line where line.invoice_id = i.id) total
-cross join lateral (select 'payment:' || k.property || ':' || k.unit || ':' || i.period_start as scope) draw
-where i.status = 'issued' and i.due_date < date '${SPEC_TODAY}'
-  and not ((k.property, k.unit, i.due_date) = ('${UNPAID.property}', ${UNPAID.unit}, date '${UNPAID.dueDate}'));
-
-create temporary table seed_transfer as
-select key || ':1' as key, invoice_id, household_id, tenant_party_id, memo_code, received_on,
-  case when split then 'bank_transfer' else method end as method,
-  case when split then round(total_vnd * 0.6 / 100000) * 100000 else total_vnd end::bigint as amount_vnd
-from pg_temp.seed_payment
-union all
-select key || ':2', invoice_id, household_id, tenant_party_id, memo_code, least(received_on + second_after, date '${SPEC_TODAY}' - 1), 'bank_transfer',
-  (total_vnd - round(total_vnd * 0.6 / 100000) * 100000)::bigint
-from pg_temp.seed_payment where split;
-
-insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method, memo, source, created_at, updated_at)
-select extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:payment:' || key), household_id, tenant_party_id, amount_vnd, received_on, method,
-  case when method = 'bank_transfer' then 'ESTA ' || memo_code end, 'manual', '${stamp}', '${stamp}'
-from pg_temp.seed_transfer;
-insert into public.payment_allocations (id, household_id, payment_id, invoice_id, amount_vnd, created_at, updated_at)
-select extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:payment-allocation:' || key), household_id,
-  extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:payment:' || key), invoice_id, amount_vnd, '${stamp}', '${stamp}'
-from pg_temp.seed_transfer;
 
 drop table pg_temp.seed_lease, pg_temp.seed_payment, pg_temp.seed_transfer;
 drop function pg_temp.seed_invoice(), pg_temp.seed_invoice_line(), pg_temp.seed_draw(text, integer);

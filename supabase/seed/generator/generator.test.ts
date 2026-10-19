@@ -77,7 +77,7 @@ describe('generate', () => {
         expect(row).toMatch(/'2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\),?$/);
       }
     }
-    expect(sql).toMatch(/'manual', '2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\nfrom pg_temp\.seed_transfer;/);
+    expect(sql).toMatch(/'manual', '2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\n\s*from pg_temp\.seed_transfer;/);
   });
 });
 

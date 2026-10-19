@@ -2689,9 +2689,9 @@ from (select lease_id, start_date, end_date, rent_vnd, cycle, anchor, proration,
       union all
       select lease_id, start_date, end_date, rent_vnd, cycle, anchor, proration, due_offset, escalation, paid_through, utilities from plan_case) golden;
 insert into public.lease_amendments (household_id, lease_id, effective_period_start, changes)
-select :'a', c.lease_id, a.effective_period_start, a.changes from schedule_amendment a join schedule_case c using (case_id)
+select :'a'::uuid, c.lease_id, a.effective_period_start, a.changes from schedule_amendment a join schedule_case c using (case_id)
 union all
-select :'a', c.lease_id, a.effective_period_start, a.changes from plan_amendment a join plan_case c using (case_id);
+select :'a'::uuid, c.lease_id, a.effective_period_start, a.changes from plan_amendment a join plan_case c using (case_id);
 insert into public.leases (
   id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
   first_period_proration, due_offset_days, escalation, paid_through_date, utilities_mode, status
