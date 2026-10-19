@@ -93,8 +93,9 @@ describe('UnitList reorder mode', () => {
   });
 
   it('offers no reorder to a viewer or for a single unit', () => {
-    list(rooms, false).unmount();
+    const viewer = list(rooms, false);
     expect(screen.queryByRole('button', { name: 'Sắp xếp phòng' })).toBeNull();
+    viewer.unmount();
     list(rooms.slice(0, 1));
     expect(screen.queryByRole('button', { name: 'Sắp xếp phòng' })).toBeNull();
   });
