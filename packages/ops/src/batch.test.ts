@@ -1,10 +1,9 @@
-import { clockAt, parseInstant } from '@esta/core';
 import { reduceNationalIds } from '@esta/core/agent-schemas';
 import { describe, expect, it } from 'vitest';
 import { applyPlan, planChanges, reduceTypedIds } from './batch';
 import type { Db } from './db';
 import type { LocalContext } from './files';
-import { fakeDb } from './test/fake-db';
+import { fakeDb, opContext } from './test/fake-db';
 
 describe('reduceTypedIds', () => {
   const digitTail = '5a7ba01a-8719-4c6b-a777-000000000123';
@@ -24,7 +23,6 @@ describe('reduceTypedIds', () => {
   });
 });
 
-const HOUSEHOLD = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0001';
 const MISSING = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0009';
 const PLAN_ID = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0010';
 
@@ -32,7 +30,7 @@ function batchContext(db: Db): LocalContext {
   const noFiles = async (): Promise<never> => {
     throw new Error('no files in this test');
   };
-  return { db, householdId: HOUSEHOLD, clock: clockAt({ kind: 'env', now: parseInstant('2026-10-07T02:00:00.000Z') }, 'Asia/Ho_Chi_Minh'), files: { readDocument: noFiles, previews: noFiles } };
+  return { ...opContext(db), files: { readDocument: noFiles, previews: noFiles } };
 }
 
 const plannedItems = (result: Awaited<ReturnType<typeof planChanges>>) => (result.ok || result.reason.kind !== 'items_refused' ? [] : result.reason.items);

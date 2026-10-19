@@ -1,17 +1,12 @@
-import { clockAt, parseInstant } from '@esta/core';
 import { describe, expect, it } from 'vitest';
-import type { Db } from './db';
-import { fakeDb } from './test/fake-db';
+import { fakeDb, opContext as context } from './test/fake-db';
 import { unitCreate } from './unit-ops';
-import { NO_PENDING, withWrites, type Pending } from './view';
+import { NO_PENDING, withWrites } from './view';
 
-const HOUSEHOLD = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0001';
 const PROPERTY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0002';
 const ROOM = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0003';
 const OTHER_ROOM = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0004';
 
-const clock = clockAt({ kind: 'env', now: parseInstant('2026-10-07T02:00:00.000Z') }, 'Asia/Ho_Chi_Minh');
-const context = (db: Db, pending?: Pending) => ({ db, householdId: HOUSEHOLD, clock, ...(pending === undefined ? {} : { pending }) });
 const plannedProperty = withWrites(NO_PENDING, [{ kind: 'create', table: 'properties', row: { id: PROPERTY, nickname: 'Demo Nhà Q7' } }]);
 const phong2 = { label: 'Phòng 2', kind: 'room', area_m2: null, list_rent_vnd: 9_000_000, available_from: null };
 

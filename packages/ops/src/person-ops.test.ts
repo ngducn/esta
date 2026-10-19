@@ -1,16 +1,11 @@
-import { clockAt, parseInstant } from '@esta/core';
 import { describe, expect, it } from 'vitest';
-import type { Db } from './db';
 import { personCreate } from './person-ops';
-import { fakeDb, type Sent } from './test/fake-db';
-import { NO_PENDING, withWrites, type Pending } from './view';
+import { fakeDb, opContext as context, type Sent } from './test/fake-db';
+import { NO_PENDING, withWrites } from './view';
 
-const HOUSEHOLD = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0001';
 const LAN = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0005';
 const STORED = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0006';
 
-const clock = clockAt({ kind: 'env', now: parseInstant('2026-10-07T02:00:00.000Z') }, 'Asia/Ho_Chi_Minh');
-const context = (db: Db, pending?: Pending) => ({ db, householdId: HOUSEHOLD, clock, ...(pending === undefined ? {} : { pending }) });
 
 const parse = (raw: unknown) => {
   const input = personCreate.input.safeParse(raw);

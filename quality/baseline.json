@@ -62,11 +62,11 @@
       }
     },
     "duplicated-lines": {
-      "value": 1302,
+      "value": 1292,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 28,
+        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 18,
         "apps/web/src/app/dev/core/sections.ts": 9,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 13,
         "apps/web/src/app/forgot-password/actions.ts": 29,

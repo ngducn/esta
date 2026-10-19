@@ -1,9 +1,8 @@
 import { normalizePhone, type Phone } from '@esta/core/phone';
 import { describe, expect, it } from 'vitest';
-import { fakeDb } from './test/fake-db';
+import { fakeDb, HOUSEHOLD } from './test/fake-db';
 import { NO_PENDING, viewRows, withWrites, type Write } from './view';
 
-const HOUSEHOLD = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0001';
 const PROPERTY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0002';
 const ROOM = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0003';
 const PERSON = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0004';
