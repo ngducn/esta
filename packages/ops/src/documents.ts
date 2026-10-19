@@ -19,7 +19,7 @@ import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 
 export const DOCUMENTS_BUCKET = 'documents';
 
-export type SignedUpload = { readonly path: string; readonly url: string; readonly token: string };
+export type SignedUpload = { readonly path: string; readonly url: string };
 /** Where the file and the two copies made from it go, each signed for one upload. */
 export type DocumentUploads = { readonly file: SignedUpload; readonly thumb: SignedUpload; readonly review: SignedUpload };
 export type DocumentSaved = { readonly id: string; readonly title: string };
@@ -31,7 +31,7 @@ export type DocumentSaved = { readonly id: string; readonly title: string };
 export async function signDocumentUploads(db: Db, householdId: string, documentId: string, filename: string): Promise<DocumentUploads | null> {
   const sign = async (path: string): Promise<SignedUpload | null> => {
     const { data, error } = await db.storage.from(DOCUMENTS_BUCKET).createSignedUploadUrl(path, { upsert: true });
-    return error ? null : { path: data.path, url: data.signedUrl, token: data.token };
+    return error ? null : { path: data.path, url: data.signedUrl };
   };
   const [file, thumb, review] = await Promise.all([
     sign(storagePath(householdId, documentId, filename)),
