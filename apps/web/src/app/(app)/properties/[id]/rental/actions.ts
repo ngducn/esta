@@ -2,15 +2,17 @@
 
 import { moveUnit, sortByRoomNumber, type SortChange } from '@esta/core/properties';
 import { addRoomsSchema, unitSchema, utilityAccountSchema, type Unit } from '@esta/core/schemas/units';
+import { runOp, unitCreate, type CommonRefusal, type UnitRefusal } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
+import { webOpContext } from '@/server/ops';
 import { ACCOUNT_COLUMNS, UNIT_COLUMNS, loadPropertyRental } from '@/server/properties/rental';
 import { createSessionClient } from '@/server/supabase/server';
 
-export type RentalWrite =
-  | { readonly ok: true; readonly id: string }
-  | { readonly ok: false; readonly reason: 'invalid' | 'duplicate' | 'wholeLeased' | 'failed' };
+type RentalRefusal = 'invalid' | 'duplicate' | 'wholeLeased' | 'failed';
+export type RentalWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: RentalRefusal };
 
 /** What a delete hands back, so `Hoàn tác` puts the row back under its own id and re-links its accounts. */
 export type DeletedUnit = { readonly propertyId: string; readonly row: { readonly id: string } & Record<string, unknown>; readonly accounts: readonly string[] };
@@ -44,20 +46,30 @@ async function nextSortOrder(propertyId: string): Promise<number> {
   return Math.max(-1, ...units.map((unit) => unit.sort_order)) + 1;
 }
 
+/** How the unit sheet reads each refusal of a new unit, the same as when it inserted the row itself. */
+const CREATE_REFUSED: Readonly<Record<(UnitRefusal | CommonRefusal)['kind'], RentalRefusal>> = {
+  label_taken: 'duplicate',
+  conflict: 'duplicate',
+  whole_unit_leased: 'wholeLeased',
+  invalid: 'invalid',
+  not_found: 'invalid',
+  forbidden: 'failed',
+  failed: 'failed',
+};
+
 export async function saveUnit(propertyId: unknown, unitId: unknown, raw: unknown): Promise<RentalWrite> {
+  if (unitId === null) {
+    const created = await runOp(unitCreate, await webOpContext(), { id: randomUUID(), property_id: propertyId, unit: raw });
+    if (!created.ok) return { ok: false, reason: CREATE_REFUSED[created.reason.kind] };
+    revalidateRental();
+    return { ok: true, id: created.value.id };
+  }
   const target = await scope(propertyId);
-  const item = unitId === null ? { success: true as const, data: null } : uuid.safeParse(unitId);
+  const item = uuid.safeParse(unitId);
   const value = unitSchema.safeParse(raw);
   if (target === null || !item.success || !value.success) return { ok: false, reason: 'invalid' };
   const { supabase, match } = target;
-  const { data, error } =
-    item.data === null
-      ? await supabase
-          .from('units')
-          .insert({ ...value.data, ...match, sort_order: await nextSortOrder(match.property_id) })
-          .select('id')
-          .single()
-      : await supabase.from('units').update(value.data).match(match).eq('id', item.data).select('id').maybeSingle();
+  const { data, error } = await supabase.from('units').update(value.data).match(match).eq('id', item.data).select('id').maybeSingle();
   if (error) return failure(error);
   if (data === null) return { ok: false, reason: 'failed' };
   revalidateRental();

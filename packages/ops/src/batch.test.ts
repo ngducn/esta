@@ -56,6 +56,40 @@ describe('planChanges with refs', () => {
   });
 });
 
+const demoProperty = {
+  nickname: 'Demo Nhà Q7',
+  code: 'DEMOQ7',
+  kind: 'townhouse',
+  kind_details: {},
+  use_mode: 'rental',
+  legal_status: 'certified',
+  current_address: null,
+  certificate_address_text: null,
+  acquired_on: null,
+  acquisition_kind: null,
+  acquisition_price_vnd: null,
+  notes: null,
+};
+
+describe('planChanges with a room on a property planned beside it', () => {
+  it('plans the room against the planned property and stores the item it needs', async () => {
+    const { db, sent } = fakeDb((request) => (request.method === 'POST' && request.table === 'change_batches' ? [{ id: PLAN_ID }] : []));
+    const room = { label: 'Phòng 2', kind: 'room', area_m2: null, list_rent_vnd: 9_000_000, available_from: null };
+    const result = await planChanges(batchContext(db), {
+      summary: 'Demo',
+      items: [
+        { op: 'property.create', ref: 'house', input: { property: demoProperty } },
+        { op: 'unit.create', input: { property_id: { $ref: 'house' }, unit: room } },
+      ],
+    });
+    if (!result.ok) throw new Error(`expected the batch to plan, got ${JSON.stringify(result.reason)}`);
+    const [house, unit] = result.value.items;
+    expect(unit).toMatchObject({ status: 'change', change: { property_id: house?.id, row: room } });
+    const stored = sent.find((request) => request.method === 'POST' && request.table === 'change_batches');
+    expect(stored?.body).toMatchObject({ plan: { items: [{ needs: [] }, { needs: [0], input: { id: unit?.id, property_id: house?.id } }] } });
+  });
+});
+
 describe('applyPlan with needs', () => {
   it('refuses an item whose needed item was refused at apply as blocked, without planning it, and ends partial', async () => {
     const stored = { v: 1, items: [0, 1, 2].map((index) => ({ op: 'property.edit', id: null, needs: index === 1 ? [0] : [], input: { id: MISSING, set: { notes: 'Demo' } }, change: {} })) };

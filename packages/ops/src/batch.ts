@@ -10,6 +10,7 @@ import { idSchema, invalid, type Refusal } from './kit';
 import { refuse, settle, type Op, type OpContext } from './op';
 import { propertyCreate, propertyEdit } from './property-ops';
 import { addLabel, blockedBy, refLabelSchema, resolveRefs, type Label } from './refs';
+import { unitCreate } from './unit-ops';
 import { NO_PENDING, withWrites, type Pending, type Write } from './view';
 
 export const PLAN_TTL_MINUTES = 30;
@@ -68,7 +69,7 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
   };
 }
 
-export const OP_KINDS = ['property.create', 'property.edit', 'document.attach'] as const;
+export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create'] as const;
 export type OpKind = (typeof OP_KINDS)[number];
 
 /** The one list of what a batch can hold; `satisfies` fails the build when it and `OP_KINDS` disagree. */
@@ -76,6 +77,7 @@ const OPS = {
   'property.create': batchStep(propertyCreate),
   'property.edit': batchStep(propertyEdit),
   'document.attach': batchStep(documentAttach),
+  'unit.create': batchStep(unitCreate),
 } as const satisfies Record<OpKind, Step>;
 
 export const planRequestSchema = z.strictObject({
