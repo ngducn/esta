@@ -1,9 +1,8 @@
 {
   "metrics": {
     "clones": {
-      "value": 130,
+      "value": 129,
       "files": {
-        "apps/agent/src/runner.ts": 1,
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 2,
         "apps/web/src/app/dev/core/sections.ts": 1,
@@ -62,9 +61,8 @@
       }
     },
     "duplicated-lines": {
-      "value": 1503,
+      "value": 1497,
       "files": {
-        "apps/agent/src/runner.ts": 6,
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 28,
         "apps/web/src/app/dev/core/sections.ts": 9,
@@ -303,12 +301,9 @@
       }
     },
     "decimal-parser-outside-parse": {
-      "value": 4,
+      "value": 1,
       "files": {
-        "packages/core/src/agent-schemas/certificate_v1.ts": 1,
-        "packages/core/src/agent-schemas/utility_bill_v1.ts": 1,
-        "packages/core/src/extraction/area-check.ts": 1,
-        "packages/core/src/properties/form-fields.ts": 1
+        "packages/core/src/agent-schemas/utility_bill_v1.ts": 1
       }
     },
     "hand-rolled-iso-date-schema": {
