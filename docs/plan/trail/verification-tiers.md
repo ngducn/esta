@@ -84,3 +84,7 @@ Phase 1 closes with P1-03, which is rigorous because it is a phase exit. Phase 2
 | P6-07 | Cloud project and deploy with Ryan | Rigorous | Production, with Ryan |
 
 Cleanup rounds of `[low]` issues are lean unless one of the issues hits a trigger.
+
+## Codebase-health lane, every tier (2026-10-19 16:45)
+
+Every round, lean included, adds one codebase-health lane: Sonnet, no stack, reading the diff against the thermo-nuclear standard and `ARCHITECTURE.md`. It blocks a diff that adds a second way to do something that has a home, duplicates a rule, puts logic in the wrong layer, writes several rows outside one transaction, or pushes a file over the size limit. It does not report debt the diff did not add. The quality ratchet in `pnpm check` is its deterministic floor.

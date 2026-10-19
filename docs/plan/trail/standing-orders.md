@@ -227,3 +227,13 @@ Rules from this update (agent interpretation; the operator can narrow any of the
 3. Product tradeoffs found in review take the root's default, recorded in decisions.tsv and the PR body, and listed in docs/plan/STATUS.md for the operator to overturn later (for example #172's refusal to end a lease before an already issued period, matching LSE-2, and #173's sensitive switch left out).
 4. The assistant design is the root's call from here: it finishes the remaining sections, writes the design doc and folds it into the Phase 5 re-cut at phase start, with no further approval round. Building it waits for its place on the critical path.
 5. Budget: trust the operator's /usage reading; `usage-pct.sh` is recalibrated to it. Stop spawning at 90% and pause at 95% of the meter.
+
+## Update 2026-10-19 16:45 +07
+
+Operator's words, 2026-10-19, after the outsider review rated the code 6.5 for readability and quality: "yeah i don't want this particular incident to occur again, is there a way we can include this into our own CI progress that runs on every PR?" and "every code change we spent hours to be super rigorous, and we got 6.5 for quality, which is unacceptable".
+
+Rules from this update (agent interpretation; the operator can change them in his own words):
+
+1. Quality gate in CI. `pnpm check`, which the local CI's check job runs on every PR, gains a ratchet: duplicated code, oversized files and a registry of known smells, each pinned in a committed baseline that may only go down, with `ARCHITECTURE.md` naming the one home for each concern. Built as its own PR now.
+2. Every verification round, at every tier, includes a codebase-health lane (Sonnet, no stack) that applies the thermo-nuclear standard and `ARCHITECTURE.md` to the diff. A diff that adds a second way to do something with a home, a duplicated rule, logic in the wrong layer, a multi-row write outside one transaction, or a file over the size limit is blocked. Lane and owner briefs carry the same scope.
+3. The consolidation round starts now, beside the critical path, instead of at the Phase 3 boundary: correctness first (#182, #184, #183, #185), then the shared action kit and operations layer, the shared UI hooks, the e2e helpers, the single SQL billing planner, and the migration squash before the first deploy. Each PR lowers the baseline. The outsider review reruns when the round ends, with a target of 8.5 or better in every column.

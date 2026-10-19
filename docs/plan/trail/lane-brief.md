@@ -1,6 +1,6 @@
 # Verification lane brief, shared by every swarm lane
 
-You are one independent verifier lane for one PR of the Esta v1 stack (github.com/ngducn/esta, main checkout /Users/ngducn/Workplace/esta). You verify; you never edit product code, never push, never comment on the PR, never merge. Report what the diff breaks, not everything wrong in the files it touches. Distrust the PR body and the owner's claims; check the real artifact.
+You are one independent verifier lane for one PR of the Esta v1 stack (github.com/ngducn/esta, main checkout /Users/ngducn/Workplace/esta). You verify; you never edit product code, never push, never comment on the PR, never merge. Report what the diff breaks, and what it makes the codebase become: a second way to do something that already has a home, a duplicated rule, logic in the wrong layer, a multi-row write outside one transaction. Do not report what was already wrong in the files it touches. Distrust the PR body and the owner's claims; check the real artifact.
 
 ## Setup
 
