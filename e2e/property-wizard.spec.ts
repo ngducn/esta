@@ -272,3 +272,55 @@ test('rule 7: in English at 130% and dark, rule 2 reads in English, wraps long a
     await servicePatch(page, member, { locale: 'vi', text_scale: 100 });
   }
 });
+
+const SHOT_RUNS = [
+  { email: 'me.lane8@demo.esta.test', viewport: PHONE, theme: 'light' },
+  { email: 'me.lane9@demo.esta.test', viewport: PHONE, theme: 'dark' },
+  { email: 'ryan.lane8@demo.esta.test', viewport: DESKTOP, theme: 'light' },
+  { email: 'ryan.lane9@demo.esta.test', viewport: DESKTOP, theme: 'dark' },
+] as const;
+
+for (const run of SHOT_RUNS) {
+  const size = `${run.viewport.width}x${run.viewport.height}-${run.theme}`;
+  test(`evidence ${size}: every wizard state on the north-star certificate`, async ({ page, request }) => {
+    test.skip(process.env.ESTA_WIZARD_SHOTS !== '1', 'screenshots for the PR body only');
+    await stopWorker();
+    await open(page, run.email, run.theme, run.viewport);
+    await page.goto('/properties/new');
+    await expect(page.getByTestId('wizard-photo')).toBeVisible();
+    await shot(page, `p2-08-step-photo-${size}`);
+    const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
+    await setClock(request, new Date(Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse(START)) + 6 * 60_000).toISOString());
+    const { propertyId } = await startWizard(page, { nickname: 'Dãy trọ Dĩ An Demo', kind: 'rooming_house', photo: await fixture('northstar-di-an').upload() });
+    await expect(notice(page)).toHaveAttribute('data-state', 'offline');
+    await shot(page, `p2-08-offline-${size}`);
+    await startWorker();
+    await page.reload();
+    await shot(page, `p2-08-step-details-${size}`);
+    await page.getByTestId('skip-step').click();
+    await step(page, 'owners');
+    await expect(notice(page)).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+    await shot(page, `p2-08-review-ready-${size}`);
+    await followReadyNotice(page);
+    await shot(page, `p2-08-step-review-${size}`);
+    await acceptEvery(page);
+    await page.getByTestId('review-submit').click();
+    await expect(page.getByTestId('address-confirm')).toBeVisible({ timeout: 15_000 });
+    await page.locator('[data-testid="legacy-suggestions"] [data-commune="25942"]').click();
+    await expect(page.getByTestId('address-saved')).toBeVisible();
+    await shot(page, `p2-08-address-confirm-${size}`);
+    await page.getByTestId('review-continue').click();
+    await step(page, 'owners');
+    await shot(page, `p2-08-step-owners-${size}`);
+    await page.getByTestId('save-ownership').click();
+    await step(page, 'use');
+    await page.getByTestId('room-count').fill('8');
+    await shot(page, `p2-08-step-use-${size}`);
+    await page.getByTestId('save-use').click();
+    await step(page, 'finish');
+    await shot(page, `p2-08-finish-${size}`);
+    await page.goto(`/properties/${propertyId}`);
+    await expect(page.getByTestId('property-addresses').locator('[data-line="legal"]')).toBeVisible();
+    await shot(page, `p2-08-northstar-header-${size}`);
+  });
+}
