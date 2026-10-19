@@ -191,7 +191,8 @@ test('rule 1: Mẹ photographs three pages, moves page 3 up, and the saved PDF r
   try {
     await page.goto(`/documents/${row.id}`);
     await expect(page.getByTestId('document-meta')).toContainText('3 trang', COLD_ROUTE);
-    await expect(page.locator('canvas[data-testid="document-page"]')).toHaveAttribute('data-drawn', 'true', COLD_ROUTE);
+    await expect(page.locator('img[data-testid="document-page"]'), 'page 1 opens from the review copy of the first photo').toHaveAttribute('data-drawn', 'true', COLD_ROUTE);
+    await expect(page.locator('img[data-testid="document-page"]')).toHaveAttribute('src', /\/review\.webp\?token=/);
     await page.getByRole('tab', { name: 'Trang 2', exact: true }).click();
     await expect(page.locator('canvas[data-testid="document-page"]')).toHaveAttribute('data-drawn', 'true', COLD_ROUTE);
     await shot(page, 'p2-06-combined-390x844-light');

@@ -2,13 +2,15 @@
 
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { openDocument } from '@/server/documents/actions';
 
 const ZOOMS = [1, 1.5, 2, 3] as const;
 /** Rendered once at this width and scaled by CSS, so zooming never re-renders a page. */
 const RENDER_WIDTH = 1600;
+const LAYER = 'absolute inset-0 size-full object-contain';
 
 type PdfDocument = { numPages: number; getPage(n: number): Promise<PdfPage> };
 type PdfTask = { promise: Promise<PdfDocument>; destroy(): Promise<void> };
@@ -43,15 +45,31 @@ function PdfPageCanvas({ pdf, page, label }: { pdf: PdfDocument; page: number; l
       live = false;
     };
   }, [pdf, page]);
-  return <canvas ref={canvas} role="img" aria-label={label} data-testid="document-page" data-drawn={drawn} className="absolute inset-0 size-full object-contain" />;
+  return <canvas ref={canvas} role="img" aria-label={label} data-testid="document-page" data-drawn={drawn} className={LAYER} />;
+}
+
+/** The server-rendered image may finish before hydration, when React fires no `load`, so `complete` is read on mount. */
+function PageImage({ src, label, onError }: { src: string; label: string; onError: () => void }) {
+  const [drawn, setDrawn] = useState(false);
+  const mounted = useCallback((image: HTMLImageElement | null) => {
+    if (image?.complete === true && image.naturalWidth > 0) setDrawn(true);
+  }, []);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
+    <img ref={mounted} src={src} alt={label} data-testid="document-page" data-drawn={drawn} fetchPriority="high" className={LAYER} onLoad={() => setDrawn(true)} onError={onError} />
+  );
 }
 
 /**
- * The document beside its fields: page tabs, zoom, and the page a field was read from. A photo is one page; a PDF's
- * pages are drawn by pdf.js on demand. Pages sit in a sheet-shaped box, so nothing below moves when one loads.
+ * The document beside its fields: page tabs, zoom, and the page a field was read from. Page 1 opens from its review
+ * copy. The full-size file loads only once Mẹ zooms in or turns the page, or at once for a document uploaded before
+ * review copies existed: a photo layered over its copy, a PDF's pages drawn by pdf.js. Pages sit in a sheet-shaped
+ * box, so nothing below moves when one loads.
  */
 export function DocumentPager({
+  documentId,
   fileUrl: renderedUrl,
+  reviewUrl: renderedReview,
   thumbUrl,
   mime,
   pageCount,
@@ -59,8 +77,11 @@ export function DocumentPager({
   page,
   onPage,
 }: {
+  documentId: string;
   fileUrl: string | null;
-  /** The upload's 320 px first-page thumbnail, shown under a PDF's page 1 while pdf.js loads and draws it. */
+  /** Page 1 at review size; null for a document uploaded before review copies existed. */
+  reviewUrl: string | null;
+  /** The upload's 320 px first-page thumbnail, shown under an older PDF's page 1 while pdf.js loads and draws it. */
   thumbUrl: string | null;
   mime: string;
   pageCount: number;
@@ -69,18 +90,33 @@ export function DocumentPager({
   onPage: (page: number) => void;
 }) {
   const t = useTranslations('extraction');
-  // Each server render signs a new URL; the first one stays, so a refresh never reloads the pages already drawn.
-  const [fileUrl] = useState(renderedUrl);
+  // Each server render signs new URLs; the first ones stay, so a refresh never reloads the pages already drawn.
+  const [fileUrl, setFileUrl] = useState(renderedUrl);
+  const [reviewUrl] = useState(renderedReview);
   const [zoom, setZoom] = useState(0);
   const [pdf, setPdf] = useState<PdfDocument | null>(null);
   const [failed, setFailed] = useState(fileUrl === null);
+  const resigned = useRef(false);
   const isPdf = mime === 'application/pdf';
   const pages = pdf?.numPages ?? (isPdf ? pageCount : 1);
   const shown = Math.min(Math.max(page, 1), pages);
   const label = t('documentAlt', { title, page: shown });
 
+  const wantsOriginal = reviewUrl === null || zoom > 0 || shown > 1;
+  const [original, setOriginal] = useState(wantsOriginal);
+  if (wantsOriginal && !original) setOriginal(true);
+
+  // The file's URL lives `ESTA_SIGNED_URL_TTL_SECONDS`, so a zoom minutes after opening signs it again, once.
+  const resign = useCallback(async () => {
+    if (resigned.current) return false;
+    resigned.current = true;
+    const url = await openDocument(documentId).catch(() => null);
+    if (url !== null) setFileUrl(url);
+    return url !== null;
+  }, [documentId]);
+
   useEffect(() => {
-    if (!isPdf || fileUrl === null) return;
+    if (!isPdf || !original || fileUrl === null) return;
     let task: PdfTask | null = null;
     let live = true;
     openPdf(fileUrl)
@@ -90,13 +126,17 @@ export function DocumentPager({
       })
       .then(
         (loaded) => live && setPdf(loaded),
-        () => live && setFailed(true),
+        async () => {
+          if (live && !(await resign()) && live) setFailed(true);
+        },
       );
     return () => {
       live = false;
       void task?.destroy();
     };
-  }, [fileUrl, isPdf]);
+  }, [fileUrl, isPdf, original, resign]);
+
+  const backdrop = shown === 1 ? (reviewUrl ?? thumbUrl) : null;
 
   return (
     <div data-testid="document-pager" className="flex flex-col gap-3">
@@ -140,24 +180,29 @@ export function DocumentPager({
             <p role="alert" className="p-4 text-body text-overdue">
               {t('documentUnavailable')}
             </p>
+          ) : isPdf && pdf === null && shown === 1 && reviewUrl !== null ? (
+            <PageImage src={reviewUrl} label={label} onError={() => setFailed(true)} />
+          ) : isPdf ? (
+            <>
+              {backdrop !== null ? (
+                // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
+                <img src={backdrop} alt="" className={LAYER} />
+              ) : null}
+              {pdf === null ? (
+                <p role="status" className="relative p-4 text-body text-ink-muted">
+                  {t('pageLoading', { page: shown })}
+                </p>
+              ) : (
+                <PdfPageCanvas pdf={pdf} page={shown} label={label} />
+              )}
+            </>
           ) : (
             <>
-              {isPdf && thumbUrl !== null && shown === 1 ? (
+              <PageImage src={reviewUrl ?? fileUrl} label={label} onError={() => setFailed(true)} />
+              {reviewUrl !== null && original ? (
                 // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
-                <img src={thumbUrl} alt="" className="absolute inset-0 size-full object-contain" />
+                <img src={fileUrl} alt="" className={LAYER} onError={() => void resign()} />
               ) : null}
-              {isPdf ? (
-                pdf === null ? (
-                  <p role="status" className="relative p-4 text-body text-ink-muted">
-                    {t('pageLoading', { page: shown })}
-                  </p>
-                ) : (
-                  <PdfPageCanvas pdf={pdf} page={shown} label={label} />
-                )
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
-                <img src={fileUrl} alt={label} data-testid="document-page" fetchPriority="high" className="absolute inset-0 size-full object-contain" onError={() => setFailed(true)} />
-              )}
             </>
           )}
         </div>

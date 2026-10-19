@@ -1,16 +1,15 @@
 import 'server-only';
-import { documentExpiry, isDocumentCategory, thumbPath, type DocumentCategory } from '@esta/core/documents';
+import { documentExpiry, isDocumentCategory, type DocumentCategory } from '@esta/core/documents';
 import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { getClock } from '@/server/clock';
-import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { openDocument } from './actions';
 import type { DocumentStatuses } from './extraction-status';
-import { signDocumentUrl } from './sign';
+import { signPagePreviews, type PagePreviews } from './sign';
 import { readDocumentStatuses } from './status';
 
 export type DocumentDetail = {
@@ -30,11 +29,10 @@ export type DocumentDetail = {
   readonly sensitive: boolean;
 };
 
-export type DocumentPageData = {
+export type DocumentPageData = PagePreviews & {
   readonly document: DocumentDetail;
   /** Signed for this render, which logs one view (DOC-4); null when Storage refused it. */
   readonly fileUrl: string | null;
-  readonly thumbUrl: string | null;
   readonly statuses: DocumentStatuses;
   readonly canEdit: boolean;
   readonly properties: readonly { readonly id: string; readonly nickname: string }[];
@@ -53,9 +51,9 @@ export async function loadDocumentPage(documentId: string): Promise<DocumentPage
     .is('deleted_at', null)
     .maybeSingle();
   if (row === null || !isDocumentCategory(row.category)) return null;
-  const [fileUrl, thumbUrl, statuses, properties, clock, t, locale] = await Promise.all([
+  const [fileUrl, previews, statuses, properties, clock, t, locale] = await Promise.all([
     openDocument(documentId, 'view'),
-    signDocumentUrl(thumbPath(member.household.id, documentId), env.ESTA_SIGNED_URL_TTL_SECONDS),
+    signPagePreviews(member.household.id, documentId),
     readDocumentStatuses(documentId, 'document'),
     supabase.from('properties').select('id, nickname').eq('household_id', member.household.id).is('deleted_at', null).order('nickname'),
     getClock(),
@@ -89,7 +87,7 @@ export async function loadDocumentPage(documentId: string): Promise<DocumentPage
       sensitive: row.sensitivity === 'sensitive',
     },
     fileUrl,
-    thumbUrl,
+    ...previews,
     statuses: statuses ?? { statuses: {}, workerOffline: false },
     canEdit: member.role !== 'viewer',
     properties: properties.data ?? [],

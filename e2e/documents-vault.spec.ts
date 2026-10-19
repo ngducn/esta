@@ -126,6 +126,7 @@ test('rule 2: on a slow phone no request names a sensitive thumbnail before a ta
   await expect.poll(() => requested.filter((url) => url.includes('/thumb-blur.webp')).length, { timeout: 30_000 }).toBeGreaterThan(0);
   const clear = requested.filter((url) => sensitive.some((id) => url.includes(`/${id}/thumb.webp`)));
   expect(clear, 'no sensitive thumb.webp before Xem').toEqual([]);
+  expect(requested.filter((url) => url.includes('/review.webp')), 'the vault never fetches a review copy').toEqual([]);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 });
 
@@ -291,7 +292,7 @@ test('evidence: every vault state at 390x844 and 1440x900, light and dark', asyn
 
       await page.goto(`/documents/${insurance}`);
       await expect(page.getByTestId('document-detail')).toBeVisible(COLD_ROUTE);
-      await expect(page.locator('canvas[data-testid="document-page"][data-drawn="true"]')).toBeVisible(COLD_ROUTE);
+      await expect(page.locator('[data-testid="document-page"][data-drawn="true"]')).toBeVisible(COLD_ROUTE);
       await shot(page, `p2-05-document-${combo.name}`);
       await page.getByTestId('edit-document').click();
       await expect(page.getByTestId('edit-sheet')).toBeVisible();

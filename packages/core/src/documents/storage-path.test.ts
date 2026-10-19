@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DOCUMENT_OBJECT_NAME, documentObjectName, storagePath, thumbBlurPath, thumbPath } from './storage-path';
+import { DOCUMENT_OBJECT_NAME, documentObjectName, reviewPath, storagePath, thumbBlurPath, thumbPath } from './storage-path';
 
 const household = '0b8c1a52-7f0e-5c1e-9a4b-3d2f1e0c9b8a';
 const document = '5e2d6c4b-1a3f-5e7d-8c9b-0a1b2c3d4e5f';
@@ -27,13 +27,16 @@ describe('storagePath', () => {
     expect(documentObjectName('Ảnh')).toMatch(DOCUMENT_OBJECT_NAME);
   });
 
-  it('never names the file like a thumbnail', () => {
+  it('never names the file like a copy made from it', () => {
     expect(documentObjectName('thumb.webp')).toBe('file-thumb.webp');
     expect(documentObjectName('Thumb Blur.webp')).toBe('file-thumb-blur.webp');
+    expect(documentObjectName('Review.WEBP')).toBe('file-review.webp');
   });
 
-  it('puts both thumbnails beside the file', () => {
+  it('puts both thumbnails and the review copy beside the file', () => {
     expect(thumbPath(household, document)).toBe(`${household}/${document}/thumb.webp`);
     expect(thumbBlurPath(household, document)).toBe(`${household}/${document}/thumb-blur.webp`);
+    expect(reviewPath(household, document)).toBe(`${household}/${document}/review.webp`);
+    expect(reviewPath(household, document).split('/')[2]).toMatch(DOCUMENT_OBJECT_NAME);
   });
 });

@@ -46,6 +46,7 @@ export function ReviewPanel({
   mime,
   pageCount,
   fileUrl,
+  reviewUrl,
   thumbUrl,
   mode,
   extractionId,
@@ -63,6 +64,7 @@ export function ReviewPanel({
   mime: string;
   pageCount: number;
   fileUrl: string | null;
+  reviewUrl: string | null;
   thumbUrl: string | null;
   mode: ReviewMode;
   extractionId: string | null;
@@ -187,7 +189,7 @@ export function ReviewPanel({
           </Button>
         </div>
         <div className={cn(!showDocument && 'max-lg:hidden')}>
-          <DocumentPager fileUrl={fileUrl} thumbUrl={thumbUrl} mime={mime} pageCount={pageCount} title={title} page={page} onPage={setPage} />
+          <DocumentPager documentId={documentId} fileUrl={fileUrl} reviewUrl={reviewUrl} thumbUrl={thumbUrl} mime={mime} pageCount={pageCount} title={title} page={page} onPage={setPage} />
         </div>
       </section>
 

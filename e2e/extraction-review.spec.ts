@@ -348,6 +348,32 @@ test('rule 7: in English at 130% and dark, labels read in English, values keep t
   }
 });
 
+test('rule 8: page 1 opens from its review copy, and the full file loads only when Mẹ zooms in or turns the page (SPEC §7.2)', async ({ page }) => {
+  await open(page, 'me.lane9@demo.esta.test', 'light', PHONE);
+  const documentId = (key: string) => seedId(`seed:document:lane-9:${key}`);
+  const files: string[] = [];
+  page.on('request', (request) => {
+    if (/\/storage\/v1\/object\/sign\/documents\/[^?]+\/(so-hong-pre2009-photo-page-1\.jpg|hop-dong-thue-thu-duc\.pdf)\?/.test(request.url())) files.push(request.url());
+  });
+  const pageImage = page.locator('img[data-testid="document-page"][data-drawn="true"]');
+
+  await page.goto(`/documents/${documentId('q7:certificate')}/review`);
+  await expect(pageImage).toHaveAttribute('src', /\/review\.webp\?token=/);
+  expect(files, 'the photo itself waits for a zoom').toEqual([]);
+  await page.getByTestId('zoom-in').click();
+  await expect.poll(() => files.length, { message: 'zooming in fetches the full-size photo' }).toBeGreaterThan(0);
+  await expect(page.locator('img[src*="/so-hong-pre2009-photo-page-1.jpg?token="]')).toBeVisible();
+
+  files.length = 0;
+  await page.goto(`/documents/${documentId('thu-duc:lease')}/review`);
+  await expect(pageImage).toHaveAttribute('src', /\/review\.webp\?token=/);
+  await expect(page.getByTestId('page-tab')).toHaveCount(2);
+  expect(files, 'the PDF and pdf.js wait for a page turn').toEqual([]);
+  await page.getByTestId('page-tab').nth(1).click();
+  await expect(page.locator('canvas[data-testid="document-page"][data-drawn="true"]')).toBeVisible({ timeout: 15_000 });
+  expect(files.length, 'turning to page 2 fetches the PDF').toBeGreaterThan(0);
+});
+
 test('main flow: Mẹ opens the waiting review from the Trợ lý item, fixes the field marked kiểm tra lại, accepts, and Pháp lý shows the parcel', async ({ page }) => {
   await startWorker();
   await open(page, 'me.lane7@demo.esta.test', 'light', PHONE);

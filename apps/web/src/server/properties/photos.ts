@@ -1,4 +1,5 @@
 import 'server-only';
+import { sameOrigin } from '@/server/supabase/same-origin';
 import { createSessionClient } from '@/server/supabase/server';
 import { coverUrlCache } from './cover-url-cache';
 
@@ -9,11 +10,6 @@ export const PROPERTY_PHOTOS_BUCKET = 'property-photos';
  * card-size house photo, and a URL that stays the same for half a day is what lets a phone keep it in its cache.
  */
 const COVER_URL_TTL_SECONDS = 24 * 60 * 60;
-
-const sameOrigin = (signedUrl: string) => {
-  const url = new URL(signedUrl);
-  return `${url.pathname}${url.search}`;
-};
 
 const signCached = coverUrlCache(COVER_URL_TTL_SECONDS);
 
