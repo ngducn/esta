@@ -39,6 +39,7 @@ const shot = async (page: Page, slug: string, focus?: Locator) => {
 // The sheet dates an expense on the Clock's day, so the spec runs in the `clock` project on SPEC §9.3's day. Each rule
 // reads its own lane household, and every expense, vendor and receipt a rule adds is removed after it.
 test.beforeEach(async ({ request }) => {
+  test.slow(recording, 'slow motion for the video triples each step');
   await setClock(request, SPEC_TODAY);
 });
 
