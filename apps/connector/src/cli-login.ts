@@ -1,4 +1,5 @@
-import { createInterface } from 'node:readline/promises';
+import { spawnSync } from 'node:child_process';
+import { createInterface } from 'node:readline';
 import type { Result } from '@esta/core/result';
 import { logIn, sendLoginCode, type LoginRefusal } from './login';
 import { connectorClient, connectorEnvSchema, type Operator } from './session';
@@ -12,25 +13,32 @@ const MESSAGES: Record<LoginRefusal, string> = {
   not_operator: 'Only the household operator can use the connector.',
 };
 
-/** Reads one line without echoing it, so a password never shows on screen or in the terminal's scrollback. */
+/** One reader for every answer, so lines piped in together are not lost between two questions. */
+const reader = createInterface({ input: process.stdin, terminal: false });
+const lines = reader[Symbol.asyncIterator]();
+
+async function ask(question: string): Promise<string> {
+  process.stdout.write(question);
+  const line = await lines.next();
+  return line.done === true ? '' : line.value;
+}
+
+/** Turns the terminal's echo off while the password or code is typed, so it never shows on screen or in the scrollback. */
 async function askHidden(question: string): Promise<string> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-  const write = Reflect.get(rl, '_writeToOutput');
-  Reflect.set(rl, '_writeToOutput', (text: string) => {
-    if (text.startsWith(question) || text.includes('\n')) Reflect.apply(write, rl, [text]);
-  });
-  const answer = await rl.question(question);
-  rl.close();
-  process.stdout.write('\n');
-  return answer;
+  const tty = process.stdin.isTTY === true;
+  if (tty) spawnSync('stty', ['-echo'], { stdio: 'inherit' });
+  try {
+    return await ask(question);
+  } finally {
+    if (tty) spawnSync('stty', ['echo'], { stdio: 'inherit' });
+    process.stdout.write('\n');
+  }
 }
 
 async function main(): Promise<void> {
   const env = connectorEnvSchema.parse(process.env);
   const db = connectorClient(env, secretStore(env.ESTA_SUPABASE_URL, { platform: process.platform, file: env.ESTA_SESSION_FILE }));
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const email = (await rl.question('Esta email: ')).trim().toLowerCase();
-  rl.close();
+  const email = (await ask('Esta email: ')).trim().toLowerCase();
   const password = await askHidden('Password (leave empty to get a code by email): ');
   let result: Result<Operator, LoginRefusal>;
   if (password !== '') {
@@ -49,3 +57,4 @@ async function main(): Promise<void> {
 }
 
 await main();
+reader.close();
