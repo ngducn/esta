@@ -29,7 +29,7 @@ const url = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 const stackUp = anonKey !== '' && (await fetch(`${url}/auth/v1/health`, { headers: { apikey: anonKey } }).then((r) => r.ok, () => false));
 
-const LANE = 9;
+const LANE = 6;
 const household = seedId(`seed:household:lane-${LANE}`);
 const propertyId = seedId(`seed:property:lane-${LANE}:q7`);
 const created: string[] = [];
@@ -64,7 +64,7 @@ describe.skipIf(!stackUp)(`expense actions against the ESTA_SLOT=${process.env.E
   let member: SupabaseClient;
 
   beforeAll(async () => {
-    member = await signedInAs(`me.lane${LANE}@demo.esta.test`);
+    member = await signedInAs(`ryan.lane${LANE}@demo.esta.test`);
     session.client = member;
     session.member = { role: 'member', household: { id: household } };
   });

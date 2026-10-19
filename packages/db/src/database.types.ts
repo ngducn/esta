@@ -823,6 +823,13 @@ export type Database = {
             foreignKeyName: "expenses_household_id_document_id_fkey"
             columns: ["household_id", "document_id"]
             isOneToOne: false
+            referencedRelation: "document_status"
+            referencedColumns: ["household_id", "document_id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["household_id", "id"]
           },
@@ -838,6 +845,20 @@ export type Database = {
             columns: ["household_id", "property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
           {
