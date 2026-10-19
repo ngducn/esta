@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 127,
+      "value": 125,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -16,6 +16,7 @@
         "apps/web/src/components/date-input.tsx": 1,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 2,
         "apps/web/src/components/expenses/expense-sheet.tsx": 1,
+        "apps/web/src/components/leases/DepositSheet.tsx": 1,
         "apps/web/src/components/leases/LeaseForm.tsx": 1,
         "apps/web/src/components/legal/annotation-list.tsx": 1,
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
@@ -23,7 +24,6 @@
         "apps/web/src/components/rental/account-actions.test.tsx": 2,
         "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
         "apps/web/src/components/rental/unit-list.test.tsx": 1,
-        "apps/web/src/server/actions/leases.integration.test.ts": 2,
         "apps/web/src/server/documents/actions.test.ts": 3,
         "apps/web/src/server/expenses/actions.test.ts": 1,
         "apps/web/src/server/extraction/actions.test.ts": 2,
@@ -31,7 +31,8 @@
         "apps/web/src/server/properties/wizard.ts": 1,
         "e2e/assistant-status.spec.ts": 11,
         "e2e/auth-password.spec.ts": 5,
-        "e2e/collections.spec.ts": 14,
+        "e2e/collections.spec.ts": 11,
+        "e2e/deposits.spec.ts": 1,
         "e2e/documents-extract.spec.ts": 9,
         "e2e/documents-multipage.spec.ts": 2,
         "e2e/documents-upload.spec.ts": 5,
@@ -39,11 +40,13 @@
         "e2e/expenses.spec.ts": 2,
         "e2e/extraction-review.spec.ts": 4,
         "e2e/fnd9-integration.spec.ts": 2,
+        "e2e/helpers/auth-api.ts": 1,
         "e2e/helpers/session.ts": 1,
         "e2e/helpers/user-rest.ts": 1,
         "e2e/helpers/wizard.ts": 1,
         "e2e/i18n.spec.ts": 1,
-        "e2e/lease-detail.spec.ts": 3,
+        "e2e/lease-detail.spec.ts": 1,
+        "e2e/leases.spec.ts": 2,
         "e2e/properties-list.spec.ts": 3,
         "e2e/properties-map.spec.ts": 5,
         "e2e/property-completeness.spec.ts": 5,
@@ -62,7 +65,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1402,
+      "value": 1327,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -77,6 +80,7 @@
         "apps/web/src/components/date-input.tsx": 11,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 22,
         "apps/web/src/components/expenses/expense-sheet.tsx": 9,
+        "apps/web/src/components/leases/DepositSheet.tsx": 8,
         "apps/web/src/components/leases/LeaseForm.tsx": 8,
         "apps/web/src/components/legal/annotation-list.tsx": 6,
         "apps/web/src/components/legal/legal-form-shell.tsx": 12,
@@ -84,7 +88,6 @@
         "apps/web/src/components/rental/account-actions.test.tsx": 14,
         "apps/web/src/components/rental/add-rooms-sheet.tsx": 13,
         "apps/web/src/components/rental/unit-list.test.tsx": 7,
-        "apps/web/src/server/actions/leases.integration.test.ts": 40,
         "apps/web/src/server/documents/actions.test.ts": 29,
         "apps/web/src/server/expenses/actions.test.ts": 8,
         "apps/web/src/server/extraction/actions.test.ts": 18,
@@ -92,7 +95,8 @@
         "apps/web/src/server/properties/wizard.ts": 8,
         "e2e/assistant-status.spec.ts": 78,
         "e2e/auth-password.spec.ts": 32,
-        "e2e/collections.spec.ts": 180,
+        "e2e/collections.spec.ts": 150,
+        "e2e/deposits.spec.ts": 10,
         "e2e/documents-extract.spec.ts": 175,
         "e2e/documents-multipage.spec.ts": 13,
         "e2e/documents-upload.spec.ts": 41,
@@ -100,11 +104,13 @@
         "e2e/expenses.spec.ts": 12,
         "e2e/extraction-review.spec.ts": 29,
         "e2e/fnd9-integration.spec.ts": 12,
+        "e2e/helpers/auth-api.ts": 6,
         "e2e/helpers/session.ts": 6,
         "e2e/helpers/user-rest.ts": 7,
         "e2e/helpers/wizard.ts": 7,
         "e2e/i18n.spec.ts": 7,
-        "e2e/lease-detail.spec.ts": 56,
+        "e2e/lease-detail.spec.ts": 9,
+        "e2e/leases.spec.ts": 18,
         "e2e/properties-list.spec.ts": 30,
         "e2e/properties-map.spec.ts": 48,
         "e2e/property-completeness.spec.ts": 58,
@@ -136,7 +142,7 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 33,
+      "value": 34,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -144,6 +150,7 @@
         "apps/web/src/components/extraction/review-panel.tsx": 2,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
+        "apps/web/src/components/leases/DepositSheet.tsx": 1,
         "apps/web/src/components/leases/LeaseForm.tsx": 1,
         "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
         "apps/web/src/components/leases/TenantQuickAdd.tsx": 1,
@@ -167,7 +174,7 @@
       }
     },
     "action-failure-mapping": {
-      "value": 27,
+      "value": 28,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -177,6 +184,7 @@
         "apps/web/src/components/extraction/review-panel.tsx": 1,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
+        "apps/web/src/components/leases/DepositSheet.tsx": 1,
         "apps/web/src/components/leases/LeaseForm.tsx": 1,
         "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
         "apps/web/src/components/leases/TenantQuickAdd.tsx": 1,
@@ -317,7 +325,7 @@
       }
     },
     "ad-hoc-result-type": {
-      "value": 44,
+      "value": 46,
       "files": {
         "apps/agent/src/sdk/result.ts": 1,
         "apps/agent/src/tools/save-extraction.ts": 1,
@@ -338,7 +346,7 @@
         "apps/web/src/server/extraction/actions.ts": 2,
         "apps/web/src/server/maps/actions.ts": 1,
         "apps/web/src/server/properties/wizard.ts": 3,
-        "packages/core/src/allocation/deposits.ts": 1,
+        "packages/core/src/allocation/deposits.ts": 3,
         "packages/core/src/expenses/schema.ts": 1,
         "packages/core/src/extraction/acceptance.ts": 1,
         "packages/core/src/extraction/fields.ts": 1,
@@ -381,7 +389,7 @@
       }
     },
     "e2e-axe-in-spec": {
-      "value": 28,
+      "value": 27,
       "files": {
         "e2e/assistant-status.spec.ts": 1,
         "e2e/auth-password.spec.ts": 1,
@@ -398,7 +406,6 @@
         "e2e/extraction-review.spec.ts": 1,
         "e2e/fnd9-integration.spec.ts": 1,
         "e2e/i18n.spec.ts": 1,
-        "e2e/lease-detail.spec.ts": 1,
         "e2e/leases.spec.ts": 1,
         "e2e/properties-list.spec.ts": 1,
         "e2e/properties-map.spec.ts": 1,
@@ -414,7 +421,7 @@
       }
     },
     "e2e-slot-env-in-spec": {
-      "value": 22,
+      "value": 20,
       "files": {
         "e2e/assistant-status.spec.ts": 1,
         "e2e/clock.spec.ts": 1,
@@ -425,7 +432,6 @@
         "e2e/documents-vault.spec.ts": 1,
         "e2e/extraction-review.spec.ts": 1,
         "e2e/fnd9-integration.spec.ts": 1,
-        "e2e/lease-detail.spec.ts": 2,
         "e2e/leases.spec.ts": 2,
         "e2e/properties-list.spec.ts": 1,
         "e2e/properties-map.spec.ts": 1,
@@ -439,7 +445,7 @@
       }
     },
     "e2e-viewport-in-spec": {
-      "value": 31,
+      "value": 29,
       "files": {
         "e2e/collections.spec.ts": 2,
         "e2e/documents-extract.spec.ts": 2,
@@ -447,7 +453,6 @@
         "e2e/documents-upload.spec.ts": 2,
         "e2e/documents-vault.spec.ts": 2,
         "e2e/extraction-review.spec.ts": 2,
-        "e2e/lease-detail.spec.ts": 2,
         "e2e/leases.spec.ts": 2,
         "e2e/prod/sign-in-photo.spec.ts": 1,
         "e2e/properties-map.spec.ts": 1,
@@ -461,7 +466,7 @@
       }
     },
     "e2e-sideways-scroll-in-spec": {
-      "value": 23,
+      "value": 22,
       "files": {
         "e2e/assistant-status.spec.ts": 1,
         "e2e/auth.spec.ts": 1,
@@ -471,7 +476,6 @@
         "e2e/documents-vault.spec.ts": 1,
         "e2e/extraction-review.spec.ts": 2,
         "e2e/fnd9-integration.spec.ts": 1,
-        "e2e/lease-detail.spec.ts": 1,
         "e2e/leases.spec.ts": 1,
         "e2e/properties-list.spec.ts": 1,
         "e2e/properties-map.spec.ts": 1,
@@ -509,6 +513,24 @@
       "from": 41,
       "to": 44,
       "reason": "readExpense and saveExpense report the amount and date problems together, which Result cannot carry until #196 widens it; the action refusals move onto Result with #188"
+    },
+    {
+      "metric": "hand-rolled-action-call",
+      "from": 33,
+      "to": 34,
+      "reason": "The deposit sheet (P3-18) saves through its own transition, as the payment and expense sheets do (until #193)"
+    },
+    {
+      "metric": "action-failure-mapping",
+      "from": 27,
+      "to": 28,
+      "reason": "The deposit sheet (P3-18) maps a thrown save to failed with its own .catch, as the payment sheet does (until #193)"
+    },
+    {
+      "metric": "ad-hoc-result-type",
+      "from": 44,
+      "to": 46,
+      "reason": "previewDepositEntry (P3-18) refuses with the limit it met, which Result cannot carry yet (until #196)"
     }
   ]
 }
