@@ -61,9 +61,9 @@ describe('leaseTimeline (P3-08 period marks)', () => {
   });
 
   it('takes the dates and total of an invoice that bills part of its period, and calls a past period with no invoice unbilled', () => {
-    const partOf = { ...invoice('2026-06-25', 'issued', 0), periodStart: d('2026-07-01'), totalVnd: vnd(2_240_000) };
+    const partOf = { ...invoice('2026-06-25', 'issued', 0), periodStart: d('2026-07-01'), periodEnd: d('2026-07-24'), totalVnd: vnd(2_240_000) };
     const rows = leaseTimeline(generateSchedule(phong5, [], d('2026-07-30')), [partOf], d('2026-10-07'));
     expect(rows.at(3)).toMatchObject({ start: '2026-05-25', invoice: null, mark: { kind: 'unbilled' } });
-    expect(rows.at(4)).toMatchObject({ start: '2026-07-01', end: '2026-06-24', amountVnd: 2_240_000, mark: { kind: 'paid' } });
+    expect(rows.at(4)).toMatchObject({ start: '2026-07-01', end: '2026-07-24', amountVnd: 2_240_000, mark: { kind: 'paid' } });
   });
 });
