@@ -1,7 +1,7 @@
 import { formatVnd } from '@esta/core/format';
 import { currentLease, currentMonthlyRent, unitLeaseMark } from '@esta/core/lease';
 import { vnd } from '@esta/core/money';
-import { leaseTerms } from '@esta/core/schemas/lease';
+import type { SchedulePeriod } from '@esta/core/schedule';
 import { Plug, Plus } from 'lucide-react';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
@@ -15,7 +15,7 @@ import { UtilityAccountList } from '@/components/rental/utility-account-list';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { UndoToastProvider } from '@/components/undo-toast';
 import { getClock } from '@/server/clock';
-import { loadPropertyLeases, type PropertyLeases } from '@/server/leases/load';
+import { loadLeaseSchedule, loadPropertyLeases, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { loadPropertyRental } from '@/server/properties/rental';
@@ -23,8 +23,8 @@ import { PropertyDetailFrame } from '../detail-frame';
 
 const roomCountSchema = z.object({ room_count: z.number().int().min(1) });
 
-/** Each unit's current lease on the Clock's date, marked by its oldest issued invoice still owed. */
-function unitLeases(units: readonly { id: string }[], { leases, invoices, amendments }: PropertyLeases, asOf: IsoDate): Record<string, UnitLease> {
+/** Each unit's current lease on the Clock's date, marked by its oldest issued invoice still owed, at the rent its period bills. */
+function unitLeases(units: readonly { id: string }[], { leases, invoices }: PropertyLeases, schedule: readonly SchedulePeriod[], asOf: IsoDate): Record<string, UnitLease> {
   return Object.fromEntries(
     units.map((unit) => {
       const live = currentLease(leases.filter((lease) => lease.unit_id === unit.id), asOf);
@@ -32,15 +32,13 @@ function unitLeases(units: readonly { id: string }[], { leases, invoices, amendm
       const openDueDates = invoices
         .filter((invoice) => invoice.leaseId === live.id && invoice.status === 'issued' && invoice.outstandingVnd > 0)
         .map((invoice) => invoice.dueDate);
-      const terms = leaseTerms(live);
-      const own = amendments.filter((amendment) => amendment.leaseId === live.id);
       return [
         unit.id,
         {
           mark: unitLeaseMark({ status: live.status, openDueDates }, asOf),
           leaseId: live.id,
           tenantName: live.tenant?.fullName ?? null,
-          rentVnd: terms === null ? live.rent_vnd : currentMonthlyRent(terms, own, asOf),
+          rentVnd: currentMonthlyRent(schedule.filter((period) => period.leaseId === live.id), asOf) ?? live.rent_vnd,
           endsOn: live.status === 'terminated' ? live.end_date : null,
         },
       ];
@@ -61,6 +59,11 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
     getLocale(),
     getMessages(),
   ]);
+  const asOf = clock.today();
+  const schedule = await loadLeaseSchedule(
+    leases.leases.map((lease) => lease.id),
+    asOf,
+  );
   const canEdit = member.role !== 'viewer';
   const roomingHouse = property.kind === 'rooming_house';
   const declared = roomingHouse ? (roomCountSchema.safeParse(property.kindDetails).data?.room_count ?? null) : null;
@@ -93,7 +96,7 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
                 </p>
               )}
               {onlyWhole && canEdit ? <p className="max-w-prose text-body text-ink-2">{t('wholeHint')}</p> : null}
-              <UnitList propertyId={id} units={rental.units} leases={unitLeases(rental.units, leases, clock.today())} canEdit={canEdit} roomingHouse={roomingHouse} />
+              <UnitList propertyId={id} units={rental.units} leases={unitLeases(rental.units, leases, schedule, asOf)} canEdit={canEdit} roomingHouse={roomingHouse} />
             </section>
             <section aria-labelledby="rental-accounts" data-testid="rental-accounts" className="flex flex-col gap-3">
               <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">

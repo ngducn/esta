@@ -1,10 +1,9 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import taxRules from '../../../../supabase/seed/reference/tax_rules.json';
-import { daysBetween } from '../date/calendar';
+import { addDays, daysBetween } from '../date/calendar';
 import { isoDate, type IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
-import { addDays } from '../schedule/dates';
 import {
   attributeRevenue,
   splitAmountByDays,

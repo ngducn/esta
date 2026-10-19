@@ -2298,6 +2298,22 @@ export type Database = {
         Returns: string
       }
       national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
+      lease_schedule: {
+        Args: { p_lease_ids: string[]; p_until: string }
+        Returns: {
+          cycle_months: number
+          due_date: string
+          invoice_id: string
+          invoice_status: string
+          lease_id: string
+          monthly_rent_vnd: number
+          period_end: string
+          period_start: string
+          prorated: boolean
+          covered_by_paid_through: boolean
+          rent_vnd: number
+        }[]
+      }
       preview_activation: {
         Args: { p_lease_id: string; p_paid_through?: string }
         Returns: {

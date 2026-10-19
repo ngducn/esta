@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { addMonths } from '../schedule/dates';
-import { generateSchedule } from '../schedule/generate';
-import type { BillingCycleMonths, LeaseTerms } from '../schedule/types';
+import { addDays, addMonths } from '../date/calendar';
+import type { IsoDate } from '../date/iso-date';
+import type { BillingCycleMonths } from '../schedule/types';
 import { attributeRevenue, periodsFromSchedule, type OwnershipShare } from './attribute';
 import { computeTaxPosition } from './position';
 import { taxRuleRowSchema } from './rules';
@@ -29,6 +29,16 @@ const AS_OF = isoDate('2026-10-07');
 const CYCLES: BillingCycleMonths[] = [1, 1, 1, 3, 6, 12];
 const PARTIES = ['me', 'ryan'];
 
+/** Back-to-back periods of `cycle` months from `start` through the year end, as `public.lease_schedule` returns them. */
+function periods(start: IsoDate, cycle: BillingCycleMonths, monthlyVnd: number) {
+  const count = Math.floor((Number(YEAR_END.slice(0, 4)) - Number(start.slice(0, 4)) + 1) * (12 / cycle));
+  return Array.from({ length: count }, (_, k) => ({
+    start: addMonths(start, k * cycle),
+    end: addDays(addMonths(start, (k + 1) * cycle), -1),
+    rentVnd: vnd(monthlyVnd * cycle),
+  })).filter((period) => period.start <= YEAR_END);
+}
+
 /** `leases` leases over `properties` properties, a third co-owned 50/50, started up to three years back. */
 function portfolio(leases: number, properties: number) {
   const shares: OwnershipShare[] = Array.from({ length: properties }, (_, p) =>
@@ -40,19 +50,9 @@ function portfolio(leases: number, properties: number) {
       : [{ propertyId: `p${p}`, partyId: PARTIES[p % 2] as string, shareBp: 10_000 }],
   ).flat();
   const inputs = Array.from({ length: leases }, (_, i) => {
-    const terms: LeaseTerms = {
-      startDate: addMonths(isoDate('2024-01-05'), i % 36),
-      endDate: null,
-      rentVnd: vnd(3_500_000 + (i % 10) * 1_000_000),
-      billingCycleMonths: CYCLES[i % CYCLES.length] as BillingCycleMonths,
-      periodAnchor: i % 2 === 0 ? 'calendar_month' : 'lease_start',
-      firstPeriodProration: 'by_days',
-      dueOffsetDays: 0,
-      escalation: { kind: 'percent', valueBps: 500, everyMonths: 12, roundingVnd: vnd(100_000) },
-      paidThroughDate: null,
-    };
+    const cycle = CYCLES[i % CYCLES.length] as BillingCycleMonths;
     return {
-      terms,
+      schedule: periods(addMonths(isoDate('2024-01-05'), i % 36), cycle, 3_500_000 + (i % 10) * 1_000_000),
       lease: {
         id: `l${i}`,
         propertyId: `p${i % properties}`,
@@ -68,7 +68,7 @@ function portfolio(leases: number, properties: number) {
 }
 
 function taxPositions({ shares, inputs }: ReturnType<typeof portfolio>) {
-  const periods = inputs.flatMap(({ terms, lease }) => periodsFromSchedule(generateSchedule(terms, [], YEAR_END), lease));
+  const periods = inputs.flatMap(({ schedule, lease }) => periodsFromSchedule(schedule, lease));
   const attribution = attributeRevenue({ periods, shares, year: 2026, asOf: AS_OF });
   return attribution.owners.map((owner) => computeTaxPosition({ rule, attribution: owner, otherBusinessRevenueVnd: vnd(0) }));
 }

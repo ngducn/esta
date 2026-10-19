@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate as d } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { addDays, addMonths } from '../schedule/dates';
+import { addDays, addMonths } from '../date/calendar';
 import { collectedThrough, type BilledPeriod } from './collected';
 
 const period = (start: string, end: string, outstanding: number, status: BilledPeriod['status'] = 'issued'): BilledPeriod => ({

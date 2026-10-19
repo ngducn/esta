@@ -12,19 +12,6 @@ export type Escalation =
   | { kind: 'percent'; valueBps: number; everyMonths: number; roundingVnd: Vnd }
   | { kind: 'fixed'; valueVnd: Vnd; everyMonths: number; roundingVnd: Vnd };
 
-export type LeaseTerms = {
-  startDate: IsoDate;
-  endDate: IsoDate | null;
-  /** Monthly rent. A full period bills it once per month of the billing cycle. */
-  rentVnd: Vnd;
-  billingCycleMonths: BillingCycleMonths;
-  periodAnchor: PeriodAnchor;
-  firstPeriodProration: FirstPeriodProration;
-  dueOffsetDays: number;
-  escalation: Escalation;
-  paidThroughDate: IsoDate | null;
-};
-
 export type AmendmentChanges = {
   rentVnd?: Vnd;
   billingCycleMonths?: BillingCycleMonths;
@@ -35,20 +22,17 @@ export type Amendment = {
   changes: AmendmentChanges;
 };
 
-export type Proration = {
-  days: number;
-  daysInFullPeriod: number;
-  fullPeriodVnd: Vnd;
+/** One period of a lease as `public.lease_schedule` plans it, with the live invoice that bills it. */
+export type SchedulePeriod = {
+  readonly leaseId: string;
+  readonly start: IsoDate;
+  readonly end: IsoDate;
+  readonly dueDate: IsoDate;
+  readonly cycleMonths: BillingCycleMonths;
+  /** After increases and amendments. */
+  readonly monthlyRentVnd: Vnd;
+  readonly rentVnd: Vnd;
+  readonly prorated: boolean;
+  readonly coveredByPaidThrough: boolean;
+  readonly invoiceId: string | null;
 };
-
-export type Period = {
-  start: IsoDate;
-  end: IsoDate;
-  dueDate: IsoDate;
-  monthlyRentVnd: Vnd;
-  rentVnd: Vnd;
-  prorated: Proration | null;
-  coveredByPaidThrough: boolean;
-};
-
-export type AmendmentRefusal = 'not_a_period_start' | 'not_after_as_of' | 'duplicate_effective_start' | 'moves_later_amendment';

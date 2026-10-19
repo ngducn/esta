@@ -6,7 +6,7 @@ import type { Emitter } from './context.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { documents } from './documents.ts';
 import { certificates, parcels, structures } from './legal.ts';
-import { invoiceLines, invoices, leaseAmendments, leases, paymentAllocations, payments, tenants } from './leasing.ts';
+import { billingSql, leaseAmendments, leases, tenants } from './leasing.ts';
 import { ownershipShares } from './ownership.ts';
 import { parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
@@ -30,10 +30,6 @@ const EMITTERS: readonly Emitter[] = [
   leases,
   leaseAmendments,
   documents,
-  invoices,
-  invoiceLines,
-  payments,
-  paymentAllocations,
   agentJobs,
   agentRuns,
 ];
@@ -59,7 +55,7 @@ export function generate({ lanes, asOf, variant }: GenerateOptions): string {
     ...(upsert === true ? { upsert } : {}),
     rows: households.flatMap((household) => rows({ household, properties, asOf, today })),
   }));
-  return renderSeed(tables, asOf);
+  return renderSeed(tables, asOf, billingSql(households, { properties }, asOf));
 }
 
 export const USAGE =

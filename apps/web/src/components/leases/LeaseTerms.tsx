@@ -3,7 +3,8 @@ import type { IsoDate } from '@esta/core/date';
 import { collectedThrough, currentMonthlyRent } from '@esta/core/lease';
 import type { Vnd } from '@esta/core/money';
 import type { LeaseAmendmentRow } from '@esta/core/schemas/lease';
-import { leaseTerms, toEscalation } from '@esta/core/schemas/lease';
+import type { SchedulePeriod } from '@esta/core/schedule';
+import { toEscalation } from '@esta/core/schemas/lease';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import type { InvoiceSummary, LeaseWithTenant } from '@/server/leases/load';
@@ -29,6 +30,7 @@ export function LeaseTerms({
   lease,
   unitLabel,
   invoices,
+  schedule,
   amendments,
   asOf,
   renewalOf,
@@ -37,6 +39,7 @@ export function LeaseTerms({
   lease: LeaseWithTenant;
   unitLabel: string;
   invoices: readonly InvoiceSummary[];
+  schedule: readonly SchedulePeriod[];
   amendments: readonly LeaseAmendmentRow[];
   asOf: IsoDate;
   renewalOf: LeaseLink | null;
@@ -47,8 +50,7 @@ export function LeaseTerms({
   const money = (amount: Vnd | null) => (amount === null ? t('none') : formatVnd(amount, locale));
   const start = lease.start_date === null ? t('none') : formatDate(lease.start_date, locale);
   const collected = collectedThrough(lease.paid_through_date, invoices);
-  const terms = leaseTerms(lease);
-  const rentNow = terms === null ? lease.rent_vnd : currentMonthlyRent(terms, amendments, asOf);
+  const rentNow = currentMonthlyRent(schedule, asOf) ?? lease.rent_vnd;
   const escalation = toEscalation(lease.escalation);
   const rentChanges = amendments.flatMap((amendment) => (amendment.changes.rentVnd === undefined ? [] : [{ ...amendment, rentVnd: amendment.changes.rentVnd }]));
   return (

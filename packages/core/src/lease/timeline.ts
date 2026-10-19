@@ -2,10 +2,11 @@ import type { PaymentStatus } from '../allocation';
 import { daysBetween } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
 import type { Vnd } from '../money/vnd';
-import type { Period } from '../schedule';
+import type { SchedulePeriod } from '../schedule';
 
 /** An invoice of the lease as `invoice_balances` reads it. */
 export type TimelineInvoice = {
+  readonly id: string;
   readonly periodStart: IsoDate;
   readonly periodEnd: IsoDate;
   readonly dueDate: IsoDate;
@@ -47,14 +48,12 @@ function invoiceMark(invoice: TimelineInvoice, asOf: IsoDate): PeriodMark {
 }
 
 /**
- * Each scheduled period beside the invoice that bills it, if any. An invoice belongs to the period its start falls in,
- * because a paid-through date or a termination can shorten the stretch it bills; its dates and total then win over the
- * schedule's. A void invoice bills nothing.
+ * Each scheduled period beside the invoice `lease_schedule` says bills it, if any. A paid-through date or a termination
+ * can shorten the stretch an invoice bills, so its dates and total win over the schedule's.
  */
-export function leaseTimeline<I extends TimelineInvoice>(periods: readonly Period[], invoices: readonly I[], asOf: IsoDate): TimelineRow<I>[] {
-  const live = invoices.filter((invoice) => invoice.status !== 'void');
+export function leaseTimeline<I extends TimelineInvoice>(periods: readonly SchedulePeriod[], invoices: readonly I[], asOf: IsoDate): TimelineRow<I>[] {
   return periods.map((period) => {
-    const invoice = live.find((candidate) => candidate.periodStart >= period.start && candidate.periodStart <= period.end) ?? null;
+    const invoice = invoices.find((candidate) => candidate.id === period.invoiceId) ?? null;
     if (invoice !== null) {
       return { start: invoice.periodStart, end: invoice.periodEnd, dueDate: invoice.dueDate, amountVnd: invoice.totalVnd, invoice, mark: invoiceMark(invoice, asOf) };
     }

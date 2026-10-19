@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { addDays, addMonths } from '../date/calendar';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { generateSchedule } from '../schedule/generate';
-import type { LeaseTerms } from '../schedule/types';
 import { attributeRevenue, periodsFromSchedule, splitAmountByDays, type RevenuePeriod, type TaxLease } from './attribute';
 
 const d = isoDate;
@@ -175,17 +174,9 @@ describe('attributeRevenue', () => {
   });
 });
 
-const PAID_THROUGH_YEAR_END: LeaseTerms = {
-  startDate: d('2026-01-01'),
-  endDate: null,
-  rentVnd: vnd(10_000_000),
-  billingCycleMonths: 1,
-  periodAnchor: 'calendar_month',
-  firstPeriodProration: 'none',
-  dueOffsetDays: 0,
-  escalation: { kind: 'none' },
-  paidThroughDate: d('2026-12-31'),
-};
+/** What `public.lease_schedule` returns for a 10.000.000 ₫ calendar-month lease from 2026-01-01, through `months` months. */
+const monthly = (months: number) =>
+  Array.from({ length: months }, (_, i) => ({ start: addMonths(d('2026-01-01'), i), end: addDays(addMonths(d('2026-01-01'), i + 1), -1), rentVnd: vnd(10_000_000) }));
 
 const taxLease: TaxLease = {
   id: 'lease-1',
@@ -198,16 +189,14 @@ const taxLease: TaxLease = {
 };
 
 describe('periodsFromSchedule', () => {
-  const schedule = (terms: LeaseTerms, until: string) => generateSchedule(terms, [], d(until));
-
   it('keeps periods paid through 2026-12-31, so they still accrue', () => {
-    const periods = periodsFromSchedule(schedule(PAID_THROUGH_YEAR_END, '2026-12-31'), taxLease);
+    const periods = periodsFromSchedule(monthly(12), taxLease);
     expect(periods).toHaveLength(12);
     expect(attribute(periods, '2026-10-07').owners[0]).toMatchObject({ accruedVnd: 92_258_065, projectedVnd: 120_000_000 });
   });
 
   it('stops a terminated lease at terminated_on, cutting the last period by days', () => {
-    const periods = periodsFromSchedule(schedule(PAID_THROUGH_YEAR_END, '2026-12-31'), {
+    const periods = periodsFromSchedule(monthly(12), {
       ...taxLease,
       active: false,
       terminatedOn: d('2026-03-10'),
@@ -219,13 +208,13 @@ describe('periodsFromSchedule', () => {
     ]);
   });
 
-  it('ends at end_date through the schedule itself', () => {
-    const periods = periodsFromSchedule(schedule({ ...PAID_THROUGH_YEAR_END, endDate: d('2026-02-14') }, '2026-12-31'), taxLease);
+  it('ends where the schedule ends, at end_date', () => {
+    const periods = periodsFromSchedule([...monthly(1), { start: d('2026-02-01'), end: d('2026-02-14'), rentVnd: vnd(5_000_000) }], taxLease);
     expect(periods.map((p) => p.end)).toEqual(['2026-01-31', '2026-02-14']);
   });
 
   it('adds recurring charges on their own cycle across the schedule span', () => {
-    const periods = periodsFromSchedule(schedule(PAID_THROUGH_YEAR_END, '2026-12-31'), {
+    const periods = periodsFromSchedule(monthly(12), {
       ...taxLease,
       recurringCharges: [{ amountVnd: vnd(600_000), cycleMonths: 3 }],
     });
@@ -241,7 +230,7 @@ describe('periodsFromSchedule', () => {
 
   it('rejects a recurring charge with no cycle', () => {
     expect(() =>
-      periodsFromSchedule(schedule(PAID_THROUGH_YEAR_END, '2026-12-31'), {
+      periodsFromSchedule(monthly(12), {
         ...taxLease,
         recurringCharges: [{ amountVnd: vnd(1), cycleMonths: 0 }],
       }),
@@ -253,7 +242,7 @@ describe('periodsFromSchedule', () => {
   });
 
   it('carries the lease facts onto every period', () => {
-    const [first] = periodsFromSchedule(schedule(PAID_THROUGH_YEAR_END, '2026-01-31'), {
+    const [first] = periodsFromSchedule(monthly(1), {
       ...taxLease,
       taxPayer: 'tenant_withholds',
       declaringPartyId: 'ryan',

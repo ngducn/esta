@@ -2,7 +2,7 @@ import type { PaymentStatus } from '../allocation/status';
 import { daysBetween } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
-import { firstOfMonth } from '../schedule/dates';
+import { firstOfMonth } from '../date/calendar';
 
 /** The board's groups in the order Mẹ reads them (LSE-10). */
 export const COLLECTION_GROUPS = ['overdue', 'due', 'notDue', 'paid'] as const;

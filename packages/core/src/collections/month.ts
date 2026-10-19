@@ -1,5 +1,5 @@
 import { isIsoDate, type IsoDate } from '../date/iso-date';
-import { firstOfMonth } from '../schedule/dates';
+import { firstOfMonth } from '../date/calendar';
 
 /** `?month=2026-10` names the board's month; anything else falls back to the Clock's month. */
 export function parseBoardMonth(param: string | undefined, today: IsoDate): IsoDate {

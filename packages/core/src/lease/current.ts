@@ -1,6 +1,7 @@
 import type { IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
-import { leaseTerms, type LeaseAmendmentRow, type LeaseRow } from '../schemas/lease';
+import type { SchedulePeriod } from '../schedule';
+import type { LeaseRow } from '../schemas/lease';
 import { currentMonthlyRent } from './monthlyRent';
 import type { LeaseStatus } from './types';
 
@@ -25,11 +26,14 @@ export function currentLease<L extends LeaseSpan>(leases: readonly L[], asOf: Is
   return holding[0] ?? leases.find((lease) => lease.status === 'draft');
 }
 
-/** The monthly rent owed on `asOf` under the leases in effect, after escalation and amendments; `null` when none is. */
-export function rentInEffect(leases: readonly LeaseRow[], amendments: readonly LeaseAmendmentRow[], asOf: IsoDate): Vnd | null {
+/**
+ * The monthly rent owed on `asOf` under the leases in effect, after escalation and amendments, from their
+ * `lease_schedule` periods; `null` when none is.
+ */
+export function rentInEffect(leases: readonly LeaseRow[], schedule: readonly SchedulePeriod[], asOf: IsoDate): Vnd | null {
   const owed = leases.flatMap((lease) => {
-    const terms = inEffect(lease, asOf) ? leaseTerms(lease) : null;
-    return terms === null ? [] : [currentMonthlyRent(terms, amendments.filter((amendment) => amendment.leaseId === lease.id), asOf)];
+    if (!inEffect(lease, asOf) || lease.rent_vnd === null) return [];
+    return [currentMonthlyRent(schedule.filter((period) => period.leaseId === lease.id), asOf) ?? lease.rent_vnd];
   });
   return owed.length === 0 ? null : vnd(owed.reduce((sum, rent) => sum + rent, 0));
 }

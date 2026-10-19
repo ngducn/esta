@@ -1,7 +1,6 @@
+import { addDays, addMonths } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
-import { generateSchedule } from '../schedule/generate';
-import type { LeaseTerms } from '../schedule/types';
 import { attributeRevenue, periodsFromSchedule, type OwnershipShare, type RevenuePeriod, type TaxPayer } from './attribute';
 import { TAX_NOTES, type TaxNoteKey } from './notes';
 import { computeTaxPosition } from './position';
@@ -32,22 +31,16 @@ export type WorkedExample = {
 const YEAR = 2026;
 const AS_OF = '2026-10-07' as IsoDate;
 const JAN_1 = '2026-01-01' as IsoDate;
-const DEC_31 = '2026-12-31' as IsoDate;
 const ALWAYS: readonly TaxNoteKey[] = ['estimate_disclaimer', 'pit_effective_date', 'utility_excluded'];
 
+/** A lease billing `monthlyRentVnd` every calendar month of 2026, as `public.lease_schedule` plans it. */
 function monthlyLease(id: string, propertyId: string, monthlyRentVnd: number): RevenuePeriod[] {
-  const terms: LeaseTerms = {
-    startDate: JAN_1,
-    endDate: DEC_31,
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    start: addMonths(JAN_1, i),
+    end: addDays(addMonths(JAN_1, i + 1), -1),
     rentVnd: vnd(monthlyRentVnd),
-    billingCycleMonths: 1,
-    periodAnchor: 'lease_start',
-    firstPeriodProration: 'none',
-    dueOffsetDays: 0,
-    escalation: { kind: 'none' },
-    paidThroughDate: null,
-  };
-  return periodsFromSchedule(generateSchedule(terms, [], DEC_31), {
+  }));
+  return periodsFromSchedule(months, {
     id,
     propertyId,
     active: true,

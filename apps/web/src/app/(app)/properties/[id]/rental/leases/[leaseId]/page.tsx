@@ -1,6 +1,5 @@
-import { amendmentStarts, holdsUnit, lastMonthlyRent, leaseDefaults, renewalStart } from '@esta/core/lease';
-import { addDays, addMonths } from '@esta/core/schedule';
-import { leaseTerms } from '@esta/core/schemas/lease';
+import { addDays, addMonths } from '@esta/core/date/calendar';
+import { amendmentStarts, currentMonthlyRent, holdsUnit, leaseDefaults, renewalStart } from '@esta/core/lease';
 import type { Metadata } from 'next';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -16,7 +15,7 @@ import { PropertyIntl } from '@/components/properties/property-intl';
 import { StatusMark, StatusShape } from '@/components/status-mark';
 import { getClock } from '@/server/clock';
 import { loadLeaseDocuments } from '@/server/leases/detail';
-import { loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
+import { loadLeaseSchedule, loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { loadPropertyRental } from '@/server/properties/rental';
@@ -35,6 +34,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 /** Rent periods from today's amendable starts, at most this many. */
 const AMEND_STARTS_SHOWN = 12;
+
+/** An open-ended lease offers amendments and shows its schedule this far past the Clock's date. */
+const AMEND_MONTHS_AHEAD = 24;
 
 function latestIssuedEnd(invoices: readonly InvoiceSummary[]) {
   return invoices.filter((invoice) => invoice.status === 'issued').reduce<InvoiceSummary['periodEnd'] | null>((latest, invoice) => (latest === null || invoice.periodEnd > latest ? invoice.periodEnd : latest), null);
@@ -106,19 +108,23 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   }
 
   const leasesHref = `${backHref}/leases`;
-  const documents = await loadLeaseDocuments(summary.id);
+  const [documents, schedule] = await Promise.all([
+    loadLeaseDocuments(summary.id),
+    loadLeaseSchedule([summary.id], summary.end_date ?? addMonths(asOf, AMEND_MONTHS_AHEAD)),
+  ]);
   const amendments = leases.amendments.filter((amendment) => amendment.leaseId === summary.id);
   const invoices = leases.invoices.filter((invoice) => invoice.leaseId === summary.id);
-  const terms = leaseTerms(summary);
   const { renewalOf, renewedBy } = renewalLinks(summary, leases.leases, leasesHref);
   const active = canEdit && summary.status === 'active';
-  const start = terms === null ? null : renewalStart(terms);
+  const start = renewalStart(summary.end_date);
+  const lastRentVnd = summary.end_date === null ? null : (currentMonthlyRent(schedule, summary.end_date) ?? summary.rent_vnd);
   const renewal: RenewalOffer | null =
-    canEdit && terms !== null && start !== null && renewedBy === null && (summary.status === 'active' || summary.status === 'ended')
-      ? { start, startsBeforeToday: start < asOf, lastRentVnd: lastMonthlyRent(terms, amendments), defaultEnd: addDays(addMonths(start, 12), -1) }
+    canEdit && start !== null && lastRentVnd !== null && renewedBy === null && (summary.status === 'active' || summary.status === 'ended')
+      ? { start, startsBeforeToday: start < asOf, lastRentVnd, defaultEnd: addDays(addMonths(start, 12), -1) }
       : null;
-  const amendStarts =
-    active && terms !== null ? amendmentStarts(terms, amendments, asOf, latestIssuedEnd(invoices), terms.endDate ?? addMonths(asOf, 24)).slice(0, AMEND_STARTS_SHOWN) : [];
+  const amendStarts = active
+    ? amendmentStarts(schedule, amendments, { asOf, billedThrough: latestIssuedEnd(invoices), paidThrough: summary.paid_through_date }).slice(0, AMEND_STARTS_SHOWN)
+    : [];
   const ended = summary.status === 'ended' || summary.status === 'terminated';
 
   return (
@@ -143,13 +149,13 @@ export default async function LeasePage({ params, searchParams }: { params: Para
       {canEdit ? null : <p className="text-body text-ink-2">{t('viewerNote')}</p>}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex flex-col gap-6">
-          <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} />
+          <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} schedule={schedule} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} />
           <PropertyIntl locale={locale} messages={{ leases: messages.leases, documents: messages.documents, components: { money, date, status, toast } }}>
             <LeaseDocuments leaseId={summary.id} propertyId={id} nickname={property.nickname} documents={documents} canEdit={canEdit} />
           </PropertyIntl>
         </div>
         <div className="order-first lg:order-none">
-          {terms === null ? null : <PeriodTimeline terms={terms} amendments={amendments} invoices={invoices} asOf={asOf} />}
+          {summary.start_date === null || summary.rent_vnd === null ? null : <PeriodTimeline schedule={schedule} endDate={summary.end_date} amendments={amendments} invoices={invoices} asOf={asOf} />}
         </div>
       </div>
     </div>

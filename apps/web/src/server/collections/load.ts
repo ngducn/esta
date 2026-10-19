@@ -2,7 +2,7 @@ import 'server-only';
 import { PAYMENT_STATUSES, type OpenInvoice } from '@esta/core/allocation';
 import { collectionState, worstCollectionState, type CollectionCandidate, type CollectionState } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
-import { firstOfMonth } from '@esta/core/schedule';
+import { firstOfMonth } from '@esta/core/date/calendar';
 import { vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { z } from 'zod';

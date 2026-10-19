@@ -1,7 +1,7 @@
 import { boardMonthParam, groupCollections, parseBoardMonth } from '@esta/core/collections';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { formatMonthWithin, formatMonthYear } from '@esta/core/format';
-import { addMonths, firstOfMonth } from '@esta/core/schedule';
+import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { CollectionsBoard } from '@/components/collections/CollectionsBoard';
 import { MonthSelector } from '@/components/collections/MonthSelector';
