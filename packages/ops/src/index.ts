@@ -29,6 +29,7 @@ export {
 export type { FileProblem, FileRefusal, LocalContext, LocalFile, LocalFiles, LocalPreviews } from './files';
 export { dbRefusal, idSchema, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
 export type { Db } from './db';
+export { leaseCreate, leaseEdit, type LeaseRefusal, type LeaseSaved } from './lease-ops';
 export { readMembership } from './member';
 export { runOp, type Op, type OpContext } from './op';
 export { readPropertyDetail, readPropertyForm, searchProperties, type PropertyDetailRow, type PropertyRow, type StoredProperty } from './properties';

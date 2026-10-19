@@ -2,7 +2,7 @@
 
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
-import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema } from '@esta/core/schemas/lease';
+import { LEASE_COLUMNS, leaseRowSchema } from '@esta/core/schemas/lease';
 import { RENEWAL_INCREASE_BPS } from '@esta/core/lease';
 import { MAX_AMOUNT_VND } from '@esta/core/money';
 import { isoDateSchema, text } from '@esta/core/schemas/legal';
@@ -10,7 +10,7 @@ import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { phoneText } from '@esta/core/phone';
 import type { Result } from '@esta/core/result';
 import { vnd, type Vnd } from '@esta/core/money';
-import { personCreate, runOp } from '@esta/ops';
+import { leaseCreate, leaseEdit, personCreate, runOp } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
@@ -42,22 +42,21 @@ function revalidateLeases() {
   revalidatePath('/collections');
 }
 
-/** Saves a draft under the session client; an active lease changes only through an amendment (P3-08). */
+function leaseWriteRefusal(kind: string): Extract<LeaseWrite, { ok: false }>['reason'] {
+  if (kind === 'not_draft' || kind === 'not_found') return 'notDraft';
+  return kind === 'invalid' || kind === 'conflict' ? 'invalid' : 'failed';
+}
+
+/** Saves a draft; an active lease changes only through an amendment (P3-08). */
 export async function saveLease(propertyId: unknown, leaseId: unknown, raw: unknown): Promise<LeaseWrite> {
-  const property = uuid.safeParse(propertyId);
-  const lease = leaseId === null ? { success: true as const, data: null } : uuid.safeParse(leaseId);
-  const value = leaseDraftSchema.safeParse(raw);
-  if (!property.success || !lease.success || !value.success) return { ok: false, reason: 'invalid' };
-  const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
-  const match = { household_id: member.household.id, property_id: property.data };
-  const { data, error } =
-    lease.data === null
-      ? await supabase.from('leases').insert({ ...value.data, ...match }).select('id').single()
-      : await supabase.from('leases').update(value.data).match(match).eq('id', lease.data).eq('status', 'draft').select('id').maybeSingle();
-  if (error) return { ok: false, reason: error.code === '23503' || error.code === '23514' ? 'invalid' : 'failed' };
-  if (data === null) return { ok: false, reason: 'notDraft' };
+  const ctx = await webOpContext();
+  const result =
+    leaseId === null
+      ? await runOp(leaseCreate, ctx, { id: randomUUID(), property_id: propertyId, lease: raw })
+      : await runOp(leaseEdit, ctx, { id: leaseId, property_id: propertyId, set: raw });
+  if (!result.ok) return { ok: false, reason: leaseWriteRefusal(result.reason.kind) };
   revalidateLeases();
-  return { ok: true, id: data.id };
+  return { ok: true, id: result.value.id };
 }
 
 export type ActivationRefusalReason = ActivationRefusal | 'paid_through_invalid' | 'already_active' | 'overlap' | 'failed';
