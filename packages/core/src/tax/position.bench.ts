@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { addDays, addMonths } from '../date/calendar';
-import type { IsoDate } from '../date/iso-date';
+import { addMonths } from '../date/calendar';
+import { schedulePeriods } from '../schedule/fixtures';
 import type { BillingCycleMonths } from '../schedule/types';
 import { attributeRevenue, periodsFromSchedule, type OwnershipShare } from './attribute';
 import { computeTaxPosition } from './position';
@@ -29,16 +29,6 @@ const AS_OF = isoDate('2026-10-07');
 const CYCLES: BillingCycleMonths[] = [1, 1, 1, 3, 6, 12];
 const PARTIES = ['me', 'ryan'];
 
-/** Back-to-back periods of `cycle` months from `start` through the year end, as `public.lease_schedule` returns them. */
-function periods(start: IsoDate, cycle: BillingCycleMonths, monthlyVnd: number) {
-  const count = Math.floor((Number(YEAR_END.slice(0, 4)) - Number(start.slice(0, 4)) + 1) * (12 / cycle));
-  return Array.from({ length: count }, (_, k) => ({
-    start: addMonths(start, k * cycle),
-    end: addDays(addMonths(start, (k + 1) * cycle), -1),
-    rentVnd: vnd(monthlyVnd * cycle),
-  })).filter((period) => period.start <= YEAR_END);
-}
-
 /** `leases` leases over `properties` properties, a third co-owned 50/50, started up to three years back. */
 function portfolio(leases: number, properties: number) {
   const shares: OwnershipShare[] = Array.from({ length: properties }, (_, p) =>
@@ -52,7 +42,9 @@ function portfolio(leases: number, properties: number) {
   const inputs = Array.from({ length: leases }, (_, i) => {
     const cycle = CYCLES[i % CYCLES.length] as BillingCycleMonths;
     return {
-      schedule: periods(addMonths(isoDate('2024-01-05'), i % 36), cycle, 3_500_000 + (i % 10) * 1_000_000),
+      schedule: schedulePeriods(`l${i}`, addMonths(isoDate('2024-01-05'), i % 36), 3_500_000 + (i % 10) * 1_000_000, 36 / cycle, cycle).filter(
+        (period) => period.start <= YEAR_END,
+      ),
       lease: {
         id: `l${i}`,
         propertyId: `p${i % properties}`,
