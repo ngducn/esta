@@ -57,7 +57,7 @@ describe('pnpm quality', () => {
     expect(text).toContain('FAIL local-id-schema rose from 0 to 1.');
     expect(text).toContain('apps/web/src/server/actions/archive.ts:3  const id = z.uuid();');
     expect(text).toContain('Use instead: `idSchema`');
-    expect(text).toContain('See ARCHITECTURE.md#server-action-kit');
+    expect(text).toContain('See ARCHITECTURE.md#server-writes-the-ops-layer');
   });
 
   it('leaves a row schema field alone', () => {

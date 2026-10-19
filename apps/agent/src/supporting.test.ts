@@ -1,25 +1,10 @@
 import { isoDate, parseInstant, type Clock } from '@esta/core';
 import { describe, expect, it } from 'vitest';
-import { readClock } from './clock';
 import { beat } from './heartbeat';
 import { jobSpec, JOBS } from './jobs/registry';
 import { fakeDb, type Recorded } from './test/fake-db';
 import { pingTools } from './jobs/ping';
 import { isEstaToolName } from './tools/server';
-
-const env = { ESTA_ENV: 'development', ESTA_FROZEN_NOW: undefined, ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' } as const;
-
-describe('readClock', () => {
-  it('reads the test clock row outside production', async () => {
-    const clock = await readClock(fakeDb({ test_clock: [{ frozen_now: '2026-10-07T02:06:00+00:00' }] }), env);
-    expect([clock.source, clock.now(), clock.today()]).toEqual(['table', '2026-10-07T02:06:00.000Z', '2026-10-07']);
-  });
-
-  it('ignores the test clock row in production', async () => {
-    const clock = await readClock(fakeDb({ test_clock: [{ frozen_now: '2026-10-07T02:06:00+00:00' }] }), { ...env, ESTA_ENV: 'production' });
-    expect(clock.source).toBe('system');
-  });
-});
 
 describe('beat', () => {
   const clock: Clock = { source: 'table', now: () => parseInstant('2026-10-07T09:06:00+07:00'), today: () => isoDate('2026-10-07') };

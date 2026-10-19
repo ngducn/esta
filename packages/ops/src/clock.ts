@@ -1,9 +1,10 @@
 import { clockAt, parseInstant, resolveClockSource, type Clock } from '@esta/core';
-import type { AgentEnv } from './env';
-import type { AgentDb } from './supabase';
+import type { Db } from './db';
 
-/** Read at every heartbeat and every job, so a test can move the clock without restarting the worker (FND-9). */
-export async function readClock(db: AgentDb, env: Pick<AgentEnv, 'ESTA_ENV' | 'ESTA_FROZEN_NOW' | 'ESTA_TIMEZONE'>): Promise<Clock> {
+export type ClockEnv = { readonly ESTA_ENV?: string | undefined; readonly ESTA_FROZEN_NOW?: string | undefined; readonly ESTA_TIMEZONE: string };
+
+/** Read at every job and every tool call, so a test can move the clock without restarting the process (FND-9). */
+export async function readClock(db: Db, env: ClockEnv): Promise<Clock> {
   let testClockRow: { frozen_now: string } | null = null;
   if (env.ESTA_ENV !== 'production') {
     const { data, error } = await db.from('test_clock').select('frozen_now').maybeSingle();

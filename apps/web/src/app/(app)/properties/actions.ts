@@ -1,14 +1,14 @@
 'use server';
 
-import { formatCurrentAddress } from '@esta/core/address';
 import { coverPhotoPath, parseCoverPhotoPath, stalePhotos, type StoredPhoto } from '@esta/core/properties';
-import { propertyInputSchema, type PropertyInput } from '@esta/core/schemas/property';
+import type { Result } from '@esta/core/result';
+import { idSchema, propertyCreate, propertyEdit, runOp, type CodeTaken, type CommonRefusal, type CurrentUnitSuggestion, type PropertySaved } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import type { CurrentUnitSuggestion } from '@esta/ops';
-import { isCommuneOf, listCommunes, suggestCurrentUnits, type AdminUnitOption } from '@/server/address/suggest';
+import { listCommunes, suggestCurrentUnits, type AdminUnitOption } from '@/server/address/suggest';
 import { requireMember } from '@/server/member';
+import { webOpContext } from '@/server/ops';
 import { PROPERTY_PHOTOS_BUCKET } from '@/server/properties/photos';
 import { setDeletedAt } from '@/server/soft-delete';
 import { createSessionClient } from '@/server/supabase/server';
@@ -22,49 +22,11 @@ export type PhotoWrite = { readonly ok: true } | { readonly ok: false };
 
 export type UploadTicket = { readonly ok: true; readonly path: string; readonly url: string } | { readonly ok: false };
 
-const id = z.uuid();
-const UNIQUE_VIOLATION = '23505';
-
-function toRow(input: PropertyInput) {
-  const address = input.current_address;
-  const line = address === null ? null : formatCurrentAddress({ houseNo: address.house_no, street: address.street });
-  return {
-    nickname: input.nickname,
-    code: input.code,
-    kind: input.kind,
-    kind_details: input.kind_details,
-    use_mode: input.use_mode,
-    legal_status: input.legal_status,
-    current_address:
-      address === null
-        ? null
-        : {
-            ...(address.house_no === null ? {} : { house_no: address.house_no }),
-            ...(address.street === null ? {} : { street: address.street }),
-            commune_code: address.commune_code,
-            province_code: address.province_code,
-            ...(line === null ? {} : { line }),
-          },
-    certificate_address_text: input.certificate_address_text,
-    acquired_on: input.acquired_on,
-    acquisition_kind: input.acquisition_kind,
-    acquisition_price_vnd: input.acquisition_price_vnd,
-    notes: input.notes,
-  };
-}
-
-async function parseInput(raw: unknown): Promise<PropertyInput | null> {
-  const parsed = propertyInputSchema.safeParse(raw);
-  if (!parsed.success) return null;
-  const address = parsed.data.current_address;
-  if (address !== null && !(await isCommuneOf(address.commune_code, address.province_code))) return null;
-  return parsed.data;
-}
-
-async function codeTaken(householdId: string, code: string): Promise<PropertyWrite> {
-  const supabase = await createSessionClient();
-  const { data } = await supabase.from('properties').select('nickname').eq('household_id', householdId).eq('code', code).maybeSingle();
-  return data === null ? { ok: false, reason: 'failed' } : { ok: false, reason: 'code_taken', code, takenBy: data.nickname };
+/** The form reads three outcomes; not found, forbidden and a conflict nobody could explain show as `failed`, as before. */
+function propertyWrite(result: Result<PropertySaved, CodeTaken | CommonRefusal>): PropertyWrite {
+  if (result.ok) return { ok: true, id: result.value.id, nickname: result.value.nickname };
+  if (result.reason.kind === 'code_taken') return { ok: false, reason: 'code_taken', code: result.reason.code, takenBy: result.reason.takenBy };
+  return { ok: false, reason: result.reason.kind === 'invalid' ? 'invalid' : 'failed' };
 }
 
 function revalidateProperty(propertyId: string) {
@@ -73,36 +35,15 @@ function revalidateProperty(propertyId: string) {
 }
 
 export async function createProperty(raw: unknown): Promise<PropertyWrite> {
-  const [member, input] = await Promise.all([requireMember(), parseInput(raw)]);
-  if (input === null) return { ok: false, reason: 'invalid' };
-  const supabase = await createSessionClient();
-  const { data, error } = await supabase
-    .from('properties')
-    .insert({ ...toRow(input), household_id: member.household.id })
-    .select('id, nickname')
-    .single();
-  if (error) return error.code === UNIQUE_VIOLATION ? codeTaken(member.household.id, input.code) : { ok: false, reason: 'failed' };
-  revalidatePath('/properties');
-  return { ok: true, id: data.id, nickname: data.nickname };
+  const result = await runOp(propertyCreate, await webOpContext(), { id: randomUUID(), property: raw });
+  if (result.ok) revalidatePath('/properties');
+  return propertyWrite(result);
 }
 
 export async function updateProperty(propertyId: unknown, raw: unknown): Promise<PropertyWrite> {
-  const parsedId = id.safeParse(propertyId);
-  const [member, input] = await Promise.all([requireMember(), parseInput(raw)]);
-  if (!parsedId.success || input === null) return { ok: false, reason: 'invalid' };
-  const supabase = await createSessionClient();
-  const { data, error } = await supabase
-    .from('properties')
-    .update(toRow(input))
-    .eq('household_id', member.household.id)
-    .eq('id', parsedId.data)
-    .is('deleted_at', null)
-    .select('id, nickname')
-    .maybeSingle();
-  if (error) return error.code === UNIQUE_VIOLATION ? codeTaken(member.household.id, input.code) : { ok: false, reason: 'failed' };
-  if (data === null) return { ok: false, reason: 'failed' };
-  revalidateProperty(data.id);
-  return { ok: true, id: data.id, nickname: data.nickname };
+  const result = await runOp(propertyEdit, await webOpContext(), { id: propertyId, set: raw });
+  if (result.ok) revalidateProperty(result.value.id);
+  return propertyWrite(result);
 }
 
 /** Archive and restore are soft delete (SPEC §5), so the property and its photo stay restorable. */
@@ -169,7 +110,7 @@ async function sweepPhotos(householdId: string, propertyId: string, anchor: stri
  * because the cover URL cache keys on the path (#77).
  */
 export async function requestCoverPhotoUpload(propertyId: unknown, type: unknown): Promise<UploadTicket> {
-  const parsedId = id.safeParse(propertyId);
+  const parsedId = idSchema.safeParse(propertyId);
   const extension = type === 'image/webp' ? 'webp' : type === 'image/jpeg' ? 'jpg' : null;
   if (!parsedId.success || extension === null) return { ok: false };
   const member = await requireMember();
@@ -182,7 +123,7 @@ export async function requestCoverPhotoUpload(propertyId: unknown, type: unknown
 
 /** Points the cover at an uploaded object, then, once the update has committed, removes the objects older than it. */
 export async function setCoverPhoto(propertyId: unknown, path: unknown): Promise<PhotoWrite> {
-  const parsedId = id.safeParse(propertyId);
+  const parsedId = idSchema.safeParse(propertyId);
   const parts = typeof path === 'string' ? parseCoverPhotoPath(path) : null;
   const member = await requireMember();
   if (!parsedId.success || parts === null || parts.householdId !== member.household.id || parts.propertyId !== parsedId.data) {
@@ -207,7 +148,7 @@ export async function setCoverPhoto(propertyId: unknown, path: unknown): Promise
 }
 
 export async function removeCoverPhoto(propertyId: unknown): Promise<PhotoWrite> {
-  const parsedId = id.safeParse(propertyId);
+  const parsedId = idSchema.safeParse(propertyId);
   if (!parsedId.success) return { ok: false };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const previous = await coverPath(member.household.id, parsedId.data);

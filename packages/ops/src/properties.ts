@@ -94,3 +94,15 @@ export async function readPropertyDetail(db: Db, householdId: string, id: string
   if (row.data === null || details.data === null) return null;
   return { ...propertyRowSchema.parse(row.data), kindDetails: kindDetailsSchema.parse(details.data).kind_details };
 }
+
+const FORM_COLUMNS =
+  'id, nickname, code, kind, kind_details, use_mode, legal_status, current_address, certificate_address_text, acquired_on, acquisition_kind, acquisition_price_vnd, notes, cover_photo_path';
+
+/** The columns the property form edits, as stored, for its edit page and for an edit's plan; `null` when archived or out of reach. */
+export async function readPropertyForm(db: Db, householdId: string, id: string) {
+  const { data, error } = await db.from('properties').select(FORM_COLUMNS).eq('household_id', householdId).eq('id', id).is('deleted_at', null).maybeSingle();
+  if (error) throw new Error(`Reading the property failed: ${error.message}`);
+  return data;
+}
+
+export type StoredProperty = NonNullable<Awaited<ReturnType<typeof readPropertyForm>>>;

@@ -61,7 +61,7 @@ const ACTION_HOOK: Home = {
   use: 'The shared action hook `useAction` in apps/web/src/components/use-action.ts, which issue #193 creates.',
   pending: { issue: 193, names: ['useAction'] },
 };
-const ACTION_KIT = { issue: 188, names: ['idSchema', 'optionalIdSchema', 'dbRefusal'] };
+const OPS_KIT = 'packages/ops/src/kit.ts';
 const WIZARD_HELPERS = 'e2e/helpers/wizard.ts';
 const UPLOAD_PRIMITIVES = ['sendPrepared', 'uploadWithProgress', 'createDocumentUpload', 'createSignedUploadUrl', 'uploadToSignedUrl'];
 
@@ -114,17 +114,23 @@ export const METRICS: readonly Metric[] = [
   syntax({
     id: 'local-id-schema',
     message: 'Server code declares its own `z.uuid()` id schema or parses an id ad hoc.',
-    home: { use: '`idSchema` and `optionalIdSchema` in apps/web/src/server/actions/kit.ts, which issue #188 creates.', pending: ACTION_KIT },
-    section: 'server-action-kit',
-    scope: without(WEB_SERVER, /^apps\/web\/src\/server\/actions\/kit\.ts$/),
+    home: {
+      use: '`idSchema` and `optionalIdSchema` in packages/ops/src/kit.ts, or an op in packages/ops.',
+      helpers: [
+        { name: 'idSchema', file: OPS_KIT },
+        { name: 'optionalIdSchema', file: OPS_KIT },
+      ],
+    },
+    section: 'server-writes-the-ops-layer',
+    scope: WEB_SERVER,
     find: localIdSchemas,
   }),
   syntax({
     id: 'sqlstate-literal',
     message: 'A database error code is compared with a Postgres SQLSTATE such as `23505` outside the one database-refusal helper.',
-    home: { use: '`dbRefusal(error, sentinels)` in apps/web/src/server/actions/kit.ts, which issue #188 creates.', pending: ACTION_KIT },
-    section: 'server-action-kit',
-    scope: without(PRODUCT_CODE, /^apps\/web\/src\/server\/actions\/kit\.ts$/),
+    home: { use: '`dbRefusal(error, sentinels)` in packages/ops/src/kit.ts, or an op in packages/ops.', helpers: [{ name: 'dbRefusal', file: OPS_KIT }] },
+    section: 'server-writes-the-ops-layer',
+    scope: without(PRODUCT_CODE, /^packages\/ops\/src\/kit\.ts$/),
     find: sqlstateReads,
   }),
   syntax({

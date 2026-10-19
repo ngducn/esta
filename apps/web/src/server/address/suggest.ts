@@ -1,5 +1,5 @@
 import 'server-only';
-import { suggestCurrentUnits as suggestUnits, type CurrentUnitSuggestion } from '@esta/ops';
+import { isCommuneOf as communeOf, suggestCurrentUnits as suggestUnits, type CurrentUnitSuggestion } from '@esta/ops';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
@@ -22,10 +22,7 @@ export async function listCommunes(provinceCode: string): Promise<AdminUnitOptio
 }
 
 export async function isCommuneOf(communeCode: string, provinceCode: string): Promise<boolean> {
-  const supabase = await createSessionClient();
-  const { data, error } = await supabase.from('admin_units').select('code').eq('code', communeCode).eq('parent_code', provinceCode).maybeSingle();
-  if (error) throw new Error(`Reading the ward failed: ${error.message}`);
-  return data !== null;
+  return communeOf(await createSessionClient(), communeCode, provinceCode);
 }
 
 /** PRP-4: the current units an address typed in the pre-2025 form maps to, best first. */

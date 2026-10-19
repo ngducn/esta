@@ -1,7 +1,6 @@
 import { formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { currentAddressText, KIND_FIELDS, searchTokens } from '@esta/core/properties';
-import { foldVietnamese } from '@esta/core/search';
 import type { Db } from './db';
 import { readPropertyDetail, searchProperties, type PropertyRow } from './properties';
 
@@ -43,16 +42,19 @@ export async function getProperty(ctx: ReadContext, id: string) {
 
 const MAX_CANDIDATES = 10;
 
-const FIELDS: readonly (readonly [string, (row: PropertyRow) => string | null])[] = [
-  ['nickname', (row) => row.nickname],
-  ['code', (row) => row.code],
-  ['current address', currentAddressText],
-  ['certificate address', (row) => row.certificateAddressText],
+/** The fields `property_list_rows.search_text` joins, in its order and with the full province name, folded as it folds them. */
+const FIELDS: readonly (readonly [string, (row: PropertyRow) => readonly (string | null)[]])[] = [
+  ['nickname', (row) => [row.nickname]],
+  ['code', (row) => [row.code]],
+  ['current address', (row) => [row.addressLine, row.communeName, row.provinceName]],
+  ['certificate address', (row) => [row.certificateAddressText]],
 ];
 const LEGACY_NAMES = 'old ward, district or province name';
 
+const searchedText = (parts: readonly (string | null)[]) => searchTokens(parts.filter((part) => part !== null).join(' ')).join(' ');
+
 function reasonsFor(row: PropertyRow, tokens: readonly string[]): string[] {
-  const field = (token: string) => FIELDS.find(([, read]) => foldVietnamese(read(row) ?? '').includes(token))?.[0] ?? LEGACY_NAMES;
+  const field = (token: string) => FIELDS.find(([, read]) => searchedText(read(row)).includes(token))?.[0] ?? LEGACY_NAMES;
   return [...new Set(tokens.map(field))];
 }
 

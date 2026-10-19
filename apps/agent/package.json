@@ -13,6 +13,7 @@
     "@anthropic-ai/sdk": "^0.131.0",
     "@esta/core": "workspace:*",
     "@esta/db": "workspace:*",
+    "@esta/ops": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@supabase/supabase-js": "^2.117.2",
     "zod": "^4.6.5"

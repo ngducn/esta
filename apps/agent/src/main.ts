@@ -4,7 +4,7 @@ import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import agentPackage from '../package.json' with { type: 'json' };
-import { readClock } from './clock';
+import { readClock } from '@esta/ops';
 import { assertStartAllowed, parseAgentEnv } from './env';
 import { startHeartbeat } from './heartbeat';
 import { DEFAULT_REPLAY_DIR } from './replay/store';
