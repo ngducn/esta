@@ -3,9 +3,10 @@ import type { Metric } from './metrics.ts';
 import type { Occurrence } from './measure.ts';
 
 const countsSchema = z.record(z.string(), z.number().int().nonnegative());
+const raiseSchema = z.strictObject({ metric: z.string(), from: z.number().int(), to: z.number().int(), reason: z.string().min(1) });
 export const baselineSchema = z.strictObject({
   metrics: z.record(z.string(), z.strictObject({ value: z.number().int().nonnegative(), files: countsSchema })),
-  raises: z.array(z.strictObject({ metric: z.string(), from: z.number().int(), to: z.number().int(), reason: z.string().min(1) })),
+  raises: z.array(raiseSchema),
 });
 export type Baseline = z.infer<typeof baselineSchema>;
 
@@ -16,7 +17,8 @@ export type Verdict =
   | { readonly kind: 'rose'; readonly reading: Reading; readonly from: number; readonly to: number; readonly suspects: readonly Occurrence[] }
   | { readonly kind: 'fell'; readonly reading: Reading; readonly from: number; readonly to: number }
   | { readonly kind: 'over-cap'; readonly reading: Reading; readonly cap: number; readonly to: number }
-  | { readonly kind: 'new'; readonly reading: Reading; readonly to: number }
+  | { readonly kind: 'missing'; readonly reading: Reading; readonly to: number }
+  | { readonly kind: 'unrecorded-raise'; readonly reading: Reading; readonly recorded: number; readonly main: number }
   | { readonly kind: 'retired'; readonly id: string; readonly from: number };
 
 const valueOf = (occurrences: readonly Occurrence[]) => occurrences.reduce((sum, occurrence) => sum + occurrence.weight, 0);
@@ -34,13 +36,25 @@ function suspects(occurrences: readonly Occurrence[], before: Record<string, num
   return occurrences.filter((occurrence) => grown.has(occurrence.file));
 }
 
-export function judge(baseline: Baseline, readings: readonly Reading[]): Verdict[] {
+/**
+ * The most the baseline may hold for a metric without a new reason: main's count (zero for a metric main does not
+ * measure yet), or the highest raise this branch recorded. With no baseline anywhere, the first --update records today's counts.
+ */
+function allowance(id: string, baseline: Baseline, main: Baseline | undefined): number {
+  if (main === undefined) return Number.POSITIVE_INFINITY;
+  const onMain = new Set(main.raises.map((raise) => JSON.stringify(raise)));
+  const raisedHere = baseline.raises.filter((raise) => raise.metric === id && !onMain.has(JSON.stringify(raise))).map((raise) => raise.to);
+  return Math.max(main.metrics[id]?.value ?? 0, ...raisedHere);
+}
+
+export function judge(baseline: Baseline, main: Baseline | undefined, readings: readonly Reading[]): Verdict[] {
   const verdicts = readings.map((reading): Verdict => {
+    const { id, cap } = reading.metric;
     const to = valueOf(reading.occurrences);
-    const { cap } = reading.metric;
     if (cap !== undefined && to > cap) return { kind: 'over-cap', reading, cap, to };
-    const before = baseline.metrics[reading.metric.id];
-    if (before === undefined) return { kind: 'new', reading, to };
+    const before = baseline.metrics[id];
+    if (before === undefined) return { kind: 'missing', reading, to };
+    if (before.value > allowance(id, baseline, main)) return { kind: 'unrecorded-raise', reading, recorded: before.value, main: main?.metrics[id]?.value ?? 0 };
     if (to > before.value) return { kind: 'rose', reading, from: before.value, to, suspects: suspects(reading.occurrences, before.files) };
     if (to < before.value) return { kind: 'fell', reading, from: before.value, to };
     return { kind: 'held', reading, to };
@@ -56,17 +70,19 @@ export const passes = (verdicts: readonly Verdict[]) => verdicts.every((verdict)
 
 export type Rebased = { readonly baseline: Baseline } | { readonly refused: readonly Verdict[] };
 
-export function rebase(baseline: Baseline, verdicts: readonly Verdict[], allowRaise: string | undefined): Rebased {
-  const refused = verdicts.filter((verdict) => verdict.kind === 'over-cap' || (verdict.kind === 'rose' && allowRaise === undefined));
+/** Rewrites the baseline from today's counts. A count above what main allows needs `allowRaise`, and its reason is recorded. */
+export function rebase(baseline: Baseline, main: Baseline | undefined, readings: readonly Reading[], allowRaise: string | undefined): Rebased {
+  const raised = readings.flatMap((reading): Verdict[] => {
+    const { id, cap } = reading.metric;
+    const to = valueOf(reading.occurrences);
+    if (cap !== undefined && to > cap) return [{ kind: 'over-cap', reading, cap, to }];
+    const from = allowance(id, baseline, main);
+    return to > from ? [{ kind: 'rose', reading, from, to, suspects: suspects(reading.occurrences, baseline.metrics[id]?.files ?? {}) }] : [];
+  });
+  const refused = raised.filter((verdict) => verdict.kind === 'over-cap' || allowRaise === undefined);
   if (refused.length > 0) return { refused };
-  const metrics: Baseline['metrics'] = {};
-  for (const verdict of verdicts) {
-    if (verdict.kind === 'retired' || verdict.kind === 'over-cap') continue;
-    metrics[verdict.reading.metric.id] = { value: verdict.to, files: perFile(verdict.reading.occurrences) };
-  }
-  const raises = verdicts.flatMap((verdict) =>
-    verdict.kind === 'rose' && allowRaise !== undefined ? [{ metric: verdict.reading.metric.id, from: verdict.from, to: verdict.to, reason: allowRaise }] : [],
-  );
+  const metrics = Object.fromEntries(readings.map((reading) => [reading.metric.id, { value: valueOf(reading.occurrences), files: perFile(reading.occurrences) }]));
+  const raises = raised.flatMap((verdict) => (verdict.kind === 'rose' && allowRaise !== undefined ? [{ metric: verdict.reading.metric.id, from: verdict.from, to: verdict.to, reason: allowRaise }] : []));
   return { baseline: { metrics, raises: [...baseline.raises, ...raises] } };
 }
 
@@ -79,8 +95,12 @@ function listing(occurrences: readonly Occurrence[]): string[] {
   return occurrences.length > SHOWN ? [...shown, `      and ${occurrences.length - SHOWN} more`] : shown;
 }
 
-function advice(metric: Metric): string[] {
-  return [`    ${metric.message}`, `    Use instead: ${metric.home}`, `    See ARCHITECTURE.md#${metric.section}`];
+function advice({ message, home, section }: Metric): string[] {
+  const raise =
+    home.pending === undefined
+      ? []
+      : [`    Until issue #${home.pending.issue} lands, a change that needs this records a raise for the root to countersign: pnpm quality --update --allow-raise "<why> (until #${home.pending.issue})"`];
+  return [`    ${message}`, `    Use instead: ${home.use}`, ...raise, `    See ARCHITECTURE.md#${section}`];
 }
 
 export function report(verdicts: readonly Verdict[]): string[] {
@@ -99,8 +119,12 @@ export function report(verdicts: readonly Verdict[]): string[] {
         return [`FAIL ${verdict.reading.metric.id} is ${verdict.to}; the cap is ${verdict.cap}.`, ...advice(verdict.reading.metric), ...listing(verdict.reading.occurrences)];
       case 'fell':
         return [`FAIL ${verdict.reading.metric.id} fell from ${verdict.from} to ${verdict.to}. Lock in the gain: pnpm quality --update`];
-      case 'new':
-        return [`FAIL ${verdict.reading.metric.id} has no baseline yet (${verdict.to} now). Record it: pnpm quality --update`];
+      case 'missing':
+        return [`FAIL ${verdict.reading.metric.id} is missing from quality/baseline.json. Restore it with pnpm quality --update; a count above main's needs --allow-raise "<reason>".`];
+      case 'unrecorded-raise':
+        return [
+          `FAIL ${verdict.reading.metric.id} is ${verdict.recorded} in quality/baseline.json, above ${verdict.main} on main, with no raise recorded. Restore main's count, or record why: pnpm quality --update --allow-raise "<reason>"`,
+        ];
       case 'retired':
         return [`FAIL ${verdict.id} is in the baseline but no longer measured. Drop it: pnpm quality --update`];
     }

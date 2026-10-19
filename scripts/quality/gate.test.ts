@@ -2,10 +2,12 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BASELINE, run } from './main.ts';
 import { METRICS } from './metrics.ts';
 import { baselineSchema } from './ratchet.ts';
+import { exportedNames } from './syntax.ts';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 
@@ -123,6 +125,75 @@ describe('pnpm quality', () => {
   });
 });
 
+describe('the baseline against main', () => {
+  const git = (...args: string[]) => {
+    const result = spawnSync('git', ['-c', 'user.name=Demo', '-c', 'user.email=demo@example.test', ...args], { cwd: root, encoding: 'utf8' });
+    expect(result.status, result.stderr).toBe(0);
+  };
+  const publish = () => {
+    git('add', '-A');
+    git('commit', '-qm', 'main');
+    git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  };
+  const DOUBLED = 'export const value = (input: string) => input as unknown as number;\n';
+  const editBaseline = (edit: (metrics: Record<string, { value: number; files: Record<string, number> }>) => void) => {
+    const current = baseline();
+    edit(current.metrics);
+    writeFileSync(join(root, BASELINE), `${JSON.stringify(current, null, 2)}\n`);
+  };
+
+  beforeEach(() => {
+    write('apps/web/src/server/doubled.ts', DOUBLED);
+    expect(run(root, { update: true, allowRaise: 'test setup' }).ok).toBe(true);
+    publish();
+  });
+
+  it('fails a count raised by hand in the baseline file', () => {
+    write('apps/web/src/server/doubled-again.ts', DOUBLED);
+    editBaseline((metrics) => {
+      metrics['double-cast'] = { value: 2, files: { 'apps/web/src/server/doubled-again.ts': 1, 'apps/web/src/server/doubled.ts': 1 } };
+    });
+    const outcome = check();
+    expect(outcome.ok).toBe(false);
+    expect(outcome.lines.join('\n')).toContain('FAIL double-cast is 2 in quality/baseline.json, above 1 on main, with no raise recorded.');
+  });
+
+  it('fails a metric deleted from the baseline, and --update restores it only up to main', () => {
+    editBaseline((metrics) => {
+      delete metrics['double-cast'];
+    });
+    write('apps/web/src/server/doubled-again.ts', DOUBLED);
+    expect(check().lines.join('\n')).toContain('FAIL double-cast is missing from quality/baseline.json.');
+    const before = baselineText();
+    const refused = run(root, { update: true });
+    expect(refused.ok).toBe(false);
+    expect(refused.lines.join('\n')).toContain('FAIL double-cast rose from 1 to 2.');
+    expect(baselineText()).toBe(before);
+    rmSync(join(root, 'apps/web/src/server/doubled-again.ts'));
+    expect(run(root, { update: true }).ok).toBe(true);
+    expect(baseline().metrics['double-cast']?.value).toBe(1);
+    expect(check().ok).toBe(true);
+  });
+
+  it('keeps a raise recorded on this branch, with its reason, above main', () => {
+    write('apps/web/src/server/doubled-again.ts', DOUBLED);
+    expect(run(root, { update: true, allowRaise: 'the SDK types the usage field as never until it ships types' }).ok).toBe(true);
+    expect(check().ok).toBe(true);
+    expect(baseline().raises.at(-1)).toEqual({ metric: 'double-cast', from: 1, to: 2, reason: 'the SDK types the usage field as never until it ships types' });
+  });
+
+  it('judges a branch against the main it forked from, so a later gain on main does not fail it', () => {
+    git('checkout', '-qb', 'feature');
+    git('checkout', '-q', 'origin/main');
+    git('checkout', '-qB', 'later-main');
+    rmSync(join(root, 'apps/web/src/server/doubled.ts'));
+    expect(run(root, { update: true }).ok).toBe(true);
+    publish();
+    git('checkout', '-q', 'feature');
+    expect(check().ok).toBe(true);
+  });
+});
+
 const anchor = (heading: string) =>
   heading
     .toLowerCase()
@@ -135,6 +206,21 @@ describe('the registry', () => {
     const anchors = new Set([...architecture.matchAll(/^#{2,3} (.+)$/gm)].map(([, heading]) => anchor(heading ?? '')));
     expect(new Set(METRICS.map(({ id }) => id)).size).toBe(METRICS.length);
     expect(METRICS.filter(({ section }) => !anchors.has(section)).map(({ id, section }) => `${id} -> #${section}`)).toEqual([]);
+  });
+
+  it('points each "Use instead" at a helper that exists and is exported, or at the issue that creates it', () => {
+    const exports = (file: string) => {
+      const source = ts.createSourceFile(file, readFileSync(join(repoRoot, file), 'utf8'), ts.ScriptTarget.Latest, true);
+      return new Set(exportedNames(source).map(({ name }) => name));
+    };
+    const problems = METRICS.flatMap(({ id, home }) => {
+      const helpers = home.helpers ?? [];
+      const known = new Set([...helpers.map(({ name }) => name), ...(home.pending?.names ?? [])]);
+      const unknown = [...home.use.matchAll(/`([A-Za-z_$][\w$]*)/g)].map(([, name]) => name ?? '').filter((name) => !known.has(name));
+      const missing = helpers.filter(({ name, file }) => !exports(file).has(name)).map(({ name, file }) => `${name} in ${file}`);
+      return [...unknown.map((name) => `${id} names \`${name}\`, which is neither a listed helper nor pending`), ...missing.map((helper) => `${id}: ${helper} is not exported`)];
+    });
+    expect(problems).toEqual([]);
   });
 
   it('holds the repository to its committed baseline', () => {

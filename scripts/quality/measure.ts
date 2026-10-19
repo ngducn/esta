@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { basename, join, relative } from 'node:path';
 import ts from 'typescript';
 import { z } from 'zod';
+import { exportedNames } from './syntax.ts';
 
 export type SourceFile = { readonly path: string; readonly text: string };
 export type Corpus = { readonly files: readonly SourceFile[] };
@@ -19,7 +20,8 @@ const isSource = (path: string) =>
   SOURCE_FILE.test(path) && !path.split('/').some((part) => SKIPPED_FOLDERS.includes(part)) && !GENERATED_FILES.includes(basename(path));
 const NOT_SOURCE_GLOBS = [...SKIPPED_FOLDERS.map((folder) => `**/${folder}/**`), ...GENERATED_FILES.map((file) => `**/${file}`)].join(',');
 
-export const TEST_FILE = /\.(test|spec|bench)\.[cm]?[jt]sx?$|(^|\/)(test|helpers)\//;
+/** Only real test locations: a `*.test.*`, `*.spec.*` or `*.bench.*` file, a `__tests__` folder, or the e2e tree. A product folder named `test` or `helpers` is product code. */
+export const TEST_FILE = /\.(test|spec|bench)\.[cm]?[jt]sx?$|(^|\/)__tests__\/|^e2e\//;
 export const DEV_ROUTES = /^apps\/web\/src\/app\/dev\//;
 
 const inScope = (scope: Scope, path: string) => scope.include.test(path) && !(scope.exclude?.test(path) ?? false);
@@ -41,16 +43,6 @@ export function readCorpus(root: string): Corpus {
 
 const lineCount = (text: string) => (text.endsWith('\n') ? text.split('\n').length - 1 : text.split('\n').length);
 
-export function matchLines(corpus: Corpus, scope: Scope, pattern: RegExp): Occurrence[] {
-  return corpus.files
-    .filter((file) => inScope(scope, file.path))
-    .flatMap((file) =>
-      file.text.split('\n').flatMap((text, index) =>
-        [...text.matchAll(pattern)].map(() => ({ file: file.path, line: index + 1, text: text.trim(), weight: 1 })),
-      ),
-    );
-}
-
 export function filesOver(corpus: Corpus, scope: Scope, limit: number): Occurrence[] {
   return corpus.files
     .filter((file) => inScope(scope, file.path))
@@ -59,102 +51,45 @@ export function filesOver(corpus: Corpus, scope: Scope, limit: number): Occurren
     .map(({ file, lines }) => ({ file, line: lines, text: `${lines} lines`, weight: 1 }));
 }
 
+const parsed = new WeakMap<SourceFile, ts.SourceFile>();
+
+/** Parses each file once; every syntax metric shares the tree. */
 function parse(file: SourceFile): ts.SourceFile {
-  return ts.createSourceFile(file.path, file.text, ts.ScriptTarget.Latest, true, file.path.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const cached = parsed.get(file);
+  if (cached !== undefined) return cached;
+  const source = ts.createSourceFile(file.path, file.text, ts.ScriptTarget.Latest, true, file.path.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  parsed.set(file, source);
+  return source;
 }
 
-function at(source: ts.SourceFile, node: ts.Node, weight = 1): Occurrence {
-  const { line } = source.getLineAndCharacterOfPosition(node.getStart(source));
-  return { file: source.fileName, line: line + 1, text: (source.text.split('\n')[line] ?? '').trim(), weight };
+function at(source: ts.SourceFile, position: number): Occurrence {
+  const { line } = source.getLineAndCharacterOfPosition(position);
+  const starts = source.getLineStarts();
+  return { file: source.fileName, line: line + 1, text: source.text.slice(starts[line], starts[line + 1]).trim(), weight: 1 };
 }
 
-function walk(node: ts.Node, visit: (node: ts.Node) => void) {
-  visit(node);
-  ts.forEachChild(node, (child) => walk(child, visit));
-}
-
-const isOkFalse = (member: ts.TypeNode) =>
-  ts.isTypeLiteralNode(member) &&
-  member.members.some(
-    (property) =>
-      ts.isPropertySignature(property) &&
-      property.name.getText() === 'ok' &&
-      property.type !== undefined &&
-      ts.isLiteralTypeNode(property.type) &&
-      property.type.literal.kind === ts.SyntaxKind.FalseKeyword,
-  );
-
-export function okFalseUnions(corpus: Corpus, scope: Scope): Occurrence[] {
+export function matchPositions(corpus: Corpus, scope: Scope, find: (source: ts.SourceFile) => readonly number[]): Occurrence[] {
   return corpus.files
     .filter((file) => inScope(scope, file.path))
     .flatMap((file) => {
       const source = parse(file);
-      const found: Occurrence[] = [];
-      walk(source, (node) => {
-        if (ts.isUnionTypeNode(node) && node.types.some(isOkFalse)) found.push(at(source, node));
-      });
-      return found;
+      return find(source)
+        .toSorted((a, b) => a - b)
+        .map((position) => at(source, position));
     });
 }
 
-const isExported = (node: ts.Node) =>
-  ts.canHaveModifiers(node) && (ts.getModifiers(node) ?? []).some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
-
-type Exported = { name: string; node: ts.Node };
-
-function importedNames(source: ts.SourceFile): Set<string> {
-  const names = new Set<string>();
-  for (const statement of source.statements) {
-    const clause = ts.isImportDeclaration(statement) ? statement.importClause : undefined;
-    if (clause?.name !== undefined) names.add(clause.name.text);
-    const bindings = clause?.namedBindings;
-    if (bindings !== undefined && ts.isNamedImports(bindings)) for (const element of bindings.elements) names.add(element.name.text);
-    if (bindings !== undefined && ts.isNamespaceImport(bindings)) names.add(bindings.name.text);
-  }
-  return names;
-}
-
-function exportedNames(source: ts.SourceFile): Exported[] {
-  const imported = importedNames(source);
-  return source.statements.flatMap((statement): Exported[] => {
-    if (ts.isExportDeclaration(statement)) {
-      if (statement.moduleSpecifier !== undefined || statement.exportClause === undefined || !ts.isNamedExports(statement.exportClause)) return [];
-      return statement.exportClause.elements
-        .filter((element) => !imported.has((element.propertyName ?? element.name).getText(source)))
-        .map((element) => ({ name: element.name.text, node: element }));
-    }
-    if (!isExported(statement)) return [];
-    if (ts.isVariableStatement(statement)) {
-      return statement.declarationList.declarations.flatMap((declaration) =>
-        ts.isIdentifier(declaration.name) ? [{ name: declaration.name.text, node: declaration }] : [],
-      );
-    }
-    const declared =
-      ts.isFunctionDeclaration(statement) ||
-      ts.isClassDeclaration(statement) ||
-      ts.isInterfaceDeclaration(statement) ||
-      ts.isTypeAliasDeclaration(statement) ||
-      ts.isEnumDeclaration(statement)
-        ? statement.name
-        : undefined;
-    return declared === undefined ? [] : [{ name: declared.text, node: statement }];
-  });
-}
-
-/** Re-exports, including `export { name }` of an imported name, are not second declarations. */
+/** One occurrence for each module past the first that declares and exports a name; the first in path order is its home. */
 export function duplicateExports(corpus: Corpus, scope: Scope): Occurrence[] {
   const homes = new Map<string, { source: ts.SourceFile; node: ts.Node }[]>();
   for (const file of corpus.files.filter((candidate) => inScope(scope, candidate.path))) {
     const source = parse(file);
-    for (const { name, node } of exportedNames(source)) homes.set(name, [...(homes.get(name) ?? []), { source, node }]);
+    const declared = new Map(exportedNames(source).map(({ name, node }) => [name, node]));
+    for (const [name, node] of declared) homes.set(name, [...(homes.get(name) ?? []), { source, node }]);
   }
-  return [...homes.entries()]
-    .filter(([, places]) => new Set(places.map(({ source }) => source.fileName)).size > 1)
-    .map(([name, [first, ...others]]) => {
-      if (first === undefined) throw new Error(`no home for ${name}`);
-      const elsewhere = [...new Set(others.map(({ source }) => source.fileName))].join(', ');
-      return { ...at(first.source, first.node), text: `${name} is also exported from ${elsewhere}` };
-    });
+  return [...homes.entries()].flatMap(([name, [home, ...copies]]) =>
+    home === undefined ? [] : copies.map(({ source, node }) => ({ ...at(source, node.getStart(source)), text: `${name} is also exported from ${home.source.fileName}` })),
+  );
 }
 
 const cloneSideSchema = z.object({ name: z.string(), start: z.number(), end: z.number() });

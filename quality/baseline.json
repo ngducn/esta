@@ -137,8 +137,43 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 21,
+      "value": 31,
       "files": {
+        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
+        "apps/web/src/components/documents/document-page.tsx": 1,
+        "apps/web/src/components/extraction/review-panel.tsx": 2,
+        "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
+        "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
+        "apps/web/src/components/leases/LeaseForm.tsx": 1,
+        "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
+        "apps/web/src/components/leases/TenantQuickAdd.tsx": 1,
+        "apps/web/src/components/leases/TerminateLeaseDialog.tsx": 1,
+        "apps/web/src/components/legal/legal-form-shell.tsx": 1,
+        "apps/web/src/components/legal/legal-item-actions.tsx": 1,
+        "apps/web/src/components/legal/ownership-form.tsx": 1,
+        "apps/web/src/components/map/paste-maps-link.tsx": 1,
+        "apps/web/src/components/map/properties-map.tsx": 4,
+        "apps/web/src/components/payments/RecordPaymentSheet.tsx": 1,
+        "apps/web/src/components/properties/archive-button.tsx": 1,
+        "apps/web/src/components/properties/cover-photo-input.tsx": 2,
+        "apps/web/src/components/properties/property-form.tsx": 1,
+        "apps/web/src/components/property-wizard/address-confirm.tsx": 1,
+        "apps/web/src/components/property-wizard/step-use.tsx": 1,
+        "apps/web/src/components/rental/account-actions.tsx": 1,
+        "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
+        "apps/web/src/components/rental/unit-list.tsx": 2,
+        "apps/web/src/components/rental/unit-sheet.tsx": 1,
+        "apps/web/src/components/rental/utility-account-form.tsx": 1
+      }
+    },
+    "action-failure-mapping": {
+      "value": 26,
+      "files": {
+        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
+        "apps/web/src/components/documents/document-page.tsx": 1,
+        "apps/web/src/components/documents/upload-sheet.tsx": 1,
+        "apps/web/src/components/documents/vault-search.tsx": 1,
+        "apps/web/src/components/extraction/review-panel.tsx": 1,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
         "apps/web/src/components/leases/LeaseForm.tsx": 1,
@@ -149,31 +184,6 @@
         "apps/web/src/components/legal/legal-item-actions.tsx": 1,
         "apps/web/src/components/legal/ownership-form.tsx": 1,
         "apps/web/src/components/payments/RecordPaymentSheet.tsx": 1,
-        "apps/web/src/components/properties/archive-button.tsx": 1,
-        "apps/web/src/components/properties/cover-photo-input.tsx": 2,
-        "apps/web/src/components/properties/property-form.tsx": 1,
-        "apps/web/src/components/property-wizard/step-use.tsx": 1,
-        "apps/web/src/components/rental/account-actions.tsx": 1,
-        "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
-        "apps/web/src/components/rental/unit-list.tsx": 2,
-        "apps/web/src/components/rental/unit-sheet.tsx": 1,
-        "apps/web/src/components/rental/utility-account-form.tsx": 1
-      }
-    },
-    "action-failure-mapping": {
-      "value": 22,
-      "files": {
-        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
-        "apps/web/src/components/documents/document-page.tsx": 1,
-        "apps/web/src/components/documents/upload-sheet.tsx": 1,
-        "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
-        "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/LeaseForm.tsx": 1,
-        "apps/web/src/components/leases/TenantQuickAdd.tsx": 1,
-        "apps/web/src/components/leases/TerminateLeaseDialog.tsx": 1,
-        "apps/web/src/components/legal/legal-form-shell.tsx": 1,
-        "apps/web/src/components/legal/legal-item-actions.tsx": 1,
-        "apps/web/src/components/legal/ownership-form.tsx": 1,
         "apps/web/src/components/properties/archive-button.tsx": 1,
         "apps/web/src/components/properties/cover-photo-input.tsx": 1,
         "apps/web/src/components/property-wizard/step-photo.tsx": 2,
@@ -253,8 +263,10 @@
       }
     },
     "hand-rolled-lazy-sheet": {
-      "value": 6,
+      "value": 8,
       "files": {
+        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
+        "apps/web/src/components/documents/upload-sheet.tsx": 1,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
         "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
@@ -282,10 +294,12 @@
       }
     },
     "upload-pipeline": {
-      "value": 2,
+      "value": 6,
       "files": {
-        "apps/web/src/components/documents/upload-sheet.tsx": 1,
-        "apps/web/src/components/property-wizard/step-photo.tsx": 1
+        "apps/web/src/app/(app)/properties/actions.ts": 1,
+        "apps/web/src/components/documents/upload-sheet.tsx": 2,
+        "apps/web/src/components/properties/cover-photo-input.tsx": 1,
+        "apps/web/src/components/property-wizard/step-photo.tsx": 2
       }
     },
     "decimal-parser-outside-parse": {
@@ -298,24 +312,25 @@
       }
     },
     "hand-rolled-iso-date-schema": {
-      "value": 7,
+      "value": 8,
       "files": {
         "apps/web/src/server/documents/actions.ts": 2,
         "apps/web/src/server/properties/list.ts": 1,
         "apps/web/src/server/properties/rental.ts": 1,
+        "packages/core/src/agent-schemas/certificate_v1.ts": 1,
         "packages/core/src/schemas/ownership.ts": 1,
         "packages/core/src/schemas/property.ts": 1,
         "packages/core/src/tax/rules.ts": 1
       }
     },
     "ad-hoc-result-type": {
-      "value": 36,
+      "value": 41,
       "files": {
         "apps/agent/src/sdk/result.ts": 1,
         "apps/agent/src/tools/save-extraction.ts": 1,
-        "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 3,
+        "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 4,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 3,
-        "apps/web/src/app/(app)/properties/actions.ts": 3,
+        "apps/web/src/app/(app)/properties/actions.ts": 4,
         "apps/web/src/app/(app)/properties/location-actions.ts": 1,
         "apps/web/src/components/extraction/review-panel.tsx": 1,
         "apps/web/src/components/leases/lease-form-values.ts": 2,
@@ -326,9 +341,10 @@
         "apps/web/src/server/actions/payments.ts": 1,
         "apps/web/src/server/documents/actions.ts": 3,
         "apps/web/src/server/documents/search.ts": 1,
-        "apps/web/src/server/extraction/actions.ts": 1,
+        "apps/web/src/server/extraction/actions.ts": 2,
         "apps/web/src/server/maps/actions.ts": 1,
-        "apps/web/src/server/properties/wizard.ts": 2,
+        "apps/web/src/server/properties/wizard.ts": 3,
+        "packages/core/src/allocation/deposits.ts": 1,
         "packages/core/src/extraction/acceptance.ts": 1,
         "packages/core/src/extraction/fields.ts": 1,
         "packages/core/src/vietqr/decode.ts": 2,
@@ -338,16 +354,17 @@
     "duplicate-core-export": {
       "value": 10,
       "files": {
-        "packages/core/src/agent-schemas/certificate_v1.ts": 7,
-        "packages/core/src/date/iso-date.ts": 1,
-        "packages/core/src/lease/types.ts": 1,
-        "packages/core/src/schemas/ownership.ts": 1
+        "packages/core/src/schedule/dates.ts": 1,
+        "packages/core/src/schemas/legal.ts": 7,
+        "packages/core/src/tax/attribute.ts": 2
       }
     },
     "double-cast": {
-      "value": 7,
+      "value": 9,
       "files": {
         "apps/agent/src/sdk/result.ts": 3,
+        "apps/agent/src/test/fake-db.ts": 1,
+        "apps/agent/test/extract-job.ts": 1,
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 1,
         "apps/web/src/components/extraction/document-pager.tsx": 1,
         "packages/core/src/maps/polygon.ts": 1,
@@ -428,7 +445,7 @@
       }
     },
     "e2e-viewport-in-spec": {
-      "value": 28,
+      "value": 31,
       "files": {
         "e2e/collections.spec.ts": 2,
         "e2e/documents-extract.spec.ts": 2,
@@ -438,25 +455,27 @@
         "e2e/extraction-review.spec.ts": 2,
         "e2e/lease-detail.spec.ts": 2,
         "e2e/leases.spec.ts": 2,
+        "e2e/prod/sign-in-photo.spec.ts": 1,
+        "e2e/properties-map.spec.ts": 1,
         "e2e/property-completeness.spec.ts": 2,
         "e2e/property-detail.spec.ts": 2,
         "e2e/property-legal.spec.ts": 2,
         "e2e/property-owners.spec.ts": 2,
         "e2e/property-units.spec.ts": 2,
-        "e2e/record-payment.spec.ts": 2
+        "e2e/record-payment.spec.ts": 2,
+        "e2e/shell.spec.ts": 1
       }
     },
     "e2e-sideways-scroll-in-spec": {
-      "value": 26,
+      "value": 23,
       "files": {
         "e2e/assistant-status.spec.ts": 1,
         "e2e/auth.spec.ts": 1,
         "e2e/collections.spec.ts": 1,
         "e2e/documents-extract.spec.ts": 2,
-        "e2e/documents-multipage.spec.ts": 1,
         "e2e/documents-upload.spec.ts": 1,
         "e2e/documents-vault.spec.ts": 1,
-        "e2e/extraction-review.spec.ts": 3,
+        "e2e/extraction-review.spec.ts": 2,
         "e2e/fnd9-integration.spec.ts": 1,
         "e2e/lease-detail.spec.ts": 1,
         "e2e/leases.spec.ts": 1,
@@ -466,9 +485,9 @@
         "e2e/property-detail.spec.ts": 2,
         "e2e/property-form.spec.ts": 1,
         "e2e/property-legal.spec.ts": 1,
-        "e2e/property-owners.spec.ts": 3,
+        "e2e/property-owners.spec.ts": 2,
         "e2e/property-units.spec.ts": 1,
-        "e2e/record-payment.spec.ts": 1
+        "e2e/shell.spec.ts": 1
       }
     }
   },
