@@ -73,7 +73,7 @@ test('rule 1: on Nhà phố Q7 Mẹ types 2tr5, picks Sửa chữa and saves; th
   const before = await liveExpenses(page, 1);
   await page.goto(`/properties/${q7(1)}`);
   await holdForRecording(page);
-  await page.getByTestId('property-header').getByTestId('add-expense').click();
+  await page.getByTestId('add-expense').click();
   await expect(sheet(page).getByRole('heading', { name: 'Thêm chi phí' })).toBeVisible();
   await typeAmount(page, '2tr5');
   await expect(sheet(page).getByTestId('money-preview')).toHaveText(vnd('2.500.000'));
@@ -328,7 +328,7 @@ test('rule 10: in English at 130% and dark, Phòng 5 is 12 days overdue and the 
     await page.goto('/collections');
     await expect(page.getByTestId('collections-row').filter({ hasText: 'Phòng 5, Dãy trọ Dĩ An' }).locator('[data-status="overdue"]')).toHaveText('12 days overdue');
     await page.goto(`/properties/${q7(10)}`);
-    await page.getByTestId('property-header').getByTestId('add-expense').click();
+    await page.getByTestId('add-expense').click();
     await expect(sheet(page).getByRole('heading', { name: 'Add expense' })).toBeVisible();
     await typeAmount(page, '2tr5');
     await pick(page, 'Repair');
@@ -373,8 +373,8 @@ test('screens: Thu chi, the sheet and the empty year at 390 and 1440, light and 
       await page.context().clearCookies();
       await open(page, 'me.lane1@demo.esta.test', theme, viewport);
       await page.goto(`/properties/${q7(1)}`);
-      await expect(page.getByTestId('property-header').getByTestId('add-expense')).toBeEnabled();
-      await shot(page, `header-${size}-${theme}`, page.getByTestId('property-header').getByTestId('add-expense'));
+      await expect(page.getByTestId('add-expense')).toBeEnabled();
+      await shot(page, `actions-${size}-${theme}`, page.getByTestId('add-expense'));
       await page.goto(`/properties/${q7(1)}/finance`);
       await expect(page.getByTestId('expense-section').getByTestId('add-expense')).toBeEnabled();
       await shot(page, `thu-chi-${size}-${theme}`, page.getByTestId('expense-section'));

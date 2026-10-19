@@ -38,7 +38,7 @@ export default async function PropertyFinancePage({
   const labels = { add: t('add'), photo: t('photo') };
 
   return (
-    <PropertyDetailFrame property={property} tab="finance" headerActions={false}>
+    <PropertyDetailFrame property={property} tab="finance" expenseActions={false}>
       <section aria-labelledby="expenses-title" data-testid="expense-section" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="flex min-w-0 flex-col gap-1">

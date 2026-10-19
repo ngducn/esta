@@ -22,17 +22,18 @@ import { signCoverPhotos } from '@/server/properties/photos';
  * Each tab renders the header rather than the layout, because Next scrolls a navigation to the first element of the
  * new page: from a scrolled list, or at 130% text, that element must be the photo, not the tab content below it. The
  * frame holds the screen's one toast and, for a member, its one expense sheet, so every tab's islands share them.
- * `headerActions` is false on a tab whose own section offers the expense actions, so the screen shows them once.
+ * The expense actions sit under the tab bar, not in the header: on a phone the header already fills the first screen,
+ * and the tabs must stay above the bottom bar. `expenseActions` is false on a tab whose own section offers them.
  */
 export async function PropertyDetailFrame({
   property,
   tab,
-  headerActions = true,
+  expenseActions = true,
   children,
 }: {
   property: PropertyDetail;
   tab: PropertyTabId;
-  headerActions?: boolean;
+  expenseActions?: boolean;
   children: ReactNode;
 }) {
   const member = await requireMember();
@@ -55,7 +56,6 @@ export async function PropertyDetailFrame({
         {t('back')}
       </IntentLink>
       <PropertyHeader
-        actions={scope !== null && headerActions ? <ExpenseActions labels={{ add: te('add'), photo: te('photo') }} /> : null}
         property={{
           nickname: property.nickname,
           kind: property.kind,
@@ -89,6 +89,7 @@ export async function PropertyDetailFrame({
           activity: t('tab', { tab: 'activity' }),
         }}
       />
+      {scope !== null && expenseActions ? <ExpenseActions labels={{ add: te('add'), photo: te('photo') }} /> : null}
       {tab === 'overview' ? (
         <MissingItems
           data={{
