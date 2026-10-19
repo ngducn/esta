@@ -1,5 +1,6 @@
 'use server';
 
+import { DEPOSIT_KINDS } from '@esta/core/allocation';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import type { Result } from '@esta/core/result';
@@ -11,7 +12,7 @@ import { createSessionClient } from '@/server/supabase/server';
 /** The deposit sheet as Mẹ filled it. Amount and date stay text, so a value that does not read is refused, never taken as 0 or today. */
 const depositInputSchema = z.object({
   leaseId: z.uuid(),
-  kind: z.enum(['received', 'applied', 'deduction', 'refunded']),
+  kind: z.enum(DEPOSIT_KINDS),
   invoiceId: z.uuid().nullable(),
   amount: z.string(),
   onDate: z.string(),
@@ -20,7 +21,7 @@ const depositInputSchema = z.object({
 });
 export type DepositInput = z.input<typeof depositInputSchema>;
 
-export type DepositRefusal =
+export type RecordDepositRefusal =
   | 'amount'
   | 'date'
   | 'dateAfterToday'
@@ -32,10 +33,10 @@ export type DepositRefusal =
   | 'failed';
 
 /** The entry written, or the one a repeated key already wrote. */
-export type DepositResult = Result<string, DepositRefusal>;
+export type RecordDepositResult = Result<string, RecordDepositRefusal>;
 
 /** What `record_deposit_entry` and `apply_deposit` refuse, by the message each raises. */
-const REFUSALS: Readonly<Record<string, DepositRefusal>> = {
+const REFUSALS: Readonly<Record<string, RecordDepositRefusal>> = {
   ESTA_DEPOSIT_DATE_AFTER_TODAY: 'dateAfterToday',
   ESTA_DEPOSIT_NOTE_REQUIRED: 'noteRequired',
   ESTA_DEPOSIT_EXCEEDS_HELD: 'exceedsHeld',
@@ -51,7 +52,7 @@ const REFUSALS: Readonly<Record<string, DepositRefusal>> = {
  * date against the database clock and refuse an entry that takes out more than is held. The key comes from the sheet,
  * so a second tap or a retry after a cut response writes nothing new (SPEC §7.4).
  */
-export async function recordDeposit(raw: unknown): Promise<DepositResult> {
+export async function recordDeposit(raw: unknown): Promise<RecordDepositResult> {
   const input = depositInputSchema.safeParse(raw);
   if (!input.success) return { ok: false, reason: 'failed' };
   const { leaseId, kind, invoiceId, note, idempotencyKey } = input.data;

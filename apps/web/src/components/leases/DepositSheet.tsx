@@ -18,7 +18,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast } from '@/components/undo-toast';
 import { cn } from '@/lib/utils';
-import { recordDeposit, type DepositRefusal } from '@/server/actions/deposits';
+import { recordDeposit, type RecordDepositRefusal } from '@/server/actions/deposits';
 import type { DepositOffer, DepositRowView } from './DepositLedger';
 
 export type DepositInvoice = OpenInvoice & { readonly periodEnd: IsoDate };
@@ -36,7 +36,7 @@ const SERVER_ERRORS = {
   invoice: 'invoice',
   notActive: 'notActive',
   failed: 'failed',
-} as const satisfies Record<DepositRefusal, SheetError>;
+} as const satisfies Record<RecordDepositRefusal, SheetError>;
 
 const OVERDRAW_ERRORS = { exceeds_held: 'exceedsHeld', exceeds_outstanding: 'exceedsOutstanding' } as const;
 
