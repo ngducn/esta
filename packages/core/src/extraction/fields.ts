@@ -39,31 +39,44 @@ const choice = <T extends string>(options: readonly T[]) => ({
 
 const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
 const DATE_OR_MONTH = String.raw`(?:\d{4}-\d{2}-\d{2}|(?:\d{1,2}[./-]){1,2}\d{4})`;
-const JOINER = String.raw`[-\u2010-\u2015\u2212\u2192~]`;
+const JOINER = String.raw`(?:[-\u2010-\u2015\u2212]>?|[\u2192~])`;
 /**
  * `đến` and `tới` as written, and `den` and `toi` typed without accents. A word that only folds onto them, such as
  * `đền`, is no range word, and neither is `tư`, `tự` or `tứ` a start.
  */
-const RANGE_WORD = /(?<![\p{L}\p{M}])(?:đến|tới|den|toi)(?![\p{L}\p{M}])/giu;
-const TERM_START = /(?<![\p{L}\p{M}])(?:từ|tu)(?![\p{L}\p{M}])/iu;
-/** A dash, a minus sign, an arrow or a tilde between two dates or months, the second perhaps after `ngày` or `tháng`. */
-const BETWEEN_DATES = new RegExp(
-  String.raw`${DATE_OR_MONTH}(?:\s*${JOINER})+\s*(?=(?:(?:ngày|tháng|ngay|thang)\s*)?(?:\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[./-](?:\d{1,2}[./-])?\d{4}))`,
-  'giu',
-);
-/** A date or month and a dash with no date after it, as in `15/10/1993 - 50 năm`, names a start. */
-const DATE_THEN_JOINER = new RegExp(String.raw`${DATE_OR_MONTH}\s*${JOINER}`, 'u');
+const RANGE_WORD = String.raw`(?<![\p{L}\p{M}])(?:đến|tới|den|toi)(?![\p{L}\p{M}])`;
+const BEFORE_END = String.raw`\s*(?:(?:ngày|tháng|ngay|thang)\s*)?`;
+/**
+ * Where a term's end is read, first match wins: the date or month after the last range word that has one, else the one
+ * after the last dash, minus sign, arrow or tilde between two dates or months. So an issue date before `Từ … đến …`, a
+ * later dash range and a later `tới hạn` are all passed over.
+ */
+const END_AFTER = [
+  new RegExp(String.raw`${RANGE_WORD}${BEFORE_END}(${DATE_OR_MONTH})`, 'giu'),
+  new RegExp(String.raw`${DATE_OR_MONTH}(?:\s*${JOINER})+(?=${BEFORE_END}(${DATE_OR_MONTH}))`, 'giu'),
+] as const;
+/**
+ * A term with no end that names a start: `Từ …`, a date then a dash, as in `15/10/1993 - 50 năm`, or a date then a range
+ * word with no date after it, as in `15/10/1993 đến nay`. `đến hạn` and `tới hạn` say when the date falls due, and
+ * `toi da` is `tối đa` typed without accents, so neither makes the date a start.
+ */
+const NAMES_A_START = [
+  /(?<![\p{L}\p{M}])(?:từ|tu)(?![\p{L}\p{M}])/iu,
+  new RegExp(String.raw`${DATE_OR_MONTH}\s*${JOINER}`, 'u'),
+  new RegExp(String.raw`${DATE_OR_MONTH}.*${RANGE_WORD}(?!\s*(?:hạn|han|da)(?![\p{L}\p{M}]))`, 'iu'),
+] as const;
 
 /**
- * The part of a term that names its end: what follows the last range word, or the last joiner between two dates, so
- * `Từ tháng 10/1993 đến tháng 10/2043`, `15/10/1993 tới 15/10/2043` and `15/10/1993 - 15/10/2043` end in 2043, and an
- * issue date written before the range is passed over. A term that names only its start, such as `50 năm kể từ ngày
- * 15/10/1993`, has no end to read.
+ * The part of a term that names its end, so `Từ tháng 10/1993 đến tháng 10/2043`, `15/10/1993 tới 15/10/2043` and
+ * `15/10/1993 - 15/10/2043` end in 2043. A term with one date and no range is that date, unless it names only a start,
+ * such as `50 năm kể từ ngày 15/10/1993`, which has no end to read.
  */
 function termEnd(text: string): string | null {
-  const last = [...text.matchAll(RANGE_WORD), ...text.matchAll(BETWEEN_DATES)].sort((a, b) => a.index - b.index).at(-1);
-  if (last !== undefined) return text.slice(last.index + last[0].length);
-  return TERM_START.test(text) || DATE_THEN_JOINER.test(text) ? null : text;
+  for (const pattern of END_AFTER) {
+    const end = [...text.matchAll(pattern)].at(-1)?.[1];
+    if (end !== undefined) return end;
+  }
+  return NAMES_A_START.some((start) => start.test(text)) ? null : text;
 }
 const TERM_MONTH = /(?<![\d./-])(\d{1,2})[./-](\d{4})(?!\d)/u;
 
@@ -167,7 +180,7 @@ export const INPUT_KINDS = {
       const text = asText(raw);
       if (text === null) return nothing;
       if (text === LONG_TERM || text.toLocaleLowerCase('vi').includes('lâu dài')) return accept(LONG_TERM);
-      const end = termEnd(text.normalize('NFC'));
+      const end = termEnd(text);
       if (end === null) return refused;
       const found = TERM_DATE.exec(end)?.[1];
       const date = found === undefined ? readMonthEnd(end) : readDate(found);

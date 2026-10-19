@@ -105,6 +105,7 @@ describe('INPUT_KINDS', () => {
     ['an end month and a later full date', 'Đến tháng 10/2043 (gia hạn 15/10/2053)', '2043-10-31'],
     ['an ASCII arrow between two dates', '15/10/1993 -> 15/10/2043', '2043-10-15'],
     ['a long ASCII arrow between two dates', '15/10/1993 --> 15/10/2043', '2043-10-15'],
+    ['an en dash arrow between two dates', '15/10/1993 –> 15/10/2043', '2043-10-15'],
   ] as const)('reads a term written as %s as its end', (_, text, end) => {
     expect(INPUT_KINDS.term.parse(text)).toEqual({ ok: true, value: end });
   });
