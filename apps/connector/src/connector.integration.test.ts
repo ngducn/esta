@@ -6,8 +6,6 @@ import { join } from 'node:path';
 import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { applyPlan, propertyCreate, propertyEdit, readClock, runOp, type Db } from '@esta/ops';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { DEMO_PASSWORD } from '../../../supabase/seed/generator/households.ts';
@@ -15,6 +13,7 @@ import { seedId } from '../../../supabase/seed/generator/ids.ts';
 import { logIn } from './login';
 import { connectorClient } from './session';
 import { fileStore } from './store';
+import { stdioConnector } from './test/stdio';
 
 // `pnpm --filter @esta/connector test:integration` (scripts/connector-integration.ts) passes the slot's stack; run
 // against a fresh `pnpm db:reset`. The server starts exactly as the README tells Claude Code to start it.
@@ -45,19 +44,9 @@ afterAll(async () => {
 });
 
 async function startConnector(file: string) {
-  const transport = new StdioClientTransport({
-    command: 'pnpm',
-    args: ['--silent', '--dir', ROOT, 'connector'],
-    env: { ESTA_SLOT: env.ESTA_SLOT, ESTA_SESSION_FILE: file },
-    stderr: 'pipe',
-  });
-  let stderr = '';
-  transport.stderr?.on('data', (chunk: Buffer) => {
-    stderr += chunk.toString('utf8');
-  });
-  const client = new Client({ name: 'connector-integration', version: '0.0.0' });
-  await client.connect(transport);
-  return { client, stderr: () => stderr };
+  const connector = stdioConnector({ command: 'pnpm', args: ['--silent', '--dir', ROOT, 'connector'], env: { ESTA_SLOT: env.ESTA_SLOT, ESTA_SESSION_FILE: file } });
+  await connector.connect();
+  return connector;
 }
 
 type Connector = Awaited<ReturnType<typeof startConnector>>;
