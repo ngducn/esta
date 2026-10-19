@@ -215,3 +215,15 @@ Rules from this update. They change locked decision D8's neighbour D11 and accep
 2. DOC-5, amended: every document shows clear, with no blur and no Xem gate. A document's sensitivity still limits what the assistant can read (only through the extraction job that targets it) and still drops `ocr_text`; views and downloads stay logged (DOC-4).
 3. #161 and #166 close unmerged; #147 closes as decided. #140's extraction-path items (label accents, middle dots) and #149 (land use term ranges) stay open.
 4. One PR carries both rulings after #165 merges: SPEC D11 and DOC-5 edited with this date, the typed-text refusals removed (the vault's Sửa thông tin, the review screen's typed edits, the accepted_fields CHECK for typed values), and the blur removed from every surface. Rigorous tier. Root merges it under the Phase 2 grant, because the operator made both calls himself.
+
+## Update 2026-10-19 14:10 +07
+
+Operator's words, 2026-10-19: "ok anything blocked on me? ill trust your judgement on this phase so go ahead and go full autonomous", after "actually the usage is only 52% --> you can spawn agent to work on the next thing". Earlier the same day, on the assistant (Phase 5) brainstorm, he chose: talk to Claude through an Esta connector first (Claude Code now, claude.ai and the phone app after deploy) with a simple in-app Trợ lý for Mẹ later; Claude writes as him after his OK in chat, each write tagged "qua Claude" with batch undo, while the unattended daily assistant only proposes; move-in first, then ongoing; approach 1 (connector over the app's own operations); and he approved design sections 1 and 2.
+
+Rules from this update (agent interpretation; the operator can narrow any of them in his own words):
+
+1. Landing grant. The root merges the PRs now in flight and the rest of Phase 3 and Phase 4, review-gated ones included (#172 P3-08, P4-02 and later), under the usual bar: a clean independent verdict at the exact head and green local CI there, `gh pr merge --squash --match-head-commit`. Rigorous PRs keep the two-fix-forward ceiling; a PR that fails its second goes to the operator.
+2. The human gates the root never waives stay: the VietQR scan with two banking apps (P3-11), the Mom test after Phase 3 and in P6-06, the 500,000,000 VND transfer cap decision, the P6-07 cloud and deploy steps, and everything under CLAUDE.md "Stop and ask Ryan". Work continues around them.
+3. Product tradeoffs found in review take the root's default, recorded in decisions.tsv and the PR body, and listed in docs/plan/STATUS.md for the operator to overturn later (for example #172's refusal to end a lease before an already issued period, matching LSE-2, and #173's sensitive switch left out).
+4. The assistant design is the root's call from here: it finishes the remaining sections, writes the design doc and folds it into the Phase 5 re-cut at phase start, with no further approval round. Building it waits for its place on the critical path.
+5. Budget: trust the operator's /usage reading; `usage-pct.sh` is recalibrated to it. Stop spawning at 90% and pause at 95% of the meter.
