@@ -68,7 +68,6 @@ async function recordEntry(entry: Entry, kind: Exclude<DepositKind, 'applied'>):
   return { ok: false, reason: RECORD_REFUSALS[reason.kind] ?? 'failed' };
 }
 
-/** Writes the deposit payment, its allocation and the `applied` entry together. */
 async function applyToInvoice(entry: Entry, invoiceId: string | null): Promise<RecordDepositResult> {
   if (invoiceId === null) return { ok: false, reason: 'invoice' };
   const [, supabase] = await Promise.all([requireMember(), createSessionClient()]);

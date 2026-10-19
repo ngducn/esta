@@ -22,7 +22,6 @@ export async function readLeases(db: Db, householdId: string, where: Partial<Pic
   return z.array(leaseRowSchema).parse(data);
 }
 
-/** Each lease beside its tenant, read in one query. */
 export async function withTenants(db: Db, householdId: string, leases: readonly LeaseRow[]): Promise<LeaseWithTenant[]> {
   const ids = [...new Set(leases.flatMap((lease) => (lease.tenant_party_id === null ? [] : [lease.tenant_party_id])))];
   const read = ids.length === 0 ? { data: [], error: null } : await db.from('parties').select('id, full_name, phone').eq('household_id', householdId).in('id', ids);
