@@ -220,13 +220,12 @@
       }
     },
     "sqlstate-literal": {
-      "value": 14,
+      "value": 11,
       "files": {
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 3,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 5,
         "apps/web/src/app/(app)/properties/location-actions.ts": 1,
         "apps/web/src/app/onboarding/actions.ts": 1,
-        "apps/web/src/server/actions/leases.ts": 3,
         "apps/web/src/server/properties/wizard.ts": 1
       }
     },

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { formatVnd } from '@esta/core/format';
+import { LEASE_DEFAULTS } from '@esta/core/lease';
 import { vnd } from '@esta/core/money';
 import { LEASE_COLUMNS } from '@esta/core/schemas/lease';
 import { depositRecord, leaseActivate, leaseCreate, leaseEdit, personCreate, propertyCreate, runOp, unitCreate, type Db } from '@esta/ops';
@@ -147,22 +148,25 @@ const OTHER_LEASE = seedId('seed:lease:lane-8:q7:1');
 const PAID_THROUGH = '2026-09-30';
 const display = (amount: number) => formatVnd(vnd(amount), 'vi');
 
-/** Chị Lan Demo's room from 01/03/2026 at 9.000.000 ₫ with two months' deposit, the room defaults otherwise. */
-const draft = (unitId: unknown, tenantId: unknown) => ({
-  unit_id: unitId,
-  tenant_party_id: tenantId,
-  start_date: '2026-03-01',
-  end_date: null,
-  rent_vnd: 9_000_000,
-  billing_cycle_months: 1,
-  period_anchor: 'lease_start',
-  first_period_proration: 'by_days',
-  deposit_vnd: 18_000_000,
-  escalation: { kind: 'none' },
-  utilities_mode: 'metered_by_owner',
-  tax_payer: 'owner',
-  notice_days: 30,
-});
+/** Chị Lan Demo's room from 01/03/2026 at 9.000.000 ₫ with two months' deposit, LEASE_DEFAULTS for a room otherwise, as Claude fills it. */
+const draft = (unitId: unknown, tenantId: unknown) => {
+  const terms = LEASE_DEFAULTS.room;
+  return {
+    unit_id: unitId,
+    tenant_party_id: tenantId,
+    start_date: '2026-03-01',
+    end_date: null,
+    rent_vnd: 9_000_000,
+    deposit_vnd: 18_000_000,
+    escalation: { kind: 'none' },
+    billing_cycle_months: terms.billingCycleMonths,
+    period_anchor: terms.periodAnchor,
+    first_period_proration: terms.firstPeriodProration,
+    utilities_mode: terms.utilitiesMode,
+    tax_payer: terms.taxPayer,
+    notice_days: terms.noticeDays,
+  };
+};
 const deposit = (leaseId: unknown) => ({ lease_id: leaseId, kind: 'received', amount_vnd: 18_000_000, on_date: '2026-03-01', note: null });
 const rental = (label: string, phone: string) => [
   { op: 'unit.create', ref: 'room', input: { property_id: Q1, unit: room(label) } },
