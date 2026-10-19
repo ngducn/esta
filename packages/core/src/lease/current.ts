@@ -4,7 +4,6 @@ import { leaseTerms, type LeaseAmendmentRow, type LeaseRow } from '../schemas/le
 import { currentMonthlyRent } from './monthlyRent';
 import type { LeaseStatus } from './types';
 
-/** A lease's status and dates as its row stores them. */
 type LeaseSpan = { readonly status: LeaseStatus; readonly start_date: IsoDate | null; readonly end_date: IsoDate | null };
 
 /**
