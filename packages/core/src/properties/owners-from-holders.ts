@@ -2,7 +2,6 @@ import { normalizeName, type ExistingParty } from '../extraction/acceptance';
 import type { OwnershipShare } from '../schemas/ownership';
 import { FULL_SHARE_BP } from './ownership';
 
-/** A holder as the accepted certificate names them. */
 export type CertificateHolder = { readonly fullName: string; readonly idLast4: string | null };
 
 /**

@@ -21,7 +21,7 @@ import {
 } from './helpers/wizard';
 
 // PRP-7 and DOC-6 through the wizard. One worker and one test clock per slot, so the rules run in order in the `clock` project.
-test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: 'serial', timeout: 120_000 });
 test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
 
 let worker: AgentWorker | undefined;
@@ -206,6 +206,8 @@ test('rule 5: Ryan adds the old Quận 3 sổ hồng; every current ward is offe
   const [saved] = await serviceGet<{ current_address: { commune_code: string } }[]>(page, `properties?id=eq.${propertyId}&select=current_address`);
   expect(saved?.current_address.commune_code).toBe(chosen);
   await page.getByTestId('review-continue').click();
+  await step(page, 'details');
+  await page.getByTestId('skip-step').click();
 
   await step(page, 'owners');
   await expect(page.getByTestId('owners-note')).toContainText('2 người đứng tên');

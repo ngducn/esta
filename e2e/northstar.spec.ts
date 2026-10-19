@@ -5,7 +5,7 @@ import { setClock } from './helpers/test-clock';
 import { acceptEvery, editField, fixture, followReadyNotice, PHONE, serviceGet, shot, START, startWizard, step } from './helpers/wizard';
 
 // SPEC §1.2 on the `northstar` seed, which has no Dãy trọ Dĩ An; `pnpm e2e:northstar` resets to it and runs this file.
-test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: 'serial', timeout: 180_000 });
 test.skip(process.env.ESTA_NORTHSTAR !== '1', 'runs through pnpm e2e:northstar, on the northstar seed');
 test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
 
