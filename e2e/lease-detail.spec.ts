@@ -66,6 +66,17 @@ const toast = (page: Page) => page.getByRole('region', { name: /Thông báo|Noti
 const noSideScroll = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
 const period = (page: Page, start: string) => page.getByTestId('lease-timeline').locator(`li[data-period-start="${start}"]`);
 
+/** The labels of the actions filled with the accent, once their color fades have finished (DESIGN.md One Accent Rule). */
+const accentFilled = (page: Page) =>
+  page.getByRole('main').evaluate(async (main) => {
+    await Promise.all(main.getAnimations({ subtree: true }).map((animation) => animation.finished));
+    const probe = main.appendChild(document.createElement('span'));
+    probe.style.backgroundColor = 'var(--accent)';
+    const accent = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return [...main.querySelectorAll('button, a')].filter((action) => getComputedStyle(action).backgroundColor === accent).map((action) => (action.textContent ?? '').trim());
+  });
+
 /** Every issued invoice of the lease with its lines, to prove a change leaves them as they were (LSE-2). */
 const issued = (page: Page, lease: string) => rest<unknown[]>(page, 'GET', `invoices?lease_id=eq.${lease}&status=eq.issued&select=*,invoice_lines(*)&order=period_start`);
 
@@ -152,7 +163,7 @@ test('rule 2: amending Phòng 2 offers only starts after 07/10/2026, bills the n
   await page.screenshot({ path: test.info().outputPath('amended-1440-light.png'), fullPage: true });
 });
 
-test('rule 3: terminating from 31/10/2026 asks the exact question, keeps the issued October invoice, drops the November draft, and a direct status write is refused', async ({ page }) => {
+test('rule 3: terminating from 31/10/2026 asks the exact question, keeps the issued October invoice, drops the November draft, refuses a direct status write, and keeps the room let until then', async ({ page }) => {
   await open(page, 'me.lane4@demo.esta.test', 'dark', PHONE);
   const lease = await freshLease(page, 4, { start: '2026-08-01', end: '2027-07-31', rent: 3_000_000, paidThrough: '2026-09-30' });
   const before = await issued(page, lease.id);
@@ -195,6 +206,16 @@ test('rule 3: terminating from 31/10/2026 asks the exact question, keeps the iss
   expect(await noSideScroll(page)).toBe(true);
   await holdForRecording(page);
   await page.screenshot({ path: test.info().outputPath('terminated-390-dark.png'), fullPage: true });
+
+  await page.goto(`/properties/${propertyId(4, 'di-an')}/rental`);
+  const room = page.getByTestId('unit-row').filter({ has: page.getByTestId('unit-label').getByText(lease.label, { exact: true }) });
+  await expect(room.getByTestId('unit-tenant')).toBeVisible();
+  await expect(room.getByTestId('unit-lease')).not.toHaveAttribute('data-mark', 'vacant');
+  await expect(room.getByTestId('unit-lease-ends')).toHaveText('Kết thúc ngày 31/10/2026');
+  await expect(room.getByTestId('open-lease')).toHaveAttribute('href', lease.path);
+  await expect(room.getByTestId('add-lease')).toHaveCount(0);
+  await room.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: test.info().outputPath('terminated-tab-390-dark.png') });
 });
 
 test('rule 4: renewing by 5% previews 9.500.000 ₫ and opens the new lease from 02/11/2026, linked to the old one (SPEC §9.4 seed 7)', async ({ page }) => {
@@ -259,12 +280,13 @@ test('rule 6: q7 shows Bên thuê nộp thay, the rent collected before Esta, th
   await page.screenshot({ path: test.info().outputPath('q7-390-dark.png'), fullPage: true });
 });
 
-test('rule 7: a lease with no papers offers one Tải hợp đồng lên action, and Thủ Đức lists its contract plainly', async ({ page }) => {
+test('rule 7: a lease with no papers offers one Tải hợp đồng lên action beside the one accent Gia hạn, and Thủ Đức lists its contract plainly', async ({ page }) => {
   await open(page, 'ryan.lane9@demo.esta.test', 'light', DESKTOP);
   await page.goto(leasePath(9, 'di-an', seedLease(9, 'di-an', 5)));
   const documents = page.getByTestId('lease-documents');
   await expect(documents.getByText('Chưa có giấy tờ')).toBeVisible();
   await expect(documents.getByRole('button')).toHaveText(['Tải hợp đồng lên']);
+  expect(await accentFilled(page)).toEqual(['Gia hạn']);
   await page.screenshot({ path: test.info().outputPath('docs-empty-1440-light.png'), fullPage: true });
 
   await page.goto(leasePath(9, 'thu-duc', seedLease(9, 'thu-duc', 1)));

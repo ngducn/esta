@@ -2,6 +2,7 @@ import { isoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import { planInvoices } from '@esta/core/lease';
 import { vnd } from '@esta/core/money';
+import { parsePropertyFilters } from '@esta/core/properties';
 import type { Amendment } from '@esta/core/schedule';
 import { leaseRowSchema, leaseTerms, LEASE_COLUMNS } from '@esta/core/schemas/lease';
 import type { Database } from '@esta/db';
@@ -40,6 +41,7 @@ vi.mock('@/server/member', () => ({ requireMember: async () => ({ household: { i
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => client }));
 
 const { activateLease, amendLease, createTenant, previewActivation, renewLease, saveLease, terminateLease } = await import('./leases');
+const { listProperties } = await import('@/server/properties/list');
 const AS_OF = isoDate('2026-10-07');
 
 const draft = (unitId: string, tenantId: string, rent: number | null) => ({
@@ -191,13 +193,20 @@ describe('lease actions against local Supabase (LSE-1 to LSE-3)', () => {
 });
 
 /** A lease on a property of its own, activated on the database clock's 2026-10-07 with the typed paid-through date. */
-async function activeLease(values: Record<string, unknown>, paidThrough: string): Promise<{ id: string }> {
+async function activeLease(values: Record<string, unknown>, paidThrough: string): Promise<{ id: string; propertyId: string }> {
   const unit = await createProperty();
   const saved = await saveLease(unit.propertyId, null, { ...draft(unit.unitId, tenantId, 3_000_000), ...values });
   if (!saved.ok) throw new Error(saved.reason);
   const activated = await activateLease(saved.id, paidThrough);
   if (!activated.ok) throw new Error(activated.reasons.join(', '));
-  return { id: saved.id };
+  return { id: saved.id, propertyId: unit.propertyId };
+}
+
+/** What the property list shows for one property on a date: its contracted monthly rent and how many units are let. */
+async function listed(propertyId: string, asOf: string) {
+  const { rows } = await listProperties(HOUSEHOLD, parsePropertyFilters({}), isoDate(asOf));
+  const row = rows.find((candidate) => candidate.id === propertyId);
+  return row === undefined ? undefined : { monthlyRentVnd: row.monthlyRentVnd, leasedUnitCount: row.leasedUnitCount };
 }
 
 async function issuedOf(leaseId: string) {
@@ -340,5 +349,25 @@ describe('amend, terminate and renew against local Supabase (LSE-2, LSE-3, #144)
       expect(actual, JSON.stringify({ values, amendment })).toEqual(expected);
       expect(actual.some((bill) => bill.periodStart >= amendment.effectivePeriodStart), 'the amended period is billed inside the horizon').toBe(true);
     }
+  });
+});
+
+describe('the property list on the Clock date after lease changes', () => {
+  it('counts only the lease in effect, at its amended rent, when a renewal is signed early', async () => {
+    const lease = await activeLease({ end_date: '2026-12-31' }, '30/09/2026');
+    expect(await amendLease(lease.id, { effectivePeriodStart: '2026-11-01', rentVnd: 3_300_000, reason: '' })).toEqual({ ok: true, value: undefined });
+    const renewal = await renewLease(lease.id, { increaseBps: 500, endDate: '2027-12-31' });
+    expect(renewal.ok).toBe(true);
+    expect(await listed(lease.propertyId, '2026-10-07')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
+    expect(await listed(lease.propertyId, '2026-11-15'), 'the amendment is in effect').toEqual({ monthlyRentVnd: 3_300_000, leasedUnitCount: 1 });
+    expect(await listed(lease.propertyId, '2027-01-15'), '3.300.000 ₫ × 1,05 rounded half up').toEqual({ monthlyRentVnd: 3_500_000, leasedUnitCount: 1 });
+  });
+
+  it('keeps a lease terminated from a later date let and billed until that date', async () => {
+    const lease = await activeLease({ end_date: '2027-07-31' }, '30/09/2026');
+    expect(await terminateLease(lease.id, { terminatedOn: '2026-10-31', reason: 'Người thuê Demo chuyển đi' })).toEqual({ ok: true, value: undefined });
+    expect(await listed(lease.propertyId, '2026-10-07')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
+    expect(await listed(lease.propertyId, '2026-10-31')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
+    expect(await listed(lease.propertyId, '2026-11-01')).toEqual({ monthlyRentVnd: null, leasedUnitCount: 0 });
   });
 });
