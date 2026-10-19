@@ -7,7 +7,6 @@ import { uploadWithProgress, type UploadProgress } from './upload-with-progress'
 
 /** `captured` marks a PDF combined from photos taken in this tab, which exist nowhere else until it is saved. */
 export type Prepared = { readonly file: File; readonly sha256: string; readonly previews: Previews; readonly captured: boolean };
-/** Why a picked file cannot be uploaded: too big or of a type no category takes, or no image or PDF could be read from it. */
 export type PickProblem = 'tooLarge' | 'wrongType' | 'unreadable';
 export type FileProblem = PickProblem | 'fileRequired' | null;
 

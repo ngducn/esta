@@ -125,7 +125,6 @@ export function useDocumentUpload({ initialFile = null, finish, eager }: Options
       const state = latest.current;
       if ('prepared' in state) inflight.current = sendFrom(run.current, state.prepared, target);
     },
-    /** `Vẫn tải lên` on the duplicate question. */
     proceed: () => {
       const state = latest.current;
       const kept = held.current;
@@ -137,7 +136,7 @@ export function useDocumentUpload({ initialFile = null, finish, eager }: Options
       held.current = null;
       if (state.step === 'duplicate') set({ step: 'ready', prepared: state.prepared });
     },
-    /** The upload once whatever it is doing now has finished. */
+    /** The upload once the work in flight has finished, which `Lưu` waits for. */
     settled: async (): Promise<Upload> => {
       await inflight.current;
       return latest.current;

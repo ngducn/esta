@@ -10,7 +10,6 @@ import { EXPENSE_CATEGORY_IDS } from './categories';
 export const MAX_EXPENSE_NOTE = 1000;
 export const MAX_VENDOR_NAME = 200;
 
-/** The tag of a vendor added from the expense sheet. */
 export const NEW_VENDOR_TAG = 'contractor';
 /** The tags of the parties the vendor picker offers: the people and firms an owner pays for work on a property. */
 export const VENDOR_TAGS = [NEW_VENDOR_TAG, 'broker', 'other'] as const;

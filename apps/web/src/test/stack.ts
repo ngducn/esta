@@ -21,7 +21,6 @@ export const stackName = `the ESTA_SLOT=${process.env.ESTA_SLOT ?? 0} stack`;
 let headers: Record<string, string> | undefined;
 const serviceHeaders = () => (headers ??= e2eServiceHeaders());
 
-/** A session client of a seeded user, signed in with the one-time code the admin API mints, as a member's request is. */
 export async function signedInAs(email: string): Promise<SupabaseClient> {
   const link = await fetch(`${url}/auth/v1/admin/generate_link`, {
     method: 'POST',
@@ -45,6 +44,5 @@ export async function service<T>(path: string, init: RequestInit = {}): Promise<
   return (await response.json().catch(() => null)) as T;
 }
 
-/** Sends bytes to an upload URL a ticket signed, as the browser does. */
 export const putSigned = (signedUrl: string, body: Buffer, type: string) =>
   fetch(signedUrl, { method: 'PUT', body: new Blob([new Uint8Array(body)]), headers: { 'content-type': type, 'x-upsert': 'true' } });
