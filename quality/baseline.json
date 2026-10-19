@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 125,
+      "value": 123,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -40,9 +40,7 @@
         "e2e/expenses.spec.ts": 2,
         "e2e/extraction-review.spec.ts": 4,
         "e2e/fnd9-integration.spec.ts": 2,
-        "e2e/helpers/auth-api.ts": 1,
         "e2e/helpers/session.ts": 1,
-        "e2e/helpers/user-rest.ts": 1,
         "e2e/helpers/wizard.ts": 1,
         "e2e/i18n.spec.ts": 1,
         "e2e/lease-detail.spec.ts": 1,
@@ -65,7 +63,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1327,
+      "value": 1314,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -104,9 +102,7 @@
         "e2e/expenses.spec.ts": 12,
         "e2e/extraction-review.spec.ts": 29,
         "e2e/fnd9-integration.spec.ts": 12,
-        "e2e/helpers/auth-api.ts": 6,
         "e2e/helpers/session.ts": 6,
-        "e2e/helpers/user-rest.ts": 7,
         "e2e/helpers/wizard.ts": 7,
         "e2e/i18n.spec.ts": 7,
         "e2e/lease-detail.spec.ts": 9,

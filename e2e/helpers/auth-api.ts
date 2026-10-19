@@ -22,9 +22,10 @@ export async function memberCall(page: Page, method: 'GET' | 'POST' | 'PATCH' | 
   });
 }
 
-/** A `memberCall` that must succeed, and its JSON body. */
+/** A `memberCall` that must succeed, and its JSON body (null when it has none). */
 export async function memberRest<T>(page: Page, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, data?: unknown): Promise<T> {
   const response = await memberCall(page, method, path, data);
-  expect(response.ok(), await response.text()).toBe(true);
-  return (await response.json()) as T;
+  const text = await response.text();
+  expect(response.ok(), text).toBe(true);
+  return (text === '' ? null : JSON.parse(text)) as T;
 }
