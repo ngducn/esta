@@ -244,21 +244,25 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
     expect(again.json()).toMatchObject({ kind: 'items_refused', items: [{ status: 'refused', refusal: { kind: 'duplicate', documents: [{ id: documentIds.get('so-do-demo-cu-chi.jpg'), title: 'Sổ đỏ Demo Củ Chi' }] } }] });
   });
 
-  it('refuses a file changed after Ryan saw the plan as stale, and sends nothing of it', async () => {
-    const photo = join(imports, 'Demo', 'anh-moi.jpg');
-    const draw = (red: number) => sharp({ create: { width: 640, height: 480, channels: 3, background: { r: red, g: 120, b: 90 } } }).jpeg().toBuffer();
-    writeFileSync(photo, await draw(200));
+  const draw = (red: number) => sharp({ create: { width: 640, height: 480, channels: 3, background: { r: red, g: 120, b: 90 } } }).jpeg().toBuffer();
+
+  it.each([
+    { what: 'changed', name: 'anh-moi.jpg', red: 200, after: async (photo: string) => writeFileSync(photo, await draw(40)), refusal: { kind: 'stale' } },
+    { what: 'gained a second name', name: 'anh-hai.jpg', red: 10, after: async (photo: string) => linkSync(photo, join(outside, 'anh-hai.jpg')), refusal: { kind: 'file', problem: 'outside_import_folders' } },
+  ])('refuses at apply a file that $what after Ryan saw the plan, and sends nothing of it', async ({ name, red, after, refusal }) => {
+    const photo = join(imports, 'Demo', name);
+    writeFileSync(photo, await draw(red));
     const planned = plannedSchema.parse(
       (
         await call(connector, 'plan_changes', {
           summary: 'Demo: ảnh mới',
-          items: [{ op: 'document.attach', input: { path: 'Demo/anh-moi.jpg', property_id: propertyIds.get('DEMOCC'), category: 'photo', title: 'Ảnh Demo Củ Chi' } }],
+          items: [{ op: 'document.attach', input: { path: `Demo/${name}`, property_id: propertyIds.get('DEMOCC'), category: 'photo', title: 'Ảnh Demo Củ Chi' } }],
         })
       ).json(),
     );
-    writeFileSync(photo, await draw(40));
+    await after(photo);
     const applied = appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json());
-    expect(applied).toMatchObject({ status: 'partial', items: [{ status: 'refused', refusal: { kind: 'stale' } }] });
+    expect(applied).toMatchObject({ status: 'partial', items: [{ status: 'refused', refusal }] });
     const id = planned.items[0]?.id ?? '';
     expect((await claudeDb.from('documents').select('id').eq('id', id)).data).toEqual([]);
     expect((await claudeDb.storage.from(DOCUMENTS_BUCKET).list(`${household(CLAUDE_LANE)}/${id}`)).data).toEqual([]);
@@ -278,25 +282,6 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
       });
       expect(viaLink.json(), path).toMatchObject({ kind: 'items_refused', items: [{ status: 'refused', refusal: refused }] });
     }
-  });
-
-  it('refuses at apply a file that gained a second name after Ryan saw the plan, and sends nothing of it', async () => {
-    const photo = join(imports, 'Demo', 'anh-hai.jpg');
-    writeFileSync(photo, await sharp({ create: { width: 640, height: 480, channels: 3, background: { r: 10, g: 200, b: 30 } } }).jpeg().toBuffer());
-    const planned = plannedSchema.parse(
-      (
-        await call(connector, 'plan_changes', {
-          summary: 'Demo: ảnh hai',
-          items: [{ op: 'document.attach', input: { path: 'Demo/anh-hai.jpg', property_id: propertyIds.get('DEMOCC'), category: 'photo', title: 'Ảnh Demo hai' } }],
-        })
-      ).json(),
-    );
-    linkSync(photo, join(outside, 'anh-hai.jpg'));
-    const applied = appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json());
-    expect(applied).toMatchObject({ status: 'partial', items: [{ status: 'refused', refusal: { kind: 'file', problem: 'outside_import_folders' } }] });
-    const id = planned.items[0]?.id ?? '';
-    expect((await claudeDb.from('documents').select('id').eq('id', id)).data).toEqual([]);
-    expect((await claudeDb.storage.from(DOCUMENTS_BUCKET).list(`${household(CLAUDE_LANE)}/${id}`)).data).toEqual([]);
   });
 
   it('refuses a file whose name holds a full ID number and stores no plan, so Claude asks Ryan to rename it', async () => {
