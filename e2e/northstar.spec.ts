@@ -55,7 +55,7 @@ test('steps 1 and 2: Mẹ signs in with the emailed code and adds Dãy trọ Dĩ
         message: `review ready within ${REVIEW_READY_BUDGET_MS / 1000} s of the upload in replay`,
       })
       .toBe('needs_review');
-    test.info().annotations.push({ type: 'review ready ms', description: String(Date.now() - uploadedAt) });
+    console.log(`[perf] review ready ${Date.now() - uploadedAt} ms after the upload`);
 
     await page.getByTestId('skip-step').click();
     await step(page, 'owners');
@@ -81,7 +81,7 @@ test('steps 1 and 2: Mẹ signs in with the emailed code and adds Dãy trọ Dĩ
   });
 
   const elapsed = Date.now() - started;
-  test.info().annotations.push({ type: 'steps 1 and 2 ms', description: String(elapsed) });
+  console.log(`[perf] north-star steps 1 and 2 in ${elapsed} ms`);
   expect(elapsed, `north-star steps 1 and 2 within ${STEPS_1_AND_2_BUDGET_MS / 1000} s`).toBeLessThanOrEqual(STEPS_1_AND_2_BUDGET_MS);
 
   await page.getByTestId('wizard-open-property').click();

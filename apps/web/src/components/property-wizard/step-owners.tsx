@@ -2,11 +2,11 @@ import { ownersFromHolders, type CertificateHolder } from '@esta/core/properties
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { z } from 'zod';
-import { OwnershipForm } from '@/components/legal/ownership-form';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { requireMember } from '@/server/member';
 import { loadOwnership, loadParties, loadPropertyLegal } from '@/server/properties/legal';
 import { createSessionClient } from '@/server/supabase/server';
+import { LazyOwnershipForm } from './lazy-steps';
 
 const accepted = z.record(z.string(), z.object({ value: z.unknown() }));
 const HOLDER_FIELD = /^holders\[(\d+)\]\.(full_name|id_last4)$/;
@@ -77,7 +77,7 @@ export async function StepOwners({ propertyId, documentId, next, back }: { prope
           {note}
         </p>
       )}
-      <OwnershipForm
+      <LazyOwnershipForm
         key={proposed.map((share) => share.party_id).join()}
         propertyId={propertyId}
         shares={proposed}

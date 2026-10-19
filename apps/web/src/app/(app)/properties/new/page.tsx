@@ -5,12 +5,11 @@ import { z } from 'zod';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { FinishChecklist } from '@/components/property-wizard/finish-checklist';
-import { ReviewReadyNotice } from '@/components/property-wizard/review-ready-notice';
+import { LazyReviewReadyNotice, LazyStepUse } from '@/components/property-wizard/lazy-steps';
 import { StepDetails } from '@/components/property-wizard/step-details';
 import { StepOwners } from '@/components/property-wizard/step-owners';
 import { StepPhoto } from '@/components/property-wizard/step-photo';
 import { StepReview } from '@/components/property-wizard/step-review';
-import { StepUse } from '@/components/property-wizard/step-use';
 import { readWizard, wizardHref, wizardMachine, wizardPath, type WizardEvent, type WizardIds, type WizardState } from '@/components/property-wizard/wizard-machine';
 import { cn } from '@/lib/utils';
 import { readDocumentStatuses } from '@/server/documents/status';
@@ -91,7 +90,7 @@ export default async function NewPropertyPage({ searchParams }: { searchParams: 
   else if (state.step === 'owners') step = <StepOwners propertyId={ids.propertyId} documentId={ids.documentId} next={go('next')} back={go('back')} />;
   else if (state.step === 'use')
     step = (
-      <StepUse
+      <LazyStepUse
         propertyId={ids.propertyId}
         kind={property.kind}
         useMode={property.use_mode}
@@ -123,7 +122,7 @@ export default async function NewPropertyPage({ searchParams }: { searchParams: 
       </header>
       <PropertyIntl locale={locale} messages={islandMessages}>
         {statuses === null || ids?.documentId == null ? null : (
-          <ReviewReadyNotice documentId={ids.documentId} statuses={statuses} reviewHref={go('openReview')} />
+          <LazyReviewReadyNotice documentId={ids.documentId} statuses={statuses} reviewHref={go('openReview')} />
         )}
         {step}
       </PropertyIntl>

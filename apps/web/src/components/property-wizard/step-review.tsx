@@ -1,12 +1,11 @@
 import { z } from 'zod';
 import { notFound } from 'next/navigation';
-import { ReviewPanel } from '@/components/extraction/review-panel';
 import { suggestCurrentUnits } from '@/server/address/suggest';
 import { loadReview, reviewPanelState } from '@/server/extraction/review';
 import { requireMember } from '@/server/member';
 import { loadLandUseCodes } from '@/server/properties/legal';
 import { createSessionClient } from '@/server/supabase/server';
-import { AddressConfirm } from './address-confirm';
+import { LazyAddressConfirm, LazyReviewPanel } from './lazy-steps';
 
 const addressRow = z.object({ certificate_address_text: z.string().nullable(), current_address: z.object({ commune_code: z.string().optional() }).nullable() });
 
@@ -31,11 +30,11 @@ export async function StepReview({ propertyId, documentId, selfHref, backHref }:
     const text = row.certificate_address_text ?? '';
     const suggestions = text.trim().length < 3 ? [] : await suggestCurrentUnits(text);
     return (
-      <AddressConfirm propertyId={propertyId} certificateAddress={text} suggestions={suggestions} picked={row.current_address?.commune_code ?? null} continueHref={backHref} />
+      <LazyAddressConfirm propertyId={propertyId} certificateAddress={text} suggestions={suggestions} picked={row.current_address?.commune_code ?? null} continueHref={backHref} />
     );
   }
   return (
-    <ReviewPanel
+    <LazyReviewPanel
       documentId={document.id}
       title={document.title}
       mime={document.mime}
