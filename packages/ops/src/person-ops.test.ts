@@ -16,7 +16,6 @@ const issuePaths = (raw: unknown) => personCreate.input.safeParse(raw).error?.is
 const lan = (person: Record<string, unknown> = {}, rest: Record<string, unknown> = {}) =>
   parse({ id: LAN, person: { full_name: 'Phạm Thị Lan Demo', phone: '0912 345 678', id_last4: '4567', ...person }, ...rest });
 
-/** A household holding one person, who answers lookups by phone and by id_last4 as the database would. */
 function storedPerson(row: { full_name: string; phone: string | null; id_last4: string | null }) {
   const stored = { id: STORED, ...row };
   const matches = (sent: Sent) => [...sent.query.entries()].every(([key, value]) => key === 'select' || key === 'household_id' || value === `eq.${String(Reflect.get(stored, key))}`);

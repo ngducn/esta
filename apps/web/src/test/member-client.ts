@@ -8,8 +8,7 @@ import { signedInAs } from './stack';
  * Server code under test runs as a seeded member of `householdId`, on the slot `pnpm test:integration`
  * (scripts/web-integration.ts) passes: `createSessionClient` returns this member's client and `requireMember` their
  * household. Call it before the `await import()` of the module under test, and `signIn` in `beforeAll`: it signs the
- * member in with `signedInAs`, so every read and write through `client` runs under RLS. The request clock reads the
- * slot's test clock through the same client.
+ * member in with `signedInAs`, so every read and write through `client` runs under RLS.
  */
 export function memberClient(email: string, householdId: string): { client: SupabaseClient<Database>; signIn: () => Promise<void> } {
   let signed: SupabaseClient<Database> | undefined;

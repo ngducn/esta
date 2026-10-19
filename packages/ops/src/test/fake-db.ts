@@ -7,10 +7,6 @@ import type { Pending } from '../view';
 
 export type Sent = { readonly method: string; readonly table: string; readonly query: URLSearchParams; readonly body: unknown };
 
-/**
- * A session client whose PostgREST answers come from `rows` (none by default), keeping every request it sent. A
- * `.single()` read gets the first row, as PostgREST's object response does.
- */
 export function fakeDb(rows: (sent: Sent) => readonly unknown[] = () => []) {
   const sent: Sent[] = [];
   const db: Db = createClient<Database>('http://fake.test', 'anon', {
@@ -32,7 +28,6 @@ export function fakeDb(rows: (sent: Sent) => readonly unknown[] = () => []) {
 
 export const HOUSEHOLD = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0001';
 
-/** An op context on `db` in one household at a frozen instant, with the batch's pending rows when given. */
 export function opContext(db: Db, pending?: Pending): OpContext {
   const clock = clockAt({ kind: 'env', now: parseInstant('2026-10-07T02:00:00.000Z') }, 'Asia/Ho_Chi_Minh');
   return { db, householdId: HOUSEHOLD, clock, ...(pending === undefined ? {} : { pending }) };

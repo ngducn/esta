@@ -59,12 +59,10 @@ export function setClock(instant: string) {
   expect(spawnSync('pnpm', ['--silent', 'clock:set', instant], { cwd: ROOT, env: { ...process.env, ESTA_SLOT: env.ESTA_SLOT } }).status).toBe(0);
 }
 
-/** What a screen's server action builds for a seeded lane: Ryan's session, the lane's household, the slot's test clock. */
 export async function laneContext(db: Db, lane: number): Promise<OpContext> {
   return { db, householdId: seedId(`seed:household:lane-${lane}`), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) };
 }
 
-/** A townhouse as the property form sends it, told apart by its code. */
 export const demoProperty = (code: string) => ({
   nickname: `Demo Nhà phố ${code}`,
   code,

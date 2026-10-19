@@ -90,7 +90,7 @@ export type PlanRequest = z.output<typeof planRequestSchema>;
 
 /**
  * `change` is what Ryan approved, null when the item had nothing to change. It is compared at apply, never written.
- * `needs` lists the earlier items the input names by ref; a plan stored before refs existed reads as none.
+ * A plan stored before refs has no `needs`.
  */
 const storedPlanSchema = z.object({
   v: z.literal(1),
@@ -129,23 +129,19 @@ function withId(raw: unknown, id: string | null): unknown {
   return id !== null && typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? { ...raw, id } : raw;
 }
 
-/**
- * The item's input as it is planned and stored: the ID numbers typed in chat cut to their last four, then each `$ref`
- * replaced by the id its item minted. The label registers even when the item is refused, so its dependents read
- * `blocked`.
- */
 function prepare(item: PlanRequest['items'][number], index: number, id: string | null, labels: Map<string, Label>, earlier: readonly Reported<ItemPlan>[]) {
   const typed = reduceTypedIds(item.input);
   const resolved = resolveRefs(typed, labels);
+  // After resolving, so a self ref is unknown; before planning, so an item naming a refused one reads blocked.
   const labelled = addLabel(labels, item.ref, { index, id });
-  if (!resolved.ok) return { input: typed, needs: [], early: resolved.reason };
+  if (!resolved.ok) return { input: typed, needs: [], refusal: resolved.reason };
   const { input, needs } = resolved.value;
-  return { input: withId(input, id), needs, early: labelled ?? blockedBy(needs, earlier) };
+  return { input: withId(input, id), needs, refusal: labelled ?? blockedBy(needs, earlier) };
 }
 
 /**
  * Plans every item in order and stores the batch only when none was refused, so Ryan's OK covers all of it. A create
- * gets its id here; Claude never invents one. Each plan sees the rows the items before it will write.
+ * gets its id here; Claude never invents one.
  */
 export async function planChanges(ctx: LocalContext, request: PlanRequest): Promise<Result<PlannedBatch, PlanRefusal>> {
   const now = ctx.clock.now();
@@ -164,8 +160,8 @@ export async function planChanges(ctx: LocalContext, request: PlanRequest): Prom
   for (const [index, item] of request.items.entries()) {
     const step = OPS[item.op];
     const id = step.creates ? randomUUID() : null;
-    const { input, needs, early } = prepare(item, index, id, labels, items);
-    const { plan, writes } = early === null ? await step.plan({ ...ctx, pending }, input) : refused(early);
+    const { input, needs, refusal } = prepare(item, index, id, labels, items);
+    const { plan, writes } = refusal === null ? await step.plan({ ...ctx, pending }, input) : refused(refusal);
     pending = withWrites(pending, writes);
     items.push({ ...plan, index, op: item.op, id });
     stored.push({ op: item.op, id, needs: [...needs], input, change: plan.status === 'change' ? plan.change : null });
@@ -210,8 +206,7 @@ const failed: ItemOutcome = { status: 'refused', refusal: { kind: 'failed' } };
 
 /**
  * Claims the batch, then for each item parses the stored input again, plans again, and applies only when the fresh
- * change equals the one Ryan approved. An item that needs a refused item is `blocked` without planning, and the
- * database alone answers every plan here. An item that throws is `failed` and the rest go on. When an apply dies before
+ * change equals the one Ryan approved. An item that throws is `failed` and the rest go on. When an apply dies before
  * recording the outcomes, the next one after the lease plans every item again: what already landed plans as unchanged
  * and counts as landed, and the rest apply.
  */

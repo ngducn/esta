@@ -12,10 +12,8 @@ const personInputSchema = z.strictObject({
   person: z.strictObject({
     full_name: tenantSchema.shape.full_name,
     phone: tenantSchema.shape.phone.nullable(),
-    /** The screens never send it. */
     id_last4: idLast4Schema.nullable().default(null),
   }),
-  /** Ryan's answer to the duplicate question: this is a different person from the ones named. */
   allow_duplicate: z.boolean().default(false),
 });
 type PersonInput = z.output<typeof personInputSchema>;
@@ -29,10 +27,8 @@ export type DuplicateReason = 'phone' | 'name_and_id_last4';
 export type PossibleDuplicate = ViewRows['parties'] & { readonly reasons: readonly DuplicateReason[] };
 export type PersonRefusal = { readonly kind: 'possible_duplicate'; readonly people: readonly PossibleDuplicate[] };
 
-/** Diacritics, case and spacing aside, as the property search compares words. */
 const foldedName = (name: string) => searchTokens(name).join(' ');
 
-/** People already in the household, or planned earlier in the batch, who may be this one: the same phone, or the same name and last four ID digits. */
 async function possibleDuplicates(ctx: OpContext, { id, person }: PersonInput): Promise<PossibleDuplicate[]> {
   const byPhone = person.phone === null ? [] : await viewRows(ctx, 'parties', { phone: person.phone });
   const byId = person.id_last4 === null ? [] : await viewRows(ctx, 'parties', { id_last4: person.id_last4 });

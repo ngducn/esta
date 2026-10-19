@@ -11,10 +11,8 @@ type NewUnit = { readonly id: string; readonly property_id: string; readonly row
 export type UnitSaved = { readonly id: string; readonly label: string };
 export type UnitRefusal = { readonly kind: 'label_taken'; readonly label: string; readonly takenBy: string } | { readonly kind: 'whole_unit_leased' };
 
-/** From the leases migration: a room would replace the property's whole unit, which has a lease. */
 const SENTINELS: Readonly<Record<string, UnitRefusal>> = { ESTA_WHOLE_UNIT_LEASED: { kind: 'whole_unit_leased' } };
 
-/** Adds a room, floor, shop or lot to a property, last in its list, under the id the caller minted. */
 export const unitCreate = defineOp<z.output<typeof unitInputSchema>, NewUnit, UnitSaved, UnitRefusal>({
   creates: 'units',
   input: unitInputSchema,

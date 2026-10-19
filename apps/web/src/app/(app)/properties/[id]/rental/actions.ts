@@ -46,7 +46,6 @@ async function nextSortOrder(propertyId: string): Promise<number> {
   return Math.max(-1, ...units.map((unit) => unit.sort_order)) + 1;
 }
 
-/** How the unit sheet reads each refusal of a new unit, the same as when it inserted the row itself. */
 const CREATE_REFUSED: Readonly<Record<(UnitRefusal | CommonRefusal)['kind'], RentalRefusal>> = {
   label_taken: 'duplicate',
   conflict: 'duplicate',
