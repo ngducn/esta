@@ -1072,7 +1072,7 @@
     "downloadFailed": "Chưa tải xuống được. Kiểm tra kết nối mạng rồi thử lại.",
     "edit": "Sửa thông tin",
     "editTitle": "Sửa thông tin tài liệu",
-    "editBody": "Sửa tên, loại, tài sản, ngày hết hạn, nhãn hoặc mức che mờ. Tệp đã lưu giữ nguyên.",
+    "editBody": "Sửa tên, loại, tài sản, ngày hết hạn hoặc nhãn. Tệp đã lưu giữ nguyên.",
     "tagsField": "Nhãn (nếu có)",
     "tagsHint": "Cách nhau bằng dấu phẩy, ví dụ: bảo hiểm, 2026.",
     "updated": "Đã lưu thông tin {title}.",

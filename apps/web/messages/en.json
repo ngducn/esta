@@ -1072,7 +1072,7 @@
     "downloadFailed": "The download did not start. Check the network connection and try again.",
     "edit": "Edit details",
     "editTitle": "Edit document details",
-    "editBody": "Change the name, type, property, expiry date, tags or blur. The saved file stays as it is.",
+    "editBody": "Change the name, type, property, expiry date or tags. The saved file stays as it is.",
     "tagsField": "Tags (optional)",
     "tagsHint": "Separate with commas, for example: insurance, 2026.",
     "updated": "Saved the details of {title}.",
