@@ -119,10 +119,6 @@ export function formatReport(report: Report, set: 'synthetic' | 'private'): stri
   return lines.join('\n');
 }
 
-function readJson(path: string): unknown {
-  return JSON.parse(readFileSync(path, 'utf8')) as unknown;
-}
-
 const formOf = (truth: unknown): CertificateForm => (truth as { form?: { value?: CertificateForm } }).form?.value ?? 'paper_only';
 
 export function syntheticFixtures(): EvalFixture[] {
@@ -150,7 +146,7 @@ export function privateFixtures(root = PRIVATE_DIR): EvalFixture[] {
     .map((entry, index) => {
       const id = `private-${index + 1}`;
       const dir = join(root, entry.name);
-      const raw = readJson(join(dir, 'truth.json')) as { certificate?: unknown };
+      const raw = JSON.parse(readFileSync(join(dir, 'truth.json'), 'utf8')) as { certificate?: unknown };
       const truth = raw.certificate ?? raw;
       const files = readdirSync(dir).filter((name) => name !== 'truth.json' && !name.startsWith('.')).sort();
       return { id, form: formOf(truth), truth, upload: privateUpload(id, dir, files) };
