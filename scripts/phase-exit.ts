@@ -113,7 +113,8 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'Lighthouse', commands: [['node', 'scripts/perf/phase-budget.ts']] },
   ],
-  // The north-star row resets the slot to the `northstar` seed, so it runs last, after every row that needs the full seed.
+  // North-star resets the slot to the `northstar` seed, so Lighthouse resets it back to the full seed. Lighthouse goes
+  // last because its build empties `.next`, which would take the pages from under a server the e2e rows reuse.
   '2': [
     cited('DOC-1', { e2e: ['documents-upload'] }),
     cited('DOC-2', { web: ['lib/capture/build-pdf.test.ts'], e2e: ['documents-multipage'] }),
@@ -129,8 +130,8 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     // The replay golden suite scores every synthetic certificate and bill against AGENT.md §7.2 and fails below a target.
     { id: 'AGT-2', commands: [['pnpm', '--filter', 'agent', 'exec', 'vitest', 'run', 'test/golden/extract.test.ts', 'test/sensitive-documents.test.ts']] },
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
-    { id: 'Lighthouse', commands: [['node', 'scripts/perf/phase-budget.ts', '--phase', '2']] },
     { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
+    { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '2']] },
   ],
 };
 

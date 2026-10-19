@@ -65,13 +65,13 @@ describe('checkPhase', () => {
     expect(PHASE_CHECKS['1']?.map((check) => check.id)).toEqual(['PRP-1', 'PRP-2', 'PRP-3', 'PRP-4', 'PRP-5', 'PRP-6', 'PRP-8', 'RLS', 'Lighthouse']);
   });
 
-  it('lists DOC-1 to DOC-7, PRP-7, AGT-2, RLS, Lighthouse and north-star for phase 2, north-star last', () => {
-    expect(PHASE_CHECKS['2']?.map((check) => check.id)).toEqual(['DOC-1', 'DOC-2', 'DOC-3', 'DOC-4', 'DOC-5', 'DOC-6', 'DOC-7', 'PRP-7', 'AGT-2', 'RLS', 'Lighthouse', 'North-star']);
+  it('lists DOC-1 to DOC-7, PRP-7, AGT-2, RLS, north-star and Lighthouse for phase 2, Lighthouse last', () => {
+    expect(PHASE_CHECKS['2']?.map((check) => check.id)).toEqual(['DOC-1', 'DOC-2', 'DOC-3', 'DOC-4', 'DOC-5', 'DOC-6', 'DOC-7', 'PRP-7', 'AGT-2', 'RLS', 'North-star', 'Lighthouse']);
   });
 
   it('runs the phase 2 Lighthouse budgets, the replay golden suite and the north-star steps', () => {
     const commands = Object.fromEntries((PHASE_CHECKS['2'] ?? []).map((check) => [check.id, 'commands' in check ? check.commands.map((command) => command.join(' ')) : []]));
-    expect(commands['Lighthouse']).toEqual(['node scripts/perf/phase-budget.ts --phase 2']);
+    expect(commands['Lighthouse'], 'back to the full seed after the north-star seed').toEqual(['pnpm db:reset', 'node scripts/perf/phase-budget.ts --phase 2']);
     expect(commands['AGT-2']?.[0]).toContain('test/golden/extract.test.ts');
     expect(commands['North-star']).toEqual(['pnpm e2e:northstar --retries=1 --reporter=list']);
   });
