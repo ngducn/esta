@@ -55,7 +55,7 @@ insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:0
 
 -- Every invoice of one lease with its rent line, in period order.
 create temporary view billed as
-  select i.lease_id, i.period_start, i.period_end, i.due_date, i.issue_on, i.status, l.amount_vnd
+  select i.household_id, i.lease_id, i.period_start, i.period_end, i.due_date, i.issue_on, i.status, l.amount_vnd
   from public.invoices i join public.invoice_lines l on l.invoice_id = i.id;
 
 select tests.act_as('member.a@test.esta.test');
@@ -103,7 +103,7 @@ select results_eq(
 select tests.clear_request();
 reset role;
 select results_eq(
-  $$ select lease_id, period_start, period_end, status from billed order by lease_id $$,
+  format($$ select lease_id, period_start, period_end, status from billed where household_id = %L order by lease_id $$, :'a'),
   $$ values ('00000000-0000-4000-8000-00000000e051'::uuid, date '2026-10-01', date '2026-10-05', 'issued'),
             ('00000000-0000-4000-8000-00000000e061'::uuid, date '2026-10-01', date '2026-10-05', 'issued'),
             ('00000000-0000-4000-8000-00000000e081'::uuid, date '2026-10-01', date '2026-10-07', 'issued'),

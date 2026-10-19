@@ -374,7 +374,9 @@ grant execute on function public.amend_lease(uuid, date, bigint, integer, text) 
 
 -- LSE-2: active to terminated with a date and a reason. The lease now ends on that date: drafts reaching past it are
 -- replanned to stop there, and the nightly job never issues a period that starts after it. A date before the start of an
--- issued invoice is refused, because that invoice cannot change.
+-- issued invoice is refused, because that invoice cannot change. The plan reads from the earlier of today and that date,
+-- since a past date shortens its period to end before today, outside a plan read from today; the shortened draft issues
+-- on its own issue date, or on the next nightly run when that date has passed.
 create function public.terminate_lease(p_lease_id uuid, p_terminated_on date, p_reason text)
 returns void
 language plpgsql
@@ -401,7 +403,7 @@ begin
   update public.leases l
   set status = 'terminated', terminated_on = p_terminated_on, end_date = p_terminated_on, termination_reason = btrim(p_reason)
   where l.id = v_lease.id;
-  perform private.issue_invoices(v_lease.id, private.business_date(v_now), v_now);
+  perform private.issue_invoices(v_lease.id, least(private.business_date(v_now), p_terminated_on), v_now);
 end;
 $$;
 revoke all on function public.terminate_lease(uuid, date, text) from public, anon;
