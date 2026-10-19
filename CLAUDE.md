@@ -54,7 +54,7 @@ Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Ne
 ## Conventions
 
 - TypeScript strict. No `any`. Parse external data with zod at boundaries; trust internal types.
-- Domain logic lives in `packages/core` as pure functions with no IO: money, formatting and parsing, schedule, allocation, matching, tax, completeness, watch rules, VietQR, proposals. Web, cron routes and agent all import it.
+- Domain logic lives in `packages/core` as pure functions with no IO: money, formatting and parsing, allocation, matching, tax, completeness, watch rules, VietQR, proposals. Web, cron routes and agent all import it. Rent periods are the exception: the database plans them (`public.lease_schedule` and the nightly invoicing job, the only writer of invoices), and TypeScript reads them through one loader.
 - Money is integer VND. Postgres `bigint`; TypeScript branded `Vnd` (a safe integer `number`). Rates are basis points. Never floats for money.
 - Time comes from one injected `Clock` that, outside `ESTA_ENV=production`, reads the `test_clock` row or `ESTA_FROZEN_NOW` (SPEC FND-9). Business dates are `IsoDate` strings (`YYYY-MM-DD`) in Asia/Ho_Chi_Minh. No `new Date()` in domain code. Business SQL takes `p_as_of` parameters and never calls `now()` or `current_date`.
 - Encode domain rules as data or registries (tax rules, land use codes, completeness checks, watch rules, proposal types), not scattered conditionals.

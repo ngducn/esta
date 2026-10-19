@@ -69,7 +69,7 @@ describe('generate', () => {
     expect(sql).toContain("select set_config('esta.actor', 'system:seed', true);");
     const statements = sql
       .split(';\n')
-      .filter((part) => part.includes('insert into') && !part.includes('private.local_stack'));
+      .filter((part) => part.includes('insert into') && !part.includes('private.local_stack') && !/insert into seed_lease|pg_temp\./.test(part));
     expect(statements.length).toBeGreaterThan(0);
     for (const statement of statements) {
       expect(statement).toMatch(/\(.*created_at, updated_at\) values/);
@@ -77,6 +77,7 @@ describe('generate', () => {
         expect(row).toMatch(/'2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\),?$/);
       }
     }
+    expect(sql).toMatch(/'manual', '2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\n\s*from pg_temp\.seed_transfer;/);
   });
 });
 

@@ -3,7 +3,7 @@
 import { allocatePayment, owedFor, owedThrough } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, formatMonthWithin, formatVnd } from '@esta/core/format';
-import { firstOfMonth } from '@esta/core/schedule';
+import { firstOfMonth } from '@esta/core/date/calendar';
 import { vnd, type Vnd } from '@esta/core/money';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';

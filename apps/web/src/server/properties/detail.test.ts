@@ -11,7 +11,7 @@ const board = vi.hoisted(() => ({ result: { data: [], error: null } as Result })
 vi.mock('server-only', () => ({}));
 vi.mock('@/server/clock', () => ({ getClock: async () => ({ today: () => '2026-10-07' }) }));
 vi.mock('@/server/member', () => ({ requireMember: async () => ({ household: { id: HOUSEHOLD_ID } }) }));
-vi.mock('@/server/leases/load', () => ({ loadHoldingLeases: async () => ({ leases: sixLetRooms, amendments: [] }) }));
+vi.mock('@/server/leases/load', () => ({ loadHoldingLeases: async () => ({ leases: sixLetRooms, schedule: [] }) }));
 vi.mock('@/server/supabase/server', () => ({
   createSessionClient: async () => ({
     from: (table: string) => query(table === 'properties' ? { data: { kind_details: { room_count: 8 } }, error: null } : { data: propertyRow, error: null }),

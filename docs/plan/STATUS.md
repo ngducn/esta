@@ -65,7 +65,7 @@ The plan's count (41 of 73 PRs merged on 2026-10-19) covers only the plan's own 
 
 - The NSO source, its license reading, the NAPAS BIN snapshot and the curated rows above were approved when you merged P0-02 to P0-11 on 2026-10-07 (standing orders, 08:40 update); they stay listed until you confirm that reading.
 
-- Confirm four `[app rule]` readings from P3-02, the lease schedule generator. Each is pinned by a table test in `packages/core/src/schedule/generate.test.ts`.
+- Confirm four `[app rule]` readings from P3-02, the lease schedule generator. Each is pinned by a golden case in `supabase/tests/lease_schedule.test.sql`, since the database became the one planner (#195).
   - `leases.rent_vnd` is the monthly rent, read from SPEC LSE-3 ("totals equal rent × months"), `units.list_rent_vnd` and the per-month quotes and deposits in DOMAIN-VN §7. A full period bills `rent_vnd × billing_cycle_months`, so a 100,000,000 lease billed quarterly bills 300,000,000 a quarter. Say if rent should be entered per billing period instead.
   - A `calendar_month` lease with a cycle above 1 aligns to months counted from its start month, not to calendar quarters. A quarterly lease from 10 August bills 10 August to 31 October, then November to January. Say if quarters should fall on January, April, July and October.
   - When the end date cuts a first calendar period, the period bills only the days from the lease start to the end date, under `first_period_proration` `none` as under `by_days`. A one-day lease on 15 July bills 1/31 of the month.
@@ -82,6 +82,7 @@ The plan's count (41 of 73 PRs merged on 2026-10-19) covers only the plan's own 
   - Late renewal (#172): a renewal whose start date is already past bills like a new lease does, from the current period onward, with the same "Đã thu tiền đến hết ngày" field. Earlier months count as settled outside Esta.
   - Renewal rent change (#172, `[app rule]`): between −50% and +100% of the old rent, rounded half up to 100.000 ₫.
   - Documents (#173): no manual "sensitive" switch. The document's type decides, so Mẹ cannot keep one bill's read text out of search.
+  - Dĩ An's October bills in the demo data (#195): nothing in Esta records meter readings until meter entry ships (P3-14), so real nightly billing would issue the six Dĩ An bills due 25/10 on 25/10. The seed issues them on 03/10 through the same one-bill issue step meter entry will use, standing in for September's readings, so the demo matches SPEC §9.3. P3-14 replaces the stand-in with seeded readings.
 
 ## Needs professional confirmation
 

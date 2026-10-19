@@ -1,10 +1,6 @@
 import { isoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
-import { planInvoices } from '@esta/core/lease';
-import { vnd } from '@esta/core/money';
 import { parsePropertyFilters } from '@esta/core/properties';
-import type { Amendment } from '@esta/core/schedule';
-import { leaseRowSchema, leaseTerms, LEASE_COLUMNS } from '@esta/core/schemas/lease';
 import type { Database } from '@esta/db';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -42,7 +38,6 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => cl
 
 const { activateLease, amendLease, createTenant, previewActivation, renewLease, saveLease, terminateLease } = await import('./leases');
 const { listProperties } = await import('@/server/properties/list');
-const AS_OF = isoDate('2026-10-07');
 
 const draft = (unitId: string, tenantId: string, rent: number | null) => ({
   unit_id: unitId,
@@ -148,47 +143,14 @@ describe('lease actions against local Supabase (LSE-1 to LSE-3)', () => {
     expect(await saveLease(propertyId, null, draft(unitId, tenantId, 0))).toEqual({ ok: false, reason: 'invalid' });
   });
 
-  it('previews on the database clock exactly what packages/core planInvoices plans, across cycles, anchors, prorations, increases and paid-through dates', async () => {
-    const { data: clock } = await client.from('test_clock').select('frozen_now').maybeSingle();
-    expect(clock?.frozen_now, 'scripts/web-integration.ts sets the database clock').toBe('2026-10-07T02:00:00+00:00');
-    const cases = [1, 3, 12].flatMap((billing_cycle_months) =>
-      (['calendar_month', 'lease_start'] as const).flatMap((period_anchor) =>
-        (
-          [
-            ['2025-01-31', null, { kind: 'none' }],
-            ['2026-08-10', '2027-01-15', { kind: 'percent', value: 500, every_months: 12 }],
-            ['2026-10-16', null, { kind: 'fixed', value: 250_000, every_months: 6 }],
-          ] as const
-        ).map(([start_date, end_date, escalation]) => ({
-          ...draft(unitId, tenantId, 3_333_333),
-          start_date,
-          end_date,
-          billing_cycle_months,
-          period_anchor,
-          first_period_proration: billing_cycle_months === 3 ? 'none' : 'by_days',
-          escalation,
-          utilities_mode: period_anchor === 'lease_start' ? 'metered_by_owner' : 'tenant_direct',
-        })),
-      ),
-    );
-    const { data, error } = await client.from('leases').insert(cases.map((value) => ({ ...value, household_id: HOUSEHOLD, property_id: propertyId }))).select(LEASE_COLUMNS);
-    if (error) throw error;
-    const rows = data.map((row) => leaseRowSchema.parse(row));
-    let compared = 0;
-    for (const row of rows) {
-      for (const paidThrough of [null, '2026-09-30', '2026-10-20', '2026-11-30'] as const) {
-        const terms = leaseTerms(row);
-        if (terms === null) throw new Error('every case has its start and rent');
-        const expected = planInvoices({ ...terms, paidThroughDate: paidThrough === null ? null : isoDate(paidThrough), utilitiesMode: row.utilities_mode }, [], AS_OF).map(
-          (invoice) => ({ periodStart: invoice.periodStart, periodEnd: invoice.periodEnd, dueDate: invoice.dueDate, rentVnd: invoice.lines[0]?.amountVnd, issuesNow: invoice.issueOn <= AS_OF }),
-        );
-        const typed = paidThrough === null ? '' : formatDate(isoDate(paidThrough), 'vi');
-        expect(await previewActivation(row.id, typed), `${JSON.stringify({ ...terms, paidThrough })}`).toEqual(expected);
-        compared += expected.length;
-      }
-    }
-    expect(compared).toBeGreaterThan(50);
-    await client.from('leases').delete().in('id', rows.map((row) => row.id));
+  it('previews on the database clock what activation would bill, from the day after a typed paid-through date inside a period', async () => {
+    const saved = await saveLease(propertyId, null, draft(unitId, tenantId, 3_000_000));
+    if (!saved.ok) throw new Error(saved.reason);
+    expect(await previewActivation(saved.id, '20/10/2026')).toEqual([
+      { periodStart: '2026-10-21', periodEnd: '2026-10-31', dueDate: '2026-10-21', rentVnd: 1_064_516, issuesNow: false },
+      { periodStart: '2026-11-01', periodEnd: '2026-11-30', dueDate: '2026-11-01', rentVnd: 3_000_000, issuesNow: false },
+    ]);
+    await client.from('leases').delete().eq('id', saved.id);
   });
 });
 
@@ -315,50 +277,46 @@ describe('amend, terminate and renew against local Supabase (LSE-2, LSE-3, #144)
     expect(data).toEqual({ start_date: '2026-12-01', paid_through_date: '2026-12-15' });
   });
 
-  it('LSE-3: after an amendment the database plans exactly what packages/core planInvoices plans with the same amendment', async () => {
+  it('LSE-3: after an amendment the drafts from its period bill the new terms and the earlier invoices keep theirs', async () => {
     const percentYearly = { kind: 'percent', value: 500, every_months: 12 } as const;
-    const cases: { values: Record<string, unknown>; paidThrough: string; amendment: Amendment }[] = [
-      { values: { start_date: '2026-08-01' }, paidThrough: '2026-09-30', amendment: { effectivePeriodStart: isoDate('2026-11-01'), changes: { rentVnd: vnd(3_456_789) } } },
+    const bill = (periodStart: string, periodEnd: string, rentVnd: number) => ({ periodStart, periodEnd, dueDate: periodStart, issueOn: periodStart, rentVnd });
+    const cases: { values: Record<string, unknown>; paidThrough: string; amendment: { start: string; rentVnd: number; billingCycleMonths?: number }; bills: ReturnType<typeof bill>[] }[] = [
+      {
+        values: { start_date: '2026-08-01' },
+        paidThrough: '2026-09-30',
+        amendment: { start: '2026-11-01', rentVnd: 3_456_789 },
+        bills: [bill('2026-10-01', '2026-10-31', 3_000_000), bill('2026-11-01', '2026-11-30', 3_456_789)],
+      },
       {
         values: { start_date: '2025-11-10', period_anchor: 'lease_start', utilities_mode: 'metered_by_owner', escalation: percentYearly },
         paidThrough: '2026-09-09',
-        amendment: { effectivePeriodStart: isoDate('2026-10-10'), changes: { rentVnd: vnd(4_000_000) } },
+        amendment: { start: '2026-10-10', rentVnd: 4_000_000 },
+        bills: [bill('2026-09-10', '2026-10-09', 3_000_000), bill('2026-10-10', '2026-11-09', 4_000_000), bill('2026-11-10', '2026-12-09', 4_200_000)],
       },
       {
         values: { start_date: '2026-08-10', billing_cycle_months: 3 },
         paidThrough: '2026-10-31',
-        amendment: { effectivePeriodStart: isoDate('2026-11-01'), changes: { rentVnd: vnd(3_333_333), billingCycleMonths: 1 } },
+        amendment: { start: '2026-11-01', rentVnd: 3_333_333, billingCycleMonths: 1 },
+        bills: [bill('2026-11-01', '2026-11-30', 3_333_333)],
       },
       {
         values: { start_date: '2026-05-01', end_date: '2026-11-07', escalation: { kind: 'fixed', value: 250_000, every_months: 6 } },
         paidThrough: '2026-09-30',
-        amendment: { effectivePeriodStart: isoDate('2026-11-01'), changes: { rentVnd: vnd(5_000_000) } },
+        amendment: { start: '2026-11-01', rentVnd: 5_000_000 },
+        bills: [bill('2026-10-01', '2026-10-31', 3_000_000), bill('2026-11-01', '2026-11-07', 1_166_667)],
       },
     ];
-    for (const { values, paidThrough, amendment } of cases) {
+    for (const { values, paidThrough, amendment, bills } of cases) {
       const lease = await activeLease(values, formatDate(isoDate(paidThrough), 'vi'));
       const { error } = await client.rpc('amend_lease', {
         p_lease_id: lease.id,
-        p_effective_period_start: amendment.effectivePeriodStart,
-        ...(amendment.changes.rentVnd === undefined ? {} : { p_rent_vnd: amendment.changes.rentVnd }),
-        ...(amendment.changes.billingCycleMonths === undefined ? {} : { p_billing_cycle_months: amendment.changes.billingCycleMonths }),
+        p_effective_period_start: amendment.start,
+        p_rent_vnd: amendment.rentVnd,
+        ...(amendment.billingCycleMonths === undefined ? {} : { p_billing_cycle_months: amendment.billingCycleMonths }),
       });
       if (error) throw error;
-      const read = await client.from('leases').select(LEASE_COLUMNS).eq('id', lease.id).single();
-      if (read.error) throw read.error;
-      const row = leaseRowSchema.parse(read.data);
-      const terms = leaseTerms(row);
-      if (terms === null) throw new Error('every case has its start and rent');
-      const expected = planInvoices({ ...terms, utilitiesMode: row.utilities_mode }, [amendment], AS_OF).map((invoice) => ({
-        periodStart: invoice.periodStart,
-        periodEnd: invoice.periodEnd,
-        dueDate: invoice.dueDate,
-        issueOn: invoice.issueOn,
-        rentVnd: invoice.lines.reduce((sum, line) => sum + line.amountVnd, 0),
-      }));
-      const actual = (await billsOf(lease.id)).map(({ status: _status, ...bill }) => bill);
-      expect(actual, JSON.stringify({ values, amendment })).toEqual(expected);
-      expect(actual.some((bill) => bill.periodStart >= amendment.effectivePeriodStart), 'the amended period is billed inside the horizon').toBe(true);
+      const actual = (await billsOf(lease.id)).map(({ status: _status, ...written }) => written);
+      expect(actual, JSON.stringify({ values, amendment })).toEqual(bills);
     }
   });
 });

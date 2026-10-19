@@ -1,5 +1,5 @@
 import { vnd, type Vnd } from '../money/vnd';
-import { scaleRoundHalfUp } from '../schedule/rounding';
+import { scaleRoundHalfUp } from '../money/round';
 import type { OwnerRevenue } from './attribute';
 import { activeTaxNotes, type TaxNoteKey } from './notes';
 import { PIT_BASES, VAT_BASES, type TaxRule } from './rules';

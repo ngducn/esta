@@ -1,8 +1,7 @@
-import { daysBetween } from '../date/calendar';
+import { addDays, addMonths, daysBetween } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
-import { addDays, addMonths } from '../schedule/dates';
-import type { Period } from '../schedule/types';
+import type { SchedulePeriod } from '../schedule/types';
 
 export type TaxPayer = 'owner' | 'tenant_withholds';
 
@@ -232,11 +231,11 @@ function recurringBlocks(charge: RecurringCharge, from: IsoDate, until: IsoDate)
 }
 
 /**
- * Turns a `generateSchedule` result into revenue periods: rent for every period, paid-through ones
+ * Turns `public.lease_schedule` periods into revenue periods: rent for every period, paid-through ones
  * included, plus each recurring charge billed every `cycleMonths` from the lease start across the same
  * span. A termination cuts the last period by days. Metered utilities never enter.
  */
-export function periodsFromSchedule(schedule: readonly Period[], lease: TaxLease): RevenuePeriod[] {
+export function periodsFromSchedule(schedule: readonly Pick<SchedulePeriod, 'start' | 'end' | 'rentVnd'>[], lease: TaxLease): RevenuePeriod[] {
   const first = schedule[0];
   const last = schedule.at(-1);
   if (first === undefined || last === undefined) return [];

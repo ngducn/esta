@@ -2,8 +2,7 @@ import { z } from 'zod';
 import { BILLING_CYCLES, LEASE_STATUSES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS, UTILITIES_MODES } from '../lease/types';
 import { vnd } from '../money/vnd';
 import { normalizePhone, type Phone } from '../phone';
-import type { Amendment, Escalation, LeaseTerms } from '../schedule/types';
-import { DEFAULT_ESCALATION_ROUNDING_VND } from '../schedule/escalation';
+import type { Amendment, Escalation, SchedulePeriod } from '../schedule/types';
 import { isoDateSchema, text } from './legal';
 import { vndSchema } from './property';
 import { MAX_LIST_RENT_VND } from './units';
@@ -22,10 +21,9 @@ export type EscalationJson = z.output<typeof escalationJsonSchema>;
 
 export function toEscalation(json: EscalationJson): Escalation {
   if (json.kind === 'none') return json;
-  const roundingVnd = json.rounding_vnd === undefined ? DEFAULT_ESCALATION_ROUNDING_VND : vnd(json.rounding_vnd);
   return json.kind === 'percent'
-    ? { kind: 'percent', valueBps: json.value, everyMonths: json.every_months, roundingVnd }
-    : { kind: 'fixed', valueVnd: vnd(json.value), everyMonths: json.every_months, roundingVnd };
+    ? { kind: 'percent', valueBps: json.value, everyMonths: json.every_months }
+    : { kind: 'fixed', valueVnd: vnd(json.value), everyMonths: json.every_months };
 }
 
 /** What `createLease` and `updateLease` accept: a draft may still miss its tenant, start or rent (LSE-2). */
@@ -120,18 +118,27 @@ export type LeaseAmendmentRow = z.output<typeof leaseAmendmentRowSchema>;
 
 export const LEASE_AMENDMENT_COLUMNS = 'id, lease_id, effective_period_start, changes, reason';
 
-/** The schedule terms of a lease that has its start and rent; a draft without them has none. */
-export function leaseTerms(row: LeaseRow): LeaseTerms | null {
-  if (row.start_date === null || row.rent_vnd === null) return null;
-  return {
-    startDate: row.start_date,
-    endDate: row.end_date,
-    rentVnd: row.rent_vnd,
-    billingCycleMonths: row.billing_cycle_months,
-    periodAnchor: row.period_anchor,
-    firstPeriodProration: row.first_period_proration,
-    dueOffsetDays: row.due_offset_days,
-    escalation: toEscalation(row.escalation),
-    paidThroughDate: row.paid_through_date,
-  };
-}
+/** A `public.lease_schedule` row. */
+export const schedulePeriodRowSchema = z
+  .object({
+    lease_id: z.uuid(),
+    period_start: isoDateSchema,
+    period_end: isoDateSchema,
+    due_date: isoDateSchema,
+    monthly_rent_vnd: z.number().int().positive(),
+    rent_vnd: z.number().int().min(0),
+    covered_by_paid_through: z.boolean(),
+    invoice_id: z.uuid().nullable(),
+  })
+  .transform(
+    (row): SchedulePeriod => ({
+      leaseId: row.lease_id,
+      start: row.period_start,
+      end: row.period_end,
+      dueDate: row.due_date,
+      monthlyRentVnd: vnd(row.monthly_rent_vnd),
+      rentVnd: vnd(row.rent_vnd),
+      coveredByPaidThrough: row.covered_by_paid_through,
+      invoiceId: row.invoice_id,
+    }),
+  );

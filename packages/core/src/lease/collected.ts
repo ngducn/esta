@@ -1,6 +1,6 @@
 import type { IsoDate } from '../date/iso-date';
 import type { Vnd } from '../money/vnd';
-import { addDays } from '../schedule/dates';
+import { addDays } from '../date/calendar';
 
 /** An invoice as `invoice_balances` reads it: what it billed and what is still owed on it. */
 export type BilledPeriod = {

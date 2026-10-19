@@ -1,8 +1,18 @@
 import 'server-only';
 import { PAYMENT_STATUSES, type PaymentStatus } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
+import { addMonths } from '@esta/core/date/calendar';
 import { holdsUnit } from '@esta/core/lease';
-import { LEASE_AMENDMENT_COLUMNS, LEASE_COLUMNS, leaseAmendmentRowSchema, leaseRowSchema, type LeaseAmendmentRow, type LeaseRow } from '@esta/core/schemas/lease';
+import type { SchedulePeriod } from '@esta/core/schedule';
+import {
+  LEASE_AMENDMENT_COLUMNS,
+  LEASE_COLUMNS,
+  leaseAmendmentRowSchema,
+  leaseRowSchema,
+  schedulePeriodRowSchema,
+  type LeaseAmendmentRow,
+  type LeaseRow,
+} from '@esta/core/schemas/lease';
 import { vnd, type Vnd } from '@esta/core/money';
 import { formatPhone, normalizePhone } from '@esta/core/phone';
 import { isoDateSchema } from '@esta/core/schemas/legal';
@@ -35,7 +45,12 @@ export type PropertyLeases = {
   readonly invoices: readonly InvoiceSummary[];
   /** In effective order. */
   readonly amendments: readonly LeaseAmendmentRow[];
+  /** Every lease's periods through its end date, or two years past the Clock's date when it has none. */
+  readonly schedule: readonly SchedulePeriod[];
 };
+
+/** An open-ended lease plans this far ahead, enough for the amendment picker and a year of timeline. */
+const OPEN_ENDED_MONTHS = 24;
 
 const invoiceRowSchema = z
   .object({
@@ -89,15 +104,19 @@ async function readTenants(supabase: SessionClient, householdId: string, ids: re
   return new Map(z.array(tenantRowSchema).parse(data).map((tenant) => [tenant.id, tenant]));
 }
 
-/** Every lease of the property with its tenant, its amendments, and every invoice with its balance. RLS scopes them to the member. */
-export const loadPropertyLeases = cache(async (propertyId: string): Promise<PropertyLeases> => {
+/**
+ * Every lease of the property with its tenant, its amendments, its planned periods, and every invoice with its balance.
+ * RLS scopes them to the member.
+ */
+export const loadPropertyLeases = cache(async (propertyId: string, asOf: IsoDate): Promise<PropertyLeases> => {
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: propertyId };
   const { data, error } = await supabase.from('leases').select(LEASE_COLUMNS).match(scope).order('start_date', { nullsFirst: false }).order('id');
   if (error) throw new Error(`Reading leases failed: ${error.message}`);
   const rows = z.array(leaseRowSchema).parse(data);
   const ids = rows.map((row) => row.id);
-  const [tenants, invoices, amendments] = await Promise.all([
+  const until = rows.reduce((latest, row) => (row.end_date !== null && row.end_date > latest ? row.end_date : latest), addMonths(asOf, OPEN_ENDED_MONTHS));
+  const [tenants, invoices, amendments, schedule] = await Promise.all([
     readTenants(supabase, member.household.id, rows.flatMap((row) => (row.tenant_party_id === null ? [] : [row.tenant_party_id]))),
     ids.length === 0
       ? { data: [], error: null }
@@ -105,6 +124,7 @@ export const loadPropertyLeases = cache(async (propertyId: string): Promise<Prop
     ids.length === 0
       ? { data: [], error: null }
       : supabase.from('lease_amendments').select(LEASE_AMENDMENT_COLUMNS).eq('household_id', member.household.id).in('lease_id', ids).order('effective_period_start'),
+    loadLeaseSchedule(ids, until),
   ]);
   if (invoices.error) throw new Error(`Reading invoices failed: ${invoices.error.message}`);
   if (amendments.error) throw new Error(`Reading lease amendments failed: ${amendments.error.message}`);
@@ -112,6 +132,7 @@ export const loadPropertyLeases = cache(async (propertyId: string): Promise<Prop
     leases: rows.map((row) => ({ ...row, tenant: row.tenant_party_id === null ? null : (tenants.get(row.tenant_party_id) ?? null) })),
     invoices: z.array(invoiceRowSchema).parse(invoices.data),
     amendments: z.array(leaseAmendmentRowSchema).parse(amendments.data),
+    schedule,
   };
 });
 
@@ -127,18 +148,26 @@ export async function loadTenants(): Promise<Tenant[]> {
   return z.array(tenantRowSchema).parse(data);
 }
 
-export type HoldingLeases = { readonly leases: readonly LeaseRow[]; readonly amendments: readonly LeaseAmendmentRow[] };
+/**
+ * The periods `public.lease_schedule` plans for these leases, each starting on or before `until`, beside the invoice that
+ * bills it. The database is the one planner (#195); a lease the member cannot see has none.
+ */
+export async function loadLeaseSchedule(leaseIds: readonly string[], until: IsoDate): Promise<SchedulePeriod[]> {
+  if (leaseIds.length === 0) return [];
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase.rpc('lease_schedule', { p_lease_ids: [...leaseIds], p_until: until });
+  if (error) throw new Error(`Reading the lease schedule failed: ${error.message}`);
+  return z.array(schedulePeriodRowSchema).parse(data);
+}
 
-/** The leases holding a unit on `asOf` with their amendments, across the household or on one property. */
+export type HoldingLeases = { readonly leases: readonly LeaseRow[]; readonly schedule: readonly SchedulePeriod[] };
+
+/** The leases holding a unit on `asOf` with their periods through it, across the household or on one property. */
 export async function loadHoldingLeases(householdId: string, asOf: IsoDate, propertyId?: string): Promise<HoldingLeases> {
   const supabase = await createSessionClient();
   const scope = propertyId === undefined ? { household_id: householdId } : { household_id: householdId, property_id: propertyId };
   const leases = await supabase.from('leases').select(LEASE_COLUMNS).match(scope).in('status', ['active', 'terminated']);
   if (leases.error) throw new Error(`Reading leases failed: ${leases.error.message}`);
   const rows = z.array(leaseRowSchema).parse(leases.data).filter((row) => holdsUnit(row, asOf));
-  if (rows.length === 0) return { leases: [], amendments: [] };
-  const amendments = await supabase.from('lease_amendments').select(LEASE_AMENDMENT_COLUMNS).eq('household_id', householdId).order('effective_period_start');
-  if (amendments.error) throw new Error(`Reading lease amendments failed: ${amendments.error.message}`);
-  const ids = new Set(rows.map((row) => row.id));
-  return { leases: rows, amendments: z.array(leaseAmendmentRowSchema).parse(amendments.data).filter((amendment) => ids.has(amendment.leaseId)) };
+  return { leases: rows, schedule: await loadLeaseSchedule(rows.map((row) => row.id), asOf) };
 }

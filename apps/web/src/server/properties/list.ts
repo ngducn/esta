@@ -29,7 +29,7 @@ type LeaseFactKey = 'leasedUnitCount' | 'monthlyRentVnd';
  */
 export function leaseFacts(propertyId: string, holding: HoldingLeases, asOf: IsoDate): Pick<PropertyViewRow, LeaseFactKey> {
   const leases = holding.leases.filter((lease) => lease.property_id === propertyId);
-  return { leasedUnitCount: new Set(leases.map((lease) => lease.unit_id)).size, monthlyRentVnd: rentInEffect(leases, holding.amendments, asOf) };
+  return { leasedUnitCount: new Set(leases.map((lease) => lease.unit_id)).size, monthlyRentVnd: rentInEffect(leases, holding.schedule, asOf) };
 }
 
 export const PROPERTY_ROW_COLUMNS =

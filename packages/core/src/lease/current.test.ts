@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate as d } from '../date/iso-date';
-import { leaseAmendmentRowSchema, leaseRowSchema } from '../schemas/lease';
+import { vnd } from '../money/vnd';
+import { schedulePeriods } from '../schedule/fixtures';
+import { leaseRowSchema } from '../schemas/lease';
 import { currentLease, rentInEffect } from './current';
 
 let next = 0;
@@ -36,7 +38,11 @@ const row = (values: Record<string, unknown>) =>
 
 const old = row({});
 const renewal = row({ start_date: '2026-11-02', end_date: '2027-11-01', rent_vnd: 9_500_000, renewal_of_lease_id: old.id });
-const amendment = leaseAmendmentRowSchema.parse({ id: uuid(), lease_id: old.id, effective_period_start: '2026-10-01', changes: { rent_vnd: 9_200_000 }, reason: null });
+/** `lease_schedule` for both leases: Thủ Đức amended to 9.200.000 ₫ from 01/10, the renewal from 02/11. */
+const schedule = [
+  ...schedulePeriods(old.id, '2025-11-01', 9_000_000, 12).map((period) => (period.start >= '2026-10-01' ? { ...period, monthlyRentVnd: vnd(9_200_000) } : period)),
+  ...schedulePeriods(renewal.id, '2026-11-02', 9_500_000, 12),
+];
 
 describe('currentLease (the lease a unit shows)', () => {
   it('keeps a lease terminated from 31/10 as the unit lease through that day, then shows the unit vacant', () => {
@@ -62,12 +68,12 @@ describe('currentLease (the lease a unit shows)', () => {
 
 describe('rentInEffect (the contracted rent a property list shows)', () => {
   it('counts an early renewal only from its start and an amendment from its period', () => {
-    expect(rentInEffect([old, renewal], [], d('2026-09-15'))).toBe(9_000_000);
-    expect(rentInEffect([old, renewal], [amendment], d('2026-10-07'))).toBe(9_200_000);
-    expect(rentInEffect([old, renewal], [amendment], d('2026-11-02'))).toBe(9_500_000);
+    expect(rentInEffect([old, renewal], schedule, d('2026-09-15'))).toBe(9_000_000);
+    expect(rentInEffect([old, renewal], schedule, d('2026-10-07'))).toBe(9_200_000);
+    expect(rentInEffect([old, renewal], schedule, d('2026-11-02'))).toBe(9_500_000);
   });
 
-  it('sums the leases in effect across units and keeps a terminated one until its date', () => {
+  it('sums the leases in effect across units, keeps a terminated one until its date, and reads the agreed rent without a schedule', () => {
     const room = row({ unit_id: uuid(), start_date: '2026-08-01', end_date: '2026-10-31', rent_vnd: 2_500_000, status: 'terminated', terminated_on: '2026-10-31' });
     expect(rentInEffect([old, renewal, room], [], d('2026-10-31'))).toBe(11_500_000);
     expect(rentInEffect([old, renewal, room], [], d('2026-11-01'))).toBe(9_000_000);

@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { addMonths } from '../schedule/dates';
-import { generateSchedule } from '../schedule/generate';
-import type { BillingCycleMonths, LeaseTerms } from '../schedule/types';
+import { addMonths } from '../date/calendar';
+import { schedulePeriods } from '../schedule/fixtures';
+import type { BillingCycleMonths } from '../schedule/types';
 import { attributeRevenue, periodsFromSchedule, type OwnershipShare } from './attribute';
 import { computeTaxPosition } from './position';
 import { taxRuleRowSchema } from './rules';
@@ -40,19 +40,11 @@ function portfolio(leases: number, properties: number) {
       : [{ propertyId: `p${p}`, partyId: PARTIES[p % 2] as string, shareBp: 10_000 }],
   ).flat();
   const inputs = Array.from({ length: leases }, (_, i) => {
-    const terms: LeaseTerms = {
-      startDate: addMonths(isoDate('2024-01-05'), i % 36),
-      endDate: null,
-      rentVnd: vnd(3_500_000 + (i % 10) * 1_000_000),
-      billingCycleMonths: CYCLES[i % CYCLES.length] as BillingCycleMonths,
-      periodAnchor: i % 2 === 0 ? 'calendar_month' : 'lease_start',
-      firstPeriodProration: 'by_days',
-      dueOffsetDays: 0,
-      escalation: { kind: 'percent', valueBps: 500, everyMonths: 12, roundingVnd: vnd(100_000) },
-      paidThroughDate: null,
-    };
+    const cycle = CYCLES[i % CYCLES.length] as BillingCycleMonths;
     return {
-      terms,
+      schedule: schedulePeriods(`l${i}`, addMonths(isoDate('2024-01-05'), i % 36), 3_500_000 + (i % 10) * 1_000_000, 36 / cycle, cycle).filter(
+        (period) => period.start <= YEAR_END,
+      ),
       lease: {
         id: `l${i}`,
         propertyId: `p${i % properties}`,
@@ -68,7 +60,7 @@ function portfolio(leases: number, properties: number) {
 }
 
 function taxPositions({ shares, inputs }: ReturnType<typeof portfolio>) {
-  const periods = inputs.flatMap(({ terms, lease }) => periodsFromSchedule(generateSchedule(terms, [], YEAR_END), lease));
+  const periods = inputs.flatMap(({ schedule, lease }) => periodsFromSchedule(schedule, lease));
   const attribution = attributeRevenue({ periods, shares, year: 2026, asOf: AS_OF });
   return attribution.owners.map((owner) => computeTaxPosition({ rule, attribution: owner, otherBusinessRevenueVnd: vnd(0) }));
 }

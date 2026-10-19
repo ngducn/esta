@@ -142,12 +142,10 @@ test('the allocation section pays the oldest invoice first and matches every exp
   expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
 });
 
-test('the schedule section bills LSE-3 from October, keeps the 25th anchor, and matches every expected period', async ({ page }) => {
+test('the schedule section shows LSE-3 billed from October, the 25th anchor, an increase and a one-day last period', async ({ page }) => {
   await page.goto('/dev/core');
   const section = page.locator('section[data-section="schedule"]');
-  await expect(section.locator('tbody tr')).toHaveCount(35);
-  await expect(section.locator('tr[data-match="mismatch"]')).toHaveCount(0);
-  await expect(section.locator('[data-cell="result"]').filter({ hasText: 'lệch' })).toHaveCount(0);
+  await expect(section.locator('tbody tr')).toHaveCount(33);
 
   const lse3 = section.locator('tr[data-example="lse3"]');
   expect(await lse3.locator('[data-cell="period"]').allTextContents()).toEqual(['01/10/2026 – 31/10/2026', '01/11/2026 – 30/11/2026']);
@@ -164,9 +162,6 @@ test('the schedule section bills LSE-3 from October, keeps the 25th anchor, and 
   const midEnd = section.locator('tr[data-example="mid-end"]').last();
   await expect(midEnd.locator('[data-cell="period"]')).toHaveText('01/11/2026 – 07/11/2026');
   await expect(midEnd.locator('[data-cell="note"]')).toHaveText('Tính theo ngày: 7/30 ngày');
-  await expect(section.locator('tr[data-example="amendment"]').filter({ hasText: 'Đổi giá từ 01/09/2026' }).locator('[data-cell="note"]')).toHaveText(
-    'từ chối: not_after_as_of',
-  );
   const thuDuc = section.locator('tr[data-example="thu-duc"]').last();
   await expect(thuDuc.locator('[data-cell="period"]')).toHaveText('01/11/2026 – 01/11/2026');
   await expect(thuDuc.locator('[data-cell="amount"]')).toHaveText(`300.000${NBSP}₫`);

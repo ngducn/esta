@@ -1,7 +1,8 @@
 import { formatDate } from '@esta/core/format';
 import type { IsoDate } from '@esta/core/date';
+import { addMonths } from '@esta/core/date/calendar';
 import { leaseTimeline, type PeriodMark, type TimelineRow } from '@esta/core/lease';
-import { addMonths, generateSchedule, type Amendment, type LeaseTerms } from '@esta/core/schedule';
+import type { Amendment, SchedulePeriod } from '@esta/core/schedule';
 import { useLocale, useTranslations } from 'next-intl';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { StatusMark, StatusShape, statusMarks } from '@/components/status-mark';
@@ -76,24 +77,26 @@ function PeriodRow({ row, newRent }: { row: TimelineRow<InvoiceSummary>; newRent
 }
 
 /**
- * LSE-3 on screen: every period `generateSchedule` plans through the end date or a year ahead, each beside the invoice
+ * LSE-3 on screen: every period `lease_schedule` plans through the end date or a year ahead, each beside the invoice
  * that bills it and its payment mark on the Clock's date. Older settled periods fold under one disclosure.
  */
 export function PeriodTimeline({
-  terms,
+  schedule,
+  endDate,
   amendments,
   invoices,
   asOf,
 }: {
-  terms: LeaseTerms;
+  schedule: readonly SchedulePeriod[];
+  endDate: IsoDate | null;
   amendments: readonly Amendment[];
   invoices: readonly InvoiceSummary[];
   asOf: IsoDate;
 }) {
   const t = useTranslations('leases');
   const yearAhead = addMonths(asOf, 12);
-  const until = terms.endDate !== null && terms.endDate < yearAhead ? terms.endDate : yearAhead;
-  const rows = leaseTimeline(generateSchedule(terms, amendments, until), invoices, asOf);
+  const until = endDate !== null && endDate < yearAhead ? endDate : yearAhead;
+  const rows = leaseTimeline(schedule.filter((period) => period.start <= until), invoices, asOf);
   const settled = (row: TimelineRow<InvoiceSummary>) => (row.mark.kind === 'paid' || row.mark.kind === 'prepaid') && row.end < asOf;
   const leading = rows.findIndex((row) => !settled(row));
   const folded = Math.max(0, (leading === -1 ? rows.length : leading) - SETTLED_SHOWN);

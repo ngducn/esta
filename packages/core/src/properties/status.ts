@@ -1,6 +1,6 @@
 import type { CollectionState } from '../collections/group';
 import type { IsoDate } from '../date/iso-date';
-import { firstOfMonth } from '../schedule/dates';
+import { firstOfMonth } from '../date/calendar';
 import type { UseMode } from './kinds';
 
 /**
