@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(40);
+select plan(54);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -18,6 +18,17 @@ insert into public.documents (id, household_id, property_id, category, title, st
    :'a' || '/00000000-0000-4000-8000-00000000d0a3/hop-dong.pdf', 'application/pdf', 1000, repeat('d', 64), 'normal'),
   ('00000000-0000-4000-8000-00000000d0b1', :'b', '00000000-0000-4000-8000-0000000000b1', 'certificate', 'Sổ hồng B',
    :'b' || '/00000000-0000-4000-8000-00000000d0b1/so-hong.jpg', 'image/jpeg', 1000, repeat('b', 64), 'sensitive');
+
+create temporary table untyped_entries (decision text, entry jsonb) on commit drop;
+grant select on untyped_entries to authenticated;
+insert into untyped_entries values
+  ('5', '{"decision": 5, "value": "CCCD 079062118340"}'),
+  ('true', '{"decision": true, "value": "CCCD 079062118340"}'),
+  ('{"x": "edited"}', '{"decision": {"x": "edited"}, "value": "CCCD 079062118340"}'),
+  ('["edited"]', '{"decision": ["edited"], "value": "CCCD 079062118340"}'),
+  ('null', '{"decision": null, "value": "CCCD 079062118340"}'),
+  ('missing', '{"value": "CCCD 079062118340"}'),
+  ('"EDITED"', '{"decision": "EDITED", "value": "CCCD 079062118340"}');
 
 select tests.act_as('member.a@test.esta.test');
 select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a1', '2026-10-07T02:00:00Z') as extraction_a \gset
@@ -110,6 +121,10 @@ select lives_ok($$ update public.document_extractions set accepted_fields = '{"n
   'a value Mẹ typed is kept as typed, a full ID included (D11, amended 2026-10-19)');
 select throws_ok($$ update public.document_extractions set accepted_fields = '{"notes_text": {"decision": "accepted", "value": "Demo 079062118340"}}' $$, '23514', null,
   'a value the assistant read and Mẹ accepted unchanged still cannot hold a full ID');
+select throws_ok(
+  format($$ update public.document_extractions set accepted_fields = jsonb_build_object('notes_text', %L::jsonb) $$, entry),
+  '23514', null, format('an entry whose decision is %s, not exactly "edited", is judged as a value the assistant read', decision))
+from untyped_entries;
 
 select tests.clear_request();
 reset role;
@@ -134,6 +149,13 @@ select throws_ok(
     values (%L, 'document_extractions', %L, 'update', 'system', 'test',
       '{"accepted_fields": {"old": {"issued_by": {"decision": "accepted", "value": "Demo 079062118340"}}, "new": null}}') $$, :'a', :'extraction_a'),
   '23514', null, 'an extraction''s audit diff cannot hold a full ID the assistant read, old or new');
+select throws_ok(
+  format($$ insert into public.audit_log (household_id, table_name, row_id, action, actor_kind, actor_id, diff)
+    values (%L, 'document_extractions', %L, 'update', 'system', 'test',
+      jsonb_build_object('accepted_fields', jsonb_build_object('old', null, 'new', jsonb_build_object('issued_by', %L::jsonb)))) $$,
+    :'a', :'extraction_a', entry),
+  '23514', null, format('an extraction''s audit diff judges an entry whose decision is %s', decision))
+from untyped_entries;
 
 select * from finish();
 rollback;
