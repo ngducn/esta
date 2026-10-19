@@ -172,11 +172,14 @@ export const METRICS: readonly Metric[] = [
     id: 'upload-pipeline',
     message: 'Code outside the upload module signs an upload or sends document bytes itself.',
     home: {
-      use: '`useDocumentUpload` in apps/web/src/components/documents/use-document-upload.ts (issue #190 moves the wizard photo step onto it).',
-      helpers: [{ name: 'useDocumentUpload', file: 'apps/web/src/components/documents/use-document-upload.ts' }],
+      use: '`useDocumentUpload` in apps/web/src/components/documents/use-document-upload.ts in the browser (issue #190 moves the wizard photo step onto it), and the `documentAttach` op for a file on Ryan\'s computer.',
+      helpers: [
+        { name: 'useDocumentUpload', file: 'apps/web/src/components/documents/use-document-upload.ts' },
+        { name: 'documentAttach', file: 'packages/ops/src/document-attach.ts' },
+      ],
     },
     section: 'document-upload',
-    scope: without(PRODUCT_CODE, /^apps\/web\/src\/(lib\/upload\/|server\/documents\/actions\.ts$|components\/documents\/use-document-upload\.tsx?$)/),
+    scope: without(PRODUCT_CODE, /^(apps\/web\/src\/(lib\/upload\/|server\/documents\/actions\.ts$|components\/documents\/use-document-upload\.tsx?$)|packages\/ops\/src\/documents\.ts$)/),
     find: (source) => [...uses(...UPLOAD_PRIMITIVES)(source), ...putFetches(source)],
   }),
   syntax({

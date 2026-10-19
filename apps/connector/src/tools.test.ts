@@ -18,10 +18,21 @@ async function connect(refusal: OperatorRefusal) {
 const textOf = (result: Awaited<ReturnType<Client['callTool']>>) => (Array.isArray(result.content) ? result.content.map((part) => (part.type === 'text' ? part.text : '')).join('') : '');
 
 describe('connector tools', () => {
-  it('offers the four read tools and the two write tools', async () => {
+  it('offers the read, file, parse and write tools', async () => {
     const { client } = await connect('signed_out');
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name).toSorted()).toEqual(['apply_plan', 'find_property', 'get_property', 'list_properties', 'plan_changes', 'resolve_address']);
+    expect(tools.map((tool) => tool.name).toSorted()).toEqual([
+      'apply_plan',
+      'find_property',
+      'get_property',
+      'list_folder',
+      'list_properties',
+      'parse_date',
+      'parse_money',
+      'plan_changes',
+      'read_spreadsheet',
+      'resolve_address',
+    ]);
   });
 
   it('rejects a plan with an op Esta does not have before reading the session', async () => {

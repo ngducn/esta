@@ -16,6 +16,7 @@ export {
   type PlanRequest,
 } from './batch';
 export { readClock, type ClockEnv } from './clock';
+export { documentAttach, type AttachRefusal } from './document-attach';
 export {
   documentRegister,
   documentRow,
@@ -25,6 +26,7 @@ export {
   type DocumentSaved,
   type NewDocument,
 } from './documents';
+export type { FileProblem, FileRefusal, LocalContext, LocalFile, LocalFiles, LocalPreviews } from './files';
 export { dbRefusal, idSchema, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
 export type { Db } from './db';
 export { readMembership } from './member';

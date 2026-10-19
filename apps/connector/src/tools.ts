@@ -1,3 +1,7 @@
+import { DOCUMENT_CATEGORY_IDS, MAX_DOCUMENT_BYTES } from '@esta/core/documents';
+import { formatVnd } from '@esta/core/format';
+import { parseDateInput } from '@esta/core/parse/date-input';
+import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { KIND_DETAIL_KEYS, propertyInputSchema } from '@esta/core/schemas/property';
 import type { Result } from '@esta/core/result';
 import {
@@ -12,15 +16,17 @@ import {
   planRequestSchema,
   PLAN_TTL_MINUTES,
   suggestCurrentUnits,
-  type OpContext,
+  type LocalContext,
   type ReadContext,
 } from '@esta/ops';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import type { ImportFolders } from './files';
 import type { OperatorRefusal } from './session';
+import { MAX_SPREADSHEET_BYTES, readSpreadsheet } from './spreadsheet';
 
-export type ToolContext = OpContext & ReadContext;
+export type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders };
 
 export type ToolDeps = {
   /** Checked on every call: the session, its household, and that the member is still its operator. */
@@ -59,6 +65,7 @@ const detailKeys = Object.entries(KIND_DETAIL_KEYS)
 const PLAN_DESCRIPTION = `Plan changes to Esta for Ryan to approve; nothing is written until apply_plan. Items run in order. Kinds: ${OP_KINDS.join(', ')}.
 - property.create: input { property }. Esta mints the new property's id; never send one.
 - property.edit: input { id, set } where set holds only the fields to change, with the keys and rules of property below; the rest keep their stored values, and the change lists only the fields that differ.
+- document.attach: input { path, property_id, category, title, lease_id?, expires_on?, allow_duplicate? } files a JPEG, PNG, WebP or PDF of at most ${MAX_DOCUMENT_BYTES / 1024 / 1024} MB from the import folders into the vault, as an upload there would. Categories: ${DOCUMENT_CATEGORY_IDS.join(', ')}. title is Vietnamese, as the vault titles it: the paper and the place, such as "Sổ hồng Bảo Lộc". property_id must name a property Esta already has: to file papers for a property created in this conversation, apply its plan first. A file already in the vault is refused as duplicate with the documents that hold it; set allow_duplicate only when Ryan wants a second copy. The change holds the file's size and SHA-256; apply sends it only if it is still the same file.
 property is this JSON Schema: ${propertySchema}
 kind_details keys by kind (others take {}): ${detailKeys}. Amounts are whole đồng. current_address codes come from resolve_address.
 Returns each item's change (or unchanged, or a refusal). When nothing is refused it stores the plan and returns plan_id; show Ryan a short Vietnamese summary of every change and call apply_plan only after he says OK. A plan expires ${PLAN_TTL_MINUTES} minutes after planning. At most ${MAX_ITEMS} items.`;
@@ -104,6 +111,59 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
     guarded('resolve_address', deps, async (ctx, { text }: { text: string }) => {
       const suggestions = await suggestCurrentUnits(ctx.db, text);
       return { data: { suggestions }, log: `count=${suggestions.length}` };
+    }),
+  );
+
+  server.registerTool(
+    'list_folder',
+    {
+      description: `List one level of a folder Ryan set aside for Esta (~/Esta-import, or a folder he added): each entry's name, kind (folder, file or other) and file size in bytes, never its contents. A relative path starts at the first import folder. Read photos and PDFs yourself; read spreadsheets with read_spreadsheet.`,
+      inputSchema: z.object({ path: z.string().trim().min(1).max(1000) }),
+    },
+    guarded('list_folder', deps, async (ctx, { path }: { path: string }) => {
+      const listed = await ctx.folders.list(path);
+      return listed.ok ? { data: { entries: listed.value }, log: `count=${listed.value.length}` } : { data: listed.reason, log: `refused=${listed.reason.problem}`, isError: true };
+    }),
+  );
+
+  server.registerTool(
+    'read_spreadsheet',
+    {
+      description: `Read an xlsx workbook or a CSV file from the import folders, every sheet row by row. Each cell is null or { type, text } with the type the sheet stored: text, number (exactly as written in the file), date (YYYY-MM-DD) or boolean; a CSV cell is always text. Turn a text amount such as "9tr" with parse_money and a text date such as "15/03/2026" with parse_date; never guess one. A sheet past ${MAX_SPREADSHEET_BYTES / 1024 / 1024} MB is refused, and one past 20,000 cells comes back with truncated: true.`,
+      inputSchema: z.object({ path: z.string().trim().min(1).max(1000) }),
+    },
+    guarded('read_spreadsheet', deps, async (ctx, { path }: { path: string }) => {
+      const read = await ctx.folders.read(path, MAX_SPREADSHEET_BYTES);
+      if (!read.ok) return { data: read.reason, log: `refused=${read.reason.problem}`, isError: true };
+      const sheets = await readSpreadsheet(read.value);
+      if (!sheets.ok) return { data: { kind: 'file', problem: sheets.reason }, log: `refused=${sheets.reason}`, isError: true };
+      return { data: { sheets: sheets.value }, log: `sheets=${sheets.value.length} rows=${sheets.value.reduce((rows, sheet) => rows + sheet.rows.length, 0)}` };
+    }),
+  );
+
+  server.registerTool(
+    'parse_money',
+    {
+      description: 'Read an amount as Vietnamese people write it ("9tr", "3,2 tỷ", "1.200.000đ", "850k") into whole đồng with Esta\'s own parser, with a display string. Refuses an ambiguous amount instead of guessing.',
+      inputSchema: z.object({ text: z.string().trim().min(1).max(100) }),
+    },
+    guarded('parse_money', deps, async (ctx, { text }: { text: string }) => {
+      const parsed = parseVndInput(text);
+      return parsed.ok
+        ? { data: { vnd: parsed.value, vnd_display: formatVnd(parsed.value, ctx.locale) }, log: 'parsed=1' }
+        : { data: { error: parsed.reason }, log: `refused=${parsed.reason}`, isError: true };
+    }),
+  );
+
+  server.registerTool(
+    'parse_date',
+    {
+      description: 'Read a date written day first, as in Vietnam ("15/03/2026", "1-3-2026"), into YYYY-MM-DD with Esta\'s own parser. Refuses a date without a year or one that does not exist.',
+      inputSchema: z.object({ text: z.string().trim().min(1).max(40) }),
+    },
+    guarded('parse_date', deps, async (_ctx, { text }: { text: string }) => {
+      const parsed = parseDateInput(text);
+      return parsed.ok ? { data: { date: parsed.value }, log: 'parsed=1' } : { data: { error: parsed.reason }, log: `refused=${parsed.reason}`, isError: true };
     }),
   );
 
