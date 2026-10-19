@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { formatVnd } from '@esta/core/format';
@@ -24,12 +24,25 @@ const OPERATOR = 'ryan.lane9@demo.esta.test';
 const MEMBER = 'me.lane9@demo.esta.test';
 const property = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
 
-const sessionFile = () => join(mkdtempSync(join(tmpdir(), 'esta-connector-it-')), 'session.json');
+const sessionFiles: string[] = [];
+const sessionFile = () => {
+  const file = join(mkdtempSync(join(tmpdir(), 'esta-connector-it-')), 'session.json');
+  sessionFiles.push(file);
+  return file;
+};
 const storeAt = (file: string) => fileStore(env.ESTA_IT_SUPABASE_URL, file);
+const clientAt = (file: string) => connectorClient({ ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY }, storeAt(file));
 
 function signIn(email: string, file: string) {
-  return logIn(connectorClient({ ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY }, storeAt(file)), { email, password: DEMO_PASSWORD });
+  return logIn(clientAt(file), { email, password: DEMO_PASSWORD });
 }
+
+afterAll(async () => {
+  for (const file of sessionFiles) {
+    if (storeAt(file).getItem('session') !== null) expect((await clientAt(file).auth.signOut({ scope: 'local' })).error).toBeNull();
+    rmSync(join(file, '..'), { recursive: true, force: true });
+  }
+});
 
 async function startConnector(file: string) {
   const transport = new StdioClientTransport({
@@ -187,7 +200,7 @@ describe('plans and applies the changes Ryan approved', () => {
   beforeAll(async () => {
     expect(await signIn(OPERATOR, file)).toMatchObject({ ok: true });
     expect(await signIn('ryan.lane8@demo.esta.test', otherFile)).toMatchObject({ ok: true });
-    db = connectorClient({ ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY }, storeAt(file));
+    db = clientAt(file);
     [connector, other] = await Promise.all([startConnector(file), startConnector(otherFile)]);
   }, 60_000);
 
