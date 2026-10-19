@@ -34,9 +34,9 @@ export function useOpenExpense() {
 }
 
 /**
- * Holds the one expense sheet of a property. The sheet, its intl provider and its toast load only on the first
- * request, so a route that shows the actions ships none of them up front; once loaded they stay, so the toast outlives
- * the sheet it came from. Each request mounts a fresh sheet, with its own expense id.
+ * Holds the one expense sheet of a property screen. The sheet and its intl provider load only on the first request, so
+ * a route that shows the actions ships neither up front; its toasts go to the screen's toast, so they outlive the sheet.
+ * Each request mounts a fresh sheet, with its own expense id.
  */
 export function ExpenseHost({ scope, children }: { scope: ExpenseScope; children: ReactNode }) {
   const [request, setRequest] = useState<{ readonly key: number; readonly value: ExpenseRequest } | null>(null);

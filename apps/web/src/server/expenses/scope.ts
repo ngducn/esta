@@ -7,13 +7,13 @@ import { loadExpenseVendors } from './load';
 
 export async function expenseScope(member: Member, property: { readonly id: string; readonly nickname: string }): Promise<ExpenseScope> {
   const [clock, vendors, locale, messages] = await Promise.all([getClock(), loadExpenseVendors(member.household.id), getLocale(), getMessages()]);
-  const { money, date, toast } = messages.components;
+  const { money, date } = messages.components;
   return {
     propertyId: property.id,
     nickname: property.nickname,
     today: clock.today(),
     vendors,
     locale,
-    messages: { expenses: messages.expenses, components: { money, date, toast } },
+    messages: { expenses: messages.expenses, components: { money, date } },
   };
 }

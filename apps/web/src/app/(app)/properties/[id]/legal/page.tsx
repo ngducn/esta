@@ -13,7 +13,6 @@ import { ParcelList, ParcelTotal } from '@/components/legal/parcel-list';
 import { StructureList } from '@/components/legal/structure-list';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { UndoToastProvider } from '@/components/undo-toast';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { loadLandUseCodes, loadOwnership, loadParties, loadPropertyLegal, type LegalKind } from '@/server/properties/legal';
@@ -88,66 +87,64 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
       label={shares.length === 0 ? owners('add') : owners('edit')}
     />
   ) : null;
-  const { date, toast } = messages.components;
+  const { date } = messages.components;
   const partyMessages = Object.fromEntries(Object.entries(messages.propertyLegal).filter(([key]) => key.startsWith('party')));
 
   return (
     <PropertyDetailFrame property={property} tab="legal">
       <FocusAnchor />
-      <PropertyIntl locale={locale} messages={{ components: { date, toast }, propertyLegal: partyMessages, propertyOwners: messages.propertyOwners }}>
-        <UndoToastProvider>
-          <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
-            <div className="flex flex-col gap-8">
-            <Section id="legal-certificates" title={t('certificatesTitle')} action={legal.certificates.length === 0 ? null : addCertificate}>
-              {legal.certificates.length === 0 ? (
-                <EmptyState title={t('certificatesEmpty')} body={t('certificatesEmptyBody')} icon={FileText} {...(addCertificate === null ? {} : { action: addCertificate })} />
+      <PropertyIntl locale={locale} messages={{ components: { date }, propertyLegal: partyMessages, propertyOwners: messages.propertyOwners }}>
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+          <div className="flex flex-col gap-8">
+          <Section id="legal-certificates" title={t('certificatesTitle')} action={legal.certificates.length === 0 ? null : addCertificate}>
+            {legal.certificates.length === 0 ? (
+              <EmptyState title={t('certificatesEmpty')} body={t('certificatesEmptyBody')} icon={FileText} {...(addCertificate === null ? {} : { action: addCertificate })} />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {legal.certificates.map((certificate) => (
+                  <CertificateCard key={certificate.id} propertyId={id} certificate={certificate} parties={partyById} canEdit={canEdit} />
+                ))}
+              </ul>
+            )}
+          </Section>
+          <Section
+            id="owners"
+            title={owners('title')}
+            aside={
+              shares.length === 0 ? null : (
+                <p data-testid="ownership-total" className="figures text-body font-semibold text-ink">
+                  {owners('total', { total: formatShareBp(ownershipStatus(shares).totalBp, locale) })}
+                </p>
+              )
+            }
+            action={null}
+            control={shares.length === 0 ? null : ownersEditor}
+          >
+            <OwnersSection shares={shares} parties={partyById} editor={ownersEditor} />
+          </Section>
+          </div>
+          <div className="flex flex-col gap-8">
+            <Section
+              id="legal-parcels"
+              title={t('parcelsTitle')}
+              aside={legal.parcels.length === 0 ? null : <ParcelTotal parcels={legal.parcels} />}
+              action={legal.parcels.length === 0 ? null : addParcel}
+            >
+              {legal.parcels.length === 0 ? (
+                <EmptyState title={t('parcelsEmpty')} body={t('parcelsEmptyBody')} icon={LandPlot} {...(addParcel === null ? {} : { action: addParcel })} />
               ) : (
-                <ul className="flex flex-col gap-3">
-                  {legal.certificates.map((certificate) => (
-                    <CertificateCard key={certificate.id} propertyId={id} certificate={certificate} parties={partyById} canEdit={canEdit} />
-                  ))}
-                </ul>
+                <ParcelList propertyId={id} parcels={legal.parcels} codes={codeByCode} canEdit={canEdit} />
               )}
             </Section>
-            <Section
-              id="owners"
-              title={owners('title')}
-              aside={
-                shares.length === 0 ? null : (
-                  <p data-testid="ownership-total" className="figures text-body font-semibold text-ink">
-                    {owners('total', { total: formatShareBp(ownershipStatus(shares).totalBp, locale) })}
-                  </p>
-                )
-              }
-              action={null}
-              control={shares.length === 0 ? null : ownersEditor}
-            >
-              <OwnersSection shares={shares} parties={partyById} editor={ownersEditor} />
+            <Section id="legal-structures" title={t('structuresTitle')} action={legal.structures.length === 0 ? null : addStructure}>
+              {legal.structures.length === 0 ? (
+                <EmptyState title={t('structuresEmpty')} body={t('structuresEmptyBody')} icon={Home} {...(addStructure === null ? {} : { action: addStructure })} />
+              ) : (
+                <StructureList propertyId={id} structures={legal.structures} canEdit={canEdit} />
+              )}
             </Section>
-            </div>
-            <div className="flex flex-col gap-8">
-              <Section
-                id="legal-parcels"
-                title={t('parcelsTitle')}
-                aside={legal.parcels.length === 0 ? null : <ParcelTotal parcels={legal.parcels} />}
-                action={legal.parcels.length === 0 ? null : addParcel}
-              >
-                {legal.parcels.length === 0 ? (
-                  <EmptyState title={t('parcelsEmpty')} body={t('parcelsEmptyBody')} icon={LandPlot} {...(addParcel === null ? {} : { action: addParcel })} />
-                ) : (
-                  <ParcelList propertyId={id} parcels={legal.parcels} codes={codeByCode} canEdit={canEdit} />
-                )}
-              </Section>
-              <Section id="legal-structures" title={t('structuresTitle')} action={legal.structures.length === 0 ? null : addStructure}>
-                {legal.structures.length === 0 ? (
-                  <EmptyState title={t('structuresEmpty')} body={t('structuresEmptyBody')} icon={Home} {...(addStructure === null ? {} : { action: addStructure })} />
-                ) : (
-                  <StructureList propertyId={id} structures={legal.structures} canEdit={canEdit} />
-                )}
-              </Section>
-            </div>
           </div>
-        </UndoToastProvider>
+        </div>
       </PropertyIntl>
     </PropertyDetailFrame>
   );

@@ -2,15 +2,17 @@ import { statusPills, statusWords } from '@/components/properties/status-pills';
 import { nextMissing } from '@esta/core/completeness';
 import { currentAddressText } from '@esta/core/properties';
 import { ChevronLeft } from 'lucide-react';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { MissingItems } from '@/components/completeness/missing-items';
 import { ExpenseActions } from '@/components/expenses/expense-actions';
 import { ExpenseHost } from '@/components/expenses/expense-host';
 import { PropertyHeader } from '@/components/properties/property-header';
+import { PropertyIntl } from '@/components/properties/property-intl';
 import { PropertyTabBar } from '@/components/properties/property-tab-bar';
 import type { PropertyTabId } from '@/components/properties/property-tabs';
 import { IntentLink } from '@/components/shell/intent-link';
+import { UndoToastProvider } from '@/components/undo-toast';
 import type { PropertyDetail } from '@/server/properties/detail';
 import { expenseScope } from '@/server/expenses/scope';
 import { requireMember } from '@/server/member';
@@ -19,37 +21,42 @@ import { signCoverPhotos } from '@/server/properties/photos';
 
 /**
  * Each tab renders the header rather than the layout, because Next scrolls a navigation to the first element of the
- * new page: from a scrolled list, or at 130% text, that element must be the photo, not the tab content below it.
+ * new page: from a scrolled list, or at 130% text, that element must be the photo, not the tab content below it. The
+ * frame holds the screen's one toast and, for a member, its one expense sheet, so every tab's islands share them.
+ * `headerActions` is false on a tab whose own section offers the expense actions, so the screen shows them once.
  */
-export async function PropertyDetailFrame({ property, tab, children }: { property: PropertyDetail; tab: PropertyTabId; children: ReactNode }) {
+export async function PropertyDetailFrame({
+  property,
+  tab,
+  headerActions = true,
+  children,
+}: {
+  property: PropertyDetail;
+  tab: PropertyTabId;
+  headerActions?: boolean;
+  children: ReactNode;
+}) {
   const member = await requireMember();
-  // Thu chi carries the expense actions in its own section, so its header does not repeat them.
-  const expenses = member.role !== 'viewer' && tab !== 'finance';
-  const [t, tp, tc, te, locale, photos, scores, scope] = await Promise.all([
+  const [t, tp, tc, te, locale, messages, photos, scores, scope] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
     getTranslations('completeness'),
     getTranslations('expenses'),
     getLocale(),
+    getMessages(),
     signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
     loadCompleteness(member.household.id, property.id),
-    expenses ? expenseScope(member, property) : null,
+    member.role === 'viewer' ? null : expenseScope(member, property),
   ]);
   const score = scores.get(property.id) ?? { percent: 100, failing: [] };
-  return (
+  const screen = (
     <div className="flex flex-col gap-5">
       <IntentLink href="/properties" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-semibold text-ink-2 hover:text-ink">
         <ChevronLeft className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
         {t('back')}
       </IntentLink>
       <PropertyHeader
-        actions={
-          scope === null ? null : (
-            <ExpenseHost scope={scope}>
-              <ExpenseActions labels={{ add: te('add'), photo: te('photo') }} />
-            </ExpenseHost>
-          )
-        }
+        actions={scope !== null && headerActions ? <ExpenseActions labels={{ add: te('add'), photo: te('photo') }} /> : null}
         property={{
           nickname: property.nickname,
           kind: property.kind,
@@ -98,5 +105,10 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
       ) : null}
       {children}
     </div>
+  );
+  return (
+    <PropertyIntl locale={locale} messages={{ components: { toast: messages.components.toast } }}>
+      <UndoToastProvider>{scope === null ? screen : <ExpenseHost scope={scope}>{screen}</ExpenseHost>}</UndoToastProvider>
+    </PropertyIntl>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { PropertyIntl } from '@/components/properties/property-intl';
-import { UndoToastProvider } from '@/components/undo-toast';
 import type { ExpenseRequest, ExpenseScope } from './expense-host';
 import { ExpenseSheet } from './expense-sheet';
 
@@ -20,9 +19,7 @@ export default function ExpenseIsland({
 }) {
   return (
     <PropertyIntl locale={scope.locale} messages={scope.messages}>
-      <UndoToastProvider>
-        <ExpenseSheet key={sheetKey} scope={scope} request={request} open={open} onOpenChange={onOpenChange} />
-      </UndoToastProvider>
+      <ExpenseSheet key={sheetKey} scope={scope} request={request} open={open} onOpenChange={onOpenChange} />
     </PropertyIntl>
   );
 }
