@@ -13,4 +13,9 @@ describe('reduceTypedIds', () => {
   it('keeps every such uuid whole under any key and cuts an ID number Ryan typed to its last four', () => {
     expect(reduceTypedIds(typed)).toEqual({ ...typed, set: { notes: 'Demo: chủ cũ CCCD 7890, gọi trước' } });
   });
+
+  it('keeps a file path whole, so the file it names is the one read, and still cuts the title', () => {
+    const attach = { path: 'Demo/hop-dong-demo-079123456789.pdf', title: 'Hợp đồng Demo CCCD 001234567890' };
+    expect(reduceTypedIds(attach)).toEqual({ path: attach.path, title: 'Hợp đồng Demo CCCD 7890' });
+  });
 });

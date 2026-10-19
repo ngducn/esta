@@ -1,7 +1,7 @@
 import { DOCUMENT_PREVIEWS, previewSize } from '@esta/core/documents/previews';
 import { DOCUMENTS_BUCKET, documentRegister, propertyCreate, readClock, runOp, signDocumentUploads, type Db, type OpContext } from '@esta/ops';
 import { randomUUID } from 'node:crypto';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, linkSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
@@ -62,6 +62,7 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
   let handDb: Db;
   const propertyIds = new Map<string, string>();
   const documentIds = new Map<string, string>();
+  const handDocumentIds = new Map<string, string>();
 
   beforeAll(async () => {
     mkdirSync(outside, { recursive: true });
@@ -69,6 +70,13 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
     cpSync(join(imports, 'Demo', 'so-do-demo-cu-chi.jpg'), join(outside, 'giay-to-rieng.jpg'));
     writeFileSync(join(outside, 'tai-san.csv'), 'Mã,Tên\nDEMOX,Demo riêng\n');
     symlinkSync(join(outside, 'giay-to-rieng.jpg'), join(imports, 'Demo', 'loi-tat.jpg'));
+    symlinkSync(outside, join(imports, 'Demo', 'thu-muc-rieng'));
+    linkSync(join(outside, 'giay-to-rieng.jpg'), join(imports, 'Demo', 'ban-sao.jpg'));
+    cpSync(join(imports, 'Demo', 'hop-dong-thue-demo-le-van-sy.pdf'), join(imports, 'Demo', 'hop-dong-demo-079123456789.pdf'));
+    mkdirSync(join(imports, 'Vong'));
+    writeFileSync(join(imports, 'Vong', 'ghi-chu.csv'), 'Mã,Tên\nDEMOV,Demo vòng\n');
+    symlinkSync(join(imports, 'Vong', 'b'), join(imports, 'Vong', 'a'));
+    symlinkSync(join(imports, 'Vong', 'a'), join(imports, 'Vong', 'b'));
 
     const [claudeFile, handFile] = [sessions.make(), sessions.make()];
     expect(await signIn(`ryan.lane${CLAUDE_LANE}@demo.esta.test`, claudeFile)).toMatchObject({ ok: true });
@@ -115,11 +123,26 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
     expect(listed.json()).toEqual({
       entries: expect.arrayContaining([
         { name: 'hop-dong-thue-demo-le-van-sy.pdf', kind: 'file', size: pdfSize },
-        { name: 'loi-tat.jpg', kind: 'other' },
+        { name: 'ban-sao.jpg', kind: 'refused', problem: 'outside_import_folders' },
+        { name: 'hop-dong-demo-079123456789.pdf', kind: 'refused', problem: 'id_number_in_name' },
+        { name: 'loi-tat.jpg', kind: 'refused', problem: 'outside_import_folders' },
+        { name: 'thu-muc-rieng', kind: 'refused', problem: 'outside_import_folders' },
         { name: 'theo-doi-tai-san-demo.xlsx', kind: 'file', size: expect.any(Number) },
       ]),
     });
     expect(listed.text).not.toContain('%PDF');
+  });
+
+  it('lists every other entry of a folder that holds a link loop, and logs only counts', async () => {
+    const listed = await call(connector, 'list_folder', { path: 'Vong' });
+    expect(listed.json()).toEqual({
+      entries: [
+        { name: 'a', kind: 'refused', problem: 'unreadable' },
+        { name: 'b', kind: 'refused', problem: 'unreadable' },
+        { name: 'ghi-chu.csv', kind: 'file', size: readFileSync(join(imports, 'Vong', 'ghi-chu.csv')).length },
+      ],
+    });
+    expect(connector.stderr()).toContain('[connector] list_folder count=3 refused=2');
   });
 
   it('plans and applies the tracker properties, then their papers, and Esta holds what a person would have entered', async () => {
@@ -173,6 +196,7 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
       });
       expect(registered).toMatchObject({ ok: true });
       handDocuments.push(documentId);
+      handDocumentIds.set(paper.file, documentId);
     }
 
     const byCode = async (db: Db, ids: readonly string[]) => (await db.from('properties').select(PROPERTY_COLUMNS).in('id', [...ids]).order('code')).data;
@@ -197,6 +221,10 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
       const folder = `${household(CLAUDE_LANE)}/${id}`;
       const { data: objects } = await claudeDb.storage.from(DOCUMENTS_BUCKET).list(folder);
       expect(objects?.map((object) => object.name).toSorted()).toEqual([paper.file, 'review.webp', 'thumb.webp'].toSorted());
+      const { data: vaultObjects } = await handDb.storage.from(DOCUMENTS_BUCKET).list(`${household(HAND_LANE)}/${handDocumentIds.get(paper.file) ?? ''}`);
+      const vault = vaultObjects?.find((object) => object.name === paper.file)?.metadata;
+      expect(vault).toMatchObject({ cacheControl: expect.any(String) });
+      for (const object of objects ?? []) expect(object.metadata?.cacheControl, `${object.name} is cached as a vault upload is`).toBe(vault?.cacheControl);
       const download = async (name: string) => Buffer.from(await ((await claudeDb.storage.from(DOCUMENTS_BUCKET).download(`${folder}/${name}`)).data?.arrayBuffer() ?? new ArrayBuffer(0)));
       const [original, thumb, review] = await Promise.all([download(paper.file), download('thumb.webp'), download('review.webp')]);
       expect(original.equals(readFileSync(join(imports, 'Demo', paper.file))), 'the bytes Ryan approved, unchanged').toBe(true);
@@ -240,11 +268,44 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
     expect((await call(connector, 'list_folder', { path: outside })).json()).toEqual(refused);
     expect((await call(connector, 'read_spreadsheet', { path: join(outside, 'tai-san.csv') })).json()).toEqual(refused);
     expect((await call(connector, 'read_spreadsheet', { path: 'Demo/../../outside/tai-san.csv' })).json()).toEqual(refused);
-    const viaLink = await call(connector, 'plan_changes', {
-      summary: 'Demo: lối tắt',
-      items: [{ op: 'document.attach', input: { path: 'Demo/loi-tat.jpg', property_id: propertyIds.get('DEMOCC'), category: 'certificate', title: 'Sổ Demo' } }],
+    expect((await call(connector, 'read_spreadsheet', { path: 'Demo/thu-muc-rieng/tai-san.csv' })).json()).toEqual(refused);
+    expect((await call(connector, 'read_spreadsheet', { path: 'Demo/thu-muc-rieng/khong-co.csv' })).json(), 'what exists outside stays unsaid').toEqual(refused);
+    for (const path of ['Demo/loi-tat.jpg', 'Demo/ban-sao.jpg']) {
+      const viaLink = await call(connector, 'plan_changes', {
+        summary: 'Demo: lối tắt',
+        items: [{ op: 'document.attach', input: { path, property_id: propertyIds.get('DEMOCC'), category: 'certificate', title: 'Sổ Demo' } }],
+      });
+      expect(viaLink.json(), path).toMatchObject({ kind: 'items_refused', items: [{ status: 'refused', refusal: refused }] });
+    }
+  });
+
+  it('refuses at apply a file that gained a second name after Ryan saw the plan, and sends nothing of it', async () => {
+    const photo = join(imports, 'Demo', 'anh-hai.jpg');
+    writeFileSync(photo, await sharp({ create: { width: 640, height: 480, channels: 3, background: { r: 10, g: 200, b: 30 } } }).jpeg().toBuffer());
+    const planned = plannedSchema.parse(
+      (
+        await call(connector, 'plan_changes', {
+          summary: 'Demo: ảnh hai',
+          items: [{ op: 'document.attach', input: { path: 'Demo/anh-hai.jpg', property_id: propertyIds.get('DEMOCC'), category: 'photo', title: 'Ảnh Demo hai' } }],
+        })
+      ).json(),
+    );
+    linkSync(photo, join(outside, 'anh-hai.jpg'));
+    const applied = appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json());
+    expect(applied).toMatchObject({ status: 'partial', items: [{ status: 'refused', refusal: { kind: 'file', problem: 'outside_import_folders' } }] });
+    const id = planned.items[0]?.id ?? '';
+    expect((await claudeDb.from('documents').select('id').eq('id', id)).data).toEqual([]);
+    expect((await claudeDb.storage.from(DOCUMENTS_BUCKET).list(`${household(CLAUDE_LANE)}/${id}`)).data).toEqual([]);
+  });
+
+  it('refuses a file whose name holds a full ID number and stores no plan, so Claude asks Ryan to rename it', async () => {
+    const before = (await claudeDb.from('change_batches').select('id', { count: 'exact', head: true })).count;
+    const planned = await call(connector, 'plan_changes', {
+      summary: 'Demo: hợp đồng',
+      items: [{ op: 'document.attach', input: { path: 'Demo/hop-dong-demo-079123456789.pdf', property_id: propertyIds.get('DEMOQ3'), category: 'lease_contract', title: 'Hợp đồng Demo', allow_duplicate: true } }],
     });
-    expect(viaLink.json()).toMatchObject({ kind: 'items_refused', items: [{ status: 'refused', refusal: refused }] });
+    expect(planned.json()).toMatchObject({ kind: 'items_refused', items: [{ status: 'refused', refusal: { kind: 'file', problem: 'id_number_in_name' } }] });
+    expect((await claudeDb.from('change_batches').select('id', { count: 'exact', head: true })).count).toBe(before);
   });
 
   it("refuses another household's property as the place for a paper", async () => {
@@ -259,6 +320,6 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
     const log = connector.stderr();
     expect(log).toContain('[connector] read_spreadsheet sheets=1 rows=3');
     expect(log).toMatch(/\[connector\] apply_plan batch=[0-9a-f-]+ status=applied items=3 landed=3/);
-    for (const secret of ['so-hong-demo', 'theo-doi', 'Lê Văn Sỹ', 'DEMOQ3', work]) expect(log).not.toContain(secret);
+    for (const secret of ['so-hong-demo', 'theo-doi', 'Lê Văn Sỹ', 'DEMOQ3', '079123456789', 'ELOOP', work]) expect(log).not.toContain(secret);
   });
 });
