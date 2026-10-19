@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
-import { propertyCreate, propertyEdit, readClock, runOp } from '@esta/ops';
+import { applyPlan, propertyCreate, propertyEdit, readClock, runOp, type Db } from '@esta/ops';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -53,6 +53,27 @@ async function call(connector: Connector, name: string, args: Record<string, unk
   const result = await connector.client.callTool({ name, arguments: args });
   const text = z.array(z.object({ type: z.literal('text'), text: z.string() })).parse(result.content)[0]?.text ?? '';
   return { isError: result.isError === true, text, json: (): unknown => JSON.parse(text) };
+}
+
+function setClock(instant: string) {
+  expect(spawnSync('pnpm', ['--silent', 'clock:set', instant], { cwd: ROOT, env: { ...process.env, ESTA_SLOT: env.ESTA_SLOT } }).status).toBe(0);
+}
+
+/** The session client, except that a query filtered to `id` throws, as a dropped connection does mid-batch. */
+function droppingQueriesOn(db: Db, id: string): Db {
+  const dropping = <T extends object>(query: T): T =>
+    new Proxy(query, {
+      get(target, key) {
+        const member: unknown = Reflect.get(target, key);
+        if (typeof member !== 'function') return member;
+        return (...args: unknown[]) => {
+          if (key === 'eq' && args[1] === id) throw new Error('connection dropped');
+          const next: unknown = member.apply(target, args);
+          return typeof next === 'object' && next !== null && !(next instanceof Promise) ? dropping(next) : next;
+        };
+      },
+    });
+  return dropping(db);
 }
 
 const candidatesSchema = z.object({ candidates: z.array(z.object({ id: z.string(), nickname: z.string(), code: z.string(), address: z.string().nullable(), reasons: z.array(z.string()) })) });
@@ -161,7 +182,7 @@ describe('plans and applies the changes Ryan approved', () => {
   const otherFile = sessionFile();
   let connector: Connector;
   let other: Connector;
-  let db: ReturnType<typeof connectorClient>;
+  let db: Db;
 
   beforeAll(async () => {
     expect(await signIn(OPERATOR, file)).toMatchObject({ ok: true });
@@ -175,6 +196,7 @@ describe('plans and applies the changes Ryan approved', () => {
   });
 
   const plan = async (items: unknown[]) => call(connector, 'plan_changes', { summary: 'Demo: thêm nhà phố', items });
+  const laneContext = async () => ({ db, householdId: seedId('seed:household:lane-9'), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) });
 
   it('writes the same row the property form writes, once', async () => {
     const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE1') } }])).json());
@@ -183,9 +205,8 @@ describe('plans and applies the changes Ryan approved', () => {
     expect(appliedSchema.parse(applied.json())).toMatchObject({ status: 'applied', items: [{ status: 'landed' }] });
     expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'already_applied', status: 'applied' });
 
-    const ctx = { db, householdId: seedId('seed:household:lane-9'), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) };
     const formId = randomUUID();
-    expect(await runOp(propertyCreate, ctx, { id: formId, property: demoProperty('FORM1') })).toMatchObject({ ok: true });
+    expect(await runOp(propertyCreate, await laneContext(), { id: formId, property: demoProperty('FORM1') })).toMatchObject({ ok: true });
     const rows = await db.from('properties').select(FORM_COLUMNS).in('id', [planned.items[0]?.id ?? '', formId]);
     expect(rows.data).toHaveLength(2);
     const [viaClaude, viaForm] = rows.data ?? [];
@@ -216,8 +237,7 @@ describe('plans and applies the changes Ryan approved', () => {
         ])
       ).json(),
     );
-    const ctx = { db, householdId: seedId('seed:household:lane-9'), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) };
-    expect(await runOp(propertyEdit, ctx, { id: property(9, 'thu-duc'), set: { notes: 'Demo: Mẹ sửa trước' } })).toMatchObject({ ok: true });
+    expect(await runOp(propertyEdit, await laneContext(), { id: property(9, 'thu-duc'), set: { notes: 'Demo: Mẹ sửa trước' } })).toMatchObject({ ok: true });
     const applied = appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json());
     expect(applied).toMatchObject({ status: 'partial', items: [{ status: 'refused', refusal: { kind: 'stale' } }, { status: 'landed' }] });
   });
@@ -228,16 +248,64 @@ describe('plans and applies the changes Ryan approved', () => {
     expect(appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).status).toBe('applied');
   });
 
-  it('says plainly that a batch a crash left half done is in progress', async () => {
-    const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE5') } }])).json());
-    const claimed = await db.from('change_batches').update({ status: 'applying', applied_at: '2026-10-07T02:00:00Z' }).eq('id', planned.planId).select('id');
-    expect(claimed.data).toHaveLength(1);
-    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'in_progress' });
-  });
-
   it('refuses a plan older than 30 minutes as expired', async () => {
     const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE6') } }])).json());
-    expect(spawnSync('pnpm', ['--silent', 'clock:set', '2026-10-07T09:31:00+07:00'], { cwd: ROOT, env: { ...process.env, ESTA_SLOT: env.ESTA_SLOT } }).status).toBe(0);
+    setClock('2026-10-07T09:31:00+07:00');
     expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'expired', expiredAt: '2026-10-07T02:30:00.000Z' });
+  });
+
+  it('records an item whose read failed as failed, lands the others, and finishes the batch', async () => {
+    const planned = plannedSchema.parse(
+      (
+        await plan([
+          { op: 'property.create', input: { property: demoProperty('CLAUDE7') } },
+          { op: 'property.edit', input: { id: property(9, 'bao-loc'), set: { notes: 'Demo: Claude' } } },
+          { op: 'property.create', input: { property: demoProperty('CLAUDE8') } },
+        ])
+      ).json(),
+    );
+    const applied = await applyPlan({ ...(await laneContext()), db: droppingQueriesOn(db, property(9, 'bao-loc')) }, planned.planId);
+    expect(applied).toMatchObject({ ok: true, value: { status: 'partial', items: [{ status: 'landed' }, { status: 'refused', refusal: { kind: 'failed' } }, { status: 'landed' }] } });
+    const batch = await db.from('change_batches').select('status, outcomes').eq('id', planned.planId).single();
+    expect(batch.data).toMatchObject({ status: 'partial', outcomes: [{ status: 'landed' }, { status: 'refused' }, { status: 'landed' }] });
+  });
+
+  it('keeps an id whose last group is all digits whole, and cuts an ID number Ryan typed to its last four', async () => {
+    const digitTail = `${randomUUID().slice(0, 24)}000000000123`;
+    expect(await runOp(propertyCreate, await laneContext(), { id: digitTail, property: demoProperty('DIGITS') })).toMatchObject({ ok: true });
+    const planned = plannedSchema.parse((await plan([{ op: 'property.edit', input: { id: digitTail, set: { notes: 'Demo: chủ cũ CCCD 001234567890' } } }])).json());
+    expect(planned.items).toMatchObject([{ change: { id: digitTail, set: { notes: 'Demo: chủ cũ CCCD 7890' } } }]);
+    const stored = await db.from('change_batches').select('plan').eq('id', planned.planId).single();
+    expect(stored.data?.plan).toMatchObject({ items: [{ input: { id: digitTail }, change: { id: digitTail } }] });
+    const applied = (await call(connector, 'apply_plan', { plan_id: planned.planId })).json();
+    expect(applied).toMatchObject({ status: 'applied', items: [{ status: 'landed', output: { id: digitTail } }] });
+    const row = await db.from('properties').select('id, notes').eq('id', digitTail).single();
+    expect(row.data).toEqual({ id: digitTail, notes: 'Demo: chủ cũ CCCD 7890' });
+  });
+
+  it('finishes a batch a crash left half done once its claim is five minutes old, landing each item once', async () => {
+    const planned = plannedSchema.parse(
+      (
+        await plan([
+          { op: 'property.create', input: { property: demoProperty('CLAUDE5') } },
+          { op: 'property.create', input: { property: demoProperty('CLAUDE9') } },
+        ])
+      ).json(),
+    );
+    const batch = await db.from('change_batches').select('plan, planned_at').eq('id', planned.planId).single();
+    const plannedAt = z.string().parse(batch.data?.planned_at);
+    const [first] = z.object({ items: z.array(z.object({ input: z.unknown() })) }).parse(batch.data?.plan).items;
+    expect(await runOp(propertyCreate, await laneContext(), first?.input)).toMatchObject({ ok: true });
+    const claimed = await db.from('change_batches').update({ status: 'applying', applied_at: plannedAt }).eq('id', planned.planId).select('id');
+    expect(claimed.data).toHaveLength(1);
+
+    const retryAt = new Date(Date.parse(plannedAt) + 5 * 60_000).toISOString();
+    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'in_progress', retryAt });
+    setClock(retryAt);
+    const applied = appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planned.planId })).json());
+    expect(applied).toMatchObject({ status: 'applied', items: [{ status: 'landed' }, { status: 'landed' }] });
+    const rows = await db.from('properties').select('id').in('code', ['CLAUDE5', 'CLAUDE9']);
+    expect(rows.data?.map((row) => row.id).toSorted()).toEqual(planned.items.map((item) => item.id).toSorted());
+    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toEqual({ kind: 'already_applied', status: 'applied' });
   });
 });

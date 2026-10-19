@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(26);
+select plan(27);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as admin_a \gset
@@ -48,6 +48,9 @@ select isnt_empty($$ update public.change_batches set status = 'applying', appli
   where id = '00000000-0000-4000-8000-0000000000c1' and status = 'planned' returning 1 $$, 'the first apply claims the batch');
 select is_empty($$ update public.change_batches set status = 'applying', applied_at = '2026-10-07T02:06:00Z'
   where id = '00000000-0000-4000-8000-0000000000c1' and status = 'planned' returning 1 $$, 'a second apply finds nothing to claim');
+select isnt_empty($$ update public.change_batches set applied_at = '2026-10-07T02:11:00Z'
+  where id = '00000000-0000-4000-8000-0000000000c1' and status = 'applying' and applied_at <= '2026-10-07T02:06:00Z' returning 1 $$,
+  'a later apply takes over a claim a crash abandoned');
 select throws_ok($$ update public.change_batches set status = 'planned', applied_at = null $$, '23514', 'ESTA_BATCH_TRANSITION',
   'a claimed batch is never planned again');
 select throws_ok($$ update public.change_batches set status = 'applied' $$, '23514', null,
