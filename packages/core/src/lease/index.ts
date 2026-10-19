@@ -1,6 +1,7 @@
 export { collectedThrough, type BilledPeriod } from './collected';
 export { LEASE_DEFAULTS, leaseDefaultKey, leaseDefaults, type LeaseDefault, type LeaseDefaultKey, type LeaseFormDefaults } from './defaults';
 export { GENERATION_HORIZON_DAYS, planInvoices, type CompletedReadings, type InvoicingLease, type PlannedInvoice, type PlannedLine } from './invoicing';
+export { currentLease, holdsUnit, rentInEffect } from './current';
 export { currentMonthlyRent } from './monthlyRent';
 export { LEASE_TRANSITIONS, activationRefusals, type ActivationFacts, type ActivationRefusal } from './state';
 export {

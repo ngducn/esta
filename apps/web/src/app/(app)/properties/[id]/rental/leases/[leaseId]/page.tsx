@@ -1,4 +1,4 @@
-import { amendmentStarts, lastMonthlyRent, leaseDefaults, renewalStart } from '@esta/core/lease';
+import { amendmentStarts, holdsUnit, lastMonthlyRent, leaseDefaults, renewalStart } from '@esta/core/lease';
 import { addDays, addMonths } from '@esta/core/schedule';
 import { leaseTerms } from '@esta/core/schemas/lease';
 import type { Metadata } from 'next';
@@ -15,7 +15,7 @@ import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { StatusMark, StatusShape } from '@/components/status-mark';
 import { getClock } from '@/server/clock';
-import { loadLeaseDetailExtras } from '@/server/leases/detail';
+import { loadLeaseDocuments } from '@/server/leases/detail';
 import { loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
@@ -70,7 +70,8 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   if ((leaseId === 'new' && !canEdit) || (leaseId !== 'new' && lease === null)) notFound();
 
   const unitFor = (unitId: string | undefined) => rental.units.find((unit) => unit.id === unitId);
-  const leased = new Set(leases.leases.filter((candidate) => candidate.status === 'active').map((candidate) => candidate.unit_id));
+  const asOf = clock.today();
+  const leased = new Set(leases.leases.filter((candidate) => holdsUnit(candidate, asOf)).map((candidate) => candidate.unit_id));
   const unit = unitFor(lease?.unit_id ?? search.unit) ?? rental.units.find((candidate) => !leased.has(candidate.id)) ?? rental.units[0];
   if (unit === undefined) notFound();
   const backHref = `/properties/${id}/rental`;
@@ -104,9 +105,9 @@ export default async function LeasePage({ params, searchParams }: { params: Para
     );
   }
 
-  const asOf = clock.today();
   const leasesHref = `${backHref}/leases`;
-  const { amendments, documents } = await loadLeaseDetailExtras(summary.id);
+  const documents = await loadLeaseDocuments(summary.id);
+  const amendments = leases.amendments.filter((amendment) => amendment.leaseId === summary.id);
   const invoices = leases.invoices.filter((invoice) => invoice.leaseId === summary.id);
   const terms = leaseTerms(summary);
   const { renewalOf, renewedBy } = renewalLinks(summary, leases.leases, leasesHref);

@@ -11,13 +11,13 @@ export type LeaseMark =
   | { readonly kind: 'vacant' };
 
 /**
- * The mark a unit shows on the Cho thuê tab: its live lease's oldest open invoice, else draft or vacant. An open invoice
- * is an issued one still owed (`invoice_balances.outstanding_vnd` above zero).
+ * The mark a unit shows on the Cho thuê tab for its `currentLease`: that lease's oldest open invoice, else draft, and
+ * vacant when it has none. An open invoice is an issued one still owed (`invoice_balances.outstanding_vnd` above zero).
  */
-export function unitLeaseMark(leases: readonly { readonly status: LeaseStatus; readonly openDueDates: readonly IsoDate[] }[], asOf: IsoDate): LeaseMark {
-  const active = leases.find((lease) => lease.status === 'active');
-  if (active === undefined) return leases.some((lease) => lease.status === 'draft') ? { kind: 'draft' } : { kind: 'vacant' };
-  const oldest = active.openDueDates.toSorted()[0];
+export function unitLeaseMark(lease: { readonly status: LeaseStatus; readonly openDueDates: readonly IsoDate[] } | undefined, asOf: IsoDate): LeaseMark {
+  if (lease === undefined) return { kind: 'vacant' };
+  if (lease.status === 'draft') return { kind: 'draft' };
+  const oldest = lease.openDueDates.toSorted()[0];
   if (oldest === undefined) return { kind: 'clear' };
   if (oldest < asOf) return { kind: 'overdue', days: daysBetween(oldest, asOf), dueDate: oldest };
   return oldest === asOf ? { kind: 'due', dueDate: oldest } : { kind: 'upcoming', dueDate: oldest };

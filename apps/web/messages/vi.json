@@ -684,6 +684,7 @@
     "continueLeaseLabel": "Tiếp tục hợp đồng nháp {label}",
     "tenantRent": "{rent} mỗi tháng",
     "nextDue": "Hạn thu {date}",
+    "leaseEnds": "Kết thúc ngày {date}",
     "leasedCount": "Đang cho thuê {leased}/{total}"
   },
   "leases": {

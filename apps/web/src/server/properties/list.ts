@@ -14,17 +14,26 @@ import {
   type PropertyViewRow,
 } from '@esta/core/properties';
 import { isIsoDate, type IsoDate } from '@esta/core/date';
-import { currentMonthlyRent } from '@esta/core/lease';
-import { vnd, type Vnd } from '@esta/core/money';
-import { leaseTerms } from '@esta/core/schemas/lease';
+import { rentInEffect } from '@esta/core/lease';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 import { loadCollectionStates } from '@/server/collections/load';
-import { loadActiveLeases } from '@/server/leases/load';
+import { loadHoldingLeases, type HoldingLeases } from '@/server/leases/load';
 import { loadCompleteness, type PropertyCompleteness } from './completeness';
 
+type LeaseFactKey = 'leasedUnitCount' | 'monthlyRentVnd';
+
+/**
+ * What the leases holding units on `asOf` say about one property: how many units are let, and the monthly rent owed
+ * under the leases in effect. `property_list_rows` cannot say either, because a view has no business date.
+ */
+export function leaseFacts(propertyId: string, holding: HoldingLeases, asOf: IsoDate): Pick<PropertyViewRow, LeaseFactKey> {
+  const leases = holding.leases.filter((lease) => lease.property_id === propertyId);
+  return { leasedUnitCount: new Set(leases.map((lease) => lease.unit_id)).size, monthlyRentVnd: rentInEffect(leases, holding.amendments, asOf) };
+}
+
 export const PROPERTY_ROW_COLUMNS =
-  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary, owner_party_ids, vacant_since, leased_unit_count, unit_count';
+  'id, nickname, code, kind, use_mode, legal_status, cover_photo_path, address_line, commune_name, province_code, province_name, certificate_address_text, legacy_province_names, search_text, lat, lng, has_boundary, owner_party_ids, vacant_since, unit_count';
 
 export const propertyRowSchema = z
   .object({
@@ -47,11 +56,10 @@ export const propertyRowSchema = z
     has_boundary: z.boolean(),
     owner_party_ids: z.array(z.string()).nullable(),
     vacant_since: z.string().refine(isIsoDate).nullable().catch(null),
-    leased_unit_count: z.number().int().min(0).catch(0),
     unit_count: z.number().int().min(0).catch(0),
   })
   .transform(
-    (row): PropertyViewRow => ({
+    (row): Omit<PropertyViewRow, LeaseFactKey> => ({
       id: row.id,
       nickname: row.nickname,
       code: row.code,
@@ -69,9 +77,7 @@ export const propertyRowSchema = z
       location: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng },
       hasBoundary: row.has_boundary,
       ownerPartyIds: row.owner_party_ids ?? [],
-      monthlyRentVnd: null,
       vacantSince: row.vacant_since as IsoDate | null,
-      leasedUnitCount: row.leased_unit_count,
       unitCount: row.unit_count,
     }),
   );
@@ -84,8 +90,8 @@ const PAGE_SIZE = 1000;
 
 type SessionClient = Awaited<ReturnType<typeof createSessionClient>>;
 
-async function readMatchingRows(supabase: SessionClient, householdId: string, tokens: readonly string[]): Promise<PropertyViewRow[]> {
-  const rows: PropertyViewRow[] = [];
+async function readMatchingRows(supabase: SessionClient, householdId: string, tokens: readonly string[]): Promise<Omit<PropertyViewRow, LeaseFactKey>[]> {
+  const rows: Omit<PropertyViewRow, LeaseFactKey>[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = supabase.from('property_list_rows').select(PROPERTY_ROW_COLUMNS).eq('household_id', householdId);
     for (const token of tokens) query = query.ilike('search_text', likeToken(token));
@@ -115,31 +121,20 @@ function summary(score: PropertyCompleteness | undefined): PropertyListRow['comp
   return score === undefined ? { percent: 100, missing: 0 } : { percent: score.percent, missing: score.failing.length };
 }
 
-/** The current monthly rent of each property's active leases, after escalation (amendments join in P3-08). */
-async function activeRentByProperty(householdId: string, asOf: IsoDate): Promise<Map<string, Vnd>> {
-  const rents = new Map<string, Vnd>();
-  for (const lease of await loadActiveLeases(householdId)) {
-    const terms = leaseTerms(lease);
-    if (terms === null) continue;
-    rents.set(lease.property_id, vnd((rents.get(lease.property_id) ?? 0) + currentMonthlyRent(terms, [], asOf)));
-  }
-  return rents;
-}
-
 /** RLS already limits the rows to the member's households; the household predicate keeps a member of two to one list. */
 export async function listProperties(householdId: string, filters: PropertyFilters, asOf: IsoDate): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
-  const [viewRows, count, ownerNames, scores, rents, collections] = await Promise.all([
+  const [viewRows, count, ownerNames, scores, holding, collections] = await Promise.all([
     readMatchingRows(supabase, householdId, tokens),
     tokens.length === 0 ? null : supabase.from('property_list_rows').select('id', { count: 'exact', head: true }).eq('household_id', householdId),
     readOwnerNames(supabase, householdId),
     loadCompleteness(householdId),
-    activeRentByProperty(householdId, asOf),
+    loadHoldingLeases(householdId, asOf),
     loadCollectionStates(householdId, asOf),
   ]);
   if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
-  const rows = viewRows.map((row): PropertyListRow => ({ ...row, monthlyRentVnd: rents.get(row.id) ?? null, completeness: summary(scores.get(row.id)) }));
+  const rows = viewRows.map((row): PropertyListRow => ({ ...row, ...leaseFacts(row.id, holding, asOf), completeness: summary(scores.get(row.id)) }));
   const matches = preferPhrase(rows, tokens);
   const filtered = applyPropertyFilters(matches, filters);
   return {

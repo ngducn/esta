@@ -1,3 +1,4 @@
+import { leaseRowSchema } from '@esta/core/schemas/lease';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const PROPERTY_ID = '5a7ba01a-8719-556b-a777-e918d5c2db9a';
@@ -10,6 +11,7 @@ const board = vi.hoisted(() => ({ result: { data: [], error: null } as Result })
 vi.mock('server-only', () => ({}));
 vi.mock('@/server/clock', () => ({ getClock: async () => ({ today: () => '2026-10-07' }) }));
 vi.mock('@/server/member', () => ({ requireMember: async () => ({ household: { id: HOUSEHOLD_ID } }) }));
+vi.mock('@/server/leases/load', () => ({ loadHoldingLeases: async () => ({ leases: sixLetRooms, amendments: [] }) }));
 vi.mock('@/server/supabase/server', () => ({
   createSessionClient: async () => ({
     from: (table: string) => query(table === 'properties' ? { data: { kind_details: { room_count: 8 } }, error: null } : { data: propertyRow, error: null }),
@@ -48,9 +50,35 @@ const propertyRow = {
   has_boundary: false,
   owner_party_ids: null,
   vacant_since: null,
-  leased_unit_count: 6,
   unit_count: 8,
 };
+
+/** Six of the eight rooms under a running lease. */
+const sixLetRooms = Array.from({ length: 6 }, (_, room) =>
+  leaseRowSchema.parse({
+    id: `00000000-0000-4000-8000-0000000e00${room}1`,
+    property_id: PROPERTY_ID,
+    unit_id: `00000000-0000-4000-8000-0000000a00${room}1`,
+    tenant_party_id: null,
+    start_date: '2026-02-25',
+    end_date: '2027-06-24',
+    rent_vnd: 2_800_000,
+    billing_cycle_months: 1,
+    period_anchor: 'lease_start',
+    first_period_proration: 'by_days',
+    due_offset_days: 0,
+    deposit_vnd: null,
+    escalation: { kind: 'none' },
+    utilities_mode: 'metered_by_owner',
+    tax_payer: 'owner',
+    notice_days: null,
+    paid_through_date: null,
+    status: 'active',
+    terminated_on: null,
+    termination_reason: null,
+    renewal_of_lease_id: null,
+  }),
+);
 
 const overdueRoom = {
   invoice_id: 'a3b0c6a4-0f43-5d55-9d55-3a0b1b8f7c11',

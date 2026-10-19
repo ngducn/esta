@@ -684,6 +684,7 @@
     "continueLeaseLabel": "Continue the draft lease for {label}",
     "tenantRent": "{rent} a month",
     "nextDue": "Due {date}",
+    "leaseEnds": "Ends on {date}",
     "leasedCount": "Let {leased}/{total}"
   },
   "leases": {
