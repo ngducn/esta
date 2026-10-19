@@ -43,7 +43,6 @@ function capped(name: string, rows: readonly (readonly Cell[])[]): Sheet {
   return { name, rows: kept, truncated: false };
 }
 
-/** Every sheet of an xlsx workbook, or the one sheet of a CSV file, row by row. */
 export async function readSpreadsheet(file: ReadFile): Promise<Result<readonly Sheet[], 'unsupported_type'>> {
   if (ZIP.every((byte, index) => file.bytes[index] === byte)) {
     const sheets = await readXlsxFile<StoredNumber>(file.bytes, { parseNumber: (stored) => ({ stored }) }).catch(() => null);
