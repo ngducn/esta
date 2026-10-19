@@ -8,9 +8,9 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { CurrentUnitSuggestion } from '@esta/ops';
 import { isCommuneOf, listCommunes, suggestCurrentUnits, type AdminUnitOption } from '@/server/address/suggest';
-import { readRequestClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 import { PROPERTY_PHOTOS_BUCKET } from '@/server/properties/photos';
+import { setDeletedAt } from '@/server/soft-delete';
 import { createSessionClient } from '@/server/supabase/server';
 
 export type PropertyWrite =
@@ -105,28 +105,19 @@ export async function updateProperty(propertyId: unknown, raw: unknown): Promise
   return { ok: true, id: data.id, nickname: data.nickname };
 }
 
-/** Archive and restore set `deleted_at` (SPEC §5 soft delete), so the property and its photo stay restorable. */
-async function setArchived(propertyId: unknown, archived: boolean): Promise<PropertyWrite> {
-  const parsedId = id.safeParse(propertyId);
-  if (!parsedId.success) return { ok: false, reason: 'invalid' };
-  const [member, supabase, clock] = await Promise.all([requireMember(), createSessionClient(), readRequestClock()]);
-  const { data, error } = await supabase
-    .from('properties')
-    .update({ deleted_at: archived ? clock.now() : null })
-    .eq('household_id', member.household.id)
-    .eq('id', parsedId.data)
-    .select('id, nickname')
-    .maybeSingle();
-  if (error || data === null) return { ok: false, reason: 'failed' };
-  revalidateProperty(data.id);
-  return { ok: true, id: data.id, nickname: data.nickname };
+/** Archive and restore are soft delete (SPEC §5), so the property and its photo stay restorable. */
+async function setArchived(propertyId: unknown, archived: boolean): Promise<{ readonly ok: boolean }> {
+  const changed = await setDeletedAt('properties', propertyId, archived);
+  if (changed === null) return { ok: false };
+  revalidateProperty(changed);
+  return { ok: true };
 }
 
-export async function archiveProperty(propertyId: unknown): Promise<PropertyWrite> {
+export async function archiveProperty(propertyId: unknown): Promise<{ readonly ok: boolean }> {
   return setArchived(propertyId, true);
 }
 
-export async function restoreProperty(propertyId: unknown): Promise<PropertyWrite> {
+export async function restoreProperty(propertyId: unknown): Promise<{ readonly ok: boolean }> {
   return setArchived(propertyId, false);
 }
 

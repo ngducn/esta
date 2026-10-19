@@ -7,10 +7,11 @@ import { firstOfMonth } from '@esta/core/date/calendar';
 import { vnd, type Vnd } from '@esta/core/money';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
+import { vndInputText } from '@esta/core/properties/form';
 import { Banknote, Landmark, PiggyBank } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useSyncExternalStore, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { DateInput } from '@/components/date-input';
 import { MoneyInput } from '@/components/money/money-input';
 import { StatusShape } from '@/components/status-mark';
@@ -18,6 +19,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { useOnline } from '@/lib/use-online';
 import { cn } from '@/lib/utils';
 import { recordPayment, undoPayment, type PaymentMethod, type RecordPaymentRefusal } from '@/server/actions/payments';
 import type { PaymentInvoice } from '@/server/collections/load';
@@ -51,20 +53,6 @@ const REFUSAL_MESSAGES = {
   failed: 'failed',
 } as const satisfies Record<Exclude<RecordPaymentRefusal, BoardChanged>, string>;
 
-/** The prefilled text, grouped the way Mẹ writes amounts, which `parseVndInput` reads back in either language. */
-function amountText(amount: Vnd): string {
-  return formatVnd(amount, 'vi').replace(/\s*₫$/, '');
-}
-
-function subscribeOnline(onChange: () => void) {
-  window.addEventListener('online', onChange);
-  window.addEventListener('offline', onChange);
-  return () => {
-    window.removeEventListener('online', onChange);
-    window.removeEventListener('offline', onChange);
-  };
-}
-
 /**
  * LSE-7 from a collections row: the amount the row owes is already in the field, so `Tiền mặt` then `Lưu` records it.
  * The preview runs allocatePayment over the same open invoices `record_payment` settles, so what it shows is what is
@@ -81,7 +69,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
   const title = useRef<HTMLHeadingElement>(null);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [openInvoices] = useState(() => target.openInvoices);
-  const [amount, setAmount] = useState(() => amountText(owedThrough(openInvoices, target.invoiceId)));
+  const [amount, setAmount] = useState(() => vndInputText(owedThrough(openInvoices, target.invoiceId)));
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [date, setDate] = useState(() => formatDate(target.today, locale));
   const [editingDate, setEditingDate] = useState(false);
@@ -89,7 +77,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
   const [choosing, setChoosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const offline = useSyncExternalStore(subscribeOnline, () => !navigator.onLine, () => false);
+  const offline = !useOnline();
 
   const parsed = parseVndInput(amount);
   const pool = chosen === null ? openInvoices : openInvoices.filter((invoice) => chosen.includes(invoice.id));

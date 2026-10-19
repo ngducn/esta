@@ -1,4 +1,7 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { MAX_AMOUNT_VND } from '../money/vnd';
+import { vndInputText } from '../properties/form-fields';
 import { parseDateInput, parseOptionalDateInput } from './date-input';
 import { parseStatementAmount, parseStatementDate } from './statement';
 import { parseVndInput } from './vnd-input';
@@ -83,6 +86,17 @@ describe('parseVndInput', () => {
     ['1,5 tỷ rưỡi', 'ambiguous_shorthand'],
   ])('rejects %s as %s', (text, reason) => {
     expect(parseVndInput(text)).toEqual({ ok: false, reason });
+  });
+});
+
+describe('vndInputText', () => {
+  it('writes every storable amount as text parseVndInput reads back, the prefill of a money field', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: MAX_AMOUNT_VND }), (amount) => {
+        expect(parseVndInput(vndInputText(amount))).toEqual({ ok: true, value: amount });
+      }),
+      { seed: 20261019, numRuns: 1000 },
+    );
   });
 });
 

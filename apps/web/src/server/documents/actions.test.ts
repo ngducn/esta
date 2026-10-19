@@ -1,12 +1,9 @@
 import { NATIONAL_ID_VECTORS } from '../../../../../packages/core/src/agent-schemas/national-id-vectors';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomBytes } from 'node:crypto';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { e2eServiceHeaders } from '../../../../../scripts/e2e-service';
-import { parseSlot } from '../../../../../scripts/slot';
-import { slotEnv } from '../../../../../scripts/slot-env';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
+import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
@@ -22,15 +19,6 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => se
 
 const { createDocumentUpload, openDocument, registerDocument, updateDocument } = await import('./actions');
 
-// The vitest config's placeholder Supabase URL and key would shadow the slot's real ones.
-vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', undefined);
-vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', undefined);
-const env = slotEnv(join(import.meta.dirname, '../../../../..'), parseSlot(process.env.ESTA_SLOT));
-vi.unstubAllEnvs();
-const url = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const stackUp = anonKey !== '' && (await fetch(`${url}/auth/v1/health`, { headers: { apikey: anonKey } }).then((r) => r.ok, () => false));
-
 const LANE = 9;
 const household = seedId(`seed:household:lane-${LANE}`);
 const propertyId = seedId(`seed:property:lane-${LANE}:bao-loc`);
@@ -38,38 +26,16 @@ const bytes = randomBytes(2048);
 const file = { filename: 'giay-to.pdf', mime: 'application/pdf', size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };
 const created: string[] = [];
 
-async function signedInAs(email: string): Promise<SupabaseClient> {
-  const link = await fetch(`${url}/auth/v1/admin/generate_link`, {
-    method: 'POST',
-    headers: { ...e2eServiceHeaders(), 'content-type': 'application/json' },
-    body: JSON.stringify({ type: 'magiclink', email }),
-  });
-  const { email_otp: token } = (await link.json()) as { email_otp: string };
-  const client = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
-  if (error) throw error;
-  return client;
-}
-
-async function service<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${url}${path}`, { ...init, headers: { ...e2eServiceHeaders(), 'content-type': 'application/json', ...init.headers } });
-  expect(response.ok, await response.clone().text()).toBe(true);
-  return (await response.json().catch(() => null)) as T;
-}
-
-const put = (signedUrl: string, body: Buffer, type: string) =>
-  fetch(signedUrl, { method: 'PUT', body: new Blob([new Uint8Array(body)]), headers: { 'content-type': type, 'x-upsert': 'true' } });
-
 async function uploadAndRegister() {
   const ticket = await createDocumentUpload({ ...file, propertyId, category: 'other' });
   if (!ticket.ok) throw new Error('createDocumentUpload refused');
   created.push(ticket.documentId);
-  expect((await put(ticket.file.url, bytes, file.mime)).status).toBe(200);
+  expect((await putSigned(ticket.file.url, bytes, file.mime)).status).toBe(200);
   const input = { ...file, propertyId, category: 'other', documentId: ticket.documentId, title: 'Giấy tờ Demo', expiresOn: null, pageCount: 1 };
   return { ticket, input };
 }
 
-describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.ESTA_SLOT ?? 0} stack`, () => {
+describe.skipIf(!stackUp)(`document actions against ${stackName}`, () => {
   let member: SupabaseClient;
   let outsider: SupabaseClient;
 
@@ -99,7 +65,7 @@ describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.
   test('a registered file cannot be rewritten through the upload URL it was sent with', async () => {
     const { ticket, input } = await uploadAndRegister();
     expect(await registerDocument(input)).toMatchObject({ ok: true });
-    expect((await put(ticket.file.url, randomBytes(16), file.mime)).ok).toBe(false);
+    expect((await putSigned(ticket.file.url, randomBytes(16), file.mime)).ok).toBe(false);
     const { data: stored } = await member.storage.from('documents').download(`${household}/${ticket.documentId}/giay-to.pdf`);
     expect(stored && Buffer.from(await stored.arrayBuffer()).equals(bytes)).toBe(true);
   });

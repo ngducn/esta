@@ -3,8 +3,9 @@
 import { CloudOff, RotateCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { Component, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Component, useState, type ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { useOnline } from '@/lib/use-online';
 import type { MapStatus, MapSurfaceProps } from './map-surface';
 
 function MapLoading() {
@@ -28,22 +29,6 @@ class MapErrorBoundary extends Component<{ fallback: ReactNode; children: ReactN
     return this.state.failed ? this.props.fallback : this.props.children;
   }
 }
-
-function subscribeOnline(onChange: () => void) {
-  window.addEventListener('online', onChange);
-  window.addEventListener('offline', onChange);
-  return () => {
-    window.removeEventListener('online', onChange);
-    window.removeEventListener('offline', onChange);
-  };
-}
-
-const useOnline = () =>
-  useSyncExternalStore(
-    subscribeOnline,
-    () => navigator.onLine,
-    () => true,
-  );
 
 export function MapCanvas(props: Omit<MapSurfaceProps, 'onStatus'>) {
   const t = useTranslations('map');

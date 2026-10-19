@@ -1,6 +1,6 @@
 'use server';
 
-import { defaultDocumentTitle, DOCUMENT_MIME_TYPES, MAX_DOCUMENT_BYTES } from '@esta/core/documents';
+import { defaultDocumentTitle, sentDocumentSchema } from '@esta/core/documents';
 import { nextRoomLabels, PROPERTY_KINDS } from '@esta/core/properties';
 import { USE_MODES } from '@esta/core/schemas/property';
 import { getTranslations } from 'next-intl/server';
@@ -25,16 +25,7 @@ const startSchema = z.object({
     .transform((text) => text.normalize('NFC')),
   code: z.string().regex(/^[A-Z0-9]{1,8}$/),
   kind: z.enum(PROPERTY_KINDS),
-  document: z
-    .object({
-      documentId: uuid,
-      filename: z.string().min(1).max(500),
-      mime: z.enum(DOCUMENT_MIME_TYPES),
-      size: z.number().int().min(1).max(MAX_DOCUMENT_BYTES),
-      sha256: z.string().regex(/^[0-9a-f]{64}$/),
-      pageCount: z.number().int().min(1).max(2000),
-    })
-    .nullable(),
+  document: sentDocumentSchema.nullable(),
 });
 
 export type WizardStart =

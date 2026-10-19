@@ -2,17 +2,15 @@ import { NATIONAL_ID_VECTORS } from '../../../../../packages/core/src/agent-sche
 import { reduceNationalIds } from '@esta/core/agent-schemas';
 import { manualEntryId, rowId } from '@esta/core/extraction/acceptance';
 import { reviewFields } from '@esta/core/extraction/fields';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
 import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
-import { e2eServiceHeaders } from '../../../../../scripts/e2e-service';
-import { parseSlot } from '../../../../../scripts/slot';
-import { slotEnv } from '../../../../../scripts/slot-env';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
+import { service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
@@ -26,13 +24,6 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => se
 
 const { saveExtractionReview } = await import('./actions');
 
-vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', undefined);
-vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', undefined);
-const env = slotEnv(join(import.meta.dirname, '../../../../..'), parseSlot(process.env.ESTA_SLOT));
-vi.unstubAllEnvs();
-const url = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const stackUp = anonKey !== '' && (await fetch(`${url}/auth/v1/health`, { headers: { apikey: anonKey } }).then((r) => r.ok, () => false));
 
 const LANE = 9;
 const household = seedId(`seed:household:lane-${LANE}`);
@@ -48,40 +39,16 @@ const truths = readdirSync(FIXTURES, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name !== 'generator')
   .map((entry) => ({ id: entry.name, certificate: (JSON.parse(readFileSync(join(FIXTURES, entry.name, 'truth.json'), 'utf8')) as { certificate: unknown }).certificate }));
 
-// Each call of e2eServiceHeaders runs `supabase status`; one key per run keeps a hundred saves from racing it.
-let headers: Record<string, string> | undefined;
-const serviceHeaders = () => (headers ??= e2eServiceHeaders());
 
-async function signedInAs(email: string): Promise<SupabaseClient> {
-  const link = await fetch(`${url}/auth/v1/admin/generate_link`, {
-    method: 'POST',
-    headers: { ...serviceHeaders(), 'content-type': 'application/json' },
-    body: JSON.stringify({ type: 'magiclink', email }),
-  });
-  const { email_otp: token } = (await link.json()) as { email_otp: string };
-  const client = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
-  if (error) throw error;
-  return client;
-}
-
-async function service<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${url}/rest/v1/${path}`, {
-    ...init,
-    headers: { ...serviceHeaders(), 'content-type': 'application/json', prefer: 'return=representation', ...init.headers },
-  });
-  expect(response.ok, await response.clone().text()).toBe(true);
-  return (await response.json().catch(() => null)) as T;
-}
-
-const patch = (path: string, body: unknown) => service(path, { method: 'PATCH', body: JSON.stringify(body) });
+const rest = <T>(path: string, init?: RequestInit) => service<T>(`/rest/v1/${path}`, init);
+const patch = (path: string, body: unknown) => rest(path, { method: 'PATCH', body: JSON.stringify(body) });
 
 /** A certificate document whose extraction the worker has read and left waiting, written as the worker writes it. */
 async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_review', result: unknown = truthFile.certificate): Promise<{ documentId: string; extractionId: string }> {
   const documentId = randomUUID();
   const extractionId = randomUUID();
   documents.push(documentId);
-  await service('documents', {
+  await rest('documents', {
     method: 'POST',
     body: JSON.stringify({
       id: documentId,
@@ -96,7 +63,7 @@ async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_revi
       sensitivity: 'sensitive',
     }),
   });
-  await service('document_extractions', {
+  await rest('document_extractions', {
     method: 'POST',
     body: JSON.stringify({ id: extractionId, household_id: household, document_id: documentId, schema_name: 'certificate_v1', schema_version: 1 }),
   });
@@ -109,7 +76,7 @@ async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_revi
   return { documentId, extractionId };
 }
 
-const count = async (path: string) => (await service<unknown[]>(path)).length;
+const count = async (path: string) => (await rest<unknown[]>(path)).length;
 
 const BILL_TEXT = 'ĐIỆN LỰC DEMO TÂN THUẬN. HÓA ĐƠN TIỀN ĐIỆN tháng 9/2026. Tổng cộng 1.234.764 đ';
 const billResult = (fullText: string) => ({ ...billTruth.bill, full_text: fullText });
@@ -120,7 +87,7 @@ async function waitingBill(sensitivity: 'normal' | 'sensitive', fullText = BILL_
   const documentId = randomUUID();
   const extractionId = randomUUID();
   documents.push(documentId);
-  await service('documents', {
+  await rest('documents', {
     method: 'POST',
     body: JSON.stringify({
       id: documentId,
@@ -135,7 +102,7 @@ async function waitingBill(sensitivity: 'normal' | 'sensitive', fullText = BILL_
       sensitivity,
     }),
   });
-  await service('document_extractions', {
+  await rest('document_extractions', {
     method: 'POST',
     body: JSON.stringify({ id: extractionId, household_id: household, document_id: documentId, schema_name: 'utility_bill_v1', schema_version: 1 }),
   });
@@ -144,7 +111,7 @@ async function waitingBill(sensitivity: 'normal' | 'sensitive', fullText = BILL_
   return { documentId, extractionId };
 }
 
-const ocrText = async (documentId: string) => (await service<{ ocr_text: string | null }[]>(`documents?id=eq.${documentId}&select=ocr_text`))[0]?.ocr_text;
+const ocrText = async (documentId: string) => (await rest<{ ocr_text: string | null }[]>(`documents?id=eq.${documentId}&select=ocr_text`))[0]?.ocr_text;
 
 /** Counts what one extraction wrote: its certificate, the parcels and structures under it, and the household's parties. */
 async function written(extractionId: string) {
@@ -172,7 +139,7 @@ function cutOnce(client: SupabaseClient, table: string): SupabaseClient {
   });
 }
 
-describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.env.ESTA_SLOT ?? 0} stack`, () => {
+describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   let member: SupabaseClient;
   let outsider: SupabaseClient;
 
@@ -184,19 +151,19 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
   afterAll(async () => {
     if (documents.length === 0) return;
     const ids = documents.join(',');
-    const certificates = await service<{ id: string; holder_party_ids: string[] }[]>(`certificates?document_id=in.(${ids})&select=id,holder_party_ids`);
+    const certificates = await rest<{ id: string; holder_party_ids: string[] }[]>(`certificates?document_id=in.(${ids})&select=id,holder_party_ids`);
     const certificateIds = certificates.map((row) => row.id).join(',');
     if (certificateIds !== '') {
-      await service(`parcels?certificate_id=in.(${certificateIds})`, { method: 'DELETE' });
-      await service(`structures?certificate_id=in.(${certificateIds})`, { method: 'DELETE' });
-      await service(`certificates?id=in.(${certificateIds})`, { method: 'DELETE' });
+      await rest(`parcels?certificate_id=in.(${certificateIds})`, { method: 'DELETE' });
+      await rest(`structures?certificate_id=in.(${certificateIds})`, { method: 'DELETE' });
+      await rest(`certificates?id=in.(${certificateIds})`, { method: 'DELETE' });
     }
     const created = certificates.flatMap((row) => row.holder_party_ids).filter((id) => id !== seedId(`seed:party:me-lane-${LANE}`));
-    if (created.length > 0) await service(`parties?id=in.(${[...new Set(created)].join(',')})`, { method: 'DELETE' });
-    const extractions = await service<{ id: string }[]>(`document_extractions?document_id=in.(${ids})&select=id`);
+    if (created.length > 0) await rest(`parties?id=in.(${[...new Set(created)].join(',')})`, { method: 'DELETE' });
+    const extractions = await rest<{ id: string }[]>(`document_extractions?document_id=in.(${ids})&select=id`);
     const accounts = extractions.map((row) => rowId(row.id, 'utility_account')).join(',');
-    if (accounts !== '') await service(`utility_accounts?id=in.(${accounts})`, { method: 'DELETE' });
-    await service(`documents?id=in.(${ids})`, { method: 'DELETE' });
+    if (accounts !== '') await rest(`utility_accounts?id=in.(${accounts})`, { method: 'DELETE' });
+    await rest(`documents?id=in.(${ids})`, { method: 'DELETE' });
   });
 
   const asMember = () => {
@@ -213,7 +180,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     expect(await saveExtractionReview(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
     expect(await written(extractionId)).toEqual(once);
     expect(once).toEqual({ certificates: 1, parcels: truthFile.certificate.parcels.length, structures: truthFile.certificate.structures.length, parties: parties + 2 });
-    const [extraction] = await service<{ status: string; reviewed_by: string; accepted_fields: Record<string, unknown> }[]>(
+    const [extraction] = await rest<{ status: string; reviewed_by: string; accepted_fields: Record<string, unknown> }[]>(
       `document_extractions?id=eq.${extractionId}&select=status,reviewed_by,accepted_fields`,
     );
     expect(extraction).toMatchObject({ status: 'accepted', reviewed_by: memberUser });
@@ -226,13 +193,13 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     session.client = cutOnce(member, 'parcels');
     expect(await saveExtractionReview(extractionId, acceptAll)).toEqual({ ok: false, reason: 'failed' });
     expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 0 });
-    expect(await service(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
+    expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
 
     session.client = member;
     expect(await saveExtractionReview(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
     expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 1, structures: 1 });
-    expect(await service(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=area_m2,parcel_no`)).toEqual([{ area_m2: 82.7, parcel_no: '56' }]);
-    expect(await service(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'accepted' }]);
+    expect(await rest(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=area_m2,parcel_no`)).toEqual([{ area_m2: 82.7, parcel_no: '56' }]);
+    expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'accepted' }]);
   });
 
   test('the history names the member as the actor of every row the save wrote, never the assistant', async () => {
@@ -241,7 +208,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     expect(await saveExtractionReview(extractionId, acceptAll)).toMatchObject({ ok: true });
     // The holders already exist from the first test, so this save reuses their parties and writes none.
     const rows = [rowId(extractionId, 'certificate'), rowId(extractionId, 'parcels[0]'), rowId(extractionId, 'structures[0]')];
-    const audit = await service<{ actor_kind: string; actor_id: string }[]>(`audit_log?row_id=in.(${rows.join(',')})&select=actor_kind,actor_id`);
+    const audit = await rest<{ actor_kind: string; actor_id: string }[]>(`audit_log?row_id=in.(${rows.join(',')})&select=actor_kind,actor_id`);
     expect(audit.length).toBeGreaterThanOrEqual(rows.length);
     expect(new Set(audit.map((row) => `${row.actor_kind}:${row.actor_id}`))).toEqual(new Set([`user:${memberUser}`]));
   });
@@ -253,11 +220,11 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: true, propertyId });
     expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: true, propertyId });
     const manual = manualEntryId(extractionId);
-    expect(await service(`document_extractions?document_id=eq.${documentId}&select=id,status,model&order=status`)).toEqual([
+    expect(await rest(`document_extractions?document_id=eq.${documentId}&select=id,status,model&order=status`)).toEqual([
       { id: manual, status: 'accepted', model: null },
       { id: extractionId, status: 'failed', model: null },
     ]);
-    expect(await service(`parcels?id=eq.${rowId(manual, 'parcels[0]')}&select=parcel_no,area_m2`)).toEqual([{ parcel_no: '12', area_m2: 300.5 }]);
+    expect(await rest(`parcels?id=eq.${rowId(manual, 'parcels[0]')}&select=parcel_no,area_m2`)).toEqual([{ parcel_no: '12', area_m2: 300.5 }]);
   });
 
   test('each of the 16 certificate truths saves with every field accepted as read', async () => {
@@ -288,10 +255,10 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     for (const { extractionId, decisions: decided, issuedBy, originText } of saves) {
       expect(await saveExtractionReview(extractionId, decided)).toEqual({ ok: true, propertyId });
       const rows = [rowId(extractionId, 'certificate'), rowId(extractionId, 'parcels[0]')];
-      expect(await service(`certificates?id=eq.${rows[0]}&select=issued_by`)).toEqual([{ issued_by: issuedBy }]);
-      expect(await service(`parcels?id=eq.${rows[1]}&select=origin_text`)).toEqual([{ origin_text: originText }]);
+      expect(await rest(`certificates?id=eq.${rows[0]}&select=issued_by`)).toEqual([{ issued_by: issuedBy }]);
+      expect(await rest(`parcels?id=eq.${rows[1]}&select=origin_text`)).toEqual([{ origin_text: originText }]);
     }
-    const audit = await service<unknown[]>(`audit_log?row_id=in.(${[rowId(read.extractionId, 'certificate'), rowId(read.extractionId, 'parcels[0]')].join(',')})&select=diff`);
+    const audit = await rest<unknown[]>(`audit_log?row_id=in.(${[rowId(read.extractionId, 'certificate'), rowId(read.extractionId, 'parcels[0]')].join(',')})&select=diff`);
     expect(audit.length).toBeGreaterThanOrEqual(2);
     expect(JSON.stringify(audit)).not.toMatch(/\d{6} \d{6}|CCCD \d{9}/u);
   });
@@ -309,7 +276,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
       const { extractionId } = await waitingExtraction();
       expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value } }), value).toEqual({ ok: false, reason: 'out_of_range', paths: [path] });
       expect(await written(extractionId), value).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
-      expect(await service(`document_extractions?id=eq.${extractionId}&select=status`), value).toEqual([{ status: 'needs_review' }]);
+      expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`), value).toEqual([{ status: 'needs_review' }]);
     }
   }, 30_000);
 
@@ -318,7 +285,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     for (const [typed, term] of [['Từ tháng 10/1993 đến tháng 10/2043', '2043-10-31'], ['Từ 15/10/1993 đến 15/10/2043', '2043-10-15']] as const) {
       const { extractionId } = await waitingExtraction();
       expect(await saveExtractionReview(extractionId, { ...acceptAll, 'parcels[0].purposes[0].term': { kind: 'edited', value: typed } }), typed).toEqual({ ok: true, propertyId });
-      const [parcel] = await service<{ purposes: { term: string }[] }[]>(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=purposes`);
+      const [parcel] = await rest<{ purposes: { term: string }[] }[]>(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=purposes`);
       expect(parcel?.purposes.map((purpose) => purpose.term), typed).toEqual([term]);
     }
   }, 30_000);
@@ -335,10 +302,10 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
       const { extractionId } = await waitingExtraction();
       const typed = text.normalize('NFC').replace(/\s+/gu, ' ').trim();
       expect(await saveExtractionReview(extractionId, { ...acceptAll, [path]: { kind: 'edited', value: text } }), name).toEqual({ ok: true, propertyId });
-      const [review] = await service<{ status: string; accepted_fields: Record<string, unknown> }[]>(`document_extractions?id=eq.${extractionId}&select=status,accepted_fields`);
+      const [review] = await rest<{ status: string; accepted_fields: Record<string, unknown> }[]>(`document_extractions?id=eq.${extractionId}&select=status,accepted_fields`);
       expect(review?.status, name).toBe('accepted');
       expect(review?.accepted_fields[path], name).toEqual({ decision: 'edited', value: typed });
-      const row = path === 'issued_by' ? await service(`certificates?id=eq.${rowId(extractionId, 'certificate')}&select=issued_by`) : await service(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=origin_text`);
+      const row = path === 'issued_by' ? await rest(`certificates?id=eq.${rowId(extractionId, 'certificate')}&select=issued_by`) : await rest(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=origin_text`);
       expect(row, name).toEqual([path === 'issued_by' ? { issued_by: typed } : { origin_text: typed }]);
     }
   }, 60_000);
@@ -373,6 +340,6 @@ describe.skipIf(!stackUp)(`saveExtractionReview against the ESTA_SLOT=${process.
     session.member = { role: 'admin', household: { id: household } };
     expect(await saveExtractionReview(extractionId, acceptAll)).toEqual({ ok: false, reason: 'not_reviewable' });
     expect(await written(extractionId)).toMatchObject({ certificates: 0, parcels: 0 });
-    expect(await service(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
+    expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
   });
 });

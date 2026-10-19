@@ -4,10 +4,10 @@ import {
   acceptsMime,
   DOCUMENT_CATEGORIES,
   DOCUMENT_CATEGORY_IDS,
-  DOCUMENT_MIME_TYPES,
-  documentObjectName,
-  MAX_DOCUMENT_BYTES,
+  documentFileSchema,
+  documentTitleSchema,
   reviewPath,
+  sentDocumentSchema,
   storagePath,
   thumbPath,
 } from '@esta/core/documents';
@@ -18,25 +18,20 @@ import { z } from 'zod';
 import { readRequestClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
+import { setDeletedAt } from '@/server/soft-delete';
 import { createSessionClient } from '@/server/supabase/server';
+import { documentRow } from './register';
 import { DOCUMENTS_BUCKET, signDocumentUrl } from './sign';
 
 const id = z.uuid();
 
-const fileSchema = z.object({
-  filename: z.string().min(1).max(500),
-  mime: z.enum(DOCUMENT_MIME_TYPES),
-  size: z.number().int().min(1).max(MAX_DOCUMENT_BYTES),
-  sha256: z.string().regex(/^[0-9a-f]{64}$/),
-});
+const target = { propertyId: id, category: z.enum(DOCUMENT_CATEGORY_IDS) };
+const uploadSchema = documentFileSchema.extend(target);
 
-const uploadSchema = fileSchema.extend({ propertyId: id, category: z.enum(DOCUMENT_CATEGORY_IDS) });
-
-const registerSchema = uploadSchema.extend({
-  documentId: id,
-  title: z.string().trim().min(1).max(200),
+const registerSchema = sentDocumentSchema.extend({
+  ...target,
+  title: documentTitleSchema,
   expiresOn: z.string().refine(isIsoDate).nullable(),
-  pageCount: z.number().int().min(1).max(2000),
   leaseId: id.nullable().default(null),
 });
 
@@ -91,41 +86,18 @@ export type Registered = { readonly ok: true; readonly title: string } | { reado
 /** Writes the row once the file is in Storage. A retry with the same id converges on one row. */
 export async function registerDocument(input: unknown): Promise<Registered> {
   const parsed = registerSchema.safeParse(input);
-  if (!parsed.success || !acceptsMime(parsed.data.category, parsed.data.mime)) return { ok: false };
-  const { documentId, propertyId, category, title, expiresOn, filename, mime, size, sha256, pageCount, leaseId } = parsed.data;
+  if (!parsed.success) return { ok: false };
   const member = await requireMember();
-  const household = member.household.id;
-  const name = documentObjectName(filename);
+  const row = await documentRow(member.household.id, parsed.data);
+  if (row === null) return { ok: false };
   const supabase = await createSessionClient();
-  const { data: objects, error: listError } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .list(`${household}/${documentId}`, { search: name, limit: 10 });
-  const stored = objects?.find((object) => object.name === name);
-  if (listError || stored === undefined || stored.metadata?.size !== size) return { ok: false };
-  const { error } = await supabase.from('documents').upsert(
-    {
-      id: documentId,
-      household_id: household,
-      property_id: propertyId,
-      category,
-      title,
-      storage_path: storagePath(household, documentId, filename),
-      mime,
-      size_bytes: size,
-      page_count: pageCount,
-      sha256,
-      sensitivity: DOCUMENT_CATEGORIES[category].sensitivity,
-      expires_on: expiresOn,
-      lease_id: leaseId,
-    },
-    { onConflict: 'id', ignoreDuplicates: true },
-  );
+  const { error } = await supabase.from('documents').upsert(row, { onConflict: 'id', ignoreDuplicates: true });
   if (error) return { ok: false };
   // The file is saved either way; a failed enqueue leaves the tile without a reading state rather than losing the upload.
-  if (DOCUMENT_CATEGORIES[category].extractionSchema !== null) {
-    await supabase.rpc('enqueue_extract_document', { p_document_id: documentId, p_as_of: (await readRequestClock()).now() });
+  if (DOCUMENT_CATEGORIES[parsed.data.category].extractionSchema !== null) {
+    await supabase.rpc('enqueue_extract_document', { p_document_id: parsed.data.documentId, p_as_of: (await readRequestClock()).now() });
   }
-  return { ok: true, title };
+  return { ok: true, title: parsed.data.title };
 }
 
 type AccessAction = 'view' | 'download' | 'share';
@@ -152,33 +124,15 @@ export async function downloadDocument(documentId: unknown): Promise<string | nu
   return signAndLog(documentId, 'download', (row) => row.storage_path);
 }
 
-async function setDeletedAt(documentId: unknown, deletedAt: string | null): Promise<boolean> {
-  const parsed = id.safeParse(documentId);
-  if (!parsed.success) return false;
-  const member = await requireMember();
-  const supabase = await createSessionClient();
-  const { data, error } = await supabase
-    .from('documents')
-    .update({ deleted_at: deletedAt })
-    .eq('household_id', member.household.id)
-    .eq('id', parsed.data)
-    .select('id');
-  return !error && data.length === 1;
-}
-
 export async function archiveDocument(documentId: unknown): Promise<boolean> {
-  return setDeletedAt(documentId, (await readRequestClock()).now());
-}
-
-export async function restoreDocument(documentId: unknown): Promise<boolean> {
-  return setDeletedAt(documentId, null);
+  return (await setDeletedAt('documents', documentId, true)) !== null;
 }
 
 const tagSchema = z.string().trim().min(1).max(40);
 
 const editSchema = z.object({
   documentId: id,
-  title: z.string().trim().min(1).max(200),
+  title: documentTitleSchema,
   category: z.enum(DOCUMENT_CATEGORY_IDS),
   propertyId: id.nullable(),
   expiresOn: z.string().refine(isIsoDate).nullable(),
