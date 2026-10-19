@@ -225,6 +225,7 @@ test('rule 4: renewing by 5% previews 9.500.000 ₫ and opens the new lease from
   await page.getByTestId('lease-renew').click();
   const sheet = page.getByTestId('renew-sheet');
   await expect(sheet).toContainText('Hợp đồng mới bắt đầu ngày 02/11/2026');
+  await expect(sheet.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' }), 'a renewal from a later day asks nothing about collected rent').toHaveCount(0);
   await sheet.getByTestId('renew-increase').fill('5');
   await expect(sheet.getByTestId('renew-preview').locator('data')).toHaveText(`9.500.000${NBSP}₫`);
   await expect(sheet.getByTestId('renew-preview')).toContainText(`Đang là 9.000.000${NBSP}₫`);
@@ -316,4 +317,40 @@ test('rule 8: in English at 130% text, Phòng 5 reads 12 days overdue and every 
   } finally {
     await rest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'vi', text_scale: 100 });
   }
+});
+
+test('rule 9: renewing a lease that ran to 31/08/2026 asks what was collected as activation does, refuses a date before 01/09/2026, and bills October after the day given and nothing for September', async ({ page }) => {
+  await open(page, 'me.lane4@demo.esta.test', 'light', PHONE);
+  const lease = await freshLease(page, 4, { start: '2026-03-01', end: '2026-08-31', rent: 3_000_000, paidThrough: '2026-08-31' });
+  expect(await rest(page, 'GET', `invoices?lease_id=eq.${lease.id}&select=id`)).toEqual([]);
+  await page.goto(lease.path);
+  await page.getByTestId('lease-renew').click();
+  const sheet = page.getByTestId('renew-sheet');
+  await expect(sheet).toContainText('Hợp đồng mới bắt đầu ngày 01/09/2026');
+  const paidThrough = sheet.getByRole('textbox', { name: 'Đã thu tiền đến hết ngày' });
+  await expect(sheet.getByTestId('paid-through-hint')).toHaveText('Để trống nếu chưa thu tiền. Esta chỉ lập hóa đơn từ kỳ hiện tại trở đi, không lập cho các kỳ đã qua.');
+  await paidThrough.fill('31/09/2026');
+  await paidThrough.blur();
+  await expect(sheet.getByTestId('renew-save')).toBeDisabled();
+  await paidThrough.fill('31/08/2026');
+  await sheet.getByTestId('renew-save').click();
+  await expect(sheet.getByTestId('paid-through-refused')).toHaveText('Ngày đã thu tiền phải từ ngày bắt đầu trở đi.');
+  await paidThrough.fill('03/10/2026');
+  await settled(sheet.getByTestId('renew-save'));
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await noSideScroll(page)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('renew-past-sheet-390-light.png') });
+  await sheet.getByTestId('renew-save').click();
+
+  await expect(toast(page)).toContainText('Đã gia hạn. Hợp đồng mới từ 01/09/2026.');
+  await expect(page).not.toHaveURL(new RegExp(`${lease.id}$`));
+  const renewal = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+  expect(await rest(page, 'GET', `invoices?lease_id=eq.${renewal}&select=period_start,period_end,status,invoice_lines(amount_vnd)&order=period_start`)).toEqual([
+    { period_start: '2026-10-04', period_end: '2026-10-31', status: 'issued', invoice_lines: [{ amount_vnd: 2_709_677 }] },
+    { period_start: '2026-11-01', period_end: '2026-11-30', status: 'draft', invoice_lines: [{ amount_vnd: 3_000_000 }] },
+  ]);
+  await expect(period(page, '2026-10-04').locator('[data-status="overdue"]')).toHaveText('Quá hạn 3 ngày');
+  expect(await noSideScroll(page)).toBe(true);
+  await holdForRecording(page);
+  await page.screenshot({ path: test.info().outputPath('renewed-past-390-light.png'), fullPage: true });
 });

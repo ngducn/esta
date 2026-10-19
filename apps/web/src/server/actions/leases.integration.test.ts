@@ -304,6 +304,17 @@ describe('amend, terminate and renew against local Supabase (LSE-2, LSE-3, #144)
     }
   });
 
+  it('a renewal reads its typed paid-through date as activation does, refusing one off the calendar or before the renewal starts', async () => {
+    const lease = await activeLease({ start_date: '2025-12-01', end_date: '2026-11-30' }, '30/09/2026');
+    const renew = (paidThrough: string) => renewLease(lease.id, { increaseBps: 0, endDate: '2027-11-30', paidThrough });
+    expect(await renew('31/09/2026')).toEqual({ ok: false, reason: 'paid_through_invalid' });
+    expect(await renew('30/11/2026')).toEqual({ ok: false, reason: 'paid_through_before_start' });
+    const renewed = await renew('15/12/2026');
+    if (!renewed.ok) throw new Error(renewed.reason);
+    const { data } = await client.from('leases').select('start_date, paid_through_date').eq('id', renewed.value).single();
+    expect(data).toEqual({ start_date: '2026-12-01', paid_through_date: '2026-12-15' });
+  });
+
   it('LSE-3: after an amendment the database plans exactly what packages/core planInvoices plans with the same amendment', async () => {
     const percentYearly = { kind: 'percent', value: 500, every_months: 12 } as const;
     const cases: { values: Record<string, unknown>; paidThrough: string; amendment: Amendment }[] = [
