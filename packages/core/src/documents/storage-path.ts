@@ -2,9 +2,9 @@ import { foldVietnamese } from '../search/fold';
 
 const MAX_NAME = 100;
 const THUMB = 'thumb.webp';
-const THUMB_BLUR = 'thumb-blur.webp';
 const REVIEW = 'review.webp';
-const DERIVED: ReadonlySet<string> = new Set([THUMB, THUMB_BLUR, REVIEW]);
+/** Uploads before 2026-10-19 also hold a blurred thumbnail, so an uploaded file never takes that name either. */
+const DERIVED: ReadonlySet<string> = new Set([THUMB, 'thumb-blur.webp', REVIEW]);
 
 /** The object name pattern the `documents` bucket policies and the `storage_path` check accept. */
 export const DOCUMENT_OBJECT_NAME = /^(?=.{1,100}$)[a-z0-9-]+(\.[a-z0-9]{1,8})?$/;
@@ -28,11 +28,6 @@ export function storagePath(householdId: string, documentId: string, filename: s
 
 export function thumbPath(householdId: string, documentId: string): string {
   return `${householdId}/${documentId}/${THUMB}`;
-}
-
-/** The only thumbnail a sensitive document's tile receives before Mẹ taps `Xem` (DOC-5). */
-export function thumbBlurPath(householdId: string, documentId: string): string {
-  return `${householdId}/${documentId}/${THUMB_BLUR}`;
 }
 
 /** Page 1 at review size, which the review screen shows in place of the full-size file until Mẹ zooms in. */

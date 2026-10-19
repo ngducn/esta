@@ -1,7 +1,7 @@
 'use server';
 
 import { reduceNationalIds } from '@esta/core/agent-schemas';
-import { manualEntryId, plannedValues, PLANNERS, type Decisions, type PlanStep } from '@esta/core/extraction/acceptance';
+import { manualEntryId, PLANNERS, readValues, type Decisions, type PlanStep } from '@esta/core/extraction/acceptance';
 import { isSchemaName } from '@esta/core/extraction/fields';
 import type { Json, TablesInsert } from '@esta/db';
 import { revalidatePath } from 'next/cache';
@@ -98,12 +98,12 @@ async function closeItems(supabase: Session, householdId: string, keys: readonly
 }
 
 /**
- * Accepts the reviewed fields of an extraction (DOC-6): builds the plan, has the database judge every value in it by
- * the extraction CHECK's rule and stops before any write when one holds a full ID (SPEC D11), upserts each step on the
- * member's session, copies a normal document's read text into `documents.ocr_text` for search (DOC-3), then marks the
- * extraction accepted with `accepted_fields`. A failed read is saved as a manual
- * entry, inserted accepted with no model before its rows so the certificate can name it. Every step is keyed by the
- * extraction, so a retry after a partial failure converges on the same rows.
+ * Accepts the reviewed fields of an extraction (DOC-6): builds the plan, has the database judge every value it keeps as
+ * read by the extraction CHECK's rule and stops before any write when one holds a full ID (a typed value is kept as
+ * typed, SPEC D11), upserts each step on the member's session, copies a normal document's read text into
+ * `documents.ocr_text` for search (DOC-3), then marks the extraction accepted with `accepted_fields`. A failed read is
+ * saved as a manual entry, inserted accepted with no model before its rows so the certificate can name it. Every step
+ * is keyed by the extraction, so a retry after a partial failure converges on the same rows.
  */
 export async function saveExtractionReview(extractionId: unknown, decisions: unknown, propertyId: unknown = null): Promise<ReviewSave> {
   const id = uuid.safeParse(extractionId);
@@ -130,7 +130,7 @@ export async function saveExtractionReview(extractionId: unknown, decisions: unk
     accounts: accounts.data.map((row) => ({ id: row.id, propertyId: row.property_id, kind: row.kind, customerCode: row.customer_code })),
   });
   if (!planned.ok) return planned;
-  const values = plannedValues(planned.plan);
+  const values = readValues(planned.plan);
   const readText = searchText(target.result, document.sensitive);
   const judged = readText === null ? values.map(({ value }) => value) : [...values.map(({ value }) => value), readText];
   const { data: held, error: judgeError } = await supabase.rpc('national_id_indexes', { p_values: judged });
@@ -138,7 +138,7 @@ export async function saveExtractionReview(extractionId: unknown, decisions: unk
   // Mẹ never sees the read text, so the judge refusing it drops the copy rather than the save; ocr_text stays null.
   const fieldsHeld = held.filter((index) => index < values.length);
   const ocrText = readText !== null && !held.includes(values.length) ? readText : null;
-  if (fieldsHeld.length > 0) return { ok: false, reason: 'national_id', paths: [...new Set(fieldsHeld.flatMap((index) => values[index]?.path ?? []))] };
+  if (fieldsHeld.length > 0) return { ok: false, reason: 'national_id', paths: fieldsHeld.flatMap((index) => values[index]?.path ?? []) };
   const acceptedFields = asJson(planned.plan.acceptedFields);
 
   if (target.manualOf !== null) {

@@ -6,11 +6,12 @@ const storagePaths = (lanes: number) =>
   [...generate({ ...DEFAULT_OPTIONS, lanes }).matchAll(/'([0-9a-f-]{36}\/[0-9a-f-]{36}\/[a-z0-9-]+\.(?:jpg|png|pdf))'/g)].map((match) => match[1] ?? '');
 
 describe('planDocumentUploads', () => {
-  it('uploads every seeded file with its two thumbnails and its review copy for two households', () => {
+  it('uploads every seeded file with its thumbnail and its review copy for two households, and no blurred thumbnail', () => {
     const paths = storagePaths(1);
     expect(paths).toHaveLength(18);
     const plan = planDocumentUploads(paths);
-    expect(plan).toHaveLength(72);
+    expect(plan).toHaveLength(54);
+    expect(plan.filter((upload) => upload.kind === 'thumb').map((upload) => upload.path.split('/')[2])).toEqual(Array(18).fill('thumb.webp'));
     expect(plan.filter((upload) => upload.kind === 'review').map((upload) => upload.path.split('/')[2])).toEqual(Array(18).fill('review.webp'));
     expect(plan.filter((upload) => upload.kind === 'file').map((upload) => upload.path).toSorted()).toEqual(paths.toSorted());
     expect(plan.filter((upload) => upload.kind !== 'file').every((upload) => upload.contentType === 'image/webp')).toBe(true);

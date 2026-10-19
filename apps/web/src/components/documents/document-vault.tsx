@@ -97,8 +97,8 @@ function SearchResults({ state, render }: { state: SearchState; render: (tile: V
 }
 
 /**
- * DESIGN-BRIEF §6.10: search first, then what expires soon, then every document by property or by kind. A sensitive
- * tile stays blurred until `Xem` (DOC-5). On a property's tab the same vault adds `Thêm tài liệu` and the drop zone.
+ * DESIGN-BRIEF §6.10: search first, then what expires soon, then every document by property or by kind. On a
+ * property's tab the same vault adds `Thêm tài liệu` and the drop zone.
  */
 export function DocumentVault({
   scope,

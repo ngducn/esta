@@ -36,12 +36,13 @@ async function rotatedPhoto(): Promise<string> {
   return jpeg.toString('base64');
 }
 
-test('an EXIF-rotated photo comes out upright as a 320 px thumbnail, a blurred variant that differs, and a 1024 px review copy', async () => {
+test('an EXIF-rotated photo comes out upright as a 320 px thumbnail and a 1024 px review copy, and nothing blurred', async () => {
   const result = await page.evaluate(async (base64) => {
     const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
-    type Made = { thumb: Blob; blurred: Blob; review: Blob };
+    type Made = { thumb: Blob; review: Blob };
     const make = (window as unknown as { makePreviews: (file: Blob) => Promise<Made> }).makePreviews;
-    const { thumb, blurred, review } = await make(new Blob([bytes], { type: 'image/jpeg' }));
+    const made = await make(new Blob([bytes], { type: 'image/jpeg' }));
+    const { thumb, review } = made;
     const read = async (blob: Blob) => {
       const bitmap = await createImageBitmap(blob);
       const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext('2d');
@@ -49,11 +50,10 @@ test('an EXIF-rotated photo comes out upright as a 320 px thumbnail, a blurred v
       const pixel = (y: number) => Array.from(context?.getImageData(Math.floor(bitmap.width / 2), y, 1, 1).data ?? []).slice(0, 3);
       return { width: bitmap.width, height: bitmap.height, top: pixel(10), bottom: pixel(bitmap.height - 10), type: blob.type };
     };
-    const same = new Uint8Array(await thumb.arrayBuffer()).join() === new Uint8Array(await blurred.arrayBuffer()).join();
-    return { thumb: await read(thumb), review: await read(review), same };
+    return { thumb: await read(thumb), review: await read(review), kinds: Object.keys(made).toSorted() };
   }, await rotatedPhoto());
 
-  expect(result.same, 'the blurred thumbnail differs from the clear one').toBe(false);
+  expect(result.kinds, 'no blurred variant is made').toEqual(['pageCount', 'review', 'thumb']);
   expect(result.thumb).toMatchObject({ width: THUMB_SIZE / 2, height: THUMB_SIZE, type: 'image/webp' });
   expect(result.review).toMatchObject({ width: REVIEW_SIZE / 2, height: REVIEW_SIZE, type: 'image/webp' });
   for (const image of [result.thumb, result.review]) {

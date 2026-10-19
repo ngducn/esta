@@ -1,8 +1,5 @@
-/** The long side of both thumbnails, as in `scripts/seed-documents.ts`. */
+/** The long side of the thumbnail, as in `scripts/seed-documents.ts`. */
 export const THUMB_SIZE = 320;
-/** The blur radius in CSS pixels at thumbnail size, as in `scripts/seed-documents.ts`. */
-export const BLUR_RADIUS = 24;
-const BLUR_SAMPLE = 12;
 /**
  * The long side of the review copy, as in `scripts/seed-documents.ts`: a portrait page fills a phone's review column at
  * 2x, and zooming in loads the original for finer print.
@@ -10,7 +7,7 @@ const BLUR_SAMPLE = 12;
 export const REVIEW_SIZE = 1024;
 const REVIEW_QUALITY = 0.75;
 
-export type Previews = { readonly thumb: Blob; readonly blurred: Blob; readonly review: Blob; readonly pageCount: number };
+export type Previews = { readonly thumb: Blob; readonly review: Blob; readonly pageCount: number };
 
 type Source = { readonly image: CanvasImageSource; readonly width: number; readonly height: number; readonly pageCount: number };
 
@@ -70,23 +67,14 @@ async function pdfSource(file: Blob): Promise<Source> {
 }
 
 /**
- * From a photo, upright from its EXIF orientation, or from a PDF's first page: a 320 px WebP thumbnail, a blurred
- * variant, and a 1024 px review copy that the review screen shows until Mẹ zooms in. The blurred one is drawn from a
- * 12 px sample, so no detail of the clear image survives in it.
+ * From a photo, upright from its EXIF orientation, or from a PDF's first page: a 320 px WebP thumbnail and a 1024 px
+ * review copy that the review screen shows until Mẹ zooms in.
  */
 export async function makePreviews(file: Blob): Promise<Previews> {
   const source = file.type === 'application/pdf' ? await pdfSource(file) : await imageSource(file);
   const review = draw(source, REVIEW_SIZE);
   const clear = draw(source, THUMB_SIZE);
-  const sample = draw(source, BLUR_SAMPLE);
-  const blurred = canvas(clear.width, clear.height);
-  const context = blurred.getContext('2d');
-  if (context !== null) {
-    context.filter = `blur(${BLUR_RADIUS / 2}px)`;
-    context.imageSmoothingQuality = 'high';
-    context.drawImage(sample, 0, 0, clear.width, clear.height);
-  }
   if ('close' in source.image && typeof source.image.close === 'function') source.image.close();
-  const [thumb, blurredThumb, reviewCopy] = await Promise.all([encode(clear, 'image/webp', 0.7), encode(blurred, 'image/webp', 0.7), encodeReview(review)]);
-  return { thumb, blurred: blurredThumb, review: reviewCopy, pageCount: source.pageCount };
+  const [thumb, reviewCopy] = await Promise.all([encode(clear, 'image/webp', 0.7), encodeReview(review)]);
+  return { thumb, review: reviewCopy, pageCount: source.pageCount };
 }

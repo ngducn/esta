@@ -177,13 +177,19 @@ test('rule 1: Mẹ opens Chờ xem lại on the Long An certificate, sees every 
   expect((await extractions(page, documentId))[0]?.status).toBe('accepted');
 });
 
-test('rule 2: an edited area of 125,5 saves as 125.5, and a second Lưu after a cut response leaves one certificate', async ({ page }) => {
+test('rule 2: an edited area of 125,5 saves as 125.5, a CCCD typed into the issuer saves as typed (D11), and a second Lưu after a cut response leaves one certificate', async ({ page }) => {
   await startWorker();
   await open(page, 'me.lane2@demo.esta.test', 'dark', PHONE);
   const documentId = await uploadAndRead(page, 2, 'bao-loc', 'gcn_2024-scan', 'Sổ hồng lane 2');
+  const views = () => serviceGet<unknown[]>(page, `document_access_log?select=id&document_id=eq.${documentId}&action=eq.view`);
+  const before = (await views()).length;
   await page.goto(`/documents/${documentId}/review`);
   await expect(page.locator('[data-testid="document-page"][data-drawn="true"]')).toBeVisible({ timeout: 15_000 });
+  expect((await views()).length, 'opening the review logs one view').toBe(before + 1);
   await acceptEvery(page);
+  const issuer = 'Sở TN&MT Demo, CCCD 079184001776';
+  await editField(page, 'issued_by', issuer);
+  await expect(row(page, 'issued_by').getByTestId('field-value')).toHaveText(issuer);
   await editField(page, 'parcels[0].area_m2', '125,5');
   await expect(row(page, 'parcels[0].area_m2').getByTestId('field-value')).toHaveText('125,5 m²');
   await expect(page.getByTestId('area-mismatch')).toBeVisible();
@@ -203,8 +209,9 @@ test('rule 2: an edited area of 125,5 saves as 125.5, and a second Lưu after a 
 
   const [extraction] = await extractions(page, documentId);
   expect(extraction?.accepted_fields?.['parcels[0].area_m2']).toEqual({ decision: 'edited', value: 125.5 });
-  const certificates = await serviceGet<{ id: string }[]>(page, `certificates?extraction_id=eq.${extraction?.id}&select=id`);
-  expect(certificates).toHaveLength(1);
+  expect(extraction?.accepted_fields?.issued_by).toEqual({ decision: 'edited', value: issuer });
+  const certificates = await serviceGet<{ id: string; issued_by: string }[]>(page, `certificates?extraction_id=eq.${extraction?.id}&select=id,issued_by`);
+  expect(certificates).toEqual([{ id: expect.any(String), issued_by: issuer }]);
   const parcels = await serviceGet<{ area_m2: number }[]>(page, `parcels?certificate_id=eq.${certificates[0]?.id}&select=area_m2`);
   const truth = fixture('gcn_2024-scan').truth as { parcels: unknown[] };
   expect(parcels).toHaveLength(truth.parcels.length);

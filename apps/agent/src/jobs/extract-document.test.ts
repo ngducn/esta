@@ -53,4 +53,16 @@ describe('extract_document on the fake service client', () => {
       }),
     ]);
   });
+
+  it('cuts a full ID typed into the document title to its last four in every item it writes (D11)', async () => {
+    const job = extractJob({ document_id: DOCUMENT_A, extraction_id: EXTRACTION_A });
+    const read = twoHouseholds([], 'Sổ hồng CCCD mẹ 079062118340');
+    await attempt(read.db, job);
+    const failed = twoHouseholds([], 'Sổ hồng CCCD mẹ 079062118340');
+    await failExtractDocument({ db: failed.db, job, clock });
+    expect([...read.tables.agent_items, ...failed.tables.agent_items].map((item) => item.title)).toEqual([
+      'Đã đọc xong Sổ hồng CCCD mẹ 8340. Mời bạn kiểm tra lại.',
+      'Trợ lý không đọc được Sổ hồng CCCD mẹ 8340.',
+    ]);
+  });
 });

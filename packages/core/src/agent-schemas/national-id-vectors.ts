@@ -4,10 +4,11 @@
  * extractions must refuse every `reduced` input and accept every reduced output and every `kept` text.
  *
  * A `squeezed` text holds an ID only once a review field squeezes its spaces, so the reducer and the CHECK keep it as
- * read; the acceptance test stores it as `stored` whether Mẹ presses Đúng or types it, and the CHECK accepts that.
+ * read; the acceptance test stores it as `stored` when Mẹ presses Đúng, and the CHECK accepts that. Typed, it is kept
+ * as typed (D11, amended 2026-10-19).
  *
  * A `refused` text is one the reducer leaves whole and the CHECK refuses. A review save asks the database, which judges
- * by the CHECK's own rule, and writes nothing when any value would be refused.
+ * the values read by the CHECK's own rule, and writes nothing when any of them would be refused.
  */
 export const NATIONAL_ID_VECTORS: {
   readonly reduced: readonly (readonly [name: string, text: string, reduced: string])[];

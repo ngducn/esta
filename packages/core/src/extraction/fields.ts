@@ -176,10 +176,11 @@ export const INPUT_KINDS = {
 export type InputKind = keyof typeof INPUT_KINDS;
 
 /**
- * One field's value, printed or typed, read as its kind, with every national ID cut to its last four digits (SPEC D11):
- * in the text before the parse, and again in the text the parse yields, which squeezes spaces and so can join two digit
- * groups into one ID. A number typed with an ID in its text is refused, as its last four would be a wrong number. What
- * this returns is what the review shows and acceptance stores.
+ * One value the assistant read, read as its kind, with every national ID cut to its last four digits (SPEC D11): in
+ * the text before the parse, and again in the text the parse yields, which squeezes spaces and so can join two digit
+ * groups into one ID. A number read with an ID in its text is refused, as its last four would be a wrong number. What
+ * this returns is what the review shows and acceptance stores. What Mẹ types goes through its kind's own parse and is
+ * kept as typed.
  */
 export function readInput(kind: InputKind, raw: unknown): Parsed<string | number | boolean> {
   const reduced = typeof raw === 'string' ? reduceNationalIds(raw) : raw;

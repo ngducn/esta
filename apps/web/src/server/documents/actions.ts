@@ -1,6 +1,5 @@
 'use server';
 
-import { reduceNationalIds } from '@esta/core/agent-schemas';
 import {
   acceptsMime,
   DOCUMENT_CATEGORIES,
@@ -10,7 +9,6 @@ import {
   MAX_DOCUMENT_BYTES,
   reviewPath,
   storagePath,
-  thumbBlurPath,
   thumbPath,
 } from '@esta/core/documents';
 import { isIsoDate } from '@esta/core/date';
@@ -38,7 +36,6 @@ const registerSchema = uploadSchema.extend({
   documentId: id,
   title: z.string().trim().min(1).max(200),
   expiresOn: z.string().refine(isIsoDate).nullable(),
-  sensitive: z.boolean(),
   pageCount: z.number().int().min(1).max(2000),
 });
 
@@ -50,7 +47,6 @@ export type UploadTicket =
       readonly documentId: string;
       readonly file: UploadTarget;
       readonly thumb: UploadTarget;
-      readonly thumbBlur: UploadTarget;
       readonly review: UploadTarget;
       readonly duplicates: readonly { readonly id: string; readonly title: string }[];
     }
@@ -73,10 +69,9 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
     const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).createSignedUploadUrl(path, { upsert: true });
     return error ? null : { path: data.path, url: data.signedUrl };
   };
-  const [file, thumb, thumbBlur, review, duplicates] = await Promise.all([
+  const [file, thumb, review, duplicates] = await Promise.all([
     sign(storagePath(household, documentId, parsed.data.filename)),
     sign(thumbPath(household, documentId)),
-    sign(thumbBlurPath(household, documentId)),
     sign(reviewPath(household, documentId)),
     supabase
       .from('documents')
@@ -86,8 +81,8 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
       .is('deleted_at', null)
       .order('created_at'),
   ]);
-  if (file === null || thumb === null || thumbBlur === null || review === null || duplicates.error) return { ok: false };
-  return { ok: true, documentId, file, thumb, thumbBlur, review, duplicates: duplicates.data };
+  if (file === null || thumb === null || review === null || duplicates.error) return { ok: false };
+  return { ok: true, documentId, file, thumb, review, duplicates: duplicates.data };
 }
 
 export type Registered = { readonly ok: true; readonly title: string } | { readonly ok: false };
@@ -96,7 +91,7 @@ export type Registered = { readonly ok: true; readonly title: string } | { reado
 export async function registerDocument(input: unknown): Promise<Registered> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success || !acceptsMime(parsed.data.category, parsed.data.mime)) return { ok: false };
-  const { documentId, propertyId, category, title, expiresOn, sensitive, filename, mime, size, sha256, pageCount } = parsed.data;
+  const { documentId, propertyId, category, title, expiresOn, filename, mime, size, sha256, pageCount } = parsed.data;
   const member = await requireMember();
   const household = member.household.id;
   const name = documentObjectName(filename);
@@ -118,7 +113,7 @@ export async function registerDocument(input: unknown): Promise<Registered> {
       size_bytes: size,
       page_count: pageCount,
       sha256,
-      sensitivity: sensitive ? 'sensitive' : 'normal',
+      sensitivity: DOCUMENT_CATEGORIES[category].sensitivity,
       expires_on: expiresOn,
     },
     { onConflict: 'id', ignoreDuplicates: true },
@@ -155,11 +150,6 @@ export async function downloadDocument(documentId: unknown): Promise<string | nu
   return signAndLog(documentId, 'download', (row) => row.storage_path);
 }
 
-/** The clear thumbnail of a sensitive document, signed only on a tap of `Xem` and logged as a view (DOC-5). */
-export async function revealThumbnail(documentId: unknown): Promise<string | null> {
-  return signAndLog(documentId, 'view', (row) => thumbPath(row.household_id, row.id));
-}
-
 async function setDeletedAt(documentId: unknown, deletedAt: string | null): Promise<boolean> {
   const parsed = id.safeParse(documentId);
   if (!parsed.success) return false;
@@ -191,41 +181,29 @@ const editSchema = z.object({
   propertyId: id.nullable(),
   expiresOn: z.string().refine(isIsoDate).nullable(),
   tags: z.array(tagSchema).max(20),
-  sensitive: z.boolean(),
 });
 
 export type DocumentEdit = z.output<typeof editSchema>;
 
-export type TypedField = 'title' | 'tags';
-
-export type DocumentUpdate =
-  | { readonly ok: true; readonly previous: DocumentEdit }
-  | { readonly ok: false; readonly reason: 'national_id'; readonly fields: readonly TypedField[] }
-  | { readonly ok: false; readonly reason: 'invalid' | 'forbidden' | 'failed' };
+export type DocumentUpdate = { readonly ok: true; readonly previous: DocumentEdit } | { readonly ok: false; readonly reason: 'invalid' | 'forbidden' | 'failed' };
 
 /**
- * `Sửa thông tin`: writes what the row says about the document and returns what it said before, so the undo toast
- * writes that back through this same action. Before any write the ID reducer and the database judge read the typed
- * title and every tag, and one holding a full ID refuses the save with its field named (D11). A document turned
- * sensitive drops its read text, which the database refuses to keep on a sensitive row.
+ * `Sửa thông tin`: writes what the row says about the document, the title and tags as typed (D11), and returns what it
+ * said before, so the undo toast writes that back through this same action. A new category sets the sensitivity, and
+ * a document turned sensitive drops its read text, which the database refuses to keep on a sensitive row; an edit that
+ * keeps the category keeps the stored sensitivity.
  */
 export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
   const parsed = editSchema.safeParse(input);
   if (!parsed.success) return { ok: false, reason: 'invalid' };
   const member = await requireMember();
   if (member.role === 'viewer') return { ok: false, reason: 'forbidden' };
-  const { documentId, title, category, propertyId, expiresOn, tags, sensitive } = parsed.data;
+  const { documentId, title, category, propertyId, expiresOn, tags } = parsed.data;
   const household = member.household.id;
   const supabase = await createSessionClient();
-  const typed = [title, ...tags];
-  const { data: held, error: judgeError } = await supabase.rpc('national_id_indexes', { p_values: typed });
-  if (judgeError) return { ok: false, reason: 'failed' };
-  const holding = typed.map((text, index) => held.includes(index) || reduceNationalIds(text) !== text);
-  const fields = (['title', 'tags'] as const).filter((field) => (field === 'title' ? holding[0] : holding.slice(1).includes(true)));
-  if (fields.length > 0) return { ok: false, reason: 'national_id', fields };
   const { data: row, error: readError } = await supabase
     .from('documents')
-    .select('title, category, property_id, expires_on, tags, sensitivity, mime')
+    .select('title, category, property_id, expires_on, tags, mime')
     .eq('household_id', household)
     .eq('id', documentId)
     .is('deleted_at', null)
@@ -239,9 +217,9 @@ export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
     propertyId: row.property_id,
     expiresOn: row.expires_on,
     tags: row.tags,
-    sensitive: row.sensitivity === 'sensitive',
   });
   if (!previous.success) return { ok: false, reason: 'failed' };
+  const { sensitivity } = DOCUMENT_CATEGORIES[category];
   const { data, error } = await supabase
     .from('documents')
     .update({
@@ -250,8 +228,7 @@ export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
       property_id: propertyId,
       expires_on: expiresOn,
       tags: [...new Set(tags)],
-      sensitivity: sensitive ? 'sensitive' : 'normal',
-      ...(sensitive ? { ocr_text: null } : {}),
+      ...(category === row.category ? {} : { sensitivity, ...(sensitivity === 'sensitive' ? { ocr_text: null } : {}) }),
     })
     .eq('household_id', household)
     .eq('id', documentId)

@@ -1,5 +1,5 @@
 import 'server-only';
-import { documentExpiry, isDocumentCategory, thumbBlurPath, thumbPath, type DocumentCategory } from '@esta/core/documents';
+import { documentExpiry, isDocumentCategory, thumbPath, type DocumentCategory } from '@esta/core/documents';
 import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { getTranslations } from 'next-intl/server';
 import { env } from '@/server/env';
@@ -10,21 +10,18 @@ export type DocumentListItem = {
   readonly id: string;
   readonly category: DocumentCategory;
   readonly title: string;
-  readonly sensitive: boolean;
   readonly expiresOn: IsoDate | null;
   readonly propertyId: string | null;
   readonly propertyName: string | null;
-  /** `thumb-blur.webp` for a sensitive document, so the clear image never reaches the browser before `Xem` (DOC-5). */
   readonly thumbUrl: string | null;
 };
 
-export const DOCUMENT_LIST_COLUMNS = 'id, category, title, sensitivity, expires_on, property_id, properties(nickname)';
+export const DOCUMENT_LIST_COLUMNS = 'id, category, title, expires_on, property_id, properties(nickname)';
 
 export type DocumentListRow = {
   readonly id: string;
   readonly category: string;
   readonly title: string;
-  readonly sensitivity: string;
   readonly expires_on: string | null;
   readonly property_id: string | null;
   readonly properties: { readonly nickname: string } | null;
@@ -33,14 +30,12 @@ export type DocumentListRow = {
 /** Signs one thumbnail per row on the member's session and drops a row whose category this build does not know. */
 export async function toListItems(householdId: string, data: readonly DocumentListRow[]): Promise<DocumentListItem[]> {
   const rows = data.flatMap((row) => (isDocumentCategory(row.category) ? [{ ...row, category: row.category }] : []));
-  const thumbOf = (row: (typeof rows)[number]) =>
-    row.sensitivity === 'sensitive' ? thumbBlurPath(householdId, row.id) : thumbPath(householdId, row.id);
+  const thumbOf = (row: (typeof rows)[number]) => thumbPath(householdId, row.id);
   const urls = await signDocumentUrls(rows.map(thumbOf), env.ESTA_SIGNED_URL_TTL_SECONDS, { appOrigin: true });
   return rows.map((row) => ({
     id: row.id,
     category: row.category,
     title: row.title,
-    sensitive: row.sensitivity === 'sensitive',
     expiresOn: row.expires_on !== null && isIsoDate(row.expires_on) ? row.expires_on : null,
     propertyId: row.property_id,
     propertyName: row.properties?.nickname ?? null,
@@ -66,8 +61,6 @@ export type VaultTile = {
   readonly propertyId: string | null;
   readonly propertyName: string | null;
   readonly expiry: { readonly text: string; readonly expired: boolean } | null;
-  readonly sensitive: boolean;
-  /** The blurred thumbnail for a sensitive document, the clear one otherwise. */
   readonly thumbUrl: string | null;
 };
 
@@ -83,7 +76,6 @@ export async function vaultTiles(items: readonly DocumentListItem[], today: IsoD
       categoryLabel: t('category', { category: item.category }),
       propertyId: item.propertyId,
       propertyName: item.propertyName,
-      sensitive: item.sensitive,
       thumbUrl: item.thumbUrl,
       expiry:
         expiry.state === 'none'
