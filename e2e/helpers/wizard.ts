@@ -15,6 +15,17 @@ const service = e2eServiceHeaders();
 export const PHONE = { width: 390, height: 844 };
 export const DESKTOP = { width: 1440, height: 900 };
 export const START = '2026-10-07T09:00:00+07:00';
+
+/**
+ * `ESTA_E2E_VIDEO=1` records each test of the calling spec at the phone size, slowed for a PR's video. Call it at the
+ * spec's top level; it returns the pause that holds a finished screen on the video.
+ */
+export function recordForPr(): (page: Page) => Promise<void> {
+  const recording = process.env.ESTA_E2E_VIDEO === '1';
+  test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 900 } } : { video: 'off' });
+  if (recording) test.describe.configure({ timeout: 180_000 });
+  return (page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
+}
 const evidence = process.env.ESTA_EVIDENCE_DIR;
 
 export function fixture(id: string) {

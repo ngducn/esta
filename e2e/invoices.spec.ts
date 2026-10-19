@@ -8,12 +8,9 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberRest } from './helpers/auth-api';
 import { laneHousehold, laneLeasePath } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, START, vnd } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START, vnd } from './helpers/wizard';
 
-// `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of Mã QR on Phòng 3.
-const recording = process.env.ESTA_E2E_VIDEO === '1';
-test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 900 } } : { video: 'off' });
-const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
+const holdForRecording = recordForPr();
 
 // Overdue days and the board's month come from the Clock, so the spec runs in the `clock` project on SPEC §9.3's day.
 test.beforeEach(async ({ request }) => {
