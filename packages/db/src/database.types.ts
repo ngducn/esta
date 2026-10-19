@@ -763,6 +763,13 @@ export type Database = {
             referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
+          {
+            foreignKeyName: "documents_lease_fk"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["household_id", "id"]
+          },
         ]
       }
       household_members: {
@@ -2331,7 +2338,11 @@ export type Database = {
         }[]
       }
       renew_lease: {
-        Args: { p_end_date?: string; p_increase_bps: number; p_lease_id: string }
+        Args: {
+          p_end_date?: string
+          p_increase_bps: number
+          p_lease_id: string
+        }
         Returns: string
       }
       run_invoicing: {
@@ -2351,6 +2362,7 @@ export type Database = {
           expires_on: string | null
           household_id: string
           id: string
+          lease_id: string | null
           mime: string
           ocr_text: string | null
           page_count: number | null
