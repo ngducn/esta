@@ -65,7 +65,7 @@ async function uploadAndRegister() {
   if (!ticket.ok) throw new Error('createDocumentUpload refused');
   created.push(ticket.documentId);
   expect((await put(ticket.file.url, bytes, file.mime)).status).toBe(200);
-  const input = { ...file, propertyId, category: 'other', documentId: ticket.documentId, title: 'Giấy tờ Demo', expiresOn: null, sensitive: false, pageCount: 1 };
+  const input = { ...file, propertyId, category: 'other', documentId: ticket.documentId, title: 'Giấy tờ Demo', expiresOn: null, pageCount: 1 };
   return { ticket, input };
 }
 
@@ -83,7 +83,7 @@ describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.
   afterAll(async () => {
     if (created.length === 0) return;
     await service(`/rest/v1/documents?id=in.(${created.join(',')})`, { method: 'DELETE' });
-    const names = created.flatMap((id) => [`${household}/${id}/giay-to.pdf`, `${household}/${id}/thumb.webp`, `${household}/${id}/thumb-blur.webp`]);
+    const names = created.flatMap((id) => [`${household}/${id}/giay-to.pdf`, `${household}/${id}/thumb.webp`]);
     await service('/storage/v1/object/documents', { method: 'DELETE', body: JSON.stringify({ prefixes: names }) });
   });
 
@@ -130,19 +130,30 @@ describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.
     expect(await service<unknown[]>(`/rest/v1/document_access_log?document_id=eq.${ticket.documentId}&select=id`)).toEqual([]);
   });
 
-  test('Sửa thông tin refuses a title or a tag holding a full ID, names the field and writes nothing (D11)', async () => {
+  test('Sửa thông tin saves a title and tags holding a full ID as typed (D11)', async () => {
     const { ticket, input } = await uploadAndRegister();
     expect(await registerDocument(input)).toMatchObject({ ok: true });
-    const edit = { documentId: ticket.documentId, title: 'Giấy tờ Demo', category: 'other', propertyId, expiresOn: null, tags: ['demo'], sensitive: false };
+    const edit = { documentId: ticket.documentId, title: 'Giấy tờ Demo', category: 'other', propertyId, expiresOn: null, tags: ['demo'] };
     const [, judgedOnly] = NATIONAL_ID_VECTORS.refused.find(([name]) => name.startsWith('a next-line')) ?? [];
-    const titles = ['CCCD mẹ 079123456789', 'số 079123\u0301456789', judgedOnly ?? ''];
-    for (const title of titles) {
-      expect(await updateDocument({ ...edit, title }), title).toEqual({ ok: false, reason: 'national_id', fields: ['title'] });
+    for (const title of ['CCCD mẹ 079123456789', 'số 079123\u0301456789', judgedOnly ?? '']) {
+      expect(await updateDocument({ ...edit, title }), title).toMatchObject({ ok: true });
+      expect(await service(`/rest/v1/documents?id=eq.${ticket.documentId}&select=title`), title).toEqual([{ title: title.trim() }]);
     }
-    expect(await updateDocument({ ...edit, tags: ['demo', '079123456789'] })).toEqual({ ok: false, reason: 'national_id', fields: ['tags'] });
-    expect(await updateDocument({ ...edit, title: titles[0], tags: ['CMND 023456789'] })).toEqual({ ok: false, reason: 'national_id', fields: ['title', 'tags'] });
-    expect(await service(`/rest/v1/documents?id=eq.${ticket.documentId}&select=title,tags`)).toEqual([{ title: 'Giấy tờ Demo', tags: [] }]);
-    expect(await updateDocument({ ...edit, title: 'Giấy tờ Demo CCCD 6789' })).toMatchObject({ ok: true });
-    expect(await service(`/rest/v1/documents?id=eq.${ticket.documentId}&select=title,tags`)).toEqual([{ title: 'Giấy tờ Demo CCCD 6789', tags: ['demo'] }]);
+    expect(await updateDocument({ ...edit, title: 'CCCD mẹ 079123456789', tags: ['demo', '079123456789', 'CMND 023456789'] })).toMatchObject({ ok: true });
+    expect(await service(`/rest/v1/documents?id=eq.${ticket.documentId}&select=title,tags`)).toEqual([
+      { title: 'CCCD mẹ 079123456789', tags: ['demo', '079123456789', 'CMND 023456789'] },
+    ]);
+  });
+
+  test('a document takes the sensitivity of its category, at upload and on Sửa thông tin (DOC-5)', async () => {
+    const { ticket, input } = await uploadAndRegister();
+    expect(await registerDocument({ ...input, category: 'id_card', sensitive: false })).toMatchObject({ ok: true });
+    const sensitivity = async () => (await service<{ sensitivity: string }[]>(`/rest/v1/documents?id=eq.${ticket.documentId}&select=sensitivity`))[0]?.sensitivity;
+    expect(await sensitivity()).toBe('sensitive');
+    const edit = { documentId: ticket.documentId, title: 'Giấy tờ Demo', propertyId, expiresOn: null, tags: [] };
+    expect(await updateDocument({ ...edit, category: 'other', sensitive: true })).toMatchObject({ ok: true });
+    expect(await sensitivity()).toBe('normal');
+    expect(await updateDocument({ ...edit, category: 'certificate' })).toMatchObject({ ok: true });
+    expect(await sensitivity()).toBe('sensitive');
   });
 });

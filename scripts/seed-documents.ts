@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { reviewPath, thumbBlurPath, thumbPath } from '../packages/core/src/documents/storage-path.ts';
+import { reviewPath, thumbPath } from '../packages/core/src/documents/storage-path.ts';
 import { SEED_DOCUMENT_FILES, type SeedDocumentName } from '../supabase/seed/generator/documents.ts';
 import { listObjects, removeObjects, retrying, stalePaths } from './seed-photos.ts';
 import { parseSlot } from './slot.ts';
@@ -10,16 +10,14 @@ import { slotEnv } from './slot-env.ts';
 export const BUCKET = 'documents';
 const repoRoot = join(import.meta.dirname, '..');
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
-/** The browser's `makePreviews` uses the same long sides, blur radius and review quality. */
+/** The browser's `makePreviews` uses the same long sides and review quality. */
 export const THUMB_SIZE = 320;
-export const BLUR_SIGMA = 24;
 export const REVIEW_SIZE = 1024;
 
 const thumb = (bytes: Buffer) => sharp(bytes).rotate().resize(THUMB_SIZE, THUMB_SIZE, { fit: 'inside' });
 
 const PREVIEWS = {
   thumb: { path: thumbPath, render: (bytes: Buffer) => thumb(bytes).webp({ quality: 70 }).toBuffer() },
-  'thumb-blur': { path: thumbBlurPath, render: (bytes: Buffer) => thumb(bytes).blur(BLUR_SIGMA).webp({ quality: 70 }).toBuffer() },
   review: {
     path: reviewPath,
     render: (bytes: Buffer) => sharp(bytes).rotate().resize(REVIEW_SIZE, REVIEW_SIZE, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toBuffer(),

@@ -3,7 +3,6 @@
 import type { IsoDate } from '@esta/core/date';
 import {
   acceptsMime,
-  DOCUMENT_CATEGORIES,
   DOCUMENT_CATEGORY_IDS,
   DOCUMENT_MIME_TYPES,
   defaultDocumentTitle,
@@ -19,7 +18,6 @@ import { FieldMessage } from '@/components/field-message';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { sha256 } from '@/lib/upload/sha256';
@@ -97,8 +95,6 @@ export default function UploadSheet({
   const prefix = (next: DocumentCategory) => defaultDocumentTitle(t('titlePrefix', { category: next }), nickname);
   const [title, setTitle] = useState(() => prefix('certificate'));
   const [titleEdited, setTitleEdited] = useState(false);
-  const [sensitive, setSensitive] = useState<boolean>(DOCUMENT_CATEGORIES.certificate.sensitivity === 'sensitive');
-  const [sensitiveEdited, setSensitiveEdited] = useState(false);
   const [expiresOn, setExpiresOn] = useState<IsoDate | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [problem, setProblem] = useState<FileProblem>(() => (initialFile === null ? null : checkFile(initialFile)));
@@ -109,7 +105,7 @@ export default function UploadSheet({
   const [leaving, setLeaving] = useState<'back' | 'close' | null>(null);
   const choice = useRef(0);
   const sheet = useRef<HTMLDivElement>(null);
-  const preview = useObjectUrl(prepared === null ? null : sensitive ? prepared.previews.blurred : prepared.previews.thumb);
+  const preview = useObjectUrl(prepared === null ? null : prepared.previews.thumb);
 
   // The capture view and the form differ in length, so each opens at its top rather than at the other's scroll.
   useEffect(() => {
@@ -172,7 +168,6 @@ export default function UploadSheet({
     if (!isDocumentCategory(next)) return;
     setCategory(next);
     if (!titleEdited) setTitle(prefix(next));
-    if (!sensitiveEdited) setSensitive(DOCUMENT_CATEGORIES[next].sensitivity === 'sensitive');
     if (prepared !== null && !acceptsMime(next, prepared.file.type)) setProblem('wrongType');
     else if (problem === 'wrongType' && prepared !== null) setProblem(null);
   };
@@ -183,7 +178,6 @@ export default function UploadSheet({
       await uploadWithProgress(ticket.file.url, file.file, ({ loaded, total }) => setPhase({ step: 'uploading', loaded, total }));
       await Promise.all([
         uploadWithProgress(ticket.thumb.url, file.previews.thumb),
-        uploadWithProgress(ticket.thumbBlur.url, file.previews.blurred),
         uploadWithProgress(ticket.review.url, file.previews.review),
       ]);
       const registered = await registerDocument({
@@ -192,7 +186,6 @@ export default function UploadSheet({
         category,
         title,
         expiresOn,
-        sensitive,
         filename: file.file.name,
         mime: file.file.type,
         size: file.file.size,
@@ -299,7 +292,7 @@ export default function UploadSheet({
               <div className="flex items-center gap-3 rounded-md border border-rule bg-surface-2 p-3">
                 {preview === null ? null : (
                   // eslint-disable-next-line @next/next/no-img-element -- a local blob URL of the thumbnail made in this tab
-                  <img src={preview} alt={t('previewAlt')} data-testid="upload-preview" data-blurred={sensitive} className="size-16 shrink-0 rounded-sm object-cover" />
+                  <img src={preview} alt={t('previewAlt')} data-testid="upload-preview" className="size-16 shrink-0 rounded-sm object-cover" />
                 )}
                 <p className="min-w-0 text-small break-words text-ink-2">
                   {t('chosenFile', { name: prepared.file.name, size: megabytes.format(prepared.file.size / 1024 / 1024) })}
@@ -336,27 +329,6 @@ export default function UploadSheet({
             }}
           />
           <DateInput label={t('expiresField')} onValueChange={setExpiresOn} />
-          <div className="flex items-start gap-1">
-            <Checkbox
-              id={`${fieldId}-sensitive`}
-              data-testid="document-sensitive"
-              checked={sensitive}
-              onCheckedChange={(checked) => {
-                setSensitive(checked);
-                setSensitiveEdited(true);
-              }}
-              aria-describedby={`${fieldId}-sensitive-hint`}
-              className="-ml-2.5"
-            />
-            <div className="flex flex-col gap-0.5 pt-2.5">
-              <label htmlFor={`${fieldId}-sensitive`} className="text-body font-semibold text-ink">
-                {t('sensitiveField')}
-              </label>
-              <p id={`${fieldId}-sensitive-hint`} className="text-small text-ink-muted">
-                {t('sensitiveHint')}
-              </p>
-            </div>
-          </div>
           {phase.step === 'uploading' ? <UploadProgress loaded={phase.loaded} total={phase.total} /> : null}
           {phase.step === 'failed' ? (
             <p role="alert" data-testid="upload-error" className="text-body font-semibold text-overdue">

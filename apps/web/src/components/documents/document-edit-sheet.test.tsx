@@ -22,7 +22,6 @@ const insurance: DocumentDetail = {
   expiryText: 'Hết hạn sau 23 ngày',
   expiringSoon: true,
   tags: [],
-  sensitive: false,
 };
 
 const open = () => renderInLocale(<DocumentEditSheet document={insurance} properties={[]} onClose={() => undefined} onSaved={() => undefined} />);
@@ -33,7 +32,7 @@ const typeExpiry = (text: string) => {
   fireEvent.blur(field);
 };
 
-const sent = () => updateDocument.mock.calls[0]?.[0] as { expiresOn?: unknown } | undefined;
+const sent = () => updateDocument.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
 
 beforeEach(() => {
   updateDocument.mockReset();
@@ -73,13 +72,15 @@ describe('Sửa thông tin', () => {
     expect(sent()?.expiresOn).toBe('2026-10-30');
   });
 
-  it('names the title and the tags the database judged to hold a full ID (D11)', async () => {
-    updateDocument.mockResolvedValue({ ok: false, reason: 'national_id', fields: ['title', 'tags'] });
+  it('sends a title and tags holding a full ID as typed, and offers no sensitivity switch (D11, DOC-5)', async () => {
     open();
+    fireEvent.change(screen.getByTestId('edit-title'), { target: { value: 'CCCD mẹ 079123456789' } });
+    fireEvent.change(screen.getByTestId('edit-tags'), { target: { value: 'demo, 079123456789' } });
+    expect(screen.queryByText(/nhạy cảm/u)).toBeNull();
     fireEvent.click(screen.getByTestId('save-edit'));
-    const message = 'Ô này còn số CCCD/CMND đầy đủ. Chỉ ghi 4 số cuối.';
-    await waitFor(() => expect(screen.getAllByText(message)).toHaveLength(2));
-    expect(screen.getByTestId('edit-title').getAttribute('aria-invalid')).toBe('true');
-    expect(screen.getByTestId('edit-tags').getAttribute('aria-invalid')).toBe('true');
+    await waitFor(() => expect(updateDocument).toHaveBeenCalledTimes(1));
+    expect(sent()).toMatchObject({ title: 'CCCD mẹ 079123456789', tags: ['demo', '079123456789'] });
+    expect(sent()).not.toHaveProperty('sensitive');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
