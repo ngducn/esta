@@ -73,8 +73,7 @@ function amountText(amount: Vnd): string {
 type FileProblem = Extract<Receipt, { step: 'failed' }>['problem'];
 
 function fileProblem(file: File): FileProblem | null {
-  const problem = checkFile(file);
-  return problem === 'fileRequired' ? null : problem;
+  return checkFile(file);
 }
 
 function previewOf(receipt: Receipt): Blob | null {

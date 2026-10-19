@@ -7,12 +7,14 @@ import { uploadWithProgress, type UploadProgress } from './upload-with-progress'
 
 /** `captured` marks a PDF combined from photos taken in this tab, which exist nowhere else until it is saved. */
 export type Prepared = { readonly file: File; readonly sha256: string; readonly previews: Previews; readonly captured: boolean };
-export type FileProblem = 'tooLarge' | 'wrongType' | 'unreadable' | 'fileRequired' | null;
+/** Why a picked file cannot be uploaded: too big or of a type no category takes, or no image or PDF could be read from it. */
+export type PickProblem = 'tooLarge' | 'wrongType' | 'unreadable';
+export type FileProblem = PickProblem | 'fileRequired' | null;
 
 export const ACCEPT = DOCUMENT_MIME_TYPES.join(',');
 
 /** Size and type are checked here, before any request, so a 30 MB photo never reaches the network (DOC-1). */
-export function checkFile(file: File): FileProblem {
+export function checkFile(file: File): Exclude<PickProblem, 'unreadable'> | null {
   if (file.size > MAX_DOCUMENT_BYTES) return 'tooLarge';
   return (DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type) ? null : 'wrongType';
 }
