@@ -853,7 +853,7 @@
     "pageTitle": "Thêm tài sản",
     "progress": "Bước {n}/{total}: {step, select, photo {Ảnh sổ} details {Thông tin} review {Xem lại sổ} owners {Chủ sở hữu} use {Sử dụng} finish {Hoàn tất} other {Thêm tài sản}}",
     "photoQuestion": "Bạn có ảnh sổ không?",
-    "photoHelp": "Chụp sổ hồng hoặc sổ đỏ. Trợ lý đọc sổ trong lúc bạn điền tiếp. Ảnh luôn được làm mờ khi hiện trên màn hình.",
+    "photoHelp": "Chụp sổ hồng hoặc sổ đỏ. Trợ lý đọc sổ trong lúc bạn điền tiếp.",
     "skip": "Bỏ qua",
     "skipped": "Không sao. Bạn có thể thêm ảnh sổ sau trong thẻ Tài liệu.",
     "addPhoto": "Thêm ảnh sổ",

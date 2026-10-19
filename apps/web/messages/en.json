@@ -853,7 +853,7 @@
     "pageTitle": "Add a property",
     "progress": "Step {n} of {total}: {step, select, photo {Certificate photo} details {Details} review {Check the certificate} owners {Owners} use {Use} finish {Finish} other {Add a property}}",
     "photoQuestion": "Do you have a photo of the certificate?",
-    "photoHelp": "Photograph the pink or red book. Trợ lý reads it while you carry on. The photo is always blurred on screen.",
+    "photoHelp": "Photograph the pink or red book. Trợ lý reads it while you carry on.",
     "skip": "Skip",
     "skipped": "That is fine. You can add the certificate photo later on the Documents tab.",
     "addPhoto": "Add a certificate photo",
