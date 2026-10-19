@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -107,19 +107,33 @@ describe('slotConfig', () => {
   });
 });
 
+/** A throwaway repo root holding a copy of `supabase/` without its slot workdirs. */
+function copyOfSupabase(): string {
+  const root = mkdtempSync(join(tmpdir(), 'esta-slot-'));
+  cpSync(join(repoRoot, 'supabase'), join(root, 'supabase'), { recursive: true, filter: (src) => !src.includes('.slots') });
+  return root;
+}
+
 describe('writeSlotWorkdir', () => {
   it('writes a workdir with the slot config and copies of migrations, seed and tests', () => {
-    const root = mkdtempSync(join(tmpdir(), 'esta-slot-'));
-    cpSync(join(repoRoot, 'supabase'), join(root, 'supabase'), {
-      recursive: true,
-      filter: (src) => !src.includes('.slots'),
-    });
+    const root = copyOfSupabase();
     const workdir = writeSlotWorkdir(root, 2);
     expect(workdir).toBe(join(root, 'supabase', '.slots', '2'));
     expect(readFileSync(join(workdir, 'supabase', 'config.toml'), 'utf8')).toContain('project_id = "esta-2"');
     for (const dir of ['migrations', 'seed', 'tests']) {
       expect(existsSync(join(workdir, 'supabase', dir))).toBe(true);
     }
+    rmSync(root, { recursive: true });
+  });
+
+  it('rewrites an email template in place, because Kong bind-mounts the file and keeps serving the inode it started with', () => {
+    const root = copyOfSupabase();
+    const template = join(writeSlotWorkdir(root, 2), 'supabase', 'templates', 'otp.html');
+    const mounted = statSync(template).ino;
+    writeFileSync(join(root, 'supabase', 'templates', 'otp.html'), '{{ .Token }}');
+    writeSlotWorkdir(root, 2);
+    expect(statSync(template).ino).toBe(mounted);
+    expect(readFileSync(template, 'utf8')).toBe('{{ .Token }}');
     rmSync(root, { recursive: true });
   });
 });

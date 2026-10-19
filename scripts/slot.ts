@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export type SlotPorts = {
@@ -28,7 +28,7 @@ const BASE_PORTS: SlotPorts = {
 const SLOT_STRIDE = 100;
 export const LIVE_TEST_SLOTS = [98, 99] as const;
 const MAX_SLOT = 99;
-const SHARED_DIRS = ['migrations', 'seed', 'templates', 'tests'] as const;
+const SHARED_DIRS = ['migrations', 'seed', 'tests'] as const;
 
 export function parseSlot(raw: string | undefined): number {
   if (raw === undefined || raw === '') return 0;
@@ -107,6 +107,12 @@ export function writeSlotWorkdir(repoRoot: string, slot: number, lan?: string): 
   for (const dir of SHARED_DIRS) {
     rmSync(join(target, dir), { recursive: true, force: true });
     cpSync(join(source, dir), join(target, dir), { recursive: true });
+  }
+  // Kong bind-mounts each email template file and keeps the inode it started with, so a template is rewritten in
+  // place: a deleted and recopied file leaves Kong answering 404 and auth sending its default email.
+  mkdirSync(join(target, 'templates'), { recursive: true });
+  for (const name of readdirSync(join(source, 'templates'))) {
+    writeFileSync(join(target, 'templates', name), readFileSync(join(source, 'templates', name)));
   }
   return workdir;
 }
