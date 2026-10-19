@@ -1,19 +1,11 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
-import { parseSlot } from '../scripts/slot.ts';
-import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
-import { signIn } from './helpers/inbucket';
-import { accessToken } from './helpers/session';
 import { setClock } from './helpers/test-clock';
+import { userRest as rest } from './helpers/user-rest';
+import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
-const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
-const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const PHONE = { width: 390, height: 844 };
-const DESKTOP = { width: 1440, height: 900 };
 const NBSP = ' ';
 const SPEC_TODAY = '2026-10-07T09:00:00+07:00';
 const RECEIPT = join(repoRoot, 'fixtures', 'receipts', 'demo-receipt-q7.jpg');
@@ -29,10 +21,18 @@ test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slow
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2000) : Promise.resolve());
 // `ESTA_E2E_SHOTS=<dir>` saves each rule's passing state as `<dir>/p4-02-<slug>.png`, the PR's lane screenshots.
 const shots = process.env.ESTA_E2E_SHOTS;
-const shot = async (page: Page, slug: string, focus?: Locator) => {
-  if (shots === undefined) return;
+/** Reduced motion turns transitions off and the pointer is parked, so axe and a screen never catch a chip mid-fade or hovered. */
+const still = async (page: Page) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.mouse.move(0, 0);
+};
+const settledAxe = async (page: Page) => {
+  await still(page);
+  return seriousAxeViolations(page);
+};
+const shot = async (page: Page, slug: string, focus?: Locator) => {
+  if (shots === undefined) return;
+  await still(page);
   // Centred, because a phone's fixed tab bar covers whatever only just scrolled into view at the bottom.
   if (focus !== undefined) await focus.first().evaluate((element) => element.scrollIntoView({ block: 'center' }));
   await page.screenshot({ path: join(shots, `p4-02-${slug}.png`) });
@@ -52,37 +52,11 @@ test.afterEach(async ({ page }) => {
   await rest(page, 'PATCH', `documents?${WRITTEN_BY_TESTS}&category=eq.invoice_receipt&deleted_at=is.null`, { deleted_at: SPEC_TODAY });
 });
 
-async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
-  await page.setViewportSize(viewport);
-  await page.context().addCookies([{ name: 'esta_theme', value: theme, url: test.info().project.use.baseURL ?? '' }]);
-  await signIn(page, email);
-}
-
-async function rest<T>(page: Page, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, data?: unknown): Promise<T> {
-  const response = await page.request.fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    method,
-    headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}`, 'content-type': 'application/json', prefer: 'return=representation' },
-    ...(data === undefined ? {} : { data }),
-  });
-  expect(response.ok(), await response.text()).toBe(true);
-  const text = await response.text();
-  return (text === '' ? null : JSON.parse(text)) as T;
-}
-
 const liveExpenses = (page: Page, lane: number) => rest<{ id: string }[]>(page, 'GET', `expenses?property_id=eq.${q7(lane)}&deleted_at=is.null&select=id`);
-
-/** Reduced motion turns transitions off and the pointer is parked, so axe never reads a chip mid-fade or hovered. */
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.mouse.move(0, 0);
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-}
 
 const sheet = (page: Page) => page.getByTestId('expense-sheet');
 const toast = (page: Page) => page.getByRole('region', { name: /Thông báo|Notifications/ });
 const rows = (page: Page) => page.getByTestId('expense-row');
-const noSideScroll = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
 
 /** Taps a category chip; its radio is visually hidden inside the label, as on a phone. */
 async function pick(page: Page, category: string) {
@@ -105,7 +79,7 @@ test('rule 1: on Nhà phố Q7 Mẹ types 2tr5, picks Sửa chữa and saves; th
   await expect(sheet(page).getByTestId('money-preview')).toHaveText(vnd('2.500.000'));
   await pick(page, 'Sửa chữa');
   await expect(sheet(page).getByTestId('expense-date')).toHaveText('Hôm nay, 07/10/2026');
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await settledAxe(page)).toEqual([]);
   await shot(page, 'sheet-filled');
   await holdForRecording(page);
   await sheet(page).getByTestId('expense-save').click();
@@ -120,7 +94,7 @@ test('rule 1: on Nhà phố Q7 Mẹ types 2tr5, picks Sửa chữa and saves; th
   await expect(newest.getByTestId('expense-category')).toHaveText('Sửa chữa');
   await expect(newest.getByTestId('expense-amount')).toHaveText(vnd('2.500.000'));
   await expect(newest.getByTestId('expense-date')).toHaveText('07/10/2026');
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await settledAxe(page)).toEqual([]);
   await shot(page, 'regression-add', page.getByTestId('expense-section'));
   await holdForRecording(page);
 });
@@ -173,13 +147,38 @@ test('rule 2: Chụp hoá đơn with the Demo receipt, 850k, saves a row with a 
   await holdForRecording(page);
 });
 
+test('rule 2b: a receipt photo cancelled with the sheet, or dropped before saving, never reaches Tài liệu', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  const receipts = () => rest<unknown[]>(page, 'GET', `documents?property_id=eq.${q7(2)}&category=eq.invoice_receipt&deleted_at=is.null&select=id`);
+  const before = (await receipts()).length;
+  await page.goto(`/properties/${q7(2)}/finance`);
+  await page.getByTestId('expense-section').getByTestId('receipt-camera').setInputFiles(RECEIPT);
+  await expect(sheet(page).getByTestId('receipt-uploaded')).toBeVisible();
+  await sheet(page).getByRole('button', { name: 'Huỷ' }).click();
+  await expect(sheet(page)).toBeHidden();
+  expect((await receipts()).length, 'a cancelled sheet files no receipt').toBe(before);
+
+  await page.getByTestId('expense-section').getByTestId('add-expense').click();
+  await sheet(page).getByTestId('sheet-receipt-file').setInputFiles(RECEIPT);
+  await expect(sheet(page).getByTestId('receipt-uploaded')).toBeVisible();
+  await sheet(page).getByTestId('receipt-remove').click();
+  await expect(sheet(page).getByTestId('receipt-preview')).toHaveCount(0);
+  await typeAmount(page, '640k');
+  await pick(page, 'Bảo trì');
+  await sheet(page).getByTestId('expense-save').click();
+  await expect(toast(page)).toContainText(`Đã ghi nhận chi phí ${vnd('640.000')}.`);
+  const [saved] = await rest<{ document_id: string | null }[]>(page, 'GET', `expenses?property_id=eq.${q7(2)}&amount_vnd=eq.640000&deleted_at=is.null&select=document_id`);
+  expect(saved).toEqual({ document_id: null });
+  expect((await receipts()).length, 'a dropped photo is not filed').toBe(before);
+});
+
 test('rule 3: at 1440 dark the field reads 3,5tr as 3.500.000 ₫ before saving', async ({ page }) => {
   await open(page, 'ryan.lane3@demo.esta.test', 'dark', DESKTOP);
   await page.goto(`/properties/${q7(3)}/finance`);
   await page.getByTestId('expense-section').getByTestId('add-expense').click();
   await typeAmount(page, '3,5tr');
   await expect(sheet(page).getByTestId('money-preview')).toHaveText(vnd('3.500.000'));
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await settledAxe(page)).toEqual([]);
   await shot(page, 'shorthand');
 });
 
@@ -197,7 +196,7 @@ test('rule 4: a vendor added from the sheet is saved as a contractor and its lon
   const vendor = rows(page).getByTestId('expense-vendor-name').filter({ hasText: name });
   await expect(vendor).toHaveText(name);
   expect(await vendor.evaluate((element) => element.scrollWidth <= element.clientWidth), 'the vendor name is not clipped').toBe(true);
-  expect(await noSideScroll(page)).toBe(true);
+  expect(await noSidewaysScroll(page)).toBe(true);
   await shot(page, 'vendor', vendor);
   const parties = await rest<{ id: string; tags: string[] }[]>(page, 'GET', `parties?full_name=eq.${encodeURIComponent(name)}&select=id,tags`);
   expect(parties.map((party) => party.tags)).toEqual([['contractor']]);
@@ -235,6 +234,20 @@ test('rule 6: an amount of 0 is refused on the field in Vietnamese and nothing i
   expect(await liveExpenses(page, 6)).toEqual(before);
 });
 
+test('rule 6c: an amount above 1.000 tỷ is refused on the field in Vietnamese and nothing is written', async ({ page }) => {
+  await open(page, 'me.lane6@demo.esta.test', 'light', PHONE);
+  const before = await liveExpenses(page, 6);
+  await page.goto(`/properties/${q7(6)}/finance`);
+  await page.getByTestId('expense-section').getByTestId('add-expense').click();
+  await typeAmount(page, '1001 tỷ');
+  await pick(page, 'Sửa chữa');
+  await sheet(page).getByTestId('expense-save').click();
+  await expect(sheet(page).getByText('Số tiền chưa đúng. Số này lớn hơn mức Esta ghi được.')).toBeVisible();
+  await expect(sheet(page).getByRole('textbox', { name: 'Số tiền' })).toHaveAttribute('aria-invalid', 'true');
+  await expect(sheet(page).getByTestId('expense-error')).toHaveCount(0);
+  expect(await liveExpenses(page, 6)).toEqual(before);
+});
+
 test('rule 6b: saving with no kind chosen asks for one and writes nothing', async ({ page }) => {
   await open(page, 'me.lane6@demo.esta.test', 'light', PHONE);
   const before = await liveExpenses(page, 6);
@@ -257,7 +270,7 @@ test('rule 7: in compact density the Sửa chữa rows of Q7 for 2026 add up to 
     const amounts = await repairs.getByTestId('expense-amount').allTextContents();
     const total = amounts.reduce((sum, text) => sum + Number(text.replace(/\D/g, '')), 0);
     expect(total).toBe(8_650_000);
-    expect(await seriousAxeViolations(page)).toEqual([]);
+    expect(await settledAxe(page)).toEqual([]);
     await shot(page, 'seed-list', page.getByTestId('expense-section'));
   } finally {
     await rest(page, 'PATCH', memberRow('ryan', 7), { density: 'comfortable' });
@@ -318,7 +331,7 @@ test('rule 10: in English at 130% and dark, Phòng 5 is 12 days overdue and the 
     await typeAmount(page, '2tr5');
     await pick(page, 'Repair');
     await expect(sheet(page).getByTestId('expense-date')).toHaveText('Today, 07/10/2026');
-    expect(await seriousAxeViolations(page)).toEqual([]);
+    expect(await settledAxe(page)).toEqual([]);
     await sheet(page).getByTestId('expense-save').click();
     await expect(toast(page)).toContainText(`Expense of ${vnd('2,500,000')} recorded.`);
     await page.getByRole('navigation', { name: 'Property sections' }).getByRole('link', { name: 'Money' }).click();
@@ -326,7 +339,7 @@ test('rule 10: in English at 130% and dark, Phòng 5 is 12 days overdue and the 
     await expect(rows(page).first().getByTestId('expense-category')).toHaveText('Repair');
     const cut = await rows(page).locator('span').evaluateAll((elements) => elements.filter((element) => element.scrollWidth > element.clientWidth + 1).map((element) => element.textContent));
     expect(cut).toEqual([]);
-    expect(await noSideScroll(page)).toBe(true);
+    expect(await noSidewaysScroll(page)).toBe(true);
     await shot(page, 'en-130-dark', page.getByTestId('expense-section'));
   } finally {
     await rest(page, 'PATCH', memberRow('me', 10), { locale: 'vi', text_scale: 100 });
