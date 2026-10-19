@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
 import { importFolders } from './files';
 import { localFiles } from './local-files';
-import { appliedSchema, call, clientAt, plannedSchema, sessionFiles, setClock, signIn, startConnector, type Connector } from './test/connector';
+import { appliedSchema, call, clientAt, demoProperty, plannedSchema, sessionFiles, setClock, signIn, startConnector, type Connector } from './test/connector';
 
 // Run against a fresh `pnpm db:reset`.
 const OPERATOR = 'ryan.lane9@demo.esta.test';
@@ -115,21 +115,6 @@ describe('the connector for anyone but the operator', () => {
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('pnpm connector:login');
   }, 60_000);
-});
-
-const demoProperty = (code: string) => ({
-  nickname: `Demo Nhà phố ${code}`,
-  code,
-  kind: 'townhouse',
-  kind_details: {},
-  use_mode: 'rental',
-  legal_status: 'certified',
-  current_address: { house_no: '12 Demo', street: 'Đường số 5', commune_code: '27475', province_code: '79' },
-  certificate_address_text: 'Thửa 12, tờ bản đồ 5, Phường Tân Kiểng, Quận 7',
-  acquired_on: '2020-05-01',
-  acquisition_kind: 'purchase',
-  acquisition_price_vnd: 3_500_000_000,
-  notes: 'Demo, mua qua môi giới',
 });
 
 const FORM_COLUMNS = 'nickname, kind, kind_details, use_mode, legal_status, current_address, certificate_address_text, acquired_on, acquisition_kind, acquisition_price_vnd, notes, created_by';

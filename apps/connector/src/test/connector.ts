@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect } from 'vitest';
 import { z } from 'zod';
+import { readClock, type Db, type OpContext } from '@esta/ops';
 import { DEMO_PASSWORD } from '../../../../supabase/seed/generator/households.ts';
+import { seedId } from '../../../../supabase/seed/generator/ids.ts';
 import { logIn } from '../login';
 import { connectorClient } from '../session';
 import { fileStore } from '../store';
@@ -56,3 +58,22 @@ export const appliedSchema = z.object({ status: z.string(), items: z.array(z.obj
 export function setClock(instant: string) {
   expect(spawnSync('pnpm', ['--silent', 'clock:set', instant], { cwd: ROOT, env: { ...process.env, ESTA_SLOT: env.ESTA_SLOT } }).status).toBe(0);
 }
+
+export async function laneContext(db: Db, lane: number): Promise<OpContext> {
+  return { db, householdId: seedId(`seed:household:lane-${lane}`), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) };
+}
+
+export const demoProperty = (code: string) => ({
+  nickname: `Demo Nhà phố ${code}`,
+  code,
+  kind: 'townhouse',
+  kind_details: {},
+  use_mode: 'rental',
+  legal_status: 'certified',
+  current_address: { house_no: '12 Demo', street: 'Đường số 5', commune_code: '27475', province_code: '79' },
+  certificate_address_text: 'Thửa 12, tờ bản đồ 5, Phường Tân Kiểng, Quận 7',
+  acquired_on: '2020-05-01',
+  acquisition_kind: 'purchase',
+  acquisition_price_vnd: 3_500_000_000,
+  notes: 'Demo, mua qua môi giới',
+});

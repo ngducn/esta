@@ -23,6 +23,7 @@ describe('connector tools', () => {
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).toSorted()).toEqual([
       'apply_plan',
+      'find_person',
       'find_property',
       'get_property',
       'list_folder',
@@ -52,6 +53,13 @@ describe('connector tools', () => {
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain(says);
     expect(logs).toEqual([`find_property refused=${refusal}`]);
+  });
+
+  it('rejects a person search with nothing to search by, or with a whole ID number, before reading the session', async () => {
+    const { client, logs } = await connect('signed_out');
+    expect((await client.callTool({ name: 'find_person', arguments: {} })).isError).toBe(true);
+    expect((await client.callTool({ name: 'find_person', arguments: { id_last4: '079301004567' } })).isError).toBe(true);
+    expect(logs).toEqual([]);
   });
 
   it('rejects arguments outside the schema before reading the session', async () => {

@@ -8,7 +8,11 @@ import { documentAttach } from './document-attach';
 import type { LocalContext } from './files';
 import { idSchema, invalid, type Refusal } from './kit';
 import { refuse, settle, type Op, type OpContext } from './op';
+import { personCreate } from './person-ops';
 import { propertyCreate, propertyEdit } from './property-ops';
+import { addLabel, blockedBy, refLabelSchema, resolveRefs, type Label } from './refs';
+import { unitCreate } from './unit-ops';
+import { NO_PENDING, withWrites, type Pending, type Write } from './view';
 
 export const PLAN_TTL_MINUTES = 30;
 /** An apply that has held its claim this long died mid-batch, and the next apply finishes the batch. */
@@ -26,26 +30,30 @@ export type ItemOutcome =
   | { readonly status: 'unchanged'; readonly current: Json }
   | { readonly status: 'refused'; readonly refusal: Refusal };
 
+type Stepped = { readonly plan: ItemPlan; readonly writes: readonly Write[] };
+
 /** Each op as a batch sees it, JSON in and JSON out, with the op's own types closed over. */
 type Step = {
   readonly creates: boolean;
-  plan(ctx: LocalContext, raw: unknown): Promise<ItemPlan>;
+  plan(ctx: LocalContext, raw: unknown): Promise<Stepped>;
   settle(ctx: LocalContext, raw: unknown, approved: unknown): Promise<ItemOutcome>;
 };
 
 const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null));
+const refused = (refusal: Refusal): Stepped => ({ plan: { status: 'refused', refusal }, writes: [] });
 
 function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>): Step {
   return {
     creates: op.creates !== null,
     async plan(ctx, raw) {
       const input = op.input.safeParse(raw);
-      if (!input.success) return { status: 'refused', refusal: invalid(input.error) };
+      if (!input.success) return refused(invalid(input.error));
       const planned = await op.plan(ctx, input.data);
-      if (!planned.ok) return { status: 'refused', refusal: planned.reason };
-      return planned.value.kind === 'change'
-        ? { status: 'change', change: asJson(planned.value.change) }
-        : { status: 'unchanged', current: asJson(planned.value.current) };
+      if (!planned.ok) return refused(planned.reason);
+      const { value } = planned;
+      return value.kind === 'change'
+        ? { plan: { status: 'change', change: asJson(value.change) }, writes: op.writes?.(value.change) ?? [] }
+        : { plan: { status: 'unchanged', current: asJson(value.current) }, writes: [] };
     },
     async settle(ctx, raw, approved) {
       const input = op.input.safeParse(raw);
@@ -62,7 +70,7 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
   };
 }
 
-export const OP_KINDS = ['property.create', 'property.edit', 'document.attach'] as const;
+export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create', 'person.create'] as const;
 export type OpKind = (typeof OP_KINDS)[number];
 
 /** The one list of what a batch can hold; `satisfies` fails the build when it and `OP_KINDS` disagree. */
@@ -70,18 +78,25 @@ const OPS = {
   'property.create': batchStep(propertyCreate),
   'property.edit': batchStep(propertyEdit),
   'document.attach': batchStep(documentAttach),
+  'unit.create': batchStep(unitCreate),
+  'person.create': batchStep(personCreate),
 } as const satisfies Record<OpKind, Step>;
 
 export const planRequestSchema = z.strictObject({
   summary: z.string().trim().min(1).max(300),
-  items: z.array(z.strictObject({ op: z.enum(OP_KINDS), input: z.unknown() })).min(1).max(MAX_ITEMS),
+  items: z.array(z.strictObject({ op: z.enum(OP_KINDS), ref: refLabelSchema.optional(), input: z.unknown() })).min(1).max(MAX_ITEMS),
 });
 export type PlanRequest = z.output<typeof planRequestSchema>;
 
-/** `change` is what Ryan approved, null when the item had nothing to change. It is compared at apply, never written. */
+/**
+ * `change` is what Ryan approved, null when the item had nothing to change. It is compared at apply, never written.
+ * A plan stored before refs has no `needs`.
+ */
 const storedPlanSchema = z.object({
   v: z.literal(1),
-  items: z.array(z.object({ op: z.enum(OP_KINDS), id: idSchema.nullable(), input: z.unknown(), change: z.unknown() })),
+  items: z.array(
+    z.object({ op: z.enum(OP_KINDS), id: idSchema.nullable(), needs: z.array(z.number().int().nonnegative()).default([]), input: z.unknown(), change: z.unknown() }),
+  ),
 });
 type StoredItem = z.output<typeof storedPlanSchema>['items'][number];
 
@@ -110,8 +125,18 @@ export function reduceTypedIds(raw: unknown): unknown {
   return JSON.parse(JSON.stringify(reduced), (_key, value: unknown) => (typeof value === 'string' && value.startsWith('\u0000') ? kept[Number(value.slice(1))] : value));
 }
 
-function withId(raw: unknown, id: string): unknown {
-  return typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? { ...raw, id } : raw;
+function withId(raw: unknown, id: string | null): unknown {
+  return id !== null && typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? { ...raw, id } : raw;
+}
+
+function prepare(item: PlanRequest['items'][number], index: number, id: string | null, labels: Map<string, Label>, earlier: readonly Reported<ItemPlan>[]) {
+  const typed = reduceTypedIds(item.input);
+  const resolved = resolveRefs(typed, labels);
+  // After resolving, so a self ref is unknown; before planning, so an item naming a refused one reads blocked.
+  const labelled = addLabel(labels, item.ref, { index, id });
+  if (!resolved.ok) return { input: typed, needs: [], refusal: resolved.reason };
+  const { input, needs } = resolved.value;
+  return { input: withId(input, id), needs, refusal: labelled ?? blockedBy(needs, earlier) };
 }
 
 /**
@@ -130,14 +155,16 @@ export async function planChanges(ctx: LocalContext, request: PlanRequest): Prom
 
   const items: Reported<ItemPlan>[] = [];
   const stored: StoredItem[] = [];
+  const labels = new Map<string, Label>();
+  let pending: Pending = NO_PENDING;
   for (const [index, item] of request.items.entries()) {
     const step = OPS[item.op];
     const id = step.creates ? randomUUID() : null;
-    const typed = reduceTypedIds(item.input);
-    const input = id === null ? typed : withId(typed, id);
-    const planned = await step.plan(ctx, input);
-    items.push({ ...planned, index, op: item.op, id });
-    stored.push({ op: item.op, id, input, change: planned.status === 'change' ? planned.change : null });
+    const { input, needs, refusal } = prepare(item, index, id, labels, items);
+    const { plan, writes } = refusal === null ? await step.plan({ ...ctx, pending }, input) : refused(refusal);
+    pending = withWrites(pending, writes);
+    items.push({ ...plan, index, op: item.op, id });
+    stored.push({ op: item.op, id, needs: [...needs], input, change: plan.status === 'change' ? plan.change : null });
   }
   if (items.some((item) => item.status === 'refused')) return refuse({ kind: 'items_refused', items });
 
@@ -190,7 +217,8 @@ export async function applyPlan(ctx: LocalContext, planId: string): Promise<Resu
   const plan = storedPlanSchema.parse(claimed);
   const items: Reported<ItemOutcome>[] = [];
   for (const [index, item] of plan.items.entries()) {
-    const outcome = await OPS[item.op].settle(ctx, item.input, item.change).catch(() => failed);
+    const blocked = blockedBy(item.needs, items);
+    const outcome: ItemOutcome = blocked === null ? await OPS[item.op].settle(ctx, item.input, item.change).catch(() => failed) : { status: 'refused', refusal: blocked };
     items.push({ ...outcome, index, op: item.op, id: item.id });
   }
   const status = items.every((item) => item.status !== 'refused') ? 'applied' : 'partial';

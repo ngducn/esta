@@ -1,8 +1,14 @@
 import { formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
+import { compareVietnameseNames } from '@esta/core/names';
+import { normalizePhone, phoneText, type Phone } from '@esta/core/phone';
 import { currentAddressText, KIND_FIELDS, searchTokens } from '@esta/core/properties';
+import type { Result } from '@esta/core/result';
+import { idLast4Schema } from '@esta/core/schemas/party';
+import { z } from 'zod';
 import type { Db } from './db';
 import { readPropertyDetail, searchProperties, type PropertyRow } from './properties';
+import type { ViewRows } from './view';
 
 export type ReadContext = { readonly db: Db; readonly householdId: string; readonly locale: Locale };
 
@@ -78,4 +84,38 @@ export function rankCandidates(rows: readonly PropertyRow[], text: string) {
 
 export async function findProperty(ctx: ReadContext, text: string) {
   return rankCandidates(await searchProperties(ctx.db, ctx.householdId, searchTokens(text)), text);
+}
+
+export const personQuerySchema = z
+  .object({ name: z.string().trim().min(1).max(200).optional(), phone: z.string().trim().min(1).max(40).optional(), id_last4: idLast4Schema.optional() })
+  .refine((query) => query.name !== undefined || query.phone !== undefined || query.id_last4 !== undefined, { message: 'Give a name, a phone or id_last4.' });
+
+export type PeopleQuery = { readonly tokens: readonly string[]; readonly phone: Phone | null; readonly idLast4: string | null };
+export type PersonMatch = 'name' | 'phone' | 'id_last4';
+
+function personMatches(row: ViewRows['parties'], query: PeopleQuery): PersonMatch[] {
+  const words = new Set(searchTokens(row.full_name));
+  const checks: readonly (readonly [PersonMatch, boolean])[] = [
+    ['name', query.tokens.length > 0 && query.tokens.every((token) => words.has(token))],
+    ['phone', query.phone !== null && row.phone === query.phone],
+    ['id_last4', query.idLast4 !== null && row.id_last4 === query.idLast4],
+  ];
+  return checks.filter(([, hit]) => hit).map(([match]) => match);
+}
+
+export function rankPeople(rows: readonly ViewRows['parties'][], query: PeopleQuery) {
+  return rows
+    .map((row) => ({ row, reasons: personMatches(row, query) }))
+    .filter(({ reasons }) => reasons.length > 0)
+    .toSorted((a, b) => b.reasons.length - a.reasons.length || compareVietnameseNames(a.row.full_name, b.row.full_name))
+    .slice(0, MAX_CANDIDATES)
+    .map(({ row, reasons }) => ({ id: row.id, full_name: row.full_name, phone: phoneText(row.phone), id_last4: row.id_last4, reasons }));
+}
+
+export async function findPerson(ctx: ReadContext, query: z.output<typeof personQuerySchema>): Promise<Result<ReturnType<typeof rankPeople>, 'invalid_phone'>> {
+  const phone = query.phone === undefined ? null : normalizePhone(query.phone);
+  if (phone !== null && !phone.ok) return { ok: false, reason: 'invalid_phone' };
+  const { data, error } = await ctx.db.from('parties').select('id, full_name, phone, id_last4').eq('household_id', ctx.householdId);
+  if (error) throw new Error(`Reading the people failed: ${error.message}`);
+  return { ok: true, value: rankPeople(data, { tokens: searchTokens(query.name ?? ''), phone: phone?.value ?? null, idLast4: query.id_last4 ?? null }) };
 }
