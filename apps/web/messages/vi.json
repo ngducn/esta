@@ -1410,6 +1410,7 @@
       "dateInvalid": "Ngày chưa đúng. Nhập theo dạng 07/10/2026.",
       "dateAfterToday": "Ngày không được sau hôm nay.",
       "noteRequired": "Ghi lý do khấu trừ.",
+      "tooLarge": "Nhiều hơn mức Esta ghi được ({amount}).",
       "exceedsHeld": "Nhiều hơn số tiền cọc đang giữ ({amount}).",
       "exceedsOutstanding": "Nhiều hơn số hóa đơn này còn nợ ({amount}).",
       "invoice": "Chọn một hóa đơn còn nợ.",

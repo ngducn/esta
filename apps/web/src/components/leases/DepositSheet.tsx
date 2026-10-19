@@ -38,7 +38,7 @@ const SERVER_ERRORS = {
   failed: 'failed',
 } as const satisfies Record<RecordDepositRefusal, SheetError>;
 
-const OVERDRAW_ERRORS = { exceeds_held: 'exceedsHeld', exceeds_outstanding: 'exceedsOutstanding' } as const;
+const OVERDRAW_ERRORS = { too_large: 'tooLarge', exceeds_held: 'exceedsHeld', exceeds_outstanding: 'exceedsOutstanding' } as const;
 
 /**
  * One sheet for the four deposit actions. It opens with `depositPrefill`'s amount, and `previewDepositEntry` shows the

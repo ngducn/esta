@@ -172,7 +172,7 @@ test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet befor
   expect(await memberRest(page, 'GET', `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: 2_800_000 }]);
 });
 
-test('rule 4: an active lease takes another deposit payment, and the sheet refuses a date after today', async ({ page }) => {
+test('rule 4: an active lease takes another deposit payment, and the sheet refuses an amount past what Esta records and a date after today', async ({ page }) => {
   await open(page, 'ryan.lane9@demo.esta.test', 'light', DESKTOP);
   const lease = laneLease(9, 'di-an', 1);
   const [{ held_vnd: before }] = await memberRest<[{ held_vnd: number }]>(page, 'GET', `lease_deposits?lease_id=eq.${lease}&select=held_vnd`);
@@ -180,6 +180,9 @@ test('rule 4: an active lease takes another deposit payment, and the sheet refus
   await expect(ledger(page).getByTestId('deposit-actions').getByRole('button')).toHaveText(['Nhận cọc', 'Trừ vào tiền thuê', 'Khấu trừ', 'Trả lại cọc']);
   await ledger(page).getByTestId('deposit-received').click();
   const sheet = page.getByTestId('deposit-sheet');
+  await sheet.getByRole('textbox', { name: 'Số tiền nhận' }).fill('1001 tỷ');
+  await expect(sheet.getByTestId('deposit-overdraw')).toHaveText(`Nhiều hơn mức Esta ghi được (${vnd('1.000.000.000.000')}).`);
+  await expect(sheet.getByTestId('deposit-save')).toBeDisabled();
   await sheet.getByRole('textbox', { name: 'Số tiền nhận' }).fill('500k');
   await sheet.getByRole('textbox', { name: 'Ngày nhận cọc' }).fill('08/10/2026');
   await sheet.getByTestId('deposit-save').click();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
+import { MAX_LIST_RENT_VND } from '../schemas/units';
 import { depositActions, depositPrefill, deriveDepositLedger, previewDepositEntry, type DepositEntry, type DepositKind, type DepositState } from './deposits';
 
 function entry(id: string, kind: DepositKind, amount: number, onDate: string): DepositEntry {
@@ -127,6 +128,12 @@ describe('previewDepositEntry', () => {
     });
     expect(previewDepositEntry(ledger, entry('new', 'refunded', 3_000_000, '2026-10-07'), null)).toEqual({ ok: false, reason: 'exceeds_held', limitVnd: 2_800_000 });
     expect(previewDepositEntry(ledger, entry('new', 'refunded', 1, '2025-09-15'), null)).toEqual({ ok: false, reason: 'exceeds_held', limitVnd: 0 });
+  });
+
+  it('refuses an amount past the ceiling deposit_entries keeps, before the table would', () => {
+    expect(previewDepositEntry(ledger, entry('new', 'received', MAX_LIST_RENT_VND, '2026-10-07'), null)).toEqual({ ok: true, heldVnd: MAX_LIST_RENT_VND + 2_800_000 });
+    expect(previewDepositEntry(ledger, entry('new', 'received', MAX_LIST_RENT_VND + 1, '2026-10-07'), null)).toEqual({ ok: false, reason: 'too_large', limitVnd: MAX_LIST_RENT_VND });
+    expect(previewDepositEntry(ledger, entry('new', 'refunded', MAX_LIST_RENT_VND + 1, '2026-10-07'), null)).toEqual({ ok: false, reason: 'too_large', limitVnd: MAX_LIST_RENT_VND });
   });
 });
 

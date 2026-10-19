@@ -1,5 +1,6 @@
 import type { IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
+import { MAX_LIST_RENT_VND } from '../schemas/units';
 
 export const DEPOSIT_KINDS = ['received', 'applied', 'deduction', 'refunded'] as const;
 
@@ -73,14 +74,16 @@ export function depositPrefill(kind: DepositKind, { heldVnd, hasEntries }: Depos
 
 export type DepositPreview =
   | { readonly ok: true; readonly heldVnd: Vnd }
-  | { readonly ok: false; readonly reason: 'exceeds_held' | 'exceeds_outstanding'; readonly limitVnd: Vnd }
+  | { readonly ok: false; readonly reason: 'too_large' | 'exceeds_held' | 'exceeds_outstanding'; readonly limitVnd: Vnd }
   | { readonly ok: false; readonly reason: 'non_positive_amount' };
 
 /**
- * The held balance once `entry` joins the ledger, or why `record_deposit_entry` and `apply_deposit` would refuse it:
- * using more than the invoice owes (`owedVnd`, for an applied entry), or taking out more than is held at its date.
+ * The held balance once `entry` joins the ledger, or why `record_deposit_entry` and `apply_deposit` would refuse it: an
+ * amount past the ceiling `deposit_entries` holds, using more than the invoice owes (`owedVnd`, for an applied entry),
+ * or taking out more than is held at its date.
  */
 export function previewDepositEntry(entries: readonly DepositEntry[], entry: DepositEntry, owedVnd: Vnd | null): DepositPreview {
+  if (entry.amountVnd > MAX_LIST_RENT_VND) return { ok: false, reason: 'too_large', limitVnd: vnd(MAX_LIST_RENT_VND) };
   if (entry.kind === 'applied' && owedVnd !== null && entry.amountVnd > owedVnd) return { ok: false, reason: 'exceeds_outstanding', limitVnd: owedVnd };
   const after = deriveDepositLedger([...entries, entry]);
   if (after.ok) return { ok: true, heldVnd: after.value.heldVnd };
