@@ -1,19 +1,20 @@
 # Architecture: one home per concern
 
-This file names the one place each recurring concern lives. Before you write a parser, a result type, an upload step, a toast, a translation subset or a test helper, find its section here and use the home it names. Where the home does not exist yet, the section names the cleanup issue that creates it. Until that issue lands, copy the closest existing pattern the section points to and do not add a third variant.
+This file names the one place each recurring concern lives. Before you write a parser, a result type, an upload step, a toast, a translation subset or a test helper, find its section here and use the home it names. Where the home does not exist yet, the section names the cleanup issue that creates it. Until that issue lands, a change that needs the concern adds to its metric, so it records a raise with the issue in the reason (see the next section), and the root countersigns it.
 
 `pnpm quality` enforces part of this file. It counts copied code, oversized files and the smells listed in each section, and fails `pnpm check` when a count rises above `quality/baseline.json`.
 
 ## The quality baseline
 
-`pnpm quality` reads every source file under `apps`, `packages`, `e2e`, `scripts`, `eslint-rules` and `supabase/seed`, except generated files, fixtures, migrations and message files. Each metric in `scripts/quality/metrics.ts` has an id, the paths it applies to, a message, the home to use instead and a link to its section in this file.
+`pnpm quality` reads every source file under `apps`, `packages`, `e2e`, `scripts`, `eslint-rules` and `supabase/seed`, except generated files, fixtures, migrations and message files. Each metric in `scripts/quality/metrics.ts` has an id, the paths it applies to, a message, the home to use instead and a link to its section in this file. The smells are matched on the TypeScript syntax tree (`scripts/quality/smells.ts`), not on text, so an alias, a renamed variable or a line break does not hide one, and a comment or a string does not count as one. Only real test locations are exempt where a metric skips tests: `*.test.*`, `*.spec.*` and `*.bench.*` files, `__tests__` folders and the `e2e` tree. A product folder named `test` or `helpers` is product code.
 
 - When a metric rises, the check fails and lists the occurrences in the files whose count went up, with the home to use instead.
 - When a metric falls, the check also fails until you run `pnpm quality --update`, so the baseline keeps every gain.
-- `pnpm quality --update` rewrites the baseline only when nothing rose. To raise a metric, run `pnpm quality --update --allow-raise "<reason>"`. The reason goes into the `raises` list in `quality/baseline.json`, and the root countersigns it in review, as it does for a performance budget.
+- The baseline is checked against the copy committed where your branch forked from `origin/main` (the working copy stands in when there is no `origin`). A count above main's needs an entry in the `raises` list with a reason, whether it came from a hand edit, a deleted key or `--update`. A metric missing from the baseline fails.
+- `pnpm quality --update` rewrites the baseline from today's counts, and refuses when a count is above main's. To raise one, run `pnpm quality --update --allow-raise "<reason>"`. The reason goes into the `raises` list in `quality/baseline.json`, and the root countersigns it in review, as it does for a performance budget.
 - `files-over-1000-lines` has a cap of zero. No flag raises it.
 
-To add a smell, add one entry to `METRICS` with a precise pattern and a section here, then run `pnpm quality --update`. A pattern that matches correct code teaches people to ignore the check, so prefer an exact call, import or type shape over a loose word.
+To add a smell, add one entry to `METRICS` with a finder in `scripts/quality/smells.ts`, a case that it counts and a look-alike that it does not in `scripts/quality/smells.test.ts`, and a section here. Main does not measure a new metric yet, so record its first count with `pnpm quality --update --allow-raise "<new metric>"`. A finder that matches correct code teaches people to ignore the check, so match an exact call, import or type shape, not a loose word. Point "Use instead" only at a helper that exists and is exported, or at the issue that creates the home; a test checks both.
 
 ## Duplicated code
 
@@ -30,19 +31,21 @@ No source file passes 1,000 lines (`files-over-1000-lines`, cap zero). The count
 All parsing of what Mẹ types or what the assistant reads lives in `packages/core/src/parse` and `packages/core/src/date`, as pure functions that return core's `Result`.
 
 - **Money.** `parseVndInput` in `packages/core/src/parse/vnd-input.ts` reads VND as Mẹ types it (`1.200.000`, `3tr5`). `Vnd` in `packages/core/src/money/vnd.ts` is the branded integer. Formatting lives in `packages/core/src/format`.
-- **Decimals.** `parseDecimal` in `packages/core/src/parse/decimal.ts` is a money parser. Đồng have no minor unit, so it reads `1.255` and `1,255` as 1255. Never use it for a quantity with a fractional part (`decimal-parser-outside-parse`).
+- **Decimals.** `parseDecimal` in `packages/core/src/parse/decimal.ts` is a money parser. Đồng have no minor unit, so it reads `1.255` and `1,255` as 1255. Never use it for a quantity with a fractional part (`decimal-parser-outside-parse` counts every import of it, under any name, outside the money and parse modules).
 - **Areas.** Three area parsers disagree today: the review screen reads "1,255 m²" as 1255, and the legal tab refuses it. Issue #182 replaces them with one zod-free parser in `packages/core/src/parse` with the Vietnamese decimal-comma rule (DOMAIN-VN). Until it lands, use `parseAreaInput` in `packages/core/src/properties/area.ts` for typed input.
 - **Dates.** `IsoDate` and `isIsoDate` live in `packages/core/src/date/iso-date.ts`, and `parseDateInput` in `packages/core/src/parse/date-input.ts`. In a zod schema, use `isoDateSchema`, which also brands the value, instead of `z.string().refine(isIsoDate)` (`hand-rolled-iso-date-schema`). `isoDateSchema` lives in `packages/core/src/schemas/legal.ts` today, and issue #196 moves it and the calendar helpers into `packages/core/src/date`.
 
 ## Results
 
-A function that can fail in an expected way returns `Result<T, Reason>` from `packages/core/src/result.ts`. Do not spell out another `{ ok: true … } | { ok: false … }` union (`ad-hoc-result-type`). Issue #196 widens `Result` to carry a structured error, so the five core siblings (`Parsed`, `PlanResult`, `TlvResult`, `DecodeResult`, `DepositLedgerResult`) fold into it. Issue #188 moves the server actions onto it.
+A function that can fail in an expected way returns `Result<T, Reason>` from `packages/core/src/result.ts`. Do not spell out another failure arm, an object type or interface with `ok: false`, whether it sits in a union, a named member or an intersection (`ad-hoc-result-type`). Issue #196 widens `Result` to carry a structured error, so the five core siblings (`Parsed`, `PlanResult`, `TlvResult`, `DecodeResult`, `DepositLedgerResult`) fold into it. Issue #188 moves the server actions onto it.
 
 ## Server action kit
 
-A server action takes `unknown`, parses it with zod, writes through the session client, and maps a database refusal to a reason the screen can show. The lease and payment actions (`apps/web/src/server/actions/leases.ts`, `apps/web/src/server/actions/payments.ts`) are the template.
+A server action takes `unknown`, parses it with zod, writes through the session client, and maps a database refusal to a reason the screen can show. It returns `Result<T, Reason>` from `@esta/core/result`, which exists today.
 
-**Home.** `apps/web/src/server/actions/kit.ts`, with `idSchema`, `optionalIdSchema` and `dbRefusal(error, sentinels)`. It does not exist yet. Issue #188 creates it and moves the `ESTA_*` sentinel strings into one core module. Until then, do not declare another `const id = z.uuid()` (`local-id-schema`) or compare another SQLSTATE literal such as `'23505'` (`sqlstate-literal`).
+**Home.** `apps/web/src/server/actions/kit.ts`, with `idSchema`, `optionalIdSchema` and `dbRefusal(error, sentinels)`. It does not exist yet. Issue #188 creates it and moves the `ESTA_*` sentinel strings into one core module. No action on main follows the whole recipe yet. Most declare their own id schema, and many compare SQLSTATE codes and spell out their own result type.
+
+Until #188 lands, a new server action that parses an id adds to `local-id-schema` (a `z.uuid()` bound to its own name or parsed on the spot), and one that reads a database refusal adds to `sqlstate-literal` (a code such as `'23505'` compared with or looked up by an error's `code`). Such a change needs `pnpm quality --update --allow-raise "<why> (until #188)"`, which the root countersigns.
 
 ## Multi-row writes
 
@@ -61,19 +64,21 @@ A rule that decides what gets written lives in SQL, because SQL is the writer: b
 
 ## Document upload
 
-Bytes go from the browser to Storage with a signed upload URL, never through a server function body (CLAUDE.md). `apps/web/src/lib/upload/prepare.ts` prepares a file and sends it (`sendPrepared`), and `createDocumentUpload` in `apps/web/src/server/documents/actions.ts` signs the upload.
+Bytes go from the browser to Storage with a signed upload URL, never through a server function body (CLAUDE.md). `apps/web/src/lib/upload/` prepares a file and sends it (`sendPrepared`, `uploadWithProgress`), and `createDocumentUpload` in `apps/web/src/server/documents/actions.ts` signs the upload.
 
-**Home.** One `useDocumentUpload({ finish })` hook in `apps/web/src/components/documents/`. It does not exist yet. Issue #190 creates it from the two copies in `components/property-wizard/step-photo.tsx` and `components/documents/upload-sheet.tsx`. Until then, do not call `sendPrepared` from a third component (`upload-pipeline`).
+**Home.** One `useDocumentUpload({ finish })` hook in `apps/web/src/components/documents/`. It does not exist yet. Issue #190 creates it from the two copies in `components/property-wizard/step-photo.tsx` and `components/documents/upload-sheet.tsx`. `upload-pipeline` counts every use of an upload step outside those two modules and the hook: `sendPrepared`, `uploadWithProgress`, `createDocumentUpload`, Storage's `createSignedUploadUrl` and `uploadToSignedUrl`, and a `fetch` with `method: 'PUT'`. The cover photo flow (`app/(app)/properties/actions.ts` and `components/properties/cover-photo-input.tsx`) is a third path that counts today. Until #190 lands, a new upload step needs a countersigned `--allow-raise` naming #190.
 
 ## Calling a server action from the UI
 
 A client component calls a server action inside a transition, maps a thrown call to a failure, and shows one error line.
 
-**Home.** One shared action hook. It does not exist yet. `useWrite` in `apps/web/src/components/properties/archive-button.tsx` is the pattern, and issue #193 promotes it to `apps/web/src/components/use-action.ts` with a `FormAlert` for the error line. Until then, do not add another `startTransition(async …)` (`hand-rolled-action-call`) or `.catch(() => ({ ok: false … }))` (`action-failure-mapping`) to a component.
+**Home.** One shared action hook, `useAction` in `apps/web/src/components/use-action.ts`, with a `FormAlert` for the error line. It does not exist yet, and nothing exported does its job today. Issue #193 creates it from the private `useWrite` in `components/properties/archive-button.tsx`.
+
+`hand-rolled-action-call` counts each async call through a transition starter, whatever it is named (`startSaving(async …)` from `useTransition`, or React's `startTransition`), in a component or a `.ts` hook. `action-failure-mapping` counts each `.catch` that maps a thrown call to `{ ok: false … }`, however it is typed or wrapped. Until #193 lands, a new form or button that calls an action adds to both and needs `pnpm quality --update --allow-raise "<why> (until #193)"`, which the root countersigns.
 
 ## Sheets and dialogs
 
-`useDeferredDialog` in `apps/web/src/components/use-deferred-dialog.ts` opens a lazy sheet or dialog. It keeps the popup mounted so the exit motion runs, preloads on hover and focus, and sets `aria-haspopup` and `aria-expanded`. Do not mount a sheet only while it is open (`hand-rolled-lazy-sheet`).
+`useDeferredDialog` in `apps/web/src/components/use-deferred-dialog.ts` opens a lazy sheet or dialog. It keeps the popup mounted so the exit motion runs, preloads on hover and focus, and sets `aria-haspopup` and `aria-expanded`. Do not mount a sheet only while it is open: a `Sheet`, `Dialog` or `AlertDialog` rendered with a bare `open` is one (`hand-rolled-lazy-sheet`).
 
 **Home.** One form-sheet shell that owns the title, the error, and the cancel and submit row. It does not exist yet. Issue #193 creates it. Until then, do not copy the footer row markup into another sheet (`sheet-footer-markup`).
 
@@ -81,7 +86,7 @@ A client component calls a server action inside a transition, maps a thrown call
 
 `UndoToastProvider` in `apps/web/src/components/undo-toast.tsx` renders the undo toast and its live region.
 
-**Home.** One mount in `apps/web/src/app/(app)/layout.tsx`, with its labels passed from the server. Eight places mount their own today, two of them on the rental tab. Issue #191 moves the mount into the layout. Do not add another mount (`toast-provider-mount`).
+**Home.** One mount in `apps/web/src/app/(app)/layout.tsx`, with its labels passed from the server. Eight places mount their own today, two of them on the rental tab. Issue #191 moves the mount into the layout. Until it lands, a new screen that needs the undo toast adds to `toast-provider-mount` and needs a countersigned `--allow-raise` naming #191.
 
 ## Translation islands
 
@@ -103,7 +108,7 @@ Fix the code instead of disabling a rule inline. When an exception is right, put
 
 ## E2E helpers
 
-Shared e2e plumbing lives in `e2e/helpers/`: `PHONE`, `DESKTOP`, `seriousAxeViolations`, `noSidewaysScroll` and `serviceGet` in `e2e/helpers/wizard.ts`, and `signIn` in `e2e/helpers/inbucket.ts`. A spec imports them. It does not import `AxeBuilder` (`e2e-axe-in-spec`), call `slotEnv` (`e2e-slot-env-in-spec`), declare `PHONE` or `DESKTOP` (`e2e-viewport-in-spec`) or write a `scrollWidth <=` check (`e2e-sideways-scroll-in-spec`).
+Shared e2e plumbing lives in `e2e/helpers/`: `PHONE`, `DESKTOP`, `seriousAxeViolations`, `noSidewaysScroll`, `rest`, `serviceGet` and `servicePatch` in `e2e/helpers/wizard.ts`, and `signIn` in `e2e/helpers/inbucket.ts`. A spec imports them. It does not import `@axe-core/playwright` (`e2e-axe-in-spec`), call `slotEnv` (`e2e-slot-env-in-spec`), declare `PHONE` or `DESKTOP` or spell out 390 × 844 or 1440 × 900 (`e2e-viewport-in-spec`), or read the page's `scrollWidth` for its own sideways-scroll check (`e2e-sideways-scroll-in-spec`). A check that one element is not clipped is a different check and does not count.
 
 **Home.** One `e2e/fixtures.ts` built on Playwright's `test.extend`, with the slot environment parsed once. It does not exist yet. Issue #194 creates it and moves the helpers out of `wizard.ts`.
 
@@ -111,4 +116,4 @@ Shared e2e plumbing lives in `e2e/helpers/`: `PHONE`, `DESKTOP`, `seriousAxeViol
 
 The worker, the recorder, the golden test and the accuracy eval must send the same extraction request, because every replay recording hashes it (AGENT.md §8). Today four places assemble it, and the eval already sends a different prompt.
 
-**Home.** One `extractRequest` exported from `apps/agent/src/jobs/extract-document.ts`. It does not exist yet. Issue #185 creates it. Issue #183 gives the agent one tool-error boundary, so a database failure stops the job instead of reaching the model.
+**Home.** `extractRequest` in `apps/agent/src/jobs/extract-document.ts`, and `withExtractSession` in `apps/agent/src/jobs/extract-session.ts` for a caller outside a job (lands with #205, which closes issues #183 and #185). #205 also gives the agent one tool-error boundary, so a database failure stops the job instead of reaching the model. Until it merges, do not add a fifth place that assembles the request.
