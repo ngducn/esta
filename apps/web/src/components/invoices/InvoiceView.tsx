@@ -40,12 +40,12 @@ function Total({ label, amount, strong = false, testId }: { label: string; amoun
 export async function InvoiceView({ invoice, qr, place, asOf, locale }: { invoice: InvoiceDetail; qr: QrState; place: string; asOf: IsoDate; locale: Locale }) {
   const t = await getTranslations('invoices');
   const state = invoice.status === 'issued' ? collectionState(invoice, asOf) : null;
-  const noQrText = (kind: Exclude<QrState['kind'], 'shown'>) =>
-    kind === 'draft'
-      ? t('noQrDraft', { date: formatDate(invoice.issueOn, locale) })
-      : kind === 'void'
-        ? t('noQrVoid', { reason: invoice.voidedReason ?? '' })
-        : t(kind === 'paid' ? 'noQrPaid' : 'noQrNoAccount');
+  const noQrText = {
+    draft: () => t('noQrDraft', { date: formatDate(invoice.issueOn, locale) }),
+    void: () => t('noQrVoid', { reason: invoice.voidedReason ?? '' }),
+    paid: () => t('noQrPaid'),
+    noAccount: () => t('noQrNoAccount'),
+  } satisfies Record<Exclude<QrState['kind'], 'shown'>, () => string>;
   return (
     <div data-print="invoice" className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -118,7 +118,7 @@ export async function InvoiceView({ invoice, qr, place, asOf, locale }: { invoic
             </div>
           ) : (
             <p data-testid="invoice-no-qr" data-reason={qr.kind} className="text-body text-ink-2">
-              {noQrText(qr.kind)}
+              {noQrText[qr.kind]()}
             </p>
           )}
         </Card>
