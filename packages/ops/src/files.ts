@@ -15,13 +15,16 @@ export type LocalFile = {
 /** The two copies the vault shows before the file itself (`@esta/core/documents/previews`), as WebP bytes. */
 export type LocalPreviews = { readonly thumb: Uint8Array; readonly review: Uint8Array };
 
-/** `unreadable`: the Mac refuses to open it, or its links loop. */
-export type FileProblem = 'outside_import_folders' | 'missing' | 'not_a_file' | 'unreadable' | 'too_large' | 'unsupported_type';
+/**
+ * `unreadable`: the Mac refuses to open it, or its links loop. `id_number_in_name`: its path or name holds a full
+ * national ID number, which a plan or a document would store (SPEC D11), so Ryan renames it.
+ */
+export type FileProblem = 'outside_import_folders' | 'missing' | 'not_a_file' | 'unreadable' | 'id_number_in_name' | 'too_large' | 'unsupported_type';
 export type FileRefusal = { readonly kind: 'file'; readonly problem: FileProblem };
 
 /** What the connector can do with files on Ryan's Mac, and only inside the import folders he configured. */
 export type LocalFiles = {
-  /** A regular file within the vault's size limit, of a type the vault takes. */
+  /** A regular file within the vault's size limit, of a type the vault takes, whose path and name hold no ID number. */
   readDocument(path: string): Promise<Result<LocalFile, FileRefusal>>;
   previews(file: LocalFile): Promise<LocalPreviews>;
 };

@@ -1,3 +1,4 @@
+import { reduceNationalIds } from '@esta/core/agent-schemas';
 import type { Result } from '@esta/core/result';
 import type { FileProblem, FileRefusal } from '@esta/ops';
 import { constants, type Stats } from 'node:fs';
@@ -20,6 +21,9 @@ const MAX_LINKS = 32;
 const refused = (problem: FileProblem): Result<never, FileRefusal> => ({ ok: false, reason: { kind: 'file', problem } });
 
 const expand = (path: string, home: string) => (path === '~' ? home : path.startsWith('~/') ? join(home, path.slice(2)) : path);
+
+/** A name the reducer would cut holds a full national ID number, which Esta never stores (SPEC D11). */
+const holdsIdNumber = (name: string) => reduceNationalIds(name) !== name;
 
 /** A regular file with a second name may be the same bytes as a file outside the folders, so it counts as outside. */
 const fileProblem = (stats: Stats): FileProblem | null => (!stats.isFile() ? 'not_a_file' : stats.nlink > 1 ? 'outside_import_folders' : null);
@@ -82,14 +86,18 @@ export function importFolders(roots: readonly string[], home = homedir()) {
     return 'unreadable';
   }
 
-  /** The real path of a file or folder Claude may read. */
+  /**
+   * The real path of a file or folder Claude may read. The path as given and the real name are what a plan and a
+   * document store, so either holding an ID number is refused.
+   */
   async function locate(path: string): Promise<Result<string, FileRefusal>> {
     const [first] = roots;
     if (first === undefined) return refused('outside_import_folders');
     const wanted = resolve(first, expand(path, home));
     const real = await attempt(realpath(wanted), (error) => unresolved(wanted, error));
     if (!real.ok) return real;
-    return inside(real.value) ? real : refused('outside_import_folders');
+    if (!inside(real.value)) return refused('outside_import_folders');
+    return holdsIdNumber(path) || holdsIdNumber(basename(real.value)) ? refused('id_number_in_name') : real;
   }
 
   /** What a listing says of one entry: the checks a read makes, without opening the file. */

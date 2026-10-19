@@ -98,14 +98,16 @@ export type ApplyRefusal =
 const minutesFrom = (instant: string, minutes: number) => new Date(Date.parse(instant) + minutes * 60_000).toISOString();
 
 /**
- * Keeps only the last four digits of any national ID number Ryan typed in chat (SPEC D11). Ids are set aside first:
- * a uuid whose last group is twelve digits reads as an ID number.
+ * Keeps only the last four digits of any national ID number Ryan typed in chat (SPEC D11). References are set aside
+ * first and kept whole: ids, since a uuid whose last group is twelve digits reads as an ID number, and file paths, since
+ * a cut path names another file. The import folders refuse a path that holds an ID number, so no plan stores one.
  */
 export function reduceTypedIds(raw: unknown): unknown {
-  const ids: string[] = [];
-  const masked = JSON.parse(JSON.stringify(raw ?? null), (_key, value: unknown) => (typeof value === 'string' && idSchema.safeParse(value).success ? `\u0000${ids.push(value) - 1}` : value));
+  const kept: string[] = [];
+  const reference = (key: string, value: string) => key === 'path' || idSchema.safeParse(value).success;
+  const masked = JSON.parse(JSON.stringify(raw ?? null), (key, value: unknown) => (typeof value === 'string' && reference(key, value) ? `\u0000${kept.push(value) - 1}` : value));
   const reduced: unknown = reduceNationalIds(masked);
-  return JSON.parse(JSON.stringify(reduced), (_key, value: unknown) => (typeof value === 'string' && value.startsWith('\u0000') ? ids[Number(value.slice(1))] : value));
+  return JSON.parse(JSON.stringify(reduced), (_key, value: unknown) => (typeof value === 'string' && value.startsWith('\u0000') ? kept[Number(value.slice(1))] : value));
 }
 
 function withId(raw: unknown, id: string): unknown {
