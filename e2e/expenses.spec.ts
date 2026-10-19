@@ -27,6 +27,11 @@ const WRITTEN_BY_TESTS = 'created_at=gt.2026-10-08T00:00:00Z';
 const recording = process.env.ESTA_E2E_VIDEO === '1';
 test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 700 } } : { video: 'off' });
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2000) : Promise.resolve());
+// `ESTA_E2E_SHOTS=<dir>` saves each rule's passing state as `<dir>/p4-02-<slug>.png`, the PR's lane screenshots.
+const shots = process.env.ESTA_E2E_SHOTS;
+const shot = async (page: Page, slug: string) => {
+  if (shots !== undefined) await page.screenshot({ path: join(shots, `p4-02-${slug}.png`) });
+};
 
 // The sheet dates an expense on the Clock's day, so the spec runs in the `clock` project on SPEC §9.3's day. Each rule
 // reads its own lane household, and every expense, vendor and receipt a rule adds is removed after it.
@@ -86,11 +91,13 @@ test('rule 1: on Nhà phố Q7 Mẹ types 2tr5, picks Sửa chữa and saves; th
   await sheet(page).getByRole('radio', { name: 'Sửa chữa' }).check();
   await expect(sheet(page).getByTestId('expense-date')).toHaveText('Hôm nay, 07/10/2026');
   expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'sheet-filled');
   await holdForRecording(page);
   await sheet(page).getByTestId('expense-save').click();
   await expect(sheet(page)).toBeHidden();
   await expect(toast(page)).toContainText(`Đã ghi nhận chi phí ${vnd('2.500.000')}.`);
   await expect(toast(page).getByRole('button', { name: 'Hoàn tác' })).toBeVisible();
+  await shot(page, 'saved-toast');
   expect((await liveExpenses(page, 1)).length, 'one more live expense on q7').toBe(before.length + 1);
 
   await page.getByRole('navigation', { name: 'Các mục của tài sản' }).getByRole('link', { name: 'Thu chi' }).click();
@@ -99,6 +106,7 @@ test('rule 1: on Nhà phố Q7 Mẹ types 2tr5, picks Sửa chữa and saves; th
   await expect(newest.getByTestId('expense-amount')).toHaveText(vnd('2.500.000'));
   await expect(newest.getByTestId('expense-date')).toHaveText('07/10/2026');
   expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'regression-add');
   await holdForRecording(page);
 });
 
@@ -126,12 +134,14 @@ test('rule 2: Chụp hoá đơn with the Demo receipt, 850k, saves a row with a 
   await typeAmount(page, '850k');
   await sheet(page).getByRole('radio', { name: 'Sửa chữa' }).check();
   await expect(sheet(page).getByTestId('receipt-uploaded')).toBeVisible();
+  await shot(page, 'receipt-sheet');
   await holdForRecording(page);
   await sheet(page).getByTestId('expense-save').click();
   await expect(toast(page)).toContainText(`Đã ghi nhận chi phí ${vnd('850.000')}.`);
 
   const row = rows(page).filter({ has: page.getByTestId('expense-amount').getByText(vnd('850.000'), { exact: true }) });
   await expect(row.getByTestId('expense-receipt-link')).toBeVisible();
+  await shot(page, 'receipt-photo');
   const [saved] = await rest<{ document_id: string; documents: { category: string; property_id: string } }[]>(
     page,
     'GET',
@@ -142,6 +152,7 @@ test('rule 2: Chụp hoá đơn with the Demo receipt, 850k, saves a row with a 
   await expect(page).toHaveURL(new RegExp(`/documents/${saved?.document_id}$`));
   await expect(page.locator('img[data-testid="document-page"]')).toBeVisible();
   await page.locator('img[data-testid="document-page"]').evaluate((img: HTMLImageElement) => img.decode());
+  await shot(page, 'receipt-opened');
   await holdForRecording(page);
 });
 
@@ -152,6 +163,7 @@ test('rule 3: at 1440 dark the field reads 3,5tr as 3.500.000 ₫ before saving'
   await typeAmount(page, '3,5tr');
   await expect(sheet(page).getByTestId('money-preview')).toHaveText(vnd('3.500.000'));
   expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'shorthand');
 });
 
 test('rule 4: a vendor added from the sheet is saved as a contractor and its long name wraps on the row', async ({ page }) => {
@@ -169,6 +181,7 @@ test('rule 4: a vendor added from the sheet is saved as a contractor and its lon
   await expect(vendor).toHaveText(name);
   expect(await vendor.evaluate((element) => element.scrollWidth <= element.clientWidth), 'the vendor name is not clipped').toBe(true);
   expect(await noSideScroll(page)).toBe(true);
+  await shot(page, 'vendor');
   const parties = await rest<{ id: string; tags: string[] }[]>(page, 'GET', `parties?full_name=eq.${encodeURIComponent(name)}&select=id,tags`);
   expect(parties.map((party) => party.tags)).toEqual([['contractor']]);
   await rest(page, 'DELETE', `parties?full_name=eq.${encodeURIComponent(name)}`);
@@ -187,6 +200,7 @@ test('rule 5: deleting a seeded Q7 repair offers Hoàn tác, which brings the sa
   await toast(page).getByRole('button', { name: 'Hoàn tác' }).click();
   await expect(toast(page)).toContainText(`Đã khôi phục chi phí ${vnd('4.500.000')}.`);
   await expect(row).toBeVisible();
+  await shot(page, 'undo');
   expect(await rest(page, 'GET', `expenses?id=eq.${seeded}&select=deleted_at`)).toEqual([{ deleted_at: null }]);
 });
 
@@ -200,6 +214,7 @@ test('rule 6: an amount of 0 is refused on the field in Vietnamese and nothing i
   await sheet(page).getByTestId('expense-save').click();
   await expect(sheet(page).getByText('Số tiền phải lớn hơn 0.')).toBeVisible();
   await expect(sheet(page).getByRole('textbox', { name: 'Số tiền' })).toHaveAttribute('aria-invalid', 'true');
+  await shot(page, 'invalid');
   expect(await liveExpenses(page, 6)).toEqual(before);
 });
 
@@ -226,6 +241,7 @@ test('rule 7: in compact density the Sửa chữa rows of Q7 for 2026 add up to 
     const total = amounts.reduce((sum, text) => sum + Number(text.replace(/\D/g, '')), 0);
     expect(total).toBe(8_650_000);
     expect(await seriousAxeViolations(page)).toEqual([]);
+    await shot(page, 'seed-list');
   } finally {
     await rest(page, 'PATCH', memberRow('ryan', 7), { density: 'comfortable' });
   }
@@ -245,6 +261,7 @@ test('rule 8: Mẹ edits a seeded expense to 1tr2 under Bảo trì, and the audi
     await expect(toast(page)).toContainText(`Đã lưu chi phí ${vnd('1.200.000')}.`);
     await expect(row.getByTestId('expense-amount')).toHaveText(vnd('1.200.000'));
     await expect(row.getByTestId('expense-category')).toHaveText('Bảo trì');
+    await shot(page, 'edit');
     const [me] = await rest<{ user_id: string }[]>(page, 'GET', `${memberRow('me', 8)}&select=user_id`);
     const audit = await rest<{ actor_kind: string; actor_id: string }[]>(page, 'GET', `audit_log?table_name=eq.expenses&row_id=eq.${seeded}&action=eq.update&select=actor_kind,actor_id`);
     expect(audit).toContainEqual({ actor_kind: 'user', actor_id: me?.user_id });
@@ -267,6 +284,7 @@ test('rule 9: offline, Lưu keeps every value and says it did not save, and no r
   await expect(sheet(page).getByRole('textbox', { name: 'Số tiền' })).toHaveValue('2tr5');
   await expect(sheet(page).getByRole('radio', { name: 'Sửa chữa' })).toBeChecked();
   await expect(sheet(page).getByTestId('expense-note')).toHaveValue('Thay vòi nước');
+  await shot(page, 'offline');
   await page.context().setOffline(false);
   expect(await liveExpenses(page, 9)).toEqual(before);
 });
@@ -292,6 +310,7 @@ test('rule 10: in English at 130% and dark, Phòng 5 is 12 days overdue and the 
     const cut = await rows(page).locator('span').evaluateAll((elements) => elements.filter((element) => element.scrollWidth > element.clientWidth + 1).map((element) => element.textContent));
     expect(cut).toEqual([]);
     expect(await noSideScroll(page)).toBe(true);
+    await shot(page, 'en-130-dark');
   } finally {
     await rest(page, 'PATCH', memberRow('me', 10), { locale: 'vi', text_scale: 100 });
   }
@@ -312,4 +331,26 @@ test('a viewer reads Thu chi with no expense action', async ({ page }) => {
   await expect(page.getByTestId('add-expense')).toHaveCount(0);
   await expect(page.getByTestId('receipt-camera')).toHaveCount(0);
   await expect(page.getByTestId('expense-row-edit')).toHaveCount(0);
+});
+
+test('screens: Thu chi, the sheet and the empty year at 390 and 1440, light and dark', async ({ page }) => {
+  test.skip(shots === undefined, 'evidence only: set ESTA_E2E_SHOTS');
+  const longAn = seedId('seed:property:lane-1:long-an');
+  for (const [size, viewport] of [['390', PHONE], ['1440', DESKTOP]] as const) {
+    for (const theme of ['light', 'dark'] as const) {
+      await page.context().clearCookies();
+      await open(page, 'me.lane1@demo.esta.test', theme, viewport);
+      await page.goto(`/properties/${q7(1)}`);
+      await shot(page, `header-${size}-${theme}`);
+      await page.goto(`/properties/${q7(1)}/finance`);
+      await expect(rows(page).first()).toBeVisible();
+      await shot(page, `thu-chi-${size}-${theme}`);
+      await page.getByTestId('expense-section').getByTestId('add-expense').click();
+      await expect(sheet(page)).toBeVisible();
+      await shot(page, `sheet-${size}-${theme}`);
+      await page.goto(`/properties/${longAn}/finance`);
+      await expect(page.getByTestId('expense-empty')).toBeVisible();
+      await shot(page, `empty-${size}-${theme}`);
+    }
+  }
 });
