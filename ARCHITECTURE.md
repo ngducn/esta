@@ -32,7 +32,7 @@ All parsing of what Mẹ types or what the assistant reads lives in `packages/co
 
 - **Money.** `parseVndInput` in `packages/core/src/parse/vnd-input.ts` reads VND as Mẹ types it (`1.200.000`, `3tr5`). `Vnd` in `packages/core/src/money/vnd.ts` is the branded integer. Formatting lives in `packages/core/src/format`.
 - **Decimals.** `parseDecimal` in `packages/core/src/parse/decimal.ts` is a money parser. Đồng have no minor unit, so it reads `1.255` and `1,255` as 1255. Never use it for a quantity with a fractional part (`decimal-parser-outside-parse` counts every import of it, under any name, outside the money and parse modules).
-- **Areas.** Three area parsers disagree today: the review screen reads "1,255 m²" as 1255, and the legal tab refuses it. Issue #182 replaces them with one zod-free parser in `packages/core/src/parse` with the Vietnamese decimal-comma rule (DOMAIN-VN). Until it lands, use `parseAreaInput` in `packages/core/src/properties/area.ts` for typed input.
+- **Areas and lengths.** One zod-free parser, `parseMeasureInput` in `packages/core/src/parse/measure.ts`, reads typed areas and lengths with the Vietnamese decimal-comma rule (DOMAIN-VN) and refuses ambiguous input such as "1,255 m²".
 - **Dates.** `IsoDate` and `isIsoDate` live in `packages/core/src/date/iso-date.ts`, and `parseDateInput` in `packages/core/src/parse/date-input.ts`. In a zod schema, use `isoDateSchema`, which also brands the value, instead of `z.string().refine(isIsoDate)` (`hand-rolled-iso-date-schema`). `isoDateSchema` lives in `packages/core/src/schemas/legal.ts` today, and issue #196 moves it and the calendar helpers into `packages/core/src/date`.
 
 ## Results

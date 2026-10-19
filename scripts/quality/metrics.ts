@@ -177,10 +177,10 @@ export const METRICS: readonly Metric[] = [
     id: 'decimal-parser-outside-parse',
     message: '`parseDecimal`, a money parser that reads `1.255` as 1255, is imported outside the money and parse modules.',
     home: {
-      use: '`parseVndInput` for money; `parseAreaInput` for areas until issue #182 adds one area parser in packages/core/src/parse.',
+      use: '`parseVndInput` for money; `parseMeasureInput` for areas and lengths.',
       helpers: [
         { name: 'parseVndInput', file: 'packages/core/src/parse/vnd-input.ts' },
-        { name: 'parseAreaInput', file: 'packages/core/src/properties/area.ts' },
+        { name: 'parseMeasureInput', file: 'packages/core/src/parse/measure.ts' },
       ],
     },
     section: 'parsing-money-decimals-areas-and-dates',
