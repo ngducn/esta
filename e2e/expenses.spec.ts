@@ -32,7 +32,9 @@ const shots = process.env.ESTA_E2E_SHOTS;
 const shot = async (page: Page, slug: string, focus?: Locator) => {
   if (shots === undefined) return;
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  if (focus !== undefined) await focus.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  // Centred, because a phone's fixed tab bar covers whatever only just scrolled into view at the bottom.
+  if (focus !== undefined) await focus.first().evaluate((element) => element.scrollIntoView({ block: 'center' }));
   await page.screenshot({ path: join(shots, `p4-02-${slug}.png`) });
 };
 
