@@ -35,7 +35,10 @@ Open, with the next step for each:
     3. lane LA's blocking items;
     4. rerun `pnpm phase:check 2`. Its /documents Lighthouse row failed only because #165 was not in its base, and its DOC-5 row must check the amended DOC-5.
   - Merge after #169.
-- **#172 lease detail, amend, terminate, renew (P3-08, track B, review-gated), WIP at 4c5f0c2.** The owner was killed while building code. Spawn a fresh Opus owner from `briefs/p3-08.md` (ROOT NOTE at the end) to continue from branch esta/p3-08-lease-detail. Migration 306500. It closes #144 and stops at merge-ready for Ryan's click.
+- **#172 lease detail, amend, terminate, renew (P3-08, track B, review-gated), WIP at aaea97c.** The owner stopped before running anything (slot 5 was busy); its trail is in /tmp/owner-p3-08/decisions.tsv.
+  - Written but never run: migration 20261007306500, the core timeline and change helpers (their unit tests pass), the amend, terminate and renew actions, the lease detail UI, the seed, and pgTAP lease_changes.test.sql.
+  - Left: pnpm db:types, typecheck and lint, db:test, the integration test extension, the /dev/core ScheduleSection, e2e/lease-detail.spec.ts, moving lane 7 in pr-inventory, screenshots and GIF, Lighthouse, deslop and no-comments, and the PR body.
+  - Spawn a fresh Opus owner from `briefs/p3-08.md` (ROOT NOTE at the end) to continue from the branch. It closes #144 and stops at merge-ready for Ryan's click.
 - **#170 room order (Ryan's ask, rigorous by verify:tier), parked at c5def0b.** Code done; pnpm check and design:detect pass. A fresh owner (`briefs/room-order.md`, continue from the branch) runs the property-units, collections and properties-list specs through heavy.sh, axe in both modes, the screenshots and the 390 video (script at /tmp/owner-rooms/shots/), and finishes the PR body. Then one combined lane plus CI, and the root merges. The Thu tiền board already sorts by room number; leave it.
 - **#149 (land use term ranges)** needs its own PR, with tests written first; the shapes from #161's rounds are in its comment. Do it before real certificates are entered.
 - **#61** stays parked (P5-11, owned by P5-03).
