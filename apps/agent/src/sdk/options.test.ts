@@ -29,7 +29,7 @@ describe('buildSdkOptions', () => {
       jobDir: '/agent/jobs/ping-1',
       model: 'routine-model',
       env: {},
-      server: estaServer(new Map()),
+      server: estaServer(new Map(), () => undefined),
       preToolUse: async () => ({}),
       abortController: new AbortController(),
     });
