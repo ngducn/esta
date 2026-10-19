@@ -73,20 +73,16 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
                 key={row.id}
                 data-testid="deposit-entry"
                 data-kind={row.kind}
-                className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-b border-rule py-3 last:border-b-0"
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 border-b border-rule py-3 last:border-b-0"
               >
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-body font-semibold text-ink">{t('kind', { kind: row.kind })}</span>
-                  <span className="text-small text-ink-muted figures">{formatDate(row.onDate, locale)}</span>
-                  {row.invoicePeriodStart === null ? null : (
-                    <span className="text-small text-ink-2 figures">{t('appliedTo', { date: formatDate(row.invoicePeriodStart, locale) })}</span>
-                  )}
-                  {row.note === null ? null : <span className="text-small break-words text-ink-2">{row.note}</span>}
-                </div>
-                <div className="flex flex-col items-end">
-                  <MoneyDisplay amount={vnd(row.kind === 'received' ? row.amountVnd : -row.amountVnd)} variant="signed" className="text-body font-semibold text-ink" />
-                  <span className="text-small text-ink-muted figures">{t('heldAfter', { amount: formatVnd(row.heldVnd, locale) })}</span>
-                </div>
+                <span className="text-body font-semibold text-ink">{t('kind', { kind: row.kind })}</span>
+                <MoneyDisplay amount={vnd(row.kind === 'received' ? row.amountVnd : -row.amountVnd)} variant="signed" className="text-body font-semibold text-ink" />
+                <span className="text-small text-ink-muted figures">{formatDate(row.onDate, locale)}</span>
+                <span className="text-end text-small text-ink-muted figures">{t('heldAfter', { amount: formatVnd(row.heldVnd, locale) })}</span>
+                {row.invoicePeriodStart === null ? null : (
+                  <span className="col-span-2 text-small text-ink-2 figures">{t('appliedTo', { date: formatDate(row.invoicePeriodStart, locale) })}</span>
+                )}
+                {row.note === null ? null : <span className="col-span-2 text-small break-words text-ink-2">{row.note}</span>}
               </li>
             ))}
           </ol>
