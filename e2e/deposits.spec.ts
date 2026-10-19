@@ -38,7 +38,7 @@ async function open(page: Page, email: string, theme: 'light' | 'dark', viewport
   await signIn(page, email);
 }
 
-async function call(page: Page, method: 'GET' | 'POST', path: string, data?: Record<string, unknown>) {
+async function call(page: Page, method: 'GET' | 'POST' | 'PATCH', path: string, data?: Record<string, unknown>) {
   return page.request.fetch(`${supabaseUrl}/rest/v1/${path}`, {
     method,
     headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}`, 'content-type': 'application/json', prefer: 'return=representation' },
@@ -46,8 +46,8 @@ async function call(page: Page, method: 'GET' | 'POST', path: string, data?: Rec
   });
 }
 
-async function rest<T>(page: Page, path: string): Promise<T> {
-  const response = await call(page, 'GET', path);
+async function rest<T>(page: Page, path: string, method: 'GET' | 'POST' | 'PATCH' = 'GET', data?: Record<string, unknown>): Promise<T> {
+  const response = await call(page, method, path, data);
   expect(response.ok(), await response.text()).toBe(true);
   return (await response.json()) as T;
 }
@@ -210,7 +210,12 @@ test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet befor
 
   await amount.fill('2tr8');
   await expect(sheet.getByTestId('deposit-held-after')).toHaveText(`Sau khi lưu, còn giữ ${vnd('0')}`);
-  await expect(sheet.getByTestId('deposit-save')).toBeEnabled();
+  await page.route(/\/properties\//, (route) => (route.request().method() === 'POST' ? route.abort('internetdisconnected') : route.fallback()));
+  await sheet.getByTestId('deposit-save').click();
+  await expect(sheet.getByTestId('deposit-error')).toHaveText('Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.');
+  await page.screenshot({ path: test.info().outputPath('refund-offline-390-dark.png') });
+  await page.unrouteAll();
+  expect(await rest(page, `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: 2_800_000 }]);
 });
 
 test('rule 4: an active lease takes another deposit payment, and the sheet refuses a date after today', async ({ page }) => {
@@ -235,4 +240,67 @@ test('rule 4: an active lease takes another deposit payment, and the sheet refus
   expect(await rest(page, `lease_deposits?lease_id=eq.${lease}&select=held_vnd`)).toEqual([{ held_vnd: before + 500_000 }]);
   await expect(page.locator('[data-testid="deposit-entry"]').last()).toContainText('Người thuê đóng thêm cọc Demo');
   await page.screenshot({ path: test.info().outputPath('received-1440-light.png'), fullPage: true });
+});
+
+test('rule 5: a new lease with nothing recorded shows the empty deposit, and Nhận cọc opens prefilled with the deposit its terms name', async ({ page }) => {
+  await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
+  const property = propertyId(3, 'di-an');
+  const units = await rest<{ label: string }[]>(page, `units?property_id=eq.${property}&select=label`);
+  const label = `Phòng ${Math.max(...units.map((unit) => Number(/^Phòng (\d+)$/.exec(unit.label)?.[1] ?? 0))) + 1}`;
+  const [unit] = await rest<{ id: string }[]>(page, 'units', 'POST', { household_id: seedId('seed:household:lane-3'), property_id: property, label, kind: 'room', list_rent_vnd: 3_000_000 });
+  const [lease] = await rest<{ id: string }[]>(page, 'leases', 'POST', {
+    household_id: seedId('seed:household:lane-3'),
+    property_id: property,
+    unit_id: unit?.id,
+    tenant_party_id: seedId('seed:party:tenant-lane-3:di-an:7'),
+    start_date: '2026-10-01',
+    end_date: '2027-09-30',
+    rent_vnd: 3_000_000,
+    deposit_vnd: 6_000_000,
+  });
+  await rest(page, 'rpc/activate_lease', 'POST', { p_lease_id: lease?.id });
+  await page.goto(`/properties/${property}/rental/leases/${lease?.id ?? ''}`);
+  await expect(ledger(page)).toContainText('Chưa ghi nhận tiền cọc');
+  await expect(ledger(page).getByTestId('deposit-actions').getByRole('button')).toHaveText(['Nhận cọc']);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await ledger(page).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: test.info().outputPath('empty-390-dark.png') });
+
+  await ledger(page).getByTestId('deposit-received').click();
+  const sheet = page.getByTestId('deposit-sheet');
+  await expect(sheet.getByRole('textbox', { name: 'Số tiền nhận' })).toHaveValue('6.000.000');
+  await expect(sheet.getByTestId('deposit-held-after')).toHaveText(`Sau khi lưu, còn giữ ${vnd('6.000.000')}`);
+  await sheet.getByTestId('deposit-save').click();
+  await expect(toast(page)).toContainText(`Đã ghi nhận ${vnd('6.000.000')} tiền cọc.`);
+  await expect(held(page)).toHaveText(vnd('6.000.000'));
+  await expect(entries(page)).toHaveCount(1);
+  expect(await noSideScroll(page)).toBe(true);
+});
+
+test('rule 6: in English at 130% text, a long deduction note and every ledger row wrap without clipping', async ({ page }) => {
+  await open(page, 'me.lane10@demo.esta.test', 'light', PHONE);
+  const memberId = seedId('seed:member:me-lane-10');
+  const lease = seedLease(10, 'di-an', 6);
+  await rest(page, `household_members?id=eq.${memberId}`, 'PATCH', { locale: 'en', text_scale: 130 });
+  try {
+    await rest(page, 'rpc/record_deposit_entry', 'POST', {
+      p_lease_id: lease,
+      p_kind: 'deduction',
+      p_amount_vnd: 150_000,
+      p_on_date: '2026-10-07',
+      p_idempotency_key: crypto.randomUUID(),
+      p_note: 'Thay bóng đèn, sửa vòi nước và vệ sinh lại máy lạnh phòng sau khi người thuê báo hỏng vào cuối tuần trước, có hóa đơn của thợ Demo',
+    });
+    await page.goto(leasePath(10, 'di-an', 6));
+    await expect(ledger(page).getByRole('heading')).toHaveText('Deposit');
+    await expect(page.locator('[data-testid="deposit-entry"][data-kind="deduction"]').last()).toContainText('Deducted');
+    const clipped = await entries(page).evaluateAll((rows) => rows.filter((row) => row.scrollWidth > row.clientWidth).length);
+    expect(clipped).toBe(0);
+    expect(await noSideScroll(page)).toBe(true);
+    expect(await seriousAxeViolations(page)).toEqual([]);
+    await ledger(page).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: test.info().outputPath('long-note-en-130-390-light.png') });
+  } finally {
+    await rest(page, `household_members?id=eq.${memberId}`, 'PATCH', { locale: 'vi', text_scale: 100 });
+  }
 });

@@ -68,7 +68,7 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
               <MoneyDisplay amount={held} variant="large" className="text-start text-ink" />
             </span>
             {held === 0 ? <p className="text-body text-ink-2">{t('heldNone')}</p> : null}
-            {contractVnd === null || contractVnd === held ? null : (
+            {contractVnd === null || held === 0 || contractVnd === held ? null : (
               <p data-testid="deposit-contract" className="text-small text-ink-2 figures">
                 {t('contract', { amount: formatVnd(contractVnd, locale) })}
               </p>
