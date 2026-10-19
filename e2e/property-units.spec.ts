@@ -278,11 +278,16 @@ test('Lên and Xuống show only after Sắp xếp phòng, a move and an edited 
   const tab = await labels(page).allInnerTexts();
 
   await page.goto('/collections?month=2026-10');
+  await expect(page.getByTestId('collections-board')).toBeVisible();
   const suffix = ', Dãy trọ Dĩ An';
-  const october = page.getByTestId('collections-row').filter({ has: page.getByTestId('row-due').filter({ hasText: '25/10/2026' }) });
-  const board = (await october.getByTestId('row-place').allInnerTexts()).flatMap((place) => (place.endsWith(suffix) ? [place.slice(0, -suffix.length)] : []));
-  expect(board, 'the October board lists the Dĩ An rooms with a lease').toHaveLength(6);
-  expect(board).toEqual(tab.filter((label) => board.includes(label)));
+  let listed = 0;
+  for (const key of ['overdue', 'due', 'notDue', 'paid']) {
+    const october = page.getByTestId(`group-${key}`).getByTestId('collections-row').filter({ has: page.getByTestId('row-due').filter({ hasText: '25/10/2026' }) });
+    const board = (await october.getByTestId('row-place').allInnerTexts()).flatMap((place) => (place.endsWith(suffix) ? [place.slice(0, -suffix.length)] : []));
+    expect(board, `the ${key} group lists Dĩ An rooms in the tab's order`).toEqual(tab.filter((label) => board.includes(label)));
+    listed += board.length;
+  }
+  expect(listed, 'the October board lists the six Dĩ An rooms with a lease').toBe(6);
   await rest(page, 'PATCH', `units?id=eq.${room(3)}`, { list_rent_vnd: 2_500_000, sort_order: 2 });
 });
 
