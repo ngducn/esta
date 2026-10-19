@@ -58,6 +58,7 @@ export function ReviewPanel({
   landUseCodes,
   propertyId,
   properties,
+  savedHref,
 }: {
   documentId: string;
   title: string;
@@ -76,6 +77,8 @@ export function ReviewPanel({
   landUseCodes: readonly LandUseCode[];
   propertyId: string | null;
   properties: readonly { readonly id: string; readonly nickname: string }[];
+  /** Where a save goes instead of the property's tab: the wizard's own review step, which then confirms the address. */
+  savedHref?: string;
 }) {
   const t = useTranslations('extraction');
   const locale = useLocale() === 'en' ? 'en' : 'vi';
@@ -127,7 +130,9 @@ export function ReviewPanel({
         (): ReviewSave => ({ ok: false, reason: 'failed' }),
       );
       setOutcome(result);
-      if (result.ok) router.push(`/properties/${result.propertyId}/${schemaName === 'utility_bill_v1' ? 'rental' : 'legal'}`);
+      if (!result.ok) return;
+      if (savedHref === undefined) router.push(`/properties/${result.propertyId}/${schemaName === 'utility_bill_v1' ? 'rental' : 'legal'}`);
+      else router.refresh();
     });
 
   const reject = () =>

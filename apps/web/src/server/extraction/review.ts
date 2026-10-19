@@ -1,5 +1,5 @@
 import 'server-only';
-import { isSchemaName, type SchemaName } from '@esta/core/extraction/fields';
+import { isSchemaName, reviewFields, type SchemaName } from '@esta/core/extraction/fields';
 import { z } from 'zod';
 import { openDocument } from '@/server/documents/actions';
 import { signPagePreviews, type PagePreviews } from '@/server/documents/sign';
@@ -7,6 +7,7 @@ import type { DocumentStatuses, ExtractionStatus } from '@/server/documents/extr
 import { readDocumentStatuses } from '@/server/documents/status';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
+import { fieldViews, type FieldView } from './field-views';
 
 export type ReviewDocument = {
   readonly id: string;
@@ -78,4 +79,26 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
     canEdit: member.role !== 'viewer',
     properties: properties.data ?? [],
   };
+}
+
+/** What `ReviewPanel` shows for each extraction state; mirrors its `ReviewMode`, which a client module cannot export here. */
+const MODES = {
+  none: 'none',
+  queued: 'waiting',
+  running: 'waiting',
+  needs_review: 'review',
+  failed: 'manual',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const satisfies Readonly<Record<ExtractionStatus, string>>;
+
+export type ReviewPanelState = { readonly status: ExtractionStatus; readonly mode: (typeof MODES)[ExtractionStatus]; readonly fields: readonly FieldView[] };
+
+/** The panel's mode and its rows: the read's fields to check, or for a failed read the empty form to fill by hand. */
+export async function reviewPanelState(extraction: ReviewExtraction | null): Promise<ReviewPanelState> {
+  const status = extraction?.status ?? 'none';
+  const mode = MODES[status];
+  const reviewed = extraction === null ? [] : mode === 'review' ? reviewFields(extraction.schemaName, extraction.result) : mode === 'manual' ? reviewFields(extraction.schemaName, null) : [];
+  const fields = await fieldViews(reviewed, extraction?.schemaName === 'utility_bill_v1' ? 'bill' : 'certificate');
+  return { status, mode, fields };
 }

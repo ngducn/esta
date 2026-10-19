@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { INITIAL_WIZARD, wizardMachine, wizardPath, type WizardEvent, type WizardState } from './wizard-machine';
+import { INITIAL_WIZARD, readWizard, wizardHref, wizardMachine, wizardPath, type WizardEvent, type WizardState } from './wizard-machine';
 
 const run = (events: readonly WizardEvent[], context: { photo?: boolean; reviewReady?: boolean } = {}): WizardState =>
   events.reduce((state, event) => wizardMachine(state, event, context), INITIAL_WIZARD);
@@ -48,5 +48,29 @@ describe('wizardMachine', () => {
 
   it('cannot open review from photo', () => {
     expect(wizardMachine(INITIAL_WIZARD, 'openReview', { photo: true, reviewReady: true })).toBe(INITIAL_WIZARD);
+  });
+});
+
+describe('wizardHref and readWizard', () => {
+  const ids = { propertyId: '6f9619ff-8b86-4011-b42d-00c04fc964ff', documentId: '7f9619ff-8b86-4011-b42d-00c04fc964ff' };
+  const read = (href: string) => readWizard(Object.fromEntries(new URL(href, 'http://esta.test').searchParams));
+
+  it('round-trips every step through the URL', () => {
+    const states: WizardState[] = [
+      { step: 'details', photo: true },
+      { step: 'owners', photo: true },
+      { step: 'use', photo: true },
+      { step: 'finish', photo: true },
+      { step: 'review', photo: true, returnTo: 'use' },
+    ];
+    for (const state of states) expect(read(wizardHref(state, ids))).toEqual({ state, ids });
+    expect(read(wizardHref({ step: 'owners', photo: false }, { ...ids, documentId: null }))).toEqual({ state: { step: 'owners', photo: false }, ids: { ...ids, documentId: null } });
+  });
+
+  it('starts at photo without a property id, and never opens review without a document', () => {
+    expect(wizardHref(INITIAL_WIZARD, null)).toBe('/properties/new');
+    expect(read('/properties/new?step=owners')).toEqual({ state: INITIAL_WIZARD, ids: null });
+    expect(read(`/properties/new?property=${ids.propertyId}&step=review`).state).toEqual({ step: 'details', photo: false });
+    expect(read(`/properties/new?property=${ids.propertyId}&step=photo`).state).toEqual({ step: 'details', photo: false });
   });
 });

@@ -46,6 +46,7 @@ export function PropertyForm({
   initialCommunes,
   otherCodes,
   cancelHref,
+  wizardNext = null,
 }: {
   propertyId: string | null;
   initial: PropertyFormValues;
@@ -53,6 +54,8 @@ export function PropertyForm({
   initialCommunes: readonly AdminUnitOption[];
   otherCodes: readonly string[];
   cancelHref: string;
+  /** In the add-property wizard, the next step: a save goes there, and `Để sau` skips to it. */
+  wizardNext?: string | null;
 }) {
   const t = useTranslations('propertyForm');
   const tp = useTranslations('properties');
@@ -138,7 +141,7 @@ export function PropertyForm({
         return;
       }
       if (result.ok) {
-        router.push(`/properties/${result.id}`);
+        router.push(wizardNext ?? `/properties/${result.id}`);
         return;
       }
       if (result.reason === 'code_taken') {
@@ -271,10 +274,10 @@ export function PropertyForm({
           )}
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" disabled={pending} data-testid="save-property">
-              {pending ? t('saving') : propertyId === null ? t('save') : t('saveChanges')}
+              {pending ? t('saving') : wizardNext !== null ? t('saveAndContinue') : propertyId === null ? t('save') : t('saveChanges')}
             </Button>
-            <Link href={cancelHref} className={buttonVariants({ variant: 'outline' })}>
-              {t('cancel')}
+            <Link href={wizardNext ?? cancelHref} className={buttonVariants({ variant: 'outline' })} data-testid={wizardNext === null ? undefined : 'skip-step'}>
+              {wizardNext === null ? t('cancel') : t('later')}
             </Link>
           </div>
         </div>

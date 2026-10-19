@@ -38,3 +38,34 @@ export function wizardMachine(state: WizardState, event: WizardEvent, { photo = 
 export function wizardPath(photo: boolean): readonly WizardStep[] {
   return photo ? ['photo', 'details', 'review', 'owners', 'use', 'finish'] : MAIN_STEPS;
 }
+
+export type WizardIds = { readonly propertyId: string; readonly documentId: string | null };
+export type WizardRoute = { readonly state: WizardState; readonly ids: WizardIds | null };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const LATER_STEPS = MAIN_STEPS.filter((step): step is Exclude<MainStep, 'photo'> => step !== 'photo');
+
+/** The wizard lives in the URL once the property exists, so a reload or the back button lands on the same step. */
+export function wizardHref(state: WizardState, ids: WizardIds | null): string {
+  if (state.step === 'photo' || ids === null) return '/properties/new';
+  const params = new URLSearchParams({ property: ids.propertyId });
+  if (ids.documentId !== null) params.set('document', ids.documentId);
+  params.set('step', state.step);
+  if (state.step === 'review') params.set('from', state.returnTo);
+  return `/properties/new?${params.toString()}`;
+}
+
+const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+const laterStep = (value: string | undefined) => LATER_STEPS.find((step) => step === value);
+
+/** Reads what `wizardHref` wrote; anything it did not write falls back to the nearest step it names. */
+export function readWizard(params: Readonly<Record<string, string | string[] | undefined>>): WizardRoute {
+  const propertyId = one(params.property);
+  if (propertyId === undefined || !UUID.test(propertyId)) return { state: INITIAL_WIZARD, ids: null };
+  const document = one(params.document);
+  const documentId = document !== undefined && UUID.test(document) ? document : null;
+  const ids = { propertyId, documentId };
+  const step = one(params.step);
+  if (step === 'review' && documentId !== null) return { state: { step: 'review', photo: true, returnTo: laterStep(one(params.from)) ?? 'owners' }, ids };
+  return { state: { step: laterStep(step) ?? 'details', photo: documentId !== null }, ids };
+}
