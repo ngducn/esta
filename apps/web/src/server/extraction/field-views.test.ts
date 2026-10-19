@@ -34,7 +34,7 @@ describe('fieldViews', () => {
   });
 
   it('shows a readable area in the Vietnamese format', async () => {
-    expect(await parcelArea(1250.5)).toMatchObject({ display: '1.250,5 m²', editValue: '1.250,5', refusal: null, area: 1250.5 });
+    expect(await parcelArea(1250.5)).toMatchObject({ display: '1.250,5 m²', editValue: '1250,5', refusal: null, area: 1250.5 });
   });
 
   describe.each(['vi', 'en'])('in %s', (locale) => {

@@ -21,7 +21,7 @@ export type FieldView = {
   readonly display: string | null;
   /** Why the value read does not fit its kind, so it must be edited before it is accepted; null when it fits. */
   readonly refusal: MeasureReason | null;
-  /** The value read as the editor takes it: an ISO date for a date, an option value for a choice, else the text. */
+  /** The value read as the editor takes it: an area as the area parser reads it in every language, an ISO date for a date, an option value for a choice, else the text. */
   readonly editValue: string;
   readonly options: readonly { readonly value: string; readonly label: string }[] | null;
   /** The area read, for the parcel's area-sum check. */
@@ -46,7 +46,8 @@ export async function fieldViews(fields: readonly ReviewField[], rootList: 'cert
   };
   const editable = (kind: InputKind, value: unknown): string => {
     if (value === null || value === undefined) return '';
-    if (kind === 'area' || kind === 'number') return format(kind, value).replace(/\s*m²$/u, '');
+    if (kind === 'area' && typeof value === 'number') return measureInputText(value);
+    if (kind === 'number') return format(kind, value).replace(/\s*m²$/u, '');
     if (kind === 'term' && typeof value === 'string' && isIsoDate(value)) return formatDate(value, lang);
     return String(value);
   };
