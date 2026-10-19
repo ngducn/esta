@@ -772,6 +772,104 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          amount_vnd: number
+          category: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          document_id: string | null
+          household_id: string
+          id: string
+          note: string | null
+          paid_on: string
+          property_id: string
+          updated_at: string
+          vendor_party_id: string | null
+        }
+        Insert: {
+          amount_vnd: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          document_id?: string | null
+          household_id: string
+          id?: string
+          note?: string | null
+          paid_on: string
+          property_id: string
+          updated_at?: string
+          vendor_party_id?: string | null
+        }
+        Update: {
+          amount_vnd?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          document_id?: string | null
+          household_id?: string
+          id?: string
+          note?: string | null
+          paid_on?: string
+          property_id?: string
+          updated_at?: string
+          vendor_party_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
+            referencedRelation: "document_status"
+            referencedColumns: ["household_id", "document_id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_vendor_party_id_fkey"
+            columns: ["household_id", "vendor_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       household_members: {
         Row: {
           created_at: string
@@ -2367,6 +2465,25 @@ export type Database = {
         Returns: {
           drafted: number
           issued: number
+        }[]
+      }
+      save_expense: {
+        Args: {
+          p_amount_vnd: number
+          p_category: string
+          p_document_id?: string
+          p_id: string
+          p_new_document?: Json
+          p_new_vendor?: Json
+          p_note?: string
+          p_paid_on: string
+          p_property_id: string
+          p_vendor_id?: string
+        }
+        Returns: {
+          amount_vnd: number
+          id: string
+          property_id: string
         }[]
       }
       search_documents: {

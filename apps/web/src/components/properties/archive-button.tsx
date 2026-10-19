@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { archiveProperty, restoreProperty } from '@/app/(app)/properties/actions';
 import { StatusShape } from '@/components/status-mark';
-import { UndoToastProvider, useUndoToast } from '@/components/undo-toast';
+import { useUndoToast } from '@/components/undo-toast';
+import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { Button } from '@/components/ui/button';
 import { ARCHIVED_PARAM } from './property-form-values';
 

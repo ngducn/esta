@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
-import { UndoToastProvider } from '@/components/undo-toast';
+import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { cn } from '@/lib/utils';
 import { registry, registrySize } from './registry';
 

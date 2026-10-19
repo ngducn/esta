@@ -1,7 +1,8 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderInLocale } from '@/test/render';
-import { UNDO_MS, UndoToastProvider, useNoticeToast, useUndoToast } from './undo-toast';
+import { UNDO_MS, useNoticeToast, useUndoToast } from './undo-toast';
+import { UndoToastProvider } from './undo-toast-provider';
 
 function Trigger({ onUndo }: { onUndo: () => void }) {
   const show = useUndoToast();

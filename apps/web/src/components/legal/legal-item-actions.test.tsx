@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { useState } from 'react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { UndoToastProvider } from '@/components/undo-toast';
+import { UndoToastProvider } from '@/components/undo-toast-provider';
 import viMessages from '../../../messages/vi.json';
 import { renderInLocale } from '@/test/render';
 import { LegalItemActions, type LegalItemActionLabels } from './legal-item-actions';

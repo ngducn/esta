@@ -166,8 +166,8 @@ export const METRICS: readonly Metric[] = [
     id: 'upload-pipeline',
     message: 'Code outside the upload module signs an upload or sends document bytes itself.',
     home: {
-      use: 'One `useDocumentUpload` hook over apps/web/src/lib/upload/prepare.ts, which issue #190 creates from the two current copies.',
-      pending: { issue: 190, names: ['useDocumentUpload'] },
+      use: '`useDocumentUpload` in apps/web/src/components/documents/use-document-upload.ts (issue #190 moves the wizard photo step onto it).',
+      helpers: [{ name: 'useDocumentUpload', file: 'apps/web/src/components/documents/use-document-upload.ts' }],
     },
     section: 'document-upload',
     scope: without(PRODUCT_CODE, /^apps\/web\/src\/(lib\/upload\/|server\/documents\/actions\.ts$|components\/documents\/use-document-upload\.tsx?$)/),

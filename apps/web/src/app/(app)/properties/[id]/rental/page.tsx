@@ -12,7 +12,6 @@ import { PropertyIntl } from '@/components/properties/property-intl';
 import { UnitList, type UnitLease } from '@/components/rental/unit-list';
 import { UtilityAccountList } from '@/components/rental/utility-account-list';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { UndoToastProvider } from '@/components/undo-toast';
 import { getClock } from '@/server/clock';
 import { loadPropertyLeases, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
@@ -66,52 +65,50 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
   const total = rents.length === 0 ? null : vnd(rents.reduce((sum, rent) => sum + rent, 0));
   const onlyWhole = rental.units.length === 1 && rental.units[0]?.kind === 'whole';
   const addAccount = canEdit ? { href: `/properties/${id}/rental/accounts/new`, label: t('addAccount') } : null;
-  const { money, date, toast, status } = messages.components;
+  const { money, date, status } = messages.components;
 
   return (
     <PropertyDetailFrame property={property} tab="rental">
-      <PropertyIntl locale={locale} messages={{ propertyRental: messages.propertyRental, components: { money, date, toast, status } }}>
-        <UndoToastProvider>
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-            <section aria-labelledby="rental-units" data-testid="rental-units" className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h2 id="rental-units" className="text-h3 text-ink">
-                  {t('unitsTitle')}
-                </h2>
-                {total === null ? null : (
-                  <p data-testid="rental-total" className="text-small text-ink-muted">
-                    {t('totalRent')} <span className="figures text-body font-bold text-ink">{formatVnd(total, locale)}</span>
-                  </p>
-                )}
-              </div>
-              {declared === null || declared === rooms ? null : (
-                <p data-testid="room-count-mismatch" className="text-body text-ink-2">
-                  {t('roomCountMismatch', { declared, actual: rooms })}
+      <PropertyIntl locale={locale} messages={{ propertyRental: messages.propertyRental, components: { money, date, status } }}>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+          <section aria-labelledby="rental-units" data-testid="rental-units" className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 id="rental-units" className="text-h3 text-ink">
+                {t('unitsTitle')}
+              </h2>
+              {total === null ? null : (
+                <p data-testid="rental-total" className="text-small text-ink-muted">
+                  {t('totalRent')} <span className="figures text-body font-bold text-ink">{formatVnd(total, locale)}</span>
                 </p>
               )}
-              {onlyWhole && canEdit ? <p className="max-w-prose text-body text-ink-2">{t('wholeHint')}</p> : null}
-              <UnitList propertyId={id} units={rental.units} leases={unitLeases(rental.units, leases, asOf)} canEdit={canEdit} roomingHouse={roomingHouse} />
-            </section>
-            <section aria-labelledby="rental-accounts" data-testid="rental-accounts" className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-                <h2 id="rental-accounts" className="text-h3 text-ink">
-                  {t('accountsTitle')}
-                </h2>
-                {addAccount === null || rental.accounts.length === 0 ? null : (
-                  <Link href={addAccount.href} data-testid="add-account" className={buttonVariants({ variant: 'outline' })}>
-                    <Plus aria-hidden="true" />
-                    {addAccount.label}
-                  </Link>
-                )}
-              </div>
-              {rental.accounts.length === 0 ? (
-                <EmptyState title={t('accountsEmpty')} body={t('accountsEmptyBody')} icon={Plug} {...(addAccount === null ? {} : { action: addAccount })} />
-              ) : (
-                <UtilityAccountList propertyId={id} accounts={rental.accounts} units={rental.units} canEdit={canEdit} />
+            </div>
+            {declared === null || declared === rooms ? null : (
+              <p data-testid="room-count-mismatch" className="text-body text-ink-2">
+                {t('roomCountMismatch', { declared, actual: rooms })}
+              </p>
+            )}
+            {onlyWhole && canEdit ? <p className="max-w-prose text-body text-ink-2">{t('wholeHint')}</p> : null}
+            <UnitList propertyId={id} units={rental.units} leases={unitLeases(rental.units, leases, asOf)} canEdit={canEdit} roomingHouse={roomingHouse} />
+          </section>
+          <section aria-labelledby="rental-accounts" data-testid="rental-accounts" className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+              <h2 id="rental-accounts" className="text-h3 text-ink">
+                {t('accountsTitle')}
+              </h2>
+              {addAccount === null || rental.accounts.length === 0 ? null : (
+                <Link href={addAccount.href} data-testid="add-account" className={buttonVariants({ variant: 'outline' })}>
+                  <Plus aria-hidden="true" />
+                  {addAccount.label}
+                </Link>
               )}
-            </section>
-          </div>
-        </UndoToastProvider>
+            </div>
+            {rental.accounts.length === 0 ? (
+              <EmptyState title={t('accountsEmpty')} body={t('accountsEmptyBody')} icon={Plug} {...(addAccount === null ? {} : { action: addAccount })} />
+            ) : (
+              <UtilityAccountList propertyId={id} accounts={rental.accounts} units={rental.units} canEdit={canEdit} />
+            )}
+          </section>
+        </div>
       </PropertyIntl>
     </PropertyDetailFrame>
   );

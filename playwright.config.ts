@@ -26,6 +26,7 @@ const sharedClock = [
   'documents-multipage.spec.ts',
   'property-wizard.spec.ts',
   'northstar.spec.ts',
+  'expenses.spec.ts',
 ];
 
 export default defineConfig({

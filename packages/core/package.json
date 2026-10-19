@@ -18,6 +18,7 @@
     "./completeness": "./src/completeness/index.ts",
     "./date": "./src/date/iso-date.ts",
     "./documents": "./src/documents/index.ts",
+    "./expenses": "./src/expenses/index.ts",
     "./date/calendar": "./src/date/calendar.ts",
     "./format": "./src/format/index.ts",
     "./lease": "./src/lease/index.ts",

@@ -7,7 +7,7 @@ import { CollectionsBoard } from '@/components/collections/CollectionsBoard';
 import { MonthSelector } from '@/components/collections/MonthSelector';
 import { OfflineNotice } from '@/components/collections/offline-notice';
 import { PropertyIntl } from '@/components/properties/property-intl';
-import { UndoToastProvider } from '@/components/undo-toast';
+import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { getClock } from '@/server/clock';
 import { loadCollectionRows, loadOpenInvoices, type PaymentInvoice } from '@/server/collections/load';

@@ -12,22 +12,13 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
-import { ACCEPT, checkFile, prepareCapture, prepareFile as prepare, sendPrepared, type FileProblem, type Prepared } from '@/lib/upload/prepare';
+import { ACCEPT } from '@/lib/upload/prepare';
 import { useObjectUrl } from '@/lib/use-object-url';
-import { createDocumentUpload, registerDocument, type UploadTicket } from '@/server/documents/actions';
+import { registerDocument } from '@/server/documents/actions';
 import { DuplicateDialog } from './duplicate-dialog';
-import { LeaveConfirm, MultiPageCapture, type CombinedCapture } from './multi-page-capture';
+import { LeaveConfirm, MultiPageCapture } from './multi-page-capture';
 import { UploadProgress } from './upload-progress';
-
-type Ticket = Extract<UploadTicket, { ok: true }>;
-
-/** The save flow as one state: each step names what the sheet shows. A failed step keeps its ticket for `Thử lại`. */
-type Phase =
-  | { readonly step: 'editing' }
-  | { readonly step: 'preparing' }
-  | { readonly step: 'duplicate'; readonly ticket: Ticket }
-  | { readonly step: 'uploading'; readonly loaded: number; readonly total: number }
-  | { readonly step: 'failed'; readonly ticket: Ticket | null };
+import { useDocumentUpload } from './use-document-upload';
 
 /** Five fields, so a sheet rather than a page (DESIGN-BRIEF §5.3). */
 export default function UploadSheet({
@@ -53,19 +44,45 @@ export default function UploadSheet({
   const fieldId = useId();
   const [category, setCategory] = useState<DocumentCategory>(initialCategory);
   const prefix = (next: DocumentCategory) => defaultDocumentTitle(t('titlePrefix', { category: next }), nickname);
-  const [title, setTitle] = useState(() => prefix(initialCategory));
-  const [titleEdited, setTitleEdited] = useState(false);
+  const [titleOverride, setTitleOverride] = useState<string | null>(null);
+  const title = titleOverride ?? prefix(category);
   const [expiresOn, setExpiresOn] = useState<IsoDate | null>(null);
-  const [prepared, setPrepared] = useState<Prepared | null>(null);
-  const [problem, setProblem] = useState<FileProblem>(() => (initialFile === null ? null : checkFile(initialFile)));
   const [titleMissing, setTitleMissing] = useState(false);
-  const [phase, setPhase] = useState<Phase>(() => (initialFile !== null && checkFile(initialFile) === null ? { step: 'preparing' } : { step: 'editing' }));
+  const [fileMissing, setFileMissing] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [capturedPages, setCapturedPages] = useState(0);
   const [leaving, setLeaving] = useState<'back' | 'close' | null>(null);
-  const choice = useRef(0);
   const sheet = useRef<HTMLDivElement>(null);
+  const { upload, pick, capture, send, proceed, dismiss } = useDocumentUpload({
+    initialFile,
+    finish: async (ticket, { file, sha256, previews }) => {
+      const registered = await registerDocument({
+        documentId: ticket.documentId,
+        propertyId,
+        category,
+        title,
+        expiresOn,
+        filename: file.name,
+        mime: file.type,
+        size: file.size,
+        sha256,
+        pageCount: previews.pageCount,
+        leaseId,
+      });
+      if (registered.ok) onSaved({ documentId: ticket.documentId, title: registered.title });
+      return registered.ok;
+    },
+  });
+  const prepared = 'prepared' in upload ? upload.prepared : null;
   const preview = useObjectUrl(prepared === null ? null : prepared.previews.thumb);
+  const problem =
+    upload.step === 'refused'
+      ? upload.problem
+      : prepared !== null && !acceptsMime(category, prepared.file.type)
+        ? 'wrongType'
+        : prepared === null && fileMissing
+          ? 'fileRequired'
+          : null;
 
   // The capture view and the form differ in length, so each opens at its top rather than at the other's scroll.
   useEffect(() => {
@@ -83,110 +100,26 @@ export default function UploadSheet({
     else setCapturing(false);
   };
 
-  const combined = async (capture: CombinedCapture) => {
-    const ticket = ++choice.current;
-    setCapturing(false);
-    setPrepared(null);
-    setProblem(null);
-    setPhase({ step: 'preparing' });
-    const result = await prepareCapture(capture);
-    if (choice.current !== ticket) return;
-    if (result === null) setProblem('unreadable');
-    else {
-      setPrepared(result);
-      if (!acceptsMime(category, result.file.type)) setProblem('wrongType');
-    }
-    setPhase({ step: 'editing' });
-  };
-
-  const choose = async (file: File | undefined) => {
+  const choose = (file: File | undefined) => {
     if (file === undefined) return;
-    const ticket = ++choice.current;
-    const wrong = checkFile(file);
-    setPrepared(null);
-    setProblem(wrong);
-    if (wrong !== null) return;
-    setPhase({ step: 'preparing' });
-    const result = await prepare(file);
-    if (choice.current !== ticket) return;
-    if (result === null) setProblem('unreadable');
-    else setPrepared(result);
-    setPhase({ step: 'editing' });
+    setFileMissing(false);
+    pick(file);
   };
-
-  useEffect(() => {
-    if (initialFile === null || checkFile(initialFile) !== null) return;
-    void prepare(initialFile).then((result) => {
-      if (choice.current !== 0) return;
-      if (result === null) setProblem('unreadable');
-      else setPrepared(result);
-      setPhase({ step: 'editing' });
-    });
-  }, [initialFile]);
 
   const changeCategory = (next: string) => {
-    if (!isDocumentCategory(next)) return;
-    setCategory(next);
-    if (!titleEdited) setTitle(prefix(next));
-    if (prepared !== null && !acceptsMime(next, prepared.file.type)) setProblem('wrongType');
-    else if (problem === 'wrongType' && prepared !== null) setProblem(null);
+    if (isDocumentCategory(next)) setCategory(next);
   };
 
-  const upload = async (ticket: Ticket, file: Prepared) => {
-    setPhase({ step: 'uploading', loaded: 0, total: file.file.size });
-    try {
-      await sendPrepared(ticket, file, ({ loaded, total }) => setPhase({ step: 'uploading', loaded, total }));
-      const registered = await registerDocument({
-        documentId: ticket.documentId,
-        propertyId,
-        category,
-        title,
-        expiresOn,
-        filename: file.file.name,
-        mime: file.file.type,
-        size: file.file.size,
-        sha256: file.sha256,
-        pageCount: file.previews.pageCount,
-        leaseId,
-      });
-      if (!registered.ok) throw new Error('register');
-      onSaved({ documentId: ticket.documentId, title: registered.title });
-    } catch {
-      setPhase({ step: 'failed', ticket });
-    }
-  };
-
-  const save = async (event?: FormEvent) => {
+  const save = (event?: FormEvent) => {
     event?.preventDefault();
     const missingTitle = title.trim() === '';
     setTitleMissing(missingTitle);
-    if (prepared === null) setProblem((current) => current ?? 'fileRequired');
+    setFileMissing(prepared === null);
     if (prepared === null || missingTitle || problem !== null) return;
-    if (phase.step === 'failed' && phase.ticket !== null) {
-      await upload(phase.ticket, prepared);
-      return;
-    }
-    setPhase({ step: 'preparing' });
-    const ticket = await createDocumentUpload({
-      propertyId,
-      category,
-      filename: prepared.file.name,
-      mime: prepared.file.type,
-      size: prepared.file.size,
-      sha256: prepared.sha256,
-    }).catch(() => ({ ok: false }) as const);
-    if (!ticket.ok) {
-      setPhase({ step: 'failed', ticket: null });
-      return;
-    }
-    if (ticket.duplicates.length > 0) {
-      setPhase({ step: 'duplicate', ticket });
-      return;
-    }
-    await upload(ticket, prepared);
+    send({ propertyId, category });
   };
 
-  const busy = phase.step === 'preparing' || phase.step === 'uploading';
+  const busy = upload.step === 'preparing' || upload.step === 'signing' || upload.step === 'uploading';
   const megabytes = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   return (
     <Sheet open onOpenChange={(open) => (open || busy ? undefined : leave('close'))}>
@@ -197,11 +130,20 @@ export default function UploadSheet({
         </div>
         {capturing ? (
           <>
-            <MultiPageCapture confirming={leaving !== null} onCount={setCapturedPages} onBack={() => leave('back')} onCombined={(capture) => void combined(capture)} />
+            <MultiPageCapture
+              confirming={leaving !== null}
+              onCount={setCapturedPages}
+              onBack={() => leave('back')}
+              onCombined={(combined) => {
+                setCapturing(false);
+                setFileMissing(false);
+                capture(combined);
+              }}
+            />
             {leaving === null ? null : <LeaveConfirm count={unsaved} onKeep={() => setLeaving(null)} onDiscard={() => leave(leaving, true)} />}
           </>
         ) : null}
-        <form noValidate hidden={capturing} onSubmit={(event) => void save(event)} className="flex flex-col gap-5">
+        <form noValidate hidden={capturing} onSubmit={save} className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
               <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm bg-ink px-4 text-body font-semibold text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
@@ -214,7 +156,7 @@ export default function UploadSheet({
                   data-testid="camera-input"
                   disabled={busy}
                   className="absolute inset-0 cursor-pointer opacity-0"
-                  onChange={(event) => void choose(event.target.files?.[0])}
+                  onChange={(event) => choose(event.target.files?.[0])}
                 />
               </label>
               <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-semibold text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
@@ -226,7 +168,7 @@ export default function UploadSheet({
                   data-testid="file-input"
                   disabled={busy}
                   className="absolute inset-0 cursor-pointer opacity-0"
-                  onChange={(event) => void choose(event.target.files?.[0])}
+                  onChange={(event) => choose(event.target.files?.[0])}
                 />
               </label>
               <Button
@@ -257,7 +199,7 @@ export default function UploadSheet({
                 </p>
               </div>
             )}
-            {phase.step === 'preparing' && prepared === null ? <p className="text-small text-ink-muted">{t('preparing')}</p> : null}
+            {upload.step === 'preparing' ? <p className="text-small text-ink-muted">{t('preparing')}</p> : null}
             <FieldMessage id={`${fieldId}-file`} error={problem === null ? null : t(problem)} />
           </div>
           <FormSelect
@@ -280,34 +222,25 @@ export default function UploadSheet({
             value={title}
             maxLength={200}
             error={titleMissing ? t('titleRequired') : null}
-            onChange={(next) => {
-              setTitle(next);
-              setTitleEdited(true);
-            }}
+            onChange={setTitleOverride}
           />
           <DateInput label={t('expiresField')} onValueChange={setExpiresOn} />
-          {phase.step === 'uploading' ? <UploadProgress loaded={phase.loaded} total={phase.total} /> : null}
-          {phase.step === 'failed' ? (
+          {upload.step === 'uploading' ? <UploadProgress loaded={upload.loaded} total={upload.total} /> : null}
+          {upload.step === 'failed' ? (
             <p role="alert" data-testid="upload-error" className="text-body font-semibold text-overdue">
               {t('networkError')}
             </p>
           ) : null}
           {leaving !== null && !capturing ? (
             <LeaveConfirm count={unsaved} onKeep={() => setLeaving(null)} onDiscard={() => leave(leaving, true)} />
-          ) : phase.step === 'duplicate' ? (
-            <DuplicateDialog
-              title={phase.ticket.duplicates.map((duplicate) => duplicate.title).join(', ')}
-              onCancel={() => setPhase({ step: 'editing' })}
-              onContinue={() => {
-                if (prepared !== null) void upload(phase.ticket, prepared);
-              }}
-            />
+          ) : upload.step === 'duplicate' ? (
+            <DuplicateDialog title={upload.duplicates.map((duplicate) => duplicate.title).join(', ')} onCancel={dismiss} onContinue={proceed} />
           ) : (
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <SheetClose render={<Button type="button" variant="outline" disabled={busy} />}>{t('cancel')}</SheetClose>
               <Button type="submit" data-testid="save-document" disabled={busy}>
-                {phase.step === 'failed' ? <RotateCw aria-hidden="true" /> : null}
-                {phase.step === 'failed' ? t('retry') : t('save')}
+                {upload.step === 'failed' ? <RotateCw aria-hidden="true" /> : null}
+                {upload.step === 'failed' ? t('retry') : t('save')}
               </Button>
             </div>
           )}

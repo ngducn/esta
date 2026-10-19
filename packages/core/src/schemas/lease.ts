@@ -1,13 +1,12 @@
 import { z } from 'zod';
 import { BILLING_CYCLES, LEASE_STATUSES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS, UTILITIES_MODES } from '../lease/types';
-import { vnd } from '../money/vnd';
+import { MAX_AMOUNT_VND, vnd } from '../money/vnd';
 import { normalizePhone, type Phone } from '../phone';
 import type { Amendment, Escalation, SchedulePeriod } from '../schedule/types';
 import { isoDateSchema, text } from './legal';
 import { vndSchema } from './property';
-import { MAX_LIST_RENT_VND } from './units';
 
-const moneySchema = vndSchema.refine((amount) => amount <= MAX_LIST_RENT_VND);
+const moneySchema = vndSchema.refine((amount) => amount <= MAX_AMOUNT_VND);
 const cycleSchema = z.union(BILLING_CYCLES.map((cycle) => z.literal(cycle)));
 const everyMonths = z.number().int().min(1).max(120);
 

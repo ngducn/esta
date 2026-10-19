@@ -5,6 +5,7 @@ import { businessDate, parseInstant, type Instant } from '../../../packages/core
 import type { Emitter } from './context.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { documents } from './documents.ts';
+import { expenses, vendors } from './expenses.ts';
 import { certificates, parcels, structures } from './legal.ts';
 import { billingSql, leaseAmendments, leases, tenants } from './leasing.ts';
 import { ownershipShares } from './ownership.ts';
@@ -19,6 +20,7 @@ import { isVariantName, VARIANTS, type VariantName } from './variants.ts';
 const EMITTERS: readonly Emitter[] = [
   ...HOUSEHOLD_EMITTERS,
   parties,
+  vendors,
   properties,
   certificates,
   parcels,
@@ -30,6 +32,7 @@ const EMITTERS: readonly Emitter[] = [
   leases,
   leaseAmendments,
   documents,
+  expenses,
   agentJobs,
   agentRuns,
 ];

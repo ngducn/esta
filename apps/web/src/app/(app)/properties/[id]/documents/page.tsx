@@ -2,7 +2,6 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { DocumentVault } from '@/components/documents/document-vault';
 import { PropertyIntl } from '@/components/properties/property-intl';
-import { UndoToastProvider } from '@/components/undo-toast';
 import { loadVault, queryParam } from '@/server/documents/vault';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
@@ -20,14 +19,12 @@ export default async function PropertyDocumentsPage({
   if (property === null) notFound();
   const member = await requireMember();
   const [vault, locale, messages] = await Promise.all([loadVault(member.household.id, id, queryParam(query.q)), getLocale(), getMessages()]);
-  const { date, toast } = messages.components;
+  const { date } = messages.components;
 
   return (
     <PropertyDetailFrame property={property} tab="documents">
-      <PropertyIntl locale={locale} messages={{ documents: messages.documents, components: { date, toast } }}>
-        <UndoToastProvider>
-          <DocumentVault scope={{ kind: 'property', propertyId: id, nickname: property.nickname }} canEdit={member.role !== 'viewer'} {...vault} />
-        </UndoToastProvider>
+      <PropertyIntl locale={locale} messages={{ documents: messages.documents, components: { date } }}>
+        <DocumentVault scope={{ kind: 'property', propertyId: id, nickname: property.nickname }} canEdit={member.role !== 'viewer'} {...vault} />
       </PropertyIntl>
     </PropertyDetailFrame>
   );

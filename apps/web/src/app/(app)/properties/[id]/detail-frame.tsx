@@ -5,31 +5,51 @@ import { ChevronLeft } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { MissingItems } from '@/components/completeness/missing-items';
+import { ExpenseActions } from '@/components/expenses/expense-actions';
+import { ExpenseHost } from '@/components/expenses/expense-host';
 import { PropertyHeader } from '@/components/properties/property-header';
 import { PropertyTabBar } from '@/components/properties/property-tab-bar';
 import type { PropertyTabId } from '@/components/properties/property-tabs';
 import { IntentLink } from '@/components/shell/intent-link';
+import { ToastHost } from '@/components/undo-toast';
 import type { PropertyDetail } from '@/server/properties/detail';
+import { expenseScope } from '@/server/expenses/scope';
 import { requireMember } from '@/server/member';
 import { loadCompleteness } from '@/server/properties/completeness';
 import { signCoverPhotos } from '@/server/properties/photos';
 
 /**
  * Each tab renders the header rather than the layout, because Next scrolls a navigation to the first element of the
- * new page: from a scrolled list, or at 130% text, that element must be the photo, not the tab content below it.
+ * new page: from a scrolled list, or at 130% text, that element must be the photo, not the tab content below it. The
+ * frame holds the screen's one toast and, for a member, its one expense sheet, so every tab's islands share them.
+ * The expense actions sit under the tab bar, not in the header: on a phone the header already fills the first screen,
+ * and the tabs must stay above the bottom bar. `expenseActions` is false on a tab whose own section offers them.
  */
-export async function PropertyDetailFrame({ property, tab, children }: { property: PropertyDetail; tab: PropertyTabId; children: ReactNode }) {
+export async function PropertyDetailFrame({
+  property,
+  tab,
+  expenseActions = true,
+  children,
+}: {
+  property: PropertyDetail;
+  tab: PropertyTabId;
+  expenseActions?: boolean;
+  children: ReactNode;
+}) {
   const member = await requireMember();
-  const [t, tp, tc, locale, photos, scores] = await Promise.all([
+  const [t, tp, tc, te, tt, locale, photos, scores, scope] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
     getTranslations('completeness'),
+    getTranslations('expenses'),
+    getTranslations('components.toast'),
     getLocale(),
     signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
     loadCompleteness(member.household.id, property.id),
+    member.role === 'viewer' ? null : expenseScope(member, property),
   ]);
   const score = scores.get(property.id) ?? { percent: 100, failing: [] };
-  return (
+  const screen = (
     <div className="flex flex-col gap-5">
       <IntentLink href="/properties" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-semibold text-ink-2 hover:text-ink">
         <ChevronLeft className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
@@ -64,10 +84,12 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           overview: t('tab', { tab: 'overview' }),
           legal: t('tab', { tab: 'legal' }),
           rental: t('tab', { tab: 'rental' }),
+          finance: t('tab', { tab: 'finance' }),
           documents: t('tab', { tab: 'documents' }),
           activity: t('tab', { tab: 'activity' }),
         }}
       />
+      {scope !== null && expenseActions ? <ExpenseActions labels={{ add: te('add'), photo: te('photo') }} /> : null}
       {tab === 'overview' ? (
         <MissingItems
           data={{
@@ -83,5 +105,8 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
       ) : null}
       {children}
     </div>
+  );
+  return (
+    <ToastHost labels={{ region: tt('region'), undo: tt('undo') }}>{scope === null ? screen : <ExpenseHost scope={scope}>{screen}</ExpenseHost>}</ToastHost>
   );
 }

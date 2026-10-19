@@ -4,7 +4,7 @@ import { isoDate, type IsoDate } from '@esta/core/date';
 import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
 import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema, tenantSchema } from '@esta/core/schemas/lease';
 import { RENEWAL_INCREASE_BPS } from '@esta/core/lease';
-import { MAX_LIST_RENT_VND } from '@esta/core/schemas/units';
+import { MAX_AMOUNT_VND } from '@esta/core/money';
 import { isoDateSchema, text } from '@esta/core/schemas/legal';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { formatPhone } from '@esta/core/phone';
@@ -169,7 +169,7 @@ function changeRefusal(error: { readonly message: string }): LeaseChangeRefusal 
   return error.message in CHANGE_REFUSALS ? CHANGE_REFUSALS[error.message as keyof typeof CHANGE_REFUSALS] : 'failed';
 }
 
-const rentSchema = z.number().int().min(1).max(MAX_LIST_RENT_VND);
+const rentSchema = z.number().int().min(1).max(MAX_AMOUNT_VND);
 
 const amendmentSchema = z.strictObject({
   effectivePeriodStart: isoDateSchema,

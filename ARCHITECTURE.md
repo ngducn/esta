@@ -81,7 +81,7 @@ A rule that decides what gets written lives in SQL, because SQL is the writer: b
 
 Bytes go from the browser to Storage with a signed upload URL, never through a server function body (CLAUDE.md). `apps/web/src/lib/upload/` prepares a file and sends it (`sendPrepared`, `uploadWithProgress`), and `createDocumentUpload` in `apps/web/src/server/documents/actions.ts` signs the upload.
 
-**Home.** One `useDocumentUpload({ finish })` hook in `apps/web/src/components/documents/`. It does not exist yet. Issue #190 creates it from the two copies in `components/property-wizard/step-photo.tsx` and `components/documents/upload-sheet.tsx`. `upload-pipeline` counts every use of an upload step outside those two modules and the hook: `sendPrepared`, `uploadWithProgress`, `createDocumentUpload`, Storage's `createSignedUploadUrl` and `uploadToSignedUrl`, and a `fetch` with `method: 'PUT'`. The cover photo flow (`app/(app)/properties/actions.ts` and `components/properties/cover-photo-input.tsx`) is a third path that counts today. Until #190 lands, a new upload step needs a countersigned `--allow-raise` naming #190.
+**Home.** `useDocumentUpload` in `apps/web/src/components/documents/use-document-upload.ts`, which the upload sheet and the expense receipt use. Issue #190 moves the wizard's photo step (`components/property-wizard/step-photo.tsx`) onto it. `upload-pipeline` counts every use of an upload step outside those two modules and the hook: `sendPrepared`, `uploadWithProgress`, `createDocumentUpload`, Storage's `createSignedUploadUrl` and `uploadToSignedUrl`, and a `fetch` with `method: 'PUT'`. The cover photo flow (`app/(app)/properties/actions.ts` and `components/properties/cover-photo-input.tsx`) is a third path that counts today. Until #190 lands, a new upload step needs a countersigned `--allow-raise` naming #190.
 
 ## Calling a server action from the UI
 
@@ -101,7 +101,7 @@ A client component calls a server action inside a transition, maps a thrown call
 
 `UndoToastProvider` in `apps/web/src/components/undo-toast.tsx` renders the undo toast and its live region.
 
-**Home.** One mount in `apps/web/src/app/(app)/layout.tsx`, with its labels passed from the server. Eight places mount their own today, two of them on the rental tab. Issue #191 moves the mount into the layout. Until it lands, a new screen that needs the undo toast adds to `toast-provider-mount` and needs a countersigned `--allow-raise` naming #191.
+**Home.** One mount in `apps/web/src/app/(app)/layout.tsx`, with its labels passed from the server. The property frame (`app/(app)/properties/[id]/detail-frame.tsx`) holds one `ToastHost` for every property tab with its labels from the server, and five other places mount their own, so the rental tab still has two. Issue #191 moves the mount into the layout. Until it lands, a new screen that needs the undo toast adds to `toast-provider-mount` and needs a countersigned `--allow-raise` naming #191.
 
 ## Translation islands
 
