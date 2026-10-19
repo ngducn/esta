@@ -136,9 +136,10 @@ export async function planChanges(ctx: OpContext, request: PlanRequest): Promise
   }
   if (items.some((item) => item.status === 'refused')) return refuse({ kind: 'items_refused', items });
 
+  const summary = z.string().parse(reduceTypedIds(request.summary));
   const { data, error: insertError } = await ctx.db
     .from('change_batches')
-    .insert({ household_id: ctx.householdId, summary: request.summary, plan: asJson({ v: 1, items: stored }), planned_at: now })
+    .insert({ household_id: ctx.householdId, summary, plan: asJson({ v: 1, items: stored }), planned_at: now })
     .select('id')
     .single();
   if (insertError) throw new Error(`Storing the plan failed: ${insertError.message}`);

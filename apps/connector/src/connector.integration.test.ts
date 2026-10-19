@@ -285,6 +285,17 @@ describe('plans and applies the changes Ryan approved', () => {
     expect(row.data).toEqual({ id: digitTail, notes: 'Demo: chủ cũ CCCD 7890' });
   });
 
+  it('cuts an ID number in the batch summary to its last four, in the stored row and its audit row', async () => {
+    const summary = 'Demo: thêm nhà cho chủ cũ CCCD 001234567890';
+    const planned = plannedSchema.parse((await call(connector, 'plan_changes', { summary, items: [{ op: 'property.create', input: { property: demoProperty('SUMID') } }] })).json());
+    const stored = await db.from('change_batches').select('summary').eq('id', planned.planId).single();
+    expect(stored.data?.summary).toBe('Demo: thêm nhà cho chủ cũ CCCD 7890');
+    const audit = await db.from('audit_log').select('diff').eq('table_name', 'change_batches').eq('row_id', planned.planId);
+    expect(audit.data?.length).toBeGreaterThan(0);
+    expect(JSON.stringify(audit.data)).not.toContain('001234567890');
+    expect(JSON.stringify(audit.data)).toContain('7890');
+  });
+
   it('finishes a batch a crash left half done once its claim is five minutes old, landing each item once', async () => {
     const planned = plannedSchema.parse(
       (
