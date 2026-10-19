@@ -4,13 +4,14 @@ import type { IsoDate } from '@esta/core/date';
 import { formatArea, formatDate, formatVnd } from '@esta/core/format';
 import type { LeaseMark } from '@esta/core/lease';
 import type { Vnd } from '@esta/core/money';
+import { compareRoomLabels } from '@esta/core/properties';
 import type { Unit } from '@esta/core/schemas/units';
-import { ArrowDown, ArrowUp, FileSignature, FilePen, FileText, Pencil, Plus } from 'lucide-react';
+import { ArrowDown, ArrowDown01, ArrowUp, ArrowUpDown, Check, FileSignature, FilePen, FileText, Pencil, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { lazy, Suspense, useState, useTransition } from 'react';
-import { deleteUnit, moveUnitAction, restoreUnit } from '@/app/(app)/properties/[id]/rental/actions';
+import { lazy, Suspense, useEffect, useRef, useState, useTransition } from 'react';
+import { deleteUnit, moveUnitAction, restoreUnit, sortUnitsByRoomNumber } from '@/app/(app)/properties/[id]/rental/actions';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { StatusMark } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -32,13 +33,15 @@ export type UnitLease = {
 };
 
 type Open = { readonly sheet: 'unit'; readonly unit: Unit | null } | { readonly sheet: 'rooms'; readonly existing: readonly string[] } | null;
+type Direction = 'up' | 'down';
 
 const small = 'min-h-touch px-3 text-small';
 
 /**
- * Rooms in the order Mẹ walks them. `Lên` and `Xuống` are words rather than drag handles, because a drag is hard on a
- * phone held in one hand. Delete sits in the edit sheet, away from the row, and the `whole` unit has none: the database
- * brings it back whenever none is left.
+ * Rooms in room-number order unless someone set another. Reordering is rare, so `Lên` and `Xuống` show only after
+ * `Sắp xếp phòng`, and stay words rather than drag handles, because a drag is hard on a phone held in one hand. Delete
+ * sits in the edit sheet, away from the row, and the `whole` unit has none: the database brings it back whenever none
+ * is left.
  */
 export function UnitList({
   propertyId,
@@ -61,14 +64,41 @@ export function UnitList({
   const [open, setOpen] = useState<Open>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [reorderOn, setReorderOn] = useState(false);
+  const reordering = reorderOn && canEdit && units.length > 1;
+  const inRoomOrder = units.every((unit, index) => {
+    const before = units[index - 1];
+    return before === undefined || compareRoomLabels(before.label, unit.label) <= 0;
+  });
+  const lastMove = useRef<{ readonly id: string; readonly direction: Direction; readonly before: readonly Unit[] } | null>(null);
+  const list = useRef<HTMLOListElement>(null);
 
-  const move = (unit: Unit, direction: 'up' | 'down') =>
+  // A pending move disables the button it came from, and React moves one of the two swapped rows in the DOM, so focus
+  // can fall to the page. Once the new order arrives, it goes back to the moved room.
+  useEffect(() => {
+    const moved = lastMove.current;
+    if (moved === null || pending || units === moved.before) return;
+    lastMove.current = null;
+    if (document.activeElement !== null && document.activeElement !== document.body) return;
+    const buttons = [...(list.current?.querySelectorAll<HTMLButtonElement>(`[data-id="${moved.id}"] [data-move]`) ?? [])].filter((button) => !button.disabled);
+    (buttons.find((button) => button.dataset.move === moved.direction) ?? buttons[0])?.focus();
+  }, [units, pending]);
+
+  const reorder = (write: () => Promise<{ readonly ok: boolean }>) =>
     startTransition(async () => {
       setError(null);
-      const result = await moveUnitAction(propertyId, unit.id, direction).catch(() => ({ ok: false }) as const);
+      const result = await write().catch(() => ({ ok: false }) as const);
       if (result.ok) router.refresh();
-      else setError(t('moveFailed'));
+      else {
+        lastMove.current = null;
+        setError(t('moveFailed'));
+      }
     });
+
+  const move = (unit: Unit, direction: Direction) => {
+    lastMove.current = { id: unit.id, direction, before: units };
+    reorder(() => moveUnitAction(propertyId, unit.id, direction));
+  };
 
   const remove = (unit: Unit) =>
     startTransition(async () => {
@@ -92,7 +122,19 @@ export function UnitList({
     <div className="flex flex-col gap-3">
       {canEdit ? (
         <div className="flex flex-wrap gap-2">
-          {roomingHouse ? (
+          {reordering ? (
+            <button
+              type="button"
+              data-testid="sort-by-number"
+              onClick={() => reorder(() => sortUnitsByRoomNumber(propertyId))}
+              disabled={pending || inRoomOrder}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              <ArrowDown01 aria-hidden="true" />
+              {t('sortByNumber')}
+            </button>
+          ) : null}
+          {!reordering && roomingHouse ? (
             <button
               type="button"
               data-testid="add-rooms"
@@ -106,26 +148,40 @@ export function UnitList({
               {t('addRooms')}
             </button>
           ) : null}
-          <button
-            type="button"
-            data-testid="add-unit"
-            aria-haspopup="dialog"
-            onPointerEnter={() => void loadUnitSheet()}
-            onFocus={() => void loadUnitSheet()}
-            onClick={() => setOpen({ sheet: 'unit', unit: null })}
-            className={buttonVariants({ variant: roomingHouse ? 'outline' : 'primary' })}
-          >
-            <Plus aria-hidden="true" />
-            {t('addUnit')}
-          </button>
+          {reordering ? null : (
+            <button
+              type="button"
+              data-testid="add-unit"
+              aria-haspopup="dialog"
+              onPointerEnter={() => void loadUnitSheet()}
+              onFocus={() => void loadUnitSheet()}
+              onClick={() => setOpen({ sheet: 'unit', unit: null })}
+              className={buttonVariants({ variant: roomingHouse ? 'outline' : 'primary' })}
+            >
+              <Plus aria-hidden="true" />
+              {t('addUnit')}
+            </button>
+          )}
+          {units.length > 1 ? (
+            <button
+              type="button"
+              data-testid="reorder-rooms"
+              onClick={() => setReorderOn(!reordering)}
+              className={cn(buttonVariants({ variant: reordering ? 'primary' : 'outline' }), 'sm:ml-auto')}
+            >
+              {reordering ? <Check aria-hidden="true" /> : <ArrowUpDown aria-hidden="true" />}
+              {reordering ? t('reorderDone') : t('reorder')}
+            </button>
+          ) : null}
         </div>
       ) : null}
+      {reordering ? <p className="text-body text-ink-2">{t('reorderHint')}</p> : null}
       {error === null ? null : (
         <p role="alert" className="text-small text-overdue">
           {error}
         </p>
       )}
-      <ol data-testid="unit-list" className="@container flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+      <ol ref={list} data-testid="unit-list" className="@container flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
         {units.map((unit, index) => {
           const facts = [t('unitKind', { kind: unit.kind }), unit.area_m2 === null ? null : formatArea(unit.area_m2, locale)].filter((fact) => fact !== null);
           return (
@@ -153,30 +209,6 @@ export function UnitList({
                 <LeaseLink propertyId={propertyId} unit={unit} lease={leases[unit.id]} canEdit={canEdit} />
               {canEdit ? (
                 <>
-                  {units.length > 1 ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => move(unit, 'up')}
-                        disabled={pending || index === 0}
-                        aria-label={t('moveUpLabel', { label: unit.label })}
-                        className={cn(buttonVariants({ variant: 'outline' }), small)}
-                      >
-                        <ArrowUp aria-hidden="true" />
-                        {t('moveUp')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => move(unit, 'down')}
-                        disabled={pending || index === units.length - 1}
-                        aria-label={t('moveDownLabel', { label: unit.label })}
-                        className={cn(buttonVariants({ variant: 'outline' }), small)}
-                      >
-                        <ArrowDown aria-hidden="true" />
-                        {t('moveDown')}
-                      </button>
-                    </>
-                  ) : null}
                   <button
                     type="button"
                     aria-haspopup="dialog"
@@ -189,6 +221,12 @@ export function UnitList({
                     {t('edit')}
                   </button>
                 </>
+              ) : null}
+              {reordering ? (
+                <div className="ml-auto flex rounded-sm border border-rule-strong bg-surface @3xl:ml-0">
+                  <MoveButton direction="up" label={unit.label} disabled={pending || index === 0} onMove={() => move(unit, 'up')} />
+                  <MoveButton direction="down" label={unit.label} disabled={pending || index === units.length - 1} onMove={() => move(unit, 'down')} />
+                </div>
               ) : null}
               </div>
             </li>
@@ -208,6 +246,27 @@ export function UnitList({
         {open?.sheet === 'rooms' ? <AddRoomsSheet propertyId={propertyId} existing={open.existing} onClose={close} /> : null}
       </Suspense>
     </div>
+  );
+}
+
+function MoveButton({ direction, label, disabled, onMove }: { direction: Direction; label: string; disabled: boolean; onMove: () => void }) {
+  const t = useTranslations('propertyRental');
+  return (
+    <button
+      type="button"
+      data-move={direction}
+      onClick={onMove}
+      disabled={disabled}
+      aria-label={direction === 'up' ? t('moveUpLabel', { label }) : t('moveDownLabel', { label })}
+      className={cn(
+        'inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 px-3 text-small font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard select-none',
+        'first:rounded-l-sm last:rounded-r-sm not-first:border-l not-first:border-rule-strong hover:bg-surface-2 active:bg-rule disabled:cursor-not-allowed disabled:text-ink-muted disabled:hover:bg-transparent',
+        '[&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0',
+      )}
+    >
+      {direction === 'up' ? <ArrowUp aria-hidden="true" /> : <ArrowDown aria-hidden="true" />}
+      {direction === 'up' ? t('moveUp') : t('moveDown')}
+    </button>
   );
 }
 

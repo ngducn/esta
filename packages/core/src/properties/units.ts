@@ -18,9 +18,14 @@ export function compareUnits(a: Ordered, b: Ordered): number {
 
 export type SortChange = { readonly id: string; readonly sort_order: number };
 
+/** Numbers the list from 0 and returns only the rows whose `sort_order` changes. */
+function renumber(ordered: readonly Ordered[]): SortChange[] {
+  return ordered.flatMap((unit, index) => (unit.sort_order === index ? [] : [{ id: unit.id, sort_order: index }]));
+}
+
 /**
- * Swaps the unit with its neighbour and numbers the list from 0, returning only the rows whose `sort_order` changes:
- * the two swapped units when the list is already numbered, more when equal values left the order to the labels.
+ * Swaps the unit with its neighbour, returning the two swapped units when the list is already numbered and more when
+ * equal values left the order to the labels.
  */
 export function moveUnit(units: readonly Ordered[], unitId: string, direction: 'up' | 'down'): SortChange[] {
   const ordered = units.toSorted(compareUnits);
@@ -28,6 +33,23 @@ export function moveUnit(units: readonly Ordered[], unitId: string, direction: '
   const to = direction === 'up' ? from - 1 : from + 1;
   const [moving, neighbour] = [ordered[from], ordered[to]];
   if (from === -1 || moving === undefined || neighbour === undefined) return [];
-  const swapped = ordered.with(from, neighbour).with(to, moving);
-  return swapped.flatMap((unit, index) => (unit.sort_order === index ? [] : [{ id: unit.id, sort_order: index }]));
+  return renumber(ordered.with(from, neighbour).with(to, moving));
+}
+
+const HAS_NUMBER = /[0-9]/;
+
+/**
+ * Room-number order: `Phòng 2` before `Phòng 10`, and every label with a number before every label without one. Two
+ * labels without a number, or two the collator reads as the same (`Phòng 01` and `Phòng 1`), compare equal, so a
+ * stable sort keeps them where they were.
+ */
+export function compareRoomLabels(a: string, b: string): number {
+  const [numberedA, numberedB] = [HAS_NUMBER.test(a), HAS_NUMBER.test(b)];
+  if (numberedA !== numberedB) return numberedA ? -1 : 1;
+  return numberedA ? collator.compare(a, b) : 0;
+}
+
+/** `Xếp theo số phòng`: the list as it shows now, re-sorted by `compareRoomLabels` and numbered from 0. */
+export function sortByRoomNumber(units: readonly Ordered[]): SortChange[] {
+  return renumber(units.toSorted(compareUnits).toSorted((a, b) => compareRoomLabels(a.label, b.label)));
 }

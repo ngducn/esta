@@ -7,7 +7,7 @@ import { renderInLocale } from '@/test/render';
 import viMessages from '../../../messages/vi.json';
 import { UnitList } from './unit-list';
 
-const actions = vi.hoisted(() => ({ moveUnitAction: vi.fn(), deleteUnit: vi.fn(), restoreUnit: vi.fn(), saveUnit: vi.fn() }));
+const actions = vi.hoisted(() => ({ moveUnitAction: vi.fn(), sortUnitsByRoomNumber: vi.fn(), deleteUnit: vi.fn(), restoreUnit: vi.fn(), saveUnit: vi.fn() }));
 
 vi.mock('@/app/(app)/properties/[id]/rental/actions', () => actions);
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -68,5 +68,47 @@ describe('UnitList', () => {
     const region = screen.getByRole('region', { name: 'Thông báo' });
     expect((await screen.findByText(restoreFailed)).closest('[role="region"]')).toBe(region);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+const list = (units: readonly Unit[], canEdit = true) =>
+  renderInLocale(
+    <UndoToastProvider>
+      <UnitList propertyId="p1" units={units} leases={{}} canEdit={canEdit} roomingHouse />
+    </UndoToastProvider>,
+  );
+const moveButtons = () => screen.queryAllByRole('button', { name: /^Đưa Phòng/u });
+
+describe('UnitList reorder mode', () => {
+  it('hides Lên and Xuống until Sắp xếp phòng, and Xong hides them again', () => {
+    list(rooms);
+    expect(moveButtons()).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Sắp xếp phòng' }));
+    expect(moveButtons().map((button) => button.getAttribute('aria-label'))).toEqual(['Đưa Phòng 101 lên', 'Đưa Phòng 101 xuống', 'Đưa Phòng 102 lên', 'Đưa Phòng 102 xuống']);
+    expect(screen.getByRole('button', { name: 'Đưa Phòng 101 lên' })).toHaveProperty('disabled', true);
+    expect(screen.queryByRole('button', { name: 'Thêm phòng' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Xong' }));
+    expect(moveButtons()).toEqual([]);
+    expect(screen.getByRole('button', { name: 'Thêm phòng' })).toBeTruthy();
+  });
+
+  it('offers no reorder to a viewer or for a single unit', () => {
+    const viewer = list(rooms, false);
+    expect(screen.queryByRole('button', { name: 'Sắp xếp phòng' })).toBeNull();
+    viewer.unmount();
+    list(rooms.slice(0, 1));
+    expect(screen.queryByRole('button', { name: 'Sắp xếp phòng' })).toBeNull();
+  });
+
+  it('sends Xếp theo số phòng only when the rooms are out of number order', () => {
+    actions.sortUnitsByRoomNumber.mockReset().mockResolvedValue({ ok: true, id: 'p1' });
+    const sorted = list(rooms);
+    fireEvent.click(screen.getByRole('button', { name: 'Sắp xếp phòng' }));
+    expect(screen.getByRole('button', { name: 'Xếp theo số phòng' })).toHaveProperty('disabled', true);
+    sorted.unmount();
+    list([room('u2', 'Phòng 102', 1), room('u1', 'Phòng 101', 2)]);
+    fireEvent.click(screen.getByRole('button', { name: 'Sắp xếp phòng' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xếp theo số phòng' }));
+    expect(actions.sortUnitsByRoomNumber).toHaveBeenCalledWith('p1');
   });
 });

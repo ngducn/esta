@@ -29,7 +29,7 @@ async function open(page: Page, email: string, theme: 'light' | 'dark', viewport
 }
 
 /** Puts a lane row back to its seed state first, so the rule passes again without a reset. */
-async function rest(page: Page, method: 'PATCH' | 'DELETE', path: string, data?: Record<string, unknown>) {
+async function rest(page: Page, method: 'POST' | 'PATCH' | 'DELETE', path: string, data?: Record<string, unknown>) {
   const response = await page.request.fetch(`${supabaseUrl}/rest/v1/${path}`, {
     method,
     headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}`, 'content-type': 'application/json' },
@@ -38,12 +38,22 @@ async function rest(page: Page, method: 'PATCH' | 'DELETE', path: string, data?:
   expect(response.ok(), await response.text()).toBe(true);
 }
 
+/** Lets running transitions end first, so axe never reads a color mid-fade, such as Xong turning from outline to filled. */
 async function seriousAxeViolations(page: Page): Promise<string[]> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 const rows = (page: Page) => page.getByTestId('unit-row');
+const moveButtons = (page: Page) => page.getByRole('button', { name: /^(Đưa|Move) .+ (lên|xuống|up|down)$/u });
 const labels = (page: Page) => page.getByTestId('unit-label');
 const row = (page: Page, label: string) => rows(page).filter({ has: page.getByRole('heading', { name: label, exact: true }) });
 const noSideScroll = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
@@ -194,8 +204,12 @@ test('rule 6: in English at 130% and dark the tab translates, room labels stay V
   await expect(rows(page).locator('data')).toHaveText(RENTS.map((amount) => amount.replaceAll('.', ',')));
   await expect(labels(page)).toHaveText(EIGHT_ROOMS);
   await expect(row(page, 'Phòng 8').getByTestId('unit-available')).toHaveText('Available from 01/08/2026');
-  await expect(row(page, 'Phòng 1').getByRole('button', { name: 'Move Phòng 1 down' })).toBeVisible();
   expect(await noSideScroll(page), 'no horizontal page scroll').toBe(true);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.getByRole('button', { name: 'Reorder rooms' }).click();
+  await expect(row(page, 'Phòng 1').getByRole('button', { name: 'Move Phòng 1 down' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sort by room number' })).toBeVisible();
+  expect(await noSideScroll(page), 'no horizontal page scroll in the reorder mode').toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -235,7 +249,7 @@ test('deleting Phòng 8 and tapping Hoàn tác brings it back with its available
   await expectRuleOne(page, 'Có thể cho thuê từ 01/08/2026');
 });
 
-test('the edit sheet changes a list rent and Lên moves a room up, and both hold after a reload', async ({ page }) => {
+test('Lên and Xuống show only after Sắp xếp phòng, a move and an edited rent hold after a reload, and Xếp theo số phòng puts the rooms back in the order the Thu tiền board shows', async ({ page }) => {
   await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
   const id = propertyId(8, 'di-an');
   const room = (n: number) => seedId(`seed:unit:lane-8:di-an:${n}`);
@@ -243,9 +257,17 @@ test('the edit sheet changes a list rent and Lên moves a room up, and both hold
   await rest(page, 'PATCH', `units?id=eq.${room(2)}`, { sort_order: 1 });
   await page.goto(`/properties/${id}/rental`);
   await expect(labels(page)).toHaveText(EIGHT_ROOMS);
+  await expect(moveButtons(page)).toHaveCount(0);
 
-  await row(page, 'Phòng 3').getByRole('button', { name: 'Đưa Phòng 3 lên' }).click();
+  await page.getByRole('button', { name: 'Sắp xếp phòng' }).click();
+  await expect(moveButtons(page)).toHaveCount(16);
+  await expect(page.getByRole('button', { name: 'Xếp theo số phòng' })).toBeDisabled();
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await row(page, 'Phòng 2').getByRole('button', { name: 'Đưa Phòng 2 xuống' }).click();
   await expect(labels(page).nth(1)).toHaveText('Phòng 3');
+  await expect(row(page, 'Phòng 2').getByRole('button', { name: 'Đưa Phòng 2 xuống' })).toBeFocused();
+  await page.getByRole('button', { name: 'Xong' }).click();
+  await expect(moveButtons(page)).toHaveCount(0);
   await row(page, 'Phòng 3').getByRole('button', { name: 'Sửa Phòng 3' }).click();
   const sheet = page.getByTestId('unit-sheet');
   await sheet.getByRole('textbox', { name: 'Giá niêm yết mỗi tháng' }).fill('2tr6');
@@ -254,6 +276,43 @@ test('the edit sheet changes a list rent and Lên moves a room up, and both hold
   await page.reload();
   await expect(labels(page)).toHaveText(['Phòng 1', 'Phòng 3', 'Phòng 2', ...EIGHT_ROOMS.slice(3)]);
   await expect(row(page, 'Phòng 3').locator('data')).toHaveText(`2.600.000${NBSP}₫`);
+  await expect(moveButtons(page)).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Sắp xếp phòng' }).click();
+  await page.getByRole('button', { name: 'Xếp theo số phòng' }).click();
+  await expect(labels(page)).toHaveText(EIGHT_ROOMS);
+  await expect(page.getByRole('button', { name: 'Xếp theo số phòng' })).toBeDisabled();
+  await page.reload();
+  await expect(labels(page)).toHaveText(EIGHT_ROOMS);
+  const tab = await labels(page).allInnerTexts();
+
+  await page.goto('/collections?month=2026-10');
+  await expect(page.getByTestId('collections-board')).toBeVisible();
+  const suffix = ', Dãy trọ Dĩ An';
+  let listed = 0;
+  for (const key of ['overdue', 'due', 'notDue', 'paid']) {
+    const october = page.getByTestId(`group-${key}`).getByTestId('collections-row').filter({ has: page.getByTestId('row-due').filter({ hasText: '25/10/2026' }) });
+    const board = (await october.getByTestId('row-place').allInnerTexts()).flatMap((place) => (place.endsWith(suffix) ? [place.slice(0, -suffix.length)] : []));
+    expect(board, `the ${key} group lists Dĩ An rooms in the tab's order`).toEqual(tab.filter((label) => board.includes(label)));
+    listed += board.length;
+  }
+  expect(listed, 'the October board lists the six Dĩ An rooms with a lease').toBe(6);
   await rest(page, 'PATCH', `units?id=eq.${room(3)}`, { list_rent_vnd: 2_500_000, sort_order: 2 });
-  await rest(page, 'PATCH', `units?id=eq.${room(2)}`, { sort_order: 1 });
+});
+
+test('a viewer sees the rooms with no Sắp xếp phòng and no Lên or Xuống', async ({ page }) => {
+  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
+  const invited = 'viewer.lane1@demo.esta.test';
+  const existing = await page.request.fetch(`${supabaseUrl}/rest/v1/household_members?invited_email=eq.${invited}&select=id`, {
+    headers: { apikey: anonKey, authorization: `Bearer ${await accessToken(page)}` },
+  });
+  if (((await existing.json()) as unknown[]).length === 0) {
+    await rest(page, 'POST', 'household_members', { household_id: seedId('seed:household:lane-1'), invited_email: invited, role: 'viewer' });
+  }
+  await page.context().clearCookies();
+  await open(page, invited, 'light', PHONE);
+  await page.goto(rentalPath(1, 'di-an'));
+  await expect(labels(page)).toHaveText(EIGHT_ROOMS);
+  await expect(page.getByRole('button', { name: 'Sắp xếp phòng' })).toHaveCount(0);
+  await expect(moveButtons(page)).toHaveCount(0);
 });

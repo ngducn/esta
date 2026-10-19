@@ -1,7 +1,7 @@
 'use server';
 
-import { moveUnit } from '@esta/core/properties';
-import { addRoomsSchema, unitSchema, utilityAccountSchema } from '@esta/core/schemas/units';
+import { moveUnit, sortByRoomNumber, type SortChange } from '@esta/core/properties';
+import { addRoomsSchema, unitSchema, utilityAccountSchema, type Unit } from '@esta/core/schemas/units';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
@@ -89,19 +89,28 @@ export async function addRooms(propertyId: unknown, raw: unknown): Promise<Renta
 
 const directionSchema = z.enum(['up', 'down']);
 
-export async function moveUnitAction(propertyId: unknown, unitId: unknown, direction: unknown): Promise<RentalWrite> {
+async function reorderUnits(propertyId: unknown, order: (units: readonly Unit[]) => SortChange[]): Promise<RentalWrite> {
   const target = await scope(propertyId);
-  const item = uuid.safeParse(unitId);
-  const way = directionSchema.safeParse(direction);
-  if (target === null || !item.success || !way.success) return { ok: false, reason: 'invalid' };
+  if (target === null) return { ok: false, reason: 'invalid' };
   const { supabase, match } = target;
   const { units } = await loadPropertyRental(match.property_id);
-  for (const change of moveUnit(units, item.data, way.data)) {
+  for (const change of order(units)) {
     const { error } = await supabase.from('units').update({ sort_order: change.sort_order }).match(match).eq('id', change.id);
     if (error) return failure(error);
   }
   revalidateRental();
-  return { ok: true, id: item.data };
+  return { ok: true, id: match.property_id };
+}
+
+export async function moveUnitAction(propertyId: unknown, unitId: unknown, direction: unknown): Promise<RentalWrite> {
+  const item = uuid.safeParse(unitId);
+  const way = directionSchema.safeParse(direction);
+  if (!item.success || !way.success) return { ok: false, reason: 'invalid' };
+  return reorderUnits(propertyId, (units) => moveUnit(units, item.data, way.data));
+}
+
+export async function sortUnitsByRoomNumber(propertyId: unknown): Promise<RentalWrite> {
+  return reorderUnits(propertyId, sortByRoomNumber);
 }
 
 export type UnitDelete = { readonly ok: true; readonly deleted: DeletedUnit } | { readonly ok: false; readonly hasLeases?: true };
