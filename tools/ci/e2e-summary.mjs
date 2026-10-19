@@ -33,7 +33,12 @@ const markdown = [
 ].join('\n');
 
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`);
-console.log(rows.map(([name, value]) => `${name}: ${value}`).join(', '));
-for (const test of flaky) console.log(`::warning title=Flaky test::${test.title}`);
-for (const name of missing) console.log(`::error title=Project ran in no shard::${name}`);
+process.stdout.write(
+  [
+    rows.map(([name, value]) => `${name}: ${value}`).join(', '),
+    ...flaky.map((test) => `::warning title=Flaky test::${test.title}`),
+    ...missing.map((name) => `::error title=Project ran in no shard::${name}`),
+    '',
+  ].join('\n'),
+);
 process.exitCode = missing.length > 0 ? 1 : 0;
