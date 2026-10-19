@@ -17,7 +17,6 @@ export const REVIEW_SIZE = 1024;
 
 const thumb = (bytes: Buffer) => sharp(bytes).rotate().resize(THUMB_SIZE, THUMB_SIZE, { fit: 'inside' });
 
-/** What the upload sheet stores beside each file, by kind. */
 const PREVIEWS = {
   thumb: { path: thumbPath, render: (bytes: Buffer) => thumb(bytes).webp({ quality: 70 }).toBuffer() },
   'thumb-blur': { path: thumbBlurPath, render: (bytes: Buffer) => thumb(bytes).blur(BLUR_SIGMA).webp({ quality: 70 }).toBuffer() },
