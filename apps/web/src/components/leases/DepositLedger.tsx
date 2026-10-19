@@ -1,6 +1,6 @@
 'use client';
 
-import type { DepositKind } from '@esta/core/allocation';
+import { depositActions, type DepositKind } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, formatVnd } from '@esta/core/format';
 import { vnd, type Vnd } from '@esta/core/money';
@@ -28,22 +28,15 @@ export type DepositOffer = {
 
 /**
  * LSE-9 on lease detail: what this lease holds as its tenant's deposit, every movement in date order with the balance
- * after it, and what a member can do next. Receiving is offered while the lease runs, or on any lease with nothing
- * recorded; using, deducting and refunding only while something is held, and using only when an invoice still owes.
- * The actions are outline buttons, so the accent keeps marking the page's one primary action (DESIGN.md One Accent Rule).
+ * after it, and the actions `depositActions` allows. They are outline buttons, so the accent keeps marking the page's one
+ * primary action (DESIGN.md One Accent Rule).
  */
 export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readonly DepositRowView[]; held: Vnd; contractVnd: Vnd | null; offer: DepositOffer | null }) {
   const t = useTranslations('deposits');
   const locale = useLocale();
   const [open, setOpen] = useState<DepositKind | null>(null);
-  const actions: readonly DepositKind[] =
-    offer === null
-      ? []
-      : [
-          ...(offer.active || rows.length === 0 ? (['received'] as const) : []),
-          ...(held > 0 && offer.openInvoices.length > 0 ? (['applied'] as const) : []),
-          ...(held > 0 ? (['deduction', 'refunded'] as const) : []),
-        ];
+  const state = offer === null ? null : { active: offer.active, heldVnd: held, hasEntries: rows.length > 0, owesInvoice: offer.openInvoices.length > 0 };
+  const actions = state === null ? [] : depositActions(state);
 
   return (
     <section aria-labelledby="lease-deposit-ledger" data-testid="deposit-ledger" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
@@ -99,7 +92,7 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
           </ol>
         </>
       )}
-      {offer === null || actions.length === 0 ? null : (
+      {actions.length === 0 ? null : (
         <div data-testid="deposit-actions" className="flex flex-wrap gap-3">
           {actions.map((kind) => (
             <Button key={kind} type="button" variant="outline" data-testid={`deposit-${kind}`} onClick={() => setOpen(kind)}>
@@ -108,9 +101,9 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
           ))}
         </div>
       )}
-      {offer === null || open === null ? null : (
+      {offer === null || state === null || open === null ? null : (
         <Suspense fallback={null}>
-          <DepositSheet kind={open} offer={offer} rows={rows} held={held} contractVnd={contractVnd} onClose={() => setOpen(null)} />
+          <DepositSheet kind={open} offer={offer} state={state} rows={rows} contractVnd={contractVnd} onClose={() => setOpen(null)} />
         </Suspense>
       )}
     </section>

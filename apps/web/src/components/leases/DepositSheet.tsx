@@ -1,9 +1,9 @@
 'use client';
 
-import { deriveDepositLedger, type DepositKind } from '@esta/core/allocation';
+import { depositPrefill, previewDepositEntry, type DepositKind, type DepositState, type OpenInvoice } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, formatVnd } from '@esta/core/format';
-import { vnd, type Vnd } from '@esta/core/money';
+import type { Vnd } from '@esta/core/money';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { vndInputText } from '@esta/core/properties/form';
@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { recordDeposit, type DepositRefusal } from '@/server/actions/deposits';
 import type { DepositOffer, DepositRowView } from './DepositLedger';
 
-export type DepositInvoice = { readonly id: string; readonly periodStart: IsoDate; readonly periodEnd: IsoDate; readonly outstandingVnd: Vnd };
+export type DepositInvoice = OpenInvoice & { readonly periodEnd: IsoDate };
 
 type SheetError = 'amountMissing' | 'amountInvalid' | 'dateMissing' | 'dateInvalid' | 'dateAfterToday' | 'noteRequired' | 'invoice' | 'notActive' | 'changed' | 'failed';
 
@@ -38,35 +38,25 @@ const SERVER_ERRORS = {
   failed: 'failed',
 } as const satisfies Record<DepositRefusal, SheetError>;
 
-/** A refusal shown under the amount, naming the figure it ran into. */
-type Overdraw = { readonly reason: 'exceedsHeld' | 'exceedsOutstanding'; readonly limitVnd: Vnd };
-
-function initialAmount(kind: DepositKind, held: Vnd, contractVnd: Vnd | null, empty: boolean, invoice: DepositInvoice | undefined): string {
-  if (kind === 'refunded') return vndInputText(held);
-  if (kind === 'applied' && invoice !== undefined) return vndInputText(vnd(Math.min(held, invoice.outstandingVnd)));
-  if (kind === 'received' && empty && contractVnd !== null && contractVnd > 0) return vndInputText(contractVnd);
-  return '';
-}
+const OVERDRAW_ERRORS = { exceeds_held: 'exceedsHeld', exceeds_outstanding: 'exceedsOutstanding' } as const;
 
 /**
- * One sheet for the four deposit actions. The amount is prefilled where the answer is usually known: the whole held
- * balance for a refund, what the chosen invoice still owes (up to what is held) for using it on rent, and the lease's
- * deposit for a first receipt. The preview runs deriveDepositLedger over the lease's entries plus this one, the rule
- * `record_deposit_entry` and `apply_deposit` refuse by, so an amount past the held balance shows before saving. One
- * opening carries one idempotency key, so a second tap or a retry writes nothing new.
+ * One sheet for the four deposit actions. It opens with `depositPrefill`'s amount, and `previewDepositEntry` shows the
+ * held balance after this entry or the refusal `record_deposit_entry` and `apply_deposit` would give, before saving.
+ * One opening carries one idempotency key, so a second tap or a retry writes nothing new.
  */
 export default function DepositSheet({
   kind,
   offer,
+  state,
   rows,
-  held,
   contractVnd,
   onClose,
 }: {
   kind: DepositKind;
   offer: DepositOffer;
+  state: DepositState;
   rows: readonly DepositRowView[];
-  held: Vnd;
   contractVnd: Vnd | null;
   onClose: () => void;
 }) {
@@ -78,7 +68,11 @@ export default function DepositSheet({
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [invoiceId, setInvoiceId] = useState(() => offer.openInvoices[0]?.id ?? null);
   const invoice = offer.openInvoices.find((candidate) => candidate.id === invoiceId);
-  const [amount, setAmount] = useState(() => initialAmount(kind, held, contractVnd, rows.length === 0, invoice));
+  const prefill = (owed: DepositInvoice | undefined) => {
+    const amount = depositPrefill(kind, state, contractVnd, owed?.outstandingVnd ?? null);
+    return amount === null ? '' : vndInputText(amount);
+  };
+  const [amount, setAmount] = useState(() => prefill(invoice));
   const [date, setDate] = useState(() => formatDate(offer.today, locale));
   const [note, setNote] = useState('');
   const [error, setError] = useState<SheetError | null>(null);
@@ -88,19 +82,14 @@ export default function DepositSheet({
   const parsedAmount = parseVndInput(amount);
   const parsedDate = parseDateInput(date);
   const onDate = parsedDate.ok ? parsedDate.value : offer.today;
-  const overdraw = ((): Overdraw | null => {
-    if (!parsedAmount.ok) return null;
-    if (kind === 'applied' && invoice !== undefined && parsedAmount.value > invoice.outstandingVnd) {
-      return { reason: 'exceedsOutstanding', limitVnd: invoice.outstandingVnd };
-    }
-    const after = deriveDepositLedger([...rows, { id: idempotencyKey, kind, amountVnd: parsedAmount.value, onDate }]);
-    return after.ok || after.reason !== 'exceeds_held' ? null : { reason: 'exceedsHeld', limitVnd: after.heldVnd };
-  })();
-  const heldAfter = parsedAmount.ok && overdraw === null ? vnd(kind === 'received' ? held + parsedAmount.value : held - parsedAmount.value) : null;
+  const preview = parsedAmount.ok
+    ? previewDepositEntry(rows, { id: idempotencyKey, kind, amountVnd: parsedAmount.value, onDate }, invoice?.outstandingVnd ?? null)
+    : null;
+  const overdraw = preview !== null && !preview.ok && preview.reason !== 'non_positive_amount' ? preview : null;
 
   const refuse = (): SheetError | null => {
     if (amount.trim() === '') return 'amountMissing';
-    if (!parsedAmount.ok) return 'amountInvalid';
+    if (!parsedAmount.ok || (preview?.ok === false && preview.reason === 'non_positive_amount')) return 'amountInvalid';
     if (!parsedDate.ok) return parsedDate.reason === 'empty' ? 'dateMissing' : 'dateInvalid';
     if (parsedDate.value > offer.today) return 'dateAfterToday';
     if (kind === 'deduction' && note.trim() === '') return 'noteRequired';
@@ -154,7 +143,7 @@ export default function DepositSheet({
                     checked={invoiceId === candidate.id}
                     onChange={() => {
                       setInvoiceId(candidate.id);
-                      setAmount(initialAmount(kind, held, contractVnd, false, candidate));
+                      setAmount(prefill(candidate));
                       setError(null);
                     }}
                     disabled={pending}
@@ -172,17 +161,16 @@ export default function DepositSheet({
           <MoneyInput key={invoiceId ?? kind} label={t('amountLabel', { kind })} defaultText={amount} onTextChange={setAmount} disabled={pending} large />
 
           <div data-testid="deposit-preview" aria-live="polite" className="flex flex-col gap-0.5 rounded-md border border-rule bg-surface-2 px-4 py-3 text-body">
-            <span className="text-ink-2 figures">{t('previewNow', { amount: money(held) })}</span>
-            {overdraw === null ? (
-              heldAfter === null ? null : (
-                <span data-testid="deposit-held-after" className="font-semibold text-ink figures">
-                  {t('previewAfter', { amount: money(heldAfter) })}
-                </span>
-              )
-            ) : (
+            <span className="text-ink-2 figures">{t('previewNow', { amount: money(state.heldVnd) })}</span>
+            {preview?.ok === true ? (
+              <span data-testid="deposit-held-after" className="font-semibold text-ink figures">
+                {t('previewAfter', { amount: money(preview.heldVnd) })}
+              </span>
+            ) : null}
+            {overdraw === null ? null : (
               <span data-testid="deposit-overdraw" data-reason={overdraw.reason} className="flex items-start gap-2 font-semibold text-overdue">
                 <StatusShape status="overdue" className="mt-1 size-4" />
-                <span className="figures">{t(`errors.${overdraw.reason}`, { amount: money(overdraw.limitVnd) })}</span>
+                <span className="figures">{t(`errors.${OVERDRAW_ERRORS[overdraw.reason]}`, { amount: money(overdraw.limitVnd) })}</span>
               </span>
             )}
           </div>

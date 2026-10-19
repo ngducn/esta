@@ -1,11 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
+import { settled, toast } from './helpers/wizard';
 
 const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -55,14 +56,7 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
-/** An enabled button fades its colors in; axe reads it once the fade has finished. */
-async function settled(button: Locator) {
-  await expect(button).toBeEnabled();
-  await button.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
-}
-
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
-const toast = (page: Page) => page.getByRole('region', { name: /Thông báo|Notifications/ });
 const noSideScroll = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
 const period = (page: Page, start: string) => page.getByTestId('lease-timeline').locator(`li[data-period-start="${start}"]`);
 

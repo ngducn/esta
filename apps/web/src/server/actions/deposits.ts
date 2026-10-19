@@ -2,6 +2,7 @@
 
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
+import type { Result } from '@esta/core/result';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
@@ -30,7 +31,8 @@ export type DepositRefusal =
   | 'notActive'
   | 'failed';
 
-export type DepositResult = { readonly ok: true; readonly entryId: string } | { readonly ok: false; readonly reason: DepositRefusal };
+/** The entry written, or the one a repeated key already wrote. */
+export type DepositResult = Result<string, DepositRefusal>;
 
 /** What `record_deposit_entry` and `apply_deposit` refuse, by the message each raises. */
 const REFUSALS: Readonly<Record<string, DepositRefusal>> = {
@@ -57,7 +59,6 @@ export async function recordDeposit(raw: unknown): Promise<DepositResult> {
   if (!amount.ok) return { ok: false, reason: 'amount' };
   const onDate = parseDateInput(input.data.onDate);
   if (!onDate.ok) return { ok: false, reason: 'date' };
-  if (kind === 'deduction' && note.trim() === '') return { ok: false, reason: 'noteRequired' };
   if (kind === 'applied' && invoiceId === null) return { ok: false, reason: 'invoice' };
   const [, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const common = {
@@ -74,5 +75,5 @@ export async function recordDeposit(raw: unknown): Promise<DepositResult> {
   if (error) return { ok: false, reason: REFUSALS[error.message] ?? 'failed' };
   revalidatePath('/properties', 'layout');
   revalidatePath('/collections');
-  return { ok: true, entryId: z.uuid().parse(data) };
+  return { ok: true, value: z.uuid().parse(data) };
 }
