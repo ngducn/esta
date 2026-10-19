@@ -6,9 +6,9 @@ import { parseConsumption, UTILITY_BILL_KINDS } from '../agent-schemas/utility_b
 import { daysInMonth, isIsoDate, type IsoDate } from '../date/iso-date';
 import { idLast4 } from '../names';
 import { isoFromParts, parseDateInput } from '../parse/date-input';
+import { measureInputText, parseMeasureInput, type MeasureReason } from '../parse/measure';
 import { parseVndInput } from '../parse/vnd-input';
-import { parseAreaInput, type AreaInputReason } from '../properties/area';
-import { areaSchema, LONG_TERM, USE_FORMS } from '../schemas/legal';
+import { LONG_TERM, USE_FORMS } from '../schemas/legal';
 import type { SchemaName } from './required-fields';
 
 export { isSchemaName, type SchemaName } from './required-fields';
@@ -17,7 +17,7 @@ export { isSchemaName, type SchemaName } from './required-fields';
 export type Leaf = { readonly value: unknown; readonly confidence: number; readonly page: number | null };
 
 /** A value that does not read as its kind is `invalid`; an area also says when it is too precise or too large. */
-export type Parsed<T> = { readonly ok: true; readonly value: T | null } | { readonly ok: false; readonly reason: AreaInputReason };
+export type Parsed<T> = { readonly ok: true; readonly value: T | null } | { readonly ok: false; readonly reason: MeasureReason };
 
 const nothing = { ok: true, value: null } as const;
 const refused = { ok: false, reason: 'invalid' } as const;
@@ -80,10 +80,10 @@ export const INPUT_KINDS = {
   area: {
     options: null,
     parse(raw: unknown): Parsed<number> {
-      if (typeof raw === 'number') return areaSchema.safeParse(raw).success ? accept(raw) : refused;
-      const text = asText(raw);
+      // A number the assistant returns meets the rule typed text meets, so 1.255 is too precise, not invalid.
+      const text = typeof raw === 'number' ? measureInputText(raw) : asText(raw);
       if (text === null) return nothing;
-      const area = parseAreaInput(text);
+      const area = parseMeasureInput(text, 'area');
       return area.ok ? accept(area.value) : area;
     },
   },

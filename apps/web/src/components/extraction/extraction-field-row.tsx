@@ -4,7 +4,7 @@ import type { FieldDecision } from '@esta/core/extraction/acceptance';
 import type { InputKind } from '@esta/core/extraction/fields';
 import { isIsoDate } from '@esta/core/date';
 import { formatArea } from '@esta/core/format';
-import { parseAreaInput } from '@esta/core/properties/area';
+import { parseMeasureInput } from '@esta/core/parse/measure';
 import { Check, Pencil, Undo2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
@@ -49,7 +49,7 @@ const EDITORS: Readonly<Record<InputKind, Editor>> = {
 /** The area the row would save, for the parcel's area-sum check: what Mẹ typed, else what was read. */
 export function rowArea(field: FieldView, decision: FieldDecision | undefined): number | null {
   if (decision?.kind !== 'edited') return field.area;
-  const area = parseAreaInput(decision.value);
+  const area = parseMeasureInput(decision.value, 'area');
   return area.ok ? area.value : null;
 }
 
@@ -59,7 +59,7 @@ function shown(field: FieldView, decision: FieldDecision | undefined, locale: 'v
   const text = decision.value.trim();
   if (text === '') return null;
   if (field.input === 'area') {
-    const area = parseAreaInput(text);
+    const area = parseMeasureInput(text, 'area');
     return area.ok ? formatArea(area.value, locale) : text;
   }
   if (field.input === 'land_use_code') return text.toUpperCase();

@@ -42,7 +42,7 @@ describe('readKindDetails', () => {
   it('names the field it cannot read', () => {
     expect(readKindDetails('apartment', { floor: 'mười hai' })).toEqual({ ok: false, reason: 'floor' });
     expect(readKindDetails('apartment', { management_fee_vnd: '1tr2tr' })).toEqual({ ok: false, reason: 'management_fee_vnd' });
-    expect(readKindDetails('residential_land', { road_width_m: '4m' })).toEqual({ ok: false, reason: 'road_width_m' });
+    expect(readKindDetails('residential_land', { road_width_m: '4,500' })).toEqual({ ok: false, reason: 'road_width_m' });
   });
 
   it('skips blank fields', () => {

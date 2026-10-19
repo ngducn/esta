@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isIsoDate } from '../date/iso-date';
-import { parseAreaInput } from '../properties/area';
+import { parseMeasureInput } from '../parse/measure';
 
 export const CERTIFICATE_FORMS = ['so_do_pre2009', 'so_hong_pre2009', 'gcn_2009_2024', 'gcn_2024', 'paper_only'] as const;
 
@@ -24,7 +24,7 @@ export function leaf<T extends z.ZodType>(value: T) {
  */
 function readPrintedArea(raw: unknown, context: z.RefinementCtx): unknown {
   if (typeof raw !== 'string') return raw;
-  const area = parseAreaInput(raw);
+  const area = parseMeasureInput(raw, 'area');
   if (area.ok) return area.value;
   if (area.reason === 'too_precise') return raw;
   context.addIssue({ code: 'custom', message: `expected an area in square metres, such as 125.5 (${area.reason})` });

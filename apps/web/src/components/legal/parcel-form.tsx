@@ -1,7 +1,8 @@
 'use client';
 
 import { formatArea } from '@esta/core/format';
-import { parseAreaInput, purposesMismatch } from '@esta/core/properties/area';
+import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
+import { purposesMismatch } from '@esta/core/properties/area';
 import { PARCEL_UNIDENTIFIED, USE_FORMS, newParcelSchema, type Parcel } from '@esta/core/schemas/legal';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -14,7 +15,7 @@ import { PurposeRows, purposeDraft, readPurposes, type PurposeDraft, type Purpos
 
 export type CertificateOption = { readonly id: string; readonly label: string };
 
-const areaText = (area: number | null) => (area === null ? '' : String(area).replace('.', ','));
+const areaText = (area: number | null) => (area === null ? '' : measureInputText(area));
 
 export function ParcelForm({
   propertyId,
@@ -41,7 +42,7 @@ export function ParcelForm({
   const [nextKey, setNextKey] = useState(purposes.length);
   const [invalid, setInvalid] = useState<'area' | 'identity' | PurposeInvalid | null>(null);
 
-  const parsedArea = area.trim() === '' ? null : parseAreaInput(area);
+  const parsedArea = area.trim() === '' ? null : parseMeasureInput(area, 'area');
   const read = readPurposes(purposes);
   const mismatch =
     parsedArea?.ok && read.ok ? purposesMismatch({ area_m2: parsedArea.value, purposes: read.value }) : null;

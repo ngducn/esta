@@ -1,7 +1,7 @@
 'use client';
 
 import type { IsoDate } from '@esta/core/date';
-import { parseAreaInput } from '@esta/core/properties/area';
+import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
 import type { Purpose } from '@esta/core/schemas/legal';
 import { Plus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -19,7 +19,7 @@ export function purposeDraft(key: number, purpose?: Purpose): PurposeDraft {
   return {
     key,
     code: purpose?.land_use_code ?? '',
-    areaText: purpose?.area_m2 === undefined ? '' : String(purpose.area_m2).replace('.', ','),
+    areaText: purpose?.area_m2 === undefined ? '' : measureInputText(purpose.area_m2),
     term: term === undefined ? '' : term === 'long_term' ? 'long_term' : 'until',
     until: term === undefined || term === 'long_term' ? null : term,
   };
@@ -32,7 +32,7 @@ export function readPurposes(drafts: readonly PurposeDraft[]): { ok: true; value
   for (const draft of drafts) {
     const code = draft.code.trim().toUpperCase();
     if (code === '') return { ok: false, invalid: { key: draft.key, field: 'code' } };
-    const area = draft.areaText.trim() === '' ? null : parseAreaInput(draft.areaText);
+    const area = draft.areaText.trim() === '' ? null : parseMeasureInput(draft.areaText, 'area');
     if (area !== null && !area.ok) return { ok: false, invalid: { key: draft.key, field: 'area' } };
     if (draft.term === 'until' && draft.until === null) return { ok: false, invalid: { key: draft.key, field: 'until' } };
     value.push({
