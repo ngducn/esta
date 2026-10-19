@@ -34,7 +34,8 @@ export type DepositOffer = {
 export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readonly DepositRowView[]; held: Vnd; contractVnd: Vnd | null; offer: DepositOffer | null }) {
   const t = useTranslations('deposits');
   const locale = useLocale();
-  const [open, setOpen] = useState<DepositKind | null>(null);
+  const [open, setOpen] = useState(false);
+  const [opening, setOpening] = useState<{ readonly kind: DepositKind; readonly count: number } | null>(null);
   const state = offer === null ? null : { active: offer.active, heldVnd: held, hasEntries: rows.length > 0, owesInvoice: offer.openInvoices.length > 0 };
   const actions = state === null ? [] : depositActions(state);
 
@@ -91,15 +92,26 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
       {actions.length === 0 ? null : (
         <div data-testid="deposit-actions" className="flex flex-wrap gap-3">
           {actions.map((kind) => (
-            <Button key={kind} type="button" variant="outline" data-testid={`deposit-${kind}`} onClick={() => setOpen(kind)}>
+            <Button
+              key={kind}
+              type="button"
+              variant="outline"
+              data-testid={`deposit-${kind}`}
+              aria-haspopup="dialog"
+              aria-expanded={open && opening?.kind === kind}
+              onClick={() => {
+                setOpening((last) => ({ kind, count: (last?.count ?? 0) + 1 }));
+                setOpen(true);
+              }}
+            >
               {t('action', { kind })}
             </Button>
           ))}
         </div>
       )}
-      {offer === null || state === null || open === null ? null : (
+      {offer === null || state === null || opening === null ? null : (
         <Suspense fallback={null}>
-          <DepositSheet kind={open} offer={offer} state={state} rows={rows} contractVnd={contractVnd} onClose={() => setOpen(null)} />
+          <DepositSheet key={opening.count} kind={opening.kind} open={open} onOpenChange={setOpen} offer={offer} state={state} rows={rows} contractVnd={contractVnd} />
         </Suspense>
       )}
     </section>

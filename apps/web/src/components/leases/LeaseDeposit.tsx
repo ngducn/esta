@@ -1,7 +1,5 @@
 import { deriveDepositLedger, openInvoicesOldestFirst } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
-import { getLocale, getMessages } from 'next-intl/server';
-import { PropertyIntl } from '@/components/properties/property-intl';
 import { loadDepositLines } from '@/server/leases/deposits';
 import type { InvoiceSummary, LeaseWithTenant } from '@/server/leases/load';
 import { DepositLedger, type DepositOffer } from './DepositLedger';
@@ -9,6 +7,7 @@ import { DepositLedger, type DepositOffer } from './DepositLedger';
 /**
  * LSE-9 on lease detail: loads the lease's deposit entries, derives the ledger the database holds the same rule for
  * (deposit_ledger_parity.test.sql), and offers a member the issued invoices a deposit may still pay, oldest due first.
+ * Mount it inside an island provider with the `deposits` namespace and `components` money, date, status and toast.
  */
 export async function LeaseDeposit({
   lease,
@@ -23,7 +22,7 @@ export async function LeaseDeposit({
   canEdit: boolean;
   today: IsoDate;
 }) {
-  const [lines, locale, messages] = await Promise.all([loadDepositLines(lease.id), getLocale(), getMessages()]);
+  const lines = await loadDepositLines(lease.id);
   const ledger = deriveDepositLedger(lines);
   if (!ledger.ok) throw new Error(`Deposit ledger of lease ${lease.id} refused at entry ${ledger.entryId}: ${ledger.reason}`);
   const offer: DepositOffer | null = canEdit
@@ -41,10 +40,5 @@ export async function LeaseDeposit({
         })),
       }
     : null;
-  const { money, date, status, toast } = messages.components;
-  return (
-    <PropertyIntl locale={locale} messages={{ deposits: messages.deposits, components: { money, date, status, toast } }}>
-      <DepositLedger rows={ledger.value.rows} held={ledger.value.heldVnd} contractVnd={lease.deposit_vnd} offer={offer} />
-    </PropertyIntl>
-  );
+  return <DepositLedger rows={ledger.value.rows} held={ledger.value.heldVnd} contractVnd={lease.deposit_vnd} offer={offer} />;
 }

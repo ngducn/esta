@@ -76,5 +76,5 @@ export async function recordDeposit(raw: unknown): Promise<RecordDepositResult> 
   if (error) return { ok: false, reason: REFUSALS[error.message] ?? 'failed' };
   revalidatePath('/properties', 'layout');
   revalidatePath('/collections');
-  return { ok: true, value: z.uuid().parse(data) };
+  return { ok: true, value: data };
 }

@@ -47,18 +47,20 @@ const OVERDRAW_ERRORS = { too_large: 'tooLarge', exceeds_held: 'exceedsHeld', ex
  */
 export default function DepositSheet({
   kind,
+  open,
+  onOpenChange,
   offer,
   state,
   rows,
   contractVnd,
-  onClose,
 }: {
   kind: DepositKind;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   offer: DepositOffer;
   state: DepositState;
   rows: readonly DepositRowView[];
   contractVnd: Vnd | null;
-  onClose: () => void;
 }) {
   const t = useTranslations('deposits');
   const locale = useLocale();
@@ -113,12 +115,12 @@ export default function DepositSheet({
       }
       notice(t('saved', { kind, amount: money(parsedAmount.value) }));
       router.refresh();
-      onClose();
+      onOpenChange(false);
     });
   };
 
   return (
-    <Sheet open onOpenChange={(next) => (next ? null : onClose())}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent data-testid="deposit-sheet" data-kind={kind} initialFocus={title} className="gap-0 p-0 pb-0">
         <div className="flex flex-col gap-4 p-5 sm:p-6">
           <div className="flex flex-col gap-1">
