@@ -19,7 +19,6 @@ export function renewalRent(lastRentVnd: Vnd, increaseBps: number): Vnd {
   return scaleRoundHalfUp(lastRentVnd, 10_000 + increaseBps, 10_000, RENEWAL_ROUNDING_VND);
 }
 
-/** A renewal starts the day after the old lease ends. */
 export function renewalStart(terms: LeaseTerms): IsoDate | null {
   return terms.endDate === null ? null : addDays(terms.endDate, 1);
 }
