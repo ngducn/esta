@@ -1,5 +1,41 @@
 import { describe, expect, it } from 'vitest';
+import { parcelSchema } from '../agent-schemas/certificate_v1';
+import { readInput } from '../extraction/fields';
 import { parseAreaInput, purposesMismatch, sumLandArea } from './area';
+
+const SURFACES = {
+  legalTab: (text: string) => {
+    const area = parseAreaInput(text);
+    return area.ok ? area.value : null;
+  },
+  reviewScreen: (text: string) => {
+    const area = readInput('area', text);
+    return area.ok && typeof area.value === 'number' ? area.value : null;
+  },
+  assistant: (text: string) => {
+    const read = parcelSchema.shape.area_m2.safeParse({ value: text, confidence: 0.9, page: 1 });
+    return read.success && typeof read.data.value === 'number' ? read.data.value : null;
+  },
+};
+
+describe('every screen and the assistant read an area the same way (DOMAIN-VN §2.1)', () => {
+  it.each([
+    ['312,8', 312.8],
+    ['1.255,5', 1255.5],
+    ['125,5 m²', 125.5],
+    ['1.250', 1250],
+    ['1,255', null],
+    ['1,255 m²', null],
+    ['1.255 m²', 1255],
+    ['0,5', 0.5],
+    ['12.345,67', 12345.67],
+    ['1 255', 1255],
+    ['', null],
+  ])('%j stores %s m² everywhere', (text, expected) => {
+    const read = Object.fromEntries(Object.entries(SURFACES).map(([surface, parse]) => [surface, parse(text)]));
+    expect(read).toEqual({ legalTab: expected, reviewScreen: expected, assistant: expected });
+  });
+});
 
 describe('parseAreaInput', () => {
   it.each([

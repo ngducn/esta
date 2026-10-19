@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { readInput } from '../extraction/fields';
 import { certificateV1Schema } from './certificate_v1';
 
 const FIXTURES = join(import.meta.dirname, '../../../../fixtures/certificates');
@@ -50,5 +51,19 @@ describe('certificateV1Schema', () => {
     const first = truths[0]?.truth.certificate as { parcels: Record<string, unknown>[] };
     const parsed = certificateV1Schema.parse({ ...first, parcels: [{ ...first.parcels[0], area_m2: leaf('1.250,5 m²') }] });
     expect(parsed.parcels[0]?.area_m2.value).toBe(1250.5);
+  });
+
+  it('keeps 1,255 m² as printed, never 1255, so the review asks Mẹ and says it has too many decimals', () => {
+    const first = truths[0]?.truth.certificate as { parcels: Record<string, unknown>[] };
+    const parsed = certificateV1Schema.parse({ ...first, parcels: [{ ...first.parcels[0], area_m2: leaf('1,255 m²') }] });
+    const stored = parsed.parcels[0]?.area_m2.value;
+    expect(stored).toBe('1,255 m²');
+    expect(readInput('area', stored)).toEqual({ ok: false, reason: 'too_precise' });
+  });
+
+  it('sends an area in words back to the model rather than to Mẹ', () => {
+    const first = truths[0]?.truth.certificate as { parcels: Record<string, unknown>[] };
+    const parsed = certificateV1Schema.safeParse({ ...first, parcels: [{ ...first.parcels[0], area_m2: leaf('khoảng sáu mươi tám mét vuông') }] });
+    expect(parsed.error?.issues.map((issue) => issue.path.join('.'))).toEqual(['parcels.0.area_m2.value']);
   });
 });
