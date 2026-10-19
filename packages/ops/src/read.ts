@@ -1,14 +1,14 @@
 import { formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { compareVietnameseNames } from '@esta/core/names';
-import { formatPhone, normalizePhone, type Phone } from '@esta/core/phone';
+import { normalizePhone, phoneText, type Phone } from '@esta/core/phone';
 import { currentAddressText, KIND_FIELDS, searchTokens } from '@esta/core/properties';
 import type { Result } from '@esta/core/result';
 import { idLast4Schema } from '@esta/core/schemas/party';
 import { z } from 'zod';
 import type { Db } from './db';
 import { readPropertyDetail, searchProperties, type PropertyRow } from './properties';
-import { partyRowSchema, type ViewRows } from './view';
+import type { ViewRows } from './view';
 
 export type ReadContext = { readonly db: Db; readonly householdId: string; readonly locale: Locale };
 
@@ -103,17 +103,13 @@ function personMatches(row: ViewRows['parties'], query: PeopleQuery): PersonMatc
   return checks.filter(([, hit]) => hit).map(([match]) => match);
 }
 
-/**
- * The people with every word of the name (accents and case aside), the phone, or the last four ID digits, each with
- * what matched and the phone as Vietnamese people write it. Most matches first, then by name.
- */
 export function rankPeople(rows: readonly ViewRows['parties'][], query: PeopleQuery) {
   return rows
     .map((row) => ({ row, reasons: personMatches(row, query) }))
     .filter(({ reasons }) => reasons.length > 0)
     .toSorted((a, b) => b.reasons.length - a.reasons.length || compareVietnameseNames(a.row.full_name, b.row.full_name))
     .slice(0, MAX_CANDIDATES)
-    .map(({ row, reasons }) => ({ id: row.id, full_name: row.full_name, phone: row.phone === null ? null : formatPhone(row.phone), id_last4: row.id_last4, reasons }));
+    .map(({ row, reasons }) => ({ id: row.id, full_name: row.full_name, phone: phoneText(row.phone), id_last4: row.id_last4, reasons }));
 }
 
 export async function findPerson(ctx: ReadContext, query: z.output<typeof personQuerySchema>): Promise<Result<ReturnType<typeof rankPeople>, 'invalid_phone'>> {
@@ -121,6 +117,5 @@ export async function findPerson(ctx: ReadContext, query: z.output<typeof person
   if (phone !== null && !phone.ok) return { ok: false, reason: 'invalid_phone' };
   const { data, error } = await ctx.db.from('parties').select('id, full_name, phone, id_last4').eq('household_id', ctx.householdId);
   if (error) throw new Error(`Reading the people failed: ${error.message}`);
-  const people = partyRowSchema.array().parse(data);
-  return { ok: true, value: rankPeople(people, { tokens: searchTokens(query.name ?? ''), phone: phone?.value ?? null, idLast4: query.id_last4 ?? null }) };
+  return { ok: true, value: rankPeople(data, { tokens: searchTokens(query.name ?? ''), phone: phone?.value ?? null, idLast4: query.id_last4 ?? null }) };
 }

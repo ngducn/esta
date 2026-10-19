@@ -57,8 +57,9 @@ describe('viewRows', () => {
     expect(await viewRows({ db, householdId: HOUSEHOLD, pending: withWrites(NO_PENDING, [room]) }, 'units', { id: ROOM })).toEqual([stored]);
   });
 
-  it('reads a stored phone back as the normalized phone a lookup compares', async () => {
-    const { db } = fakeDb(() => [{ id: PERSON, full_name: 'Lan Demo', phone: '+84901234567', id_last4: null }]);
-    expect(await viewRows({ db, householdId: HOUSEHOLD }, 'parties', { id: PERSON })).toEqual([{ id: PERSON, full_name: 'Lan Demo', phone: phone('0901 234 567'), id_last4: null }]);
+  it('reads a phone stored some other way as it is, rather than failing the read', async () => {
+    const row = { id: PERSON, full_name: 'Lan Demo', phone: 'Zalo 0901', id_last4: null };
+    const { db } = fakeDb(() => [row]);
+    expect(await viewRows({ db, householdId: HOUSEHOLD }, 'parties', { id: PERSON })).toEqual([row]);
   });
 });
