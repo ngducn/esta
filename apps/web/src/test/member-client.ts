@@ -1,5 +1,6 @@
 import type { Database } from '@esta/db';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { vi } from 'vitest';
 import { z } from 'zod';
 import { clearMailbox, latestCode } from '../../../../scripts/inbucket-code.ts';
 
@@ -8,12 +9,17 @@ const { ESTA_IT_SUPABASE_URL: url, ESTA_IT_ANON_KEY: anonKey, ESTA_IT_MAILBOX: a
   .parse(process.env);
 
 /**
- * A session client on the slot `pnpm test:integration` (scripts/web-integration.ts) passes, for a seeded member. Call
- * `signIn` in `beforeAll`: it signs the member in through the slot's mailbox like a person, so every read and write
- * runs under RLS.
+ * Server code under test runs as a seeded member of `householdId`, on the slot `pnpm test:integration`
+ * (scripts/web-integration.ts) passes: `createSessionClient` returns this member's client and `requireMember` their
+ * household. Call it before the `await import()` of the module under test, and `signIn` in `beforeAll`: it signs the
+ * member in through the slot's mailbox like a person, so every read and write runs under RLS.
  */
-export function memberClient(email: string): { client: SupabaseClient<Database>; signIn: () => Promise<void> } {
+export function memberClient(email: string, householdId: string): { client: SupabaseClient<Database>; signIn: () => Promise<void> } {
   const client = createClient<Database>(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  vi.doMock('server-only', () => ({}));
+  vi.doMock('next/cache', () => ({ revalidatePath: () => undefined }));
+  vi.doMock('@/server/member', () => ({ requireMember: async () => ({ household: { id: householdId } }) }));
+  vi.doMock('@/server/supabase/server', () => ({ createSessionClient: async () => client }));
   const signIn = async () => {
     await clearMailbox(email, { api });
     const sent = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });

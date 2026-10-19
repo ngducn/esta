@@ -4,9 +4,9 @@ import { query } from '../scripts/db-checksum.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberCall, memberRest } from './helpers/auth-api';
-import { laneLease, laneLeasePath, laneProperty } from './helpers/seed';
+import { laneHousehold, laneLease, laneLeasePath, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, settled, toast, vnd } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, settled, START, toast, vnd } from './helpers/wizard';
 
 // `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of the deposit settled after Phòng 7 left.
 const recording = process.env.ESTA_E2E_VIDEO === '1';
@@ -16,7 +16,7 @@ const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) 
 
 // The sheets default to the Clock's day and refuse a later one, so the spec runs in the `clock` project on SPEC §9.3's day.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, '2026-10-07T09:00:00+07:00');
+  await setClock(request, START);
 });
 
 const ledger = (page: Page) => page.getByTestId('deposit-ledger');
@@ -153,7 +153,7 @@ test('rule 3: a refund past the 2.800.000 ₫ held is refused in the sheet befor
   });
   expect(await refused.json()).toMatchObject({ code: '23514', message: 'ESTA_DEPOSIT_EXCEEDS_HELD' });
   const direct = await memberCall(page, 'POST', 'deposit_entries', {
-    household_id: seedId('seed:household:lane-9'),
+    household_id: laneHousehold(9),
     lease_id: lease,
     kind: 'refunded',
     amount_vnd: 100_000,
@@ -204,9 +204,9 @@ test('rule 5: a new lease with nothing recorded shows the empty deposit, and Nh�
   const property = laneProperty(3, 'di-an');
   const units = await memberRest<{ label: string }[]>(page, 'GET', `units?property_id=eq.${property}&select=label`);
   const label = `Phòng ${Math.max(...units.map((unit) => Number(/^Phòng (\d+)$/.exec(unit.label)?.[1] ?? 0))) + 1}`;
-  const [unit] = await memberRest<{ id: string }[]>(page, 'POST', 'units', { household_id: seedId('seed:household:lane-3'), property_id: property, label, kind: 'room', list_rent_vnd: 3_000_000 });
+  const [unit] = await memberRest<{ id: string }[]>(page, 'POST', 'units', { household_id: laneHousehold(3), property_id: property, label, kind: 'room', list_rent_vnd: 3_000_000 });
   const [lease] = await memberRest<{ id: string }[]>(page, 'POST', 'leases', {
-    household_id: seedId('seed:household:lane-3'),
+    household_id: laneHousehold(3),
     property_id: property,
     unit_id: unit?.id,
     tenant_party_id: seedId('seed:party:tenant-lane-3:di-an:7'),

@@ -1,7 +1,7 @@
 import { isoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import { parsePropertyFilters } from '@esta/core/properties';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
@@ -9,12 +9,7 @@ import { memberClient } from '@/test/member-client';
 
 // seedId('seed:household:lane-3'), supabase/seed/README.md
 const HOUSEHOLD = '77551982-f791-5e3b-8cc6-0622735344d4';
-const { client, signIn } = memberClient('ryan.lane3@demo.esta.test');
-
-vi.mock('server-only', () => ({}));
-vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/member', () => ({ requireMember: async () => ({ household: { id: HOUSEHOLD } }) }));
-vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => client }));
+const { client, signIn } = memberClient('ryan.lane3@demo.esta.test', HOUSEHOLD);
 
 const { activateLease, amendLease, createTenant, previewActivation, renewLease, saveLease, terminateLease } = await import('./leases');
 const { listProperties } = await import('@/server/properties/list');

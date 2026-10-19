@@ -1,5 +1,5 @@
 import { deriveDepositLedger } from '@esta/core/allocation';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { memberClient } from '@/test/member-client';
 
@@ -9,12 +9,7 @@ import { memberClient } from '@/test/member-client';
 
 // seedId('seed:household:lane-6'), supabase/seed/README.md
 const HOUSEHOLD = '7a44c0c3-e063-5cf0-b56d-c33c5f915ddd';
-const { client, signIn } = memberClient('ryan.lane6@demo.esta.test');
-
-vi.mock('server-only', () => ({}));
-vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/member', () => ({ requireMember: async () => ({ household: { id: HOUSEHOLD } }) }));
-vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => client }));
+const { client, signIn } = memberClient('ryan.lane6@demo.esta.test', HOUSEHOLD);
 
 const { recordDeposit } = await import('./deposits');
 const { loadDepositLines, loadHeldDepositTotal } = await import('@/server/leases/deposits');
