@@ -54,7 +54,12 @@ export async function runTool(estaTool: EstaTool, input: Record<string, unknown>
   }
 }
 
-/** The MCP server hands a thrown error back to the model as text, so a job failure also goes to `fail` for the caller to end the session. */
+const JOB_STOPPED = 'This call failed outside your control, and the job has stopped.';
+
+/**
+ * A job failure goes to `fail`, which ends the session with the real cause. The model reads only that the call failed,
+ * because the MCP server would hand a thrown error's own text to the model.
+ */
 export function estaServer(tools: EstaTools, fail: (error: unknown) => void): McpSdkServerConfigWithInstance {
   return createSdkMcpServer({
     name: SERVER_NAME,
@@ -67,7 +72,7 @@ export function estaServer(tools: EstaTools, fail: (error: unknown) => void): Mc
           return { content: [{ type: 'text' as const, text }], isError };
         } catch (error) {
           fail(error);
-          throw error;
+          return { content: [{ type: 'text' as const, text: JOB_STOPPED }], isError: true };
         }
       }),
     ),
