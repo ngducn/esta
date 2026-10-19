@@ -42,12 +42,19 @@ const balanceSchema = z.object({ id: z.uuid(), number: z.string(), lease_id: z.u
 /** The seeded lane household's open invoices, read under RLS as the member records them. */
 type Sheet = { leaseId: string; invoiceId: string; open: OpenInvoice[] };
 
-async function openInvoices(number: string): Promise<Sheet> {
+/** Invoice numbers follow the order the nightly job drafts in, so a Dĩ An room's invoice is found by its room and month. */
+async function openInvoices(room: string, month: string): Promise<Sheet> {
+  const property = await client.from('properties').select('id').eq('code', 'DIAN').single();
+  if (property.error) throw property.error;
+  const unit = await client.from('units').select('id').eq('property_id', property.data.id).eq('label', room).single();
+  if (unit.error) throw unit.error;
+  const lease = await client.from('leases').select('id').eq('unit_id', unit.data.id).eq('status', 'active').single();
+  if (lease.error) throw lease.error;
   const { data, error } = await client.from('invoice_balances').select('id, number, lease_id, due_date, period_start, outstanding_vnd').eq('status', 'issued').gt('outstanding_vnd', 0);
   if (error) throw error;
   const rows = z.array(balanceSchema).parse(data);
-  const row = rows.find((candidate) => candidate.number === number);
-  if (row === undefined) throw new Error(`${number} is not open`);
+  const row = rows.find((candidate) => candidate.lease_id === lease.data.id && candidate.period_start.startsWith(month));
+  if (row === undefined) throw new Error(`${room} ${month} is not open`);
   const open = rows
     .filter((candidate) => candidate.lease_id === row.lease_id)
     .map((candidate) => ({ id: candidate.id, dueDate: isoDate(candidate.due_date), periodStart: isoDate(candidate.period_start), outstandingVnd: vnd(candidate.outstanding_vnd) }));
@@ -100,7 +107,7 @@ beforeAll(async () => {
 
 describe('payment actions against local Supabase (LSE-7)', () => {
   it('records a full cash payment on Phòng 3, which reads paid, and undo removes it with its allocation', async () => {
-    const sheet = await openInvoices('DIAN-202610-003');
+    const sheet = await openInvoices('Phòng 3', '2026-10');
     const { invoiceId } = sheet;
     const payment = await record({ ...input(sheet, '2.500.000'), method: 'cash' });
     expect(payment).toMatchObject({ amountVnd: 2_500_000, allocatedVnd: 2_500_000 });
@@ -114,7 +121,7 @@ describe('payment actions against local Supabase (LSE-7)', () => {
   });
 
   it('records 3tr5 as a partial transfer and an overpayment with the rest left as credit', async () => {
-    const sheet = await openInvoices('DIAN-202610-005');
+    const sheet = await openInvoices('Phòng 5', '2026-10');
     const partial = await record(input(sheet, '3tr5'));
     expect(partial).toMatchObject({ amountVnd: 3_500_000, allocatedVnd: 3_500_000 });
     await undo(partial.id);
@@ -124,7 +131,7 @@ describe('payment actions against local Supabase (LSE-7)', () => {
   });
 
   it('returns the same payment for a repeated key and writes one', async () => {
-    const raw = input(await openInvoices('DIAN-202610-006'), '2tr8');
+    const raw = input(await openInvoices('Phòng 6', '2026-10'), '2tr8');
     const [first, second] = await Promise.all([record(raw), record(raw)]);
     expect(second.id).toBe(first.id);
     const { count } = await client.from('payments').select('id', { count: 'exact', head: true }).eq('idempotency_key', raw.idempotencyKey);
@@ -133,9 +140,9 @@ describe('payment actions against local Supabase (LSE-7)', () => {
   });
 
   it('refuses a sheet left open on Phòng 5 September once that row is recorded elsewhere, so October stays owed', async () => {
-    const stale = await openInvoices('DIAN-202609-005');
-    const october = await openInvoices('DIAN-202610-005');
-    const elsewhere = await record(input(await openInvoices('DIAN-202609-005'), '2.800.000'));
+    const stale = await openInvoices('Phòng 5', '2026-09');
+    const october = await openInvoices('Phòng 5', '2026-10');
+    const elsewhere = await record(input(await openInvoices('Phòng 5', '2026-09'), '2.800.000'));
     const before = await client.from('payments').select('id', { count: 'exact', head: true });
     expect(await recordPayment(input(stale, '2.800.000')), 'the row is paid').toEqual({ ok: false, reason: 'stale' });
     expect(await recordPayment(input(stale, '2.800.000', [stale.invoiceId])), 'the chosen September is paid').toEqual({ ok: false, reason: 'stale' });
@@ -150,7 +157,7 @@ describe('payment actions against local Supabase (LSE-7)', () => {
   });
 
   it('refuses an unreadable amount, an impossible date and a date after the clock, writing nothing', async () => {
-    const sheet = await openInvoices('DIAN-202610-004');
+    const sheet = await openInvoices('Phòng 4', '2026-10');
     const before = await client.from('payments').select('id', { count: 'exact', head: true });
     expect(await recordPayment(input(sheet, '3tr5x'))).toEqual({ ok: false, reason: 'amount' });
     expect(await recordPayment(input(sheet, ''))).toEqual({ ok: false, reason: 'amount' });
@@ -167,9 +174,9 @@ describe('payment actions against local Supabase (LSE-7)', () => {
     const edges = [1, 2_799_999, 2_800_000, 2_800_001, 5_599_999, 5_600_000, 5_600_001];
     let compared = 0;
     for (const start of [0, 1_000_000, 2_800_000]) {
-      const seeded = await openInvoices('DIAN-202610-005');
+      const seeded = await openInvoices('Phòng 5', '2026-10');
       const setup = start === 0 ? null : await record(input(seeded, String(start)));
-      const sheet = await openInvoices('DIAN-202610-005');
+      const sheet = await openInvoices('Phòng 5', '2026-10');
       const { open } = sheet;
       const choices = [null, ...open.map((invoice) => [invoice.id]), ...(open.length > 1 ? [open.map((invoice) => invoice.id)] : [])];
       for (const amount of [...edges, ...amounts]) {
@@ -186,7 +193,7 @@ describe('payment actions against local Supabase (LSE-7)', () => {
         }
       }
       if (setup !== null) await undo(setup.id);
-      expect((await openInvoices('DIAN-202610-005')).open).toEqual(seeded.open);
+      expect((await openInvoices('Phòng 5', '2026-10')).open).toEqual(seeded.open);
     }
     expect(compared).toBeGreaterThan(100);
   }, 120_000);
