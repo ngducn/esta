@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { e2eServiceHeaders } from '../../scripts/e2e-service.ts';
 import { parseSlot } from '../../scripts/slot.ts';
@@ -26,6 +27,21 @@ export async function open(page: Page, email: string, theme: 'light' | 'dark', v
   await page.setViewportSize(viewport);
   await page.context().addCookies([{ name: 'esta_theme', value: theme, url: test.info().project.use.baseURL ?? '' }]);
   await signIn(page, email);
+}
+
+/**
+ * A household of its own for a rule that adds properties, because a seeded lane's counts are asserted by other specs
+ * (as P1-05's property form rules do). Signs up through onboarding as `Nguyễn Thị Demo`.
+ */
+export async function openNewHousehold(page: Page, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
+  await page.setViewportSize(viewport);
+  await page.context().addCookies([{ name: 'esta_theme', value: theme, url: test.info().project.use.baseURL ?? '' }]);
+  await signIn(page, `p208.${randomUUID().slice(0, 8)}@demo.esta.test`);
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await page.getByLabel('Tên gia đình').fill('Gia đình Demo P208');
+  await page.getByLabel('Tên của bạn').fill('Nguyễn Thị Demo');
+  await page.getByRole('button', { name: 'Tạo gia đình' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mời người trong gia đình', { timeout: 20_000 });
 }
 
 export async function serviceGet<T>(page: Page, path: string): Promise<T> {

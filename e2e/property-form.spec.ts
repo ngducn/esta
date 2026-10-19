@@ -60,16 +60,33 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 
 const kindSelect = (page: Page) => page.getByTestId('kind-select');
 
-async function openNewForm(page: Page) {
-  await page.goto('/properties');
-  await page.getByTestId('add-property').click();
+/** Since P2-08 a property starts in the add-property wizard: its first step creates it, and its details step is this form. */
+async function startInWizard(page: Page, nickname: string, kind: string) {
   await expect(page).toHaveURL(/\/properties\/new$/);
-  await expect(page.getByTestId('property-form')).toBeVisible();
+  await expect(page.getByTestId('skip-photo')).toBeEnabled();
+  await page.getByTestId('skip-photo').click();
+  await page.getByTestId('nickname').fill(nickname);
+  await kindSelect(page).selectOption({ label: kind });
+  await page.getByTestId('wizard-start').click();
+  await expect(page.getByTestId('property-form')).toBeVisible({ timeout: 15_000 });
 }
 
+async function openNewForm(page: Page, nickname: string, kind: string) {
+  await page.goto('/properties');
+  await page.getByTestId('add-property').click();
+  await startInWizard(page, nickname, kind);
+}
+
+/** In the wizard a save moves on to the owners step, so the property's page is opened from there. */
 async function save(page: Page) {
+  const wizardProperty = new URL(page.url()).searchParams.get('property');
   await page.getByTestId('save-property').click();
-  await expect(page).toHaveURL(/\/properties\/[0-9a-f-]{36}$/, { timeout: 15_000 });
+  if (wizardProperty === null) {
+    await expect(page).toHaveURL(/\/properties\/[0-9a-f-]{36}$/, { timeout: 15_000 });
+    return;
+  }
+  await expect(page.getByTestId('property-wizard')).toHaveAttribute('data-step', 'owners', { timeout: 15_000 });
+  await page.goto(`/properties/${wizardProperty}`);
 }
 
 async function apartmentWithFee(page: Page, words: { kind: string; fee: string; floorLabel: string }) {
@@ -91,7 +108,7 @@ test('rule 1: Mẹ adds a townhouse, picks the ward the Dĩ An, Bình Dương su
   onlyOn('mobile');
   await setTheme(page, 'light');
   await newHousehold(page);
-  await openNewForm(page);
+  await openNewForm(page, 'Nhà phố Demo Dĩ An', 'Nhà phố');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await page.getByTestId('nickname').fill('Nhà phố Demo Dĩ An');
@@ -125,7 +142,7 @@ test('rule 2: an apartment shows its own fields, previews 1tr2 as 1.200.000 ₫ 
   onlyOn('mobile');
   await setTheme(page, 'dark');
   await newHousehold(page);
-  await openNewForm(page);
+  await openNewForm(page, 'Căn hộ Demo Bình Thọ', 'Căn hộ');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await apartmentWithFee(page, { kind: 'Căn hộ', fee: 'Phí quản lý mỗi tháng', floorLabel: 'Tầng' });
 
@@ -221,9 +238,7 @@ test('rule 5: archiving Kho Biên Hòa shows Hoàn tác, the undo brings it back
   onlyOn('desktop');
   await setTheme(page, 'dark');
   await newHousehold(page);
-  await openNewForm(page);
-  await page.getByTestId('nickname').fill('Kho Biên Hòa');
-  await kindSelect(page).selectOption({ label: 'Kho' });
+  await openNewForm(page, 'Kho Biên Hòa', 'Kho');
   await save(page);
   const detail = page.url();
   const card = page.getByTestId('property-card').filter({ has: page.getByRole('link', { name: 'Kho Biên Hòa', exact: true }) });
@@ -262,12 +277,13 @@ test('rule 6: in English at 130% and dark, the apartment form keeps 1.200.000 �
   await page.goto('/properties/new');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add a property');
+  await expect(page.getByTestId('skip-photo')).toBeEnabled();
+  await page.getByTestId('skip-photo').click();
   await expect(page.getByText('Kind', { exact: true })).toBeVisible();
-  await kindSelect(page).selectOption({ label: 'Apartment' });
+  await startInWizard(page, 'Căn hộ Demo Bình Thọ', 'Apartment');
   await page.getByTestId('detail-management_fee_vnd').getByRole('textbox', { name: 'Monthly management fee' }).fill('1tr2');
   await expect(page.getByTestId('money-preview'), 'English groups thousands with commas (formatVnd, DOMAIN-VN §9)').toHaveText(FEE_EN);
   expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth), 'no horizontal page scroll').toBe(true);
-  await page.getByTestId('nickname').fill('Căn hộ Demo Bình Thọ');
   await save(page);
   await page.reload();
   await expect(page.getByTestId('overview-facts')).toContainText(/1,200,000\s₫/);
@@ -293,8 +309,7 @@ test('PRP-1: one property of each of the ten kinds saves with its own fields', a
   await newHousehold(page);
   for (const [kind, details] of TEN_KINDS) {
     await page.goto('/properties/new');
-    await page.getByTestId('nickname').fill(`${kind} Demo`);
-    await kindSelect(page).selectOption({ label: kind });
+    await startInWizard(page, `${kind} Demo`, kind);
     for (const [testId, text] of Object.entries(details)) await page.getByTestId(testId).fill(text);
     await save(page);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(`${kind} Demo`);
@@ -318,7 +333,8 @@ test('on a slow phone the form takes no typing until it is ready, then keeps wha
     await route.continue();
   });
 
-  for (const path of ['/properties/new', `/properties/${propertyId(6, 'thu-duc')}/edit`]) {
+  // The wizard's details step is the new-property form since P2-08; it runs over a property step 1 created.
+  for (const path of [`/properties/new?property=${propertyId(6, 'thu-duc')}&step=details`, `/properties/${propertyId(6, 'thu-duc')}/edit`]) {
     let release = () => {};
     held = new Promise<void>((resolve) => {
       release = resolve;

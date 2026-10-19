@@ -8,12 +8,11 @@ import {
   fixture,
   followReadyNotice,
   noSidewaysScroll,
-  open,
   PHONE,
   rest,
   seriousAxeViolations,
+  openNewHousehold,
   serviceGet,
-  servicePatch,
   shot,
   START,
   startWizard,
@@ -93,7 +92,7 @@ async function runRule2(page: Page, label: string, evidence: string | null) {
 }
 
 test('rule 2: Mẹ moves on to owners while Trợ lý reads the gcn_2024 photo, then follows the notice to the review', async ({ page }) => {
-  await open(page, 'me.lane2@demo.esta.test', 'dark', PHONE);
+  await openNewHousehold(page, 'dark', PHONE);
   await page.goto('/properties/new');
   await expect(page.getByTestId('wizard-photo')).toBeVisible();
   await expectAxeClean(page, 'step photo');
@@ -107,7 +106,7 @@ test('rule 2: Mẹ moves on to owners while Trợ lý reads the gcn_2024 photo, 
 });
 
 test('rule 3: Ryan skips the photo and finishes, then leaves a second wizard after owners and finds both on Tài sản', async ({ page }) => {
-  await open(page, 'ryan.lane3@demo.esta.test', 'light', DESKTOP);
+  await openNewHousehold(page, 'light', DESKTOP);
   await page.goto('/properties/new');
   await expect(page.getByTestId('wizard-photo')).toBeVisible();
   await shot(page, 'p2-08-step-photo-1440x900-light');
@@ -147,7 +146,7 @@ test('rule 3: Ryan skips the photo and finishes, then leaves a second wizard aft
 
 test('rule 4: with the worker stopped and its heartbeat six minutes old, the wizard finishes and the review opens once it runs', async ({ page, request }) => {
   await stopWorker();
-  await open(page, 'me.lane4@demo.esta.test', 'light', PHONE);
+  await openNewHousehold(page, 'light', PHONE);
   await page.goto('/properties/new');
   await expect(page.getByTestId('wizard-photo')).toBeVisible();
   await shot(page, 'p2-08-step-photo-390x844-light');
@@ -177,7 +176,7 @@ test('rule 4: with the worker stopped and its heartbeat six minutes old, the wiz
 
 test('rule 5: Ryan adds the old Quận 3 sổ hồng; every current ward is offered, the chosen one is saved and the married couple own 50% each', async ({ page }) => {
   await startWorker();
-  await open(page, 'ryan.lane5@demo.esta.test', 'dark', DESKTOP);
+  await openNewHousehold(page, 'dark', DESKTOP);
   await page.goto('/properties/new');
   await expect(page.getByTestId('wizard-photo')).toBeVisible();
   await shot(page, 'p2-08-step-photo-1440x900-dark');
@@ -224,7 +223,7 @@ test('rule 5: Ryan adds the old Quận 3 sổ hồng; every current ward is offe
 });
 
 test('rule 6: Mẹ sets a rooming house to 8 rooms on the use step and Cho thuê lists Phòng 1 to Phòng 8', async ({ page }) => {
-  await open(page, 'me.lane6@demo.esta.test', 'dark', PHONE);
+  await openNewHousehold(page, 'dark', PHONE);
   const { propertyId } = await startWizard(page, { nickname: 'Dãy trọ Thủ Đức mới Demo', kind: 'rooming_house', photo: null });
   await page.getByTestId('skip-step').click();
   await step(page, 'owners');
@@ -241,43 +240,41 @@ test('rule 6: Mẹ sets a rooming house to 8 rooms on the use step and Cho thuê
 });
 
 test('rule 7: in English at 130% and dark, rule 2 reads in English, wraps long addresses and never scrolls sideways', async ({ page }) => {
-  const member = `household_members?invited_email=eq.${encodeURIComponent('me.lane10@demo.esta.test')}`;
-  await servicePatch(page, member, { locale: 'en', text_scale: 130 });
-  try {
-    await open(page, 'me.lane10@demo.esta.test', 'dark', PHONE);
-    await page.goto('/properties/new');
-    await expect(page.getByRole('heading', { name: 'Do you have a photo of the certificate?' })).toBeVisible();
-    expect(await noSidewaysScroll(page), 'photo step').toBe(true);
-    await stopWorker();
-    await startWizard(page, { nickname: 'Nhà phố Phường An Khánh Thành phố Thủ Đức cũ Thành phố Hồ Chí Minh Demo', kind: 'townhouse', photo: await fixture('gcn_2024-photo').upload(), via: 'camera' });
-    await expect(page.getByTestId('wizard-progress')).toHaveText('Step 2 of 6: Details');
-    expect(await noSidewaysScroll(page), 'details step').toBe(true);
-    await page.getByTestId('skip-step').click();
-    await step(page, 'owners');
-    await expect(page.getByRole('heading', { name: 'Who owns this property?' })).toBeVisible();
-    await expect(notice(page)).toContainText('Trợ lý is reading');
-    await startWorker();
-    await followReadyNotice(page);
-    expect(await noSidewaysScroll(page), 'review step').toBe(true);
-    await acceptAndConfirm(page);
-    await expect(page.getByRole('heading', { name: 'Current address' })).toBeVisible();
-    expect(await noSidewaysScroll(page), 'address confirm').toBe(true);
-    await page.getByTestId('review-continue').click();
-    await step(page, 'owners');
-    await finishFromOwners(page);
-    await expect(page.getByTestId('wizard-score')).toContainText('Completeness');
-    await expect(page.getByRole('link', { name: 'Open the property' })).toBeVisible();
-    expect(await noSidewaysScroll(page), 'finish step').toBe(true);
-  } finally {
-    await servicePatch(page, member, { locale: 'vi', text_scale: 100 });
-  }
+  await openNewHousehold(page, 'dark', PHONE);
+  await page.goto('/settings');
+  for (const choice of ['English', '130%']) await page.getByRole('radio', { name: new RegExp(`^${choice}`) }).check();
+  await page.getByRole('button', { name: /^(Lưu|Save)$/ }).click();
+  await expect(page.getByRole('status')).toHaveText(/^(Đã lưu cài đặt hiển thị\.|Display settings saved\.)$/);
+  await page.goto('/properties/new');
+  await expect(page.getByRole('heading', { name: 'Do you have a photo of the certificate?' })).toBeVisible();
+  expect(await noSidewaysScroll(page), 'photo step').toBe(true);
+  await stopWorker();
+  await startWizard(page, { nickname: 'Nhà phố Phường An Khánh Thành phố Thủ Đức cũ Thành phố Hồ Chí Minh Demo', kind: 'townhouse', photo: await fixture('gcn_2024-photo').upload(), via: 'camera' });
+  await expect(page.getByTestId('wizard-progress')).toHaveText('Step 2 of 6: Details');
+  expect(await noSidewaysScroll(page), 'details step').toBe(true);
+  await page.getByTestId('skip-step').click();
+  await step(page, 'owners');
+  await expect(page.getByRole('heading', { name: 'Who owns this property?' })).toBeVisible();
+  await expect(notice(page)).toContainText('Trợ lý is reading');
+  await startWorker();
+  await followReadyNotice(page);
+  expect(await noSidewaysScroll(page), 'review step').toBe(true);
+  await acceptAndConfirm(page);
+  await expect(page.getByRole('heading', { name: 'Current address' })).toBeVisible();
+  expect(await noSidewaysScroll(page), 'address confirm').toBe(true);
+  await page.getByTestId('review-continue').click();
+  await step(page, 'owners');
+  await finishFromOwners(page);
+  await expect(page.getByTestId('wizard-score')).toContainText('Completeness');
+  await expect(page.getByRole('link', { name: 'Open the property' })).toBeVisible();
+  expect(await noSidewaysScroll(page), 'finish step').toBe(true);
 });
 
 const SHOT_RUNS = [
-  { email: 'me.lane8@demo.esta.test', viewport: PHONE, theme: 'light' },
-  { email: 'me.lane9@demo.esta.test', viewport: PHONE, theme: 'dark' },
-  { email: 'ryan.lane8@demo.esta.test', viewport: DESKTOP, theme: 'light' },
-  { email: 'ryan.lane9@demo.esta.test', viewport: DESKTOP, theme: 'dark' },
+  { viewport: PHONE, theme: 'light' },
+  { viewport: PHONE, theme: 'dark' },
+  { viewport: DESKTOP, theme: 'light' },
+  { viewport: DESKTOP, theme: 'dark' },
 ] as const;
 
 for (const run of SHOT_RUNS) {
@@ -285,7 +282,7 @@ for (const run of SHOT_RUNS) {
   test(`evidence ${size}: every wizard state on the north-star certificate`, async ({ page, request }) => {
     test.skip(process.env.ESTA_WIZARD_SHOTS !== '1', 'screenshots for the PR body only');
     await stopWorker();
-    await open(page, run.email, run.theme, run.viewport);
+    await openNewHousehold(page, run.theme, run.viewport);
     await page.goto('/properties/new');
     await expect(page.getByTestId('wizard-photo')).toBeVisible();
     await shot(page, `p2-08-step-photo-${size}`);

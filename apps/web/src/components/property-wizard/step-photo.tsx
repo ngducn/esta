@@ -257,6 +257,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
               type="button"
               variant="outline"
               data-testid="capture-pages"
+              className="min-[22rem]:col-span-2"
               onClick={() => {
                 setCapturedPages(0);
                 setCapturing(true);
@@ -270,6 +271,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
               variant={choice === 'skip' ? 'outline' : 'quiet'}
               aria-pressed={choice === 'skip'}
               data-testid="skip-photo"
+              className="min-[22rem]:col-span-2"
               onClick={() => {
                 picking.current += 1;
                 setPrepared(null);
