@@ -333,7 +333,17 @@ export function ExpenseSheet({
               </p>
             ) : null}
 
-            <MoneyInput label={t('amount')} defaultText={amount} onTextChange={setAmount} disabled={pending} error={amountError()} large />
+            <MoneyInput
+              label={t('amount')}
+              defaultText={amount}
+              onTextChange={(text) => {
+                setAmount(text);
+                setErrors((errors) => without(errors, 'amount'));
+              }}
+              disabled={pending}
+              error={amountError()}
+              large
+            />
 
             <fieldset className="flex flex-col gap-2" aria-describedby={`${fieldId}-category`}>
               <legend className="mb-2 text-body font-semibold text-ink">{t('category')}</legend>
@@ -365,7 +375,15 @@ export function ExpenseSheet({
 
             {editingDate ? (
               <div className="flex flex-col gap-1">
-                <DateInput label={t('date')} defaultValue={editing?.paidOn ?? scope.today} onTextChange={setDate} disabled={pending} />
+                <DateInput
+                  label={t('date')}
+                  defaultValue={editing?.paidOn ?? scope.today}
+                  onTextChange={(text) => {
+                    setDate(text);
+                    setErrors((errors) => without(errors, 'paidOn'));
+                  }}
+                  disabled={pending}
+                />
                 {dateError() === null ? null : <FieldMessage id={`${fieldId}-date`} error={dateError()} />}
               </div>
             ) : (
