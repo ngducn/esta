@@ -1,0 +1,30 @@
+name: diag
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          browsers: 'true'
+      - name: lsof
+        run: |
+          command -v lsof || echo NO-LSOF
+          (python3 -m http.server 3200 >/dev/null 2>&1 &) ; sleep 2
+          lsof -nP -t -iTCP:3200 -sTCP:LISTEN; echo "exit=$?"
+          lsof -nP -iTCP:3200 | head -3
+          fc-list | grep -ci jakarta || true
+      - name: glyph widths on the dev server
+        run: |
+                    cp .env.example apps/web/.env.local
+          (pnpm --filter ./apps/web exec next dev -p 3000 >"$RUNNER_TEMP/dev.log" 2>&1 &)
+          for i in $(seq 1 60); do curl -fs localhost:3000/dev/glyphs >/dev/null && break; sleep 3; done
+          node --input-type=module -e "$(cat tools/ci/.diag.mjs)" || tail -30 "$RUNNER_TEMP/dev.log"
