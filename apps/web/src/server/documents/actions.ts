@@ -37,6 +37,7 @@ const registerSchema = uploadSchema.extend({
   title: z.string().trim().min(1).max(200),
   expiresOn: z.string().refine(isIsoDate).nullable(),
   pageCount: z.number().int().min(1).max(2000),
+  leaseId: id.nullable().default(null),
 });
 
 export type UploadTarget = { readonly path: string; readonly url: string };
@@ -91,7 +92,7 @@ export type Registered = { readonly ok: true; readonly title: string } | { reado
 export async function registerDocument(input: unknown): Promise<Registered> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success || !acceptsMime(parsed.data.category, parsed.data.mime)) return { ok: false };
-  const { documentId, propertyId, category, title, expiresOn, filename, mime, size, sha256, pageCount } = parsed.data;
+  const { documentId, propertyId, category, title, expiresOn, filename, mime, size, sha256, pageCount, leaseId } = parsed.data;
   const member = await requireMember();
   const household = member.household.id;
   const name = documentObjectName(filename);
@@ -115,6 +116,7 @@ export async function registerDocument(input: unknown): Promise<Registered> {
       sha256,
       sensitivity: DOCUMENT_CATEGORIES[category].sensitivity,
       expires_on: expiresOn,
+      lease_id: leaseId,
     },
     { onConflict: 'id', ignoreDuplicates: true },
   );

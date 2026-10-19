@@ -3,7 +3,9 @@
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
 import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema, tenantSchema } from '@esta/core/schemas/lease';
-import { isoDateSchema } from '@esta/core/schemas/legal';
+import { RENEWAL_INCREASE_BPS } from '@esta/core/lease';
+import { MAX_LIST_RENT_VND } from '@esta/core/schemas/units';
+import { isoDateSchema, text } from '@esta/core/schemas/legal';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { formatPhone } from '@esta/core/phone';
 import type { Result } from '@esta/core/result';
@@ -36,6 +38,7 @@ export type LeaseWrite = { readonly ok: true; readonly id: string } | { readonly
 
 function revalidateLeases() {
   revalidatePath('/properties', 'layout');
+  revalidatePath('/collections');
 }
 
 /** Saves a draft under the session client; an active lease changes only through an amendment (P3-08). */
@@ -131,4 +134,96 @@ export async function activateLease(leaseId: unknown, paidThrough: unknown): Pro
     .toSorted()
     .at(-1);
   return { ok: true, issuedMonth: latest === undefined ? null : isoDate(latest) };
+}
+
+/** What `amend_lease`, `terminate_lease` and `renew_lease` refuse, by the message each raises. */
+const CHANGE_REFUSALS = {
+  ESTA_LEASE_NOT_FOUND: 'failed',
+  ESTA_LEASE_NOT_ACTIVE: 'not_active',
+  ESTA_AMENDMENT_NOT_AFTER_AS_OF: 'not_after_as_of',
+  ESTA_AMENDMENT_ALREADY_BILLED: 'already_billed',
+  ESTA_AMENDMENT_DUPLICATE: 'duplicate_effective_start',
+  ESTA_AMENDMENT_NOT_A_PERIOD_START: 'not_a_period_start',
+  ESTA_AMENDMENT_MOVES_LATER: 'moves_later_amendment',
+  ESTA_AMENDMENT_EMPTY: 'invalid',
+  ESTA_TERMINATION_REASON: 'reason_required',
+  ESTA_TERMINATION_DATE: 'date_outside_lease',
+  ESTA_TERMINATION_BEFORE_ISSUED: 'before_issued',
+  ESTA_LEASE_NOT_RENEWABLE: 'not_renewable',
+  ESTA_LEASE_OPEN_ENDED: 'open_ended',
+  ESTA_LEASE_ALREADY_RENEWED: 'already_renewed',
+  ESTA_RENEWAL_INCREASE: 'invalid',
+  ESTA_RENEWAL_END: 'end_before_start',
+  ESTA_LEASE_OVERLAP: 'overlap',
+} as const;
+
+export type LeaseChangeRefusal = (typeof CHANGE_REFUSALS)[keyof typeof CHANGE_REFUSALS] | 'invalid' | 'failed';
+
+export type LeaseChange<T = undefined> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly reason: LeaseChangeRefusal };
+
+function changeRefusal(error: { readonly message: string }): LeaseChangeRefusal {
+  return error.message in CHANGE_REFUSALS ? CHANGE_REFUSALS[error.message as keyof typeof CHANGE_REFUSALS] : 'failed';
+}
+
+const rentSchema = z.number().int().min(1).max(MAX_LIST_RENT_VND);
+
+const amendmentSchema = z.strictObject({
+  effectivePeriodStart: isoDateSchema,
+  rentVnd: rentSchema,
+  reason: z.string().trim().max(1000),
+});
+
+/**
+ * LSE-2 and LSE-3: a new monthly rent from a later period start. `amend_lease` checks the start against the database
+ * clock and what is already billed, writes the amendment and plans the drafts from that start again, so every issued
+ * invoice stays as it was.
+ */
+export async function amendLease(leaseId: unknown, raw: unknown): Promise<LeaseChange> {
+  const id = uuid.safeParse(leaseId);
+  const value = amendmentSchema.safeParse(raw);
+  if (!id.success || !value.success) return { ok: false, reason: 'invalid' };
+  const supabase = await createSessionClient();
+  const { error } = await supabase.rpc('amend_lease', {
+    p_lease_id: id.data,
+    p_effective_period_start: value.data.effectivePeriodStart,
+    p_rent_vnd: value.data.rentVnd,
+    ...(value.data.reason === '' ? {} : { p_reason: value.data.reason }),
+  });
+  revalidateLeases();
+  return error ? { ok: false, reason: changeRefusal(error) } : { ok: true, value: undefined };
+}
+
+const terminationSchema = z.strictObject({ terminatedOn: isoDateSchema, reason: text(1000) });
+
+/** LSE-2: the lease ends on the chosen day for the stated reason, and no period after that day is ever billed (#144). */
+export async function terminateLease(leaseId: unknown, raw: unknown): Promise<LeaseChange> {
+  const id = uuid.safeParse(leaseId);
+  if (!id.success) return { ok: false, reason: 'invalid' };
+  const value = terminationSchema.safeParse(raw);
+  if (!value.success) return { ok: false, reason: value.error.issues.some((issue) => issue.path[0] === 'reason') ? 'reason_required' : 'invalid' };
+  const supabase = await createSessionClient();
+  const { error } = await supabase.rpc('terminate_lease', { p_lease_id: id.data, p_terminated_on: value.data.terminatedOn, p_reason: value.data.reason });
+  revalidateLeases();
+  return error ? { ok: false, reason: changeRefusal(error) } : { ok: true, value: undefined };
+}
+
+const renewalSchema = z.strictObject({
+  increaseBps: z.number().int().min(RENEWAL_INCREASE_BPS.min).max(RENEWAL_INCREASE_BPS.max),
+  endDate: isoDateSchema.nullable(),
+});
+
+/** LSE-2 and SPEC §9.4 seed 7: a new active lease from the day after this one ends, at the rent `renewalRent` previews. */
+export async function renewLease(leaseId: unknown, raw: unknown): Promise<LeaseChange<string>> {
+  const id = uuid.safeParse(leaseId);
+  const value = renewalSchema.safeParse(raw);
+  if (!id.success || !value.success) return { ok: false, reason: 'invalid' };
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase.rpc('renew_lease', {
+    p_lease_id: id.data,
+    p_increase_bps: value.data.increaseBps,
+    ...(value.data.endDate === null ? {} : { p_end_date: value.data.endDate }),
+  });
+  revalidateLeases();
+  if (error) return { ok: false, reason: changeRefusal(error) };
+  return { ok: true, value: uuid.parse(data) };
 }

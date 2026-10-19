@@ -34,7 +34,7 @@ insert into public.leases (
   ('00000000-0000-4000-8000-00000000e004', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a17',
    '00000000-0000-4000-8000-00000000a0a1', '2025-10-25', '2026-10-31', 2800000, 1, 'lease_start', 7, 'metered_by_owner', '2026-10-24', 'ended', null),
   ('00000000-0000-4000-8000-00000000e005', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a16',
-   '00000000-0000-4000-8000-00000000a0a1', '2025-06-25', '2027-06-24', 2800000, 1, 'lease_start', 0, 'metered_by_owner', '2026-10-24', 'terminated', '2026-10-20'),
+   '00000000-0000-4000-8000-00000000a0a1', '2025-06-25', '2026-10-20', 2800000, 1, 'lease_start', 0, 'metered_by_owner', '2026-10-24', 'terminated', '2026-10-20'),
   ('00000000-0000-4000-8000-00000000e0b1', :'b', '00000000-0000-4000-8000-0000000000b1', private.whole_unit_id('00000000-0000-4000-8000-0000000000b1'),
    '00000000-0000-4000-8000-00000000b0b1', '2026-01-01', null, 9000000, 1, 'calendar_month', 0, 'tenant_direct', '2026-10-31', 'active', null);
 insert into public.invoices (id, household_id, lease_id, period_start, period_end, due_date, issue_on, status, issued_at) values
@@ -121,7 +121,7 @@ select results_eq(
             ('00000000-0000-4000-8000-0000000f0004'::uuid, 'issued'::text, '2026-11-02T09:00:00+07:00'::timestamptz) $$,
   'Thủ Đức''s 01/11 draft and the ended lease''s last draft issue at the run''s instant');
 select is((select status from public.invoices where id = '00000000-0000-4000-8000-0000000f0005'), 'draft',
-  'a terminated lease''s draft is left for termination to settle');
+  'a terminated lease never issues a draft that starts after its end');
 select results_eq(
   $$ select id, issued_at from public.invoices where id in ('00000000-0000-4000-8000-0000000f0002', '00000000-0000-4000-8000-0000000f0003') order by id $$,
   $$ values ('00000000-0000-4000-8000-0000000f0002'::uuid, '2026-10-01T00:30:00+07:00'::timestamptz),

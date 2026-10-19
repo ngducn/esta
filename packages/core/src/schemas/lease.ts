@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { BILLING_CYCLES, LEASE_STATUSES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS, UTILITIES_MODES } from '../lease/types';
 import { vnd } from '../money/vnd';
 import { normalizePhone, type Phone } from '../phone';
-import type { Escalation, LeaseTerms } from '../schedule/types';
+import type { Amendment, Escalation, LeaseTerms } from '../schedule/types';
 import { DEFAULT_ESCALATION_ROUNDING_VND } from '../schedule/escalation';
 import { isoDateSchema, text } from './legal';
 import { vndSchema } from './property';
@@ -86,11 +86,39 @@ export const leaseRowSchema = z.object({
   notice_days: z.number().int().nullable(),
   paid_through_date: nullableDate,
   status: z.enum(LEASE_STATUSES),
+  terminated_on: nullableDate,
+  termination_reason: z.string().nullable(),
+  renewal_of_lease_id: z.uuid().nullable(),
 });
 export type LeaseRow = z.output<typeof leaseRowSchema>;
 
 export const LEASE_COLUMNS =
-  'id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor, first_period_proration, due_offset_days, deposit_vnd, escalation, utilities_mode, tax_payer, notice_days, paid_through_date, status';
+  'id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor, first_period_proration, due_offset_days, deposit_vnd, escalation, utilities_mode, tax_payer, notice_days, paid_through_date, status, terminated_on, termination_reason, renewal_of_lease_id';
+
+/** A `lease_amendments` row: `changes` holds a monthly rent, a billing cycle, or both (SPEC §5.4). */
+export const leaseAmendmentRowSchema = z
+  .object({
+    id: z.uuid(),
+    lease_id: z.uuid(),
+    effective_period_start: isoDateSchema,
+    changes: z.object({ rent_vnd: z.number().int().positive().optional(), billing_cycle_months: cycleSchema.optional() }),
+    reason: z.string().nullable(),
+  })
+  .transform(
+    (row): Amendment & { readonly id: string; readonly leaseId: string; readonly reason: string | null } => ({
+      id: row.id,
+      leaseId: row.lease_id,
+      reason: row.reason,
+      effectivePeriodStart: row.effective_period_start,
+      changes: {
+        ...(row.changes.rent_vnd === undefined ? {} : { rentVnd: vnd(row.changes.rent_vnd) }),
+        ...(row.changes.billing_cycle_months === undefined ? {} : { billingCycleMonths: row.changes.billing_cycle_months }),
+      },
+    }),
+  );
+export type LeaseAmendmentRow = z.output<typeof leaseAmendmentRowSchema>;
+
+export const LEASE_AMENDMENT_COLUMNS = 'id, lease_id, effective_period_start, changes, reason';
 
 /** The schedule terms of a lease that has its start and rent; a draft without them has none. */
 export function leaseTerms(row: LeaseRow): LeaseTerms | null {

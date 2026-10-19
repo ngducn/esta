@@ -34,21 +34,26 @@ export default function UploadSheet({
   propertyId,
   nickname,
   initialFile,
+  leaseId = null,
+  initialCategory = 'certificate',
   onClose,
   onSaved,
 }: {
   propertyId: string;
   nickname: string;
   initialFile: File | null;
+  /** A lease's contract or handover papers: the document is filed under that lease (P3-08). */
+  leaseId?: string | null;
+  initialCategory?: DocumentCategory;
   onClose: () => void;
   onSaved: (saved: { documentId: string; title: string }) => void;
 }) {
   const t = useTranslations('documents');
   const locale = useLocale();
   const fieldId = useId();
-  const [category, setCategory] = useState<DocumentCategory>('certificate');
+  const [category, setCategory] = useState<DocumentCategory>(initialCategory);
   const prefix = (next: DocumentCategory) => defaultDocumentTitle(t('titlePrefix', { category: next }), nickname);
-  const [title, setTitle] = useState(() => prefix('certificate'));
+  const [title, setTitle] = useState(() => prefix(initialCategory));
   const [titleEdited, setTitleEdited] = useState(false);
   const [expiresOn, setExpiresOn] = useState<IsoDate | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
@@ -142,6 +147,7 @@ export default function UploadSheet({
         size: file.file.size,
         sha256: file.sha256,
         pageCount: file.previews.pageCount,
+        leaseId,
       });
       if (!registered.ok) throw new Error('register');
       onSaved({ documentId: ticket.documentId, title: registered.title });
