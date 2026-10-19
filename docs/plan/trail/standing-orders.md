@@ -252,3 +252,12 @@ Rules from this update (agent interpretation; the operator can change them):
 4. CI after a rebase: when main's new commits touch none of the PR's files and the range-diff is identical, run the check and db jobs only; the full suite reruns when files overlap.
 5. Engineering: a per-household test clock so the clock-bound Playwright specs run in parallel, as the next cleanup PR.
 The quality bar (codebase-health lane, no-stack second opinions, the two-fix-forward ceiling) is unchanged.
+
+## Update 2026-10-19 22:15 +07
+
+After the Mac restart Ryan wrote: "yah continue now, work on it, i look forward to be able to tell you populate my portfolio using MCP connector". The root pulls the connector ahead of the rest of Phases 3 and 4, cut into four vertical slices in `docs/plan/connector-track.md` (add a property by chat; a rented room with its lease; a Demo folder with documents; history and undo).
+
+- The in-flight PRs (#177 expenses, #181 deposits, #209 one billing planner) land first; C2 needs #181 and #209, C3 needs #177.
+- C1 starts now with its design (the `Op` type, refusals, plans and batches) through pstack:architect, because every later slice and the migration of every server action build on it. The id schema and refusal mapper of #188 move into the ops layer; the rest of #188 becomes one cleanup PR after C3.
+- The cleanup round continues in the gaps: #193 action hook, P3-11 VietQR bills, #208 test clock and the lows, then the rest of Phases 3 and 4.
+- Real data still waits for the production database (CONNECTOR.md §6). Before Ryan loads his real portfolio: the land use term fix (#149), the migration squash (#197), and the cloud database and deploy, which is his gate. The root asks him when C3 is merged.
