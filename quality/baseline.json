@@ -4,6 +4,7 @@
       "value": 127,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
+        "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 2,
         "apps/web/src/app/dev/core/sections.ts": 1,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 1,
@@ -12,20 +13,19 @@
         "apps/web/src/app/forgot-password/reset-form.tsx": 2,
         "apps/web/src/app/sign-in/actions.ts": 1,
         "apps/web/src/app/sign-in/password-form.tsx": 1,
-        "apps/web/src/components/collections/offline-notice.tsx": 2,
         "apps/web/src/components/date-input.tsx": 1,
-        "apps/web/src/components/documents/upload-sheet.tsx": 3,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 2,
+        "apps/web/src/components/expenses/expense-sheet.tsx": 1,
         "apps/web/src/components/leases/LeaseForm.tsx": 1,
         "apps/web/src/components/legal/annotation-list.tsx": 1,
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
         "apps/web/src/components/legal/legal-item-actions.tsx": 1,
-        "apps/web/src/components/map/map-canvas.tsx": 1,
         "apps/web/src/components/rental/account-actions.test.tsx": 2,
         "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
         "apps/web/src/components/rental/unit-list.test.tsx": 1,
         "apps/web/src/server/actions/leases.integration.test.ts": 2,
         "apps/web/src/server/documents/actions.test.ts": 3,
+        "apps/web/src/server/expenses/actions.test.ts": 1,
         "apps/web/src/server/extraction/actions.test.ts": 2,
         "apps/web/src/server/properties/form.ts": 1,
         "apps/web/src/server/properties/wizard.ts": 1,
@@ -36,9 +36,11 @@
         "e2e/documents-multipage.spec.ts": 2,
         "e2e/documents-upload.spec.ts": 5,
         "e2e/documents-vault.spec.ts": 1,
+        "e2e/expenses.spec.ts": 2,
         "e2e/extraction-review.spec.ts": 4,
         "e2e/fnd9-integration.spec.ts": 2,
         "e2e/helpers/session.ts": 1,
+        "e2e/helpers/user-rest.ts": 1,
         "e2e/helpers/wizard.ts": 1,
         "e2e/i18n.spec.ts": 1,
         "e2e/lease-detail.spec.ts": 3,
@@ -60,9 +62,10 @@
       }
     },
     "duplicated-lines": {
-      "value": 1485,
+      "value": 1402,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
+        "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 28,
         "apps/web/src/app/dev/core/sections.ts": 9,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 13,
@@ -71,20 +74,19 @@
         "apps/web/src/app/forgot-password/reset-form.tsx": 28,
         "apps/web/src/app/sign-in/actions.ts": 13,
         "apps/web/src/app/sign-in/password-form.tsx": 18,
-        "apps/web/src/components/collections/offline-notice.tsx": 19,
         "apps/web/src/components/date-input.tsx": 11,
-        "apps/web/src/components/documents/upload-sheet.tsx": 25,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 22,
+        "apps/web/src/components/expenses/expense-sheet.tsx": 9,
         "apps/web/src/components/leases/LeaseForm.tsx": 8,
         "apps/web/src/components/legal/annotation-list.tsx": 6,
         "apps/web/src/components/legal/legal-form-shell.tsx": 12,
         "apps/web/src/components/legal/legal-item-actions.tsx": 40,
-        "apps/web/src/components/map/map-canvas.tsx": 10,
         "apps/web/src/components/rental/account-actions.test.tsx": 14,
         "apps/web/src/components/rental/add-rooms-sheet.tsx": 13,
         "apps/web/src/components/rental/unit-list.test.tsx": 7,
         "apps/web/src/server/actions/leases.integration.test.ts": 40,
-        "apps/web/src/server/documents/actions.test.ts": 106,
+        "apps/web/src/server/documents/actions.test.ts": 29,
+        "apps/web/src/server/expenses/actions.test.ts": 8,
         "apps/web/src/server/extraction/actions.test.ts": 18,
         "apps/web/src/server/properties/form.ts": 6,
         "apps/web/src/server/properties/wizard.ts": 8,
@@ -95,9 +97,11 @@
         "e2e/documents-multipage.spec.ts": 13,
         "e2e/documents-upload.spec.ts": 41,
         "e2e/documents-vault.spec.ts": 8,
+        "e2e/expenses.spec.ts": 12,
         "e2e/extraction-review.spec.ts": 29,
         "e2e/fnd9-integration.spec.ts": 12,
         "e2e/helpers/session.ts": 6,
+        "e2e/helpers/user-rest.ts": 7,
         "e2e/helpers/wizard.ts": 7,
         "e2e/i18n.spec.ts": 7,
         "e2e/lease-detail.spec.ts": 56,
@@ -132,10 +136,11 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 31,
+      "value": 33,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
+        "apps/web/src/components/expenses/expense-sheet.tsx": 2,
         "apps/web/src/components/extraction/review-panel.tsx": 2,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
@@ -162,12 +167,13 @@
       }
     },
     "action-failure-mapping": {
-      "value": 26,
+      "value": 27,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
-        "apps/web/src/components/documents/upload-sheet.tsx": 1,
+        "apps/web/src/components/documents/use-document-upload.ts": 1,
         "apps/web/src/components/documents/vault-search.tsx": 1,
+        "apps/web/src/components/expenses/expense-sheet.tsx": 1,
         "apps/web/src/components/extraction/review-panel.tsx": 1,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
@@ -191,7 +197,7 @@
       }
     },
     "local-id-schema": {
-      "value": 18,
+      "value": 19,
       "files": {
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 1,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 1,
@@ -209,7 +215,8 @@
         "apps/web/src/server/extraction/review.ts": 1,
         "apps/web/src/server/properties/detail.ts": 1,
         "apps/web/src/server/properties/form.ts": 2,
-        "apps/web/src/server/properties/wizard.ts": 1
+        "apps/web/src/server/properties/wizard.ts": 1,
+        "apps/web/src/server/soft-delete.ts": 1
       }
     },
     "sqlstate-literal": {
@@ -225,14 +232,11 @@
       }
     },
     "toast-provider-mount": {
-      "value": 8,
+      "value": 5,
       "files": {
         "apps/web/src/app/(app)/collections/page.tsx": 1,
         "apps/web/src/app/(app)/documents/(vault)/layout.tsx": 1,
-        "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
-        "apps/web/src/app/(app)/properties/[id]/legal/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/rental/layout.tsx": 1,
-        "apps/web/src/app/(app)/properties/[id]/rental/page.tsx": 1,
         "apps/web/src/components/map/properties-map.tsx": 1,
         "apps/web/src/components/properties/archive-button.tsx": 1
       }
@@ -289,12 +293,12 @@
       }
     },
     "upload-pipeline": {
-      "value": 6,
+      "value": 5,
       "files": {
         "apps/web/src/app/(app)/properties/actions.ts": 1,
-        "apps/web/src/components/documents/upload-sheet.tsx": 2,
         "apps/web/src/components/properties/cover-photo-input.tsx": 1,
-        "apps/web/src/components/property-wizard/step-photo.tsx": 2
+        "apps/web/src/components/property-wizard/step-photo.tsx": 2,
+        "apps/web/src/test/stack.ts": 1
       }
     },
     "decimal-parser-outside-parse": {
@@ -316,7 +320,7 @@
       }
     },
     "ad-hoc-result-type": {
-      "value": 41,
+      "value": 44,
       "files": {
         "apps/agent/src/sdk/result.ts": 1,
         "apps/agent/src/tools/save-extraction.ts": 1,
@@ -333,10 +337,12 @@
         "apps/web/src/server/actions/payments.ts": 1,
         "apps/web/src/server/documents/actions.ts": 3,
         "apps/web/src/server/documents/search.ts": 1,
+        "apps/web/src/server/expenses/actions.ts": 2,
         "apps/web/src/server/extraction/actions.ts": 2,
         "apps/web/src/server/maps/actions.ts": 1,
         "apps/web/src/server/properties/wizard.ts": 3,
         "packages/core/src/allocation/deposits.ts": 1,
+        "packages/core/src/expenses/schema.ts": 1,
         "packages/core/src/extraction/acceptance.ts": 1,
         "packages/core/src/extraction/fields.ts": 1,
         "packages/core/src/vietqr/decode.ts": 2,
@@ -482,5 +488,30 @@
       }
     }
   },
-  "raises": []
+  "raises": [
+    {
+      "metric": "hand-rolled-action-call",
+      "from": 31,
+      "to": 33,
+      "reason": "The expense sheet runs its save and its delete through startTransition (until #193)"
+    },
+    {
+      "metric": "action-failure-mapping",
+      "from": 26,
+      "to": 27,
+      "reason": "The expense sheet delete and the one useDocumentUpload hook (which replaced the upload sheet copy) map a thrown action to ok false (until #193)"
+    },
+    {
+      "metric": "local-id-schema",
+      "from": 18,
+      "to": 19,
+      "reason": "setDeletedAt, the one soft-delete helper for documents, expenses and properties, parses its row id (until #188)"
+    },
+    {
+      "metric": "ad-hoc-result-type",
+      "from": 41,
+      "to": 44,
+      "reason": "readExpense and saveExpense report the amount and date problems together, which Result cannot carry until #196 widens it; the action refusals move onto Result with #188"
+    }
+  ]
 }
