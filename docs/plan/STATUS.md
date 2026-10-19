@@ -9,6 +9,24 @@
 - Phase 1 exit, P1-03 (PR #107), 2026-10-18. Phase 1 is P1-01 (#50), P1-04 (#52), P1-09 (#72, #84), P1-06 (#80), P1-05 (#92), P1-07 (#95), P1-10 (#100), P1-08 (#105) and P1-03. `pnpm phase:check 1` on slot 2 passed every row: PRP-1 to PRP-6, PRP-8, RLS (24 pgTAP files, 644 tests, every public table covered) and Lighthouse over HTTP/2 on a production build. Medians of 5 runs: `/properties` LCP 2079 ms, TBT 24 ms, 152 KB script; `/properties/<di-an id>` LCP 2166 ms, TBT 20 ms, 151 KB; the map view TBT 258 ms, 287 KB of script over the list, all six pins at 3.3 s under mobile throttling. PRP-7 (the add-property wizard) moved to P2-08. The S6 result from P1-01 is under Spike results. The completeness registry scores Phase 1 data only; P2-02 adds the certificate document and photo checks, and P3-07 the lease document check.
 - Phase 2 exit, P2-08 (PR #164), 2026-10-19, every row passes. Phase 2 is P2-01 (#67, #75), P2-02 (#117), P2-03 (#124), P2-07 (#141), P2-05 (#150), P2-06 (#158) and P2-08, the add-property wizard. `pnpm phase:check 2` on slot 5 at the fix-forward head, rebased over #165 and #169, passed all twelve rows: DOC-1 to DOC-7, PRP-7, AGT-2, RLS (36 pgTAP files, 1256 tests, all 31 public tables covered), north-star steps 1 and 2, and Lighthouse (`/documents` LCP 2186 ms, TBT 25 ms, CLS 0, 171 KB of script; `/properties/new` LCP 2217 ms, TBT 19 ms, CLS 0, 186 KB). The DOC-5 row checks the amended DOC-5 through the specs it cites: every document shows clear on its tile and page, Storage holds no blurred copy, and views stay logged. The AGT-2 replay summary (`pnpm --filter agent test`, `test/golden/extract.test.ts`): sixteen certificates and two bills, schema-valid 100.0%, required exact 99.1%, high-confidence precision 100.0%, every AGENT.md §7.2 target met. Because the recordings already met the targets and every fixture the specs use has one, `pnpm agent:record` was not run. The S5 result from P2-01 is under Spike results. North-star steps 1 and 2 took a median of 5.1 s over 5 runs (budget 90 s), and review readiness after the upload took a median of 0.9 s in replay (budget 10 s).
 
+## Work added outside the original plan
+
+The plan's count (41 of 73 PRs merged on 2026-10-19) covers only the plan's own PRs. This table tracks everything added since, with where each lives. Update it whenever work is added, merged or dropped.
+
+| Work | Why it was added | Tracked in | State (2026-10-19 23:20) |
+| --- | --- | --- | --- |
+| Quality gate and ARCHITECTURE.md (one home for each kind of code) | Outsider review rated quality 6.5; Ryan: "unacceptable" | #187 | Merged |
+| One area and length parser | Review: three parsers disagreed (1,255 m² read as 1255) | #201 (closes #182, #199, #200) | Merged |
+| One extraction request and its real failure cause | Review | #205 (closes #183, #185) | Merged |
+| Rent bills planned in one place, the database | Review: billing rules written twice and drifting | #209 (closes #195) | Both lanes clean; CI running |
+| Connector: manage the portfolio by talking to Claude | Ryan, 2026-10-19: "tell you populate my portfolio using MCP connector" | `docs/plan/connector-track.md`, `docs/spec/CONNECTOR.md` | C1a #213 in fix-forward; C1b being built; C2 to C4 queued |
+| CI on GitHub Actions | Ryan made the repo public for free CI minutes | Owner running (branch esta/actions-ci) | Building; Actions runs are stuck in the queue |
+| Public-repo safety: secret scanning, push protection, interaction limits, CI guard | Repo made public | Standing orders 23:30; #215 | Done, except #215 before the deploy |
+| Cleanup round (server action kit, action hook, test clock, gate follow-ups, extraction acceptance, smaller duplicates) | Review | #188 (folds into the connector's ops layer), #193, #208, #210, #184, #189 to #192, #194, #196, #198 | Queued |
+| Lows found by review lanes | Lanes | #207, #211, #212, #214 | Queued |
+| Squash migrations before the first deploy | Review | #197 | Before the deploy |
+| Rerun the outsider code review | Target 8.5 or better | Standing orders 16:45 | After the cleanup round |
+
 ## Spike results
 
 | Spike | Branch | SHA | Result |
