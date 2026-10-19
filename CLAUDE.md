@@ -9,6 +9,7 @@ Private web app for a Vietnamese family to manage its real estate: properties an
 3. `docs/spec/DESIGN-BRIEF.md`, `PRODUCT.md`, `DESIGN.md` before any UI work.
 4. `docs/spec/AGENT.md` before any agent or extraction work.
 5. `docs/plan/` for the current plan, status and resume notes.
+6. `ARCHITECTURE.md` before writing a parser, a result type, a server action, a multi-row write, an upload step, a toast, a translation island or a test helper. It names the one home for each, and `pnpm quality` fails a change that adds a second one.
 
 Locked decisions are in SPEC §3. Do not change them; raise a conflict instead.
 
@@ -33,7 +34,8 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints), then fails on a public table without RLS or a pgTAP file naming it; takes `supabase/tests/<name>.test.sql` paths to run only those files |
 | `pnpm phase:check <n>` | Runs phase n's exit checks (`PHASE_CHECKS` in `scripts/phase-exit.ts`) and prints one PASS or FAIL row per id; exits 1 on any FAIL |
-| `pnpm check` | i18n parity and plan coverage, then typecheck, lint and unit tests in every workspace |
+| `pnpm check` | i18n parity, plan coverage and the quality baseline, then typecheck, lint and unit tests in every workspace |
+| `pnpm quality` | Counts copied code (jscpd), files over 400 and 1,000 lines, and the smells in `scripts/quality/metrics.ts` (matched on the syntax tree), and fails when a count rises above `quality/baseline.json`, falls without an update, or when the baseline holds more than it did where the branch forked from `origin/main` without a recorded raise (`ARCHITECTURE.md`); `--update` rewrites it from today's counts up to main's, and `--update --allow-raise "<reason>"` goes above main with the reason recorded for review |
 | `pnpm i18n:parity` | Compares `apps/web/messages/vi.json` and `en.json` (see Translations) |
 | `pnpm plan:coverage` | Maps every SPEC §6 acceptance id, north-star step, phase exit and Mom test to the PRs in `docs/plan/trail/pr-inventory.md`; fails on an unmapped requirement or an id SPEC does not define (`--inventory <path>` checks another copy) |
 | `pnpm verify:tier` | Prints the minimum verification tier (lean, standard or rigorous) of the files this branch changes against `origin/main`, with one line per reason; `--base <ref>` and `--head <ref>` pick the range, and `--declared <tier>` exits 1 when that tier is lower than the computed one |
