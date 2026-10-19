@@ -3,7 +3,6 @@
 import { Camera, Plus } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { useHydrated } from '@/lib/use-hydrated';
-import { cn } from '@/lib/utils';
 import { useOpenExpense, warmExpenseSheet } from './expense-host';
 
 /**
@@ -30,10 +29,10 @@ export function ExpenseActions({ labels, primary = false }: { labels: { add: str
         {labels.add}
       </button>
       <label
-        className={cn(
-          buttonVariants({ variant: 'outline' }),
-          'relative cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
-        )}
+        className={buttonVariants({
+          variant: 'outline',
+          className: 'relative cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
+        })}
         onPointerDown={warmExpenseSheet}
       >
         <Camera aria-hidden="true" />
