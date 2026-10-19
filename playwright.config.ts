@@ -17,6 +17,7 @@ const sharedClock = [
   'property-detail.spec.ts',
   'documents-upload.spec.ts',
   'leases.spec.ts',
+  'lease-detail.spec.ts',
   'collections.spec.ts',
   'documents-extract.spec.ts',
   'record-payment.spec.ts',
