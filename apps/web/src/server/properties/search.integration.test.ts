@@ -1,7 +1,7 @@
 import { isoDate } from '@esta/core/date';
-import { parsePropertyFilters } from '@esta/core/properties';
+import { parsePropertyFilters, searchTokens } from '@esta/core/properties';
 import type { Database } from '@esta/db';
-import { findProperty } from '@esta/ops';
+import { findProperty, rankCandidates, searchProperties } from '@esta/ops';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -35,4 +35,24 @@ describe('one property search for the list screen and the connector', () => {
       expect(found.map((candidate) => candidate.id).toSorted()).toEqual(list.rows.map((row) => row.id).toSorted());
     },
   );
+
+  it('names each word by the first field that holds it, in the order the search text joins them', async () => {
+    const rows = await searchProperties(client, HOUSEHOLD, []);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const fields = [
+        ['nickname', [row.nickname]],
+        ['code', [row.code]],
+        ['current address', [row.addressLine, row.communeName, row.provinceName]],
+        ['certificate address', [row.certificateAddressText]],
+      ] as const;
+      const folded = fields.map(([name, parts]) => [name, searchTokens(parts.filter((part) => part !== null).join(' '))] as const);
+      const words = folded.flatMap(([, tokens]) => tokens);
+      expect(row.searchText.split(' ').slice(0, words.length)).toEqual(words);
+      for (const word of words) {
+        const first = row.code === word.toUpperCase() ? 'code' : folded.find(([, tokens]) => tokens.join(' ').includes(word))?.[0];
+        expect(rankCandidates([row], word)[0]?.reasons).toEqual([first]);
+      }
+    }
+  });
 });

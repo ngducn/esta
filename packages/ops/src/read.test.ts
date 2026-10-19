@@ -41,6 +41,10 @@ describe('rankCandidates', () => {
     expect(reasons([nhaPho], 'nha pho, quan 7')).toEqual([['p2', ['nickname', 'old ward, district or province name']]]);
   });
 
+  it('reads the full province name the search holds, not the short one the address shows', () => {
+    expect(reasons([nhaPho], 'thanh pho ho chi minh')).toEqual([['p2', ['current address', 'nickname']]]);
+  });
+
   it('puts an exact code first, then a nickname match, then the rest', () => {
     const codeInName = row({ id: 'p4', nickname: 'Demo CH-03 kho', code: 'K-04' });
     expect(reasons([codeInName, canHo], 'ch-03')).toEqual([

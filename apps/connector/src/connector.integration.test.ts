@@ -75,9 +75,9 @@ describe('the connector over stdio, signed in as the household operator', () => 
     expect(statSync(file).mode & 0o777).toBe(0o600);
   });
 
-  it('offers the four read tools', async () => {
+  it('offers the four read tools and the two that change properties', async () => {
     const { tools } = await connector.client.listTools();
-    expect(tools.map((tool) => tool.name).toSorted()).toEqual(['find_property', 'get_property', 'list_properties', 'resolve_address']);
+    expect(tools.map((tool) => tool.name).toSorted()).toEqual(['apply_plan', 'find_property', 'get_property', 'list_properties', 'plan_changes', 'resolve_address']);
   });
 
   it("lists the household's properties and no other household's", async () => {
@@ -194,7 +194,7 @@ describe('plans and applies the changes Ryan approved', () => {
 
   it('plans an edit as only the fields that change, with their values before', async () => {
     const planned = plannedSchema.parse((await plan([{ op: 'property.edit', input: { id: property(9, 'q7'), set: { notes: 'Demo: đã sơn lại' } } }])).json());
-    expect(planned.items[0]).toMatchObject({ status: 'change', change: { id: property(9, 'q7'), before: { notes: expect.anything() }, set: { notes: 'Demo: đã sơn lại' } } });
+    expect(planned.items[0]).toMatchObject({ status: 'change', change: { id: property(9, 'q7'), before: { notes: null }, set: { notes: 'Demo: đã sơn lại' } } });
     expect(Object.keys(z.object({ change: z.object({ set: z.record(z.string(), z.unknown()) }) }).parse(planned.items[0]).change.set)).toEqual(['notes']);
   });
 

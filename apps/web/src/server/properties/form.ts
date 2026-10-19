@@ -2,7 +2,7 @@ import 'server-only';
 import { isIsoDate } from '@esta/core/date';
 import { kindDetailsText, PROPERTY_KINDS, vndInputText } from '@esta/core/properties';
 import { ACQUISITION_KINDS, LEGAL_STATUSES, USE_MODES } from '@esta/core/schemas/property';
-import { readPropertyForm } from '@esta/ops';
+import { idSchema, readPropertyForm } from '@esta/ops';
 import { z } from 'zod';
 import type { PropertyFormValues } from '@/components/properties/property-form-values';
 import { createSessionClient } from '@/server/supabase/server';
@@ -43,7 +43,7 @@ const rowSchema = z.object({
 });
 
 export async function loadEditableProperty(householdId: string, id: string): Promise<EditableProperty | null> {
-  if (!z.uuid().safeParse(id).success) return null;
+  if (!idSchema.safeParse(id).success) return null;
   const supabase = await createSessionClient();
   const data = await readPropertyForm(supabase, householdId, id);
   if (data === null) return null;
@@ -101,7 +101,7 @@ export async function loadArchivedProperties(householdId: string): Promise<Archi
 }
 
 export async function loadArchivedNickname(householdId: string, id: string): Promise<string | null> {
-  if (!z.uuid().safeParse(id).success) return null;
+  if (!idSchema.safeParse(id).success) return null;
   const supabase = await createSessionClient();
   const { data } = await supabase.from('properties').select('nickname').eq('household_id', householdId).eq('id', id).not('deleted_at', 'is', null).maybeSingle();
   return data?.nickname ?? null;
