@@ -6,6 +6,7 @@ import {
   documentTitleSchema,
   reviewPath,
   sentDocumentSchema,
+  signedUploadHeaders,
   storagePath,
   thumbPath,
 } from '@esta/core/documents';
@@ -40,10 +41,10 @@ export async function signDocumentUploads(db: Db, householdId: string, documentI
   return file === null || thumb === null || review === null ? null : { file, thumb, review };
 }
 
-/** The bytes of a file read on a server or on Ryan's Mac, sent to the paths `signDocumentUploads` signed. */
-export async function sendDocumentUpload(db: Db, upload: SignedUpload, bytes: Uint8Array, contentType: string): Promise<boolean> {
-  const { error } = await db.storage.from(DOCUMENTS_BUCKET).uploadToSignedUrl(upload.path, upload.token, bytes, { contentType, upsert: true });
-  return error === null;
+/** The bytes of a file read on Ryan's Mac, sent to a path `signDocumentUploads` signed with the PUT the vault sends. */
+export async function sendDocumentUpload(upload: SignedUpload, bytes: Uint8Array, contentType: string): Promise<boolean> {
+  const response = await fetch(upload.url, { method: 'PUT', body: new Uint8Array(bytes), headers: signedUploadHeaders(contentType) }).catch(() => null);
+  return response?.ok === true;
 }
 
 /** The household's live documents with these bytes, oldest first, for the duplicate question; null when the read failed. */

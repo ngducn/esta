@@ -80,9 +80,9 @@ export const documentAttach = defineOp<z.output<typeof attachInputSchema>, Attac
     if (uploads === null) return refuse({ kind: 'failed' });
     const previews = await ctx.files.previews(read.value);
     const sent = await Promise.all([
-      sendDocumentUpload(ctx.db, uploads.file, read.value.bytes, file.mime),
-      sendDocumentUpload(ctx.db, uploads.thumb, previews.thumb, PREVIEW_MIME),
-      sendDocumentUpload(ctx.db, uploads.review, previews.review, PREVIEW_MIME),
+      sendDocumentUpload(uploads.file, read.value.bytes, file.mime),
+      sendDocumentUpload(uploads.thumb, previews.thumb, PREVIEW_MIME),
+      sendDocumentUpload(uploads.review, previews.review, PREVIEW_MIME),
     ]);
     if (!sent.every(Boolean)) return refuse({ kind: 'failed' });
     const document: NewDocument = {

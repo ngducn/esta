@@ -30,6 +30,14 @@ export function thumbPath(householdId: string, documentId: string): string {
   return `${householdId}/${documentId}/${THUMB}`;
 }
 
+/**
+ * The headers of the PUT that sends a document's file or a copy made from it to its signed upload URL, from the browser
+ * and from Ryan's Mac alike, so Storage keeps every object the same way. Upsert lets a retry rewrite the same path.
+ */
+export function signedUploadHeaders(contentType: string): Readonly<Record<string, string>> {
+  return { 'content-type': contentType, 'x-upsert': 'true' };
+}
+
 /** Page 1 at review size, which the review screen shows in place of the full-size file until Mẹ zooms in. */
 export function reviewPath(householdId: string, documentId: string): string {
   return `${householdId}/${documentId}/${REVIEW}`;

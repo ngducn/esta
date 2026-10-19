@@ -1,3 +1,4 @@
+import { signedUploadHeaders } from '@esta/core/documents';
 import { DOCUMENT_PREVIEWS, previewSize } from '@esta/core/documents/previews';
 import { DOCUMENTS_BUCKET, documentRegister, propertyCreate, readClock, runOp, signDocumentUploads, type Db, type OpContext } from '@esta/ops';
 import { randomUUID } from 'node:crypto';
@@ -180,7 +181,7 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
       const facts = z.object({ change: z.object({ file: z.object({ mime: z.string(), size: z.number(), sha256: z.string(), pageCount: z.number() }) }) }).parse(plannedPapers.items[PAPERS.indexOf(paper)]).change.file;
       const documentId = randomUUID();
       const uploads = await signDocumentUploads(handDb, ctx.householdId, documentId, paper.file);
-      const put = await fetch(uploads?.file.url ?? '', { method: 'PUT', body: new Blob([new Uint8Array(bytes)]), headers: { 'content-type': facts.mime, 'x-upsert': 'true' } });
+      const put = await fetch(uploads?.file.url ?? '', { method: 'PUT', body: new Blob([new Uint8Array(bytes)]), headers: signedUploadHeaders(facts.mime) });
       expect(put.status).toBe(200);
       const registered = await runOp(documentRegister, ctx, {
         documentId,
