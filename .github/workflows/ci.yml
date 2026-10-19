@@ -33,6 +33,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup
+        with:
+          # apps/web unit tests draw images in headless Chromium.
+          browsers: 'true'
       - run: pnpm check
       - run: pnpm test:live
 
