@@ -1,5 +1,6 @@
 'use client';
 
+import type { IsoDate } from '@esta/core/date';
 import { formatArea, formatDate, formatVnd } from '@esta/core/format';
 import type { LeaseMark } from '@esta/core/lease';
 import type { Vnd } from '@esta/core/money';
@@ -21,8 +22,14 @@ const loadAddRoomsSheet = () => import('./add-rooms-sheet');
 const UnitSheet = lazy(loadUnitSheet);
 const AddRoomsSheet = lazy(loadAddRoomsSheet);
 
- /** A unit's live lease as the Cho thuê tab shows it: the active one, else a draft. */
-export type UnitLease = { readonly mark: LeaseMark; readonly leaseId: string | null; readonly tenantName: string | null; readonly rentVnd: Vnd | null };
+/** A unit's `currentLease` as the Cho thuê tab shows it; `endsOn` is the termination date of a terminated one. */
+export type UnitLease = {
+  readonly mark: LeaseMark;
+  readonly leaseId: string | null;
+  readonly tenantName: string | null;
+  readonly rentVnd: Vnd | null;
+  readonly endsOn: IsoDate | null;
+};
 
 type Open = { readonly sheet: 'unit'; readonly unit: Unit | null } | { readonly sheet: 'rooms'; readonly existing: readonly string[] } | null;
 
@@ -224,6 +231,11 @@ function UnitLeaseLine({ lease }: { lease: UnitLease | undefined }) {
         <p className="text-small text-ink-2">{t('tenantRent', { rent: formatVnd(lease.rentVnd, locale) })}</p>
       )}
       {mark.kind === 'upcoming' ? <p className="text-small text-ink-2">{t('nextDue', { date: formatDate(mark.dueDate, locale) })}</p> : null}
+      {lease.endsOn === null ? null : (
+        <p data-testid="unit-lease-ends" className="text-small text-ink-2">
+          {t('leaseEnds', { date: formatDate(lease.endsOn, locale) })}
+        </p>
+      )}
     </div>
   );
 }

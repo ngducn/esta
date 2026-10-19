@@ -1,5 +1,5 @@
 import { formatVnd } from '@esta/core/format';
-import { currentMonthlyRent, unitLeaseMark } from '@esta/core/lease';
+import { currentLease, currentMonthlyRent, unitLeaseMark } from '@esta/core/lease';
 import { vnd } from '@esta/core/money';
 import { leaseTerms } from '@esta/core/schemas/lease';
 import { Plug, Plus } from 'lucide-react';
@@ -23,24 +23,27 @@ import { PropertyDetailFrame } from '../detail-frame';
 
 const roomCountSchema = z.object({ room_count: z.number().int().min(1) });
 
-/** Each unit's live lease on the Clock's date, marked by its oldest issued invoice still owed. */
-function unitLeases(units: readonly { id: string }[], { leases, invoices }: PropertyLeases, asOf: IsoDate): Record<string, UnitLease> {
+/** Each unit's current lease on the Clock's date, marked by its oldest issued invoice still owed. */
+function unitLeases(units: readonly { id: string }[], { leases, invoices, amendments }: PropertyLeases, asOf: IsoDate): Record<string, UnitLease> {
   return Object.fromEntries(
     units.map((unit) => {
-      const own = leases.filter((lease) => lease.unit_id === unit.id);
-      const live = own.find((lease) => lease.status === 'active') ?? own.find((lease) => lease.status === 'draft') ?? null;
-      const mark = unitLeaseMark(
-        own.map((lease) => ({
-          status: lease.status,
-          openDueDates: invoices
-            .filter((invoice) => invoice.leaseId === lease.id && invoice.status === 'issued' && invoice.outstandingVnd > 0)
-            .map((invoice) => invoice.dueDate),
-        })),
-        asOf,
-      );
-      const terms = live === null ? null : leaseTerms(live);
-      const rentVnd = live === null ? null : terms === null ? live.rent_vnd : currentMonthlyRent(terms, [], asOf);
-      return [unit.id, { mark, leaseId: live?.id ?? null, tenantName: live?.tenant?.fullName ?? null, rentVnd }];
+      const live = currentLease(leases.filter((lease) => lease.unit_id === unit.id), asOf);
+      if (live === undefined) return [unit.id, { mark: unitLeaseMark(undefined, asOf), leaseId: null, tenantName: null, rentVnd: null, endsOn: null }];
+      const openDueDates = invoices
+        .filter((invoice) => invoice.leaseId === live.id && invoice.status === 'issued' && invoice.outstandingVnd > 0)
+        .map((invoice) => invoice.dueDate);
+      const terms = leaseTerms(live);
+      const own = amendments.filter((amendment) => amendment.leaseId === live.id);
+      return [
+        unit.id,
+        {
+          mark: unitLeaseMark({ status: live.status, openDueDates }, asOf),
+          leaseId: live.id,
+          tenantName: live.tenant?.fullName ?? null,
+          rentVnd: terms === null ? live.rent_vnd : currentMonthlyRent(terms, own, asOf),
+          endsOn: live.status === 'terminated' ? live.end_date : null,
+        },
+      ];
     }),
   );
 }

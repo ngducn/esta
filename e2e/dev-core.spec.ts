@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { signIn } from './helpers/inbucket';
 
 const NBSP = String.fromCharCode(160);
-const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address', 'vietqr', 'allocation', 'tax'];
+const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address', 'vietqr', 'schedule', 'allocation', 'tax'];
 const ESTA_INVOICE_PAYLOAD =
   '00020101021238540010A00000072701240006970436011001234567890208QRIBFTTA53037045408150000005802VN62170813ESTA 7K2QX9MP6304BB90';
 const NAPAS_6_3_3_PAYLOAD =
@@ -139,6 +139,39 @@ test('the allocation section pays the oldest invoice first and matches every exp
   await expect(section.locator('tr[data-example="bien-hoa"]').last().locator('[data-cell="held"]')).toHaveText(`0${NBSP}₫`);
 
   const { violations } = await new AxeBuilder({ page }).include('section[data-section="allocation"]').analyze();
+  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+});
+
+test('the schedule section bills LSE-3 from October, keeps the 25th anchor, and matches every expected period', async ({ page }) => {
+  await page.goto('/dev/core');
+  const section = page.locator('section[data-section="schedule"]');
+  await expect(section.locator('tbody tr')).toHaveCount(35);
+  await expect(section.locator('tr[data-match="mismatch"]')).toHaveCount(0);
+  await expect(section.locator('[data-cell="result"]').filter({ hasText: 'lệch' })).toHaveCount(0);
+
+  const lse3 = section.locator('tr[data-example="lse3"]');
+  expect(await lse3.locator('[data-cell="period"]').allTextContents()).toEqual(['01/10/2026 – 31/10/2026', '01/11/2026 – 30/11/2026']);
+  await expect(lse3.first().locator('[data-cell="due"]')).toHaveText('01/10/2026');
+  expect(await section.locator('tr[data-example="phong-3"] [data-cell="period"]').allTextContents()).toEqual([
+    '25/09/2026 – 24/10/2026',
+    '25/10/2026 – 24/11/2026',
+  ]);
+  expect(await section.locator('tr[data-example="escalation"] [data-cell="amount"]').allTextContents()).toEqual([
+    ...Array<string>(4).fill(`300.000.000${NBSP}₫`),
+    ...Array<string>(4).fill(`315.000.000${NBSP}₫`),
+    `330.900.000${NBSP}₫`,
+  ]);
+  const midEnd = section.locator('tr[data-example="mid-end"]').last();
+  await expect(midEnd.locator('[data-cell="period"]')).toHaveText('01/11/2026 – 07/11/2026');
+  await expect(midEnd.locator('[data-cell="note"]')).toHaveText('Tính theo ngày: 7/30 ngày');
+  await expect(section.locator('tr[data-example="amendment"]').filter({ hasText: 'Đổi giá từ 01/09/2026' }).locator('[data-cell="note"]')).toHaveText(
+    'từ chối: not_after_as_of',
+  );
+  const thuDuc = section.locator('tr[data-example="thu-duc"]').last();
+  await expect(thuDuc.locator('[data-cell="period"]')).toHaveText('01/11/2026 – 01/11/2026');
+  await expect(thuDuc.locator('[data-cell="amount"]')).toHaveText(`300.000${NBSP}₫`);
+
+  const { violations } = await new AxeBuilder({ page }).include('section[data-section="schedule"]').analyze();
   expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
 });
 

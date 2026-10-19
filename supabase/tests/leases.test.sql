@@ -47,7 +47,7 @@ select lives_ok(
   'a draft takes rent and deposit edits');
 select throws_ok(
   $$ update public.leases set status = 'active', paid_through_date = '2026-09-30' where id = '00000000-0000-4000-8000-00000000e001' $$,
-  '42501', 'ESTA_LEASE_ACTIVATE_THROUGH_FUNCTION', 'a member cannot activate by writing the status, which would skip issuance');
+  '42501', 'permission denied for table leases', 'a member cannot activate by writing the status, which would skip issuance (#144)');
 select results_eq(
   $$ select period_start, period_end, due_date, rent_vnd, issues_now from public.preview_activation('00000000-0000-4000-8000-00000000e001', '2026-09-30') $$,
   $$ values (date '2026-10-01', date '2026-10-31', date '2026-10-01', 3000000::bigint, true), (date '2026-11-01', date '2026-11-30', date '2026-11-01', 3000000::bigint, false) $$,
@@ -161,7 +161,7 @@ select throws_ok(
   '23514', 'ESTA_LEASE_TERMS_LOCKED', 'an active lease keeps its money terms');
 select throws_ok(
   $$ update public.leases set status = 'draft' where id = '00000000-0000-4000-8000-00000000e001' $$,
-  '23514', 'ESTA_LEASE_TRANSITION', 'active never goes back to draft');
+  '42501', 'permission denied for table leases', 'a member cannot move an active lease back to draft (#144)');
 select throws_ok(
   $$ select * from public.activate_lease('00000000-0000-4000-8000-00000000e003', null) $$,
   '23514', 'ESTA_LEASE_TRANSITION', 'an ended lease is final');
@@ -206,8 +206,13 @@ select isnt_empty(
 select tests.sees_household('public.leases', :'a', true);
 select tests.sees_household('public.leases', :'b', false);
 select tests.sees_household('public.invoices', :'b', false);
-select tests.cannot_write('public.leases', :'b',
-  format($$ insert into public.leases (household_id, property_id, unit_id) values (%L, '00000000-0000-4000-8000-0000000000b1', private.whole_unit_id('00000000-0000-4000-8000-0000000000b1')) $$, :'b'));
+-- tests.cannot_write updates household_id, which a member may not update on leases at all (#144), so its three checks
+-- are spelled out with a column a member can write.
+select throws_ok(
+  format($$ insert into public.leases (household_id, property_id, unit_id) values (%L, '00000000-0000-4000-8000-0000000000b1', private.whole_unit_id('00000000-0000-4000-8000-0000000000b1')) $$, :'b'),
+  '42501', null, 'public.leases: insert refused');
+select is_empty(format($$ update public.leases set notes = notes where household_id = %L returning 1 $$, :'b'), 'public.leases: update touches no row');
+select is_empty(format($$ delete from public.leases where household_id = %L returning 1 $$, :'b'), 'public.leases: delete touches no row');
 
 select tests.act_as('viewer.a@test.esta.test');
 select tests.sees_household('public.invoices', :'a', true);

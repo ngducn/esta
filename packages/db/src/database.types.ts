@@ -666,6 +666,7 @@ export type Database = {
           expires_on: string | null
           household_id: string
           id: string
+          lease_id: string | null
           mime: string
           ocr_text: string | null
           page_count: number | null
@@ -688,6 +689,7 @@ export type Database = {
           expires_on?: string | null
           household_id: string
           id?: string
+          lease_id?: string | null
           mime: string
           ocr_text?: string | null
           page_count?: number | null
@@ -710,6 +712,7 @@ export type Database = {
           expires_on?: string | null
           household_id?: string
           id?: string
+          lease_id?: string | null
           mime?: string
           ocr_text?: string | null
           page_count?: number | null
@@ -758,6 +761,13 @@ export type Database = {
             columns: ["household_id", "property_id"]
             isOneToOne: false
             referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_lease_fk"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
             referencedColumns: ["household_id", "id"]
           },
         ]
@@ -1042,6 +1052,57 @@ export type Database = {
           name_vi?: string
         }
         Relationships: []
+      }
+      lease_amendments: {
+        Row: {
+          changes: Json
+          created_at: string
+          created_by: string | null
+          effective_period_start: string
+          household_id: string
+          id: string
+          lease_id: string
+          reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          changes: Json
+          created_at?: string
+          created_by?: string | null
+          effective_period_start: string
+          household_id: string
+          id?: string
+          lease_id: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          changes?: Json
+          created_at?: string
+          created_by?: string | null
+          effective_period_start?: string
+          household_id?: string
+          id?: string
+          lease_id?: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lease_amendments_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_amendments_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
       }
       leases: {
         Row: {
@@ -2122,6 +2183,16 @@ export type Database = {
       }
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
+      amend_lease: {
+        Args: {
+          p_billing_cycle_months?: number
+          p_effective_period_start: string
+          p_lease_id: string
+          p_reason?: string
+          p_rent_vnd?: number
+        }
+        Returns: string
+      }
       claim_abandoned_agent_job: {
         Args: { p_as_of: string; worker_id: string }
         Returns: {
@@ -2266,6 +2337,15 @@ export type Database = {
           id: string
         }[]
       }
+      renew_lease: {
+        Args: {
+          p_end_date?: string
+          p_increase_bps: number
+          p_lease_id: string
+          p_paid_through?: string
+        }
+        Returns: string
+      }
       run_invoicing: {
         Args: { p_as_of: string; p_household_id: string; p_issued_at: string }
         Returns: {
@@ -2283,6 +2363,7 @@ export type Database = {
           expires_on: string | null
           household_id: string
           id: string
+          lease_id: string | null
           mime: string
           ocr_text: string | null
           page_count: number | null
@@ -2329,6 +2410,10 @@ export type Database = {
           rank: number
           source: string
         }[]
+      }
+      terminate_lease: {
+        Args: { p_lease_id: string; p_reason: string; p_terminated_on: string }
+        Returns: undefined
       }
       undo_payment: { Args: { p_payment_id: string }; Returns: undefined }
       update_my_display_settings: {

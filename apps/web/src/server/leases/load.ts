@@ -1,7 +1,8 @@
 import 'server-only';
 import { PAYMENT_STATUSES, type PaymentStatus } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
-import { LEASE_COLUMNS, leaseRowSchema, type LeaseRow } from '@esta/core/schemas/lease';
+import { holdsUnit } from '@esta/core/lease';
+import { LEASE_AMENDMENT_COLUMNS, LEASE_COLUMNS, leaseAmendmentRowSchema, leaseRowSchema, type LeaseAmendmentRow, type LeaseRow } from '@esta/core/schemas/lease';
 import { vnd, type Vnd } from '@esta/core/money';
 import { formatPhone, normalizePhone } from '@esta/core/phone';
 import { isoDateSchema } from '@esta/core/schemas/legal';
@@ -32,6 +33,8 @@ export type LeaseWithTenant = LeaseRow & { readonly tenant: Tenant | null };
 export type PropertyLeases = {
   readonly leases: readonly LeaseWithTenant[];
   readonly invoices: readonly InvoiceSummary[];
+  /** In effective order. */
+  readonly amendments: readonly LeaseAmendmentRow[];
 };
 
 const invoiceRowSchema = z
@@ -86,7 +89,7 @@ async function readTenants(supabase: SessionClient, householdId: string, ids: re
   return new Map(z.array(tenantRowSchema).parse(data).map((tenant) => [tenant.id, tenant]));
 }
 
-/** Every lease of the property with its tenant, and every invoice of those leases with its balance. RLS scopes both to the member. */
+/** Every lease of the property with its tenant, its amendments, and every invoice with its balance. RLS scopes them to the member. */
 export const loadPropertyLeases = cache(async (propertyId: string): Promise<PropertyLeases> => {
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: propertyId };
@@ -94,16 +97,21 @@ export const loadPropertyLeases = cache(async (propertyId: string): Promise<Prop
   if (error) throw new Error(`Reading leases failed: ${error.message}`);
   const rows = z.array(leaseRowSchema).parse(data);
   const ids = rows.map((row) => row.id);
-  const [tenants, invoices] = await Promise.all([
+  const [tenants, invoices, amendments] = await Promise.all([
     readTenants(supabase, member.household.id, rows.flatMap((row) => (row.tenant_party_id === null ? [] : [row.tenant_party_id]))),
     ids.length === 0
       ? { data: [], error: null }
       : supabase.from('invoice_balances').select(INVOICE_COLUMNS).eq('household_id', member.household.id).in('lease_id', ids).order('period_start'),
+    ids.length === 0
+      ? { data: [], error: null }
+      : supabase.from('lease_amendments').select(LEASE_AMENDMENT_COLUMNS).eq('household_id', member.household.id).in('lease_id', ids).order('effective_period_start'),
   ]);
   if (invoices.error) throw new Error(`Reading invoices failed: ${invoices.error.message}`);
+  if (amendments.error) throw new Error(`Reading lease amendments failed: ${amendments.error.message}`);
   return {
     leases: rows.map((row) => ({ ...row, tenant: row.tenant_party_id === null ? null : (tenants.get(row.tenant_party_id) ?? null) })),
     invoices: z.array(invoiceRowSchema).parse(invoices.data),
+    amendments: z.array(leaseAmendmentRowSchema).parse(amendments.data),
   };
 });
 
@@ -119,10 +127,18 @@ export async function loadTenants(): Promise<Tenant[]> {
   return z.array(tenantRowSchema).parse(data);
 }
 
-/** Active leases of the household by property, for the list's monthly rent. */
-export async function loadActiveLeases(householdId: string): Promise<LeaseRow[]> {
+export type HoldingLeases = { readonly leases: readonly LeaseRow[]; readonly amendments: readonly LeaseAmendmentRow[] };
+
+/** The leases holding a unit on `asOf` with their amendments, across the household or on one property. */
+export async function loadHoldingLeases(householdId: string, asOf: IsoDate, propertyId?: string): Promise<HoldingLeases> {
   const supabase = await createSessionClient();
-  const { data, error } = await supabase.from('leases').select(LEASE_COLUMNS).eq('household_id', householdId).eq('status', 'active');
-  if (error) throw new Error(`Reading active leases failed: ${error.message}`);
-  return z.array(leaseRowSchema).parse(data);
+  const scope = propertyId === undefined ? { household_id: householdId } : { household_id: householdId, property_id: propertyId };
+  const leases = await supabase.from('leases').select(LEASE_COLUMNS).match(scope).in('status', ['active', 'terminated']);
+  if (leases.error) throw new Error(`Reading leases failed: ${leases.error.message}`);
+  const rows = z.array(leaseRowSchema).parse(leases.data).filter((row) => holdsUnit(row, asOf));
+  if (rows.length === 0) return { leases: [], amendments: [] };
+  const amendments = await supabase.from('lease_amendments').select(LEASE_AMENDMENT_COLUMNS).eq('household_id', householdId).order('effective_period_start');
+  if (amendments.error) throw new Error(`Reading lease amendments failed: ${amendments.error.message}`);
+  const ids = new Set(rows.map((row) => row.id));
+  return { leases: rows, amendments: z.array(leaseAmendmentRowSchema).parse(amendments.data).filter((amendment) => ids.has(amendment.leaseId)) };
 }

@@ -1,7 +1,7 @@
 import { isoDate, type IsoDate } from '../../../packages/core/src/date/iso-date.ts';
 import { planInvoices, type CompletedReadings, type InvoicingLease, type PlannedInvoice } from '../../../packages/core/src/lease/invoicing.ts';
 import { vnd } from '../../../packages/core/src/money/vnd.ts';
-import { addDays, addMonths, generateSchedule } from '../../../packages/core/src/schedule/index.ts';
+import { addDays, addMonths, generateSchedule, type Amendment } from '../../../packages/core/src/schedule/index.ts';
 import { normalizePhone } from '../../../packages/core/src/phone/index.ts';
 import { publicTable, type HouseholdSeed, type SeedContext } from './context.ts';
 import { householdId } from './households.ts';
@@ -119,6 +119,15 @@ export const LEASE_SEEDS: readonly LeaseSeed[] = [
   },
 ];
 
+type AmendmentSeed = Amendment & { readonly property: PropertySeedKey; readonly unit: number; readonly reason: string };
+
+/** One rent change after SPEC_TODAY, past every billed period, so lease detail shows an amendment without moving any invoice. */
+export const AMENDMENT_SEEDS: readonly AmendmentSeed[] = [
+  { property: 'q7', unit: 1, effectivePeriodStart: d('2027-01-01'), changes: { rentVnd: vnd(16_000_000) }, reason: 'Phụ lục Demo: tăng giá từ năm 2027' },
+];
+
+const amendmentsOf = (seed: LeaseSeed) => AMENDMENT_SEEDS.filter((amendment) => amendment.property === seed.property && amendment.unit === seed.unit);
+
 /** SPEC §9.3: Dĩ An's September readings were all entered on 2026-10-03, so its October drafts issued that day. */
 const READINGS: Partial<Record<PropertySeedKey, CompletedReadings>> = {
   'di-an': { month: d('2026-09-01'), completeOn: d('2026-10-03') },
@@ -127,7 +136,9 @@ const READINGS: Partial<Record<PropertySeedKey, CompletedReadings>> = {
 const MEMO_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 const leaseKey = (household: HouseholdSeed, seed: LeaseSeed) => `${household.key}:${seed.property}:${seed.unit}`;
-const leaseId = (household: HouseholdSeed, seed: LeaseSeed) => seedId(`seed:lease:${leaseKey(household, seed)}`);
+const leaseId = (household: HouseholdSeed, seed: { readonly property: PropertySeedKey; readonly unit: number }) =>
+  seedId(`seed:lease:${household.key}:${seed.property}:${seed.unit}`);
+export const seedLeaseId = leaseId;
 const tenantId = (household: HouseholdSeed, seed: LeaseSeed) => seedId(`seed:party:tenant-${leaseKey(household, seed)}`);
 const invoiceId = (household: HouseholdSeed, seed: LeaseSeed, start: IsoDate) => seedId(`seed:invoice:${leaseKey(household, seed)}:${start}`);
 
@@ -154,9 +165,9 @@ const SPEC_TODAY = d('2026-10-07');
 function leaseInvoices(seed: LeaseSeed): PlannedInvoice[] {
   const byStart = new Map<IsoDate, PlannedInvoice>();
   for (let asOf = HISTORY_FROM; asOf < SPEC_TODAY; asOf = addMonths(asOf, 1)) {
-    for (const invoice of planInvoices(seed.terms, [], asOf)) byStart.set(invoice.periodStart, invoice);
+    for (const invoice of planInvoices(seed.terms, amendmentsOf(seed), asOf)) byStart.set(invoice.periodStart, invoice);
   }
-  for (const invoice of planInvoices(seed.terms, [], SPEC_TODAY, READINGS[seed.property] ?? null)) byStart.set(invoice.periodStart, invoice);
+  for (const invoice of planInvoices(seed.terms, amendmentsOf(seed), SPEC_TODAY, READINGS[seed.property] ?? null)) byStart.set(invoice.periodStart, invoice);
   return [...byStart.values()].toSorted((a, b) => a.periodStart.localeCompare(b.periodStart));
 }
 
@@ -220,6 +231,21 @@ export const leases = publicTable('leases', (ctx) =>
     };
   }),
 );
+
+export const leaseAmendments = publicTable('lease_amendments', (ctx) => {
+  const keys = new Set(leasesIn(ctx).map((seed) => `${seed.property}:${seed.unit}`));
+  return AMENDMENT_SEEDS.filter((amendment) => keys.has(`${amendment.property}:${amendment.unit}`)).map((amendment) => ({
+    id: seedId(`seed:lease-amendment:${ctx.household.key}:${amendment.property}:${amendment.unit}:${amendment.effectivePeriodStart}`),
+    household_id: householdId(ctx.household),
+    lease_id: leaseId(ctx.household, amendment),
+    effective_period_start: amendment.effectivePeriodStart,
+    changes: JSON.stringify({
+      ...(amendment.changes.rentVnd === undefined ? {} : { rent_vnd: amendment.changes.rentVnd }),
+      ...(amendment.changes.billingCycleMonths === undefined ? {} : { billing_cycle_months: amendment.changes.billingCycleMonths }),
+    }),
+    reason: amendment.reason,
+  }));
+});
 
 export const invoices = publicTable('invoices', (ctx) =>
   seededInvoices(ctx).map(({ seed, invoice, number }) => {

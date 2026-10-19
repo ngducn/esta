@@ -3,6 +3,7 @@ import { AddressLookup } from './address-lookup';
 import { LiveParse } from './live-parse';
 import { checkRow, sections, type CheckedRow } from './sections';
 import { AllocationSection } from './sections/AllocationSection';
+import { ScheduleSection } from './sections/ScheduleSection';
 import { TaxSection } from './sections/tax';
 import { VietQrSection } from './sections/VietQrSection';
 
@@ -57,6 +58,7 @@ export default async function DevCorePage({ searchParams }: { searchParams: Prom
       <LiveParse />
       <AddressLookup />
       <VietQrSection />
+      <ScheduleSection />
       <AllocationSection />
       <TaxSection taxYear={taxYear} />
 

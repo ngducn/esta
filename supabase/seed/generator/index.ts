@@ -6,7 +6,7 @@ import type { Emitter } from './context.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { documents } from './documents.ts';
 import { certificates, parcels, structures } from './legal.ts';
-import { invoiceLines, invoices, leases, paymentAllocations, payments, tenants } from './leasing.ts';
+import { invoiceLines, invoices, leaseAmendments, leases, paymentAllocations, payments, tenants } from './leasing.ts';
 import { ownershipShares } from './ownership.ts';
 import { parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
@@ -26,9 +26,10 @@ const EMITTERS: readonly Emitter[] = [
   ownershipShares,
   units,
   utilityAccounts,
-  documents,
   tenants,
   leases,
+  leaseAmendments,
+  documents,
   invoices,
   invoiceLines,
   payments,

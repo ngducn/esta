@@ -5,6 +5,7 @@ import { storagePath } from '../../../packages/core/src/documents/storage-path.t
 import { publicTable, type HouseholdSeed } from './context.ts';
 import { householdId, personKey } from './households.ts';
 import { seedId } from './ids.ts';
+import { seedLeaseId } from './leasing.ts';
 import type { PropertySeedKey } from './properties.ts';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -47,6 +48,8 @@ type DocumentSeed = {
   readonly title: string;
   readonly name: SeedDocumentName;
   readonly expiresOn: string | null;
+  /** The lease the paper belongs to, as `{property}:{unit}` (P3-08). */
+  readonly lease?: { readonly property: PropertySeedKey; readonly unit: number };
 };
 
 /** SPEC §9.3 documents. `long-an` has a paper-only record and no certificate photo, so it stays below 60%. */
@@ -54,7 +57,15 @@ export const DOCUMENT_SEEDS: readonly DocumentSeed[] = [
   { key: 'q7:certificate', property: 'q7', category: 'certificate', title: 'Sổ hồng Q7', name: 'so-hong-pre2009-photo-page-1.jpg', expiresOn: null },
   { key: 'q7:insurance', property: 'q7', category: 'insurance', title: 'Bảo hiểm cháy nổ Nhà phố Q7', name: 'bao-hiem-q7.pdf', expiresOn: '2026-10-30' },
   { key: 'thu-duc:certificate', property: 'thu-duc', category: 'certificate', title: 'Sổ hồng Thủ Đức', name: 'gcn-2009-2024-low-light-page-1.jpg', expiresOn: null },
-  { key: 'thu-duc:lease', property: 'thu-duc', category: 'lease_contract', title: 'Hợp đồng thuê Căn hộ Thủ Đức', name: 'hop-dong-thue-thu-duc.pdf', expiresOn: null },
+  {
+    key: 'thu-duc:lease',
+    property: 'thu-duc',
+    category: 'lease_contract',
+    title: 'Hợp đồng thuê Căn hộ Thủ Đức',
+    name: 'hop-dong-thue-thu-duc.pdf',
+    expiresOn: null,
+    lease: { property: 'thu-duc', unit: 1 },
+  },
   { key: 'di-an:certificate', property: 'di-an', category: 'certificate', title: 'Sổ hồng Dĩ An', name: 'gcn-2024-low-light-page-1.jpg', expiresOn: null },
   { key: 'q1:certificate', property: 'q1', category: 'certificate', title: 'Sổ hồng Quận 1', name: 'gcn-2009-2024-low-light-page-2.jpg', expiresOn: null },
   { key: 'bien-hoa:certificate', property: 'bien-hoa', category: 'certificate', title: 'Sổ đỏ Biên Hòa', name: 'so-do-pre2009-photo-page-1.jpg', expiresOn: null },
@@ -96,6 +107,7 @@ export const documents = publicTable('documents', ({ household, properties }) =>
       sha256,
       sensitivity: SENSITIVE.has(seed.category) ? 'sensitive' : 'normal',
       expires_on: seed.expiresOn,
+      lease_id: seed.lease === undefined ? null : seedLeaseId(household, seed.lease),
     };
   });
 });
