@@ -186,6 +186,8 @@ test('rule 5: the lease timeline links each bill, and Phòng 5’s overdue bill 
   await expect(page).toHaveURL(invoicePath(id));
   await expect(page.getByTestId('invoice-status')).toContainText('Quá hạn 12 ngày');
   expectInvoiceCode(await scan(page.getByTestId('invoice-qr').getByTestId('qr-code')), 2_800_000, memoCode);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('bill-overdue-1440-light.png'), fullPage: true });
 });
 
 test('rule 6: in English at 130% text the QR sheet keeps the code at least 240 px wide and every fact unclipped', async ({ page }) => {
