@@ -101,6 +101,21 @@ jobs:
           PROJECTS: ${{ matrix.projects }}
           SHARD: ${{ matrix.shard }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: ${{ matrix.id }}.zip
+      - name: DIAG
+        if: ${{ !cancelled() && (matrix.id == 'viewports-2' || matrix.id == 'clock-1') }}
+        continue-on-error: true
+        run: |
+          command -v lsof || echo NO-LSOF
+          (python3 -m http.server 3200 >/dev/null 2>&1 &); sleep 2
+          lsof -nP -t -iTCP:3200 -sTCP:LISTEN; echo "lsof exit=$?"
+          ss -ltnp | grep 3200 || true
+          fc-list | grep -ci jakarta || true
+          fc-match sans-serif
+          (ESTA_ENV=test ESTA_NEXT_DIST_DIR=.next/e2e-slot-0 node scripts/web.ts start >"$RUNNER_TEMP/web.log" 2>&1 &)
+          for i in $(seq 1 40); do curl -fs localhost:3000/dev/glyphs >/dev/null && break; sleep 2; done
+          lsof -nP -t -iTCP:3000 -sTCP:LISTEN; echo "lsof3000 exit=$?"
+          ss -ltnp | grep 3000 || true
+          node --input-type=module -e "$(cat tools/ci/.diag.mjs)" || tail -20 "$RUNNER_TEMP/web.log"
       - id: strip
         if: ${{ !cancelled() }}
         run: tools/ci/strip-key-traces.sh blob-report

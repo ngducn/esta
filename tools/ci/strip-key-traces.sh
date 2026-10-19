@@ -19,7 +19,7 @@ fi
 
 for blob in "$dir"/*.zip; do
 	rm -rf "${work:?}"/*
-	unzip -q "$blob" -d "$work"
+	unzip -qo "$blob" -d "$work"
 	stripped=0
 	for trace in "$work"/resources/*.zip; do
 		if (set +o pipefail && unzip -p "$trace" | grep -aqFf "$keys"); then
