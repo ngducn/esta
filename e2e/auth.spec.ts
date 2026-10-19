@@ -178,7 +178,7 @@ test('an invited address claims its invite only after its email is confirmed by 
   const invite = await request.get(`${restUrl}/household_members?invited_email=eq.${encodeURIComponent(invitee)}&select=user_id`, {
     headers: e2eServiceHeaders(),
   });
-  expect(await invite.json(), 'nobody has claimed the invite before the email is confirmed').toEqual([{ user_id: "BREAK" }]);
+  expect(await invite.json(), 'nobody has claimed the invite before the email is confirmed').toEqual([{ user_id: null }]);
 
   const ownerContext = await browser.newContext();
   const ownerPage = await ownerContext.newPage();
