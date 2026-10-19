@@ -197,11 +197,10 @@
       }
     },
     "local-id-schema": {
-      "value": 19,
+      "value": 16,
       "files": {
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 1,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 1,
-        "apps/web/src/app/(app)/properties/actions.ts": 1,
         "apps/web/src/app/(app)/properties/location-actions.ts": 1,
         "apps/web/src/app/(app)/properties/page.tsx": 1,
         "apps/web/src/proxy.ts": 1,
@@ -214,17 +213,15 @@
         "apps/web/src/server/extraction/actions.ts": 1,
         "apps/web/src/server/extraction/review.ts": 1,
         "apps/web/src/server/properties/detail.ts": 1,
-        "apps/web/src/server/properties/form.ts": 2,
         "apps/web/src/server/properties/wizard.ts": 1,
         "apps/web/src/server/soft-delete.ts": 1
       }
     },
     "sqlstate-literal": {
-      "value": 15,
+      "value": 14,
       "files": {
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 3,
         "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 5,
-        "apps/web/src/app/(app)/properties/actions.ts": 1,
         "apps/web/src/app/(app)/properties/location-actions.ts": 1,
         "apps/web/src/app/onboarding/actions.ts": 1,
         "apps/web/src/server/actions/leases.ts": 3,
@@ -311,12 +308,12 @@
       "value": 8,
       "files": {
         "apps/web/src/server/documents/actions.ts": 2,
-        "apps/web/src/server/properties/list.ts": 1,
         "apps/web/src/server/properties/rental.ts": 1,
         "packages/core/src/agent-schemas/certificate_v1.ts": 1,
         "packages/core/src/schemas/ownership.ts": 1,
         "packages/core/src/schemas/property.ts": 1,
-        "packages/core/src/tax/rules.ts": 1
+        "packages/core/src/tax/rules.ts": 1,
+        "packages/ops/src/properties.ts": 1
       }
     },
     "ad-hoc-result-type": {
