@@ -22,3 +22,12 @@ describe('expenses.test.sql', () => {
     expect(sql).toContain(":'a', :amount_ceiling + 1),");
   });
 });
+
+describe('deposit_ledger_parity.test.sql', () => {
+  it('holds exactly the rows of fixtures/deposit_ledgers.csv', () => {
+    const [, ...csv] = readFileSync(join(tests, 'fixtures', 'deposit_ledgers.csv'), 'utf8').trim().split('\n');
+    const sql = readFileSync(join(tests, 'deposit_ledger_parity.test.sql'), 'utf8');
+    const rows = [...sql.matchAll(/\('([^']+)', (\d+), '(\w+)', (\d+)::bigint, '([\d-]+)', '(\w+)'\)/g)].map((match) => match.slice(1).join(','));
+    expect(rows).toEqual(csv);
+  });
+});

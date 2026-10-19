@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { setClock } from './helpers/test-clock';
-import { userRest as rest } from './helpers/user-rest';
+import { memberRest as rest } from './helpers/auth-api';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');

@@ -17,6 +17,7 @@ import { statusPills, statusWords } from '@/components/properties/status-pills';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
+import { HeldDepositTotal } from '@/components/leases/HeldDepositTotal';
 import { ArchivedNoticeLoader } from '@/components/properties/archived-notice-loader';
 import { FilterChips, filterChips, hasChoice, type FilterChip, type FilterGroup } from '@/components/properties/filter-chips';
 import type { PropertyCardData } from '@/components/properties/property-card';
@@ -115,6 +116,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           <p data-testid="property-count" className="text-small text-ink-muted">
             {count}
           </p>
+          <HeldDepositTotal householdId={member.household.id} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {list.householdCount === 0 ? null : (

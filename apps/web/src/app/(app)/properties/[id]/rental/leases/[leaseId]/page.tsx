@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { LeaseForm, type LeaseFormUnit } from '@/components/leases/LeaseForm';
 import { newLeaseValues, valuesFromRow } from '@/components/leases/lease-form-values';
 import { LeaseActions, type RenewalOffer } from '@/components/leases/LeaseActions';
+import { LeaseDeposit } from '@/components/leases/LeaseDeposit';
 import { LeaseDocuments } from '@/components/leases/LeaseDocuments';
 import { LeaseTerms } from '@/components/leases/LeaseTerms';
 import { PeriodTimeline } from '@/components/leases/PeriodTimeline';
@@ -144,6 +145,9 @@ export default async function LeasePage({ params, searchParams }: { params: Para
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex flex-col gap-6">
           <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} schedule={schedule} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} />
+          <PropertyIntl locale={locale} messages={{ deposits: messages.deposits, components: { money, date, status, toast } }}>
+            <LeaseDeposit lease={summary} unitLabel={name} invoices={invoices} canEdit={canEdit} today={asOf} />
+          </PropertyIntl>
           <PropertyIntl locale={locale} messages={{ leases: messages.leases, documents: messages.documents, components: { money, date, status, toast } }}>
             <LeaseDocuments leaseId={summary.id} propertyId={id} nickname={property.nickname} documents={documents} canEdit={canEdit} />
           </PropertyIntl>

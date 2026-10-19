@@ -26,6 +26,11 @@ function oldestFirst(a: OpenInvoice, b: OpenInvoice): number {
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
+/** The issued invoices that still owe, in the order `record_payment` and `apply_deposit` take them: oldest due first. */
+export function openInvoicesOldestFirst<I extends OpenInvoice & { readonly status: string }>(invoices: readonly I[]): I[] {
+  return invoices.filter((invoice) => invoice.status === 'issued' && invoice.outstandingVnd > 0).sort(oldestFirst);
+}
+
 function checkOverride(
   amountVnd: Vnd,
   openInvoices: readonly OpenInvoice[],

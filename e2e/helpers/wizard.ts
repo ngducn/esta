@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { e2eServiceHeaders } from '../../scripts/e2e-service.ts';
@@ -79,6 +79,18 @@ export async function shot(page: Page, name: string) {
   }
   await page.screenshot({ path: join(evidence, `${name}.png`), fullPage: true });
 }
+
+/** An enabled button fades its colors in; axe reads it once the fade has finished. */
+export async function settled(button: Locator) {
+  await expect(button).toBeEnabled();
+  await button.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+}
+
+/** An amount as the app prints it, `2.800.000 ₫`, with the no-break space `formatVnd` puts before the sign. */
+export const vnd = (digits: string) => `${digits}\u00a0₫`;
+
+/** The toast region in either language. */
+export const toast = (page: Page) => page.getByRole('region', { name: /Thông báo|Notifications/ });
 
 export const noSidewaysScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 

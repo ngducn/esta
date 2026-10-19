@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { isoDate, type IsoDate } from '../date/iso-date';
 import { vnd, type Vnd } from '../money/vnd';
 import { allocatePayment, type Allocation, type AllocationPlan, type OpenInvoice } from './allocate';
-import { deriveDepositLedger, type DepositEntry, type DepositKind } from './deposits';
+import { DEPOSIT_KINDS, deriveDepositLedger, type DepositEntry, type DepositKind } from './deposits';
 import { derivePaymentStatus } from './status';
 
 const params = { seed: 20261007, numRuns: 1000 };
@@ -136,10 +136,8 @@ describe('allocatePayment with an override', () => {
   });
 });
 
-const KINDS: readonly DepositKind[] = ['received', 'applied', 'deduction', 'refunded'];
-
 const ledger: fc.Arbitrary<DepositEntry[]> = fc.array(
-  fc.record({ kind: fc.constantFrom(...KINDS), amountVnd: amount(50_000_000), onDate: day }),
+  fc.record({ kind: fc.constantFrom(...DEPOSIT_KINDS), amountVnd: amount(50_000_000), onDate: day }),
   { maxLength: 15 },
 ).map((entries) => entries.map((entry, i) => ({ id: `e${i}`, ...entry })));
 
@@ -163,6 +161,18 @@ describe('deriveDepositLedger', () => {
         expect(result.value.heldVnd).toBe(held);
         expect(result.value.rows.every((row) => row.heldVnd >= 0)).toBe(true);
         expect(result.value.rows.map((row) => row.id)).toEqual(ordered.map((entry) => entry.id));
+      }),
+      params,
+    );
+  });
+
+  it('holds what was received less what was applied, deducted and refunded', () => {
+    fc.assert(
+      fc.property(ledger, (entries) => {
+        const result = deriveDepositLedger(entries);
+        if (!result.ok) return;
+        const total = (kind: DepositKind) => entries.filter((entry) => entry.kind === kind).reduce((sum, entry) => sum + entry.amountVnd, 0);
+        expect(result.value.heldVnd).toBe(total('received') - total('applied') - total('deduction') - total('refunded'));
       }),
       params,
     );

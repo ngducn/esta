@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { allocatePayment, owedFor, owedThrough, type Allocation, type OpenInvoice } from './allocate';
+import { allocatePayment, openInvoicesOldestFirst, owedFor, owedThrough, type Allocation, type OpenInvoice } from './allocate';
 
 const d = isoDate;
 
@@ -129,5 +129,17 @@ describe('owedFor', () => {
 
   it('counts nothing for a chosen invoice that is no longer open', () => {
     expect(owedFor([august, september], 'sep', ['oct'])).toBe(0);
+  });
+});
+
+describe('openInvoicesOldestFirst', () => {
+  it('keeps issued invoices that still owe, oldest due first, and drops drafts and paid ones', () => {
+    const invoices = [
+      { ...invoice('oct', '2026-10-25', 2_800_000), status: 'issued' },
+      { ...invoice('sep', '2026-09-25', 1_300_000), status: 'issued' },
+      { ...invoice('aug', '2026-08-25', 0), status: 'issued' },
+      { ...invoice('nov', '2026-11-25', 2_800_000), status: 'draft' },
+    ];
+    expect(openInvoicesOldestFirst(invoices).map((open) => open.id)).toEqual(['sep', 'oct']);
   });
 });

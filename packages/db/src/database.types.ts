@@ -578,6 +578,80 @@ export type Database = {
           },
         ]
       }
+      deposit_entries: {
+        Row: {
+          amount_vnd: number
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          idempotency_key: string | null
+          kind: string
+          lease_id: string
+          note: string | null
+          on_date: string
+          payment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_vnd: number
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          idempotency_key?: string | null
+          kind: string
+          lease_id: string
+          note?: string | null
+          on_date: string
+          payment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_vnd?: number
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          idempotency_key?: string | null
+          kind?: string
+          lease_id?: string
+          note?: string | null
+          on_date?: string
+          payment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_entries_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_entries_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_deposits"
+            referencedColumns: ["household_id", "lease_id"]
+          },
+          {
+            foreignKeyName: "deposit_entries_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "deposit_entries_household_id_payment_id_fkey"
+            columns: ["household_id", "payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       document_access_log: {
         Row: {
           action: string
@@ -818,6 +892,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "documents_lease_fk"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_deposits"
+            referencedColumns: ["household_id", "lease_id"]
           },
           {
             foreignKeyName: "documents_lease_fk"
@@ -1181,6 +1262,13 @@ export type Database = {
             foreignKeyName: "invoices_household_id_lease_id_fkey"
             columns: ["household_id", "lease_id"]
             isOneToOne: false
+            referencedRelation: "lease_deposits"
+            referencedColumns: ["household_id", "lease_id"]
+          },
+          {
+            foreignKeyName: "invoices_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
             referencedRelation: "leases"
             referencedColumns: ["household_id", "id"]
           },
@@ -1248,6 +1336,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "households"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_amendments_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_deposits"
+            referencedColumns: ["household_id", "lease_id"]
           },
           {
             foreignKeyName: "lease_amendments_household_id_lease_id_fkey"
@@ -1367,6 +1462,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "units"
             referencedColumns: ["household_id", "property_id", "id"]
+          },
+          {
+            foreignKeyName: "leases_household_id_renewal_of_lease_id_fkey"
+            columns: ["household_id", "renewal_of_lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_deposits"
+            referencedColumns: ["household_id", "lease_id"]
           },
           {
             foreignKeyName: "leases_household_id_renewal_of_lease_id_fkey"
@@ -2254,8 +2356,31 @@ export type Database = {
             foreignKeyName: "invoices_household_id_lease_id_fkey"
             columns: ["household_id", "lease_id"]
             isOneToOne: false
+            referencedRelation: "lease_deposits"
+            referencedColumns: ["household_id", "lease_id"]
+          },
+          {
+            foreignKeyName: "invoices_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
             referencedRelation: "leases"
             referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      lease_deposits: {
+        Row: {
+          held_vnd: number | null
+          household_id: string | null
+          lease_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leases_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2344,6 +2469,17 @@ export type Database = {
           p_lease_id: string
           p_reason?: string
           p_rent_vnd?: number
+        }
+        Returns: string
+      }
+      apply_deposit: {
+        Args: {
+          p_amount_vnd: number
+          p_idempotency_key: string
+          p_invoice_id: string
+          p_lease_id: string
+          p_note?: string
+          p_on_date: string
         }
         Returns: string
       }
@@ -2491,6 +2627,17 @@ export type Database = {
         }[]
       }
       property_boundary: { Args: { p_property_id: string }; Returns: Json }
+      record_deposit_entry: {
+        Args: {
+          p_amount_vnd: number
+          p_idempotency_key: string
+          p_kind: string
+          p_lease_id: string
+          p_note?: string
+          p_on_date: string
+        }
+        Returns: string
+      }
       record_payment: {
         Args: {
           p_amount_vnd: number

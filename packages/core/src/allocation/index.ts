@@ -1,5 +1,6 @@
 export {
   allocatePayment,
+  openInvoicesOldestFirst,
   owedFor,
   owedThrough,
   type Allocation,
@@ -8,7 +9,13 @@ export {
   type OpenInvoice,
 } from './allocate';
 export {
+  DEPOSIT_KINDS,
+  depositActions,
+  depositPrefill,
   deriveDepositLedger,
+  previewDepositEntry,
+  type DepositPreview,
+  type DepositState,
   type DepositEntry,
   type DepositKind,
   type DepositLedger,

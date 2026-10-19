@@ -1,40 +1,15 @@
 import { isoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import { parsePropertyFilters } from '@esta/core/properties';
-import type { Database } from '@esta/db';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { z } from 'zod';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
 // AS_OF_INSTANT; run against a fresh `pnpm db:reset`.
-const { ESTA_IT_SUPABASE_URL: url, ESTA_IT_ANON_KEY: anonKey, ESTA_IT_MAILBOX: mailbox } = z
-  .object({ ESTA_IT_SUPABASE_URL: z.url(), ESTA_IT_ANON_KEY: z.string().min(1), ESTA_IT_MAILBOX: z.url() })
-  .parse(process.env);
-const EMAIL = 'ryan.lane3@demo.esta.test';
+
 // seedId('seed:household:lane-3'), supabase/seed/README.md
 const HOUSEHOLD = '77551982-f791-5e3b-8cc6-0622735344d4';
-const client: SupabaseClient<Database> = createClient<Database>(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-const search = new URLSearchParams({ query: `to:"${EMAIL}"` }).toString();
-
-async function latestCode(): Promise<string> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const found = z.object({ messages: z.array(z.object({ ID: z.string() })) }).parse(await (await fetch(`${mailbox}/search?${search}`)).json());
-    const [newest] = found.messages;
-    if (newest !== undefined) {
-      const { Text } = z.object({ Text: z.string() }).parse(await (await fetch(`${mailbox}/message/${newest.ID}`)).json());
-      const code = /\b\d{6}\b/.exec(Text)?.[0];
-      if (code !== undefined) return code;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`No sign-in code reached ${EMAIL}`);
-}
-
-vi.mock('server-only', () => ({}));
-vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/member', () => ({ requireMember: async () => ({ household: { id: HOUSEHOLD } }) }));
-vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => client }));
+const { client, signIn } = memberClient('ryan.lane3@demo.esta.test', HOUSEHOLD);
 
 const { activateLease, amendLease, createTenant, previewActivation, renewLease, saveLease, terminateLease } = await import('./leases');
 const { listProperties } = await import('@/server/properties/list');
@@ -80,13 +55,8 @@ async function invoicesOf(leaseId: string) {
   return data;
 }
 
-/** Signs in through the slot's mailbox like a person, so every write below runs under RLS as a household admin. */
 beforeAll(async () => {
-  await fetch(`${mailbox}/search?${search}`, { method: 'DELETE' });
-  const sent = await client.auth.signInWithOtp({ email: EMAIL, options: { shouldCreateUser: false } });
-  if (sent.error) throw sent.error;
-  const verified = await client.auth.verifyOtp({ email: EMAIL, token: await latestCode(), type: 'email' });
-  if (verified.error) throw verified.error;
+  await signIn();
   ({ propertyId, unitId } = await createProperty());
 }, 30_000);
 
