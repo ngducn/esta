@@ -106,11 +106,11 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          (for i in $(seq 1 90); do echo "--- t=$i"; ss -ltnp | grep -E ':3000\b'; lsof -nP -iTCP:3000 -sTCP:LISTEN; echo "lsof=$?"; sleep 2; done >"$RUNNER_TEMP/watch.log" 2>&1 &)
+          (for i in $(seq 1 90); do echo "--- t=$i"; ss -ltnp | grep 300; lsof -nP -iTCP:3000 -sTCP:LISTEN; lsof -nP -i :3000; echo "lsof=$?"; sleep 2; done >"$RUNNER_TEMP/watch.log" 2>&1 &)
           pnpm e2e --project=clock e2e/fnd9-integration.spec.ts --reporter=line >"$RUNNER_TEMP/spec.log" 2>&1
           tail -5 "$RUNNER_TEMP/spec.log" | cut -c1-200
-          grep -m3 -B2 -A6 'lsof=0' "$RUNNER_TEMP/watch.log" | head -30
-          grep -c 'lsof=1' "$RUNNER_TEMP/watch.log"
+          head -c 3000 "$RUNNER_TEMP/watch.log"; echo; grep -c 'lsof=0' "$RUNNER_TEMP/watch.log"
+          ss -ltnp | head -20
       - id: strip
         if: ${{ !cancelled() }}
         run: tools/ci/strip-key-traces.sh blob-report
