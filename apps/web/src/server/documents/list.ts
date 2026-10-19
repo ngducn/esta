@@ -35,7 +35,7 @@ export async function toListItems(householdId: string, data: readonly DocumentLi
   const rows = data.flatMap((row) => (isDocumentCategory(row.category) ? [{ ...row, category: row.category }] : []));
   const thumbOf = (row: (typeof rows)[number]) =>
     row.sensitivity === 'sensitive' ? thumbBlurPath(householdId, row.id) : thumbPath(householdId, row.id);
-  const urls = await signDocumentUrls(rows.map(thumbOf), env.ESTA_SIGNED_URL_TTL_SECONDS);
+  const urls = await signDocumentUrls(rows.map(thumbOf), env.ESTA_SIGNED_URL_TTL_SECONDS, { appOrigin: true });
   return rows.map((row) => ({
     id: row.id,
     category: row.category,
