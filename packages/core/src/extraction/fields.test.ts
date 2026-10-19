@@ -94,6 +94,17 @@ describe('INPUT_KINDS', () => {
     ['a date before đền bù', '15/10/2043 (đền bù)', '2043-10-15'],
     ['a date after tứ', 'tứ 27/02/1973', '1973-02-27'],
     ['a range written in NFD', 'T\u01B0\u0300 15/10/1993 \u0111e\u0302\u0301n 15/10/2043', '2043-10-15'],
+    ['a range and a later range word with no date after it', 'Từ 15/10/1993 đến 15/10/2043, gia hạn đến khi Nhà nước thu hồi', '2043-10-15'],
+    ['an end date and a later tới hạn', 'Đến ngày 15/10/2043 (tới hạn thì làm thủ tục gia hạn)', '2043-10-15'],
+    ['an end date and a later toi da, without accents', 'Thoi han su dung den 15/10/2043 (toi da 50 nam)', '2043-10-15'],
+    ['a date before tới hạn', '15/10/2043 tới hạn', '2043-10-15'],
+    ['a date before đến hạn', '15/10/2043 (đến hạn gia hạn)', '2043-10-15'],
+    ['a date before toi da, without accents', '15/10/2043 (toi da)', '2043-10-15'],
+    ['an end date and a later dash range', 'Đến 15/10/2043; QĐ giao đất 12/03/2005 - 12/03/2006', '2043-10-15'],
+    ['a range and a later dash range', 'Từ 15/10/1993 đến 15/10/2043 (gia hạn 15/10/2043 - 15/10/2053)', '2043-10-15'],
+    ['an end month and a later full date', 'Đến tháng 10/2043 (gia hạn 15/10/2053)', '2043-10-31'],
+    ['an ASCII arrow between two dates', '15/10/1993 -> 15/10/2043', '2043-10-15'],
+    ['a long ASCII arrow between two dates', '15/10/1993 --> 15/10/2043', '2043-10-15'],
   ] as const)('reads a term written as %s as its end', (_, text, end) => {
     expect(INPUT_KINDS.term.parse(text)).toEqual({ ok: true, value: end });
   });
@@ -103,6 +114,9 @@ describe('INPUT_KINDS', () => {
     ['a start date and a dash with no end date after it', '15/10/1993 - 50 năm'],
     ['a period from a start without accents', '50 nam ke tu ngay 15/10/1993'],
     ['a date and a dash before words, read as a start', '15/10/2043 - gia hạn'],
+    ['a start date before đến nay', '15/10/1993 đến nay'],
+    ['a start date before tới nay', '15/10/1993 tới nay'],
+    ['a start date before đến khi', '15/10/1993 đến khi Nhà nước thu hồi'],
   ] as const)('refuses a term that names only %s', (_, text) => {
     expect(INPUT_KINDS.term.parse(text)).toEqual({ ok: false });
   });
