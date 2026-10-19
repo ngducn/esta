@@ -1,3 +1,4 @@
+import { openInvoicesOldestFirst } from '@esta/core/allocation';
 import { formatVnd } from '@esta/core/format';
 import { currentLease, currentMonthlyRent, unitLeaseMark } from '@esta/core/lease';
 import { vnd } from '@esta/core/money';
@@ -27,9 +28,7 @@ function unitLeases(units: readonly { id: string }[], { leases, invoices, schedu
     units.map((unit) => {
       const live = currentLease(leases.filter((lease) => lease.unit_id === unit.id), asOf);
       if (live === undefined) return [unit.id, { mark: unitLeaseMark(undefined, asOf), leaseId: null, tenantName: null, rentVnd: null, endsOn: null }];
-      const openDueDates = invoices
-        .filter((invoice) => invoice.leaseId === live.id && invoice.status === 'issued' && invoice.outstandingVnd > 0)
-        .map((invoice) => invoice.dueDate);
+      const openDueDates = openInvoicesOldestFirst(invoices.filter((invoice) => invoice.leaseId === live.id)).map((invoice) => invoice.dueDate);
       return [
         unit.id,
         {
