@@ -10,16 +10,21 @@ const env = slotEnv(root, slot);
 const AS_OF_INSTANT = '2026-10-07T09:00:00+07:00';
 const clock = (target: string) => spawnSync('pnpm', ['clock:set', target], { cwd: root, stdio: 'inherit', env: { ...process.env, ESTA_SLOT: String(slot) } });
 if (clock(AS_OF_INSTANT).status !== 0) process.exit(1);
-const result = spawnSync('pnpm', ['exec', 'vitest', 'run', '--project', 'node', 'integration'], {
-  cwd: join(root, 'apps', 'web'),
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    ESTA_SLOT: String(slot),
-    ESTA_IT_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL,
-    ESTA_IT_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    ESTA_IT_MAILBOX: `http://127.0.0.1:${slotPorts(slot).inbucket}/api/v1`,
-  },
-});
+const vitest = (...filters: string[]) =>
+  spawnSync('pnpm', ['exec', 'vitest', 'run', '--project', 'node', ...filters], {
+    cwd: join(root, 'apps', 'web'),
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      ESTA_SLOT: String(slot),
+      ESTA_IT_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL,
+      ESTA_IT_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      ESTA_IT_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
+      ESTA_IT_MAILBOX: `http://127.0.0.1:${slotPorts(slot).inbucket}/api/v1`,
+    },
+  }).status ?? 1;
+// The cron test moves every household past the seed date, so it runs alone after the others.
+const CRON_TEST = 'src/server/cron/cron.integration.test.ts';
+const status = vitest('integration', '--exclude', CRON_TEST) || vitest(CRON_TEST);
 clock('off');
-process.exit(result.status ?? 1);
+process.exit(status);
