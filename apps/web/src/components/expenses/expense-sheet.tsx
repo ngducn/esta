@@ -268,7 +268,9 @@ export function ExpenseSheet({
         return;
       }
       if (!result.ok) {
-        setErrors(result.reason === 'invalid' ? result.problems : { save: result.reason === 'forbidden' ? 'forbidden' : 'networkError' });
+        if (result.reason === 'forbidden') setErrors({ save: 'forbidden' });
+        else if (result.reason === 'invalid' && (result.problems.amount !== undefined || result.problems.paidOn !== undefined)) setErrors(result.problems);
+        else setErrors({ save: 'networkError' });
         return;
       }
       finish(result);
