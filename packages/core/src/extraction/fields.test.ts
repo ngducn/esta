@@ -61,6 +61,13 @@ describe('INPUT_KINDS', () => {
     expect(INPUT_KINDS.id_last4.parse('12')).toEqual({ ok: false, reason: 'invalid' });
   });
 
+  it('holds an area the assistant returns as a number to the rule typed text meets', () => {
+    expect(readInput('area', 125.5)).toEqual({ ok: true, value: 125.5 });
+    expect(readInput('area', 1250)).toEqual({ ok: true, value: 1250 });
+    expect(readInput('area', 1.255)).toEqual({ ok: false, reason: 'too_precise' });
+    expect(readInput('area', 0)).toEqual({ ok: false, reason: 'invalid' });
+  });
+
   it('refuses a number read with an ID in its text instead of keeping its digits (D11)', () => {
     for (const typed of ['001123456789', '0791234567,89', '07912345678,9', '0791234567,89 m²']) expect(readInput('area', typed), typed).toEqual({ ok: false, reason: 'invalid' });
     expect(readInput('area', '1.250,5')).toEqual({ ok: true, value: 1250.5 });
