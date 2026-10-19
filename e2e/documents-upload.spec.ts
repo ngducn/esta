@@ -86,7 +86,7 @@ function actionBodies(page: Page): number[] {
 }
 
 const isFilePut = (request: Request) =>
-  request.method() === 'PUT' && request.url().includes('/storage/v1/object/upload/sign/documents/') && !/\/thumb(-blur)?\.webp\?/.test(request.url());
+  request.method() === 'PUT' && request.url().includes('/storage/v1/object/upload/sign/documents/') && !/\/(thumb(-blur)?|review)\.webp\?/.test(request.url());
 
 async function uploadThroughCamera(page: Page, file: string) {
   await page.getByTestId('add-document').click();
@@ -119,14 +119,17 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurre
     expect(puts, 'the file went in one PUT to a signed upload URL').toHaveLength(1);
     expect(Math.max(...bodies), 'no server action body carries file bytes').toBeLessThan(10 * 1024);
     const names = (await folder(page, `${household(1)}/${row?.id}/`)).map((object) => object.name).toSorted();
-    expect(names, 'the bucket holds the file and both thumbnails').toEqual(['page-1.jpg', 'thumb-blur.webp', 'thumb.webp']);
+    expect(names, 'the bucket holds the file, both thumbnails and the review copy').toEqual(['page-1.jpg', 'review.webp', 'thumb-blur.webp', 'thumb.webp']);
     await expect(tile(page, 'Sổ hồng Long An')).toHaveAttribute('data-blurred', 'true');
     const object = async (name: string) =>
       Buffer.from(await (await page.request.get(`${supabaseUrl}/storage/v1/object/documents/${household(1)}/${row?.id}/${name}`, { headers: service })).body());
-    const [clear, blurred] = await Promise.all([object('thumb.webp'), object('thumb-blur.webp')]);
+    const [clear, blurred, review, original] = await Promise.all([object('thumb.webp'), object('thumb-blur.webp'), object('review.webp'), object('page-1.jpg')]);
     const size = await sharp(clear).metadata();
     expect(Math.max(size.width ?? 0, size.height ?? 0), 'the thumbnail is at most 320 px on its long side').toBe(320);
     expect(clear.equals(blurred), 'the blurred thumbnail differs from the clear one').toBe(false);
+    const [reviewSize, originalSize] = await Promise.all([sharp(review).metadata(), sharp(original).metadata()]);
+    expect([reviewSize.format, reviewSize.width, reviewSize.height], 'the review copy is a WebP of the upright page, never enlarged').toEqual(['webp', originalSize.width, originalSize.height]);
+    expect(review.length, 'the review copy weighs less than the photo').toBeLessThan(original.length);
 
     await tile(page, 'Sổ hồng Long An').getByTestId('document-link').first().click();
     await expect(page).toHaveURL(new RegExp(`/documents/${row?.id}$`), COLD_ROUTE);
@@ -134,7 +137,9 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and blurre
     await expect(image).toBeVisible(COLD_ROUTE);
     await image.evaluate((img: HTMLImageElement) => img.decode());
     if (process.env.ESTA_VIDEO === '1') await page.screenshot({ path: test.info().outputPath('opened.png') });
-    expect(await image.getAttribute('src'), 'Mẹ opens her upload through a signed URL').toMatch(new RegExp(`/storage/v1/object/sign/documents/${household(1)}/${row?.id}/page-1\\.jpg\\?token=`));
+    expect(await image.getAttribute('src'), 'Mẹ opens her upload through its signed review copy').toMatch(new RegExp(`/storage/v1/object/sign/documents/${household(1)}/${row?.id}/review\\.webp\\?token=`));
+    await page.getByTestId('zoom-in').click();
+    await expect(page.locator(`img[src*="/${row?.id}/page-1.jpg?token="]`), 'zooming in layers the signed photo over its copy').toBeVisible();
   } finally {
     await archiveNewDocuments(page, 1, 'long-an');
   }

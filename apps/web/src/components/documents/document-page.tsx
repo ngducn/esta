@@ -95,7 +95,9 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
         </header>
         <div className="lg:order-1">
           <DocumentPager
+            documentId={document.id}
             fileUrl={data.fileUrl}
+            reviewUrl={data.reviewUrl}
             thumbUrl={data.thumbUrl}
             mime={document.mime}
             pageCount={document.pageCount}

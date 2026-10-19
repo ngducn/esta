@@ -23,7 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { sha256 } from '@/lib/upload/sha256';
-import { makeThumbnails, type Thumbnails } from '@/lib/upload/thumbnail';
+import { makePreviews, type Previews } from '@/lib/upload/previews';
 import { uploadWithProgress } from '@/lib/upload/upload-with-progress';
 import { createDocumentUpload, registerDocument, type UploadTicket } from '@/server/documents/actions';
 import { DuplicateDialog } from './duplicate-dialog';
@@ -32,7 +32,7 @@ import { UploadProgress } from './upload-progress';
 
 type Ticket = Extract<UploadTicket, { ok: true }>;
 /** `captured` marks a PDF combined from photos taken in this tab, which exist nowhere else until it is saved. */
-type Prepared = { readonly file: File; readonly sha256: string; readonly thumbnails: Thumbnails; readonly captured: boolean };
+type Prepared = { readonly file: File; readonly sha256: string; readonly previews: Previews; readonly captured: boolean };
 type FileProblem = 'tooLarge' | 'wrongType' | 'unreadable' | 'fileRequired' | null;
 
 /** The save flow as one state: each step names what the sheet shows. A failed step keeps its ticket for `Thử lại`. */
@@ -51,11 +51,11 @@ export function checkFile(file: File): FileProblem {
   return (DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type) ? null : 'wrongType';
 }
 
-/** The combined PDF, with its thumbnails drawn from the page 1 photo rather than by rendering the PDF again. */
+/** The combined PDF, with its previews drawn from the page 1 photo rather than by rendering the PDF again. */
 async function prepareCapture({ pdf, firstPage, pageCount }: CombinedCapture): Promise<Prepared | null> {
   try {
-    const [digest, thumbnails] = await Promise.all([sha256(pdf), makeThumbnails(firstPage)]);
-    return { file: pdf, sha256: digest, thumbnails: { ...thumbnails, pageCount }, captured: true };
+    const [digest, previews] = await Promise.all([sha256(pdf), makePreviews(firstPage)]);
+    return { file: pdf, sha256: digest, previews: { ...previews, pageCount }, captured: true };
   } catch {
     return null;
   }
@@ -63,8 +63,8 @@ async function prepareCapture({ pdf, firstPage, pageCount }: CombinedCapture): P
 
 async function prepare(file: File): Promise<Prepared | null> {
   try {
-    const [digest, thumbnails] = await Promise.all([sha256(file), makeThumbnails(file)]);
-    return { file, sha256: digest, thumbnails, captured: false };
+    const [digest, previews] = await Promise.all([sha256(file), makePreviews(file)]);
+    return { file, sha256: digest, previews, captured: false };
   } catch {
     return null;
   }
@@ -109,14 +109,14 @@ export default function UploadSheet({
   const [leaving, setLeaving] = useState<'back' | 'close' | null>(null);
   const choice = useRef(0);
   const sheet = useRef<HTMLDivElement>(null);
-  const preview = useObjectUrl(prepared === null ? null : sensitive ? prepared.thumbnails.blurred : prepared.thumbnails.thumb);
+  const preview = useObjectUrl(prepared === null ? null : sensitive ? prepared.previews.blurred : prepared.previews.thumb);
 
   // The capture view and the form differ in length, so each opens at its top rather than at the other's scroll.
   useEffect(() => {
     sheet.current?.scrollTo({ top: 0 });
   }, [capturing]);
 
-  const unsaved = capturing ? capturedPages : prepared?.captured === true ? prepared.thumbnails.pageCount : 0;
+  const unsaved = capturing ? capturedPages : prepared?.captured === true ? prepared.previews.pageCount : 0;
   const leave = (target: 'back' | 'close', confirmed = false) => {
     if (unsaved > 0 && !confirmed) {
       setLeaving(target);
@@ -181,7 +181,11 @@ export default function UploadSheet({
     setPhase({ step: 'uploading', loaded: 0, total: file.file.size });
     try {
       await uploadWithProgress(ticket.file.url, file.file, ({ loaded, total }) => setPhase({ step: 'uploading', loaded, total }));
-      await Promise.all([uploadWithProgress(ticket.thumb.url, file.thumbnails.thumb), uploadWithProgress(ticket.thumbBlur.url, file.thumbnails.blurred)]);
+      await Promise.all([
+        uploadWithProgress(ticket.thumb.url, file.previews.thumb),
+        uploadWithProgress(ticket.thumbBlur.url, file.previews.blurred),
+        uploadWithProgress(ticket.review.url, file.previews.review),
+      ]);
       const registered = await registerDocument({
         documentId: ticket.documentId,
         propertyId,
@@ -193,7 +197,7 @@ export default function UploadSheet({
         mime: file.file.type,
         size: file.file.size,
         sha256: file.sha256,
-        pageCount: file.thumbnails.pageCount,
+        pageCount: file.previews.pageCount,
       });
       if (!registered.ok) throw new Error('register');
       onSaved({ documentId: ticket.documentId, title: registered.title });
@@ -299,7 +303,7 @@ export default function UploadSheet({
                 )}
                 <p className="min-w-0 text-small break-words text-ink-2">
                   {t('chosenFile', { name: prepared.file.name, size: megabytes.format(prepared.file.size / 1024 / 1024) })}
-                  {prepared.thumbnails.pageCount > 1 ? ` · ${t('pageCount', { count: prepared.thumbnails.pageCount })}` : null}
+                  {prepared.previews.pageCount > 1 ? ` · ${t('pageCount', { count: prepared.previews.pageCount })}` : null}
                 </p>
               </div>
             )}

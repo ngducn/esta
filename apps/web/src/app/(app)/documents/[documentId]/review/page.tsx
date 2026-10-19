@@ -55,6 +55,7 @@ export default async function DocumentReviewPage({ params }: { params: Promise<{
           mime={document.mime}
           pageCount={document.pageCount}
           fileUrl={review.fileUrl}
+          reviewUrl={review.reviewUrl}
           thumbUrl={review.thumbUrl}
           mode={mode}
           extractionId={extraction?.id ?? null}

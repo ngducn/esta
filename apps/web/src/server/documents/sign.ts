@@ -1,4 +1,6 @@
 import 'server-only';
+import { reviewPath, thumbPath } from '@esta/core/documents';
+import { env } from '@/server/env';
 import { createSessionClient } from '@/server/supabase/server';
 
 export const DOCUMENTS_BUCKET = 'documents';
@@ -18,4 +20,18 @@ export async function signDocumentUrls(paths: readonly string[], ttl: number, { 
 /** `download` makes Storage answer with an attachment, so the browser saves the file instead of showing it. */
 export async function signDocumentUrl(path: string, ttl: number, options: { download?: boolean } = {}): Promise<string | null> {
   return (await signDocumentUrls([path], ttl, options)).get(path) ?? null;
+}
+
+export type PagePreviews = {
+  /** Page 1 at review size; null for a document uploaded before review copies existed. */
+  readonly reviewUrl: string | null;
+  readonly thumbUrl: string | null;
+};
+
+/** The two previews a document's pager shows before or instead of the file, signed in one request. */
+export async function signPagePreviews(householdId: string, documentId: string): Promise<PagePreviews> {
+  const review = reviewPath(householdId, documentId);
+  const thumb = thumbPath(householdId, documentId);
+  const urls = await signDocumentUrls([review, thumb], env.ESTA_SIGNED_URL_TTL_SECONDS);
+  return { reviewUrl: urls.get(review) ?? null, thumbUrl: urls.get(thumb) ?? null };
 }

@@ -8,6 +8,7 @@ import {
   DOCUMENT_MIME_TYPES,
   documentObjectName,
   MAX_DOCUMENT_BYTES,
+  reviewPath,
   storagePath,
   thumbBlurPath,
   thumbPath,
@@ -50,12 +51,13 @@ export type UploadTicket =
       readonly file: UploadTarget;
       readonly thumb: UploadTarget;
       readonly thumbBlur: UploadTarget;
+      readonly review: UploadTarget;
       readonly duplicates: readonly { readonly id: string; readonly title: string }[];
     }
   | { readonly ok: false };
 
 /**
- * Picks the document id and signs one upload URL for the file and one for each thumbnail. The browser sends the bytes
+ * Picks the document id and signs one upload URL for the file and one for each preview made from it. The browser sends the bytes
  * straight to Storage; the session client signs, so the storage insert policy decides. Upsert lets a retry rewrite
  * the same path. Same-household rows with the same SHA-256 come back for the duplicate warning.
  */
@@ -71,10 +73,11 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
     const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).createSignedUploadUrl(path, { upsert: true });
     return error ? null : { path: data.path, url: data.signedUrl };
   };
-  const [file, thumb, thumbBlur, duplicates] = await Promise.all([
+  const [file, thumb, thumbBlur, review, duplicates] = await Promise.all([
     sign(storagePath(household, documentId, parsed.data.filename)),
     sign(thumbPath(household, documentId)),
     sign(thumbBlurPath(household, documentId)),
+    sign(reviewPath(household, documentId)),
     supabase
       .from('documents')
       .select('id, title')
@@ -83,8 +86,8 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
       .is('deleted_at', null)
       .order('created_at'),
   ]);
-  if (file === null || thumb === null || thumbBlur === null || duplicates.error) return { ok: false };
-  return { ok: true, documentId, file, thumb, thumbBlur, duplicates: duplicates.data };
+  if (file === null || thumb === null || thumbBlur === null || review === null || duplicates.error) return { ok: false };
+  return { ok: true, documentId, file, thumb, thumbBlur, review, duplicates: duplicates.data };
 }
 
 export type Registered = { readonly ok: true; readonly title: string } | { readonly ok: false };
