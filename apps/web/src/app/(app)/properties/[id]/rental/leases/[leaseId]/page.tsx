@@ -15,7 +15,7 @@ import { PropertyIntl } from '@/components/properties/property-intl';
 import { StatusMark, StatusShape } from '@/components/status-mark';
 import { getClock } from '@/server/clock';
 import { loadLeaseDocuments } from '@/server/leases/detail';
-import { loadLeaseSchedule, loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
+import { loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { loadPropertyRental } from '@/server/properties/rental';
@@ -35,9 +35,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 /** Rent periods from today's amendable starts, at most this many. */
 const AMEND_STARTS_SHOWN = 12;
 
-/** An open-ended lease offers amendments and shows its schedule this far past the Clock's date. */
-const AMEND_MONTHS_AHEAD = 24;
-
 function latestIssuedEnd(invoices: readonly InvoiceSummary[]) {
   return invoices.filter((invoice) => invoice.status === 'issued').reduce<InvoiceSummary['periodEnd'] | null>((latest, invoice) => (latest === null || invoice.periodEnd > latest ? invoice.periodEnd : latest), null);
 }
@@ -56,12 +53,12 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   if (!parsed.success) notFound();
   const { id, leaseId } = parsed.data;
   const search = searchSchema.parse(await searchParams);
-  const [member, property, rental, leases, clock, t, locale, messages] = await Promise.all([
+  const asOf = (await getClock()).today();
+  const [member, property, rental, leases, t, locale, messages] = await Promise.all([
     requireMember(),
     loadPropertyDetail(id),
     loadPropertyRental(id),
-    loadPropertyLeases(id),
-    getClock(),
+    loadPropertyLeases(id, asOf),
     getTranslations('leases'),
     getLocale(),
     getMessages(),
@@ -72,7 +69,6 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   if ((leaseId === 'new' && !canEdit) || (leaseId !== 'new' && lease === null)) notFound();
 
   const unitFor = (unitId: string | undefined) => rental.units.find((unit) => unit.id === unitId);
-  const asOf = clock.today();
   const leased = new Set(leases.leases.filter((candidate) => holdsUnit(candidate, asOf)).map((candidate) => candidate.unit_id));
   const unit = unitFor(lease?.unit_id ?? search.unit) ?? rental.units.find((candidate) => !leased.has(candidate.id)) ?? rental.units[0];
   if (unit === undefined) notFound();
@@ -108,10 +104,8 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   }
 
   const leasesHref = `${backHref}/leases`;
-  const [documents, schedule] = await Promise.all([
-    loadLeaseDocuments(summary.id),
-    loadLeaseSchedule([summary.id], summary.end_date ?? addMonths(asOf, AMEND_MONTHS_AHEAD)),
-  ]);
+  const documents = await loadLeaseDocuments(summary.id);
+  const schedule = leases.schedule.filter((period) => period.leaseId === summary.id);
   const amendments = leases.amendments.filter((amendment) => amendment.leaseId === summary.id);
   const invoices = leases.invoices.filter((invoice) => invoice.leaseId === summary.id);
   const { renewalOf, renewedBy } = renewalLinks(summary, leases.leases, leasesHref);
