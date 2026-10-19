@@ -411,8 +411,9 @@ grant execute on function public.terminate_lease(uuid, date, text) to authentica
 
 -- LSE-2 and SPEC §9.4 seed 7: a new active lease from the day after the old one ends, linked by renewal_of_lease_id, at
 -- the old lease's last monthly rent changed by p_increase_bps and rounded half up to 100.000 ₫. It keeps the old terms
--- otherwise and bills like any activation. [app rule] An increase runs from -50% to +100%.
-create function public.renew_lease(p_lease_id uuid, p_increase_bps integer, p_end_date date default null)
+-- otherwise and bills like an activation with p_paid_through: from the current period on, never for a period that
+-- ended before today. [app rule] An increase runs from -50% to +100%.
+create function public.renew_lease(p_lease_id uuid, p_increase_bps integer, p_end_date date default null, p_paid_through date default null)
 returns uuid
 language plpgsql
 security definer
@@ -439,6 +440,9 @@ begin
   if p_end_date is not null and p_end_date <= v_old.end_date then
     raise exception 'ESTA_RENEWAL_END' using errcode = '22023';
   end if;
+  if p_paid_through <= v_old.end_date then
+    raise exception 'ESTA_PAID_THROUGH_BEFORE_START' using errcode = '22023';
+  end if;
   select s.cycle_months, s.monthly_rent_vnd into v_last
   from private.lease_periods(v_old, v_old.end_date) s
   order by s.period_start desc
@@ -446,13 +450,13 @@ begin
   insert into public.leases (
     household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
     first_period_proration, due_offset_days, deposit_vnd, escalation, utilities_mode, tax_payer, declaring_party_id,
-    notice_days, renewal_of_lease_id
+    notice_days, paid_through_date, renewal_of_lease_id
   )
   values (
     v_old.household_id, v_old.property_id, v_old.unit_id, v_old.tenant_party_id, v_old.end_date + 1, p_end_date,
     private.scale_round_half_up(v_last.monthly_rent_vnd, 10000 + p_increase_bps, 10000, 100000), v_last.cycle_months,
     v_old.period_anchor, v_old.first_period_proration, v_old.due_offset_days, v_old.deposit_vnd, v_old.escalation,
-    v_old.utilities_mode, v_old.tax_payer, v_old.declaring_party_id, v_old.notice_days, v_old.id
+    v_old.utilities_mode, v_old.tax_payer, v_old.declaring_party_id, v_old.notice_days, p_paid_through, v_old.id
   )
   returning id into v_id;
   update public.leases l set status = 'active' where l.id = v_id;
@@ -460,8 +464,8 @@ begin
   return v_id;
 end;
 $$;
-revoke all on function public.renew_lease(uuid, integer, date) from public, anon;
-grant execute on function public.renew_lease(uuid, integer, date) to authenticated;
+revoke all on function public.renew_lease(uuid, integer, date, date) from public, anon;
+grant execute on function public.renew_lease(uuid, integer, date, date) to authenticated;
 
 -- A lease's contract and handover papers sit under the lease (P3-08 lease detail).
 alter table public.documents

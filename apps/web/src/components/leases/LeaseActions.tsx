@@ -10,7 +10,7 @@ const AmendLeaseSheet = lazy(() => import('./AmendLeaseSheet'));
 const TerminateLeaseDialog = lazy(() => import('./TerminateLeaseDialog'));
 const RenewLeaseSheet = lazy(() => import('./RenewLeaseSheet'));
 
-export type RenewalOffer = { readonly start: IsoDate; readonly lastRentVnd: Vnd; readonly defaultEnd: IsoDate };
+export type RenewalOffer = { readonly start: IsoDate; readonly startsBeforeToday: boolean; readonly lastRentVnd: Vnd; readonly defaultEnd: IsoDate };
 
 /** What a member can do next with this lease. An ended or terminated lease offers no amend or terminate (LSE-2). */
 export function LeaseActions({
@@ -53,7 +53,15 @@ export function LeaseActions({
         {open === 'amend' ? <AmendLeaseSheet leaseId={leaseId} starts={amendStarts} onClose={close} /> : null}
         {open === 'terminate' ? <TerminateLeaseDialog leaseId={leaseId} unitLabel={unitLabel} onClose={close} /> : null}
         {open === 'renew' && renewal !== null ? (
-          <RenewLeaseSheet leaseId={leaseId} start={renewal.start} lastRentVnd={renewal.lastRentVnd} defaultEnd={renewal.defaultEnd} leasesHref={leasesHref} onClose={close} />
+          <RenewLeaseSheet
+            leaseId={leaseId}
+            start={renewal.start}
+            startsBeforeToday={renewal.startsBeforeToday}
+            lastRentVnd={renewal.lastRentVnd}
+            defaultEnd={renewal.defaultEnd}
+            leasesHref={leasesHref}
+            onClose={close}
+          />
         ) : null}
       </Suspense>
     </div>

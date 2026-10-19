@@ -296,11 +296,11 @@ describe('amend, terminate and renew against local Supabase (LSE-2, LSE-3, #144)
     for (const { rent, increaseBps, renewed } of cases) {
       // Ends after 02/11/2026, so cron.integration.test.ts, which runs next on the same stack, counts only the seed's ends.
       const lease = await activeLease({ start_date: '2025-12-01', end_date: '2026-11-30', rent_vnd: rent }, '30/09/2026');
-      const result = await renewLease(lease.id, { increaseBps, endDate: '2027-11-30' });
+      const result = await renewLease(lease.id, { increaseBps, endDate: '2027-11-30', paidThrough: '' });
       if (!result.ok) throw new Error(result.reason);
       const { data } = await client.from('leases').select('start_date, end_date, rent_vnd, status, renewal_of_lease_id').eq('id', result.value).single();
       expect(data, `${rent} + ${increaseBps} bps`).toEqual({ start_date: '2026-12-01', end_date: '2027-11-30', rent_vnd: renewed, status: 'active', renewal_of_lease_id: lease.id });
-      expect(await renewLease(lease.id, { increaseBps, endDate: null })).toEqual({ ok: false, reason: 'already_renewed' });
+      expect(await renewLease(lease.id, { increaseBps, endDate: null, paidThrough: '' })).toEqual({ ok: false, reason: 'already_renewed' });
     }
   });
 
@@ -367,7 +367,7 @@ describe('the property list on the Clock date after lease changes', () => {
   it('counts only the lease in effect, at its amended rent, when a renewal is signed early', async () => {
     const lease = await activeLease({ end_date: '2026-12-31' }, '30/09/2026');
     expect(await amendLease(lease.id, { effectivePeriodStart: '2026-11-01', rentVnd: 3_300_000, reason: '' })).toEqual({ ok: true, value: undefined });
-    const renewal = await renewLease(lease.id, { increaseBps: 500, endDate: '2027-12-31' });
+    const renewal = await renewLease(lease.id, { increaseBps: 500, endDate: '2027-12-31', paidThrough: '' });
     expect(renewal.ok).toBe(true);
     expect(await listed(lease.propertyId, '2026-10-07')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
     expect(await listed(lease.propertyId, '2026-11-15'), 'the amendment is in effect').toEqual({ monthlyRentVnd: 3_300_000, leasedUnitCount: 1 });

@@ -61,6 +61,9 @@ export async function saveLease(propertyId: unknown, leaseId: unknown, raw: unkn
 
 export type ActivationRefusalReason = ActivationRefusal | 'paid_through_invalid' | 'already_active' | 'overlap' | 'failed';
 
+/** What activation and a renewal refuse about `Đã thu tiền đến hết ngày`, shown under that field. */
+export type PaidThroughRefusal = Extract<ActivationRefusalReason, 'paid_through_invalid' | 'paid_through_before_start'>;
+
 export type ActivationResult = { readonly ok: true; readonly issuedMonth: IsoDate | null } | { readonly ok: false; readonly reasons: readonly ActivationRefusalReason[] };
 
 /** `Đã thu tiền đến hết ngày` as typed: empty is nothing collected, and anything else must be a day on the calendar. */
@@ -155,9 +158,10 @@ const CHANGE_REFUSALS = {
   ESTA_RENEWAL_INCREASE: 'invalid',
   ESTA_RENEWAL_END: 'end_before_start',
   ESTA_LEASE_OVERLAP: 'overlap',
+  ESTA_PAID_THROUGH_BEFORE_START: 'paid_through_before_start',
 } as const;
 
-export type LeaseChangeRefusal = (typeof CHANGE_REFUSALS)[keyof typeof CHANGE_REFUSALS] | 'invalid' | 'failed';
+export type LeaseChangeRefusal = (typeof CHANGE_REFUSALS)[keyof typeof CHANGE_REFUSALS] | 'paid_through_invalid' | 'invalid' | 'failed';
 
 export type LeaseChange<T = undefined> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly reason: LeaseChangeRefusal };
 
@@ -210,18 +214,25 @@ export async function terminateLease(leaseId: unknown, raw: unknown): Promise<Le
 const renewalSchema = z.strictObject({
   increaseBps: z.number().int().min(RENEWAL_INCREASE_BPS.min).max(RENEWAL_INCREASE_BPS.max),
   endDate: isoDateSchema.nullable(),
+  paidThrough: z.string(),
 });
 
-/** LSE-2 and SPEC §9.4 seed 7: a new active lease from the day after this one ends, at the rent `renewalRent` previews. */
+/**
+ * LSE-2 and SPEC §9.4 seed 7: a new active lease from the day after this one ends, at the rent `renewalRent` previews.
+ * `paidThrough` is `Đã thu tiền đến hết ngày` as typed, read and billed as activation reads and bills it.
+ */
 export async function renewLease(leaseId: unknown, raw: unknown): Promise<LeaseChange<string>> {
   const id = uuid.safeParse(leaseId);
   const value = renewalSchema.safeParse(raw);
   if (!id.success || !value.success) return { ok: false, reason: 'invalid' };
+  const through = readPaidThrough(value.data.paidThrough);
+  if (!through.ok) return { ok: false, reason: through.reason };
   const supabase = await createSessionClient();
   const { data, error } = await supabase.rpc('renew_lease', {
     p_lease_id: id.data,
     p_increase_bps: value.data.increaseBps,
     ...(value.data.endDate === null ? {} : { p_end_date: value.data.endDate }),
+    ...(through.value === null ? {} : { p_paid_through: through.value }),
   });
   revalidateLeases();
   if (error) return { ok: false, reason: changeRefusal(error) };

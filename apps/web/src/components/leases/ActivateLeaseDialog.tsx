@@ -6,12 +6,12 @@ import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { activateLease, previewActivation, type ActivationRefusalReason, type BillPreview } from '@/server/actions/leases';
-import { DateInput } from '@/components/date-input';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { StatusShape } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogClose, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/dialog';
 import { useNoticeToast } from '@/components/undo-toast';
+import { PaidThroughField } from './paid-through-field';
 
 /**
  * LSE-2 and LSE-3: `Đã thu tiền đến hết ngày` sets paid_through_date, so what was collected before Esta is never
@@ -73,23 +73,13 @@ export default function ActivateLeaseDialog({
           <AlertDialogTitle>{t('activateTitle')}</AlertDialogTitle>
           <AlertDialogDescription>{t('activateBody')}</AlertDialogDescription>
         </div>
-        <div className="flex flex-col gap-1">
-          <DateInput
-            label={t('paidThroughField')}
-            onTextChange={(text) => {
-              setPaidThrough(text);
-              setRefusals((current) => current.filter((reason) => reason !== 'paid_through_invalid'));
-            }}
-          />
-          {dateRefused ? (
-            <p role="alert" data-testid="paid-through-refused" className="flex items-start gap-2 text-small text-overdue">
-              <StatusShape status="overdue" className="mt-0.5 size-4" />
-              <span>{t('refusal', { reason: 'paid_through_invalid' })}</span>
-            </p>
-          ) : (
-            <p className="text-small text-ink-muted">{t('paidThroughHint')}</p>
-          )}
-        </div>
+        <PaidThroughField
+          refusal={dateRefused ? 'paid_through_invalid' : null}
+          onTextChange={(text) => {
+            setPaidThrough(text);
+            setRefusals((current) => current.filter((reason) => reason !== 'paid_through_invalid'));
+          }}
+        />
         {blocked.length > 0 ? null : (
           <section aria-live="polite" data-testid="activation-preview" className="flex flex-col gap-2">
             <h3 className="text-body font-semibold text-ink">{t('previewTitle')}</h3>

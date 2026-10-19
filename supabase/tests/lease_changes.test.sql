@@ -68,10 +68,10 @@ select ok(not has_column_privilege('authenticated', 'public.leases', 'terminated
 select ok(has_column_privilege('authenticated', 'public.leases', 'end_date', 'UPDATE'), 'a draft''s end date stays editable; guard_lease freezes it once active');
 select ok(has_function_privilege('authenticated', 'public.amend_lease(uuid, date, bigint, integer, text)', 'execute')
   and has_function_privilege('authenticated', 'public.terminate_lease(uuid, date, text)', 'execute')
-  and has_function_privilege('authenticated', 'public.renew_lease(uuid, integer, date)', 'execute'), 'a member calls amend, terminate and renew');
+  and has_function_privilege('authenticated', 'public.renew_lease(uuid, integer, date, date)', 'execute'), 'a member calls amend, terminate and renew');
 select ok(not has_function_privilege('anon', 'public.amend_lease(uuid, date, bigint, integer, text)', 'execute')
   and not has_function_privilege('anon', 'public.terminate_lease(uuid, date, text)', 'execute')
-  and not has_function_privilege('anon', 'public.renew_lease(uuid, integer, date)', 'execute'), 'anon calls none of them');
+  and not has_function_privilege('anon', 'public.renew_lease(uuid, integer, date, date)', 'execute'), 'anon calls none of them');
 select ok(not has_function_privilege('authenticated', 'private.lease_periods(public.leases, date)', 'execute')
   and not has_function_privilege('authenticated', 'private.member_lease(uuid)', 'execute'), 'the private helpers stay private');
 select ok(not has_table_privilege('authenticated', 'public.lease_amendments', 'INSERT')

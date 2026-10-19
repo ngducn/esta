@@ -115,7 +115,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   const start = terms === null ? null : renewalStart(terms);
   const renewal: RenewalOffer | null =
     canEdit && terms !== null && start !== null && renewedBy === null && (summary.status === 'active' || summary.status === 'ended')
-      ? { start, lastRentVnd: lastMonthlyRent(terms, amendments), defaultEnd: addDays(addMonths(start, 12), -1) }
+      ? { start, startsBeforeToday: start < asOf, lastRentVnd: lastMonthlyRent(terms, amendments), defaultEnd: addDays(addMonths(start, 12), -1) }
       : null;
   const amendStarts =
     active && terms !== null ? amendmentStarts(terms, amendments, asOf, latestIssuedEnd(invoices), terms.endDate ?? addMonths(asOf, 24)).slice(0, AMEND_STARTS_SHOWN) : [];

@@ -9,7 +9,7 @@ import { parsePercentBps } from '@esta/core/parse/percent';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { renewLease, type LeaseChangeRefusal } from '@/server/actions/leases';
+import { renewLease, type LeaseChangeRefusal, type PaidThroughRefusal } from '@/server/actions/leases';
 import { DateInput } from '@/components/date-input';
 import { TextField } from '@/components/form-parts';
 import { MoneyDisplay } from '@/components/money/money-display';
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast } from '@/components/undo-toast';
 import { ChangeRefusal } from './change-refusal';
+import { PaidThroughField } from './paid-through-field';
 
 /** Empty keeps the rent; otherwise a percent `parsePercentBps` reads, inside what `renew_lease` accepts. */
 function readIncrease(text: string): number | null {
@@ -27,11 +28,13 @@ function readIncrease(text: string): number | null {
 
 /**
  * LSE-2 and SPEC §9.4 seed 7: a new lease from the day after this one ends. The preview applies the same half-up rounding
- * to 100.000 ₫ that `renew_lease` writes, so the number Mẹ confirms is the number billed.
+ * to 100.000 ₫ that `renew_lease` writes, so the number Mẹ confirms is the number billed. A renewal that starts before
+ * today bills like activation, from the current period on, so it asks activation's question about what was collected.
  */
 export default function RenewLeaseSheet({
   leaseId,
   start,
+  startsBeforeToday,
   lastRentVnd,
   defaultEnd,
   leasesHref,
@@ -39,6 +42,7 @@ export default function RenewLeaseSheet({
 }: {
   leaseId: string;
   start: IsoDate;
+  startsBeforeToday: boolean;
   lastRentVnd: Vnd;
   defaultEnd: IsoDate;
   leasesHref: string;
@@ -50,16 +54,21 @@ export default function RenewLeaseSheet({
   const notice = useNoticeToast();
   const [increaseText, setIncreaseText] = useState('');
   const [endText, setEndText] = useState(() => formatDate(defaultEnd, locale));
+  const [paidThroughText, setPaidThroughText] = useState('');
   const [refusal, setRefusal] = useState<LeaseChangeRefusal | null>(null);
   const [pending, startTransition] = useTransition();
   const increase = readIncrease(increaseText);
   const rent = increase === null ? null : renewalRent(lastRentVnd, increase);
   const end = parseOptionalDateInput(endText);
+  const paidThrough = parseOptionalDateInput(paidThroughText);
+  const paidThroughRefusal: PaidThroughRefusal | null = refusal === 'paid_through_invalid' || refusal === 'paid_through_before_start' ? refusal : null;
 
   const save = () =>
     startTransition(async () => {
-      if (increase === null || !end.ok) return;
-      const result = await renewLease(leaseId, { increaseBps: increase, endDate: end.value }).catch(() => ({ ok: false, reason: 'failed' }) as const);
+      if (increase === null || !end.ok || !paidThrough.ok) return;
+      const result = await renewLease(leaseId, { increaseBps: increase, endDate: end.value, paidThrough: paidThroughText }).catch(
+        () => ({ ok: false, reason: 'failed' }) as const,
+      );
       if (!result.ok) {
         setRefusal(result.reason);
         return;
@@ -110,10 +119,19 @@ export default function RenewLeaseSheet({
             }}
           />
           <p className="-mt-2 text-small text-ink-muted">{t('endHint')}</p>
-          <ChangeRefusal reason={refusal} />
+          {startsBeforeToday ? (
+            <PaidThroughField
+              refusal={paidThroughRefusal}
+              onTextChange={(text) => {
+                setPaidThroughText(text);
+                setRefusal(null);
+              }}
+            />
+          ) : null}
+          <ChangeRefusal reason={paidThroughRefusal === null ? refusal : null} />
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <SheetClose render={<Button type="button" variant="outline" />}>{t('cancel')}</SheetClose>
-            <Button type="submit" data-testid="renew-save" disabled={pending || rent === null || !end.ok}>
+            <Button type="submit" data-testid="renew-save" disabled={pending || rent === null || !end.ok || !paidThrough.ok}>
               {pending ? t('working') : t('renewSave')}
             </Button>
           </div>

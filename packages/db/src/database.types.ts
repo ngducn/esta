@@ -2342,6 +2342,7 @@ export type Database = {
           p_end_date?: string
           p_increase_bps: number
           p_lease_id: string
+          p_paid_through?: string
         }
         Returns: string
       }
