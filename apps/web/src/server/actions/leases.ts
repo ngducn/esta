@@ -2,7 +2,7 @@
 
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { activationRefusals, type ActivationRefusal } from '@esta/core/lease';
-import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema, tenantSchema } from '@esta/core/schemas/lease';
+import { LEASE_COLUMNS, leaseDraftSchema, leaseRowSchema } from '@esta/core/schemas/lease';
 import { RENEWAL_INCREASE_BPS } from '@esta/core/lease';
 import { MAX_AMOUNT_VND } from '@esta/core/money';
 import { isoDateSchema, text } from '@esta/core/schemas/legal';
@@ -10,28 +10,29 @@ import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { formatPhone } from '@esta/core/phone';
 import type { Result } from '@esta/core/result';
 import { vnd, type Vnd } from '@esta/core/money';
+import { personCreate, runOp } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Tenant } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
+import { webOpContext } from '@/server/ops';
 import { createSessionClient } from '@/server/supabase/server';
 
 const uuid = z.uuid();
 
 export type TenantWrite = { readonly ok: true; readonly tenant: Tenant } | { readonly ok: false; readonly reason: 'name' | 'phone' | 'failed' };
 
-/** LSE-1: a party tagged `tenant`, its phone stored the way `normalizePhone` writes it. */
+/** LSE-1: a party tagged `tenant`, its phone stored the way `normalizePhone` writes it. The quick add never asked about namesakes. */
 export async function createTenant(raw: unknown): Promise<TenantWrite> {
-  const value = tenantSchema.safeParse(raw);
-  if (!value.success) return { ok: false, reason: value.error.issues.some((issue) => issue.path[0] === 'full_name') ? 'name' : 'phone' };
-  const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
-  const { data, error } = await supabase
-    .from('parties')
-    .insert({ household_id: member.household.id, kind: 'individual', full_name: value.data.full_name, phone: value.data.phone, tags: ['tenant'] })
-    .select('id, full_name, phone')
-    .single();
-  if (error) return { ok: false, reason: 'failed' };
-  return { ok: true, tenant: { id: data.id, fullName: data.full_name, phone: formatPhone(value.data.phone) } };
+  const result = await runOp(personCreate, await webOpContext(), { id: randomUUID(), person: raw, allow_duplicate: true });
+  if (!result.ok) {
+    const { reason } = result;
+    if (reason.kind !== 'invalid') return { ok: false, reason: 'failed' };
+    return { ok: false, reason: reason.issues.some((issue) => issue.path === 'person.full_name') ? 'name' : 'phone' };
+  }
+  const { id, full_name, phone } = result.value;
+  return { ok: true, tenant: { id, fullName: full_name, phone: phone === null ? null : formatPhone(phone) } };
 }
 
 export type LeaseWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'notDraft' | 'failed' };
