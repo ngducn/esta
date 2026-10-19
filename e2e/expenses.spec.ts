@@ -152,7 +152,9 @@ test('rule 2b: a receipt photo cancelled with the sheet, or dropped before savin
   const receipts = () => rest<unknown[]>(page, 'GET', `documents?property_id=eq.${q7(2)}&category=eq.invoice_receipt&deleted_at=is.null&select=id`);
   const before = (await receipts()).length;
   await page.goto(`/properties/${q7(2)}/finance`);
-  await page.getByTestId('expense-section').getByTestId('receipt-camera').setInputFiles(RECEIPT);
+  const camera = page.getByTestId('expense-section').getByTestId('receipt-camera');
+  await expect(camera).toBeEnabled();
+  await camera.setInputFiles(RECEIPT);
   await expect(sheet(page).getByTestId('receipt-uploaded')).toBeVisible();
   await sheet(page).getByRole('button', { name: 'Huỷ' }).click();
   await expect(sheet(page)).toBeHidden();
