@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -29,10 +29,11 @@ test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slow
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2000) : Promise.resolve());
 // `ESTA_E2E_SHOTS=<dir>` saves each rule's passing state as `<dir>/p4-02-<slug>.png`, the PR's lane screenshots.
 const shots = process.env.ESTA_E2E_SHOTS;
-const shot = async (page: Page, slug: string, fullPage = false) => {
+const shot = async (page: Page, slug: string, focus?: Locator) => {
   if (shots === undefined) return;
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.screenshot({ path: join(shots, `p4-02-${slug}.png`), fullPage });
+  if (focus !== undefined) await focus.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(shots, `p4-02-${slug}.png`) });
 };
 
 // The sheet dates an expense on the Clock's day, so the spec runs in the `clock` project on SPEC §9.3's day. Each rule
@@ -117,7 +118,7 @@ test('rule 1: on Nhà phố Q7 Mẹ types 2tr5, picks Sửa chữa and saves; th
   await expect(newest.getByTestId('expense-amount')).toHaveText(vnd('2.500.000'));
   await expect(newest.getByTestId('expense-date')).toHaveText('07/10/2026');
   expect(await seriousAxeViolations(page)).toEqual([]);
-  await shot(page, 'regression-add', true);
+  await shot(page, 'regression-add', page.getByTestId('expense-section'));
   await holdForRecording(page);
 });
 
@@ -154,7 +155,7 @@ test('rule 2: Chụp hoá đơn with the Demo receipt, 850k, saves a row with a 
 
   const row = rows(page).filter({ has: page.getByTestId('expense-amount').getByText(vnd('850.000'), { exact: true }) });
   await expect(row.getByTestId('expense-receipt-link')).toBeVisible();
-  await shot(page, 'receipt-photo', true);
+  await shot(page, 'receipt-photo', row);
   const [saved] = await rest<{ document_id: string; documents: { category: string; property_id: string } }[]>(
     page,
     'GET',
@@ -194,7 +195,7 @@ test('rule 4: a vendor added from the sheet is saved as a contractor and its lon
   await expect(vendor).toHaveText(name);
   expect(await vendor.evaluate((element) => element.scrollWidth <= element.clientWidth), 'the vendor name is not clipped').toBe(true);
   expect(await noSideScroll(page)).toBe(true);
-  await shot(page, 'vendor', true);
+  await shot(page, 'vendor', vendor);
   const parties = await rest<{ id: string; tags: string[] }[]>(page, 'GET', `parties?full_name=eq.${encodeURIComponent(name)}&select=id,tags`);
   expect(parties.map((party) => party.tags)).toEqual([['contractor']]);
   await rest(page, 'DELETE', `parties?full_name=eq.${encodeURIComponent(name)}`);
@@ -213,7 +214,7 @@ test('rule 5: deleting a seeded Q7 repair offers Hoàn tác, which brings the sa
   await toast(page).getByRole('button', { name: 'Hoàn tác' }).click();
   await expect(toast(page)).toContainText(`Đã khôi phục chi phí ${vnd('4.500.000')}.`);
   await expect(row).toBeVisible();
-  await shot(page, 'undo', true);
+  await shot(page, 'undo', row);
   expect(await rest(page, 'GET', `expenses?id=eq.${seeded}&select=deleted_at`)).toEqual([{ deleted_at: null }]);
 });
 
@@ -254,7 +255,7 @@ test('rule 7: in compact density the Sửa chữa rows of Q7 for 2026 add up to 
     const total = amounts.reduce((sum, text) => sum + Number(text.replace(/\D/g, '')), 0);
     expect(total).toBe(8_650_000);
     expect(await seriousAxeViolations(page)).toEqual([]);
-    await shot(page, 'seed-list', true);
+    await shot(page, 'seed-list', page.getByTestId('expense-section'));
   } finally {
     await rest(page, 'PATCH', memberRow('ryan', 7), { density: 'comfortable' });
   }
@@ -274,7 +275,7 @@ test('rule 8: Mẹ edits a seeded expense to 1tr2 under Bảo trì, and the audi
     await expect(toast(page)).toContainText(`Đã lưu chi phí ${vnd('1.200.000')}.`);
     await expect(row.getByTestId('expense-amount')).toHaveText(vnd('1.200.000'));
     await expect(row.getByTestId('expense-category')).toHaveText('Bảo trì');
-    await shot(page, 'edit', true);
+    await shot(page, 'edit', row);
     const [me] = await rest<{ user_id: string }[]>(page, 'GET', `${memberRow('me', 8)}&select=user_id`);
     const audit = await rest<{ actor_kind: string; actor_id: string }[]>(page, 'GET', `audit_log?table_name=eq.expenses&row_id=eq.${seeded}&action=eq.update&select=actor_kind,actor_id`);
     expect(audit).toContainEqual({ actor_kind: 'user', actor_id: me?.user_id });
@@ -323,7 +324,7 @@ test('rule 10: in English at 130% and dark, Phòng 5 is 12 days overdue and the 
     const cut = await rows(page).locator('span').evaluateAll((elements) => elements.filter((element) => element.scrollWidth > element.clientWidth + 1).map((element) => element.textContent));
     expect(cut).toEqual([]);
     expect(await noSideScroll(page)).toBe(true);
-    await shot(page, 'en-130-dark', true);
+    await shot(page, 'en-130-dark', page.getByTestId('expense-section'));
   } finally {
     await rest(page, 'PATCH', memberRow('me', 10), { locale: 'vi', text_scale: 100 });
   }
@@ -355,16 +356,16 @@ test('screens: Thu chi, the sheet and the empty year at 390 and 1440, light and 
       await open(page, 'me.lane1@demo.esta.test', theme, viewport);
       await page.goto(`/properties/${q7(1)}`);
       await expect(page.getByTestId('property-header').getByTestId('add-expense')).toBeEnabled();
-      await shot(page, `header-${size}-${theme}`, true);
+      await shot(page, `header-${size}-${theme}`, page.getByTestId('property-header').getByTestId('add-expense'));
       await page.goto(`/properties/${q7(1)}/finance`);
       await expect(page.getByTestId('expense-section').getByTestId('add-expense')).toBeEnabled();
-      await shot(page, `thu-chi-${size}-${theme}`, true);
+      await shot(page, `thu-chi-${size}-${theme}`, page.getByTestId('expense-section'));
       await page.getByTestId('expense-section').getByTestId('add-expense').click();
       await expect(sheet(page)).toBeVisible();
       await shot(page, `sheet-${size}-${theme}`);
       await page.goto(`/properties/${longAn}/finance`);
       await expect(page.getByTestId('expense-empty')).toBeVisible();
-      await shot(page, `empty-${size}-${theme}`, true);
+      await shot(page, `empty-${size}-${theme}`, page.getByTestId('expense-empty'));
     }
   }
 });
