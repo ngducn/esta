@@ -65,7 +65,10 @@ async function rest<T>(page: Page, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', 
 
 const liveExpenses = (page: Page, lane: number) => rest<{ id: string }[]>(page, 'GET', `expenses?property_id=eq.${q7(lane)}&deleted_at=is.null&select=id`);
 
+/** Reduced motion turns transitions off and the pointer is parked, so axe never reads a chip mid-fade or hovered. */
 async function seriousAxeViolations(page: Page): Promise<string[]> {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.mouse.move(0, 0);
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
@@ -74,6 +77,12 @@ const sheet = (page: Page) => page.getByTestId('expense-sheet');
 const toast = (page: Page) => page.getByRole('region', { name: /Thông báo|Notifications/ });
 const rows = (page: Page) => page.getByTestId('expense-row');
 const noSideScroll = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
+
+/** Taps a category chip; its radio is visually hidden inside the label, as on a phone. */
+async function pick(page: Page, category: string) {
+  await sheet(page).getByRole('radio', { name: category, exact: true }).locator('xpath=..').click();
+  await expect(sheet(page).getByRole('radio', { name: category, exact: true })).toBeChecked();
+}
 
 async function typeAmount(page: Page, text: string) {
   await sheet(page).getByRole('textbox', { name: /^(Số tiền|Amount)$/ }).fill(text);
@@ -88,7 +97,7 @@ test('rule 1: on Nhà phố Q7 Mẹ types 2tr5, picks Sửa chữa and saves; th
   await expect(sheet(page).getByRole('heading', { name: 'Thêm chi phí' })).toBeVisible();
   await typeAmount(page, '2tr5');
   await expect(sheet(page).getByTestId('money-preview')).toHaveText(vnd('2.500.000'));
-  await sheet(page).getByRole('radio', { name: 'Sửa chữa' }).check();
+  await pick(page, 'Sửa chữa');
   await expect(sheet(page).getByTestId('expense-date')).toHaveText('Hôm nay, 07/10/2026');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'sheet-filled');
@@ -116,7 +125,7 @@ test('rule 1b: Hoàn tác on the saved toast takes the new expense back off', as
   await page.goto(`/properties/${q7(1)}/finance`);
   await page.getByTestId('expense-section').getByTestId('add-expense').click();
   await typeAmount(page, '700k');
-  await sheet(page).getByRole('radio', { name: 'Bảo trì' }).check();
+  await pick(page, 'Bảo trì');
   await sheet(page).getByTestId('expense-save').click();
   await expect(rows(page).first().getByTestId('expense-amount')).toHaveText(vnd('700.000'));
   await toast(page).getByRole('button', { name: 'Hoàn tác' }).click();
@@ -129,10 +138,12 @@ test('rule 2: Chụp hoá đơn with the Demo receipt, 850k, saves a row with a 
   await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
   await page.goto(`/properties/${q7(2)}/finance`);
   await holdForRecording(page);
-  await page.getByTestId('expense-section').getByTestId('receipt-camera').setInputFiles(RECEIPT);
+  const camera = page.getByTestId('expense-section').getByTestId('receipt-camera');
+  await expect(camera, 'the camera input waits for hydration, so a photo is never lost').toBeEnabled();
+  await camera.setInputFiles(RECEIPT);
   await expect(sheet(page).getByTestId('receipt-preview')).toBeVisible();
   await typeAmount(page, '850k');
-  await sheet(page).getByRole('radio', { name: 'Sửa chữa' }).check();
+  await pick(page, 'Sửa chữa');
   await expect(sheet(page).getByTestId('receipt-uploaded')).toBeVisible();
   await shot(page, 'receipt-sheet');
   await holdForRecording(page);
@@ -172,7 +183,7 @@ test('rule 4: a vendor added from the sheet is saved as a contractor and its lon
   await page.goto(`/properties/${q7(4)}/finance`);
   await page.getByTestId('expense-section').getByTestId('add-expense').click();
   await typeAmount(page, '1tr8');
-  await sheet(page).getByRole('radio', { name: 'Sửa chữa' }).check();
+  await pick(page, 'Sửa chữa');
   await sheet(page).getByTestId('expense-vendor').selectOption({ label: 'Thêm người nhận mới' });
   await sheet(page).getByTestId('expense-vendor-name').fill(name);
   await sheet(page).getByTestId('expense-save').click();
@@ -210,7 +221,7 @@ test('rule 6: an amount of 0 is refused on the field in Vietnamese and nothing i
   await page.goto(`/properties/${q7(6)}/finance`);
   await page.getByTestId('expense-section').getByTestId('add-expense').click();
   await typeAmount(page, '0');
-  await sheet(page).getByRole('radio', { name: 'Sửa chữa' }).check();
+  await pick(page, 'Sửa chữa');
   await sheet(page).getByTestId('expense-save').click();
   await expect(sheet(page).getByText('Số tiền phải lớn hơn 0.')).toBeVisible();
   await expect(sheet(page).getByRole('textbox', { name: 'Số tiền' })).toHaveAttribute('aria-invalid', 'true');
@@ -256,7 +267,7 @@ test('rule 8: Mẹ edits a seeded expense to 1tr2 under Bảo trì, and the audi
     await row.getByTestId('expense-row-edit').click();
     await expect(sheet(page).getByRole('textbox', { name: 'Số tiền' })).toHaveValue('950.000');
     await typeAmount(page, '1tr2');
-    await sheet(page).getByRole('radio', { name: 'Bảo trì' }).check();
+    await pick(page, 'Bảo trì');
     await sheet(page).getByTestId('expense-save').click();
     await expect(toast(page)).toContainText(`Đã lưu chi phí ${vnd('1.200.000')}.`);
     await expect(row.getByTestId('expense-amount')).toHaveText(vnd('1.200.000'));
@@ -276,7 +287,7 @@ test('rule 9: offline, Lưu keeps every value and says it did not save, and no r
   await page.goto(`/properties/${q7(9)}/finance`);
   await page.getByTestId('expense-section').getByTestId('add-expense').click();
   await typeAmount(page, '2tr5');
-  await sheet(page).getByRole('radio', { name: 'Sửa chữa' }).check();
+  await pick(page, 'Sửa chữa');
   await sheet(page).getByTestId('expense-note').fill('Thay vòi nước');
   await page.context().setOffline(true);
   await sheet(page).getByTestId('expense-save').click();
@@ -299,7 +310,7 @@ test('rule 10: in English at 130% and dark, Phòng 5 is 12 days overdue and the 
     await page.getByTestId('property-header').getByTestId('add-expense').click();
     await expect(sheet(page).getByRole('heading', { name: 'Add expense' })).toBeVisible();
     await typeAmount(page, '2tr5');
-    await sheet(page).getByRole('radio', { name: 'Repair' }).check();
+    await pick(page, 'Repair');
     await expect(sheet(page).getByTestId('expense-date')).toHaveText('Today, 07/10/2026');
     expect(await seriousAxeViolations(page)).toEqual([]);
     await sheet(page).getByTestId('expense-save').click();
