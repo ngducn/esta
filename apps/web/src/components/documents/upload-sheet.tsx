@@ -1,18 +1,10 @@
 'use client';
 
 import type { IsoDate } from '@esta/core/date';
-import {
-  acceptsMime,
-  DOCUMENT_CATEGORY_IDS,
-  DOCUMENT_MIME_TYPES,
-  defaultDocumentTitle,
-  isDocumentCategory,
-  MAX_DOCUMENT_BYTES,
-  type DocumentCategory,
-} from '@esta/core/documents';
+import { acceptsMime, DOCUMENT_CATEGORY_IDS, defaultDocumentTitle, isDocumentCategory, type DocumentCategory } from '@esta/core/documents';
 import { Camera, Files, FolderOpen, RotateCw } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { DateInput } from '@/components/date-input';
 import { FieldMessage } from '@/components/field-message';
 import { TextField } from '@/components/form-parts';
@@ -20,18 +12,14 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
-import { sha256 } from '@/lib/upload/sha256';
-import { makePreviews, type Previews } from '@/lib/upload/previews';
-import { uploadWithProgress } from '@/lib/upload/upload-with-progress';
+import { ACCEPT, checkFile, prepareCapture, prepareFile as prepare, sendPrepared, type FileProblem, type Prepared } from '@/lib/upload/prepare';
+import { useObjectUrl } from '@/lib/use-object-url';
 import { createDocumentUpload, registerDocument, type UploadTicket } from '@/server/documents/actions';
 import { DuplicateDialog } from './duplicate-dialog';
 import { LeaveConfirm, MultiPageCapture, type CombinedCapture } from './multi-page-capture';
 import { UploadProgress } from './upload-progress';
 
 type Ticket = Extract<UploadTicket, { ok: true }>;
-/** `captured` marks a PDF combined from photos taken in this tab, which exist nowhere else until it is saved. */
-type Prepared = { readonly file: File; readonly sha256: string; readonly previews: Previews; readonly captured: boolean };
-type FileProblem = 'tooLarge' | 'wrongType' | 'unreadable' | 'fileRequired' | null;
 
 /** The save flow as one state: each step names what the sheet shows. A failed step keeps its ticket for `Thử lại`. */
 type Phase =
@@ -40,39 +28,6 @@ type Phase =
   | { readonly step: 'duplicate'; readonly ticket: Ticket }
   | { readonly step: 'uploading'; readonly loaded: number; readonly total: number }
   | { readonly step: 'failed'; readonly ticket: Ticket | null };
-
-const ACCEPT = DOCUMENT_MIME_TYPES.join(',');
-
-/** Size and type are checked here, before any request, so a 30 MB photo never reaches the network (DOC-1). */
-export function checkFile(file: File): FileProblem {
-  if (file.size > MAX_DOCUMENT_BYTES) return 'tooLarge';
-  return (DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type) ? null : 'wrongType';
-}
-
-/** The combined PDF, with its previews drawn from the page 1 photo rather than by rendering the PDF again. */
-async function prepareCapture({ pdf, firstPage, pageCount }: CombinedCapture): Promise<Prepared | null> {
-  try {
-    const [digest, previews] = await Promise.all([sha256(pdf), makePreviews(firstPage)]);
-    return { file: pdf, sha256: digest, previews: { ...previews, pageCount }, captured: true };
-  } catch {
-    return null;
-  }
-}
-
-async function prepare(file: File): Promise<Prepared | null> {
-  try {
-    const [digest, previews] = await Promise.all([sha256(file), makePreviews(file)]);
-    return { file, sha256: digest, previews, captured: false };
-  } catch {
-    return null;
-  }
-}
-
-function useObjectUrl(blob: Blob | null): string | null {
-  const url = useMemo(() => (blob === null ? null : URL.createObjectURL(blob)), [blob]);
-  useEffect(() => () => (url === null ? undefined : URL.revokeObjectURL(url)), [url]);
-  return url;
-}
 
 /** Five fields, so a sheet rather than a page (DESIGN-BRIEF §5.3). */
 export default function UploadSheet({
@@ -175,11 +130,7 @@ export default function UploadSheet({
   const upload = async (ticket: Ticket, file: Prepared) => {
     setPhase({ step: 'uploading', loaded: 0, total: file.file.size });
     try {
-      await uploadWithProgress(ticket.file.url, file.file, ({ loaded, total }) => setPhase({ step: 'uploading', loaded, total }));
-      await Promise.all([
-        uploadWithProgress(ticket.thumb.url, file.previews.thumb),
-        uploadWithProgress(ticket.review.url, file.previews.review),
-      ]);
+      await sendPrepared(ticket, file, ({ loaded, total }) => setPhase({ step: 'uploading', loaded, total }));
       const registered = await registerDocument({
         documentId: ticket.documentId,
         propertyId,

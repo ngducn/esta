@@ -21,6 +21,7 @@ export const colorPairs: readonly ColorPair[] = [
   { kind: 'text', foreground: 'surface', background: 'ink', opacity: 88 },
   { kind: 'text', foreground: 'surface', background: 'ink', opacity: 80 },
   { kind: 'text', foreground: 'accent', background: 'accent-tint' },
+  { kind: 'text', foreground: 'ink', background: 'accent-tint' },
   { kind: 'text', foreground: 'surface', background: 'ink' },
   { kind: 'text', foreground: 'ink', background: 'rule' },
   { kind: 'text', foreground: 'ink-muted', background: 'rule' },

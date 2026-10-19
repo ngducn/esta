@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { misses, PHASE_1_BUDGETS } from './phase-budget.ts';
+import { misses, PHASE_1_BUDGETS, PHASE_2_BUDGETS } from './phase-budget.ts';
 
 const medians = { protocol: 'h2', route: '/properties', runs: 5, lcpMs: 2100, tbtMs: 120, cls: 0.01, scriptKb: 180, imageKb: 90 };
 const [list, map, detail] = PHASE_1_BUDGETS;
@@ -29,5 +29,14 @@ describe('the Phase 1 Lighthouse budgets', () => {
       'pinsMs 8200 > 8000',
     ]);
     expect(map && misses(map, map439)).toEqual(['addedScriptKb unknown > 300', 'pinsMs never > 8000']);
+  });
+});
+
+describe('PHASE_2_BUDGETS', () => {
+  it('holds /documents and the wizard to the general SPEC §7.2 budget', () => {
+    expect(PHASE_2_BUDGETS).toEqual([
+      { route: '/documents', limits: { lcpMs: 2500, tbtMs: 200, cls: 0.05, scriptKb: 200 } },
+      { route: '/properties/new', limits: { lcpMs: 2500, tbtMs: 200, cls: 0.05, scriptKb: 200 } },
+    ]);
   });
 });

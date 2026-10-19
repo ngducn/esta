@@ -1,25 +1,12 @@
-import { reviewFields } from '@esta/core/extraction/fields';
 import { ChevronLeft } from 'lucide-react';
 import type { Metadata } from 'next';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ReviewPanel, type ReviewMode } from '@/components/extraction/review-panel';
+import { ReviewPanel } from '@/components/extraction/review-panel';
 import { PropertyIntl } from '@/components/properties/property-intl';
-import type { ExtractionStatus } from '@/server/documents/extraction-status';
-import { fieldViews } from '@/server/extraction/field-views';
-import { loadReview } from '@/server/extraction/review';
+import { loadReview, reviewPanelState } from '@/server/extraction/review';
 import { loadLandUseCodes } from '@/server/properties/legal';
-
-const MODES: Readonly<Record<ExtractionStatus, ReviewMode>> = {
-  none: 'none',
-  queued: 'waiting',
-  running: 'waiting',
-  needs_review: 'review',
-  failed: 'manual',
-  accepted: 'accepted',
-  rejected: 'rejected',
-};
 
 export async function generateMetadata(): Promise<Metadata> {
   const nav = await getTranslations('nav');
@@ -31,12 +18,14 @@ export default async function DocumentReviewPage({ params }: { params: Promise<{
   const { documentId } = await params;
   const review = await loadReview(documentId);
   if (review === null) notFound();
-  const [t, locale, messages, landUseCodes] = await Promise.all([getTranslations('extraction'), getLocale(), getMessages(), loadLandUseCodes()]);
   const { document, extraction } = review;
-  const status = extraction?.status ?? 'none';
-  const mode = MODES[status];
-  const reviewed = extraction === null ? [] : mode === 'review' ? reviewFields(extraction.schemaName, extraction.result) : mode === 'manual' ? reviewFields(extraction.schemaName, null) : [];
-  const fields = await fieldViews(reviewed, extraction?.schemaName === 'utility_bill_v1' ? 'bill' : 'certificate');
+  const [t, locale, messages, landUseCodes, { status, mode, fields }] = await Promise.all([
+    getTranslations('extraction'),
+    getLocale(),
+    getMessages(),
+    loadLandUseCodes(),
+    reviewPanelState(extraction),
+  ]);
   const { purposeCodeHint, unknownCode } = messages.propertyLegal;
   const { date, money, confirm } = messages.components;
   const back = document.propertyId === null ? '/documents' : `/properties/${document.propertyId}/documents`;

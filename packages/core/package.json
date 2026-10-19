@@ -32,6 +32,7 @@
     "./properties/area": "./src/properties/area.ts",
     "./properties/form": "./src/properties/form.ts",
     "./properties/ownership": "./src/properties/ownership.ts",
+    "./properties/owners-from-holders": "./src/properties/owners-from-holders.ts",
     "./result": "./src/result.ts",
     "./schedule": "./src/schedule/index.ts",
     "./schemas/lease": "./src/schemas/lease.ts",

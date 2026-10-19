@@ -23,6 +23,8 @@ const sharedClock = [
   'extraction-review.spec.ts',
   'documents-vault.spec.ts',
   'documents-multipage.spec.ts',
+  'property-wizard.spec.ts',
+  'northstar.spec.ts',
 ];
 
 export default defineConfig({

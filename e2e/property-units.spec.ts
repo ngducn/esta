@@ -150,12 +150,16 @@ test('rule 5: a new rooming house starts with Toàn bộ, and adding 4 rooms lea
   const nickname = 'Dãy trọ Demo Thủ Dầu Một';
   await open(page, 'me.lane5@demo.esta.test', 'light', PHONE);
   await rest(page, 'PATCH', `properties?nickname=eq.${encodeURIComponent(nickname)}&deleted_at=is.null`, { deleted_at: '2026-10-07T02:00:00Z' });
+  // Since P2-08 a property starts in the add-property wizard, whose first step creates it.
   await page.goto('/properties/new');
+  await expect(page.getByTestId('skip-photo')).toBeEnabled();
+  await page.getByTestId('skip-photo').click();
   await page.getByTestId('nickname').fill(nickname);
   await page.getByTestId('kind-select').selectOption({ label: 'Dãy trọ' });
-  await page.getByTestId('save-property').click();
-  await expect(page).toHaveURL(/\/properties\/[0-9a-f-]{36}$/, { timeout: 15_000 });
-  const id = /\/properties\/([0-9a-f-]{36})$/.exec(page.url())?.[1] ?? '';
+  await page.getByTestId('wizard-start').click();
+  await expect(page.getByTestId('property-wizard')).toHaveAttribute('data-step', 'details', { timeout: 15_000 });
+  const id = new URL(page.url()).searchParams.get('property') ?? '';
+  await page.goto(`/properties/${id}`);
   try {
     await page.getByRole('link', { name: 'Cho thuê', exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/properties/${id}/rental$`));

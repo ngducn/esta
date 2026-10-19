@@ -65,8 +65,27 @@ describe('checkPhase', () => {
     expect(PHASE_CHECKS['1']?.map((check) => check.id)).toEqual(['PRP-1', 'PRP-2', 'PRP-3', 'PRP-4', 'PRP-5', 'PRP-6', 'PRP-8', 'RLS', 'Lighthouse']);
   });
 
+  it('lists DOC-1 to DOC-7, PRP-7, AGT-2, RLS, north-star and Lighthouse for phase 2, Lighthouse last', () => {
+    expect(PHASE_CHECKS['2']?.map((check) => check.id)).toEqual(['DOC-1', 'DOC-2', 'DOC-3', 'DOC-4', 'DOC-5', 'DOC-6', 'DOC-7', 'PRP-7', 'AGT-2', 'RLS', 'North-star', 'Lighthouse']);
+  });
+
+  it('runs the phase 2 Lighthouse budgets, the replay golden suite and the north-star steps', () => {
+    const commands = Object.fromEntries((PHASE_CHECKS['2'] ?? []).map((check) => [check.id, 'commands' in check ? check.commands.map((command) => command.join(' ')) : []]));
+    expect(commands['Lighthouse'], 'back to the full seed after the north-star seed').toEqual(['pnpm db:reset', 'node scripts/perf/phase-budget.ts --phase 2']);
+    expect(commands['AGT-2']?.[0]).toContain('test/golden/extract.test.ts');
+    expect(commands['North-star']).toEqual(['pnpm e2e:northstar --retries=1 --reporter=list']);
+  });
+
+  it('exits 1 when one phase 2 row fails', () => {
+    const rows = (PHASE_CHECKS['2'] ?? []).map((check): PhaseCheck => ({ id: check.id, commands: [node(`process.exit(${check.id === 'AGT-2' ? 1 : 0})`)] }));
+    const { code, lines } = runPhase('2', { '2': rows });
+    expect(code).toBe(1);
+    expect(lines.filter((line) => line.startsWith('FAIL'))).toEqual([expect.stringMatching(/^FAIL {2}AGT-2 /)]);
+    expect(lines.filter((line) => line.startsWith('PASS'))).toHaveLength(11);
+  });
+
   it('runs only files that cite their row id, at least one per row', () => {
-    for (const check of PHASE_CHECKS['1'] ?? []) {
+    for (const check of [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? [])]) {
       if (!('commands' in check) || check.cites === undefined) continue;
       expect(check.cites.length, check.id).toBeGreaterThan(0);
       expect(uncited(repoRoot, check), check.id).toEqual([]);
@@ -87,8 +106,8 @@ describe('checkPhase', () => {
     ]);
   });
 
-  it('runs every phase 1 spec with one retry, as local CI does', () => {
-    const specCommands = (PHASE_CHECKS['1'] ?? []).flatMap((check) => ('commands' in check ? check.commands : [])).filter((command) => command[1] === 'e2e');
+  it('runs every phase 1 and phase 2 spec with one retry, as local CI does', () => {
+    const specCommands = [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? [])].flatMap((check) => ('commands' in check ? check.commands : [])).filter((command) => command[1]?.startsWith('e2e') === true);
     expect(specCommands.length).toBeGreaterThan(0);
     for (const command of specCommands) expect(command, command.join(' ')).toEqual(expect.arrayContaining(['--retries=1', '--reporter=list']));
   });
