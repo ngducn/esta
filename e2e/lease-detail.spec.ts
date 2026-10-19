@@ -99,9 +99,10 @@ test('rule 1: Phòng 5 shows September 12 days overdue, October not yet due and 
   await expect(period(page, '2026-10-25').locator('[data-status="upcoming"]')).toHaveText('Chưa đến hạn');
   await page.getByTestId('timeline-earlier').locator('summary').click();
   await expect(period(page, '2026-08-25').locator('[data-status="paid"]')).toHaveText('Đã thu');
-  await expect(page.getByTestId('lease-deposit')).toHaveText(`2.800.000${NBSP}₫`);
+  await expect(page.getByTestId('lease-deposit').locator('dd')).toHaveText(`2.800.000${NBSP}₫`);
   await expect(page.getByTestId('lease-tax')).toContainText('Chủ nhà tự nộp');
   await expect(page.getByTestId('lease-actions').getByRole('button')).toHaveText(['Gia hạn', 'Đổi tiền thuê', 'Kết thúc hợp đồng']);
+  await expect(page.getByTestId('skeleton-lease')).toHaveCount(0);
   expect(await noSideScroll(page)).toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('phong5-390-light.png'), fullPage: true });
@@ -119,6 +120,7 @@ test('rule 2: amending Phòng 2 offers only starts after 07/10/2026, bills the n
   await page.goto(leasePath(5, 'di-an', lease));
   await page.getByTestId('lease-amend').click();
   const sheet = page.getByTestId('amend-sheet');
+  await expect(sheet.getByTestId('amend-start')).toBeVisible();
   const starts = await sheet.getByTestId('amend-start').locator('option').evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
   expect(starts.length).toBeGreaterThan(0);
   expect(starts.every((start) => start > '2026-11-24'), `${starts.join(', ')} start after the issued 25/10 period`).toBe(true);
@@ -220,7 +222,7 @@ test('rule 5: the ended Phòng 7 lease offers no amend or terminate and shows it
   await open(page, 'ryan.lane7@demo.esta.test', 'dark', DESKTOP);
   await page.goto(leasePath(7, 'di-an', seedLease(7, 'di-an', 7)));
   await expect(page.getByTestId('lease-status')).toHaveText('Đã kết thúc');
-  await expect(page.getByTestId('lease-deposit')).toHaveText(`2.800.000${NBSP}₫`);
+  await expect(page.getByTestId('lease-deposit').locator('dd')).toHaveText(`2.800.000${NBSP}₫`);
   await expect(page.getByTestId('lease-terminate')).toHaveCount(0);
   await expect(page.getByTestId('lease-amend')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -267,6 +269,7 @@ test('rule 8: in English at 130% text, Phòng 5 reads 12 days overdue and every 
   try {
     await page.goto(leasePath(10, 'di-an', seedLease(10, 'di-an', 5)));
     await expect(period(page, '2026-09-25').locator('[data-status="overdue"]')).toHaveText('12 days overdue');
+    await expect(page.getByTestId('skeleton-lease')).toHaveCount(0);
     const clipped = await page
       .getByTestId('lease-timeline')
       .locator('li')

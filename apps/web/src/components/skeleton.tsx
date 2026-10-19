@@ -221,7 +221,7 @@ export function SkeletonLease() {
         <Block className="h-touch w-28" />
         <Block className="h-touch w-36" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
           <Block className="h-7 w-40" />
           {Array.from({ length: 5 }, (_, index) => (
@@ -231,7 +231,7 @@ export function SkeletonLease() {
         <div className="order-first flex flex-col rounded-lg border border-rule bg-surface shadow-card lg:order-none">
           {Array.from({ length: 4 }, (_, index) => (
             <div key={index} className="flex items-center justify-between gap-3 border-b border-rule p-4 last:border-b-0 sm:px-5">
-              <div className="flex flex-col gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <Block className="h-6 w-52 max-w-full" />
                 <Block className="h-5 w-36" />
               </div>

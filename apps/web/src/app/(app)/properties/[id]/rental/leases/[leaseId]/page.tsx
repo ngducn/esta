@@ -138,7 +138,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
         </PropertyIntl>
       </div>
       {canEdit ? null : <p className="text-body text-ink-2">{t('viewerNote')}</p>}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex flex-col gap-6">
           <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} />
           <PropertyIntl locale={locale} messages={{ leases: messages.leases, documents: messages.documents, components: { money, date, status, toast } }}>
