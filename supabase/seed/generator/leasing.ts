@@ -190,6 +190,32 @@ export const leaseAmendments = publicTable('lease_amendments', (ctx) => {
   }));
 });
 
+/** SPEC §9.3: every ended lease but Phòng 7's gave its deposit back; Kho Biên Hòa's was refunded on 2026-08-05. */
+const DEPOSIT_REFUNDS: readonly { readonly property: PropertySeedKey; readonly unit: number; readonly onDate: IsoDate }[] = [
+  { property: 'bien-hoa', unit: 1, onDate: d('2026-08-05') },
+];
+
+/** Each lease with a deposit received it on its first day, so Phòng 7's ended lease still holds all of it. */
+export const depositEntries = publicTable('deposit_entries', (ctx) =>
+  leasesIn(ctx)
+    .filter((seed) => seed.depositVnd > 0)
+    .flatMap((seed) => {
+      const key = leaseKey(ctx.household, seed);
+      const entry = (kind: 'received' | 'refunded', onDate: IsoDate) => ({
+        id: seedId(`seed:deposit-entry:${key}:${kind}`),
+        household_id: householdId(ctx.household),
+        lease_id: leaseId(ctx.household, seed),
+        kind,
+        amount_vnd: seed.depositVnd,
+        on_date: onDate,
+        note: null,
+        payment_id: null,
+      });
+      const refund = DEPOSIT_REFUNDS.find((target) => target.property === seed.property && target.unit === seed.unit);
+      return [entry('received', seed.terms.startDate), ...(refund === undefined ? [] : [entry('refunded', refund.onDate)])];
+    }),
+);
+
 /** SPEC §9.3: twelve months of invoices, so the nightly job runs from this night. */
 const HISTORY_FROM = '2025-10-01';
 
