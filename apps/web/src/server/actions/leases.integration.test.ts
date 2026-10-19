@@ -285,11 +285,12 @@ describe('amend, terminate and renew against local Supabase (LSE-2, LSE-3, #144)
       { rent: 2_500_000, increaseBps: 600, renewed: 2_700_000 },
     ];
     for (const { rent, increaseBps, renewed } of cases) {
-      const lease = await activeLease({ start_date: '2025-11-01', end_date: '2026-11-01', rent_vnd: rent }, '30/09/2026');
-      const result = await renewLease(lease.id, { increaseBps, endDate: '2027-11-01' });
+      // Ends after 02/11/2026, so cron.integration.test.ts, which runs next on the same stack, counts only the seed's ends.
+      const lease = await activeLease({ start_date: '2025-12-01', end_date: '2026-11-30', rent_vnd: rent }, '30/09/2026');
+      const result = await renewLease(lease.id, { increaseBps, endDate: '2027-11-30' });
       if (!result.ok) throw new Error(result.reason);
       const { data } = await client.from('leases').select('start_date, end_date, rent_vnd, status, renewal_of_lease_id').eq('id', result.value).single();
-      expect(data, `${rent} + ${increaseBps} bps`).toEqual({ start_date: '2026-11-02', end_date: '2027-11-01', rent_vnd: renewed, status: 'active', renewal_of_lease_id: lease.id });
+      expect(data, `${rent} + ${increaseBps} bps`).toEqual({ start_date: '2026-12-01', end_date: '2027-11-30', rent_vnd: renewed, status: 'active', renewal_of_lease_id: lease.id });
       expect(await renewLease(lease.id, { increaseBps, endDate: null })).toEqual({ ok: false, reason: 'already_renewed' });
     }
   });
