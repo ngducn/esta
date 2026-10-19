@@ -52,7 +52,7 @@ async function call(connector: Connector, name: string, args: Record<string, unk
   return { isError: result.isError === true, text, json: (): unknown => JSON.parse(text) };
 }
 
-const candidatesSchema = z.object({ candidates: z.array(z.object({ id: z.string(), reasons: z.array(z.string()) })) });
+const candidatesSchema = z.object({ candidates: z.array(z.object({ id: z.string(), nickname: z.string(), code: z.string(), address: z.string().nullable(), reasons: z.array(z.string()) })) });
 
 describe('the connector over stdio, signed in as the household operator', () => {
   const file = sessionFile();
