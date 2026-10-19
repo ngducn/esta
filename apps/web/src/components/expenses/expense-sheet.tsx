@@ -132,8 +132,9 @@ export function ExpenseSheet({
   const upload = useRef<Promise<string | null> | null>(null);
   const preview = useObjectUrl(previewOf(receipt));
 
-  const current = editing?.vendor ?? null;
-  const vendors = current === null || scope.vendors.some((option) => option.id === current.id) ? scope.vendors : [...scope.vendors, current];
+  const editingVendor = editing?.vendor ?? null;
+  const vendors =
+    editingVendor === null || scope.vendors.some((option) => option.id === editingVendor.id) ? scope.vendors : [...scope.vendors, editingVendor];
   const money = (value: Vnd) => formatVnd(value, locale);
 
   /** Runs from the `preparing` step the caller set, so nothing here sets state before its first wait. */
@@ -299,12 +300,11 @@ export function ExpenseSheet({
     });
   };
 
-  const busy = pending;
   const hasPhoto = preview !== null;
   const percent = receipt.step === 'uploading' && receipt.total > 0 ? Math.round((receipt.loaded / receipt.total) * 100) : 0;
 
   return (
-    <Sheet open={open} onOpenChange={(next) => (busy ? undefined : onOpenChange(next))}>
+    <Sheet open={open} onOpenChange={(next) => (pending ? undefined : onOpenChange(next))}>
       <SheetContent data-testid="expense-sheet" initialFocus={title} className={cn('gap-0 p-0 pb-0', hasPhoto && 'lg:w-[54rem]')}>
         <div className={cn('flex flex-col gap-5 p-5 sm:p-6', hasPhoto && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] lg:items-start lg:gap-6')}>
           {hasPhoto ? (
@@ -333,7 +333,7 @@ export function ExpenseSheet({
               </p>
             ) : null}
 
-            <MoneyInput label={t('amount')} defaultText={amount} onTextChange={setAmount} disabled={busy} error={amountError()} large />
+            <MoneyInput label={t('amount')} defaultText={amount} onTextChange={setAmount} disabled={pending} error={amountError()} large />
 
             <fieldset className="flex flex-col gap-2" aria-describedby={`${fieldId}-category`}>
               <legend className="mb-2 text-body font-semibold text-ink">{t('category')}</legend>
@@ -348,7 +348,7 @@ export function ExpenseSheet({
                       name={`category-${expenseId}`}
                       value={id}
                       checked={category === id}
-                      disabled={busy}
+                      disabled={pending}
                       onChange={() => {
                         setCategory(id);
                         setErrors((errors) => without(errors, 'category'));
@@ -365,7 +365,7 @@ export function ExpenseSheet({
 
             {editingDate ? (
               <div className="flex flex-col gap-1">
-                <DateInput label={t('date')} defaultValue={editing?.paidOn ?? scope.today} onTextChange={setDate} disabled={busy} />
+                <DateInput label={t('date')} defaultValue={editing?.paidOn ?? scope.today} onTextChange={setDate} disabled={pending} />
                 {dateError() === null ? null : <FieldMessage id={`${fieldId}-date`} error={dateError()} />}
               </div>
             ) : (
@@ -419,7 +419,7 @@ export function ExpenseSheet({
                 value={note}
                 rows={2}
                 maxLength={MAX_EXPENSE_NOTE}
-                disabled={busy}
+                disabled={pending}
                 onChange={(event) => setNote(event.target.value)}
                 className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
               />
@@ -470,7 +470,7 @@ export function ExpenseSheet({
                     accept="image/*"
                     capture="environment"
                     data-testid="sheet-receipt-camera"
-                    disabled={busy}
+                    disabled={pending}
                     className="absolute inset-0 cursor-pointer opacity-0"
                     onChange={(event) => {
                       chooseReceipt(event.target.files?.[0]);
@@ -485,7 +485,7 @@ export function ExpenseSheet({
                     type="file"
                     accept={ACCEPT}
                     data-testid="sheet-receipt-file"
-                    disabled={busy}
+                    disabled={pending}
                     className="absolute inset-0 cursor-pointer opacity-0"
                     onChange={(event) => {
                       chooseReceipt(event.target.files?.[0]);
@@ -495,7 +495,7 @@ export function ExpenseSheet({
                 </label>
               </div>
               {receipt.step === 'none' ? null : (
-                <button type="button" data-testid="receipt-remove" onClick={dropReceipt} disabled={busy} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
+                <button type="button" data-testid="receipt-remove" onClick={dropReceipt} disabled={pending} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
                   <X aria-hidden="true" />
                   {t('receiptRemove')}
                 </button>
@@ -503,7 +503,7 @@ export function ExpenseSheet({
             </section>
 
             {editing === null ? null : (
-              <button type="button" data-testid="expense-delete" onClick={remove} disabled={busy} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0 text-overdue')}>
+              <button type="button" data-testid="expense-delete" onClick={remove} disabled={pending} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0 text-overdue')}>
                 <Trash2 aria-hidden="true" />
                 {t('delete')}
               </button>
@@ -519,11 +519,11 @@ export function ExpenseSheet({
             </p>
           )}
           <div className="flex gap-2">
-            <SheetClose disabled={busy} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
+            <SheetClose disabled={pending} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
               {t('cancel')}
             </SheetClose>
-            <button type="button" data-testid="expense-save" onClick={save} disabled={busy} className={cn(buttonVariants({ variant: 'primary' }), 'flex-[2]')}>
-              {busy ? t('saving') : t('save')}
+            <button type="button" data-testid="expense-save" onClick={save} disabled={pending} className={cn(buttonVariants({ variant: 'primary' }), 'flex-[2]')}>
+              {pending ? t('saving') : t('save')}
             </button>
           </div>
         </div>
