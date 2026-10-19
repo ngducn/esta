@@ -25,6 +25,11 @@ let webPid: string;
 
 /** The process listening on the web port, so a restarted server shows up as a new pid. */
 function listeningPid(): string {
+  if (process.platform === 'linux') {
+    // lsof cannot see next-server's listening socket on the GitHub runner, so read the pid from ss.
+    const sockets = execFileSync('ss', ['-ltnpH', `sport = :${webPort}`], { encoding: 'utf8' });
+    return /pid=(\d+)/.exec(sockets)?.[1] ?? '';
+  }
   return execFileSync('lsof', ['-nP', '-t', `-iTCP:${webPort}`, '-sTCP:LISTEN'], { encoding: 'utf8' }).trim();
 }
 

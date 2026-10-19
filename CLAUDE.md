@@ -51,6 +51,14 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 
 Local email goes to the Supabase Inbucket mailbox through the SMTP transport. Never configure a real mail sender in development.
 
+### CI
+
+GitHub Actions is the gate. `.github/workflows/ci.yml` runs on every pull request and every push to `main`, at the exact head commit: `check` (`pnpm check` and `pnpm test:live`), `db` (seed determinism, pgTAP and `pnpm db:types` drift), `e2e` in six shards on a production build, each with its own local Supabase, `e2e-report`, `prod-build` (`pnpm e2e:prod` and `pnpm check:build-env`) and `design`. The `ci` job passes only when every other job passed, so it is the one check a merge needs. `e2e-report` merges the shards into one Playwright report, puts the test counts in the run summary and lists each test that failed and then passed on its one retry as flaky.
+
+The repository is public, so the workflow uses no secrets, runs on `pull_request` and never `pull_request_target`, pins every action by full SHA and has a read-only token. It masks the local stack's keys in the log, and before it uploads a Playwright report it removes every trace that holds one of those keys. It uploads the merged HTML report only when a test failed.
+
+When Actions is down, `tools/ci-local.sh <worktree> <pr> <slot>` runs the same jobs on this machine and posts `local-ci/*` statuses to the PR.
+
 ## Conventions
 
 - TypeScript strict. No `any`. Parse external data with zod at boundaries; trust internal types.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Run the CI jobs from .github/workflows/ci.yml on this machine and post the
-# results to the PR as commit statuses (context local-ci/<job>) plus one
-# summary comment. GitHub Actions minutes are not used.
+# The fallback for when GitHub Actions is down: run the CI jobs from
+# .github/workflows/ci.yml on this machine and post the results to the PR as
+# commit statuses (context local-ci/<job>) plus one summary comment.
 #
 # Usage: tools/ci-local.sh <worktree> <pr-number> <slot> [job ...]
 #   jobs default to: check db e2e prod-build design

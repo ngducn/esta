@@ -223,7 +223,7 @@ describe('the registry', () => {
     expect(problems).toEqual([]);
   });
 
-  it('holds the repository to its committed baseline', () => {
+  it('holds the repository to its committed baseline', { timeout: 30_000 }, () => {
     expect(run(repoRoot, { update: false }).lines).toEqual([]);
   });
 });

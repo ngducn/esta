@@ -85,6 +85,10 @@ Phase 1 closes with P1-03, which is rigorous because it is a phase exit. Phase 2
 
 Cleanup rounds of `[low]` issues are lean unless one of the issues hits a trigger.
 
+## CI, every tier (2026-10-19 23:30)
+
+Every tier needs the `ci` check on GitHub Actions green at the exact head before a merge. It runs the full suite, so owners run only the specs their change touches. When Actions is down, `tools/ci-local.sh` on this machine is the fallback, and its `local-ci/*` statuses count instead.
+
 ## Codebase-health lane, every tier (2026-10-19 16:45)
 
 Every round, lean included, adds one codebase-health lane: Sonnet, no stack, reading the diff against the thermo-nuclear standard and `ARCHITECTURE.md`. It blocks a diff that adds a second way to do something that has a home, duplicates a rule, puts logic in the wrong layer, writes several rows outside one transaction, or pushes a file over the size limit. It does not report debt the diff did not add. The quality ratchet in `pnpm check` is its deterministic floor.
