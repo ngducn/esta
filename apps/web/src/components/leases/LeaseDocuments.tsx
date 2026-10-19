@@ -12,7 +12,8 @@ const UploadSheet = lazy(() => import('@/components/documents/upload-sheet'));
 
 /**
  * The papers filed under this lease, shown plainly (Ryan's 2026-10-19 ruling: no blur, no gate). With none, the one
- * action is to upload the contract, filed under this lease as a lease contract.
+ * action is to upload the contract, filed under this lease as a lease contract. It stays an outline button, because the
+ * accent marks the page's one primary action (DESIGN.md One Accent Rule).
  */
 export function LeaseDocuments({
   leaseId,
@@ -32,7 +33,7 @@ export function LeaseDocuments({
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const upload = canEdit ? (
-    <Button type="button" variant={documents.length === 0 ? 'primary' : 'outline'} data-testid="lease-upload" onClick={() => setUploading(true)}>
+    <Button type="button" variant="outline" data-testid="lease-upload" onClick={() => setUploading(true)}>
       <Upload aria-hidden="true" />
       {t('uploadContract')}
     </Button>
