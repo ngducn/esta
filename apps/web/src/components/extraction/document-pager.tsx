@@ -79,7 +79,7 @@ export function DocumentPager({
 }: {
   documentId: string;
   fileUrl: string | null;
-  /** Page 1 at review size, about a fifth of a phone photo's bytes; null for an older upload. */
+  /** Page 1 at review size; null for a document uploaded before review copies existed. */
   reviewUrl: string | null;
   /** The upload's 320 px first-page thumbnail, shown under an older PDF's page 1 while pdf.js loads and draws it. */
   thumbUrl: string | null;
