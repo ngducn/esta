@@ -5,7 +5,7 @@ import type { BillingCycleMonths, SchedulePeriod } from './types';
 
 /**
  * For tests: `count` back-to-back periods of `cycleMonths` from `start` at `monthlyRentVnd`, the shape `public.lease_schedule`
- * returns, with no proration, paid-through cover or invoice.
+ * returns, with no paid-through cover or invoice.
  */
 export function schedulePeriods(leaseId: string, start: string, monthlyRentVnd: number, count: number, cycleMonths: BillingCycleMonths = 1): SchedulePeriod[] {
   return Array.from({ length: count }, (_, k) => {
@@ -15,10 +15,8 @@ export function schedulePeriods(leaseId: string, start: string, monthlyRentVnd: 
       start: from,
       end: addDays(addMonths(isoDate(start), (k + 1) * cycleMonths), -1),
       dueDate: from,
-      cycleMonths,
       monthlyRentVnd: vnd(monthlyRentVnd),
       rentVnd: vnd(monthlyRentVnd * cycleMonths),
-      prorated: false,
       coveredByPaidThrough: false,
       invoiceId: null,
     };

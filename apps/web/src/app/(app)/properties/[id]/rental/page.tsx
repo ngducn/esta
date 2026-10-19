@@ -60,10 +60,7 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
     getMessages(),
   ]);
   const asOf = clock.today();
-  const schedule = await loadLeaseSchedule(
-    leases.leases.map((lease) => lease.id),
-    asOf,
-  );
+  const schedule = await loadLeaseSchedule(leases.leases.map((lease) => lease.id), asOf);
   const canEdit = member.role !== 'viewer';
   const roomingHouse = property.kind === 'rooming_house';
   const declared = roomingHouse ? (roomCountSchema.safeParse(property.kindDetails).data?.room_count ?? null) : null;

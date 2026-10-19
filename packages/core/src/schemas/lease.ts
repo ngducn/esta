@@ -11,9 +11,6 @@ const moneySchema = vndSchema.refine((amount) => amount <= MAX_LIST_RENT_VND);
 const cycleSchema = z.union(BILLING_CYCLES.map((cycle) => z.literal(cycle)));
 const everyMonths = z.number().int().min(1).max(120);
 
-/** SPEC §5.4: an increase rounds half up to this when the lease names no `rounding_vnd`, as `private.lease_periods` does. */
-const DEFAULT_ESCALATION_ROUNDING_VND = vnd(100_000);
-
 /** `leases.escalation` as SPEC §5.4 stores it: `value` is basis points for `percent` and đồng for `fixed`. */
 export const escalationJsonSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
@@ -24,10 +21,9 @@ export type EscalationJson = z.output<typeof escalationJsonSchema>;
 
 export function toEscalation(json: EscalationJson): Escalation {
   if (json.kind === 'none') return json;
-  const roundingVnd = json.rounding_vnd === undefined ? DEFAULT_ESCALATION_ROUNDING_VND : vnd(json.rounding_vnd);
   return json.kind === 'percent'
-    ? { kind: 'percent', valueBps: json.value, everyMonths: json.every_months, roundingVnd }
-    : { kind: 'fixed', valueVnd: vnd(json.value), everyMonths: json.every_months, roundingVnd };
+    ? { kind: 'percent', valueBps: json.value, everyMonths: json.every_months }
+    : { kind: 'fixed', valueVnd: vnd(json.value), everyMonths: json.every_months };
 }
 
 /** What `createLease` and `updateLease` accept: a draft may still miss its tenant, start or rent (LSE-2). */
@@ -129,10 +125,8 @@ export const schedulePeriodRowSchema = z
     period_start: isoDateSchema,
     period_end: isoDateSchema,
     due_date: isoDateSchema,
-    cycle_months: cycleSchema,
     monthly_rent_vnd: z.number().int().positive(),
     rent_vnd: z.number().int().min(0),
-    prorated: z.boolean(),
     covered_by_paid_through: z.boolean(),
     invoice_id: z.uuid().nullable(),
   })
@@ -142,10 +136,8 @@ export const schedulePeriodRowSchema = z
       start: row.period_start,
       end: row.period_end,
       dueDate: row.due_date,
-      cycleMonths: row.cycle_months,
       monthlyRentVnd: vnd(row.monthly_rent_vnd),
       rentVnd: vnd(row.rent_vnd),
-      prorated: row.prorated,
       coveredByPaidThrough: row.covered_by_paid_through,
       invoiceId: row.invoice_id,
     }),

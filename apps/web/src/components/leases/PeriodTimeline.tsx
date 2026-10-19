@@ -96,11 +96,7 @@ export function PeriodTimeline({
   const t = useTranslations('leases');
   const yearAhead = addMonths(asOf, 12);
   const until = endDate !== null && endDate < yearAhead ? endDate : yearAhead;
-  const rows = leaseTimeline(
-    schedule.filter((period) => period.start <= until),
-    invoices,
-    asOf,
-  );
+  const rows = leaseTimeline(schedule.filter((period) => period.start <= until), invoices, asOf);
   const settled = (row: TimelineRow<InvoiceSummary>) => (row.mark.kind === 'paid' || row.mark.kind === 'prepaid') && row.end < asOf;
   const leading = rows.findIndex((row) => !settled(row));
   const folded = Math.max(0, (leading === -1 ? rows.length : leading) - SETTLED_SHOWN);

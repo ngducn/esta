@@ -7,10 +7,11 @@ export type PeriodAnchor = 'lease_start' | 'calendar_month';
 
 export type FirstPeriodProration = 'none' | 'by_days';
 
+/** A lease's rent increase as the terms card shows it; `private.lease_periods` applies it, rounding included. */
 export type Escalation =
   | { kind: 'none' }
-  | { kind: 'percent'; valueBps: number; everyMonths: number; roundingVnd: Vnd }
-  | { kind: 'fixed'; valueVnd: Vnd; everyMonths: number; roundingVnd: Vnd };
+  | { kind: 'percent'; valueBps: number; everyMonths: number }
+  | { kind: 'fixed'; valueVnd: Vnd; everyMonths: number };
 
 export type AmendmentChanges = {
   rentVnd?: Vnd;
@@ -28,11 +29,9 @@ export type SchedulePeriod = {
   readonly start: IsoDate;
   readonly end: IsoDate;
   readonly dueDate: IsoDate;
-  readonly cycleMonths: BillingCycleMonths;
   /** After increases and amendments. */
   readonly monthlyRentVnd: Vnd;
   readonly rentVnd: Vnd;
-  readonly prorated: boolean;
   readonly coveredByPaidThrough: boolean;
   readonly invoiceId: string | null;
 };
