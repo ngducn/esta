@@ -24,14 +24,14 @@ export const clock = (): Promise<Clock> => Promise.resolve({ source: 'table', no
 const SCAN = readFileSync(join(import.meta.dirname, '../../../fixtures/certificates/gcn_2009_2024-scan/document.pdf'));
 
 /** Two households with one certificate each, as the service client sees them. */
-export function twoHouseholds(writes: Recorded[] = []) {
+export function twoHouseholds(writes: Recorded[] = [], titleA = 'Sổ hồng Bảo Lộc') {
   const tables = {
     households: [
       { id: A, name: 'Gia đình Demo 1', locale: 'vi' },
       { id: B, name: 'Gia đình Demo 2', locale: 'vi' },
     ],
     documents: [
-      { id: DOCUMENT_A, household_id: A, title: 'Sổ hồng Bảo Lộc', storage_path: `${A}/${DOCUMENT_A}/so-hong.pdf`, mime: 'application/pdf' },
+      { id: DOCUMENT_A, household_id: A, title: titleA, storage_path: `${A}/${DOCUMENT_A}/so-hong.pdf`, mime: 'application/pdf' },
       { id: DOCUMENT_B, household_id: B, title: 'Sổ hồng B', storage_path: `${B}/${DOCUMENT_B}/so-hong.pdf`, mime: 'application/pdf' },
     ],
     document_extractions: [
