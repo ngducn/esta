@@ -204,3 +204,14 @@ This changes locked decision D8 (email one-time code). The operator raised it hi
 4. Passwords need at least 8 characters, with no other complexity rules. No paid Supabase features (leaked-password checks are a paid plan feature and are not used).
 5. Google sign-in stays as SPEC D8 already plans it: behind `ESTA_GOOGLE_AUTH`, at the Phase 6 gate, once Ryan creates the OAuth client.
 6. It is rigorous tier (sign-in is a security boundary). It runs as the next item on track A after #150 merges, before P2-06. The PR edits SPEC D8 and FND-1 to record this ruling with its date.
+
+## Update 2026-10-19 08:45 +07
+
+Operator's words, 2026-10-19, looking at a blurred CCCD tile: "why did we have this đã che mờ UI? also, for the 161 on the IDs on fields, can we be more lenient with it?" Asked for the handling of a full ID typed into a field, he chose "Store as typed", for every typed field (the review screen's edits and Sửa thông tin included), with the assistant's own readings still keeping only the last four digits. Asked what the sensitive blur should cover, he chose "No blur".
+
+Rules from this update. They change locked decision D8's neighbour D11 and acceptance check DOC-5 by the operator's own choice.
+
+1. D11, amended: text a person types is saved as typed, full ID numbers included. The assistant never writes a full ID by itself: its readings (extraction results, accepted values it read, `ocr_text`) keep only the last four digits, and the CHECKs on the assistant's own output stay. Structured identity fields stay last-four only (`parties.id_last4`).
+2. DOC-5, amended: every document shows clear, with no blur and no Xem gate. A document's sensitivity still limits what the assistant can read (only through the extraction job that targets it) and still drops `ocr_text`; views and downloads stay logged (DOC-4).
+3. #161 and #166 close unmerged; #147 closes as decided. #140's extraction-path items (label accents, middle dots) and #149 (land use term ranges) stay open.
+4. One PR carries both rulings after #165 merges: SPEC D11 and DOC-5 edited with this date, the typed-text refusals removed (the vault's Sửa thông tin, the review screen's typed edits, the accepted_fields CHECK for typed values), and the blur removed from every surface. Rigorous tier. Root merges it under the Phase 2 grant, because the operator made both calls himself.
