@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
@@ -48,14 +48,27 @@ export function keychainStore(scope: string, run: Run = runCommand): SecretStore
 
 const fileSchema = z.record(z.string(), z.string());
 
-/** Where `security` does not exist: one JSON file only its owner can read, in a folder only its owner can open. */
+/**
+ * Where `security` does not exist: one JSON file only its owner can read, in a folder only its owner can open. Every
+ * write lands whole through a rename. A file that does not parse reads as signed out, because the parse error quotes
+ * the file and stderr ends up in Claude Code's logs.
+ */
 export function fileStore(scope: string, file: string): SecretStore {
   const account = (key: string) => `${scope}#${key}`;
-  const read = () => (existsSync(file) ? fileSchema.parse(JSON.parse(readFileSync(file, 'utf8'))) : {});
+  const read = (): Record<string, string> => {
+    if (!existsSync(file)) return {};
+    try {
+      return fileSchema.parse(JSON.parse(readFileSync(file, 'utf8')));
+    } catch {
+      return {};
+    }
+  };
   const write = (items: Record<string, string>) => {
     mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
-    writeFileSync(file, JSON.stringify(items), { mode: 0o600 });
-    chmodSync(file, 0o600);
+    const partial = `${file}.${process.pid}.tmp`;
+    writeFileSync(partial, JSON.stringify(items), { mode: 0o600 });
+    chmodSync(partial, 0o600);
+    renameSync(partial, file);
   };
   return {
     getItem: (key) => read()[account(key)] ?? null,
