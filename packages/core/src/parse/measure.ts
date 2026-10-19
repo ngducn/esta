@@ -13,10 +13,9 @@ const GROUPED = /^(?<integer>\d{1,3}(?<mark>[. \u00A0])\d{3}(?:\k<mark>\d{3})*)(
 const PLAIN = /^(?<integer>\d+)(?:[.,](?<fraction>\d+))?$/u;
 
 /**
- * Reads an area or a length as Vietnamese people write it (DOMAIN-VN §9): `350,5`, `1.250,75 m²`, `1 250`, and also
- * `350.5`. A dot or a space before three-digit groups is thousands grouping; a lone comma or dot is the decimal mark;
- * any other space is refused, so `12 5` is never read as 125. More than two decimals is refused, because the column
- * keeps hundredths, so `4,500` is never read as 4500.
+ * Reads an area or a length by the DOMAIN-VN §9 rule, such as `350,5`, `1.250,75 m²` or `1 250`. A dot or a space is
+ * grouping only before three-digit groups, so `12 5` is never 125, and more than two decimals is refused because the
+ * column keeps hundredths, so `4,500` is never 4500.
  */
 export function parseMeasureInput(text: string, measure: Measure): Result<number, MeasureReason> {
   const trimmed = text.trim().replace(UNITS[measure], '');
