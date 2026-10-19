@@ -1,14 +1,12 @@
 'use server';
 
-import { parseOtpInput } from '@esta/core/auth';
+import { parseOtpInput, parsePassword } from '@esta/core/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { env } from '@/server/env';
-import { finishSignIn } from '@/server/sign-in';
-import { createCodeSender, createSessionClient } from '@/server/supabase/server';
-
-type SendFailure = 'send-failed' | 'rate-limited';
+import { emailSchema, finishSignIn, formSecret, formText, sendSignInCode, type SendFailure } from '@/server/sign-in';
+import { createSessionClient } from '@/server/supabase/server';
 
 export type SignInState =
   | { step: 'email'; email: string; error: 'invalid-email' | SendFailure | null }
@@ -16,24 +14,11 @@ export type SignInState =
 
 export type SignInError = NonNullable<SignInState['error']>;
 
-const emailSchema = z.email().transform((email) => email.toLowerCase());
-
 const intentSchema = z.enum(['send', 'resend', 'verify', 'change-email']);
-
-function field(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-async function sendCode(email: string): Promise<SendFailure | null> {
-  const { error } = await createCodeSender().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-  if (error === null) return null;
-  return error.status === 429 ? 'rate-limited' : 'send-failed';
-}
 
 export async function signIn(previous: SignInState, formData: FormData): Promise<SignInState> {
   const intent = intentSchema.parse(formData.get('intent'));
-  const rawEmail = field(formData, 'email');
+  const rawEmail = formText(formData, 'email');
 
   if (intent === 'change-email') return { step: 'email', email: rawEmail, error: null };
 
@@ -43,7 +28,7 @@ export async function signIn(previous: SignInState, formData: FormData): Promise
   const sentCount = previous.step === 'code' ? previous.sentCount : 0;
 
   if (intent === 'send' || intent === 'resend') {
-    const failure = await sendCode(email);
+    const failure = await sendSignInCode(email);
     if (failure !== null) {
       return intent === 'send'
         ? { step: 'email', email, error: failure }
@@ -52,7 +37,7 @@ export async function signIn(previous: SignInState, formData: FormData): Promise
     return { step: 'code', email, code: '', error: null, sentCount: sentCount + 1 };
   }
 
-  const typed = field(formData, 'code');
+  const typed = formText(formData, 'code');
   if (typed === '') return { step: 'code', email, code: typed, error: 'missing-code', sentCount };
   const wrong: SignInState = { step: 'code', email, code: typed, error: 'wrong-code', sentCount };
   const code = parseOtpInput(typed);
@@ -60,6 +45,25 @@ export async function signIn(previous: SignInState, formData: FormData): Promise
   const supabase = await createSessionClient();
   const { error } = await supabase.auth.verifyOtp({ email, token: code.value, type: 'email' });
   if (error) return wrong;
+  redirect(await finishSignIn());
+}
+
+export type PasswordSignInState = {
+  email: string;
+  error: 'invalid-email' | 'missing-password' | 'wrong-password' | 'rate-limited' | 'failed' | null;
+};
+
+export async function signInWithPassword(_previous: PasswordSignInState, formData: FormData): Promise<PasswordSignInState> {
+  const rawEmail = formText(formData, 'email');
+  const parsed = emailSchema.safeParse(rawEmail);
+  if (!parsed.success) return { email: rawEmail, error: 'invalid-email' };
+  const email = parsed.data;
+  const password = parsePassword(formSecret(formData, 'password'));
+  if (!password.ok) return { email, error: 'missing-password' };
+  const supabase = await createSessionClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password: password.value });
+  // Auth answers 400 both for a wrong password and for an address with no account, so the error tells nobody which.
+  if (error) return { email, error: error.status === 429 ? 'rate-limited' : error.status === 400 ? 'wrong-password' : 'failed' };
   redirect(await finishSignIn());
 }
 

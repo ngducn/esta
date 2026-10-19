@@ -77,7 +77,7 @@ refresh_token_reuse_interval = 10
 enable_signup = true
 enable_anonymous_sign_ins = false
 enable_manual_linking = false
-minimum_password_length = 6
+minimum_password_length = 8
 password_requirements = ""
 
 [auth.rate_limit]
@@ -93,7 +93,7 @@ web3 = 30
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
-secure_password_change = false
+secure_password_change = true
 max_frequency = "1s"
 otp_length = 6
 otp_expiry = 3600
@@ -107,6 +107,11 @@ content_path = "./supabase/templates/otp.html"
 [auth.email.template.confirmation]
 subject = "Mã đăng nhập Esta"
 content_path = "./supabase/templates/otp.html"
+
+# "Quên mật khẩu?" sends the recovery template; its code signs in so the new password can be set.
+[auth.email.template.recovery]
+subject = "Mã đặt lại mật khẩu Esta"
+content_path = "./supabase/templates/recovery.html"
 
 [auth.sessions]
 timebox = "720h"

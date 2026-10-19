@@ -9,8 +9,8 @@ import { parseSlot, slotPorts } from '../slot.ts';
 import { startH2Proxy } from './h2-proxy.ts';
 
 const USAGE =
-  'Usage: tsx scripts/perf/lighthouse.ts <route> --email <member email> [--base <origin>] [--http1] [--runs 5] [--label head] [--out <dir for the JSON reports>]\n' +
-  'Runs Lighthouse 12.8.2 mobile on a running production server, signed in as the member, and prints the medians.\n' +
+  'Usage: tsx scripts/perf/lighthouse.ts <route> [--email <member email>] [--base <origin>] [--http1] [--runs 5] [--label head] [--out <dir for the JSON reports>]\n' +
+  'Runs Lighthouse 12.8.2 mobile on a running production server, signed in as the member (signed out without --email), and prints the medians.\n' +
   'Measures over HTTP/2 through a local TLS proxy in front of the server (production serves HTTP/2); --http1 measures the server directly.';
 const LIGHTHOUSE = 'lighthouse@12.8.2';
 
@@ -49,12 +49,12 @@ export async function sessionCookie(origin: string, email: string, slot: number)
   try {
     const page = await browser.newPage({ ignoreHTTPSErrors: true });
     await clearMailbox(email, mailbox);
-    await page.goto(`${origin}/sign-in`);
+    await page.goto(`${origin}/sign-in/code`);
     await page.locator('input[name="email"]').fill(email);
     await page.locator('button[value="send"]').click();
     await page.locator('input[name="code"]').fill(await latestCode(email, mailbox));
     await page.locator('button[value="verify"]').click();
-    await page.waitForURL((url) => url.pathname !== '/sign-in');
+    await page.waitForURL((url) => url.pathname !== '/sign-in/code');
     const cookies = await page.context().cookies(origin);
     return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
   } finally {
@@ -64,7 +64,7 @@ export async function sessionCookie(origin: string, email: string, slot: number)
 
 export type Medians = { protocol: string; route: string; runs: number; lcpMs: number; tbtMs: number; cls: number; scriptKb: number; imageKb: number };
 
-export type MeasureOptions = { route: string; email: string; slot: number; base?: string; http1?: boolean; runs?: number; label?: string; out?: string };
+export type MeasureOptions = { route: string; email?: string; slot: number; base?: string; http1?: boolean; runs?: number; label?: string; out?: string };
 
 export async function measure({ route, email, slot, base, http1 = false, runs = 5, label, out }: MeasureOptions): Promise<Medians> {
   const server = base ?? `http://localhost:${slotPorts(slot).webProd}`;
@@ -74,7 +74,7 @@ export async function measure({ route, email, slot, base, http1 = false, runs = 
   const workdir = mkdtempSync(join(tmpdir(), 'esta-lighthouse-'));
   try {
     const headers = join(workdir, 'headers.json');
-    writeFileSync(headers, JSON.stringify({ Cookie: await sessionCookie(origin, email, slot) }));
+    if (email !== undefined) writeFileSync(headers, JSON.stringify({ Cookie: await sessionCookie(origin, email, slot) }));
     const results: Run[] = [];
     for (let index = 0; index < runs; index++) {
       const output = join(out ?? workdir, `${label ?? 'run'}-${index + 1}.json`);
@@ -88,7 +88,7 @@ export async function measure({ route, email, slot, base, http1 = false, runs = 
           '--only-categories=performance',
           '--output=json',
           `--output-path=${output}`,
-          `--extra-headers=${headers}`,
+          ...(email === undefined ? [] : [`--extra-headers=${headers}`]),
           `--chrome-flags=${chromeFlags}`,
         ],
         { stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, CHROME_PATH: process.env.CHROME_PATH ?? chromium.executablePath() } },
@@ -121,10 +121,10 @@ async function run(): Promise<void> {
     options: { email: { type: 'string' }, base: { type: 'string' }, runs: { type: 'string' }, label: { type: 'string' }, http1: { type: 'boolean' }, out: { type: 'string' } },
   });
   const [route] = positionals;
-  if (route === undefined || values.email === undefined) throw new Error(USAGE);
+  if (route === undefined) throw new Error(USAGE);
   const medians = await measure({
     route,
-    email: values.email,
+    ...(values.email === undefined ? {} : { email: values.email }),
     slot: parseSlot(process.env.ESTA_SLOT),
     ...(values.base === undefined ? {} : { base: values.base }),
     http1: values.http1 ?? false,

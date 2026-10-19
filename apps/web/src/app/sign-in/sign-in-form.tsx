@@ -1,12 +1,8 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import { signIn, type SignInError, type SignInState } from './actions';
-
-const RESEND_WAIT_SECONDS = 60;
-
-/** A message split around its one argument by the server, so this route ships no ICU runtime. */
-export type Around = readonly [before: string, after: string];
+import { CodeStep, fieldClass, primaryClass, type Around } from './auth-fields';
 
 export type SignInCopy = {
   emailIntro: string;
@@ -28,24 +24,6 @@ export type SignInCopy = {
 };
 
 const initialState: SignInState = { step: 'email', email: '', error: null };
-
-const fieldClass = 'min-h-touch w-full rounded-md border border-field bg-surface px-3.5 text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted aria-invalid:border-overdue';
-const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
-const secondaryClass = 'min-h-touch px-2 font-semibold text-ink underline decoration-ink-muted underline-offset-4 disabled:no-underline disabled:opacity-60';
-
-function ResendButton({ copy, pending }: { copy: SignInCopy; pending: boolean }) {
-  const [seconds, setSeconds] = useState(RESEND_WAIT_SECONDS);
-  useEffect(() => {
-    const timer = setInterval(() => setSeconds((left) => Math.max(0, left - 1)), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  const waiting = seconds > 0;
-  return (
-    <button type="submit" name="intent" value="resend" formNoValidate disabled={waiting || pending} className={secondaryClass}>
-      {waiting ? `${copy.resendIn[0]}${seconds}${copy.resendIn[1]}` : copy.resend}
-    </button>
-  );
-}
 
 const ERRORS = {
   'invalid-email': { copy: 'invalidEmail', aboutValue: true },
@@ -99,46 +77,17 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
   }
 
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
-      <input type="hidden" name="email" value={state.email} />
-      <p id="code-sent" className="text-ink-2">
-        {copy.codeSent[0]}
-        <strong className="inline-block max-w-full wrap-anywhere">{state.email}</strong>
-        {copy.codeSent[1]}
-      </p>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="code" className="font-semibold">
-          {copy.codeLabel}
-        </label>
-        <input
-          key={state.sentCount}
-          ref={codeInput}
-          id="code"
-          name="code"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          autoFocus
-          required
-          maxLength={12}
-          defaultValue={state.code}
-          aria-invalid={invalid}
-          aria-describedby={error === null ? 'code-sent' : 'code-sent code-error'}
-          className={`${fieldClass} text-h2 tracking-widest tabular-nums`}
-        />
-        <p id="code-error" role="alert" className="min-h-6 font-semibold text-overdue">
-          {error}
-        </p>
-      </div>
-      <button type="submit" name="intent" value="verify" disabled={pending} className={primaryClass}>
-        {pending ? copy.verifying : copy.verify}
-      </button>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <ResendButton key={state.sentCount} copy={copy} pending={pending} />
-        <button type="submit" name="intent" value="change-email" formNoValidate disabled={pending} className={secondaryClass}>
-          {copy.changeEmail}
-        </button>
-      </div>
-    </form>
+    <CodeStep
+      action={action}
+      email={state.email}
+      code={state.code}
+      sentCount={state.sentCount}
+      intent="verify"
+      error={error}
+      codeInvalid={invalid}
+      pending={pending}
+      copy={{ ...copy, submit: copy.verify, submitting: copy.verifying }}
+      codeInput={codeInput}
+    />
   );
 }

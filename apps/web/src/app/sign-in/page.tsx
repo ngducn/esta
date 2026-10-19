@@ -1,42 +1,33 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth-frame';
 import { env } from '@/server/env';
 import { LanguageSwitch } from '../language-switch';
 import { signInWithGoogle } from './actions';
-import { SignInForm, type Around, type SignInCopy } from './sign-in-form';
+import { linkClass, outlineClass } from './auth-fields';
+import { passwordCopy } from './copy';
+import { PasswordSignInForm, type PasswordSignInCopy } from './password-form';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('signIn');
   return { title: t('title') };
 }
 
-const SLOT = '\u0000';
-
-function around(formatted: string): Around {
-  const [before = '', after = ''] = formatted.split(SLOT);
-  return [before, after];
-}
-
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
-  const [t, app, { error }] = await Promise.all([getTranslations('signIn'), getTranslations('app'), searchParams]);
-  const copy: SignInCopy = {
-    emailIntro: t('emailIntro'),
+  const [t, app, password, { error }] = await Promise.all([getTranslations('signIn'), getTranslations('app'), passwordCopy(), searchParams]);
+  const copy: PasswordSignInCopy = {
     emailLabel: t('emailLabel'),
-    sendCode: t('sendCode'),
-    sending: t('sending'),
+    passwordLabel: t('passwordLabel'),
+    password,
+    forgotPassword: t('forgotPassword'),
+    submit: t('signInSubmit'),
+    submitting: t('signingIn'),
     invalidEmail: t('invalidEmail'),
-    sendFailed: t('sendFailed'),
-    rateLimited: t('rateLimited'),
-    codeSent: around(t('codeSent', { email: SLOT })),
-    codeLabel: t('codeLabel'),
-    verify: t('verify'),
-    verifying: t('verifying'),
-    wrongCode: t('wrongCode'),
-    missingCode: t('missingCode'),
-    resend: t('resend'),
-    resendIn: around(t('resendIn', { seconds: SLOT })),
-    changeEmail: t('changeEmail'),
+    missingPassword: t('missingPassword'),
+    wrongPassword: t('wrongPassword'),
+    rateLimited: t('tooManyTries'),
+    failed: t('signInFailed'),
   };
   const google = env.ESTA_GOOGLE_AUTH === 'on';
   return (
@@ -50,18 +41,26 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
           {t('googleFailed')}
         </p>
       )}
-      <SignInForm copy={copy} />
-      {google && (
-        <form action={signInWithGoogle} className="flex flex-col gap-4">
-          <p className="text-center text-ink-muted">{t('or')}</p>
-          <button
-            type="submit"
-            className="min-h-touch w-full rounded-sm border border-rule-strong bg-surface px-4 font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2"
-          >
-            {t('google')}
-          </button>
-        </form>
-      )}
+      <PasswordSignInForm copy={copy} />
+      <div className="flex flex-col gap-4">
+        <p className="text-center text-ink-muted">{t('or')}</p>
+        <Link href="/sign-in/code" className={outlineClass}>
+          {t('useCode')}
+        </Link>
+        {google && (
+          <form action={signInWithGoogle}>
+            <button type="submit" className={outlineClass}>
+              {t('google')}
+            </button>
+          </form>
+        )}
+      </div>
+      <p className="flex flex-wrap items-center justify-center gap-x-2 border-t border-rule pt-4 text-ink-2">
+        {t('noAccount')}
+        <Link href="/sign-up" className={linkClass}>
+          {t('createAccount')}
+        </Link>
+      </p>
     </AuthFrame>
   );
 }

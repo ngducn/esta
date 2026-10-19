@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Launch, check and drive the Esta web app (Next.js on local Supabase) in a real browser, one isolated stack per ESTA_SLOT. Signs in with the 6-digit code from the slot's mailbox, switches language, theme and viewport, and saves screenshot evidence. Use to prove a UI change works, to run a verification lane, or to screenshot a screen at 390x844 or 1440x900.
+description: Launch, check and drive the Esta web app (Next.js on local Supabase) in a real browser, one isolated stack per ESTA_SLOT. Signs in with the 6-digit code from the slot's mailbox or with the seed's demo password, switches language, theme and viewport, and saves screenshot evidence. Use to prove a UI change works, to run a verification lane, or to screenshot a screen at 390x844 or 1440x900.
 ---
 
 # Verify the Esta web app
@@ -65,7 +65,8 @@ Send browser commands through `$S/b.sh`, which runs gstack browse against your s
 
 ```bash
 $S/b.sh viewport 390x844          # phone; 1440x900 for desktop
-$S/sign-in.sh me.lane1@demo.esta.test
+$S/sign-in.sh me.lane1@demo.esta.test             # mailbox code on /sign-in/code
+$S/sign-in.sh me.lane1@demo.esta.test --password  # demo password on /sign-in
 $S/set-locale.sh en               # or vi
 $S/set-theme.sh dark              # or light
 $S/b.sh goto http://localhost:4300/onboarding
@@ -73,7 +74,8 @@ $S/b.sh snapshot -i               # interactive elements with @e refs
 $S/b.sh click 'role=button[name="Tạo gia đình"]'
 ```
 
-- `sign-in.sh <email>` drops any earlier session (`sign-out.sh`), clears that address's mail, fills `/sign-in`, reads the newest code with `node scripts/inbucket-code.ts <email>`, submits it and waits until the browser leaves `/sign-in`. It prints the landing path, `/` for a member and `/onboarding` for an address with no household. It takes about 2 s. Sign-in is code-only: email confirmations are on and seeded users have no password, so there is no password path to drive.
+- `sign-in.sh <email>` drops any earlier session (`sign-out.sh`), clears that address's mail, fills `/sign-in/code`, reads the newest code with `node scripts/inbucket-code.ts <email>`, submits it and waits until the browser leaves `/sign-in/code`. It prints the landing path, `/` for a member and `/onboarding` for an address with no household. It takes about 2 s. The code path works for any address, seeded or new.
+- `sign-in.sh <email> --password` signs in on `/sign-in` with the seed's demo password (`DEMO_PASSWORD` in `supabase/seed/generator/households.ts`, documented in `supabase/seed/README.md`). Only seeded accounts hold it; a new address has no password until it creates an account on `/sign-up`.
 - `set-locale.sh <vi|en>` sets the `NEXT_LOCALE` cookie and reloads. A signed-in member's saved locale wins over the cookie, so when `<html lang>` does not change it presses the in-app language switch (`button[lang="en"]`), which saves the member's choice. It fails unless `<html lang>` ends at the requested locale.
 - `set-theme.sh <light|dark>` sets the `esta_theme` cookie and reloads. The server renders `data-theme` on `<html>` from that cookie, so the theme holds from the first byte and across every later navigation and reload. It fails unless the reloaded page carries the requested `data-theme`. With no cookie the app is light whatever the browser's `prefers-color-scheme` says.
 - `sign-out.sh` leaves the browser signed out on `/sign-in`. When `/sign-in` redirects to `/`, it opens the account menu (`Tài khoản` or `Account`) and presses `Đăng xuất` or `Sign out` in it. When it redirects to `/onboarding`, which has no account menu, it presses that page's own `Đăng xuất` or `Sign out` button.
@@ -81,7 +83,8 @@ $S/b.sh click 'role=button[name="Tạo gia đình"]'
 
 Selectors accept CSS and Playwright engines. Prefer form names, `role=` with an accessible name, and `@e` refs from a fresh `snapshot`:
 
-- `input[name="email"]`, `input[name="code"]`, `button[value="send"]`, `button[value="verify"]` on `/sign-in`.
+- `input[name="email"]`, `input[name="password"]`, `button[value="sign-in"]` on `/sign-in`.
+- `input[name="email"]`, `input[name="code"]`, `button[value="send"]`, `button[value="verify"]` on `/sign-in/code`. `/sign-up` and `/forgot-password` use the same names, with `button[value="send"]` first, then the code with `button[value="verify"]` on `/sign-up` or `button[value="reset"]` on `/forgot-password`.
 - `input[name="householdName"]`, `input[name="displayName"]`, `input[name="role"][value="viewer"]` on `/onboarding`.
 - `role=button[name="Mời"s]` matches the exact name. Without `s` the name matches as a substring.
 - `[data-testid="date-line"]` is the business date line in the header of every signed-in page.
@@ -137,7 +140,7 @@ Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pa
 | `launch.sh [--variant northstar] [--clock <iso>]` | Start, reseed, set the clock and serve the slot; prints `Ready` |
 | `doctor.sh` | Six read-only `OK`/`FAIL` checks with fixes |
 | `b.sh <command> [args]` | One gstack browse command on the lane's daemon |
-| `sign-in.sh <email>` | Sign in through `/sign-in` with the mailbox code |
+| `sign-in.sh <email> [--password]` | Sign in through `/sign-in/code` with the mailbox code, or through `/sign-in` with the demo password |
 | `sign-out.sh` | Sign out through the app and open `/sign-in` |
 | `set-locale.sh <vi\|en>` | Switch the UI language |
 | `set-theme.sh <light\|dark>` | Set the theme cookie and reload into that theme |

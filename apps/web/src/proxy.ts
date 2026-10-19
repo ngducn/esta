@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { parseEnv } from '@/server/env-schema';
-import { isPublicPath } from '@/server/public-paths';
+import { isAuthPage, isPublicPath } from '@/server/public-paths';
 import { sessionCookie } from '@/server/supabase/session';
 
 const env = parseEnv(process.env);
@@ -67,7 +67,7 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   if (data === null && !isPublicPath(pathname)) return redirectKeepingCookies(request, response, '/sign-in');
-  if (data !== null && pathname === '/sign-in') return redirectKeepingCookies(request, response, '/');
+  if (data !== null && isAuthPage(pathname)) return redirectKeepingCookies(request, response, '/');
   if (data !== null && (await isMissingProperty(request, supabase))) return new NextResponse(null, { status: 404, headers: response.headers });
   return response;
 }
