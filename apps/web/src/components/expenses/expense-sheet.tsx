@@ -195,7 +195,6 @@ export function ExpenseSheet({
         <div className={cn('flex flex-col gap-5 p-5 sm:p-6', hasPhoto && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] lg:items-start lg:gap-6')}>
           {hasPhoto ? (
             <figure className="lg:sticky lg:top-6 lg:row-span-2">
-              {/* eslint-disable-next-line @next/next/no-img-element -- a local blob URL of the receipt chosen in this tab */}
               <img
                 src={preview}
                 alt={t('receiptAlt')}

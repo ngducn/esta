@@ -37,6 +37,11 @@ export default defineConfig(
     rules: { '@next/next/no-html-link-for-pages': 'off' },
   },
   {
+    // The receipt preview is a blob URL of the photo picked in this tab, which next/image cannot load.
+    files: ['apps/web/src/components/expenses/expense-sheet.tsx'],
+    rules: { '@next/next/no-img-element': 'off' },
+  },
+  {
     ignores: ['eslint-rules/**'],
     plugins: {
       esta: {

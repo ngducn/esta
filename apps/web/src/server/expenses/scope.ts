@@ -1,19 +1,11 @@
 import 'server-only';
-import { getLocale, getMessages } from 'next-intl/server';
 import type { ExpenseScope } from '@/components/expenses/expense-host';
 import { getClock } from '@/server/clock';
 import type { Member } from '@/server/member';
+import { expenseIslandIntl } from '@/server/properties/island-messages';
 import { loadExpenseVendors } from './load';
 
 export async function expenseScope(member: Member, property: { readonly id: string; readonly nickname: string }): Promise<ExpenseScope> {
-  const [clock, vendors, locale, messages] = await Promise.all([getClock(), loadExpenseVendors(member.household.id), getLocale(), getMessages()]);
-  const { money, date } = messages.components;
-  return {
-    propertyId: property.id,
-    nickname: property.nickname,
-    today: clock.today(),
-    vendors,
-    locale,
-    messages: { expenses: messages.expenses, components: { money, date } },
-  };
+  const [clock, vendors, intl] = await Promise.all([getClock(), loadExpenseVendors(member.household.id), expenseIslandIntl()]);
+  return { propertyId: property.id, nickname: property.nickname, today: clock.today(), vendors, ...intl };
 }

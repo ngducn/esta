@@ -10,3 +10,9 @@ export async function propertyIslandIntl() {
     messages: { propertyForm: messages.propertyForm, properties: messages.properties, components: { money, date, confirm, toast } },
   };
 }
+
+export async function expenseIslandIntl() {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  const { money, date } = messages.components;
+  return { locale, messages: { expenses: messages.expenses, components: { money, date } } };
+}
