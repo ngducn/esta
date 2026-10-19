@@ -772,6 +772,83 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          amount_vnd: number
+          category: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          document_id: string | null
+          household_id: string
+          id: string
+          note: string | null
+          paid_on: string
+          property_id: string
+          updated_at: string
+          vendor_party_id: string | null
+        }
+        Insert: {
+          amount_vnd: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          document_id?: string | null
+          household_id: string
+          id?: string
+          note?: string | null
+          paid_on: string
+          property_id: string
+          updated_at?: string
+          vendor_party_id?: string | null
+        }
+        Update: {
+          amount_vnd?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          document_id?: string | null
+          household_id?: string
+          id?: string
+          note?: string | null
+          paid_on?: string
+          property_id?: string
+          updated_at?: string
+          vendor_party_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_household_id_document_id_fkey"
+            columns: ["household_id", "document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_household_id_vendor_party_id_fkey"
+            columns: ["household_id", "vendor_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       household_members: {
         Row: {
           created_at: string
