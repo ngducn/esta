@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareUnits, moveUnit, nextRoomLabels } from './units';
+import { compareRoomLabels, compareUnits, moveUnit, nextRoomLabels, sortByRoomNumber } from './units';
 
 describe('nextRoomLabels', () => {
   it('continues after the highest room', () => {
@@ -62,5 +62,67 @@ describe('moveUnit', () => {
     ];
     expect(tied.toSorted(compareUnits).map((unit) => unit.label)).toEqual(['Phòng 9', 'Phòng 10']);
     expect(moveUnit(tied, 'x', 'up')).toEqual([{ id: 'y', sort_order: 1 }]);
+  });
+});
+
+const shown = (labels: readonly string[]) => labels.map((label, index) => ({ id: `u${index}`, label, sort_order: index }));
+const afterSort = (labels: readonly string[]) => {
+  const units = shown(labels);
+  const changes = new Map(sortByRoomNumber(units).map((change) => [change.id, change.sort_order]));
+  return units
+    .map((unit) => ({ ...unit, sort_order: changes.get(unit.id) ?? unit.sort_order }))
+    .toSorted(compareUnits)
+    .map((unit) => unit.label);
+};
+
+describe('compareRoomLabels', () => {
+  it('reads the number inside a label as a number', () => {
+    expect(['Phòng 10', 'Phòng 2', 'Phòng 1'].toSorted(compareRoomLabels)).toEqual(['Phòng 1', 'Phòng 2', 'Phòng 10']);
+    expect(['Tầng 2 Phòng 10', 'Tầng 1 Phòng 12'].toSorted(compareRoomLabels)).toEqual(['Tầng 1 Phòng 12', 'Tầng 2 Phòng 10']);
+  });
+
+  it('orders Vietnamese labels by the Vietnamese alphabet and reads decomposed marks as the same label', () => {
+    expect(['Phòng Đ1', 'Phòng E1', 'Phòng D2'].toSorted(compareRoomLabels)).toEqual(['Phòng D2', 'Phòng Đ1', 'Phòng E1']);
+    expect(compareRoomLabels('Phòng 1'.normalize('NFD'), 'Phòng 1')).toBe(0);
+  });
+
+  it('puts a label with a number before a label without one, and calls two without a number equal', () => {
+    expect(compareRoomLabels('Phòng 99', 'Gác lửng')).toBeLessThan(0);
+    expect(compareRoomLabels('Toàn bộ', 'Phòng 1')).toBeGreaterThan(0);
+    expect(compareRoomLabels('Tầng trệt', 'Gác lửng')).toBe(0);
+  });
+});
+
+describe('sortByRoomNumber', () => {
+  it('puts a reordered list back in room-number order', () => {
+    expect(afterSort(['Phòng 10', 'Phòng 3', 'Phòng 1', 'Phòng 2'])).toEqual(['Phòng 1', 'Phòng 2', 'Phòng 3', 'Phòng 10']);
+  });
+
+  it('keeps labels without a number after the numbered ones, in the order they showed', () => {
+    expect(afterSort(['Tầng trệt', 'Phòng 2', 'Gác lửng', 'Phòng 1'])).toEqual(['Phòng 1', 'Phòng 2', 'Tầng trệt', 'Gác lửng']);
+  });
+
+  it('keeps labels the collator reads as the same number in the order they showed', () => {
+    expect(afterSort(['Phòng 2', 'Phòng 1', 'Phòng 01'])).toEqual(['Phòng 1', 'Phòng 01', 'Phòng 2']);
+    expect(afterSort(['Phòng 2', 'Phòng 01', 'Phòng 1'])).toEqual(['Phòng 01', 'Phòng 1', 'Phòng 2']);
+  });
+
+  it('returns only the rows whose place changes, and nothing for a list already in order', () => {
+    expect(sortByRoomNumber(shown(['Phòng 1', 'Phòng 3', 'Phòng 2', 'Phòng 4']))).toEqual([
+      { id: 'u2', sort_order: 1 },
+      { id: 'u1', sort_order: 2 },
+    ]);
+    expect(sortByRoomNumber(shown(['Phòng 1', 'Phòng 2', 'Phòng 10']))).toEqual([]);
+  });
+
+  it('numbers a list whose values tie from 0', () => {
+    const tied = [
+      { id: 'x', label: 'Phòng 10', sort_order: 4 },
+      { id: 'y', label: 'Phòng 9', sort_order: 4 },
+    ];
+    expect(sortByRoomNumber(tied)).toEqual([
+      { id: 'y', sort_order: 0 },
+      { id: 'x', sort_order: 1 },
+    ]);
   });
 });

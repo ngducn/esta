@@ -1,6 +1,6 @@
 'use server';
 
-import { moveUnit } from '@esta/core/properties';
+import { moveUnit, sortByRoomNumber, type SortChange } from '@esta/core/properties';
 import { addRoomsSchema, unitSchema, utilityAccountSchema } from '@esta/core/schemas/units';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -89,19 +89,30 @@ export async function addRooms(propertyId: unknown, raw: unknown): Promise<Renta
 
 const directionSchema = z.enum(['up', 'down']);
 
+async function writeSortOrder(target: NonNullable<Awaited<ReturnType<typeof scope>>>, changes: readonly SortChange[]): Promise<RentalWrite> {
+  const { supabase, match } = target;
+  for (const change of changes) {
+    const { error } = await supabase.from('units').update({ sort_order: change.sort_order }).match(match).eq('id', change.id);
+    if (error) return failure(error);
+  }
+  revalidateRental();
+  return { ok: true, id: match.property_id };
+}
+
 export async function moveUnitAction(propertyId: unknown, unitId: unknown, direction: unknown): Promise<RentalWrite> {
   const target = await scope(propertyId);
   const item = uuid.safeParse(unitId);
   const way = directionSchema.safeParse(direction);
   if (target === null || !item.success || !way.success) return { ok: false, reason: 'invalid' };
-  const { supabase, match } = target;
-  const { units } = await loadPropertyRental(match.property_id);
-  for (const change of moveUnit(units, item.data, way.data)) {
-    const { error } = await supabase.from('units').update({ sort_order: change.sort_order }).match(match).eq('id', change.id);
-    if (error) return failure(error);
-  }
-  revalidateRental();
-  return { ok: true, id: item.data };
+  const { units } = await loadPropertyRental(target.match.property_id);
+  return writeSortOrder(target, moveUnit(units, item.data, way.data));
+}
+
+export async function sortUnitsByRoomNumber(propertyId: unknown): Promise<RentalWrite> {
+  const target = await scope(propertyId);
+  if (target === null) return { ok: false, reason: 'invalid' };
+  const { units } = await loadPropertyRental(target.match.property_id);
+  return writeSortOrder(target, sortByRoomNumber(units));
 }
 
 export type UnitDelete = { readonly ok: true; readonly deleted: DeletedUnit } | { readonly ok: false; readonly hasLeases?: true };
