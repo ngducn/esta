@@ -145,15 +145,19 @@ describe.skipIf(!stackUp)(`document actions against the ESTA_SLOT=${process.env.
     ]);
   });
 
-  test('a document takes the sensitivity of its category, at upload and on Sửa thông tin (DOC-5)', async () => {
+  test('a document takes the sensitivity of its category at upload, and Sửa thông tin changes it only with the category (DOC-5)', async () => {
     const { ticket, input } = await uploadAndRegister();
     expect(await registerDocument({ ...input, category: 'id_card', sensitive: false })).toMatchObject({ ok: true });
-    const sensitivity = async () => (await service<{ sensitivity: string }[]>(`/rest/v1/documents?id=eq.${ticket.documentId}&select=sensitivity`))[0]?.sensitivity;
+    const rowPath = `/rest/v1/documents?id=eq.${ticket.documentId}`;
+    const sensitivity = async () => (await service<{ sensitivity: string }[]>(`${rowPath}&select=sensitivity`))[0]?.sensitivity;
     expect(await sensitivity()).toBe('sensitive');
     const edit = { documentId: ticket.documentId, title: 'Giấy tờ Demo', propertyId, expiresOn: null, tags: [] };
     expect(await updateDocument({ ...edit, category: 'other', sensitive: true })).toMatchObject({ ok: true });
     expect(await sensitivity()).toBe('normal');
     expect(await updateDocument({ ...edit, category: 'certificate' })).toMatchObject({ ok: true });
+    expect(await sensitivity()).toBe('sensitive');
+    await service(rowPath, { method: 'PATCH', body: JSON.stringify({ category: 'other', sensitivity: 'sensitive' }) });
+    expect(await updateDocument({ ...edit, category: 'other', title: 'Giấy tờ Demo đã sửa' })).toMatchObject({ ok: true });
     expect(await sensitivity()).toBe('sensitive');
   });
 });
