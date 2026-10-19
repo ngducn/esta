@@ -1,6 +1,6 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { UndoToastProvider } from '@/components/undo-toast';
+import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { renderInLocale } from '@/test/render';
 
 const actions = vi.hoisted(() => ({ previewActivation: vi.fn(), activateLease: vi.fn() }));

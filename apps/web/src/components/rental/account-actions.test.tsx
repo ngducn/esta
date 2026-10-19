@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { UndoToastProvider } from '@/components/undo-toast';
+import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { renderInLocale } from '@/test/render';
 import { AccountActions, type AccountActionLabels } from './account-actions';
 

@@ -1,7 +1,7 @@
 import { getLocale, getMessages } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { PropertyIntl } from '@/components/properties/property-intl';
-import { UndoToastProvider } from '@/components/undo-toast';
+import { UndoToastProvider } from '@/components/undo-toast-provider';
 
 /**
  * One toast for the vault and its document pages, so `Hoàn tác` after `Sửa thông tin` still works once Mẹ is back on

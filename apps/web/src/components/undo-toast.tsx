@@ -1,6 +1,5 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { ToastRequest } from '@/components/ui/toast';
 
@@ -14,13 +13,10 @@ const ToastContext = createContext<{ undo: ShowUndo; notice: ShowNotice } | null
 
 export type ToastLabels = { readonly region: string; readonly undo: string };
 
-/** Mount once around the screen; `useUndoToast` shows the toast inside it. */
-export function UndoToastProvider({ children }: { children: ReactNode }) {
-  const t = useTranslations('components.toast');
-  return <ToastHost labels={{ region: t('region'), undo: t('undo') }}>{children}</ToastHost>;
-}
-
-/** The provider with its labels translated on the server, so a screen needs no intl provider to hold its toast. */
+/**
+ * Mount once around the screen; `useUndoToast` shows the toast inside it. The labels come translated, so a screen whose
+ * server passes them needs no intl provider to hold its toast.
+ */
 export function ToastHost({ labels, children }: { labels: ToastLabels; children: ReactNode }) {
   const [request, setRequest] = useState<ToastRequest | null>(null);
   const undo = useCallback<ShowUndo>(
