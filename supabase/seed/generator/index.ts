@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 import { businessDate, parseInstant, type Instant } from '../../../packages/core/src/index.ts';
 import type { Emitter } from './context.ts';
+import { bankAccounts } from './bank-accounts.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { documents } from './documents.ts';
 import { expenses, vendors } from './expenses.ts';
@@ -20,6 +21,7 @@ import { isVariantName, VARIANTS, type VariantName } from './variants.ts';
 const EMITTERS: readonly Emitter[] = [
   ...HOUSEHOLD_EMITTERS,
   parties,
+  bankAccounts,
   vendors,
   properties,
   certificates,
