@@ -6,6 +6,7 @@ export const PROPERTY_TABS = [
   { id: 'overview', labelKey: 'overview', segment: null },
   { id: 'legal', labelKey: 'legal', segment: 'legal' },
   { id: 'rental', labelKey: 'rental', segment: 'rental' },
+  { id: 'finance', labelKey: 'finance', segment: 'finance' },
   { id: 'documents', labelKey: 'documents', segment: 'documents' },
   { id: 'activity', labelKey: 'activity', segment: 'activity' },
 ] as const satisfies readonly { id: string; labelKey: string; segment: string | null }[];

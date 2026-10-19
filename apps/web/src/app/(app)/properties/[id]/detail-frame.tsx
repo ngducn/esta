@@ -5,11 +5,14 @@ import { ChevronLeft } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { MissingItems } from '@/components/completeness/missing-items';
+import { ExpenseActions } from '@/components/expenses/expense-actions';
+import { ExpenseHost } from '@/components/expenses/expense-host';
 import { PropertyHeader } from '@/components/properties/property-header';
 import { PropertyTabBar } from '@/components/properties/property-tab-bar';
 import type { PropertyTabId } from '@/components/properties/property-tabs';
 import { IntentLink } from '@/components/shell/intent-link';
 import type { PropertyDetail } from '@/server/properties/detail';
+import { expenseScope } from '@/server/expenses/scope';
 import { requireMember } from '@/server/member';
 import { loadCompleteness } from '@/server/properties/completeness';
 import { signCoverPhotos } from '@/server/properties/photos';
@@ -20,13 +23,17 @@ import { signCoverPhotos } from '@/server/properties/photos';
  */
 export async function PropertyDetailFrame({ property, tab, children }: { property: PropertyDetail; tab: PropertyTabId; children: ReactNode }) {
   const member = await requireMember();
-  const [t, tp, tc, locale, photos, scores] = await Promise.all([
+  // Thu chi carries the expense actions in its own section, so its header does not repeat them.
+  const expenses = member.role !== 'viewer' && tab !== 'finance';
+  const [t, tp, tc, te, locale, photos, scores, scope] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
     getTranslations('completeness'),
+    getTranslations('expenses'),
     getLocale(),
     signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
     loadCompleteness(member.household.id, property.id),
+    expenses ? expenseScope(member, property) : null,
   ]);
   const score = scores.get(property.id) ?? { percent: 100, failing: [] };
   return (
@@ -36,6 +43,13 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
         {t('back')}
       </IntentLink>
       <PropertyHeader
+        actions={
+          scope === null ? null : (
+            <ExpenseHost scope={scope}>
+              <ExpenseActions labels={{ add: te('add'), photo: te('photo') }} />
+            </ExpenseHost>
+          )
+        }
         property={{
           nickname: property.nickname,
           kind: property.kind,
@@ -64,6 +78,7 @@ export async function PropertyDetailFrame({ property, tab, children }: { propert
           overview: t('tab', { tab: 'overview' }),
           legal: t('tab', { tab: 'legal' }),
           rental: t('tab', { tab: 'rental' }),
+          finance: t('tab', { tab: 'finance' }),
           documents: t('tab', { tab: 'documents' }),
           activity: t('tab', { tab: 'activity' }),
         }}

@@ -21,10 +21,12 @@ type MoneyInputProps = {
   disabled?: boolean;
   /** The figure-sized field of a sheet whose whole job is one amount, such as recording a payment. */
   large?: boolean;
+  /** A refusal the form found on save, such as an amount of 0; it shows in place of the field's own reading error. */
+  error?: string | null;
 };
 
 /** Reads Vietnamese shorthand through `parseVndInput` and shows the full amount it read under the field. */
-export function MoneyInput({ label, defaultText = '', onValueChange, onTextChange, name, disabled = false, large = false }: MoneyInputProps) {
+export function MoneyInput({ label, defaultText = '', onValueChange, onTextChange, name, disabled = false, large = false, error: refusal = null }: MoneyInputProps) {
   const t = useTranslations('components.money');
   const locale = useLocale();
   const id = useId();
@@ -32,7 +34,7 @@ export function MoneyInput({ label, defaultText = '', onValueChange, onTextChang
   const { settled, settle } = useSettled(text);
 
   const result = parseVndInput(text);
-  const error = !result.ok && result.reason !== 'empty' && settled ? `${t('invalid')} ${t(`reasons.${result.reason}`)}` : null;
+  const error = refusal ?? (!result.ok && result.reason !== 'empty' && settled ? `${t('invalid')} ${t(`reasons.${result.reason}`)}` : null);
 
   return (
     <div className="flex flex-col gap-1">

@@ -1,6 +1,7 @@
 import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
 import { Pencil } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { AddressBlock } from '@/components/address-block';
 import { CompletenessRingView } from '@/components/completeness-ring';
 import { buttonVariants } from '@/components/ui/button';
@@ -28,8 +29,11 @@ export type PropertyHeaderData = {
   completeness: { title: string; percent: number; score: string };
 };
 
-/** The photo leads, because Mẹ knows a house by sight before its nickname; the kind tile stands in when there is none. */
-export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
+/**
+ * The photo leads, because Mẹ knows a house by sight before its nickname; the kind tile stands in when there is none.
+ * `actions` are the quick records any tab offers, such as `Thêm chi phí`.
+ */
+export function PropertyHeader({ property, actions }: { property: PropertyHeaderData; actions?: ReactNode }) {
   const KindIcon = kindIcons[property.kind];
   return (
     <header
@@ -75,6 +79,7 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
         <div data-testid="property-addresses">
           <AddressBlock current={property.currentAddress} legal={property.certificateAddress} />
         </div>
+        {actions}
       </div>
     </header>
   );
