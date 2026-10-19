@@ -75,7 +75,9 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   if (unit === undefined) notFound();
   const backHref = `/properties/${id}/rental`;
   const summary = lease !== null && !(lease.status === 'draft' && canEdit) ? lease : null;
-  const title = lease === null ? t('newTitle', { unit: unit.label }) : lease.status === 'draft' ? t('draftTitle', { unit: unit.label }) : t('leaseTitle', { unit: unit.label });
+  // A lease on the whole property is named after the property, so its title and confirm never read "Toàn bộ".
+  const name = unit.kind === 'whole' ? property.nickname : unit.label;
+  const title = lease === null ? t('newTitle', { unit: name }) : lease.status === 'draft' ? t('draftTitle', { unit: name }) : t('leaseTitle', { unit: name });
   const formUnits: LeaseFormUnit[] = rental.units.map((candidate) => ({ id: candidate.id, label: candidate.label, defaults: leaseDefaults(candidate, property.kind) }));
   const tenants = summary === null ? await loadTenants() : [];
   const { money, date, status, toast } = messages.components;
@@ -134,7 +136,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
           </span>
         </div>
         <PropertyIntl locale={locale} messages={{ leases: messages.leases, components: { money, date, status, toast } }}>
-          <LeaseActions leaseId={summary.id} unitLabel={unit.label} leasesHref={leasesHref} active={active} amendStarts={amendStarts} renewal={renewal} />
+          <LeaseActions leaseId={summary.id} unitLabel={name} leasesHref={leasesHref} active={active} amendStarts={amendStarts} renewal={renewal} />
         </PropertyIntl>
       </div>
       {canEdit ? null : <p className="text-body text-ink-2">{t('viewerNote')}</p>}

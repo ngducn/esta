@@ -777,6 +777,7 @@
     "groupMoreHint": "Kỳ thu, tháng đầu lẻ ngày, tăng giá, thuế và báo trước. Đã điền sẵn theo thói quen cho thuê.",
     "timelineTitle": "Các kỳ thu tiền",
     "timelineEarlier": "{count, plural, other {Xem # kỳ trước}}",
+    "timelineLater": "{count, plural, other {Xem # kỳ sau}}",
     "timelineNewRent": "Giá mới từ kỳ này",
     "markPrepaid": "Đã thu trước",
     "markPartial": "Thu một phần",

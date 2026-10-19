@@ -105,6 +105,9 @@ test('rule 1: Phòng 5 shows September 12 days overdue, October not yet due and 
   await expect(period(page, '2026-10-25').locator('[data-status="upcoming"]')).toHaveText('Chưa đến hạn');
   await page.getByTestId('timeline-earlier').locator('summary').click();
   await expect(period(page, '2026-08-25').locator('[data-status="paid"]')).toHaveText('Đã thu');
+  await expect(period(page, '2026-12-25')).toBeVisible();
+  await expect(period(page, '2027-01-25')).toBeHidden();
+  await expect(page.getByTestId('timeline-later').locator('summary')).toHaveText('Xem 5 kỳ sau');
   await expect(page.getByTestId('lease-deposit').locator('dd')).toHaveText(`2.800.000${NBSP}₫`);
   await expect(page.getByTestId('lease-tax')).toContainText('Chủ nhà tự nộp');
   await expect(page.getByTestId('lease-actions').getByRole('button')).toHaveText(['Gia hạn', 'Đổi tiền thuê', 'Kết thúc hợp đồng']);
@@ -241,6 +244,7 @@ test('rule 5: the ended Phòng 7 lease offers no amend or terminate and shows it
 test('rule 6: q7 shows Bên thuê nộp thay, the rent collected before Esta, the collected quarters, and its 2027 rent change', async ({ page }) => {
   await open(page, 'me.lane8@demo.esta.test', 'dark', PHONE);
   await page.goto(leasePath(8, 'q7', seedLease(8, 'q7', 1)));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hợp đồng Nhà phố Q7');
   await expect(page.getByTestId('lease-tax')).toContainText('Bên thuê nộp thay');
   await page.getByTestId('timeline-earlier').locator('summary').click();
   await expect(period(page, '2025-07-01')).toHaveAttribute('data-mark', 'prepaid');

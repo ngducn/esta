@@ -777,6 +777,7 @@
     "groupMoreHint": "Periods, a part-month start, increases, tax and notice. Filled in with the usual terms.",
     "timelineTitle": "Rent periods",
     "timelineEarlier": "{count, plural, one {Show # earlier period} other {Show # earlier periods}}",
+    "timelineLater": "{count, plural, one {Show # later period} other {Show # later periods}}",
     "timelineNewRent": "New rent from this period",
     "markPrepaid": "Collected before",
     "markPartial": "Partly paid",

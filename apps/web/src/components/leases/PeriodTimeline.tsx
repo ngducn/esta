@@ -11,6 +11,9 @@ import type { InvoiceSummary } from '@/server/leases/load';
 /** Settled periods before these many stay folded away, so the open ones lead on a phone. */
 const SETTLED_SHOWN = 3;
 
+/** Periods ahead with no invoice yet shown before the rest fold away, so the terms stay near on a phone. */
+const UPCOMING_SHOWN = 2;
+
 function Mark({ mark }: { mark: PeriodMark }) {
   const t = useTranslations('leases');
   switch (mark.kind) {
@@ -94,6 +97,8 @@ export function PeriodTimeline({
   const settled = (row: TimelineRow<InvoiceSummary>) => (row.mark.kind === 'paid' || row.mark.kind === 'prepaid') && row.end < asOf;
   const leading = rows.findIndex((row) => !settled(row));
   const folded = Math.max(0, (leading === -1 ? rows.length : leading) - SETTLED_SHOWN);
+  const upcoming = rows.findIndex((row) => row.invoice === null && row.start > asOf);
+  const later = upcoming === -1 ? rows.length : Math.max(folded, upcoming + UPCOMING_SHOWN);
   const starts = new Set(amendments.filter((amendment) => amendment.changes.rentVnd !== undefined).map((amendment) => amendment.effectivePeriodStart));
   const list = (part: readonly TimelineRow<InvoiceSummary>[]) => (
     <ol className="flex flex-col">
@@ -114,7 +119,13 @@ export function PeriodTimeline({
             <div className="border-t border-rule">{list(rows.slice(0, folded))}</div>
           </details>
         )}
-        {list(rows.slice(folded))}
+        {list(rows.slice(folded, later))}
+        {later >= rows.length ? null : (
+          <details data-testid="timeline-later" className="group border-t border-rule">
+            <summary className="flex min-h-12 cursor-pointer items-center px-4 text-body font-semibold text-accent sm:px-5">{t('timelineLater', { count: rows.length - later })}</summary>
+            <div className="border-t border-rule">{list(rows.slice(later))}</div>
+          </details>
+        )}
       </div>
     </section>
   );
