@@ -25,6 +25,7 @@ const leasePath = (lane: number, key: string, unit: number) => `/properties/${pr
 // `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of the deposit settled after Phòng 7 left.
 const recording = process.env.ESTA_E2E_VIDEO === '1';
 test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 900 } } : { video: 'off' });
+if (recording) test.describe.configure({ timeout: 180_000 });
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
 
 // The sheets default to the Clock's day and refuse a later one, so the spec runs in the `clock` project on SPEC §9.3's day.
