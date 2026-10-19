@@ -278,6 +278,27 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
 
+  apps/connector:
+    dependencies:
+      '@esta/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@esta/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@esta/ops':
+        specifier: workspace:*
+        version: link:../../packages/ops
+      '@modelcontextprotocol/sdk':
+        specifier: 1.32.1
+        version: 1.32.1(zod@4.6.5)
+      '@supabase/supabase-js':
+        specifier: ^2.117.2
+        version: 2.117.2
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+
   apps/web:
     dependencies:
       '@base-ui/react':
@@ -289,6 +310,9 @@ importers:
       '@esta/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@esta/ops':
+        specifier: workspace:*
+        version: link:../../packages/ops
       '@supabase/ssr':
         specifier: ^0.12.7
         version: 0.12.7(@supabase/supabase-js@2.117.2)
@@ -422,6 +446,21 @@ importers:
         version: 1.5.1
 
   packages/db: {}
+
+  packages/ops:
+    dependencies:
+      '@esta/core':
+        specifier: workspace:*
+        version: link:../core
+      '@esta/db':
+        specifier: workspace:*
+        version: link:../db
+      '@supabase/supabase-js':
+        specifier: ^2.117.2
+        version: 2.117.2
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
 
 packages:
 

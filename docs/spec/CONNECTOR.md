@@ -41,7 +41,7 @@ type Op<I, O> = {
 
 Server actions become thin wrappers that build `OpContext` from the cookie session and call `apply`. The connector builds it from Ryan's token. Validation stays where it is today: zod schemas in `packages/core`, CHECKs, definer functions and RLS in Postgres. Money and legal rows keep their SQL write paths (activation, amend, terminate, renew, issue, payments); the op calls the same function the screen calls.
 
-Read tools move from `apps/agent` into a shared module so the worker and the connector use one copy, with the `_display` strings AGENT.md §4 defines.
+Read tools live in `packages/ops`, so the worker and the connector use one copy, with the `_display` strings AGENT.md §4 defines.
 
 ### 3.2 The connector, `apps/connector`
 
@@ -54,9 +54,9 @@ Files attached in claude.ai reach Claude but not the connector's tools, so stori
 
 ### 3.3 Auth
 
-- The connector signs in once as Ryan with email and password and keeps the refresh token in the macOS Keychain (fallback: a 0600 file under `~/.config/esta/`), never in the repo or a log.
+- The connector signs in once as Ryan the way Esta does (SPEC D8): email and password, or the 6-digit code mailed to that address. `pnpm connector:login` asks for the email and the password and mails a code when the password is left empty. It keeps the session, refresh token included, in the macOS Keychain through the `security` command (fallback: a 0600 file under `~/.config/esta/`), never in the repo or a log, one entry per Supabase URL.
 - Every request runs as Ryan's session: RLS limits it to his households, and the audit log names him.
-- Only an operator member may use it (`household_members.is_operator`). Viewers and plain members are refused at sign-in.
+- Only the operator of the household Esta opens for the account (its first membership, `household_members.is_operator`) may use it. Anyone else is signed out again at sign-in, and every tool call checks again.
 - It never holds the service role key.
 
 ### 3.4 Change batches

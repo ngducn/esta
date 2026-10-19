@@ -16,6 +16,7 @@
     "@base-ui/react": "^1.8.0",
     "@esta/core": "workspace:*",
     "@esta/db": "workspace:*",
+    "@esta/ops": "workspace:*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "@tanstack/react-virtual": "^3.14.20",

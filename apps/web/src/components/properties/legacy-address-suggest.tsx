@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState } from 'react';
 import { suggestAddress } from '@/app/(app)/properties/actions';
 import { cn } from '@/lib/utils';
-import type { CurrentUnitSuggestion } from '@/server/address/suggest';
+import type { CurrentUnitSuggestion } from '@esta/ops';
 
 const DEBOUNCE_MS = 300;
 
