@@ -54,6 +54,9 @@ describe('every field reads an area or a length the Vietnamese way (DOMAIN-VN §
     ['0,5', 0.5, 0.5],
     ['12.345,67', 12345.67, 12345.67],
     ['1 255', 1255, 1255],
+    ['1 255,5', 1255.5, 1255.5],
+    ['12 5', null, null],
+    ['1,5 5', null, null],
     ['', null, null],
     ['4,500', null, null],
     ['4,5 m', 4.5, 4.5],
@@ -73,7 +76,10 @@ describe('parseMeasureInput', () => {
     ['1.250,75', 1250.75],
     ['1.250', 1250],
     [' 12 ', 12],
-  ])('reads %s as %d m²', (text, expected) => {
+    ['1 255', 1255],
+    ['1\u00A0255,5 m²', 1255.5],
+    ['12 345 678,9', 12_345_678.9],
+  ])('reads %j as %d m²', (text, expected) => {
     expect(parseMeasureInput(text, 'area')).toEqual({ ok: true, value: expected });
   });
 
@@ -86,6 +92,12 @@ describe('parseMeasureInput', () => {
     ['12,5,5', 'invalid'],
     ['abc', 'invalid'],
     ['99999999999', 'too_large'],
+    ['12 5', 'invalid'],
+    ['1,5 5', 'invalid'],
+    ['125, 5', 'invalid'],
+    ['1 25', 'invalid'],
+    ['1 2550', 'invalid'],
+    ['1.255 000', 'invalid'],
   ])('refuses %j as %s', (text, reason) => {
     expect(parseMeasureInput(text, 'area')).toEqual({ ok: false, reason });
   });
