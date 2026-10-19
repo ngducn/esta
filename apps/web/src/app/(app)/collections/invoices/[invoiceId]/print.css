@@ -19,6 +19,8 @@
     --ink-2: var(--qr-ink);
     --ink-muted: var(--qr-ink);
     --rule: color-mix(in oklch, var(--qr-ink) 25%, var(--qr-paper));
+    /* html sets its color from its own theme's --ink, so text without a color class would keep the dark theme's light ink. */
+    color: var(--ink);
     background: var(--qr-paper);
     padding: 0;
     font-size: 12pt;

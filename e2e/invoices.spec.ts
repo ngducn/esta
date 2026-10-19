@@ -114,6 +114,8 @@ test('rule 2: the bill lists its charges and totals beside the code, and prints 
   await expect(page.getByTestId('invoice-print')).toBeHidden();
   await expect(page.getByTestId('qr-save')).toBeHidden();
   await expect(page.getByTestId('invoice-lines')).toBeVisible();
+  const color = (testId: string) => page.getByTestId(testId).evaluate((element) => getComputedStyle(element).color);
+  expect(await color('invoice-place')).toBe(await color('invoice-number'));
   await page.screenshot({ path: test.info().outputPath('bill-print.png'), fullPage: true });
   const pdf = (await page.pdf({ preferCSSPageSize: true, printBackground: true })).toString('latin1');
   expect(pdf.match(/\/Type\s*\/Page[^s]/g)).toHaveLength(1);
