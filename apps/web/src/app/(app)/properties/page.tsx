@@ -12,11 +12,12 @@ import {
 import { compareVietnameseNames } from '@esta/core/names';
 import { Archive, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { formatVnd, formatVndCompact } from '@esta/core/format';
+import { formatVndCompact } from '@esta/core/format';
 import { statusPills, statusWords } from '@/components/properties/status-pills';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
+import { HeldDepositTotal } from '@/components/leases/HeldDepositTotal';
 import { ArchivedNoticeLoader } from '@/components/properties/archived-notice-loader';
 import { FilterChips, filterChips, hasChoice, type FilterChip, type FilterGroup } from '@/components/properties/filter-chips';
 import type { PropertyCardData } from '@/components/properties/property-card';
@@ -30,7 +31,6 @@ import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getClock } from '@/server/clock';
-import { loadHeldDepositTotal } from '@/server/leases/deposits';
 import { requireMember } from '@/server/member';
 import { loadArchivedNickname } from '@/server/properties/form';
 import { propertyIslandIntl } from '@/server/properties/island-messages';
@@ -48,15 +48,13 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const [params, member, clock] = await Promise.all([searchParams, requireMember(), getClock()]);
   const filters = parsePropertyFilters(params);
   const archivedId = locateParam.safeParse(params[ARCHIVED_PARAM]).data ?? null;
-  const [list, nav, t, tc, td, locale, archived, heldDeposits] = await Promise.all([
+  const [list, nav, t, tc, locale, archived] = await Promise.all([
     listProperties(member.household.id, filters, clock.today()),
     getTranslations('nav'),
     getTranslations('properties'),
     getTranslations('components.completeness'),
-    getTranslations('deposits'),
     getLocale(),
     archivedId === null ? null : loadArchivedNickname(member.household.id, archivedId),
-    loadHeldDepositTotal(member.household.id),
   ]);
   const canEdit = member.role !== 'viewer';
   const addAction = canEdit ? { label: t('add'), href: '/properties/new', icon: Plus } : undefined;
@@ -118,11 +116,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           <p data-testid="property-count" className="text-small text-ink-muted">
             {count}
           </p>
-          {heldDeposits === 0 ? null : (
-            <p data-testid="deposit-held-total" className="text-small text-ink-2 figures">
-              {td('heldTotal', { amount: formatVnd(heldDeposits, locale) })}
-            </p>
-          )}
+          <HeldDepositTotal householdId={member.household.id} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {list.householdCount === 0 ? null : (
