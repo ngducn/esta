@@ -10,9 +10,14 @@ const labels = new Map<string, Label>([
 ]);
 
 describe('resolveRefs', () => {
-  it('puts the minted id where a $ref stands, at any depth, and lists the items named in order', () => {
-    const input = { lease: { unit_id: { $ref: 'room' }, parties: [{ $ref: 'house' }, { $ref: 'room' }] }, note: 'Demo' };
-    expect(resolveRefs(input, labels)).toEqual({ ok: true, value: { input: { lease: { unit_id: ROOM, parties: [HOUSE, ROOM] }, note: 'Demo' }, needs: [0, 2] } });
+  it('puts the minted id where a $ref stands for an id, at any depth, and lists the items named in order', () => {
+    const input = { id: { $ref: 'house' }, lease: { unit_id: { $ref: 'room' }, party_ids: [{ $ref: 'house' }, { $ref: 'room' }] }, note: 'Demo' };
+    expect(resolveRefs(input, labels)).toEqual({ ok: true, value: { input: { id: HOUSE, lease: { unit_id: ROOM, party_ids: [HOUSE, ROOM] }, note: 'Demo' }, needs: [0, 2] } });
+  });
+
+  it('refuses a $ref where no id belongs, so a minted id never lands in a text field', () => {
+    expect(resolveRefs({ unit: { label: { $ref: 'room' } } }, labels)).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'unit.label', code: 'ref_not_an_id' }] } });
+    expect(resolveRefs({ $ref: 'room' }, labels)).toMatchObject({ ok: false, reason: { issues: [{ code: 'ref_not_an_id' }] } });
   });
 
   it('leaves an object with keys beside $ref alone, as an ordinary value', () => {
