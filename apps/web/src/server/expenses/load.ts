@@ -1,6 +1,6 @@
 import 'server-only';
 import type { IsoDate } from '@esta/core/date';
-import { EXPENSE_CATEGORY_IDS, type ExpenseCategory } from '@esta/core/expenses';
+import { EXPENSE_CATEGORY_IDS, VENDOR_TAGS, type ExpenseCategory } from '@esta/core/expenses';
 import { vnd, type Vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { z } from 'zod';
@@ -27,9 +27,6 @@ const rowSchema = z.object({
   document_id: z.uuid().nullable(),
   vendor: z.object({ id: z.uuid(), full_name: z.string() }).nullable(),
 });
-
-/** The tags of the parties the vendor picker offers: the people and firms an owner pays for work on a property. */
-const VENDOR_TAGS = ['contractor', 'broker', 'other'];
 
 /** Every live expense of the property, newest first; a property has tens a year, so the tab filters by year in memory. */
 export async function loadPropertyExpenses(household: string, propertyId: string): Promise<readonly ExpenseRow[]> {
@@ -59,7 +56,7 @@ export async function loadPropertyExpenses(household: string, propertyId: string
 
 export async function loadExpenseVendors(household: string): Promise<readonly ExpenseVendorOption[]> {
   const supabase = await createSessionClient();
-  const { data, error } = await supabase.from('parties').select('id, full_name').eq('household_id', household).overlaps('tags', VENDOR_TAGS);
+  const { data, error } = await supabase.from('parties').select('id, full_name').eq('household_id', household).overlaps('tags', [...VENDOR_TAGS]);
   if (error) throw new Error(`Reading the vendors failed: ${error.message}`);
   return data.map((party) => ({ id: party.id, name: party.full_name })).toSorted((a, b) => a.name.localeCompare(b.name, 'vi'));
 }

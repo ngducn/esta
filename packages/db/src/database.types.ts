@@ -2467,6 +2467,25 @@ export type Database = {
           issued: number
         }[]
       }
+      save_expense: {
+        Args: {
+          p_amount_vnd: number
+          p_category: string
+          p_document_id?: string
+          p_id: string
+          p_new_document?: Json
+          p_new_vendor?: Json
+          p_note?: string
+          p_paid_on: string
+          p_property_id: string
+          p_vendor_id?: string
+        }
+        Returns: {
+          amount_vnd: number
+          id: string
+          property_id: string
+        }[]
+      }
       search_documents: {
         Args: { p_query: string }
         Returns: {

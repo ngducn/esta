@@ -4,21 +4,20 @@ import { defaultDocumentTitle } from '@esta/core/documents';
 import {
   EXPENSE_CATEGORIES,
   EXPENSE_CATEGORY_IDS,
-  expenseInputSchema,
-  expenseProblems,
   MAX_EXPENSE_NOTE,
   MAX_VENDOR_NAME,
+  readExpense,
   type ExpenseCategory,
   type ExpenseProblems,
   type ExpenseVendor,
 } from '@esta/core/expenses';
 import { formatDate, formatVnd } from '@esta/core/format';
 import type { Vnd } from '@esta/core/money';
-import { Camera, Check, FileText, FolderOpen, RotateCw, Trash2, X } from 'lucide-react';
+import { vndInputText } from '@esta/core/properties/form';
+import { Check, Trash2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, useTransition } from 'react';
+import { useId, useRef, useState, useTransition } from 'react';
 import { DateInput } from '@/components/date-input';
 import { FieldMessage } from '@/components/field-message';
 import { TextField } from '@/components/form-parts';
@@ -28,24 +27,11 @@ import { StatusShape } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
-import { ACCEPT, checkFile, prepareFile, sendPrepared, type Prepared } from '@/lib/upload/prepare';
-import { useObjectUrl } from '@/lib/use-object-url';
+import { useOnline } from '@/lib/use-online';
 import { cn } from '@/lib/utils';
-import { createDocumentUpload, registerDocument } from '@/server/documents/actions';
-import { createExpense, deleteExpense, restoreExpense, updateExpense, type ExpenseSaved } from '@/server/expenses/actions';
+import { deleteExpense, restoreExpense, saveExpense, type ExpenseSaved } from '@/server/expenses/actions';
 import type { ExpenseRequest, ExpenseScope } from './expense-host';
-
-/**
- * The receipt photo as one state: each step names what the sheet shows beside the fields. The upload starts the moment
- * a photo is chosen, so Mẹ types the amount while it travels; `Lưu` waits for it.
- */
-type Receipt =
-  | { readonly step: 'none' }
-  | { readonly step: 'saved'; readonly documentId: string }
-  | { readonly step: 'preparing'; readonly file: File }
-  | { readonly step: 'uploading'; readonly file: File; readonly prepared: Prepared; readonly loaded: number; readonly total: number }
-  | { readonly step: 'uploaded'; readonly file: File; readonly prepared: Prepared; readonly documentId: string }
-  | { readonly step: 'failed'; readonly file: File; readonly problem: 'tooLarge' | 'wrongType' | 'unreadable' | 'receiptFailed' };
+import { ReceiptField, useReceipt } from './receipt-field';
 
 const NEW_VENDOR = 'new';
 const NO_VENDOR = '';
@@ -54,32 +40,6 @@ type Errors = ExpenseProblems & { readonly category?: true; readonly vendorName?
 
 function without(errors: Errors, field: keyof Errors): Errors {
   return Object.fromEntries(Object.entries(errors).filter(([key]) => key !== field));
-}
-
-function subscribeOnline(onChange: () => void) {
-  window.addEventListener('online', onChange);
-  window.addEventListener('offline', onChange);
-  return () => {
-    window.removeEventListener('online', onChange);
-    window.removeEventListener('offline', onChange);
-  };
-}
-
-/** The saved amount as Mẹ would type it again, which `parseVndInput` reads back in either language. */
-function amountText(amount: Vnd): string {
-  return formatVnd(amount, 'vi').replace(/\s*₫$/, '');
-}
-
-type FileProblem = Extract<Receipt, { step: 'failed' }>['problem'];
-
-function fileProblem(file: File): FileProblem | null {
-  return checkFile(file);
-}
-
-function previewOf(receipt: Receipt): Blob | null {
-  if (receipt.step === 'uploading' || receipt.step === 'uploaded') return receipt.prepared.previews.review;
-  if ((receipt.step === 'preparing' || receipt.step === 'failed') && receipt.file.type.startsWith('image/')) return receipt.file;
-  return null;
 }
 
 /**
@@ -109,103 +69,31 @@ export function ExpenseSheet({
   const editing = request.kind === 'edit' ? request.expense : null;
   const [expenseId] = useState(() => editing?.id ?? crypto.randomUUID());
   const [newVendorId] = useState(() => crypto.randomUUID());
-  const [amount, setAmount] = useState(() => (editing === null ? '' : amountText(editing.amountVnd)));
+  const [amount, setAmount] = useState(() => (editing === null ? '' : vndInputText(editing.amountVnd)));
   const [category, setCategory] = useState<ExpenseCategory | null>(editing?.category ?? null);
   const [date, setDate] = useState(() => formatDate(editing?.paidOn ?? scope.today, locale));
   const [editingDate, setEditingDate] = useState(false);
   const [vendorChoice, setVendorChoice] = useState(editing?.vendor?.id ?? NO_VENDOR);
   const [vendorName, setVendorName] = useState('');
   const [note, setNote] = useState(editing?.note ?? '');
-  const [initialReceipt] = useState(() => (request.kind === 'new' ? request.receipt : null));
-  const [receipt, setReceipt] = useState<Receipt>(() => {
-    if (initialReceipt !== null) {
-      const problem = fileProblem(initialReceipt);
-      return problem === null ? { step: 'preparing', file: initialReceipt } : { step: 'failed', file: initialReceipt, problem };
-    }
-    return editing === null || editing.documentId === null ? { step: 'none' } : { step: 'saved', documentId: editing.documentId };
+  const receipt = useReceipt({
+    propertyId: scope.propertyId,
+    filed: editing?.documentId ?? null,
+    initialFile: request.kind === 'new' ? request.receipt : null,
   });
   const [errors, setErrors] = useState<Errors>({});
   const [pending, startTransition] = useTransition();
-  const offline = useSyncExternalStore(subscribeOnline, () => !navigator.onLine, () => false);
-  const generation = useRef(0);
-  const upload = useRef<Promise<string | null> | null>(null);
-  const preview = useObjectUrl(previewOf(receipt));
+  const offline = !useOnline();
 
   const editingVendor = editing?.vendor ?? null;
   const vendors =
     editingVendor === null || scope.vendors.some((option) => option.id === editingVendor.id) ? scope.vendors : [...scope.vendors, editingVendor];
   const money = (value: Vnd) => formatVnd(value, locale);
 
-  /** Runs from the `preparing` step the caller set, so nothing here sets state before its first wait. */
-  const sendReceipt = async (file: File, run: number): Promise<string | null> => {
-    const current = () => generation.current === run;
-    const fail = (problem: FileProblem) => {
-      if (current()) setReceipt({ step: 'failed', file, problem });
-      return null;
-    };
-    const prepared = await prepareFile(file);
-    if (prepared === null) return fail('unreadable');
-    if (!current()) return null;
-    const meta = { propertyId: scope.propertyId, category: 'invoice_receipt', filename: file.name, mime: file.type, size: file.size, sha256: prepared.sha256 };
-    try {
-      const ticket = await createDocumentUpload(meta);
-      if (!ticket.ok) return fail('receiptFailed');
-      if (current()) setReceipt({ step: 'uploading', file, prepared, loaded: 0, total: file.size });
-      await sendPrepared(ticket, prepared, ({ loaded, total }) => {
-        if (current()) setReceipt({ step: 'uploading', file, prepared, loaded, total });
-      });
-      const registered = await registerDocument({
-        ...meta,
-        documentId: ticket.documentId,
-        title: defaultDocumentTitle(t('receiptDocument'), scope.nickname),
-        expiresOn: null,
-        pageCount: prepared.previews.pageCount,
-      });
-      if (!registered.ok) return fail('receiptFailed');
-      if (current()) setReceipt({ step: 'uploaded', file, prepared, documentId: ticket.documentId });
-      return current() ? ticket.documentId : null;
-    } catch {
-      return fail('receiptFailed');
-    }
-  };
-
-  const chooseReceipt = (file: File | undefined) => {
-    if (file === undefined) return;
-    const run = ++generation.current;
-    setErrors((errors) => without(errors, 'save'));
-    const problem = fileProblem(file);
-    if (problem !== null) {
-      upload.current = null;
-      setReceipt({ step: 'failed', file, problem });
-      return;
-    }
-    setReceipt({ step: 'preparing', file });
-    upload.current = sendReceipt(file, run);
-  };
-
-  // A Strict Mode rerun starts a second send; the first stops after preparing, since its run is no longer current.
-  const startInitialReceipt = useEffectEvent(() => {
-    if (initialReceipt !== null && receipt.step === 'preparing') upload.current = sendReceipt(initialReceipt, ++generation.current);
-  });
-  useEffect(() => startInitialReceipt(), []);
-
-  const dropReceipt = () => {
-    generation.current++;
-    upload.current = null;
-    setReceipt({ step: 'none' });
-  };
-
   const vendor = (): ExpenseVendor | null => {
     if (vendorChoice === NO_VENDOR) return null;
     if (vendorChoice === NEW_VENDOR) return { kind: 'new', id: newVendorId, fullName: vendorName };
     return { kind: 'existing', id: vendorChoice };
-  };
-
-  const documentId = async (): Promise<string | null | false> => {
-    if (receipt.step === 'none') return null;
-    if (receipt.step === 'saved' || receipt.step === 'uploaded') return receipt.documentId;
-    if (receipt.step === 'failed' || upload.current === null) return false;
-    return (await upload.current) ?? false;
   };
 
   const amountError = (): string | null => {
@@ -241,9 +129,9 @@ export function ExpenseSheet({
   };
 
   const save = () => {
-    const raw = { id: expenseId, propertyId: scope.propertyId, category: category ?? '', amount, paidOn: date, vendor: vendor(), documentId: null, note };
-    const parsed = expenseInputSchema(scope.today).safeParse(raw);
-    const problems = parsed.success ? {} : expenseProblems(parsed.error);
+    const raw = { id: expenseId, propertyId: scope.propertyId, category: category ?? '', amount, paidOn: date, vendor: vendor(), receipt: null, note };
+    const read = readExpense(raw, scope.today);
+    const problems = read.ok ? {} : read.problems;
     const next: Errors = {
       ...(problems.amount === undefined ? {} : { amount: problems.amount }),
       ...(problems.paidOn === undefined ? {} : { paidOn: problems.paidOn }),
@@ -256,13 +144,12 @@ export function ExpenseSheet({
       return;
     }
     startTransition(async () => {
-      const linked = await documentId();
+      const linked = await receipt.linked(defaultDocumentTitle(t('receiptDocument'), scope.nickname));
       if (linked === false) {
         setErrors({ save: 'receiptBlocking' });
         return;
       }
-      const action = editing === null ? createExpense : updateExpense;
-      const result = await action({ ...raw, documentId: linked }).catch(() => null);
+      const result = await saveExpense({ ...raw, receipt: linked }).catch(() => null);
       if (result === null) {
         setErrors({ save: 'networkError' });
         return;
@@ -299,8 +186,8 @@ export function ExpenseSheet({
     });
   };
 
+  const { preview } = receipt;
   const hasPhoto = preview !== null;
-  const percent = receipt.step === 'uploading' && receipt.total > 0 ? Math.round((receipt.loaded / receipt.total) * 100) : 0;
 
   return (
     <Sheet open={open} onOpenChange={(next) => (pending ? undefined : onOpenChange(next))}>
@@ -442,82 +329,7 @@ export function ExpenseSheet({
               />
             </div>
 
-            <section aria-labelledby={`${fieldId}-receipt`} className="flex flex-col gap-3" data-testid="expense-receipt">
-              <h3 id={`${fieldId}-receipt`} className="text-body font-semibold text-ink">
-                {t('receiptTitle')} <span className="font-normal text-ink-muted">({t('optional')})</span>
-              </h3>
-              {receipt.step === 'saved' ? (
-                <Link href={`/documents/${receipt.documentId}`} data-testid="expense-saved-receipt" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
-                  <FileText aria-hidden="true" />
-                  {t('receiptSaved')}
-                </Link>
-              ) : null}
-              {receipt.step === 'preparing' ? <p className="text-small text-ink-muted">{t('receiptPreparing')}</p> : null}
-              {receipt.step === 'uploading' ? (
-                <div className="flex flex-col gap-1" data-testid="receipt-uploading">
-                  <p className="text-small text-ink-2">{t('receiptUploading')}</p>
-                  <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={t('receiptUploading')} className="h-1.5 overflow-hidden rounded-full bg-rule">
-                    <div className="h-full rounded-full bg-ink transition-[width] duration-(--duration-fast) ease-standard" style={{ width: `${percent}%` }} />
-                  </div>
-                </div>
-              ) : null}
-              {receipt.step === 'uploaded' ? (
-                <p data-testid="receipt-uploaded" className="flex items-center gap-2 text-small text-ink-2">
-                  <StatusShape status="paid" className="size-4" />
-                  {t('receiptUploaded')}
-                </p>
-              ) : null}
-              {receipt.step === 'failed' ? (
-                <div className="flex flex-col items-start gap-2">
-                  <FieldMessage id={`${fieldId}-receipt-error`} error={t(receipt.problem)} />
-                  {receipt.problem === 'receiptFailed' ? (
-                    <button type="button" data-testid="receipt-retry" onClick={() => chooseReceipt(receipt.file)} className={buttonVariants({ variant: 'outline' })}>
-                      <RotateCw aria-hidden="true" />
-                      {t('receiptRetry')}
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-              <div className="grid grid-cols-1 gap-2 min-[22rem]:grid-cols-2">
-                <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-semibold text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
-                  <Camera className="size-5" aria-hidden="true" />
-                  {t('takePhoto')}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    data-testid="sheet-receipt-camera"
-                    disabled={pending}
-                    className="absolute inset-0 cursor-pointer opacity-0"
-                    onChange={(event) => {
-                      chooseReceipt(event.target.files?.[0]);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
-                <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-semibold text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
-                  <FolderOpen className="size-5" aria-hidden="true" />
-                  {t('chooseFile')}
-                  <input
-                    type="file"
-                    accept={ACCEPT}
-                    data-testid="sheet-receipt-file"
-                    disabled={pending}
-                    className="absolute inset-0 cursor-pointer opacity-0"
-                    onChange={(event) => {
-                      chooseReceipt(event.target.files?.[0]);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
-              </div>
-              {receipt.step === 'none' ? null : (
-                <button type="button" data-testid="receipt-remove" onClick={dropReceipt} disabled={pending} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
-                  <X aria-hidden="true" />
-                  {t('receiptRemove')}
-                </button>
-              )}
-            </section>
+            <ReceiptField receipt={receipt} disabled={pending} onPick={() => setErrors((errors) => without(errors, 'save'))} />
 
             {editing === null ? null : (
               <button type="button" data-testid="expense-delete" onClick={remove} disabled={pending} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0 text-overdue')}>
