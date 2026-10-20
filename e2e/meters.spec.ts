@@ -9,6 +9,8 @@ import { laneHousehold, laneLease, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START, toast } from './helpers/wizard';
 
+const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
+const metersPath = (lane: number) => `/properties/${laneProperty(lane, 'di-an')}/rental/meters`;
 const holdForRecording = recordForPr();
 
 // Readings default to the month before the Clock's, and bills issue on the database clock, so the spec runs in the
@@ -17,8 +19,6 @@ test.beforeEach(async ({ request }) => {
   await setClock(request, START);
 });
 
-const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
-const metersPath = (lane: number) => `/properties/${laneProperty(lane, 'di-an')}/rental/meters`;
 const room = (page: Page, n: number) => page.getByTestId('meter-room').filter({ has: page.getByRole('heading', { name: `Phòng ${n}`, exact: true }) });
 const reading = (page: Page, n: number, kind: 'electricity' | 'water') => room(page, n).locator(`[data-kind="${kind}"]`);
 
