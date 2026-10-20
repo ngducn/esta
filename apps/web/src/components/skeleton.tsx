@@ -233,9 +233,10 @@ export function SkeletonHome() {
           <Block className="h-7 w-36" />
           <Block className="h-12 w-64 max-w-full" />
           <Block className="h-2 w-full" />
-          <div className="grid grid-cols-2 gap-2">
+          <Block className="h-6 w-44" />
+          <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-rule pt-4">
             {Array.from({ length: 4 }, (_, index) => (
-              <Block key={index} className="h-touch w-full" />
+              <Block key={index} className="h-6 w-24" />
             ))}
           </div>
         </div>

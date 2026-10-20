@@ -88,6 +88,7 @@ test('Mẹ opens Tổng quan at 390 on 07/10 and sees Phòng 5, the Thủ Đức
   await open(page, MOM, 'light', PHONE);
   await expectSeedHome(page);
   await expect(page.getByTestId('home-map-strip')).toBeHidden();
+  await expect(page.locator('[data-testid="month-collection"] ~ *'), 'the brief and portfolio slots draw no empty box').toHaveCount(0);
   await page.waitForLoadState('networkidle');
   expect(scripts, 'a phone fetches no MapLibre chunk and no tile').toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
@@ -177,6 +178,7 @@ test('a new household has nothing to do and no bill this month, and draws no emp
   await expect(page.getByTestId('today-empty')).toHaveText('Hôm nay không có việc cần làm.');
   await expect(page.getByTestId('month-empty')).toHaveText('Chưa có hóa đơn nào đến hạn trong tháng 10/2026.');
   await expect(page.getByTestId('month-figure')).toHaveCount(0);
+  await expect(page.getByTestId('month-group-overdue'), 'no row of four zeros under the sentence').toHaveCount(0);
   await expect(page.getByTestId('home-map-strip')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });

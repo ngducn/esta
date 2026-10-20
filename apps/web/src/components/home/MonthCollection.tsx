@@ -57,15 +57,17 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
           </p>
         </div>
       )}
-      <ul aria-label={t('monthGroups')} className="flex flex-wrap gap-x-5 gap-y-2 border-t border-rule pt-4">
-        {board.map((group) => (
-          <li key={group.key} data-testid={`month-group-${group.key}`} data-count={group.items.length} className="flex items-center gap-2 text-body whitespace-nowrap text-ink">
-            <StatusShape status={GROUP_MARKS[group.key]} />
-            <span>{tc('group', { group: group.key })}</span>
-            <span className="figures font-bold">{group.items.length}</span>
-          </li>
-        ))}
-      </ul>
+      {board.every((group) => group.items.length === 0) ? null : (
+        <ul aria-label={t('monthGroups')} className="flex flex-wrap gap-x-5 gap-y-2 border-t border-rule pt-4">
+          {board.map((group) => (
+            <li key={group.key} data-testid={`month-group-${group.key}`} data-count={group.items.length} className="flex items-center gap-2 text-body whitespace-nowrap text-ink">
+              <StatusShape status={GROUP_MARKS[group.key]} />
+              <span>{tc('group', { group: group.key })}</span>
+              <span className="figures font-bold">{group.items.length}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
