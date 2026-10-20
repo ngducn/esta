@@ -10,6 +10,7 @@ import { RecordPaymentAction, type PaymentIntl } from '@/components/payments/Rec
 import type { PaymentAccount } from '@/components/payments/RecordPaymentSheet';
 import { StatusMark } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { cn } from '@/lib/utils';
 import type { PaymentInvoice } from '@/server/collections/load';
 import type { HomeSnapshot } from '@/server/home/load';
 
@@ -179,7 +180,7 @@ export function TodayList({ today, asOf, payment }: { today: TodayListData<HomeS
         </ul>
       )}
       {today.total > today.items.length ? (
-        <Link href="/collections" data-testid="today-more" className={buttonVariants({ variant: 'quiet', className: 'self-start px-0' })}>
+        <Link href="/collections" data-testid="today-more" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
           {t('todayMore')}
         </Link>
       ) : null}

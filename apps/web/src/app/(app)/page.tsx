@@ -40,15 +40,7 @@ async function Home() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-h2 break-words lg:text-h1">{member.household.name}</h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className="text-ink-2">{member.displayName === null ? t('signedIn') : t('signedInAs', { name: member.displayName })}</p>
-          <p className="rounded-full border border-rule bg-surface px-3 py-1 text-small font-semibold text-ink-muted">
-            {t('role', { role: onboarding(`roles.${member.role}`) })}
-          </p>
-        </div>
-      </div>
+      <h1 className="text-h2 break-words lg:text-h1">{member.household.name}</h1>
       <OfflineNotice message={t('offline')} testId="home-offline" />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
         <ToastHost labels={{ region: toast('region'), undo: toast('undo') }}>
@@ -63,6 +55,10 @@ async function Home() {
       {home.pins.length === 0 ? null : (
         <HomeMapStrip title={t('mapTitle')} openLabel={t('mapOpen')} map={{ ...mapIntl, theme, label: t('mapLabel', { count: home.pins.length }), pins: home.pins }} />
       )}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-small">
+        <p className="text-ink-2">{member.displayName === null ? t('signedIn') : t('signedInAs', { name: member.displayName })}</p>
+        <p className="rounded-full border border-rule bg-surface px-3 py-1 font-semibold text-ink-muted">{t('role', { role: onboarding(`roles.${member.role}`) })}</p>
+      </div>
     </div>
   );
 }

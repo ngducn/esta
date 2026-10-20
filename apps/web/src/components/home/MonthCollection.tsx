@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { GROUP_MARKS } from '@/components/collections/CollectionsBoard';
 import { StatusShape } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { cn } from '@/lib/utils';
 import type { CollectionRow } from '@/server/collections/load';
 
 /**
@@ -26,7 +27,7 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
         <h2 id="month-title" className="text-h3 text-ink">
           {tc('monthTitle', { month: monthLabel })}
         </h2>
-        <Link href="/collections" className={buttonVariants({ variant: 'quiet', className: 'px-0' })}>
+        <Link href="/collections" className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
           {t('openCollections')}
         </Link>
       </div>
@@ -56,12 +57,12 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
           </p>
         </div>
       )}
-      <ul aria-label={t('monthGroups')} className="grid grid-cols-2 gap-2">
+      <ul aria-label={t('monthGroups')} className="flex flex-wrap gap-x-5 gap-y-2 border-t border-rule pt-4">
         {board.map((group) => (
-          <li key={group.key} data-testid={`month-group-${group.key}`} data-count={group.items.length} className="flex min-h-touch items-center gap-2 rounded-md bg-surface-2 px-3 py-2">
+          <li key={group.key} data-testid={`month-group-${group.key}`} data-count={group.items.length} className="flex items-center gap-2 text-body whitespace-nowrap text-ink">
             <StatusShape status={GROUP_MARKS[group.key]} />
-            <span className="min-w-0 flex-1 text-body break-words text-ink">{tc('group', { group: group.key })}</span>
-            <span className="figures text-lead font-bold text-ink">{group.items.length}</span>
+            <span>{tc('group', { group: group.key })}</span>
+            <span className="figures font-bold">{group.items.length}</span>
           </li>
         ))}
       </ul>
