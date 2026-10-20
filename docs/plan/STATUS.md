@@ -28,6 +28,7 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
 | Lows found by review lanes | Lanes | #207, #211, #212, #214, #219, #220, #222, #225, #226 | Queued; #220 before real data |
 | Squash migrations before the first deploy | Review | #197 | Before the deploy |
 | Rerun the outsider code review | Target 8.5 or better | Standing orders 16:45 | After the cleanup round |
+| Receipt wording: `lẻ` in amounts in words, and `Thông báo tiền thuê` for a bill with nothing received | Ryan, 2026-10-20: "use lẻ, and title unpaid ones Thông báo tiền thuê" | #251 | In review |
 
 ## Spike results
 
@@ -48,6 +49,11 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
 - P3-06 (PR #58) at `727db97`, 2026-10-17. The one fix-forward fixed the double post, but its CSV decode fix does not hold: an unterminated quote at a field start is closed by a later quote, and every row in between disappears without a refusal (repro and suggested second-round scope in the PR #58 park comment). Your call: grant a second, narrow round (refuse quoted fields that span a line break), narrow the PR, or close it. Nothing depends on it before P3-15.
 - P5-11 (PR #61) at `a8d00d8`, 2026-10-17, parked again after the operator-granted second round. The structural rewrite closed 33 more probes, but round 3 found a regression (`25\ntriệu` reads as 25) and smaller-count reads on glued tails and Markdown emphasis. The root recommends redesigning the guard to read the rendered plain text, either here or inside P5-03 (PR #61 comment). Nothing needs it before P5-03.
 - Nothing parked. P0-14 (PR #32) merged on 2026-10-16 as `064303c` after a test-only fix-forward: the create-household e2e helper gave the server one 5 s wait, which ran out under load. The 2026-10-15 note that it also failed at load 4 was wrong; that rerun failed in `db reset` with a Supabase 502, not in Playwright.
+
+## Decided by Ryan
+
+- 2026-10-20, receipts (#251): amounts in words say `lẻ`, not `linh`, for a zero tens digit after a hundreds digit (`Một triệu không trăm lẻ năm nghìn đồng`), on receipts and on the bill's VietQR split note from 500 million (DOMAIN-VN §9).
+- 2026-10-20, receipts (#251): a bill with nothing received yet prints as `Thông báo tiền thuê` without the `Đã nhận` row, in the PDF, the Zalo picture and the file name (`thong-bao-<number>`); once any money is received it is `Biên nhận tiền thuê` (SPEC LSE-6).
 
 ## Waiting for Ryan
 
