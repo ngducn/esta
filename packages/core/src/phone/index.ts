@@ -35,6 +35,15 @@ export function formatPhone(phone: Phone): string {
     : `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
 }
 
+/** The first stored number that reads as a Vietnamese phone, such as a tenant's Zalo number before their phone. */
+export function firstPhone(stored: readonly (string | null)[]): Phone | null {
+  for (const text of stored) {
+    const phone = text === null ? null : normalizePhone(text);
+    if (phone?.ok) return phone.value;
+  }
+  return null;
+}
+
 /** A stored phone as Mẹ reads it, `0903 123 456`; one stored some other way shows as it was typed. */
 export function phoneText(stored: string | null): string | null {
   if (stored === null) return null;

@@ -1,7 +1,7 @@
 import 'server-only';
 import { collectionState } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
-import { formatPhone, normalizePhone, zaloChatUrl } from '@esta/core/phone';
+import { firstPhone, formatPhone, zaloChatUrl } from '@esta/core/phone';
 import { defaultFormOfAddress, FORM_OF_ADDRESS_KEYS, reminderTiming, type FormOfAddress, type ReminderInput } from '@esta/core/reminder';
 import { getTranslations } from 'next-intl/server';
 import type { CollectionRow, OwedBill } from '@/server/collections/load';
@@ -31,11 +31,8 @@ export type ReminderLabels = {
 };
 
 function zaloContact(tenant: NonNullable<OwedBill['tenant']>): ReminderTarget['zalo'] {
-  for (const stored of [tenant.zaloPhone, tenant.phone]) {
-    const phone = stored === null ? null : normalizePhone(stored);
-    if (phone?.ok) return { url: zaloChatUrl(phone.value), phone: formatPhone(phone.value) };
-  }
-  return null;
+  const phone = firstPhone([tenant.zaloPhone, tenant.phone]);
+  return phone === null ? null : { url: zaloChatUrl(phone), phone: formatPhone(phone) };
 }
 
 /**
@@ -48,7 +45,7 @@ export async function boardReminders(rows: readonly CollectionRow[], owed: Reado
     rows.flatMap((row) => {
       const bill = owed.get(row.invoiceId);
       const timing = reminderTiming(collectionState(row, today));
-      if (bill?.tenant == null || row.tenantName === null || timing === null) return [];
+      if (bill === undefined || bill.tenant === null || row.tenantName === null || timing === null) return [];
       const target: ReminderTarget = {
         draft: {
           timing,

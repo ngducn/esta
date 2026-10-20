@@ -137,9 +137,7 @@ function CollectionsRow({
                   />
                 );
               case 'remind':
-                return reminder === undefined || row.tenantName === null ? null : (
-                  <ReminderAction key={action.id} label={t(action.label)} title={place} tenant={row.tenantName} target={reminder} labels={reminders.labels} />
-                );
+                return reminder === undefined ? null : <ReminderAction key={action.id} label={t(action.label)} title={place} target={reminder} labels={reminders.labels} />;
               case 'recordPayment':
                 return (
                   <RecordPaymentAction

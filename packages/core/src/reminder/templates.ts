@@ -26,18 +26,18 @@ export function reminderTiming(state: CollectionState): ReminderTiming | null {
  * DOMAIN-VN §9 `[app rule]`: how a reminder greets and then addresses the tenant. A person is greeted by given name
  * with the pronoun Mẹ picks, `anh/chị` when she has not; a business by its full name as `Quý khách`.
  */
-export const FORMS_OF_ADDRESS = {
+export const FORM_OF_ADDRESS_KEYS = ['anh_chi', 'anh', 'chi', 'co', 'chu', 'quy_khach'] as const;
+
+export type FormOfAddress = (typeof FORM_OF_ADDRESS_KEYS)[number];
+
+export const FORMS_OF_ADDRESS: Record<FormOfAddress, { readonly salutation: string; readonly you: string; readonly name: 'given' | 'full' }> = {
   anh_chi: { salutation: 'Chào anh/chị', you: 'anh/chị', name: 'given' },
   anh: { salutation: 'Chào anh', you: 'anh', name: 'given' },
   chi: { salutation: 'Chào chị', you: 'chị', name: 'given' },
   co: { salutation: 'Chào cô', you: 'cô', name: 'given' },
   chu: { salutation: 'Chào chú', you: 'chú', name: 'given' },
   quy_khach: { salutation: 'Kính gửi', you: 'Quý khách', name: 'full' },
-} as const satisfies Record<string, { readonly salutation: string; readonly you: string; readonly name: 'given' | 'full' }>;
-
-export type FormOfAddress = keyof typeof FORMS_OF_ADDRESS;
-
-export const FORM_OF_ADDRESS_KEYS = Object.keys(FORMS_OF_ADDRESS) as readonly FormOfAddress[];
+};
 
 export function defaultFormOfAddress(kind: 'individual' | 'organization'): FormOfAddress {
   return kind === 'organization' ? 'quy_khach' : 'anh_chi';

@@ -19,14 +19,12 @@ export default function ReminderSheet({
   open,
   onOpenChange,
   title,
-  tenant,
   target,
   labels,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  tenant: string;
   target: ReminderTarget;
   labels: ReminderLabels;
 }) {
@@ -34,7 +32,8 @@ export default function ReminderSheet({
   const [copy, setCopy] = useState<CopyState>('idle');
   const titleRef = useRef<HTMLHeadingElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
-  const ids = { text: useId(), noPhone: useId() };
+  const radios = useId();
+  const noPhone = useId();
   const text = useMemo(
     () => draftReminder({ ...target.draft, form, qrUrl: target.qrPath === null ? null : new URL(target.qrPath, window.location.origin).href }),
     [form, target],
@@ -59,7 +58,7 @@ export default function ReminderSheet({
               {title}
             </SheetTitle>
             <SheetDescription className="flex flex-wrap gap-x-3">
-              <span className="break-words">{tenant}</span>
+              <span className="break-words">{target.draft.tenantName}</span>
               {target.zalo === null ? null : <span className="figures">{target.zalo.phone}</span>}
             </SheetDescription>
           </div>
@@ -74,7 +73,7 @@ export default function ReminderSheet({
                 >
                   <input
                     type="radio"
-                    name="reminder-form"
+                    name={radios}
                     value={key}
                     checked={form === key}
                     onChange={() => {
@@ -91,13 +90,10 @@ export default function ReminderSheet({
           </fieldset>
 
           <div className="flex flex-col gap-2">
-            <h3 id={ids.text} className="text-body font-semibold text-ink">
-              {labels.text}
-            </h3>
+            <h3 className="text-body font-semibold text-ink">{labels.text}</h3>
             <p
               ref={textRef}
               data-testid="reminder-text"
-              aria-labelledby={ids.text}
               lang="vi"
               className="rounded-md border border-rule bg-surface-2 p-4 text-body wrap-anywhere whitespace-pre-wrap text-ink"
             >
@@ -123,7 +119,7 @@ export default function ReminderSheet({
           </button>
           <div className="flex gap-2">
             {target.zalo === null ? (
-              <button type="button" data-testid="reminder-zalo" disabled aria-describedby={ids.noPhone} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
+              <button type="button" data-testid="reminder-zalo" disabled aria-describedby={noPhone} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
                 <MessageCircle aria-hidden="true" />
                 {labels.openZalo}
               </button>
@@ -136,7 +132,7 @@ export default function ReminderSheet({
             <SheetClose className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>{labels.close}</SheetClose>
           </div>
           {target.zalo === null ? (
-            <p id={ids.noPhone} data-testid="reminder-no-phone" className="text-body text-ink-2">
+            <p id={noPhone} data-testid="reminder-no-phone" className="text-body text-ink-2">
               {labels.noPhone}
             </p>
           ) : null}

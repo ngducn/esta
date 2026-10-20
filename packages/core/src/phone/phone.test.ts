@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhone, normalizePhone, phoneForZaloLink, phoneText, zaloChatUrl, type Phone } from './index';
+import { firstPhone, formatPhone, normalizePhone, phoneForZaloLink, phoneText, zaloChatUrl, type Phone } from './index';
 
 function phone(text: string): Phone {
   const result = normalizePhone(text);
@@ -64,5 +64,15 @@ describe('zaloChatUrl', () => {
   it('opens the chat with the local number (LSE-11)', () => {
     expect(zaloChatUrl(phone('+84 901 111 005'))).toBe('https://zalo.me/0901111005');
     expect(zaloChatUrl(phone('0283 812 3456'))).toBe('https://zalo.me/02838123456');
+  });
+});
+
+describe('firstPhone', () => {
+  it('takes the first stored number that reads as a phone, so a Zalo number wins over the phone', () => {
+    expect(firstPhone(['0912 345 678', '0901 111 005'])).toBe('+84912345678');
+    expect(firstPhone([null, '0901 111 005'])).toBe('+84901111005');
+    expect(firstPhone(['Zalo của chị Lan', '0901 111 005'])).toBe('+84901111005');
+    expect(firstPhone([null, null])).toBeNull();
+    expect(firstPhone(['', 'không có'])).toBeNull();
   });
 });
