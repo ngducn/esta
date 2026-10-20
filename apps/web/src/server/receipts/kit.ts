@@ -29,7 +29,7 @@ export type Receipt = ReceiptModel<ReceiptLabels>;
 /** A5 in PDF points (ISO 216, 148 × 210 mm). */
 export const A5_PT = { width: 419.528, height: 595.276 } as const;
 
-/** The Zalo picture: A5's ratio at 1080 px wide, sharp on a phone screen at full width. */
+/** The Zalo picture: 1080 px wide, sharp on a phone screen, and A5's ratio unless a long bill makes it taller. */
 export const PNG_PX = { width: 1080, height: 1527 } as const;
 
 /** Paper is white in either theme, so the receipt reads the light tokens. */

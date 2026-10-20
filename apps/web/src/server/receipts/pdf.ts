@@ -28,24 +28,36 @@ function wrap(text: string, font: PDFFont, size: number, width: number): string[
   return [...lines, line];
 }
 
-type Pen = { page: PDFPage; regular: PDFFont; bold: PDFFont; y: number };
+type Pen = { pdf: PDFDocument; page: PDFPage; regular: PDFFont; bold: PDFFont; y: number };
 type Style = { font?: 'regular' | 'bold'; size?: number; color?: ColorToken };
 
 const LEFT = MARGIN;
 const RIGHT = A5_PT.width - MARGIN;
+const TOP = A5_PT.height - MARGIN;
+const LEADING = 1.45;
+
+const face = (pen: Pen, font: Style['font']) => (font === 'bold' ? pen.bold : pen.regular);
+const height = (pen: Pen, value: string, width: number, { font, size = 10 }: Style = {}) => wrap(value, face(pen, font), size, width).length * size * LEADING;
+
+/** Starts a new A5 page when `needed` points would run past the bottom margin, so a block never splits or falls off. */
+function room(pen: Pen, needed: number): void {
+  if (pen.y - needed >= MARGIN) return;
+  pen.page = pen.pdf.addPage([A5_PT.width, A5_PT.height]);
+  pen.y = TOP;
+}
 
 /** Draws wrapped text from the pen's line down and moves the pen below it. */
 function text(pen: Pen, value: string, x: number, width: number, { font = 'regular', size = 10, color = 'ink' }: Style = {}): void {
-  const face = font === 'bold' ? pen.bold : pen.regular;
-  for (const line of wrap(value, face, size, width)) {
-    pen.page.drawText(line, { x, y: pen.y - size, size, font: face, color: tone(color) });
-    pen.y -= size * 1.45;
+  for (const line of wrap(value, face(pen, font), size, width)) {
+    room(pen, size * LEADING);
+    pen.page.drawText(line, { x, y: pen.y - size, size, font: face(pen, font), color: tone(color) });
+    pen.y -= size * LEADING;
   }
 }
 
 function rightText(pen: Pen, value: string, { font = 'regular', size = 10, color = 'ink' }: Style = {}): void {
-  const face = font === 'bold' ? pen.bold : pen.regular;
-  pen.page.drawText(value, { x: RIGHT - face.widthOfTextAtSize(value, size), y: pen.y - size, size, font: face, color: tone(color) });
+  const used = face(pen, font);
+  pen.page.drawText(value, { x: RIGHT - used.widthOfTextAtSize(value, size), y: pen.y - size, size, font: used, color: tone(color) });
 }
 
 function rule(pen: Pen, color: ColorToken, thickness: number): void {
@@ -54,6 +66,7 @@ function rule(pen: Pen, color: ColorToken, thickness: number): void {
 
 /** A label on the left and its value wrapped in the column beside it. */
 function field(pen: Pen, label: string, value: string, style: Style = {}): void {
+  room(pen, Math.max(height(pen, label, LABEL_COLUMN - 8), height(pen, value, RIGHT - LEFT - LABEL_COLUMN, style)));
   const top = pen.y;
   text(pen, label, LEFT, LABEL_COLUMN - 8, { color: 'ink-muted' });
   const below = pen.y;
@@ -64,9 +77,10 @@ function field(pen: Pen, label: string, value: string, style: Style = {}): void 
 
 /** An amount row: the label wraps in the space the right-aligned amount leaves. */
 function amountRow(pen: Pen, label: string, amount: string, style: Style = {}): void {
+  const width = RIGHT - LEFT - face(pen, style.font).widthOfTextAtSize(amount, style.size ?? 10) - 16;
+  room(pen, height(pen, label, width, style));
   const top = pen.y;
-  const face = style.font === 'bold' ? pen.bold : pen.regular;
-  text(pen, label, LEFT, RIGHT - LEFT - face.widthOfTextAtSize(amount, style.size ?? 10) - 16, style);
+  text(pen, label, LEFT, width, style);
   const below = pen.y;
   pen.y = top;
   rightText(pen, amount, style);
@@ -76,18 +90,22 @@ function amountRow(pen: Pen, label: string, amount: string, style: Style = {}): 
 function qrBlock(pen: Pen, receipt: Receipt): void {
   if (receipt.qr === null) return;
   const qr = receipt.qr;
+  const x = LEFT + QR_PT + 16;
+  const width = RIGHT - x;
+  const notes: readonly [string, Style][] = [
+    [receipt.labels.scanToPay, { font: 'bold' }],
+    [receipt.labels.memo, { color: 'ink-muted', size: 9 }],
+    [qr.memo, { font: 'bold', size: 12 }],
+    [receipt.labels.account, { color: 'ink-muted', size: 9 }],
+    [`${qr.bank} · ${qr.accountNo}`, {}],
+    [qr.accountName, {}],
+  ];
+  // The code, the transfer note and the account stay together on one page, whatever came above them.
+  room(pen, Math.max(QR_PT, notes.reduce((sum, [value, style]) => sum + height(pen, value, width, style), 0)));
   const matrix = qrMatrix(qr.payload);
   const top = pen.y;
   pen.page.drawSvgPath(matrix.path, { x: LEFT, y: top, scale: QR_PT / matrix.size, color: tone('qr-ink'), borderWidth: 0 });
-  const x = LEFT + QR_PT + 16;
-  const width = RIGHT - x;
-  pen.y = top;
-  text(pen, receipt.labels.scanToPay, x, width, { font: 'bold' });
-  text(pen, receipt.labels.memo, x, width, { color: 'ink-muted', size: 9 });
-  text(pen, qr.memo, x, width, { font: 'bold', size: 12 });
-  text(pen, receipt.labels.account, x, width, { color: 'ink-muted', size: 9 });
-  text(pen, `${qr.bank} · ${qr.accountNo}`, x, width);
-  text(pen, qr.accountName, x, width);
+  for (const [value, style] of notes) text(pen, value, x, width, style);
   pen.y = Math.min(pen.y, top - QR_PT);
 }
 
@@ -100,8 +118,7 @@ export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
   pdf.setCreator('Esta');
   pdf.setProducer('Esta');
   const [regular, bold] = await Promise.all([pdf.embedFont(receiptFont(400), { subset: true }), pdf.embedFont(receiptFont(700), { subset: true })]);
-  const page = pdf.addPage([A5_PT.width, A5_PT.height]);
-  const pen: Pen = { page, regular, bold, y: A5_PT.height - MARGIN };
+  const pen: Pen = { pdf, page: pdf.addPage([A5_PT.width, A5_PT.height]), regular, bold, y: TOP };
 
   rightText(pen, `${receipt.labels.number} ${receipt.number}`, { size: 9, color: 'ink-muted' });
   text(pen, receipt.header, LEFT, RIGHT - LEFT - 130, { font: 'bold', size: 12 });

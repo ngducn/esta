@@ -1,3 +1,4 @@
+import fontkit from '@pdf-lib/fontkit';
 import { buildReceiptModel } from '@esta/core/receipt';
 import { isoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
@@ -5,8 +6,9 @@ import { PDFDocument } from 'pdf-lib';
 import { PNG } from 'pngjs';
 import { describe, expect, it, vi } from 'vitest';
 import { decodeQrPng } from '../../../../../scripts/decode-qr';
+import { pdfPagePngs } from '../../../../../scripts/pdf-pages.mjs';
 import { pdfText } from '../../../../../scripts/receipt-text';
-import { A5_PT, PNG_PX, type ReceiptLabels } from './kit';
+import { A5_PT, PNG_PX, receiptFonts, type ReceiptLabels } from './kit';
 import { renderReceiptPdf } from './pdf';
 import { renderReceiptPng } from './png';
 
@@ -86,5 +88,60 @@ describe('renderReceiptPng', () => {
     const png = PNG.sync.read(bytes);
     expect([png.width, png.height]).toEqual([PNG_PX.width, PNG_PX.height]);
     expect(decodeQrPng(bytes)?.payload).toBe(PAYLOAD);
+  });
+});
+
+/** Twelve charges, as a month with meter readings and fees brings, under a long name and a long place. */
+const long = buildReceiptModel({
+  ...input,
+  tenant: 'Tôn Nữ Thị Phương Hoàng Jürgen Müller Núñez Demo',
+  place: 'Phòng 12A, Khu nhà trọ cho thuê dài hạn đường Nguyễn Văn Linh, phường Dĩ An Demo',
+  lines: [
+    'Tiền thuê',
+    'Tiền điện 120 kWh',
+    'Tiền nước 5 m³',
+    'Phí rác',
+    'Phí gửi xe máy',
+    'Phí internet',
+    'Phí vệ sinh khu chung hằng tháng của dãy trọ',
+    'Phí thang máy',
+    'Phí bảo vệ',
+    'Tiền điện tháng trước còn thiếu',
+    'Phí sửa vòi nước',
+    'Điều chỉnh',
+  ].map((label, index) => ({ label, amountVnd: vnd(index === 0 ? 3_500_000 : 10_000 * index) })),
+  totalVnd: vnd(4_160_000),
+  receivedVnd: vnd(0),
+  outstandingVnd: vnd(4_160_000),
+});
+
+describe('a long receipt', () => {
+  it('keeps every line and a scannable code in the PDF, on as many A5 pages as it needs', async () => {
+    const bytes = await renderReceiptPdf(long);
+    const text = await pdfText(bytes);
+    for (const line of long.lines) expect(text).toContain(line.label);
+    for (const expected of [long.tenant, 'm³', 'Jürgen Müller Núñez Demo', 'ESTA 7K2QX9MP', 'NGUYEN THI DEMO']) expect(text).toContain(expected);
+    expect(text).not.toContain('\u0000');
+    const pdf = await PDFDocument.load(bytes);
+    for (const page of pdf.getPages()) expect(page.getSize()).toEqual({ width: A5_PT.width, height: A5_PT.height });
+    const codes = (await pdfPagePngs(bytes)).map((page) => decodeQrPng(page)?.payload ?? null);
+    expect(codes.filter((code) => code !== null)).toEqual([PAYLOAD]);
+  });
+
+  it('grows the picture taller instead of cutting off the code', async () => {
+    const bytes = await renderReceiptPng(long);
+    const png = PNG.sync.read(bytes);
+    expect(png.width).toBe(PNG_PX.width);
+    expect(png.height).toBeGreaterThan(PNG_PX.height);
+    expect(decodeQrPng(bytes)?.payload).toBe(PAYLOAD);
+  });
+
+  it('draws every character it prints from the bundled fonts, so nothing falls back to a blank box', () => {
+    const printed = [long.header, long.number, long.tenant, long.place, long.period, long.total, long.totalWords, ...long.lines.flatMap((line) => [line.label, line.amount]), ...Object.values(long.labels)].join('');
+    const codePoints = [...new Set(printed)].map((character) => character.codePointAt(0) ?? 0);
+    for (const font of receiptFonts()) {
+      const face = fontkit.create(font.data);
+      expect(codePoints.filter((point) => !face.hasGlyphForCodePoint(point)).map((point) => String.fromCodePoint(point))).toEqual([]);
+    }
   });
 });

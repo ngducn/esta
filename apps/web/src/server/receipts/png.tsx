@@ -43,7 +43,7 @@ function Payment({ receipt }: { receipt: Receipt }) {
   if (receipt.qr === null) return null;
   return (
     <div style={{ display: 'flex', flex: 1, gap: 36, alignItems: 'center' }}>
-      <img src={qrImage(receipt.qr.payload)} width={QR_PX} height={QR_PX} alt={receipt.labels.scanToPay} />
+      <img src={qrImage(receipt.qr.payload)} width={QR_PX} height={QR_PX} alt={receipt.labels.scanToPay} style={{ flexShrink: 0 }} />
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: 2 }}>
         <div style={{ fontWeight: 700 }}>{receipt.labels.scanToPay}</div>
         <div style={note}>{receipt.labels.memo}</div>
@@ -59,11 +59,11 @@ function Payment({ receipt }: { receipt: Receipt }) {
   );
 }
 
-/** The facts keep their height (flexShrink 0); only the space above the code gives way on a long bill. */
+/** A5's shape at least; a bill with many lines makes the picture taller, so the code is never cut off or squeezed. */
 function ReceiptPicture({ receipt }: { receipt: Receipt }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', padding: 80, background: hex('surface'), color: hex('ink'), fontFamily: FAMILY, fontSize: 30, lineHeight: 1.45 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minHeight: PNG_PX.height, padding: 80, background: hex('surface'), color: hex('ink'), fontFamily: FAMILY, fontSize: 30, lineHeight: 1.45 }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 24, paddingBottom: 16, borderBottom: `3px solid ${hex('ink')}` }}>
           <div style={{ display: 'flex', flex: 1, minWidth: 0, fontWeight: 700, fontSize: 34 }}>{receipt.header}</div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0, fontSize: 26, ...muted }}>
@@ -106,11 +106,10 @@ function ReceiptPicture({ receipt }: { receipt: Receipt }) {
   );
 }
 
-/** LSE-6: the receipt as a 1080 × 1527 picture to send in Zalo, drawn with the bundled fonts only. */
+/** LSE-6: the receipt as a picture 1080 px wide to send in Zalo, drawn with the bundled fonts only. */
 export async function renderReceiptPng(receipt: Receipt): Promise<Buffer> {
   const svg = await satori(<ReceiptPicture receipt={receipt} />, {
     width: PNG_PX.width,
-    height: PNG_PX.height,
     fonts: receiptFonts().map((font) => ({ name: FAMILY, data: font.data, weight: font.weight, style: 'normal' as const })),
   });
   return new Resvg(svg, { fitTo: { mode: 'width', value: PNG_PX.width }, font: { loadSystemFonts: false } }).render().asPng();
