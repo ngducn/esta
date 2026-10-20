@@ -201,7 +201,7 @@ test('rule 6: in English at 130% and dark, bao loc so still finds Sổ hồng B�
   await serviceWrite(page, 'PATCH', member('me', 10), { locale: 'en', text_scale: 130 });
   try {
     await page.goto('/');
-    await page.getByRole('navigation').getByRole('link', { name: 'Documents' }).click();
+    await page.getByRole('navigation').getByRole('link', { name: 'Docs' }).click();
     await expect(page.getByTestId('vault-search')).toHaveAttribute('placeholder', 'Search by name or the words on the paper', COLD_ROUTE);
     await expect(page.getByRole('heading', { name: 'Expiring soon' })).toBeVisible();
     await search(page, 'bao loc so');

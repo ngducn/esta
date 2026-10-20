@@ -7,8 +7,8 @@ import { clippedText } from './helpers/text-scale';
 /** `en` is the English name on the phone's tab bar, short enough to stay whole at 130% text (FND-8). */
 const sections = [
   { vi: 'Tổng quan', en: 'Home', path: '/' },
-  { vi: 'Tài sản', en: 'Properties', path: '/properties' },
-  { vi: 'Thu tiền', en: 'Collections', path: '/collections' },
+  { vi: 'Tài sản', en: 'Assets', path: '/properties' },
+  { vi: 'Thu tiền', en: 'Rent', path: '/collections' },
   { vi: 'Tài liệu', en: 'Docs', path: '/documents' },
   { vi: 'Trợ lý', en: 'Assistant', path: '/assistant' },
 ] as const;
@@ -276,7 +276,7 @@ test('lane 10: English, 130% and dark on Collections keep every tab label inside
   onlyOn('mobile');
   await newHousehold(page);
   await saveDisplaySettings(page, { language: 'English', textScale: '130%', theme: 'Tối' });
-  await tabBar(page).getByRole('link', { name: 'Collections' }).click();
+  await tabBar(page).getByRole('link', { name: 'Rent' }).click();
   await expect(page).toHaveURL(/\/collections$/);
   await expect(tabBar(page).getByRole('link')).toHaveText(sections.map((section) => section.en));
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');

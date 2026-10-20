@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
 
   const toItem = ({ key, href }: { key: NavItem['key']; href: string }): NavItem => ({ key, href, label: nav(key) });
   const items = primarySections.map(toItem);
-  // A phone's five tabs share 390 px, so English takes shorter names there that still fit whole at 130% text (FND-8).
+  // A phone's five tabs share 390 px, and the English section names need 490 at 130% text, so the tabs take short ones (FND-8).
   const tabs = primarySections.map(({ key, href }): NavItem => ({ key, href, label: nav(`${key}Tab`) }));
   const more = accountSections.map(toItem);
   const name = member.displayName ?? shell('account');

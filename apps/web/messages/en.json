@@ -384,8 +384,8 @@
     "reports": "Reports",
     "settings": "Settings",
     "homeTab": "Home",
-    "propertiesTab": "Properties",
-    "collectionsTab": "Collections",
+    "propertiesTab": "Assets",
+    "collectionsTab": "Rent",
     "documentsTab": "Docs",
     "assistantTab": "Assistant"
   },
