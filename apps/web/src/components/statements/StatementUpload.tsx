@@ -56,11 +56,14 @@ export function StatementUpload({ accounts }: { accounts: readonly AccountOption
     setError(null);
     setEarlier(null);
     setReading(true);
-    const { decodeStatementFile } = await import('@/lib/statements/decodeStatementFile');
-    const decoded = await decodeStatementFile(new Uint8Array(await file.arrayBuffer()), file.name);
+    // Offline, the reader's chunk may not load; that reads as a failed send, not as a bad file.
+    const decoded = await import('@/lib/statements/decodeStatementFile')
+      .then(async ({ decodeStatementFile }) => decodeStatementFile(new Uint8Array(await file.arrayBuffer()), file.name))
+      .catch(() => null);
     event.target.value = '';
     setReading(false);
-    if (!decoded.ok) setError(t(FILE_ERRORS[decoded.reason]));
+    if (decoded === null) setError(t('errorFailed'));
+    else if (!decoded.ok) setError(t(FILE_ERRORS[decoded.reason]));
     else if (decoded.value.rows.length === 0) setError(t('errorEmpty'));
     else setChosen({ name: file.name, importId: crypto.randomUUID(), decoded: decoded.value });
   };
