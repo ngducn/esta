@@ -237,6 +237,8 @@ Lease form defaults by unit, `LEASE_DEFAULTS` in `packages/core/src/lease/defaul
 | Floor | 1 month | 2 months | Calendar months | Metered by the owner |
 | Lot | 12 months | 3 months | Calendar months | Tenant pays directly |
 
+A wrong bill `[app rule]`, from P3-20 (LSE-5). Mẹ voids an issued bill with a reason; it keeps its number and shows `Đã hủy` with no QR, and its period is never billed again, so a correct charge for that period goes on another bill as an adjustment. A bill any payment settled cannot be voided, because a payment is undone only within its saved toast; the money would otherwise sit on a void bill. A draft is never voided, since nobody has seen it; `Phát hành` issues it early instead, on that day.
+
 ## 8. Personal data
 
 `[verified]` The Personal Data Protection Law 91/2025/QH15 took effect on 1 January 2026. Decree 330/2026/NĐ-CP sets administrative penalties from 19 August 2026. Principles include purpose limitation, minimization, security, and deletion on request.

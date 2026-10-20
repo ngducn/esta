@@ -262,6 +262,8 @@ test('rule 7: Ryan voids a wrong October bill with a reason, nothing bills Octob
   await expect(page.getByTestId('invoice-no-qr')).toHaveText('Hóa đơn đã hủy, nên không có mã QR. Lý do: Demo: người thuê đã chuyển đi 30/09');
   await expect(page.getByTestId('qr-code')).toHaveCount(0);
   await expect(page.getByTestId('invoice-void')).toHaveCount(0);
+  await expect(page.getByTestId('invoice-total')).toHaveText(vnd('3.000.000'));
+  await expect(page.getByTestId('invoice-outstanding'), 'a void bill owes nothing, so it shows no amount still owed').toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('bill-void-1440-light.png'), fullPage: true });
 
@@ -288,7 +290,8 @@ test('rule 8: Mẹ issues November’s draft early with Phát hành, and the bil
   await page.goto(invoicePath(november?.id ?? ''));
   await expect(page.getByTestId('invoice-status')).toHaveText('Bản nháp');
   await expect(page.getByTestId('invoice-void')).toHaveCount(0);
-  await page.screenshot({ path: test.info().outputPath('bill-draft-issue-390-dark.png'), fullPage: true });
+  await expect(page.getByTestId('invoice-issue')).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('bill-draft-issue-390-dark.png') });
   await page.getByTestId('invoice-issue').click();
   await expect(page.getByTestId('invoice-status')).toHaveAttribute('data-status', 'issued');
   await expect(page.getByTestId('invoice-issue')).toHaveCount(0);
@@ -315,6 +318,7 @@ test('rule 9: with no receiving account Mẹ adds one from the bill, its code pa
     await sheet.getByTestId('account-save').click();
     await expect(sheet).toContainText('Chọn ngân hàng.');
     await sheet.getByTestId('account-bank').selectOption(ACCOUNT.bin);
+    await expect(sheet).not.toContainText('Chọn ngân hàng.');
     await sheet.getByTestId('account-no').fill('0071 000 123 456');
     await sheet.getByTestId('account-name').fill('Nguyễn Thị Demo');
     await expect(sheet.getByTestId('account-name-preview')).toHaveText('NGUYEN THI DEMO');

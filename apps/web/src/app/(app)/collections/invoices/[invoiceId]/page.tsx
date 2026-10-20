@@ -67,14 +67,16 @@ export default async function InvoicePage({ params }: { params: Params }) {
   const canEdit = member.role !== 'viewer';
   const qr = await qrState(invoice, member.household.id, locale);
   const [actions, accountAction] = await Promise.all([canEdit ? billActions(invoice) : null, qr.kind === 'noAccount' ? noAccountAction(member.role) : null]);
+  // A draft's `Phát hành` sits under the sentence saying when it would issue, where Mẹ reads it on a phone.
+  const issuing = invoice.status === 'draft';
   return (
     <div className="flex flex-col gap-5">
       <div className="print:hidden">
         <BackLink href="/collections" label={t('back')} />
       </div>
-      <InvoiceView invoice={invoice} qr={qr} place={place} asOf={clock.today()} locale={locale} noQrAction={accountAction} />
+      <InvoiceView invoice={invoice} qr={qr} place={place} asOf={clock.today()} locale={locale} noQrAction={issuing ? actions : accountAction} />
       <div className="flex flex-wrap items-start gap-3 print:hidden">
-        {actions}
+        {issuing ? null : actions}
         <PrintButton label={t('print')} />
         <IntentLink href={`/properties/${invoice.propertyId}/rental/leases/${invoice.leaseId}`} className={buttonVariants({ variant: 'outline' })}>
           {t('openLease')}

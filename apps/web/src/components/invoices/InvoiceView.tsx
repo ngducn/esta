@@ -119,9 +119,13 @@ export async function InvoiceView({
             </ul>
           </div>
           <dl className="flex flex-col">
-            <Total label={t('total')} amount={invoice.totalVnd} testId="invoice-total" />
-            <Total label={t('allocated')} amount={invoice.allocatedVnd} testId="invoice-allocated" />
-            <Total label={t('outstanding')} amount={invoice.outstandingVnd} strong testId="invoice-outstanding" />
+            <Total label={t('total')} amount={invoice.totalVnd} strong={invoice.status === 'void'} testId="invoice-total" />
+            {invoice.status === 'void' ? null : (
+              <>
+                <Total label={t('allocated')} amount={invoice.allocatedVnd} testId="invoice-allocated" />
+                <Total label={t('outstanding')} amount={invoice.outstandingVnd} strong testId="invoice-outstanding" />
+              </>
+            )}
           </dl>
         </Card>
 
@@ -136,7 +140,7 @@ export async function InvoiceView({
               <p data-testid="invoice-no-qr" data-reason={qr.kind} className="text-body text-ink-2">
                 {noQrText[qr.kind]()}
               </p>
-              {noQrAction}
+              {noQrAction === undefined ? null : <div className="flex flex-col print:hidden">{noQrAction}</div>}
             </div>
           )}
         </Card>

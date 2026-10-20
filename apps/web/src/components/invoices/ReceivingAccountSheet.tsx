@@ -53,7 +53,11 @@ export default function ReceivingAccountSheet({
   const [bank, setBank] = useState('');
   const [accountNo, setAccountNo] = useState('');
   const [accountName, setAccountName] = useState('');
-  const { refusal, pending, run } = useBillAction<AccountActionRefusal>(() => onOpenChange(false));
+  const { refusal, setRefusal, pending, run } = useBillAction<AccountActionRefusal>(() => onOpenChange(false));
+  const typed = (set: (value: string) => void) => (value: string) => {
+    set(value);
+    setRefusal(null);
+  };
   const folded = bankAccountName(accountName);
   const fieldError = (field: AccountActionRefusal) => (refusal === field ? labels.refusals[field] : null);
 
@@ -70,16 +74,16 @@ export default function ReceivingAccountSheet({
             <SheetDescription>{labels.body}</SheetDescription>
           </div>
           <div className="flex flex-col gap-1">
-            <FormSelect label={labels.bank} value={bank} options={banks} placeholder={labels.bankPick} onChange={setBank} testId="account-bank" />
+            <FormSelect label={labels.bank} value={bank} options={banks} placeholder={labels.bankPick} onChange={typed(setBank)} testId="account-bank" />
             <ActionRefusal message={fieldError('bank')} />
           </div>
-          <TextField label={labels.accountNo} value={accountNo} onChange={setAccountNo} error={fieldError('accountNo')} testId="account-no" inputMode="numeric" maxLength={30} />
+          <TextField label={labels.accountNo} value={accountNo} onChange={typed(setAccountNo)} error={fieldError('accountNo')} testId="account-no" inputMode="numeric" maxLength={30} />
           <div className="flex flex-col gap-1">
             <TextField
               label={labels.accountName}
               hint={labels.accountNameHint}
               value={accountName}
-              onChange={setAccountName}
+              onChange={typed(setAccountName)}
               error={fieldError('accountName')}
               testId="account-name"
               maxLength={60}
