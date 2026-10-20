@@ -23,6 +23,8 @@
   --due-fill: oklch(97.2% 0.022 80);
   --overdue-fill: oklch(96% 0.017 27);
   --vacant-fill: oklch(96% 0.005 258);
+  --qr-paper: oklch(99.5% 0.002 265);
+  --qr-ink: oklch(20.9% 0.01 268);
   --duration-fast: 150ms;
   --duration-base: 180ms;
   --duration-slow: 220ms;
@@ -51,6 +53,8 @@
   --due-fill: oklch(28% 0.04 70);
   --overdue-fill: oklch(27% 0.05 28);
   --vacant-fill: oklch(27% 0.012 265);
+  --qr-paper: oklch(99.5% 0.002 265);
+  --qr-ink: oklch(20.9% 0.01 268);
   color-scheme: dark;
 }
 
@@ -80,6 +84,8 @@
   --color-due-fill: var(--due-fill);
   --color-overdue-fill: var(--overdue-fill);
   --color-vacant-fill: var(--vacant-fill);
+  --color-qr-paper: var(--qr-paper);
+  --color-qr-ink: var(--qr-ink);
   --text-*: initial;
   --text-meta: 0.8125rem;
   --text-meta--line-height: 1.45;

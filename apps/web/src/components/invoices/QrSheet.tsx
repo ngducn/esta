@@ -1,0 +1,49 @@
+'use client';
+
+import Link from 'next/link';
+import { useMemo } from 'react';
+import { buttonVariants } from '@/components/ui/button-variants';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { qrMatrix } from '@/lib/qr';
+import type { InvoiceQrView } from '@/server/invoices/qr';
+import { QrPanel, type QrLabels } from './QrPanel';
+
+export type QrSheetLabels = QrLabels & { readonly close: string; readonly openInvoice: string };
+
+/** Loaded on the first `Mã QR`, so `qrcode` stays out of the board's own load. */
+export default function QrSheet({
+  open,
+  onOpenChange,
+  title,
+  description,
+  invoiceHref,
+  qr,
+  labels,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  invoiceHref: string;
+  qr: InvoiceQrView;
+  labels: QrSheetLabels;
+}) {
+  const matrix = useMemo(() => qrMatrix(qr.payload), [qr.payload]);
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent data-testid="qr-sheet" className="gap-4">
+        <div className="flex flex-col gap-1">
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
+        </div>
+        <QrPanel qr={qr} matrix={matrix} labels={labels} />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Link href={invoiceHref} data-testid="qr-open-invoice" className={buttonVariants({ variant: 'quiet', className: '-ml-2' })}>
+            {labels.openInvoice}
+          </Link>
+          <SheetClose className={buttonVariants({ variant: 'secondary' })}>{labels.close}</SheetClose>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

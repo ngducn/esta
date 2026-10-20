@@ -8,12 +8,13 @@ type ActionBase = {
 };
 
 /**
- * The actions a collections row offers, in the order they show. P3-11 and P3-13 add `Mã QR` and `Nhắc qua Zalo` here;
- * a viewer sees only the actions marked for viewers. A link navigates; `recordPayment` opens the sheet on the row.
+ * The actions a collections row offers, in the order they show. P3-13 adds `Nhắc qua Zalo` here; a viewer sees only
+ * the actions marked for viewers. A link navigates; `recordPayment` and `qr` open their sheet on the row.
  * Each label is a key in the `collections` messages.
  */
 export type CollectionRowAction =
   | (ActionBase & { readonly kind: 'recordPayment'; readonly label: 'recordPayment' })
+  | (ActionBase & { readonly kind: 'qr'; readonly label: 'qr' })
   | (ActionBase & { readonly kind: 'link'; readonly label: 'openLease'; readonly href: (row: CollectionRow) => string });
 
 export const COLLECTION_ROW_ACTIONS: readonly CollectionRowAction[] = [
@@ -22,6 +23,13 @@ export const COLLECTION_ROW_ACTIONS: readonly CollectionRowAction[] = [
     kind: 'recordPayment',
     label: 'recordPayment',
     forViewer: false,
+    appliesTo: (item) => item.row.outstandingVnd > 0,
+  },
+  {
+    id: 'qr',
+    kind: 'qr',
+    label: 'qr',
+    forViewer: true,
     appliesTo: (item) => item.row.outstandingVnd > 0,
   },
   {

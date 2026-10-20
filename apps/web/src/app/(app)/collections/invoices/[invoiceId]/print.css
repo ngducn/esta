@@ -1,0 +1,28 @@
+/* LSE-5: a bill prints on one A5 sheet, ink on paper whatever the theme, without the app around it. */
+@media print {
+  @page {
+    size: A5 portrait;
+    margin: 10mm;
+  }
+
+  body:has([data-print='invoice']) :is(aside, nav, header) {
+    display: none !important;
+  }
+
+  body:has([data-print='invoice']),
+  body:has([data-print='invoice']) main,
+  [data-print='invoice'] {
+    --ground: var(--qr-paper);
+    --surface: var(--qr-paper);
+    --surface-2: var(--qr-paper);
+    --ink: var(--qr-ink);
+    --ink-2: var(--qr-ink);
+    --ink-muted: var(--qr-ink);
+    --rule: color-mix(in oklch, var(--qr-ink) 25%, var(--qr-paper));
+    /* html sets its color from its own theme's --ink, so text without a color class would keep the dark theme's light ink. */
+    color: var(--ink);
+    background: var(--qr-paper);
+    padding: 0;
+    font-size: 12pt;
+  }
+}

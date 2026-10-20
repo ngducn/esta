@@ -385,6 +385,67 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          account_name: string
+          account_no: string
+          bank_bin: string
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          is_default: boolean
+          owner_party_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_no: string
+          bank_bin: string
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          is_default?: boolean
+          owner_party_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_no?: string
+          bank_bin?: string
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          is_default?: boolean
+          owner_party_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_bank_bin_fkey"
+            columns: ["bank_bin"]
+            isOneToOne: false
+            referencedRelation: "bank_bins"
+            referencedColumns: ["bin"]
+          },
+          {
+            foreignKeyName: "bank_accounts_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_accounts_household_id_owner_party_id_fkey"
+            columns: ["household_id", "owner_party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       bank_bins: {
         Row: {
           bin: string

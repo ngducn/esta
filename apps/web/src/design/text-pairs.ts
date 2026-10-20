@@ -25,5 +25,6 @@ export const colorPairs: readonly ColorPair[] = [
   { kind: 'text', foreground: 'surface', background: 'ink' },
   { kind: 'text', foreground: 'ink', background: 'rule' },
   { kind: 'text', foreground: 'ink-muted', background: 'rule' },
+  { kind: 'text', foreground: 'qr-ink', background: 'qr-paper' },
   ...onGrounds('shape', 'field'),
 ];

@@ -5,6 +5,7 @@ import { leaseTimeline, type PeriodMark, type TimelineRow } from '@esta/core/lea
 import type { Amendment, SchedulePeriod } from '@esta/core/schedule';
 import { useLocale, useTranslations } from 'next-intl';
 import { MoneyDisplay } from '@/components/money/money-display';
+import { IntentLink } from '@/components/shell/intent-link';
 import { StatusMark, StatusShape, statusMarks } from '@/components/status-mark';
 import { cn } from '@/lib/utils';
 import type { InvoiceSummary } from '@/server/leases/load';
@@ -56,7 +57,9 @@ function PeriodRow({ row, newRent }: { row: TimelineRow<InvoiceSummary>; newRent
         <p className="text-small break-words text-ink-muted">
           {invoice === null ? null : (
             <>
-              <span className="figures">{invoice.number}</span>
+              <IntentLink href={`/collections/invoices/${invoice.id}`} data-testid="invoice-link" className="figures font-semibold text-ink underline decoration-ink-muted underline-offset-4 hover:decoration-ink">
+                {invoice.number}
+              </IntentLink>
               {' · '}
             </>
           )}
