@@ -7,5 +7,5 @@
     "allowJs": true,
     "jsx": "react-jsx"
   },
-  "include": ["e2e", "playwright.config.ts", "playwright.prod.config.ts", "scripts", "eslint-rules", "supabase/seed/generator", "fixtures/certificates/generator"]
+  "include": ["e2e", "playwright.config.ts", "playwright.prod.config.ts", "scripts", "eslint-rules", "supabase/seed/generator", "fixtures/certificates/generator", "fixtures/statements"]
 }

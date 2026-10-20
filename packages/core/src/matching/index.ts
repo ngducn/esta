@@ -11,6 +11,7 @@ export {
   type StatementRow,
 } from './decode';
 export { sha256Hex } from './fingerprint';
+export { planImport, type ImportInvoice, type ImportReason, type ImportRow, type ImportStatus, type PlannedImport } from './import';
 export {
   HEADER_ALIASES,
   STATEMENT_LAYOUTS,

@@ -2053,6 +2053,7 @@ export type Database = {
           payer_party_id: string | null
           received_on: string
           source: string
+          statement_row_id: string | null
           updated_at: string
         }
         Insert: {
@@ -2069,6 +2070,7 @@ export type Database = {
           payer_party_id?: string | null
           received_on: string
           source?: string
+          statement_row_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -2085,6 +2087,7 @@ export type Database = {
           payer_party_id?: string | null
           received_on?: string
           source?: string
+          statement_row_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2107,6 +2110,13 @@ export type Database = {
             columns: ["household_id", "payer_party_id"]
             isOneToOne: false
             referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "payments_statement_row_fkey"
+            columns: ["household_id", "statement_row_id"]
+            isOneToOne: false
+            referencedRelation: "statement_rows"
             referencedColumns: ["household_id", "id"]
           },
         ]
@@ -2188,6 +2198,149 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "households"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      statement_imports: {
+        Row: {
+          bank_account_id: string
+          column_mapping: Json
+          committed_at: string | null
+          created_at: string
+          created_by: string | null
+          file_name: string
+          household_id: string
+          id: string
+          rejected: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bank_account_id: string
+          column_mapping: Json
+          committed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          household_id: string
+          id?: string
+          rejected?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bank_account_id?: string
+          column_mapping?: Json
+          committed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          household_id?: string
+          id?: string
+          rejected?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "statement_imports_household_id_bank_account_id_fkey"
+            columns: ["household_id", "bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "statement_imports_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      statement_rows: {
+        Row: {
+          amount_vnd: number
+          bank_ref: string
+          candidate_invoice_ids: string[]
+          created_at: string
+          created_by: string | null
+          description: string
+          fingerprint: string
+          household_id: string
+          id: string
+          import_id: string
+          invoice_id: string | null
+          posted_on: string
+          reason: string | null
+          row_index: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_vnd: number
+          bank_ref?: string
+          candidate_invoice_ids?: string[]
+          created_at?: string
+          created_by?: string | null
+          description: string
+          fingerprint: string
+          household_id: string
+          id?: string
+          import_id: string
+          invoice_id?: string | null
+          posted_on: string
+          reason?: string | null
+          row_index: number
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          amount_vnd?: number
+          bank_ref?: string
+          candidate_invoice_ids?: string[]
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          fingerprint?: string
+          household_id?: string
+          id?: string
+          import_id?: string
+          invoice_id?: string | null
+          posted_on?: string
+          reason?: string | null
+          row_index?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "statement_rows_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "statement_rows_household_id_import_id_fkey"
+            columns: ["household_id", "import_id"]
+            isOneToOne: false
+            referencedRelation: "statement_imports"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "statement_rows_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_balances"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "statement_rows_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["household_id", "id"]
           },
         ]
       }
@@ -2812,8 +2965,26 @@ export type Database = {
           unit_label: string
         }[]
       }
+      commit_statement_import: {
+        Args: { p_confirmed_row_ids?: string[]; p_import_id: string }
+        Returns: {
+          posted_count: number
+          skipped_count: number
+        }[]
+      }
       create_household: {
         Args: { p_display_name: string; p_name: string }
+        Returns: string
+      }
+      create_statement_import: {
+        Args: {
+          p_bank_account_id: string
+          p_column_mapping: Json
+          p_file_name: string
+          p_import_id: string
+          p_rejected: Json
+          p_rows: Json
+        }
         Returns: string
       }
       end_expired_leases: { Args: { p_as_of: string }; Returns: number }
@@ -2857,6 +3028,10 @@ export type Database = {
           prorated: boolean
           rent_vnd: number
         }[]
+      }
+      link_statement_line: {
+        Args: { p_payment_id: string; p_row_id: string }
+        Returns: undefined
       }
       national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
       preview_activation: {
@@ -3011,6 +3186,22 @@ export type Database = {
       set_property_location: {
         Args: { p_lat?: number; p_lng?: number; p_property_id: string }
         Returns: Json
+      }
+      statement_import_lines: {
+        Args: { p_import_id: string }
+        Returns: {
+          amount_vnd: number
+          bank_ref: string
+          candidate_invoice_ids: string[]
+          description: string
+          hand_payments: Json
+          id: string
+          invoice_id: string
+          posted_on: string
+          reason: string
+          row_index: number
+          state: string
+        }[]
       }
       suggest_current_unit: {
         Args: { p_text: string }

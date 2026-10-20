@@ -136,7 +136,7 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 36,
+      "value": 38,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -166,11 +166,13 @@
         "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
         "apps/web/src/components/rental/unit-list.tsx": 2,
         "apps/web/src/components/rental/unit-sheet.tsx": 1,
-        "apps/web/src/components/rental/utility-account-form.tsx": 1
+        "apps/web/src/components/rental/utility-account-form.tsx": 1,
+        "apps/web/src/components/statements/ImportPreview.tsx": 1,
+        "apps/web/src/components/statements/StatementUpload.tsx": 1
       }
     },
     "action-failure-mapping": {
-      "value": 30,
+      "value": 32,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -199,7 +201,9 @@
         "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
         "apps/web/src/components/rental/unit-list.tsx": 2,
         "apps/web/src/components/rental/unit-sheet.tsx": 1,
-        "apps/web/src/components/rental/utility-account-form.tsx": 1
+        "apps/web/src/components/rental/utility-account-form.tsx": 1,
+        "apps/web/src/components/statements/ImportPreview.tsx": 1,
+        "apps/web/src/components/statements/StatementUpload.tsx": 1
       }
     },
     "local-id-schema": {
@@ -559,6 +563,18 @@
       "from": 29,
       "to": 30,
       "reason": "Meter entry saves a month of readings through its own transition and catch, like every form until the shared action hook lands (until #193)"
+    },
+    {
+      "metric": "hand-rolled-action-call",
+      "from": 36,
+      "to": 38,
+      "reason": "statement import preview and commit each call one server action through a transition (until #193)"
+    },
+    {
+      "metric": "action-failure-mapping",
+      "from": 30,
+      "to": 32,
+      "reason": "statement import preview and commit each call one server action through a transition (until #193)"
     }
   ]
 }

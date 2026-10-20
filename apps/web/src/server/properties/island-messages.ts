@@ -21,3 +21,8 @@ export async function meterIslandIntl() {
   const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return { locale, messages: { meters: messages.meters } };
 }
+
+export async function statementIslandIntl() {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  return { locale, messages: { statements: messages.statements } };
+}
