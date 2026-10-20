@@ -25,7 +25,7 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
 | Decision for Ryan: may Claude's change history copy a full ID Mẹ typed? | Lane finding on #217 | #223 | Waiting for Ryan (default keep, recommend reduce) |
 | Public-repo safety: secret scanning, push protection, interaction limits, CI guard | Repo made public | Standing orders 23:30; #215 | Done, except #215 before the deploy |
 | Cleanup round (server action kit, action hook, test clock, gate follow-ups, extraction acceptance, smaller duplicates) | Review | #188 (folds into the connector's ops layer), #193, #208, #210, #184, #189 to #192, #194, #196, #198 | Queued |
-| Lows found by review lanes | Lanes | #207, #211, #212, #214, #219, #220, #222, #225, #226 | Queued; #220 before real data |
+| Lows found by review lanes | Lanes | #207, #211, #212, #214, #219, #220, #222, #225, #226; 2026-10-20: #240, #241, #243, #245, #247, #249, #250, #252, #254, #255, #257 | Queued; #220 before real data |
 | Squash migrations before the first deploy | Review | #197 | Before the deploy |
 | Rerun the outsider code review | Target 8.5 or better | Standing orders 16:45 | After the cleanup round |
 | Receipt wording: `lẻ` in amounts in words, and `Thông báo tiền thuê` for a bill with nothing received | Ryan, 2026-10-20: "use lẻ, and title unpaid ones Thông báo tiền thuê" | #251 | In review |
