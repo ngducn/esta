@@ -681,7 +681,8 @@
     "tenantRent": "{rent} mỗi tháng",
     "nextDue": "Hạn thu {date}",
     "leaseEnds": "Kết thúc ngày {date}",
-    "leasedCount": "Đang cho thuê {leased}/{total}"
+    "leasedCount": "Đang cho thuê {leased}/{total}",
+    "enterReadings": "Nhập chỉ số"
   },
   "leases": {
     "newTitle": "Hợp đồng mới cho {unit}",
@@ -1613,5 +1614,37 @@
     "memo": "Nội dung chuyển khoản",
     "account": "Tài khoản nhận",
     "noTenant": "Chưa ghi người thuê"
+  },
+  "meters": {
+    "title": "Chỉ số điện nước",
+    "monthHeading": "Tháng {month}",
+    "remaining": "{count, plural, other {Còn # phòng chưa nhập}}",
+    "complete": "{count, plural, other {Đã nhập đủ # phòng}}",
+    "roomColumn": "Phòng",
+    "kind": "{kind, select, electricity {Điện, kWh} water {Nước, m³} other {Đồng hồ}}",
+    "noMeter": "Không có đồng hồ",
+    "previous": "Tháng {month}: {reading, number}",
+    "firstReading": "Chỉ số đầu tiên",
+    "used": "Dùng {used, number} {kind, select, electricity {kWh} water {m³} other {đơn vị}}",
+    "readOn": "Nhập ngày {date}",
+    "notNumber": "Nhập số trên đồng hồ, không có phần lẻ.",
+    "belowPrevious": "Thấp hơn chỉ số tháng trước ({reading, number}). Kiểm tra lại.",
+    "anomaly": "Cao gấp 3 lần mức thường ({usual, number} {kind, select, electricity {kWh} water {m³} other {đơn vị}} mỗi tháng)",
+    "save": "Lưu chỉ số",
+    "saving": "Đang lưu…",
+    "saved": "Đã lưu chỉ số tháng {month}. {issued, plural, =0 {Chưa có hóa đơn nào phát hành.} other {Đã phát hành # hóa đơn.}}",
+    "unbilled": "{count, plural, other {# chỉ số chưa vào hóa đơn nào vì hợp đồng của phòng không còn kỳ thu nào. Nếu gia hạn hợp đồng, số này sẽ vào hóa đơn đầu của hợp đồng mới; nếu không, hãy thu riêng hoặc trừ vào tiền cọc.}}",
+    "nothingChanged": "Không có chỉ số nào thay đổi.",
+    "fixFirst": "Sửa các chỉ số được đánh dấu rồi lưu lại.",
+    "errorBelowPrevious": "Có chỉ số thấp hơn tháng trước. Tải lại trang để xem số mới nhất.",
+    "errorAboveNext": "Có chỉ số cao hơn tháng sau. Kiểm tra lại.",
+    "errorTooLarge": "Có chỉ số dùng quá 100.000 trong một tháng, có thể đã gõ thừa số. Kiểm tra lại số trên đồng hồ.",
+    "errorMonth": "Chưa nhập được chỉ số cho tháng này.",
+    "errorNetwork": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
+    "empty": "Nhà này chưa có đồng hồ điện nước.",
+    "emptyBody": "Khi mỗi phòng có đồng hồ, chỉ số hằng tháng được nhập ở đây.",
+    "viewerNote": "Bạn chỉ xem được chỉ số, không sửa được.",
+    "priceNote": "Giả định: tiền điện nước tính theo giá đặt cho từng đồng hồ. Quy định của Bộ Công Thương giới hạn giá điện thu của người thuê nhà, nên hãy kiểm tra giá trước khi gửi hóa đơn.",
+    "monthNav": "Chọn tháng"
   }
 }

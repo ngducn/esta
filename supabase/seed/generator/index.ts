@@ -8,6 +8,7 @@ import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { documents } from './documents.ts';
 import { expenses, vendors } from './expenses.ts';
 import { certificates, parcels, structures } from './legal.ts';
+import { meters } from './meters.ts';
 import { billingSql, depositEntries, leaseAmendments, leases, tenants } from './leasing.ts';
 import { ownershipShares } from './ownership.ts';
 import { parties } from './parties.ts';
@@ -30,6 +31,7 @@ const EMITTERS: readonly Emitter[] = [
   ownershipShares,
   units,
   utilityAccounts,
+  meters,
   tenants,
   leases,
   leaseAmendments,

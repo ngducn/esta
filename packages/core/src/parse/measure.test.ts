@@ -4,7 +4,7 @@ import type { z } from 'zod';
 import { parcelSchema, purposeSchema, structureSchema } from '../agent-schemas/certificate_v1';
 import { readInput } from '../extraction/fields';
 import { readKindDetails } from '../properties/form-fields';
-import { measureInputText, parseMeasureInput } from './measure';
+import { measureInputText, parseMeasureInput, parseReadingInput } from './measure';
 
 const number = (value: unknown) => (typeof value === 'number' ? value : null);
 
@@ -122,5 +122,23 @@ describe('measureInputText', () => {
         expect(parseMeasureInput(measureInputText(value), 'area')).toEqual({ ok: true, value });
       }),
     );
+  });
+});
+
+describe('parseReadingInput', () => {
+  it('reads whole kWh or m³ as typed, grouped or not', () => {
+    for (const [text, value] of [['2967', 2967], [' 0 ', 0], ['12.345', 12345], ['12 345', 12345], ['1.234.567', 1234567]] as const) {
+      expect(parseReadingInput(text), text).toEqual({ ok: true, value });
+    }
+  });
+
+  it('refuses a fraction, an empty field, stray text and more than nine digits', () => {
+    expect(parseReadingInput('12,5')).toEqual({ ok: false, reason: 'too_precise' });
+    expect(parseReadingInput('1.5')).toEqual({ ok: false, reason: 'too_precise' });
+    expect(parseReadingInput('  ')).toEqual({ ok: false, reason: 'empty' });
+    expect(parseReadingInput('12 5')).toEqual({ ok: false, reason: 'invalid' });
+    expect(parseReadingInput('-5')).toEqual({ ok: false, reason: 'invalid' });
+    expect(parseReadingInput('120 kWh')).toEqual({ ok: false, reason: 'invalid' });
+    expect(parseReadingInput('1000000000')).toEqual({ ok: false, reason: 'too_large' });
   });
 });

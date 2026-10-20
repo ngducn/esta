@@ -24,6 +24,7 @@
     "./format": "./src/format/index.ts",
     "./lease": "./src/lease/index.ts",
     "./maps": "./src/maps/index.ts",
+    "./meters": "./src/meters/index.ts",
     "./matching": "./src/matching/index.ts",
     "./money": "./src/money/vnd.ts",
     "./names": "./src/names/index.ts",

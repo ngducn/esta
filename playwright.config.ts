@@ -31,6 +31,7 @@ const sharedClock = [
   'property-wizard.spec.ts',
   'northstar.spec.ts',
   'expenses.spec.ts',
+  'meters.spec.ts',
 ];
 
 export default defineConfig({
