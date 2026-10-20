@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(48);
+select plan(51);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -199,6 +199,18 @@ select results_eq(
      where i.lease_id = '00000000-0000-4000-8000-00000000e011' and i.period_start = '2026-12-25' and l.kind = 'adjustment' $$,
   $$ values (4, -3500::bigint, -14000::bigint, 'Điều chỉnh tiền điện tháng 10/2026: -4 kWh') $$,
   'and the draft''s adjustment becomes a credit of 4 kWh');
+select lives_ok($$ select public.void_invoice((select id from public.invoices where lease_id = '00000000-0000-4000-8000-00000000e011' and period_start = '2026-11-25'), 'Demo: gửi nhầm') $$,
+  'Mẹ voids Phòng 1''s bill from 25/11');
+reset role;
+select tests.act_as_service('{"x-esta-actor": "system:cron"}');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-26', '2026-11-26T00:30:00+07:00') $$, :'a'), 'the nightly run after the void');
+select results_eq(
+  $$ select l.kind, l.quantity::integer, l.amount_vnd from public.invoice_lines l join public.invoices i on i.id = l.invoice_id
+     where i.lease_id = '00000000-0000-4000-8000-00000000e011' and i.period_start = '2026-12-25' and l.kind = 'adjustment' order by l.amount_vnd $$,
+  $$ values ('adjustment'::text, 6, 108000::bigint), ('adjustment', 116, 406000) $$,
+  'bills October''s whole use on the December draft, since the void bill charged nothing');
+reset role;
+select tests.act_as('member.a@test.esta.test');
 select results_eq($$ select saved, issued from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-10-01',
   '[{"meter_id": "00000000-0000-4000-8000-00000000d12a", "reading": 409}]') $$,
   $$ values (1, 0) $$, 'Phòng 2''s water read late, after its bill issued on its due date');
