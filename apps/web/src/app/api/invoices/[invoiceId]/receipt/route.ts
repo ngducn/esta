@@ -1,3 +1,4 @@
+import type { ReceiptKind } from '@esta/core/receipt';
 import { idSchema } from '@esta/ops';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -14,12 +15,14 @@ const formatSchema = z.enum(['pdf', 'png']).catch('pdf');
 
 const NO_STORE = { 'Cache-Control': 'private, no-store' };
 
+const FILE_PREFIX: Readonly<Record<ReceiptKind, string>> = { notice: 'thong-bao', receipt: 'bien-nhan' };
+
 /** A file name a phone and Zalo keep as typed: ASCII letters, digits and dashes only. */
-const fileName = (number: string, format: 'pdf' | 'png') => `bien-nhan-${number.replace(/[^A-Za-z0-9-]+/g, '-')}.${format}`;
+const fileName = (kind: ReceiptKind, number: string, format: 'pdf' | 'png') => `${FILE_PREFIX[kind]}-${number.replace(/[^A-Za-z0-9-]+/g, '-')}.${format}`;
 
 /**
- * LSE-6: `?format=pdf` is the A5 receipt, `?format=png` the picture for Zalo. The bill is read with the member's
- * session, so a bill of another household, a draft or a voided one answers 404.
+ * LSE-6: `?format=pdf` is the A5 receipt, `?format=png` the picture for Zalo, each a notice while nothing is received.
+ * The bill is read with the member's session, so a bill of another household, a draft or a voided one answers 404.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ invoiceId: string }> }) {
   const parsed = paramsSchema.safeParse(await params);
@@ -34,7 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ invo
     headers: {
       ...NO_STORE,
       'Content-Type': format === 'png' ? 'image/png' : 'application/pdf',
-      'Content-Disposition': `inline; filename="${fileName(receipt.number, format)}"`,
+      'Content-Disposition': `inline; filename="${fileName(receipt.kind, receipt.number, format)}"`,
     },
   });
 }

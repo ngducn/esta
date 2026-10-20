@@ -1343,7 +1343,7 @@
     "accountSaving": "Đang lưu…",
     "accountClose": "Đóng",
     "accountRefusal": "{reason, select, bank {Chọn ngân hàng.} accountNo {Số tài khoản chỉ gồm chữ số và chữ cái, tối đa 19 ký tự.} accountName {Nhập tên chủ tài khoản, tối đa 50 ký tự.} duplicate {Gia đình đã có tài khoản này.} forbidden {Chỉ quản trị viên mới thêm được tài khoản nhận tiền.} other {Chưa lưu được. Kiểm tra kết nối rồi thử lại.}}",
-    "receiptPdf": "Biên nhận PDF",
+    "receiptPdf": "{kind, select, notice {Thông báo PDF} other {Biên nhận PDF}}",
     "receiptPng": "Ảnh gửi Zalo"
   },
   "payments": {
@@ -1598,7 +1598,7 @@
     "manualLink": "Nhập tay"
   },
   "receipt": {
-    "title": "Biên nhận tiền thuê",
+    "title": "{kind, select, notice {Thông báo tiền thuê} other {Biên nhận tiền thuê}}",
     "number": "Số",
     "issuedOn": "Ngày lập",
     "tenant": "Người thuê",

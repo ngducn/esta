@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { query } from '../scripts/db-checksum.ts';
 import { decodeQrPng, type DecodedImage } from '../scripts/decode-qr.ts';
+import { pdfText } from '../scripts/receipt-text.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberRest } from './helpers/auth-api';
@@ -114,25 +115,27 @@ test('rule 2: the bill lists its charges and totals beside the code, and prints 
   expect(pdf.match(/\/Type\s*\/Page[^s]/g)).toHaveLength(1);
 });
 
-test('rule 3: from 500 million the code carries no amount, and the bill shows it in words and figures with the split note', async ({ page }) => {
+test('rule 3: from 500 million the code carries no amount, and the bill shows it in words with lẻ and figures with the split note, as its notice prints it', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
   const id = invoiceId(3, 'di-an', 4, '2026-10-25');
   const { memo_code: memoCode } = await storedInvoice(page, id);
   const line = seedId('e2e:invoice-line:lane-3:cap');
   query(workdir, `insert into public.invoice_lines (id, household_id, invoice_id, kind, description, quantity, unit_price_vnd, amount_vnd, sort_order)
-    select '${line}', i.household_id, i.id, 'adjustment', 'Điều chỉnh Demo', 1, 597500000, 597500000, 9 from public.invoices i where i.id = '${id}' returning id`);
+    select '${line}', i.household_id, i.id, 'adjustment', 'Điều chỉnh Demo', 1, 602500000, 602500000, 9 from public.invoices i where i.id = '${id}' returning id`);
   try {
     await page.goto(invoicePath(id));
     const panel = page.getByTestId('invoice-qr');
-    await expect(page.getByTestId('invoice-outstanding')).toHaveText(vnd('600.000.000'));
-    await expect(panel.getByTestId('qr-amount')).toHaveText(vnd('600.000.000'));
-    await expect(panel.getByTestId('qr-amount-words')).toHaveText('Sáu trăm triệu đồng');
+    await expect(page.getByTestId('invoice-outstanding')).toHaveText(vnd('605.000.000'));
+    await expect(panel.getByTestId('qr-amount')).toHaveText(vnd('605.000.000'));
+    await expect(panel.getByTestId('qr-amount-words')).toHaveText('Sáu trăm lẻ năm triệu đồng');
     await expect(panel.getByTestId('qr-split-note')).toHaveText(
       `Giả địnhSố tiền từ ${vnd('500.000.000')} trở lên. Mã QR không kèm số tiền, hãy chia thành nhiều lần chuyển.`,
     );
     expectInvoiceCode(await scan(panel.getByTestId('qr-code')), undefined, memoCode);
     expect(await seriousAxeViolations(page)).toEqual([]);
     await page.screenshot({ path: test.info().outputPath('bill-cap-390-light.png'), fullPage: true });
+    const notice = await page.request.get(`/api/invoices/${id}/receipt?format=pdf`);
+    expect(await pdfText(await notice.body())).toContain('Bằng chữ: Sáu trăm lẻ năm triệu đồng');
   } finally {
     query(workdir, `delete from public.invoice_lines where id = '${line}' returning id`);
   }

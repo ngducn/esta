@@ -109,11 +109,14 @@ function qrBlock(pen: Pen, receipt: Receipt): void {
   pen.y = Math.min(pen.y, top - QR_PT);
 }
 
-/** LSE-6: the A5 receipt with the font embedded and subset, so its text extracts as Studio stores it. */
+/**
+ * LSE-6: the A5 receipt, or the notice while nothing is received, with the font embedded and subset, so its text
+ * extracts as Studio stores it.
+ */
 export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
-  pdf.setTitle(receipt.labels.title, { showInWindowTitleBar: true });
+  pdf.setTitle(receipt.title, { showInWindowTitleBar: true });
   pdf.setLanguage('vi-VN');
   pdf.setCreator('Esta');
   pdf.setProducer('Esta');
@@ -125,7 +128,7 @@ export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
   pen.y -= 4;
   rule(pen, 'ink', 1);
   pen.y -= 18;
-  text(pen, receipt.labels.title, LEFT, RIGHT - LEFT, { font: 'bold', size: 20 });
+  text(pen, receipt.title, LEFT, RIGHT - LEFT, { font: 'bold', size: 20 });
   text(pen, `${receipt.labels.issuedOn} ${receipt.issuedOn}`, LEFT, RIGHT - LEFT, { size: 9, color: 'ink-muted' });
   pen.y -= 10;
   field(pen, receipt.labels.tenant, receipt.tenant, { font: 'bold' });
@@ -146,7 +149,7 @@ export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
   amountRow(pen, receipt.labels.total, receipt.total, { font: 'bold', size: 14 });
   text(pen, `${receipt.labels.words} ${receipt.totalWords}`, LEFT, RIGHT - LEFT, { color: 'ink-2' });
   pen.y -= 6;
-  amountRow(pen, receipt.labels.received, receipt.received);
+  if (receipt.received !== null) amountRow(pen, receipt.labels.received, receipt.received);
   amountRow(pen, receipt.labels.outstanding, receipt.outstanding, { font: 'bold' });
   pen.y -= 14;
   if (receipt.paid) text(pen, receipt.labels.paidInFull, LEFT, RIGHT - LEFT, { font: 'bold', size: 12, color: 'paid' });

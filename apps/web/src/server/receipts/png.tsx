@@ -71,7 +71,7 @@ function ReceiptPicture({ receipt }: { receipt: Receipt }) {
             <span>{receipt.number}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', fontWeight: 700, fontSize: 56, lineHeight: 1.3, marginTop: 32 }}>{receipt.labels.title}</div>
+        <div style={{ display: 'flex', fontWeight: 700, fontSize: 56, lineHeight: 1.3, marginTop: 32 }}>{receipt.title}</div>
         <div style={{ display: 'flex', gap: 8, fontSize: 26, marginTop: 4, marginBottom: 24, ...muted }}>
           <span>{receipt.labels.issuedOn}</span>
           <span>{receipt.issuedOn}</span>
@@ -94,7 +94,7 @@ function ReceiptPicture({ receipt }: { receipt: Receipt }) {
             <span>{receipt.totalWords}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: 12 }}>
-            <Amount label={receipt.labels.received} amount={receipt.received} />
+            {receipt.received === null ? null : <Amount label={receipt.labels.received} amount={receipt.received} />}
             <Amount label={receipt.labels.outstanding} amount={receipt.outstanding} strong />
           </div>
         </div>

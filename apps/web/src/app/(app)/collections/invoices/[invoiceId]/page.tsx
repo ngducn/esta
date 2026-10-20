@@ -1,4 +1,5 @@
 import type { Locale } from '@esta/core/format';
+import { receiptKind } from '@esta/core/receipt';
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -79,7 +80,9 @@ export default async function InvoicePage({ params }: { params: Params }) {
       <div className="flex flex-wrap items-start gap-3 print:hidden">
         {issuing ? null : actions}
         <PrintButton label={t('print')} />
-        {invoice.status === 'issued' ? <ReceiptLinks invoiceId={invoice.id} labels={{ pdf: t('receiptPdf'), png: t('receiptPng') }} /> : null}
+        {invoice.status === 'issued' ? (
+          <ReceiptLinks invoiceId={invoice.id} labels={{ pdf: t('receiptPdf', { kind: receiptKind(invoice.totalVnd, invoice.allocatedVnd) }), png: t('receiptPng') }} />
+        ) : null}
         <IntentLink href={`/properties/${invoice.propertyId}/rental/leases/${invoice.leaseId}`} className={buttonVariants({ variant: 'outline' })}>
           {t('openLease')}
         </IntentLink>
