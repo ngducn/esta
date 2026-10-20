@@ -36,6 +36,7 @@ export { invoiceIssue, invoiceVoid, type InvoiceChanged, type InvoiceRefusal } f
 export { leaseCreate, leaseEdit, type LeaseRefusal, type LeaseSaved } from './lease-ops';
 export { readLeases, readLeaseSchedule, scheduleUntil, tenantRowSchema, withTenants, type LeaseWithTenant, type Tenant } from './leases';
 export { readMembership } from './member';
+export { meterReadingsSave, type MeterRefusal, type ReadingsSaved } from './meter-ops';
 export { runOp, settle, type Op, type OpContext } from './op';
 export { readPropertyDetail, readPropertyForm, searchProperties, type PropertyDetailRow, type PropertyRow, type StoredProperty } from './properties';
 export { personCreate, type PersonRefusal, type PersonSaved, type PossibleDuplicate } from './person-ops';

@@ -32,3 +32,20 @@ export function parseMeasureInput(text: string, measure: Measure): Result<number
 
 /** A measure as Mẹ types it, `350,5` for 350.5, which `parseMeasureInput` reads back as the same number. */
 export const measureInputText = (value: number) => String(value).replace('.', ',');
+
+/** `meter_readings.reading`: whole units up to nine digits. */
+const MAX_READING = 999_999_999;
+
+/**
+ * Reads a meter reading in whole kWh or m³ with the same grouping rule, such as `2967`, `12.345` or `12 345`. A meter
+ * reads from 0, and a fraction is refused, since bills charge whole units, so `12,5` is never 125.
+ */
+export function parseReadingInput(text: string): Result<number, MeasureReason> {
+  const trimmed = text.trim();
+  if (trimmed === '') return { ok: false, reason: 'empty' };
+  const match = GROUPED.exec(trimmed) ?? PLAIN.exec(trimmed);
+  if (match === null) return { ok: false, reason: 'invalid' };
+  if ((match.groups?.fraction ?? '') !== '') return { ok: false, reason: 'too_precise' };
+  const value = Number((match.groups?.integer ?? '').replace(/\D/g, ''));
+  return value > MAX_READING ? { ok: false, reason: 'too_large' } : { ok: true, value };
+}
