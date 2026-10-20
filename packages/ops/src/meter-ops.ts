@@ -14,8 +14,11 @@ const readingsInputSchema = z.strictObject({
 });
 type Readings = z.output<typeof readingsInputSchema>;
 
-/** How many readings changed, and how many bills went out because their rooms are now read (LSE-4). */
-export type ReadingsSaved = { readonly saved: number; readonly issued: number };
+/**
+ * How many readings changed, how many bills went out because their rooms are now read, and how many months' use no bill
+ * will carry because the room's lease has ended (LSE-4).
+ */
+export type ReadingsSaved = { readonly saved: number; readonly issued: number; readonly unbilled: number };
 export type MeterRefusal = { readonly kind: 'below_previous' | 'above_next' | 'use_too_large' | 'month_after_today' };
 
 const SENTINELS: Readonly<Record<string, MeterRefusal | CommonRefusal>> = {
@@ -52,12 +55,12 @@ export const meterReadingsSave = defineOp<Readings, Readings, ReadingsSaved, Met
   input: readingsInputSchema,
   async plan(ctx, input) {
     const stored = await storedReadings(ctx, input);
-    return input.readings.every((entry) => stored.get(entry.meter_id) === entry.reading) ? unchanged({ saved: 0, issued: 0 }) : change(input);
+    return input.readings.every((entry) => stored.get(entry.meter_id) === entry.reading) ? unchanged({ saved: 0, issued: 0, unbilled: 0 }) : change(input);
   },
   async apply(ctx, { property_id, reading_month, readings }) {
     const { data, error } = await ctx.db.rpc('save_meter_readings', { p_property_id: property_id, p_reading_month: reading_month, p_readings: readings });
     if (error) return refuse(dbRefusal(error, SENTINELS));
     const [row] = data;
-    return { ok: true, value: { saved: row?.saved ?? 0, issued: row?.issued ?? 0 } };
+    return { ok: true, value: { saved: row?.saved ?? 0, issued: row?.issued ?? 0, unbilled: row?.unbilled ?? 0 } };
   },
 });

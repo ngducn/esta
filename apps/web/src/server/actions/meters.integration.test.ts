@@ -88,7 +88,7 @@ beforeAll(async () => {
 describe('saveReadings against local Supabase (LSE-4)', () => {
   it("issues Phòng A's October bill the day both its meters are read, with September's use at each meter's price", async () => {
     expect(await bill(leases.a, '2026-10-25')).toMatchObject({ status: 'draft', issue_on: '2026-10-25', lines: [{ kind: 'rent' }] });
-    expect(await saveReadings(september({ aPower: 1200, aWater: 50 }))).toEqual({ ok: true, value: { saved: 2, issued: 1 } });
+    expect(await saveReadings(september({ aPower: 1200, aWater: 50 }))).toEqual({ ok: true, value: { saved: 2, issued: 1, unbilled: 0 } });
     expect(await bill(leases.a, '2026-10-25')).toEqual({
       status: 'issued',
       issue_on: '2026-10-07',
@@ -101,14 +101,14 @@ describe('saveReadings against local Supabase (LSE-4)', () => {
   });
 
   it("leaves Phòng B's October bill a draft while its water is unread", async () => {
-    expect(await saveReadings(september({ bPower: 2150 }))).toEqual({ ok: true, value: { saved: 1, issued: 0 } });
+    expect(await saveReadings(september({ bPower: 2150 }))).toEqual({ ok: true, value: { saved: 1, issued: 0, unbilled: 0 } });
     expect(await bill(leases.b, '2026-10-25')).toMatchObject({ status: 'draft', lines: [{ kind: 'rent' }, { kind: 'electricity', quantity: 150, amount_vnd: 525_000 }] });
   });
 
   it("puts Phòng C's September use, read after its October bill went out, on November's draft and leaves October as it was", async () => {
     const october = await bill(leases.c, '2026-10-01');
     expect(october).toMatchObject({ status: 'issued', lines: [{ kind: 'rent' }] });
-    expect(await saveReadings(september({ cPower: 560 }))).toEqual({ ok: true, value: { saved: 1, issued: 0 } });
+    expect(await saveReadings(september({ cPower: 560 }))).toEqual({ ok: true, value: { saved: 1, issued: 0, unbilled: 0 } });
     expect(await bill(leases.c, '2026-10-01')).toEqual(october);
     expect(await bill(leases.c, '2026-11-01')).toEqual({
       status: 'draft',
@@ -124,6 +124,6 @@ describe('saveReadings against local Supabase (LSE-4)', () => {
     expect(await saveReadings(september({ bWater: 69 }))).toEqual({ ok: false, reason: 'belowPrevious' });
     const { data } = await client.from('meter_readings').select('reading').eq('meter_id', meters.bWater).eq('reading_month', '2026-09-01');
     expect(data).toEqual([]);
-    expect(await saveReadings(september({ aPower: 1200, aWater: 50 }))).toEqual({ ok: true, value: { saved: 0, issued: 0 } });
+    expect(await saveReadings(september({ aPower: 1200, aWater: 50 }))).toEqual({ ok: true, value: { saved: 0, issued: 0, unbilled: 0 } });
   });
 });

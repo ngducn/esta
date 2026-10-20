@@ -2961,6 +2961,7 @@ export type Database = {
         Returns: {
           issued: number
           saved: number
+          unbilled: number
         }[]
       }
       search_documents: {

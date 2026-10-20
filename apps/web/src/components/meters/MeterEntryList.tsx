@@ -70,7 +70,8 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
         setError(t(ERRORS[result.reason]));
         return;
       }
-      notice(t('saved', { month: monthLabel, issued: result.value.issued }));
+      const { issued, unbilled } = result.value;
+      notice(unbilled === 0 ? t('saved', { month: monthLabel, issued }) : `${t('saved', { month: monthLabel, issued })} ${t('unbilled', { count: unbilled })}`);
       router.refresh();
     });
   };

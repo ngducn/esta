@@ -1633,6 +1633,7 @@
     "save": "Lưu chỉ số",
     "saving": "Đang lưu…",
     "saved": "Đã lưu chỉ số tháng {month}. {issued, plural, =0 {Chưa có hóa đơn nào phát hành.} other {Đã phát hành # hóa đơn.}}",
+    "unbilled": "{count, plural, other {# chỉ số không vào hóa đơn nào vì hợp đồng của phòng đã hết. Hãy thu riêng hoặc trừ vào tiền cọc.}}",
     "nothingChanged": "Không có chỉ số nào thay đổi.",
     "fixFirst": "Sửa các chỉ số được đánh dấu rồi lưu lại.",
     "errorBelowPrevious": "Có chỉ số thấp hơn tháng trước. Tải lại trang để xem số mới nhất.",

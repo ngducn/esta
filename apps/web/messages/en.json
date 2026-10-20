@@ -1633,6 +1633,7 @@
     "save": "Save readings",
     "saving": "Saving…",
     "saved": "Saved the readings for {month}. {issued, plural, =0 {No bill issued yet.} one {# bill issued.} other {# bills issued.}}",
+    "unbilled": "{count, plural, one {# reading goes on no bill because the room's lease has ended. Collect it yourself or deduct it from the deposit.} other {# readings go on no bill because the rooms' leases have ended. Collect them yourself or deduct them from the deposit.}}",
     "nothingChanged": "No reading changed.",
     "fixFirst": "Fix the marked readings, then save again.",
     "errorBelowPrevious": "A reading is lower than last month's. Reload the page to see the latest numbers.",
