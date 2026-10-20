@@ -78,6 +78,11 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
             </p>
           )}
         </div>
+        {member.role === 'viewer' ? (
+          <p data-testid="meter-viewer-note" className="text-body text-ink-2">
+            {t('viewerNote')}
+          </p>
+        ) : null}
       </div>
       {rooms.length === 0 ? (
         <EmptyState title={t('empty')} body={t('emptyBody')} icon={Gauge} />

@@ -223,7 +223,7 @@ test('rule 7: a viewer reads the month with no input to change and no Lưu', asy
   await expect(page.getByTestId('meter-room')).toHaveCount(8);
   for (const input of await page.getByTestId('meter-input').all()) await expect(input).toHaveAttribute('readonly', '');
   await expect(page.getByTestId('meter-save')).toHaveCount(0);
-  await expect(page.getByTestId('meter-form')).toContainText('Bạn chỉ xem được chỉ số, không sửa được.');
+  await expect(page.getByTestId('meter-viewer-note')).toHaveText('Bạn chỉ xem được chỉ số, không sửa được.');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('meters-viewer-390-light.png') });
 });

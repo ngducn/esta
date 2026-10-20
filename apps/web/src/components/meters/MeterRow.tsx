@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import type { KeyboardEvent } from 'react';
 import { StatusShape } from '@/components/status-mark';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import type { MeterView } from '@/server/meters/load';
 
 /** What a typed reading means beside the one before it: nothing yet, a refusal, or the month's use. */
@@ -71,7 +72,7 @@ export function MeterRow({
         aria-describedby={`${id}-previous ${id}-message`}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={onEnter}
-        className="figures w-32 text-right text-lead"
+        className={cn('figures w-32 text-right text-lead', canEdit ? null : 'border-rule bg-surface-2')}
       />
       <div className="min-w-0 text-small">
         <p id={`${id}-previous`} data-testid="meter-previous" className="figures text-ink-muted">

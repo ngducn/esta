@@ -137,9 +137,7 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
           </Button>
           <FieldMessage id="meter-form-error" error={error} />
         </div>
-      ) : (
-        <p className="text-body text-ink-2">{t('viewerNote')}</p>
-      )}
+      ) : null}
     </form>
   );
 }
