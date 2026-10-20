@@ -6,6 +6,11 @@ function nameParts(fullName: string): NameParts {
   return { given: words.at(-1) ?? '', middle: words.slice(1, -1).join(' '), family: words[0] ?? '' };
 }
 
+/** The name a person is called by, the last word of a Vietnamese full name: `Hường` in `Nguyễn Thị Hường`. */
+export function givenName(fullName: string): string {
+  return nameParts(fullName).given;
+}
+
 /** Vietnamese names are written family, middle, given; this key reads given, middle, family. */
 export function sortKeyVietnameseName(fullName: string): string {
   const { given, middle, family } = nameParts(fullName);

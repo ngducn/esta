@@ -240,8 +240,8 @@ const sqlText = (text: string) => `'${text.replaceAll("'", "''")}'`;
 /**
  * The invoices and payments of every household, written after the tables. The database bills: `end_expired_leases` and
  * `run_invoicing` run for each night from HISTORY_FROM to SPEC_TODAY, as the daily cron does, and meter entry issues Dĩ An's
- * October drafts on 2026-10-03. A seed-only trigger gives each invoice and line its seed id and a memo code drawn from its
- * seed key, so two resets write the same rows. Then every issued invoice due before SPEC_TODAY is paid in full except
+ * October drafts on 2026-10-03. Seed-only triggers give each invoice and line its seed id, and each invoice a memo code
+ * and, once issued, a share token drawn from its seed key, so two resets write the same rows. Then every issued invoice due before SPEC_TODAY is paid in full except
  * UNPAID: rooms from two days early to a week late, three in ten in cash, companies by transfer up to six days early.
  * Draws come from md5 of a scope string, the SQL side of `rngFor`. `supabase db reset` prepares every seed statement
  * before it runs the first, so each statement that reads a table this file creates sits inside the DO block.
@@ -268,6 +268,18 @@ begin
 end;
 $$;
 create trigger seed_invoice before insert on public.invoices for each row execute function pg_temp.seed_invoice();
+
+-- Sorts before share_invoice, which keeps a token already set.
+create function pg_temp.seed_invoice_share() returns trigger language plpgsql as $$
+begin
+  if new.status = 'issued' and (tg_op = 'INSERT' or old.status <> 'issued') then
+    select translate(rtrim(encode(decode(md5('seed:invoice-share:' || k.key || ':' || new.period_start), 'hex'), 'base64'), '='), '+/', '-_')
+    into new.share_token from pg_temp.seed_lease k where k.lease_id = new.lease_id;
+  end if;
+  return new;
+end;
+$$;
+create trigger seed_invoice_share before insert or update on public.invoices for each row execute function pg_temp.seed_invoice_share();
 
 create function pg_temp.seed_invoice_line() returns trigger language plpgsql as $$
 begin
@@ -298,6 +310,7 @@ begin
     end if;
   end loop;
   drop trigger seed_invoice on public.invoices;
+  drop trigger seed_invoice_share on public.invoices;
   drop trigger seed_invoice_line on public.invoice_lines;
 
   create temporary table seed_payment as
@@ -339,6 +352,6 @@ end;
 $$;
 
 drop table pg_temp.seed_lease, pg_temp.seed_payment, pg_temp.seed_transfer;
-drop function pg_temp.seed_invoice(), pg_temp.seed_invoice_line(), pg_temp.seed_draw(text, integer);
+drop function pg_temp.seed_invoice(), pg_temp.seed_invoice_share(), pg_temp.seed_invoice_line(), pg_temp.seed_draw(text, integer);
 `;
 }

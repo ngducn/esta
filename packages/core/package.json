@@ -35,6 +35,7 @@
     "./properties/ownership": "./src/properties/ownership.ts",
     "./properties/owners-from-holders": "./src/properties/owners-from-holders.ts",
     "./receipt": "./src/receipt/model.ts",
+    "./reminder": "./src/reminder/templates.ts",
     "./result": "./src/result.ts",
     "./schedule": "./src/schedule/index.ts",
     "./schemas/lease": "./src/schemas/lease.ts",

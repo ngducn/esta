@@ -42,7 +42,12 @@ export function phoneText(stored: string | null): string | null {
   return phone.ok ? formatPhone(phone.value) : stored;
 }
 
-/** [verify] DOMAIN-VN §9: `https://zalo.me/{phone}` takes the local form; confirm in LSE-11. */
+/** DOMAIN-VN §9, `Giả định`: `https://zalo.me/{phone}` takes the local form. Zalo publishes no page that confirms it. */
 export function phoneForZaloLink(phone: Phone): string {
   return national(phone);
+}
+
+/** LSE-11: the link that opens Zalo on the chat with this number. */
+export function zaloChatUrl(phone: Phone): string {
+  return `https://zalo.me/${phoneForZaloLink(phone)}`;
 }

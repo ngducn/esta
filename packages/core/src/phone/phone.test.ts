@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhone, normalizePhone, phoneForZaloLink, phoneText, type Phone } from './index';
+import { formatPhone, normalizePhone, phoneForZaloLink, phoneText, zaloChatUrl, type Phone } from './index';
 
 function phone(text: string): Phone {
   const result = normalizePhone(text);
@@ -57,5 +57,12 @@ describe('phoneText', () => {
 describe('phoneForZaloLink', () => {
   it('matches DOMAIN-VN §9', () => {
     expect(phoneForZaloLink(phone('+84903123456'))).toBe('0903123456');
+  });
+});
+
+describe('zaloChatUrl', () => {
+  it('opens the chat with the local number (LSE-11)', () => {
+    expect(zaloChatUrl(phone('+84 901 111 005'))).toBe('https://zalo.me/0901111005');
+    expect(zaloChatUrl(phone('0283 812 3456'))).toBe('https://zalo.me/02838123456');
   });
 });
