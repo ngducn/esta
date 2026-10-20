@@ -4,9 +4,12 @@ import type { Json } from '@esta/db';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
+import { leaseActivate } from './activation-op';
+import { depositRecord } from './deposit-ops';
 import { documentAttach } from './document-attach';
 import type { LocalContext } from './files';
 import { idSchema, invalid, type Refusal } from './kit';
+import { leaseCreate, leaseEdit } from './lease-ops';
 import { refuse, settle, type Op, type OpContext } from './op';
 import { personCreate } from './person-ops';
 import { propertyCreate, propertyEdit } from './property-ops';
@@ -21,7 +24,7 @@ export const MAX_ITEMS = 200;
 export const MAX_BATCHES_PER_HOUR = 20;
 
 export type ItemPlan =
-  | { readonly status: 'change'; readonly change: Json }
+  | { readonly status: 'change'; readonly change: Json; readonly preview?: Json }
   | { readonly status: 'unchanged'; readonly current: Json }
   | { readonly status: 'refused'; readonly refusal: Refusal };
 
@@ -51,9 +54,9 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
       const planned = await op.plan(ctx, input.data);
       if (!planned.ok) return refused(planned.reason);
       const { value } = planned;
-      return value.kind === 'change'
-        ? { plan: { status: 'change', change: asJson(value.change) }, writes: op.writes?.(value.change) ?? [] }
-        : { plan: { status: 'unchanged', current: asJson(value.current) }, writes: [] };
+      if (value.kind === 'unchanged') return { plan: { status: 'unchanged', current: asJson(value.current) }, writes: [] };
+      const preview = await op.preview?.(ctx, value.change);
+      return { plan: { status: 'change', change: asJson(value.change), ...(preview === undefined ? {} : { preview }) }, writes: op.writes?.(value.change) ?? [] };
     },
     async settle(ctx, raw, approved) {
       const input = op.input.safeParse(raw);
@@ -70,7 +73,7 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
   };
 }
 
-export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create', 'person.create'] as const;
+export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create', 'person.create', 'lease.create', 'lease.edit', 'lease.activate', 'deposit.record'] as const;
 export type OpKind = (typeof OP_KINDS)[number];
 
 /** The one list of what a batch can hold; `satisfies` fails the build when it and `OP_KINDS` disagree. */
@@ -80,6 +83,10 @@ const OPS = {
   'document.attach': batchStep(documentAttach),
   'unit.create': batchStep(unitCreate),
   'person.create': batchStep(personCreate),
+  'lease.create': batchStep(leaseCreate),
+  'lease.edit': batchStep(leaseEdit),
+  'lease.activate': batchStep(leaseActivate),
+  'deposit.record': batchStep(depositRecord),
 } as const satisfies Record<OpKind, Step>;
 
 export const planRequestSchema = z.strictObject({

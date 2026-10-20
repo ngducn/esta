@@ -2,6 +2,8 @@ import { DOCUMENT_CATEGORY_IDS, MAX_DOCUMENT_BYTES } from '@esta/core/documents'
 import { formatVnd } from '@esta/core/format';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
+import { LEASE_DEFAULTS } from '@esta/core/lease';
+import { leaseDraftSchema } from '@esta/core/schemas/lease';
 import { KIND_DETAIL_KEYS, propertyInputSchema } from '@esta/core/schemas/property';
 import { unitSchema } from '@esta/core/schemas/units';
 import type { Result } from '@esta/core/result';
@@ -9,8 +11,10 @@ import {
   applyPlan,
   findPerson,
   findProperty,
+  getLease,
   getProperty,
   idSchema,
+  listLeases,
   listProperties,
   MAX_ITEMS,
   OP_KINDS,
@@ -61,6 +65,13 @@ function guarded<A>(name: string, deps: ToolDeps, handler: (ctx: ToolContext, ar
 
 const propertySchema = JSON.stringify(z.toJSONSchema(propertyInputSchema, { io: 'input', unrepresentable: 'any' }));
 const unitJsonSchema = JSON.stringify(z.toJSONSchema(unitSchema, { io: 'input', unrepresentable: 'any' }));
+const leaseJsonSchema = JSON.stringify(z.toJSONSchema(leaseDraftSchema, { io: 'input', unrepresentable: 'any' }));
+const leaseDefaults = Object.entries(LEASE_DEFAULTS)
+  .map(
+    ([kind, terms]) =>
+      `${kind}: billing_cycle_months ${terms.billingCycleMonths}, period_anchor ${terms.periodAnchor}, first_period_proration ${terms.firstPeriodProration}, utilities_mode ${terms.utilitiesMode}, tax_payer ${terms.taxPayer}, notice_days ${terms.noticeDays}, deposit ${terms.depositMonths} months of rent`,
+  )
+  .join('; ');
 const detailKeys = Object.entries(KIND_DETAIL_KEYS)
   .filter(([, keys]) => keys.length > 0)
   .map(([kind, keys]) => `${kind}: ${keys.join(', ')}`)
@@ -74,6 +85,11 @@ const PLAN_DESCRIPTION = `Plan changes to Esta for Ryan to approve; nothing is w
 - document.attach: input { path, property_id, category, title, lease_id?, expires_on?, allow_duplicate? } files a JPEG, PNG, WebP or PDF of at most ${MAX_DOCUMENT_BYTES / 1024 / 1024} MB from the import folders into the vault, as an upload there would. Categories: ${DOCUMENT_CATEGORY_IDS.join(', ')}. title is Vietnamese, as the vault titles it: the paper and the place, such as "Sổ hồng Bảo Lộc". property_id must name a property Esta already has: to file papers for a property created in this conversation, apply its plan first. A file already in the vault is refused as duplicate with the documents that hold it; set allow_duplicate only when Ryan wants a second copy. The change holds the file's size and SHA-256; apply sends it only if it is still the same file. ${ID_IN_NAME}
 - unit.create: input { property_id, unit } adds a room, floor, shop or lot to a property, last in its list, as the rental tab does. property_id names a property Esta has, or one planned earlier in the batch by $ref. A label the property already has is refused as label_taken with the unit that holds it. unit is this JSON Schema: ${unitJsonSchema}
 - person.create: input { person: { full_name, phone, id_last4 }, allow_duplicate? } adds a tenant. Call find_person first, and name a person Esta already has by id instead of creating them again. phone is null when Ryan gave none. id_last4 is only the last four digits of an ID number (CCCD), or null: never type the whole number. A person who may already be in Esta is refused as possible_duplicate with the people and what matched; set allow_duplicate: true only after Ryan says it is a different person.
+- lease.create: input { lease, property_id? } saves a draft lease, as the lease form does. unit_id and tenant_party_id name a unit and a person Esta has, or ones planned earlier in the batch by $ref; give property_id when Ryan named the property, and a unit on another property is refused as other_property. Fill every term from LEASE_DEFAULTS below for the unit's kind unless Ryan said otherwise: deposit_vnd is rent_vnd times that kind's deposit months, escalation is { "kind": "none" } unless he named an increase, and end_date is null when the lease has no end. lease is this JSON Schema: ${leaseJsonSchema}
+- lease.edit: input { id, set } changes a draft lease's terms; set holds only the terms to change, with the keys of lease above. A lease that is no longer a draft is refused as not_draft.
+- lease.activate: input { lease_id, paid_through } starts a draft lease and issues the bills it owes today. paid_through is the last day the tenant has already paid for, or null: "đã thu đến 30/9" means paid_through "2026-09-30", and nothing up to that day is billed. Its preview lists the bills activation will write, issues_now marking those issued today; that preview is what Ryan approves, so show it to him with the change.
+- deposit.record: input { lease_id, kind, amount_vnd, on_date, note } records a deposit received, deducted (note says what for) or refunded on a lease that is active, so plan it after the lease's activation. on_date is the day the money changed hands, no later than today. Its preview shows the amount, the day and what the lease holds after it.
+LEASE_DEFAULTS by unit kind (a whole unit of an apartment takes the apartment terms): ${leaseDefaults}.
 Refs: an item that creates a row may carry ref, a label you choose (a letter, then up to 39 letters, digits, - or _), and a later item writes { "$ref": "<label>" } wherever that row's id belongs, such as a unit's property_id. Only creates carry ref, and a $ref names only an earlier item. When an item is refused, at plan or at apply, every item that names it is refused as blocked and nothing of it is written.
 property is this JSON Schema: ${propertySchema}
 kind_details keys by kind (others take {}): ${detailKeys}. Amounts are whole đồng. current_address codes come from resolve_address.
@@ -95,6 +111,32 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
     guarded('get_property', deps, async (ctx, { id }: { id: string }) => {
       const property = await getProperty(ctx, id);
       return property === null ? { data: { error: 'not_found' }, log: 'count=0', isError: true } : { data: property, log: 'count=1' };
+    }),
+  );
+
+  server.registerTool(
+    'list_leases',
+    {
+      description:
+        "List the household's leases, or one property's: unit, property, tenant with a display phone, status, dates, rent and deposit with display strings, the paid-through date and the deposit held.",
+      inputSchema: z.object({ property_id: idSchema.optional() }),
+    },
+    guarded('list_leases', deps, async (ctx, { property_id }: { property_id?: string | undefined }) => {
+      const leases = await listLeases(ctx, property_id);
+      return { data: { leases }, log: `count=${leases.length}` };
+    }),
+  );
+
+  server.registerTool(
+    'get_lease',
+    {
+      description:
+        'Read one lease with every term, the deposit held, and its rent periods as the lease page plans them: each amount with a display string, whether the paid-through date covers it, and the invoice that bills it with its status.',
+      inputSchema: z.object({ id: idSchema }),
+    },
+    guarded('get_lease', deps, async (ctx, { id }: { id: string }) => {
+      const lease = await getLease(ctx, id);
+      return lease === null ? { data: { error: 'not_found' }, log: 'count=0', isError: true } : { data: lease, log: 'count=1' };
     }),
   );
 

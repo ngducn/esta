@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
 
 export const idSchema = z.uuid();
@@ -43,4 +44,18 @@ export type DatabaseError = { readonly code: string; readonly message: string };
 export function dbRefusal<S extends Refusal = never>(error: DatabaseError, sentinels: Readonly<Record<string, S>> = {}): S | CommonRefusal {
   const sentinel = Object.hasOwn(sentinels, error.message) ? sentinels[error.message] : undefined;
   return sentinel ?? BY_SQLSTATE[error.code] ?? { kind: 'failed' };
+}
+
+type Columns<T> = { -readonly [K in keyof T]?: T[K] };
+export type Changed<T> = { readonly before: Columns<T>; readonly set: Columns<T> };
+
+/** The columns an edit changes, with their values before and after; null when it changes none. */
+export function changedColumns<T>(current: T, next: T, keys: readonly (keyof T)[]): Changed<T> | null {
+  const before: Columns<T> = {};
+  const set: Columns<T> = {};
+  for (const key of keys.filter((column) => !isDeepStrictEqual(current[column], next[column]))) {
+    before[key] = current[key];
+    set[key] = next[key];
+  }
+  return Object.keys(set).length === 0 ? null : { before, set };
 }

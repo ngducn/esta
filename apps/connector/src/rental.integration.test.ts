@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { personCreate, propertyCreate, runOp, unitCreate, type Db } from '@esta/ops';
+import { formatVnd } from '@esta/core/format';
+import { LEASE_DEFAULTS } from '@esta/core/lease';
+import { vnd } from '@esta/core/money';
+import { LEASE_COLUMNS } from '@esta/core/schemas/lease';
+import { depositRecord, leaseActivate, leaseCreate, leaseEdit, personCreate, propertyCreate, runOp, unitCreate, type Db } from '@esta/ops';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { e2eServiceHeaders } from '../../../scripts/e2e-service.ts';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
-import { appliedSchema, call, clientAt, demoProperty, laneContext, plannedSchema, sessionFiles, signIn, startConnector, type Connector } from './test/connector';
+import { appliedSchema, call, clientAt, demoProperty, env, laneContext, plannedSchema, sessionFiles, signIn, startConnector, type Connector } from './test/connector';
 
 // Run against a fresh `pnpm db:reset`.
 const LANE = 7;
@@ -20,27 +25,27 @@ const candidatesSchema = z.object({
 });
 
 const sessions = sessionFiles();
-afterAll(() => sessions.discard());
+const file = sessions.make();
+let connector: Connector;
+let db: Db;
+
+beforeAll(async () => {
+  expect(await signIn(OPERATOR, file)).toMatchObject({ ok: true, value: { householdName: `Gia đình Demo ${LANE}` } });
+  db = clientAt(file);
+  connector = await startConnector(file);
+}, 60_000);
+
+afterAll(async () => {
+  await connector.client.close();
+  await sessions.discard();
+});
+
+const plan = (summary: string, items: unknown[]) => call(connector, 'plan_changes', { summary, items });
+const apply = async (planId: string) => appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planId })).json());
+const without = <T extends Record<string, unknown>>(row: T | null, ...keys: string[]) => Object.fromEntries(Object.entries(row ?? {}).filter(([key]) => !keys.includes(key)));
 
 describe('a room and its tenant planned by talking to Claude', () => {
-  const file = sessions.make();
-  let connector: Connector;
-  let db: Db;
   let tenantId = '';
-
-  beforeAll(async () => {
-    expect(await signIn(OPERATOR, file)).toMatchObject({ ok: true, value: { householdName: `Gia đình Demo ${LANE}` } });
-    db = clientAt(file);
-    connector = await startConnector(file);
-  }, 60_000);
-
-  afterAll(async () => {
-    await connector.client.close();
-  });
-
-  const plan = (summary: string, items: unknown[]) => call(connector, 'plan_changes', { summary, items });
-  const apply = async (planId: string) => appliedSchema.parse((await call(connector, 'apply_plan', { plan_id: planId })).json());
-  const without = <T extends Record<string, unknown>>(row: T | null, ...keys: string[]) => Object.fromEntries(Object.entries(row ?? {}).filter(([key]) => !keys.includes(key)));
 
   it('adds a property, a room on it named by ref, and a tenant, writing the rows the screens write and only the last four ID digits', async () => {
     const summary = `Demo: phòng 1 ở nhà mới cho chị Hoa Demo, CCCD ${FULL_CCCD}`;
@@ -135,5 +140,202 @@ describe('a room and its tenant planned by talking to Claude', () => {
     expect(await find({ name: 'hoa demo' })).toContainEqual({ id: tenantId, full_name: 'Trương Thị Hoa Demo', phone: '0987 654 321', id_last4: '4567', reasons: ['name'] });
     expect(await find({ phone: '+84 987 654 321' })).toContainEqual(expect.objectContaining({ id: tenantId, reasons: ['phone'] }));
     expect(await find({ id_last4: '4567' })).toContainEqual(expect.objectContaining({ id: tenantId, reasons: ['id_last4'] }));
+  });
+});
+
+const Q1 = seedId(`seed:property:lane-${LANE}:q1`);
+const OTHER_LEASE = seedId('seed:lease:lane-8:q7:1');
+const PAID_THROUGH = '2026-09-30';
+const display = (amount: number) => formatVnd(vnd(amount), 'vi');
+
+/** Chị Lan Demo's room from 01/03/2026 at 9.000.000 ₫ with two months' deposit, LEASE_DEFAULTS for a room otherwise, as Claude fills it. */
+const draft = (unitId: unknown, tenantId: unknown) => {
+  const terms = LEASE_DEFAULTS.room;
+  return {
+    unit_id: unitId,
+    tenant_party_id: tenantId,
+    start_date: '2026-03-01',
+    end_date: null,
+    rent_vnd: 9_000_000,
+    deposit_vnd: 18_000_000,
+    escalation: { kind: 'none' },
+    billing_cycle_months: terms.billingCycleMonths,
+    period_anchor: terms.periodAnchor,
+    first_period_proration: terms.firstPeriodProration,
+    utilities_mode: terms.utilitiesMode,
+    tax_payer: terms.taxPayer,
+    notice_days: terms.noticeDays,
+  };
+};
+const deposit = (leaseId: unknown) => ({ lease_id: leaseId, kind: 'received', amount_vnd: 18_000_000, on_date: '2026-03-01', note: null });
+const rental = (label: string, phone: string) => [
+  { op: 'unit.create', ref: 'room', input: { property_id: Q1, unit: room(label) } },
+  { op: 'person.create', ref: 'lan', input: { person: { full_name: 'Lan Demo', phone, id_last4: null } } },
+  { op: 'lease.create', ref: 'lease', input: { property_id: Q1, lease: draft({ $ref: 'room' }, { $ref: 'lan' }) } },
+  { op: 'lease.activate', input: { lease_id: { $ref: 'lease' }, paid_through: PAID_THROUGH } },
+  { op: 'deposit.record', input: deposit({ $ref: 'lease' }) },
+];
+
+/** The nightly invoicing for lane 7 alone, as the cron route runs it with the service role. */
+async function nightlyRun(asOf: string) {
+  const response = await fetch(`${env.ESTA_IT_SUPABASE_URL}/rest/v1/rpc/run_invoicing`, {
+    method: 'POST',
+    headers: { ...e2eServiceHeaders(), 'content-type': 'application/json' },
+    body: JSON.stringify({ p_household_id: seedId(`seed:household:lane-${LANE}`), p_as_of: asOf, p_issued_at: `${asOf}T00:30:00+07:00` }),
+  });
+  expect(response.ok, await response.text()).toBe(true);
+}
+
+/** What a lease bills and holds, without ids: its row, its periods, its invoices and its deposit ledger. */
+async function billed(id: string) {
+  const [lease, schedule, invoices, entries, held] = await Promise.all([
+    db.from('leases').select(`${LEASE_COLUMNS}, created_by`).eq('id', id).single(),
+    db.rpc('lease_schedule', { p_lease_ids: [id], p_until: '2027-03-31' }),
+    db.from('invoice_balances').select('period_start, period_end, due_date, issue_on, status, total_vnd, outstanding_vnd').eq('lease_id', id).order('period_start'),
+    db.from('deposit_entries').select('kind, amount_vnd, on_date, note, payment_id, created_by').eq('lease_id', id),
+    db.from('lease_deposits').select('held_vnd').eq('lease_id', id).single(),
+  ]);
+  return {
+    lease: without(lease.data, 'id', 'unit_id', 'tenant_party_id'),
+    schedule: (schedule.data ?? []).map((period) => without(period, 'lease_id', 'invoice_id')),
+    invoices: invoices.data,
+    entries: entries.data,
+    held: held.data,
+  };
+}
+
+describe('a lease with its deposit and paid-through started by talking to Claude', () => {
+  let leaseId = '';
+
+  it('plans the Demo rental in one batch, shows the first bills and the deposit, and lands every item', async () => {
+    const reply = await plan('Demo: Phòng 2 ở Q1 cho chị Lan Demo thuê 9.000.000 ₫ từ 01/03/2026, cọc 18.000.000 ₫, đã thu đến 30/09/2026', rental('Phòng 2', '0901 234 567'));
+    expect(reply.json()).toMatchObject({
+      items: [
+        { status: 'change' },
+        { status: 'change' },
+        { status: 'change', change: { row: { property_id: Q1, status: 'draft', paid_through_date: null, due_offset_days: 0 } } },
+        {
+          status: 'change',
+          change: { paid_through: PAID_THROUGH },
+          preview: {
+            paid_through_display: '30/09/2026',
+            bills: [
+              { period_start: '2026-10-01', period_end: '2026-10-31', rent_vnd: 9_000_000, rent_display: display(9_000_000), issues_now: true },
+              { period_start: '2026-11-01', issues_now: false },
+            ],
+          },
+        },
+        { status: 'change', preview: { amount_display: display(18_000_000), on_date_display: '01/03/2026', held_after_display: display(18_000_000) } },
+      ],
+    });
+    const planned = plannedSchema.parse(reply.json());
+    leaseId = planned.items[2]?.id ?? '';
+    expect(await apply(planned.planId)).toMatchObject({ status: 'applied', items: Array.from({ length: 5 }, () => ({ status: 'landed' })) });
+  });
+
+  it('bills and holds exactly what the same lease entered on the screens does, through a nightly run', async () => {
+    const ctx = await laneContext(db, LANE);
+    const [unit, tenant, lease] = [randomUUID(), randomUUID(), randomUUID()];
+    expect(await runOp(unitCreate, ctx, { id: unit, property_id: Q1, unit: room('Phòng 3') })).toMatchObject({ ok: true });
+    expect(await runOp(personCreate, ctx, { id: tenant, person: { full_name: 'Lan Demo', phone: '0901 234 567' }, allow_duplicate: true })).toMatchObject({ ok: true });
+    expect(await runOp(leaseCreate, ctx, { id: lease, property_id: Q1, lease: draft(unit, tenant) })).toMatchObject({ ok: true });
+    expect(await runOp(leaseActivate, ctx, { lease_id: lease, paid_through: PAID_THROUGH })).toMatchObject({ ok: true });
+    expect(await runOp(depositRecord, ctx, { id: randomUUID(), ...deposit(lease) })).toMatchObject({ ok: true });
+    await nightlyRun('2026-11-01');
+
+    const viaClaude = await billed(leaseId);
+    expect(viaClaude.invoices?.slice(0, 2), 'October issued at activation, November by the nightly run').toMatchObject([
+      { period_start: '2026-10-01', status: 'issued', total_vnd: 9_000_000 },
+      { period_start: '2026-11-01', status: 'issued', total_vnd: 9_000_000 },
+    ]);
+    expect(viaClaude).toMatchObject({
+      lease: { property_id: Q1, status: 'active', paid_through_date: PAID_THROUGH, rent_vnd: 9_000_000 },
+      entries: [{ kind: 'received', amount_vnd: 18_000_000, on_date: '2026-03-01' }],
+      held: { held_vnd: 18_000_000 },
+    });
+    expect(viaClaude.schedule.find((period) => period.period_start === '2026-09-01')).toMatchObject({ covered_by_paid_through: true });
+    expect(viaClaude).toEqual(await billed(lease));
+  });
+
+  it('refuses the lease, its activation and its deposit as blocked when its room is refused at apply, and lands the tenant', async () => {
+    const planned = plannedSchema.parse((await plan('Demo: Phòng 5 ở Q1 cho chị Lan Demo', rental('Phòng 5', '0987 000 222'))).json());
+    expect(await runOp(unitCreate, await laneContext(db, LANE), { id: randomUUID(), property_id: Q1, unit: room('Phòng 5') })).toMatchObject({ ok: true });
+    expect(await apply(planned.planId)).toMatchObject({
+      status: 'partial',
+      items: [
+        { status: 'refused', refusal: { kind: 'label_taken', label: 'Phòng 5' } },
+        { status: 'landed' },
+        { status: 'refused', refusal: { kind: 'blocked', by: [0] } },
+        { status: 'refused', refusal: { kind: 'blocked', by: [2] } },
+        { status: 'refused', refusal: { kind: 'blocked', by: [2] } },
+      ],
+    });
+    expect((await db.from('leases').select('id').eq('id', planned.items[2]?.id ?? '')).data, 'no lease row').toEqual([]);
+  });
+
+  it('refuses a lease edit as stale when the same term changed after Ryan approved it', async () => {
+    const ctx = await laneContext(db, LANE);
+    const [unit, lease] = [randomUUID(), randomUUID()];
+    expect(await runOp(unitCreate, ctx, { id: unit, property_id: Q1, unit: room('Phòng 6') })).toMatchObject({ ok: true });
+    expect(await runOp(leaseCreate, ctx, { id: lease, property_id: Q1, lease: draft(unit, null) })).toMatchObject({ ok: true });
+    const planned = plannedSchema.parse((await plan('Demo: Phòng 6 lên 9.500.000 ₫', [{ op: 'lease.edit', input: { id: lease, set: { rent_vnd: 9_500_000 } } }])).json());
+    expect(planned.items).toMatchObject([{ status: 'change', change: { before: { rent_vnd: 9_000_000 }, set: { rent_vnd: 9_500_000 } } }]);
+    expect(await runOp(leaseEdit, ctx, { id: lease, property_id: Q1, set: { rent_vnd: 9_200_000 } })).toMatchObject({ ok: true });
+    expect(await apply(planned.planId)).toMatchObject({ status: 'partial', items: [{ status: 'refused', refusal: { kind: 'stale' } }] });
+    expect((await db.from('leases').select('rent_vnd').eq('id', lease).single()).data).toEqual({ rent_vnd: 9_200_000 });
+  });
+
+  it('refuses a room and a lease on a property in the trash as not found, at plan and at apply', async () => {
+    const ctx = await laneContext(db, LANE);
+    const [house, unit] = [randomUUID(), randomUUID()];
+    expect(await runOp(propertyCreate, ctx, { id: house, property: demoProperty('C2TRASH') })).toMatchObject({ ok: true });
+    expect(await runOp(unitCreate, ctx, { id: unit, property_id: house, unit: room('Phòng 1') })).toMatchObject({ ok: true });
+    const items = [
+      { op: 'unit.create', input: { property_id: house, unit: room('Phòng 2') } },
+      { op: 'lease.create', input: { lease: draft(unit, SEEDED_TENANT.id) } },
+    ];
+    const notFound = (path: string) => ({ status: 'refused', refusal: { kind: 'invalid', issues: [{ path, code: 'not_found' }] } });
+    const planned = plannedSchema.parse((await plan('Demo: phòng 2 và hợp đồng phòng 1 ở nhà C2TRASH', items)).json());
+    const trashed = await db.from('properties').update({ deleted_at: '2026-10-07T09:00:00+07:00' }).eq('id', house).select('id');
+    expect(trashed.data).toEqual([{ id: house }]);
+    expect(await apply(planned.planId)).toMatchObject({ status: 'partial', items: [notFound('property_id'), notFound('lease.unit_id')] });
+    expect((await plan('Demo: phòng 2 và hợp đồng phòng 1 sau khi xóa nhà', items)).json()).toMatchObject({ kind: 'items_refused', items: [notFound('property_id'), notFound('lease.unit_id')] });
+    const landed = await Promise.all([db.from('units').select('id').eq('property_id', house), db.from('leases').select('id').eq('property_id', house)]);
+    expect(landed.map((read) => read.data), 'only the room stored before the trash').toEqual([[{ id: unit }], []]);
+  });
+
+  it("refuses another household's lease for an activation and a deposit, and get_lease does not find it", async () => {
+    const refused = await plan('Demo: hợp đồng nhà khác', [
+      { op: 'lease.activate', input: { lease_id: OTHER_LEASE, paid_through: null } },
+      { op: 'deposit.record', input: deposit(OTHER_LEASE) },
+    ]);
+    expect(refused.json()).toMatchObject({ kind: 'items_refused', items: [{ status: 'refused', refusal: { kind: 'not_found' } }, { status: 'refused', refusal: { kind: 'not_found' } }] });
+    const read = await call(connector, 'get_lease', { id: OTHER_LEASE });
+    expect([read.isError, read.json()]).toEqual([true, { error: 'not_found' }]);
+  });
+
+  it('reads the Demo lease back with display strings and its schedule, alone and in the property list', async () => {
+    const summary = {
+      id: leaseId,
+      property: 'Mặt bằng Quận 1',
+      unit: 'Phòng 2',
+      tenant: expect.objectContaining({ full_name: 'Lan Demo', phone: '0901 234 567' }),
+      status: 'active',
+      start_date: '2026-03-01',
+      rent_display: display(9_000_000),
+      deposit_display: display(18_000_000),
+      paid_through_date: PAID_THROUGH,
+      held_deposit_vnd: 18_000_000,
+      held_deposit_display: display(18_000_000),
+    };
+    expect((await call(connector, 'get_lease', { id: leaseId })).json()).toMatchObject({
+      ...summary,
+      billing_cycle_months: 1,
+      schedule: expect.arrayContaining([
+        expect.objectContaining({ period_start: '2026-09-01', covered_by_paid_through: true, invoice_id: null }),
+        expect.objectContaining({ period_start: '2026-10-01', rent_display: display(9_000_000), covered_by_paid_through: false, invoice_status: 'issued' }),
+      ]),
+    });
+    expect((await call(connector, 'list_leases', { property_id: Q1 })).json()).toMatchObject({ leases: expect.arrayContaining([expect.objectContaining(summary)]) });
   });
 });

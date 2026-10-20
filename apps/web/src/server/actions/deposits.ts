@@ -1,13 +1,16 @@
 'use server';
 
-import { DEPOSIT_KINDS } from '@esta/core/allocation';
+import { DEPOSIT_KINDS, type DepositKind } from '@esta/core/allocation';
+import type { IsoDate } from '@esta/core/date';
 import { MAX_AMOUNT_VND } from '@esta/core/money';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import type { Result } from '@esta/core/result';
+import { depositRecord, runOp, type CommonRefusal, type DepositRefusal } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
+import { webOpContext } from '@/server/ops';
 import { createSessionClient } from '@/server/supabase/server';
 
 /** The deposit sheet as Mẹ filled it. Amount and date stay text, so a value that does not read is refused, never taken as 0 or today. */
@@ -38,10 +41,9 @@ export type RecordDepositRefusal =
 /** The entry written, or the one a repeated key already wrote. */
 export type RecordDepositResult = Result<string, RecordDepositRefusal>;
 
-/** What `record_deposit_entry` and `apply_deposit` refuse, by the message each raises. */
-const REFUSALS: Readonly<Record<string, RecordDepositRefusal>> = {
+/** What `apply_deposit` refuses, by the message it raises. */
+const APPLY_REFUSALS: Readonly<Record<string, RecordDepositRefusal>> = {
   ESTA_DEPOSIT_DATE_AFTER_TODAY: 'dateAfterToday',
-  ESTA_DEPOSIT_NOTE_REQUIRED: 'noteRequired',
   ESTA_DEPOSIT_EXCEEDS_HELD: 'exceedsHeld',
   ESTA_DEPOSIT_EXCEEDS_OUTSTANDING: 'exceedsOutstanding',
   ESTA_DEPOSIT_AMOUNT: 'amount',
@@ -49,11 +51,42 @@ const REFUSALS: Readonly<Record<string, RecordDepositRefusal>> = {
   ESTA_LEASE_NOT_ACTIVE: 'notActive',
 };
 
+const RECORD_REFUSALS: Partial<Record<(DepositRefusal | CommonRefusal)['kind'], RecordDepositRefusal>> = {
+  not_active: 'notActive',
+  date_after_today: 'dateAfterToday',
+  note_required: 'noteRequired',
+  exceeds_held: 'exceedsHeld',
+};
+
+type Entry = { readonly id: string; readonly lease_id: string; readonly amount_vnd: number; readonly on_date: IsoDate; readonly note: string | null };
+
+async function recordEntry(entry: Entry, kind: Exclude<DepositKind, 'applied'>): Promise<RecordDepositResult> {
+  const result = await runOp(depositRecord, await webOpContext(), { ...entry, kind });
+  if (result.ok) return { ok: true, value: result.value.entry_id };
+  const { reason } = result;
+  if (reason.kind === 'invalid') return { ok: false, reason: reason.issues.some((issue) => issue.path === 'amount_vnd') ? 'amount' : 'failed' };
+  return { ok: false, reason: RECORD_REFUSALS[reason.kind] ?? 'failed' };
+}
+
+async function applyToInvoice(entry: Entry, invoiceId: string | null): Promise<RecordDepositResult> {
+  if (invoiceId === null) return { ok: false, reason: 'invoice' };
+  const [, supabase] = await Promise.all([requireMember(), createSessionClient()]);
+  const { data, error } = await supabase.rpc('apply_deposit', {
+    p_lease_id: entry.lease_id,
+    p_invoice_id: invoiceId,
+    p_amount_vnd: entry.amount_vnd,
+    p_on_date: entry.on_date,
+    p_idempotency_key: entry.id,
+    ...(entry.note === null ? {} : { p_note: entry.note }),
+  });
+  return error ? { ok: false, reason: APPLY_REFUSALS[error.message] ?? 'failed' } : { ok: true, value: data };
+}
+
 /**
  * LSE-7 and LSE-9. A deposit received, deducted or refunded is one `deposit_entries` row; applying it to an invoice also
- * writes the deposit payment and its allocation, in the same transaction. Both functions take the lease lock, check the
- * date against the database clock and refuse an entry that takes out more than is held. The key comes from the sheet,
- * so a second tap or a retry after a cut response writes nothing new (SPEC §7.4).
+ * writes the deposit payment and its allocation, in the same transaction. Both take the lease lock, check the date
+ * against the database clock and refuse an entry that takes out more than is held. The key comes from the sheet, so a
+ * second tap or a retry after a cut response writes nothing new (SPEC §7.4).
  */
 export async function recordDeposit(raw: unknown): Promise<RecordDepositResult> {
   const input = depositInputSchema.safeParse(raw);
@@ -64,21 +97,11 @@ export async function recordDeposit(raw: unknown): Promise<RecordDepositResult> 
   if (!amount.success) return { ok: false, reason: 'amount' };
   const onDate = parseDateInput(input.data.onDate);
   if (!onDate.ok) return { ok: false, reason: 'date' };
-  if (kind === 'applied' && invoiceId === null) return { ok: false, reason: 'invoice' };
-  const [, supabase] = await Promise.all([requireMember(), createSessionClient()]);
-  const common = {
-    p_lease_id: leaseId,
-    p_amount_vnd: amount.data,
-    p_on_date: onDate.value,
-    p_idempotency_key: idempotencyKey,
-    ...(note.trim() === '' ? {} : { p_note: note }),
-  };
-  const { data, error } =
-    kind === 'applied' && invoiceId !== null
-      ? await supabase.rpc('apply_deposit', { ...common, p_invoice_id: invoiceId })
-      : await supabase.rpc('record_deposit_entry', { ...common, p_kind: kind });
-  if (error) return { ok: false, reason: REFUSALS[error.message] ?? 'failed' };
-  revalidatePath('/properties', 'layout');
-  revalidatePath('/collections');
-  return { ok: true, value: data };
+  const entry = { id: idempotencyKey, lease_id: leaseId, amount_vnd: amount.data, on_date: onDate.value, note: note.trim() === '' ? null : note };
+  const result = kind === 'applied' ? await applyToInvoice(entry, invoiceId) : await recordEntry(entry, kind);
+  if (result.ok) {
+    revalidatePath('/properties', 'layout');
+    revalidatePath('/collections');
+  }
+  return result;
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { applyPlan, planChanges, reduceTypedIds } from './batch';
 import type { Db } from './db';
 import type { LocalContext } from './files';
-import { fakeDb, opContext } from './test/fake-db';
+import { demoBills, fakeDb, LEASE, OCTOBER, opContext, storedLease } from './test/fake-db';
 
 describe('reduceTypedIds', () => {
   const digitTail = '5a7ba01a-8719-4c6b-a777-000000000123';
@@ -104,5 +104,37 @@ describe('applyPlan with needs', () => {
     const stored = { v: 1, items: [{ op: 'property.edit', id: null, input: { id: MISSING, set: { notes: 'Demo' } }, change: {} }] };
     const { db } = fakeDb((request) => (request.table !== 'change_batches' ? [] : [{ id: PLAN_ID, plan: stored }]));
     expect(await applyPlan(batchContext(db), PLAN_ID)).toMatchObject({ ok: true, value: { items: [{ status: 'refused', refusal: { kind: 'not_found' } }] } });
+  });
+});
+
+describe('previews', () => {
+  const activation = { lease_id: LEASE, paid_through: '2026-09-30' };
+
+  it("reports an activation's bills beside its change and stores none of them", async () => {
+    const { db, sent } = fakeDb((request) => {
+      if (request.table === 'leases') return [storedLease()];
+      if (request.table === 'rpc/preview_lease_bills') return demoBills;
+      return request.method === 'POST' && request.table === 'change_batches' ? [{ id: PLAN_ID }] : [];
+    });
+    const result = await planChanges(batchContext(db), { summary: 'Demo', items: [{ op: 'lease.activate', input: activation }] });
+    expect(result).toMatchObject({ ok: true, value: { items: [{ status: 'change', change: activation, preview: { paid_through_display: '30/09/2026', bills: [{ rent_vnd: 9_000_000 }, {}] } }] } });
+    const stored = sent.find((request) => request.method === 'POST' && request.table === 'change_batches');
+    expect(stored?.body).toMatchObject({ plan: { items: [{ input: activation, change: activation }] } });
+    expect(JSON.stringify(stored?.body), 'no preview in the stored plan').not.toContain('bills');
+  });
+
+  it('applies an approved activation without previewing it again, so bills that moved since never make it stale', async () => {
+    const plan = { v: 1, items: [{ op: 'lease.activate', id: null, needs: [], input: activation, change: activation }] };
+    const { db, sent } = fakeDb((request) => {
+      if (request.table === 'change_batches') return [{ id: PLAN_ID, plan }];
+      if (request.table === 'leases') return [storedLease()];
+      if (request.table === 'rpc/preview_lease_bills') return [{ ...demoBills[0], rent_vnd: 9_500_000 }];
+      return request.table === 'rpc/activate_lease' ? [OCTOBER] : [];
+    });
+    expect(await applyPlan(batchContext(db), PLAN_ID)).toEqual({
+      ok: true,
+      value: { planId: PLAN_ID, status: 'applied', items: [{ index: 0, op: 'lease.activate', id: null, status: 'landed', output: { lease_id: LEASE, invoices: [OCTOBER] } }] },
+    });
+    expect(sent.filter((request) => request.table === 'rpc/preview_lease_bills')).toEqual([]);
   });
 });

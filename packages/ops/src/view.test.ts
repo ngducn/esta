@@ -1,6 +1,7 @@
+import { isoDate } from '@esta/core/date';
 import { normalizePhone, type Phone } from '@esta/core/phone';
 import { describe, expect, it } from 'vitest';
-import { fakeDb, HOUSEHOLD } from './test/fake-db';
+import { fakeDb, HOUSEHOLD, LEASE, storedLease, viewLease } from './test/fake-db';
 import { NO_PENDING, viewRows, withWrites, type Write } from './view';
 
 const PROPERTY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0002';
@@ -61,5 +62,29 @@ describe('viewRows', () => {
     const row = { id: PERSON, full_name: 'Lan Demo', phone: 'Zalo 0901', id_last4: null };
     const { db } = fakeDb(() => [row]);
     expect(await viewRows({ db, householdId: HOUSEHOLD }, 'parties', { id: PERSON })).toEqual([row]);
+  });
+});
+
+describe('viewRows of leases', () => {
+  const activation: Write = { kind: 'set', table: 'leases', id: LEASE, set: { status: 'active', paid_through_date: isoDate('2026-09-30') } };
+
+  it('reads a stored lease by id in the household and lays a planned activation over it', async () => {
+    const { db, sent } = fakeDb((request) => (request.table === 'leases' ? [storedLease()] : []));
+    const [lease] = await viewRows({ db, householdId: HOUSEHOLD, pending: withWrites(NO_PENDING, [activation]) }, 'leases', { id: LEASE });
+    expect(lease).toMatchObject({ id: LEASE, rent_vnd: 9_000_000, status: 'active', paid_through_date: '2026-09-30' });
+    expect(Object.fromEntries(sent[0]?.query ?? [])).toMatchObject({ household_id: `eq.${HOUSEHOLD}`, id: `eq.${LEASE}` });
+  });
+
+  it('merges a set into a lease planned earlier in the batch, and reads it as stored once nothing is pending', async () => {
+    const { db } = fakeDb();
+    const created: Write = { kind: 'create', table: 'leases', row: viewLease() };
+    const pending = withWrites(withWrites(NO_PENDING, [created]), [activation]);
+    expect(await viewRows({ db, householdId: HOUSEHOLD, pending }, 'leases', { id: LEASE })).toMatchObject([{ id: LEASE, status: 'active', paid_through_date: '2026-09-30' }]);
+    expect(await viewRows({ db, householdId: HOUSEHOLD }, 'leases', { id: LEASE })).toEqual([]);
+  });
+
+  it('keeps a set on a stored lease out of reads of other tables', async () => {
+    const { db } = fakeDb();
+    expect(await viewRows({ db, householdId: HOUSEHOLD, pending: withWrites(NO_PENDING, [activation]) }, 'units', { id: LEASE })).toEqual([]);
   });
 });

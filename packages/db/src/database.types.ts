@@ -2675,6 +2675,16 @@ export type Database = {
           rent_vnd: number
         }[]
       }
+      preview_lease_bills: {
+        Args: { p_household_id: string; p_lease: Json; p_paid_through?: string }
+        Returns: {
+          due_date: string
+          issues_now: boolean
+          period_end: string
+          period_start: string
+          rent_vnd: number
+        }[]
+      }
       property_activity: {
         Args: { p_limit?: number; p_property_id: string }
         Returns: {
