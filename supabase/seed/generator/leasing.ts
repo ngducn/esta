@@ -5,6 +5,7 @@ import { normalizePhone } from '../../../packages/core/src/phone/index.ts';
 import { publicTable, type HouseholdSeed, type SeedContext } from './context.ts';
 import { householdId } from './households.ts';
 import { seedId } from './ids.ts';
+import { METER_ENTRY, septemberReadingsSql } from './meters.ts';
 import type { PropertySeedKey } from './properties.ts';
 import { propertyId, unitId, UNIT_SEEDS } from './units.ts';
 
@@ -222,13 +223,6 @@ const HISTORY_FROM = '2025-10-01';
 /** SPEC §9.3 "today". Like every other seeded fact, the invoices are that day's state whatever `--as-of` says. */
 const SPEC_TODAY = '2026-10-07';
 
-/**
- * SPEC §9.3: Dĩ An's September readings were all entered on 2026-10-03, and LSE-4 bills them on the period starting in
- * October, so its October drafts issued that day. Until P3-14 stores readings, the seed issues those drafts itself
- * through `private.issue_invoice`, the path meter entry will take.
- */
-const METER_ENTRY = { property: 'di-an', on: '2026-10-03', at: '2026-10-03T00:30:00+07:00', periodsFrom: '2026-10-01', periodsTo: '2026-10-31' } as const;
-
 /** SPEC §9.3: the one issued invoice due before SPEC_TODAY that nobody paid. */
 const UNPAID = { property: 'di-an', unit: 5, dueDate: '2026-09-25' } as const;
 
@@ -239,8 +233,8 @@ const sqlText = (text: string) => `'${text.replaceAll("'", "''")}'`;
 
 /**
  * The invoices and payments of every household, written after the tables. The database bills: `end_expired_leases` and
- * `run_invoicing` run for each night from HISTORY_FROM to SPEC_TODAY, as the daily cron does, and meter entry issues Dĩ An's
- * October drafts on 2026-10-03. Seed-only triggers give each invoice and line its seed id, and each invoice a memo code
+ * `run_invoicing` run for each night from HISTORY_FROM to SPEC_TODAY, as the daily cron does. Dĩ An's September readings
+ * land on 2026-10-03 before that night's run (SPEC §9.3), which finds them complete and issues the October drafts. Seed-only triggers give each invoice and line its seed id, and each invoice a memo code
  * and, once issued, a share token drawn from its seed key, so two resets write the same rows. Then every issued invoice due before SPEC_TODAY is paid in full except
  * UNPAID: rooms from two days early to a week late, three in ten in cash, companies by transfer up to six days early.
  * Draws come from md5 of a scope string, the SQL side of `rngFor`. `supabase db reset` prepares every seed statement
@@ -251,6 +245,7 @@ export function billingSql(households: readonly HouseholdSeed[], ctx: Pick<SeedC
     leasesIn(ctx).map((seed) => `(${sqlText(leaseId(household, seed))}, ${sqlText(leaseKey(household, seed))}, ${sqlText(seed.property)}, ${seed.unit})`),
   );
   if (rows.length === 0) return '';
+  const readings = septemberReadingsSql(households, ctx, stamp);
   return `create temporary table seed_lease (lease_id uuid primary key, key text not null, property text not null, unit integer not null);
 
 create function pg_temp.seed_draw(p_scope text, p_n integer) returns double precision language sql immutable
@@ -299,15 +294,13 @@ begin
     ${rows.join(',\n    ')};
 
   for v_night in select n::date from generate_series(date '${HISTORY_FROM}', date '${SPEC_TODAY}', interval '1 day') n loop
-    perform public.end_expired_leases(v_night);
+    ${readings === '' ? '' : `if v_night = date '${METER_ENTRY.readOn}' then
+      ${readings}
+    end if;
+    `}perform public.end_expired_leases(v_night);
     for v_household in select h.id from public.households h order by h.id loop
       perform public.run_invoicing(v_household, v_night, (v_night + time '00:30') at time zone 'Asia/Ho_Chi_Minh');
     end loop;
-    if v_night = date '${METER_ENTRY.on}' then
-      perform private.issue_invoice(i.id, v_night, '${METER_ENTRY.at}')
-      from public.invoices i join pg_temp.seed_lease k on k.lease_id = i.lease_id
-      where k.property = '${METER_ENTRY.property}' and i.status = 'draft' and i.period_start between '${METER_ENTRY.periodsFrom}' and '${METER_ENTRY.periodsTo}';
-    end if;
   end loop;
   drop trigger seed_invoice on public.invoices;
   drop trigger seed_invoice_share on public.invoices;

@@ -1202,7 +1202,9 @@ export type Database = {
           id: string
           invoice_id: string
           kind: string
+          meter_id: string | null
           quantity: number
+          reading_month: string | null
           sort_order: number
           unit_price_vnd: number
           updated_at: string
@@ -1216,7 +1218,9 @@ export type Database = {
           id?: string
           invoice_id: string
           kind: string
+          meter_id?: string | null
           quantity?: number
+          reading_month?: string | null
           sort_order?: number
           unit_price_vnd: number
           updated_at?: string
@@ -1230,7 +1234,9 @@ export type Database = {
           id?: string
           invoice_id?: string
           kind?: string
+          meter_id?: string | null
           quantity?: number
+          reading_month?: string | null
           sort_order?: number
           unit_price_vnd?: number
           updated_at?: string
@@ -1255,6 +1261,13 @@ export type Database = {
             columns: ["household_id", "invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_meter_fkey"
+            columns: ["household_id", "meter_id"]
+            isOneToOne: false
+            referencedRelation: "meters"
             referencedColumns: ["household_id", "id"]
           },
         ]
@@ -1547,6 +1560,131 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "parties"
             referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      meter_readings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          meter_id: string
+          photo_document_id: string | null
+          read_on: string
+          reading: number
+          reading_month: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          meter_id: string
+          photo_document_id?: string | null
+          read_on: string
+          reading: number
+          reading_month: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          meter_id?: string
+          photo_document_id?: string | null
+          read_on?: string
+          reading?: number
+          reading_month?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meter_readings_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meter_readings_household_id_meter_id_fkey"
+            columns: ["household_id", "meter_id"]
+            isOneToOne: false
+            referencedRelation: "meters"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "meter_readings_household_id_photo_document_id_fkey"
+            columns: ["household_id", "photo_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_status"
+            referencedColumns: ["household_id", "document_id"]
+          },
+          {
+            foreignKeyName: "meter_readings_household_id_photo_document_id_fkey"
+            columns: ["household_id", "photo_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      meters: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          kind: string
+          pricing: Json
+          property_id: string
+          serial: string | null
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          kind: string
+          pricing: Json
+          property_id: string
+          serial?: string | null
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          kind?: string
+          pricing?: Json
+          property_id?: string
+          serial?: string | null
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meters_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meters_household_id_property_id_unit_id_fkey"
+            columns: ["household_id", "property_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["household_id", "property_id", "id"]
           },
         ]
       }
@@ -2784,6 +2922,17 @@ export type Database = {
           amount_vnd: number
           id: string
           property_id: string
+        }[]
+      }
+      save_meter_readings: {
+        Args: {
+          p_property_id: string
+          p_reading_month: string
+          p_readings: Json
+        }
+        Returns: {
+          issued: number
+          saved: number
         }[]
       }
       search_documents: {
