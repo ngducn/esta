@@ -1,7 +1,6 @@
 import 'server-only';
 import { addMonths } from '@esta/core/date/calendar';
 import type { IsoDate } from '@esta/core/date';
-import { monthlyConsumption } from '@esta/core/meters';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { idSchema } from '@esta/ops';
 import { z } from 'zod';
@@ -13,7 +12,7 @@ const METER_KINDS = ['electricity', 'water'] as const;
 export type MeterKind = (typeof METER_KINDS)[number];
 
 const meterSchema = z.object({ id: idSchema, unit_id: idSchema, kind: z.enum(METER_KINDS) });
-const readingSchema = z.object({ meter_id: idSchema, reading_month: isoDateSchema, reading: z.number().int(), read_on: isoDateSchema });
+const usageSchema = z.object({ meter_id: idSchema, reading_month: isoDateSchema, reading: z.number().int(), read_on: isoDateSchema, used: z.number().int().nullable() });
 
 export type MeterView = {
   readonly id: string;
@@ -36,30 +35,28 @@ export async function loadMeterEntry(propertyId: string, month: IsoDate): Promis
   const meters = await supabase.from('meters').select('id, unit_id, kind').match({ household_id: member.household.id, property_id: propertyId, active: true });
   if (meters.error) throw new Error(`Reading meters failed: ${meters.error.message}`);
   const active = z.array(meterSchema).parse(meters.data);
-  const readings = await supabase
-    .from('meter_readings')
-    .select('meter_id, reading_month, reading, read_on')
+  const usage = await supabase
+    .from('meter_usage')
+    .select('meter_id, reading_month, reading, read_on, used')
     .eq('household_id', member.household.id)
-    .in(
-      'meter_id',
-      active.map((meter) => meter.id),
-    )
+    .in('meter_id', active.map((meter) => meter.id))
     .gte('reading_month', addMonths(month, -HISTORY_MONTHS))
-    .lte('reading_month', month);
-  if (readings.error) throw new Error(`Reading meter readings failed: ${readings.error.message}`);
-  const rows = z.array(readingSchema).parse(readings.data);
+    .lte('reading_month', month)
+    .order('reading_month');
+  if (usage.error) throw new Error(`Reading meter readings failed: ${usage.error.message}`);
+  const rows = z.array(usageSchema).parse(usage.data);
 
   const view = (meter: z.output<typeof meterSchema>): MeterView => {
     const mine = rows.filter((row) => row.meter_id === meter.id);
     const stored = mine.find((row) => row.reading_month === month);
-    const before = mine.filter((row) => row.reading_month < month).map((row) => ({ month: row.reading_month, reading: row.reading }));
-    const previous = before.toSorted((a, b) => b.month.localeCompare(a.month))[0] ?? null;
+    const before = mine.filter((row) => row.reading_month < month);
+    const last = before.at(-1);
     return {
       id: meter.id,
       kind: meter.kind,
       stored: stored === undefined ? null : { reading: stored.reading, readOn: stored.read_on },
-      previous,
-      history: monthlyConsumption(before).map((entry) => entry.used),
+      previous: last === undefined ? null : { month: last.reading_month, reading: last.reading },
+      history: before.flatMap((row) => (row.used === null ? [] : [row.used])),
     };
   };
   return rental.units.flatMap((unit) => {

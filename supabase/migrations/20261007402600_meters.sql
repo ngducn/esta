@@ -89,6 +89,19 @@ drop policy meter_readings_insert on public.meter_readings;
 drop policy meter_readings_update on public.meter_readings;
 drop policy meter_readings_delete on public.meter_readings;
 
+-- Each reading with the one before it and the use between them: the one place consumption is worked out, for the bill
+-- lines below and for the meter screen.
+create view public.meter_usage with (security_invoker = true) as
+select
+  r.household_id, r.meter_id, r.reading_month, r.reading, r.read_on,
+  lag(r.reading_month) over w as previous_month,
+  lag(r.reading) over w as previous_reading,
+  r.reading - lag(r.reading) over w as used
+from public.meter_readings r
+window w as (partition by r.meter_id order by r.reading_month);
+revoke all on public.meter_usage from anon, authenticated;
+grant select on public.meter_usage to authenticated;
+
 -- Each utility line names the meter and the month it bills, so what issued bills charged can be compared with what the
 -- readings now say.
 alter table public.invoice_lines
@@ -111,9 +124,9 @@ $$;
 revoke all on function private.grouped(numeric) from public;
 
 -- The utility lines the lease's drafts should carry (LSE-4). A bill covers the months before its period starts, as
--- many as the period is long, from the lease's first month on; a renewal carries on from the lease it renews. A month's
--- consumption is its reading less the one before it. Each draft bills its own months; for the months of issued and
--- void bills, what the readings now say less what issued bills charged goes on the earliest draft as an adjustment.
+-- many as the period is long, from the lease's first month on; a renewal carries on from the lease it renews. Each
+-- draft bills its months' use from meter_usage; for the months of issued and void bills, what the readings now say
+-- less what issued bills charged goes on the earliest draft as an adjustment.
 create function private.meter_lines(p_lease public.leases)
 returns table (
   invoice_id uuid, kind text, meter_id uuid, reading_month date, quantity integer, unit_price_vnd bigint, amount_vnd bigint,
@@ -124,9 +137,9 @@ stable
 set search_path = ''
 as $$
   with used as (
-    select r.meter_id, r.reading_month, r.reading, lag(r.reading) over (partition by r.meter_id order by r.reading_month) as previous
-    from public.meter_readings r
-    join public.meters m on m.id = r.meter_id
+    select u.meter_id, u.reading_month, u.reading, u.previous_reading as previous, u.used
+    from public.meter_usage u
+    join public.meters m on m.id = u.meter_id
     where m.unit_id = p_lease.unit_id
   ),
   months as (
@@ -143,7 +156,7 @@ as $$
   owed as (
     select
       mo.id, mo.status, mo.month, m.id as meter_id, m.kind, (m.pricing ->> 'unit_price_vnd')::bigint as price, u.previous, u.reading,
-      coalesce(u.reading - u.previous, 0) as due,
+      coalesce(u.used, 0) as due,
       coalesce((
         select sum(case when l.unit_price_vnd < 0 then -l.quantity else l.quantity end)
         from public.invoice_lines l

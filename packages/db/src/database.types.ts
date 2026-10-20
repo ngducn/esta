@@ -2596,6 +2596,34 @@ export type Database = {
           },
         ]
       }
+      meter_usage: {
+        Row: {
+          household_id: string | null
+          meter_id: string | null
+          previous_month: string | null
+          previous_reading: number | null
+          read_on: string | null
+          reading: number | null
+          reading_month: string | null
+          used: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meter_readings_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meter_readings_household_id_meter_id_fkey"
+            columns: ["household_id", "meter_id"]
+            isOneToOne: false
+            referencedRelation: "meters"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       property_completeness_facts: {
         Row: {
           certificate_document_count: number | null

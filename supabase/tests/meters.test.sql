@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(51);
+select plan(54);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -77,6 +77,8 @@ select tests.sees_household('public.meters', :'a', true);
 select tests.sees_household('public.meters', :'b', false);
 select tests.sees_household('public.meter_readings', :'a', true);
 select tests.sees_household('public.meter_readings', :'b', false);
+select tests.sees_household('public.meter_usage', :'b', false);
+select ok(not has_table_privilege('anon', 'public.meter_usage', 'select'), 'anon cannot read meter use');
 select lives_ok($$ update public.meters set pricing = '{"kind": "flat", "unit_price_vnd": 18000}' where id = '00000000-0000-4000-8000-00000000d11a' $$,
   'a member changes a meter''s price');
 select throws_ok($$ update public.meters set unit_id = '00000000-0000-4000-8000-000000000a13' where id = '00000000-0000-4000-8000-00000000d11a' $$,
@@ -154,6 +156,8 @@ select results_eq(
 select results_eq($$ select saved, issued from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-10-01',
   '[{"meter_id": "00000000-0000-4000-8000-00000000d11e", "reading": 2967}]') $$,
   $$ values (0, 0) $$, 'saving the same reading again changes nothing');
+select results_eq($$ select previous_month, previous_reading, used from public.meter_usage where meter_id = '00000000-0000-4000-8000-00000000d11e' order by reading_month $$,
+  $$ values (null::date, null::integer, null::integer), ('2026-09-01', 2847, 120) $$, 'meter_usage reads each month''s use from the reading before it');
 select is((select read_on from public.meter_readings where meter_id = '00000000-0000-4000-8000-00000000d11e' and reading_month = '2026-10-01'),
   '2026-11-02'::date, 'a reading is read on the database clock''s date');
 select results_eq(
