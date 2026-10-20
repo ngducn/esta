@@ -2989,6 +2989,8 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 
 **Depends on.** P3-10, the parent, and P3-05 for `buildInvoiceQr`.
 
+**Split (2026-10-20).** This PR ships the QR, the invoice view and print. Voiding, `Phát hành`, the add-receiving-account sheet and `payments.bank_account_id` move to P3-20 (`docs/plan/trail/pr-inventory.md`), so the boxes below that name them, and lanes 4 and 5, belong to P3-20.
+
 **Files.**
 
 - [ ] Create `apps/web/src/app/(app)/invoices/[invoiceId]/page.tsx` and `apps/web/src/app/(app)/invoices/[invoiceId]/print.css`.

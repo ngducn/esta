@@ -3,6 +3,8 @@ import type { IsoDate } from '@esta/core/date';
 import { formatDate, formatMonthWithin, formatRelativeDue, type Locale } from '@esta/core/format';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { QrAction } from '@/components/invoices/QrAction';
+import type { QrSheetLabels } from '@/components/invoices/QrSheet';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { RecordPaymentAction } from '@/components/payments/RecordPaymentAction';
 import { StatusMark, StatusShape, type MarkStatus } from '@/components/status-mark';
@@ -10,13 +12,16 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { CollectionRow, PaymentInvoice } from '@/server/collections/load';
+import type { InvoiceQrView } from '@/server/invoices/qr';
 import { collectionRowActions } from './rowActions';
 
-const GROUP_MARKS = { overdue: 'overdue', due: 'due', notDue: 'upcoming', paid: 'paid' } as const satisfies Record<CollectionGroupKey, MarkStatus>;
+export const GROUP_MARKS = { overdue: 'overdue', due: 'due', notDue: 'upcoming', paid: 'paid' } as const satisfies Record<CollectionGroupKey, MarkStatus>;
 
 type Board = readonly CollectionGroup<CollectionRow>[];
 /** Each lease's open invoices, which `Ghi nhận` prefills from and settles. */
 type OpenInvoices = ReadonlyMap<string, readonly PaymentInvoice[]>;
+/** Each owed row's `Mã QR`, by invoice; a row is missing when the household has no default receiving account. */
+export type BoardQrs = { readonly byInvoice: ReadonlyMap<string, InvoiceQrView>; readonly labels: QrSheetLabels };
 
 /** Below 640 px every row stacks: place and amount, tenant and due date, the status, then the actions. */
 const cell = {
@@ -55,16 +60,19 @@ function CollectionsRow({
   asOf,
   canEdit,
   openInvoices,
+  qrs,
 }: {
   item: CollectionItem<CollectionRow>;
   month: IsoDate;
   asOf: IsoDate;
   canEdit: boolean;
   openInvoices: OpenInvoices;
+  qrs: BoardQrs;
 }) {
   const t = useTranslations('collections');
   const locale = useLocale();
   const { row } = item;
+  const qr = qrs.byInvoice.get(row.invoiceId);
   const place = row.wholeUnit ? row.propertyName : t('place', { unit: row.unitLabel, property: row.propertyName });
   return (
     <TableRow
@@ -103,6 +111,18 @@ function CollectionsRow({
               <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'quiet', className: 'max-sm:first:-ml-2' })}>
                 {t(action.label)}
               </Link>
+            ) : action.kind === 'qr' ? (
+              qr === undefined ? null : (
+                <QrAction
+                  key={action.id}
+                  label={t(action.label)}
+                  title={place}
+                  description={t('qrDescription', { number: row.number, date: formatDate(row.dueDate, locale) })}
+                  invoiceHref={`/collections/invoices/${row.invoiceId}`}
+                  qr={qr}
+                  labels={qrs.labels}
+                />
+              )
             ) : (
               <RecordPaymentAction
                 key={action.id}
@@ -156,6 +176,7 @@ export function CollectionsBoard({
   asOf,
   canEdit,
   openInvoices,
+  qrs,
 }: {
   board: Board;
   month: IsoDate;
@@ -163,6 +184,7 @@ export function CollectionsBoard({
   asOf: IsoDate;
   canEdit: boolean;
   openInvoices: OpenInvoices;
+  qrs: BoardQrs;
 }) {
   const t = useTranslations('collections');
   return (
@@ -192,7 +214,7 @@ export function CollectionsBoard({
                 </TableCell>
               </TableRow>
             ) : (
-              group.items.map((item) => <CollectionsRow key={item.row.invoiceId} item={item} month={month} asOf={asOf} canEdit={canEdit} openInvoices={openInvoices} />)
+              group.items.map((item) => <CollectionsRow key={item.row.invoiceId} item={item} month={month} asOf={asOf} canEdit={canEdit} openInvoices={openInvoices} qrs={qrs} />)
             )}
           </TableBody>
         ))}
