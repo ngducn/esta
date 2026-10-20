@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { undoSheetPayments } from './helpers/board';
@@ -106,18 +107,32 @@ test('Ryan reads the same Home at 1440 in dark, with the pinned properties on th
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('Home’s figure and counts equal the board and invoice_balances for the same household and month', async ({ page }) => {
-  for (const [email, householdId] of [
-    [MOM, DEMO],
-    ['ryan.lane9@demo.esta.test', laneHousehold(9)],
-  ] as const) {
-    await open(page, email, 'light', DESKTOP);
+test('Home’s figure and counts equal the board and invoice_balances, before and after a payment that leaves a credit', async ({ page }) => {
+  const expectParity = async (householdId: string, label: string) => {
+    await page.goto('/');
     const figure = await homeFigure(page);
     const counts = await homeCounts(page);
-    expect(figure, `${email}: X and Y`).toEqual(await balancesFor(page, householdId, '2026-10-01', '2026-11-01'));
-    expect(counts, `${email}: the group counts`).toEqual(await boardCounts(page));
-    await page.context().clearCookies();
-  }
+    expect(figure, `${label}: X and Y`).toEqual(await balancesFor(page, householdId, '2026-10-01', '2026-11-01'));
+    expect(counts, `${label}: the group counts`).toEqual(await boardCounts(page));
+    return { figure, counts };
+  };
+  await open(page, 'ryan.lane9@demo.esta.test', 'light', DESKTOP);
+  await expectParity(laneHousehold(9), 'lane 9');
+  await page.context().clearCookies();
+
+  await open(page, MOM, 'light', DESKTOP);
+  expect((await expectParity(DEMO, 'the seed')).figure).toEqual({ collected: 54_000_000, billed: 69_600_000 });
+  await memberRest(page, 'POST', 'rpc/record_payment', {
+    p_invoice_id: seedId('seed:invoice:demo:di-an:1:2026-10-25'),
+    p_owed_vnd: 2_500_000,
+    p_amount_vnd: 3_000_000,
+    p_method: 'cash',
+    p_received_on: '2026-10-07',
+    p_idempotency_key: randomUUID(),
+  });
+  const paid = await expectParity(DEMO, 'after 3.000.000 on Phòng 1');
+  expect(paid.figure, 'Phòng 1’s 2.500.000 counts and the 500.000 credit does not').toEqual({ collected: 56_500_000, billed: 69_600_000 });
+  expect(paid.counts).toEqual({ overdue: 1, due: 0, notDue: 5, paid: 3 });
 });
 
 test('on 25/10 nine things are due and Home shows seven, with Xem tất cả ở Thu tiền', async ({ page, request }) => {
