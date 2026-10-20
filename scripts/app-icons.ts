@@ -2,9 +2,9 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
+import { oklchHex } from '../apps/web/src/design/contrast.ts';
 import { brandHousePath } from '../apps/web/src/design/brand.ts';
-import { colors, radius, type Oklch } from '../apps/web/src/design/tokens.ts';
+import { colors, radius } from '../apps/web/src/design/tokens.ts';
 
 const web = fileURLToPath(new URL('../apps/web/', import.meta.url));
 
@@ -13,9 +13,8 @@ type Sharp = (input: Buffer) => { resize: (size: number) => { png: () => { toBuf
 const fromNext = createRequire(createRequire(join(web, 'package.json')).resolve('next/package.json'));
 const sharp = fromNext('sharp') as Sharp;
 
-const hex = (color: Oklch) => `#${oklchToSrgb255(color).map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-const accent = hex(colors.accent.light);
-const glyph = hex(colors['on-accent'].light);
+const accent = oklchHex(colors.accent.light);
+const glyph = oklchHex(colors['on-accent'].light);
 
 /** The mock's 36 px mark: a 10 px radius and a 20 px house. `bleed` fills the square for masks and iOS. */
 function markSvg({ bleed, houseShare }: { bleed: boolean; houseShare: number }): string {

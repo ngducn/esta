@@ -1,4 +1,4 @@
-import { oklchToSrgb255 } from '@/design/contrast';
+import { oklchHex } from '@/design/contrast';
 import { colors, type ColorToken, type Theme } from '@/design/tokens';
 
 /** SPEC D10. Both names confirmed on openfreemap.org and at `tiles.openfreemap.org/styles/<name>` on 2026-10-17. */
@@ -12,9 +12,7 @@ export function mapStyleUrl(name: (typeof MAP_STYLES)[Theme]): string {
 
 /** WebGL layers and terra-draw take hex strings, so map colors are derived from the same tokens the CSS uses. */
 export function tokenHex(token: ColorToken, theme: Theme): `#${string}` {
-  return `#${oklchToSrgb255(colors[token][theme])
-    .map((channel) => channel.toString(16).padStart(2, '0'))
-    .join('')}`;
+  return oklchHex(colors[token][theme]);
 }
 
 /** Southern Vietnam, where most of a family's properties sit; used only before any pin fits the view. */

@@ -31,6 +31,13 @@ export function oklchToSrgb255(color: Oklch): Rgb {
   return [to255(r), to255(g), to255(b)];
 }
 
+/** `#rrggbb`, for the places that take a hex string: WebGL map layers, the app icons and the receipt picture. */
+export function oklchHex(color: Oklch): `#${string}` {
+  return `#${oklchToSrgb255(color)
+    .map((channel) => channel.toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
 function relativeLuminance(color: Oklch): number {
   const [r, g, b] = oklchToLinearSrgb(color);
   return 0.2126 * clamp01(r) + 0.7152 * clamp01(g) + 0.0722 * clamp01(b);

@@ -3,10 +3,7 @@ import { Resvg } from '@resvg/resvg-js';
 import type { CSSProperties, ReactNode } from 'react';
 import satori from 'satori';
 import { QR_QUIET_MODULES, qrMatrix } from '@/lib/qr';
-import type { ColorToken } from '@/design/tokens';
-import { PNG_PX, receiptColor, receiptFonts, type Receipt } from './kit';
-
-const hex = (token: ColorToken) => `#${receiptColor(token).map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+import { PNG_PX, receiptFonts, receiptHex as hex, type Receipt } from './kit';
 
 const FAMILY = 'Receipt';
 const QR_PX = 280;
