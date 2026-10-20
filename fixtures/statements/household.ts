@@ -20,7 +20,8 @@ export type ScenarioLine = RenderableRow & { expect: Expected };
 export type HouseholdStatement = { asOf: IsoDate; lines: ScenarioLine[]; fractional: RenderableRow };
 
 const SUGGESTION_WINDOW_DAYS = 10;
-const upper = (name: string) => foldVietnamese(name).toUpperCase();
+/** A name as a bank prints it, without accents in capitals. */
+export const upper = (name: string) => foldVietnamese(name).toUpperCase();
 const expectLine = (status: ImportStatus, invoices: string[] = [], reason: ImportReason | null = null): Expected => ({ status, reason, invoices });
 
 /** A bill a transfer dated `on` can suggest alone: no other open bill of its tenant owes the same within the window. */

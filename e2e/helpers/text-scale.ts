@@ -1,16 +1,24 @@
 import type { Page } from '@playwright/test';
 
-/** Text that a box cuts, that spills out of the box it sits in, runs off the screen or breaks inside a word, as FND-8 counts it. */
+/** Text cut, spilling, breaking inside a word or sliding under another box, as FND-8 counts it. */
 export type ClippedText = { readonly text: string; readonly in: string; readonly by: string; readonly px: number };
 
 /**
- * Every run of text on the page that a box cuts off, that spills out of the box it sits in, or that runs past the
- * screen's edge, without the ellipsis or line clamp that says it goes on, and every word split across two lines (FND-8). Text a box scrolls to is not cut,
- * since scrolling shows it; the page's own sideways scroll is `noSidewaysScroll`'s to check. A glyph's box is taller
- * than a tight line, so up to 0.4 em above or below a box is the font's own ascent and descent, not a cut line.
+ * Every place on the page where text does not fit (FND-8), without the ellipsis or line clamp that says it goes on:
+ * - an element whose content is wider than its box (`scrollWidth` past `clientWidth`, the plan's own check), unless the
+ *   box, or the strip it sits in, scrolls to show the rest;
+ * - text that a box cuts, or that spills out of its block or out of any box that draws a border or a background;
+ * - text past the screen's edge, a word of letters split over two lines, a field's placeholder cut by the field;
+ * - two boxes in the flow, each holding text, that overlap.
+ * Text that is not drawn (no box, `visibility: hidden`, opacity 0, or a 1 px screen-reader box) is not read. Visible
+ * text is read even when `aria-hidden` keeps it from screen readers. A glyph's box is taller than a tight line, so up to
+ * 0.4 em above or below a box is the font's ascent and descent, not a cut line. The page's own sideways scroll is
+ * `noSidewaysScroll`'s to check.
  */
 export function clippedText(page: Page): Promise<ClippedText[]> {
   return page.evaluate(() => {
+    type Edges = { left: number; right: number; top: number; bottom: number };
+    const found: { text: string; in: string; by: string; px: number }[] = [];
     const name = (element: Element): string => {
       const owner = element.closest('[data-testid]');
       const tag = element.tagName.toLowerCase();
@@ -18,28 +26,50 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
       const id = `[data-testid="${owner.getAttribute('data-testid')}"]`;
       return owner === element ? id : `${id} ${tag}`;
     };
-    const marked = (style: CSSStyleDeclaration) => style.textOverflow === 'ellipsis' || style.webkitLineClamp !== 'none';
     const scrolls = (overflow: string) => overflow === 'auto' || overflow === 'scroll';
-    type Edges = { left: number; right: number; top: number; bottom: number };
-    const found: { text: string; in: string; by: string; px: number }[] = [];
+    const marked = (style: CSSStyleDeclaration) =>
+      (style.textOverflow === 'ellipsis' && style.overflowX !== 'visible') || (style.webkitLineClamp !== 'none' && style.overflowY !== 'visible');
+    const draws = (style: CSSStyleDeclaration) =>
+      ['top', 'right', 'bottom', 'left'].some((side) => style.getPropertyValue(`border-${side}-style`) !== 'none' && Number.parseFloat(style.getPropertyValue(`border-${side}-width`)) > 0) ||
+      style.backgroundImage !== 'none' ||
+      !/^(transparent|rgba\(.*,\s*0\)|.*\/\s*0\))$/.test(style.backgroundColor);
+    const unseen = new Map<Element, boolean>();
+    const hidden = (element: Element | null): boolean => {
+      if (element === null || element === document.documentElement) return false;
+      const known = unseen.get(element);
+      if (known !== undefined) return known;
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      const srOnly = style.overflowX !== 'visible' && (box.width <= 1 || box.height <= 1);
+      const value = style.opacity === '0' || srOnly || hidden(element.parentElement);
+      unseen.set(element, value);
+      return value;
+    };
+    const textRects = (node: Node) => {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      return [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
+    };
+    const past = (rects: readonly DOMRect[], edges: Edges, slack = 0) => ({
+      x: Math.max(...rects.map((rect) => Math.max(edges.left - rect.left, rect.right - edges.right))),
+      y: Math.max(...rects.map((rect) => Math.max(edges.top - rect.top, rect.bottom - edges.bottom))) - slack,
+    });
+    const paddingBox = (box: Element): Edges => {
+      const outer = box.getBoundingClientRect();
+      return { left: outer.left + box.clientLeft, top: outer.top + box.clientTop, right: outer.left + box.clientLeft + box.clientWidth, bottom: outer.top + box.clientTop + box.clientHeight };
+    };
+
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
       const text = node.textContent?.trim() ?? '';
       const parent = node.parentElement;
-      if (text === '' || parent === null || parent.closest('[aria-hidden="true"], script, style, template, noscript') !== null) continue;
+      if (text === '' || parent === null || parent.closest('script, style, template, noscript') !== null) continue;
       const style = getComputedStyle(parent);
-      if (style.visibility === 'hidden') continue;
-      const range = document.createRange();
-      range.selectNodeContents(node);
-      const rects = [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
+      const rects = textRects(node);
+      if (rects.length === 0 || style.visibility === 'hidden' || hidden(parent)) continue;
       let block = parent;
       while (block.parentElement !== null && ['inline', 'contents'].includes(getComputedStyle(block).display)) block = block.parentElement;
-      if (rects.length === 0) continue;
       const slack = Number.parseFloat(style.fontSize) * 0.4;
-      const beyond = (edges: Edges) => ({
-        x: Math.max(...rects.map((rect) => Math.max(edges.left - rect.left, rect.right - edges.right))),
-        y: Math.max(...rects.map((rect) => Math.max(edges.top - rect.top, rect.bottom - edges.bottom))) - slack,
-      });
       const report = (box: Element, px: number) => found.push({ text: text.slice(0, 60), in: name(parent), by: name(box), px: Math.round(px) });
       let ellipsis = marked(style);
       let scrolled = { x: false, y: false };
@@ -49,18 +79,9 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
         ellipsis ||= marked(boxStyle);
         if (ellipsis) break;
         if (boxStyle.display === 'contents') continue;
-        const outer = box.getBoundingClientRect();
         const cuts = boxStyle.overflowX !== 'visible' || boxStyle.overflowY !== 'visible';
-        // Screen reader text sits in a 1 px box that cuts it on purpose.
-        if (cuts && (outer.width <= 1 || outer.height <= 1)) {
-          done = true;
-          break;
-        }
-        const edges = cuts
-          ? { left: outer.left + box.clientLeft, top: outer.top + box.clientTop, right: outer.left + box.clientLeft + box.clientWidth, bottom: outer.top + box.clientTop + box.clientHeight }
-          : outer;
-        if (!cuts && box !== block) continue;
-        const over = beyond(edges);
+        if (!cuts && box !== block && !draws(boxStyle)) continue;
+        const over = past(rects, cuts ? paddingBox(box) : box.getBoundingClientRect(), slack);
         const x = over.x > 1 && !scrolled.x && !scrolls(boxStyle.overflowX);
         const y = over.y > 1 && !scrolled.y && !scrolls(boxStyle.overflowY);
         if (x || y) {
@@ -70,7 +91,7 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
         scrolled = { x: scrolled.x || (over.x > 1 && scrolls(boxStyle.overflowX)), y: scrolled.y || (over.y > 1 && scrolls(boxStyle.overflowY)) };
       }
       if (done || ellipsis || scrolled.x) continue;
-      const offScreen = beyond({ left: 0, right: document.documentElement.clientWidth, top: Number.NEGATIVE_INFINITY, bottom: Number.POSITIVE_INFINITY }).x;
+      const offScreen = past(rects, { left: 0, right: document.documentElement.clientWidth, top: Number.NEGATIVE_INFINITY, bottom: Number.POSITIVE_INFINITY }).x;
       if (offScreen > 1) report(document.documentElement, offScreen);
       // A word too wide for its box breaks across lines rather than spilling; a link or a code has no such word.
       for (const word of (node.textContent ?? '').matchAll(/(?<=^|\s)[\p{L}\p{M}]{2,}(?=[.,:;!?)]*(?:\s|$))/gu)) {
@@ -81,16 +102,44 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
         if (lines.size > 1) found.push({ text: word[0], in: name(parent), by: 'a line break inside the word', px: lines.size });
       }
     }
+
+    // The plan's check: content wider than its box. A strip that scrolls, inside the box or around it, shows the rest,
+    // and a box placed out of the flow sits where it was put.
+    for (const box of document.body.querySelectorAll<HTMLElement>('*')) {
+      if (box.scrollWidth <= box.clientWidth + 1 || box.clientWidth <= 1 || (box.innerText ?? '').trim() === '' || hidden(box)) continue;
+      const style = getComputedStyle(box);
+      if (style.visibility === 'hidden' || scrolls(style.overflowX) || marked(style)) continue;
+      // As `scrollWidth` counts it: past the end, not a negative margin that pulls a link into the gutter.
+      const end = paddingBox(box).right;
+      const outside = (rects: readonly DOMRect[]) => rects.some((rect) => rect.right - end > 1);
+      const shown = (element: HTMLElement) => {
+        for (let up: HTMLElement | null = element; up !== null && up !== box; up = up.parentElement) {
+          const upStyle = getComputedStyle(up);
+          if (['absolute', 'fixed'].includes(upStyle.position) || (up === element ? scrolls(upStyle.overflowX) : upStyle.overflowX !== 'visible')) return false;
+        }
+        return true;
+      };
+      const spills =
+        [...box.childNodes].some((child) => child.nodeType === Node.TEXT_NODE && (child.textContent ?? '').trim() !== '' && outside(textRects(child))) ||
+        [...box.querySelectorAll<HTMLElement>('*')].some((element) => shown(element) && outside([element.getBoundingClientRect()].filter((rect) => rect.width > 0)));
+      if (!spills) continue;
+      let holder = box.parentElement;
+      while (holder !== null && holder !== document.body && getComputedStyle(holder).overflowX === 'visible') holder = holder.parentElement;
+      if (holder !== null && holder !== document.body && scrolls(getComputedStyle(holder).overflowX)) continue;
+      found.push({ text: box.innerText.trim().slice(0, 60), in: name(box), by: 'content wider than its box', px: box.scrollWidth - box.clientWidth });
+    }
+
     // A field's placeholder is the one text a box cuts that no node holds; an empty field must show all of it.
     const measure = document.createElement('canvas').getContext('2d');
     for (const field of document.body.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[placeholder], textarea[placeholder]')) {
       const style = getComputedStyle(field);
-      if (field.value !== '' || field.placeholder === '' || style.display === 'none' || style.visibility === 'hidden' || measure === null) continue;
+      if (field.value !== '' || field.placeholder === '' || style.display === 'none' || style.visibility === 'hidden' || hidden(field) || measure === null) continue;
       measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
       const room = field.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
       const px = measure.measureText(field.placeholder).width - room;
       if (px > 1 && style.textOverflow !== 'ellipsis') found.push({ text: field.placeholder, in: name(field), by: 'its field', px: Math.round(px) });
     }
+
     // Boxes in the flow sit side by side or stacked; two that overlap mean one has grown out of its column. A sticky
     // bar rides over the content on purpose.
     const inFlow = (element: Element) => {

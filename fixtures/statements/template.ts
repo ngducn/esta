@@ -1,9 +1,8 @@
 import { renderMagnitude } from '../../packages/core/src/matching/render.ts';
-import type { Vnd } from '../../packages/core/src/money/vnd.ts';
-import { foldVietnamese } from '../../packages/core/src/search/fold.ts';
+import { upper, type OpenBill } from './household.ts';
 
 /** A bill the template names by its place in the list, from 1. */
-export type TemplateBill = { readonly memoCode: string; readonly outstanding: Vnd; readonly tenantName: string };
+export type TemplateBill = Pick<OpenBill, 'memoCode' | 'outstanding' | 'tenantName'>;
 
 const PLACEHOLDER = /\{(memo|amount|tenant):(\d+)\}/g;
 
@@ -18,6 +17,6 @@ export function statementFromTemplate(template: string, bills: readonly Template
     if (bill === undefined) throw new Error(`The template names bill ${place}, but only ${bills.length} were given`);
     if (field === 'memo') return bill.memoCode;
     if (field === 'amount') return String(renderMagnitude(bill.outstanding, 'dot_grouped'));
-    return foldVietnamese(bill.tenantName).toUpperCase();
+    return upper(bill.tenantName);
   });
 }

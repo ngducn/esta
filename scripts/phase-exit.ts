@@ -3,6 +3,7 @@ import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { isIsoDate } from '../packages/core/src/date/iso-date.ts';
 
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
@@ -49,29 +50,82 @@ export function verifyPingRecord(text: string): Outcome {
 export const STATUS = 'docs/plan/STATUS.md';
 export const MOM_TEST = 'docs/plan/mom-test.md';
 
-/** Ryan's line in STATUS.md once two banking apps have scanned the gate's VietQR and an invoice's (SPEC §10, Phase 3). */
+/** Markdown as a reader sees it: without HTML comments or fenced code, where a record could sit unseen. */
+export function shownMarkdown(text: string): string {
+  let fence: string | null = null;
+  return text
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
+    .split('\n')
+    .filter((line) => {
+      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker === undefined) return fence === null;
+      if (fence === null) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      return false;
+    })
+    .join('\n');
+}
+
+/** The body of the shown `## <heading>` section, or nothing when the file has no such section. */
+export function markdownSection(text: string, heading: string): string {
+  const section = shownMarkdown(text)
+    .split(/^## /m)
+    .slice(1)
+    .find((part) => part.slice(0, part.indexOf('\n') === -1 ? undefined : part.indexOf('\n')).trim() === heading);
+  return section === undefined ? '' : section.slice(section.indexOf('\n') + 1);
+}
+
+const VIETQR_RECORD = '- VietQR gate passed on ';
+const appKey = (app: string) => app.toLowerCase().replace(/\s+/g, '');
+
+/**
+ * Ryan's one line under `## Decided by Ryan` in STATUS.md once two banking apps have scanned the gate's VietQR and an
+ * invoice's (SPEC §10, Phase 3): `- VietQR gate passed on YYYY-MM-DD: <first app>, <second app>.`, a real date from
+ * 2026 on and two different apps, named.
+ */
 export function verifyVietQrScan(text: string): Outcome {
-  const record = /^- VietQR gate passed on (\d{4}-\d{2}-\d{2}): ([^,\n]+), ([^.\n]+)\.?$/m.exec(text);
-  if (record === null) return { pass: false, detail: `waiting for Ryan: no "VietQR gate passed on" line in ${STATUS}` };
-  return { pass: true, detail: `${record[2]?.trim()} and ${record[3]?.trim()} on ${record[1]}` };
+  const records = markdownSection(text, 'Decided by Ryan')
+    .split('\n')
+    .filter((line) => line.startsWith(VIETQR_RECORD));
+  if (records.length === 0) return { pass: false, detail: `waiting for Ryan: no "${VIETQR_RECORD.slice(2).trim()}" line under Decided by Ryan in ${STATUS}` };
+  if (records.length > 1) return { pass: false, detail: `${records.length} "${VIETQR_RECORD.slice(2).trim()}" lines under Decided by Ryan in ${STATUS}; keep one` };
+  const record = /^- VietQR gate passed on (\S+): ([^,]*), ([^,]*?)\.?$/.exec(records[0] ?? '');
+  if (record === null) return { pass: false, detail: `the VietQR line in ${STATUS} names no date and two apps, as "${VIETQR_RECORD}YYYY-MM-DD: <first app>, <second app>."` };
+  const [, date = '', first = '', second = ''] = record.map((part) => part.trim());
+  const problems = [
+    ...(isIsoDate(date) && Number(date.slice(0, 4)) >= 2026 ? [] : [`${date} is not a date from 2026 on`]),
+    ...[first, second].flatMap((app, i) => (app === '' || /[<>]/.test(app) ? [`the ${i === 0 ? 'first' : 'second'} app is not named`] : [])),
+    ...(first !== '' && appKey(first) === appKey(second) ? ['the two apps are the same'] : []),
+  ];
+  return problems.length === 0
+    ? { pass: true, detail: `${first} and ${second} on ${date}` }
+    : { pass: false, detail: `the VietQR line in ${STATUS}: ${problems.join(', ')}` };
 }
 
 const MOM_TASKS = 4;
 const MOM_LIMIT_SECONDS = 120;
+const MOM_ROW = /^\|\s*([1-4])\.[^|]*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|/;
 
-/** Ryan's table under `## Results` in mom-test.md: each of the four SPEC §10.1 tasks passed in under two minutes. */
+/**
+ * Ryan's table under `## Results` in mom-test.md: one row for each of the four SPEC §10.1 tasks, marked `yes`, with a
+ * time `m:ss` above 0:00 and under 2:00.
+ */
 export function verifyMomTest(text: string): Outcome {
-  const results = text.split(/^## /m).find((section) => section.startsWith('Results')) ?? '';
-  const rows = [...results.matchAll(/^\|\s*([1-4])\.[^|]*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|/gm)];
+  const rows = markdownSection(text, 'Results')
+    .split('\n')
+    .map((line) => MOM_ROW.exec(line))
+    .filter((row) => row !== null);
   const problems: string[] = [];
   for (let task = 1; task <= MOM_TASKS; task++) {
-    const row = rows.find((match) => match[1] === String(task));
+    const own = rows.filter((row) => row[1] === String(task));
+    const [row] = own;
     const time = /^(\d+):([0-5]\d)$/.exec(row?.[2] ?? '');
     const seconds = time === null ? undefined : Number(time[1]) * 60 + Number(time[2]);
     if (row === undefined) problems.push(`task ${task} has no row`);
+    else if (own.length > 1) problems.push(`task ${task} has ${own.length} rows`);
     else if (seconds === undefined) problems.push(`task ${task} has no time`);
+    else if (seconds <= 0 || seconds >= MOM_LIMIT_SECONDS) problems.push(`task ${task} took ${row[2]}`);
     else if (row[3]?.toLowerCase() !== 'yes') problems.push(`task ${task} is not marked passed`);
-    else if (seconds >= MOM_LIMIT_SECONDS) problems.push(`task ${task} took ${row[2]}`);
   }
   return problems.length === 0
     ? { pass: true, detail: `${MOM_TASKS} of ${MOM_TASKS} tasks passed in under two minutes` }

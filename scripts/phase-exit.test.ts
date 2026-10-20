@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { checkPhase, flakyTests, MOM_TEST, PHASE_CHECKS, S1_RECORD, STATUS, uncited, verifyMomTest, verifyPingRecord, verifyVietQrScan, type PhaseCheck } from './phase-exit.ts';
+import { checkPhase, flakyTests, markdownSection, MOM_TEST, PHASE_CHECKS, S1_RECORD, shownMarkdown, STATUS, uncited, verifyMomTest, verifyPingRecord, verifyVietQrScan, type PhaseCheck } from './phase-exit.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const logDir = mkdtempSync(join(tmpdir(), 'esta-phase-test-'));
@@ -107,17 +107,9 @@ describe('checkPhase', () => {
     expect(commands['Lighthouse']).toEqual(['pnpm db:reset', 'node scripts/perf/phase-budget.ts --phase 3']);
   });
 
-  it('fails the lease prefill row until P3-19 brings its spec', () => {
+  it('runs the lease prefill spec P3-19 brings for DOC-6', () => {
     const prefill = (PHASE_CHECKS['3'] ?? []).find((check) => check.id === 'DOC-6');
-    expect(prefill && uncited(repoRoot, prefill)).toEqual(['e2e/lease-from-contract.spec.ts']);
-  });
-
-  it('waits for Ryan on the committed VietQR and Mom test records', () => {
-    expect(verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8'))).toMatchObject({ pass: false, detail: expect.stringContaining('waiting for Ryan') });
-    expect(verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8'))).toEqual({
-      pass: false,
-      detail: `waiting for Ryan: task 1 has no time, task 2 has no time, task 3 has no time, task 4 has no time in ${MOM_TEST}`,
-    });
+    expect(prefill && 'cites' in prefill && prefill.cites).toEqual(['e2e/lease-from-contract.spec.ts']);
   });
 
   it('runs only files that cite their row id, at least one per row', () => {
@@ -212,29 +204,107 @@ describe('verifyPingRecord', () => {
   });
 });
 
+// Fixture text only: the live STATUS.md and mom-test.md change when Ryan records the gates, and `pnpm phase:check 3` reads them.
+const status = (decided: string, waiting = '') =>
+  ['# Status', '', '## Decided by Ryan', '', decided, '', '## Waiting for Ryan', '', waiting, '', '## Needs professional confirmation', ''].join('\n');
+
 describe('verifyVietQrScan', () => {
-  it('passes the line Ryan writes once two banking apps have scanned the codes', () => {
-    expect(verifyVietQrScan('## Decided by Ryan\n\n- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.\n')).toEqual({ pass: true, detail: 'VCB Digibank and MB Bank on 2026-10-22' });
+  it('passes the one line Ryan adds under Decided by Ryan', () => {
+    expect(verifyVietQrScan(status('- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.'))).toEqual({ pass: true, detail: 'VCB Digibank and MB Bank on 2026-10-22' });
+    expect(verifyVietQrScan(status('- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank')).pass).toBe(true);
   });
 
-  it('fails one app, or a line without a date', () => {
-    expect(verifyVietQrScan('- VietQR gate passed on 2026-10-22: VCB Digibank.\n').pass).toBe(false);
-    expect(verifyVietQrScan('- VietQR gate passed: VCB Digibank, MB Bank.\n').pass).toBe(false);
+  it('waits while the line is only the instruction, under Waiting for Ryan', () => {
+    const instruction = 'Record only the app names, by adding this line under Decided by Ryan: `- VietQR gate passed on YYYY-MM-DD: <first app>, <second app>.`';
+    expect(verifyVietQrScan(status('- Earlier decision.', `- ${instruction}\n- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.`))).toEqual({
+      pass: false,
+      detail: `waiting for Ryan: no "VietQR gate passed on" line under Decided by Ryan in ${STATUS}`,
+    });
+  });
+
+  it.each([
+    ['inside a code fence', '```\n- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.\n```'],
+    ['inside a tilde fence', '~~~md\n- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.\n~~~'],
+    ['inside an HTML comment', '<!--\n- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.\n-->'],
+    ['inside a one-line HTML comment', '<!-- - VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank. -->'],
+  ])('does not read a line %s', (_, decided) => {
+    expect(verifyVietQrScan(status(decided)).detail).toContain('waiting for Ryan');
+  });
+
+  it.each([
+    ['the same app twice', '2026-10-22: VCB Digibank, VCB Digibank.', 'the two apps are the same'],
+    ['one app in two cases', '2026-10-22: MB Bank, mb bank.', 'the two apps are the same'],
+    ['one app with its spaces moved', '2026-10-22: MB Bank, MBBank.', 'the two apps are the same'],
+    ['the template left in', '2026-10-22: <first app>, <second app>.', 'the first app is not named, the second app is not named'],
+    ['the date left as the template', 'YYYY-MM-DD: VCB Digibank, MB Bank.', 'YYYY-MM-DD is not a date from 2026 on'],
+    ['a month that does not exist', '2026-13-45: VCB Digibank, MB Bank.', '2026-13-45 is not a date from 2026 on'],
+    ['a day the month does not have', '2026-02-30: VCB Digibank, MB Bank.', '2026-02-30 is not a date from 2026 on'],
+    ['the zero date', '0000-00-00: VCB Digibank, MB Bank.', '0000-00-00 is not a date from 2026 on'],
+    ['two blank apps', '2026-10-22: , .', 'the first app is not named, the second app is not named'],
+    ['a blank second app', '2026-10-22: VCB Digibank, .', 'the second app is not named'],
+  ])('fails %s', (_, rest, problem) => {
+    expect(verifyVietQrScan(status(`- VietQR gate passed on ${rest}`))).toEqual({ pass: false, detail: `the VietQR line in ${STATUS}: ${problem}` });
+  });
+
+  it('fails one app, and two lines', () => {
+    expect(verifyVietQrScan(status('- VietQR gate passed on 2026-10-22: VCB Digibank.')).detail).toContain('names no date and two apps');
+    expect(verifyVietQrScan(status('- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.\n- VietQR gate passed on 2026-10-23: VCB Digibank, MB Bank.')).detail).toContain('2 "VietQR gate passed on" lines');
   });
 });
 
 describe('verifyMomTest', () => {
-  const results = (rows: readonly (readonly [string, string])[]) =>
-    ['## The four tasks', '', '| 1. Record a cash payment for Phòng 3 | "Mẹ ghi nhận" | toast |', '', '## Results', '', '| Task | Time | Passed | Notes |', '| --- | --- | --- | --- |', ...rows.map(([time, passed], i) => `| ${i + 1}. Task | ${time} | ${passed} | |`), '', '## Failures', ''].join('\n');
+  const PASSING = [['0:41', 'yes'], ['0:12', 'yes'], ['1:05', 'Yes'], ['1:59', 'yes']] as const;
+  const table = (rows: readonly (readonly [string, string])[]) => ['| Task | Time | Passed | Notes |', '| --- | --- | --- | --- |', ...rows.map(([time, passed], i) => `| ${i + 1}. Task | ${time} | ${passed} | |`)];
+  const file = (results: readonly string[]) =>
+    ['## The four tasks', '', '| 1. Record a cash payment for Phòng 3 | "Mẹ ghi nhận" | toast |', '', '## Results', '', ...results, '', '## Failures', ''].join('\n');
 
   it('passes four tasks marked yes, each under two minutes, and reads only the results table', () => {
-    expect(verifyMomTest(results([['0:41', 'yes'], ['0:12', 'yes'], ['1:05', 'Yes'], ['1:59', 'yes']]))).toEqual({ pass: true, detail: '4 of 4 tasks passed in under two minutes' });
+    expect(verifyMomTest(file(table(PASSING)))).toEqual({ pass: true, detail: '4 of 4 tasks passed in under two minutes' });
+  });
+
+  it('waits on the table as committed, with no times', () => {
+    expect(verifyMomTest(file(table([['', ''], ['', ''], ['', ''], ['', '']])))).toEqual({
+      pass: false,
+      detail: `waiting for Ryan: task 1 has no time, task 2 has no time, task 3 has no time, task 4 has no time in ${MOM_TEST}`,
+    });
   });
 
   it('fails a task at two minutes, one not passed and one not run, and names each', () => {
-    expect(verifyMomTest(results([['2:00', 'yes'], ['0:30', 'no'], ['', '']]))).toEqual({
+    expect(verifyMomTest(file(table([['2:00', 'yes'], ['0:30', 'no'], ['', '']])))).toEqual({
       pass: false,
       detail: `waiting for Ryan: task 1 took 2:00, task 2 is not marked passed, task 3 has no time, task 4 has no row in ${MOM_TEST}`,
     });
+  });
+
+  it.each([
+    ['0:00', 'task 1 took 0:00'],
+    ['12:30', 'task 1 took 12:30'],
+    ['1:75', 'task 1 has no time'],
+    ['90', 'task 1 has no time'],
+  ])('fails a time of %s', (time, problem) => {
+    expect(verifyMomTest(file(table([[time, 'yes'], ...PASSING.slice(1)])))).toEqual({ pass: false, detail: `waiting for Ryan: ${problem} in ${MOM_TEST}` });
+  });
+
+  it('fails a task recorded twice, even when both rows pass', () => {
+    const rows = table(PASSING);
+    expect(verifyMomTest(file([...rows, '| 2. Task again | 0:20 | yes | |']))).toEqual({ pass: false, detail: `waiting for Ryan: task 2 has 2 rows in ${MOM_TEST}` });
+  });
+
+  it.each([
+    ['an HTML comment', (rows: string[]) => ['<!--', ...rows, '-->']],
+    ['a code fence', (rows: string[]) => ['```', ...rows, '```']],
+  ])('does not read rows inside %s', (_, wrap) => {
+    expect(verifyMomTest(file(wrap(table(PASSING))))).toEqual({
+      pass: false,
+      detail: `waiting for Ryan: task 1 has no row, task 2 has no row, task 3 has no row, task 4 has no row in ${MOM_TEST}`,
+    });
+  });
+});
+
+describe('shownMarkdown and markdownSection', () => {
+  it('drop comments and fences, and find a section by its whole heading', () => {
+    const text = ['## Results', 'kept', '<!-- gone -->', '````', '```', 'gone', '````', 'kept too', '## Results later', 'other'].join('\n');
+    expect(markdownSection(text, 'Results')).toBe('kept\n\nkept too\n');
+    expect(shownMarkdown('a<!-- open comment\nnever closed')).toBe('a');
   });
 });

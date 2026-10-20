@@ -20,7 +20,7 @@ async function expectFits(page: Page, name: string) {
   expect(await seriousAxeViolations(page)).toEqual([]);
 }
 
-test('the FND-8 check finds cut, spilling, too-tall and broken words, a cut placeholder and overlapping boxes, and passes an ellipsis, a line clamp and a strip that scrolls', async ({ page }) => {
+test('the FND-8 check finds cut, spilling, too-tall and broken text, content wider than its card, visible aria-hidden text, a cut placeholder and overlapping boxes, and passes an ellipsis, a line clamp and strips that scroll', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await page.setContent(`<main>
     <p data-testid="cut" style="width:50px;overflow:hidden;white-space:nowrap">Đang cho thuê 6/8</p>
@@ -37,10 +37,17 @@ test('the FND-8 check finds cut, spilling, too-tall and broken words, a cut plac
     <p style="width:120px;overflow-wrap:anywhere">https://esta.example/q/AbCdEfGhIjKlMnOpQrStUv</p>
     <input data-testid="placeholder" style="width:120px" placeholder="Tìm theo tên hoặc chữ trên giấy tờ">
     <input style="width:200px" placeholder="Tên hoặc chữ">
+    <div data-testid="bordered" style="width:120px;border:1px solid"><span style="display:inline-block;white-space:nowrap">Quá hạn 12 ngày rất lâu</span></div>
+    <div data-testid="card" style="display:flex;gap:8px;width:140px;background:#eee"><span style="white-space:nowrap">Phòng 5, Dãy trọ Dĩ An</span><span style="flex:none;white-space:nowrap">2.800.000 ₫</span></div>
+    <div data-testid="pillcard" style="width:120px;padding:4px;border:1px solid"><span style="display:inline-flex;padding:2px 8px;white-space:nowrap;background:#fdd">Quá hạn 12 ngày, từ tháng 9</span></div>
+    <p data-testid="ariahidden" aria-hidden="true" style="width:60px;white-space:nowrap">Tháng 10/2026</p>
+    <div style="width:200px"><nav style="margin:0 -16px;overflow-x:auto;white-space:nowrap">Tổng quan Pháp lý Cho thuê Thu chi Tài liệu Hoạt động</nav></div>
+    <nav style="width:100px;overflow-x:auto"><ul style="display:flex;gap:8px;margin:0;padding:0;list-style:none"><li style="white-space:nowrap">Tổng quan</li><li style="white-space:nowrap">Pháp lý</li><li style="white-space:nowrap">Cho thuê</li></ul></nav>
     <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Chỉ trình đọc màn hình đọc dòng này</span>
   </main>`);
   const found = await clippedText(page);
-  expect(found.map((hit) => hit.in.replace(/^\[data-testid="([^"]+)"\].*$/, '$1')).toSorted()).toEqual(['broken', 'cut', 'left', 'placeholder', 'spill', 'tall', 'word']);
+  const where = new Set(found.map((hit) => hit.in.replace(/^\[data-testid="([^"]+)"\].*$/, '$1')));
+  expect([...where].toSorted()).toEqual(['ariahidden', 'bordered', 'broken', 'card', 'cut', 'left', 'pillcard', 'placeholder', 'spill', 'tall', 'word']);
 });
 
 // Mẹ reads Vietnamese and Ryan English, whose longer words are the first to outgrow a box.
