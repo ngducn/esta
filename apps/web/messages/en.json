@@ -1208,7 +1208,7 @@
     "extractionFailed": "Could not read",
     "extractionOffline": "Assistant offline",
     "searchLabel": "Search documents",
-    "searchPlaceholder": "Search by name or the words on the paper",
+    "searchPlaceholder": "Name or words on it",
     "searching": "Searching…",
     "results": "{count, plural, one {# result} other {# results}}",
     "noMatch": "No documents found for \"{query}\".",

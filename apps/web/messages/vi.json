@@ -1208,7 +1208,7 @@
     "extractionFailed": "Không đọc được",
     "extractionOffline": "Trợ lý ngoại tuyến",
     "searchLabel": "Tìm tài liệu",
-    "searchPlaceholder": "Tìm theo tên hoặc chữ trên giấy tờ",
+    "searchPlaceholder": "Tên hoặc chữ trên giấy tờ",
     "searching": "Đang tìm…",
     "results": "{count, plural, other {# kết quả}}",
     "noMatch": "Không tìm thấy tài liệu cho \"{query}\".",

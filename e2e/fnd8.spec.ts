@@ -20,7 +20,7 @@ async function expectFits(page: Page, name: string) {
   expect(await seriousAxeViolations(page)).toEqual([]);
 }
 
-test('the FND-8 check finds cut, spilling, too-tall and broken words and overlapping boxes, and passes an ellipsis, a line clamp and a strip that scrolls', async ({ page }) => {
+test('the FND-8 check finds cut, spilling, too-tall and broken words, a cut placeholder and overlapping boxes, and passes an ellipsis, a line clamp and a strip that scrolls', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await page.setContent(`<main>
     <p data-testid="cut" style="width:50px;overflow:hidden;white-space:nowrap">Đang cho thuê 6/8</p>
@@ -35,10 +35,12 @@ test('the FND-8 check finds cut, spilling, too-tall and broken words and overlap
     <p data-testid="clamp" style="width:80px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">Bảo hiểm cháy nổ Nhà phố Q7</p>
     <nav data-testid="strip" style="width:80px;overflow-x:auto;white-space:nowrap">Tổng quan Pháp lý Cho thuê Thu chi</nav>
     <p style="width:120px;overflow-wrap:anywhere">https://esta.example/q/AbCdEfGhIjKlMnOpQrStUv</p>
+    <input data-testid="placeholder" style="width:120px" placeholder="Tìm theo tên hoặc chữ trên giấy tờ">
+    <input style="width:200px" placeholder="Tên hoặc chữ">
     <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Chỉ trình đọc màn hình đọc dòng này</span>
   </main>`);
   const found = await clippedText(page);
-  expect(found.map((hit) => hit.in.replace(/^\[data-testid="([^"]+)"\].*$/, '$1')).toSorted()).toEqual(['broken', 'cut', 'left', 'spill', 'tall', 'word']);
+  expect(found.map((hit) => hit.in.replace(/^\[data-testid="([^"]+)"\].*$/, '$1')).toSorted()).toEqual(['broken', 'cut', 'left', 'placeholder', 'spill', 'tall', 'word']);
 });
 
 // Mẹ reads Vietnamese and Ryan English, whose longer words are the first to outgrow a box.

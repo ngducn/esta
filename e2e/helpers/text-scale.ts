@@ -81,6 +81,16 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
         if (lines.size > 1) found.push({ text: word[0], in: name(parent), by: 'a line break inside the word', px: lines.size });
       }
     }
+    // A field's placeholder is the one text a box cuts that no node holds; an empty field must show all of it.
+    const measure = document.createElement('canvas').getContext('2d');
+    for (const field of document.body.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[placeholder], textarea[placeholder]')) {
+      const style = getComputedStyle(field);
+      if (field.value !== '' || field.placeholder === '' || style.display === 'none' || style.visibility === 'hidden' || measure === null) continue;
+      measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const room = field.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+      const px = measure.measureText(field.placeholder).width - room;
+      if (px > 1 && style.textOverflow !== 'ellipsis') found.push({ text: field.placeholder, in: name(field), by: 'its field', px: Math.round(px) });
+    }
     // Boxes in the flow sit side by side or stacked; two that overlap mean one has grown out of its column. A sticky
     // bar rides over the content on purpose.
     const inFlow = (element: Element) => {
