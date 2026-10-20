@@ -48,8 +48,13 @@ describe('meterReadingsSave (LSE-4)', () => {
     }
   });
 
-  it('names a reading below the month before, which the database refuses', async () => {
-    const { db } = fakeDb(answers([]), (request) => (request.table.startsWith('rpc/') ? { code: '23514', message: 'ESTA_READING_BELOW_PREVIOUS' } : null));
-    expect(await runOp(meterReadingsSave, context(db), input)).toEqual({ ok: false, reason: { kind: 'below_previous' } });
+  it('names a reading below the month before, and a month used past what a bill line holds, as the database refuses them', async () => {
+    for (const [message, kind] of [
+      ['ESTA_READING_BELOW_PREVIOUS', 'below_previous'],
+      ['ESTA_READING_USE_TOO_LARGE', 'use_too_large'],
+    ] as const) {
+      const { db } = fakeDb(answers([]), (request) => (request.table.startsWith('rpc/') ? { code: '23514', message } : null));
+      expect(await runOp(meterReadingsSave, context(db), input)).toEqual({ ok: false, reason: { kind } });
+    }
   });
 });

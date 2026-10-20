@@ -16,7 +16,7 @@ type Readings = z.output<typeof readingsInputSchema>;
 
 /** How many readings changed, and how many bills went out because their rooms are now read (LSE-4). */
 export type ReadingsSaved = { readonly saved: number; readonly issued: number };
-export type MeterRefusal = { readonly kind: 'below_previous' | 'above_next' | 'month_after_today' };
+export type MeterRefusal = { readonly kind: 'below_previous' | 'above_next' | 'use_too_large' | 'month_after_today' };
 
 const SENTINELS: Readonly<Record<string, MeterRefusal | CommonRefusal>> = {
   ESTA_PROPERTY_NOT_FOUND: { kind: 'not_found' },
@@ -25,6 +25,7 @@ const SENTINELS: Readonly<Record<string, MeterRefusal | CommonRefusal>> = {
   ESTA_READING_METER: { kind: 'invalid', issues: [{ path: 'readings', code: 'invalid_value' }] },
   ESTA_READING_BELOW_PREVIOUS: { kind: 'below_previous' },
   ESTA_READING_ABOVE_NEXT: { kind: 'above_next' },
+  ESTA_READING_USE_TOO_LARGE: { kind: 'use_too_large' },
 };
 
 async function storedReadings(ctx: OpContext, { reading_month, readings }: Readings): Promise<ReadonlyMap<string, number>> {

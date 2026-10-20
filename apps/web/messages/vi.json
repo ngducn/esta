@@ -1637,6 +1637,7 @@
     "fixFirst": "Sửa các chỉ số được đánh dấu rồi lưu lại.",
     "errorBelowPrevious": "Có chỉ số thấp hơn tháng trước. Tải lại trang để xem số mới nhất.",
     "errorAboveNext": "Có chỉ số cao hơn tháng sau. Kiểm tra lại.",
+    "errorTooLarge": "Có chỉ số dùng quá 100.000 trong một tháng, có thể đã gõ thừa số. Kiểm tra lại số trên đồng hồ.",
     "errorMonth": "Chưa nhập được chỉ số cho tháng này.",
     "errorNetwork": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
     "empty": "Nhà này chưa có đồng hồ điện nước.",

@@ -17,6 +17,7 @@ const KINDS = ['electricity', 'water'] as const;
 const ERRORS = {
   belowPrevious: 'errorBelowPrevious',
   aboveNext: 'errorAboveNext',
+  useTooLarge: 'errorTooLarge',
   monthAfterToday: 'errorMonth',
   notFound: 'errorNetwork',
   failed: 'errorNetwork',

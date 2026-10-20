@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { query } from '../scripts/db-checksum.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
@@ -7,7 +8,7 @@ import { PRICE_VND, SEPTEMBER } from '../supabase/seed/generator/meters.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { laneHousehold, laneLease, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START, toast } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START, toast, vnd } from './helpers/wizard';
 
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const metersPath = (lane: number) => `/properties/${laneProperty(lane, 'di-an')}/rental/meters`;
@@ -80,6 +81,7 @@ test('rule 2: at 02/11 Mẹ enters October for four rooms, then the rest, and ea
   await page.getByTestId('meter-save').click();
   await expect(toast(page)).toContainText('Đã lưu chỉ số tháng 10/2026. Đã phát hành 4 hóa đơn.');
   await expect(page.getByTestId('meter-remaining')).toHaveText('Còn 4 phòng chưa nhập');
+  await holdForRecording(page);
   await page.screenshot({ path: test.info().outputPath('meters-partial-390-light.png'), fullPage: true });
   expect((await billFrom(page, 7, 1, '2026-11-25'))?.lines).toEqual([
     { kind: 'electricity', quantity: 110, amount_vnd: 110 * PRICE_VND.electricity },
@@ -100,7 +102,19 @@ test('rule 2: at 02/11 Mẹ enters October for four rooms, then the rest, and ea
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('meters-complete-390-light.png'), fullPage: true });
 
+  // Phòng 1's bill and its receipt name the month, the use and both readings.
+  const [bill] = await memberRest<{ id: string }[]>(page, 'GET', `invoices?lease_id=eq.${laneLease(7, 'di-an', 1)}&period_start=eq.2026-11-25&select=id`);
+  await page.goto(`/collections/invoices/${bill?.id ?? ''}`);
+  await expect(page.getByTestId('invoice-line')).toContainText(['Tiền thuê', 'Tiền điện tháng 10/2026: 110 kWh (2.847 → 2.957)', 'Tiền nước tháng 10/2026: 5 m³ (312 → 317)']);
+  await expect(page.getByTestId('invoice-total')).toHaveText(vnd('2.975.000'));
+  await holdForRecording(page);
+  await page.screenshot({ path: test.info().outputPath('meters-bill-390-light.png'), fullPage: true });
+  const receipt = await page.request.get(`/api/invoices/${bill?.id ?? ''}/receipt?format=png`);
+  expect(receipt.status()).toBe(200);
+  writeFileSync(test.info().outputPath('meters-receipt.png'), await receipt.body());
+
   // A reading raised after its bill went out (LSE-4): the bill stays, and the next draft carries the difference.
+  await page.goto(metersPath(7));
   const sent = await billFrom(page, 7, 3, '2026-11-25');
   await reading(page, 3, 'electricity').getByRole('textbox').fill(String(october(3).electricity + 10));
   await page.getByTestId('meter-save').click();
@@ -177,4 +191,39 @@ test('rule 5: in English at 130% text and dark, every row keeps its label, last 
     expect(await seriousAxeViolations(page)).toEqual([]);
     await page.screenshot({ path: test.info().outputPath('meters-english-130-390-dark.png'), fullPage: true });
   });
+});
+
+test('rule 6: a reading with extra digits is refused in words and saves nothing, and a save without a connection says so', async ({ page }) => {
+  await setClock(page.request, '2026-11-02T09:00:00+07:00');
+  await open(page, 'ryan.lane4@demo.esta.test', 'dark', PHONE);
+  await page.goto(metersPath(4));
+  await reading(page, 3, 'electricity').getByRole('textbox').fill('999999999');
+  await page.getByTestId('meter-save').click();
+  await expect(page.getByTestId('meter-form')).toContainText('Có chỉ số dùng quá 100.000 trong một tháng, có thể đã gõ thừa số. Kiểm tra lại số trên đồng hồ.');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('meters-too-large-390-dark.png') });
+  const saved = await memberRest<unknown[]>(page, 'GET', `meter_readings?meter_id=eq.${seedId('seed:meter:lane-4:di-an:3:electricity')}&reading_month=eq.2026-10-01&select=id`);
+  expect(saved).toEqual([]);
+
+  await reading(page, 3, 'electricity').getByRole('textbox').fill(String(october(3).electricity));
+  await page.context().setOffline(true);
+  await page.getByTestId('meter-save').click();
+  await expect(page.getByTestId('meter-form')).toContainText('Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.');
+  await page.context().setOffline(false);
+});
+
+test('rule 7: a viewer reads the month with no input to change and no Lưu', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  const invited = 'viewer.lane2@demo.esta.test';
+  const existing = await memberRest<unknown[]>(page, 'GET', `household_members?invited_email=eq.${invited}&select=id`);
+  if (existing.length === 0) await memberRest(page, 'POST', 'household_members', { household_id: laneHousehold(2), invited_email: invited, role: 'viewer' });
+  await page.context().clearCookies();
+  await open(page, invited, 'light', PHONE);
+  await page.goto(metersPath(2));
+  await expect(page.getByTestId('meter-room')).toHaveCount(8);
+  for (const input of await page.getByTestId('meter-input').all()) await expect(input).toHaveAttribute('readonly', '');
+  await expect(page.getByTestId('meter-save')).toHaveCount(0);
+  await expect(page.getByTestId('meter-form')).toContainText('Bạn chỉ xem được chỉ số, không sửa được.');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('meters-viewer-390-light.png') });
 });

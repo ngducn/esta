@@ -1637,6 +1637,7 @@
     "fixFirst": "Fix the marked readings, then save again.",
     "errorBelowPrevious": "A reading is lower than last month's. Reload the page to see the latest numbers.",
     "errorAboveNext": "A reading is higher than next month's. Check it again.",
+    "errorTooLarge": "A reading uses more than 100,000 in one month, perhaps with an extra digit. Check the number on the meter.",
     "errorMonth": "Readings for this month cannot be entered yet.",
     "errorNetwork": "Not saved. Check the network connection and try again.",
     "empty": "This property has no electricity or water meters yet.",

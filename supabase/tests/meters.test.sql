@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(54);
+select plan(64);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -223,6 +223,79 @@ select results_eq(
      where i.lease_id = '00000000-0000-4000-8000-00000000e012' and l.kind <> 'rent' order by i.period_start, l.sort_order $$,
   $$ values ('2026-11-25'::date, 'electricity'::text, 595000::bigint), ('2026-12-25', 'adjustment', 72000) $$,
   'goes on the December draft as an adjustment, beside the electricity November already billed');
+
+-- [app rule] A month's use stops at 100.000, so a typed extra digit never reaches a bill line (the line holds at most
+-- 1.000.000.000.000 ₫, and a meter's price at most 9.999.999 ₫).
+reset role;
+select throws_ok($$ insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on)
+  select household_id, id, '2026-10-01', 100101, '2026-11-02' from public.meters where id = '00000000-0000-4000-8000-00000000db1e' $$,
+  '23514', 'ESTA_READING_USE_TOO_LARGE', 'a month used past 100.000 is refused for any writer');
+select tests.act_as('member.a@test.esta.test');
+select throws_ok($$ select * from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-11-01',
+  '[{"meter_id": "00000000-0000-4000-8000-00000000d13e", "reading": 999999999}]') $$,
+  '23514', 'ESTA_READING_USE_TOO_LARGE', 'a reading of 999999999 is refused before any bill is planned');
+select lives_ok($$ select * from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-11-01',
+  '[{"meter_id": "00000000-0000-4000-8000-00000000d13e", "reading": 100077}]') $$,
+  'exactly 100.000 in a month saves');
+select throws_ok($$ select * from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-10-01',
+  '[{"meter_id": "00000000-0000-4000-8000-00000000d13e", "reading": 0}]') $$,
+  '23514', 'ESTA_READING_USE_TOO_LARGE', 'lowering October is refused when it would make November''s use pass 100.000');
+
+-- Each month bills once (LSE-4). Phòng 2 B bills from the 25th and is paid through 10/11, so its bills from 11/11 and
+-- 25/11 both start in November; Phòng 3 B bills by quarter from the 25th, paid through 10/11, so its bill from 11/11
+-- covers two months and the next, from 25/01, three.
+reset role;
+insert into public.units (id, household_id, property_id, label, kind) values
+  ('00000000-0000-4000-8000-000000000b12', :'b', '00000000-0000-4000-8000-0000000000b1', 'Phòng 2 B', 'room'),
+  ('00000000-0000-4000-8000-000000000b13', :'b', '00000000-0000-4000-8000-0000000000b1', 'Phòng 3 B', 'room');
+insert into public.meters (id, household_id, property_id, unit_id, kind, pricing) values
+  ('00000000-0000-4000-8000-00000000db2e', :'b', '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-000000000b12', 'electricity', '{"kind": "flat", "unit_price_vnd": 3500}'),
+  ('00000000-0000-4000-8000-00000000db3e', :'b', '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-000000000b13', 'electricity', '{"kind": "flat", "unit_price_vnd": 3500}');
+insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on) values
+  (:'b', '00000000-0000-4000-8000-00000000db2e', '2026-09-01', 100, '2026-10-01'),
+  (:'b', '00000000-0000-4000-8000-00000000db2e', '2026-10-01', 220, '2026-11-01');
+insert into public.leases (
+  id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
+  utilities_mode, due_offset_days, paid_through_date, status
+) values
+  ('00000000-0000-4000-8000-00000000eb02', :'b', '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-000000000b12',
+   (select id from public.parties where household_id = :'b' limit 1), '2025-03-25', '2027-06-24', 2500000, 1, 'lease_start', 'metered_by_owner', 0, '2026-11-10', 'active');
+select tests.act_as_service('{"x-esta-actor": "system:cron"}');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-02', '2026-11-02T00:30:00+07:00') $$, :'b'), 'Phòng 2 B''s nightly run on 02/11');
+select results_eq(
+  $$ select i.period_start, i.status, coalesce(sum(l.quantity) filter (where l.meter_id is not null), 0)::integer
+     from public.invoices i left join public.invoice_lines l on l.invoice_id = i.id
+     where i.lease_id = '00000000-0000-4000-8000-00000000eb02' group by i.id order by i.period_start $$,
+  $$ values ('2026-11-11'::date, 'issued'::text, 120), ('2026-11-25', 'draft', 0) $$,
+  'October goes on the bill from 11/11, which issues as soon as October is read; the bill from 25/11 owns no month and waits for its due date');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-26', '2026-11-26T00:30:00+07:00') $$, :'b'), 'and the run on 26/11 issues it');
+select results_eq(
+  $$ select l.reading_month, count(*)::integer, sum(case when l.unit_price_vnd < 0 then -l.quantity else l.quantity end)::integer
+     from public.invoice_lines l where l.meter_id = '00000000-0000-4000-8000-00000000db2e' group by l.reading_month $$,
+  $$ values ('2026-10-01'::date, 1, 120) $$,
+  'so October is billed once in all');
+
+reset role;
+insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on) values
+  (:'b', '00000000-0000-4000-8000-00000000db3e', '2026-08-01', 1000, '2026-09-01'),
+  (:'b', '00000000-0000-4000-8000-00000000db3e', '2026-09-01', 1100, '2026-10-01'),
+  (:'b', '00000000-0000-4000-8000-00000000db3e', '2026-10-01', 1250, '2026-11-01'),
+  (:'b', '00000000-0000-4000-8000-00000000db3e', '2026-11-01', 1300, '2026-12-01'),
+  (:'b', '00000000-0000-4000-8000-00000000db3e', '2026-12-01', 1420, '2026-12-20');
+insert into public.leases (
+  id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
+  utilities_mode, due_offset_days, paid_through_date, status
+) values
+  ('00000000-0000-4000-8000-00000000eb03', :'b', '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-000000000b13',
+   (select id from public.parties where household_id = :'b' limit 1), '2026-01-25', '2027-12-24', 2500000, 3, 'lease_start', 'metered_by_owner', 0, '2026-11-10', 'active');
+select tests.act_as_service('{"x-esta-actor": "system:cron"}');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-12-21', '2026-12-21T00:30:00+07:00') $$, :'b'), 'Phòng 3 B''s nightly run on 21/12');
+select results_eq(
+  $$ select i.period_start, l.reading_month, l.quantity::integer
+     from public.invoice_lines l join public.invoices i on i.id = l.invoice_id
+     where l.meter_id = '00000000-0000-4000-8000-00000000db3e' order by l.reading_month $$,
+  $$ values ('2026-11-11'::date, '2026-09-01'::date, 100), ('2026-11-11', '2026-10-01', 150), ('2027-01-25', '2026-11-01', 50), ('2027-01-25', '2026-12-01', 120) $$,
+  'the quarter from 11/11 bills September and October, the next from 25/01 November and December: each month once');
 
 reset role;
 select is_empty(

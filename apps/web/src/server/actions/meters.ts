@@ -5,11 +5,12 @@ import { meterReadingsSave, runOp, type ReadingsSaved } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { webOpContext } from '@/server/ops';
 
-export type MeterActionRefusal = 'belowPrevious' | 'aboveNext' | 'monthAfterToday' | 'notFound' | 'failed';
+export type MeterActionRefusal = 'belowPrevious' | 'aboveNext' | 'useTooLarge' | 'monthAfterToday' | 'notFound' | 'failed';
 
 const REFUSALS: Readonly<Record<string, MeterActionRefusal>> = {
   below_previous: 'belowPrevious',
   above_next: 'aboveNext',
+  use_too_large: 'useTooLarge',
   month_after_today: 'monthAfterToday',
   not_found: 'notFound',
 };

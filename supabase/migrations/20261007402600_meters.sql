@@ -49,8 +49,10 @@ create table public.meter_readings (
   foreign key (household_id, photo_document_id) references public.documents (household_id, id) on delete set null (photo_document_id)
 );
 
--- A meter only counts up, so a reading sits between the readings before and after it, for every writer. The meter lock
--- makes two saves of one meter take turns.
+-- A meter only counts up, so a reading sits between the readings before and after it, for every writer. [app rule] A
+-- month's use stays at or under 100.000 kWh or m³, so its bill line fits invoice_lines' amount at the highest price a
+-- meter takes (9.999.999 ₫): a reading typed with extra digits is refused here, never at the nightly run. The meter
+-- lock makes two saves of one meter take turns.
 create function private.guard_meter_reading()
 returns trigger
 language plpgsql
@@ -66,6 +68,10 @@ begin
   end if;
   if exists (select 1 from public.meter_readings r where r.meter_id = new.meter_id and r.reading_month > new.reading_month and r.reading < new.reading) then
     raise exception 'ESTA_READING_ABOVE_NEXT' using errcode = '23514';
+  end if;
+  if new.reading - coalesce((select max(r.reading) from public.meter_readings r where r.meter_id = new.meter_id and r.reading_month < new.reading_month), new.reading) > 100000
+    or coalesce((select min(r.reading) from public.meter_readings r where r.meter_id = new.meter_id and r.reading_month > new.reading_month), new.reading) - new.reading > 100000 then
+    raise exception 'ESTA_READING_USE_TOO_LARGE' using errcode = '23514';
   end if;
   return new;
 end;
@@ -123,10 +129,13 @@ as $$
 $$;
 revoke all on function private.grouped(numeric) from public;
 
--- The utility lines the lease's drafts should carry (LSE-4). A bill covers the months before its period starts, as
--- many as the period is long, from the lease's first month on; a renewal carries on from the lease it renews. Each
--- draft bills its months' use from meter_usage; for the months of issued and void bills, what the readings now say
--- less what issued bills charged goes on the earliest draft as an adjustment.
+-- The utility lines the lease's drafts should carry (LSE-4). Each month belongs to one bill: the lease's first bill
+-- takes the months before its period starts, as many as the period is long, and every later bill the months from the
+-- month the bill before it started up to its own, so two bills starting in one month (a paid-through date inside a
+-- period) never share one. Months before the lease's first month are never billed; a renewal carries on from the lease
+-- it renews. Each draft bills its months' use from meter_usage, less anything issued bills already charged; for the
+-- months of issued and void bills, what the readings now say less what issued bills charged goes on the earliest draft
+-- as an adjustment.
 create function private.meter_lines(p_lease public.leases)
 returns table (
   invoice_id uuid, kind text, meter_id uuid, reading_month date, quantity integer, unit_price_vnd bigint, amount_vnd bigint,
@@ -144,14 +153,20 @@ as $$
   ),
   months as (
     select i.id, i.status, s.month::date as month
-    from public.invoices i
+    from (
+      select i.id, i.status, i.period_start, i.period_end, lag(i.period_start) over (order by i.period_start) as previous_start
+      from public.invoices i
+      where i.lease_id = p_lease.id
+    ) i
     cross join lateral generate_series(
-      date_trunc('month', i.period_start)::date - make_interval(months => greatest(1, private.months_until(i.period_start, i.period_end + 1))),
+      coalesce(
+        date_trunc('month', i.previous_start)::date,
+        date_trunc('month', i.period_start)::date - make_interval(months => greatest(1, private.months_until(i.period_start, i.period_end + 1)))
+      ),
       date_trunc('month', i.period_start)::date - interval '1 month',
       interval '1 month'
     ) s (month)
-    where i.lease_id = p_lease.id
-      and (s.month >= date_trunc('month', p_lease.start_date)::date or p_lease.renewal_of_lease_id is not null)
+    where s.month >= date_trunc('month', p_lease.start_date)::date or p_lease.renewal_of_lease_id is not null
   ),
   owed as (
     select
@@ -171,12 +186,12 @@ as $$
     select i.id from public.invoices i where i.lease_id = p_lease.id and i.status = 'draft' order by i.period_start limit 1
   )
   select
-    o.id, o.kind, o.meter_id, o.month, o.due, o.price, o.due * o.price,
+    o.id, o.kind, o.meter_id, o.month, o.due - o.billed, o.price, (o.due - o.billed) * o.price,
     format('Tiền %s tháng %s: %s %s (%s → %s)', case o.kind when 'electricity' then 'điện' else 'nước' end, to_char(o.month, 'MM/YYYY'),
-      private.grouped(o.due), case o.kind when 'electricity' then 'kWh' else 'm³' end, private.grouped(o.previous), private.grouped(o.reading)),
+      private.grouped(o.due - o.billed), case o.kind when 'electricity' then 'kWh' else 'm³' end, private.grouped(o.previous), private.grouped(o.reading)),
     case o.kind when 'electricity' then 1 else 2 end
   from owed o
-  where o.status = 'draft' and o.due > 0
+  where o.status = 'draft' and o.due > o.billed
   union all
   select
     d.id, 'adjustment', o.meter_id, o.month, abs(o.due - o.billed), case when o.due > o.billed then o.price else -o.price end, (o.due - o.billed) * o.price,
@@ -221,7 +236,8 @@ $$;
 revoke all on function private.refresh_meter_lines(public.leases) from public;
 
 -- SPEC §5.4's trigger for a metered bill: every active meter of the unit has the reading of the month before its period
--- starts. A unit with no meter, or a first bill whose month predates the lease, waits for its due date.
+-- starts. A unit with no meter, a first bill whose month predates the lease, and a bill that owns no month because an
+-- earlier bill of the lease started in the same month wait for their due date.
 create function private.readings_complete(p_lease public.leases, p_period_start date)
 returns boolean
 language sql
@@ -236,7 +252,11 @@ as $$
         where r.meter_id = m.id and r.reading_month = (date_trunc('month', p_period_start)::date - interval '1 month')::date
       )
     )
-    and (date_trunc('month', p_period_start)::date - interval '1 month' >= date_trunc('month', p_lease.start_date)::date or p_lease.renewal_of_lease_id is not null);
+    and (date_trunc('month', p_period_start)::date - interval '1 month' >= date_trunc('month', p_lease.start_date)::date or p_lease.renewal_of_lease_id is not null)
+    and not exists (
+      select 1 from public.invoices j
+      where j.lease_id = p_lease.id and j.period_start < p_period_start and j.period_start >= date_trunc('month', p_period_start)::date
+    );
 $$;
 revoke all on function private.readings_complete(public.leases, date) from public;
 
