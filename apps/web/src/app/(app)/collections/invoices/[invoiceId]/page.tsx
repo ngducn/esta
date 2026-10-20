@@ -7,6 +7,7 @@ import { AddReceivingAccount } from '@/components/invoices/AddReceivingAccount';
 import { InvoiceActions } from '@/components/invoices/InvoiceActions';
 import { InvoiceView, type QrState } from '@/components/invoices/InvoiceView';
 import { PrintButton } from '@/components/invoices/PrintButton';
+import { ReceiptLinks } from '@/components/invoices/ReceiptLinks';
 import { BackLink } from '@/components/properties/back-link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { IntentLink } from '@/components/shell/intent-link';
@@ -78,6 +79,7 @@ export default async function InvoicePage({ params }: { params: Params }) {
       <div className="flex flex-wrap items-start gap-3 print:hidden">
         {issuing ? null : actions}
         <PrintButton label={t('print')} />
+        {invoice.status === 'issued' ? <ReceiptLinks invoiceId={invoice.id} labels={{ pdf: t('receiptPdf'), png: t('receiptPng') }} /> : null}
         <IntentLink href={`/properties/${invoice.propertyId}/rental/leases/${invoice.leaseId}`} className={buttonVariants({ variant: 'outline' })}>
           {t('openLease')}
         </IntentLink>

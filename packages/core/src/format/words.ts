@@ -24,12 +24,12 @@ function groupsOf(amount: number): number[] {
   return groups;
 }
 
-/** A group read as a receipt reads it: a group after a higher one keeps its `không trăm` and `lẻ`. */
+/** A group read as a receipt reads it: a group after a higher one keeps its `không trăm` and `linh`. */
 function viGroup(group: number, afterHigher: boolean): string[] {
   const [hundreds, tens, units] = [Math.floor(group / 100), Math.floor(group / 10) % 10, group % 10];
   const words: string[] = hundreds > 0 || afterHigher ? [word(VI_DIGITS, hundreds), 'trăm'] : [];
   if (tens === 0) {
-    if (units > 0) words.push(...(words.length > 0 ? ['lẻ'] : []), word(VI_DIGITS, units));
+    if (units > 0) words.push(...(words.length > 0 ? ['linh'] : []), word(VI_DIGITS, units));
   } else {
     words.push(...(tens === 1 ? ['mười'] : [word(VI_DIGITS, tens), 'mươi']));
     if (units === 5) words.push('lăm');

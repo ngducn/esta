@@ -23,3 +23,14 @@ mkdir -p "$out"
 build plusjakartasans 'PlusJakartaSans%5Bwght%5D.ttf' 'wght=400:700' "$text_features,tnum" PlusJakartaSans-Variable
 curl -fsSL "$base/plusjakartasans/OFL.txt" > "$out/LICENSE-OFL.txt"
 (cd "$out" && shasum -a 256 ./*.woff2)
+
+# pdf-lib and satori embed static TrueType only, so the receipts get regular and bold instances of the same subset.
+receipts="$out/../server/receipts/fonts"
+mkdir -p "$receipts"
+cp "$out/LICENSE-OFL.txt" "$receipts/LICENSE-OFL.txt"
+for weight in Regular:400 Bold:700; do
+  fonttools fonttools varLib.instancer --quiet "$out/PlusJakartaSans-Variable.woff2" "wght=${weight#*:}" -o "$work/${weight%%:*}.woff2"
+  fonttools python -c 'import sys; from fontTools.ttLib import TTFont; f = TTFont(sys.argv[1]); f.flavor = None; f.save(sys.argv[2])' \
+    "$work/${weight%%:*}.woff2" "$receipts/PlusJakartaSans-${weight%%:*}.ttf"
+done
+(cd "$receipts" && shasum -a 256 ./*.ttf)
