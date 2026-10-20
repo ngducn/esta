@@ -12,7 +12,7 @@ export {
 } from './decode';
 export { chosenHeader, guessColumns, guessHeaderRow, presetHeader, type ColumnPreset, type MappingReason } from './columns';
 export { sha256Hex } from './fingerprint';
-export { planImport, type ImportInvoice, type ImportReason, type ImportRow, type ImportStatus, type PlannedImport } from './import';
+export { knownLines, planImport, REFERENCE_WINDOW_DAYS, type ImportInvoice, type ImportReason, type ImportRow, type ImportStatus, type PlannedImport, type StoredLine } from './import';
 export {
   HEADER_ALIASES,
   HEADER_SCAN_ROWS,

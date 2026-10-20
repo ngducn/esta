@@ -110,6 +110,16 @@ export async function statementXlsx(statement: HouseholdStatement): Promise<Buff
   return writeXlsxFile([{ sheet: 'Sao ke', data }], {}).toBuffer();
 }
 
+/**
+ * The account's next statement from the bank Esta does not recognize (P3-21): one transfer on `on` naming each bill
+ * still owed by its code, under new bank references, with `header` in place of that bank's own labels when given.
+ */
+export function nextUnrecognizedCsv(bills: readonly OpenBill[], on: IsoDate, refPrefix: string, header?: readonly string[]): string {
+  const rows = bills.map((bill, i) => ({ date: on, amount: bill.outstanding, bankRef: `${refPrefix}${String(i + 1).padStart(6, '0')}`, description: `CK ESTA${bill.memoCode}` }));
+  const [labels = [], ...lines] = renderStatementGrid(UNRECOGNIZED_LAYOUT, rows);
+  return renderCsv([...UNRECOGNIZED_PREAMBLE, header ?? labels, ...lines]);
+}
+
 /** The file line (a 1-based data row under the header, which sits `headerRow` lines down) and what the import must make of it. */
 export const golden = (statement: HouseholdStatement, headerRow = 0) => statement.lines.map((line, i) => ({ index: headerRow + i + 1, ...line.expect }));
 

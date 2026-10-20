@@ -1,4 +1,4 @@
-import { planImport, type ImportInvoice, type ImportRow } from '@esta/core/matching';
+import { planImport, type ImportInvoice, type ImportRow, type StoredLine } from '@esta/core/matching';
 import { vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { z } from 'zod';
@@ -12,10 +12,7 @@ const MAX_ROWS = 5000;
 const lineIndex = z.number().int().min(0).max(100_000);
 const columnIndex = z.number().int().min(0).max(99);
 
-/**
- * The header the rows were read under, and whether Esta knew its labels (`detected`) or a person chose the columns
- * (`mapped`). The next file from the same account whose labels Esta does not know looks for these cells (P3-21).
- */
+/** The header the rows were read under: the next file from the same account whose labels Esta does not know looks for these cells (P3-21). */
 export const statementColumnsSchema = z.strictObject({
   headerRow: z.number().int().min(0).max(19),
   header: z.array(z.string().max(200)).max(100),
@@ -28,7 +25,6 @@ export const statementColumnsSchema = z.strictObject({
       z.strictObject({ kind: z.literal('split'), credit: columnIndex, debit: columnIndex }),
     ]),
   }),
-  source: z.enum(['detected', 'mapped']).default('detected'),
 });
 
 const rejectedSchema = z.strictObject({ index: lineIndex, field: z.enum(['row', 'date', 'amount']), reason: z.string().min(1).max(40) });
@@ -116,18 +112,42 @@ async function readImportInvoices(ctx: OpContext): Promise<ImportInvoice[]> {
   }));
 }
 
-/** Each stored line's fingerprint, with the import that holds it. */
-async function readKnownLines(ctx: OpContext): Promise<Map<string, string>> {
-  const rows = await readAll('the imported lines', (from, to) =>
-    ctx.db.from('statement_rows').select('fingerprint, import_id').eq('household_id', ctx.householdId).order('id').range(from, to),
-  );
-  return new Map(rows.map((row) => [row.fingerprint, row.import_id]));
+const storedLineSchema = z.object({
+  fingerprint: z.string(),
+  import_id: z.uuid(),
+  posted_on: isoDateSchema,
+  amount_vnd: z.number().int().transform(vnd),
+  bank_ref: z.string(),
+  description: z.string(),
+});
+
+/** Every line the household's imports hold, with whether it came into `accountId`, for core's `knownLines`. */
+async function readStoredLines(ctx: OpContext, accountId: string): Promise<StoredLine[]> {
+  const [rows, imports] = await Promise.all([
+    readAll('the imported lines', (from, to) =>
+      ctx.db.from('statement_rows').select('fingerprint, import_id, posted_on, amount_vnd, bank_ref, description').eq('household_id', ctx.householdId).order('id').range(from, to),
+    ),
+    readAll('the imports', (from, to) => ctx.db.from('statement_imports').select('id, bank_account_id').eq('household_id', ctx.householdId).order('id').range(from, to)),
+  ]);
+  const accountOf = new Map(imports.map((stored) => [stored.id, stored.bank_account_id]));
+  return z
+    .array(storedLineSchema)
+    .parse(rows)
+    .map((row) => ({
+      fingerprint: row.fingerprint,
+      importId: row.import_id,
+      date: row.posted_on,
+      amount: row.amount_vnd,
+      bankRef: row.bank_ref,
+      description: row.description,
+      sameAccount: accountOf.get(row.import_id) === accountId,
+    }));
 }
 
 /**
  * LSE-8 `Xem trước`: the decoded lines of a statement, matched to the household's bills and stored for preview. A
  * line dated after the Clock's date is refused, since only a received transfer can post. Lines an earlier import
- * holds are left out; a file with nothing new names the import that holds it.
+ * holds, by core's `knownLines`, are left out; a file with nothing new names the import that holds it.
  */
 export const statementImport = defineOp<ImportInput, ImportChange, StatementImported, StatementRefusal>({
   creates: 'statement_imports',
@@ -138,14 +158,14 @@ export const statementImport = defineOp<ImportInput, ImportChange, StatementImpo
     if (existing.data !== null) return unchanged({ import_id: input.import_id, known: 0 });
     const today = ctx.clock.today();
     const late: Rejected[] = input.rows.filter((row) => row.date > today).map((row) => ({ index: row.index, field: 'date', reason: 'after_today' }));
-    const [invoices, known] = await Promise.all([readImportInvoices(ctx), readKnownLines(ctx)]);
+    const [invoices, stored] = await Promise.all([readImportInvoices(ctx), readStoredLines(ctx, input.bank_account_id)]);
     const planned = planImport(
       input.rows.filter((row) => row.date <= today),
       invoices,
-      new Set(known.keys()),
+      stored,
     );
     const [first] = planned.known;
-    if (planned.rows.length === 0 && first !== undefined) return refuse({ kind: 'nothing_new', import_id: known.get(first) ?? '' });
+    if (planned.rows.length === 0 && first !== undefined) return refuse({ kind: 'nothing_new', import_id: first });
     return change({ ...input, rejected: [...input.rejected, ...late].toSorted((a, b) => a.index - b.index), rows: planned.rows, known: planned.known.length });
   },
   async apply(ctx, { import_id, bank_account_id, file_name, column_mapping, rejected, rows, known }) {

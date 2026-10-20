@@ -43,7 +43,7 @@ function decoded(id: Layout) {
 describe('householdStatement', () => {
   it.each(LAYOUTS)('layout %s imports exactly as its golden lines say, the half-đồng line refused', (id) => {
     const { rows, rejected } = decoded(id);
-    const plan = planImport(rows, OPEN.map((open) => ({ ...open, status: 'issued' })), new Set());
+    const plan = planImport(rows, OPEN.map((open) => ({ ...open, status: 'issued' })), []);
     expect(
       plan.rows.map((stored) => ({
         index: stored.row.index,
@@ -56,7 +56,7 @@ describe('householdStatement', () => {
   });
 
   it('gives the same fingerprints in every layout, dated on or before the clock', () => {
-    const fingerprints = LAYOUTS.map((id) => planImport(decoded(id).rows, [], new Set()).rows.map((stored) => stored.fingerprint));
+    const fingerprints = LAYOUTS.map((id) => planImport(decoded(id).rows, [], []).rows.map((stored) => stored.fingerprint));
     for (const other of fingerprints.slice(1)) expect(other).toEqual(fingerprints[0]);
     expect(statement.lines.every((line) => line.date <= statement.asOf)).toBe(true);
   });

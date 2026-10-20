@@ -107,9 +107,10 @@ export async function loadStatementImport(householdId: string, importId: string)
 }
 
 /**
- * Each receiving account's saved columns (LSE-8 preset, P3-21): the columns of its latest import that committed or
- * whose columns a person chose. A file from that account whose labels Esta does not know is read under them when its
- * header still carries their labels. No migration: every import stores the columns it was read under.
+ * Each receiving account's saved columns (LSE-8 preset, P3-21): the columns of its latest import with at least one line
+ * posted, by `Ghi sổ` or linked to a hand transfer by `Đã ghi tay`. A file from that account whose labels Esta does not
+ * know is read under them when its header still carries their labels. Columns picked for an import that posted nothing
+ * are never applied without asking. No migration: every import stores the columns it was read under.
  */
 export async function loadColumnPresets(householdId: string, accountIds: readonly string[]): Promise<Readonly<Record<string, ColumnPreset>>> {
   const supabase = await createSessionClient();
@@ -117,11 +118,11 @@ export async function loadColumnPresets(householdId: string, accountIds: readonl
     accountIds.map(async (accountId) => {
       const { data, error } = await supabase
         .from('statement_imports')
-        .select('column_mapping')
+        .select('column_mapping, statement_rows!inner(payments!inner(id))')
         .eq('household_id', householdId)
         .eq('bank_account_id', accountId)
-        .or('status.eq.committed,column_mapping->>source.eq.mapped')
         .order('created_at', { ascending: false })
+        .limit(1, { referencedTable: 'statement_rows' })
         .limit(1)
         .maybeSingle();
       if (error) throw new Error(`Reading the saved columns failed: ${error.message}`);

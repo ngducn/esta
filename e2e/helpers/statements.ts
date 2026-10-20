@@ -2,8 +2,6 @@ import { expect, type Page } from '@playwright/test';
 import { z } from 'zod';
 import { golden, householdStatement, roomingHouse, type HouseholdStatement, type OpenBill } from '../../fixtures/statements/household.ts';
 import { isoDate } from '../../packages/core/src/date/iso-date.ts';
-import { renderCsv, renderStatementGrid } from '../../packages/core/src/matching/render.ts';
-import { UNRECOGNIZED_LAYOUT, UNRECOGNIZED_PREAMBLE } from '../../packages/core/src/matching/statement-scenario.ts';
 import { vnd } from '../../packages/core/src/money/vnd.ts';
 import { memberRest } from './auth-api';
 
@@ -46,16 +44,6 @@ export async function statementHousehold(page: Page): Promise<StatementHousehold
 export async function laneStatement(page: Page, lane: number, householdId: string): Promise<{ statement: HouseholdStatement; bills: readonly OpenBill[] }> {
   const { bills } = await openBills(page, householdId);
   return { statement: householdStatement(bills, isoDate('2026-10-07'), `FT${String(lane).padStart(2, '0')}`), bills };
-}
-
-/**
- * The account's next statement from the bank Esta does not recognize (P3-21): one transfer naming each bill still owed by
- * its code, under new bank references, with `header` in place of that bank's own labels when given.
- */
-export function nextUnrecognizedCsv(bills: readonly OpenBill[], refPrefix: string, header?: readonly string[]): string {
-  const rows = bills.map((bill, i) => ({ date: isoDate('2026-10-07'), amount: bill.outstanding, bankRef: `${refPrefix}${String(i + 1).padStart(6, '0')}`, description: `CK ESTA${bill.memoCode}` }));
-  const [labels = [], ...lines] = renderStatementGrid(UNRECOGNIZED_LAYOUT, rows);
-  return renderCsv([...UNRECOGNIZED_PREAMBLE, header ?? labels, ...lines]);
 }
 
 export async function openBills(page: Page, householdId: string) {

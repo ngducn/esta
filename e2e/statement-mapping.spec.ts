@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { statementCsv, unrecognizedCsv } from '../fixtures/statements/household.ts';
+import { nextUnrecognizedCsv, statementCsv, unrecognizedCsv } from '../fixtures/statements/household.ts';
+import { isoDate } from '../packages/core/src/date/iso-date.ts';
 import { UNRECOGNIZED_COLUMNS, UNRECOGNIZED_LAYOUT } from '../packages/core/src/matching/statement-scenario.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
-import { chooseFile, expectGolden, nextUnrecognizedCsv, openBills, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
+import { chooseFile, expectGolden, openBills, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, settled, shot, START } from './helpers/wizard';
 
@@ -21,6 +22,7 @@ const money = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'curre
 const dayOf = (date: string) => date.split('-').toReversed().join('/');
 const { headerRow: HEADER_ROW } = UNRECOGNIZED_COLUMNS;
 const LABELS = UNRECOGNIZED_LAYOUT.columns.map((column) => column.header);
+const OCTOBER_7 = isoDate('2026-10-07');
 const INTRO_NEW = 'Esta chưa biết mẫu sao kê của ngân hàng này. Chọn cột ngày, nội dung và số tiền một lần; lần sau nhập từ tài khoản này, Esta tự dùng lại các cột đã chọn.';
 
 /** Ryan's picks for the bank Esta does not recognize: the date, its voucher number, the description, then money in and out. */
@@ -81,13 +83,13 @@ test('rule 1: Ryan maps the columns of a statement Esta does not recognize and p
   await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
   await holdForRecording(page);
   expect(await memberRest<{ column_mapping: unknown }[]>(page, 'GET', `statement_imports?household_id=eq.${household.householdId}&select=column_mapping`)).toEqual([
-    { column_mapping: { ...UNRECOGNIZED_COLUMNS, header: LABELS, source: 'mapped' } },
+    { column_mapping: { ...UNRECOGNIZED_COLUMNS, header: LABELS } },
   ]);
 
   // The rest of October's rent arrives on the account's next statement, which the saved columns read.
   const { bills } = await openBills(page, household.householdId);
   await page.goto('/collections/import');
-  await chooseFile(page, 'sao-ke-ngan-hang-demo-2.csv', nextUnrecognizedCsv(bills, 'FT02'));
+  await chooseFile(page, 'sao-ke-ngan-hang-demo-2.csv', nextUnrecognizedCsv(bills, OCTOBER_7, 'FT02'));
   await expect(page.getByTestId('statement-preset')).toContainText('Dùng cột đã chọn lần trước.');
   await expect(page.getByTestId('statement-read')).toContainText(`sao-ke-ngan-hang-demo-2.csv: đọc được ${bills.length} dòng.`);
   await expect(mapping(page)).toHaveCount(0);
@@ -137,7 +139,7 @@ test('rule 2: a mapping that reads no line, such as the description picked as th
   expect(await memberRest<unknown[]>(page, 'GET', `statement_imports?household_id=eq.${household.householdId}&select=id`)).toEqual([]);
 });
 
-test('rule 3: at 1440 in dark, saved columns belong to their account, Đổi cột reopens them, and a header the bank changed opens the mapping with the columns that kept their names', async ({ page }) => {
+test('rule 3: at 1440 in dark, only columns an import posted with are saved, per account; a wrong mapping left at the preview asks again, Đổi cột reopens the saved ones, and a changed heading opens the mapping', async ({ page }) => {
   await openNewHousehold(page, 'dark', DESKTOP);
   const household = await statementHousehold(page);
   const [first] = await memberRest<{ id: string }[]>(page, 'GET', `bank_accounts?household_id=eq.${household.householdId}&select=id`);
@@ -150,16 +152,31 @@ test('rule 3: at 1440 in dark, saved columns belong to their account, Đổi c�
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
   await shot(page, 'p3-21-mapping-1440-dark');
-  // Columns Ryan chose are saved with the import even before anything posts.
   await toPreview(page);
+  await page.getByTestId('statement-commit').click();
+  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
 
+  // Lane 2: into the second account, money in and money out swapped, previewed and left without Ghi sổ.
   const { bills } = await openBills(page, household.householdId);
   await page.goto('/collections/import');
-  await chooseFile(page, 'sao-ke-ngan-hang-demo-2.csv', nextUnrecognizedCsv(bills, 'FT03'));
-  await expect(page.getByTestId('statement-preset')).toBeVisible();
+  await expect(page.getByTestId('statement-account')).toBeEnabled();
   await page.getByTestId('statement-account').selectOption(second);
+  await chooseFile(page, 'sao-ke-tai-khoan-2.csv', nextUnrecognizedCsv(bills, OCTOBER_7, 'FT05'));
+  await mapUnrecognized(page);
+  await page.getByTestId('mapping-credit').selectOption('4');
+  await page.getByTestId('mapping-debit').selectOption('3');
+  await toPreview(page);
+  await expect(page.getByTestId('statement-filter-ignored')).toHaveText(`Bỏ qua (${bills.length})`);
+  // The account's next file is not read under those columns: the mapping opens and asks.
+  await page.goto('/collections/import');
+  await expect(page.getByTestId('statement-account')).toBeEnabled();
+  await page.getByTestId('statement-account').selectOption(second);
+  await chooseFile(page, 'sao-ke-tai-khoan-2-thang-sau.csv', nextUnrecognizedCsv(bills, OCTOBER_7, 'FT06'));
   await expect(page.getByTestId('mapping-intro')).toHaveText(INTRO_NEW);
+  await expect(page.getByTestId('statement-preset')).toHaveCount(0);
   await expect(page.getByTestId('statement-preview')).toBeDisabled();
+
+  // The first account posted under its columns, so they read its next file.
   await page.getByTestId('statement-account').selectOption(first?.id ?? '');
   await expect(page.getByTestId('statement-preset')).toBeVisible();
   await expect(mapping(page)).toHaveCount(0);
@@ -169,7 +186,7 @@ test('rule 3: at 1440 in dark, saved columns belong to their account, Đổi c�
   await expect(page.getByTestId('statement-preview')).toBeEnabled();
 
   const renamed = LABELS.map((label) => (label === 'Tiền gửi vào' ? 'Số tiền gửi vào' : label));
-  await chooseFile(page, 'sao-ke-ngan-hang-demo-3.csv', nextUnrecognizedCsv(bills, 'FT04', renamed));
+  await chooseFile(page, 'sao-ke-ngan-hang-demo-3.csv', nextUnrecognizedCsv(bills, OCTOBER_7, 'FT04', renamed));
   await expect(page.getByTestId('mapping-intro')).toHaveText('Tên cột khác lần trước, nên cần chọn lại. Các cột còn giữ tên cũ đã được chọn sẵn.');
   for (const [role, column] of [
     ['date', '0'],
@@ -185,7 +202,7 @@ test('rule 3: at 1440 in dark, saved columns belong to their account, Đổi c�
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p3-21-mismatch-1440-dark');
   await page.getByTestId('mapping-credit').selectOption('3');
-  await expect(page.getByTestId('mapping-sample-row')).toHaveCount(5);
+  await expect(page.getByTestId('mapping-sample-row')).toHaveCount(bills.length);
   await expect(page.getByTestId('statement-preview')).toBeEnabled();
 });
 
@@ -211,4 +228,33 @@ test('rule 4: in English at 130% on a phone in dark, the mapping reads in Englis
     await settled(page.getByTestId('statement-preview'));
     expect(await seriousAxeViolations(page)).toEqual([]);
   });
+});
+
+test('rule 5: a statement posted with no bank reference picked, read again with the reference column picked, posts nothing (lane 4)', async ({ page }) => {
+  await openNewHousehold(page, 'light', PHONE);
+  const household = await statementHousehold(page);
+  const csv = unrecognizedCsv(household.statement);
+  await page.goto('/collections/import');
+  await chooseFile(page, 'sao-ke-ngan-hang-demo.csv', csv);
+  await mapUnrecognized(page);
+  await page.getByTestId('mapping-bank-ref').selectOption('');
+  await expect(page.getByTestId('mapping-bank-ref')).toHaveValue('');
+  await toPreview(page);
+  await page.getByTestId('statement-commit').click();
+  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
+  const owed = await openBills(page, household.householdId);
+
+  await page.goto('/collections/import');
+  await chooseFile(page, 'sao-ke-ngan-hang-demo.csv', csv);
+  await expect(page.getByTestId('statement-preset')).toBeVisible();
+  await page.getByTestId('statement-preset-change').click();
+  await page.getByTestId('mapping-bank-ref').selectOption('1');
+  await expect(page.getByTestId('mapping-sample-row')).toHaveCount(5);
+  await settled(page.getByTestId('statement-preview'));
+  await page.getByTestId('statement-preview').click();
+  await expect(page.getByTestId('statement-nothing-new')).toHaveText('Mọi dòng trong tệp này đã được nhập trước đây, nên không có gì mới để ghi sổ.');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'p3-21-reference-again-390-light');
+  expect(await statementPayments(page, household.householdId)).toHaveLength(3);
+  expect((await openBills(page, household.householdId)).bills).toEqual(owed.bills);
 });

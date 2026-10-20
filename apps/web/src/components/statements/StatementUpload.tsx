@@ -35,11 +35,8 @@ type Reader = typeof import('@/lib/statements/decodeStatementFile');
 /** The import id is minted with the file, so sending it again after a lost connection finds the import already made. */
 type Chosen = { readonly name: string; readonly importId: string; readonly file: StatementFile; readonly reader: Reader };
 
-/** The lines as the chosen columns read them, and whether Esta knew the header or a person chose the columns. */
-type Read = { readonly decoded: DecodedStatement; readonly source: 'detected' | 'mapped' };
-
 /** A chosen file: how its columns are known, the picks while the mapping is open, and what those columns read. */
-type View = { readonly chosen: Chosen; readonly columns: FileColumns; readonly picks: Picks | null; readonly read: Read | null; readonly problem: MappingProblem | null };
+type View = { readonly chosen: Chosen; readonly columns: FileColumns; readonly picks: Picks | null; readonly read: DecodedStatement | null; readonly problem: MappingProblem | null };
 
 /**
  * A file's lines under the labels Esta knows, else under the account's saved columns found again (LSE-8 preset), else
@@ -51,23 +48,23 @@ function viewOf(chosen: Chosen, preset: ColumnPreset | undefined, picks: Picks |
   const open = picks ?? (columns.kind === 'unknown' ? reader.firstPicks(file.grid, preset) : null);
   if (open === null && columns.kind !== 'unknown') {
     const decoded = file.decode(columns.header);
-    return { chosen, columns, picks: null, read: decoded.ok ? { decoded: decoded.value, source: columns.kind === 'detected' ? 'detected' : 'mapped' } : null, problem: null };
+    return { chosen, columns, picks: null, read: decoded.ok ? decoded.value : null, problem: null };
   }
   const picked = open === null ? null : reader.pickedHeader(file.grid, open);
   if (picked === null || !picked.ok) return { chosen, columns, picks: open, read: null, problem: picked?.reason ?? 'incomplete' };
   const decoded = file.decode(picked.value);
-  const read = decoded.ok ? { decoded: decoded.value, source: 'mapped' as const } : null;
-  return { chosen, columns, picks: open, read, problem: read === null || read.decoded.rows.length === 0 ? 'no_rows' : null };
+  const read = decoded.ok ? decoded.value : null;
+  return { chosen, columns, picks: open, read, problem: read === null || read.rows.length === 0 ? 'no_rows' : null };
 }
 
-function importInput({ chosen }: View, read: Read, accountId: string) {
-  const { headerRow, mapping, rows, rejected } = read.decoded;
+function importInput({ chosen }: View, read: DecodedStatement, accountId: string) {
+  const { headerRow, mapping, rows, rejected } = read;
   const header = chosen.reader.headerCells(chosen.file.grid, headerRow);
   return {
     import_id: chosen.importId,
     bank_account_id: accountId,
     file_name: chosen.name.slice(0, 255),
-    column_mapping: { headerRow, header: header.slice(0, 100).map((cell) => cell.slice(0, 200)), mapping, source: read.source },
+    column_mapping: { headerRow, header: header.slice(0, 100).map((cell) => cell.slice(0, 200)), mapping },
     rejected,
     rows: rows.map((row) => ({ ...row, description: row.description.slice(0, 1000), bankRef: row.bankRef.slice(0, 200) })),
   };
@@ -85,12 +82,12 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
   const [saving, startSaving] = useTransition();
   const hydrated = useHydrated();
   const read = view?.problem === null ? view.read : null;
-  const ready = read !== null && read.decoded.rows.length > 0;
+  const ready = read !== null && read.rows.length > 0;
 
   /** Columns that read no line are a problem on the mapping; a file read by its labels or saved columns says so here. */
   const show = (next: View) => {
     setView(next);
-    setError(next.picks === null && next.read?.decoded.rows.length === 0 ? t('errorEmpty') : null);
+    setError(next.picks === null && next.read?.rows.length === 0 ? t('errorEmpty') : null);
   };
 
   const choose = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -140,8 +137,8 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
   const counts =
     read === null ? null : (
       <span data-testid="statement-read" className="flex flex-col text-ink">
-        <span className="break-words">{t('read', { file: view?.chosen.name ?? '', count: read.decoded.rows.length })}</span>
-        {read.decoded.rejected.length === 0 ? null : <span className="text-ink-2">{t('readRefused', { count: read.decoded.rejected.length })}</span>}
+        <span className="break-words">{t('read', { file: view?.chosen.name ?? '', count: read.rows.length })}</span>
+        {read.rejected.length === 0 ? null : <span className="text-ink-2">{t('readRefused', { count: read.rejected.length })}</span>}
       </span>
     );
   const columns = view?.columns;
@@ -203,7 +200,7 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
           onPicks={(picks) => show(viewOf(view.chosen, presets[accountId], picks))}
           preset={presets[accountId]}
           intro={view.columns.kind === 'unknown' ? (view.columns.mismatch ? 'mismatch' : 'new') : 'change'}
-          sample={view.read?.decoded.rows.slice(0, SAMPLE_LINES) ?? []}
+          sample={view.read?.rows.slice(0, SAMPLE_LINES) ?? []}
           problem={view.problem}
           counts={counts}
           disabled={saving}
