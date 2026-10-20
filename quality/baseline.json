@@ -62,7 +62,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1292,
+      "value": 1289,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -93,7 +93,7 @@
         "e2e/assistant-status.spec.ts": 78,
         "e2e/auth-password.spec.ts": 32,
         "e2e/collections.spec.ts": 150,
-        "e2e/deposits.spec.ts": 10,
+        "e2e/deposits.spec.ts": 7,
         "e2e/documents-extract.spec.ts": 170,
         "e2e/documents-multipage.spec.ts": 13,
         "e2e/documents-upload.spec.ts": 41,
