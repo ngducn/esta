@@ -6,9 +6,10 @@ import { decodeQrPng, type DecodedImage } from '../scripts/decode-qr.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberRest } from './helpers/auth-api';
+import { freshLease } from './helpers/leases';
 import { laneHousehold, laneLeasePath } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START, vnd } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, settled, START, toast, vnd } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
 
@@ -220,5 +221,126 @@ test('rule 6: in English at 130% text the QR sheet keeps the code at least 240 p
     await page.screenshot({ path: test.info().outputPath('qr-sheet-en-130-390-dark.png') });
   } finally {
     await memberRest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'vi', text_scale: 100 });
+  }
+});
+
+/** The lease's bills by period start, as the member reads them. */
+const billsOf = (page: Page, lease: string) => memberRest<{ id: string; number: string; period_start: string; status: string }[]>(page, 'GET', `invoices?lease_id=eq.${lease}&select=id,number,period_start,status&order=period_start`);
+
+test('rule 7: Ryan voids a wrong October bill with a reason, nothing bills October again, and the lease it blocked then ends on 30/09', async ({ page }) => {
+  await open(page, 'ryan.lane5@demo.esta.test', 'light', DESKTOP);
+  const lease = await freshLease(page, 5, { start: '2026-09-01', end: '2027-08-31', rent: 3_000_000, paidThrough: '2026-09-30' });
+  const [october] = (await billsOf(page, lease.id)).filter((bill) => bill.period_start === '2026-10-01');
+  if (october === undefined) throw new Error('activation issued no October bill');
+
+  await page.goto(lease.path);
+  await page.getByTestId('lease-terminate').click();
+  const ending = page.getByTestId('terminate-dialog');
+  await ending.getByRole('textbox', { name: 'Ngày kết thúc' }).fill('30/09/2026');
+  await ending.getByTestId('terminate-reason').fill('Demo: người thuê chuyển đi');
+  await ending.getByTestId('terminate-confirm').click();
+  const blocked = ending.getByTestId('terminate-blocked-by');
+  await expect(blocked).toContainText(`Hóa đơn ${october.number} đã phát hành cho kỳ sau ngày này. Nếu lập nhầm, hãy hủy hóa đơn đó rồi kết thúc hợp đồng.`);
+  await settled(ending.getByTestId('terminate-confirm'));
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('end-lease-blocked-1440-light.png') });
+  await blocked.getByRole('link', { name: `Mở hóa đơn ${october.number}` }).click();
+  await expect(page).toHaveURL(invoicePath(october.id));
+
+  await page.getByTestId('invoice-void').click();
+  const dialog = page.getByTestId('void-dialog');
+  await expect(dialog.getByTestId('void-question')).toHaveText(`Hủy hóa đơn ${october.number}?`);
+  await dialog.getByTestId('void-confirm').click();
+  await expect(dialog).toContainText('Nhập lý do hủy.');
+  await dialog.getByTestId('void-reason').fill('Demo: người thuê đã chuyển đi 30/09');
+  await settled(dialog.getByTestId('void-confirm'));
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('void-dialog-1440-light.png') });
+  await dialog.getByTestId('void-confirm').click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByTestId('invoice-status')).toHaveText('Đã hủy');
+  await expect(page.getByTestId('invoice-no-qr')).toHaveText('Hóa đơn đã hủy, nên không có mã QR. Lý do: Demo: người thuê đã chuyển đi 30/09');
+  await expect(page.getByTestId('qr-code')).toHaveCount(0);
+  await expect(page.getByTestId('invoice-void')).toHaveCount(0);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('bill-void-1440-light.png'), fullPage: true });
+
+  query(workdir, `select * from public.run_invoicing('${laneHousehold(5)}', '2026-10-07', '2026-10-07T00:30:00+07:00')`);
+  expect((await billsOf(page, lease.id)).filter((bill) => bill.period_start.startsWith('2026-10'))).toEqual([{ ...october, status: 'void' }]);
+
+  await page.goto(lease.path);
+  const row = page.getByTestId('lease-timeline').locator('li[data-period-start="2026-10-01"]');
+  await expect(row).toHaveAttribute('data-mark', 'void');
+  await expect(row.locator('[data-status="void"]')).toHaveText('Đã hủy');
+  await page.getByTestId('lease-terminate').click();
+  await ending.getByRole('textbox', { name: 'Ngày kết thúc' }).fill('30/09/2026');
+  await ending.getByTestId('terminate-reason').fill('Demo: người thuê chuyển đi');
+  await ending.getByTestId('terminate-confirm').click();
+  await expect(toast(page)).toContainText(`Đã kết thúc hợp đồng ${lease.label} từ ngày 30/09/2026.`);
+  await expect(page.getByTestId('lease-status')).toHaveText('Đã chấm dứt');
+});
+
+test('rule 8: Mẹ issues November’s draft early with Phát hành, and the bill then shows its code', async ({ page }) => {
+  await open(page, 'me.lane4@demo.esta.test', 'dark', PHONE);
+  const lease = await freshLease(page, 4, { start: '2026-09-01', end: '2027-08-31', rent: 3_000_000, paidThrough: '2026-10-31' });
+  const [november] = await billsOf(page, lease.id);
+  expect(november).toMatchObject({ period_start: '2026-11-01', status: 'draft' });
+  await page.goto(invoicePath(november?.id ?? ''));
+  await expect(page.getByTestId('invoice-status')).toHaveText('Bản nháp');
+  await expect(page.getByTestId('invoice-void')).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('bill-draft-issue-390-dark.png'), fullPage: true });
+  await page.getByTestId('invoice-issue').click();
+  await expect(page.getByTestId('invoice-status')).toHaveAttribute('data-status', 'issued');
+  await expect(page.getByTestId('invoice-issue')).toHaveCount(0);
+  await expect(page.getByTestId('invoice-void')).toBeVisible();
+  const { memo_code: memoCode } = await stored(page, november?.id ?? '');
+  expectInvoiceCode(await scan(page.getByTestId('invoice-qr').getByTestId('qr-code')), 3_000_000, memoCode);
+  expect(await memberRest(page, 'GET', `invoices?id=eq.${november?.id ?? ''}&select=status,issue_on`)).toEqual([{ status: 'issued', issue_on: '2026-10-07' }]);
+  expect(await noSidewaysScroll(page)).toBe(true);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath('bill-issued-390-dark.png'), fullPage: true });
+});
+
+test('rule 9: with no receiving account Mẹ adds one from the bill, its code pays into it, and a transfer on the board names it', async ({ page }) => {
+  await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
+  const seeded = seedId('seed:bank-account:lane-8');
+  query(workdir, `delete from public.bank_accounts where id = '${seeded}' returning id`);
+  try {
+    const id = invoiceId(8, 'di-an', 3, '2026-10-25');
+    const { memo_code: memoCode } = await stored(page, id);
+    await page.goto(invoicePath(id));
+    await expect(page.getByTestId('invoice-no-qr')).toHaveAttribute('data-reason', 'noAccount');
+    await page.getByTestId('add-account').click();
+    const sheet = page.getByTestId('account-sheet');
+    await sheet.getByTestId('account-save').click();
+    await expect(sheet).toContainText('Chọn ngân hàng.');
+    await sheet.getByTestId('account-bank').selectOption(ACCOUNT.bin);
+    await sheet.getByTestId('account-no').fill('0071 000 123 456');
+    await sheet.getByTestId('account-name').fill('Nguyễn Thị Demo');
+    await expect(sheet.getByTestId('account-name-preview')).toHaveText('NGUYEN THI DEMO');
+    expect(await noSidewaysScroll(page)).toBe(true);
+    expect(await seriousAxeViolations(page)).toEqual([]);
+    await page.screenshot({ path: test.info().outputPath('account-sheet-390-light.png') });
+    await sheet.getByTestId('account-save').click();
+    await expect(sheet).toBeHidden();
+    const panel = page.getByTestId('invoice-qr');
+    await expect(panel.getByTestId('qr-account-no')).toHaveText('0071000123456');
+    await expect(panel.getByTestId('qr-account-name')).toHaveText('NGUYEN THI DEMO');
+    expect((await scan(panel.getByTestId('qr-code')))?.decoded).toMatchObject({ ok: true, value: { bin: ACCOUNT.bin, accountNo: '0071000123456', purpose: `ESTA ${memoCode}` } });
+
+    await page.goto('/collections');
+    await row(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
+    const payment = page.getByTestId('record-payment-sheet');
+    await payment.getByRole('radio', { name: 'Chuyển khoản' }).click();
+    await expect(payment.getByTestId('payment-account')).toHaveText('Vào tài khoản Vietcombank · 0071000123456');
+    await payment.getByTestId('payment-save').click();
+    await expect(payment).toBeHidden();
+    const [added] = query<{ id: string }>(workdir, `select id::text as id from public.bank_accounts where household_id = '${laneHousehold(8)}' and account_no = '0071000123456'`);
+    expect(query(workdir, `select method from public.payments where bank_account_id = '${added?.id ?? ''}'`)).toEqual([{ method: 'bank_transfer' }]);
+  } finally {
+    query(workdir, `delete from public.payments where bank_account_id in (select id from public.bank_accounts where household_id = '${laneHousehold(8)}') returning id`);
+    query(workdir, `delete from public.bank_accounts where household_id = '${laneHousehold(8)}' returning id`);
+    query(workdir, `insert into public.bank_accounts (id, household_id, bank_bin, account_no, account_name, owner_party_id, is_default)
+      values ('${seeded}', '${laneHousehold(8)}', '${ACCOUNT.bin}', '${ACCOUNT.accountNo}', '${ACCOUNT.accountName}', '${seedId('seed:party:me-lane-8')}', true) returning id`);
   }
 });
