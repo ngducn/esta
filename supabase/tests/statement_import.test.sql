@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(87);
+select plan(95);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -25,7 +25,13 @@ insert into public.units (id, household_id, property_id, label, kind) values
   ('00000000-0000-4000-8000-000000000a16', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 6', 'room'),
   ('00000000-0000-4000-8000-000000000a17', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 7', 'room'),
   ('00000000-0000-4000-8000-000000000a18', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 8', 'room'),
-  ('00000000-0000-4000-8000-000000000a19', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 9', 'room');
+  ('00000000-0000-4000-8000-000000000a19', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 9', 'room'),
+  ('00000000-0000-4000-8000-000000000a1a', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 10', 'room'),
+  ('00000000-0000-4000-8000-000000000a1b', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 11', 'room'),
+  ('00000000-0000-4000-8000-000000000a1c', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 12', 'room'),
+  ('00000000-0000-4000-8000-000000000a1d', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 13', 'room'),
+  ('00000000-0000-4000-8000-000000000a1e', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 14', 'room'),
+  ('00000000-0000-4000-8000-000000000a1f', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 15', 'room');
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0a1', :'a', 'individual', 'Nguyễn Văn An Demo', array['tenant']),
   ('00000000-0000-4000-8000-00000000a0a2', :'a', 'individual', 'Trần Thị Bình Demo', array['tenant']),
@@ -36,6 +42,12 @@ insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0a7', :'a', 'individual', 'Bùi Văn Hùng Demo', array['tenant']),
   ('00000000-0000-4000-8000-00000000a0a8', :'a', 'individual', 'Phan Thị Lan Demo', array['tenant']),
   ('00000000-0000-4000-8000-00000000a0a9', :'a', 'individual', 'Đỗ Văn Minh Demo', array['tenant']),
+  ('00000000-0000-4000-8000-00000000a0aa', :'a', 'individual', 'Ngô Thị Nga Demo', array['tenant']),
+  ('00000000-0000-4000-8000-00000000a0ab', :'a', 'individual', 'Lý Văn Phúc Demo', array['tenant']),
+  ('00000000-0000-4000-8000-00000000a0ac', :'a', 'individual', 'Mai Thị Quyên Demo', array['tenant']),
+  ('00000000-0000-4000-8000-00000000a0ad', :'a', 'individual', 'Tô Văn Sơn Demo', array['tenant']),
+  ('00000000-0000-4000-8000-00000000a0ae', :'a', 'individual', 'Hà Thị Thu Demo', array['tenant']),
+  ('00000000-0000-4000-8000-00000000a0af', :'a', 'individual', 'Kiều Văn Vinh Demo', array['tenant']),
   ('00000000-0000-4000-8000-00000000b0b1', :'b', 'individual', 'Người thuê B', array['tenant']);
 insert into public.leases (id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, status) values
   ('00000000-0000-4000-8000-00000000e001', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a11',
@@ -56,12 +68,24 @@ insert into public.leases (id, household_id, property_id, unit_id, tenant_party_
    '00000000-0000-4000-8000-00000000a0a8', '2026-01-01', '2027-06-30', 2800000, 'active'),
   ('00000000-0000-4000-8000-00000000e009', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a19',
    '00000000-0000-4000-8000-00000000a0a9', '2026-01-25', '2027-06-24', 2500000, 'active'),
+  ('00000000-0000-4000-8000-00000000e00a', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a1a',
+   '00000000-0000-4000-8000-00000000a0aa', '2026-01-25', '2027-06-24', 2800000, 'active'),
+  ('00000000-0000-4000-8000-00000000e00b', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a1b',
+   '00000000-0000-4000-8000-00000000a0ab', '2026-01-25', '2027-06-24', 2500000, 'active'),
+  ('00000000-0000-4000-8000-00000000e00c', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a1c',
+   '00000000-0000-4000-8000-00000000a0ac', '2026-01-25', '2027-06-24', 2500000, 'active'),
+  ('00000000-0000-4000-8000-00000000e00d', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a1d',
+   '00000000-0000-4000-8000-00000000a0ad', '2026-01-25', '2027-06-24', 2500000, 'active'),
+  ('00000000-0000-4000-8000-00000000e00e', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a1e',
+   '00000000-0000-4000-8000-00000000a0ae', '2026-01-25', '2027-06-24', 2800000, 'active'),
+  ('00000000-0000-4000-8000-00000000e00f', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a1f',
+   '00000000-0000-4000-8000-00000000a0af', '2026-01-25', '2027-06-24', 2500000, 'active'),
   ('00000000-0000-4000-8000-00000000e0b1', :'b', '00000000-0000-4000-8000-0000000000b1',
    private.whole_unit_id('00000000-0000-4000-8000-0000000000b1'), '00000000-0000-4000-8000-00000000b0b1', '2026-01-01', null, 9000000, 'active');
 
 -- Phòng 1 owes September and October. Phòng 2 owes October, whose bill also carries its meters. Phòng 3 to 6 owe
 -- October; Phòng 4's is 2.800.000. Phòng 7 owes September and October, Phòng 8 August to October by calendar month,
--- Phòng 9 October.
+-- Phòng 9 October. Phòng 10 to 15 owe nothing for September, which Mẹ recorded by hand, and owe October.
 insert into public.invoices (id, household_id, lease_id, period_start, period_end, due_date, issue_on, number, memo_code, status, issued_at) values
   ('00000000-0000-4000-8000-0000000f0109', :'a', '00000000-0000-4000-8000-00000000e001', '2026-09-25', '2026-10-24', '2026-09-25', '2026-09-25', 'DIAN-202609-001', 'AAAAB9SE', 'issued', '2026-09-25T00:30:00+07:00'),
   ('00000000-0000-4000-8000-0000000f0110', :'a', '00000000-0000-4000-8000-00000000e001', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-001', 'AAAAB2TT', 'issued', '2026-10-03T00:30:00+07:00'),
@@ -76,6 +100,18 @@ insert into public.invoices (id, household_id, lease_id, period_start, period_en
   ('00000000-0000-4000-8000-0000000f0809', :'a', '00000000-0000-4000-8000-00000000e008', '2026-09-01', '2026-09-30', '2026-09-01', '2026-09-01', 'DIAN-202609-008', 'AAAAM2TT', 'issued', '2026-09-01T00:30:00+07:00'),
   ('00000000-0000-4000-8000-0000000f0810', :'a', '00000000-0000-4000-8000-00000000e008', '2026-10-01', '2026-10-31', '2026-10-01', '2026-10-01', 'DIAN-202610-008', 'AAAAN2TT', 'issued', '2026-10-01T00:30:00+07:00'),
   ('00000000-0000-4000-8000-0000000f0910', :'a', '00000000-0000-4000-8000-00000000e009', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-009', 'AAAAP2TT', 'issued', '2026-10-03T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1009', :'a', '00000000-0000-4000-8000-00000000e00a', '2026-09-25', '2026-10-24', '2026-09-25', '2026-09-25', 'DIAN-202609-010', 'AAAAQ9SE', 'issued', '2026-09-25T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1010', :'a', '00000000-0000-4000-8000-00000000e00a', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-010', 'AAAAQ2TT', 'issued', '2026-10-03T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1109', :'a', '00000000-0000-4000-8000-00000000e00b', '2026-09-25', '2026-10-24', '2026-09-25', '2026-09-25', 'DIAN-202609-011', 'AAAAR9SE', 'issued', '2026-09-25T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1110', :'a', '00000000-0000-4000-8000-00000000e00b', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-011', 'AAAAR2TT', 'issued', '2026-10-03T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1209', :'a', '00000000-0000-4000-8000-00000000e00c', '2026-09-25', '2026-10-24', '2026-09-25', '2026-09-25', 'DIAN-202609-012', 'AAAAS9SE', 'issued', '2026-09-25T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1210', :'a', '00000000-0000-4000-8000-00000000e00c', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-012', 'AAAAS2TT', 'issued', '2026-10-03T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1309', :'a', '00000000-0000-4000-8000-00000000e00d', '2026-09-25', '2026-10-24', '2026-09-25', '2026-09-25', 'DIAN-202609-013', 'AAAAT9SE', 'issued', '2026-09-25T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1310', :'a', '00000000-0000-4000-8000-00000000e00d', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-013', 'AAAAT2TT', 'issued', '2026-10-03T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1409', :'a', '00000000-0000-4000-8000-00000000e00e', '2026-09-25', '2026-10-24', '2026-09-25', '2026-09-25', 'DIAN-202609-014', 'AAAAU9SE', 'issued', '2026-09-25T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1410', :'a', '00000000-0000-4000-8000-00000000e00e', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-014', 'AAAAU2TT', 'issued', '2026-10-03T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1509', :'a', '00000000-0000-4000-8000-00000000e00f', '2026-09-25', '2026-10-24', '2026-09-25', '2026-09-25', 'DIAN-202609-015', 'AAAAV9SE', 'issued', '2026-09-25T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f1510', :'a', '00000000-0000-4000-8000-00000000e00f', '2026-10-25', '2026-11-24', '2026-10-25', '2026-10-03', 'DIAN-202610-015', 'AAAAV2TT', 'issued', '2026-10-03T00:30:00+07:00'),
   ('00000000-0000-4000-8000-0000000f0b10', :'b', '00000000-0000-4000-8000-00000000e0b1', '2026-10-01', '2026-10-31', '2026-10-01', '2026-10-01', 'B1-202610-001', 'BBBBE2TT', 'issued', '2026-10-01T00:30:00+07:00');
 insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd, amount_vnd)
 select i.household_id, i.id, 'rent', l.rent_vnd, l.rent_vnd from public.invoices i join public.leases l on l.id = i.lease_id;
@@ -240,9 +276,10 @@ select results_eq($$ select row_index, state, reason, invoice_id from public.sta
   'each is left unmatched, naming the voided or paid bill and why');
 select is((select count(*)::integer from public.payments where source = 'statement_import'), 4, 'no payment was posted for them');
 
--- A memo match on a bill with a transfer recorded by hand that no line holds is held for a person ([app rule]).
--- Phòng 4: Mẹ records 1.000.000 of 2.800.000 by hand. Phòng 5: she records 1.000.000 of 2.500.000 by hand, and the
--- statement holds that transfer and a second 1.000.000. Phòng 6: she records 1.000.000 in cash.
+-- A memo match is held for a person when its lease has a transfer recorded by hand that no line holds, of the line's
+-- amount, from 2 days before to 10 days after the line's date ([app rule]). Phòng 4: Mẹ records 1.000.000 of 2.800.000
+-- by hand. Phòng 5: she records 1.000.000 of 2.500.000 by hand, and the statement holds that transfer on its date and a
+-- second 1.000.000 two days later. Phòng 6: she records 1.000.000 in cash.
 select tests.act_as('member.a@test.esta.test');
 select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0410', 2800000, 1000000, 'bank_transfer', '2026-10-05',
   '00000000-0000-4000-8000-00000000cc04', null, '00000000-0000-4000-8000-00000000ba0a') $$, 'Mẹ records 1.000.000 of Phòng 4 as a transfer');
@@ -314,31 +351,28 @@ select results_eq($$ select outstanding_vnd, (select count(*)::integer from publ
 select tests.act_as('member.a@test.esta.test');
 select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0710', 5600000, 2800000, 'bank_transfer', '2026-10-06',
   '00000000-0000-4000-8000-00000000cc71') $$, 'Mẹ records Phòng 7''s 2.800.000 transfer, which settles September');
--- Phòng 8: each month's 2.800.000 recorded by hand the day after its bill. Phòng 9: 1.000.000 recorded 11 days before
--- the statement's line.
+-- Phòng 8: each month's 2.800.000 recorded by hand the day after its bill. Phòng 9: 500.000 recorded on 03/10.
 select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0808', 2800000, 2800000, 'bank_transfer', '2026-08-02',
   '00000000-0000-4000-8000-00000000cc81') $$, 'Mẹ records Phòng 8''s August transfer');
 select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0809', 2800000, 2800000, 'bank_transfer', '2026-09-02',
   '00000000-0000-4000-8000-00000000cc82') $$, 'its September transfer');
 select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0810', 2800000, 2800000, 'bank_transfer', '2026-10-02',
   '00000000-0000-4000-8000-00000000cc83') $$, 'and its October transfer');
-select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0910', 2500000, 1000000, 'bank_transfer', '2026-09-25',
-  '00000000-0000-4000-8000-00000000cc91') $$, 'Mẹ records 1.000.000 of Phòng 9 on 25/09');
+select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0910', 2500000, 500000, 'bank_transfer', '2026-10-03',
+  '00000000-0000-4000-8000-00000000cc91') $$, 'Mẹ records 500.000 of Phòng 9 on 03/10');
 select tests.act_as('admin.a@test.esta.test');
 select lives_ok(format($$ select public.create_statement_import('00000000-0000-4000-8000-00000000c0a7', '00000000-0000-4000-8000-00000000ba0a', 'sao-ke-5.csv', '{}', '[]', %L) $$,
   jsonb_build_array(
     pg_temp.line(1, '2026-10-06', 2800000, 'memo_match', '00000000-0000-4000-8000-0000000f0710', null, 'cross-7'),
     pg_temp.line(2, '2026-08-02', 2800000, 'memo_match', '00000000-0000-4000-8000-0000000f0808', null, 'month-8-08'),
     pg_temp.line(3, '2026-09-02', 2800000, 'memo_match', '00000000-0000-4000-8000-0000000f0809', null, 'month-8-09'),
-    pg_temp.line(4, '2026-10-02', 2800000, 'memo_match', '00000000-0000-4000-8000-0000000f0810', null, 'month-8-10'),
-    pg_temp.line(5, '2026-10-06', 1000000, 'memo_match', '00000000-0000-4000-8000-0000000f0910', null, 'far-9'))),
-  'a statement names Phòng 7''s October, Phòng 8''s three months and Phòng 9''s October');
+    pg_temp.line(4, '2026-10-02', 2800000, 'memo_match', '00000000-0000-4000-8000-0000000f0810', null, 'month-8-10'))),
+  'a statement names Phòng 7''s October and Phòng 8''s three months');
 select results_eq($$ select row_index, state, candidates, first_payment from held where import_id = '00000000-0000-4000-8000-00000000c0a7' order by row_index $$,
-  $$ values (1, 'held', 1, pg_temp.hand('cc71')), (2, 'held', 1, pg_temp.hand('cc81')), (3, 'held', 1, pg_temp.hand('cc82')), (4, 'held', 1, pg_temp.hand('cc83')),
-            (5, 'memo_match', 0, null::uuid) $$,
-  'the October line holds on the transfer that settled September, each month holds only its own month''s transfer, and one 11 days away holds nothing');
+  $$ values (1, 'held', 1, pg_temp.hand('cc71')), (2, 'held', 1, pg_temp.hand('cc81')), (3, 'held', 1, pg_temp.hand('cc82')), (4, 'held', 1, pg_temp.hand('cc83')) $$,
+  'the October line holds on the transfer that settled September, and each month holds only its own month''s transfer');
 select results_eq($$ select * from public.commit_statement_import('00000000-0000-4000-8000-00000000c0a7', '{}') $$,
-  $$ values (1, 4) $$, 'Ghi sổ posts only Phòng 9''s line');
+  $$ values (0, 4) $$, 'Ghi sổ posts none of them');
 select is((select outstanding_vnd from public.invoice_balances where number = 'DIAN-202610-007'), 2800000::bigint,
   'Phòng 7''s October still owes 2.800.000: the one transfer was not recorded twice');
 select lives_ok($$ select public.link_statement_line(pg_temp.row_id('c0a7', 1), pg_temp.hand('cc71')) $$, 'Đã ghi tay links Phòng 7''s line to the September payment');
@@ -348,10 +382,74 @@ select throws_ok($$ select public.link_statement_line(pg_temp.row_id('c0a7', 3),
 select lives_ok($$ select public.link_statement_line(pg_temp.row_id('c0a7', 3), pg_temp.hand('cc82')) $$, 'September links to September');
 select lives_ok($$ select public.link_statement_line(pg_temp.row_id('c0a7', 4), pg_temp.hand('cc83')) $$, 'October links to October');
 select results_eq($$ select row_index, state from held where import_id = '00000000-0000-4000-8000-00000000c0a7' order by row_index $$,
-  $$ values (1, 'posted'), (2, 'posted'), (3, 'posted'), (4, 'posted'), (5, 'posted') $$, 'every line of the statement is in the books');
+  $$ values (1, 'posted'), (2, 'posted'), (3, 'posted'), (4, 'posted') $$, 'every line of the statement is in the books');
 select is((select count(*)::integer from public.payments p where exists (select from public.payment_allocations a join public.invoices i on i.id = a.invoice_id
   where a.payment_id = p.id and i.lease_id in ('00000000-0000-4000-8000-00000000e007', '00000000-0000-4000-8000-00000000e008'))), 4,
   'Phòng 7 and Phòng 8 hold only the four transfers Mẹ recorded: linking added no money');
+
+-- Phòng 9's 500.000 of 03/10 against lines 11 and 10 days before it, 2 and 3 days after it, and one of 400.000 that day.
+select lives_ok(format($$ select public.create_statement_import('00000000-0000-4000-8000-00000000c0a8', '00000000-0000-4000-8000-00000000ba0a', 'sao-ke-6.csv', '{}', '[]', %L) $$,
+  jsonb_build_array(
+    pg_temp.line(1, '2026-09-22', 500000, 'memo_match', '00000000-0000-4000-8000-0000000f0910', null, 'window-9-1'),
+    pg_temp.line(2, '2026-09-23', 500000, 'memo_match', '00000000-0000-4000-8000-0000000f0910', null, 'window-9-2'),
+    pg_temp.line(3, '2026-10-05', 500000, 'memo_match', '00000000-0000-4000-8000-0000000f0910', null, 'window-9-3'),
+    pg_temp.line(4, '2026-10-06', 500000, 'memo_match', '00000000-0000-4000-8000-0000000f0910', null, 'window-9-4'),
+    pg_temp.line(5, '2026-10-03', 400000, 'memo_match', '00000000-0000-4000-8000-0000000f0910', null, 'window-9-5'))),
+  'a statement names Phòng 9''s October five times');
+select results_eq($$ select row_index, state, candidates from held where import_id = '00000000-0000-4000-8000-00000000c0a8' order by row_index $$,
+  $$ values (1, 'memo_match', 0), (2, 'held', 1), (3, 'held', 1), (4, 'memo_match', 0), (5, 'memo_match', 0) $$,
+  'a hand transfer recorded 10 days after the line or 2 days before it holds it; 11 days after, 3 days before or another amount does not');
+select results_eq($$ select * from public.commit_statement_import('00000000-0000-4000-8000-00000000c0a8', '{}') $$,
+  $$ values (3, 2) $$, 'Ghi sổ posts the three lines no hand transfer may be');
+
+-- Lanes 2, 3 and 6 of the seed: September recorded by hand as one transfer of the rent 7, 6 or 3 days before October's
+-- line (Phòng 10, 11, 13, 14), or as 1.500.000 and 1.000.000 around it (Phòng 12, 15). None is October's transfer.
+select tests.act_as('member.a@test.esta.test');
+do $$
+begin
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1009', 2800000, 2800000, 'bank_transfer', '2026-09-26', '00000000-0000-4000-8000-00000000cd10');
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1109', 2500000, 2500000, 'bank_transfer', '2026-09-30', '00000000-0000-4000-8000-00000000cd11');
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1209', 2500000, 1500000, 'bank_transfer', '2026-09-29', '00000000-0000-4000-8000-00000000cd12');
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1209', 1000000, 1000000, 'bank_transfer', '2026-10-04', '00000000-0000-4000-8000-00000000ce12');
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1309', 2500000, 2500000, 'bank_transfer', '2026-09-27', '00000000-0000-4000-8000-00000000cd13');
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1409', 2800000, 2800000, 'bank_transfer', '2026-09-26', '00000000-0000-4000-8000-00000000cd14');
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1509', 2500000, 1500000, 'bank_transfer', '2026-09-29', '00000000-0000-4000-8000-00000000cd15');
+  perform public.record_payment('00000000-0000-4000-8000-0000000f1509', 1000000, 1000000, 'bank_transfer', '2026-10-04', '00000000-0000-4000-8000-00000000ce15');
+end $$;
+select is((select count(*)::integer from public.invoice_balances where number like 'DIAN-202609-01_' and outstanding_vnd = 0), 6,
+  'Mẹ''s transfers by hand settle September for Phòng 10 to 15');
+select tests.act_as('admin.a@test.esta.test');
+select lives_ok(format($$ select public.create_statement_import('00000000-0000-4000-8000-00000000c0a9', '00000000-0000-4000-8000-00000000ba0a', 'sao-ke-7.csv', '{}', '[]', %L) $$,
+  jsonb_build_array(
+    pg_temp.line(1, '2026-10-02', 2800000, 'memo_match', '00000000-0000-4000-8000-0000000f1010', null, 'lane-2-1'),
+    pg_temp.line(2, '2026-10-03', 2500000, 'memo_match', '00000000-0000-4000-8000-0000000f1110', null, 'lane-2-2'),
+    pg_temp.line(3, '2026-10-02', 2500000, 'memo_match', '00000000-0000-4000-8000-0000000f1210', null, 'lane-3-1'),
+    pg_temp.line(4, '2026-10-04', 2500000, 'memo_match', '00000000-0000-4000-8000-0000000f1310', null, 'lane-3-3'),
+    pg_temp.line(5, '2026-10-03', 2800000, 'memo_match', '00000000-0000-4000-8000-0000000f1410', null, 'lane-6-2'),
+    pg_temp.line(6, '2026-10-04', 2500000, 'memo_match', '00000000-0000-4000-8000-0000000f1510', null, 'lane-6-3'))),
+  'the October statement names Phòng 10 to 15''s October bills by code');
+-- For each line: its lease's hand transfers within 10 days either way, those of its amount, those dated from 2 days
+-- before to 10 days after it, and what the preview reads.
+select results_eq($$
+  select r.row_index,
+    count(p.id) filter (where abs(p.received_on - r.posted_on) <= 10)::integer as near,
+    count(p.id) filter (where abs(p.received_on - r.posted_on) <= 10 and p.amount_vnd = r.amount_vnd)::integer as same_amount,
+    count(p.id) filter (where p.received_on - r.posted_on between -2 and 10)::integer as in_window,
+    (select l.state from public.statement_import_lines(r.import_id) l where l.id = r.id) as state
+  from public.statement_rows r
+  join public.invoices b on b.id = r.invoice_id
+  left join public.payments p on p.source = 'manual' and p.method = 'bank_transfer' and exists (
+    select from public.payment_allocations a join public.invoices i on i.id = a.invoice_id where a.payment_id = p.id and i.lease_id = b.lease_id)
+  where r.import_id = '00000000-0000-4000-8000-00000000c0a9'
+  group by r.id, r.row_index, r.import_id
+  order by r.row_index $$,
+  $$ values (1, 1, 1, 0, 'memo_match'), (2, 1, 1, 0, 'memo_match'), (3, 2, 0, 1, 'memo_match'), (4, 1, 1, 0, 'memo_match'),
+            (5, 1, 1, 0, 'memo_match'), (6, 2, 0, 1, 'memo_match') $$,
+  'no line holds: a September transfer of the same amount was 3 to 7 days before its line, and one in the window is of another amount');
+select results_eq($$ select * from public.commit_statement_import('00000000-0000-4000-8000-00000000c0a9', '{}') $$,
+  $$ values (6, 0) $$, 'Ghi sổ posts all six code matches');
+select is((select count(*)::integer from public.invoice_balances where number ~ '^DIAN-2026(09|10)-01[0-5]$' and outstanding_vnd = 0), 12,
+  'September and October are each paid once for Phòng 10 to 15');
 
 select tests.act_as('member.a@test.esta.test');
 select lives_ok($$ select * from public.record_payment('00000000-0000-4000-8000-0000000f0610', 500000, 200000, 'bank_transfer', '2026-10-06',

@@ -5,14 +5,13 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import type { StatementLine } from '@/lib/statements/lines';
 
-/** The one hand transfer of the line's amount, when exactly one has it, is the likely match ([app rule] DOMAIN-VN §9). */
+/** A held line's only hand transfer is the likely match ([app rule] DOMAIN-VN §9); among several, a person chooses. */
 export function preselected(line: StatementLine): string | undefined {
-  const same = line.hands.filter((hand) => hand.amount === line.amount);
-  return same.length === 1 ? same[0]?.paymentId : undefined;
+  return line.hands.length === 1 ? line.hands[0]?.paymentId : undefined;
 }
 
 /**
- * A held line's hand transfers to choose from, each with its amount beside the line's when they differ, and
+ * A held line's hand transfers of its amount to choose from, each with its date and the bills it went to, and
  * `Đã ghi tay`, which links the line to the one chosen and adds no money.
  */
 export function HeldChoices({
@@ -34,7 +33,6 @@ export function HeldChoices({
     <fieldset data-testid="statement-hands" className="mt-1 flex flex-col gap-1">
       <legend className="sr-only">{t('handLegend', { line: line.index })}</legend>
       {line.hands.map((hand) => {
-        const values = { amount: formatVnd(hand.amount, locale), date: formatDate(hand.receivedOn, locale), bills: hand.bills.join(', ') };
         return (
           <label key={hand.paymentId} className="flex min-h-touch items-center gap-3 text-small text-ink">
             <input
@@ -47,7 +45,7 @@ export function HeldChoices({
               className="size-5 shrink-0 accent-ink"
             />
             <span className="figures min-w-0 break-words">
-              {hand.amount === line.amount ? t('handOption', values) : t('handOptionOther', { ...values, line: formatVnd(line.amount, locale) })}
+              {t('handOption', { amount: formatVnd(hand.amount, locale), date: formatDate(hand.receivedOn, locale), bills: hand.bills.join(', ') })}
             </span>
           </label>
         );

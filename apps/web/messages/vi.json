@@ -1344,14 +1344,13 @@
     "refusedField": "{field, select, date {ngày không đọc được} amount {số tiền không đọc được} other {dòng không đúng định dạng}}",
     "empty": "Không có dòng nào ở mục này.",
     "offline": "Đang mất mạng. Khi có mạng lại, bấm ghi sổ lần nữa; các lựa chọn vẫn giữ nguyên.",
-    "reasonHeld": "{count, plural, other {Có # khoản}} chuyển khoản ghi tay của hợp đồng này trong 10 ngày quanh ngày của dòng. Nếu là chính khoản này, chọn khoản đó rồi bấm Đã ghi tay; nếu là khoản khác, đánh dấu để ghi sổ.",
+    "reasonHeld": "{count, plural, other {Có # khoản}} chuyển khoản ghi tay cùng số tiền của hợp đồng này, ghi từ 2 ngày trước đến 10 ngày sau ngày của dòng. Nếu là chính khoản này, chọn khoản đó rồi bấm Đã ghi tay; nếu là khoản khác, đánh dấu để ghi sổ.",
     "reasonLinked": "{bill} · đã ghi tay trước đó",
     "postLine": "Ghi sổ dòng {line} như một khoản mới",
     "linkByHand": "Đã ghi tay",
     "linked": "Đã nối dòng {line} với khoản ghi tay, không thêm tiền.",
     "handLegend": "Khoản ghi tay có thể trùng với dòng {line}",
-    "handOption": "{amount} ngày {date} · {bills}",
-    "handOptionOther": "{amount} ngày {date} · {bills} · khác số tiền của dòng ({line})"
+    "handOption": "{amount} ngày {date} · {bills}"
   },
   "invoices": {
     "metaTitle": "Hóa đơn",

@@ -1,14 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
+import { join } from 'node:path';
 import { golden, statementCsv, statementXlsx } from '../fixtures/statements/household.ts';
-import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { renderCsv } from '../packages/core/src/matching/render.ts';
+import { query } from '../scripts/db-checksum.ts';
+import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
+import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { boardRow, storedInvoice } from './helpers/board';
-import { laneInvoice } from './helpers/seed';
-import { PROPERTY, statementHousehold, type StatementHousehold } from './helpers/statements';
+import { laneHousehold, laneInvoice } from './helpers/seed';
+import { laneStatement, PROPERTY, statementHousehold, type StatementHousehold } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START, toast, vnd } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
+const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 
 // Bills issue on activation and a line may post only on or before the database clock's date, so the spec runs in the
 // `clock` project at 07/10/2026. Each rule signs up a household of its own and fills it through the member's API.
@@ -252,7 +256,7 @@ test('rule 8: a code match on a bill Mẹ already recorded by hand is held, and 
   await preview(page, 'sao-ke.csv', statementCsv(household.statement, 'a'));
   await expect(line(page, 1)).toHaveAttribute('data-status', 'held');
   await expect(line(page, 1).getByTestId('statement-status')).toHaveText('Có thể trùng');
-  await expect(line(page, 1).getByTestId('statement-target')).toContainText('Có 1 khoản chuyển khoản ghi tay của hợp đồng này');
+  await expect(line(page, 1).getByTestId('statement-target')).toContainText('Có 1 khoản chuyển khoản ghi tay cùng số tiền của hợp đồng này');
   await expect(line(page, 1).getByTestId('statement-hands').getByRole('radio')).toBeChecked();
   await expect(line(page, 1).getByTestId('statement-hands')).toContainText(bill.number);
   await expect(line(page, 1).getByRole('checkbox', { name: 'Ghi sổ dòng 1 như một khoản mới' })).not.toBeChecked();
@@ -301,4 +305,46 @@ test('rule 9: a transfer Mẹ records from Phòng 5’s October row settles Sept
   // Lane 9 goes back to its seeded bills for the specs that read them.
   const [hand] = await memberRest<{ id: string }[]>(page, 'GET', `payments?source=eq.manual&statement_row_id=not.is.null&created_by=not.is.null&order=created_at.desc&limit=1&select=id`);
   await memberRest(page, 'POST', 'rpc/undo_payment', { p_payment_id: hand?.id });
+});
+
+test('rule 10: on a seeded lane with September recorded by hand, the October statement posts its three code matches on Ghi sổ and Ryan confirms the suggestion (north-star step 5)', async ({ page }) => {
+  const householdId = laneHousehold(6);
+  await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
+  const { statement, bills } = await laneStatement(page, 6, householdId);
+  const expected = golden(statement);
+  const matches = expected.filter((row) => row.status === 'memo_match');
+  const suggestion = expected.find((row) => row.status === 'suggested');
+  expect(matches).toHaveLength(3);
+  if (suggestion === undefined) throw new Error('The lane statement has no suggestion');
+  try {
+    await page.goto('/collections');
+    await page.getByTestId('statement-import-link').click();
+    await expect(page).toHaveURL(/\/collections\/import$/);
+    await chooseFile(page, 'sao-ke-thang-10.csv', statementCsv(statement, 'a'));
+    await expect(page.getByTestId('statement-read')).toBeVisible();
+    await page.getByTestId('statement-preview').click();
+    await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
+    for (const row of expected) await expect(line(page, row.index)).toHaveAttribute('data-status', row.status);
+    await expect(page.getByTestId('statement-filter-held')).toHaveText('Có thể trùng (0)');
+    await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 3 khoản');
+    await page.getByTestId('statement-commit').click();
+    await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
+    await line(page, suggestion.index).getByRole('checkbox', { name: `Xác nhận gợi ý dòng ${suggestion.index}` }).click();
+    await page.getByTestId('statement-commit').click();
+    await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 1 khoản. Các khoản đã vào trang Thu tiền.');
+    for (const row of [...matches, suggestion]) await expect(line(page, row.index)).toHaveAttribute('data-status', 'posted');
+
+    const october = matches.map((row) => bills.find((bill) => bill.number === row.invoices[0])?.id);
+    const rooms = await memberRest<{ lease: { unit: { label: string } } }[]>(
+      page,
+      'GET',
+      `invoices?id=in.(${october.join(',')})&select=lease:leases!invoices_household_id_lease_id_fkey(unit:units!leases_household_id_property_id_unit_id_fkey(label))`,
+    );
+    await page.goto('/collections');
+    for (const room of rooms) await expect(boardRow(page, 'paid', `${room.lease.unit.label}, Dãy trọ Dĩ An`)).toBeVisible();
+  } finally {
+    // Lane 6 goes back to its seeded bills for the specs that read them; nothing undoes an imported payment yet (#255).
+    query(workdir, `delete from public.payments where household_id = '${householdId}' and source = 'statement_import' returning id`);
+    query(workdir, `delete from public.statement_imports where household_id = '${householdId}' returning id`);
+  }
 });

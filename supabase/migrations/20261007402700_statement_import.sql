@@ -221,10 +221,11 @@ end;
 $$;
 
 -- The transfers recorded by hand a matched or suggested line may be ([app rule] DOMAIN-VN §9): payments recorded by hand
--- as a bank transfer (source manual, method bank_transfer) that no statement line holds yet, allocated to any bill of
--- the line's lease, received within 10 days of the line's date, whatever their amount. A hand payment often lands on an
--- older bill than the memo names, because the sheet settles oldest first. The window keeps last month's transfer of
--- the same rent away from this month's line. The likeliest come first: the line's amount, then the nearest date.
+-- as a bank transfer (source manual, method bank_transfer) that no statement line holds yet, of the line's amount,
+-- allocated to any bill of the line's lease, and received from 2 days before to 10 days after the line's date. A hand
+-- payment often lands on an older bill than the memo names, because the sheet settles oldest first. Mẹ records a
+-- transfer on or after the day it lands, and 2 days cover a weekend's booking, so last month's transfer of the same
+-- rent, recorded a week or more before this month's line, is not one. The nearest date comes first.
 create function private.statement_line_candidates(p_row public.statement_rows)
 returns table (payment_id uuid, received_on date, amount_vnd bigint)
 language sql
@@ -235,13 +236,13 @@ as $$
   from public.payments p
   where p_row.invoice_id is not null and p_row.status in ('memo_match', 'suggested')
     and p.household_id = p_row.household_id and p.source = 'manual' and p.method = 'bank_transfer' and p.statement_row_id is null
-    and abs(p.received_on - p_row.posted_on) <= 10
+    and p.amount_vnd = p_row.amount_vnd and p.received_on - p_row.posted_on between -2 and 10
     and exists (
       select from public.payment_allocations a
       join public.invoices i on i.id = a.invoice_id
       where a.payment_id = p.id and i.lease_id = (select b.lease_id from public.invoices b where b.id = p_row.invoice_id)
     )
-  order by p.amount_vnd = p_row.amount_vnd desc, abs(p.received_on - p_row.posted_on), p.received_on, p.id;
+  order by abs(p.received_on - p_row.posted_on), p.received_on, p.id;
 $$;
 revoke all on function private.statement_line_candidates(public.statement_rows) from public;
 grant execute on function private.statement_line_candidates(public.statement_rows) to authenticated;

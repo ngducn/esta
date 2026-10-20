@@ -35,6 +35,18 @@ export async function statementHousehold(page: Page): Promise<StatementHousehold
   await memberRest(page, 'POST', 'parties', house.parties);
   await memberRest(page, 'POST', 'leases', house.leases);
   for (const activation of house.activations) await memberRest(page, 'POST', 'rpc/activate_lease', activation);
+  const { bills, balances } = await openBills(page, householdId);
+  const rooms = new Map(balances.map((row) => [row.number, house.roomOfLease.get(row.lease_id) ?? '']));
+  return { householdId, statement: householdStatement(bills, isoDate('2026-10-07')), bills, rooms };
+}
+
+/** A seeded lane's October statement, as `fixtures/statements/generate.ts` writes it, from what the lane owes now. */
+export async function laneStatement(page: Page, lane: number, householdId: string): Promise<{ statement: HouseholdStatement; bills: readonly OpenBill[] }> {
+  const { bills } = await openBills(page, householdId);
+  return { statement: householdStatement(bills, isoDate('2026-10-07'), `FT${String(lane).padStart(2, '0')}`), bills };
+}
+
+async function openBills(page: Page, householdId: string) {
   const balances = balancesSchema.parse(
     await memberRest(page, 'GET', `invoice_balances?household_id=eq.${householdId}&status=eq.issued&outstanding_vnd=gt.0&select=id,number,lease_id,due_date,outstanding_vnd`),
   );
@@ -50,6 +62,5 @@ export async function statementHousehold(page: Page): Promise<StatementHousehold
     if (code === undefined) throw new Error(`No memo code for ${row.number}`);
     return { id: row.id, number: row.number, memoCode: code.memo_code, tenantName: code.lease.tenant.full_name, dueDate: isoDate(row.due_date), outstanding: vnd(row.outstanding_vnd) };
   });
-  const rooms = new Map(balances.map((row) => [row.number, house.roomOfLease.get(row.lease_id) ?? '']));
-  return { householdId, statement: householdStatement(bills, isoDate('2026-10-07')), bills, rooms };
+  return { bills, balances };
 }

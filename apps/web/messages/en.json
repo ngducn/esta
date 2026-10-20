@@ -1344,14 +1344,13 @@
     "refusedField": "{field, select, date {the date could not be read} amount {the amount could not be read} other {the line is not in the expected format}}",
     "empty": "No lines here.",
     "offline": "You are offline. When the connection is back, record again; your selection is kept.",
-    "reasonHeld": "{count, plural, one {# transfer} other {# transfers}} recorded by hand on this lease within 10 days of the line. If one is this payment, choose it and press Recorded by hand; if this is another payment, tick it to record it.",
+    "reasonHeld": "{count, plural, one {# transfer} other {# transfers}} of the same amount recorded by hand on this lease, from 2 days before to 10 days after the line. If one is this payment, choose it and press Recorded by hand; if this is another payment, tick it to record it.",
     "reasonLinked": "{bill} · recorded by hand earlier",
     "postLine": "Record line {line} as a new payment",
     "linkByHand": "Recorded by hand",
     "linked": "Line {line} is now linked to the payment recorded by hand; no money was added.",
     "handLegend": "Payments recorded by hand that line {line} may duplicate",
-    "handOption": "{amount} on {date} · {bills}",
-    "handOptionOther": "{amount} on {date} · {bills} · differs from the line ({line})"
+    "handOption": "{amount} on {date} · {bills}"
   },
   "invoices": {
     "metaTitle": "Invoice",
