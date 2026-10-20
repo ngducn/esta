@@ -136,7 +136,7 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 35,
+      "value": 36,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -155,6 +155,7 @@
         "apps/web/src/components/legal/ownership-form.tsx": 1,
         "apps/web/src/components/map/paste-maps-link.tsx": 1,
         "apps/web/src/components/map/properties-map.tsx": 4,
+        "apps/web/src/components/meters/MeterEntryList.tsx": 1,
         "apps/web/src/components/payments/RecordPaymentSheet.tsx": 1,
         "apps/web/src/components/properties/archive-button.tsx": 1,
         "apps/web/src/components/properties/cover-photo-input.tsx": 2,
@@ -169,7 +170,7 @@
       }
     },
     "action-failure-mapping": {
-      "value": 29,
+      "value": 30,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -188,6 +189,7 @@
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
         "apps/web/src/components/legal/legal-item-actions.tsx": 1,
         "apps/web/src/components/legal/ownership-form.tsx": 1,
+        "apps/web/src/components/meters/MeterEntryList.tsx": 1,
         "apps/web/src/components/payments/RecordPaymentSheet.tsx": 1,
         "apps/web/src/components/properties/archive-button.tsx": 1,
         "apps/web/src/components/properties/cover-photo-input.tsx": 1,
@@ -545,6 +547,18 @@
       "from": 13,
       "to": 14,
       "reason": "P3-20 bill actions: one useBillAction call site and the void dialog's footer row (until #193)"
+    },
+    {
+      "metric": "hand-rolled-action-call",
+      "from": 35,
+      "to": 36,
+      "reason": "Meter entry saves a month of readings through its own transition and catch, like every form until the shared action hook lands (until #193)"
+    },
+    {
+      "metric": "action-failure-mapping",
+      "from": 29,
+      "to": 30,
+      "reason": "Meter entry saves a month of readings through its own transition and catch, like every form until the shared action hook lands (until #193)"
     }
   ]
 }
