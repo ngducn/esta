@@ -154,4 +154,33 @@ describe('knownLines: the same statement under other columns records nothing twi
     expect(kept.map((stored) => stored.row.index)).toEqual(rows.filter((line) => line.bankRef !== '').map((line) => line.index));
     expect(plannedAfter(withRefs, storedOf(withRefs, 'import-1', false)).rows).toEqual([]);
   });
+
+  it('knows a line first read without its reference on 05/10, read again under the value date 06/10 with the reference (lane 4)', () => {
+    const first = storedOf([row('CK ESTAQ4N8R2TV DEMO', 1_000_000, '2026-10-05', '')]);
+    expect(knownLines([row('CK ESTAQ4N8R2TV DEMO', 1_000_000, '2026-10-06', 'FT26279003')], first).map((line) => line?.importId)).toEqual(['import-1']);
+  });
+
+  it('knows a line of a bank with no reference column read under another date column 1 to 3 days off, and not 4', () => {
+    const first = storedOf([row('NOP TIEN MAT PHONG 3 DEMO', 2_500_000, '2026-10-05', '')]);
+    const on = (date: string) => knownLines([row('NOP TIEN MAT PHONG 3 DEMO', 2_500_000, date, '')], first)[0]?.importId;
+    expect(['2026-10-02', '2026-10-03', '2026-10-04', '2026-10-06', '2026-10-07', '2026-10-08'].map(on)).toEqual(Array.from({ length: 6 }, () => 'import-1'));
+    expect([on('2026-10-01'), on('2026-10-09')]).toEqual([undefined, undefined]);
+  });
+
+  it('records lines with different references as different transfers, whatever their descriptions', () => {
+    const first = storedOf([row('CK TIEN PHONG', 2_800_000, '2026-10-05', 'FT2W009')]);
+    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2026-10-05', 'FT2X009')], first)).toEqual([undefined]);
+    expect(plannedAfter([row('CK TIEN PHONG', 2_800_000, '2026-10-05', 'FT2X009')], first).rows).toHaveLength(1);
+  });
+
+  it('counts two separate transfers without references, of one amount and description within 3 days, as one across statements (the trade-off)', () => {
+    const first = storedOf([row('CK TIEN DIEN', 300_000, '2026-10-05', '')]);
+    expect(knownLines([row('CK TIEN DIEN', 300_000, '2026-10-07', '')], first).map((line) => line?.importId)).toEqual(['import-1']);
+  });
+
+  it('answers each new line with an equal reference before a nearer line that only shares the description', () => {
+    const first = storedOf([row('CK TIEN PHONG', 2_800_000, '2026-10-05', ''), { ...row('CK TIEN PHONG', 2_800_000, '2026-10-03', 'FT7'), index: 2 }]);
+    const [line] = knownLines([row('CK TIEN PHONG', 2_800_000, '2026-10-05', 'FT7')], first);
+    expect(line?.bankRef).toBe('FT7');
+  });
 });

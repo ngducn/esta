@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { nextUnrecognizedCsv, statementCsv, unrecognizedCsv } from '../fixtures/statements/household.ts';
+import { nextUnrecognizedCsv, statementCsv, unrecognizedCsv, valueDatedCsv } from '../fixtures/statements/household.ts';
 import { isoDate } from '../packages/core/src/date/iso-date.ts';
 import { UNRECOGNIZED_COLUMNS, UNRECOGNIZED_LAYOUT } from '../packages/core/src/matching/statement-scenario.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
@@ -230,31 +230,41 @@ test('rule 4: in English at 130% on a phone in dark, the mapping reads in Englis
   });
 });
 
-test('rule 5: a statement posted with no bank reference picked, read again with the reference column picked, posts nothing (lane 4)', async ({ page }) => {
+test('rule 5: a statement posted under its transaction date with no reference, read again with the reference and then the value date, posts nothing (lane 4)', async ({ page }) => {
   await openNewHousehold(page, 'light', PHONE);
   const household = await statementHousehold(page);
-  const csv = unrecognizedCsv(household.statement);
+  const csv = valueDatedCsv(household.statement);
   await page.goto('/collections/import');
-  await chooseFile(page, 'sao-ke-ngan-hang-demo.csv', csv);
-  await mapUnrecognized(page);
+  await chooseFile(page, 'sao-ke-ngay-hieu-luc.csv', csv);
+  await page.getByTestId('mapping-date').selectOption('0');
+  await page.getByTestId('mapping-description').selectOption('3');
   await page.getByTestId('mapping-bank-ref').selectOption('');
-  await expect(page.getByTestId('mapping-bank-ref')).toHaveValue('');
+  await page.getByRole('radio', { name: 'Hai cột: tiền vào và tiền ra' }).check();
+  await page.getByTestId('mapping-credit').selectOption('4');
+  await page.getByTestId('mapping-debit').selectOption('5');
   await toPreview(page);
   await page.getByTestId('statement-commit').click();
   await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
   const owed = await openBills(page, household.householdId);
 
-  await page.goto('/collections/import');
-  await chooseFile(page, 'sao-ke-ngan-hang-demo.csv', csv);
-  await expect(page.getByTestId('statement-preset')).toBeVisible();
-  await page.getByTestId('statement-preset-change').click();
-  await page.getByTestId('mapping-bank-ref').selectOption('1');
-  await expect(page.getByTestId('mapping-sample-row')).toHaveCount(5);
-  await settled(page.getByTestId('statement-preview'));
-  await page.getByTestId('statement-preview').click();
-  await expect(page.getByTestId('statement-nothing-new')).toHaveText('Mọi dòng trong tệp này đã được nhập trước đây, nên không có gì mới để ghi sổ.');
+  // Đổi cột to the reference column, then to the value date a day later as well: the same transfers, nothing new.
+  for (const [date, label] of [
+    ['0', 'the reference'],
+    ['1', 'the reference and the value date'],
+  ] as const) {
+    await page.goto('/collections/import');
+    await chooseFile(page, 'sao-ke-ngay-hieu-luc.csv', csv);
+    await expect(page.getByTestId('statement-preset')).toBeVisible();
+    await page.getByTestId('statement-preset-change').click();
+    await page.getByTestId('mapping-date').selectOption(date);
+    await page.getByTestId('mapping-bank-ref').selectOption('2');
+    await expect(page.getByTestId('mapping-sample-row'), label).toHaveCount(5);
+    await settled(page.getByTestId('statement-preview'));
+    await page.getByTestId('statement-preview').click();
+    await expect(page.getByTestId('statement-nothing-new'), label).toHaveText('Mọi dòng trong tệp này đã được nhập trước đây, nên không có gì mới để ghi sổ.');
+  }
   expect(await seriousAxeViolations(page)).toEqual([]);
-  await shot(page, 'p3-21-reference-again-390-light');
+  await shot(page, 'p3-21-value-date-again-390-light');
   expect(await statementPayments(page, household.householdId)).toHaveLength(3);
   expect((await openBills(page, household.householdId)).bills).toEqual(owed.bills);
 });

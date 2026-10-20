@@ -4,7 +4,7 @@ import { addDays, daysBetween } from '../../packages/core/src/date/calendar.ts';
 import type { IsoDate } from '../../packages/core/src/date/iso-date.ts';
 import { STATEMENT_LAYOUTS, type StatementCell, type StatementGrid, type StatementLayout, type StatementLayoutId } from '../../packages/core/src/matching/layouts.ts';
 import type { ImportReason, ImportStatus } from '../../packages/core/src/matching/import.ts';
-import { renderCsv, renderStatementGrid, type RenderableRow } from '../../packages/core/src/matching/render.ts';
+import { renderCsv, renderDate, renderStatementGrid, type RenderableRow } from '../../packages/core/src/matching/render.ts';
 import { UNRECOGNIZED_LAYOUT, UNRECOGNIZED_PREAMBLE } from '../../packages/core/src/matching/statement-scenario.ts';
 import { vnd, type Vnd } from '../../packages/core/src/money/vnd.ts';
 import { foldVietnamese } from '../../packages/core/src/search/fold.ts';
@@ -108,6 +108,16 @@ export const statementCsv = (statement: HouseholdStatement, id: 'a' | 'c'): stri
 export async function statementXlsx(statement: HouseholdStatement): Promise<Buffer> {
   const data = statementGrid(statement, 'b').map((row) => row.map((cell) => (cell === null ? null : { value: cell })));
   return writeXlsxFile([{ sheet: 'Sao ke', data }], {}).toBuffer();
+}
+
+/**
+ * The same statement from that bank with a value date column after the transaction date, a day later, so a reading under
+ * either date column names the same transfers (P3-21): `Ngày thực hiện`, `Ngày hiệu lực`, then layout D's other columns.
+ */
+export function valueDatedCsv(statement: HouseholdStatement): string {
+  const [labels = [], ...lines] = layoutGrid(statement, UNRECOGNIZED_LAYOUT);
+  const valued = [...statement.lines, statement.fractional].map((line) => renderDate(addDays(line.date, 1), UNRECOGNIZED_LAYOUT.dateStyle));
+  return renderCsv([...UNRECOGNIZED_PREAMBLE, [labels[0] ?? null, 'Ngày hiệu lực', ...labels.slice(1)], ...lines.map((cells, i) => [cells[0] ?? null, valued[i] ?? null, ...cells.slice(1)])]);
 }
 
 /**

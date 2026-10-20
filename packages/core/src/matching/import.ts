@@ -36,8 +36,8 @@ export type StoredLine = Pick<StatementRow, 'date' | 'amount' | 'bankRef' | 'des
   readonly sameAccount: boolean;
 };
 
-/** Days a bank reference still names the same transfer, so a value date read in place of a transaction date matches. */
-export const REFERENCE_WINDOW_DAYS = 3;
+/** Days apart two readings of one transfer may be dated, as when a value date is read in place of a transaction date. */
+export const KNOWN_WINDOW_DAYS = 3;
 
 function grouped(lines: readonly StoredLine[], key: (line: StoredLine) => string): Map<string, StoredLine[]> {
   const groups = new Map<string, StoredLine[]>();
@@ -49,46 +49,38 @@ function grouped(lines: readonly StoredLine[], key: (line: StoredLine) => string
   return groups;
 }
 
-const sameText = (line: Pick<StatementRow, 'date' | 'amount' | 'description'>) => [line.date, String(line.amount), normalizeDescription(line.description)].join('\n');
-const sameReference = (line: Pick<StatementRow, 'amount' | 'bankRef'>) => [String(line.amount), line.bankRef].join('\n');
-
 /**
  * The stored line each line of a new statement is, or undefined for a new transfer ([app rule] DOMAIN-VN §9, P3-21), so
  * reading the same statement under other columns records nothing twice. A line is known when the household holds its
- * #58 fingerprint, or when the same account holds a line of the same amount that either has an equal bank reference
- * dated within REFERENCE_WINDOW_DAYS, or is on the same date with the same description after `normalizeDescription`.
- * Each stored line answers for one new line at most, so the nth identical line of a file is known only while the
- * account holds n of them, and two identical counter deposits stay two.
+ * #58 fingerprint, or when the same account holds a line of the same amount dated within KNOWN_WINDOW_DAYS that, if both
+ * carry a bank reference, has the same reference, and otherwise has the same description after `normalizeDescription`.
+ * Each stored line answers for one new line at most, an equal reference and then the nearest date first, so the nth
+ * identical line of a file is known only while the account holds n of them and two identical counter deposits stay two.
  */
 export function knownLines(rows: readonly StatementRow[], stored: readonly StoredLine[]): (StoredLine | undefined)[] {
   const byFingerprint = grouped(stored, (line) => line.fingerprint);
   const own = stored.filter((line) => line.sameAccount);
-  const byReference = grouped(
-    own.filter((line) => line.bankRef !== ''),
-    sameReference,
-  );
-  const byText = grouped(own, sameText);
+  const byAmount = grouped(own, (line) => String(line.amount));
+  const texts = new Map(own.map((line) => [line, normalizeDescription(line.description)]));
   const claimed = new Set<StoredLine>();
   const known = identifyRows(rows).map(({ fingerprint }) => {
     const lines = byFingerprint.get(fingerprint) ?? [];
     for (const line of lines) claimed.add(line);
     return lines[0];
   });
-  const claim = (i: number, candidates: readonly StoredLine[]) => {
-    const line = candidates.find((candidate) => !claimed.has(candidate));
-    if (known[i] !== undefined || line === undefined) return;
+  rows.forEach((row, i) => {
+    if (known[i] !== undefined) return;
+    const text = normalizeDescription(row.description);
+    const days = (line: StoredLine) => Math.abs(daysBetween(line.date, row.date));
+    const referenced = (line: StoredLine) => line.bankRef !== '' && row.bankRef !== '';
+    const same = (line: StoredLine) => (referenced(line) ? line.bankRef === row.bankRef : texts.get(line) === text);
+    const [line] = (byAmount.get(String(row.amount)) ?? [])
+      .filter((candidate) => !claimed.has(candidate) && days(candidate) <= KNOWN_WINDOW_DAYS && same(candidate))
+      .toSorted((a, b) => Number(!referenced(a)) - Number(!referenced(b)) || days(a) - days(b));
+    if (line === undefined) return;
     claimed.add(line);
     known[i] = line;
-  };
-  rows.forEach((row, i) => {
-    if (row.bankRef === '') return;
-    const near = (line: StoredLine) => Math.abs(daysBetween(line.date, row.date));
-    claim(
-      i,
-      (byReference.get(sameReference(row)) ?? []).filter((line) => near(line) <= REFERENCE_WINDOW_DAYS).toSorted((a, b) => near(a) - near(b)),
-    );
   });
-  rows.forEach((row, i) => claim(i, byText.get(sameText(row)) ?? []));
   return known;
 }
 
