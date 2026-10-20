@@ -11,7 +11,7 @@ import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { getClock } from '@/server/clock';
 import { loadCollectionRows, loadOpenInvoices, type PaymentInvoice } from '@/server/collections/load';
-import { loadBoardQrs, loadQrLabels } from '@/server/invoices/qr';
+import { loadBoardQrs, loadQrLabels, loadReceivingAccount } from '@/server/invoices/qr';
 import { requireMember } from '@/server/member';
 
 export const generateMetadata = () => sectionMetadata('collections');
@@ -30,8 +30,9 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const today = clock.today();
   const month = parseBoardMonth(typeof params.month === 'string' ? params.month : undefined, today);
   const canEdit = member.role !== 'viewer';
-  const [rows, openInvoices, nav, t, locale, messages, qrLabels] = await Promise.all([
+  const [rows, account, openInvoices, nav, t, locale, messages, qrLabels] = await Promise.all([
     loadCollectionRows(member.household.id, month),
+    loadReceivingAccount(member.household.id),
     canEdit ? loadOpenInvoices(member.household.id) : new Map<string, PaymentInvoice[]>(),
     getTranslations('nav'),
     getTranslations('collections'),
@@ -39,7 +40,11 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
     getMessages(),
     loadQrLabels(),
   ]);
-  const qrs = { byInvoice: await loadBoardQrs(member.household.id, rows, locale), labels: qrLabels };
+  const qrs = {
+    byInvoice: await loadBoardQrs(member.household.id, rows, account, locale),
+    labels: qrLabels,
+    account: account === null ? null : { id: account.id, bankName: account.bankName, accountNo: account.accountNo },
+  };
   const monthLabel = formatMonthYear(month, locale);
   const step = (offset: number) => {
     const value = addMonths(month, offset);

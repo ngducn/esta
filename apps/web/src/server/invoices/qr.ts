@@ -8,7 +8,7 @@ import type { QrSheetLabels } from '@/components/invoices/QrSheet';
 import { createSessionClient } from '@/server/supabase/server';
 
 /** The household's default receiving account with the bank's name as payers know it. */
-export type ReceivingAccountView = ReceivingAccount & { readonly bankName: string };
+export type ReceivingAccountView = ReceivingAccount & { readonly id: string; readonly bankName: string };
 
 /** What the QR sheet and the bill show and the saved picture prints, ready for the page's language. */
 export type InvoiceQrView = {
@@ -24,14 +24,14 @@ export type InvoiceQrView = {
 };
 
 const accountSchema = z
-  .object({ bank_bin: z.string(), account_no: z.string(), account_name: z.string(), bank: z.object({ short_name: z.string().nullable(), name: z.string() }) })
-  .transform((row): ReceivingAccountView => ({ bin: row.bank_bin, accountNo: row.account_no, accountName: row.account_name, bankName: row.bank.short_name ?? row.bank.name }));
+  .object({ id: z.uuid(), bank_bin: z.string(), account_no: z.string(), account_name: z.string(), bank: z.object({ short_name: z.string().nullable(), name: z.string() }) })
+  .transform((row): ReceivingAccountView => ({ id: row.id, bin: row.bank_bin, accountNo: row.account_no, accountName: row.account_name, bankName: row.bank.short_name ?? row.bank.name }));
 
 export async function loadReceivingAccount(householdId: string): Promise<ReceivingAccountView | null> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('bank_accounts')
-    .select('bank_bin, account_no, account_name, bank:bank_bins(short_name, name)')
+    .select('id, bank_bin, account_no, account_name, bank:bank_bins(short_name, name)')
     .eq('household_id', householdId)
     .eq('is_default', true)
     .maybeSingle();
@@ -60,14 +60,11 @@ export function invoiceQrView(invoice: QrSource, account: ReceivingAccountView |
 type BoardRow = { readonly invoiceId: string; readonly number: string; readonly outstandingVnd: Vnd };
 
 /** The `Mã QR` of every board row still owed, keyed by invoice. The board lists issued bills only (LSE-10). */
-export async function loadBoardQrs(householdId: string, rows: readonly BoardRow[], locale: Locale): Promise<Map<string, InvoiceQrView>> {
+export async function loadBoardQrs(householdId: string, rows: readonly BoardRow[], account: ReceivingAccountView | null, locale: Locale): Promise<Map<string, InvoiceQrView>> {
   const owed = rows.filter((row) => row.outstandingVnd > 0);
   if (owed.length === 0) return new Map();
   const supabase = await createSessionClient();
-  const [account, codes] = await Promise.all([
-    loadReceivingAccount(householdId),
-    supabase.from('invoices').select('id, memo_code').eq('household_id', householdId).in('id', owed.map((row) => row.invoiceId)),
-  ]);
+  const codes = await supabase.from('invoices').select('id, memo_code').eq('household_id', householdId).in('id', owed.map((row) => row.invoiceId));
   if (codes.error) throw new Error(`Reading the memo codes failed: ${codes.error.message}`);
   const memo = new Map(codes.data.map((row) => [row.id, row.memo_code]));
   return new Map(

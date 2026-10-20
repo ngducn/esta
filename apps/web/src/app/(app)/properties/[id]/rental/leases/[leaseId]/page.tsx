@@ -138,7 +138,15 @@ export default async function LeasePage({ params, searchParams }: { params: Para
           </span>
         </div>
         <PropertyIntl locale={locale} messages={{ leases: messages.leases, components: { money, date, status, toast } }}>
-          <LeaseActions leaseId={summary.id} unitLabel={name} leasesHref={leasesHref} active={active} amendStarts={amendStarts} renewal={renewal} />
+          <LeaseActions
+            leaseId={summary.id}
+            unitLabel={name}
+            leasesHref={leasesHref}
+            active={active}
+            amendStarts={amendStarts}
+            renewal={renewal}
+            issuedBills={invoices.filter((invoice) => invoice.status === 'issued').map(({ id, number, periodStart }) => ({ id, number, periodStart }))}
+          />
         </PropertyIntl>
       </div>
       {canEdit ? null : <p className="text-body text-ink-2">{t('viewerNote')}</p>}

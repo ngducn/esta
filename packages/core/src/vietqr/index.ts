@@ -9,6 +9,7 @@ export {
   type InvoiceQrInput,
   type ReceivingAccount,
 } from './invoiceQr';
+export { ACCOUNT_NAME_MAX_CHARS, bankAccountName, bankAccountNo } from './account';
 export { NAPAS_AID, VIETQR_RULES, type Initiation, type Service } from './rules';
 export { parseTlv, tlv, type Tlv, type TlvFault } from './tlv';
 export {

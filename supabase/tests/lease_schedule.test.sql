@@ -2760,13 +2760,13 @@ select is_empty(
   $$ select from_date, to_date from months_expected where private.months_until(from_date, to_date) <> months $$,
   'months_until counts whole months as the golden cases do');
 
--- The invoice beside each period: the live one whose start falls in it, never a void one.
+-- The invoice beside each period: the live one whose start falls in it, else a void one, so the timeline reads it voided.
 select tests.act_as('viewer.a@test.esta.test');
 select results_eq(
   $$ select period_start, invoice_id, invoice_status from public.lease_schedule(array['00000000-0000-4000-8000-00000000e5a4'::uuid], '2026-04-30') $$,
-  $$ values ('2026-01-01'::date, '00000000-0000-4000-8000-0000000f05a1'::uuid, 'issued'::text), ('2026-02-01', null, null),
+  $$ values ('2026-01-01'::date, '00000000-0000-4000-8000-0000000f05a1'::uuid, 'issued'::text), ('2026-02-01', '00000000-0000-4000-8000-0000000f05a2', 'void'),
             ('2026-03-01', '00000000-0000-4000-8000-0000000f05a3', 'draft'), ('2026-04-01', null, null) $$,
-  'each period names the live invoice that bills it, a shortened one included, and skips a void one');
+  'each period names the live invoice that bills it, a shortened one included, and a void one when nothing live bills it');
 select tests.clear_request();
 reset role;
 

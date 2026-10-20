@@ -81,6 +81,7 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
 
 - Defaults the root chose on 2026-10-19 under your full-autonomy grant. Each works now; say the word to change any of them.
   - Ending a lease (#172): Mẹ cannot end a lease before a bill that has already gone out. The bill stays as issued until voiding arrives with the VietQR bills (P3-11). This follows LSE-2, "issued bills are never edited".
+  - Voiding a bill (P3-20, `[app rule]`, DOMAIN-VN §7): Mẹ can void an issued bill only while no payment settles it, and the end-lease dialog now names the bill that blocks the date and links to it. The voided period is never billed again. Say if a paid bill should be voidable, with its payment moved to credit.
   - Late renewal (#172): a renewal whose start date is already past bills like a new lease does, from the current period onward, with the same "Đã thu tiền đến hết ngày" field. Earlier months count as settled outside Esta.
   - Renewal rent change (#172, `[app rule]`): between −50% and +100% of the old rent, rounded half up to 100.000 ₫.
   - Documents (#173): no manual "sensitive" switch. The document's type decides, so Mẹ cannot keep one bill's read text out of search.

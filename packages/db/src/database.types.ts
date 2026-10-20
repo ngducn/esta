@@ -1897,6 +1897,7 @@ export type Database = {
       payments: {
         Row: {
           amount_vnd: number
+          bank_account_id: string | null
           bank_ref: string | null
           created_at: string
           created_by: string | null
@@ -1912,6 +1913,7 @@ export type Database = {
         }
         Insert: {
           amount_vnd: number
+          bank_account_id?: string | null
           bank_ref?: string | null
           created_at?: string
           created_by?: string | null
@@ -1927,6 +1929,7 @@ export type Database = {
         }
         Update: {
           amount_vnd?: number
+          bank_account_id?: string | null
           bank_ref?: string | null
           created_at?: string
           created_by?: string | null
@@ -1941,6 +1944,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_bank_account_fkey"
+            columns: ["household_id", "bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["household_id", "id"]
+          },
           {
             foreignKeyName: "payments_household_id_fkey"
             columns: ["household_id"]
@@ -2648,6 +2658,7 @@ export type Database = {
         }
         Returns: string
       }
+      issue_invoice_now: { Args: { p_invoice_id: string }; Returns: undefined }
       lease_schedule: {
         Args: { p_lease_ids: string[]; p_until: string }
         Returns: {
@@ -2712,6 +2723,7 @@ export type Database = {
       record_payment: {
         Args: {
           p_amount_vnd: number
+          p_bank_account_id?: string
           p_idempotency_key: string
           p_invoice_id: string
           p_invoice_ids?: string[]
@@ -2825,6 +2837,10 @@ export type Database = {
       undo_payment: { Args: { p_payment_id: string }; Returns: undefined }
       update_my_display_settings: {
         Args: { p_density: string; p_locale: string; p_text_scale: number }
+        Returns: undefined
+      }
+      void_invoice: {
+        Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
       }
     }

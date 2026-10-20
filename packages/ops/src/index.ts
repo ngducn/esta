@@ -16,6 +16,7 @@ export {
   type PlanRefusal,
   type PlanRequest,
 } from './batch';
+export { bankAccountCreate, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
 export { readClock, type ClockEnv } from './clock';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';
@@ -31,6 +32,7 @@ export {
 export type { FileProblem, FileRefusal, LocalContext, LocalFile, LocalFiles, LocalPreviews } from './files';
 export { dbRefusal, idSchema, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
 export type { Db } from './db';
+export { invoiceIssue, invoiceVoid, type InvoiceChanged, type InvoiceRefusal } from './invoice-ops';
 export { leaseCreate, leaseEdit, type LeaseRefusal, type LeaseSaved } from './lease-ops';
 export { readLeases, readLeaseSchedule, scheduleUntil, tenantRowSchema, withTenants, type LeaseWithTenant, type Tenant } from './leases';
 export { readMembership } from './member';

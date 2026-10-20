@@ -11,10 +11,35 @@ import { TextField } from '@/components/form-parts';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogClose, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/dialog';
 import { useNoticeToast } from '@/components/undo-toast';
+import { IntentLink } from '@/components/shell/intent-link';
 import { ChangeRefusal } from './change-refusal';
+import type { IssuedBill } from './LeaseActions';
+
+/** The first issued bill after the chosen day, which `terminate_lease` refuses to end before until it is voided. */
+function BlockingBill({ bill }: { bill: IssuedBill }) {
+  const t = useTranslations('leases');
+  return (
+    <div data-testid="terminate-blocked-by" className="flex flex-col gap-2 text-body text-ink">
+      <p>{t('terminateBlockedBy', { number: bill.number })}</p>
+      <IntentLink href={`/collections/invoices/${bill.id}`} className="self-start font-semibold text-accent underline underline-offset-4">
+        {t('terminateOpenBill', { number: bill.number })}
+      </IntentLink>
+    </div>
+  );
+}
 
 /** LSE-2: active to terminated. The title asks the exact question, naming the room and the day (DESIGN-BRIEF voice). */
-export default function TerminateLeaseDialog({ leaseId, unitLabel, onClose }: { leaseId: string; unitLabel: string; onClose: () => void }) {
+export default function TerminateLeaseDialog({
+  leaseId,
+  unitLabel,
+  issuedBills,
+  onClose,
+}: {
+  leaseId: string;
+  unitLabel: string;
+  issuedBills: readonly IssuedBill[];
+  onClose: () => void;
+}) {
   const t = useTranslations('leases');
   const locale = useLocale();
   const router = useRouter();
@@ -23,6 +48,9 @@ export default function TerminateLeaseDialog({ leaseId, unitLabel, onClose }: { 
   const [reason, setReason] = useState('');
   const [refusal, setRefusal] = useState<LeaseChangeRefusal | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const blocking =
+    refusal === 'before_issued' && date !== null ? issuedBills.toSorted((a, b) => a.periodStart.localeCompare(b.periodStart)).find((bill) => bill.periodStart > date) : undefined;
 
   const confirm = () =>
     startTransition(async () => {
@@ -68,7 +96,7 @@ export default function TerminateLeaseDialog({ leaseId, unitLabel, onClose }: { 
           testId="terminate-reason"
           maxLength={1000}
         />
-        <ChangeRefusal reason={refusal} />
+        {blocking === undefined ? <ChangeRefusal reason={refusal} /> : <BlockingBill bill={blocking} />}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <AlertDialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</AlertDialogClose>
           <Button type="button" data-testid="terminate-confirm" disabled={pending || date === null} onClick={confirm}>
