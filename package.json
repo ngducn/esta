@@ -28,7 +28,7 @@
     "fonts:build": "scripts/fonts-build.sh",
     "icons:build": "node scripts/app-icons.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run scripts eslint-rules supabase/seed/generator fixtures/certificates/generator --exclude 'supabase/.slots/**' --exclude '**/*.live.test.ts'",
+    "test": "vitest run scripts eslint-rules supabase/seed/generator fixtures/certificates/generator fixtures/statements --exclude 'supabase/.slots/**' --exclude '**/*.live.test.ts'",
     "test:live": "vitest run scripts/web.live.test.ts",
     "lint": "eslint .",
     "e2e": "playwright test",

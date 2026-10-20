@@ -3265,6 +3265,8 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 
 **Depends on.** P3-14, the parent, P3-06 for matching and P3-10 for payment writes.
 
+**Split (2026-10-20).** This PR ships import, preview, commit and bulk confirm, with the columns detected from the header and stored with each import. `ColumnMapping` and the saved preset per bank account move to P3-21 (`docs/plan/trail/pr-inventory.md`), so the boxes below that name them, and lane 4, belong to P3-21.
+
 **Files.**
 
 - [ ] Create `apps/web/src/app/(app)/collections/import/page.tsx`.

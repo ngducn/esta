@@ -2,13 +2,16 @@ import { boardMonthParam, groupCollections, parseBoardMonth } from '@esta/core/c
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { formatMonthWithin, formatMonthYear } from '@esta/core/format';
 import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
+import { FileSpreadsheet } from 'lucide-react';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
+import Link from 'next/link';
 import { CollectionsBoard } from '@/components/collections/CollectionsBoard';
 import { MonthSelector } from '@/components/collections/MonthSelector';
 import { OfflineNotice } from '@/components/collections/offline-notice';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { sectionMetadata } from '@/components/shell/section-page';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { getClock } from '@/server/clock';
 import { loadCollectionRows, loadOpenInvoices, loadOwedBills, type PaymentInvoice } from '@/server/collections/load';
 import { boardQrs, loadQrLabels, loadReceivingAccount } from '@/server/invoices/qr';
@@ -58,7 +61,15 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
 
   const page = (
     <div className="flex flex-col gap-5">
-      <h1 className="text-h2 break-words lg:text-h1">{nav('collections')}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="text-h2 break-words lg:text-h1">{nav('collections')}</h1>
+        {member.role === 'admin' ? (
+          <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'outline' })}>
+            <FileSpreadsheet aria-hidden="true" />
+            {t('importStatement')}
+          </Link>
+        ) : null}
+      </div>
       <OfflineNotice message={t('offline')} />
       <MonthSelector
         label={t('monthPicker')}

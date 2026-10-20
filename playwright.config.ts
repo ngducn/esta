@@ -32,6 +32,7 @@ const sharedClock = [
   'northstar.spec.ts',
   'expenses.spec.ts',
   'meters.spec.ts',
+  'statement-import.spec.ts',
 ];
 
 export default defineConfig({

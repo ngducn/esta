@@ -30,16 +30,21 @@ const accountSchema = z
   .object({ id: z.uuid(), bank_bin: z.string(), account_no: z.string(), account_name: z.string(), bank: z.object({ short_name: z.string().nullable(), name: z.string() }) })
   .transform((row): ReceivingAccountView => ({ id: row.id, bin: row.bank_bin, accountNo: row.account_no, accountName: row.account_name, bankName: row.bank.short_name ?? row.bank.name }));
 
+const ACCOUNT_SELECT = 'id, bank_bin, account_no, account_name, bank:bank_bins(short_name, name)';
+
 export async function loadReceivingAccount(householdId: string): Promise<ReceivingAccountView | null> {
   const supabase = await createSessionClient();
-  const { data, error } = await supabase
-    .from('bank_accounts')
-    .select('id, bank_bin, account_no, account_name, bank:bank_bins(short_name, name)')
-    .eq('household_id', householdId)
-    .eq('is_default', true)
-    .maybeSingle();
+  const { data, error } = await supabase.from('bank_accounts').select(ACCOUNT_SELECT).eq('household_id', householdId).eq('is_default', true).maybeSingle();
   if (error) throw new Error(`Reading the receiving account failed: ${error.message}`);
   return data === null ? null : accountSchema.parse(data);
+}
+
+/** Every receiving account, the default first, for a screen that asks which one the money landed in. */
+export async function loadReceivingAccounts(householdId: string): Promise<ReceivingAccountView[]> {
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase.from('bank_accounts').select(ACCOUNT_SELECT).eq('household_id', householdId).order('is_default', { ascending: false }).order('created_at');
+  if (error) throw new Error(`Reading the receiving accounts failed: ${error.message}`);
+  return z.array(accountSchema).parse(data);
 }
 
 type QrSource = { readonly status: 'draft' | 'issued' | 'void'; readonly number: string; readonly memoCode: string; readonly outstandingVnd: Vnd };
