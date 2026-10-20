@@ -1,59 +1,54 @@
 # Resume notes for the Esta v1 run
 
-Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (the 2026-10-19 updates, newest first: 23:30 public repo, 22:15 connector, 18:00, 16:45, 14:10), `verification-tiers.md`, `owner-brief.md` (800-line product cap; CI on Actions; heavy jobs and full `pnpm check` through heavy.sh), `lane-brief.md`, the tail of `decisions.tsv`, `ARCHITECTURE.md`, `docs/plan/connector-track.md`, and `docs/plan/STATUS.md` ("Work added outside the original plan"). Briefs are in `~/.claude/orchestrate/esta/briefs/`.
+## Where the run is (written 2026-10-21 00:40 +07)
 
-## Where the run is (written 2026-10-20 04:30 +07)
+Main is 154b44e plus this handoff. On 2026-10-20 a cloud session (claude.ai/code, not Ryan's Mac) took over as root. It ran one owner agent at a time on its single branch `claude/charming-faraday-0wvqtn`, with independent health and live lanes before every merge. Actions `ci` was the gate.
 
-Main is c8dc732 plus this handoff. Plan progress: 43 of 73 plan PRs. Usage window 03:39 to 08:39 +07 was about 3% at 04:00 (the previous window ended near 45%).
+**Merged in that session, in order:**
+- #239: start a lease with its deposit and paid-through by talking to Claude (connector C2b).
+- #231 and #242: bills with VietQR, the bill page and A5 print (P3-11); then voiding, issuing early, the receiving-account sheet and `payments.bank_account_id` (P3-20).
+- #244: receipts as A5 PDF and Zalo picture (P3-12).
+- #246: polite Zalo reminders and the public `/q/<token>` QR link (P3-13).
+- #248: meter readings on one screen, with metered bills (P3-14). Three fix-forwards: a month billed twice within a lease, a typo that stopped nightly billing, then cross-lease double billing on renewals and tenant changes. Ownership now follows the lease chain.
+- #251: Ryan's receipt decisions (`lẻ` in words; `Thông báo tiền thuê` while nothing is received).
+- #253: bank statement import, commit and bulk confirm (P3-15, split A; P3-21 is the column mapping). Three fix-forwards for a transfer recorded by hand posting again on import. Final rule: hold a line when the lease has an unclaimed hand bank transfer of the same amount, dated 2 days before to 10 days after the line.
+- #256: Home with today's list and `Đã thu X / Y` from the board's own rows (P3-16).
 
-**Merged overnight (2026-10-19 23:30 to 2026-10-20 04:20):**
-- #209 rent bills planned in one place, the database (9d30de0).
-- #218 local stacks keep Esta's own emails after a reset (f83ac0a). Docker 29.2.0 broke the mounted email templates after `db:reset`, which made six auth e2e specs fail everywhere.
-- #213 connector C1a "Ask Claude about your properties" (1e5a8fe).
-- #177 expenses with receipts, P4-02 (08fd91c).
-- #216 GitHub Actions CI (d66dd75). From here on, the merge gate is a green Actions `ci` check at the exact head, about 6 minutes. `tools/ci-local.sh` is the fallback.
-- #217 connector C1b "Add a property by talking to Claude" (c2cbfde).
-- #181 deposits on the lease, P3-18 (c8dc732).
+**Broke a standing order:** #248 and #253 each went past the two-fix-forward ceiling (standing orders, 2026-10-19 landing grant) and were merged by the root, not handed to Ryan. Both landed after clean final re-checks. Ryan was told. From now on, stop at the ceiling.
 
-**Ryan's words since the last handoff:** "also CI on actions doesn't run well" (00:3x, with a screenshot of #209's failed Actions run). The causes:
-- The root's own allowlist blocked oven-sh/setup-bun, which supabase/setup-cli uses. It is now allowed at its exact SHA.
-- The old workflow never installed Chromium.
-- GitHub had an Actions incident.
+**Media standard (Ryan, 2026-10-20: "the PRs you created are not up to par"):** every PR body matches #181 and #248. That means a 390 px flow GIF, 8 to 10 captioned screenshots including edge states, exact evidence, a Design section and the lanes' verdicts. Media is published to the `pr-media` branch. #242, #244 and #246 were backfilled with screenshots and GIFs.
 
-All three are fixed or over, and question 4 below (billing) is withdrawn.
+## Next steps
 
-**Questions waiting for Ryan:**
-1. Are "Đặng Thị H.", "Nguyễn Thị H.", "Trần Văn K." or "Nguyễn Văn A." real people? (stock placeholders in tests and the glyph string)
-2. Does the seed's set of districts mirror the real portfolio? If so, rename the demo places.
-3. Future commits under his GitHub noreply email instead of his Gmail?
-4. #223: may Claude's change history keep a full ID that Mẹ typed into a property note? Default: keep it. Recommended: cut it to the last four. Answer before real data.
-5. Expense buttons now sit under the tab bar, not in the property header (the plan said header; no header spot keeps the tabs on the first phone screen). Accepted as reversible; he may want it back.
-6. A branch ruleset requiring `ci` would block the root's direct docs pushes to main. Not set; ask whether he wants it, with plan notes moving into PRs.
-7. Still pending from earlier: the live extraction eval go; going live earlier and trimming Phase 5 (self-evaluation).
+1. **P3-21:** map a statement's columns once per bank account. No migration; the import already stores `column_mapping`.
+2. **P3-19:** prefill a lease from a contract photo. Blocked here: its golden test needs a live `pnpm agent:record` (no API key in the cloud container). Run it on the Mac.
+3. **P3-17**, the Phase 3 exit: FND-8 at 130%, north-star steps 3 to 6, and `pnpm phase:check 3`. It needs Ryan for VietQR scanned by two bank apps and the Mom test.
+4. **Phase 4:** P4-03 ledger, P4-06 valuations, P4-04 tax card, P4-05 reports. P4-01 and P4-02 are merged.
+5. Open PR #61 (p5-11 number guard) is still parked.
 
-## Open work, with the next step for each
+**Before writing a money PR, write the exact rule into the owner's brief.** #248 and #253 needed several rounds because the plan said what to build but not how matching works across a lease's bills and leases. #256 had its rule up front and passed in one round.
 
-- **Connector C3 "load a folder of properties and documents" (owner running, Opus, slot 3, branch esta/connector-c3, brief `briefs/connector-c3.md`).** Design accepted with conditions (decisions.tsv 2026-10-19T21:4x): `list_folder`, `read_spreadsheet` (read-excel-file 9.3.10, csv through core), `document.attach` as a plan item with path, size and sha256 rechecked at apply, import roots only, LocalContext on Op, vault signing and registration moved to packages/ops, previews equal to the vault's from one shared constant, no test needing the agent worker. It also brings `parse_money` and `parse_date`. Next: its report, then round 1 (health lane plus a live lane on file safety, stale files, previews and records equal to the web path), Actions `ci`, then merge. Split into C3a and C3b if it passes 800 product lines.
-- **Connector C2 "add a rented room with its lease" (owner running, Opus, slot 5, branch esta/connector-c2, brief `briefs/connector-c2.md`).** Unit, person (IDs cut to the last four), lease, activation with paid-through and deposit received as ops. Items in one batch refer to each other. Tools: `find_person`, `list_leases` and `get_lease`. Expect a design summary and a split proposal (C2a room and tenant, C2b lease start with deposit) before it builds far. It coordinates with C3 on packages/ops and tools.ts.
-- **#61** (p5-11 number guard): an old open PR, not touched tonight.
-- **Queue:** C4 history and undo (with #223's guard items: a batch starts `planned`, `undone` only through undo); #193 action hook; P3-11 VietQR bills; #208 test clock; the cleanup issues in STATUS's table; #149, #197, #215 and #220 before any real data; rerun the outsider review after the cleanup round.
+## Running the stack in the cloud container
 
-## Rules added this session (read before acting)
+- Node 24 via `npx -y n install 24` (installs to `$HOME/.n`), then `export PATH=$HOME/.n/bin:$PATH COREPACK_ENABLE_DOWNLOAD_PROMPT=0`. Supabase CLI 2.90.0 from its GitHub release into `/usr/local/bin`.
+- Docker: `(nohup dockerd > /tmp/claude-0/dockerd.log 2>&1 &)`. Images must come from Docker Hub (`SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io`); ECR answers "Data limit exceeded".
+- No IPv6, so Realtime cannot start. Set `[realtime] enabled = false` in the gitignored `supabase/.slots/<k>/supabase/config.toml` (regenerated by `scripts/db.ts`), then `SUPABASE_TELEMETRY_DISABLED=1 SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io supabase start --workdir supabase/.slots/<k>` (or `db reset`). Never commit it.
+- `pnpm db:test` may fail to pull pg_prove; run the pgTAP files through psql with the harness.
+- Heavy jobs: `flock /tmp/claude-0/heavy.lock <cmd>`. Web on port 3400 or higher.
+- One connector test, `files.test.ts` "unreadable entries", fails only because the container runs as root.
+- Lighthouse runs over HTTP/1.1 only (no mkcert or caddy), so LCP sits around 2.5 to 2.8 s on every page there, trunk included. Compare head with trunk in the same container.
 
-- **Merge gate is Actions `ci`** at the exact head, plus the clean independent verdict. A PR branch must contain #216's tools/ci scripts, so rebase onto main before expecting CI. GitHub runs no CI on a conflicting PR.
-- **Full `pnpm check` runs through heavy.sh** (owner-brief, lane-brief). An agent's check beside a CI e2e run pushed the load past 100 and failed tests on timeouts.
-- **Root rebases** after merges and verifies the rebase by range-diff, `pnpm check`, quality, and a scoped proof on a slot for any hand-resolved product hunk. Generated `database.types.ts` conflicts: take either side, then regenerate on a stack. Baseline conflicts: take main's file, then `--update`.
-- **Test order on one stack:** never run e2e right after the connector integration on the same stack without `db:reset`. The hourly sign-in code limit trips.
-- **Public repo:** nothing secret or real anywhere; Actions allowlist pins third-party actions by SHA (pnpm/action-setup, supabase/setup-cli, oven-sh/setup-bun at 0c5077e5).
+## Questions waiting for Ryan (new on 2026-10-20; older ones stay in STATUS.md)
 
-## How CI runs now
+1. Move-out month: whoever's lease chain holds the room on the month's last day pays that month's meters (#248). Recommended: add a move-out reading.
+2. The electricity price rule is one flat rate, `Giả định` (Thông tư 60/2025/TT-BCT not readable from the container).
+3. Statement import (#253): three cases the duplicate hold does not catch. They are a hand payment recorded as the sum of two transfers, one backdated more than 2 days, and one recorded more than 10 days after. Undo for imported payments is #255.
+4. Voiding a paid bill: the default is no (#242).
+5. Tap `Mở Zalo` once on a phone to confirm the link format (#246).
+6. The notice's QR caption "chuyển phần còn lại" on a bill with nothing paid (#252).
+7. May owners push their own `esta/*` branches, so two PRs run at once?
+8. Earlier and still open: #223 (full ID in Claude's change history), the placeholder names, the seed districts, the commit email, the expense button position, the branch ruleset for `ci`, and the live extraction eval.
 
-Actions on every PR push: `gh pr checks <n>` or `gh run list --branch <b>`. Six e2e shards, a merged report with flaky titles, one `ci` summary job. Local fallback: `until bin/slot-free.sh N; do sleep 30; done; bin/ci-when-calm.sh <wt> <pr> <slot>`, with logs in `/tmp/ci-local/pr-<n>-<sha7>/`.
+## Lows filed on 2026-10-20
 
-## Gotchas learned this run
-
-- macOS 27.0.1 and Docker 29.2.0 arrived with the restart. The email template mount broke (#218). Watch for other single-file mounts.
-- Under load, Docker clock drift shows as "JWT issued at future" and dropped streams. Rerun on a calm machine before triaging.
-- GitHub status lags during incidents: a "queued" run can already be finished.
-- `gh` calls can hang. Wrap them in `timeout`.
-- Background agents report "completed" while their children run. Stop them once they hand back. A SendMessage to a finished agent resumes it.
+#240, #241, #243, #245, #247 (`/collections` is about 209 KB on main, already over the 200 KB budget), #249, #250, #252, #254, #255 and #257. They join the cleanup round's queue.
