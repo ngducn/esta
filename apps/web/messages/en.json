@@ -1617,7 +1617,7 @@
   },
   "meters": {
     "title": "Meter readings",
-    "monthHeading": "Month {month}",
+    "monthHeading": "{month}",
     "remaining": "{count, plural, one {# room left to read} other {# rooms left to read}}",
     "complete": "{count, plural, one {# room read} other {All # rooms read}}",
     "roomColumn": "Room",

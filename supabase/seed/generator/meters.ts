@@ -7,10 +7,10 @@ import { propertyId, unitId, UNIT_SEEDS } from './units.ts';
 type MeterKind = 'electricity' | 'water';
 
 /** [app rule] What a rooming house commonly charges per kWh and per m³ (DOMAIN-VN §7). */
-const PRICE_VND: Record<MeterKind, number> = { electricity: 3_500, water: 18_000 };
+export const PRICE_VND: Record<MeterKind, number> = { electricity: 3_500, water: 18_000 };
 
 /** SPEC §9.3: every Dĩ An room's September readings, each its meter's first, so October's bills carry no consumption. */
-const SEPTEMBER: Record<MeterKind, readonly number[]> = {
+export const SEPTEMBER: Record<MeterKind, readonly number[]> = {
   electricity: [2_847, 4_120, 1_563, 3_305, 2_208, 5_671, 3_984, 812],
   water: [312, 405, 188, 267, 233, 451, 376, 95],
 };
