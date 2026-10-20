@@ -87,6 +87,12 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
   const read = view?.problem === null ? view.read : null;
   const ready = read !== null && read.decoded.rows.length > 0;
 
+  /** Columns that read no line are a problem on the mapping; a file read by its labels or saved columns says so here. */
+  const show = (next: View) => {
+    setView(next);
+    setError(next.picks === null && next.read?.decoded.rows.length === 0 ? t('errorEmpty') : null);
+  };
+
   const choose = async (event: ChangeEvent<HTMLInputElement>) => {
     const picked = event.target.files?.[0];
     if (picked === undefined) return;
@@ -104,18 +110,14 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
     if (loaded === null) setError(t('errorFailed'));
     else if (!loaded.file.ok) setError(t(FILE_ERRORS[loaded.file.reason]));
     else if (!loaded.reader.holdsLines(loaded.file.value.grid)) setError(t('errorEmpty'));
-    else {
-      const next = viewOf({ name: picked.name, importId: crypto.randomUUID(), file: loaded.file.value, reader: loaded.reader }, presets[accountId], null);
-      setView(next);
-      if (next.picks === null && next.read?.decoded.rows.length === 0) setError(t('errorEmpty'));
-    }
+    else show(viewOf({ name: picked.name, importId: crypto.randomUUID(), file: loaded.file.value, reader: loaded.reader }, presets[accountId], null));
   };
 
   const changeAccount = (id: string) => {
     setAccountId(id);
     if (view === null) return;
     const still = view.chosen.reader.fileColumns(view.chosen.file, presets[id]).kind === 'unknown';
-    setView(viewOf(view.chosen, presets[id], still ? view.picks : null));
+    show(viewOf(view.chosen, presets[id], still ? view.picks : null));
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -183,7 +185,7 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
         {view?.picks === null && columns?.kind === 'preset' ? (
           <p data-testid="statement-preset" className="flex flex-wrap items-center gap-x-3 text-body text-ink-2">
             {t('presetUsed')}
-            <Button type="button" variant="quiet" data-testid="statement-preset-change" onClick={() => setView(viewOf(view.chosen, presets[accountId], view.chosen.reader.picksOf(columns.header)))}>
+            <Button type="button" variant="quiet" data-testid="statement-preset-change" onClick={() => show(viewOf(view.chosen, presets[accountId], view.chosen.reader.picksOf(columns.header)))}>
               {t('presetChange')}
             </Button>
           </p>
@@ -198,7 +200,7 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
         <ColumnMapping
           grid={view.chosen.file.grid}
           picks={view.picks}
-          onPicks={(picks) => setView(viewOf(view.chosen, presets[accountId], picks))}
+          onPicks={(picks) => show(viewOf(view.chosen, presets[accountId], picks))}
           preset={presets[accountId]}
           intro={view.columns.kind === 'unknown' ? (view.columns.mismatch ? 'mismatch' : 'new') : 'change'}
           sample={view.read?.decoded.rows.slice(0, SAMPLE_LINES) ?? []}
