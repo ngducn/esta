@@ -76,6 +76,22 @@ export function groupCollections<R extends CollectionCandidate>(rows: readonly R
   });
 }
 
+/** `Đã thu X / Y` for a board's month. */
+export type MonthCollected = { readonly collectedVnd: Vnd; readonly billedVnd: Vnd };
+
+/**
+ * Y is what the issued bills due in the board's month charge; X is what payments allocated to exactly those bills, each
+ * capped at its bill, so a credit or an overpayment never lifts X past Y. Bills carried in from earlier months count
+ * toward neither, so a late September rent paid in October leaves October's figure where it was.
+ */
+export function monthCollected<R extends CollectionCandidate>(board: readonly CollectionGroup<R>[]): MonthCollected {
+  const own = board.flatMap((group) => group.items).filter((item) => item.carriedFrom === null);
+  return {
+    collectedVnd: vnd(own.reduce((sum, { row }) => sum + Math.min(row.allocatedVnd, row.totalVnd), 0)),
+    billedVnd: vnd(own.reduce((sum, { row }) => sum + row.totalVnd, 0)),
+  };
+}
+
 /** The state a property card shows for its month: the longest overdue, else due today, else not yet due, else paid. */
 export function worstCollectionState(states: readonly CollectionState[]): CollectionState | null {
   const rank = (state: CollectionState) => COLLECTION_GROUPS.indexOf(state.group);

@@ -17,9 +17,9 @@ export type LocationMapProps = {
 };
 
 /** SPEC §7.2: the detail page ships none of the map; its island and MapLibre load once the card nears the viewport. */
-const LocationMapIsland = dynamic(() => import('./location-map-island').then((module) => module.LocationMapIsland), { ssr: false });
+const MapIsland = dynamic(() => import('./location-map-island').then((module) => module.MapIsland), { ssr: false });
 
-export function LocationMap(props: LocationMapProps) {
+export function LocationMap({ pin, ...props }: LocationMapProps) {
   const frame = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
 
@@ -40,7 +40,7 @@ export function LocationMap(props: LocationMapProps) {
 
   return (
     <div ref={frame} data-testid="location-map" className="relative h-64 overflow-hidden rounded-md border border-rule bg-surface-2 lg:h-80">
-      {near ? <LocationMapIsland {...props} /> : null}
+      {near ? <MapIsland {...props} pins={[pin]} /> : null}
     </div>
   );
 }

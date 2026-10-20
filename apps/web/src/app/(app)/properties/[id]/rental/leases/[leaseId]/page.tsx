@@ -22,7 +22,11 @@ import { loadPropertyDetail } from '@/server/properties/detail';
 import { loadPropertyRental } from '@/server/properties/rental';
 
 const paramsSchema = z.object({ id: z.uuid(), leaseId: z.union([z.literal('new'), z.uuid()]) });
-const searchSchema = z.object({ unit: z.uuid().optional().catch(undefined), activate: z.literal('1').optional().catch(undefined) });
+const searchSchema = z.object({
+  unit: z.uuid().optional().catch(undefined),
+  activate: z.literal('1').optional().catch(undefined),
+  renew: z.literal('1').optional().catch(undefined),
+});
 
 type Params = Promise<{ id: string; leaseId: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
@@ -145,6 +149,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
             active={active}
             amendStarts={amendStarts}
             renewal={renewal}
+            renewOnOpen={search.renew === '1'}
             issuedBills={invoices.filter((invoice) => invoice.status === 'issued').map(({ id, number, periodStart }) => ({ id, number, periodStart }))}
           />
         </PropertyIntl>

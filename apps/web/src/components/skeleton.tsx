@@ -211,6 +211,40 @@ export function SkeletonCollections() {
   );
 }
 
+/** Home as it lands: the title, today's list beside the month's figure on a desktop, the list first on a phone. */
+export function SkeletonHome() {
+  return (
+    <Loading testId="skeleton-home" className="flex flex-col gap-6">
+      <Block className="h-9 w-56 max-w-full" />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+        <div className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+          <Block className="h-7 w-48" />
+          {Array.from({ length: 3 }, (_, index) => (
+            <div key={index} className="flex items-center gap-3 py-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Block className="h-6 w-56 max-w-full" />
+                <Block className="h-5 w-40" />
+              </div>
+              <Block className="h-touch w-28" />
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+          <Block className="h-7 w-36" />
+          <Block className="h-12 w-64 max-w-full" />
+          <Block className="h-2 w-full" />
+          <Block className="h-6 w-44" />
+          <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-rule pt-4">
+            {Array.from({ length: 4 }, (_, index) => (
+              <Block key={index} className="h-6 w-24" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </Loading>
+  );
+}
+
 /** Lease detail as it lands: the title and its actions, then the period rows first on a phone and beside the terms on a desktop. */
 export function SkeletonLease() {
   return (

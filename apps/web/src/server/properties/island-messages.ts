@@ -26,3 +26,16 @@ export async function statementIslandIntl() {
   const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return { locale, messages: { statements: messages.statements } };
 }
+
+/** The record payment sheet's namespaces, for Home, which opens it without an intl provider of its own. */
+export async function paymentIslandIntl() {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  const { money, date } = messages.components;
+  return { locale, messages: { payments: messages.payments, components: { money, date } } };
+}
+
+/** The map's namespace, for a map island on a screen without an intl provider. */
+export async function mapIslandIntl() {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  return { locale, messages: { map: messages.map } };
+}
