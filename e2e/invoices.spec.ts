@@ -7,7 +7,7 @@ import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberRest } from './helpers/auth-api';
 import { freshLease } from './helpers/leases';
-import { laneHousehold, laneLeasePath } from './helpers/seed';
+import { laneHousehold, laneInvoice as invoiceId, laneLeasePath } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, settled, START, toast, vnd } from './helpers/wizard';
 
@@ -19,7 +19,6 @@ test.beforeEach(async ({ request }) => {
 });
 
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
-const invoiceId = (lane: number, key: string, unit: number, start: string) => seedId(`seed:invoice:lane-${lane}:${key}:${unit}:${start}`);
 const invoicePath = (id: string) => `/collections/invoices/${id}`;
 const ACCOUNT = { bin: '970436', accountNo: '0123456789', accountName: 'NGUYEN THI DEMO', bankName: 'Vietcombank' } as const;
 

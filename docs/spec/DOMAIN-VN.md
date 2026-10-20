@@ -280,6 +280,22 @@ Implemented in `packages/core/format` and `packages/core/parse`. FND-4 tests use
 
 English compact forms: `3.2B ₫`, `15.5M ₫`, `850K ₫`. tỷ keeps up to 2 decimals, tr up to 1, trailing zeros trimmed.
 
+Amounts in words `[app rule]` (`vndInWords`, receipts and the VietQR split note). Spelled as a receipt prints it, starting with a capital and ending with `đồng`:
+
+| Amount | Words |
+| --- | --- |
+| 0 | `Không đồng` |
+| 15000000 | `Mười lăm triệu đồng` |
+| 3500000 | `Ba triệu năm trăm nghìn đồng` |
+| 21000000 | `Hai mươi mốt triệu đồng` |
+| 1005000 | `Một triệu không trăm linh năm nghìn đồng` |
+
+- `nghìn`, never `ngàn`; `tỷ`, never `tỉ`.
+- `linh` for a zero tens digit after a hundreds digit (`một trăm linh năm`). `lẻ` is the other common form; Esta picks one so a receipt and its QR note never differ.
+- After a tens word, 1 is `mốt` and 5 is `lăm` (`hai mươi mốt`, `mười lăm`); 4 stays `bốn`, never `tư`.
+- A group after a higher one keeps its `không trăm` (`một triệu không trăm linh năm nghìn`).
+- A receipt prints in Vietnamese whatever the screen's language, because the tenant reads it.
+
 Areas and lengths `[app rule]`. Every screen and the assistant read a typed or printed area or length with `parseMeasureInput`, in both languages:
 
 - The comma is the decimal mark. A dot that is not followed by groups of three digits is also a decimal mark, so `350.5` is 350.5.

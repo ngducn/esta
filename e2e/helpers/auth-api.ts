@@ -29,3 +29,14 @@ export async function memberRest<T>(page: Page, method: 'GET' | 'POST' | 'PATCH'
   expect(response.ok(), text).toBe(true);
   return (text === '' ? null : JSON.parse(text)) as T;
 }
+
+/** Runs `check` with the signed-in member reading English at 130% text, then puts her back on Vietnamese at 100%. */
+export async function inEnglishAt130(page: Page, memberId: string, check: () => Promise<void>): Promise<void> {
+  const member = `household_members?id=eq.${memberId}`;
+  await memberRest(page, 'PATCH', member, { locale: 'en', text_scale: 130 });
+  try {
+    await check();
+  } finally {
+    await memberRest(page, 'PATCH', member, { locale: 'vi', text_scale: 100 });
+  }
+}

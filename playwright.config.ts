@@ -23,6 +23,7 @@ const sharedClock = [
   'documents-extract.spec.ts',
   'record-payment.spec.ts',
   'invoices.spec.ts',
+  'receipts.spec.ts',
   'extraction-review.spec.ts',
   'documents-vault.spec.ts',
   'documents-multipage.spec.ts',

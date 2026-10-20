@@ -1329,7 +1329,9 @@
     "accountSave": "Lưu tài khoản",
     "accountSaving": "Đang lưu…",
     "accountClose": "Đóng",
-    "accountRefusal": "{reason, select, bank {Chọn ngân hàng.} accountNo {Số tài khoản chỉ gồm chữ số và chữ cái, tối đa 19 ký tự.} accountName {Nhập tên chủ tài khoản, tối đa 50 ký tự.} duplicate {Gia đình đã có tài khoản này.} forbidden {Chỉ quản trị viên mới thêm được tài khoản nhận tiền.} other {Chưa lưu được. Kiểm tra kết nối rồi thử lại.}}"
+    "accountRefusal": "{reason, select, bank {Chọn ngân hàng.} accountNo {Số tài khoản chỉ gồm chữ số và chữ cái, tối đa 19 ký tự.} accountName {Nhập tên chủ tài khoản, tối đa 50 ký tự.} duplicate {Gia đình đã có tài khoản này.} forbidden {Chỉ quản trị viên mới thêm được tài khoản nhận tiền.} other {Chưa lưu được. Kiểm tra kết nối rồi thử lại.}}",
+    "receiptPdf": "Biên nhận PDF",
+    "receiptPng": "Ảnh gửi Zalo"
   },
   "payments": {
     "title": "Ghi nhận tiền",
@@ -1581,5 +1583,23 @@
     "optionNone": "Chưa chọn",
     "reviewLink": "Xem lại",
     "manualLink": "Nhập tay"
+  },
+  "receipt": {
+    "title": "Biên nhận tiền thuê",
+    "number": "Số",
+    "issuedOn": "Ngày lập",
+    "tenant": "Người thuê",
+    "place": "Nơi thuê",
+    "period": "Kỳ thuê",
+    "lines": "Các khoản",
+    "total": "Tổng cộng",
+    "words": "Bằng chữ:",
+    "received": "Đã nhận",
+    "outstanding": "Còn lại",
+    "paidInFull": "Đã nhận đủ tiền kỳ này",
+    "scanToPay": "Quét mã VietQR để chuyển phần còn lại",
+    "memo": "Nội dung chuyển khoản",
+    "account": "Tài khoản nhận",
+    "noTenant": "Chưa ghi người thuê"
   }
 }

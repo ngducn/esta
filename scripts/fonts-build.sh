@@ -23,3 +23,15 @@ mkdir -p "$out"
 build plusjakartasans 'PlusJakartaSans%5Bwght%5D.ttf' 'wght=400:700' "$text_features,tnum" PlusJakartaSans-Variable
 curl -fsSL "$base/plusjakartasans/OFL.txt" > "$out/LICENSE-OFL.txt"
 (cd "$out" && shasum -a 256 ./*.woff2)
+
+# pdf-lib and satori embed static TrueType only, so the receipts get regular and bold instances. Their subset adds
+# Latin-1 Supplement to the web's, because a receipt prints what was typed: m³ on a water line, a name such as Müller.
+receipts="$out/../server/receipts/fonts"
+mkdir -p "$receipts"
+cp "$out/LICENSE-OFL.txt" "$receipts/LICENSE-OFL.txt"
+for weight in Regular:400 Bold:700; do
+  fonttools fonttools varLib.instancer --quiet "$work/PlusJakartaSans-Variable.ttf" "wght=${weight#*:}" -o "$work/${weight%%:*}.ttf"
+  fonttools pyftsubset "$work/${weight%%:*}.ttf" --unicodes="$vietnamese_and_basic_latin,U+00A0-00FF" --layout-features="$text_features,tnum" \
+    --name-IDs='*' --no-hinting --output-file="$receipts/PlusJakartaSans-${weight%%:*}.ttf"
+done
+(cd "$receipts" && shasum -a 256 ./*.ttf)
