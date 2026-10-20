@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PaymentStatus } from '../allocation/status';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { groupCollections, worstCollectionState, type CollectionCandidate, type CollectionGroup } from './group';
+import { groupCollections, monthCollected, worstCollectionState, type CollectionCandidate, type CollectionGroup } from './group';
 
 const DI_AN = 'Dãy trọ Dĩ An';
 
@@ -127,6 +127,34 @@ describe('groupCollections', () => {
     const rooms = [10, 9, 2].map((n) => row(DI_AN, `Phòng ${n}`, '2026-10-25', 2_500_000, 0, 'unpaid'));
     const [, , notDue] = groupCollections(rooms, isoDate('2026-10-01'), isoDate('2026-10-07'));
     expect(notDue?.items.map(({ row: { unitLabel } }) => unitLabel)).toEqual(['Phòng 2', 'Phòng 9', 'Phòng 10']);
+  });
+});
+
+describe('monthCollected', () => {
+  it('October on the full seed at 2026-10-07 reads Đã thu 54 tr / 69,6 tr: Phòng 5 from September counts toward neither', () => {
+    expect(monthCollected(groupCollections(OCTOBER, isoDate('2026-10-01'), isoDate('2026-10-07')))).toEqual({ collectedVnd: 54_000_000, billedVnd: 69_600_000 });
+  });
+
+  it('September counts Phòng 5 as billed and not collected, and the five paid rooms and Thủ Đức as both', () => {
+    expect(monthCollected(groupCollections(SEPTEMBER, isoDate('2026-09-01'), isoDate('2026-10-07')))).toEqual({
+      collectedVnd: 9_000_000 + 4 * 2_500_000 + 2_800_000,
+      billedVnd: 9_000_000 + 4 * 2_500_000 + 2 * 2_800_000,
+    });
+  });
+
+  it('counts a part payment as it came in and caps an overpaid bill at its total, so X never passes Y', () => {
+    const partial = row(DI_AN, 'Phòng 2', '2026-10-25', 2_500_000, 1_500_000, 'partial');
+    const overpaid = row(DI_AN, 'Phòng 3', '2026-10-25', 2_500_000, 2_600_000, 'overpaid');
+    expect(monthCollected(groupCollections([partial, overpaid], isoDate('2026-10-01'), isoDate('2026-10-07')))).toEqual({ collectedVnd: 4_000_000, billedVnd: 5_000_000 });
+  });
+
+  it('a payment for a bill carried in from an earlier month leaves the month where it was', () => {
+    const paidLate = row(DI_AN, 'Phòng 4', '2026-08-25', 2_500_000, 1_000_000, 'partial');
+    expect(monthCollected(groupCollections([paidLate, ...october25], isoDate('2026-10-01'), isoDate('2026-10-07')))).toEqual({ collectedVnd: 0, billedVnd: 15_600_000 });
+  });
+
+  it('a month with no bills reads zero of zero', () => {
+    expect(monthCollected(groupCollections([], isoDate('2024-12-01'), isoDate('2026-10-07')))).toEqual({ collectedVnd: 0, billedVnd: 0 });
   });
 });
 

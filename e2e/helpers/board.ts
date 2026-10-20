@@ -13,3 +13,13 @@ export async function storedInvoice(page: Page, id: string): Promise<StoredInvoi
   if (invoice === undefined) throw new Error(`No invoice ${id}`);
   return invoice;
 }
+
+/**
+ * Undoes every payment the record payment sheet wrote in a household (the sheet's carry an idempotency key, the seed's
+ * none), so a rule that records one leaves the household as seeded. A page that never signed in has nothing to undo.
+ */
+export async function undoSheetPayments(page: Page, householdId: string): Promise<void> {
+  if (!(await page.context().cookies()).some((cookie) => cookie.name.startsWith('sb-'))) return;
+  const recorded = await memberRest<{ id: string }[]>(page, 'GET', `payments?household_id=eq.${householdId}&idempotency_key=not.is.null&select=id`);
+  for (const { id } of recorded) await memberRest(page, 'POST', 'rpc/undo_payment', { p_payment_id: id });
+}

@@ -33,6 +33,7 @@ const sharedClock = [
   'expenses.spec.ts',
   'meters.spec.ts',
   'statement-import.spec.ts',
+  'home.spec.ts',
 ];
 
 export default defineConfig({

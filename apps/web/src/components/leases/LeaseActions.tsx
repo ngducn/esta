@@ -15,7 +15,10 @@ export type IssuedBill = { readonly id: string; readonly number: string; readonl
 
 export type RenewalOffer = { readonly start: IsoDate; readonly startsBeforeToday: boolean; readonly lastRentVnd: Vnd; readonly defaultEnd: IsoDate };
 
-/** What a member can do next with this lease. An ended or terminated lease offers no amend or terminate (LSE-2). */
+/**
+ * What a member can do next with this lease. An ended or terminated lease offers no amend or terminate (LSE-2).
+ * `renewOnOpen` opens the renew sheet on arrival, as Home's `Gia hạn` asks, when the lease can be renewed.
+ */
 export function LeaseActions({
   leaseId,
   unitLabel,
@@ -23,6 +26,7 @@ export function LeaseActions({
   active,
   amendStarts,
   renewal,
+  renewOnOpen = false,
   issuedBills,
 }: {
   leaseId: string;
@@ -31,10 +35,11 @@ export function LeaseActions({
   active: boolean;
   amendStarts: readonly IsoDate[];
   renewal: RenewalOffer | null;
+  renewOnOpen?: boolean;
   issuedBills: readonly IssuedBill[];
 }) {
   const t = useTranslations('leases');
-  const [open, setOpen] = useState<'amend' | 'terminate' | 'renew' | null>(null);
+  const [open, setOpen] = useState<'amend' | 'terminate' | 'renew' | null>(renewOnOpen && renewal !== null ? 'renew' : null);
   const close = () => setOpen(null);
   if (!active && renewal === null) return null;
   return (

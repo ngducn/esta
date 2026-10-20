@@ -39,6 +39,7 @@
     "./reminder": "./src/reminder/templates.ts",
     "./result": "./src/result.ts",
     "./schedule": "./src/schedule/index.ts",
+    "./today": "./src/today/rules.ts",
     "./schemas/lease": "./src/schemas/lease.ts",
     "./schemas/legal": "./src/schemas/legal.ts",
     "./schemas/ownership": "./src/schemas/ownership.ts",
