@@ -171,9 +171,17 @@ export const statementImport = defineOp<ImportInput, ImportChange, StatementImpo
 const commitInputSchema = z.strictObject({ import_id: idSchema, confirmed_row_ids: z.array(idSchema).max(MAX_ROWS) });
 type Commit = z.output<typeof commitInputSchema>;
 
+const lineStateSchema = z.object({ id: z.uuid(), state: z.string(), reason: z.string().nullable(), link_payment_id: z.uuid().nullable() });
+
+/** Each line of the import with what it can do now, as the database reads it (`statement_line_state`). */
+async function readLineStates(ctx: OpContext, importId: string): Promise<z.output<typeof lineStateSchema>[]> {
+  const rows = await readAll("the import's lines", (from, to) => ctx.db.rpc('statement_import_lines', { p_import_id: importId }).select('id, state, reason, link_payment_id').range(from, to));
+  return z.array(lineStateSchema).parse(rows);
+}
+
 /**
- * LSE-8 `Ghi sổ` and `Xác nhận gợi ý`: every memo match, and the suggestions confirmed, post as bank transfers in one
- * transaction. A commit with nothing left to post plans as unchanged.
+ * LSE-8 `Ghi sổ`: every memo match the database does not hold, and every suggestion or held line confirmed, posts as a
+ * bank transfer in one transaction. A commit with nothing left to post plans as unchanged.
  */
 export const statementCommit = defineOp<Commit, Commit, StatementCommitted>({
   creates: null,
@@ -182,10 +190,10 @@ export const statementCommit = defineOp<Commit, Commit, StatementCommitted>({
     const imported = await ctx.db.from('statement_imports').select('id').eq('household_id', ctx.householdId).eq('id', input.import_id).maybeSingle();
     if (imported.error) throw new Error(`Reading the import failed: ${imported.error.message}`);
     if (imported.data === null) return refuse({ kind: 'not_found' });
-    const { data, error } = await ctx.db.from('statement_rows').select('id, status').eq('import_id', input.import_id).in('status', ['memo_match', 'suggested']);
-    if (error) throw new Error(`Reading the import's lines failed: ${error.message}`);
     const confirmed = new Set(input.confirmed_row_ids);
-    const posts = data.length >= PAGE_SIZE || data.some((row) => row.status === 'memo_match' || confirmed.has(row.id));
+    const posts = (await readLineStates(ctx, input.import_id)).some(
+      (line) => line.state === 'memo_match' || (confirmed.has(line.id) && (line.state === 'suggested' || line.state === 'held')),
+    );
     return posts ? change(input) : unchanged({ posted: 0, skipped: 0 });
   },
   async apply(ctx, { import_id, confirmed_row_ids }) {
@@ -193,5 +201,35 @@ export const statementCommit = defineOp<Commit, Commit, StatementCommitted>({
     if (error) return refuse(dbRefusal(error, SENTINELS));
     const [row] = data;
     return { ok: true, value: { posted: row?.posted_count ?? 0, skipped: row?.skipped_count ?? 0 } };
+  },
+});
+
+const linkInputSchema = z.strictObject({ import_id: idSchema, row_id: idSchema });
+type Link = z.output<typeof linkInputSchema>;
+
+/** The held line is not the one transfer recorded by hand of its amount, so it cannot be linked. */
+export type LinkRefusal = { readonly kind: 'not_linkable' };
+
+const LINK_SENTINELS: Readonly<Record<string, LinkRefusal | CommonRefusal>> = {
+  ESTA_STATEMENT_LINE_NOT_FOUND: { kind: 'not_found' },
+  ESTA_STATEMENT_LINE_NOT_LINKABLE: { kind: 'not_linkable' },
+};
+
+/**
+ * LSE-8 `Đã ghi tay` ([app rule] DOMAIN-VN §9): a held line is the transfer Mẹ already recorded by hand, so that payment
+ * takes the line and no money is added. A line already linked plans as unchanged.
+ */
+export const statementLink = defineOp<Link, Link, StatementCommitted, LinkRefusal>({
+  creates: null,
+  input: linkInputSchema,
+  async plan(ctx, input) {
+    const line = (await readLineStates(ctx, input.import_id)).find((candidate) => candidate.id === input.row_id);
+    if (line === undefined) return refuse({ kind: 'not_found' });
+    if (line.state === 'posted' && line.reason === 'recorded_by_hand') return unchanged({ posted: 0, skipped: 0 });
+    return line.state === 'held' && line.link_payment_id !== null ? change(input) : refuse({ kind: 'not_linkable' });
+  },
+  async apply(ctx, { row_id }) {
+    const { error } = await ctx.db.rpc('link_statement_line', { p_row_id: row_id });
+    return error ? refuse(dbRefusal(error, LINK_SENTINELS)) : { ok: true, value: { posted: 0, skipped: 0 } };
   },
 });

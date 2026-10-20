@@ -85,12 +85,12 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   await page.getByTestId('statement-commit').click();
   await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (3)');
-  await expect(page.getByTestId('statement-commit')).toHaveText('Xác nhận 0 gợi ý');
+  await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 0 khoản');
   await expect(page.getByTestId('statement-commit')).toBeDisabled();
   await holdForRecording(page);
 
   await line(page, 4).getByRole('checkbox', { name: 'Xác nhận gợi ý dòng 4' }).click();
-  await expect(page.getByTestId('statement-commit')).toHaveText('Xác nhận 1 gợi ý');
+  await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 1 khoản');
   await page.getByTestId('statement-commit').click();
   await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 1 khoản. Các khoản đã vào trang Thu tiền.');
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (4)');
@@ -125,10 +125,23 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   expect(await statementPayments(page, household.householdId)).toHaveLength(4);
 });
 
-test('rule 2: at 1440 in dark, a layout B workbook previews with debits under Bỏ qua and nothing clipped', async ({ page }) => {
+test('rule 2: at 1440 in dark, a layout B workbook into a second account previews with debits under Bỏ qua and posts into that account', async ({ page }) => {
   await openNewHousehold(page, 'dark', DESKTOP);
   const household = await statementHousehold(page);
-  await preview(page, 'sao-ke.xlsx', await statementXlsx(household.statement));
+  const [second] = await memberRest<{ id: string }[]>(page, 'POST', 'bank_accounts', {
+    household_id: household.householdId,
+    bank_bin: '970403',
+    account_no: '0011012345678',
+    account_name: 'TRAN MINH DEMO',
+  });
+  await page.goto('/collections/import');
+  // The picker is disabled until React owns the page, so the account chosen here is the one the lines post into.
+  await expect(page.getByTestId('statement-account')).toBeEnabled();
+  await page.getByTestId('statement-account').selectOption(second?.id ?? '');
+  await chooseFile(page, 'sao-ke.xlsx', await statementXlsx(household.statement));
+  await expect(page.getByTestId('statement-read')).toBeVisible();
+  await page.getByTestId('statement-preview').click();
+  await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
   await expectGolden(page, household);
   await expect(line(page, 7).getByTestId('statement-status')).toHaveText('Bỏ qua');
   await expect(line(page, 7).getByTestId('statement-target')).toHaveText('Tiền ra khỏi tài khoản');
@@ -137,6 +150,9 @@ test('rule 2: at 1440 in dark, a layout B workbook previews with debits under B�
   await expect(page.getByTestId('statement-line')).toHaveCount(1);
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
+  await page.getByTestId('statement-commit').click();
+  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
+  expect((await statementPayments(page, household.householdId)).map((payment) => payment.bank_account_id)).toEqual([second?.id, second?.id, second?.id]);
 });
 
 test('rule 3: in English at 130% on a phone in dark, the preview reads in English and keeps amounts on one line', async ({ page }) => {
@@ -215,4 +231,39 @@ test('rule 7: with no receiving account the import screen says where to add one'
   await expect(page.getByTestId('statement-upload')).toHaveCount(0);
   await shot(page, 'p3-15-no-account-390-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('rule 8: a code match on a bill Mẹ already recorded by hand is held, and Đã ghi tay links it without adding money', async ({ page }) => {
+  await openNewHousehold(page, 'light', PHONE);
+  const household = await statementHousehold(page);
+  const [first] = household.statement.lines;
+  const bill = household.bills.find((candidate) => candidate.number === golden(household.statement)[0]?.invoices[0]);
+  if (first === undefined || bill === undefined) throw new Error('The statement has no first memo line');
+  await memberRest(page, 'POST', 'rpc/record_payment', {
+    p_invoice_id: bill.id,
+    p_owed_vnd: bill.outstanding,
+    p_amount_vnd: first.amount,
+    p_method: 'bank_transfer',
+    p_received_on: first.date,
+    p_idempotency_key: crypto.randomUUID(),
+  });
+  await preview(page, 'sao-ke.csv', statementCsv(household.statement, 'a'));
+  await expect(line(page, 1)).toHaveAttribute('data-status', 'held');
+  await expect(line(page, 1).getByTestId('statement-status')).toHaveText('Có thể trùng');
+  await expect(line(page, 1).getByTestId('statement-target')).toContainText(`Hóa đơn ${bill.number} đã có`);
+  await expect(line(page, 1).getByRole('checkbox', { name: 'Ghi sổ dòng 1 như một khoản mới' })).not.toBeChecked();
+  await expect(page.getByTestId('statement-summary')).toContainText('Sẽ ghi sổ 2 khoản');
+  await expect(page.getByTestId('statement-filter-held')).toHaveText('Có thể trùng (1)');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await line(page, 1).scrollIntoViewIfNeeded();
+  await shot(page, 'p3-15-held-390-light');
+  await line(page, 1).getByTestId('statement-link').click();
+  await expect(page.getByTestId('statement-result')).toHaveText('Đã nối dòng 1 với khoản ghi tay, không thêm tiền.');
+  await expect(line(page, 1)).toHaveAttribute('data-status', 'posted');
+  await expect(line(page, 1).getByTestId('statement-target')).toContainText('đã ghi tay trước đó');
+  await page.getByTestId('statement-commit').click();
+  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 2 khoản. Các khoản đã vào trang Thu tiền.');
+  expect(await statementPayments(page, household.householdId)).toHaveLength(2);
+  const hand = await memberRest<{ statement_row_id: string | null }[]>(page, 'GET', `payments?household_id=eq.${household.householdId}&source=eq.manual&select=statement_row_id`);
+  expect(hand.map((payment) => payment.statement_row_id !== null)).toEqual([true]);
 });

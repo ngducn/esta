@@ -54,17 +54,17 @@ describe('planImport', () => {
     expect(later.rows.map((stored) => stored.row.index)).toEqual(rows.slice(5).filter((r) => r.index !== 12).map((r) => r.index));
   });
 
-  it('leaves a memo naming a paid bill for a person, with the bill as its candidate', () => {
-    const [stored] = planImport([row('ESTA N5P9R3SQ HOANG ANH DEMO', 2_500_000)], issued, new Set()).rows;
-    expect(stored).toMatchObject({ status: 'unmatched', reason: 'paid', invoiceId: null, candidateIds: ['inv-dian-p1-202609'] });
-  });
-
-  it('leaves a memo naming a void bill for a person, and never suggests a void bill', () => {
+  it('stores a memo naming a paid or a void bill as a memo match, for the database to hold, and never suggests a void bill', () => {
     const voided = issued.map((invoice): ImportInvoice => (invoice.id === 'inv-dian-p3-202610' ? { ...invoice, status: 'void' } : invoice));
-    const plan = planImport([row('ESTA 7K2QX9MP', 3_500_000), row('NGUYEN THI HUONG DEMO CK', 3_500_000, '2026-10-02', 'FT2')], voided, new Set());
-    expect(plan.rows.map((stored) => [stored.status, stored.reason, stored.candidateIds])).toEqual([
-      ['unmatched', 'void', ['inv-dian-p3-202610']],
-      ['unmatched', null, []],
+    const plan = planImport(
+      [row('ESTA N5P9R3SQ HOANG ANH DEMO', 2_500_000), row('ESTA 7K2QX9MP', 3_500_000, '2026-10-04', 'FT2'), row('NGUYEN THI HUONG DEMO CK', 3_500_000, '2026-10-02', 'FT3')],
+      voided,
+      new Set(),
+    );
+    expect(plan.rows.map((stored) => [stored.status, stored.invoiceId])).toEqual([
+      ['memo_match', 'inv-dian-p1-202609'],
+      ['memo_match', 'inv-dian-p3-202610'],
+      ['unmatched', null],
     ]);
   });
 });

@@ -1,7 +1,7 @@
 'use server';
 
 import type { Result } from '@esta/core/result';
-import { runOp, statementCommit, statementImport, type StatementCommitted, type StatementImported } from '@esta/ops';
+import { runOp, statementCommit, statementImport, statementLink, type StatementCommitted, type StatementImported } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { webOpContext } from '@/server/ops';
 
@@ -16,9 +16,17 @@ export async function importStatement(raw: unknown): Promise<Result<StatementImp
   return result;
 }
 
-/** LSE-8 `Ghi sổ` and `Xác nhận gợi ý`: the memo matches and the confirmed suggestions post as payments. */
+/** LSE-8 `Ghi sổ`: the memo matches the database does not hold, and the confirmed lines, post as payments. */
 export async function commitStatement(raw: unknown): Promise<Result<StatementCommitted, 'failed'>> {
   const result = await runOp(statementCommit, await webOpContext(), raw);
+  if (!result.ok) return { ok: false, reason: 'failed' };
+  revalidatePath('/collections', 'layout');
+  return result;
+}
+
+/** LSE-8 `Đã ghi tay`: a held line is the transfer recorded by hand, so that payment takes it and no money is added. */
+export async function linkStatementLine(raw: unknown): Promise<Result<StatementCommitted, 'failed'>> {
+  const result = await runOp(statementLink, await webOpContext(), raw);
   if (!result.ok) return { ok: false, reason: 'failed' };
   revalidatePath('/collections', 'layout');
   return result;

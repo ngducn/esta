@@ -1,7 +1,8 @@
 -- Bank statement import (SPEC §5.4 statement_imports and statement_rows, LSE-8). The browser reads the file, the server
 -- matches its rows with packages/core matchRows and stores them through create_statement_import, and
--- commit_statement_import posts the memo matches and the suggestions an admin confirmed, in one transaction. A
--- statement shows every movement of the account, so only an admin reads or writes these rows.
+-- commit_statement_import posts the memo matches and the lines an admin confirmed, in one transaction. What a line can
+-- do now (post, wait for a person, already posted) is private.statement_line_state, read by the preview and the
+-- commit alike. A statement shows every movement of the account, so only an admin reads or writes these rows.
 
 create table public.statement_imports (
   id uuid primary key default gen_random_uuid(),
@@ -23,7 +24,8 @@ create table public.statement_imports (
 );
 create index statement_imports_account_idx on public.statement_imports (household_id, bank_account_id, created_at desc);
 
--- One line of a statement. `fingerprint` is the #58 contract (packages/core identifyRows) and never changes once stored.
+-- One line of a statement, as matching found it; a stored line never changes. `fingerprint` is the #58 contract
+-- (packages/core identifyRows).
 -- A line the file repeats under the same bank reference shares its first copy's fingerprint and is stored `ignored`
 -- with reason `duplicate`, so the unique key covers every other row: a transfer is stored once per household.
 create table public.statement_rows (
@@ -38,9 +40,8 @@ create table public.statement_rows (
   description text not null check (char_length(description) <= 1000),
   bank_ref text not null default '' check (char_length(bank_ref) <= 200),
   fingerprint text not null check (fingerprint ~ '^[0-9a-f]{64}$'),
-  status text not null check (status in ('memo_match', 'suggested', 'unmatched', 'ignored', 'posted')),
-  -- Why a row is ignored (a debit, a repeat of an earlier line) or left for a person: a repeat without a bank
-  -- reference, or a memo naming a bill that is already paid or void.
+  status text not null check (status in ('memo_match', 'suggested', 'unmatched', 'ignored')),
+  -- Why a row is ignored (a debit, a repeat of an earlier line) or left for a person (a repeat without a reference).
   reason text,
   invoice_id uuid,
   candidate_invoice_ids uuid[] not null default '{}',
@@ -55,7 +56,7 @@ create table public.statement_rows (
   check (
     case status
       when 'ignored' then invoice_id is null and reason in ('debit', 'duplicate')
-      when 'unmatched' then invoice_id is null and (reason is null or reason in ('repeat', 'paid', 'void'))
+      when 'unmatched' then invoice_id is null and (reason is null or reason = 'repeat')
       else invoice_id is not null and reason is null
     end
   )
@@ -83,13 +84,16 @@ create policy statement_imports_select on public.statement_imports for select to
 create policy statement_rows_select on public.statement_rows for select to authenticated
   using (private.is_member(household_id, 'admin'));
 
--- The statement line a payment was posted from. One line posts at most one payment.
+-- The statement line a payment was posted from, or the line an admin said a transfer recorded by hand came in on. A
+-- line holds at most one payment.
 alter table public.payments add column statement_row_id uuid;
 alter table public.payments
   add constraint payments_statement_row_fkey foreign key (household_id, statement_row_id)
     references public.statement_rows (household_id, id),
   add constraint payments_statement_row_key unique (statement_row_id),
-  add constraint payments_statement_row_source check (statement_row_id is null or source = 'statement_import');
+  add constraint payments_statement_row_source check (
+    statement_row_id is null or source = 'statement_import' or (source = 'manual' and method = 'bank_transfer')
+  );
 
 -- The one allocation every payment writer runs (LSE-7): what the payment brought settles the lease's issued invoices
 -- still owed, oldest due first, or only p_invoice_ids when the member chose. p_first_invoice_id goes ahead of that order,
@@ -216,6 +220,94 @@ begin
 end;
 $$;
 
+-- What a line can do now (LSE-8, [app rule] DOMAIN-VN §9): `posted` once a payment holds it, with `recorded_by_hand`
+-- when that payment was recorded by hand and linked; a memo naming a voided bill, or one that owes nothing, is
+-- `unmatched` with `void` or `paid`. A memo match on a bill that has a transfer recorded by hand (source manual, method
+-- bank_transfer) that no statement line holds yet is `held` with `recorded_by_hand`, because the line may be that same
+-- transfer: it posts only when an admin confirms it, or is linked to that payment. `link_payment_id` is the one such
+-- transfer of the same amount, when there is exactly one; `hand_*` describe the transfer shown beside the line.
+create function private.statement_line_state(
+  p_row public.statement_rows,
+  out state text,
+  out reason text,
+  out link_payment_id uuid,
+  out hand_received_on date,
+  out hand_amount_vnd bigint
+)
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_source text;
+  v_bill record;
+begin
+  select p.source into v_source from public.payments p where p.statement_row_id = p_row.id;
+  if found then
+    state := 'posted';
+    reason := case when v_source = 'manual' then 'recorded_by_hand' end;
+    return;
+  end if;
+  state := p_row.status;
+  reason := p_row.reason;
+  if p_row.invoice_id is null then
+    return;
+  end if;
+  select b.status, b.outstanding_vnd into v_bill from public.invoice_balances b where b.id = p_row.invoice_id;
+  if v_bill.status <> 'issued' then
+    state := 'unmatched';
+    reason := 'void';
+    return;
+  end if;
+  if p_row.status = 'memo_match' then
+    select p.received_on, p.amount_vnd into hand_received_on, hand_amount_vnd
+    from public.payments p
+    where p.household_id = p_row.household_id and p.source = 'manual' and p.method = 'bank_transfer' and p.statement_row_id is null
+      and exists (select from public.payment_allocations a where a.payment_id = p.id and a.invoice_id = p_row.invoice_id)
+    order by p.amount_vnd = p_row.amount_vnd desc, p.received_on desc, p.id
+    limit 1;
+    if found then
+      state := 'held';
+      reason := 'recorded_by_hand';
+      select min(p.id::text)::uuid into link_payment_id
+      from public.payments p
+      where p.household_id = p_row.household_id and p.source = 'manual' and p.method = 'bank_transfer' and p.statement_row_id is null
+        and p.amount_vnd = p_row.amount_vnd
+        and exists (select from public.payment_allocations a where a.payment_id = p.id and a.invoice_id = p_row.invoice_id)
+      having count(*) = 1;
+      return;
+    end if;
+  end if;
+  if v_bill.outstanding_vnd <= 0 then
+    state := 'unmatched';
+    reason := 'paid';
+  end if;
+end;
+$$;
+revoke all on function private.statement_line_state(public.statement_rows) from public;
+grant execute on function private.statement_line_state(public.statement_rows) to authenticated;
+
+-- The preview: each line of an import in file order with its state, under the reader's RLS.
+create function public.statement_import_lines(p_import_id uuid)
+returns table (
+  id uuid, row_index integer, posted_on date, amount_vnd bigint, description text, bank_ref text, state text, reason text,
+  invoice_id uuid, candidate_invoice_ids uuid[], link_payment_id uuid, hand_received_on date, hand_amount_vnd bigint
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select r.id, r.row_index, r.posted_on, r.amount_vnd, r.description, r.bank_ref, s.state, s.reason, r.invoice_id, r.candidate_invoice_ids,
+    s.link_payment_id, s.hand_received_on, s.hand_amount_vnd
+  from public.statement_rows r
+  cross join lateral private.statement_line_state(r) s
+  where r.import_id = p_import_id
+  order by r.row_index;
+$$;
+revoke all on function public.statement_import_lines(uuid) from public, anon;
+grant execute on function public.statement_import_lines(uuid) to authenticated;
+
 -- `Xem trước`: the import and its matched rows, as the server's matchRows decided them. p_import_id is minted by the
 -- caller, so a repeated request finds the import it made. A row a concurrent import already stored is left out.
 create function public.create_statement_import(
@@ -254,11 +346,10 @@ begin
     invoice_id uuid, candidate_invoice_ids uuid[]
   )
   on conflict (household_id, fingerprint) where reason is distinct from 'duplicate' do nothing;
-  -- Only commit_statement_import posts, and only a line dated on or before the database clock's date may post.
+  -- Only a line dated on or before the database clock's date may post.
   if exists (
     select from public.statement_rows r
-    where r.import_id = p_import_id
-      and (r.status = 'posted' or (r.status in ('memo_match', 'suggested') and r.posted_on > private.business_date(private.audit_now())))
+    where r.import_id = p_import_id and r.status in ('memo_match', 'suggested') and r.posted_on > private.business_date(private.audit_now())
   ) then
     raise exception 'ESTA_STATEMENT_ROWS' using errcode = '22023';
   end if;
@@ -268,11 +359,12 @@ $$;
 revoke all on function public.create_statement_import(uuid, uuid, text, jsonb, jsonb, jsonb) from public, anon;
 grant execute on function public.create_statement_import(uuid, uuid, text, jsonb, jsonb, jsonb) to authenticated;
 
--- `Ghi sổ` and `Xác nhận gợi ý` (LSE-8, SPEC §7.4): every `memo_match` row and every `suggested` row in
--- p_confirmed_row_ids posts one bank transfer into the import's account, to its bill first and the rest by
--- private.allocate_payment's order, and the import is committed. A row whose bill is no longer issued, or owes nothing
--- (paid by hand since, say), posts nothing and is left for a person. A posted row never posts again: the import lock
--- makes two commits take turns, and the second finds no row left to post.
+-- `Ghi sổ` (LSE-8, SPEC §7.4): every line whose state is `memo_match`, and every `suggested` or `held` line in
+-- p_confirmed_row_ids, posts one bank transfer into the import's account, to its bill first and the rest by
+-- private.allocate_payment's order, and the import is committed. The lease lock is record_payment's, so a payment of
+-- the same lease in flight lands before the line's state is read. A posted line never posts again: the import lock
+-- makes two commits take turns, and a line's payment makes it `posted`. skipped_count is the lines asked for that did
+-- not post (held, paid or void), counting the memo matches only on the first commit.
 create function public.commit_statement_import(p_import_id uuid, p_confirmed_row_ids uuid[] default '{}')
 returns table (posted_count integer, skipped_count integer)
 language plpgsql
@@ -283,7 +375,8 @@ declare
   v_import public.statement_imports;
   v_row public.statement_rows;
   v_lease public.leases;
-  v_bill record;
+  v_state record;
+  v_wanted boolean;
   v_payment uuid;
   v_posted integer := 0;
   v_skipped integer := 0;
@@ -296,33 +389,29 @@ begin
   end if;
   for v_row in
     select * from public.statement_rows r
-    where r.import_id = p_import_id
-      and (r.status = 'memo_match' or (r.status = 'suggested' and r.id = any (coalesce(p_confirmed_row_ids, '{}'))))
+    where r.import_id = p_import_id and r.invoice_id is not null
     order by r.row_index
   loop
+    v_wanted := v_row.id = any (coalesce(p_confirmed_row_ids, '{}'));
+    continue when v_row.status <> 'memo_match' and not v_wanted;
     select l.* into v_lease from public.invoices i join public.leases l on l.id = i.lease_id
     where i.id = v_row.invoice_id
     for no key update of l;
-    select b.status, b.outstanding_vnd into v_bill from public.invoice_balances b where b.id = v_row.invoice_id;
-    if v_bill.status <> 'issued' or v_bill.outstanding_vnd <= 0 then
-      update public.statement_rows r
-      set status = 'unmatched', reason = case when v_bill.status = 'issued' then 'paid' else 'void' end,
-        candidate_invoice_ids = array[v_row.invoice_id], invoice_id = null
-      where r.id = v_row.id;
+    v_state := private.statement_line_state(v_row);
+    if v_state.state = 'memo_match' or (v_wanted and v_state.state in ('suggested', 'held')) then
+      insert into public.payments (
+        household_id, payer_party_id, amount_vnd, received_on, method, bank_ref, memo, source, bank_account_id, statement_row_id
+      )
+      values (
+        v_import.household_id, v_lease.tenant_party_id, v_row.amount_vnd, v_row.posted_on, 'bank_transfer', nullif(btrim(v_row.bank_ref), ''),
+        nullif(btrim(left(v_row.description, 500)), ''), 'statement_import', v_import.bank_account_id, v_row.id
+      )
+      returning id into v_payment;
+      perform private.allocate_payment(v_payment, v_lease.id, null, v_row.invoice_id);
+      v_posted := v_posted + 1;
+    elsif v_state.state <> 'posted' and (v_wanted or v_import.status = 'parsed') then
       v_skipped := v_skipped + 1;
-      continue;
     end if;
-    insert into public.payments (
-      household_id, payer_party_id, amount_vnd, received_on, method, bank_ref, memo, source, bank_account_id, statement_row_id
-    )
-    values (
-      v_import.household_id, v_lease.tenant_party_id, v_row.amount_vnd, v_row.posted_on, 'bank_transfer', nullif(btrim(v_row.bank_ref), ''),
-      nullif(btrim(left(v_row.description, 500)), ''), 'statement_import', v_import.bank_account_id, v_row.id
-    )
-    returning id into v_payment;
-    perform private.allocate_payment(v_payment, v_lease.id, null, v_row.invoice_id);
-    update public.statement_rows r set status = 'posted' where r.id = v_row.id;
-    v_posted := v_posted + 1;
   end loop;
   update public.statement_imports s set status = 'committed', committed_at = private.audit_now()
   where s.id = p_import_id and s.status = 'parsed';
@@ -331,3 +420,35 @@ end;
 $$;
 revoke all on function public.commit_statement_import(uuid, uuid[]) from public, anon;
 grant execute on function public.commit_statement_import(uuid, uuid[]) to authenticated;
+
+-- `Đã ghi tay`: a held line is the transfer recorded by hand, so that payment takes the line and no money is added. Only
+-- the one transfer of the line's amount private.statement_line_state names can be linked; linking it again changes
+-- nothing.
+create function public.link_statement_line(p_row_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_row public.statement_rows;
+  v_state record;
+begin
+  select r.* into v_row from public.statement_rows r where r.id = p_row_id and private.is_member(r.household_id, 'admin');
+  if not found then
+    raise exception 'ESTA_STATEMENT_LINE_NOT_FOUND' using errcode = 'P0002';
+  end if;
+  perform 1 from public.statement_imports s where s.id = v_row.import_id for update;
+  perform 1 from public.invoices i join public.leases l on l.id = i.lease_id where i.id = v_row.invoice_id for no key update of l;
+  v_state := private.statement_line_state(v_row);
+  if v_state.state = 'posted' and v_state.reason = 'recorded_by_hand' then
+    return;
+  end if;
+  if v_state.state <> 'held' or v_state.link_payment_id is null then
+    raise exception 'ESTA_STATEMENT_LINE_NOT_LINKABLE' using errcode = '55000';
+  end if;
+  update public.payments p set statement_row_id = v_row.id where p.id = v_state.link_payment_id;
+end;
+$$;
+revoke all on function public.link_statement_line(uuid) from public, anon;
+grant execute on function public.link_statement_line(uuid) to authenticated;

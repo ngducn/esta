@@ -88,7 +88,15 @@ export function StatementUpload({ accounts }: { accounts: readonly AccountOption
   return (
     <form noValidate onSubmit={submit} data-testid="statement-upload" className="flex max-w-2xl flex-col gap-5 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <p className="max-w-prose text-body text-ink-2">{t('intro')}</p>
-      <FormSelect label={t('account')} value={accountId} options={accounts.map((account) => ({ value: account.id, label: account.label }))} onChange={setAccountId} testId="statement-account" />
+      {/* Before hydration a choice would revert to the default account, so the picker waits for React. */}
+      <FormSelect
+        label={t('account')}
+        value={accountId}
+        options={accounts.map((account) => ({ value: account.id, label: account.label }))}
+        onChange={setAccountId}
+        testId="statement-account"
+        disabled={!hydrated}
+      />
       <div className="flex flex-col gap-2">
         <p className="text-body font-semibold text-ink">{t('file')}</p>
         <p className="text-small text-ink-muted">{t('fileHint')}</p>

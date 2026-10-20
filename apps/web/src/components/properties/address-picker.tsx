@@ -19,6 +19,7 @@ export function FormSelect({
   onChange,
   testId,
   selectId,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -27,6 +28,7 @@ export function FormSelect({
   onChange: (value: string) => void;
   testId?: string;
   selectId?: string;
+  disabled?: boolean;
 }) {
   const generated = useId();
   const id = selectId ?? generated;
@@ -40,6 +42,7 @@ export function FormSelect({
           id={id}
           data-testid={testId}
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
           className="min-h-touch w-full appearance-none rounded-md border border-field bg-surface pr-10 pl-3.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
         >

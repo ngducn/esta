@@ -2,6 +2,8 @@
 
 import { formatDate, formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
+import type { Result } from '@esta/core/result';
+import type { StatementCommitted } from '@esta/ops';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -10,11 +12,20 @@ import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-m
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { commitStatement } from '@/server/actions/statements';
+import { commitStatement, linkStatementLine } from '@/server/actions/statements';
 import { LINE_STATUSES, type BillLabel, type LineStatus, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
 
-/** Shape, word, then color: a match waits to post, a suggestion waits for a person, a posted line is settled. */
-const LINE_MARKS = { memo_match: 'upcoming', suggested: 'due', unmatched: 'draft', ignored: 'ended', posted: 'paid' } as const satisfies Record<LineStatus, MarkStatus>;
+/** Shape, word, then color: a match waits to post, a suggestion waits for a person, a held line warns, a posted one is settled. */
+const LINE_MARKS = {
+  memo_match: 'upcoming',
+  suggested: 'due',
+  held: 'overdue',
+  unmatched: 'draft',
+  ignored: 'ended',
+  posted: 'paid',
+} as const satisfies Record<LineStatus, MarkStatus>;
+/** A line a person may tick to post: a suggestion, or a held line that is a second transfer after all. */
+const TICKABLE: ReadonlySet<LineStatus> = new Set(['suggested', 'held']);
 const KNOWN_REFUSALS = new Set(['fractional', 'credit_and_debit', 'after_today']);
 
 type Filter = LineStatus | 'all';
@@ -31,7 +42,10 @@ function LineTarget({ line }: { line: StatementLine }) {
   const billText = useBillText();
   const [bill] = line.bills;
   let text: string;
-  if (line.status === 'ignored') text = t(line.reason === 'debit' ? 'reasonDebit' : 'reasonDuplicate');
+  if (line.status === 'held' && line.hand !== null) {
+    text = t('reasonHeld', { amount: formatVnd(line.hand.amount, locale as Locale), date: formatDate(line.hand.receivedOn, locale as Locale), number: bill?.number ?? '' });
+  } else if (line.status === 'posted' && line.reason === 'recorded_by_hand' && bill !== undefined) text = t('reasonLinked', { bill: billText(bill) });
+  else if (line.status === 'ignored') text = t(line.reason === 'debit' ? 'reasonDebit' : 'reasonDuplicate');
   else if (line.reason === 'repeat') text = t('reasonRepeat');
   else if (line.reason === 'paid' || line.reason === 'void') text = t(line.reason === 'paid' ? 'reasonPaid' : 'reasonVoid', { number: bill?.number ?? '' });
   else if (line.status !== 'unmatched' && bill !== undefined) text = billText(bill);
@@ -44,14 +58,22 @@ function LineTarget({ line }: { line: StatementLine }) {
   );
 }
 
-function LineRow({ line, reserve, checked, onCheck, disabled }: { line: StatementLine; reserve: boolean; checked: boolean; onCheck: (on: boolean) => void; disabled: boolean }) {
+type RowProps = { line: StatementLine; reserve: boolean; checked: boolean; onCheck: (on: boolean) => void; onLink: () => void; disabled: boolean };
+
+function LineRow({ line, reserve, checked, onCheck, onLink, disabled }: RowProps) {
   const t = useTranslations('statements');
   const locale = useLocale() as Locale;
   const mark = LINE_MARKS[line.status];
   return (
     <li data-testid="statement-line" data-line={line.index} data-status={line.status} className={cn('flex gap-2 border-b border-rule px-4 py-4 last:border-b-0 sm:gap-3 sm:px-6', reserve && 'sm:pl-3')}>
-      {line.status === 'suggested' ? (
-        <Checkbox checked={checked} disabled={disabled} onCheckedChange={onCheck} aria-label={t('confirmLine', { line: line.index })} className="-my-2.5 -ml-2.5" />
+      {TICKABLE.has(line.status) ? (
+        <Checkbox
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={onCheck}
+          aria-label={t(line.status === 'held' ? 'postLine' : 'confirmLine', { line: line.index })}
+          className="-my-2.5 -ml-2.5"
+        />
       ) : reserve ? (
         <span aria-hidden="true" className="-ml-2.5 hidden size-touch shrink-0 sm:block" />
       ) : null}
@@ -73,14 +95,20 @@ function LineRow({ line, reserve, checked, onCheck, disabled }: { line: Statemen
           </span>
           <LineTarget line={line} />
         </div>
+        {line.hand?.linkable ? (
+          <Button type="button" variant="outline" disabled={disabled} onClick={onLink} data-testid="statement-link" className="mt-1 w-fit">
+            {t('linkByHand')}
+          </Button>
+        ) : null}
       </div>
     </li>
   );
 }
 
 /**
- * LSE-8 preview: every line in file order, its match and what posting will do. `Ghi sổ` posts the memo matches and the
- * ticked suggestions together; after it, the suggestions left can still be confirmed with the same button.
+ * LSE-8 preview: every line in file order, its state as the database reads it and what posting will do. `Ghi sổ` posts
+ * the memo matches and the ticked lines together, and stays for the lines left after it. A held line is either linked to
+ * the transfer recorded by hand (`Đã ghi tay`) or ticked to post as a second transfer.
  */
 export function ImportPreview({ importId, committed, lines, refused }: { importId: string; committed: boolean; lines: readonly StatementLine[]; refused: readonly RefusedLine[] }) {
   const t = useTranslations('statements');
@@ -93,7 +121,9 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
   const [saving, startSaving] = useTransition();
 
   const suggestions = lines.filter((line) => line.status === 'suggested');
-  const posting = lines.filter((line) => line.status === 'memo_match' || chosen.has(line.id));
+  const ticked = suggestions.filter((line) => chosen.has(line.id)).length;
+  const posting = lines.filter((line) => line.status === 'memo_match' || (TICKABLE.has(line.status) && chosen.has(line.id)));
+  const open = lines.some((line) => TICKABLE.has(line.status));
   const total = vnd(posting.reduce((sum, line) => sum + line.amount, 0));
   const shown = filter === 'all' ? lines : lines.filter((line) => line.status === filter);
   const toggle = (ids: readonly string[], on: boolean) =>
@@ -106,21 +136,26 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
       return next;
     });
 
-  const submit = () => {
+  const run = (call: () => Promise<Result<StatementCommitted, 'failed'>>, said: (done: StatementCommitted) => string) => {
     setError(null);
     setResult(null);
     startSaving(async () => {
-      const outcome = await commitStatement({ import_id: importId, confirmed_row_ids: [...chosen] }).catch(() => ({ ok: false, reason: 'failed' }) as const);
+      const outcome = await call().catch(() => ({ ok: false, reason: 'failed' }) as const);
       if (!outcome.ok) {
         setError(t('errorFailed'));
         return;
       }
-      const { posted, skipped } = outcome.value;
-      setResult(skipped === 0 ? t('posted', { count: posted }) : `${t('posted', { count: posted })} ${t('skipped', { count: skipped })}`);
+      setResult(said(outcome.value));
       setChosen(new Set());
       router.refresh();
     });
   };
+  const commit = () =>
+    run(
+      () => commitStatement({ import_id: importId, confirmed_row_ids: [...chosen] }),
+      ({ posted, skipped }) => (skipped === 0 ? t('posted', { count: posted }) : `${t('posted', { count: posted })} ${t('skipped', { count: skipped })}`),
+    );
+  const link = (line: StatementLine) => run(() => linkStatementLine({ import_id: importId, row_id: line.id }), () => t('linked', { line: line.index }));
 
   const pick = (value: Filter, label: string) => (
     <button
@@ -146,7 +181,7 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
       </div>
 
       <section aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-        {committed && posting.length === 0 ? (
+        {committed && posting.length === 0 && !open ? (
           <p data-testid="statement-committed" className="text-body font-semibold text-ink">
             {t('committedNote')}
           </p>
@@ -161,10 +196,10 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
             {result}
           </p>
         )}
-        {committed && suggestions.length === 0 ? null : (
+        {committed && posting.length === 0 && !open ? null : (
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-            <Button type="button" onClick={submit} disabled={saving || posting.length === 0} data-testid="statement-commit">
-              {saving ? t('committing') : committed ? t('confirmSelected', { count: chosen.size }) : t('commit', { count: posting.length })}
+            <Button type="button" onClick={commit} disabled={saving || posting.length === 0} data-testid="statement-commit">
+              {saving ? t('committing') : t('commit', { count: posting.length })}
             </Button>
             <FieldMessage id="statement-commit-error" error={error} />
           </div>
@@ -176,8 +211,8 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
           <label className="flex items-center gap-2 border-b border-rule px-4 py-2 text-body font-semibold text-ink sm:px-3">
             <Checkbox
               data-testid="statement-select-all"
-              checked={chosen.size === suggestions.length}
-              indeterminate={chosen.size > 0 && chosen.size < suggestions.length}
+              checked={ticked === suggestions.length}
+              indeterminate={ticked > 0 && ticked < suggestions.length}
               disabled={saving}
               onCheckedChange={(on) => toggle(suggestions.map((line) => line.id), on)}
             />
@@ -189,7 +224,15 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
         ) : (
           <ol>
             {shown.map((line) => (
-              <LineRow key={line.id} line={line} reserve={suggestions.length > 0} checked={chosen.has(line.id)} disabled={saving} onCheck={(on) => toggle([line.id], on)} />
+              <LineRow
+                key={line.id}
+                line={line}
+                reserve={open}
+                checked={chosen.has(line.id)}
+                disabled={saving}
+                onCheck={(on) => toggle([line.id], on)}
+                onLink={() => link(line)}
+              />
             ))}
           </ol>
         )}

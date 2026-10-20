@@ -3029,6 +3029,7 @@ export type Database = {
           rent_vnd: number
         }[]
       }
+      link_statement_line: { Args: { p_row_id: string }; Returns: undefined }
       national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
       preview_activation: {
         Args: { p_lease_id: string; p_paid_through?: string }
@@ -3182,6 +3183,24 @@ export type Database = {
       set_property_location: {
         Args: { p_lat?: number; p_lng?: number; p_property_id: string }
         Returns: Json
+      }
+      statement_import_lines: {
+        Args: { p_import_id: string }
+        Returns: {
+          amount_vnd: number
+          bank_ref: string
+          candidate_invoice_ids: string[]
+          description: string
+          hand_amount_vnd: number
+          hand_received_on: string
+          id: string
+          invoice_id: string
+          link_payment_id: string
+          posted_on: string
+          reason: string
+          row_index: number
+          state: string
+        }[]
       }
       suggest_current_unit: {
         Args: { p_text: string }

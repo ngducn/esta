@@ -3,7 +3,7 @@ import { MAX_AMOUNT_VND, vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { idSchema } from '@esta/ops';
 import { z } from 'zod';
-import { LINE_STATUSES, type BillLabel, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
+import { LINE_REASONS, LINE_STATUSES, type BillLabel, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
 import { createSessionClient } from '@/server/supabase/server';
 
 export type StatementImportView = {
@@ -17,17 +17,22 @@ export type StatementImportView = {
 
 const PAGE_SIZE = 1000;
 
+const money = z.number().int().min(-MAX_AMOUNT_VND).max(MAX_AMOUNT_VND).transform(vnd);
+
 const lineSchema = z.object({
   id: idSchema,
   row_index: z.number().int(),
   posted_on: isoDateSchema,
-  amount_vnd: z.number().int().min(-MAX_AMOUNT_VND).max(MAX_AMOUNT_VND).transform(vnd),
+  amount_vnd: money,
   description: z.string(),
   bank_ref: z.string(),
-  status: z.enum(LINE_STATUSES),
-  reason: z.enum(['debit', 'duplicate', 'repeat', 'paid', 'void']).nullable(),
+  state: z.enum(LINE_STATUSES),
+  reason: z.enum(LINE_REASONS).nullable(),
   invoice_id: idSchema.nullable(),
   candidate_invoice_ids: z.array(idSchema),
+  link_payment_id: idSchema.nullable(),
+  hand_received_on: isoDateSchema.nullable(),
+  hand_amount_vnd: money.nullable(),
 });
 
 const importSchema = z.object({
@@ -71,12 +76,7 @@ export async function loadStatementImport(householdId: string, importId: string)
   const stored = importSchema.parse(header.data);
   const rows: z.output<typeof lineSchema>[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase
-      .from('statement_rows')
-      .select('id, row_index, posted_on, amount_vnd, description, bank_ref, status, reason, invoice_id, candidate_invoice_ids')
-      .eq('import_id', importId)
-      .order('row_index')
-      .range(from, from + PAGE_SIZE - 1);
+    const { data, error } = await supabase.rpc('statement_import_lines', { p_import_id: importId }).range(from, from + PAGE_SIZE - 1);
     if (error) throw new Error(`Reading the import's lines failed: ${error.message}`);
     rows.push(...z.array(lineSchema).parse(data));
     if (data.length < PAGE_SIZE) break;
@@ -96,9 +96,13 @@ export async function loadStatementImport(householdId: string, importId: string)
       amount: row.amount_vnd,
       description: row.description,
       bankRef: row.bank_ref,
-      status: row.status,
+      status: row.state,
       reason: row.reason,
       bills: named(row).flatMap((id) => bills.get(id) ?? []),
+      hand:
+        row.state === 'held' && row.hand_received_on !== null && row.hand_amount_vnd !== null
+          ? { receivedOn: row.hand_received_on, amount: row.hand_amount_vnd, linkable: row.link_payment_id !== null }
+          : null,
     })),
   };
 }

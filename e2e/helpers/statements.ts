@@ -9,7 +9,12 @@ export const PROPERTY = 'Dãy trọ Demo Sao Kê';
 const TENANTS = ['Nguyễn Văn An Demo', 'Trần Thị Bình Demo', 'Lê Văn Cường Demo', 'Võ Thị Dung Demo', 'Hoàng Văn Em Demo', 'Đặng Thị Giang Demo'];
 
 /** `rooms` names each owed bill's room by its number. */
-export type StatementHousehold = { readonly householdId: string; readonly statement: HouseholdStatement; readonly rooms: ReadonlyMap<string, string> };
+export type StatementHousehold = {
+  readonly householdId: string;
+  readonly statement: HouseholdStatement;
+  readonly bills: readonly OpenBill[];
+  readonly rooms: ReadonlyMap<string, string>;
+};
 
 const balancesSchema = z.array(z.object({ id: z.string(), number: z.string(), lease_id: z.string(), due_date: z.string(), outstanding_vnd: z.number() }));
 const codesSchema = z.array(z.object({ id: z.string(), memo_code: z.string(), lease: z.object({ tenant: z.object({ full_name: z.string() }) }) }));
@@ -46,5 +51,5 @@ export async function statementHousehold(page: Page): Promise<StatementHousehold
     return { id: row.id, number: row.number, memoCode: code.memo_code, tenantName: code.lease.tenant.full_name, dueDate: isoDate(row.due_date), outstanding: vnd(row.outstanding_vnd) };
   });
   const rooms = new Map(balances.map((row) => [row.number, house.roomOfLease.get(row.lease_id) ?? '']));
-  return { householdId, statement: householdStatement(bills, isoDate('2026-10-07')), rooms };
+  return { householdId, statement: householdStatement(bills, isoDate('2026-10-07')), bills, rooms };
 }
