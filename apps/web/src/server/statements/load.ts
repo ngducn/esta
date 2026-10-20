@@ -30,9 +30,7 @@ const lineSchema = z.object({
   reason: z.enum(LINE_REASONS).nullable(),
   invoice_id: idSchema.nullable(),
   candidate_invoice_ids: z.array(idSchema),
-  link_payment_id: idSchema.nullable(),
-  hand_received_on: isoDateSchema.nullable(),
-  hand_amount_vnd: money.nullable(),
+  hand_payments: z.array(z.object({ payment_id: idSchema, received_on: isoDateSchema, amount_vnd: money, bills: z.array(z.string()) })),
 });
 
 const importSchema = z.object({
@@ -99,10 +97,7 @@ export async function loadStatementImport(householdId: string, importId: string)
       status: row.state,
       reason: row.reason,
       bills: named(row).flatMap((id) => bills.get(id) ?? []),
-      hand:
-        row.state === 'held' && row.hand_received_on !== null && row.hand_amount_vnd !== null
-          ? { receivedOn: row.hand_received_on, amount: row.hand_amount_vnd, linkable: row.link_payment_id !== null }
-          : null,
+      hands: row.hand_payments.map((hand) => ({ paymentId: hand.payment_id, receivedOn: hand.received_on, amount: hand.amount_vnd, bills: hand.bills })),
     })),
   };
 }

@@ -1,10 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { golden, statementCsv, statementXlsx } from '../fixtures/statements/household.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
-import { boardRow } from './helpers/board';
+import { renderCsv } from '../packages/core/src/matching/render.ts';
+import { boardRow, storedInvoice } from './helpers/board';
+import { laneInvoice } from './helpers/seed';
 import { PROPERTY, statementHousehold, type StatementHousehold } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START, toast, vnd } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
 
@@ -250,7 +252,9 @@ test('rule 8: a code match on a bill Mẹ already recorded by hand is held, and 
   await preview(page, 'sao-ke.csv', statementCsv(household.statement, 'a'));
   await expect(line(page, 1)).toHaveAttribute('data-status', 'held');
   await expect(line(page, 1).getByTestId('statement-status')).toHaveText('Có thể trùng');
-  await expect(line(page, 1).getByTestId('statement-target')).toContainText(`Hóa đơn ${bill.number} đã có`);
+  await expect(line(page, 1).getByTestId('statement-target')).toContainText('Có 1 khoản chuyển khoản ghi tay của hợp đồng này');
+  await expect(line(page, 1).getByTestId('statement-hands').getByRole('radio')).toBeChecked();
+  await expect(line(page, 1).getByTestId('statement-hands')).toContainText(bill.number);
   await expect(line(page, 1).getByRole('checkbox', { name: 'Ghi sổ dòng 1 như một khoản mới' })).not.toBeChecked();
   await expect(page.getByTestId('statement-summary')).toContainText('Sẽ ghi sổ 2 khoản');
   await expect(page.getByTestId('statement-filter-held')).toHaveText('Có thể trùng (1)');
@@ -266,4 +270,35 @@ test('rule 8: a code match on a bill Mẹ already recorded by hand is held, and 
   expect(await statementPayments(page, household.householdId)).toHaveLength(2);
   const hand = await memberRest<{ statement_row_id: string | null }[]>(page, 'GET', `payments?household_id=eq.${household.householdId}&source=eq.manual&select=statement_row_id`);
   expect(hand.map((payment) => payment.statement_row_id !== null)).toEqual([true]);
+});
+
+test('rule 9: a transfer Mẹ records from Phòng 5’s October row settles September, and the October line holds on it instead of posting twice', async ({ page }) => {
+  await open(page, 'ryan.lane9@demo.esta.test', 'light', PHONE);
+  const october = laneInvoice(9, 'di-an', 5, '2026-10-25');
+  const { memo_code: code } = await storedInvoice(page, october);
+  await page.goto('/collections');
+  await boardRow(page, 'notDue', 'Phòng 5, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
+  const sheet = page.getByTestId('record-payment-sheet');
+  await sheet.getByRole('textbox', { name: 'Số tiền nhận' }).fill('2.800.000');
+  await expect(sheet.getByTestId('payment-allocation').getByRole('listitem').first()).toContainText('Tháng 9');
+  await sheet.getByRole('radio', { name: 'Chuyển khoản' }).click();
+  await sheet.getByTestId('payment-save').click();
+  await expect(toast(page)).toContainText(`Đã ghi nhận ${vnd('2.800.000')} từ Phòng 5.`);
+
+  const csv = renderCsv([
+    ['Ngày giao dịch', 'Số tham chiếu', 'Số tiền (VND)', 'Nội dung'],
+    ['06/10/2026 00:00:00', `FT9${Date.now()}`, '2.800.000', `MBVCB.ESTA${code}.CT TU 0903123456 HOANG VAN EM DEMO`],
+  ]);
+  await preview(page, 'sao-ke-phong-5.csv', csv);
+  await expect(line(page, 1)).toHaveAttribute('data-status', 'held');
+  await expect(line(page, 1).getByTestId('statement-hands')).toContainText(`${vnd('2.800.000')} ngày 07/10/2026 · DIAN-202609-`);
+  await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 0 khoản');
+  await line(page, 1).getByTestId('statement-link').click();
+  await expect(line(page, 1)).toHaveAttribute('data-status', 'posted');
+  const [bill] = await memberRest<{ outstanding_vnd: number }[]>(page, 'GET', `invoice_balances?id=eq.${october}&select=outstanding_vnd`);
+  expect(bill?.outstanding_vnd).toBe(2_800_000);
+
+  // Lane 9 goes back to its seeded bills for the specs that read them.
+  const [hand] = await memberRest<{ id: string }[]>(page, 'GET', `payments?source=eq.manual&statement_row_id=not.is.null&created_by=not.is.null&order=created_at.desc&limit=1&select=id`);
+  await memberRest(page, 'POST', 'rpc/undo_payment', { p_payment_id: hand?.id });
 });

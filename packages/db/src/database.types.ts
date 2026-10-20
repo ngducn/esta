@@ -3029,7 +3029,10 @@ export type Database = {
           rent_vnd: number
         }[]
       }
-      link_statement_line: { Args: { p_row_id: string }; Returns: undefined }
+      link_statement_line: {
+        Args: { p_payment_id: string; p_row_id: string }
+        Returns: undefined
+      }
       national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
       preview_activation: {
         Args: { p_lease_id: string; p_paid_through?: string }
@@ -3191,11 +3194,9 @@ export type Database = {
           bank_ref: string
           candidate_invoice_ids: string[]
           description: string
-          hand_amount_vnd: number
-          hand_received_on: string
+          hand_payments: Json
           id: string
           invoice_id: string
-          link_payment_id: string
           posted_on: string
           reason: string
           row_index: number

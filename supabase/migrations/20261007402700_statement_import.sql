@@ -220,20 +220,37 @@ begin
 end;
 $$;
 
--- What a line can do now (LSE-8, [app rule] DOMAIN-VN §9): `posted` once a payment holds it, with `recorded_by_hand`
--- when that payment was recorded by hand and linked; a memo naming a voided bill, or one that owes nothing, is
--- `unmatched` with `void` or `paid`. A memo match on a bill that has a transfer recorded by hand (source manual, method
--- bank_transfer) that no statement line holds yet is `held` with `recorded_by_hand`, because the line may be that same
--- transfer: it posts only when an admin confirms it, or is linked to that payment. `link_payment_id` is the one such
--- transfer of the same amount, when there is exactly one; `hand_*` describe the transfer shown beside the line.
-create function private.statement_line_state(
-  p_row public.statement_rows,
-  out state text,
-  out reason text,
-  out link_payment_id uuid,
-  out hand_received_on date,
-  out hand_amount_vnd bigint
-)
+-- The transfers recorded by hand a matched or suggested line may be ([app rule] DOMAIN-VN §9): payments recorded by hand
+-- as a bank transfer (source manual, method bank_transfer) that no statement line holds yet, allocated to any bill of
+-- the line's lease, received within 10 days of the line's date, whatever their amount. A hand payment often lands on an
+-- older bill than the memo names, because the sheet settles oldest first. The window keeps last month's transfer of
+-- the same rent away from this month's line. The likeliest come first: the line's amount, then the nearest date.
+create function private.statement_line_candidates(p_row public.statement_rows)
+returns table (payment_id uuid, received_on date, amount_vnd bigint)
+language sql
+stable
+set search_path = ''
+as $$
+  select p.id, p.received_on, p.amount_vnd
+  from public.payments p
+  where p_row.invoice_id is not null and p_row.status in ('memo_match', 'suggested')
+    and p.household_id = p_row.household_id and p.source = 'manual' and p.method = 'bank_transfer' and p.statement_row_id is null
+    and abs(p.received_on - p_row.posted_on) <= 10
+    and exists (
+      select from public.payment_allocations a
+      join public.invoices i on i.id = a.invoice_id
+      where a.payment_id = p.id and i.lease_id = (select b.lease_id from public.invoices b where b.id = p_row.invoice_id)
+    )
+  order by p.amount_vnd = p_row.amount_vnd desc, abs(p.received_on - p_row.posted_on), p.received_on, p.id;
+$$;
+revoke all on function private.statement_line_candidates(public.statement_rows) from public;
+grant execute on function private.statement_line_candidates(public.statement_rows) to authenticated;
+
+-- What a line can do now (LSE-8): `posted` once a payment holds it, with `recorded_by_hand` when that payment was
+-- recorded by hand and linked; a line naming a voided bill is `unmatched` with `void`; a line with a hand transfer it
+-- may be (private.statement_line_candidates) is `held` with `recorded_by_hand`, and posts only when an admin ticks it
+-- or links it to one of them; a line naming a bill that owes nothing is `unmatched` with `paid`.
+create function private.statement_line_state(p_row public.statement_rows, out state text, out reason text)
 language plpgsql
 stable
 set search_path = ''
@@ -257,28 +274,10 @@ begin
   if v_bill.status <> 'issued' then
     state := 'unmatched';
     reason := 'void';
-    return;
-  end if;
-  if p_row.status = 'memo_match' then
-    select p.received_on, p.amount_vnd into hand_received_on, hand_amount_vnd
-    from public.payments p
-    where p.household_id = p_row.household_id and p.source = 'manual' and p.method = 'bank_transfer' and p.statement_row_id is null
-      and exists (select from public.payment_allocations a where a.payment_id = p.id and a.invoice_id = p_row.invoice_id)
-    order by p.amount_vnd = p_row.amount_vnd desc, p.received_on desc, p.id
-    limit 1;
-    if found then
-      state := 'held';
-      reason := 'recorded_by_hand';
-      select min(p.id::text)::uuid into link_payment_id
-      from public.payments p
-      where p.household_id = p_row.household_id and p.source = 'manual' and p.method = 'bank_transfer' and p.statement_row_id is null
-        and p.amount_vnd = p_row.amount_vnd
-        and exists (select from public.payment_allocations a where a.payment_id = p.id and a.invoice_id = p_row.invoice_id)
-      having count(*) = 1;
-      return;
-    end if;
-  end if;
-  if v_bill.outstanding_vnd <= 0 then
+  elsif exists (select from private.statement_line_candidates(p_row)) then
+    state := 'held';
+    reason := 'recorded_by_hand';
+  elsif v_bill.outstanding_vnd <= 0 then
     state := 'unmatched';
     reason := 'paid';
   end if;
@@ -287,11 +286,12 @@ $$;
 revoke all on function private.statement_line_state(public.statement_rows) from public;
 grant execute on function private.statement_line_state(public.statement_rows) to authenticated;
 
--- The preview: each line of an import in file order with its state, under the reader's RLS.
+-- The preview: each line of an import in file order with its state, and for a held line the hand transfers it may be,
+-- each with the bills it settled, under the reader's RLS.
 create function public.statement_import_lines(p_import_id uuid)
 returns table (
   id uuid, row_index integer, posted_on date, amount_vnd bigint, description text, bank_ref text, state text, reason text,
-  invoice_id uuid, candidate_invoice_ids uuid[], link_payment_id uuid, hand_received_on date, hand_amount_vnd bigint
+  invoice_id uuid, candidate_invoice_ids uuid[], hand_payments jsonb
 )
 language sql
 stable
@@ -299,7 +299,14 @@ security invoker
 set search_path = ''
 as $$
   select r.id, r.row_index, r.posted_on, r.amount_vnd, r.description, r.bank_ref, s.state, s.reason, r.invoice_id, r.candidate_invoice_ids,
-    s.link_payment_id, s.hand_received_on, s.hand_amount_vnd
+    case when s.state = 'held' then (
+      select jsonb_agg(jsonb_build_object(
+        'payment_id', c.payment_id, 'received_on', c.received_on, 'amount_vnd', c.amount_vnd,
+        'bills', (select coalesce(jsonb_agg(i.number order by i.due_date), '[]') from public.payment_allocations a
+                  join public.invoices i on i.id = a.invoice_id where a.payment_id = c.payment_id)
+      ) order by c.ord)
+      from private.statement_line_candidates(r) with ordinality c (payment_id, received_on, amount_vnd, ord)
+    ) else '[]' end
   from public.statement_rows r
   cross join lateral private.statement_line_state(r) s
   where r.import_id = p_import_id
@@ -421,10 +428,10 @@ $$;
 revoke all on function public.commit_statement_import(uuid, uuid[]) from public, anon;
 grant execute on function public.commit_statement_import(uuid, uuid[]) to authenticated;
 
--- `Đã ghi tay`: a held line is the transfer recorded by hand, so that payment takes the line and no money is added. Only
--- the one transfer of the line's amount private.statement_line_state names can be linked; linking it again changes
--- nothing.
-create function public.link_statement_line(p_row_id uuid)
+-- `Đã ghi tay`: a held line is one of the transfers recorded by hand it may be, chosen by the admin, so that payment
+-- takes the line and no money is added. Only a candidate of the line can be chosen, so a payment another line holds
+-- never can; linking the same pair again changes nothing.
+create function public.link_statement_line(p_row_id uuid, p_payment_id uuid)
 returns void
 language plpgsql
 security definer
@@ -440,15 +447,15 @@ begin
   end if;
   perform 1 from public.statement_imports s where s.id = v_row.import_id for update;
   perform 1 from public.invoices i join public.leases l on l.id = i.lease_id where i.id = v_row.invoice_id for no key update of l;
-  v_state := private.statement_line_state(v_row);
-  if v_state.state = 'posted' and v_state.reason = 'recorded_by_hand' then
+  if exists (select from public.payments p where p.id = p_payment_id and p.statement_row_id = v_row.id) then
     return;
   end if;
-  if v_state.state <> 'held' or v_state.link_payment_id is null then
+  v_state := private.statement_line_state(v_row);
+  if v_state.state <> 'held' or not exists (select from private.statement_line_candidates(v_row) c where c.payment_id = p_payment_id) then
     raise exception 'ESTA_STATEMENT_LINE_NOT_LINKABLE' using errcode = '55000';
   end if;
-  update public.payments p set statement_row_id = v_row.id where p.id = v_state.link_payment_id;
+  update public.payments p set statement_row_id = v_row.id where p.id = p_payment_id;
 end;
 $$;
-revoke all on function public.link_statement_line(uuid) from public, anon;
-grant execute on function public.link_statement_line(uuid) to authenticated;
+revoke all on function public.link_statement_line(uuid, uuid) from public, anon;
+grant execute on function public.link_statement_line(uuid, uuid) to authenticated;

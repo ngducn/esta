@@ -22,8 +22,11 @@ export type StatementLine = {
   readonly reason: LineReason | null;
   /** The matched bill, or each bill a line left for a person could belong to. */
   readonly bills: readonly BillLabel[];
-  /** For a held line, the transfer recorded by hand on its bill, and whether `Đã ghi tay` can link the line to it. */
-  readonly hand: { readonly receivedOn: IsoDate; readonly amount: Vnd; readonly linkable: boolean } | null;
+  /** For a held line, the hand transfers it may be, likeliest first; `Đã ghi tay` links it to the one chosen. */
+  readonly hands: readonly HandPayment[];
 };
+
+/** A payment recorded by hand as a bank transfer on the line's lease, with the bills it settled. */
+export type HandPayment = { readonly paymentId: string; readonly receivedOn: IsoDate; readonly amount: Vnd; readonly bills: readonly string[] };
 
 export type RefusedLine = { readonly index: number; readonly field: 'row' | 'date' | 'amount'; readonly reason: string };

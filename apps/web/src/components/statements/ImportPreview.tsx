@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { commitStatement, linkStatementLine } from '@/server/actions/statements';
 import { LINE_STATUSES, type BillLabel, type LineStatus, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
+import { HeldChoices, preselected } from './HeldChoices';
 
 /** Shape, word, then color: a match waits to post, a suggestion waits for a person, a held line warns, a posted one is settled. */
 const LINE_MARKS = {
@@ -42,9 +43,8 @@ function LineTarget({ line }: { line: StatementLine }) {
   const billText = useBillText();
   const [bill] = line.bills;
   let text: string;
-  if (line.status === 'held' && line.hand !== null) {
-    text = t('reasonHeld', { amount: formatVnd(line.hand.amount, locale as Locale), date: formatDate(line.hand.receivedOn, locale as Locale), number: bill?.number ?? '' });
-  } else if (line.status === 'posted' && line.reason === 'recorded_by_hand' && bill !== undefined) text = t('reasonLinked', { bill: billText(bill) });
+  if (line.status === 'held') text = t('reasonHeld', { count: line.hands.length });
+  else if (line.status === 'posted' && line.reason === 'recorded_by_hand' && bill !== undefined) text = t('reasonLinked', { bill: billText(bill) });
   else if (line.status === 'ignored') text = t(line.reason === 'debit' ? 'reasonDebit' : 'reasonDuplicate');
   else if (line.reason === 'repeat') text = t('reasonRepeat');
   else if (line.reason === 'paid' || line.reason === 'void') text = t(line.reason === 'paid' ? 'reasonPaid' : 'reasonVoid', { number: bill?.number ?? '' });
@@ -58,9 +58,18 @@ function LineTarget({ line }: { line: StatementLine }) {
   );
 }
 
-type RowProps = { line: StatementLine; reserve: boolean; checked: boolean; onCheck: (on: boolean) => void; onLink: () => void; disabled: boolean };
+type RowProps = {
+  line: StatementLine;
+  reserve: boolean;
+  checked: boolean;
+  onCheck: (on: boolean) => void;
+  pick: string | undefined;
+  onPick: (paymentId: string) => void;
+  onLink: () => void;
+  disabled: boolean;
+};
 
-function LineRow({ line, reserve, checked, onCheck, onLink, disabled }: RowProps) {
+function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, disabled }: RowProps) {
   const t = useTranslations('statements');
   const locale = useLocale() as Locale;
   const mark = LINE_MARKS[line.status];
@@ -95,11 +104,7 @@ function LineRow({ line, reserve, checked, onCheck, onLink, disabled }: RowProps
           </span>
           <LineTarget line={line} />
         </div>
-        {line.hand?.linkable ? (
-          <Button type="button" variant="outline" disabled={disabled} onClick={onLink} data-testid="statement-link" className="mt-1 w-fit">
-            {t('linkByHand')}
-          </Button>
-        ) : null}
+        {line.status === 'held' ? <HeldChoices line={line} pick={pick} onPick={onPick} onLink={onLink} disabled={disabled} /> : null}
       </div>
     </li>
   );
@@ -116,6 +121,7 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>('all');
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
+  const [picks, setPicks] = useState<Readonly<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -146,6 +152,7 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
         return;
       }
       setResult(said(outcome.value));
+      setPicks({});
       setChosen(new Set());
       router.refresh();
     });
@@ -153,9 +160,11 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
   const commit = () =>
     run(
       () => commitStatement({ import_id: importId, confirmed_row_ids: [...chosen] }),
-      ({ posted, skipped }) => (skipped === 0 ? t('posted', { count: posted }) : `${t('posted', { count: posted })} ${t('skipped', { count: skipped })}`),
+      ({ posted, skipped }) => [posted > 0 || skipped === 0 ? t('posted', { count: posted }) : null, skipped > 0 ? t('skipped', { count: skipped }) : null].filter(Boolean).join(' '),
     );
-  const link = (line: StatementLine) => run(() => linkStatementLine({ import_id: importId, row_id: line.id }), () => t('linked', { line: line.index }));
+  const pickOf = (line: StatementLine) => picks[line.id] ?? preselected(line);
+  const link = (line: StatementLine) =>
+    run(() => linkStatementLine({ import_id: importId, row_id: line.id, payment_id: pickOf(line) ?? '' }), () => t('linked', { line: line.index }));
 
   const pick = (value: Filter, label: string) => (
     <button
@@ -231,6 +240,8 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
                 checked={chosen.has(line.id)}
                 disabled={saving}
                 onCheck={(on) => toggle([line.id], on)}
+                pick={pickOf(line)}
+                onPick={(paymentId) => setPicks((current) => ({ ...current, [line.id]: paymentId }))}
                 onLink={() => link(line)}
               />
             ))}

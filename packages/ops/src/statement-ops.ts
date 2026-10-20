@@ -171,11 +171,15 @@ export const statementImport = defineOp<ImportInput, ImportChange, StatementImpo
 const commitInputSchema = z.strictObject({ import_id: idSchema, confirmed_row_ids: z.array(idSchema).max(MAX_ROWS) });
 type Commit = z.output<typeof commitInputSchema>;
 
-const lineStateSchema = z.object({ id: z.uuid(), state: z.string(), reason: z.string().nullable(), link_payment_id: z.uuid().nullable() });
+const lineStateSchema = z.object({
+  id: z.uuid(),
+  state: z.string(),
+  hand_payments: z.array(z.object({ payment_id: z.uuid() }).loose()),
+});
 
 /** Each line of the import with what it can do now, as the database reads it (`statement_line_state`). */
 async function readLineStates(ctx: OpContext, importId: string): Promise<z.output<typeof lineStateSchema>[]> {
-  const rows = await readAll("the import's lines", (from, to) => ctx.db.rpc('statement_import_lines', { p_import_id: importId }).select('id, state, reason, link_payment_id').range(from, to));
+  const rows = await readAll("the import's lines", (from, to) => ctx.db.rpc('statement_import_lines', { p_import_id: importId }).select('id, state, hand_payments').range(from, to));
   return z.array(lineStateSchema).parse(rows);
 }
 
@@ -204,10 +208,10 @@ export const statementCommit = defineOp<Commit, Commit, StatementCommitted>({
   },
 });
 
-const linkInputSchema = z.strictObject({ import_id: idSchema, row_id: idSchema });
+const linkInputSchema = z.strictObject({ import_id: idSchema, row_id: idSchema, payment_id: idSchema });
 type Link = z.output<typeof linkInputSchema>;
 
-/** The held line is not the one transfer recorded by hand of its amount, so it cannot be linked. */
+/** The payment is not one of the hand transfers the held line may be, or another line already holds it. */
 export type LinkRefusal = { readonly kind: 'not_linkable' };
 
 const LINK_SENTINELS: Readonly<Record<string, LinkRefusal | CommonRefusal>> = {
@@ -216,8 +220,8 @@ const LINK_SENTINELS: Readonly<Record<string, LinkRefusal | CommonRefusal>> = {
 };
 
 /**
- * LSE-8 `Đã ghi tay` ([app rule] DOMAIN-VN §9): a held line is the transfer Mẹ already recorded by hand, so that payment
- * takes the line and no money is added. A line already linked plans as unchanged.
+ * LSE-8 `Đã ghi tay` ([app rule] DOMAIN-VN §9): a held line is the hand transfer the admin chose among its candidates,
+ * so that payment takes the line and no money is added. A line already linked to it plans as unchanged.
  */
 export const statementLink = defineOp<Link, Link, StatementCommitted, LinkRefusal>({
   creates: null,
@@ -225,11 +229,16 @@ export const statementLink = defineOp<Link, Link, StatementCommitted, LinkRefusa
   async plan(ctx, input) {
     const line = (await readLineStates(ctx, input.import_id)).find((candidate) => candidate.id === input.row_id);
     if (line === undefined) return refuse({ kind: 'not_found' });
-    if (line.state === 'posted' && line.reason === 'recorded_by_hand') return unchanged({ posted: 0, skipped: 0 });
-    return line.state === 'held' && line.link_payment_id !== null ? change(input) : refuse({ kind: 'not_linkable' });
+    if (line.state === 'posted') {
+      const linked = await ctx.db.from('payments').select('id').eq('id', input.payment_id).eq('statement_row_id', input.row_id).maybeSingle();
+      if (linked.error) throw new Error(`Reading the linked payment failed: ${linked.error.message}`);
+      return linked.data === null ? refuse({ kind: 'not_linkable' }) : unchanged({ posted: 0, skipped: 0 });
+    }
+    const offered = line.state === 'held' && line.hand_payments.some((hand) => hand.payment_id === input.payment_id);
+    return offered ? change(input) : refuse({ kind: 'not_linkable' });
   },
-  async apply(ctx, { row_id }) {
-    const { error } = await ctx.db.rpc('link_statement_line', { p_row_id: row_id });
+  async apply(ctx, { row_id, payment_id }) {
+    const { error } = await ctx.db.rpc('link_statement_line', { p_row_id: row_id, p_payment_id: payment_id });
     return error ? refuse(dbRefusal(error, LINK_SENTINELS)) : { ok: true, value: { posted: 0, skipped: 0 } };
   },
 });
