@@ -5,6 +5,7 @@ import type { IsoDate } from '../../packages/core/src/date/iso-date.ts';
 import { STATEMENT_LAYOUTS, type StatementCell, type StatementGrid, type StatementLayout, type StatementLayoutId } from '../../packages/core/src/matching/layouts.ts';
 import type { ImportReason, ImportStatus } from '../../packages/core/src/matching/import.ts';
 import { renderCsv, renderStatementGrid, type RenderableRow } from '../../packages/core/src/matching/render.ts';
+import { UNRECOGNIZED_LAYOUT, UNRECOGNIZED_PREAMBLE } from '../../packages/core/src/matching/statement-scenario.ts';
 import { vnd, type Vnd } from '../../packages/core/src/money/vnd.ts';
 import { foldVietnamese } from '../../packages/core/src/search/fold.ts';
 
@@ -90,13 +91,17 @@ const FRACTIONAL: Readonly<Record<StatementLayout['amountStyle'], StatementCell>
   number: 1_500_000.5,
 };
 
-/** Each layout of DOMAIN-VN §9, with the half-đồng line last. */
-export function statementGrid(statement: HouseholdStatement, id: StatementLayoutId): StatementGrid {
-  const layout = STATEMENT_LAYOUTS[id];
+function layoutGrid(statement: HouseholdStatement, layout: StatementLayout): StatementGrid {
   const [, fractional = []] = renderStatementGrid(layout, [statement.fractional]);
   const half = fractional.map((cell, column) => (['amount', 'credit'].includes(layout.columns[column]?.role ?? '') ? FRACTIONAL[layout.amountStyle] : cell));
   return [...renderStatementGrid(layout, statement.lines), half];
 }
+
+/** Each layout of DOMAIN-VN §9, with the half-đồng line last. */
+export const statementGrid = (statement: HouseholdStatement, id: StatementLayoutId): StatementGrid => layoutGrid(statement, STATEMENT_LAYOUTS[id]);
+
+/** The same statement from a bank Esta does not recognize (P3-21), its account lines first: it imports through the column mapping. */
+export const unrecognizedCsv = (statement: HouseholdStatement): string => renderCsv([...UNRECOGNIZED_PREAMBLE, ...layoutGrid(statement, UNRECOGNIZED_LAYOUT)]);
 
 export const statementCsv = (statement: HouseholdStatement, id: 'a' | 'c'): string => renderCsv(statementGrid(statement, id));
 
@@ -105,8 +110,8 @@ export async function statementXlsx(statement: HouseholdStatement): Promise<Buff
   return writeXlsxFile([{ sheet: 'Sao ke', data }], {}).toBuffer();
 }
 
-/** The file line (a 1-based data row under the header) and what the import must make of it. */
-export const golden = (statement: HouseholdStatement) => statement.lines.map((line, i) => ({ index: i + 1, ...line.expect }));
+/** The file line (a 1-based data row under the header, which sits `headerRow` lines down) and what the import must make of it. */
+export const golden = (statement: HouseholdStatement, headerRow = 0) => statement.lines.map((line, i) => ({ index: headerRow + i + 1, ...line.expect }));
 
 /**
  * A Demo rooming house as rows for any client to insert: one monthly lease a room from January, each activated paid

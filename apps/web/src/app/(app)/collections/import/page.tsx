@@ -8,13 +8,17 @@ import { StatementUpload } from '@/components/statements/StatementUpload';
 import { loadReceivingAccounts } from '@/server/invoices/qr';
 import { requireMember } from '@/server/member';
 import { statementIslandIntl } from '@/server/properties/island-messages';
+import { loadColumnPresets } from '@/server/statements/load';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('statements');
   return { title: t('metaTitle') };
 }
 
-/** LSE-8: an admin chooses the receiving account and a statement file; the browser reads it and the preview opens. */
+/**
+ * LSE-8: an admin chooses the receiving account and a statement file; the browser reads it, under each account's saved
+ * columns when Esta does not know its header (P3-21), and the preview opens.
+ */
 export default async function StatementImportPage() {
   const [member, t] = await Promise.all([requireMember(), getTranslations('statements')]);
   const heading = (
@@ -34,6 +38,10 @@ export default async function StatementImportPage() {
     );
   }
   const [accounts, intl] = await Promise.all([loadReceivingAccounts(member.household.id), statementIslandIntl()]);
+  const presets = await loadColumnPresets(
+    member.household.id,
+    accounts.map((account) => account.id),
+  );
   return (
     <div className="flex flex-col gap-5">
       {heading}
@@ -41,7 +49,10 @@ export default async function StatementImportPage() {
         <EmptyState title={t('noAccountTitle')} body={t('noAccountBody')} icon={Landmark} action={{ label: t('noAccountAction'), href: '/collections' }} />
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
-          <StatementUpload accounts={accounts.map((account) => ({ id: account.id, label: t('accountOption', { bank: account.bankName, number: account.accountNo }) }))} />
+          <StatementUpload
+            accounts={accounts.map((account) => ({ id: account.id, label: t('accountOption', { bank: account.bankName, number: account.accountNo }) }))}
+            presets={presets}
+          />
         </PropertyIntl>
       )}
     </div>

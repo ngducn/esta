@@ -3,7 +3,8 @@ import { isoDate } from '../../packages/core/src/date/iso-date.ts';
 import { decodeStatement, decodeStatementCsv } from '../../packages/core/src/matching/decode.ts';
 import { planImport } from '../../packages/core/src/matching/import.ts';
 import { vnd } from '../../packages/core/src/money/vnd.ts';
-import { golden, householdStatement, statementCsv, statementGrid, type OpenBill } from './household.ts';
+import { UNRECOGNIZED_COLUMNS } from '../../packages/core/src/matching/statement-scenario.ts';
+import { golden, householdStatement, statementCsv, statementGrid, unrecognizedCsv, type OpenBill } from './household.ts';
 
 const bill = (number: string, memoCode: string, tenantName: string, dueDate: string, outstanding: number): OpenBill => ({
   id: `id-${number}`,
@@ -27,14 +28,20 @@ const OPEN = [
 const statement = householdStatement(OPEN, isoDate('2026-10-07'), 'FT02');
 const numberOf = new Map(OPEN.map((open) => [open.id, open.number]));
 
-function decoded(id: 'a' | 'b' | 'c') {
-  const result = id === 'b' ? decodeStatement(statementGrid(statement, 'b')) : decodeStatementCsv(statementCsv(statement, id));
+const LAYOUTS = ['a', 'b', 'c', 'd'] as const;
+type Layout = (typeof LAYOUTS)[number];
+/** Layout D is the bank Esta does not recognize, read under the columns a person picks (P3-21). */
+const headerRow = (id: Layout) => (id === 'd' ? UNRECOGNIZED_COLUMNS.headerRow : 0);
+
+function decoded(id: Layout) {
+  const result =
+    id === 'b' ? decodeStatement(statementGrid(statement, 'b')) : id === 'd' ? decodeStatementCsv(unrecognizedCsv(statement), UNRECOGNIZED_COLUMNS) : decodeStatementCsv(statementCsv(statement, id));
   if (!result.ok) throw new Error(result.reason);
   return result.value;
 }
 
 describe('householdStatement', () => {
-  it.each(['a', 'b', 'c'] as const)('layout %s imports exactly as its golden lines say, the half-đồng line refused', (id) => {
+  it.each(LAYOUTS)('layout %s imports exactly as its golden lines say, the half-đồng line refused', (id) => {
     const { rows, rejected } = decoded(id);
     const plan = planImport(rows, OPEN.map((open) => ({ ...open, status: 'issued' })), new Set());
     expect(
@@ -44,14 +51,13 @@ describe('householdStatement', () => {
         reason: stored.reason,
         invoices: (stored.invoiceId === null ? stored.candidateIds : [stored.invoiceId]).map((invoiceId) => numberOf.get(invoiceId)).toSorted(),
       })),
-    ).toEqual(golden(statement));
-    expect(rejected).toEqual([{ index: statement.lines.length + 1, field: 'amount', reason: 'fractional' }]);
+    ).toEqual(golden(statement, headerRow(id)));
+    expect(rejected).toEqual([{ index: headerRow(id) + statement.lines.length + 1, field: 'amount', reason: 'fractional' }]);
   });
 
   it('gives the same fingerprints in every layout, dated on or before the clock', () => {
-    const fingerprints = (['a', 'b', 'c'] as const).map((id) => planImport(decoded(id).rows, [], new Set()).rows.map((stored) => stored.fingerprint));
-    expect(fingerprints[1]).toEqual(fingerprints[0]);
-    expect(fingerprints[2]).toEqual(fingerprints[0]);
+    const fingerprints = LAYOUTS.map((id) => planImport(decoded(id).rows, [], new Set()).rows.map((stored) => stored.fingerprint));
+    for (const other of fingerprints.slice(1)) expect(other).toEqual(fingerprints[0]);
     expect(statement.lines.every((line) => line.date <= statement.asOf)).toBe(true);
   });
 

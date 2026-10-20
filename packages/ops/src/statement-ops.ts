@@ -12,8 +12,11 @@ const MAX_ROWS = 5000;
 const lineIndex = z.number().int().min(0).max(100_000);
 const columnIndex = z.number().int().min(0).max(99);
 
-/** The header the rows were read under: the next import from the same account looks for these cells. */
-const columnMappingSchema = z.strictObject({
+/**
+ * The header the rows were read under, and whether Esta knew its labels (`detected`) or a person chose the columns
+ * (`mapped`). The next file from the same account whose labels Esta does not know looks for these cells (P3-21).
+ */
+export const statementColumnsSchema = z.strictObject({
   headerRow: z.number().int().min(0).max(19),
   header: z.array(z.string().max(200)).max(100),
   mapping: z.strictObject({
@@ -25,6 +28,7 @@ const columnMappingSchema = z.strictObject({
       z.strictObject({ kind: z.literal('split'), credit: columnIndex, debit: columnIndex }),
     ]),
   }),
+  source: z.enum(['detected', 'mapped']).default('detected'),
 });
 
 const rejectedSchema = z.strictObject({ index: lineIndex, field: z.enum(['row', 'date', 'amount']), reason: z.string().min(1).max(40) });
@@ -34,7 +38,7 @@ const importInputSchema = z.strictObject({
   import_id: idSchema,
   bank_account_id: idSchema,
   file_name: z.string().trim().min(1).max(255),
-  column_mapping: columnMappingSchema,
+  column_mapping: statementColumnsSchema,
   rejected: z.array(rejectedSchema).max(MAX_ROWS),
   rows: z
     .array(

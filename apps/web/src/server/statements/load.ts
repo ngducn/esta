@@ -1,7 +1,8 @@
 import 'server-only';
 import { MAX_AMOUNT_VND, vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
-import { idSchema } from '@esta/ops';
+import type { ColumnPreset } from '@esta/core/matching';
+import { idSchema, statementColumnsSchema } from '@esta/ops';
 import { z } from 'zod';
 import { LINE_REASONS, LINE_STATUSES, type BillLabel, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
 import { createSessionClient } from '@/server/supabase/server';
@@ -100,4 +101,30 @@ export async function loadStatementImport(householdId: string, importId: string)
       hands: row.hand_payments.map((hand) => ({ paymentId: hand.payment_id, receivedOn: hand.received_on, amount: hand.amount_vnd, bills: hand.bills })),
     })),
   };
+}
+
+/**
+ * Each receiving account's saved columns (LSE-8 preset, P3-21): the columns of its latest import that committed or
+ * whose columns a person chose. A file from that account whose labels Esta does not know is read under them when its
+ * header still carries their labels. No migration: every import stores the columns it was read under.
+ */
+export async function loadColumnPresets(householdId: string, accountIds: readonly string[]): Promise<Readonly<Record<string, ColumnPreset>>> {
+  const supabase = await createSessionClient();
+  const latest = await Promise.all(
+    accountIds.map(async (accountId) => {
+      const { data, error } = await supabase
+        .from('statement_imports')
+        .select('column_mapping')
+        .eq('household_id', householdId)
+        .eq('bank_account_id', accountId)
+        .or('status.eq.committed,column_mapping->>source.eq.mapped')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw new Error(`Reading the saved columns failed: ${error.message}`);
+      const stored = data === null ? null : statementColumnsSchema.safeParse(data.column_mapping);
+      return stored?.success ? ([[accountId, stored.data]] as const) : [];
+    }),
+  );
+  return Object.fromEntries(latest.flat());
 }

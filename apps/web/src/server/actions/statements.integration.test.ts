@@ -1,21 +1,24 @@
 import { isoDate } from '@esta/core/date';
-import { matchRows } from '@esta/core/matching';
+import { matchRows, type DecodedStatement } from '@esta/core/matching';
 import { vnd } from '@esta/core/money';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { golden, householdStatement, roomingHouse, statementCsv, statementXlsx, type HouseholdStatement, type OpenBill } from '../../../../../fixtures/statements/household.ts';
+import { golden, householdStatement, roomingHouse, statementCsv, statementXlsx, unrecognizedCsv, type HouseholdStatement, type OpenBill } from '../../../../../fixtures/statements/household.ts';
+import { UNRECOGNIZED_COLUMNS } from '../../../../../packages/core/src/matching/statement-scenario';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
-import { decodeStatementFile, type DecodedStatementFile } from '@/lib/statements/decodeStatementFile';
+import { decodeStatementFile, fileColumns, headerCells, pickedHeader, picksOf, type StatementFile } from '@/lib/statements/decodeStatementFile';
 import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) sets the slot's database clock to 2026-10-07. The file adds its
 // own Demo rooming house to lane 8, whose six leases owe October, and imports the statement
-// fixtures/statements/household.ts writes for those bills in each of the three layouts.
+// fixtures/statements/household.ts writes for those bills in each of the three layouts, and as layout D, a bank Esta
+// does not recognize, read under the columns a person picks (P3-21).
 const HOUSEHOLD = seedId('seed:household:lane-8');
 const ACCOUNT = seedId('seed:bank-account:lane-8');
 const { client, signIn } = memberClient('ryan.lane8@demo.esta.test', HOUSEHOLD);
 
 const { importStatement, commitStatement } = await import('./statements');
+const { loadColumnPresets } = await import('@/server/statements/load');
 
 const run = Math.floor(Math.random() * 1e6)
   .toString()
@@ -24,8 +27,22 @@ const TENANTS = ['Phan Văn Sao Demo', 'Đỗ Thị Kê Demo', 'Mai Văn Nhập 
 const house = roomingHouse(HOUSEHOLD, `Demo P3-15 ${run}`, `SK${run}`, TENANTS);
 const leaseIds = house.leases.map((lease) => lease.id);
 
+/** A file's lines as the browser sends them, with the header cells and how the columns were found. */
+type Decoded = DecodedStatement & { readonly header: readonly string[]; readonly source: 'detected' | 'mapped' };
+type Layout = 'a' | 'b' | 'c' | 'd';
+
 let statement: HouseholdStatement;
-const decoded: Partial<Record<'a' | 'b' | 'c', DecodedStatementFile>> = {};
+let owedBills: OpenBill[];
+const decoded: Partial<Record<Layout, Decoded>> = {};
+
+/** Layouts A to C by their labels; layout D under the columns a person picks on the mapping, as the upload sends them. */
+function read(file: StatementFile, id: Layout): Decoded {
+  const picked = id === 'd' ? pickedHeader(file.grid, picksOf(UNRECOGNIZED_COLUMNS)) : null;
+  if (picked !== null && !picked.ok) throw new Error(picked.reason);
+  const result = file.decode(picked?.value);
+  if (!result.ok) throw new Error(`${id}: ${result.reason}`);
+  return { ...result.value, header: headerCells(file.grid, result.value.headerRow), source: id === 'd' ? 'mapped' : 'detected' };
+}
 
 async function insert(table: 'properties' | 'units' | 'parties' | 'leases', rows: unknown) {
   const { error } = await client.from(table).insert(rows as never);
@@ -59,11 +76,11 @@ async function outstanding(ids: readonly string[]): Promise<Map<string, number>>
   return new Map(data.map((row) => [row.id ?? '', row.outstanding_vnd ?? 0]));
 }
 
-const input = (file: DecodedStatementFile, name: string) => ({
+const input = (file: Decoded, name: string) => ({
   import_id: crypto.randomUUID(),
   bank_account_id: ACCOUNT,
   file_name: name,
-  column_mapping: { headerRow: file.headerRow, header: [...file.header], mapping: file.mapping },
+  column_mapping: { headerRow: file.headerRow, header: [...file.header], mapping: file.mapping, source: file.source },
   rejected: file.rejected,
   rows: file.rows,
 });
@@ -90,35 +107,34 @@ beforeAll(async () => {
   await signIn();
   const bills = await seedRoomingHouse();
   const owed = await outstanding(bills.map((bill) => bill.id));
-  statement = householdStatement(
-    bills.map((bill) => ({ ...bill, outstanding: vnd(owed.get(bill.id) ?? 0) })).filter((bill) => bill.outstanding > 0),
-    isoDate('2026-10-07'),
-    `IT${run}`,
-  );
+  owedBills = bills.map((bill) => ({ ...bill, outstanding: vnd(owed.get(bill.id) ?? 0) })).filter((bill) => bill.outstanding > 0);
+  statement = householdStatement(owedBills, isoDate('2026-10-07'), `IT${run}`);
   for (const [id, name, bytes] of [
     ['a', 'sao-ke.csv', new TextEncoder().encode(statementCsv(statement, 'a'))],
     ['b', 'sao-ke.xlsx', new Uint8Array(await statementXlsx(statement))],
     ['c', 'statement.csv', new TextEncoder().encode(statementCsv(statement, 'c'))],
+    ['d', 'sao-ke-demo.csv', new TextEncoder().encode(unrecognizedCsv(statement))],
   ] as const) {
     const file = await decodeStatementFile(bytes, name);
     if (!file.ok) throw new Error(`${name}: ${file.reason}`);
-    decoded[id] = file.value;
+    expect(fileColumns(file.value, undefined).kind).toBe(id === 'd' ? 'unknown' : 'detected');
+    decoded[id] = read(file.value, id);
   }
 }, 60_000);
 
 describe('statement import against local Supabase (LSE-8)', () => {
   let importId = '';
 
-  it('reads the same lines from every layout, the half-đồng line refused, so each line keeps one fingerprint', () => {
-    const fingerprints = (['a', 'b', 'c'] as const).map((id) => matchRows(decoded[id]?.rows ?? [], []).map((row) => row.fingerprint));
+  it('reads the same lines from every layout, by its labels or by the columns picked, the half-đồng line refused, so each line keeps one fingerprint', () => {
+    const fingerprints = (['a', 'b', 'c', 'd'] as const).map((id) => matchRows(decoded[id]?.rows ?? [], []).map((row) => row.fingerprint));
     expect(fingerprints[0]).toHaveLength(statement.lines.length);
-    expect(fingerprints[1]).toEqual(fingerprints[0]);
-    expect(fingerprints[2]).toEqual(fingerprints[0]);
+    for (const other of fingerprints.slice(1)) expect(other).toEqual(fingerprints[0]);
     for (const id of ['a', 'b', 'c'] as const) expect(decoded[id]?.rejected).toEqual([{ index: statement.lines.length + 1, field: 'amount', reason: 'fractional' }]);
+    expect(decoded.d?.rejected).toEqual([{ index: UNRECOGNIZED_COLUMNS.headerRow + statement.lines.length + 1, field: 'amount', reason: 'fractional' }]);
   });
 
   it('stores layout A with each line as golden.json says and its fingerprint as the #58 contract gives it', async () => {
-    const file = decoded.a as DecodedStatementFile;
+    const file = decoded.a as Decoded;
     const imported = await importStatement(input(file, 'sao-ke.csv'));
     if (!imported.ok) throw new Error(JSON.stringify(imported.reason));
     importId = imported.value.import_id;
@@ -144,14 +160,15 @@ describe('statement import against local Supabase (LSE-8)', () => {
     expect(await commitStatement({ import_id: importId, confirmed_row_ids: [] })).toEqual({ ok: true, value: { posted: 0, skipped: 0 } });
   });
 
-  it('stores and posts nothing when the same statement comes back in any layout', async () => {
+  it('stores and posts nothing when the same statement comes back in any layout, the unrecognized one read by a mapping too', async () => {
     const before = (await lines(importId)).map((row) => row.fingerprint);
     for (const [id, name] of [
       ['a', 'sao-ke.csv'],
       ['b', 'sao-ke.xlsx'],
       ['c', 'statement.csv'],
+      ['d', 'sao-ke-demo.csv'],
     ] as const) {
-      expect(await importStatement(input(decoded[id] as DecodedStatementFile, name))).toEqual({ ok: false, reason: { kind: 'nothingNew', importId } });
+      expect(await importStatement(input(decoded[id] as Decoded, name))).toEqual({ ok: false, reason: { kind: 'nothingNew', importId } });
     }
     expect(await statementPayments(importId)).toHaveLength(3);
     expect((await lines(importId)).map((row) => row.fingerprint)).toEqual(before);
@@ -164,5 +181,21 @@ describe('statement import against local Supabase (LSE-8)', () => {
     expect(await commitStatement(confirm)).toEqual({ ok: true, value: { posted: 1, skipped: 0 } });
     expect(await commitStatement(confirm)).toEqual({ ok: true, value: { posted: 0, skipped: 0 } });
     expect(await statementPayments(importId)).toHaveLength(4);
+  });
+
+  it('keeps the account’s columns from its latest committed import or mapped one, never from an uncommitted import Esta read by its labels', async () => {
+    const presets = async () => (await loadColumnPresets(HOUSEHOLD, [ACCOUNT]))[ACCOUNT];
+    expect(await presets()).toEqual({ headerRow: 0, header: decoded.a?.header, mapping: decoded.a?.mapping, source: 'detected' });
+    // Two more statements of the same October bills, under new bank references, so their lines are new to the account.
+    const next = householdStatement(owedBills, isoDate('2026-10-07'), `IU${run}`);
+    const mapped = await decodeStatementFile(new TextEncoder().encode(unrecognizedCsv(next)), 'sao-ke-demo-2.csv');
+    if (!mapped.ok) throw new Error(mapped.reason);
+    expect(await importStatement(input(read(mapped.value, 'd'), 'sao-ke-demo-2.csv'))).toMatchObject({ ok: true });
+    const columns = { headerRow: UNRECOGNIZED_COLUMNS.headerRow, header: decoded.d?.header, mapping: UNRECOGNIZED_COLUMNS.mapping, source: 'mapped' };
+    expect(await presets()).toEqual(columns);
+    const labelled = await decodeStatementFile(new TextEncoder().encode(statementCsv(householdStatement(owedBills, isoDate('2026-10-07'), `IV${run}`), 'c')), 'statement-2.csv');
+    if (!labelled.ok) throw new Error(labelled.reason);
+    expect(await importStatement(input(read(labelled.value, 'c'), 'statement-2.csv'))).toMatchObject({ ok: true });
+    expect(await presets()).toEqual(columns);
   });
 });
