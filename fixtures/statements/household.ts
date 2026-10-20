@@ -110,7 +110,7 @@ export const golden = (statement: HouseholdStatement) => statement.lines.map((li
 
 /**
  * A Demo rooming house as rows for any client to insert: one monthly lease a room from January, each activated paid
- * through September except the last, paid through August, so on 07/10/2026 the house owes October and one September.
+ * through September, so on 07/10/2026 every room owes its October bill, due 01/10.
  */
 export function roomingHouse(householdId: string, nickname: string, code: string, tenants: readonly string[]) {
   const propertyId = randomUUID();
@@ -130,7 +130,7 @@ export function roomingHouse(householdId: string, nickname: string, code: string
       rent_vnd: i % 2 === 0 ? 2_500_000 : 2_800_000,
       due_offset_days: 0,
     })),
-    activations: rooms.map((room, i) => ({ p_lease_id: room.lease, p_paid_through: i === rooms.length - 1 ? '2026-08-31' : '2026-09-30' })),
+    activations: rooms.map((room) => ({ p_lease_id: room.lease, p_paid_through: '2026-09-30' })),
     roomOfLease: new Map<string, string>(rooms.map((room) => [room.lease, room.label])),
   };
 }

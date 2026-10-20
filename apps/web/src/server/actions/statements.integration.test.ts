@@ -9,7 +9,7 @@ import { decodeStatementFile, type DecodedStatementFile } from '@/lib/statements
 import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) sets the slot's database clock to 2026-10-07. The file adds its
-// own Demo rooming house to lane 8, whose six leases owe October (Phòng 6 also September), and imports the statement
+// own Demo rooming house to lane 8, whose six leases owe October, and imports the statement
 // fixtures/statements/household.ts writes for those bills in each of the three layouts.
 const HOUSEHOLD = seedId('seed:household:lane-8');
 const ACCOUNT = seedId('seed:bank-account:lane-8');

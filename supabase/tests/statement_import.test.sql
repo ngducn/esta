@@ -52,7 +52,7 @@ insert into public.invoice_lines (household_id, invoice_id, kind, meter_id, read
   (:'a', '00000000-0000-4000-8000-0000000f0210', 'water', '00000000-0000-4000-8000-00000000d022', '2026-09-01', 6, 18000, 108000, 'Tiền nước tháng 9/2026', 2);
 
 create temporary view posted as
-  select r.row_index, p.amount_vnd, p.received_on, p.method, p.source, p.bank_ref, p.bank_account_id, i.number, a.amount_vnd as allocated_vnd
+  select r.import_id, r.row_index, p.amount_vnd, p.received_on, p.method, p.source, p.bank_ref, p.bank_account_id, i.number, a.amount_vnd as allocated_vnd
   from public.statement_rows r
   join public.payments p on p.statement_row_id = r.id
   left join public.payment_allocations a on a.payment_id = p.id
@@ -138,7 +138,8 @@ select throws_ok($$ select * from public.commit_statement_import('00000000-0000-
 select tests.act_as('admin.a@test.esta.test');
 select results_eq($$ select * from public.commit_statement_import('00000000-0000-4000-8000-00000000c0a1', '{}') $$,
   $$ values (3, 0) $$, 'committing posts the three memo matches and nothing else (LSE-8)');
-select results_eq($$ select row_index, amount_vnd, received_on, method, source, bank_ref, bank_account_id, number, allocated_vnd from posted order by row_index, number $$,
+select results_eq($$ select row_index, amount_vnd, received_on, method, source, bank_ref, bank_account_id, number, allocated_vnd from posted
+     where import_id = '00000000-0000-4000-8000-00000000c0a1' order by row_index, number $$,
   $$ values
     (1, 3000000::bigint, '2026-10-02'::date, 'bank_transfer', 'statement_import', 'FT1', '00000000-0000-4000-8000-00000000ba0a'::uuid, 'DIAN-202609-001', 500000::bigint),
     (1, 3000000::bigint, '2026-10-02'::date, 'bank_transfer', 'statement_import', 'FT1', '00000000-0000-4000-8000-00000000ba0a'::uuid, 'DIAN-202610-001', 2500000::bigint),
@@ -161,7 +162,7 @@ select results_eq(format($$ select * from public.commit_statement_import('000000
   (select id from public.statement_rows where import_id = '00000000-0000-4000-8000-00000000c0a1' and row_index = 4),
   (select id from public.statement_rows where import_id = '00000000-0000-4000-8000-00000000c0a1' and row_index = 5)),
   $$ values (1, 0) $$, 'confirming the suggestion posts it, and naming an unmatched line posts nothing');
-select results_eq($$ select number, allocated_vnd from posted where row_index = 4 $$,
+select results_eq($$ select number, allocated_vnd from posted where import_id = '00000000-0000-4000-8000-00000000c0a1' and row_index = 4 $$,
   $$ values ('DIAN-202609-001', 2000000::bigint) $$,
   'the suggestion pays what its bill still owes, and the rest is the tenant''s credit');
 select results_eq(format($$ select * from public.commit_statement_import('00000000-0000-4000-8000-00000000c0a1', array[%L]::uuid[]) $$,
@@ -208,11 +209,12 @@ select is((select count(*)::integer from public.payments where source = 'stateme
 -- Constraints for every writer.
 reset role;
 select throws_ok($$ insert into public.payments (household_id, amount_vnd, received_on, method, source, statement_row_id)
-  values ((select household_id from public.statement_rows where row_index = 5 limit 1), 1, '2026-10-01', 'cash', 'manual',
-          (select id from public.statement_rows where row_index = 5 limit 1)) $$,
+  select household_id, 1, '2026-10-01', 'cash', 'manual', id from public.statement_rows
+  where import_id = '00000000-0000-4000-8000-00000000c0a1' and row_index = 5 $$,
   '23514', null, 'only a statement payment names a statement line');
 select throws_ok($$ insert into public.payments (household_id, amount_vnd, received_on, method, source, statement_row_id)
-  select household_id, 1, '2026-10-01', 'bank_transfer', 'statement_import', statement_row_id from public.payments where statement_row_id is not null limit 1 $$,
+  select household_id, 1, '2026-10-01', 'bank_transfer', 'statement_import', statement_row_id from public.payments
+  where statement_row_id = (select id from public.statement_rows where import_id = '00000000-0000-4000-8000-00000000c0a1' and row_index = 1) $$,
   '23505', null, 'a statement line posts at most one payment');
 select throws_ok($$ update public.statement_rows set status = 'memo_match' where row_index = 5 and import_id = '00000000-0000-4000-8000-00000000c0a1' $$,
   '23514', null, 'a matched line names its bill');

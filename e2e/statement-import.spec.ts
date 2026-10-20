@@ -4,7 +4,7 @@ import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { PROPERTY, statementHousehold, type StatementHousehold } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, START } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
 
@@ -16,9 +16,15 @@ test.beforeEach(async ({ request }) => {
 
 const line = (page: Page, index: number) => page.locator(`[data-testid="statement-line"][data-line="${index}"]`);
 
+/** The picker is enabled once React owns the page, so a file chosen earlier is never lost. */
+async function chooseFile(page: Page, name: string, buffer: Buffer | string) {
+  await expect(page.getByTestId('statement-file')).toBeEnabled();
+  await page.getByTestId('statement-file').setInputFiles({ name, mimeType: name.endsWith('.csv') ? 'text/csv' : 'application/octet-stream', buffer: Buffer.from(buffer) });
+}
+
 async function upload(page: Page, name: string, buffer: Buffer | string) {
   await page.goto('/collections/import');
-  await page.getByTestId('statement-file').setInputFiles({ name, mimeType: name.endsWith('.csv') ? 'text/csv' : 'application/octet-stream', buffer: Buffer.from(buffer) });
+  await chooseFile(page, name, buffer);
   await expect(page.getByTestId('statement-read')).toBeVisible();
 }
 
@@ -73,6 +79,7 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   await expect(page.getByTestId('statement-summary')).toHaveText(`Sẽ ghi sổ 3 khoản, tổng ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(memoTotal)}.`);
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
+  await shot(page, 'p3-15-preview-390-light');
   await holdForRecording(page);
 
   await page.getByTestId('statement-commit').click();
@@ -88,6 +95,7 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 1 khoản. Các khoản đã vào trang Thu tiền.');
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (4)');
   await expect(page.getByTestId('statement-committed')).toHaveText('Đã ghi sổ sao kê này.');
+  await shot(page, 'p3-15-posted-390-light');
   await holdForRecording(page);
 
   const payments = await statementPayments(page, household.householdId);
@@ -98,6 +106,7 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   for (const expected of golden(household.statement).slice(0, 3)) {
     await expect(boardRow(page, 'paid', `${household.rooms.get(expected.invoices[0] ?? '')}, ${PROPERTY}`)).toBeVisible();
   }
+  await shot(page, 'p3-15-board-after-390-light');
   await holdForRecording(page);
 
   for (const [name, bytes] of [
@@ -109,6 +118,7 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
     await page.getByTestId('statement-preview').click();
     await expect(page.getByTestId('statement-nothing-new')).toHaveText('Mọi dòng trong tệp này đã được nhập trước đây, nên không có gì mới để ghi sổ.');
   }
+  await shot(page, 'p3-15-reimport-390-light');
   await holdForRecording(page);
   await page.getByTestId('statement-earlier').click();
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (4)');
@@ -122,14 +132,15 @@ test('rule 2: at 1440 in dark, a layout B workbook previews with debits under B�
   await expectGolden(page, household);
   await expect(line(page, 7).getByTestId('statement-status')).toHaveText('Bỏ qua');
   await expect(line(page, 7).getByTestId('statement-target')).toHaveText('Tiền ra khỏi tài khoản');
+  await shot(page, 'p3-15-preview-1440-dark');
   await page.getByTestId('statement-filter-suggested').click();
   await expect(page.getByTestId('statement-line')).toHaveCount(1);
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
 });
 
-test('rule 3: in English at 130% on a phone, the preview reads in English and keeps amounts on one line', async ({ page }) => {
-  await openNewHousehold(page, 'light', PHONE);
+test('rule 3: in English at 130% on a phone in dark, the preview reads in English and keeps amounts on one line', async ({ page }) => {
+  await openNewHousehold(page, 'dark', PHONE);
   const household = await statementHousehold(page);
   const [member] = await memberRest<{ id: string }[]>(page, 'GET', `household_members?household_id=eq.${household.householdId}&select=id`);
   await preview(page, 'statement.csv', statementCsv(household.statement, 'c'));
@@ -141,6 +152,7 @@ test('rule 3: in English at 130% on a phone, the preview reads in English and ke
     const wrapped = await page.getByTestId('statement-amount').evaluateAll((amounts) => amounts.filter((amount) => amount.getBoundingClientRect().height > 40).length);
     expect(wrapped).toBe(0);
     expect(await noSidewaysScroll(page)).toBe(true);
+    await shot(page, 'p3-15-english-130-390-dark');
     expect(await seriousAxeViolations(page)).toEqual([]);
   });
 });
@@ -149,10 +161,11 @@ test('rule 4: a file without a statement header, or not CSV or XLSX, is refused 
   await openNewHousehold(page, 'light', PHONE);
   const household = await statementHousehold(page);
   await page.goto('/collections/import');
-  await page.getByTestId('statement-file').setInputFiles({ name: 'ghi-chu.csv', mimeType: 'text/csv', buffer: Buffer.from('Tên,Ghi chú\nAn,Demo\n') });
+  await chooseFile(page, 'ghi-chu.csv', 'Tên,Ghi chú\nAn,Demo\n');
   await expect(page.locator('#statement-file-message')).toContainText('Không tìm thấy dòng tiêu đề có Ngày, Nội dung và Số tiền');
   await expect(page.getByTestId('statement-preview')).toBeDisabled();
-  await page.getByTestId('statement-file').setInputFiles({ name: 'sao-ke.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7') });
+  await shot(page, 'p3-15-no-header-390-light');
+  await chooseFile(page, 'sao-ke.pdf', '%PDF-1.7');
   await expect(page.locator('#statement-file-message')).toHaveText('Chỉ nhận tệp CSV hoặc XLSX.');
   expect(await memberRest<unknown[]>(page, 'GET', `statement_imports?household_id=eq.${household.householdId}&select=id`)).toEqual([]);
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -168,6 +181,7 @@ test('rule 5: offline, Ghi sổ keeps the ticked suggestion and says to try agai
   await page.getByTestId('statement-commit').click();
   await expect(page.locator('#statement-commit-error')).toHaveText('Chưa gửi được. Kiểm tra kết nối mạng rồi thử lại.');
   await expect(line(page, 4).getByRole('checkbox')).toBeChecked();
+  await shot(page, 'p3-15-offline-390-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.context().setOffline(false);
   await page.getByTestId('statement-commit').click();
@@ -188,5 +202,17 @@ test('rule 6: a viewer sees no Nhập sao kê and cannot open the import screen'
   await page.goto('/collections/import');
   await expect(page.getByTestId('statement-admin-only')).toHaveText('Chỉ quản trị viên của gia đình mới nhập được sao kê ngân hàng.');
   await expect(page.getByTestId('statement-upload')).toHaveCount(0);
+  await shot(page, 'p3-15-viewer-390-light');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('rule 7: with no receiving account the import screen says where to add one', async ({ page }) => {
+  await openNewHousehold(page, 'light', PHONE);
+  await page.goto('/collections');
+  await page.getByTestId('statement-import-link').click();
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Chưa có tài khoản nhận tiền');
+  await expect(page.getByRole('link', { name: 'Về Thu tiền' })).toHaveAttribute('href', '/collections');
+  await expect(page.getByTestId('statement-upload')).toHaveCount(0);
+  await shot(page, 'p3-15-no-account-390-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });

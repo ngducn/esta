@@ -10,6 +10,7 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import type { DecodedStatementFile, StatementFileReason } from '@/lib/statements/decodeStatementFile';
+import { useHydrated } from '@/lib/use-hydrated';
 import { importStatement } from '@/server/actions/statements';
 
 export type AccountOption = { readonly id: string; readonly label: string };
@@ -46,6 +47,7 @@ export function StatementUpload({ accounts }: { accounts: readonly AccountOption
   const [error, setError] = useState<string | null>(null);
   const [earlier, setEarlier] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
+  const hydrated = useHydrated();
 
   const choose = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -94,6 +96,7 @@ export function StatementUpload({ accounts }: { accounts: readonly AccountOption
             type="file"
             data-testid="statement-file"
             accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            disabled={!hydrated}
             onChange={choose}
             className="sr-only"
           />
