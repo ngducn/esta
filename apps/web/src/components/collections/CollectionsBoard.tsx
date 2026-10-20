@@ -14,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import type { CollectionRow, PaymentInvoice } from '@/server/collections/load';
 import type { InvoiceQrView } from '@/server/invoices/qr';
+import type { ReminderLabels, ReminderTarget } from '@/server/reminders/board';
+import { ReminderAction } from './ReminderAction';
 import { collectionRowActions } from './rowActions';
 
 export const GROUP_MARKS = { overdue: 'overdue', due: 'due', notDue: 'upcoming', paid: 'paid' } as const satisfies Record<CollectionGroupKey, MarkStatus>;
@@ -24,6 +26,8 @@ type OpenInvoices = ReadonlyMap<string, readonly PaymentInvoice[]>;
 /** Each owed row's `Mã QR`, by invoice; a row is missing when the household has no default receiving account. */
 /** Each owed row's code, and the default receiving account a transfer recorded from the board lands in. */
 export type BoardQrs = { readonly byInvoice: ReadonlyMap<string, InvoiceQrView>; readonly labels: QrSheetLabels; readonly account: PaymentAccount | null };
+/** Each owed row's `Nhắc qua Zalo`, by invoice. */
+export type BoardReminders = { readonly byInvoice: ReadonlyMap<string, ReminderTarget>; readonly labels: ReminderLabels };
 
 /** Below 640 px every row stacks: place and amount, tenant and due date, the status, then the actions. */
 const cell = {
@@ -63,6 +67,7 @@ function CollectionsRow({
   canEdit,
   openInvoices,
   qrs,
+  reminders,
 }: {
   item: CollectionItem<CollectionRow>;
   month: IsoDate;
@@ -70,11 +75,13 @@ function CollectionsRow({
   canEdit: boolean;
   openInvoices: OpenInvoices;
   qrs: BoardQrs;
+  reminders: BoardReminders;
 }) {
   const t = useTranslations('collections');
   const locale = useLocale();
   const { row } = item;
   const qr = qrs.byInvoice.get(row.invoiceId);
+  const reminder = reminders.byInvoice.get(row.invoiceId);
   const place = row.wholeUnit ? row.propertyName : t('place', { unit: row.unitLabel, property: row.propertyName });
   return (
     <TableRow
@@ -106,41 +113,51 @@ function CollectionsRow({
       <TableCell className={cn('text-end max-sm:border-0 max-sm:p-0', cell.amount)}>
         <MoneyDisplay amount={item.amountVnd} className="text-body font-bold text-ink" />
       </TableCell>
-      <TableCell className={cn('text-end max-sm:border-0 max-sm:p-0 max-sm:text-start', cell.actions)}>
+      {/* Wide enough for Nhắc qua Zalo and Xem hợp đồng on one line, so a row's actions take two lines, not three. */}
+      <TableCell className={cn('text-end lg:min-w-[19.5rem] max-sm:border-0 max-sm:p-0 max-sm:text-start', cell.actions)}>
         <span className="inline-flex flex-wrap gap-2">
-          {collectionRowActions(item, canEdit).map((action) =>
-            action.kind === 'link' ? (
-              <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'quiet', className: 'max-sm:first:-ml-2' })}>
-                {t(action.label)}
-              </Link>
-            ) : action.kind === 'qr' ? (
-              qr === undefined ? null : (
-                <QrAction
-                  key={action.id}
-                  label={t(action.label)}
-                  title={place}
-                  description={t('qrDescription', { number: row.number, date: formatDate(row.dueDate, locale) })}
-                  invoiceHref={`/collections/invoices/${row.invoiceId}`}
-                  qr={qr}
-                  labels={qrs.labels}
-                />
-              )
-            ) : (
-              <RecordPaymentAction
-                key={action.id}
-                label={t(action.label)}
-                target={{
-                  invoiceId: row.invoiceId,
-                  place,
-                  shortPlace: row.wholeUnit ? row.propertyName : row.unitLabel,
-                  tenantName: row.tenantName,
-                  openInvoices: openInvoices.get(row.leaseId) ?? [],
-                  today: asOf,
-                  account: qrs.account,
-                }}
-              />
-            ),
-          )}
+          {collectionRowActions(item, canEdit).map((action) => {
+            switch (action.kind) {
+              case 'link':
+                return (
+                  <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'quiet', className: 'max-sm:first:-ml-2' })}>
+                    {t(action.label)}
+                  </Link>
+                );
+              case 'qr':
+                return qr === undefined ? null : (
+                  <QrAction
+                    key={action.id}
+                    label={t(action.label)}
+                    title={place}
+                    description={t('qrDescription', { number: row.number, date: formatDate(row.dueDate, locale) })}
+                    invoiceHref={`/collections/invoices/${row.invoiceId}`}
+                    qr={qr}
+                    labels={qrs.labels}
+                  />
+                );
+              case 'remind':
+                return reminder === undefined || row.tenantName === null ? null : (
+                  <ReminderAction key={action.id} label={t(action.label)} title={place} tenant={row.tenantName} target={reminder} labels={reminders.labels} />
+                );
+              case 'recordPayment':
+                return (
+                  <RecordPaymentAction
+                    key={action.id}
+                    label={t(action.label)}
+                    target={{
+                      invoiceId: row.invoiceId,
+                      place,
+                      shortPlace: row.wholeUnit ? row.propertyName : row.unitLabel,
+                      tenantName: row.tenantName,
+                      openInvoices: openInvoices.get(row.leaseId) ?? [],
+                      today: asOf,
+                      account: qrs.account,
+                    }}
+                  />
+                );
+            }
+          })}
         </span>
       </TableCell>
     </TableRow>
@@ -180,6 +197,7 @@ export function CollectionsBoard({
   canEdit,
   openInvoices,
   qrs,
+  reminders,
 }: {
   board: Board;
   month: IsoDate;
@@ -188,6 +206,7 @@ export function CollectionsBoard({
   canEdit: boolean;
   openInvoices: OpenInvoices;
   qrs: BoardQrs;
+  reminders: BoardReminders;
 }) {
   const t = useTranslations('collections');
   return (
@@ -217,7 +236,7 @@ export function CollectionsBoard({
                 </TableCell>
               </TableRow>
             ) : (
-              group.items.map((item) => <CollectionsRow key={item.row.invoiceId} item={item} month={month} asOf={asOf} canEdit={canEdit} openInvoices={openInvoices} qrs={qrs} />)
+              group.items.map((item) => <CollectionsRow key={item.row.invoiceId} item={item} month={month} asOf={asOf} canEdit={canEdit} openInvoices={openInvoices} qrs={qrs} reminders={reminders} />)
             )}
           </TableBody>
         ))}

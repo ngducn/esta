@@ -114,3 +114,47 @@ export async function loadOpenInvoices(householdId: string): Promise<Map<string,
   for (const invoice of openInvoicesOldestFirst(z.array(invoiceSchema).parse(data))) byLease.set(invoice.leaseId, [...(byLease.get(invoice.leaseId) ?? []), invoice]);
   return byLease;
 }
+
+/** What the board's row actions need of a bill still owed beyond its row: its memo code, share link and tenant contact. */
+export type OwedBill = {
+  readonly memoCode: string;
+  /** Null only for a bill that is not issued, which the board never lists. */
+  readonly shareToken: string | null;
+  readonly periodStart: IsoDate;
+  readonly periodEnd: IsoDate;
+  readonly tenant: { readonly kind: 'individual' | 'organization'; readonly phone: string | null; readonly zaloPhone: string | null } | null;
+};
+
+const owedBillSchema = z
+  .object({
+    id: z.uuid(),
+    memo_code: z.string(),
+    share_token: z.string().nullable(),
+    period_start: isoDateSchema,
+    period_end: isoDateSchema,
+    lease: z.object({ tenant: z.object({ kind: z.enum(['individual', 'organization']), phone: z.string().nullable(), zalo_phone: z.string().nullable() }).nullable() }),
+  })
+  .transform((row): [string, OwedBill] => [
+    row.id,
+    {
+      memoCode: row.memo_code,
+      shareToken: row.share_token,
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      tenant: row.lease.tenant === null ? null : { kind: row.lease.tenant.kind, phone: row.lease.tenant.phone, zaloPhone: row.lease.tenant.zalo_phone },
+    },
+  ]);
+
+/** One read for every board row still owed, for `Mã QR` and `Nhắc qua Zalo`. */
+export async function loadOwedBills(householdId: string, rows: readonly CollectionRow[]): Promise<Map<string, OwedBill>> {
+  const owed = rows.filter((row) => row.outstandingVnd > 0);
+  if (owed.length === 0) return new Map();
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('id, memo_code, share_token, period_start, period_end, lease:leases!invoices_household_id_lease_id_fkey(tenant:parties!leases_household_id_tenant_party_id_fkey(kind, phone, zalo_phone))')
+    .eq('household_id', householdId)
+    .in('id', owed.map((row) => row.invoiceId));
+  if (error) throw new Error(`Reading the owed bills failed: ${error.message}`);
+  return new Map(z.array(owedBillSchema).parse(data));
+}

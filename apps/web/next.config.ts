@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   // satori loads its yoga and harfbuzz wasm at run time; bundled, `next build` cannot find them (spike S7).
   serverExternalPackages: ['satori', '@resvg/resvg-js'],
   // The receipt fonts are read from process.cwd() at run time, which the tracer cannot see.
-  outputFileTracingIncludes: { '/api/invoices/*/receipt': ['./src/server/receipts/fonts/**'] },
+  outputFileTracingIncludes: { '/api/invoices/*/receipt': ['./src/server/receipts/fonts/**'], '/q/*': ['./src/server/receipts/fonts/**'] },
 };
 
 export default createNextIntlPlugin({

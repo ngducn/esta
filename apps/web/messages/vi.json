@@ -1267,7 +1267,19 @@
     "recordPayment": "Ghi nhận",
     "partial": "Thu một phần",
     "qr": "Mã QR",
-    "qrDescription": "Hóa đơn {number}, hạn {date}"
+    "qrDescription": "Hóa đơn {number}, hạn {date}",
+    "remind": "Nhắc qua Zalo",
+    "reminderForm": "Xưng hô",
+    "reminderFormOption": "{form, select, anh_chi {Anh/chị} anh {Anh} chi {Chị} co {Cô} chu {Chú} other {Quý khách}}",
+    "reminderText": "Lời nhắc",
+    "reminderCopy": "Sao chép lời nhắc",
+    "reminderCopied": "Đã sao chép. Mở Zalo rồi dán vào ô tin nhắn.",
+    "reminderCopyFailed": "Chưa sao chép được. Lời nhắc đã được chọn sẵn, bấm giữ để sao chép.",
+    "reminderOpenZalo": "Mở Zalo",
+    "reminderNoPhone": "Chưa có số điện thoại",
+    "reminderAssumption": "Giả định",
+    "reminderZaloNote": "Zalo mở trò chuyện theo số điện thoại này. Xem đúng tên người thuê trước khi gửi.",
+    "reminderClose": "Đóng"
   },
   "invoices": {
     "metaTitle": "Hóa đơn",

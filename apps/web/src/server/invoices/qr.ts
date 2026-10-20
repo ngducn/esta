@@ -5,15 +5,15 @@ import { buildInvoiceQr, invoiceMemo, VIETQR_RULES, type ReceivingAccount } from
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import type { QrSheetLabels } from '@/components/invoices/QrSheet';
+import type { OwedBill } from '@/server/collections/load';
 import { createSessionClient } from '@/server/supabase/server';
 
 /** The household's default receiving account with the bank's name as payers know it. */
 export type ReceivingAccountView = ReceivingAccount & { readonly id: string; readonly bankName: string };
 
-/** What the QR sheet and the bill show and the saved picture prints, ready for the page's language. */
-export type InvoiceQrView = {
+/** The code for what is still owed with what the payer's bank app will show, ready for the page's language. */
+export type PayableQr = {
   readonly payload: string;
-  readonly number: string;
   readonly amountText: string;
   /** At or above the NAPAS 247 cap the code carries no amount, so the amount in words and the split note stand in. */
   readonly amountWords: string | null;
@@ -22,6 +22,9 @@ export type InvoiceQrView = {
   readonly accountNo: string;
   readonly accountName: string;
 };
+
+/** What the QR sheet and the bill show and the saved picture prints. */
+export type InvoiceQrView = PayableQr & { readonly number: string };
 
 const accountSchema = z
   .object({ id: z.uuid(), bank_bin: z.string(), account_no: z.string(), account_name: z.string(), bank: z.object({ short_name: z.string().nullable(), name: z.string() }) })
@@ -41,36 +44,38 @@ export async function loadReceivingAccount(householdId: string): Promise<Receivi
 
 type QrSource = { readonly status: 'draft' | 'issued' | 'void'; readonly number: string; readonly memoCode: string; readonly outstandingVnd: Vnd };
 
-/** LSE-5: only an issued bill with something still owed shows a code, for the outstanding amount and its memo. */
-export function invoiceQrView(invoice: QrSource, account: ReceivingAccountView | null, locale: Locale): InvoiceQrView | null {
-  if (invoice.status !== 'issued' || invoice.outstandingVnd <= 0 || account === null) return null;
-  const qr = buildInvoiceQr({ account, outstandingVnd: invoice.outstandingVnd, memoCode: invoice.memoCode });
+type PayeeAccount = Pick<ReceivingAccountView, 'bin' | 'accountNo' | 'accountName' | 'bankName'>;
+
+/** The code for `outstandingVnd` into `account`, or null when nothing is owed. */
+export function payableQr(account: PayeeAccount, outstandingVnd: Vnd, memoCode: string, locale: Locale): PayableQr | null {
+  if (outstandingVnd <= 0) return null;
+  const qr = buildInvoiceQr({ account, outstandingVnd, memoCode });
   return {
     payload: qr.payload,
-    number: invoice.number,
-    amountText: formatVnd(invoice.outstandingVnd, locale),
-    amountWords: qr.amountInQr ? null : vndInWords(invoice.outstandingVnd, locale),
-    memo: invoiceMemo(invoice.memoCode),
+    amountText: formatVnd(outstandingVnd, locale),
+    amountWords: qr.amountInQr ? null : vndInWords(outstandingVnd, locale),
+    memo: invoiceMemo(memoCode),
     bankName: account.bankName,
     accountNo: account.accountNo,
     accountName: account.accountName,
   };
 }
 
+/** LSE-5: only an issued bill with something still owed shows a code, for the outstanding amount and its memo. */
+export function invoiceQrView(invoice: QrSource, account: ReceivingAccountView | null, locale: Locale): InvoiceQrView | null {
+  if (invoice.status !== 'issued' || account === null) return null;
+  const qr = payableQr(account, invoice.outstandingVnd, invoice.memoCode, locale);
+  return qr === null ? null : { ...qr, number: invoice.number };
+}
+
 type BoardRow = { readonly invoiceId: string; readonly number: string; readonly outstandingVnd: Vnd };
 
 /** The `Mã QR` of every board row still owed, keyed by invoice. The board lists issued bills only (LSE-10). */
-export async function loadBoardQrs(householdId: string, rows: readonly BoardRow[], account: ReceivingAccountView | null, locale: Locale): Promise<Map<string, InvoiceQrView>> {
-  const owed = rows.filter((row) => row.outstandingVnd > 0);
-  if (owed.length === 0) return new Map();
-  const supabase = await createSessionClient();
-  const codes = await supabase.from('invoices').select('id, memo_code').eq('household_id', householdId).in('id', owed.map((row) => row.invoiceId));
-  if (codes.error) throw new Error(`Reading the memo codes failed: ${codes.error.message}`);
-  const memo = new Map(codes.data.map((row) => [row.id, row.memo_code]));
+export function boardQrs(rows: readonly BoardRow[], owed: ReadonlyMap<string, OwedBill>, account: ReceivingAccountView | null, locale: Locale): Map<string, InvoiceQrView> {
   return new Map(
-    owed.flatMap((row) => {
-      const memoCode = memo.get(row.invoiceId);
-      const view = memoCode === undefined ? null : invoiceQrView({ status: 'issued', number: row.number, memoCode, outstandingVnd: row.outstandingVnd }, account, locale);
+    rows.flatMap((row) => {
+      const bill = owed.get(row.invoiceId);
+      const view = bill === undefined ? null : invoiceQrView({ status: 'issued', number: row.number, memoCode: bill.memoCode, outstandingVnd: row.outstandingVnd }, account, locale);
       return view === null ? [] : [[row.invoiceId, view] as const];
     }),
   );

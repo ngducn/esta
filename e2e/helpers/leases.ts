@@ -3,10 +3,11 @@ import { seedId } from '../../supabase/seed/generator/ids.ts';
 import { memberRest } from './auth-api';
 import { laneHousehold, laneProperty } from './seed';
 
-export type FreshTerms = { start: string; end: string; rent: number; paidThrough: string };
+export type FreshTerms = { start: string; end: string; rent: number; paidThrough: string; tenantPartyId?: string };
 
 /**
- * An active monthly lease on a room no lease has touched, named as `Thêm phòng` would name it, for the Phòng 7 tenant.
+ * An active monthly lease on a room no lease has touched, named as `Thêm phòng` would name it, for the Phòng 7 tenant
+ * unless the terms name another.
  * It is drafted and activated through the session like any member's lease, so its invoices are what activation issues.
  */
 export async function freshLease(page: Page, lane: number, terms: FreshTerms): Promise<{ id: string; label: string; path: string }> {
@@ -18,7 +19,7 @@ export async function freshLease(page: Page, lane: number, terms: FreshTerms): P
     household_id: laneHousehold(lane),
     property_id: property,
     unit_id: unit?.id,
-    tenant_party_id: seedId(`seed:party:tenant-lane-${lane}:di-an:7`),
+    tenant_party_id: terms.tenantPartyId ?? seedId(`seed:party:tenant-lane-${lane}:di-an:7`),
     start_date: terms.start,
     end_date: terms.end,
     rent_vnd: terms.rent,
