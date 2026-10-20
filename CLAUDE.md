@@ -41,6 +41,7 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm verify:tier` | Prints the minimum verification tier (lean, standard or rigorous) of the files this branch changes against `origin/main`, with one line per reason; `--base <ref>` and `--head <ref>` pick the range, and `--declared <tier>` exits 1 when that tier is lower than the computed one |
 | `pnpm e2e` | Playwright suite; `pnpm e2e:northstar` runs SPEC §1.2. When `CI` is set or `ESTA_E2E_SERVER=build` it builds the web app and serves that build with `ESTA_ENV=test` (so `/dev/*` and `/api/test/*` stay on), which compiles every page before the first test. Otherwise, or with `ESTA_E2E_SERVER=dev`, it serves `pnpm dev` |
 | `pnpm e2e:prod` | Builds, starts with `ESTA_ENV=production` and checks `/dev/*` returns 404 |
+| `pnpm gate:vietqr` | Writes `/tmp/esta-gate-vietqr.png`, a VietQR for 10.000 ₫ with memo `ESTA GATEQRVN` to the receiving account in `ESTA_GATE_BANK_BIN`, `ESTA_GATE_ACCOUNT_NO` and `ESTA_GATE_ACCOUNT_NAME` (`apps/web/.env.local` or the shell), for the Phase 3 two-app scan; prints only the account's last four digits |
 | `pnpm qr:decode <png>` | Reads the VietQR in a PNG (a saved `Lưu ảnh` picture or a screenshot) and prints its bank, account, amount and memo, and whether its checksum holds |
 | `pnpm check:build-env` | Builds a clean copy without `CRON_SECRET` and checks it fails with the zod message |
 | `pnpm design:detect` | Impeccable detector over `apps/web/src` with JSON output |

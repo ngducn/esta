@@ -46,6 +46,38 @@ export function verifyPingRecord(text: string): Outcome {
   return { pass, detail: `auth ${auth_mode}, agent ${agent_mode}, household_info × ${calls}` };
 }
 
+export const STATUS = 'docs/plan/STATUS.md';
+export const MOM_TEST = 'docs/plan/mom-test.md';
+
+/** Ryan's line in STATUS.md once two banking apps have scanned the gate's VietQR and an invoice's (SPEC §10, Phase 3). */
+export function verifyVietQrScan(text: string): Outcome {
+  const record = /^- VietQR gate passed on (\d{4}-\d{2}-\d{2}): ([^,\n]+), ([^.\n]+)\.?$/m.exec(text);
+  if (record === null) return { pass: false, detail: `waiting for Ryan: no "VietQR gate passed on" line in ${STATUS}` };
+  return { pass: true, detail: `${record[2]?.trim()} and ${record[3]?.trim()} on ${record[1]}` };
+}
+
+const MOM_TASKS = 4;
+const MOM_LIMIT_SECONDS = 120;
+
+/** Ryan's table under `## Results` in mom-test.md: each of the four SPEC §10.1 tasks passed in under two minutes. */
+export function verifyMomTest(text: string): Outcome {
+  const results = text.split(/^## /m).find((section) => section.startsWith('Results')) ?? '';
+  const rows = [...results.matchAll(/^\|\s*([1-4])\.[^|]*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|/gm)];
+  const problems: string[] = [];
+  for (let task = 1; task <= MOM_TASKS; task++) {
+    const row = rows.find((match) => match[1] === String(task));
+    const time = /^(\d+):([0-5]\d)$/.exec(row?.[2] ?? '');
+    const seconds = time === null ? undefined : Number(time[1]) * 60 + Number(time[2]);
+    if (row === undefined) problems.push(`task ${task} has no row`);
+    else if (seconds === undefined) problems.push(`task ${task} has no time`);
+    else if (row[3]?.toLowerCase() !== 'yes') problems.push(`task ${task} is not marked passed`);
+    else if (seconds >= MOM_LIMIT_SECONDS) problems.push(`task ${task} took ${row[2]}`);
+  }
+  return problems.length === 0
+    ? { pass: true, detail: `${MOM_TASKS} of ${MOM_TASKS} tasks passed in under two minutes` }
+    : { pass: false, detail: `waiting for Ryan: ${problems.join(', ')} in ${MOM_TEST}` };
+}
+
 /** Local CI's policy: a test that fails gets one retry, and a test that fails twice fails its row. */
 const e2e = (spec: string) => ['pnpm', 'e2e', '--retries=1', '--reporter=list', spec];
 
@@ -132,6 +164,32 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
     { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '2']] },
+  ],
+  // The integration tests want a fresh full seed, and their cron test moves every household past SPEC §9.3's day, so
+  // their row resets first and runs right before north-star, which resets to the `northstar` seed.
+  '3': [
+    cited('LSE-1', { e2e: ['leases'] }),
+    cited('LSE-2', { core: ['lease/state.test.ts', 'lease/changes.test.ts'], pgtap: ['leases', 'lease_changes', 'lease_schedule'], e2e: ['leases', 'lease-detail'] }),
+    cited('LSE-3', { pgtap: ['leases', 'lease_schedule', 'lease_changes'], e2e: ['leases'] }),
+    cited('LSE-4', { core: ['meters/consumption.test.ts', 'meters/anomaly.test.ts'], pgtap: ['meters'], e2e: ['meters'] }),
+    cited('LSE-5', { core: ['vietqr/roundtrip.test.ts'], pgtap: ['invoice_void_issue'], e2e: ['invoices'] }),
+    cited('LSE-6', { web: ['server/receipts/pdf.test.ts'], e2e: ['receipts'] }),
+    cited('LSE-7', { core: ['allocation/allocate.property.test.ts'], pgtap: ['record_payment', 'deposits'], e2e: ['record-payment'] }),
+    cited('LSE-8', { core: ['matching/fixtures.test.ts'], pgtap: ['statement_import'], e2e: ['statement-import', 'statement-mapping'] }),
+    cited('LSE-9', { core: ['allocation/deposits.test.ts'], pgtap: ['deposits'], e2e: ['deposits'] }),
+    cited('LSE-10', { core: ['collections/group.test.ts', 'properties/status.test.ts'], pgtap: ['collections'], e2e: ['collections'] }),
+    cited('LSE-11', { core: ['reminder/templates.test.ts', 'phone/phone.test.ts'], pgtap: ['invoice_share_token'], e2e: ['reminder'] }),
+    // The lease prefill from a contract photo (P3-19) brings this spec; the row fails until it merges.
+    cited('DOC-6', { e2e: ['lease-from-contract'] }),
+    cited('FND-8', { e2e: ['fnd8'] }),
+    // Schedule's fast-check samples are pgTAP golden vectors since the database became the one planner (#195).
+    { id: 'PBT', commands: [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', 'src/allocation/allocate.property.test.ts', 'src/matching/match.property.test.ts'], ['pnpm', 'db:test', 'supabase/tests/lease_schedule.test.sql']] },
+    { id: 'RLS', commands: [['pnpm', 'db:test']] },
+    { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
+    { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
+    { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '3']] },
+    { id: 'VietQR', verify: (repoRoot) => verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8')) },
+    { id: 'Mom', verify: (repoRoot) => verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8')) },
   ],
 };
 

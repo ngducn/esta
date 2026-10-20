@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { checkPhase, flakyTests, PHASE_CHECKS, S1_RECORD, uncited, verifyPingRecord, type PhaseCheck } from './phase-exit.ts';
+import { checkPhase, flakyTests, MOM_TEST, PHASE_CHECKS, S1_RECORD, STATUS, uncited, verifyMomTest, verifyPingRecord, verifyVietQrScan, type PhaseCheck } from './phase-exit.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 const logDir = mkdtempSync(join(tmpdir(), 'esta-phase-test-'));
@@ -84,8 +84,44 @@ describe('checkPhase', () => {
     expect(lines.filter((line) => line.startsWith('PASS'))).toHaveLength(11);
   });
 
+  it('lists LSE-1 to LSE-11, the lease prefill, FND-8, the property tests, RLS, integration, north-star, Lighthouse and the two gates for phase 3', () => {
+    expect(PHASE_CHECKS['3']?.map((check) => check.id)).toEqual([
+      ...Array.from({ length: 11 }, (_, i) => `LSE-${i + 1}`),
+      'DOC-6',
+      'FND-8',
+      'PBT',
+      'RLS',
+      'IT',
+      'North-star',
+      'Lighthouse',
+      'VietQR',
+      'Mom',
+    ]);
+  });
+
+  it('resets before the integration tests, whose cron test moves the seed, and runs north-star right after them', () => {
+    const commands = Object.fromEntries((PHASE_CHECKS['3'] ?? []).map((check) => [check.id, 'commands' in check ? check.commands.map((command) => command.join(' ')) : []]));
+    expect(commands['IT']).toEqual(['pnpm db:reset', 'node scripts/web-integration.ts']);
+    const ids = (PHASE_CHECKS['3'] ?? []).map((check) => check.id);
+    expect(ids.indexOf('North-star')).toBe(ids.indexOf('IT') + 1);
+    expect(commands['Lighthouse']).toEqual(['pnpm db:reset', 'node scripts/perf/phase-budget.ts --phase 3']);
+  });
+
+  it('fails the lease prefill row until P3-19 brings its spec', () => {
+    const prefill = (PHASE_CHECKS['3'] ?? []).find((check) => check.id === 'DOC-6');
+    expect(prefill && uncited(repoRoot, prefill)).toEqual(['e2e/lease-from-contract.spec.ts']);
+  });
+
+  it('waits for Ryan on the committed VietQR and Mom test records', () => {
+    expect(verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8'))).toMatchObject({ pass: false, detail: expect.stringContaining('waiting for Ryan') });
+    expect(verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8'))).toEqual({
+      pass: false,
+      detail: `waiting for Ryan: task 1 has no time, task 2 has no time, task 3 has no time, task 4 has no time in ${MOM_TEST}`,
+    });
+  });
+
   it('runs only files that cite their row id, at least one per row', () => {
-    for (const check of [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? [])]) {
+    for (const check of [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? []), ...(PHASE_CHECKS['3'] ?? []).filter((check) => check.id !== 'DOC-6')]) {
       if (!('commands' in check) || check.cites === undefined) continue;
       expect(check.cites.length, check.id).toBeGreaterThan(0);
       expect(uncited(repoRoot, check), check.id).toEqual([]);
@@ -106,8 +142,8 @@ describe('checkPhase', () => {
     ]);
   });
 
-  it('runs every phase 1 and phase 2 spec with one retry, as local CI does', () => {
-    const specCommands = [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? [])].flatMap((check) => ('commands' in check ? check.commands : [])).filter((command) => command[1]?.startsWith('e2e') === true);
+  it('runs every phase 1, 2 and 3 spec with one retry, as local CI does', () => {
+    const specCommands = [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? []), ...(PHASE_CHECKS['3'] ?? [])].flatMap((check) => ('commands' in check ? check.commands : [])).filter((command) => command[1]?.startsWith('e2e') === true);
     expect(specCommands.length).toBeGreaterThan(0);
     for (const command of specCommands) expect(command, command.join(' ')).toEqual(expect.arrayContaining(['--retries=1', '--reporter=list']));
   });
@@ -173,5 +209,32 @@ describe('verifyPingRecord', () => {
 
   it('fails text that is not JSON', () => {
     expect(verifyPingRecord('not json').pass).toBe(false);
+  });
+});
+
+describe('verifyVietQrScan', () => {
+  it('passes the line Ryan writes once two banking apps have scanned the codes', () => {
+    expect(verifyVietQrScan('## Decided by Ryan\n\n- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.\n')).toEqual({ pass: true, detail: 'VCB Digibank and MB Bank on 2026-10-22' });
+  });
+
+  it('fails one app, or a line without a date', () => {
+    expect(verifyVietQrScan('- VietQR gate passed on 2026-10-22: VCB Digibank.\n').pass).toBe(false);
+    expect(verifyVietQrScan('- VietQR gate passed: VCB Digibank, MB Bank.\n').pass).toBe(false);
+  });
+});
+
+describe('verifyMomTest', () => {
+  const results = (rows: readonly (readonly [string, string])[]) =>
+    ['## The four tasks', '', '| 1. Record a cash payment for Phòng 3 | "Mẹ ghi nhận" | toast |', '', '## Results', '', '| Task | Time | Passed | Notes |', '| --- | --- | --- | --- |', ...rows.map(([time, passed], i) => `| ${i + 1}. Task | ${time} | ${passed} | |`), '', '## Failures', ''].join('\n');
+
+  it('passes four tasks marked yes, each under two minutes, and reads only the results table', () => {
+    expect(verifyMomTest(results([['0:41', 'yes'], ['0:12', 'yes'], ['1:05', 'Yes'], ['1:59', 'yes']]))).toEqual({ pass: true, detail: '4 of 4 tasks passed in under two minutes' });
+  });
+
+  it('fails a task at two minutes, one not passed and one not run, and names each', () => {
+    expect(verifyMomTest(results([['2:00', 'yes'], ['0:30', 'no'], ['', '']]))).toEqual({
+      pass: false,
+      detail: `waiting for Ryan: task 1 took 2:00, task 2 is not marked passed, task 3 has no time, task 4 has no row in ${MOM_TEST}`,
+    });
   });
 });

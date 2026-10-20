@@ -84,7 +84,7 @@ async function countTaps(page: Page) {
   return () => page.evaluate(() => (window as unknown as { estaTaps: number }).estaTaps);
 }
 
-test('rule 2: SPEC §9.4 seed 2, Phòng 5 in three taps with the prefilled amount, then Hoàn tác', async ({ page }) => {
+test('rule 2: SPEC §9.4 seed 2, Phòng 5 in three taps with the prefilled amount, then Hoàn tác (LSE-7)', async ({ page }) => {
   await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
   await page.goto('/collections');
   const phong5 = row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An');

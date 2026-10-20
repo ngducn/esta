@@ -52,7 +52,7 @@ async function expectFacts(panel: Locator, amount: string, memoCode: string) {
   await expect(panel.getByTestId('qr-account-name')).toHaveText(ACCOUNT.accountName);
 }
 
-test('rule 1: Mã QR on Phòng 3 shows a code that scans to its amount, memo and account, and Lưu ảnh saves the same code', async ({ page }) => {
+test('rule 1: Mã QR on Phòng 3 shows a code that scans to its amount, memo and account, and Lưu ảnh saves the same code (LSE-5)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   const id = invoiceId(1, 'di-an', 3, '2026-10-25');
   const { number, memo_code: memoCode } = await storedInvoice(page, id);

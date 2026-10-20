@@ -73,16 +73,51 @@ export async function chooseFile(page: Page, name: string, buffer: Buffer | stri
   await page.getByTestId('statement-file').setInputFiles({ name, mimeType: name.endsWith('.csv') ? 'text/csv' : 'application/octet-stream', buffer: Buffer.from(buffer) });
 }
 
+/** Ryan's way in: Thu tiền's `Nhập sao kê` link, then the file, before the screen has read it. */
+export async function chooseFromBoard(page: Page, name: string, buffer: Buffer | string) {
+  await page.goto('/collections');
+  await page.getByTestId('statement-import-link').click();
+  await expect(page).toHaveURL(/\/collections\/import$/);
+  await chooseFile(page, name, buffer);
+}
+
+/** `Ghi sổ` on the preview, and the count of lines it posted. */
+export async function commitLines(page: Page, count: number) {
+  await page.getByTestId('statement-commit').click();
+  await expect(page.getByTestId('statement-result')).toHaveText(`Đã ghi sổ ${count} khoản. Các khoản đã vào trang Thu tiền.`);
+}
+
+/** Ticks the suggestion on one line, which `Ghi sổ` then posts on its own. */
+export async function confirmSuggestion(page: Page, index: number) {
+  await line(page, index).getByRole('checkbox', { name: `Xác nhận gợi ý dòng ${index}` }).click();
+  await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 1 khoản');
+}
+
 export async function upload(page: Page, name: string, buffer: Buffer | string) {
   await page.goto('/collections/import');
   await chooseFile(page, name, buffer);
   await expect(page.getByTestId('statement-read')).toBeVisible();
 }
 
-export async function preview(page: Page, name: string, buffer: Buffer | string) {
-  await upload(page, name, buffer);
+/** `Xem trước` on a read file, which stores the import and opens its preview. */
+export async function openPreview(page: Page) {
   await page.getByTestId('statement-preview').click();
   await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
+}
+
+export async function preview(page: Page, name: string, buffer: Buffer | string) {
+  await upload(page, name, buffer);
+  await openPreview(page);
+}
+
+const FILTERS = { memo_match: 'Khớp mã', suggested: 'Gợi ý', unmatched: 'Chưa khớp', ignored: 'Bỏ qua', posted: 'Đã ghi sổ' } as const;
+
+/** The preview's filter chips, each with the count of lines it holds. */
+export async function expectFilters(page: Page, counts: Readonly<Partial<Record<keyof typeof FILTERS, number>>>) {
+  for (const [status, label] of Object.entries(FILTERS)) {
+    const count = counts[status as keyof typeof FILTERS];
+    if (count !== undefined) await expect(page.getByTestId(`statement-filter-${status}`)).toHaveText(`${label} (${count})`);
+  }
 }
 
 /** Every line reads the status golden.json gives it, and names the bills it gives. */

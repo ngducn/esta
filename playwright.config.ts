@@ -14,6 +14,7 @@ const sharedClock = [
   'clock.spec.ts',
   'assistant-status.spec.ts',
   'fnd9-integration.spec.ts',
+  'fnd8.spec.ts',
   'property-detail.spec.ts',
   'documents-upload.spec.ts',
   'leases.spec.ts',

@@ -45,7 +45,7 @@ function hasTag(payload: string, tag: string): boolean {
   return parsed.ok && parsed.value.has(tag);
 }
 
-describe('encode and decode round trips', () => {
+describe('encode and decode round trips (LSE-5)', () => {
   it('decodes every field the encoder wrote, with tag 01 following the amount', () => {
     fc.assert(
       fc.property(input, (value) => {

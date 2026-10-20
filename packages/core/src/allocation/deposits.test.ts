@@ -13,7 +13,7 @@ function held(entries: readonly DepositEntry[]) {
   return { rows: result.value.rows.map((row) => [row.id, row.heldVnd]), heldVnd: result.value.heldVnd };
 }
 
-describe('deriveDepositLedger', () => {
+describe('deriveDepositLedger (LSE-9)', () => {
   it('holds nothing without entries', () => {
     expect(held([])).toEqual({ rows: [], heldVnd: 0 });
   });
