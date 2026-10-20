@@ -94,9 +94,10 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
     setError(null);
     setEarlier(null);
     setReading(true);
-    // Offline, the reader's chunk may not load; that reads as a failed send, not as a bad file.
-    const loaded = await import('@/lib/statements/decodeStatementFile')
-      .then(async (reader) => ({ reader, file: await reader.decodeStatementFile(new Uint8Array(await picked.arrayBuffer()), picked.name) }))
+    // Offline, the reader's chunk may not load; that reads as a failed send, not as a bad file. The mapping's chunk loads
+    // with it, so a file that needs the mapping never waits on the network for it.
+    const loaded = await Promise.all([import('@/lib/statements/decodeStatementFile'), import('./ColumnMapping')])
+      .then(async ([reader]) => ({ reader, file: await reader.decodeStatementFile(new Uint8Array(await picked.arrayBuffer()), picked.name) }))
       .catch(() => null);
     event.target.value = '';
     setReading(false);
@@ -193,7 +194,7 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
           </Link>
         )}
       </div>
-      {view?.picks == null ? null : (
+      {view === null || view.picks === null ? null : (
         <ColumnMapping
           grid={view.chosen.file.grid}
           picks={view.picks}

@@ -97,9 +97,9 @@ export async function preview(page: Page, name: string, buffer: Buffer | string)
   await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
 }
 
-/** Every line reads the status golden.json gives it, and names the bills it gives; `headerRow` is where the file's header sits. */
-export async function expectGolden(page: Page, household: StatementHousehold, headerRow = 0) {
-  for (const expected of golden(household.statement, headerRow)) {
+/** Every line reads the status golden.json gives it, and names the bills it gives. */
+export async function expectGolden(page: Page, household: StatementHousehold) {
+  for (const expected of golden(household.statement)) {
     const row = line(page, expected.index);
     await expect(row).toHaveAttribute('data-status', expected.status);
     for (const number of expected.invoices) await expect(row.getByTestId('statement-target')).toContainText(number);

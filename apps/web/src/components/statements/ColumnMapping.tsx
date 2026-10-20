@@ -64,7 +64,7 @@ export function ColumnMapping({ grid, picks, onPicks, preset, intro, sample, pro
   });
   const rows = grid.slice(0, HEADER_SCAN_ROWS).map((row, index) => {
     const text = row.map(cellText).filter((cell) => cell !== '');
-    return { value: String(index), label: text.length === 0 ? t('headerRowBlank', { line: index + 1 }) : t('headerRowOption', { line: index + 1, cells: clip(text.join(' · ')) }) };
+    return { value: String(index), label: text.length === 0 ? t('headerRowBlank') : clip(text.join(' · ')) };
   });
   const select = (role: Role) => {
     const value = picks[role];

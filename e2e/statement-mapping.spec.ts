@@ -49,7 +49,7 @@ test('rule 1: Ryan maps the columns of a statement Esta does not recognize and p
   await expect(mapping(page)).toBeVisible();
   await expect(page.getByTestId('mapping-intro')).toHaveText(INTRO_NEW);
   await expect(page.getByTestId('mapping-header-row')).toHaveValue(String(HEADER_ROW));
-  await expect(page.getByTestId('mapping-header-row').locator('option:checked')).toContainText('Dòng 5: Ngày thực hiện · Số chứng từ');
+  await expect(page.getByTestId('mapping-header-row').locator('option:checked')).toContainText('Ngày thực hiện · Số chứng từ');
   await expect(page.locator('#mapping-problem')).toHaveText('Chọn cột ngày, nội dung và số tiền để xem thử.');
   await expect(page.getByTestId('statement-preview')).toBeDisabled();
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -70,8 +70,9 @@ test('rule 1: Ryan maps the columns of a statement Esta does not recognize and p
   await toPreview(page);
   await expect(page.getByTestId('statement-filter-memo_match')).toHaveText('Khớp mã (3)');
   await expect(page.getByTestId('statement-filter-suggested')).toHaveText('Gợi ý (1)');
-  await expectGolden(page, household, HEADER_ROW);
-  await expect(page.getByTestId('statement-refused')).toContainText(`Dòng ${HEADER_ROW + 13}: số tiền có phần lẻ đồng, nên không ghi sổ`);
+  // Lines are numbered from the header, so the bank's account lines above it shift nothing.
+  await expectGolden(page, household);
+  await expect(page.getByTestId('statement-refused')).toContainText('Dòng 13: số tiền có phần lẻ đồng, nên không ghi sổ');
   await shot(page, 'p3-21-preview-390-light');
   await holdForRecording(page);
   await page.getByTestId('statement-commit').click();

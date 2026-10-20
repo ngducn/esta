@@ -18,7 +18,7 @@ const ACCOUNT = seedId('seed:bank-account:lane-8');
 const { client, signIn } = memberClient('ryan.lane8@demo.esta.test', HOUSEHOLD);
 
 const { importStatement, commitStatement } = await import('./statements');
-const { loadColumnPresets } = await import('@/server/statements/load');
+const { loadColumnPresets, loadStatementImport } = await import('@/server/statements/load');
 
 const run = Math.floor(Math.random() * 1e6)
   .toString()
@@ -190,7 +190,12 @@ describe('statement import against local Supabase (LSE-8)', () => {
     const next = householdStatement(owedBills, isoDate('2026-10-07'), `IU${run}`);
     const mapped = await decodeStatementFile(new TextEncoder().encode(unrecognizedCsv(next)), 'sao-ke-demo-2.csv');
     if (!mapped.ok) throw new Error(mapped.reason);
-    expect(await importStatement(input(read(mapped.value, 'd'), 'sao-ke-demo-2.csv'))).toMatchObject({ ok: true });
+    const imported = await importStatement(input(read(mapped.value, 'd'), 'sao-ke-demo-2.csv'));
+    if (!imported.ok) throw new Error(JSON.stringify(imported.reason));
+    // The preview numbers its lines from the header, under the bank's four account lines, as it does for a known layout.
+    const view = await loadStatementImport(HOUSEHOLD, imported.value.import_id);
+    expect(view?.lines.map((line) => line.index)).toEqual(golden(next).map((line) => line.index));
+    expect(view?.refused).toEqual([{ index: next.lines.length + 1, field: 'amount', reason: 'fractional' }]);
     const columns = { headerRow: UNRECOGNIZED_COLUMNS.headerRow, header: decoded.d?.header, mapping: UNRECOGNIZED_COLUMNS.mapping, source: 'mapped' };
     expect(await presets()).toEqual(columns);
     const labelled = await decodeStatementFile(new TextEncoder().encode(statementCsv(householdStatement(owedBills, isoDate('2026-10-07'), `IV${run}`), 'c')), 'statement-2.csv');

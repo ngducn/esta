@@ -40,6 +40,7 @@ const importSchema = z.object({
   status: z.enum(['parsed', 'committed']),
   bank_account_id: idSchema,
   rejected: z.array(z.object({ index: z.number().int(), field: z.enum(['row', 'date', 'amount']), reason: z.string() })),
+  column_mapping: z.object({ headerRow: z.number().int().min(0) }),
 });
 
 const billSchema = z
@@ -69,7 +70,7 @@ async function billLabels(householdId: string, ids: readonly string[]): Promise<
 /** One import with every line in file order and the bills they name; null for an import the member cannot read. */
 export async function loadStatementImport(householdId: string, importId: string): Promise<StatementImportView | null> {
   const supabase = await createSessionClient();
-  const header = await supabase.from('statement_imports').select('id, file_name, status, bank_account_id, rejected').eq('household_id', householdId).eq('id', importId).maybeSingle();
+  const header = await supabase.from('statement_imports').select('id, file_name, status, bank_account_id, rejected, column_mapping').eq('household_id', householdId).eq('id', importId).maybeSingle();
   if (header.error) throw new Error(`Reading the import failed: ${header.error.message}`);
   if (header.data === null) return null;
   const stored = importSchema.parse(header.data);
@@ -82,15 +83,17 @@ export async function loadStatementImport(householdId: string, importId: string)
   }
   const named = (row: z.output<typeof lineSchema>) => (row.invoice_id === null ? row.candidate_invoice_ids : [row.invoice_id]);
   const bills = await billLabels(householdId, [...new Set(rows.flatMap(named))]);
+  // A line is numbered from the header, so the first line under it is 1 whatever account lines the bank prints above.
+  const fromHeader = (index: number) => index - stored.column_mapping.headerRow;
   return {
     id: stored.id,
     fileName: stored.file_name,
     committed: stored.status === 'committed',
     accountId: stored.bank_account_id,
-    refused: stored.rejected,
+    refused: stored.rejected.map((line) => ({ ...line, index: fromHeader(line.index) })),
     lines: rows.map((row) => ({
       id: row.id,
-      index: row.row_index,
+      index: fromHeader(row.row_index),
       date: row.posted_on,
       amount: row.amount_vnd,
       description: row.description,
