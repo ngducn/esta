@@ -15,7 +15,7 @@ import { createSessionClient } from '@/server/supabase/server';
 export type HomeLease = TodaySnapshot['leases'][number] & { readonly propertyId: string; readonly wholeUnit: boolean };
 
 /** Today's list reads the board's own rows, so a bill there and on Thu tiền is one bill in one state. */
-export type HomeSnapshot = TodaySnapshot & { readonly bills: readonly CollectionRow[]; readonly leases: readonly HomeLease[] };
+export type HomeSnapshot = Omit<TodaySnapshot, 'bills' | 'leases'> & { readonly bills: readonly CollectionRow[]; readonly leases: readonly HomeLease[] };
 
 export type HomeView = {
   readonly month: IsoDate;
