@@ -4,9 +4,10 @@ import { UNRECOGNIZED_COLUMNS, UNRECOGNIZED_LAYOUT } from '../packages/core/src/
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { chooseFile, expectGolden, nextUnrecognizedCsv, openBills, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, noSidewaysScroll, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, settled, shot, START } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
+// `Xem trước` fades in as the columns start to read lines, so a scan waits for it to settle (`settled`, #168).
 
 // P3-21: a statement from a bank Esta does not recognize opens the column mapping, and the columns Ryan picks read the
 // account's next statement. It runs in the `clock` project at 07/10/2026 like statement-import.spec.ts, each rule in a
@@ -62,6 +63,7 @@ test('rule 1: Ryan maps the columns of a statement Esta does not recognize and p
   await expect(page.getByTestId('mapping-sample-amount')).toHaveText(sample.map((line) => money(line.amount)));
   await expect(page.getByTestId('statement-read')).toContainText('sao-ke-ngan-hang-demo.csv: đọc được 12 dòng.');
   await expect(page.getByTestId('statement-read')).toContainText('1 dòng không đọc được');
+  await settled(page.getByTestId('statement-preview'));
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
   await shot(page, 'p3-21-mapping-390-light');
@@ -89,6 +91,7 @@ test('rule 1: Ryan maps the columns of a statement Esta does not recognize and p
   await expect(page.getByTestId('statement-preset')).toContainText('Dùng cột đã chọn lần trước.');
   await expect(page.getByTestId('statement-read')).toContainText(`sao-ke-ngan-hang-demo-2.csv: đọc được ${bills.length} dòng.`);
   await expect(mapping(page)).toHaveCount(0);
+  await settled(page.getByTestId('statement-preview'));
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p3-21-preset-390-light');
   await holdForRecording(page);
@@ -143,6 +146,7 @@ test('rule 3: at 1440 in dark, saved columns belong to their account, Đổi c�
   await chooseFile(page, 'sao-ke-ngan-hang-demo.csv', unrecognizedCsv(household.statement));
   await mapUnrecognized(page);
   await expect(page.getByTestId('mapping-sample-row')).toHaveCount(5);
+  await settled(page.getByTestId('statement-preview'));
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
   await shot(page, 'p3-21-mapping-1440-dark');
@@ -204,6 +208,7 @@ test('rule 4: in English at 130% on a phone in dark, the mapping reads in Englis
     expect(wrapped).toBe(0);
     expect(await noSidewaysScroll(page)).toBe(true);
     await shot(page, 'p3-21-english-130-390-dark');
+    await settled(page.getByTestId('statement-preview'));
     expect(await seriousAxeViolations(page)).toEqual([]);
   });
 });
