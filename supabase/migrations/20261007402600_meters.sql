@@ -258,7 +258,9 @@ begin
   if v_lease.status is null or v_lease.status not in ('active', 'ended', 'terminated') then
     raise exception 'ESTA_LEASE_NOT_ACTIVE' using errcode = '55000';
   end if;
-  v_metered := v_lease.utilities_mode = 'metered_by_owner';
+  -- A unit with no reading yet has no utility line to carry, which spares the nightly run on most rooms.
+  v_metered := v_lease.utilities_mode = 'metered_by_owner'
+    and exists (select 1 from public.meters m join public.meter_readings r on r.meter_id = m.id where m.unit_id = v_lease.unit_id);
   if v_lease.status in ('active', 'terminated') then
     for v_plan in select * from private.plan_invoices(v_lease, p_as_of) loop
       continue when exists (
