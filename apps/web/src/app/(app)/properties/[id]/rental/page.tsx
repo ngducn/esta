@@ -2,7 +2,7 @@ import { openInvoicesOldestFirst } from '@esta/core/allocation';
 import { formatVnd } from '@esta/core/format';
 import { currentLease, currentMonthlyRent, unitLeaseMark } from '@esta/core/lease';
 import { vnd } from '@esta/core/money';
-import { Plug, Plus } from 'lucide-react';
+import { Gauge, Plug, Plus } from 'lucide-react';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -16,6 +16,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { getClock } from '@/server/clock';
 import { loadPropertyLeases, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
+import { propertyHasMeters } from '@/server/meters/load';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { loadPropertyRental } from '@/server/properties/rental';
 import { PropertyDetailFrame } from '../detail-frame';
@@ -48,10 +49,11 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
   const asOf = (await getClock()).today();
-  const [member, rental, leases, t, locale, messages] = await Promise.all([
+  const [member, rental, leases, metered, t, locale, messages] = await Promise.all([
     requireMember(),
     loadPropertyRental(id),
     loadPropertyLeases(id, asOf),
+    propertyHasMeters(id),
     getTranslations('propertyRental'),
     getLocale(),
     getMessages(),
@@ -81,6 +83,12 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
                 </p>
               )}
             </div>
+            {metered ? (
+              <Link href={`/properties/${id}/rental/meters`} data-testid="enter-readings" className={buttonVariants({ variant: 'outline', className: 'self-start' })}>
+                <Gauge aria-hidden="true" />
+                {t('enterReadings')}
+              </Link>
+            ) : null}
             {declared === null || declared === rooms ? null : (
               <p data-testid="room-count-mismatch" className="text-body text-ink-2">
                 {t('roomCountMismatch', { declared, actual: rooms })}

@@ -681,7 +681,8 @@
     "tenantRent": "{rent} a month",
     "nextDue": "Due {date}",
     "leaseEnds": "Ends on {date}",
-    "leasedCount": "Let {leased}/{total}"
+    "leasedCount": "Let {leased}/{total}",
+    "enterReadings": "Enter readings"
   },
   "leases": {
     "newTitle": "New lease for {unit}",
@@ -1613,5 +1614,35 @@
     "memo": "Transfer note",
     "account": "Receiving account",
     "noTenant": "No tenant recorded"
+  },
+  "meters": {
+    "title": "Meter readings",
+    "monthHeading": "Month {month}",
+    "remaining": "{count, plural, one {# room left to read} other {# rooms left to read}}",
+    "complete": "{count, plural, one {# room read} other {All # rooms read}}",
+    "roomColumn": "Room",
+    "kind": "{kind, select, electricity {Electricity, kWh} water {Water, m³} other {Meter}}",
+    "noMeter": "No meter",
+    "previous": "{month}: {reading, number}",
+    "firstReading": "First reading",
+    "used": "Used {used, number} {kind, select, electricity {kWh} water {m³} other {units}}",
+    "readOn": "Entered {date}",
+    "notNumber": "Enter the number on the meter, with no decimals.",
+    "belowPrevious": "Lower than last month's reading ({reading, number}). Check it again.",
+    "anomaly": "Over 3 times the usual ({usual, number} {kind, select, electricity {kWh} water {m³} other {units}} a month)",
+    "save": "Save readings",
+    "saving": "Saving…",
+    "saved": "Saved the readings for {month}. {issued, plural, =0 {No bill issued yet.} one {# bill issued.} other {# bills issued.}}",
+    "nothingChanged": "No reading changed.",
+    "fixFirst": "Fix the marked readings, then save again.",
+    "errorBelowPrevious": "A reading is lower than last month's. Reload the page to see the latest numbers.",
+    "errorAboveNext": "A reading is higher than next month's. Check it again.",
+    "errorMonth": "Readings for this month cannot be entered yet.",
+    "errorNetwork": "Not saved. Check the network connection and try again.",
+    "empty": "This property has no electricity or water meters yet.",
+    "emptyBody": "Once each room has meters, the monthly readings are entered here.",
+    "viewerNote": "You can view the readings but not change them.",
+    "priceNote": "Assumption: electricity and water are charged at the price set on each meter. Ministry of Industry and Trade rules cap what renters may be charged for electricity, so check the price before sending bills.",
+    "monthNav": "Choose the month"
   }
 }

@@ -6,7 +6,14 @@ import { fakeDb, opContext as context, type Sent } from './test/fake-db';
 const PROPERTY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0020';
 const ELECTRICITY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0021';
 const WATER = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0022';
-const input = { property_id: PROPERTY, reading_month: '2026-10-01', readings: [{ meter_id: ELECTRICITY, reading: 2967 }, { meter_id: WATER, reading: 318 }] };
+const input = {
+  property_id: PROPERTY,
+  reading_month: '2026-10-01',
+  readings: [
+    { meter_id: ELECTRICITY, reading: 2967 },
+    { meter_id: WATER, reading: 318 },
+  ],
+};
 
 const answers = (stored: readonly { meter_id: string; reading: number }[]) => (request: Sent) =>
   request.table === 'meter_readings' ? stored : request.table === 'rpc/save_meter_readings' ? [{ saved: 2, issued: 1 }] : [];
@@ -15,7 +22,10 @@ describe('meterReadingsSave (LSE-4)', () => {
   it('saves a month of readings through save_meter_readings and reports the bills it issued', async () => {
     const { db, sent } = fakeDb(answers([{ meter_id: ELECTRICITY, reading: 2967 }]));
     expect(await runOp(meterReadingsSave, context(db), input)).toEqual({ ok: true, value: { saved: 2, issued: 1 } });
-    expect(sent.at(-1)).toMatchObject({ table: 'rpc/save_meter_readings', body: { p_property_id: PROPERTY, p_reading_month: '2026-10-01', p_readings: input.readings } });
+    expect(sent.at(-1)).toMatchObject({
+      table: 'rpc/save_meter_readings',
+      body: { p_property_id: PROPERTY, p_reading_month: '2026-10-01', p_readings: input.readings },
+    });
   });
 
   it('plans readings equal to the stored ones as unchanged, and writes nothing', async () => {
