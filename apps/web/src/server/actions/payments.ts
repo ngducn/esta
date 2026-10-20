@@ -20,6 +20,8 @@ const paymentInputSchema = z.object({
   receivedOn: z.string(),
   idempotencyKey: z.uuid(),
   invoiceIds: z.array(z.uuid()).nullable(),
+  /** The default receiving account the sheet filled for `Chuyển khoản`; null for cash or when the household has none. */
+  bankAccountId: z.uuid().nullable().default(null),
 });
 export type PaymentInput = z.input<typeof paymentInputSchema>;
 
@@ -66,6 +68,7 @@ export async function recordPayment(raw: unknown): Promise<RecordPaymentResult> 
     p_received_on: receivedOn.value,
     p_idempotency_key: input.data.idempotencyKey,
     ...(input.data.invoiceIds === null ? {} : { p_invoice_ids: input.data.invoiceIds }),
+    ...(input.data.bankAccountId === null ? {} : { p_bank_account_id: input.data.bankAccountId }),
   });
   if (error) return { ok: false, reason: REFUSALS[error.message] ?? 'failed' };
   revalidatePayments();

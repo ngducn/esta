@@ -825,7 +825,10 @@
     "documentsEmpty": "Chưa có giấy tờ",
     "documentsEmptyBody": "Tải hợp đồng lên để mở lại ngay trên điện thoại khi cần.",
     "uploadContract": "Tải hợp đồng lên",
-    "documentsViewerEmpty": "Chưa có giấy tờ nào cho hợp đồng này."
+    "documentsViewerEmpty": "Chưa có giấy tờ nào cho hợp đồng này.",
+    "markVoid": "Đã hủy",
+    "terminateBlockedBy": "Hóa đơn {number} đã phát hành cho kỳ sau ngày này. Nếu lập nhầm, hãy hủy hóa đơn đó rồi kết thúc hợp đồng.",
+    "terminateOpenBill": "Mở hóa đơn {number}"
   },
   "propertyOwners": {
     "title": "Chủ sở hữu",
@@ -1302,7 +1305,31 @@
     "openLease": "Xem hợp đồng",
     "notFoundTitle": "Không tìm thấy hóa đơn này",
     "notFoundBody": "Đường dẫn có thể đã cũ, hoặc hóa đơn không thuộc gia đình này.",
-    "notFoundAction": "Về trang Thu tiền"
+    "notFoundAction": "Về trang Thu tiền",
+    "issue": "Phát hành",
+    "issuing": "Đang phát hành…",
+    "voidAction": "Hủy hóa đơn",
+    "voidTitle": "Hủy hóa đơn {number}?",
+    "voidBody": "Hóa đơn sẽ không còn mã QR và không ai phải trả. Kỳ này sẽ không được lập hóa đơn lại.",
+    "voidReason": "Lý do hủy",
+    "voiding": "Đang hủy…",
+    "keep": "Giữ hóa đơn",
+    "voidPaidNote": "Hóa đơn đã có tiền thu nên không hủy được.",
+    "actionRefusal": "{reason, select, reasonRequired {Nhập lý do hủy.} notIssued {Hóa đơn này chưa phát hành hoặc đã hủy.} notDraft {Hóa đơn này đã được phát hành.} hasPayments {Hóa đơn này đã có tiền thu nên không hủy được.} notFound {Không tìm thấy hóa đơn này.} other {Chưa lưu được. Kiểm tra kết nối rồi thử lại.}}",
+    "noAccountAsk": "Nhờ quản trị viên thêm tài khoản nhận tiền.",
+    "addAccount": "Thêm tài khoản nhận tiền",
+    "accountTitle": "Tài khoản nhận tiền",
+    "accountBody": "Mã QR trên mọi hóa đơn sẽ chuyển tiền vào tài khoản này.",
+    "accountBank": "Ngân hàng",
+    "accountBankPick": "Chọn ngân hàng",
+    "accountNo": "Số tài khoản",
+    "accountName": "Tên chủ tài khoản",
+    "accountNameHint": "Ghi như trên thẻ ngân hàng. Esta tự bỏ dấu.",
+    "accountNamePreview": "Người chuyển khoản sẽ thấy tên",
+    "accountSave": "Lưu tài khoản",
+    "accountSaving": "Đang lưu…",
+    "accountClose": "Đóng",
+    "accountRefusal": "{reason, select, bank {Chọn ngân hàng.} accountNo {Số tài khoản chỉ gồm chữ số và chữ cái, tối đa 19 ký tự.} accountName {Nhập tên chủ tài khoản, tối đa 50 ký tự.} duplicate {Gia đình đã có tài khoản này.} forbidden {Chỉ quản trị viên mới thêm được tài khoản nhận tiền.} other {Chưa lưu được. Kiểm tra kết nối rồi thử lại.}}"
   },
   "payments": {
     "title": "Ghi nhận tiền",
@@ -1341,7 +1368,8 @@
       "stale": "{place} vừa được ghi nhận tiền nên khoản này chưa lưu. Xem số mới trên bảng.",
       "nothingOwed": "{place} không còn khoản nào phải thu nên khoản này chưa lưu. Xem số mới trên bảng.",
       "failed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
-    }
+    },
+    "transferTo": "Vào tài khoản {bank} · {accountNo}"
   },
   "expenses": {
     "add": "Thêm chi phí",

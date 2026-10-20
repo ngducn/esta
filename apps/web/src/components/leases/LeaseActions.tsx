@@ -10,6 +10,9 @@ const AmendLeaseSheet = lazy(() => import('./AmendLeaseSheet'));
 const TerminateLeaseDialog = lazy(() => import('./TerminateLeaseDialog'));
 const RenewLeaseSheet = lazy(() => import('./RenewLeaseSheet'));
 
+/** An issued bill, which can stop the lease ending before its period (LSE-2) until it is voided. */
+export type IssuedBill = { readonly id: string; readonly number: string; readonly periodStart: IsoDate };
+
 export type RenewalOffer = { readonly start: IsoDate; readonly startsBeforeToday: boolean; readonly lastRentVnd: Vnd; readonly defaultEnd: IsoDate };
 
 /** What a member can do next with this lease. An ended or terminated lease offers no amend or terminate (LSE-2). */
@@ -20,6 +23,7 @@ export function LeaseActions({
   active,
   amendStarts,
   renewal,
+  issuedBills,
 }: {
   leaseId: string;
   unitLabel: string;
@@ -27,6 +31,7 @@ export function LeaseActions({
   active: boolean;
   amendStarts: readonly IsoDate[];
   renewal: RenewalOffer | null;
+  issuedBills: readonly IssuedBill[];
 }) {
   const t = useTranslations('leases');
   const [open, setOpen] = useState<'amend' | 'terminate' | 'renew' | null>(null);
@@ -51,7 +56,7 @@ export function LeaseActions({
       ) : null}
       <Suspense fallback={null}>
         {open === 'amend' ? <AmendLeaseSheet leaseId={leaseId} starts={amendStarts} onClose={close} /> : null}
-        {open === 'terminate' ? <TerminateLeaseDialog leaseId={leaseId} unitLabel={unitLabel} onClose={close} /> : null}
+        {open === 'terminate' ? <TerminateLeaseDialog leaseId={leaseId} unitLabel={unitLabel} issuedBills={issuedBills} onClose={close} /> : null}
         {open === 'renew' && renewal !== null ? (
           <RenewLeaseSheet
             leaseId={leaseId}

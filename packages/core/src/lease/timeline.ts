@@ -18,7 +18,7 @@ export type TimelineInvoice = {
 
 /**
  * Where one period stands on the Clock's date. `prepaid` is rent collected before Esta billed it (the lease's
- * paid-through date); `unbilled` is a past period with neither an invoice nor that date, which only an import can leave.
+ * paid-through date); `void` is a period whose bill was voided, which nothing bills again; `unbilled` is a past period with neither an invoice nor that date, which only an import can leave.
  */
 export type PeriodMark =
   | { readonly kind: 'paid' }
@@ -27,6 +27,7 @@ export type PeriodMark =
   | { readonly kind: 'due' }
   | { readonly kind: 'upcoming' }
   | { readonly kind: 'draft' }
+  | { readonly kind: 'void' }
   | { readonly kind: 'prepaid' }
   | { readonly kind: 'unbilled' };
 
@@ -40,7 +41,7 @@ export type TimelineRow<I extends TimelineInvoice> = {
 };
 
 function invoiceMark(invoice: TimelineInvoice, asOf: IsoDate): PeriodMark {
-  if (invoice.status === 'draft') return { kind: 'draft' };
+  if (invoice.status === 'draft' || invoice.status === 'void') return { kind: invoice.status };
   if (invoice.outstandingVnd === 0) return { kind: 'paid' };
   if (invoice.dueDate < asOf) return { kind: 'overdue', days: daysBetween(invoice.dueDate, asOf) };
   if (invoice.paymentStatus === 'partial') return { kind: 'partial' };

@@ -37,7 +37,22 @@ function Total({ label, amount, strong = false, testId }: { label: string; amoun
 }
 
 /** LSE-5: the bill as Mẹ hands it over, with its code when something is still owed, and as it prints on A5. */
-export async function InvoiceView({ invoice, qr, place, asOf, locale }: { invoice: InvoiceDetail; qr: QrState; place: string; asOf: IsoDate; locale: Locale }) {
+export async function InvoiceView({
+  invoice,
+  qr,
+  place,
+  asOf,
+  locale,
+  noQrAction,
+}: {
+  invoice: InvoiceDetail;
+  qr: QrState;
+  place: string;
+  asOf: IsoDate;
+  locale: Locale;
+  /** What Mẹ can do about a missing code, such as adding the receiving account. */
+  noQrAction?: ReactNode;
+}) {
   const t = await getTranslations('invoices');
   const state = invoice.status === 'issued' ? collectionState(invoice, asOf) : null;
   const noQrText = {
@@ -117,9 +132,12 @@ export async function InvoiceView({ invoice, qr, place, asOf, locale }: { invoic
               <QrPanel qr={qr.qr} matrix={qr.matrix} labels={qr.labels} />
             </div>
           ) : (
-            <p data-testid="invoice-no-qr" data-reason={qr.kind} className="text-body text-ink-2">
-              {noQrText[qr.kind]()}
-            </p>
+            <div className="flex flex-col gap-3">
+              <p data-testid="invoice-no-qr" data-reason={qr.kind} className="text-body text-ink-2">
+                {noQrText[qr.kind]()}
+              </p>
+              {noQrAction}
+            </div>
           )}
         </Card>
       </div>

@@ -17,13 +17,17 @@ const invoice = (start: string, status: TimelineInvoice['status'], outstanding: 
 
 /**
  * Phòng 5 from 25/02/2026, paid through 24/05, as `lease_schedule` returns it: each period names the live invoice whose
- * start falls in it.
+ * start falls in it, else a void one.
  */
 function phong5(count: number, invoices: readonly TimelineInvoice[]) {
   return schedulePeriods('phong-5', '2026-02-25', 2_800_000, count).map((period) => ({
     ...period,
     coveredByPaidThrough: period.end <= '2026-05-24',
-    invoiceId: invoices.find((candidate) => candidate.status !== 'void' && candidate.periodStart >= period.start && candidate.periodStart <= period.end)?.id ?? null,
+    invoiceId:
+      invoices
+        .filter((candidate) => candidate.periodStart >= period.start && candidate.periodStart <= period.end)
+        .toSorted((a, b) => Number(a.status === 'void') - Number(b.status === 'void'))
+        .at(0)?.id ?? null,
   }));
 }
 
@@ -54,9 +58,9 @@ describe('leaseTimeline (P3-08 period marks)', () => {
     ]);
   });
 
-  it('marks a draft, a part payment, a period due today, and a period whose invoice is void as upcoming', () => {
+  it('marks a draft, a part payment, a period due today, and a period whose invoice is void as voided', () => {
     const invoices = [invoice('2026-09-25', 'issued', 800_000, 'partial'), invoice('2026-10-25', 'draft', 2_800_000), invoice('2026-11-25', 'void', 2_800_000)];
-    expect(marks(d('2026-09-25'), invoices).slice(7)).toEqual(['2026-09-25 partial', '2026-10-25 draft', '2026-11-25 upcoming']);
+    expect(marks(d('2026-09-25'), invoices).slice(7)).toEqual(['2026-09-25 partial', '2026-10-25 draft', '2026-11-25 void']);
     expect(marks(d('2026-09-25'), [invoice('2026-09-25', 'issued', 2_800_000)]).at(7)).toBe('2026-09-25 due');
     expect(marks(d('2026-09-26'), invoices).at(7)).toBe('2026-09-25 overdue 1');
   });

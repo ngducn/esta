@@ -24,6 +24,9 @@ import { cn } from '@/lib/utils';
 import { recordPayment, undoPayment, type PaymentMethod, type RecordPaymentRefusal } from '@/server/actions/payments';
 import type { PaymentInvoice } from '@/server/collections/load';
 
+/** The household's default receiving account, which a transfer names (PLT-1). */
+export type PaymentAccount = { readonly id: string; readonly bankName: string; readonly accountNo: string };
+
 /** The row a payment is recorded from, and every invoice its lease still owes. */
 export type PaymentTarget = {
   readonly invoiceId: string;
@@ -34,6 +37,7 @@ export type PaymentTarget = {
   readonly tenantName: string | null;
   readonly openInvoices: readonly PaymentInvoice[];
   readonly today: IsoDate;
+  readonly account: PaymentAccount | null;
 };
 
 const METHODS = [
@@ -108,7 +112,8 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
     if (refusal !== null || method === null) return;
     startTransition(async () => {
       const owedVnd = owedFor(openInvoices, target.invoiceId, chosen);
-      const result = await recordPayment({ invoiceId: target.invoiceId, owedVnd, amount, method, receivedOn: date, idempotencyKey, invoiceIds: chosen }).catch(
+      const bankAccountId = method === 'bank_transfer' ? (target.account?.id ?? null) : null;
+      const result = await recordPayment({ invoiceId: target.invoiceId, owedVnd, amount, method, receivedOn: date, idempotencyKey, invoiceIds: chosen, bankAccountId }).catch(
         () => ({ ok: false, reason: 'failed' }) as const,
       );
       if (!result.ok) {
@@ -240,6 +245,11 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
                 </label>
               ))}
             </div>
+            {method === 'bank_transfer' && target.account !== null ? (
+              <p data-testid="payment-account" className="figures text-body text-ink-2">
+                {t('transferTo', { bank: target.account.bankName, accountNo: target.account.accountNo })}
+              </p>
+            ) : null}
           </fieldset>
 
           {editingDate ? (

@@ -136,12 +136,13 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 34,
+      "value": 35,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
         "apps/web/src/components/expenses/expense-sheet.tsx": 2,
         "apps/web/src/components/extraction/review-panel.tsx": 2,
+        "apps/web/src/components/invoices/use-bill-action.ts": 1,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
         "apps/web/src/components/leases/DepositSheet.tsx": 1,
@@ -168,7 +169,7 @@
       }
     },
     "action-failure-mapping": {
-      "value": 28,
+      "value": 29,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -176,6 +177,7 @@
         "apps/web/src/components/documents/vault-search.tsx": 1,
         "apps/web/src/components/expenses/expense-sheet.tsx": 1,
         "apps/web/src/components/extraction/review-panel.tsx": 1,
+        "apps/web/src/components/invoices/use-bill-action.ts": 1,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
         "apps/web/src/components/leases/DepositSheet.tsx": 1,
@@ -273,13 +275,14 @@
       }
     },
     "sheet-footer-markup": {
-      "value": 13,
+      "value": 14,
       "files": {
         "apps/web/src/components/confirm-dialog-popup.tsx": 1,
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/duplicate-dialog.tsx": 1,
         "apps/web/src/components/documents/multi-page-capture.tsx": 1,
         "apps/web/src/components/documents/upload-sheet.tsx": 1,
+        "apps/web/src/components/invoices/VoidInvoiceDialog.tsx": 1,
         "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
         "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
         "apps/web/src/components/leases/LeaseForm.tsx": 1,
@@ -524,6 +527,24 @@
       "from": 44,
       "to": 46,
       "reason": "previewDepositEntry (P3-18) refuses with the limit it met, which Result cannot carry yet (until #196)"
+    },
+    {
+      "metric": "hand-rolled-action-call",
+      "from": 34,
+      "to": 35,
+      "reason": "P3-20 bill actions: one useBillAction call site and the void dialog's footer row (until #193)"
+    },
+    {
+      "metric": "action-failure-mapping",
+      "from": 28,
+      "to": 29,
+      "reason": "P3-20 bill actions: one useBillAction call site and the void dialog's footer row (until #193)"
+    },
+    {
+      "metric": "sheet-footer-markup",
+      "from": 13,
+      "to": 14,
+      "reason": "P3-20 bill actions: one useBillAction call site and the void dialog's footer row (until #193)"
     }
   ]
 }

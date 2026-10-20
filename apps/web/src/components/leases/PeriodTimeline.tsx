@@ -28,9 +28,10 @@ function Mark({ mark }: { mark: PeriodMark }) {
       return <StatusMark status={mark.kind} />;
     case 'prepaid':
     case 'partial':
+    case 'void':
     case 'unbilled': {
-      const shape = mark.kind === 'prepaid' ? 'paid' : mark.kind === 'partial' ? 'due' : 'upcoming';
-      const word = mark.kind === 'prepaid' ? t('markPrepaid') : mark.kind === 'partial' ? t('markPartial') : t('markUnbilled');
+      const shape = mark.kind === 'prepaid' ? 'paid' : mark.kind === 'partial' ? 'due' : mark.kind === 'void' ? 'ended' : 'upcoming';
+      const word = { prepaid: t('markPrepaid'), partial: t('markPartial'), void: t('markVoid'), unbilled: t('markUnbilled') }[mark.kind];
       return (
         <span data-status={mark.kind} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 align-top text-small font-semibold', statusMarks[shape].pill)}>
           <StatusShape status={shape} className="size-4" />

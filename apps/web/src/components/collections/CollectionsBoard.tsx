@@ -7,6 +7,7 @@ import { QrAction } from '@/components/invoices/QrAction';
 import type { QrSheetLabels } from '@/components/invoices/QrSheet';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { RecordPaymentAction } from '@/components/payments/RecordPaymentAction';
+import type { PaymentAccount } from '@/components/payments/RecordPaymentSheet';
 import { StatusMark, StatusShape, type MarkStatus } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,7 +22,8 @@ type Board = readonly CollectionGroup<CollectionRow>[];
 /** Each lease's open invoices, which `Ghi nhận` prefills from and settles. */
 type OpenInvoices = ReadonlyMap<string, readonly PaymentInvoice[]>;
 /** Each owed row's `Mã QR`, by invoice; a row is missing when the household has no default receiving account. */
-export type BoardQrs = { readonly byInvoice: ReadonlyMap<string, InvoiceQrView>; readonly labels: QrSheetLabels };
+/** Each owed row's code, and the default receiving account a transfer recorded from the board lands in. */
+export type BoardQrs = { readonly byInvoice: ReadonlyMap<string, InvoiceQrView>; readonly labels: QrSheetLabels; readonly account: PaymentAccount | null };
 
 /** Below 640 px every row stacks: place and amount, tenant and due date, the status, then the actions. */
 const cell = {
@@ -134,6 +136,7 @@ function CollectionsRow({
                   tenantName: row.tenantName,
                   openInvoices: openInvoices.get(row.leaseId) ?? [],
                   today: asOf,
+                  account: qrs.account,
                 }}
               />
             ),

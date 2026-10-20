@@ -825,7 +825,10 @@
     "documentsEmpty": "No documents yet",
     "documentsEmptyBody": "Upload the contract so you can open it on your phone when you need it.",
     "uploadContract": "Upload contract",
-    "documentsViewerEmpty": "This lease has no documents yet."
+    "documentsViewerEmpty": "This lease has no documents yet.",
+    "markVoid": "Voided",
+    "terminateBlockedBy": "Bill {number} is issued for a period after this day. If it was a mistake, void that bill, then end the lease.",
+    "terminateOpenBill": "Open bill {number}"
   },
   "propertyOwners": {
     "title": "Owners",
@@ -1302,7 +1305,31 @@
     "openLease": "View lease",
     "notFoundTitle": "Invoice not found",
     "notFoundBody": "The link may be out of date, or the invoice belongs to another household.",
-    "notFoundAction": "Back to Collections"
+    "notFoundAction": "Back to Collections",
+    "issue": "Issue",
+    "issuing": "Issuing…",
+    "voidAction": "Void bill",
+    "voidTitle": "Void bill {number}?",
+    "voidBody": "The bill loses its QR code and nobody owes it. This period will not be billed again.",
+    "voidReason": "Reason for voiding",
+    "voiding": "Voiding…",
+    "keep": "Keep bill",
+    "voidPaidNote": "This bill has a payment, so it cannot be voided.",
+    "actionRefusal": "{reason, select, reasonRequired {Enter a reason for voiding.} notIssued {This bill is not issued, or is already void.} notDraft {This bill is already issued.} hasPayments {This bill has a payment, so it cannot be voided.} notFound {This bill was not found.} other {Not saved. Check the connection and try again.}}",
+    "noAccountAsk": "Ask an admin to add a receiving account.",
+    "addAccount": "Add receiving account",
+    "accountTitle": "Receiving account",
+    "accountBody": "The QR code on every bill sends money to this account.",
+    "accountBank": "Bank",
+    "accountBankPick": "Choose a bank",
+    "accountNo": "Account number",
+    "accountName": "Account holder",
+    "accountNameHint": "As printed on the bank card. Esta drops the accents.",
+    "accountNamePreview": "Payers will see the name",
+    "accountSave": "Save account",
+    "accountSaving": "Saving…",
+    "accountClose": "Close",
+    "accountRefusal": "{reason, select, bank {Choose a bank.} accountNo {An account number has only digits and letters, at most 19.} accountName {Enter the account holder, at most 50 characters.} duplicate {The household already has this account.} forbidden {Only an admin can add a receiving account.} other {Not saved. Check the connection and try again.}}"
   },
   "payments": {
     "title": "Record payment",
@@ -1341,7 +1368,8 @@
       "stale": "{place} was just recorded, so this payment was not saved. See the new amounts on the board.",
       "nothingOwed": "{place} owes nothing now, so this payment was not saved. See the new amounts on the board.",
       "failed": "Not saved yet. Check the connection and try again."
-    }
+    },
+    "transferTo": "Into {bank} · {accountNo}"
   },
   "expenses": {
     "add": "Add expense",
