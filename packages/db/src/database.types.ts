@@ -1202,6 +1202,7 @@ export type Database = {
           id: string
           invoice_id: string
           kind: string
+          live: boolean
           meter_id: string | null
           quantity: number
           reading_month: string | null
@@ -1218,6 +1219,7 @@ export type Database = {
           id?: string
           invoice_id: string
           kind: string
+          live?: boolean
           meter_id?: string | null
           quantity?: number
           reading_month?: string | null
@@ -1234,6 +1236,7 @@ export type Database = {
           id?: string
           invoice_id?: string
           kind?: string
+          live?: boolean
           meter_id?: string | null
           quantity?: number
           reading_month?: string | null

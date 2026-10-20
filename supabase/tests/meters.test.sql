@@ -1,9 +1,9 @@
 begin;
 \ir _harness.psql
 
-select plan(74);
+select plan(89);
 
-select tests.create_household('a') as a, tests.create_household('b') as b, tests.create_household('c') as c \gset
+select tests.create_household('a') as a, tests.create_household('b') as b, tests.create_household('c') as c, tests.create_household('d') as d \gset
 
 -- Dĩ An on the database clock's 02/11/2026. Phòng 1 and Phòng 2 bill from the 25th with owner-metered utilities; their
 -- October bills went out on 03/10 when September's readings, each meter's first, were complete. Phòng 3 has meters
@@ -297,10 +297,13 @@ select results_eq(
   $$ values ('2026-11-11'::date, '2026-09-01'::date, 100), ('2026-11-11', '2026-10-01', 150), ('2027-01-25', '2026-11-01', 50), ('2027-01-25', '2026-12-01', 120) $$,
   'the quarter from 11/11 bills September and October, the next from 25/01 November and December: each month once');
 
--- Each month bills once across the leases of a room, and only to the tenant who held it at the month's end (LSE-4).
--- Household c bills by calendar month with rent due on the 5th. Phòng 1 C's lease runs 11/11/2025 to 10/11/2026 and is
--- renewed on 05/11 after October was read on 02/11. Phòng 2 C and Phòng 3 C change tenant on 11/11; Phòng 2 C's October
--- is read on 02/11, before the old tenant's last bill went out, and Phòng 3 C's on 12/11, after the old lease ended.
+-- Each month bills once across the leases of a room, to the lease chain (a lease and its renewals) that held the room on
+-- the month's last day, on the chain's first bill after the month (LSE-4). Household c bills by calendar month with rent
+-- due on the 5th, but Phòng 4 C bills from the 25th and Phòng 5 C is due on the 1st. Phòng 1 C's lease runs to 10/11
+-- and is renewed on 05/11 after October was read on 02/11. Phòng 2 C and Phòng 3 C change tenant on 11/11; Phòng 2 C's
+-- October is read on 02/11, before the old tenant's last bill went out, and Phòng 3 C's on 12/11, after the old lease
+-- ended. Phòng 4 C's lease ends 24/11 with its last bill from 25/10, and Phòng 5 C's ends 30/11 with its last bill from
+-- 01/11 out before October was read; both are read on 02/11 and renewed on 05/11.
 reset role;
 select tests.clear_request();
 select set_config('esta.actor', 'system:test', true);
@@ -308,14 +311,14 @@ insert into public.properties (id, household_id, nickname, code, kind, use_mode)
   ('00000000-0000-4000-8000-0000000000c1', :'c', 'Dãy trọ Demo C', 'DEMOC', 'rooming_house', 'rental');
 insert into public.units (id, household_id, property_id, label, kind)
 select ('00000000-0000-4000-8000-000000000c1' || k)::uuid, :'c', '00000000-0000-4000-8000-0000000000c1', 'Phòng ' || k || ' C', 'room'
-from (values ('1'), ('2'), ('3')) as room (k);
+from (values ('1'), ('2'), ('3'), ('4'), ('5')) as room (k);
 insert into public.meters (id, household_id, property_id, unit_id, kind, pricing)
 select ('00000000-0000-4000-8000-00000000dc' || k || 'e')::uuid, :'c', '00000000-0000-4000-8000-0000000000c1', ('00000000-0000-4000-8000-000000000c1' || k)::uuid,
   'electricity', '{"kind": "flat", "unit_price_vnd": 3500}'
-from (values ('1'), ('2'), ('3')) as room (k);
+from (values ('1'), ('2'), ('3'), ('4'), ('5')) as room (k);
 insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on)
 select :'c', ('00000000-0000-4000-8000-00000000dc' || k || 'e')::uuid, '2026-09-01', 1000 * k::integer, '2026-10-01'
-from (values ('1'), ('2'), ('3')) as room (k);
+from (values ('1'), ('2'), ('3'), ('4'), ('5')) as room (k);
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000c0a1', :'c', 'individual', 'Người thuê cũ Demo', array['tenant']),
   ('00000000-0000-4000-8000-00000000c0b1', :'c', 'individual', 'Người thuê mới Demo', array['tenant']);
@@ -332,22 +335,46 @@ insert into public.leases (
   ('00000000-0000-4000-8000-00000000ec31', :'c', '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000c13',
    '00000000-0000-4000-8000-00000000c0a1', '2026-01-01', '2026-11-10', 3000000, 1, 'calendar_month', 'metered_by_owner', 4, '2026-09-30', 'active'),
   ('00000000-0000-4000-8000-00000000ec32', :'c', '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000c13',
-   '00000000-0000-4000-8000-00000000c0b1', '2026-11-11', '2027-11-10', 3000000, 1, 'calendar_month', 'metered_by_owner', 4, null, 'active');
+   '00000000-0000-4000-8000-00000000c0b1', '2026-11-11', '2027-11-10', 3000000, 1, 'calendar_month', 'metered_by_owner', 4, null, 'active'),
+  ('00000000-0000-4000-8000-00000000ec41', :'c', '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000c14',
+   '00000000-0000-4000-8000-00000000c0a1', '2025-11-25', '2026-11-24', 3000000, 1, 'lease_start', 'metered_by_owner', 0, '2026-09-24', 'active'),
+  ('00000000-0000-4000-8000-00000000ec51', :'c', '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000c15',
+   '00000000-0000-4000-8000-00000000c0a1', '2025-12-01', '2026-11-30', 3000000, 1, 'calendar_month', 'metered_by_owner', 0, '2026-09-30', 'active');
 select tests.act_as_service('{"x-esta-actor": "system:cron"}');
 select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-10-01', '2026-10-01T00:30:00+07:00') $$, :'c'), 'household c''s run on 01/10');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-01', '2026-11-01T00:30:00+07:00') $$, :'c'),
+  'and on 01/11, which issues Phòng 5 C''s last bill on its due date, before October is read');
 reset role;
+update public.test_clock set frozen_now = '2026-11-02T09:00:00+07:00';
 insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on) values
   (:'c', '00000000-0000-4000-8000-00000000dc1e', '2026-10-01', 1110, '2026-11-02'),
   (:'c', '00000000-0000-4000-8000-00000000dc2e', '2026-10-01', 2110, '2026-11-02');
+select tests.act_as('member.c@test.esta.test');
+select results_eq($$ select saved, issued, unbilled from public.save_meter_readings('00000000-0000-4000-8000-0000000000c1', '2026-10-01',
+  '[{"meter_id": "00000000-0000-4000-8000-00000000dc4e", "reading": 4100}, {"meter_id": "00000000-0000-4000-8000-00000000dc5e", "reading": 5110}]') $$,
+  $$ values (2, 0, 2) $$,
+  'Phòng 4 C''s and Phòng 5 C''s October, read on 02/11 when no bill of their leases is left, count as billed to no one for now');
+reset role;
 select tests.act_as_service('{"x-esta-actor": "system:cron"}');
-select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-02', '2026-11-02T00:30:00+07:00') $$, :'c'), 'and on 02/11, after October is read');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-02', '2026-11-02T00:30:00+07:00') $$, :'c'), 'the run on 02/11, after October is read');
 reset role;
 update public.test_clock set frozen_now = '2026-11-05T09:00:00+07:00';
 select tests.act_as('member.c@test.esta.test');
 select lives_ok($$ select public.renew_lease('00000000-0000-4000-8000-00000000ec11', 0) $$, 'Phòng 1 C''s lease is renewed on 05/11');
+select lives_ok($$ select public.renew_lease('00000000-0000-4000-8000-00000000ec41', 0), public.renew_lease('00000000-0000-4000-8000-00000000ec51', 0) $$,
+  'and so are Phòng 4 C''s and Phòng 5 C''s');
 reset role;
 select tests.act_as_service('{"x-esta-actor": "system:cron"}');
 select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-06', '2026-11-06T00:30:00+07:00') $$, :'c'), 'the run on 06/11');
+reset role;
+update public.test_clock set frozen_now = '2026-11-06T09:00:00+07:00';
+select tests.act_as('member.c@test.esta.test');
+select results_eq($$ select saved, issued, unbilled from public.save_meter_readings('00000000-0000-4000-8000-0000000000c1', '2026-10-01',
+  '[{"meter_id": "00000000-0000-4000-8000-00000000dc4e", "reading": 4100}, {"meter_id": "00000000-0000-4000-8000-00000000dc5e", "reading": 5110}]') $$,
+  $$ values (0, 0, 0) $$,
+  'saved again after the renewals, they no longer count as billed to no one');
+reset role;
+select tests.act_as_service('{"x-esta-actor": "system:cron"}');
 select lives_ok($$ select public.end_expired_leases('2026-11-11') $$, 'the old leases end on 11/11');
 reset role;
 update public.test_clock set frozen_now = '2026-11-12T09:00:00+07:00';
@@ -355,33 +382,131 @@ select tests.act_as('member.c@test.esta.test');
 select results_eq($$ select saved, issued, unbilled from public.save_meter_readings('00000000-0000-4000-8000-0000000000c1', '2026-10-01',
   '[{"meter_id": "00000000-0000-4000-8000-00000000dc3e", "reading": 3100}]') $$,
   $$ values (1, 0, 1) $$,
-  'Phòng 3 C''s October, read after its old lease ended with no bill left, saves and is counted as billed to no one');
+  'Phòng 3 C''s October, read after its old lease ended with no bill left and no renewal, counts as billed to no one');
 reset role;
 select tests.act_as_service('{"x-esta-actor": "system:cron"}');
 select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-12', '2026-11-12T00:30:00+07:00') $$, :'c'), 'the run on 12/11');
-select results_eq(
-  $$ select l.meter_id, i.lease_id, i.period_start, l.kind, l.reading_month, l.quantity::integer
-     from public.invoice_lines l join public.invoices i on i.id = l.invoice_id
-     where l.meter_id in ('00000000-0000-4000-8000-00000000dc1e', '00000000-0000-4000-8000-00000000dc2e', '00000000-0000-4000-8000-00000000dc3e')
-     order by l.meter_id $$,
-  $$ values
-     ('00000000-0000-4000-8000-00000000dc1e'::uuid, '00000000-0000-4000-8000-00000000ec11'::uuid, '2026-11-01'::date, 'electricity'::text, '2026-10-01'::date, 110),
-     ('00000000-0000-4000-8000-00000000dc2e', '00000000-0000-4000-8000-00000000ec21', '2026-11-01', 'electricity', '2026-10-01', 110) $$,
-  'October is charged once per room, to the lease that held it on 31/10: never to the renewal, never to the new tenant');
-select is((select count(*)::integer from public.invoices i join public.leases l on l.id = i.lease_id
-  where l.renewal_of_lease_id = '00000000-0000-4000-8000-00000000ec11'), 2, 'the renewal has its own bills from 11/11, rent only');
 reset role;
+select results_eq(
+  $$ select l.meter_id, l.reading_month, i.lease_id, sum(case when l.unit_price_vnd < 0 then -l.quantity else l.quantity end)::integer
+     from public.invoice_lines l join public.invoices i on i.id = l.invoice_id join public.meters m on m.id = l.meter_id
+     where m.property_id = '00000000-0000-4000-8000-0000000000c1' and i.status <> 'void'
+     group by l.meter_id, l.reading_month, i.lease_id order by l.meter_id, l.reading_month $$,
+  $$ values
+     ('00000000-0000-4000-8000-00000000dc1e'::uuid, '2026-10-01'::date, '00000000-0000-4000-8000-00000000ec11'::uuid, 110),
+     ('00000000-0000-4000-8000-00000000dc2e', '2026-10-01', '00000000-0000-4000-8000-00000000ec21', 110),
+     ('00000000-0000-4000-8000-00000000dc4e', '2026-10-01', (select id from public.leases where renewal_of_lease_id = '00000000-0000-4000-8000-00000000ec41'), 100),
+     ('00000000-0000-4000-8000-00000000dc5e', '2026-10-01', (select id from public.leases where renewal_of_lease_id = '00000000-0000-4000-8000-00000000ec51'), 110) $$,
+  'October is charged once per room, to the chain that held it on 31/10: never to the new tenants, and on a renewal''s bill when the old lease had none left');
+select results_eq(
+  $$ select l.meter_id, i.period_start, i.status, l.kind, l.description
+     from public.invoice_lines l join public.invoices i on i.id = l.invoice_id
+     where l.meter_id in ('00000000-0000-4000-8000-00000000dc4e', '00000000-0000-4000-8000-00000000dc5e') order by l.meter_id $$,
+  $$ values
+     ('00000000-0000-4000-8000-00000000dc4e'::uuid, '2026-11-25'::date, 'issued'::text, 'electricity'::text, 'Tiền điện tháng 10/2026: 100 kWh (4.000 → 4.100)'::text),
+     ('00000000-0000-4000-8000-00000000dc5e', '2026-12-01', 'draft', 'adjustment', 'Điều chỉnh tiền điện tháng 10/2026: +110 kWh') $$,
+  'Phòng 4 C''s renewal bills October from 25/11, issued as soon as it is read; Phòng 5 C''s from 01/12 as an adjustment, since 01/11 went out without it');
+select is((select count(*)::integer from public.invoices i join public.leases l on l.id = i.lease_id
+  where l.renewal_of_lease_id = '00000000-0000-4000-8000-00000000ec11'), 2, 'Phòng 1 C''s renewal has its own bills from 11/11, rent only');
 select throws_ok($$ insert into public.invoice_lines (household_id, invoice_id, kind, meter_id, reading_month, quantity, unit_price_vnd, amount_vnd)
   select i.household_id, i.id, 'electricity', '00000000-0000-4000-8000-00000000dc2e', '2026-10-01', 110, 3500, 385000
   from public.invoices i where i.lease_id = '00000000-0000-4000-8000-00000000ec22' order by i.period_start limit 1 $$,
   '23505', null, 'a second electricity line for the same meter and month is refused by the database');
+
+-- A void bill's line no longer holds its month, and a month a bill charged stays with that bill's chain (LSE-4). Phòng 1
+-- D's lease (calendar month, due on the 5th) charges November on its bill from 01/12; on 03/12 Mẹ voids that bill, ends
+-- the lease on 20/11 and lets the room to a new tenant from 21/11. Phòng 2 D's tenant renews twice: to 24/10/2026, then a
+-- month to 24/11, then a year, billing from the 25th.
+reset role;
+select tests.clear_request();
+select set_config('esta.actor', 'system:test', true);
+insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
+  ('00000000-0000-4000-8000-0000000000d1', :'d', 'Dãy trọ Demo D', 'DEMOD', 'rooming_house', 'rental');
+insert into public.units (id, household_id, property_id, label, kind)
+select ('00000000-0000-4000-8000-000000000d1' || k)::uuid, :'d', '00000000-0000-4000-8000-0000000000d1', 'Phòng ' || k || ' D', 'room'
+from (values ('1'), ('2')) as room (k);
+insert into public.meters (id, household_id, property_id, unit_id, kind, pricing)
+select ('00000000-0000-4000-8000-00000000dd' || k || 'e')::uuid, :'d', '00000000-0000-4000-8000-0000000000d1', ('00000000-0000-4000-8000-000000000d1' || k)::uuid,
+  'electricity', '{"kind": "flat", "unit_price_vnd": 3500}'
+from (values ('1'), ('2')) as room (k);
+insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on) values
+  (:'d', '00000000-0000-4000-8000-00000000dd1e', '2026-09-01', 500, '2026-10-01'),
+  (:'d', '00000000-0000-4000-8000-00000000dd2e', '2026-08-01', 1000, '2026-09-01'),
+  (:'d', '00000000-0000-4000-8000-00000000dd2e', '2026-09-01', 1100, '2026-10-01');
+insert into public.parties (id, household_id, kind, full_name, tags) values
+  ('00000000-0000-4000-8000-00000000d0a1', :'d', 'individual', 'Người thuê cũ Demo D', array['tenant']),
+  ('00000000-0000-4000-8000-00000000d0b1', :'d', 'individual', 'Người thuê mới Demo D', array['tenant']);
+insert into public.leases (
+  id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
+  utilities_mode, due_offset_days, paid_through_date, status, renewal_of_lease_id
+) values
+  ('00000000-0000-4000-8000-00000000ed11', :'d', '00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-000000000d11',
+   '00000000-0000-4000-8000-00000000d0a1', '2026-06-01', '2027-05-31', 3000000, 1, 'calendar_month', 'metered_by_owner', 4, '2026-09-30', 'active', null),
+  ('00000000-0000-4000-8000-00000000ed12', :'d', '00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-000000000d11',
+   '00000000-0000-4000-8000-00000000d0b1', '2026-11-21', '2027-11-20', 3000000, 1, 'calendar_month', 'metered_by_owner', 4, null, 'draft', null),
+  ('00000000-0000-4000-8000-00000000ed21', :'d', '00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-000000000d12',
+   '00000000-0000-4000-8000-00000000d0a1', '2025-10-25', '2026-10-24', 3000000, 1, 'lease_start', 'metered_by_owner', 0, '2026-09-24', 'active', null),
+  ('00000000-0000-4000-8000-00000000ed22', :'d', '00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-000000000d12',
+   '00000000-0000-4000-8000-00000000d0a1', '2026-10-25', '2026-11-24', 3000000, 1, 'lease_start', 'metered_by_owner', 0, null, 'active',
+   '00000000-0000-4000-8000-00000000ed21'),
+  ('00000000-0000-4000-8000-00000000ed23', :'d', '00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-000000000d12',
+   '00000000-0000-4000-8000-00000000d0a1', '2026-11-25', '2027-11-24', 3000000, 1, 'lease_start', 'metered_by_owner', 0, null, 'active',
+   '00000000-0000-4000-8000-00000000ed22');
+select tests.act_as_service('{"x-esta-actor": "system:cron"}');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-10-01', '2026-10-01T00:30:00+07:00') $$, :'d'), 'household d''s run on 01/10');
+reset role;
+insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on) values
+  (:'d', '00000000-0000-4000-8000-00000000dd1e', '2026-10-01', 600, '2026-11-02'),
+  (:'d', '00000000-0000-4000-8000-00000000dd2e', '2026-10-01', 1250, '2026-11-02');
+select tests.act_as_service('{"x-esta-actor": "system:cron"}');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-02', '2026-11-02T00:30:00+07:00') $$, :'d'), 'and on 02/11, after October is read');
+reset role;
+insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on) values
+  (:'d', '00000000-0000-4000-8000-00000000dd1e', '2026-11-01', 680, '2026-12-02');
+select tests.act_as_service('{"x-esta-actor": "system:cron"}');
+select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-12-02', '2026-12-02T00:30:00+07:00') $$, :'d'),
+  'and on 02/12, which issues Phòng 1 D''s bill from 01/12 with November''s 80 kWh');
+reset role;
+update public.test_clock set frozen_now = '2026-12-03T09:00:00+07:00';
+select tests.act_as('member.d@test.esta.test');
+select lives_ok($$ select public.void_invoice((select id from public.invoices where lease_id = '00000000-0000-4000-8000-00000000ed11' and period_start = '2026-12-01'), 'Demo: gửi nhầm') $$,
+  'on 03/12 Mẹ voids Phòng 1 D''s bill from 01/12');
+select results_eq(
+  $$ select l.kind, l.live from public.invoice_lines l join public.invoices i on i.id = l.invoice_id
+     where i.lease_id = '00000000-0000-4000-8000-00000000ed11' and i.period_start = '2026-12-01' order by l.sort_order $$,
+  $$ values ('rent'::text, false), ('electricity', false) $$,
+  'and its lines stop charging anything');
+select lives_ok($$ select public.terminate_lease('00000000-0000-4000-8000-00000000ed11', '2026-11-20', 'Demo: chuyển đi') $$, 'she ends the lease on 20/11');
+select lives_ok($$ select * from public.activate_lease('00000000-0000-4000-8000-00000000ed12') $$, 'and lets the room to a new tenant from 21/11');
+select results_eq(
+  $$ select i.period_start, i.status, (count(l.id) filter (where l.meter_id is not null))::integer
+     from public.invoices i left join public.invoice_lines l on l.invoice_id = i.id
+     where i.lease_id = '00000000-0000-4000-8000-00000000ed12' group by i.id order by i.period_start $$,
+  $$ values ('2026-12-01'::date, 'draft'::text, 0), ('2027-01-01', 'draft', 0) $$,
+  'the new tenant is never charged the November the old tenant''s bill charged, so their first bill waits for its due date');
+select results_eq($$ select saved, issued, unbilled from public.save_meter_readings('00000000-0000-4000-8000-0000000000d1', '2026-11-01',
+  '[{"meter_id": "00000000-0000-4000-8000-00000000dd1e", "reading": 680}]') $$,
+  $$ values (0, 0, 1) $$,
+  'saving November again counts it as billed to no one, for the old tenant to settle');
+reset role;
+select results_eq(
+  $$ select l.meter_id, l.reading_month, i.lease_id, sum(case when l.unit_price_vnd < 0 then -l.quantity else l.quantity end)::integer
+     from public.invoice_lines l join public.invoices i on i.id = l.invoice_id join public.meters m on m.id = l.meter_id
+     where m.property_id = '00000000-0000-4000-8000-0000000000d1' and i.status <> 'void'
+     group by l.meter_id, l.reading_month, i.lease_id order by l.meter_id, l.reading_month $$,
+  $$ values
+     ('00000000-0000-4000-8000-00000000dd1e'::uuid, '2026-10-01'::date, '00000000-0000-4000-8000-00000000ed11'::uuid, 100),
+     ('00000000-0000-4000-8000-00000000dd2e', '2026-09-01', '00000000-0000-4000-8000-00000000ed22', 100),
+     ('00000000-0000-4000-8000-00000000dd2e', '2026-10-01', '00000000-0000-4000-8000-00000000ed23', 150) $$,
+  'each month is charged once on bills that are not void: the voided November to no one, and each renewal''s first bill carries the month before it');
 
 reset role;
 select is_empty(
   $$ select p.oid::regprocedure from pg_proc p
      where p.oid in ('private.meter_lines(public.leases)'::regprocedure, 'private.refresh_meter_lines(public.leases)'::regprocedure,
                      'private.readings_complete(public.leases, date)'::regprocedure, 'private.issue_invoices(uuid, date, timestamptz)'::regprocedure,
-                     'public.save_meter_readings(uuid, date, jsonb)'::regprocedure)
+                     'public.save_meter_readings(uuid, date, jsonb)'::regprocedure, 'private.lease_chain(uuid)'::regprocedure,
+                     'private.room_holder(uuid, date)'::regprocedure, 'private.meter_month_owner(uuid, date)'::regprocedure)
        and p.prosrc ~* '\m(now|current_date|current_timestamp|localtimestamp|clock_timestamp|statement_timestamp|transaction_timestamp)\M' $$,
   'metered billing reads no clock but the database clock it is given');
 select ok(not has_function_privilege('authenticated', 'private.meter_lines(public.leases)', 'execute'), 'a member cannot call the line planner');

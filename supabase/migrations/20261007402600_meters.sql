@@ -1,8 +1,8 @@
 -- Meters and monthly readings (SPEC §5.4, LSE-4). Readings bill in the database like rent: the consumption of month M
 -- is a line on the bill whose period starts in month M+1, a metered bill issues once every meter of its unit has that
 -- month's reading (or on its due date), and a reading entered or changed after its bill issued becomes an adjustment
--- line on the lease's next draft. A member writes readings only through save_meter_readings, which re-plans the
--- drafts of the leases they touch in the same transaction.
+-- line on the next draft of the lease or its renewal. A member writes readings only through save_meter_readings, which
+-- re-plans the drafts of the leases they touch in the same transaction.
 
 create table public.meters (
   id uuid primary key default gen_random_uuid(),
@@ -109,17 +109,39 @@ revoke all on public.meter_usage from anon, authenticated;
 grant select on public.meter_usage to authenticated;
 
 -- Each utility line names the meter and the month it bills, so what issued bills charged can be compared with what the
--- readings now say.
+-- readings now say. A line is live until its bill is voided.
 alter table public.invoice_lines
   add column meter_id uuid,
   add column reading_month date,
+  add column live boolean not null default true,
   add constraint invoice_lines_meter_month check ((meter_id is null) = (reading_month is null)),
   add constraint invoice_lines_meter_kind check (meter_id is null or kind in ('electricity', 'water', 'adjustment')),
   add constraint invoice_lines_meter_fkey foreign key (household_id, meter_id) references public.meters (household_id, id);
 create index invoice_lines_meter_idx on public.invoice_lines (meter_id, reading_month) where meter_id is not null;
--- A meter's month has one electricity or water line in all, on the bill that first charged it; anything charged after
--- that is an adjustment line.
-create unique index invoice_lines_meter_month_once_idx on public.invoice_lines (meter_id, reading_month) where kind in ('electricity', 'water');
+-- A meter's month has one live electricity or water line in all, on the bill that first charged it; anything charged
+-- after that is an adjustment line. A voided bill's line no longer counts, so its month can be charged again.
+create unique index invoice_lines_meter_month_once_idx on public.invoice_lines (meter_id, reading_month)
+  where live and kind in ('electricity', 'water');
+
+-- A voided bill's lines stop being live, for every path that voids a bill. It runs as its owner, since
+-- freeze_issued_lines refuses API roles any change to an issued bill's lines.
+create function private.retire_void_lines()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.invoice_lines l set live = false where l.invoice_id = new.id and l.live;
+  return null;
+end;
+$$;
+revoke all on function private.retire_void_lines() from public;
+
+create trigger retire_void_lines
+  after update of status on public.invoices
+  for each row when (new.status = 'void' and old.status <> 'void')
+  execute function private.retire_void_lines();
 
 -- `1.234`, as a receipt prints a count.
 create function private.grouped(p_count numeric)
@@ -143,14 +165,71 @@ as $$
 $$;
 revoke all on function private.month_end(date) from public;
 
--- The utility lines the lease's drafts should carry (LSE-4). [app rule] A meter's month belongs to the lease that holds
--- the unit on the month's last day, so a renewal or a new tenant never takes the month before it began, and a vacant
--- month belongs to no one. It goes on the first bill of that lease starting after the month (the bill whose period
--- starts the next month, or a later one when two bills start in one month or a bill covers a quarter); the lease's
--- first bill reaches back only as many months as its period is long. A draft bills the month's use from meter_usage,
--- less what any issued bill already charged for it. For a month whose bill already went out, or was voided, the
--- difference goes on the lease's earliest draft as an adjustment. A month no bill of its lease will reach (the lease's
--- last month, or a reading entered after the lease's last bill) is billed to no one; save_meter_readings counts it.
+-- A lease and its renewals, both ways along renewal_of_lease_id: one tenant's stay in a room, whose meter months bill
+-- as one (LSE-4).
+create function private.lease_chain(p_lease_id uuid)
+returns table (lease_id uuid)
+language sql
+stable
+set search_path = ''
+as $$
+  with recursive up (id, renewal_of) as (
+    select l.id, l.renewal_of_lease_id from public.leases l where l.id = p_lease_id
+    union
+    select l.id, l.renewal_of_lease_id from public.leases l join up on l.id = up.renewal_of
+  ),
+  down (id) as (
+    select up.id from up
+    union
+    select l.id from public.leases l join down on l.renewal_of_lease_id = down.id where l.status <> 'draft'
+  )
+  select down.id from down;
+$$;
+revoke all on function private.lease_chain(uuid) from public;
+
+-- The lease that holds a room on a day: of the leases past draft whose dates cover it, the one that started last.
+create function private.room_holder(p_unit_id uuid, p_day date)
+returns uuid
+language sql
+stable
+set search_path = ''
+as $$
+  select l.id from public.leases l
+  where l.unit_id = p_unit_id and l.status <> 'draft' and l.start_date <= p_day and (l.end_date is null or l.end_date >= p_day)
+  order by l.start_date desc, l.id
+  limit 1;
+$$;
+revoke all on function private.room_holder(uuid, date) from public;
+
+-- Whose a meter's month is (LSE-4). [app rule] It is the lease chain's that holds the room on the month's last day, so a
+-- new tenant pays the whole month they moved in during and never a month that ended before their lease began, and a
+-- vacant month is no one's. A month a bill already charged (charged), even a bill voided since, stays with that bill's
+-- lease, so ending a lease early or letting the room again never moves it to another tenant.
+create function private.meter_month_owner(p_meter_id uuid, p_month date)
+returns table (lease_id uuid, charged boolean)
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce(c.lease_id, private.room_holder(m.unit_id, private.month_end(p_month))), c.lease_id is not null
+  from public.meters m
+  left join lateral (
+    select i.lease_id from public.invoice_lines l join public.invoices i on i.id = l.invoice_id
+    where l.meter_id = m.id and l.reading_month = p_month and l.kind in ('electricity', 'water') and i.status <> 'draft'
+    order by i.status = 'void', i.period_start
+    limit 1
+  ) c on true
+  where m.id = p_meter_id;
+$$;
+revoke all on function private.meter_month_owner(uuid, date) from public;
+
+-- The utility lines the lease's drafts should carry (LSE-4). A meter's month goes to its owner's chain
+-- (private.meter_month_owner), on the chain's first bill that is not void and starts after the month, whichever lease of
+-- the chain issued it: a renewal's first bill carries a month its predecessor had no bill left for. The chain's first
+-- bill reaches back only as many months as its period is long. A draft bills the month's use from meter_usage, less what
+-- any issued bill already charged for it. For a month a bill already charged, or whose bill went out without it, the
+-- difference goes on the chain's earliest draft as an adjustment. A month no bill of its chain will reach is billed to no
+-- one; save_meter_readings counts it.
 create function private.meter_lines(p_lease public.leases)
 returns table (
   invoice_id uuid, kind text, meter_id uuid, reading_month date, quantity integer, unit_price_vnd bigint, amount_vnd bigint,
@@ -160,17 +239,24 @@ language sql
 stable
 set search_path = ''
 as $$
-  with bills as (
-    select
-      i.id, i.status, i.period_start, row_number() over (order by i.period_start) = 1 as first,
-      greatest(1, private.months_until(i.period_start, i.period_end + 1)) as months
+  with chain as materialized (
+    select c.lease_id from private.lease_chain(p_lease.id) c
+  ),
+  bills as (
+    select i.id, i.lease_id, i.status, i.period_start, i.period_end
     from public.invoices i
-    where i.lease_id = p_lease.id
+    where i.lease_id in (select c.lease_id from chain c)
+  ),
+  reach as (
+    select (date_trunc('month', b.period_start)::date - make_interval(months => greatest(1, private.months_until(b.period_start, b.period_end + 1))))::date as month
+    from bills b
+    order by b.period_start
+    limit 1
   ),
   owed as (
     select
-      b.id, b.status, u.reading_month as month, u.meter_id, m.kind, (m.pricing ->> 'unit_price_vnd')::bigint as price,
-      u.previous_reading as previous, u.reading, coalesce(u.used, 0) as due,
+      b.id, b.lease_id, not w.charged and b.status = 'draft' as drafted, u.reading_month as month, u.meter_id, m.kind,
+      (m.pricing ->> 'unit_price_vnd')::bigint as price, u.previous_reading as previous, u.reading, coalesce(u.used, 0) as due,
       coalesce((
         select sum(case when l.unit_price_vnd < 0 then -l.quantity else l.quantity end)
         from public.invoice_lines l
@@ -179,15 +265,19 @@ as $$
       ), 0)::integer as billed
     from public.meter_usage u
     join public.meters m on m.id = u.meter_id and m.unit_id = p_lease.unit_id
-    cross join lateral (
-      select b.* from bills b where b.period_start > private.month_end(u.reading_month) order by b.period_start limit 1
-    ) b
-    where p_lease.start_date <= private.month_end(u.reading_month)
-      and (p_lease.end_date is null or p_lease.end_date >= private.month_end(u.reading_month))
-      and (not b.first or u.reading_month >= date_trunc('month', b.period_start)::date - make_interval(months => b.months))
+    cross join lateral private.meter_month_owner(u.meter_id, u.reading_month) w
+    left join lateral (
+      select b.id, b.lease_id, b.status from bills b
+      where b.status <> 'void' and b.period_start > private.month_end(u.reading_month)
+      order by b.period_start
+      limit 1
+    ) b on true
+    where w.lease_id in (select c.lease_id from chain c)
+      and (w.charged or b.id is not null)
+      and u.reading_month >= (select r.month from reach r)
   ),
   next_draft as (
-    select i.id from public.invoices i where i.lease_id = p_lease.id and i.status = 'draft' order by i.period_start limit 1
+    select b.id, b.lease_id from bills b where b.status = 'draft' order by b.period_start limit 1
   )
   select
     o.id, o.kind, o.meter_id, o.month, o.due - o.billed, o.price, (o.due - o.billed) * o.price,
@@ -195,7 +285,7 @@ as $$
       private.grouped(o.due - o.billed), case o.kind when 'electricity' then 'kWh' else 'm³' end, private.grouped(o.previous), private.grouped(o.reading)),
     case o.kind when 'electricity' then 1 else 2 end
   from owed o
-  where o.status = 'draft' and o.due > o.billed
+  where o.drafted and o.lease_id = p_lease.id and o.due > o.billed
   union all
   select
     d.id, 'adjustment', o.meter_id, o.month, abs(o.due - o.billed), case when o.due > o.billed then o.price else -o.price end, (o.due - o.billed) * o.price,
@@ -204,7 +294,7 @@ as $$
     3
   from owed o
   cross join next_draft d
-  where o.status <> 'draft' and o.due <> o.billed;
+  where not o.drafted and d.lease_id = p_lease.id and o.due <> o.billed;
 $$;
 revoke all on function private.meter_lines(public.leases) from public;
 
@@ -238,9 +328,9 @@ $$;
 revoke all on function private.refresh_meter_lines(public.leases) from public;
 
 -- SPEC §5.4's trigger for a metered bill: every active meter of the unit has the reading of the month before its period
--- starts, and that month is this bill's: the lease holds the unit on its last day and no earlier bill of the lease
--- starts after it. Any other bill (a unit with no meter, a month the lease did not hold at its end, a month an earlier
--- bill took) waits for its due date.
+-- starts, and that month is this bill's: it belongs to the lease's chain and no earlier bill of the chain that is not
+-- void starts after it. Any other bill (a unit with no meter, a month another tenant's, a month an earlier bill took)
+-- waits for its due date.
 create function private.readings_complete(p_lease public.leases, p_period_start date)
 returns boolean
 language sql
@@ -249,19 +339,24 @@ set search_path = ''
 as $$
   with closing as (
     select (date_trunc('month', p_period_start)::date - interval '1 month')::date as start
+  ),
+  chain as (
+    select c.lease_id from private.lease_chain(p_lease.id) c
   )
   select exists (select 1 from public.meters m where m.unit_id = p_lease.unit_id and m.active)
     and not exists (
       select 1 from public.meters m
-      where m.unit_id = p_lease.unit_id and m.active and not exists (
-        select 1 from public.meter_readings r where r.meter_id = m.id and r.reading_month = (select start from closing)
+      cross join lateral private.meter_month_owner(m.id, (select start from closing)) w
+      where m.unit_id = p_lease.unit_id and m.active and (
+        not exists (select 1 from public.meter_readings r where r.meter_id = m.id and r.reading_month = (select start from closing))
+        or w.lease_id is null
+        or w.lease_id not in (select c.lease_id from chain c)
       )
     )
-    and p_lease.start_date <= private.month_end((select start from closing))
-    and (p_lease.end_date is null or p_lease.end_date >= private.month_end((select start from closing)))
     and not exists (
       select 1 from public.invoices j
-      where j.lease_id = p_lease.id and j.period_start < p_period_start and j.period_start > private.month_end((select start from closing))
+      where j.lease_id in (select c.lease_id from chain c) and j.status <> 'void'
+        and j.period_start < p_period_start and j.period_start > private.month_end((select start from closing))
     );
 $$;
 revoke all on function private.readings_complete(public.leases, date) from public;
@@ -387,26 +482,34 @@ begin
     issued := issued + v_done.issued;
   end loop;
 
-  -- [app rule] A month whose lease holds the room on its last day but has no bill left to carry it (the lease's last
-  -- month, or a reading entered after its last bill) is billed to no one, never to the next tenant. The screen says how
-  -- many, so Mẹ can collect them herself or deduct them from the deposit.
+  -- [app rule] A month whose chain has no bill left to carry it (the last month of a lease not renewed, or a reading
+  -- entered after the chain's last bill) is billed to no one, never to another tenant. The screen says how many, so Mẹ
+  -- can renew the lease, collect them herself or deduct them from the deposit.
   select count(*)::integer into unbilled
   from jsonb_array_elements(p_readings) e
   join public.meter_usage u on u.meter_id = (e ->> 'meter_id')::uuid and u.reading_month = p_reading_month and u.used > 0
-  join public.meters m on m.id = u.meter_id
-  join public.leases l on l.unit_id = m.unit_id and l.utilities_mode = 'metered_by_owner' and l.status <> 'draft'
-    and l.start_date <= private.month_end(p_reading_month) and l.end_date >= private.month_end(p_reading_month)
-  where not exists (select 1 from public.invoices i where i.lease_id = l.id and i.status = 'draft')
-    and not exists (
-      select 1 from private.lease_periods(l, l.end_date) s
-      where s.period_start > coalesce((select max(i.period_start) from public.invoices i where i.lease_id = l.id), l.start_date - 1)
-    )
-    and u.used <> coalesce((
+  cross join lateral private.meter_month_owner(u.meter_id, u.reading_month) w
+  join public.leases o on o.id = w.lease_id and o.utilities_mode = 'metered_by_owner'
+  where u.used <> coalesce((
       select sum(case when il.unit_price_vnd < 0 then -il.quantity else il.quantity end)
       from public.invoice_lines il
       join public.invoices i on i.id = il.invoice_id
       where i.status = 'issued' and il.meter_id = u.meter_id and il.reading_month = u.reading_month
-    ), 0);
+    ), 0)
+    and not exists (
+      select 1 from private.lease_chain(o.id) c
+      join public.leases l on l.id = c.lease_id
+      where l.end_date is null
+        or exists (
+          select 1 from public.invoices i
+          where i.lease_id = l.id and i.status = 'draft' and i.period_start > private.month_end(p_reading_month)
+        )
+        or exists (
+          select 1 from private.lease_periods(l, l.end_date) s
+          where s.period_start > private.month_end(p_reading_month)
+            and s.period_start > coalesce((select max(i.period_start) from public.invoices i where i.lease_id = l.id), l.start_date - 1)
+        )
+    );
   return next;
 end;
 $$;
