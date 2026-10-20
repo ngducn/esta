@@ -1,3 +1,5 @@
+import { signedUploadHeaders } from '@esta/core/documents';
+
 export type UploadProgress = { readonly loaded: number; readonly total: number };
 
 export class UploadError extends Error {
@@ -14,8 +16,7 @@ export function uploadWithProgress(url: string, file: Blob, onProgress: (progres
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open('PUT', url);
-    request.setRequestHeader('content-type', file.type || 'application/octet-stream');
-    request.setRequestHeader('x-upsert', 'true');
+    for (const [name, value] of Object.entries(signedUploadHeaders(file.type || 'application/octet-stream'))) request.setRequestHeader(name, value);
     request.upload.onprogress = (event) => onProgress({ loaded: event.loaded, total: event.lengthComputable ? event.total : file.size });
     request.onload = () => (request.status >= 200 && request.status < 300 ? resolve() : reject(new UploadError(request.status)));
     request.onerror = () => reject(new UploadError(0));

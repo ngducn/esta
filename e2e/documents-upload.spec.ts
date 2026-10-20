@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
 import { join } from 'node:path';
-import { REVIEW_SIZE } from '../apps/web/src/lib/upload/previews.ts';
+import { DOCUMENT_PREVIEWS } from '../packages/core/src/documents/previews.ts';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
@@ -130,7 +130,7 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and clear,
     const [reviewSize, originalSize] = await Promise.all([sharp(review).metadata(), sharp(original).metadata()]);
     const longSide = (size: { width?: number; height?: number }) => Math.max(size.width ?? 0, size.height ?? 0);
     expect(reviewSize.format).toBe('webp');
-    expect(longSide(reviewSize), 'the review copy is at most 1024 px on its long side, never enlarged').toBe(Math.min(REVIEW_SIZE, longSide(originalSize)));
+    expect(longSide(reviewSize), 'the review copy is at most 1024 px on its long side, never enlarged').toBe(Math.min(DOCUMENT_PREVIEWS.review.longSide, longSide(originalSize)));
     expect((reviewSize.width ?? 0) < (reviewSize.height ?? 0), 'the review copy keeps the upright page').toBe((originalSize.width ?? 0) < (originalSize.height ?? 0));
     expect(review.length, 'the review copy weighs less than the photo').toBeLessThan(original.length);
 

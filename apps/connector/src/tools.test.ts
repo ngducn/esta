@@ -18,10 +18,22 @@ async function connect(refusal: OperatorRefusal) {
 const textOf = (result: Awaited<ReturnType<Client['callTool']>>) => (Array.isArray(result.content) ? result.content.map((part) => (part.type === 'text' ? part.text : '')).join('') : '');
 
 describe('connector tools', () => {
-  it('offers the four read tools and the two write tools', async () => {
+  it('offers the read, file, parse and write tools', async () => {
     const { client } = await connect('signed_out');
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name).toSorted()).toEqual(['apply_plan', 'find_property', 'get_property', 'list_properties', 'plan_changes', 'resolve_address']);
+    expect(tools.map((tool) => tool.name).toSorted()).toEqual([
+      'apply_plan',
+      'find_person',
+      'find_property',
+      'get_property',
+      'list_folder',
+      'list_properties',
+      'parse_date',
+      'parse_money',
+      'plan_changes',
+      'read_spreadsheet',
+      'resolve_address',
+    ]);
   });
 
   it('rejects a plan with an op Esta does not have before reading the session', async () => {
@@ -41,6 +53,13 @@ describe('connector tools', () => {
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain(says);
     expect(logs).toEqual([`find_property refused=${refusal}`]);
+  });
+
+  it('rejects a person search with nothing to search by, or with a whole ID number, before reading the session', async () => {
+    const { client, logs } = await connect('signed_out');
+    expect((await client.callTool({ name: 'find_person', arguments: {} })).isError).toBe(true);
+    expect((await client.callTool({ name: 'find_person', arguments: { id_last4: '079301004567' } })).isError).toBe(true);
+    expect(logs).toEqual([]);
   });
 
   it('rejects arguments outside the schema before reading the session', async () => {

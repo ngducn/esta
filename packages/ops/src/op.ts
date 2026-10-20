@@ -4,8 +4,10 @@ import type { Database } from '@esta/db';
 import type { z } from 'zod';
 import type { Db } from './db';
 import { invalid, type CommonRefusal, type Refusal } from './kit';
+import type { Pending, Write } from './view';
 
-export type OpContext = { readonly db: Db; readonly householdId: string; readonly clock: Clock };
+/** `pending` is the batch planned so far; only `planChanges` sets it, so apply and every screen read the database alone. */
+export type OpContext = { readonly db: Db; readonly householdId: string; readonly clock: Clock; readonly pending?: Pending };
 
 /** The change to approve, or nothing to do because the database already holds what the input asks for. */
 export type Planned<C, O> = { readonly kind: 'change'; readonly change: C } | { readonly kind: 'unchanged'; readonly current: O };
@@ -14,15 +16,19 @@ export type Planned<C, O> = { readonly kind: 'change'; readonly change: C } | { 
  * One write Esta performs (CONNECTOR.md §3.1). `input` names the state the row should reach, with any new row's id
  * minted by the caller. `plan` only reads; planning twice on an untouched database gives equal changes, and planning
  * after `apply` gives `unchanged`. `apply` writes exactly the change through one statement or one definer function.
+ * `X` is the context the op needs: an op that reads files on Ryan's Mac takes a `LocalContext`, which no server action
+ * has. `plan` and `apply` are properties, not methods, so TypeScript checks that context strictly.
  */
-export type Op<I, C, O, R extends Refusal> = {
+export type Op<I, C, O, R extends Refusal, X extends OpContext = OpContext> = {
   readonly creates: keyof Database['public']['Tables'] | null;
   readonly input: z.ZodType<I, unknown>;
-  plan(ctx: OpContext, input: I): Promise<Result<Planned<C, O>, R | CommonRefusal>>;
-  apply(ctx: OpContext, change: C): Promise<Result<O, R | CommonRefusal>>;
+  readonly plan: (ctx: X, input: I) => Promise<Result<Planned<C, O>, R | CommonRefusal>>;
+  readonly apply: (ctx: X, change: C) => Promise<Result<O, R | CommonRefusal>>;
+  /** The rows the change creates, as a later item in the batch reads them before they land. */
+  readonly writes?: (change: C) => readonly Write[];
 };
 
-export function defineOp<I, C, O, R extends Refusal = never>(op: Op<I, C, O, R>): Op<I, C, O, R> {
+export function defineOp<I, C, O, R extends Refusal = never, X extends OpContext = OpContext>(op: Op<I, C, O, R, X>): Op<I, C, O, R, X> {
   return op;
 }
 
@@ -36,9 +42,9 @@ export type Settled<O> = { readonly landed: boolean; readonly output: O };
  * Plans, lets `approve` veto the fresh change, then applies it. A conflict at apply is explained by planning once
  * more: the plan already knows how to say "code Q7 belongs to Nhà Q1", or that the row now exists.
  */
-export async function settle<I, C, O, R extends Refusal, V extends Refusal>(
-  op: Op<I, C, O, R>,
-  ctx: OpContext,
+export async function settle<I, C, O, R extends Refusal, V extends Refusal, X extends OpContext>(
+  op: Op<I, C, O, R, X>,
+  ctx: X,
   input: I,
   approve: (change: C) => V | null,
 ): Promise<Result<Settled<O>, R | CommonRefusal | V>> {
@@ -59,6 +65,6 @@ export async function settle<I, C, O, R extends Refusal, V extends Refusal>(
 export async function runOp<I, C, O, R extends Refusal>(op: Op<I, C, O, R>, ctx: OpContext, raw: unknown): Promise<Result<O, R | CommonRefusal>> {
   const input = op.input.safeParse(raw);
   if (!input.success) return refuse(invalid(input.error));
-  const settled = await settle<I, C, O, R, never>(op, ctx, input.data, () => null);
+  const settled = await settle<I, C, O, R, never, OpContext>(op, ctx, input.data, () => null);
   return settled.ok ? { ok: true, value: settled.value.output } : settled;
 }

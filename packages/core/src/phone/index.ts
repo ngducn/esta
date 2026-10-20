@@ -35,6 +35,13 @@ export function formatPhone(phone: Phone): string {
     : `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
 }
 
+/** A stored phone as Mẹ reads it, `0903 123 456`; one stored some other way shows as it was typed. */
+export function phoneText(stored: string | null): string | null {
+  if (stored === null) return null;
+  const phone = normalizePhone(stored);
+  return phone.ok ? formatPhone(phone.value) : stored;
+}
+
 /** [verify] DOMAIN-VN §9: `https://zalo.me/{phone}` takes the local form; confirm in LSE-11. */
 export function phoneForZaloLink(phone: Phone): string {
   return national(phone);

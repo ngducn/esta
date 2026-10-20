@@ -7,6 +7,7 @@ import { parseSlot } from '../../scripts/slot.ts';
 import { slotEnv } from '../../scripts/slot-env.ts';
 import { extractionFixtures, type UploadFile } from '../../fixtures/certificates/generator/uploads.tsx';
 import { signIn } from './inbucket';
+import { createAccount } from './password';
 
 const repoRoot = join(import.meta.dirname, '../..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT), { withKeys: false });
@@ -42,17 +43,20 @@ export async function open(page: Page, email: string, theme: 'light' | 'dark', v
 
 /**
  * A household of its own for a rule that adds properties, because a seeded lane's counts are asserted by other specs
- * (as P1-05's property form rules do). Signs up through onboarding as `Nguyễn Thị Demo`.
+ * (as P1-05's property form rules do). Signs up through onboarding as `Nguyễn Thị Demo`, with a code by email or, given
+ * one, a password, and returns the address.
  */
-export async function openNewHousehold(page: Page, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
+export async function openNewHousehold(page: Page, theme: 'light' | 'dark', viewport: { width: number; height: number }, password?: string) {
   await page.setViewportSize(viewport);
   await page.context().addCookies([{ name: 'esta_theme', value: theme, url: test.info().project.use.baseURL ?? '' }]);
-  await signIn(page, `p208.${randomUUID().slice(0, 8)}@demo.esta.test`);
+  const email = `p208.${randomUUID().slice(0, 8)}@demo.esta.test`;
+  await (password === undefined ? signIn(page, email) : createAccount(page, email, password));
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByLabel('Tên gia đình').fill('Gia đình Demo P208');
   await page.getByLabel('Tên của bạn').fill('Nguyễn Thị Demo');
   await page.getByRole('button', { name: 'Tạo gia đình' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mời người trong gia đình', { timeout: 20_000 });
+  return email;
 }
 
 export async function serviceGet<T>(page: Page, path: string): Promise<T> {
@@ -69,6 +73,12 @@ export async function storedNames(page: Page, documentId: string): Promise<strin
   });
   expect(response.ok(), await response.text()).toBe(true);
   return ((await response.json()) as { name: string }[]).map((object) => object.name).toSorted();
+}
+
+export async function storedObject(page: Page, path: string): Promise<Buffer> {
+  const response = await page.request.get(`${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/documents/${path}`, { headers: service });
+  expect(response.ok(), `${path} is in the bucket`).toBe(true);
+  return response.body();
 }
 
 export async function servicePatch(page: Page, path: string, data: unknown) {

@@ -41,7 +41,7 @@ A function that can fail in an expected way returns `Result<T, Reason>` from `pa
 
 ## Server writes: the ops layer
 
-Every write a screen or the connector performs is an op in `packages/ops` (`docs/spec/CONNECTOR.md` §3.1): `input` parses with zod, `plan` reads and returns the change or `unchanged`, `apply` writes that change through the session client or one definer function. A server action builds `OpContext` from the cookie session, calls `runOp(op, ctx, raw)`, revalidates, and maps the result to the type its screen reads. `createProperty` and `updateProperty` in `apps/web/src/app/(app)/properties/actions.ts` are the template. The connector runs the same ops through `planChanges` and `applyPlan`.
+Every write a screen or the connector performs is an op in `packages/ops` (`docs/spec/CONNECTOR.md` §3.1): `input` parses with zod, `plan` reads and returns the change or `unchanged`, `apply` writes that change through the session client or one definer function. A server action builds `OpContext` from the cookie session, calls `runOp(op, ctx, raw)`, revalidates, and maps the result to the type its screen reads. `createProperty` and `updateProperty` in `apps/web/src/app/(app)/properties/actions.ts` are the template. The connector runs the same ops through `planChanges` and `applyPlan`. An op that reads a file on Ryan's computer, such as `documentAttach`, takes `LocalContext`, which adds `LocalFiles` to `OpContext`. Only the connector builds one, so a server action that calls such an op does not compile.
 
 **Home.** `packages/ops`: `idSchema` and `optionalIdSchema` in `src/kit.ts` parse every id, and `dbRefusal(error, sentinels)` in the same file is the only reader of SQLSTATE codes, followed by a per-feature table of `ESTA_*` sentinels. An op's refusals are objects in `Result`'s `reason`. The other server actions move onto ops in one cleanup round after the connector's document slice, which closes issue #188.
 
@@ -56,13 +56,14 @@ Until then, an action outside the ops layer that parses an id adds to `local-id-
 - **Clock.** `readClock(db, env)` in `packages/ops/src/clock.ts` reads the test clock row on every call outside production (SPEC FND-9). The web passes a cookieless client, the agent and the connector their own.
 - **Membership.** `readMembership(db, userId)` in `packages/ops/src/member.ts` is the one read of the membership Esta opens for a user, the first one they joined. `getCurrentMember` and the connector's operator check both call it.
 - **Addresses.** `suggestCurrentUnits` in `packages/ops/src/address.ts` maps an old address to the current ward and province.
+- **Documents.** `packages/ops/src/documents.ts` signs a document's three uploads (`signDocumentUploads`), finds the household's documents with the same hash (`documentsWithHash`), and registers the row (`documentRegister`), for the vault's server actions and for `documentAttach`.
 - **Tool results.** `packages/ops/src/read.ts` shapes these reads for a model: display strings for amounts and the reason each search candidate matched. The daily assistant's tools reuse it rather than query again.
 
 A read moves here before a second surface uses it. A read that only one surface needs stays with that surface.
 
 ## The connector: apps/connector
 
-`apps/connector` is the MCP surface only: sign-in, the session store, the operator check on every call, and tool definitions that call `packages/ops`. It holds no query, parser or rule of its own (`docs/spec/CONNECTOR.md`).
+`apps/connector` is the MCP surface: sign-in, the session store, the operator check on every call, tool definitions that call `packages/ops`, and the adapters to Ryan's computer that no other surface has. `files.ts` keeps every path inside the import folders (`~/Esta-import` and `ESTA_IMPORT_ROOTS`), `spreadsheet.ts` returns xlsx and CSV cells as the file stored them, and `local-files.ts` implements `LocalFiles`. It holds no query or domain rule of its own: money, dates and CSV rows parse in `packages/core` (`docs/spec/CONNECTOR.md`).
 
 ## Multi-row writes
 
@@ -81,9 +82,9 @@ A rule that decides what gets written lives in SQL, because SQL is the writer: b
 
 ## Document upload
 
-Bytes go from the browser to Storage with a signed upload URL, never through a server function body (CLAUDE.md). `apps/web/src/lib/upload/` prepares a file and sends it (`sendPrepared`, `uploadWithProgress`), and `createDocumentUpload` in `apps/web/src/server/documents/actions.ts` signs the upload.
+Bytes go from the device that holds the file to Storage with a signed upload URL, never through a server function body (CLAUDE.md). In the browser, `apps/web/src/lib/upload/` prepares a file and sends it (`sendPrepared`, `uploadWithProgress`), and `createDocumentUpload` in `apps/web/src/server/documents/actions.ts` signs the upload. From Ryan's computer, the connector's `documentAttach` op signs and sends with `signDocumentUploads` and `sendDocumentUpload` in `packages/ops/src/documents.ts`. Both paths PUT with the headers `signedUploadHeaders` gives (`packages/core/src/documents/storage-path.ts`), so Storage keeps their objects alike, register the row with `documentRegister`, and draw previews at the sizes and quality in `DOCUMENT_PREVIEWS` (`packages/core/src/documents/previews.ts`).
 
-**Home.** `useDocumentUpload` in `apps/web/src/components/documents/use-document-upload.ts`, which the upload sheet and the expense receipt use. Issue #190 moves the wizard's photo step (`components/property-wizard/step-photo.tsx`) onto it. `upload-pipeline` counts every use of an upload step outside those two modules and the hook: `sendPrepared`, `uploadWithProgress`, `createDocumentUpload`, Storage's `createSignedUploadUrl` and `uploadToSignedUrl`, and a `fetch` with `method: 'PUT'`. The cover photo flow (`app/(app)/properties/actions.ts` and `components/properties/cover-photo-input.tsx`) is a third path that counts today. Until #190 lands, a new upload step needs a countersigned `--allow-raise` naming #190.
+**Home.** `useDocumentUpload` in `apps/web/src/components/documents/use-document-upload.ts`, which the upload sheet and the expense receipt use. Issue #190 moves the wizard's photo step (`components/property-wizard/step-photo.tsx`) onto it. `upload-pipeline` counts every use of an upload step outside those two modules, the hook and `packages/ops/src/documents.ts`: `sendPrepared`, `uploadWithProgress`, `createDocumentUpload`, Storage's `createSignedUploadUrl` and `uploadToSignedUrl`, and a `fetch` with `method: 'PUT'`. The cover photo flow (`app/(app)/properties/actions.ts` and `components/properties/cover-photo-input.tsx`) is a third path that counts today. Until #190 lands, a new upload step needs a countersigned `--allow-raise` naming #190.
 
 ## Calling a server action from the UI
 

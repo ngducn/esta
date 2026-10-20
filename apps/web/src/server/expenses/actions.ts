@@ -2,10 +2,10 @@
 
 import { NEW_VENDOR_TAG, readExpense, type ExpenseProblems } from '@esta/core/expenses';
 import { vnd, type Vnd } from '@esta/core/money';
+import { documentRow } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { readRequestClock } from '@/server/clock';
-import { documentRow } from '@/server/documents/register';
 import { requireMember } from '@/server/member';
 import { setDeletedAt } from '@/server/soft-delete';
 import { createSessionClient } from '@/server/supabase/server';
@@ -30,12 +30,12 @@ export async function saveExpense(input: unknown): Promise<ExpenseSaved> {
   if (!read.ok) return { ok: false, reason: 'invalid', problems: read.problems };
   if (member.role === 'viewer') return { ok: false, reason: 'forbidden' };
   const { id, propertyId, category, amount, paidOn, note, vendor, receipt } = read.value;
+  const supabase = await createSessionClient();
   const document =
     receipt?.kind === 'new'
-      ? await documentRow(member.household.id, { ...receipt, propertyId, category: 'invoice_receipt', expiresOn: null, leaseId: null })
+      ? await documentRow(supabase, member.household.id, { ...receipt, propertyId, category: 'invoice_receipt', expiresOn: null, leaseId: null })
       : null;
   if (receipt?.kind === 'new' && document === null) return failed;
-  const supabase = await createSessionClient();
   const { data, error } = await supabase.rpc('save_expense', {
     p_id: id,
     p_property_id: propertyId,

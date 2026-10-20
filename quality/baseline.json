@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 123,
+      "value": 122,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -41,7 +41,6 @@
         "e2e/extraction-review.spec.ts": 4,
         "e2e/fnd9-integration.spec.ts": 2,
         "e2e/helpers/session.ts": 1,
-        "e2e/helpers/wizard.ts": 1,
         "e2e/i18n.spec.ts": 1,
         "e2e/lease-detail.spec.ts": 1,
         "e2e/leases.spec.ts": 2,
@@ -63,11 +62,11 @@
       }
     },
     "duplicated-lines": {
-      "value": 1314,
+      "value": 1292,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 28,
+        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 18,
         "apps/web/src/app/dev/core/sections.ts": 9,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 13,
         "apps/web/src/app/forgot-password/actions.ts": 29,
@@ -95,7 +94,7 @@
         "e2e/auth-password.spec.ts": 32,
         "e2e/collections.spec.ts": 150,
         "e2e/deposits.spec.ts": 10,
-        "e2e/documents-extract.spec.ts": 175,
+        "e2e/documents-extract.spec.ts": 170,
         "e2e/documents-multipage.spec.ts": 13,
         "e2e/documents-upload.spec.ts": 41,
         "e2e/documents-vault.spec.ts": 8,
@@ -103,7 +102,6 @@
         "e2e/extraction-review.spec.ts": 29,
         "e2e/fnd9-integration.spec.ts": 12,
         "e2e/helpers/session.ts": 6,
-        "e2e/helpers/wizard.ts": 7,
         "e2e/i18n.spec.ts": 7,
         "e2e/lease-detail.spec.ts": 9,
         "e2e/leases.spec.ts": 18,
@@ -309,9 +307,9 @@
       }
     },
     "hand-rolled-iso-date-schema": {
-      "value": 8,
+      "value": 7,
       "files": {
-        "apps/web/src/server/documents/actions.ts": 2,
+        "apps/web/src/server/documents/actions.ts": 1,
         "apps/web/src/server/properties/rental.ts": 1,
         "packages/core/src/agent-schemas/certificate_v1.ts": 1,
         "packages/core/src/schemas/ownership.ts": 1,

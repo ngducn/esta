@@ -1,11 +1,4 @@
-/** The long side of the thumbnail, as in `scripts/seed-documents.ts`. */
-export const THUMB_SIZE = 320;
-/**
- * The long side of the review copy, as in `scripts/seed-documents.ts`: a portrait page fills a phone's review column at
- * 2x, and zooming in loads the original for finer print.
- */
-export const REVIEW_SIZE = 1024;
-const REVIEW_QUALITY = 0.75;
+import { DOCUMENT_PREVIEWS, pdfPageScale, PREVIEW_MIME, previewSize } from '@esta/core/documents/previews';
 
 export type Previews = { readonly thumb: Blob; readonly review: Blob; readonly pageCount: number };
 
@@ -18,13 +11,8 @@ function canvas(width: number, height: number): HTMLCanvasElement {
   return element;
 }
 
-function fit(width: number, height: number, longSide: number) {
-  const scale = Math.min(1, longSide / Math.max(width, height));
-  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
-}
-
 function draw(source: Source, longSide: number): HTMLCanvasElement {
-  const size = fit(source.width, source.height, longSide);
+  const size = previewSize(source.width, source.height, longSide);
   const target = canvas(size.width, size.height);
   const context = target.getContext('2d');
   if (context !== null) {
@@ -39,8 +27,9 @@ const encode = (element: HTMLCanvasElement, type: string, quality: number) =>
 
 /** A browser that cannot encode WebP hands back PNG, which at review size outweighs the photo, so it gets JPEG. */
 async function encodeReview(element: HTMLCanvasElement): Promise<Blob> {
-  const webp = await encode(element, 'image/webp', REVIEW_QUALITY);
-  return webp.type === 'image/webp' ? webp : encode(element, 'image/jpeg', REVIEW_QUALITY);
+  const quality = DOCUMENT_PREVIEWS.review.quality / 100;
+  const webp = await encode(element, PREVIEW_MIME, quality);
+  return webp.type === PREVIEW_MIME ? webp : encode(element, 'image/jpeg', quality);
 }
 
 async function imageSource(file: Blob): Promise<Source> {
@@ -57,7 +46,7 @@ async function pdfSource(file: Blob): Promise<Source> {
   try {
     const page = await pdf.getPage(1);
     const base = page.getViewport({ scale: 1 });
-    const viewport = page.getViewport({ scale: REVIEW_SIZE / Math.max(base.width, base.height) });
+    const viewport = page.getViewport({ scale: pdfPageScale(base.width, base.height) });
     const target = canvas(Math.round(viewport.width), Math.round(viewport.height));
     await page.render({ canvas: target, viewport }).promise;
     return { image: target, width: target.width, height: target.height, pageCount: pdf.numPages };
@@ -72,9 +61,9 @@ async function pdfSource(file: Blob): Promise<Source> {
  */
 export async function makePreviews(file: Blob): Promise<Previews> {
   const source = file.type === 'application/pdf' ? await pdfSource(file) : await imageSource(file);
-  const review = draw(source, REVIEW_SIZE);
-  const clear = draw(source, THUMB_SIZE);
+  const review = draw(source, DOCUMENT_PREVIEWS.review.longSide);
+  const clear = draw(source, DOCUMENT_PREVIEWS.thumb.longSide);
   if ('close' in source.image && typeof source.image.close === 'function') source.image.close();
-  const [thumb, reviewCopy] = await Promise.all([encode(clear, 'image/webp', 0.7), encodeReview(review)]);
+  const [thumb, reviewCopy] = await Promise.all([encode(clear, PREVIEW_MIME, DOCUMENT_PREVIEWS.thumb.quality / 100), encodeReview(review)]);
   return { thumb, review: reviewCopy, pageCount: source.pageCount };
 }

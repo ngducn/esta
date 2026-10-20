@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import sharp from 'sharp';
 import ts from 'typescript';
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { REVIEW_SIZE, THUMB_SIZE } from './previews';
+import { DOCUMENT_PREVIEWS } from '@esta/core/documents/previews';
 
 /** makePreviews needs createImageBitmap, canvas and WebP encoding, which only a real browser has. */
 let browser: Browser;
@@ -12,10 +12,12 @@ let page: Page;
 beforeAll(async () => {
   browser = await chromium.launch();
   page = await browser.newPage();
-  await page.setContent('<!doctype html><title>previews</title>');
-  const source = ts.transpileModule(readFileSync(new URL('./previews.ts', import.meta.url), 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
+  const transpile = (url: URL) =>
+    ts.transpileModule(readFileSync(url, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const shared = Buffer.from(transpile(new URL('../../../../../packages/core/src/documents/previews.ts', import.meta.url))).toString('base64');
+  const imports = JSON.stringify({ imports: { '@esta/core/documents/previews': `data:text/javascript;base64,${shared}` } });
+  await page.setContent(`<!doctype html><title>previews</title><script type="importmap">${imports}</script>`);
+  const source = transpile(new URL('./previews.ts', import.meta.url));
   await page.addScriptTag({ type: 'module', content: `${source}\nwindow.makePreviews = makePreviews;` });
   await page.waitForFunction(() => 'makePreviews' in window);
 }, 30_000);
@@ -54,8 +56,8 @@ test('an EXIF-rotated photo comes out upright as a 320 px thumbnail and a 1024 p
   }, await rotatedPhoto());
 
   expect(result.kinds, 'no blurred variant is made').toEqual(['pageCount', 'review', 'thumb']);
-  expect(result.thumb).toMatchObject({ width: THUMB_SIZE / 2, height: THUMB_SIZE, type: 'image/webp' });
-  expect(result.review).toMatchObject({ width: REVIEW_SIZE / 2, height: REVIEW_SIZE, type: 'image/webp' });
+  expect(result.thumb).toMatchObject({ width: DOCUMENT_PREVIEWS.thumb.longSide / 2, height: DOCUMENT_PREVIEWS.thumb.longSide, type: 'image/webp' });
+  expect(result.review).toMatchObject({ width: DOCUMENT_PREVIEWS.review.longSide / 2, height: DOCUMENT_PREVIEWS.review.longSide, type: 'image/webp' });
   for (const image of [result.thumb, result.review]) {
     const [topRed, , topBlue] = image.top;
     const [bottomRed, , bottomBlue] = image.bottom;

@@ -1,6 +1,8 @@
+import { normalizePhone } from '@esta/core/phone';
+import { searchTokens } from '@esta/core/properties';
 import { describe, expect, it } from 'vitest';
 import type { PropertyRow } from './properties';
-import { rankCandidates } from './read';
+import { rankCandidates, rankPeople } from './read';
 
 function row(overrides: Partial<PropertyRow> & Pick<PropertyRow, 'id' | 'nickname' | 'code'>): PropertyRow {
   return {
@@ -60,5 +62,34 @@ describe('rankCandidates', () => {
   it('returns at most ten candidates', () => {
     const many = Array.from({ length: 12 }, (_, index) => row({ id: `p${index}`, nickname: `Demo Kho ${index}`, code: `K-${index}` }));
     expect(rankCandidates(many, 'kho')).toHaveLength(10);
+  });
+});
+
+describe('rankPeople', () => {
+  const phone = (text: string) => {
+    const parsed = normalizePhone(text);
+    if (!parsed.ok) throw new Error(`${text} is not a phone`);
+    return parsed.value;
+  };
+  const lan = { id: 't1', full_name: 'Phạm Thị Lan Demo', phone: phone('0912 345 678'), id_last4: '4567' };
+  const an = { id: 't2', full_name: 'Nguyễn Văn An Demo', phone: phone('0901 111 001'), id_last4: null };
+  const lanh = { id: 't3', full_name: 'Lê Thị Lành Demo', phone: null, id_last4: '4567' };
+  const query = (overrides: Partial<Parameters<typeof rankPeople>[1]>) => ({ tokens: [], phone: null, idLast4: null, ...overrides });
+
+  it('matches every word of the name without accents, and a word only as a whole word', () => {
+    expect(rankPeople([lan, an, lanh], query({ tokens: searchTokens('lan demo') })).map((found) => found.id)).toEqual(['t1']);
+    expect(rankPeople([lan, an], query({ tokens: searchTokens('La') }))).toEqual([]);
+  });
+
+  it('says what matched, shows the phone as written in Vietnam, and puts the person with most matches first', () => {
+    expect(rankPeople([lanh, lan], query({ tokens: searchTokens('Lan'), phone: phone('0912345678'), idLast4: '4567' }))).toEqual([
+      { id: 't1', full_name: 'Phạm Thị Lan Demo', phone: '0912 345 678', id_last4: '4567', reasons: ['name', 'phone', 'id_last4'] },
+      { id: 't3', full_name: 'Lê Thị Lành Demo', phone: null, id_last4: '4567', reasons: ['id_last4'] },
+    ]);
+  });
+
+  it('returns at most ten people', () => {
+    const many = Array.from({ length: 12 }, (_, index) => ({ ...an, id: `p${index}` }));
+    expect(rankPeople(many, query({ tokens: ['demo'] }))).toHaveLength(10);
   });
 });

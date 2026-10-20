@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhone, normalizePhone, phoneForZaloLink, type Phone } from './index';
+import { formatPhone, normalizePhone, phoneForZaloLink, phoneText, type Phone } from './index';
 
 function phone(text: string): Phone {
   const result = normalizePhone(text);
@@ -43,6 +43,14 @@ describe('formatPhone', () => {
 
   it('groups landlines as area code, then two groups of four', () => {
     expect(formatPhone(phone('02838234567'))).toBe('028 3823 4567');
+  });
+});
+
+describe('phoneText', () => {
+  it('shows a stored phone as Mẹ reads it, one stored some other way as it was, and none as none', () => {
+    expect(phoneText('+84903123456')).toBe('0903 123 456');
+    expect(phoneText('Zalo 0901')).toBe('Zalo 0901');
+    expect(phoneText(null)).toBeNull();
   });
 });
 

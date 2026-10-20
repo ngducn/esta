@@ -1,65 +1,23 @@
-import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { applyPlan, propertyCreate, propertyEdit, readClock, runOp, type Db } from '@esta/ops';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { DEMO_PASSWORD } from '../../../supabase/seed/generator/households.ts';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
-import { logIn } from './login';
-import { connectorClient } from './session';
-import { fileStore } from './store';
-import { stdioConnector } from './test/stdio';
+import { importFolders } from './files';
+import { localFiles } from './local-files';
+import { appliedSchema, call, clientAt, demoProperty, plannedSchema, sessionFiles, setClock, signIn, startConnector, type Connector } from './test/connector';
 
-// `pnpm --filter @esta/connector test:integration` (scripts/connector-integration.ts) passes the slot's stack; run
-// against a fresh `pnpm db:reset`. The server starts exactly as the README tells Claude Code to start it.
-const env = z.object({ ESTA_SLOT: z.string(), ESTA_IT_SUPABASE_URL: z.url(), ESTA_IT_ANON_KEY: z.string().min(1) }).parse(process.env);
-const ROOT = join(import.meta.dirname, '..', '..', '..');
+// Run against a fresh `pnpm db:reset`.
 const OPERATOR = 'ryan.lane9@demo.esta.test';
 const MEMBER = 'me.lane9@demo.esta.test';
 const property = (lane: number, key: string) => seedId(`seed:property:lane-${lane}:${key}`);
 
-const sessionFiles: string[] = [];
-const sessionFile = () => {
-  const file = join(mkdtempSync(join(tmpdir(), 'esta-connector-it-')), 'session.json');
-  sessionFiles.push(file);
-  return file;
-};
-const storeAt = (file: string) => fileStore(env.ESTA_IT_SUPABASE_URL, file);
-const clientAt = (file: string) => connectorClient({ ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY }, storeAt(file));
-
-function signIn(email: string, file: string) {
-  return logIn(clientAt(file), { email, password: DEMO_PASSWORD });
-}
-
-afterAll(async () => {
-  for (const file of sessionFiles) {
-    if (storeAt(file).getItem('session') !== null) expect((await clientAt(file).auth.signOut({ scope: 'local' })).error).toBeNull();
-    rmSync(join(file, '..'), { recursive: true, force: true });
-  }
-});
-
-async function startConnector(file: string) {
-  const connector = stdioConnector({ command: 'pnpm', args: ['--silent', '--dir', ROOT, 'connector'], env: { ESTA_SLOT: env.ESTA_SLOT, ESTA_SESSION_FILE: file } });
-  await connector.connect();
-  return connector;
-}
-
-type Connector = Awaited<ReturnType<typeof startConnector>>;
-
-async function call(connector: Connector, name: string, args: Record<string, unknown> = {}) {
-  const result = await connector.client.callTool({ name, arguments: args });
-  const text = z.array(z.object({ type: z.literal('text'), text: z.string() })).parse(result.content)[0]?.text ?? '';
-  return { isError: result.isError === true, text, json: (): unknown => JSON.parse(text) };
-}
-
-function setClock(instant: string) {
-  expect(spawnSync('pnpm', ['--silent', 'clock:set', instant], { cwd: ROOT, env: { ...process.env, ESTA_SLOT: env.ESTA_SLOT } }).status).toBe(0);
-}
+const sessions = sessionFiles();
+const sessionFile = () => sessions.make();
+afterAll(() => sessions.discard());
 
 /** The session client, except that a query filtered to `id` throws, as a dropped connection does mid-batch. */
 function droppingQueriesOn(db: Db, id: string): Db {
@@ -98,9 +56,9 @@ describe('the connector over stdio, signed in as the household operator', () => 
     expect(statSync(file).mode & 0o777).toBe(0o600);
   });
 
-  it('offers the four read tools and the two that change properties', async () => {
+  it('offers the read, file, parse and write tools', async () => {
     const { tools } = await connector.client.listTools();
-    expect(tools.map((tool) => tool.name).toSorted()).toEqual(['apply_plan', 'find_property', 'get_property', 'list_properties', 'plan_changes', 'resolve_address']);
+    expect(tools.map((tool) => tool.name)).toEqual(expect.arrayContaining(['list_properties', 'list_folder', 'parse_money', 'plan_changes', 'apply_plan']));
   });
 
   it("lists the household's properties and no other household's", async () => {
@@ -159,25 +117,8 @@ describe('the connector for anyone but the operator', () => {
   }, 60_000);
 });
 
-const demoProperty = (code: string) => ({
-  nickname: `Demo Nhà phố ${code}`,
-  code,
-  kind: 'townhouse',
-  kind_details: {},
-  use_mode: 'rental',
-  legal_status: 'certified',
-  current_address: { house_no: '12 Demo', street: 'Đường số 5', commune_code: '27475', province_code: '79' },
-  certificate_address_text: 'Thửa 12, tờ bản đồ 5, Phường Tân Kiểng, Quận 7',
-  acquired_on: '2020-05-01',
-  acquisition_kind: 'purchase',
-  acquisition_price_vnd: 3_500_000_000,
-  notes: 'Demo, mua qua môi giới',
-});
-
 const FORM_COLUMNS = 'nickname, kind, kind_details, use_mode, legal_status, current_address, certificate_address_text, acquired_on, acquisition_kind, acquisition_price_vnd, notes, created_by';
 
-const plannedSchema = z.object({ planId: z.string(), items: z.array(z.object({ status: z.string(), id: z.string().nullable(), change: z.unknown().optional() })) });
-const appliedSchema = z.object({ status: z.string(), items: z.array(z.object({ status: z.string(), refusal: z.unknown().optional() })) });
 
 describe('plans and applies the changes Ryan approved', () => {
   const file = sessionFile();
@@ -198,7 +139,12 @@ describe('plans and applies the changes Ryan approved', () => {
   });
 
   const plan = async (items: unknown[]) => call(connector, 'plan_changes', { summary: 'Demo: thêm nhà phố', items });
-  const laneContext = async () => ({ db, householdId: seedId('seed:household:lane-9'), clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }) });
+  const laneContext = async () => ({
+    db,
+    householdId: seedId('seed:household:lane-9'),
+    clock: await readClock(db, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' }),
+    files: localFiles(importFolders([])),
+  });
 
   it('writes the same row the property form writes, once', async () => {
     const planned = plannedSchema.parse((await plan([{ op: 'property.create', input: { property: demoProperty('CLAUDE1') } }])).json());

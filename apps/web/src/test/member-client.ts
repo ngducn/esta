@@ -1,4 +1,5 @@
 import type { Database } from '@esta/db';
+import { readClock } from '@esta/ops';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { vi } from 'vitest';
 import { signedInAs } from './stack';
@@ -21,6 +22,8 @@ export function memberClient(email: string, householdId: string): { client: Supa
   vi.doMock('next/cache', () => ({ revalidatePath: () => undefined }));
   vi.doMock('@/server/member', () => ({ requireMember: async () => ({ household: { id: householdId } }) }));
   vi.doMock('@/server/supabase/server', () => ({ createSessionClient: async () => client }));
+  const clock = () => readClock(client, { ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh' });
+  vi.doMock('@/server/clock', () => ({ readRequestClock: clock, getClock: clock }));
   const signIn = async () => {
     signed = (await signedInAs(email)) as SupabaseClient<Database>;
   };
