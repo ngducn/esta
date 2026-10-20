@@ -1,7 +1,9 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { z } from 'zod';
-import { householdStatement, roomingHouse, type HouseholdStatement, type OpenBill } from '../../fixtures/statements/household.ts';
+import { golden, householdStatement, roomingHouse, type HouseholdStatement, type OpenBill } from '../../fixtures/statements/household.ts';
 import { isoDate } from '../../packages/core/src/date/iso-date.ts';
+import { renderCsv, renderStatementGrid } from '../../packages/core/src/matching/render.ts';
+import { UNRECOGNIZED_LAYOUT, UNRECOGNIZED_PREAMBLE } from '../../packages/core/src/matching/statement-scenario.ts';
 import { vnd } from '../../packages/core/src/money/vnd.ts';
 import { memberRest } from './auth-api';
 
@@ -46,7 +48,17 @@ export async function laneStatement(page: Page, lane: number, householdId: strin
   return { statement: householdStatement(bills, isoDate('2026-10-07'), `FT${String(lane).padStart(2, '0')}`), bills };
 }
 
-async function openBills(page: Page, householdId: string) {
+/**
+ * The account's next statement from the bank Esta does not recognize (P3-21): one transfer naming each bill still owed by
+ * its code, under new bank references, with `header` in place of that bank's own labels when given.
+ */
+export function nextUnrecognizedCsv(bills: readonly OpenBill[], refPrefix: string, header?: readonly string[]): string {
+  const rows = bills.map((bill, i) => ({ date: isoDate('2026-10-07'), amount: bill.outstanding, bankRef: `${refPrefix}${String(i + 1).padStart(6, '0')}`, description: `CK ESTA${bill.memoCode}` }));
+  const [labels = [], ...lines] = renderStatementGrid(UNRECOGNIZED_LAYOUT, rows);
+  return renderCsv([...UNRECOGNIZED_PREAMBLE, header ?? labels, ...lines]);
+}
+
+export async function openBills(page: Page, householdId: string) {
   const balances = balancesSchema.parse(
     await memberRest(page, 'GET', `invoice_balances?household_id=eq.${householdId}&status=eq.issued&outstanding_vnd=gt.0&select=id,number,lease_id,due_date,outstanding_vnd`),
   );
@@ -63,4 +75,52 @@ async function openBills(page: Page, householdId: string) {
     return { id: row.id, number: row.number, memoCode: code.memo_code, tenantName: code.lease.tenant.full_name, dueDate: isoDate(row.due_date), outstanding: vnd(row.outstanding_vnd) };
   });
   return { bills, balances };
+}
+
+export const line = (page: Page, index: number) => page.locator(`[data-testid="statement-line"][data-line="${index}"]`);
+
+/** The picker is enabled once React owns the page, so a file chosen earlier is never lost. */
+export async function chooseFile(page: Page, name: string, buffer: Buffer | string) {
+  await expect(page.getByTestId('statement-file')).toBeEnabled();
+  await page.getByTestId('statement-file').setInputFiles({ name, mimeType: name.endsWith('.csv') ? 'text/csv' : 'application/octet-stream', buffer: Buffer.from(buffer) });
+}
+
+export async function upload(page: Page, name: string, buffer: Buffer | string) {
+  await page.goto('/collections/import');
+  await chooseFile(page, name, buffer);
+  await expect(page.getByTestId('statement-read')).toBeVisible();
+}
+
+export async function preview(page: Page, name: string, buffer: Buffer | string) {
+  await upload(page, name, buffer);
+  await page.getByTestId('statement-preview').click();
+  await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
+}
+
+/** Every line reads the status golden.json gives it, and names the bills it gives; `headerRow` is where the file's header sits. */
+export async function expectGolden(page: Page, household: StatementHousehold, headerRow = 0) {
+  for (const expected of golden(household.statement, headerRow)) {
+    const row = line(page, expected.index);
+    await expect(row).toHaveAttribute('data-status', expected.status);
+    for (const number of expected.invoices) await expect(row.getByTestId('statement-target')).toContainText(number);
+  }
+}
+
+export const statementPayments = (page: Page, householdId: string) =>
+  memberRest<{ amount_vnd: number; bank_account_id: string | null; statement_row_id: string | null }[]>(
+    page,
+    'GET',
+    `payments?household_id=eq.${householdId}&source=eq.statement_import&select=amount_vnd,bank_account_id,statement_row_id`,
+  );
+
+/** A second receiving account for the household, which a statement can be imported into instead of the default. */
+export async function secondAccount(page: Page, householdId: string): Promise<string> {
+  const [account] = await memberRest<{ id: string }[]>(page, 'POST', 'bank_accounts', {
+    household_id: householdId,
+    bank_bin: '970403',
+    account_no: '0011012345678',
+    account_name: 'TRAN MINH DEMO',
+  });
+  if (account === undefined) throw new Error('No second account');
+  return account.id;
 }

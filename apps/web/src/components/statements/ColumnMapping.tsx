@@ -123,16 +123,16 @@ export function ColumnMapping({ grid, picks, onPicks, preset, intro, sample, pro
         {sample.length === 0 ? null : (
           <ol data-testid="mapping-sample" className="flex flex-col">
             {sample.map((row) => (
-              <li key={row.index} data-testid="mapping-sample-row" className="flex items-baseline justify-between gap-3 border-b border-rule py-2.5 first:pt-0 last:border-b-0 last:pb-0">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span data-testid="mapping-sample-date" className="figures text-small text-ink-muted">
+              <li key={row.index} data-testid="mapping-sample-row" className="flex flex-col gap-0.5 border-b border-rule py-2.5 first:pt-0 last:border-b-0 last:pb-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span data-testid="mapping-sample-date" className="figures min-w-0 text-small text-ink-muted">
                     {formatDate(row.date, locale)}
                   </span>
-                  <span className="text-body break-words text-ink">{row.description}</span>
+                  <span data-testid="mapping-sample-amount" className={cn('figures shrink-0 text-body font-semibold whitespace-nowrap', row.amount < 0 ? 'text-ink-muted' : 'text-ink')}>
+                    {formatVnd(row.amount, locale)}
+                  </span>
                 </div>
-                <span data-testid="mapping-sample-amount" className={cn('figures shrink-0 text-body font-semibold whitespace-nowrap', row.amount < 0 ? 'text-ink-muted' : 'text-ink')}>
-                  {formatVnd(row.amount, locale)}
-                </span>
+                <span className="text-body break-words text-ink">{row.description}</span>
               </li>
             ))}
           </ol>
