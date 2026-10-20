@@ -382,7 +382,12 @@
     "documents": "Tài liệu",
     "assistant": "Trợ lý",
     "reports": "Báo cáo",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "homeTab": "Tổng quan",
+    "propertiesTab": "Tài sản",
+    "collectionsTab": "Thu tiền",
+    "documentsTab": "Tài liệu",
+    "assistantTab": "Trợ lý"
   },
   "shell": {
     "sections": "Các mục chính",

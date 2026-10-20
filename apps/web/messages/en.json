@@ -382,7 +382,12 @@
     "documents": "Documents",
     "assistant": "Assistant",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "homeTab": "Home",
+    "propertiesTab": "Properties",
+    "collectionsTab": "Collections",
+    "documentsTab": "Docs",
+    "assistantTab": "Assistant"
   },
   "shell": {
     "sections": "Main sections",

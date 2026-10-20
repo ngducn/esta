@@ -13,12 +13,12 @@ import { boardRow } from './helpers/board';
 import { signIn } from './helpers/inbucket';
 import { chooseFromBoard, commitLines, confirmSuggestion, expectFilters, line, openPreview } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
-import { acceptEvery, editField, fixture, followReadyNotice, open, PHONE, serviceGet, shot, START, startWizard, step, toast, vnd } from './helpers/wizard';
+import { acceptEvery, editField, fixture, followReadyNotice, open, PHONE, recordForPr, serviceGet, shot, START, startWizard, step, toast, vnd } from './helpers/wizard';
 
 // SPEC §1.2 on the `northstar` seed, which has no Dãy trọ Dĩ An; `pnpm e2e:northstar` resets to it and runs this file.
 test.describe.configure({ mode: 'serial', timeout: 180_000 });
 test.skip(process.env.ESTA_NORTHSTAR !== '1', 'runs through pnpm e2e:northstar, on the northstar seed');
-test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
+const holdForRecording = recordForPr();
 
 const ME = 'me.lane1@demo.esta.test';
 const RYAN = 'ryan.lane1@demo.esta.test';
@@ -201,6 +201,7 @@ test('step 3: 8 rooms and 6 active monthly leases with deposits, paid through 30
   }
   await expect(page.locator('[data-status="paid"]').filter({ hasText: 'Đang cho thuê 6/8' })).toBeVisible();
   await shot(page, 'p3-17-northstar-step3-390-light');
+  await holdForRecording(page);
   // The tab names a lease's end once it is terminated (P3-08); the contracted end reads on the lease's own page.
   await unitRow(page, 'Phòng 3').getByTestId('open-lease').click();
   await expect(page.getByTestId('lease-period')).toContainText('01/05/2026 đến 07/11/2026');
@@ -243,7 +244,10 @@ test('step 4: October bills for 01/10 to 31/10, due 01/10/2026, are issued for t
     const shown = decodeQrPng(await page.getByTestId('invoice-qr').getByTestId('qr-code').screenshot())?.decoded;
     expect(shown?.ok && shown.value).toMatchObject({ amountVnd: room?.rentVnd, purpose: `ESTA ${bill.memo_code}` });
     await expect(page.getByTestId('receipt-png')).toHaveText('Ảnh gửi Zalo');
-    if (i === 0) await shot(page, 'p3-17-northstar-step4-bill-390-light');
+    if (i === 0) {
+      await shot(page, 'p3-17-northstar-step4-bill-390-light');
+      await holdForRecording(page);
+    }
     const receipt = await page.request.get(`/api/invoices/${bill.id}/receipt?format=png`);
     expect(receipt.status()).toBe(200);
     expect(receipt.headers()['content-type']).toBe('image/png');
@@ -273,10 +277,12 @@ test('step 5: Ryan imports the October statement, three lines post by memo code,
     if (room > 0) await expect(line(page, index).getByTestId('statement-target')).toContainText(october[room - 1]?.number ?? '');
   }
   await shot(page, 'p3-17-northstar-step5-preview-390-light');
+  await holdForRecording(page);
   await commitLines(page, 3);
   await confirmSuggestion(page, 3);
   await commitLines(page, 1);
   await expectFilters(page, { posted: 4 });
+  await holdForRecording(page);
 
   await page.context().clearCookies();
   await open(page, ME, 'light', PHONE);
@@ -287,6 +293,7 @@ test('step 5: Ryan imports the October statement, three lines post by memo code,
   await sheet.getByRole('radio', { name: 'Tiền mặt' }).click();
   await sheet.getByTestId('payment-save').click();
   await expect(toast(page)).toContainText(`Đã ghi nhận ${vnd('2.500.000')} từ Phòng 5.`);
+  await holdForRecording(page);
 
   const balances = await memberRest<{ id: string; outstanding_vnd: number }[]>(page, 'GET', `invoice_balances?id=in.(${october.map((bill) => bill.id).join(',')})&select=id,outstanding_vnd`);
   expect(october.map((bill) => balances.find((balance) => balance.id === bill.id)?.outstanding_vnd)).toEqual([0, 0, 0, 0, 0, 2_800_000]);
@@ -310,6 +317,7 @@ test('step 6: the October board shows Phòng 6 overdue 6 days and Mẹ copies it
   await expect(phong6.locator('[data-status="overdue"]')).toHaveText('Quá hạn 6 ngày');
   for (const room of ROOMS.slice(0, 5)) await expect(boardRow(page, 'paid', place(room.label))).toBeVisible();
   await shot(page, 'p3-17-northstar-step6-board-390-light');
+  await holdForRecording(page);
 
   await phong6.getByTestId('row-action-remind').click();
   const sheet = page.getByTestId('reminder-sheet');
@@ -332,6 +340,7 @@ test('step 6: the October board shows Phòng 6 overdue 6 days and Mẹ copies it
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(expected);
   await expect(sheet.getByTestId('reminder-zalo')).toHaveAttribute('href', 'https://zalo.me/0901111006');
   await shot(page, 'p3-17-northstar-step6-reminder-390-light');
+  await holdForRecording(page);
 });
 
 test.skip('step 7: the 2026-10-08 morning brief lists the overdue room, the ending lease and a market item (Phase 5, P5-10)', () => {});

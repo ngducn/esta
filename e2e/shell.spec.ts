@@ -2,12 +2,14 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { signIn } from './helpers/inbucket';
+import { clippedText } from './helpers/text-scale';
 
+/** `en` is the English name on the phone's tab bar, short enough to stay whole at 130% text (FND-8). */
 const sections = [
-  { vi: 'Tổng quan', en: 'Overview', path: '/' },
+  { vi: 'Tổng quan', en: 'Home', path: '/' },
   { vi: 'Tài sản', en: 'Properties', path: '/properties' },
   { vi: 'Thu tiền', en: 'Collections', path: '/collections' },
-  { vi: 'Tài liệu', en: 'Documents', path: '/documents' },
+  { vi: 'Tài liệu', en: 'Docs', path: '/documents' },
   { vi: 'Trợ lý', en: 'Assistant', path: '/assistant' },
 ] as const;
 
@@ -281,6 +283,7 @@ test('lane 10: English, 130% and dark on Collections keep every tab label inside
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await rootFontSize(page)).toBe('20.8px');
   expect(await overflowingLabels(page)).toEqual([]);
+  expect(await clippedText(page), 'no word breaks in two and no box overlaps another').toEqual([]);
   expect(await pageOverflows(page)).toBe(false);
   await expect(page.getByTestId('date-line')).toHaveText(/^(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day, \d{2}\/\d{2}\/\d{4}$/);
   expect(await seriousAxeViolations(page)).toEqual([]);

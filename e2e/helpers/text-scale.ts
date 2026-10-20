@@ -1,11 +1,11 @@
 import type { Page } from '@playwright/test';
 
-/** Text that a box cuts, that spills out of the box it sits in, or that runs off the screen, as FND-8 counts it. */
+/** Text that a box cuts, that spills out of the box it sits in, runs off the screen or breaks inside a word, as FND-8 counts it. */
 export type ClippedText = { readonly text: string; readonly in: string; readonly by: string; readonly px: number };
 
 /**
  * Every run of text on the page that a box cuts off, that spills out of the box it sits in, or that runs past the
- * screen's edge, without the ellipsis or line clamp that says it goes on (FND-8). Text a box scrolls to is not cut,
+ * screen's edge, without the ellipsis or line clamp that says it goes on, and every word split across two lines (FND-8). Text a box scrolls to is not cut,
  * since scrolling shows it; the page's own sideways scroll is `noSidewaysScroll`'s to check. A glyph's box is taller
  * than a tight line, so up to 0.4 em above or below a box is the font's own ascent and descent, not a cut line.
  */
@@ -72,6 +72,30 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
       if (done || ellipsis || scrolled.x) continue;
       const offScreen = beyond({ left: 0, right: document.documentElement.clientWidth, top: Number.NEGATIVE_INFINITY, bottom: Number.POSITIVE_INFINITY }).x;
       if (offScreen > 1) report(document.documentElement, offScreen);
+      // A word too wide for its box breaks across lines rather than spilling; a link or a code has no such word.
+      for (const word of (node.textContent ?? '').matchAll(/(?<=^|\s)[\p{L}\p{M}]{2,}(?=[.,:;!?)]*(?:\s|$))/gu)) {
+        const part = document.createRange();
+        part.setStart(node, word.index);
+        part.setEnd(node, word.index + word[0].length);
+        const lines = new Set([...part.getClientRects()].filter((rect) => rect.width > 0).map((rect) => Math.round(rect.top)));
+        if (lines.size > 1) found.push({ text: word[0], in: name(parent), by: 'a line break inside the word', px: lines.size });
+      }
+    }
+    // Boxes in the flow sit side by side or stacked; two that overlap mean one has grown out of its column. A sticky
+    // bar rides over the content on purpose.
+    const inFlow = (element: Element) => {
+      const style = getComputedStyle(element);
+      return !['absolute', 'fixed', 'sticky'].includes(style.position) && style.display !== 'none' && style.visibility !== 'hidden' && (element.textContent ?? '').trim() !== '';
+    };
+    for (const box of document.body.querySelectorAll('*')) {
+      const children = [...box.children].filter(inFlow).map((child) => ({ child, rect: child.getBoundingClientRect() }));
+      for (const [i, a] of children.entries()) {
+        for (const b of children.slice(i + 1)) {
+          const x = Math.min(a.rect.right, b.rect.right) - Math.max(a.rect.left, b.rect.left);
+          const y = Math.min(a.rect.bottom, b.rect.bottom) - Math.max(a.rect.top, b.rect.top);
+          if (x > 1 && y > 1) found.push({ text: (a.child.textContent ?? '').trim().slice(0, 60), in: name(a.child), by: `${name(b.child)}, which it overlaps`, px: Math.round(x) });
+        }
+      }
     }
     return found;
   });
