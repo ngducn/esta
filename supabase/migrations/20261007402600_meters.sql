@@ -171,6 +171,7 @@ create function private.lease_chain(p_lease_id uuid)
 returns table (lease_id uuid)
 language sql
 stable
+rows 3
 set search_path = ''
 as $$
   with recursive up (id, renewal_of) as (
@@ -209,6 +210,7 @@ create function private.meter_month_owner(p_meter_id uuid, p_month date)
 returns table (lease_id uuid, charged boolean)
 language sql
 stable
+rows 1
 set search_path = ''
 as $$
   select coalesce(c.lease_id, private.room_holder(m.unit_id, private.month_end(p_month))), c.lease_id is not null
@@ -485,31 +487,35 @@ begin
   -- [app rule] A month whose chain has no bill left to carry it (the last month of a lease not renewed, or a reading
   -- entered after the chain's last bill) is billed to no one, never to another tenant. The screen says how many, so Mẹ
   -- can renew the lease, collect them herself or deduct them from the deposit.
-  select count(*)::integer into unbilled
-  from jsonb_array_elements(p_readings) e
-  join public.meter_usage u on u.meter_id = (e ->> 'meter_id')::uuid and u.reading_month = p_reading_month and u.used > 0
-  cross join lateral private.meter_month_owner(u.meter_id, u.reading_month) w
-  join public.leases o on o.id = w.lease_id and o.utilities_mode = 'metered_by_owner'
-  where u.used <> coalesce((
+  with owned as materialized (
+    select w.lease_id
+    from jsonb_array_elements(p_readings) e
+    join public.meter_usage u on u.meter_id = (e ->> 'meter_id')::uuid and u.reading_month = p_reading_month and u.used > 0
+    cross join lateral private.meter_month_owner(u.meter_id, u.reading_month) w
+    where u.used <> coalesce((
       select sum(case when il.unit_price_vnd < 0 then -il.quantity else il.quantity end)
       from public.invoice_lines il
       join public.invoices i on i.id = il.invoice_id
       where i.status = 'issued' and il.meter_id = u.meter_id and il.reading_month = u.reading_month
     ), 0)
-    and not exists (
-      select 1 from private.lease_chain(o.id) c
-      join public.leases l on l.id = c.lease_id
-      where l.end_date is null
-        or exists (
-          select 1 from public.invoices i
-          where i.lease_id = l.id and i.status = 'draft' and i.period_start > private.month_end(p_reading_month)
-        )
-        or exists (
-          select 1 from private.lease_periods(l, l.end_date) s
-          where s.period_start > private.month_end(p_reading_month)
-            and s.period_start > coalesce((select max(i.period_start) from public.invoices i where i.lease_id = l.id), l.start_date - 1)
-        )
-    );
+  )
+  select count(*)::integer into unbilled
+  from owned w
+  join public.leases o on o.id = w.lease_id and o.utilities_mode = 'metered_by_owner'
+  where not exists (
+    select 1 from private.lease_chain(o.id) c
+    join public.leases l on l.id = c.lease_id
+    where l.end_date is null
+      or exists (
+        select 1 from public.invoices i
+        where i.lease_id = l.id and i.status = 'draft' and i.period_start > private.month_end(p_reading_month)
+      )
+      or exists (
+        select 1 from private.lease_periods(l, l.end_date) s
+        where s.period_start > private.month_end(p_reading_month)
+          and s.period_start > coalesce((select max(i.period_start) from public.invoices i where i.lease_id = l.id), l.start_date - 1)
+      )
+  );
   return next;
 end;
 $$;
