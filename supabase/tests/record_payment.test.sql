@@ -224,15 +224,15 @@ select tests.clear_request();
 reset role;
 select is((select count(*)::integer from public.payments where id = '00000000-0000-4000-8000-0000000c0b10'), 1, 'household b''s payment is untouched');
 select ok(
-  not has_function_privilege('anon', 'public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[])', 'execute')
+  not has_function_privilege('anon', 'public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[], uuid)', 'execute')
     and not has_function_privilege('anon', 'public.undo_payment(uuid)', 'execute'),
   'anon cannot execute record_payment or undo_payment');
 select ok(
-  has_function_privilege('authenticated', 'public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[])', 'execute')
+  has_function_privilege('authenticated', 'public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[], uuid)', 'execute')
     and has_function_privilege('authenticated', 'public.undo_payment(uuid)', 'execute'),
   'authenticated can execute both');
 select ok(
-  (select bool_and(p.prosecdef) from pg_proc p where p.oid in ('public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[])'::regprocedure, 'public.undo_payment(uuid)'::regprocedure)),
+  (select bool_and(p.prosecdef) from pg_proc p where p.oid in ('public.record_payment(uuid, bigint, bigint, text, date, uuid, uuid[], uuid)'::regprocedure, 'public.undo_payment(uuid)'::regprocedure)),
   'both run as security definer, so members still hold no write grant on payments');
 
 select * from finish();
