@@ -12,7 +12,7 @@ export type BillLabel = { readonly id: string; readonly number: string; readonly
 
 export type StatementLine = {
   readonly id: string;
-  /** The line of the file, counting the header as 0. */
+  /** The line of the file, counting the header as 0 whatever account lines a bank prints above it. */
   readonly index: number;
   readonly date: IsoDate;
   readonly amount: Vnd;

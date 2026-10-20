@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
 import { golden, statementCsv, statementXlsx } from '../fixtures/statements/household.ts';
 import { renderCsv } from '../packages/core/src/matching/render.ts';
@@ -7,7 +7,7 @@ import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { boardRow, storedInvoice } from './helpers/board';
 import { laneHousehold, laneInvoice } from './helpers/seed';
-import { laneStatement, PROPERTY, statementHousehold, type StatementHousehold } from './helpers/statements';
+import { chooseFile, expectGolden, laneStatement, line, preview, PROPERTY, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START, toast, vnd } from './helpers/wizard';
 
@@ -19,42 +19,6 @@ const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.e
 test.beforeEach(async ({ request }) => {
   await setClock(request, START);
 });
-
-const line = (page: Page, index: number) => page.locator(`[data-testid="statement-line"][data-line="${index}"]`);
-
-/** The picker is enabled once React owns the page, so a file chosen earlier is never lost. */
-async function chooseFile(page: Page, name: string, buffer: Buffer | string) {
-  await expect(page.getByTestId('statement-file')).toBeEnabled();
-  await page.getByTestId('statement-file').setInputFiles({ name, mimeType: name.endsWith('.csv') ? 'text/csv' : 'application/octet-stream', buffer: Buffer.from(buffer) });
-}
-
-async function upload(page: Page, name: string, buffer: Buffer | string) {
-  await page.goto('/collections/import');
-  await chooseFile(page, name, buffer);
-  await expect(page.getByTestId('statement-read')).toBeVisible();
-}
-
-async function preview(page: Page, name: string, buffer: Buffer | string) {
-  await upload(page, name, buffer);
-  await page.getByTestId('statement-preview').click();
-  await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
-}
-
-/** Every line reads the status golden.json gives it, and names the bills it gives. */
-async function expectGolden(page: Page, household: StatementHousehold) {
-  for (const expected of golden(household.statement)) {
-    const row = line(page, expected.index);
-    await expect(row).toHaveAttribute('data-status', expected.status);
-    for (const number of expected.invoices) await expect(row.getByTestId('statement-target')).toContainText(number);
-  }
-}
-
-const statementPayments = (page: Page, householdId: string) =>
-  memberRest<{ amount_vnd: number; bank_account_id: string | null; statement_row_id: string | null }[]>(
-    page,
-    'GET',
-    `payments?household_id=eq.${householdId}&source=eq.statement_import&select=amount_vnd,bank_account_id,statement_row_id`,
-  );
 
 test('rule 1: Ryan imports the October statement, three memo matches post on Ghi sổ, he confirms the suggestion, and a re-import posts nothing (LSE-8)', async ({ page }) => {
   await openNewHousehold(page, 'light', PHONE);
@@ -134,16 +98,11 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
 test('rule 2: at 1440 in dark, a layout B workbook into a second account previews with debits under Bỏ qua and posts into that account', async ({ page }) => {
   await openNewHousehold(page, 'dark', DESKTOP);
   const household = await statementHousehold(page);
-  const [second] = await memberRest<{ id: string }[]>(page, 'POST', 'bank_accounts', {
-    household_id: household.householdId,
-    bank_bin: '970403',
-    account_no: '0011012345678',
-    account_name: 'TRAN MINH DEMO',
-  });
+  const second = await secondAccount(page, household.householdId);
   await page.goto('/collections/import');
   // The picker is disabled until React owns the page, so the account chosen here is the one the lines post into.
   await expect(page.getByTestId('statement-account')).toBeEnabled();
-  await page.getByTestId('statement-account').selectOption(second?.id ?? '');
+  await page.getByTestId('statement-account').selectOption(second);
   await chooseFile(page, 'sao-ke.xlsx', await statementXlsx(household.statement));
   await expect(page.getByTestId('statement-read')).toBeVisible();
   await page.getByTestId('statement-preview').click();
@@ -158,7 +117,7 @@ test('rule 2: at 1440 in dark, a layout B workbook into a second account preview
   expect(await noSidewaysScroll(page)).toBe(true);
   await page.getByTestId('statement-commit').click();
   await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
-  expect((await statementPayments(page, household.householdId)).map((payment) => payment.bank_account_id)).toEqual([second?.id, second?.id, second?.id]);
+  expect((await statementPayments(page, household.householdId)).map((payment) => payment.bank_account_id)).toEqual([second, second, second]);
 });
 
 test('rule 3: in English at 130% on a phone in dark, the preview reads in English and keeps amounts on one line', async ({ page }) => {
@@ -179,16 +138,19 @@ test('rule 3: in English at 130% on a phone in dark, the preview reads in Englis
   });
 });
 
-test('rule 4: a file without a statement header, or not CSV or XLSX, is refused with the reason and nothing is stored', async ({ page }) => {
+test('rule 4: a file that is not CSV or XLSX is refused with the reason, one without a known header opens the mapping, and nothing is stored', async ({ page }) => {
   await openNewHousehold(page, 'light', PHONE);
   const household = await statementHousehold(page);
   await page.goto('/collections/import');
   await chooseFile(page, 'ghi-chu.csv', 'Tên,Ghi chú\nAn,Demo\n');
-  await expect(page.locator('#statement-file-message')).toContainText('Không tìm thấy dòng tiêu đề có Ngày, Nội dung và Số tiền');
+  await expect(page.getByTestId('column-mapping')).toBeVisible();
+  await expect(page.locator('#mapping-problem')).toHaveText('Chọn cột ngày, nội dung và số tiền để xem thử.');
   await expect(page.getByTestId('statement-preview')).toBeDisabled();
-  await shot(page, 'p3-15-no-header-390-light');
   await chooseFile(page, 'sao-ke.pdf', '%PDF-1.7');
   await expect(page.locator('#statement-file-message')).toHaveText('Chỉ nhận tệp CSV hoặc XLSX.');
+  await expect(page.getByTestId('column-mapping')).toHaveCount(0);
+  await chooseFile(page, 'trong.csv', 'Ngày,Nội dung,Số tiền\n');
+  await expect(page.locator('#statement-file-message')).toHaveText('Tệp không có dòng giao dịch nào đọc được.');
   expect(await memberRest<unknown[]>(page, 'GET', `statement_imports?household_id=eq.${household.householdId}&select=id`)).toEqual([]);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });

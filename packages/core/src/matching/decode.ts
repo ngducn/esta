@@ -104,8 +104,14 @@ export function decodeStatementRows(grid: StatementGrid, header: DetectedHeader)
   return decodeRows(grid, header, () => undefined);
 }
 
-export function decodeStatement(grid: StatementGrid): Result<DecodedStatement, HeaderReason> {
-  const header = detectColumnMapping(grid);
+/** The header its labels name, or the one given: the columns a person chose (`chosenHeader`) or a preset found again (`presetHeader`). */
+function headerOf(grid: StatementGrid, chosen: DetectedHeader | undefined): Result<DetectedHeader, HeaderReason> {
+  return chosen === undefined ? detectColumnMapping(grid) : { ok: true, value: chosen };
+}
+
+/** A sheet's lines under the header its labels name, or under `chosen` when Esta does not know them (LSE-8 column mapping). */
+export function decodeStatement(grid: StatementGrid, chosen?: DetectedHeader): Result<DecodedStatement, HeaderReason> {
+  const header = headerOf(grid, chosen);
   if (!header.ok) return header;
   return { ok: true, value: { ...header.value, ...decodeStatementRows(grid, header.value) } };
 }
@@ -113,12 +119,12 @@ export function decodeStatement(grid: StatementGrid): Result<DecodedStatement, H
 /**
  * A CSV statement decoded like a sheet. Besides the sheet refusals, a malformed record under the
  * header, or one with more or fewer cells than the header, is refused as a row: an unquoted
- * `1,500,000` in a comma file splits into extra cells and would otherwise read as 1.
+ * `1,500,000` in a comma file splits into extra cells and would otherwise read as 1. `chosen` is as for `decodeStatement`.
  */
-export function decodeStatementCsv(text: string): Result<DecodedStatement, HeaderReason> {
+export function decodeStatementCsv(text: string, chosen?: DetectedHeader): Result<DecodedStatement, HeaderReason> {
   const records = parseCsv(text, { spanLines: false });
   const grid = records.map((record) => (record.ok ? record.value : []));
-  const header = detectColumnMapping(grid);
+  const header = headerOf(grid, chosen);
   if (!header.ok) return header;
   const width = grid[header.value.headerRow]?.length;
   const check: RowCheck = (index, cells) => {

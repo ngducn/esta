@@ -9,12 +9,14 @@ import { e2eServiceHeaders } from '../../scripts/e2e-service.ts';
 import { parseSlot } from '../../scripts/slot.ts';
 import { slotEnv } from '../../scripts/slot-env.ts';
 import { seedId } from '../../supabase/seed/generator/ids.ts';
-import { golden, householdStatement, statementCsv, statementXlsx, type OpenBill } from './household.ts';
+import { golden, householdStatement, statementCsv, statementXlsx, unrecognizedCsv, type OpenBill } from './household.ts';
 
 /**
  * `pnpm tsx fixtures/statements/generate.ts --household <n>` writes lane household n's statement in the three layouts
- * (`layout-a.csv`, `layout-b.xlsx`, `layout-c.csv`) and `golden.json`, from the bills it owes on the slot's local stack
- * as of the test clock (`--as-of` overrides it). Household 0 is `Gia đình Demo`.
+ * (`layout-a.csv`, `layout-b.xlsx`, `layout-c.csv`) and `golden.json`, and as a bank Esta does not recognize
+ * (`layout-d.csv`, whose columns a person maps; its preview numbers lines from the header, so `golden.json` holds for it
+ * too), from the bills it owes on the slot's local stack as of the test clock (`--as-of` overrides it). Household 0 is
+ * `Gia đình Demo`.
  */
 const { values } = parseArgs({ options: { household: { type: 'string' }, 'as-of': { type: 'string' }, out: { type: 'string' } } });
 const lane = Number(values.household);
@@ -56,4 +58,5 @@ writeFileSync(join(out, 'layout-a.csv'), statementCsv(statement, 'a'));
 writeFileSync(join(out, 'layout-b.xlsx'), await statementXlsx(statement));
 writeFileSync(join(out, 'layout-c.csv'), statementCsv(statement, 'c'));
 writeFileSync(join(out, 'golden.json'), `${JSON.stringify(golden(statement), null, 2)}\n`);
+writeFileSync(join(out, 'layout-d.csv'), unrecognizedCsv(statement));
 console.log(`Wrote household ${lane}'s statement as of ${asOf} to ${out}`);

@@ -1,7 +1,7 @@
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import type { RejectedRow } from './decode';
-import type { StatementCell, StatementGrid, StatementLayout } from './layouts';
+import type { DetectedHeader, StatementCell, StatementGrid, StatementLayout } from './layouts';
 import type { InvoiceCandidate, StatementMatch } from './match';
 import { renderDate, renderStatementGrid, type RenderableRow } from './render';
 
@@ -133,3 +133,37 @@ export function scenarioGrid(layout: StatementLayout): StatementGrid {
 }
 
 export const SCENARIO_REJECTED: readonly RejectedRow[] = [{ index: SCENARIO_ROWS.length + 1, field: 'amount', reason: 'fractional' }];
+
+/**
+ * A bank Esta does not recognize (P3-21): account lines above the header, labels no alias names, and money in and out
+ * in separate columns. Its lines decode only under `UNRECOGNIZED_COLUMNS`, the columns a person picks for it, and hash
+ * to the same fingerprints as the three known layouts.
+ */
+export const UNRECOGNIZED_LAYOUT = {
+  id: 'd',
+  columns: [
+    { role: 'date', header: 'Ngày thực hiện' },
+    { role: 'bankRef', header: 'Số chứng từ' },
+    { role: 'description', header: 'Diễn giải chi tiết' },
+    { role: 'credit', header: 'Tiền gửi vào' },
+    { role: 'debit', header: 'Tiền rút ra' },
+    { role: 'balance', header: 'Số dư cuối kỳ' },
+  ],
+  amountStyle: 'dot_grouped',
+  dateStyle: 'dd/MM/yyyy',
+} as const satisfies StatementLayout;
+
+export const UNRECOGNIZED_PREAMBLE: StatementGrid = [
+  ['NGÂN HÀNG TMCP DEMO'],
+  ['Sao kê tài khoản 0123456789 - GIA DINH DEMO'],
+  ['Từ ngày 01/10/2026 đến ngày 31/10/2026'],
+  [],
+];
+
+export const UNRECOGNIZED_COLUMNS: DetectedHeader = {
+  headerRow: UNRECOGNIZED_PREAMBLE.length,
+  mapping: { date: 0, description: 2, bankRef: 1, amount: { kind: 'split', credit: 3, debit: 4 } },
+};
+
+/** The scenario as that bank exports it, its account lines first. */
+export const unrecognizedGrid = (): StatementGrid => [...UNRECOGNIZED_PREAMBLE, ...scenarioGrid(UNRECOGNIZED_LAYOUT)];

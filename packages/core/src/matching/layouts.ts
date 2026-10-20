@@ -72,8 +72,11 @@ function mappingFromRow(row: readonly StatementCell[]): ColumnMapping | undefine
   return { date, description, bankRef: columns.get('bankRef') ?? null, amount: amountColumns };
 }
 
+/** How far down a file its header row may sit, under the account lines a bank prints first. */
+export const HEADER_SCAN_ROWS = 20;
+
 /** The first row within `scanRows` that names a date, a description and an amount or a credit and debit pair. */
-export function detectColumnMapping(grid: StatementGrid, scanRows = 20): Result<DetectedHeader, HeaderReason> {
+export function detectColumnMapping(grid: StatementGrid, scanRows = HEADER_SCAN_ROWS): Result<DetectedHeader, HeaderReason> {
   for (let headerRow = 0; headerRow < Math.min(scanRows, grid.length); headerRow++) {
     const mapping = mappingFromRow(grid[headerRow] ?? []);
     if (mapping !== undefined) return { ok: true, value: { headerRow, mapping } };

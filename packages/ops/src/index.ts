@@ -40,7 +40,7 @@ export { meterReadingsSave, type MeterRefusal, type ReadingsSaved } from './mete
 export { runOp, settle, type Op, type OpContext } from './op';
 export { readPropertyDetail, readPropertyForm, searchProperties, type PropertyDetailRow, type PropertyRow, type StoredProperty } from './properties';
 export { personCreate, type PersonRefusal, type PersonSaved, type PossibleDuplicate } from './person-ops';
-export { statementCommit, statementImport, statementLink, type LinkRefusal, type StatementCommitted, type StatementImported, type StatementRefusal } from './statement-ops';
+export { statementColumnsSchema, statementCommit, statementImport, statementLink, type LinkRefusal, type StatementCommitted, type StatementImported, type StatementRefusal } from './statement-ops';
 export { propertyCreate, propertyEdit, type CodeTaken, type PropertySaved } from './property-ops';
 export { findPerson, findProperty, getLease, getProperty, listLeases, listProperties, personQuerySchema, rankCandidates, rankPeople, type ReadContext } from './read';
 export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
