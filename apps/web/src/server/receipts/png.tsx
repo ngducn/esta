@@ -5,11 +5,11 @@ import satori from 'satori';
 import { QR_QUIET_MODULES, qrMatrix } from '@/lib/qr';
 import { PNG_PX, receiptFonts, receiptHex as hex, type Receipt } from './kit';
 
-const FAMILY = 'Receipt';
+export const FAMILY = 'Receipt';
 const QR_PX = 280;
 
 /** The code as an SVG picture with its quiet zone, dark on white as bank apps expect. */
-function qrImage(payload: string): string {
+export function qrImage(payload: string): string {
   const { size, path } = qrMatrix(payload);
   const box = size + 2 * QR_QUIET_MODULES;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-QR_QUIET_MODULES} ${-QR_QUIET_MODULES} ${box} ${box}" shape-rendering="crispEdges"><rect x="${-QR_QUIET_MODULES}" y="${-QR_QUIET_MODULES}" width="${box}" height="${box}" fill="${hex('qr-paper')}"/><path d="${path}" fill="${hex('qr-ink')}"/></svg>`;
@@ -106,11 +106,16 @@ function ReceiptPicture({ receipt }: { receipt: Receipt }) {
   );
 }
 
-/** LSE-6: the receipt as a picture 1080 px wide to send in Zalo, drawn with the bundled fonts only. */
-export async function renderReceiptPng(receipt: Receipt): Promise<Buffer> {
-  const svg = await satori(<ReceiptPicture receipt={receipt} />, {
+/** A picture 1080 px wide, sharp on a phone and sized for Zalo, drawn with the bundled fonts only (set `fontFamily: FAMILY`). */
+export async function renderPicturePng(picture: ReactNode): Promise<Buffer> {
+  const svg = await satori(picture, {
     width: PNG_PX.width,
     fonts: receiptFonts().map((font) => ({ name: FAMILY, data: font.data, weight: font.weight, style: 'normal' as const })),
   });
   return new Resvg(svg, { fitTo: { mode: 'width', value: PNG_PX.width }, font: { loadSystemFonts: false } }).render().asPng();
+}
+
+/** LSE-6: the receipt as a picture to send in Zalo. */
+export function renderReceiptPng(receipt: Receipt): Promise<Buffer> {
+  return renderPicturePng(<ReceiptPicture receipt={receipt} />);
 }

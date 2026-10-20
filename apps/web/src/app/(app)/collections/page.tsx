@@ -10,9 +10,10 @@ import { PropertyIntl } from '@/components/properties/property-intl';
 import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { getClock } from '@/server/clock';
-import { loadCollectionRows, loadOpenInvoices, type PaymentInvoice } from '@/server/collections/load';
-import { loadBoardQrs, loadQrLabels, loadReceivingAccount } from '@/server/invoices/qr';
+import { loadCollectionRows, loadOpenInvoices, loadOwedBills, type PaymentInvoice } from '@/server/collections/load';
+import { boardQrs, loadQrLabels, loadReceivingAccount } from '@/server/invoices/qr';
 import { requireMember } from '@/server/member';
+import { boardReminders, loadReminderLabels } from '@/server/reminders/board';
 
 export const generateMetadata = () => sectionMetadata('collections');
 
@@ -30,7 +31,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const today = clock.today();
   const month = parseBoardMonth(typeof params.month === 'string' ? params.month : undefined, today);
   const canEdit = member.role !== 'viewer';
-  const [rows, account, openInvoices, nav, t, locale, messages, qrLabels] = await Promise.all([
+  const [rows, account, openInvoices, nav, t, locale, messages, qrLabels, reminderLabels] = await Promise.all([
     loadCollectionRows(member.household.id, month),
     loadReceivingAccount(member.household.id),
     canEdit ? loadOpenInvoices(member.household.id) : new Map<string, PaymentInvoice[]>(),
@@ -39,12 +40,16 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
     getLocale(),
     getMessages(),
     loadQrLabels(),
+    loadReminderLabels(),
   ]);
+  const owed = await loadOwedBills(member.household.id, rows);
   const qrs = {
-    byInvoice: await loadBoardQrs(member.household.id, rows, account, locale),
+    byInvoice: boardQrs(rows, owed, account, locale),
     labels: qrLabels,
     account: account === null ? null : { id: account.id, bankName: account.bankName, accountNo: account.accountNo },
   };
+  // Reminding a tenant is acting for the household, so a viewer gets no `Nhắc qua Zalo`.
+  const reminders = { byInvoice: canEdit ? await boardReminders(rows, owed, today, account !== null) : new Map(), labels: reminderLabels };
   const monthLabel = formatMonthYear(month, locale);
   const step = (offset: number) => {
     const value = addMonths(month, offset);
@@ -68,7 +73,16 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
             {t('empty', { month: monthLabel })}
           </p>
         ) : (
-          <CollectionsBoard board={groupCollections(rows, month, today)} month={month} monthLabel={monthLabel} asOf={today} canEdit={canEdit} openInvoices={openInvoices} qrs={qrs} />
+          <CollectionsBoard
+            board={groupCollections(rows, month, today)}
+            month={month}
+            monthLabel={monthLabel}
+            asOf={today}
+            canEdit={canEdit}
+            openInvoices={openInvoices}
+            qrs={qrs}
+            reminders={reminders}
+          />
         )}
       </MonthSelector>
     </div>

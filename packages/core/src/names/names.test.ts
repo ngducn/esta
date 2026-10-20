@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { compareVietnameseNames, idLast4, sortKeyVietnameseName } from './index';
+import { compareVietnameseNames, givenName, idLast4, sortKeyVietnameseName } from './index';
+
+describe('givenName', () => {
+  it('is the last word of the full name, which a reminder greets', () => {
+    expect(givenName('Nguyễn Thị Hường')).toBe('Hường');
+    expect(givenName('  Trần   Văn Khoa ')).toBe('Khoa');
+    expect(givenName('Hường')).toBe('Hường');
+  });
+});
 
 describe('sortKeyVietnameseName', () => {
   it('orders the parts given, middle, family', () => {

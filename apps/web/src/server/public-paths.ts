@@ -2,7 +2,8 @@
 const AUTH_PAGES = ['/sign-in', '/sign-in/code', '/sign-up', '/forgot-password'] as const;
 /** The manifest is fetched without cookies, so a home-screen install needs it signed out. */
 const PUBLIC_EXACT = [...AUTH_PAGES, '/sign-in/callback', '/dev', '/manifest.webmanifest'] as const;
-const PUBLIC_PREFIXES = ['/api/cron/', '/api/test/', '/dev/'] as const;
+/** `/q/` is a bill's QR picture, which a reminder sends to a tenant who has no account (LSE-11). */
+const PUBLIC_PREFIXES = ['/api/cron/', '/api/test/', '/dev/', '/q/'] as const;
 
 export function isAuthPage(pathname: string): boolean {
   return AUTH_PAGES.some((path) => pathname === path);

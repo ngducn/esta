@@ -6,6 +6,7 @@ import { decodeQrPng, type DecodedImage } from '../scripts/decode-qr.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberRest } from './helpers/auth-api';
+import { boardRow, storedInvoice } from './helpers/board';
 import { freshLease } from './helpers/leases';
 import { laneHousehold, laneInvoice as invoiceId, laneLeasePath } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
@@ -22,14 +23,6 @@ const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.e
 const invoicePath = (id: string) => `/collections/invoices/${id}`;
 const ACCOUNT = { bin: '970436', accountNo: '0123456789', accountName: 'NGUYEN THI DEMO', bankName: 'Vietcombank' } as const;
 
-const row = (page: Page, group: string, place: string) =>
-  page.getByTestId(`group-${group}`).getByTestId('collections-row').filter({ has: page.getByTestId('row-place').getByText(place, { exact: true }) });
-
-async function stored(page: Page, id: string) {
-  const [invoice] = await memberRest<{ number: string; memo_code: string }[]>(page, 'GET', `invoices?id=eq.${id}&select=number,memo_code`);
-  if (invoice === undefined) throw new Error(`No invoice ${id}`);
-  return invoice;
-}
 
 /** What a bank app's camera reads off the code as drawn on screen. */
 async function scan(code: Locator): Promise<DecodedImage | null> {
@@ -61,10 +54,10 @@ async function expectFacts(panel: Locator, amount: string, memoCode: string) {
 test('rule 1: Mã QR on Phòng 3 shows a code that scans to its amount, memo and account, and Lưu ảnh saves the same code', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   const id = invoiceId(1, 'di-an', 3, '2026-10-25');
-  const { number, memo_code: memoCode } = await stored(page, id);
+  const { number, memo_code: memoCode } = await storedInvoice(page, id);
   await page.goto('/collections');
-  const phong3 = row(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An');
-  await expect(phong3.getByRole('button')).toHaveText(['Ghi nhận', 'Mã QR']);
+  const phong3 = boardRow(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An');
+  await expect(phong3.getByRole('button')).toHaveText(['Ghi nhận', 'Mã QR', 'Nhắc qua Zalo']);
   await phong3.getByTestId('row-action-qr').click();
   const sheet = page.getByTestId('qr-sheet');
   await expect(sheet.getByRole('heading')).toHaveText('Phòng 3, Dãy trọ Dĩ An');
@@ -89,9 +82,9 @@ test('rule 1: Mã QR on Phòng 3 shows a code that scans to its amount, memo and
 test('rule 2: the bill lists its charges and totals beside the code, and prints on one A5 sheet without the app around it', async ({ page }) => {
   await open(page, 'ryan.lane2@demo.esta.test', 'dark', DESKTOP);
   const id = invoiceId(2, 'di-an', 3, '2026-10-25');
-  const { number, memo_code: memoCode } = await stored(page, id);
+  const { number, memo_code: memoCode } = await storedInvoice(page, id);
   await page.goto('/collections');
-  await row(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An').getByTestId('row-action-qr').click();
+  await boardRow(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An').getByTestId('row-action-qr').click();
   await page.getByTestId('qr-open-invoice').click();
   await expect(page).toHaveURL(invoicePath(id));
   await expect(page.getByTestId('invoice-place')).toHaveText('Phòng 3, Dãy trọ Dĩ An');
@@ -124,7 +117,7 @@ test('rule 2: the bill lists its charges and totals beside the code, and prints 
 test('rule 3: from 500 million the code carries no amount, and the bill shows it in words and figures with the split note', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
   const id = invoiceId(3, 'di-an', 4, '2026-10-25');
-  const { memo_code: memoCode } = await stored(page, id);
+  const { memo_code: memoCode } = await storedInvoice(page, id);
   const line = seedId('e2e:invoice-line:lane-3:cap');
   query(workdir, `insert into public.invoice_lines (id, household_id, invoice_id, kind, description, quantity, unit_price_vnd, amount_vnd, sort_order)
     select '${line}', i.household_id, i.id, 'adjustment', 'Điều chỉnh Demo', 1, 597500000, 597500000, 9 from public.invoices i where i.id = '${id}' returning id`);
@@ -166,7 +159,7 @@ test('rule 4: a paid bill, a draft and a household without a receiving account s
     await page.goto(invoicePath(invoiceId(4, 'di-an', 3, '2026-10-25')));
     await expect(noQr).toHaveText('Chưa có tài khoản nhận tiền mặc định, nên chưa tạo được mã QR.');
     await page.goto('/collections');
-    await expect(row(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An').getByTestId('row-action-qr')).toHaveCount(0);
+    await expect(boardRow(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An').getByTestId('row-action-qr')).toHaveCount(0);
   } finally {
     query(workdir, `insert into public.bank_accounts (id, household_id, bank_bin, account_no, account_name, owner_party_id, is_default)
       values ('${account}', '${laneHousehold(4)}', '${ACCOUNT.bin}', '${ACCOUNT.accountNo}', '${ACCOUNT.accountName}', '${seedId('seed:party:me-lane-4')}', true) returning id`);
@@ -189,7 +182,7 @@ test('rule 4: a paid bill, a draft and a household without a receiving account s
 test('rule 5: the lease timeline links each bill, and Phòng 5’s overdue bill opens from there with its code', async ({ page }) => {
   await open(page, 'ryan.lane5@demo.esta.test', 'light', DESKTOP);
   const id = invoiceId(5, 'di-an', 5, '2026-09-25');
-  const { number, memo_code: memoCode } = await stored(page, id);
+  const { number, memo_code: memoCode } = await storedInvoice(page, id);
   await page.goto(laneLeasePath(5, 'di-an', 5));
   await page.getByTestId('invoice-link').getByText(number, { exact: true }).click();
   await expect(page).toHaveURL(invoicePath(id));
@@ -204,9 +197,9 @@ test('rule 6: in English at 130% text the QR sheet keeps the code at least 240 p
   const memberId = seedId('seed:member:me-lane-6');
   await memberRest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'en', text_scale: 130 });
   try {
-    const { memo_code: memoCode } = await stored(page, invoiceId(6, 'di-an', 5, '2026-09-25'));
+    const { memo_code: memoCode } = await storedInvoice(page, invoiceId(6, 'di-an', 5, '2026-09-25'));
     await page.goto('/collections');
-    await row(page, 'overdue', 'Phòng 5, Dãy trọ Dĩ An').getByTestId('row-action-qr').click();
+    await boardRow(page, 'overdue', 'Phòng 5, Dãy trọ Dĩ An').getByTestId('row-action-qr').click();
     const sheet = page.getByTestId('qr-sheet');
     await expect(sheet.getByTestId('qr-save')).toHaveText('Save image');
     await expect(sheet.getByTestId('qr-memo')).toHaveText(`ESTA ${memoCode}`);
@@ -295,7 +288,7 @@ test('rule 8: Mẹ issues November’s draft early with Phát hành, and the bil
   await expect(page.getByTestId('invoice-status')).toHaveAttribute('data-status', 'issued');
   await expect(page.getByTestId('invoice-issue')).toHaveCount(0);
   await expect(page.getByTestId('invoice-void')).toBeVisible();
-  const { memo_code: memoCode } = await stored(page, november?.id ?? '');
+  const { memo_code: memoCode } = await storedInvoice(page, november?.id ?? '');
   expectInvoiceCode(await scan(page.getByTestId('invoice-qr').getByTestId('qr-code')), 3_000_000, memoCode);
   expect(await memberRest(page, 'GET', `invoices?id=eq.${november?.id ?? ''}&select=status,issue_on`)).toEqual([{ status: 'issued', issue_on: '2026-10-07' }]);
   expect(await noSidewaysScroll(page)).toBe(true);
@@ -309,7 +302,7 @@ test('rule 9: with no receiving account Mẹ adds one from the bill, its code pa
   query(workdir, `delete from public.bank_accounts where id = '${seeded}' returning id`);
   try {
     const id = invoiceId(8, 'di-an', 3, '2026-10-25');
-    const { memo_code: memoCode } = await stored(page, id);
+    const { memo_code: memoCode } = await storedInvoice(page, id);
     await page.goto(invoicePath(id));
     await expect(page.getByTestId('invoice-no-qr')).toHaveAttribute('data-reason', 'noAccount');
     await page.getByTestId('add-account').click();
@@ -332,7 +325,7 @@ test('rule 9: with no receiving account Mẹ adds one from the bill, its code pa
     expect((await scan(panel.getByTestId('qr-code')))?.decoded).toMatchObject({ ok: true, value: { bin: ACCOUNT.bin, accountNo: '0071000123456', purpose: `ESTA ${memoCode}` } });
 
     await page.goto('/collections');
-    await row(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
+    await boardRow(page, 'notDue', 'Phòng 3, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
     const payment = page.getByTestId('record-payment-sheet');
     await payment.getByRole('radio', { name: 'Chuyển khoản' }).click();
     await expect(payment.getByTestId('payment-account')).toHaveText('Vào tài khoản Vietcombank · 0071000123456');

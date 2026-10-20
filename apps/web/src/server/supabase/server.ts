@@ -22,6 +22,11 @@ export async function createSessionClient() {
   });
 }
 
+/** Signed out and cookieless: reads that need no member, such as the test clock and a bill's shared QR link. */
+export const cookielessAnonClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
+
 /** The SSR client always runs PKCE and would leave code-verifier cookies behind, which an email code never uses. */
 export function createCodeSender() {
   return createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {

@@ -35,6 +35,15 @@ export function formatPhone(phone: Phone): string {
     : `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
 }
 
+/** The first stored number that reads as a Vietnamese phone, such as a tenant's Zalo number before their phone. */
+export function firstPhone(stored: readonly (string | null)[]): Phone | null {
+  for (const text of stored) {
+    const phone = text === null ? null : normalizePhone(text);
+    if (phone?.ok) return phone.value;
+  }
+  return null;
+}
+
 /** A stored phone as Mẹ reads it, `0903 123 456`; one stored some other way shows as it was typed. */
 export function phoneText(stored: string | null): string | null {
   if (stored === null) return null;
@@ -42,7 +51,12 @@ export function phoneText(stored: string | null): string | null {
   return phone.ok ? formatPhone(phone.value) : stored;
 }
 
-/** [verify] DOMAIN-VN §9: `https://zalo.me/{phone}` takes the local form; confirm in LSE-11. */
+/** DOMAIN-VN §9, `Giả định`: `https://zalo.me/{phone}` takes the local form. Zalo publishes no page that confirms it. */
 export function phoneForZaloLink(phone: Phone): string {
   return national(phone);
+}
+
+/** LSE-11: the link that opens Zalo on the chat with this number. */
+export function zaloChatUrl(phone: Phone): string {
+  return `https://zalo.me/${phoneForZaloLink(phone)}`;
 }

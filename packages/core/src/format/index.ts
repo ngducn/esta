@@ -54,6 +54,11 @@ export function formatDate(date: IsoDate, _locale: Locale): string {
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
+/** `25/09/2026 – 24/10/2026`, a billing period as a receipt and a reminder print it. */
+export function formatDateRange(start: IsoDate, end: IsoDate, locale: Locale): string {
+  return `${formatDate(start, locale)} – ${formatDate(end, locale)}`;
+}
+
 /** `01/08`, for a date the reader places in the current year, such as the `Trống từ 01/08` mark. */
 export function formatDayMonth(date: IsoDate, locale: Locale): string {
   return formatDate(date, locale).slice(0, 5);

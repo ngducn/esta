@@ -42,8 +42,8 @@ export default defineConfig(
     rules: { '@next/next/no-img-element': 'off' },
   },
   {
-    // satori draws the receipt picture from plain elements on the server; next/image never reaches it.
-    files: ['apps/web/src/server/receipts/png.tsx'],
+    // satori draws the receipt and shared QR pictures from plain elements on the server; next/image never reaches them.
+    files: ['apps/web/src/server/receipts/png.tsx', 'apps/web/src/server/invoices/shared-qr.tsx'],
     rules: { '@next/next/no-img-element': 'off' },
   },
   {

@@ -1,5 +1,5 @@
 import type { IsoDate } from '../date/iso-date';
-import { formatDate, formatVnd, vndInWords } from '../format';
+import { formatDate, formatDateRange, formatVnd, vndInWords } from '../format';
 import type { Vnd } from '../money/vnd';
 
 /** What Mẹ gets paid to, printed under the code while something is still owed. */
@@ -56,7 +56,7 @@ export function buildReceiptModel<Labels extends Record<string, string>>(input: 
     issuedOn: formatDate(input.issuedOn, 'vi'),
     tenant: nfc(input.tenant),
     place: nfc(input.place),
-    period: `${formatDate(input.periodStart, 'vi')} – ${formatDate(input.periodEnd, 'vi')}`,
+    period: formatDateRange(input.periodStart, input.periodEnd, 'vi'),
     lines: input.lines.map((line) => ({ label: nfc(line.label), amount: money(line.amountVnd) })),
     total: money(input.totalVnd),
     totalWords: nfc(vndInWords(input.totalVnd, 'vi')),

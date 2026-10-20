@@ -1267,7 +1267,19 @@
     "recordPayment": "Record",
     "partial": "Part paid",
     "qr": "QR code",
-    "qrDescription": "Invoice {number}, due {date}"
+    "qrDescription": "Invoice {number}, due {date}",
+    "remind": "Remind on Zalo",
+    "reminderForm": "Form of address",
+    "reminderFormOption": "{form, select, anh_chi {anh/chị (either)} anh {anh (a man)} chi {chị (a woman)} co {cô (an older woman)} chu {chú (an older man)} other {Quý khách (a business)}}",
+    "reminderText": "Reminder, in Vietnamese for the tenant",
+    "reminderCopy": "Copy reminder",
+    "reminderCopied": "Copied. Open Zalo and paste it into the message box.",
+    "reminderCopyFailed": "Could not copy. The reminder is selected; press and hold to copy it.",
+    "reminderOpenZalo": "Open Zalo",
+    "reminderNoPhone": "No phone number yet",
+    "reminderAssumption": "Assumption",
+    "reminderZaloNote": "Zalo opens the chat for this phone number. Check the tenant's name before you send.",
+    "reminderClose": "Close"
   },
   "invoices": {
     "metaTitle": "Invoice",

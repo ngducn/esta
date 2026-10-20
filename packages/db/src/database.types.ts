@@ -1273,6 +1273,7 @@ export type Database = {
           number: string
           period_end: string
           period_start: string
+          share_token: string | null
           status: string
           updated_at: string
           voided_reason: string | null
@@ -1290,6 +1291,7 @@ export type Database = {
           number: string
           period_end: string
           period_start: string
+          share_token?: string | null
           status?: string
           updated_at?: string
           voided_reason?: string | null
@@ -1307,6 +1309,7 @@ export type Database = {
           number?: string
           period_end?: string
           period_start?: string
+          share_token?: string | null
           status?: string
           updated_at?: string
           voided_reason?: string | null
@@ -2657,6 +2660,17 @@ export type Database = {
           p_role: Database["public"]["Enums"]["member_role"]
         }
         Returns: string
+      }
+      invoice_qr_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          account_name: string
+          account_no: string
+          bank_bin: string
+          bank_name: string
+          memo_code: string
+          outstanding_vnd: number
+        }[]
       }
       issue_invoice_now: { Args: { p_invoice_id: string }; Returns: undefined }
       lease_schedule: {

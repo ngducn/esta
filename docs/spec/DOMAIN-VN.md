@@ -276,7 +276,9 @@ Implemented in `packages/core/format` and `packages/core/parse`. FND-4 tests use
 | due 2026-09-25, today 2026-10-07 | `formatRelativeDue` | `quá hạn 12 ngày` |
 | `0903123456`, `+84903123456`, `84903123456` | `normalizePhone` | `+84903123456` |
 | `+84903123456` | `formatPhone` | `0903 123 456` |
-| `+84903123456` | `phoneForZaloLink` | `0903123456` (local format for `https://zalo.me/{phone}`) `[verify]` |
+| `+84903123456` | `phoneForZaloLink` | `0903123456` (local format for `https://zalo.me/{phone}`) `Giả định` |
+
+The Zalo link `Giả định` (LSE-11, checked 2026-10-20). Zalo's own documentation does not describe `https://zalo.me/{phone}`: searches of zalo.me, help.zalo.me and developers.zalo.me found no help or developer page for it. Search reports a Zalo Support reply giving the local form `zalo.me/0123456789` in a developers.zalo.me community thread (<https://developers.zalo.me/community/detail/14fef113cd5624087d47>), but the session could not open developers.zalo.me to read it, and that is a forum answer, not documentation. So `zaloChatUrl` uses the local form, the reminder sheet labels `Mở Zalo` `Giả định` and tells Mẹ to check the tenant's name before sending, and `docs/plan/STATUS.md` asks Ryan to confirm it on a phone.
 
 English compact forms: `3.2B ₫`, `15.5M ₫`, `850K ₫`. tỷ keeps up to 2 decimals, tr up to 1, trailing zeros trimmed.
 
@@ -304,6 +306,8 @@ Areas and lengths `[app rule]`. Every screen and the assistant read a typed or p
 - An area may end in `m²`, `m2` or `m`, and a length in `m`.
 - The value is greater than 0. An area is at most 9.999.999.999,99 m², the `numeric(12,2)` column, and an area the assistant reads is at most 100.000.000 m², so a national ID number cannot pass as one (SPEC D11). A frontage or road width is under 10.000 m (`kindDetailsSchema`).
 - Every editor pre-fills an area or length with `measureInputText`: the decimal comma and no grouping, such as `350,5` or `1250`. The text reads back as the same number in both languages.
+
+Reminders `[app rule]` (LSE-11, `REMINDER_TEMPLATES` in `packages/core/src/reminder/templates.ts`). A reminder is Vietnamese whatever the screen's language, because the tenant reads it, one sentence a line, with no exclamation mark. It names the place as the receipt does, the period as `25/09/2026 – 24/10/2026`, what is still owed with `formatVnd` and the due date with `formatDate`; an overdue one says `đã quá hạn 12 ngày`. It links the bill's QR picture when the household has a receiving account. Forms of address: a person is greeted by given name, `Chào anh/chị Hường.`, and Mẹ may pick `anh`, `chị`, `cô` or `chú` instead, which the whole message then uses; a business is greeted by its full name, `Kính gửi Công ty TNHH Demo Phát Đạt.`, and called `Quý khách`. No sentence opens on the pronoun, so no form needs a capital.
 
 Names: Vietnamese names are family name, middle, given name ("Nguyễn Thị Hường"). Sort by given name, then middle, then family, using `vi` collation. `sortKeyVietnameseName("Nguyễn Thị Hường")` sorts before `"Trần Văn Khoa"` (H before K).
 
