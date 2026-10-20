@@ -16,7 +16,9 @@ declare module 'next-intl' {
   }
 }
 
-export default getRequestConfig(async () => {
+export default getRequestConfig(async ({ locale: asked }) => {
+  // A caller that names its language, such as the receipt that always prints in Vietnamese, gets that language.
+  if (asked !== undefined) return { locale: asked, messages: messages[asked] };
   const [cookieStore, member] = await Promise.all([cookies(), getCurrentMember()]);
   const locale = resolveLocale({
     memberLocale: member?.locale ?? null,

@@ -9,7 +9,7 @@ export async function pdfText(bytes: Uint8Array): Promise<string> {
     const pages: string[] = [];
     for (let number = 1; number <= pdf.numPages; number++) {
       const content = await (await pdf.getPage(number)).getTextContent();
-      pages.push(content.items.flatMap((item) => ('str' in item && item.str !== '' ? [item.str] : [])).join('\n'));
+      pages.push(content.items.flatMap((item) => ('str' in item && item.str.trim() !== '' ? [item.str] : [])).join('\n'));
     }
     return pages.join('\n\n');
   } finally {
