@@ -7,7 +7,7 @@ import { vnd as asVnd } from '../packages/core/src/money/vnd.ts';
 import { decodeQrPng } from '../scripts/decode-qr.ts';
 import { pdfText } from '../scripts/receipt-text.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
-import { memberRest } from './helpers/auth-api';
+import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { laneInvoice } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, START } from './helpers/wizard';
@@ -103,9 +103,7 @@ test('rule 3: another household’s bill, a draft and a malformed id answer 404 
 
 test('rule 4: in English at 130% text the buttons read in English and the receipt stays Vietnamese', async ({ page }) => {
   await open(page, 'me.lane10@demo.esta.test', 'dark', PHONE);
-  const memberId = seedId('seed:member:me-lane-10');
-  await memberRest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'en', text_scale: 130 });
-  try {
+  await inEnglishAt130(page, seedId('seed:member:me-lane-10'), async () => {
     const id = laneInvoice(10, 'di-an', 5, '2026-09-25');
     await page.goto(`/collections/invoices/${id}`);
     await expect(page.getByTestId('receipt-pdf')).toHaveText('Receipt PDF');
@@ -116,7 +114,5 @@ test('rule 4: in English at 130% text the buttons read in English and the receip
     const text = await receiptPdf(page, id);
     expect(text).toContain('Biên nhận tiền thuê');
     expect(text).toContain('Bằng chữ:');
-  } finally {
-    await memberRest(page, 'PATCH', `household_members?id=eq.${memberId}`, { locale: 'vi', text_scale: 100 });
-  }
+  });
 });
