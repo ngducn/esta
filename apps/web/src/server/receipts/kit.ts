@@ -5,9 +5,8 @@ import type { ReceiptModel } from '@esta/core/receipt';
 import { oklchHex, oklchToSrgb255, type Rgb } from '@/design/contrast';
 import { colors, type ColorToken } from '@/design/tokens';
 
-/** The receipt's own words, always Vietnamese (messages `receipt`), resolved on the server. */
+/** The receipt's own words, always Vietnamese (messages `receipt`), resolved on the server. The title is the model's. */
 export type ReceiptLabels = {
-  readonly title: string;
   readonly number: string;
   readonly issuedOn: string;
   readonly tenant: string;

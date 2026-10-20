@@ -49,6 +49,7 @@ When a fact cannot be confirmed from a source (the last row, or anything needing
 | Dãy trọ / phòng trọ | Rooming house / room | `rooming_house` / `room` |
 | Mặt bằng | Commercial space | `commercial_space` |
 | Biên nhận / phiếu thu | Receipt | `receipt` |
+| Thông báo tiền thuê | Rent notice (a bill's page before anything is received) | `receipt` of kind `notice` |
 | Doanh thu | Revenue | |
 | Thuế GTGT / thuế TNCN | VAT / personal income tax | |
 | Bảng giá đất | State land price table | `state_price_reference` |
@@ -292,13 +293,15 @@ Amounts in words `[app rule]` (`vndInWords`, receipts and the VietQR split note)
 | 15000000 | `Mười lăm triệu đồng` |
 | 3500000 | `Ba triệu năm trăm nghìn đồng` |
 | 21000000 | `Hai mươi mốt triệu đồng` |
-| 1005000 | `Một triệu không trăm linh năm nghìn đồng` |
+| 1005000 | `Một triệu không trăm lẻ năm nghìn đồng` |
+| 1200000000000 | `Một nghìn hai trăm tỷ đồng` |
 
 - `nghìn`, never `ngàn`; `tỷ`, never `tỉ`.
-- `linh` for a zero tens digit after a hundreds digit (`một trăm linh năm`). `lẻ` is the other common form; Esta picks one so a receipt and its QR note never differ.
+- `lẻ` for a zero tens digit after a hundreds digit (`một trăm lẻ năm`), never `linh` (Ryan decided 2026-10-20). Esta picks one so a receipt and its QR note never differ.
 - After a tens word, 1 is `mốt` and 5 is `lăm` (`hai mươi mốt`, `mười lăm`); 4 stays `bốn`, never `tư`.
-- A group after a higher one keeps its `không trăm` (`một triệu không trăm linh năm nghìn`).
-- A receipt prints in Vietnamese whatever the screen's language, because the tenant reads it.
+- A group after a higher one keeps its `không trăm` (`một triệu không trăm lẻ năm nghìn`).
+- Thousands of tỷ share one `tỷ`: 1.200.000.000.000 is `một nghìn hai trăm tỷ`, and 1.000.000.000.000 `một nghìn tỷ`.
+- A receipt prints in Vietnamese whatever the screen's language, because the tenant reads it. While nothing is received on the bill it is a `Thông báo tiền thuê` without the received row, and a `Biên nhận tiền thuê` once any money is in (SPEC LSE-6, Ryan decided 2026-10-20).
 
 Areas and lengths `[app rule]`. Every screen and the assistant read a typed or printed area or length with `parseMeasureInput`, in both languages:
 

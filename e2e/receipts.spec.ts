@@ -46,13 +46,14 @@ async function receiptPdf(page: Page, id: string) {
 /** pdf.js reads the no-break space before ₫ back as a plain space. */
 const amount = (value: number) => `${new Intl.NumberFormat('vi-VN').format(value)} ₫`;
 
-test('rule 1: Biên nhận PDF on the Phòng 3 October bill prints the tenant in NFC, the lines, the total and its words, and Ảnh gửi Zalo saves a 1080 × 1527 picture whose code pays the bill', async ({ page }) => {
+test('rule 1: Thông báo PDF on the unpaid Phòng 3 October bill prints a notice with the tenant in NFC, the lines, the total and its words and no received row, and Ảnh gửi Zalo saves a 1080 × 1527 picture whose code pays the bill', async ({ page }) => {
   await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
   const id = laneInvoice(2, 'di-an', 3, '2026-10-25');
   const bill = await stored(page, id);
+  expect(bill.allocated_vnd).toBe(0);
   await page.goto(`/collections/invoices/${id}`);
   const pdfLink = page.getByTestId('receipt-pdf');
-  await expect(pdfLink).toHaveText('Biên nhận PDF');
+  await expect(pdfLink).toHaveText('Thông báo PDF');
   await expect(page.getByTestId('receipt-png')).toHaveText('Ảnh gửi Zalo');
   await expect(pdfLink).toHaveAttribute('href', receiptPath(id, 'pdf'));
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -61,12 +62,14 @@ test('rule 1: Biên nhận PDF on the Phòng 3 October bill prints the tenant in
 
   const text = await receiptPdf(page, id);
   expect(bill.tenant).toBe(bill.tenant.normalize('NFC'));
-  for (const expected of ['Biên nhận tiền thuê', bill.tenant, bill.number, 'Phòng 3, Dãy trọ Dĩ An', 'Tiền thuê', amount(bill.total_vnd), vndInWords(asVnd(bill.total_vnd), 'vi'), `ESTA ${bill.memo_code}`, 'Ngày lập 07/10/2026']) {
+  for (const expected of ['Thông báo tiền thuê', bill.tenant, bill.number, 'Phòng 3, Dãy trọ Dĩ An', 'Tiền thuê', amount(bill.total_vnd), vndInWords(asVnd(bill.total_vnd), 'vi'), `Còn lại\n${amount(bill.outstanding_vnd)}`, `ESTA ${bill.memo_code}`, 'Ngày lập 07/10/2026']) {
     expect(text).toContain(expected);
   }
+  expect(text).not.toContain('Biên nhận');
+  expect(text).not.toContain('Đã nhận');
 
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('receipt-png').click()]);
-  expect(download.suggestedFilename()).toBe(`bien-nhan-${bill.number}.png`);
+  expect(download.suggestedFilename()).toBe(`thong-bao-${bill.number}.png`);
   const saved = test.info().outputPath(download.suggestedFilename());
   await download.saveAs(saved);
   const bytes = readFileSync(saved);
@@ -76,21 +79,53 @@ test('rule 1: Biên nhận PDF on the Phòng 3 October bill prints the tenant in
   expect(decoded?.ok && decoded.value).toMatchObject({ amountVnd: bill.outstanding_vnd, purpose: `ESTA ${bill.memo_code}` });
 });
 
-test('rule 2: a paid September bill prints the received amount equal to the total and no code', async ({ page }) => {
+test('rule 2: once part of the October bill is received it prints Biên nhận tiền thuê, with the received row and the code for the rest', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  const id = laneInvoice(2, 'di-an', 3, '2026-10-25');
+  const before = await stored(page, id);
+  const [payment] = await memberRest<{ id: string }[]>(page, 'POST', 'rpc/record_payment', {
+    p_invoice_id: id,
+    p_invoice_ids: [id],
+    p_owed_vnd: before.outstanding_vnd,
+    p_amount_vnd: 1_000_000,
+    p_method: 'cash',
+    p_received_on: '2026-10-07',
+    p_idempotency_key: crypto.randomUUID(),
+  });
+  try {
+    const bill = await stored(page, id);
+    expect(bill.allocated_vnd).toBe(1_000_000);
+    await page.goto(`/collections/invoices/${id}`);
+    await expect(page.getByTestId('receipt-pdf')).toHaveText('Biên nhận PDF');
+    const text = await receiptPdf(page, id);
+    for (const expected of ['Biên nhận tiền thuê', `Đã nhận\n${amount(1_000_000)}`, `Còn lại\n${amount(bill.outstanding_vnd)}`, `ESTA ${bill.memo_code}`]) expect(text).toContain(expected);
+    expect(text).not.toContain('Thông báo');
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('receipt-png').click()]);
+    expect(download.suggestedFilename()).toBe(`bien-nhan-${bill.number}.png`);
+    const decoded = decodeQrPng(readFileSync(await download.path()))?.decoded;
+    expect(decoded?.ok && decoded.value).toMatchObject({ amountVnd: bill.outstanding_vnd, purpose: `ESTA ${bill.memo_code}` });
+  } finally {
+    if (payment !== undefined) await memberRest(page, 'POST', 'rpc/undo_payment', { p_payment_id: payment.id });
+  }
+});
+
+test('rule 3: a paid September bill prints Biên nhận tiền thuê with the received amount equal to the total and no code', async ({ page }) => {
   await open(page, 'ryan.lane2@demo.esta.test', 'light', DESKTOP);
   const id = laneInvoice(2, 'di-an', 3, '2026-09-25');
   const bill = await stored(page, id);
   expect(bill.outstanding_vnd).toBe(0);
   const text = await receiptPdf(page, id);
+  expect(text).toContain('Biên nhận tiền thuê');
   expect(text).toContain(`Đã nhận\n${amount(bill.total_vnd)}`);
   expect(text).toContain('Đã nhận đủ tiền kỳ này');
   expect(text).not.toContain(`ESTA ${bill.memo_code}`);
   const png = await page.request.get(receiptPath(id, 'png'));
   expect(png.headers()['content-type']).toBe('image/png');
+  expect(png.headers()['content-disposition']).toBe(`inline; filename="bien-nhan-${bill.number}.png"`);
   expect(decodeQrPng(await png.body())).toBeNull();
 });
 
-test('rule 3: another household’s bill, a draft and a malformed id answer 404 with no receipt', async ({ page }) => {
+test('rule 4: another household’s bill, a draft and a malformed id answer 404 with no receipt', async ({ page }) => {
   await open(page, 'me.lane8@demo.esta.test', 'dark', PHONE);
   for (const id of [laneInvoice(9, 'di-an', 3, '2026-10-25'), laneInvoice(8, 'thu-duc', 1, '2026-11-01'), 'not-a-bill']) {
     for (const format of ['pdf', 'png'] as const) {
@@ -101,18 +136,19 @@ test('rule 3: another household’s bill, a draft and a malformed id answer 404 
   }
 });
 
-test('rule 4: in English at 130% text the buttons read in English and the receipt stays Vietnamese', async ({ page }) => {
+test('rule 5: in English at 130% text the buttons read in English and the unpaid bill’s notice stays Vietnamese', async ({ page }) => {
   await open(page, 'me.lane10@demo.esta.test', 'dark', PHONE);
   await inEnglishAt130(page, seedId('seed:member:me-lane-10'), async () => {
     const id = laneInvoice(10, 'di-an', 5, '2026-09-25');
     await page.goto(`/collections/invoices/${id}`);
-    await expect(page.getByTestId('receipt-pdf')).toHaveText('Receipt PDF');
+    await expect(page.getByTestId('receipt-pdf')).toHaveText('Notice PDF');
     await expect(page.getByTestId('receipt-png')).toHaveText('Picture for Zalo');
     expect(await noSidewaysScroll(page)).toBe(true);
     expect(await seriousAxeViolations(page)).toEqual([]);
     await page.screenshot({ path: test.info().outputPath('bill-receipt-links-en-130-390-dark.png'), fullPage: true });
     const text = await receiptPdf(page, id);
-    expect(text).toContain('Biên nhận tiền thuê');
+    expect(text).toContain('Thông báo tiền thuê');
     expect(text).toContain('Bằng chữ:');
+    expect(text).not.toContain('Rent notice');
   });
 });

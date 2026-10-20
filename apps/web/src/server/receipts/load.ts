@@ -24,7 +24,6 @@ type ReceiptT = Awaited<ReturnType<typeof getTranslations<'receipt'>>>;
 
 function receiptLabels(t: ReceiptT): ReceiptLabels {
   return {
-    title: t('title'),
     number: t('number'),
     issuedOn: t('issuedOn'),
     tenant: t('tenant'),
@@ -70,6 +69,7 @@ export async function loadReceipt(member: Member, invoiceId: string, today: IsoD
     receivedVnd: invoice.allocatedVnd,
     outstandingVnd: invoice.outstandingVnd,
     qr: qr === null ? null : { payload: qr.payload, memo: qr.memo, bank: qr.bankName, accountNo: qr.accountNo, accountName: qr.accountName },
+    titles: { notice: t('title', { kind: 'notice' }), receipt: t('title', { kind: 'receipt' }) },
     labels: receiptLabels(t),
   });
 }

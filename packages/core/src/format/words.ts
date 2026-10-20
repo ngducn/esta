@@ -24,12 +24,15 @@ function groupsOf(amount: number): number[] {
   return groups;
 }
 
-/** A group read as a receipt reads it: a group after a higher one keeps its `không trăm` and `linh`. */
+/**
+ * A group read as a receipt reads it: a group after a higher one keeps its `không trăm` and `lẻ`. `lẻ`, not `linh`, for a
+ * zero tens digit after a hundreds digit (Ryan decided 2026-10-20, DOMAIN-VN §9).
+ */
 function viGroup(group: number, afterHigher: boolean): string[] {
   const [hundreds, tens, units] = [Math.floor(group / 100), Math.floor(group / 10) % 10, group % 10];
   const words: string[] = hundreds > 0 || afterHigher ? [word(VI_DIGITS, hundreds), 'trăm'] : [];
   if (tens === 0) {
-    if (units > 0) words.push(...(words.length > 0 ? ['linh'] : []), word(VI_DIGITS, units));
+    if (units > 0) words.push(...(words.length > 0 ? ['lẻ'] : []), word(VI_DIGITS, units));
   } else {
     words.push(...(tens === 1 ? ['mười'] : [word(VI_DIGITS, tens), 'mươi']));
     if (units === 5) words.push('lăm');
@@ -37,6 +40,11 @@ function viGroup(group: number, afterHigher: boolean): string[] {
     else if (units > 0) words.push(word(VI_DIGITS, units));
   }
   return words;
+}
+
+/** Thousands of tỷ share the tỷ group's word: 1.200 tỷ is `một nghìn hai trăm tỷ`, and 1.000 tỷ `một nghìn tỷ`. */
+function viScale(index: number, groups: readonly number[]): string {
+  return index === 4 && groups[3] !== 0 ? 'nghìn' : word(VI_SCALES, index);
 }
 
 function enGroup(group: number): string[] {
@@ -49,8 +57,8 @@ function enGroup(group: number): string[] {
 }
 
 const WORDS = {
-  vi: { zero: VI_DIGITS[0], currency: 'đồng', scales: VI_SCALES, group: viGroup },
-  en: { zero: EN_SMALL[0], currency: 'dong', scales: EN_SCALES, group: enGroup },
+  vi: { zero: VI_DIGITS[0], currency: 'đồng', scale: viScale, group: viGroup },
+  en: { zero: EN_SMALL[0], currency: 'dong', scale: (index: number) => word(EN_SCALES, index), group: enGroup },
 } as const satisfies Record<Locale, unknown>;
 
 /**
@@ -59,10 +67,10 @@ const WORDS = {
  */
 export function vndInWords(amount: Vnd, locale: Locale): string {
   if (!Number.isSafeInteger(amount) || amount < 0 || amount >= 1e15) throw new RangeError(`No words for ${amount}`);
-  const { zero, currency, scales, group: read } = WORDS[locale];
+  const { zero, currency, scale, group: read } = WORDS[locale];
   const groups = groupsOf(amount);
   const spoken = groups
-    .map((group, index) => (group === 0 ? [] : [...read(group, index < groups.length - 1), word(scales, index)]))
+    .map((group, index) => (group === 0 ? [] : [...read(group, index < groups.length - 1), scale(index, groups)]))
     .reverse()
     .flat()
     .filter((word) => word !== '');

@@ -14,8 +14,9 @@ import { renderReceiptPng } from './png';
 
 vi.mock('server-only', () => ({}));
 
+const titles = { notice: 'Thông báo tiền thuê', receipt: 'Biên nhận tiền thuê' };
+
 const labels: ReceiptLabels = {
-  title: 'Biên nhận tiền thuê',
   number: 'Số',
   issuedOn: 'Ngày lập',
   tenant: 'Người thuê',
@@ -52,13 +53,15 @@ const input = {
   receivedVnd: vnd(180_000),
   outstandingVnd: vnd(3_500_000),
   qr: { payload: PAYLOAD, memo: 'ESTA 7K2QX9MP', bank: 'Vietcombank', accountNo: '0123456789', accountName: 'NGUYEN THI DEMO' },
+  titles,
   labels,
 };
-const unpaid = buildReceiptModel(input);
+const partPaid = buildReceiptModel(input);
+const notice = buildReceiptModel({ ...input, receivedVnd: vnd(0), outstandingVnd: vnd(3_680_000) });
 
 describe('renderReceiptPdf', () => {
   it('extracts the tenant, title, total and words in NFC from an A5 page (LSE-6)', async () => {
-    const bytes = await renderReceiptPdf(unpaid);
+    const bytes = await renderReceiptPdf(partPaid);
     const text = await pdfText(bytes);
     expect(text).toContain('Đặng Thị Hường Demo');
     expect(text).not.toContain('Đặng Thị Hường Demo'.normalize('NFD'));
@@ -71,20 +74,43 @@ describe('renderReceiptPdf', () => {
     const { width, height } = pdf.getPage(0).getSize();
     expect([width, height]).toEqual([A5_PT.width, A5_PT.height]);
     expect(pdf.getTitle()).toBe('Biên nhận tiền thuê');
+    expect(text).toContain('Đã nhận\n180.000 ₫');
+    expect(text).toContain('Còn lại\n3.500.000 ₫');
+    expect(text).not.toContain('Thông báo tiền thuê');
+  });
+
+  it('titles a bill with nothing received Thông báo tiền thuê and prints no received row, with the code for the whole total', async () => {
+    const bytes = await renderReceiptPdf(notice);
+    const text = await pdfText(bytes);
+    expect(text).toContain('Thông báo tiền thuê');
+    expect(text).not.toContain('Biên nhận');
+    expect(text).not.toContain('Đã nhận');
+    expect(text).toContain('Còn lại\n3.680.000 ₫');
+    expect(text).toContain('ESTA 7K2QX9MP');
+    expect((await PDFDocument.load(bytes)).getTitle()).toBe('Thông báo tiền thuê');
+    const codes = (await pdfPagePngs(bytes)).map((page) => decodeQrPng(page)?.payload ?? null);
+    expect(codes).toEqual([PAYLOAD]);
   });
 
   it('wraps a long name inside the margin and prints a paid bill without a code', async () => {
     const paid = buildReceiptModel({ ...input, tenant: 'Tôn Nữ Thị Phương Hoàng Demo Tôn Nữ Thị Phương Hoàng', receivedVnd: vnd(3_680_000), outstandingVnd: vnd(0) });
-    const text = await pdfText(await renderReceiptPdf(paid));
+    const bytes = await renderReceiptPdf(paid);
+    const text = await pdfText(bytes);
+    expect(text).toContain('Biên nhận tiền thuê');
+    expect(text).toContain('Đã nhận\n3.680.000 ₫');
     expect(text).toContain('Đã nhận đủ tiền kỳ này');
+    expect((await PDFDocument.load(bytes)).getTitle()).toBe('Biên nhận tiền thuê');
     expect(text).not.toContain('ESTA 7K2QX9MP');
     expect(text).toContain('Tôn Nữ Thị');
   });
 });
 
 describe('renderReceiptPng', () => {
-  it('draws a 1080 × 1527 picture whose code a bank app reads', async () => {
-    const bytes = await renderReceiptPng(unpaid);
+  it.each([
+    ['part-paid', partPaid],
+    ['notice', notice],
+  ])('draws a 1080 × 1527 %s picture whose code a bank app reads', async (_, receipt) => {
+    const bytes = await renderReceiptPng(receipt);
     const png = PNG.sync.read(bytes);
     expect([png.width, png.height]).toEqual([PNG_PX.width, PNG_PX.height]);
     expect(decodeQrPng(bytes)?.payload).toBe(PAYLOAD);
@@ -137,7 +163,7 @@ describe('a long receipt', () => {
   });
 
   it('draws every character it prints from the bundled fonts, so nothing falls back to a blank box', () => {
-    const printed = [long.header, long.number, long.tenant, long.place, long.period, long.total, long.totalWords, ...long.lines.flatMap((line) => [line.label, line.amount]), ...Object.values(long.labels)].join('');
+    const printed = [...Object.values(titles), long.header, long.number, long.tenant, long.place, long.period, long.total, long.totalWords, ...long.lines.flatMap((line) => [line.label, line.amount]), ...Object.values(long.labels)].join('');
     const codePoints = [...new Set(printed)].map((character) => character.codePointAt(0) ?? 0);
     for (const font of receiptFonts()) {
       const face = fontkit.create(font.data);

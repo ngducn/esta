@@ -1343,7 +1343,7 @@
     "accountSaving": "Saving…",
     "accountClose": "Close",
     "accountRefusal": "{reason, select, bank {Choose a bank.} accountNo {An account number has only digits and letters, at most 19.} accountName {Enter the account holder, at most 50 characters.} duplicate {The household already has this account.} forbidden {Only an admin can add a receiving account.} other {Not saved. Check the connection and try again.}}",
-    "receiptPdf": "Receipt PDF",
+    "receiptPdf": "{kind, select, notice {Notice PDF} other {Receipt PDF}}",
     "receiptPng": "Picture for Zalo"
   },
   "payments": {
@@ -1598,7 +1598,7 @@
     "manualLink": "Enter by hand"
   },
   "receipt": {
-    "title": "Rent receipt",
+    "title": "{kind, select, notice {Rent notice} other {Rent receipt}}",
     "number": "No.",
     "issuedOn": "Issued on",
     "tenant": "Tenant",
