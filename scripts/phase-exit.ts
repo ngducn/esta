@@ -76,7 +76,10 @@ export function markdownSection(text: string, heading: string): string {
 }
 
 const VIETQR_RECORD = '- VietQR gate passed on ';
+/** An app's name as typed, in NFC, without the zero-width characters a copy and paste can bring along. */
+const appName = (typed: string) => typed.normalize('NFC').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').trim();
 const appKey = (app: string) => app.toLowerCase().replace(/\s+/g, '');
+const named = (app: string) => /[\p{L}\p{N}]/u.test(app) && !/[<>]/.test(app);
 
 /**
  * Ryan's one line under `## Decided by Ryan` in STATUS.md once two banking apps have scanned the gate's VietQR and an
@@ -86,16 +89,17 @@ const appKey = (app: string) => app.toLowerCase().replace(/\s+/g, '');
 export function verifyVietQrScan(text: string): Outcome {
   const records = markdownSection(text, 'Decided by Ryan')
     .split('\n')
+    .map((line) => line.trim())
     .filter((line) => line.startsWith(VIETQR_RECORD));
   if (records.length === 0) return { pass: false, detail: `waiting for Ryan: no "${VIETQR_RECORD.slice(2).trim()}" line under Decided by Ryan in ${STATUS}` };
   if (records.length > 1) return { pass: false, detail: `${records.length} "${VIETQR_RECORD.slice(2).trim()}" lines under Decided by Ryan in ${STATUS}; keep one` };
   const record = /^- VietQR gate passed on (\S+): ([^,]*), ([^,]*?)\.?$/.exec(records[0] ?? '');
   if (record === null) return { pass: false, detail: `the VietQR line in ${STATUS} names no date and two apps, as "${VIETQR_RECORD}YYYY-MM-DD: <first app>, <second app>."` };
-  const [, date = '', first = '', second = ''] = record.map((part) => part.trim());
+  const [, date = '', first = '', second = ''] = record.map(appName);
   const problems = [
     ...(isIsoDate(date) && Number(date.slice(0, 4)) >= 2026 ? [] : [`${date} is not a date from 2026 on`]),
-    ...[first, second].flatMap((app, i) => (app === '' || /[<>]/.test(app) ? [`the ${i === 0 ? 'first' : 'second'} app is not named`] : [])),
-    ...(first !== '' && appKey(first) === appKey(second) ? ['the two apps are the same'] : []),
+    ...[first, second].flatMap((app, i) => (named(app) ? [] : [`the ${i === 0 ? 'first' : 'second'} app is not named`])),
+    ...(named(first) && appKey(first) === appKey(second) ? ['the two apps are the same'] : []),
   ];
   return problems.length === 0
     ? { pass: true, detail: `${first} and ${second} on ${date}` }

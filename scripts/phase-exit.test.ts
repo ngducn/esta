@@ -246,6 +246,33 @@ describe('verifyVietQrScan', () => {
     expect(verifyVietQrScan(status(`- VietQR gate passed on ${rest}`))).toEqual({ pass: false, detail: `the VietQR line in ${STATUS}: ${problem}` });
   });
 
+  it.each([
+    ['a space after the closing dot', 'MB Bank, MB Bank. ', 'the two apps are the same'],
+    ['a blank second app and a space after the dot', 'Vietcombank, . ', 'the second app is not named'],
+    ['a zero-width space inside one name', 'MB\u200BBank, MBBank.', 'the two apps are the same'],
+    ['one name in NFC and again in NFD', `${'Ngân hàng Số'.normalize('NFC')}, ${'Ngân hàng Số'.normalize('NFD')}.`, 'the two apps are the same'],
+    ['a dot for the second app', 'Vietcombank, ..', 'the second app is not named'],
+    ['two dots for the second app', 'Vietcombank, ...', 'the second app is not named'],
+    ['a dash for the first app', '-, Vietcombank.', 'the first app is not named'],
+    ['a question mark for the second app', 'Vietcombank, ?.', 'the second app is not named'],
+  ])('fails %s', (_, apps, problem) => {
+    expect(verifyVietQrScan(status(`- VietQR gate passed on 2026-10-25: ${apps}`))).toEqual({ pass: false, detail: `the VietQR line in ${STATUS}: ${problem}` });
+  });
+
+  it.each([
+    ['one app in two cases', 'MB Bank, mb bank.', 'the two apps are the same'],
+    ['a blank second app', 'Vietcombank, .', 'the second app is not named'],
+  ])('fails %s with Windows line endings', (_, apps, problem) => {
+    const crlf = status(`- VietQR gate passed on 2026-10-25: ${apps}`).replace(/\n/g, '\r\n');
+    expect(verifyVietQrScan(crlf)).toEqual({ pass: false, detail: `the VietQR line in ${STATUS}: ${problem}` });
+  });
+
+  it('passes a Vietnamese app name, a trailing space and Windows line endings on a valid line', () => {
+    expect(verifyVietQrScan(status('- VietQR gate passed on 2026-10-25: Ngân hàng Số, MB Bank. '))).toEqual({ pass: true, detail: 'Ngân hàng Số and MB Bank on 2026-10-25' });
+    const crlf = status('- VietQR gate passed on 2026-10-25: VCB Digibank, MB Bank.').replace(/\n/g, '\r\n');
+    expect(verifyVietQrScan(crlf)).toEqual({ pass: true, detail: 'VCB Digibank and MB Bank on 2026-10-25' });
+  });
+
   it('fails one app, and two lines', () => {
     expect(verifyVietQrScan(status('- VietQR gate passed on 2026-10-22: VCB Digibank.')).detail).toContain('names no date and two apps');
     expect(verifyVietQrScan(status('- VietQR gate passed on 2026-10-22: VCB Digibank, MB Bank.\n- VietQR gate passed on 2026-10-23: VCB Digibank, MB Bank.')).detail).toContain('2 "VietQR gate passed on" lines');
