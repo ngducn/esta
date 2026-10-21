@@ -8,7 +8,7 @@ import { readClock, type Db, type OpContext } from '@esta/ops';
 import { DEMO_PASSWORD } from '../../../../supabase/seed/generator/households.ts';
 import { seedId } from '../../../../supabase/seed/generator/ids.ts';
 import { logIn } from '../login';
-import { connectorClient } from '../session';
+import { batchClient, connectorClient } from '../session';
 import { fileStore } from '../store';
 import { stdioConnector } from './stdio';
 
@@ -19,7 +19,9 @@ export const env = z.object({ ESTA_SLOT: z.string(), ESTA_IT_SUPABASE_URL: z.url
 export const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 
 const storeAt = (file: string) => fileStore(env.ESTA_IT_SUPABASE_URL, file);
-export const clientAt = (file: string) => connectorClient({ ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY }, storeAt(file));
+const stack = { ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY };
+export const clientAt = (file: string) => connectorClient(stack, storeAt(file));
+export const batchClientFor = (session: Db, batchId: string) => batchClient(stack, session, batchId);
 
 /** Session files in folders of their own; `discard` signs each out and deletes it, so no session outlives the run. */
 export function sessionFiles() {

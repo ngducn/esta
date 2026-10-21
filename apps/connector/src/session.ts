@@ -31,6 +31,17 @@ export function connectorClient(env: Pick<ConnectorEnv, 'ESTA_SUPABASE_URL' | 'E
   });
 }
 
+/**
+ * Ryan's session for the writes of one batch: each request carries `x-esta-via: claude` and `x-esta-batch`, which the
+ * audit trigger stores, and takes its token from `session`, which alone signs in and refreshes.
+ */
+export function batchClient(env: Pick<ConnectorEnv, 'ESTA_SUPABASE_URL' | 'ESTA_SUPABASE_ANON_KEY'>, session: Db, batchId: string): Db {
+  return createClient<Database>(env.ESTA_SUPABASE_URL, env.ESTA_SUPABASE_ANON_KEY, {
+    accessToken: async () => (await session.auth.getSession()).data.session?.access_token ?? null,
+    global: { headers: { 'x-esta-via': 'claude', 'x-esta-batch': batchId } },
+  });
+}
+
 export type Operator = { readonly userId: string; readonly householdId: string; readonly householdName: string; readonly locale: Locale };
 
 export type OperatorRefusal = 'signed_out' | 'no_household' | 'not_operator';

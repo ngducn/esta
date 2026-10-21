@@ -23,6 +23,7 @@ import {
   planRequestSchema,
   PLAN_TTL_MINUTES,
   suggestCurrentUnits,
+  type Db,
   type LocalContext,
   type ReadContext,
 } from '@esta/ops';
@@ -33,7 +34,8 @@ import type { ImportFolders } from './files';
 import type { OperatorRefusal } from './session';
 import { MAX_SPREADSHEET_BYTES, readSpreadsheet } from './spreadsheet';
 
-export type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders };
+/** `batchDb` is Ryan's session tagged with one batch, for the writes `apply_plan` makes. */
+export type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders; readonly batchDb: (batchId: string) => Db };
 
 export type ToolDeps = {
   /** Checked on every call: the session, its household, and that the member is still its operator. */
@@ -252,7 +254,7 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
       inputSchema: z.object({ plan_id: idSchema }),
     },
     guarded('apply_plan', deps, async (ctx, { plan_id }: { plan_id: string }) => {
-      const applied = await applyPlan(ctx, plan_id);
+      const applied = await applyPlan(ctx, plan_id, ctx.batchDb(plan_id));
       if (!applied.ok) return { data: applied.reason, log: `batch=${plan_id} reason=${applied.reason.kind}`, isError: true };
       const landed = applied.value.items.filter((item) => item.status === 'landed').length;
       return { data: applied.value, log: `batch=${plan_id} status=${applied.value.status} items=${applied.value.items.length} landed=${landed}` };
