@@ -89,7 +89,8 @@ test('Mẹ opens Tổng quan at 390 on 07/10 and sees Phòng 5, the Thủ Đức
   await open(page, MOM, 'light', PHONE);
   await expectSeedHome(page);
   await expect(page.getByTestId('home-map-strip')).toBeHidden();
-  await expect(page.locator('[data-testid="month-collection"] ~ *'), 'the brief and portfolio slots draw no empty box').toHaveCount(0);
+  await expect(page.locator('[data-testid="month-collection"] ~ *'), 'the brief slot draws no empty box; only the portfolio figure follows').toHaveCount(1);
+  await expect(page.locator('[data-testid="month-collection"] + [data-testid="portfolio-figure"]')).toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(scripts, 'a phone fetches no MapLibre chunk and no tile').toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
