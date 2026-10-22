@@ -39,7 +39,11 @@ export type StoredLine = Pick<StatementRow, 'date' | 'amount' | 'bankRef' | 'des
 /** Days apart two readings of one transfer without bank references may be dated, as when a value date is read in place of a transaction date. */
 export const KNOWN_WINDOW_DAYS = 3;
 
-/** Days apart two readings of one transfer with the same bank reference may be dated: a bank re-dates a transfer to its value date after a break such as Tết or 30/4. */
+/**
+ * Days apart two readings of one transfer with the same bank reference may be dated: a bank re-dates a transfer to its
+ * value date after a break such as Tết or 30/4, and a short reference it reuses must never hide the next month's rent
+ * (issue #266).
+ */
 const KNOWN_REFERENCE_WINDOW_DAYS = 14;
 
 function grouped(lines: readonly StoredLine[], key: (line: StoredLine) => string): Map<string, StoredLine[]> {
@@ -57,10 +61,9 @@ function grouped(lines: readonly StoredLine[], key: (line: StoredLine) => string
  * reading the same statement under other columns records nothing twice. A line is known when the household holds its
  * #58 fingerprint, or when the same account holds a line of the same amount that, if both carry a bank reference, has
  * the same reference and a date within KNOWN_REFERENCE_WINDOW_DAYS, and otherwise has the same description after
- * `normalizeDescription` and a date within KNOWN_WINDOW_DAYS. The reference window stops short of a month, so a short
- * reference a bank reuses never hides the next month's rent (issue #266). Each stored line answers for one new line at
- * most, an equal reference and then the nearest date first, so the nth identical line of a file is known only while the
- * account holds n of them and two identical counter deposits stay two.
+ * `normalizeDescription` and a date within KNOWN_WINDOW_DAYS. Each stored line answers for one new line at most, an equal
+ * reference and then the nearest date first, so the nth identical line of a file is known only while the account holds
+ * n of them and two identical counter deposits stay two.
  */
 export function knownLines(rows: readonly StatementRow[], stored: readonly StoredLine[]): (StoredLine | undefined)[] {
   const byFingerprint = grouped(stored, (line) => line.fingerprint);

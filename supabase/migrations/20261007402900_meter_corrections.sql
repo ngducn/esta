@@ -273,8 +273,7 @@ begin
   set status = 'terminated', terminated_on = p_terminated_on, end_date = p_terminated_on, termination_reason = btrim(p_reason)
   where l.id = v_lease.id;
   perform private.issue_invoices(v_lease.id, least(private.business_date(v_now), p_terminated_on), v_now);
-  if v_lease.utilities_mode = 'metered_by_owner'
-    and exists (select 1 from public.leases l where l.id = v_lease.id and not private.meter_credit_fits(l, v_now)) then
+  if v_lease.utilities_mode = 'metered_by_owner' and not private.meter_credit_fits(v_lease, v_now) then
     raise exception 'ESTA_LEASE_METER_CREDIT_TOO_LARGE' using errcode = '55000';
   end if;
   return (
