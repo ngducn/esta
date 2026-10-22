@@ -23,6 +23,7 @@
     "./date/calendar": "./src/date/calendar.ts",
     "./format": "./src/format/index.ts",
     "./lease": "./src/lease/index.ts",
+    "./ledger": "./src/ledger/buildLedger.ts",
     "./maps": "./src/maps/index.ts",
     "./meters": "./src/meters/index.ts",
     "./matching": "./src/matching/index.ts",
