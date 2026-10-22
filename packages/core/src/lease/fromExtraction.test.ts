@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leaseFieldsFromExtraction } from './fromExtraction';
+import { contractTenant, leaseFieldsFromExtraction } from './fromExtraction';
 
 const accepted = (value: unknown, decision: 'accepted' | 'edited' = 'accepted') => ({ decision, value });
 
@@ -76,5 +76,22 @@ describe('leaseFieldsFromExtraction', () => {
   it('reads nothing from a value that is not an accepted-fields record', () => {
     expect(leaseFieldsFromExtraction(null, UNITS)).toEqual({ terms: {}, tenant: null });
     expect(leaseFieldsFromExtraction({ rent_vnd: 3_500_000 }, UNITS)).toEqual({ terms: {}, tenant: null });
+  });
+});
+
+describe('contractTenant', () => {
+  const tenants = [
+    { id: 't1', fullName: 'Lê Văn Demo', phone: '0903 999 999' },
+    { id: 't2', fullName: 'LÊ VĂN  DEMO', phone: '0903 123 456' },
+  ];
+
+  it('finds the tenant with the same name and phone, whatever the spacing and case', () => {
+    expect(contractTenant(tenants, { fullName: 'Lê Văn Demo', phone: '0903123456' })?.id).toBe('t2');
+  });
+
+  it('treats a namesake with another phone, or a contract without a phone, as nobody known', () => {
+    expect(contractTenant(tenants, { fullName: 'Lê Văn Demo', phone: '0911 000 000' })).toBeNull();
+    expect(contractTenant(tenants, { fullName: 'Lê Văn Demo', phone: null })).toBeNull();
+    expect(contractTenant(tenants, null)).toBeNull();
   });
 });

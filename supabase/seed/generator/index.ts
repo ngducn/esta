@@ -5,7 +5,7 @@ import { businessDate, parseInstant, type Instant } from '../../../packages/core
 import type { Emitter } from './context.ts';
 import { bankAccounts } from './bank-accounts.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
-import { documents } from './documents.ts';
+import { contractReadingsSql, documentExtractions, documents } from './documents.ts';
 import { expenses, vendors } from './expenses.ts';
 import { certificates, parcels, structures } from './legal.ts';
 import { meters } from './meters.ts';
@@ -37,6 +37,7 @@ const EMITTERS: readonly Emitter[] = [
   leaseAmendments,
   depositEntries,
   documents,
+  documentExtractions,
   expenses,
   agentJobs,
   agentRuns,
@@ -63,7 +64,7 @@ export function generate({ lanes, asOf, variant }: GenerateOptions): string {
     ...(upsert === true ? { upsert } : {}),
     rows: households.flatMap((household) => rows({ household, properties, asOf, today })),
   }));
-  return renderSeed(tables, asOf, billingSql(households, { properties }, asOf));
+  return renderSeed(tables, asOf, [billingSql(households, { properties }, asOf), contractReadingsSql(households, { properties })].join('\n'));
 }
 
 export const USAGE =

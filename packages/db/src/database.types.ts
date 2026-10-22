@@ -3040,6 +3040,15 @@ export type Database = {
         Args: { p_display_name: string; p_name: string }
         Returns: string
       }
+      create_lease: {
+        Args: {
+          p_document_id?: string
+          p_household_id: string
+          p_id: string
+          p_lease: Json
+        }
+        Returns: string
+      }
       create_statement_import: {
         Args: {
           p_bank_account_id: string

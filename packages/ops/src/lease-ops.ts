@@ -2,17 +2,19 @@ import type { LeaseStatus } from '@esta/core/lease';
 import type { Result } from '@esta/core/result';
 import { leaseDraftSchema, type LeaseDraft } from '@esta/core/schemas/lease';
 import { z } from 'zod';
-import { changedColumns, dbRefusal, idSchema, invalid, type Changed, type CommonRefusal } from './kit';
+import { changedColumns, dbRefusal, idSchema, invalid, optionalIdSchema, type Changed, type CommonRefusal } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 import { LEASE_DRAFT_KEYS, viewRows, type ViewRows } from './view';
 
-const createInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), lease: leaseDraftSchema });
+/** `document_id` names the lease contract the terms were read from (P3-19), which then belongs to the lease. */
+const createInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), lease: leaseDraftSchema, document_id: optionalIdSchema.default(null) });
 const editInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), set: z.partialRecord(z.enum(LEASE_DRAFT_KEYS), z.unknown()) });
 
 /** The draft with the columns the database would default spelled out, so a later item reads the row the insert writes. */
 type NewLease = {
   readonly id: string;
   readonly row: LeaseDraft & { readonly property_id: string; readonly status: 'draft'; readonly paid_through_date: null; readonly due_offset_days: 0 };
+  readonly document_id: string | null;
 };
 type LeaseEdit = { readonly id: string } & Changed<LeaseDraft>;
 export type LeaseSaved = { readonly id: string };
@@ -35,24 +37,44 @@ async function tenantRefusal(ctx: OpContext, path: string, tenantId: string | nu
   return tenant === undefined ? issue(path, 'not_found') : null;
 }
 
+/** A contract can join a new lease only when it is a live lease contract on the lease's property that no lease holds yet. */
+async function documentRefusal(ctx: OpContext, documentId: string | null, propertyId: string): Promise<CommonRefusal | null> {
+  if (documentId === null) return null;
+  const { data, error } = await ctx.db
+    .from('documents')
+    .select('property_id, category, lease_id')
+    .eq('household_id', ctx.householdId)
+    .eq('id', documentId)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (error) throw new Error(`Reading the lease contract failed: ${error.message}`);
+  if (data === null || data.property_id !== propertyId || data.category !== 'lease_contract') return issue('document_id', 'not_found');
+  return data.lease_id === null ? null : issue('document_id', 'linked');
+}
+
 const draftOf = (lease: ViewRows['leases']) => Object.fromEntries(LEASE_DRAFT_KEYS.map((key) => [key, lease[key]]));
 
-/** Saves a draft lease under the id the caller minted, on the property its unit belongs to. */
+/**
+ * Saves a draft lease under the id the caller minted, on the property its unit belongs to. `create_lease` is the one
+ * insert, and links the contract in the same transaction.
+ */
 export const leaseCreate = defineOp<z.output<typeof createInputSchema>, NewLease, LeaseSaved>({
   creates: 'leases',
   input: createInputSchema,
-  async plan(ctx, { id, property_id, lease }) {
+  async plan(ctx, { id, property_id, lease, document_id }) {
     const [existing] = await viewRows(ctx, 'leases', { id });
     if (existing !== undefined) return unchanged({ id });
     const property = await propertyOf(ctx, 'lease.unit_id', lease.unit_id, property_id);
     if (!property.ok) return property;
     const tenant = await tenantRefusal(ctx, 'lease.tenant_party_id', lease.tenant_party_id);
     if (tenant !== null) return refuse(tenant);
-    return change({ id, row: { ...lease, property_id: property.value, status: 'draft', paid_through_date: null, due_offset_days: 0 } });
+    const document = await documentRefusal(ctx, document_id, property.value);
+    if (document !== null) return refuse(document);
+    return change({ id, row: { ...lease, property_id: property.value, status: 'draft', paid_through_date: null, due_offset_days: 0 }, document_id });
   },
-  async apply(ctx, { id, row }) {
-    const { error } = await ctx.db.from('leases').insert({ ...row, id, household_id: ctx.householdId });
-    return error ? refuse(dbRefusal(error)) : { ok: true, value: { id } };
+  async apply(ctx, { id, row, document_id }) {
+    const { error } = await ctx.db.rpc('create_lease', { p_household_id: ctx.householdId, p_id: id, p_lease: row, ...(document_id === null ? {} : { p_document_id: document_id }) });
+    return error ? refuse(dbRefusal(error, { ESTA_LEASE_DOCUMENT: { kind: 'conflict' } })) : { ok: true, value: { id } };
   },
   writes: ({ id, row }) => [{ kind: 'create', table: 'leases', row: { id, ...row } }],
 });

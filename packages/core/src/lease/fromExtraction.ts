@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { leaseV1Schema } from '../agent-schemas/lease_v1';
 import { addDays, addMonths } from '../date/calendar';
+import { normalizeName } from '../extraction/acceptance';
 import { vnd } from '../money/vnd';
 import type { LeaseDraft } from '../schemas/lease';
 
 /** The lease terms a scanned contract fills in; every key is a term the form marks `Từ hợp đồng đã quét`. */
-export type LeaseTermsFromContract = Partial<Pick<LeaseDraft, 'unit_id' | 'start_date' | 'end_date' | 'rent_vnd' | 'billing_cycle_months' | 'deposit_vnd'>>;
+export type LeaseTermsFromContract = { readonly [K in 'unit_id' | 'start_date' | 'end_date' | 'rent_vnd' | 'billing_cycle_months' | 'deposit_vnd']?: NonNullable<LeaseDraft[K]> };
 
 export type LeaseFromContract = {
   readonly terms: LeaseTermsFromContract;
@@ -53,4 +54,16 @@ export function leaseFieldsFromExtraction(acceptedFields: unknown, units: readon
   };
   const fullName = read.tenant_name?.value ?? null;
   return { terms, tenant: fullName === null ? null : { fullName, phone: read.tenant_phone?.value ?? null } };
+}
+
+const digits = (phone: string) => phone.replace(/\D/gu, '');
+
+/**
+ * The household's tenant the contract names: the same name and the same phone, both read. A namesake without a matching
+ * phone is someone else to the form, which then offers the quick add instead.
+ */
+export function contractTenant<T extends { readonly fullName: string; readonly phone: string | null }>(tenants: readonly T[], read: LeaseFromContract['tenant']): T | null {
+  if (read === null || read.phone === null) return null;
+  const phone = digits(read.phone);
+  return tenants.find((tenant) => tenant.phone !== null && digits(tenant.phone) === phone && normalizeName(tenant.fullName) === normalizeName(read.fullName)) ?? null;
 }

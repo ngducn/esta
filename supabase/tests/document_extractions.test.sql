@@ -14,8 +14,8 @@ insert into public.documents (id, household_id, property_id, category, title, st
    :'a' || '/00000000-0000-4000-8000-00000000d0a1/so-hong.jpg', 'image/jpeg', 1000, repeat('a', 64), 'sensitive'),
   ('00000000-0000-4000-8000-00000000d0a2', :'a', '00000000-0000-4000-8000-0000000000a1', 'photo', 'Ảnh lô đất',
    :'a' || '/00000000-0000-4000-8000-00000000d0a2/anh.jpg', 'image/jpeg', 1000, repeat('c', 64), 'normal'),
-  ('00000000-0000-4000-8000-00000000d0a3', :'a', '00000000-0000-4000-8000-0000000000a1', 'lease_contract', 'Hợp đồng thuê',
-   :'a' || '/00000000-0000-4000-8000-00000000d0a3/hop-dong.pdf', 'application/pdf', 1000, repeat('d', 64), 'normal'),
+  ('00000000-0000-4000-8000-00000000d0a3', :'a', '00000000-0000-4000-8000-0000000000a1', 'insurance', 'Bảo hiểm cháy nổ',
+   :'a' || '/00000000-0000-4000-8000-00000000d0a3/bao-hiem.pdf', 'application/pdf', 1000, repeat('d', 64), 'normal'),
   ('00000000-0000-4000-8000-00000000d0b1', :'b', '00000000-0000-4000-8000-0000000000b1', 'certificate', 'Sổ hồng B',
    :'b' || '/00000000-0000-4000-8000-00000000d0b1/so-hong.jpg', 'image/jpeg', 1000, repeat('b', 64), 'sensitive');
 
@@ -38,7 +38,7 @@ select is(public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a1'
 select is(public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a2', '2026-10-07T02:00:00Z'), null,
   'a photo queues nothing');
 select is(public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a3', '2026-10-07T02:00:00Z'), null,
-  'a lease contract queues nothing until lease_v1 arrives');
+  'an insurance policy queues nothing; lease_from_contract.test.sql queues a lease contract');
 select is(public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0b1', '2026-10-07T02:00:00Z'), null,
   'a document of another household is invisible to enqueue');
 select results_eq(
