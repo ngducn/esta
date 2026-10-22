@@ -1653,6 +1653,8 @@
     "manualIntro": "Trợ lý không đọc được tài liệu này. Bạn có thể nhập tay các trường bên dưới, nhìn ảnh để đối chiếu.",
     "acceptedTitle": "Đã lưu vào hồ sơ",
     "acceptedBody": "Các trường đã xem đã được lưu vào hồ sơ của bất động sản.",
+    "acceptedLeaseTitle": "Đã xem xong hợp đồng",
+    "acceptedLeaseBody": "Hợp đồng thuê chưa được lưu. Bấm nút dưới đây để mở biểu mẫu đã điền sẵn, kiểm tra rồi lưu.",
     "openTab": "{tab, select, rental {Mở tab Cho thuê} other {Mở tab Pháp lý}}",
     "rejected": "Đã bỏ kết quả đọc này. Không có gì được lưu.",
     "notExtractable": "Tài liệu này không có trường để xem lại.",

@@ -21,7 +21,6 @@ import { ExtractionFieldRow, rowArea, type RowError } from './extraction-field-r
 
 export type ReviewMode = 'waiting' | 'review' | 'manual' | 'accepted' | 'rejected' | 'none';
 
-/** Where an accepted reading goes: a certificate to the legal tab, a bill to the rental tab, a lease contract into a new lease. */
 function nextStep(schemaName: SchemaName, propertyId: string, documentId: string): { readonly href: string; readonly tab: 'legal' | 'rental' | null } {
   if (schemaName === 'lease_v1') return { href: `/properties/${propertyId}/rental/leases/new?fromDocument=${documentId}`, tab: null };
   const tab = schemaName === 'utility_bill_v1' ? 'rental' : 'legal';
@@ -91,6 +90,7 @@ export function ReviewPanel({
   savedHref?: string;
 }) {
   const t = useTranslations('extraction');
+  const leaseToCreate = schemaName === 'lease_v1' && leaseId === null;
   const locale = useLocale() === 'en' ? 'en' : 'vi';
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -214,9 +214,9 @@ export function ReviewPanel({
           <section data-testid="review-accepted" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-lead font-bold text-ink">
               <CircleCheck className="size-5 shrink-0 text-paid" strokeWidth={2} aria-hidden="true" />
-              {t('acceptedTitle')}
+              {t(leaseToCreate ? 'acceptedLeaseTitle' : 'acceptedTitle')}
             </h2>
-            <p className="text-body text-ink-2">{t('acceptedBody')}</p>
+            <p className="text-body text-ink-2">{t(leaseToCreate ? 'acceptedLeaseBody' : 'acceptedBody')}</p>
             {propertyId === null ? null : <AcceptedLink {...nextStep(schemaName, propertyId, documentId)} leaseHref={leaseId === null ? null : `/properties/${propertyId}/rental/leases/${leaseId}`} canEdit={canEdit} />}
           </section>
         ) : null}

@@ -1653,6 +1653,8 @@
     "manualIntro": "Trợ lý could not read this document. You can type the fields below while looking at the image.",
     "acceptedTitle": "Saved to the records",
     "acceptedBody": "The fields you checked are saved to the property's records.",
+    "acceptedLeaseTitle": "Contract checked",
+    "acceptedLeaseBody": "The lease is not saved yet. Open the filled-in form below, check it and save.",
     "openTab": "{tab, select, rental {Open the Rental tab} other {Open the Legal tab}}",
     "rejected": "This reading was set aside. Nothing was saved.",
     "notExtractable": "This document has no fields to review.",
