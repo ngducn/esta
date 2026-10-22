@@ -147,7 +147,7 @@ export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
   rule(pen, 'ink', 1);
   pen.y -= 8;
   amountRow(pen, receipt.labels.total, receipt.total, { font: 'bold', size: 14 });
-  text(pen, `${receipt.labels.words} ${receipt.totalWords}`, LEFT, RIGHT - LEFT, { color: 'ink-2' });
+  if (receipt.totalWords !== null) text(pen, `${receipt.labels.words} ${receipt.totalWords}`, LEFT, RIGHT - LEFT, { color: 'ink-2' });
   pen.y -= 6;
   if (receipt.received !== null) amountRow(pen, receipt.labels.received, receipt.received);
   amountRow(pen, receipt.labels.outstanding, receipt.outstanding, { font: 'bold' });

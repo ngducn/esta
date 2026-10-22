@@ -29,7 +29,7 @@ const candidateSchema = z
     tenant_name: z.string().nullable(),
     number: z.string(),
     due_date: isoDateSchema,
-    total_vnd: money,
+    total_vnd: z.number().int().transform(vnd),
     allocated_vnd: money,
     outstanding_vnd: money,
     payment_status: z.enum(PAYMENT_STATUSES),
