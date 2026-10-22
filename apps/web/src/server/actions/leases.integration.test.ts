@@ -204,7 +204,7 @@ describe('amend, terminate and renew against local Supabase (LSE-2, LSE-3, #144)
     const lease = await activeLease({ end_date: '2027-07-31' }, '30/09/2026');
     const before = await issuedOf(lease.id);
     expect(await terminateLease(lease.id, { terminatedOn: '2026-11-15', reason: '  ' })).toEqual({ ok: false, reason: 'reason_required' });
-    expect(await terminateLease(lease.id, { terminatedOn: '2026-11-15', reason: 'Người thuê chuyển đi' })).toEqual({ ok: true, value: undefined });
+    expect(await terminateLease(lease.id, { terminatedOn: '2026-11-15', reason: 'Người thuê chuyển đi' })).toEqual({ ok: true, value: { unbilled: 0 } });
     expect(await issuedOf(lease.id)).toEqual(before);
     expect((await billsOf(lease.id)).map(({ periodStart, periodEnd, status, rentVnd }) => ({ periodStart, periodEnd, status, rentVnd }))).toEqual([
       { periodStart: '2026-10-01', periodEnd: '2026-10-31', status: 'issued', rentVnd: 3_000_000 },
@@ -304,7 +304,7 @@ describe('the property list on the Clock date after lease changes', () => {
 
   it('keeps a lease terminated from a later date let and billed until that date', async () => {
     const lease = await activeLease({ end_date: '2027-07-31' }, '30/09/2026');
-    expect(await terminateLease(lease.id, { terminatedOn: '2026-10-31', reason: 'Người thuê Demo chuyển đi' })).toEqual({ ok: true, value: undefined });
+    expect(await terminateLease(lease.id, { terminatedOn: '2026-10-31', reason: 'Người thuê Demo chuyển đi' })).toEqual({ ok: true, value: { unbilled: 0 } });
     expect(await listed(lease.propertyId, '2026-10-07')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
     expect(await listed(lease.propertyId, '2026-10-31')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
     expect(await listed(lease.propertyId, '2026-11-01')).toEqual({ monthlyRentVnd: null, leasedUnitCount: 0 });

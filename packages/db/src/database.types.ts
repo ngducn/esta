@@ -3239,7 +3239,7 @@ export type Database = {
       }
       terminate_lease: {
         Args: { p_lease_id: string; p_reason: string; p_terminated_on: string }
-        Returns: undefined
+        Returns: number
       }
       undo_change_batch: { Args: { p_batch_id: string }; Returns: Json }
       undo_payment: { Args: { p_payment_id: string }; Returns: undefined }
