@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { IsoDate } from '../date/iso-date';
 import { MAX_AMOUNT_VND, vnd } from '../money/vnd';
-import { parseOptionalDateInput, type DateInputReason } from '../parse/date-input';
+import { parseDateUpToToday, type PastDateReason } from '../parse/date-input';
 import { parsePositiveVnd, type PositiveVndReason } from '../parse/vnd-input';
 import type { Result } from '../result';
 import { isoDateSchema } from '../schemas/legal';
@@ -40,7 +40,7 @@ export type Valuation = z.output<typeof valuationSchema>;
 
 export type ValuationProblems = {
   readonly value?: PositiveVndReason;
-  readonly asOf?: Exclude<DateInputReason, 'empty'> | 'after_today';
+  readonly asOf?: PastDateReason;
   readonly sourceUrl?: 'not_https';
   readonly form?: 'invalid';
 };
@@ -56,14 +56,6 @@ const textsSchema = z.object({
   note: trimmedOrNull(MAX_VALUATION_NOTE),
 });
 
-/** An empty date is the Clock's business date; a later day is refused, because a valuation records what was known. */
-function readAsOf(text: string, today: IsoDate): Result<IsoDate, NonNullable<ValuationProblems['asOf']>> {
-  const parsed = parseOptionalDateInput(text);
-  if (!parsed.ok) return parsed;
-  const day = parsed.value ?? today;
-  return day <= today ? { ok: true, value: day } : { ok: false, reason: 'after_today' };
-}
-
 /**
  * The valuation sheet as Mẹ filled it (FIN-5): `9ty5` is 9.500.000.000, the date reads `dd/mm/yyyy`, and a source must
  * be an `https:` link. Each field is refused on its own, all at once; anything else that does not parse is a `form`
@@ -74,7 +66,7 @@ export function readValuation(input: unknown, today: IsoDate): Result<Valuation,
   if (!texts.success) return { ok: false, reason: { form: 'invalid' } };
   const { value, asOf, sourceUrl, ...fields } = texts.data;
   const amount = parsePositiveVnd(value);
-  const day = readAsOf(asOf, today);
+  const day = parseDateUpToToday(asOf, today);
   const https = sourceUrl === null || isHttpsUrl(sourceUrl);
   if (amount.ok && day.ok && https) return { ok: true, value: { ...fields, valueVnd: amount.value, asOf: day.value, sourceUrl } };
   return {

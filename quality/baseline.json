@@ -16,7 +16,7 @@
         "apps/web/src/components/date-input.tsx": 1,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 2,
         "apps/web/src/components/expenses/expense-sheet.tsx": 1,
-        "apps/web/src/components/leases/DepositSheet.tsx": 1,
+        "apps/web/src/components/leases/LeaseForm.tsx": 1,
         "apps/web/src/components/legal/annotation-list.tsx": 1,
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
         "apps/web/src/components/legal/legal-item-actions.tsx": 1,
@@ -76,7 +76,7 @@
         "apps/web/src/components/date-input.tsx": 11,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 22,
         "apps/web/src/components/expenses/expense-sheet.tsx": 9,
-        "apps/web/src/components/leases/DepositSheet.tsx": 8,
+        "apps/web/src/components/leases/LeaseForm.tsx": 8,
         "apps/web/src/components/legal/annotation-list.tsx": 6,
         "apps/web/src/components/legal/legal-form-shell.tsx": 12,
         "apps/web/src/components/legal/legal-item-actions.tsx": 40,
@@ -134,7 +134,7 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 38,
+      "value": 40,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -166,7 +166,9 @@
         "apps/web/src/components/rental/unit-sheet.tsx": 1,
         "apps/web/src/components/rental/utility-account-form.tsx": 1,
         "apps/web/src/components/statements/ImportPreview.tsx": 1,
-        "apps/web/src/components/statements/StatementUpload.tsx": 1
+        "apps/web/src/components/statements/StatementUpload.tsx": 1,
+        "apps/web/src/components/valuations/valuation-actions.tsx": 1,
+        "apps/web/src/components/valuations/valuation-sheet.tsx": 1
       }
     },
     "action-failure-mapping": {
@@ -573,6 +575,12 @@
       "from": 30,
       "to": 32,
       "reason": "statement import preview and commit each call one server action through a transition (until #193)"
+    },
+    {
+      "metric": "hand-rolled-action-call",
+      "from": 38,
+      "to": 40,
+      "reason": "valuation sheet save and the history row delete call their server actions in a transition (until #193)"
     }
   ]
 }

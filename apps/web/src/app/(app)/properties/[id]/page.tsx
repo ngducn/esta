@@ -6,10 +6,14 @@ import { z } from 'zod';
 import { FocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { LocationCard } from '@/components/properties/location-card';
 import { OverviewFacts, type OverviewFact } from '@/components/properties/overview-facts';
+import { ValuationBlock } from '@/components/valuations/valuation-block';
+import { getClock } from '@/server/clock';
 import { readBoundary } from '@/server/properties/boundary';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
+import { valuationIslandIntl } from '@/server/properties/island-messages';
 import { getThemePreference } from '@/server/theme';
+import { loadPropertyValuations } from '@/server/valuations/load';
 import { PropertyDetailFrame } from './detail-frame';
 
 type DetailFormat = 'count' | 'meters' | 'text' | 'vnd';
@@ -34,14 +38,17 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
   const { id } = await params;
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
-  const [member, t, tp, theme, locale, messages, boundary] = await Promise.all([
-    requireMember(),
+  const member = await requireMember();
+  const [t, tp, theme, locale, messages, boundary, clock, valuations, valuationIntl] = await Promise.all([
     getTranslations('propertyDetail'),
     getTranslations('properties'),
     getThemePreference(),
     getLocale(),
     getMessages(),
     property.hasBoundary ? readBoundary(id) : null,
+    getClock(),
+    loadPropertyValuations(member.household.id, id),
+    member.role === 'viewer' ? null : valuationIslandIntl(),
   ]);
 
   const format: Record<DetailFormat, (value: unknown) => string | null> = {
@@ -98,6 +105,12 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
                   boundary,
                 }
           }
+        />
+        <ValuationBlock
+          valuations={valuations}
+          today={clock.today()}
+          monthlyRentVnd={property.monthlyRentVnd}
+          scope={valuationIntl === null ? null : { propertyId: property.id, nickname: property.nickname, today: clock.today(), ...valuationIntl }}
         />
       </div>
     </PropertyDetailFrame>

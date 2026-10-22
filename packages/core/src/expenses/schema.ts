@@ -2,9 +2,8 @@ import { z } from 'zod';
 import type { IsoDate } from '../date/iso-date';
 import { documentTitleSchema, sentDocumentSchema } from '../documents/file';
 import type { Vnd } from '../money/vnd';
-import { parseOptionalDateInput, type DateInputReason } from '../parse/date-input';
+import { parseDateUpToToday, type PastDateReason } from '../parse/date-input';
 import { parsePositiveVnd, type PositiveVndReason } from '../parse/vnd-input';
-import type { Result } from '../result';
 import { EXPENSE_CATEGORY_IDS } from './categories';
 
 export const MAX_EXPENSE_NOTE = 1000;
@@ -15,15 +14,7 @@ export const NEW_VENDOR_TAG = 'contractor';
 export const VENDOR_TAGS = [NEW_VENDOR_TAG, 'broker', 'other'] as const;
 
 export type AmountProblem = PositiveVndReason;
-export type PaidOnProblem = Exclude<DateInputReason, 'empty'> | 'after_today';
-
-/** An empty date is the Clock's business date; a later day is refused. */
-function readPaidOn(text: string, today: IsoDate): Result<IsoDate, PaidOnProblem> {
-  const parsed = parseOptionalDateInput(text);
-  if (!parsed.ok) return parsed;
-  const day = parsed.value ?? today;
-  return day <= today ? { ok: true, value: day } : { ok: false, reason: 'after_today' };
-}
+export type PaidOnProblem = PastDateReason;
 
 const vendorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('existing'), id: z.uuid() }),
@@ -69,7 +60,7 @@ export function readExpense(
   const texts = textsSchema.safeParse(input);
   const fields = fieldsSchema.safeParse(input);
   const amount = texts.success ? parsePositiveVnd(texts.data.amount) : null;
-  const paidOn = texts.success ? readPaidOn(texts.data.paidOn, today) : null;
+  const paidOn = texts.success ? parseDateUpToToday(texts.data.paidOn, today) : null;
   if (fields.success && amount?.ok && paidOn?.ok) return { ok: true, value: { ...fields.data, amount: amount.value, paidOn: paidOn.value } };
   return {
     ok: false,

@@ -46,3 +46,5 @@ export { statementColumnsSchema, statementCommit, statementImport, statementLink
 export { propertyCreate, propertyEdit, type CodeTaken, type PropertySaved } from './property-ops';
 export { findPerson, findProperty, getLease, getProperty, listLeases, listProperties, personQuerySchema, rankCandidates, rankPeople, type ReadContext } from './read';
 export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
+export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
+export { readLivePropertyIds, readValuations } from './valuations';

@@ -70,3 +70,39 @@ export function TextField({
     </div>
   );
 }
+
+/** An optional free-text note under a sheet's fields, two lines tall and growing with the text scale. */
+export function NoteField({
+  labels,
+  value,
+  onChange,
+  maxLength,
+  disabled,
+  testId,
+}: {
+  labels: { readonly note: string; readonly optional: string };
+  value: string;
+  onChange: (text: string) => void;
+  maxLength: number;
+  disabled: boolean;
+  testId: string;
+}) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-body font-semibold text-ink">
+        {labels.note} <span className="font-normal text-ink-muted">({labels.optional})</span>
+      </label>
+      <textarea
+        id={id}
+        data-testid={testId}
+        value={value}
+        rows={2}
+        maxLength={maxLength}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
+      />
+    </div>
+  );
+}
