@@ -36,7 +36,6 @@ import type { ImportFolders } from './files';
 import type { OperatorRefusal } from './session';
 import { MAX_SPREADSHEET_BYTES, readSpreadsheet } from './spreadsheet';
 
-/** `batchDb` is Ryan's session tagged with one batch, for the writes `apply_plan` makes. */
 export type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders; readonly batchDb: (batchId: string) => Db };
 
 export type ToolDeps = {

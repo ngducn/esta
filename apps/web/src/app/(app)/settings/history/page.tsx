@@ -30,7 +30,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title') };
 }
 
-/** The batches Claude applied for the household, newest first, for the operator who can undo them (CONNECTOR.md §3.4). */
 export default async function ChangeHistoryPage() {
   const member = await requireMember();
   if (!member.isOperator) notFound();

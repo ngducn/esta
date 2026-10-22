@@ -28,7 +28,6 @@ insert into public.leases (id, household_id, property_id, unit_id, tenant_party_
   ('00000000-0000-4000-8000-0000000c4d02', :'a', '00000000-0000-4000-8000-0000000c4a01', '00000000-0000-4000-8000-0000000c4b02',
    '00000000-0000-4000-8000-0000000c4c01', '2026-03-01', 3500000, 7000000);
 
--- A batch as the connector applies one: planned, claimed, every write tagged, then finished.
 create function pg_temp.open_batch(p_id uuid, p_household uuid) returns void language plpgsql as $$
 begin
   insert into public.change_batches (id, household_id, summary, plan, planned_at)
@@ -43,7 +42,6 @@ begin
   update public.change_batches set status = 'applied', outcomes = '[]' where id = p_id;
 end;
 $$;
--- A rental batch on Dĩ An: Phòng n with its lease, started paid through September.
 create function pg_temp.rental_batch(p_id uuid, p_room int) returns void language plpgsql as $$
 declare
   v_household uuid := (select household_id from public.properties where id = '00000000-0000-4000-8000-0000000c4a01');
@@ -59,7 +57,6 @@ begin
   perform pg_temp.close_batch(p_id);
 end;
 $$;
--- A household's rows outside the audit log and the batches, to compare before and after an undo.
 create function pg_temp.household_rows(p_household uuid) returns setof jsonb language plpgsql as $$
 declare
   v_table text;
@@ -295,13 +292,13 @@ select is_empty($$
   join pg_catalog.pg_attribute a on a.attrelid = c.oid and a.attname = 'household_id' and not a.attisdropped
   where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' and c.relname <> 'audit_log'
     and not exists (select from pg_catalog.pg_trigger t where t.tgrelid = c.oid and t.tgname = 'audit_row')
-    and c.relname not in (select table_name from private.undo_rules where reason is null)
+    and c.relname not in (select table_name from private.undo_rules where kind = 'bookkeeping')
 $$, 'every household table has the audit trigger or is bookkeeping in the undo rules');
 select is_empty($$ select table_name from private.undo_rules except
   select relname from pg_catalog.pg_class where relnamespace = 'public'::regnamespace and relkind = 'r' $$,
   'every undo rule names a table that exists');
 select ok((select bool_and(x.reason = any (array['edited_after', 'lease_started', 'invoice_issued', 'payment_recorded', 'deposit_recorded', 'in_use']))
-  from private.undo_rules x where x.reason is not null), 'every reason is one the screens explain');
+  from private.undo_rules x where x.kind <> 'bookkeeping'), 'every reason is one the screens explain');
 
 select is(has_function_privilege('anon', 'public.undo_change_batch(uuid)', 'execute'), false, 'an anonymous caller cannot undo');
 select is(has_table_privilege('authenticated', 'private.undo_rules', 'select'), false, 'the undo rules are not readable through the API');

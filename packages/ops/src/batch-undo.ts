@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { dbRefusal, idSchema, type CommonRefusal } from './kit';
 import { change, defineOp, refuse, unchanged } from './op';
 
-/** Why `undo_change_batch` refused, one per row that depends on the batch, and the flow Ryan uses instead. */
 export const UNDO_REASONS = ['edited_after', 'lease_started', 'invoice_issued', 'payment_recorded', 'deposit_recorded', 'in_use'] as const;
 export const UNDO_FLOWS = ['void', 'end_lease', 'edit'] as const;
 
@@ -13,7 +12,6 @@ const undoneSchema = z.discriminatedUnion('undone', [
 ]);
 
 export type UndoBlocker = z.output<typeof blockerSchema>;
-/** `archived_properties`: the properties the batch created, now in Đã lưu trữ, where they can be restored. */
 export type BatchUndone = { readonly batch_id: string; readonly archived_properties: number };
 export type UndoRefusal = { readonly kind: 'undo_blocked'; readonly blockers: readonly UndoBlocker[] } | { readonly kind: 'not_undoable'; readonly status: string };
 
@@ -25,10 +23,6 @@ const SENTINELS: Readonly<Record<string, UndoRefusal | CommonRefusal>> = {
 const inputSchema = z.strictObject({ batch_id: idSchema });
 type UndoInput = z.output<typeof inputSchema>;
 
-/**
- * Undoes a batch Claude applied, all of it or nothing, as the operator (CONNECTOR.md §3.4). A batch already undone
- * plans as unchanged; one still planned or applying has nothing to undo.
- */
 export const batchUndo = defineOp<UndoInput, UndoInput, BatchUndone, UndoRefusal>({
   creates: null,
   input: inputSchema,

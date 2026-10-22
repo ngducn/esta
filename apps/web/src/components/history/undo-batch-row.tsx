@@ -6,7 +6,6 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { StatusShape } from '@/components/status-mark';
 import { undoBatch } from '@/server/actions/batches';
 
-/** A history row Ryan can still undo: its lines, Undo behind a confirm step, and why an undo was refused with the flow to use. */
 export function UndoBatchRow({ batchId, summary, children }: { batchId: string; summary: string; children: ReactNode }) {
   const t = useTranslations('history');
   const [state, undo, pending] = useActionState(undoBatch, null);

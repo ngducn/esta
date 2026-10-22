@@ -216,17 +216,15 @@ const failed: ItemOutcome = { status: 'refused', refusal: { kind: 'failed' } };
  * Claims the batch, then for each item parses the stored input again, plans again, and applies only when the fresh
  * change equals the one Ryan approved. An item that throws is `failed` and the rest go on. When an apply dies before
  * recording the outcomes, the next one after the lease plans every item again: what already landed plans as unchanged
- * and counts as landed, and the rest apply. `tagged` is Ryan's session sending `x-esta-via: claude` and `x-esta-batch`
- * for this batch, so the audit log files every item's writes under it and undo can find them; the claim and the
- * outcomes go through the plain session, since they are the batch's own record, not a change to undo.
+ * and counts as landed, and the rest apply.
  */
-export async function applyPlan(ctx: LocalContext, planId: string, tagged: Db): Promise<Result<AppliedBatch, ApplyRefusal>> {
+export async function applyPlan(ctx: LocalContext, planId: string, itemDb: Db): Promise<Result<AppliedBatch, ApplyRefusal>> {
   const claimed = await claim(ctx, planId, ctx.clock.now());
   if (claimed === null) return refuse(await unclaimable(ctx, planId));
 
   const plan = storedPlanSchema.parse(claimed);
   const items: Reported<ItemOutcome>[] = [];
-  const itemCtx = { ...ctx, db: tagged };
+  const itemCtx = { ...ctx, db: itemDb };
   for (const [index, item] of plan.items.entries()) {
     const blocked = blockedBy(item.needs, items);
     const outcome: ItemOutcome = blocked === null ? await OPS[item.op].settle(itemCtx, item.input, item.change).catch(() => failed) : { status: 'refused', refusal: blocked };

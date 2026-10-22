@@ -343,17 +343,16 @@ describe('a lease with its deposit and paid-through started by talking to Claude
   });
 });
 
-/** Every table but the audit log and the batches, whose undo rows and status are the history of the undo itself. */
-const tables = () => businessChecksums(slotWorkdir(ROOT, parseSlot(env.ESTA_SLOT))).filter((table) => table.table !== 'change_batches');
+const tablesUndoRestores = () => businessChecksums(slotWorkdir(ROOT, parseSlot(env.ESTA_SLOT))).filter((table) => table.table !== 'change_batches');
 
 describe('a Demo rental Claude applied, undone from the connector', () => {
   it('puts every table back as it was before the apply', async () => {
     const planned = plannedSchema.parse((await plan('Demo: Phòng 7 ở Q1 cho chị Lan Demo', rental('Phòng 7', '0901 777 007'))).json());
-    const before = tables();
+    const before = tablesUndoRestores();
     expect(await apply(planned.planId)).toMatchObject({ status: 'applied', items: Array.from({ length: 5 }, () => ({ status: 'landed' })) });
-    expect(tables()).not.toEqual(before);
+    expect(tablesUndoRestores()).not.toEqual(before);
     expect((await call(connector, 'undo_batch', { batch_id: planned.planId })).json()).toEqual({ batch_id: planned.planId, archived_properties: 0 });
-    expect(tables()).toEqual(before);
+    expect(tablesUndoRestores()).toEqual(before);
     expect((await db.from('change_batches').select('status').eq('id', planned.planId).single()).data).toEqual({ status: 'undone' });
   });
 
@@ -361,10 +360,10 @@ describe('a Demo rental Claude applied, undone from the connector', () => {
     const planned = plannedSchema.parse((await plan('Demo: Phòng 8 ở Q1 cho chị Lan Demo', rental('Phòng 8', '0901 777 008'))).json());
     expect(await apply(planned.planId)).toMatchObject({ status: 'applied' });
     await nightlyRun('2026-11-01');
-    const before = tables();
+    const before = tablesUndoRestores();
     const refused = await call(connector, 'undo_batch', { batch_id: planned.planId });
     expect(refused.isError).toBe(true);
     expect(refused.json()).toMatchObject({ kind: 'undo_blocked', blockers: expect.arrayContaining([expect.objectContaining({ table_name: 'invoices', reason: 'invoice_issued', flow: 'void' })]) });
-    expect(tables()).toEqual(before);
+    expect(tablesUndoRestores()).toEqual(before);
   });
 });

@@ -1,4 +1,3 @@
-/** A Demo townhouse in Quận 7 as Claude would plan it, with the given code. */
 export const demoProperty = (code: string) => ({
   nickname: `Demo Nhà phố ${code}`,
   code,

@@ -4,7 +4,6 @@ import { batchUndo, runOp, type UndoBlocker } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { webOpContext } from '@/server/ops';
 
-/** A refused undo names each reason once, with the flow Ryan uses instead. */
 export type UndoState =
   | { readonly status: 'undone' }
   | { readonly status: 'refused'; readonly blockers: readonly Pick<UndoBlocker, 'reason' | 'flow'>[] }

@@ -1,16 +1,10 @@
--- Batch history and undo (CONNECTOR.md §3.4). While the connector applies a batch it tags every write with
--- x-esta-via and x-esta-batch, the audit trigger stores both, and undo_change_batch replays the batch's audit rows in
--- reverse as Ryan, refusing while anything outside the batch depends on what it wrote.
-
 alter table public.audit_log
   add column via text check (via in ('claude', 'undo')),
   add column batch_id uuid,
   add constraint audit_log_batch_tag check ((via is null) = (batch_id is null));
 create index audit_log_batch_idx on public.audit_log (batch_id, id) where batch_id is not null;
 
--- The batch a write belongs to. undo_change_batch names its own writes with esta.via and esta.batch, which no API
--- caller can set. The headers count only for a batch that is applying, in the row's household, planned by the writer,
--- so nobody files a write under someone else's batch.
+-- undo_change_batch names its own writes with esta.via and esta.batch, which no API caller can set.
 create function private.audit_tag(p_household_id uuid, out via text, out batch_id uuid)
 language plpgsql
 stable
@@ -109,40 +103,35 @@ create trigger guard_change_batch
   before insert or update on public.change_batches
   for each row execute function private.guard_change_batch();
 
--- How undo treats a table. With no column, reason and flow say what blocks an undo when a row of the table written
--- outside the batch references a row the batch created, and the flow Ryan uses instead; a table not listed blocks as
--- in_use, fixed by editing. With no column and no reason the table is bookkeeping about other rows: it never blocks and
--- undo leaves its rows alone. With a column, undo refuses to set that column back on a row the batch updated, because
--- it only moves forward.
 create table private.undo_rules (
   table_name text not null,
+  kind text not null check (kind in ('blocks_reference', 'forward_only', 'bookkeeping')),
   column_name text,
   reason text,
   flow text check (flow in ('void', 'end_lease', 'edit')),
   unique nulls not distinct (table_name, column_name),
-  check ((reason is null) = (flow is null)),
-  check (column_name is null or reason is not null)
+  check ((kind = 'forward_only') = (column_name is not null)),
+  check ((kind = 'bookkeeping') = (reason is null)),
+  check ((reason is null) = (flow is null))
 );
 revoke all on table private.undo_rules from public, anon, authenticated, service_role;
 
-insert into private.undo_rules (table_name, column_name, reason, flow) values
-  ('invoices', null, 'invoice_issued', 'void'),
-  ('invoice_lines', null, 'invoice_issued', 'void'),
-  ('payments', null, 'payment_recorded', 'end_lease'),
-  ('payment_allocations', null, 'payment_recorded', 'end_lease'),
-  ('deposit_entries', null, 'deposit_recorded', 'end_lease'),
-  ('leases', 'status', 'lease_started', 'end_lease'),
-  ('change_batches', null, null, null),
-  ('agent_jobs', null, null, null),
-  ('agent_runs', null, null, null),
-  ('agent_items', null, null, null),
-  ('document_extractions', null, null, null),
-  ('document_access_log', null, null, null);
+insert into private.undo_rules (table_name, kind, column_name, reason, flow) values
+  ('invoices', 'blocks_reference', null, 'invoice_issued', 'void'),
+  ('invoice_lines', 'blocks_reference', null, 'invoice_issued', 'void'),
+  ('payments', 'blocks_reference', null, 'payment_recorded', 'end_lease'),
+  ('payment_allocations', 'blocks_reference', null, 'payment_recorded', 'end_lease'),
+  ('deposit_entries', 'blocks_reference', null, 'deposit_recorded', 'end_lease'),
+  ('leases', 'forward_only', 'status', 'lease_started', 'end_lease'),
+  ('change_batches', 'bookkeeping', null, null, null),
+  ('agent_jobs', 'bookkeeping', null, null, null),
+  ('agent_runs', 'bookkeeping', null, null, null),
+  ('agent_items', 'bookkeeping', null, null, null),
+  ('document_extractions', 'bookkeeping', null, null, null),
+  ('document_access_log', 'bookkeeping', null, null, null);
 
--- One row per row the batch wrote, bookkeeping aside: its first and last audit ids, whether the batch created it and
--- whether it removed it, and its image before the batch, the oldest value of every column the batch changed.
 create function private.batch_rows(p_batch_id uuid)
-returns table (table_name text, row_id uuid, first_id bigint, last_id bigint, created boolean, removed boolean, image jsonb)
+returns table (table_name text, row_id uuid, first_id bigint, last_id bigint, created boolean, removed boolean, before_image jsonb)
 language sql
 stable
 set search_path = ''
@@ -163,15 +152,11 @@ as $$
     )
   from public.audit_log a
   where a.batch_id = p_batch_id and a.via = 'claude'
-    and a.table_name not in (select r.table_name from private.undo_rules r where r.reason is null)
+    and a.table_name not in (select r.table_name from private.undo_rules r where r.kind = 'bookkeeping')
   group by a.table_name, a.row_id;
 $$;
 revoke all on function private.batch_rows(uuid) from public;
 
--- What stops an undo, one row per blocking row: a later write outside the batch to a row it wrote, which blocks with
--- the table's own reason where it has one (a bill the batch drafted and the nightly run issued is an issued bill), a
--- forward-only column it moved, or a row outside the batch that references a row it created. The references come from the foreign
--- keys themselves, so a table added later is covered without a rule.
 create function private.undo_blockers(p_batch_id uuid)
 returns table (table_name text, row_id uuid, reason text, flow text)
 language plpgsql
@@ -184,7 +169,7 @@ begin
   return query
     select t.table_name, t.row_id, coalesce(r.reason, 'edited_after'), coalesce(r.flow, 'edit')
     from private.batch_rows(p_batch_id) t
-    left join private.undo_rules r on r.table_name = t.table_name and r.column_name is null
+    left join private.undo_rules r on r.table_name = t.table_name and r.kind = 'blocks_reference'
     where exists (
       select from public.audit_log l
       where l.table_name = t.table_name and l.row_id = t.row_id and l.id > t.first_id and l.batch_id is distinct from p_batch_id
@@ -193,8 +178,8 @@ begin
   return query
     select t.table_name, t.row_id, r.reason, r.flow
     from private.batch_rows(p_batch_id) t
-    join private.undo_rules r on r.table_name = t.table_name and r.column_name is not null
-    where not t.created and t.image ? r.column_name;
+    join private.undo_rules r on r.table_name = t.table_name and r.kind = 'forward_only'
+    where not t.created and t.before_image ? r.column_name;
 
   for v_fk in
     select distinct child.relname as child_table, child_column.attname as child_column, parent.relname as parent_table
@@ -206,14 +191,14 @@ begin
     join pg_catalog.pg_attribute child_column on child_column.attrelid = c.conrelid and child_column.attnum = k.child_attnum
     where c.contype = 'f' and parent_id.attname = 'id'
       and child.relnamespace = 'public'::regnamespace and parent.relnamespace = 'public'::regnamespace
-      and child.relname not in (select r.table_name from private.undo_rules r where r.reason is null)
+      and child.relname not in (select r.table_name from private.undo_rules r where r.kind = 'bookkeeping')
       and parent.relname in (select t.table_name from private.batch_rows(p_batch_id) t where t.created and not t.removed)
   loop
     return query execute format(
       $q$
         select %1$L::text, c.id, coalesce(r.reason, 'in_use'), coalesce(r.flow, 'edit')
         from public.%1$I c
-        left join private.undo_rules r on r.table_name = %1$L and r.column_name is null
+        left join private.undo_rules r on r.table_name = %1$L and r.kind = 'blocks_reference'
         where c.%2$I = any ($1) and not c.id = any ($2)
       $q$, v_fk.child_table, v_fk.child_column)
     using
@@ -224,8 +209,6 @@ end;
 $$;
 revoke all on function private.undo_blockers(uuid) from public;
 
--- Sets a row back to its image: the columns the image names, in place when the row exists, else as a new row.
--- Generated columns follow, and created_by stays the trigger's to set.
 create function private.undo_restore(p_table text, p_row_id uuid, p_image jsonb)
 returns void
 language plpgsql
@@ -254,10 +237,6 @@ end;
 $$;
 revoke all on function private.undo_restore(text, uuid, jsonb) from public;
 
--- Undoes a batch as the operator, in one transaction (CONNECTOR.md §3.4). With any blocker it writes nothing and
--- returns them. Otherwise it puts back the columns the batch changed, removes the rows it created children first,
--- moving a row of a soft-delete table to the trash instead, brings back the rows it removed parents first, and marks the
--- batch undone. Its own writes carry via undo and the batch id, so the history reads both sides.
 create function public.undo_change_batch(p_batch_id uuid)
 returns jsonb
 language plpgsql
@@ -287,7 +266,7 @@ begin
   perform set_config('esta.via', 'undo', true);
   perform set_config('esta.batch', p_batch_id::text, true);
   for v_row in select * from private.batch_rows(p_batch_id) t where not t.created and not t.removed order by t.last_id desc loop
-    perform private.undo_restore(v_row.table_name, v_row.row_id, v_row.image);
+    perform private.undo_restore(v_row.table_name, v_row.row_id, v_row.before_image);
   end loop;
   for v_row in select * from private.batch_rows(p_batch_id) t where t.created and not t.removed order by t.first_id desc loop
     if exists (
@@ -301,7 +280,7 @@ begin
     end if;
   end loop;
   for v_row in select * from private.batch_rows(p_batch_id) t where not t.created and t.removed order by t.last_id desc loop
-    perform private.undo_restore(v_row.table_name, v_row.row_id, v_row.image);
+    perform private.undo_restore(v_row.table_name, v_row.row_id, v_row.before_image);
   end loop;
   update public.change_batches set status = 'undone', undone_at = v_now where id = p_batch_id;
   perform set_config('esta.via', '', true);
@@ -312,8 +291,6 @@ $$;
 revoke all on function public.undo_change_batch(uuid) from public, anon;
 grant execute on function public.undo_change_batch(uuid) to authenticated;
 
--- The household's history of what Claude changed, newest first. Security invoker, so RLS keeps it to the member's
--- households. archived_properties counts the properties an undo moved to Đã lưu trữ, which the history row names.
 create function public.change_batch_history(p_household_id uuid, p_limit int default 50)
 returns table (
   id uuid,
