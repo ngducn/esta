@@ -266,7 +266,7 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
     'undo_batch',
     {
       description:
-        'Undo a batch Claude applied, all of it or nothing, when Ryan asks. A property the batch added goes to Đã lưu trữ, where he can restore it. Refused as undo_blocked, with each blocking row, its reason and the flow Ryan uses instead, once an issued bill, a payment, a deposit or a later edit depends on the batch.',
+        'Undo a batch Claude applied, all of it or nothing, when Ryan asks. A property the batch added goes to Đã lưu trữ, where he can restore it. Refused as undo_blocked, with each blocking row, its reason and the flow Ryan uses instead, once an issued bill, a payment, a deposit or a later edit depends on the batch. Refused as not_undoable when the batch is already undone.',
       inputSchema: z.object({ batch_id: idSchema }),
     },
     guarded('undo_batch', deps, async (ctx, { batch_id }: { batch_id: string }) => {

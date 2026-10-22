@@ -1777,8 +1777,11 @@
     "undoBody": "Esta đưa mọi thứ nhóm này đã sửa về như trước. Tài sản Claude đã thêm sẽ vào Đã lưu trữ, khôi phục được bất cứ lúc nào.",
     "undoing": "Đang hoàn tác…",
     "refused": "Không hoàn tác được.",
-    "reason": "{reason, select, invoice_issued {Đã phát hành hóa đơn cho hợp đồng này.} payment_recorded {Đã ghi nhận tiền thu cho hợp đồng này.} deposit_recorded {Đã ghi tiền cọc cho hợp đồng này.} lease_started {Hợp đồng đã bắt đầu thì không quay lại bản nháp được.} edited_after {Có người đã sửa lại phần này sau đó.} in_use {Có dữ liệu khác đang dùng phần Claude đã thêm.} other {}}",
-    "flow": "{flow, select, void {Hãy dùng Hủy hóa đơn trong mục Thu tiền.} end_lease {Hãy dùng Kết thúc hợp đồng trong tab Cho thuê.} edit {Hãy sửa trực tiếp trên màn hình đó.} other {}}",
-    "failed": "Chưa hoàn tác được. Kiểm tra mạng rồi thử lại."
+    "reason": "{reason, select, invoice_issued {Đã phát hành hóa đơn cho hợp đồng này.} payment_recorded {Đã ghi nhận tiền thu cho hợp đồng này.} deposit_recorded {Đã ghi tiền cọc cho hợp đồng này.} lease_started {Hợp đồng đã bắt đầu thì không quay lại bản nháp được.} edited_after {Có người đã sửa lại phần này sau đó.} in_use {Có dữ liệu khác đang dùng phần Claude đã thêm.} deposit_later {Sau đó đã có khoản tiền cọc khác ghi cho hợp đồng này.} payment_later {Sau đó đã có khoản thu khác ghi cho cùng hóa đơn hoặc người thuê.} statement_matched {Một dòng sao kê ngân hàng đang khớp với hóa đơn Claude đã phát hành.} other {}}",
+    "flow": "{flow, select, void {Hãy mở hóa đơn trong mục Thu tiền và dùng Hủy hóa đơn.} end_lease {Hãy mở hợp đồng ở tab Cho thuê và dùng Kết thúc hợp đồng.} edit {Hãy sửa trực tiếp trên màn hình đó.} deposit {Hãy mở hợp đồng ở tab Cho thuê và ghi khoản bù ở phần Tiền cọc.} payment {Hãy mở hóa đơn trong mục Thu tiền để xem các khoản đã thu.} other {}}",
+    "failed": "Chưa hoàn tác được. Kiểm tra mạng rồi thử lại.",
+    "undoBills": "{count, plural, other {Esta cũng xóa # hóa đơn Claude đã phát hành: {bills}.}}",
+    "bill": "{number} (tháng {month})",
+    "alreadyUndone": "Nhóm thay đổi này đã được hoàn tác rồi. Tải lại trang để xem."
   }
 }

@@ -1777,8 +1777,11 @@
     "undoBody": "Esta puts back everything this group changed. Properties Claude added go to Archived, where you can restore them at any time.",
     "undoing": "Undoing…",
     "refused": "This can't be undone.",
-    "reason": "{reason, select, invoice_issued {A bill has been issued for this lease.} payment_recorded {A payment has been recorded for this lease.} deposit_recorded {A deposit has been recorded for this lease.} lease_started {A started lease can't go back to a draft.} edited_after {Someone changed this again afterwards.} in_use {Other records use what Claude added.} other {}}",
-    "flow": "{flow, select, void {Use Void bill in Collections.} end_lease {Use End lease on the Rental tab.} edit {Edit it on its own screen.} other {}}",
-    "failed": "Couldn't undo. Check the connection and try again."
+    "reason": "{reason, select, invoice_issued {A bill has been issued for this lease.} payment_recorded {A payment has been recorded for this lease.} deposit_recorded {A deposit has been recorded for this lease.} lease_started {A started lease can't go back to a draft.} edited_after {Someone changed this again afterwards.} in_use {Other records use what Claude added.} deposit_later {Another deposit entry was recorded for this lease afterwards.} payment_later {Another payment was recorded afterwards for the same bill or tenant.} statement_matched {A bank statement line matches a bill Claude issued.} other {}}",
+    "flow": "{flow, select, void {Open the bill in Collections and use Void bill.} end_lease {Open the lease on the Rental tab and use End lease.} edit {Edit it on its own screen.} deposit {Open the lease on the Rental tab and record a correcting entry under Deposit.} payment {Open the bill in Collections to see what was paid.} other {}}",
+    "failed": "Couldn't undo. Check the connection and try again.",
+    "undoBills": "{count, plural, one {Esta also removes the bill Claude issued: {bills}.} other {Esta also removes the # bills Claude issued: {bills}.}}",
+    "bill": "{number} ({month})",
+    "alreadyUndone": "This batch was already undone. Reload the page to see it."
   }
 }

@@ -105,30 +105,41 @@ create trigger guard_change_batch
 
 create table private.undo_rules (
   table_name text not null,
-  kind text not null check (kind in ('blocks_reference', 'forward_only', 'bookkeeping')),
+  kind text not null check (kind in ('blocks_reference', 'forward_only', 'ledger', 'array_reference', 'bookkeeping')),
   column_name text,
+  refers_to text,
   reason text,
-  flow text check (flow in ('void', 'end_lease', 'edit')),
+  flow text check (flow in ('void', 'end_lease', 'edit', 'deposit', 'payment')),
   unique nulls not distinct (table_name, column_name),
-  check ((kind = 'forward_only') = (column_name is not null)),
+  check ((kind in ('forward_only', 'ledger', 'array_reference')) = (column_name is not null)),
+  check ((kind = 'array_reference') = (refers_to is not null)),
   check ((kind = 'bookkeeping') = (reason is null)),
   check ((reason is null) = (flow is null))
 );
 revoke all on table private.undo_rules from public, anon, authenticated, service_role;
 
-insert into private.undo_rules (table_name, kind, column_name, reason, flow) values
-  ('invoices', 'blocks_reference', null, 'invoice_issued', 'void'),
-  ('invoice_lines', 'blocks_reference', null, 'invoice_issued', 'void'),
-  ('payments', 'blocks_reference', null, 'payment_recorded', 'end_lease'),
-  ('payment_allocations', 'blocks_reference', null, 'payment_recorded', 'end_lease'),
-  ('deposit_entries', 'blocks_reference', null, 'deposit_recorded', 'end_lease'),
-  ('leases', 'forward_only', 'status', 'lease_started', 'end_lease'),
-  ('change_batches', 'bookkeeping', null, null, null),
-  ('agent_jobs', 'bookkeeping', null, null, null),
-  ('agent_runs', 'bookkeeping', null, null, null),
-  ('agent_items', 'bookkeeping', null, null, null),
-  ('document_extractions', 'bookkeeping', null, null, null),
-  ('document_access_log', 'bookkeeping', null, null, null);
+-- blocks_reference: a row of this table that refers to a row the batch created blocks the undo.
+-- forward_only: the batch changed this column of a row it did not create, and the column never goes back.
+-- ledger: the batch created a row, and a later row of the same table with the same column_name value may rest on it.
+-- array_reference: column_name holds ids of refers_to rows without a foreign key; one naming a created row blocks.
+insert into private.undo_rules (table_name, kind, column_name, refers_to, reason, flow) values
+  ('invoices', 'blocks_reference', null, null, 'invoice_issued', 'void'),
+  ('invoice_lines', 'blocks_reference', null, null, 'invoice_issued', 'void'),
+  ('payments', 'blocks_reference', null, null, 'payment_recorded', 'end_lease'),
+  ('payment_allocations', 'blocks_reference', null, null, 'payment_recorded', 'end_lease'),
+  ('deposit_entries', 'blocks_reference', null, null, 'deposit_recorded', 'end_lease'),
+  ('statement_rows', 'blocks_reference', null, null, 'statement_matched', 'void'),
+  ('leases', 'forward_only', 'status', null, 'lease_started', 'end_lease'),
+  ('deposit_entries', 'ledger', 'lease_id', null, 'deposit_later', 'deposit'),
+  ('payments', 'ledger', 'payer_party_id', null, 'payment_later', 'payment'),
+  ('payment_allocations', 'ledger', 'invoice_id', null, 'payment_later', 'payment'),
+  ('statement_rows', 'array_reference', 'candidate_invoice_ids', 'invoices', 'statement_matched', 'void'),
+  ('change_batches', 'bookkeeping', null, null, null, null),
+  ('agent_jobs', 'bookkeeping', null, null, null, null),
+  ('agent_runs', 'bookkeeping', null, null, null, null),
+  ('agent_items', 'bookkeeping', null, null, null, null),
+  ('document_extractions', 'bookkeeping', null, null, null, null),
+  ('document_access_log', 'bookkeeping', null, null, null, null);
 
 create function private.batch_rows(p_batch_id uuid)
 returns table (table_name text, row_id uuid, first_id bigint, last_id bigint, created boolean, removed boolean, before_image jsonb)
@@ -165,6 +176,7 @@ set search_path = ''
 as $$
 declare
   v_fk record;
+  v_rule private.undo_rules;
 begin
   return query
     select t.table_name, t.row_id, coalesce(r.reason, 'edited_after'), coalesce(r.flow, 'edit')
@@ -205,9 +217,65 @@ begin
       array(select t.row_id from private.batch_rows(p_batch_id) t where t.table_name = v_fk.parent_table and t.created and not t.removed),
       array(select t.row_id from private.batch_rows(p_batch_id) t where t.table_name = v_fk.child_table);
   end loop;
+
+  for v_rule in
+    select r.* from private.undo_rules r
+    where r.kind = 'ledger' and r.table_name in (select t.table_name from private.batch_rows(p_batch_id) t where t.created and not t.removed)
+  loop
+    return query execute format(
+      $q$
+        select %1$L::text, mine.id, %3$L::text, %4$L::text
+        from public.%1$I mine
+        join private.batch_rows($1) t on t.table_name = %1$L and t.row_id = mine.id and t.created
+        where exists (
+          select from public.%1$I later
+          join public.audit_log l on l.table_name = %1$L and l.row_id = later.id and l.action = 'insert'
+          where later.%2$I = mine.%2$I and l.id > t.first_id and l.batch_id is distinct from $1
+        )
+      $q$, v_rule.table_name, v_rule.column_name, v_rule.reason, v_rule.flow)
+    using p_batch_id;
+  end loop;
+
+  for v_rule in select r.* from private.undo_rules r where r.kind = 'array_reference' loop
+    return query execute format(
+      $q$ select %1$L::text, c.id, %3$L::text, %4$L::text from public.%1$I c where c.%2$I && $1 $q$,
+      v_rule.table_name, v_rule.column_name, v_rule.reason, v_rule.flow)
+    using array(select t.row_id from private.batch_rows(p_batch_id) t where t.table_name = v_rule.refers_to and t.created and not t.removed);
+  end loop;
 end;
 $$;
 revoke all on function private.undo_blockers(uuid) from public;
+
+-- Every row the batch wrote, then each ledger's parent (a deposit's lease), locked before the blockers are read: a write
+-- to any of them that is in flight commits first and is seen, or waits until the undo is done.
+create function private.lock_batch_rows(p_batch_id uuid)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_lock record;
+begin
+  for v_lock in
+    select t.table_name, array_agg(t.row_id) as ids from private.batch_rows(p_batch_id) t group by t.table_name order by t.table_name
+  loop
+    execute format('select from public.%I where id = any ($1) order by id for update', v_lock.table_name) using v_lock.ids;
+  end loop;
+  for v_lock in
+    select r.table_name, r.column_name, c.confrelid::regclass as parent
+    from private.undo_rules r
+    join pg_catalog.pg_attribute a on a.attrelid = format('public.%I', r.table_name)::regclass and a.attname = r.column_name
+    join pg_catalog.pg_constraint c on c.conrelid = a.attrelid and c.contype = 'f' and a.attnum = any (c.conkey)
+    where r.kind = 'ledger'
+    order by c.confrelid::regclass::text, r.table_name
+  loop
+    execute format('select from %s p where p.id in (select c.%I from public.%I c where c.id = any ($1)) order by p.id for update',
+      v_lock.parent, v_lock.column_name, v_lock.table_name)
+    using array(select t.row_id from private.batch_rows(p_batch_id) t where t.table_name = v_lock.table_name and t.created);
+  end loop;
+end;
+$$;
+revoke all on function private.lock_batch_rows(uuid) from public;
 
 create function private.undo_restore(p_table text, p_row_id uuid, p_image jsonb)
 returns void
@@ -237,6 +305,23 @@ end;
 $$;
 revoke all on function private.undo_restore(text, uuid, jsonb) from public;
 
+-- A held deposit never goes below zero, also when an entry leaves the ledger: an undo, or the lease's own deletion.
+create function private.keep_deposit_held()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform private.refuse_deposit_overdraw(old.lease_id);
+  return null;
+end;
+$$;
+revoke all on function private.keep_deposit_held() from public;
+create trigger deposit_entries_keep_held
+  after delete on public.deposit_entries
+  for each row execute function private.keep_deposit_held();
+
 create function public.undo_change_batch(p_batch_id uuid)
 returns jsonb
 language plpgsql
@@ -258,6 +343,7 @@ begin
     raise exception 'ESTA_BATCH_NOT_UNDOABLE' using errcode = '55000', detail = v_batch.status;
   end if;
 
+  perform private.lock_batch_rows(p_batch_id);
   select coalesce(jsonb_agg(distinct to_jsonb(b)), '[]') into v_blockers from private.undo_blockers(p_batch_id) b;
   if v_blockers <> '[]' then
     return jsonb_build_object('undone', false, 'blockers', v_blockers);
@@ -301,7 +387,8 @@ returns table (
   applied_at timestamptz,
   undone_at timestamptz,
   planner_name text,
-  archived_properties integer
+  archived_properties integer,
+  issued_bills jsonb
 )
 language sql
 stable
@@ -312,11 +399,16 @@ as $$
     (
       select count(*)::integer from public.audit_log a
       where a.batch_id = b.id and a.via = 'undo' and a.table_name = 'properties' and a.diff -> 'deleted_at' ->> 'new' is not null
+    ),
+    (
+      select coalesce(jsonb_agg(jsonb_build_object('number', i.number, 'period_start', i.period_start) order by i.period_start, i.number), '[]')
+      from public.invoices i
+      where i.id in (select a.row_id from public.audit_log a where a.batch_id = b.id and a.via = 'claude' and a.table_name = 'invoices' and a.action = 'insert')
     )
   from public.change_batches b
   left join public.household_members m on m.household_id = b.household_id and m.user_id = b.created_by
   where b.household_id = p_household_id and b.status in ('applied', 'partial', 'undone')
-  order by b.planned_at desc, b.id
+  order by b.planned_at desc, b.created_at desc, b.id desc
   limit least(greatest(coalesce(p_limit, 50), 1), 200);
 $$;
 revoke all on function public.change_batch_history(uuid, int) from public, anon;

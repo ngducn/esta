@@ -2891,6 +2891,7 @@ export type Database = {
           applied_at: string
           archived_properties: number
           id: string
+          issued_bills: Json
           planned_at: string
           planner_name: string
           status: string

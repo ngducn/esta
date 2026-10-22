@@ -1,5 +1,7 @@
 import { parseInstant } from '@esta/core';
 import { activityTime } from '@esta/core/activity';
+import { formatMonthYear } from '@esta/core/format';
+import { isoDateSchema } from '@esta/core/schemas/legal';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
@@ -22,6 +24,7 @@ const historySchema = z.array(
     applied_at: z.string().transform(parseInstant).nullable(),
     planner_name: z.string().nullable(),
     archived_properties: z.number(),
+    issued_bills: z.array(z.object({ number: z.string(), period_start: isoDateSchema })),
   }),
 );
 
@@ -81,7 +84,21 @@ export default async function ChangeHistoryPage() {
                   {batch.status === 'undone' ? (
                     <div className="flex min-w-0 flex-col gap-1">{lines}</div>
                   ) : (
-                    <UndoBatchRow batchId={batch.id} summary={batch.summary}>
+                    <UndoBatchRow
+                      batchId={batch.id}
+                      summary={batch.summary}
+                      body={[
+                        t('undoBody'),
+                        ...(batch.issued_bills.length === 0
+                          ? []
+                          : [
+                              t('undoBills', {
+                                count: batch.issued_bills.length,
+                                bills: batch.issued_bills.map((bill) => t('bill', { number: bill.number, month: formatMonthYear(bill.period_start, intl.locale) })).join('; '),
+                              }),
+                            ]),
+                      ].join(' ')}
+                    >
                       {lines}
                     </UndoBatchRow>
                   )}

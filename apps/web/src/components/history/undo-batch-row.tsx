@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { StatusShape } from '@/components/status-mark';
 import { undoBatch } from '@/server/actions/batches';
 
-export function UndoBatchRow({ batchId, summary, children }: { batchId: string; summary: string; children: ReactNode }) {
+export function UndoBatchRow({ batchId, summary, body, children }: { batchId: string; summary: string; body: string; children: ReactNode }) {
   const t = useTranslations('history');
   const [state, undo, pending] = useActionState(undoBatch, null);
   return (
@@ -15,7 +15,7 @@ export function UndoBatchRow({ batchId, summary, children }: { batchId: string; 
         <div className="flex min-w-0 flex-1 basis-60 flex-col gap-1">{children}</div>
         <ConfirmDialog
           title={t('undoTitle', { summary })}
-          description={t('undoBody')}
+          description={body}
           triggerLabel={t('undo')}
           confirmLabel={t('undo')}
           onConfirm={() => startTransition(() => undo(batchId))}
@@ -26,8 +26,8 @@ export function UndoBatchRow({ batchId, summary, children }: { batchId: string; 
         {!pending && state !== null && state.status !== 'undone' ? (
           <div className="flex items-start gap-2">
             <StatusShape status="overdue" className="mt-1 size-4 shrink-0" />
-            {state.status === 'failed' ? (
-              <p className="text-overdue">{t('failed')}</p>
+            {state.status === 'failed' || state.status === 'already_undone' ? (
+              <p className="text-overdue">{t(state.status === 'failed' ? 'failed' : 'alreadyUndone')}</p>
             ) : (
               <div className="flex max-w-prose flex-col gap-1">
                 <p className="font-semibold text-overdue">{t('refused')}</p>
