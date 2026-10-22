@@ -1573,6 +1573,24 @@
     "restored": "Expense of {amount} restored.",
     "undoFailed": "Could not undo. Try again."
   },
+  "ledger": {
+    "title": "Income and expenses {year}",
+    "caption": "Income and expenses by month, {year}",
+    "basis": "Income counts in the month the money arrived.",
+    "month": "Month",
+    "monthName": "{month}",
+    "income": "Income",
+    "expenses": "Expenses",
+    "noi": "Net",
+    "total": "Total",
+    "marked": "Month you opened",
+    "downloadCsv": "Download CSV",
+    "downloadExcel": "Download Excel",
+    "downloads": "Download the ledger",
+    "sheet": "Ledger {year}",
+    "empty": "No income or expenses in {year}.",
+    "emptyAction": "Rent shows here once payments are recorded. Add expenses from a receipt photo or by hand."
+  },
   "deposits": {
     "title": "Deposit",
     "heldLabel": "Held now",

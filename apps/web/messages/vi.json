@@ -1573,6 +1573,24 @@
     "restored": "Đã khôi phục chi phí {amount}.",
     "undoFailed": "Chưa hoàn tác được. Thử lại."
   },
+  "ledger": {
+    "title": "Thu chi năm {year}",
+    "caption": "Thu chi từng tháng năm {year}",
+    "basis": "Tiền thu tính vào tháng nhận được tiền.",
+    "month": "Tháng",
+    "monthName": "Tháng {month}",
+    "income": "Thu",
+    "expenses": "Tổng chi",
+    "noi": "Còn lại",
+    "total": "Tổng cộng",
+    "marked": "Tháng đang xem",
+    "downloadCsv": "Tải CSV",
+    "downloadExcel": "Tải Excel",
+    "downloads": "Tải bảng thu chi",
+    "sheet": "Thu chi {year}",
+    "empty": "Chưa có khoản thu hay chi nào trong năm {year}.",
+    "emptyAction": "Tiền thuê hiện ở đây khi ghi nhận thanh toán. Khoản chi thì ghi bằng ảnh hoá đơn hoặc nhập tay."
+  },
   "deposits": {
     "title": "Tiền cọc",
     "heldLabel": "Đang giữ",
