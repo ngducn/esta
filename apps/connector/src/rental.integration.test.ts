@@ -375,7 +375,6 @@ describe('an undo racing a write to what the batch added', () => {
   const RYAN = seedId(`seed:user:ryan-lane-${LANE}`);
   const ME = seedId(`seed:user:me-lane-${LANE}`);
 
-  /** Holds `write` open in one connection, starts Ryan's undo in another, commits the write, and returns the undo's answer. */
   async function undoDuring(batchId: string, write: string) {
     const [writer, undoer] = [psqlSession(), psqlSession()];
     try {

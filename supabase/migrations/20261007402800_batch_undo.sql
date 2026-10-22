@@ -105,23 +105,19 @@ create trigger guard_change_batch
 
 create table private.undo_rules (
   table_name text not null,
-  kind text not null check (kind in ('blocks_reference', 'forward_only', 'ledger', 'array_reference', 'bookkeeping')),
+  kind text not null check (kind in ('blocks_reference', 'forward_only', 'blocks_later_entry', 'blocks_id_array', 'bookkeeping')),
   column_name text,
   refers_to text,
   reason text,
   flow text check (flow in ('void', 'end_lease', 'edit', 'deposit', 'payment')),
   unique nulls not distinct (table_name, column_name),
-  check ((kind in ('forward_only', 'ledger', 'array_reference')) = (column_name is not null)),
-  check ((kind = 'array_reference') = (refers_to is not null)),
+  check ((kind in ('forward_only', 'blocks_later_entry', 'blocks_id_array')) = (column_name is not null)),
+  check ((kind = 'blocks_id_array') = (refers_to is not null)),
   check ((kind = 'bookkeeping') = (reason is null)),
   check ((reason is null) = (flow is null))
 );
 revoke all on table private.undo_rules from public, anon, authenticated, service_role;
 
--- blocks_reference: a row of this table that refers to a row the batch created blocks the undo.
--- forward_only: the batch changed this column of a row it did not create, and the column never goes back.
--- ledger: the batch created a row, and a later row of the same table with the same column_name value may rest on it.
--- array_reference: column_name holds ids of refers_to rows without a foreign key; one naming a created row blocks.
 insert into private.undo_rules (table_name, kind, column_name, refers_to, reason, flow) values
   ('invoices', 'blocks_reference', null, null, 'invoice_issued', 'void'),
   ('invoice_lines', 'blocks_reference', null, null, 'invoice_issued', 'void'),
@@ -130,10 +126,10 @@ insert into private.undo_rules (table_name, kind, column_name, refers_to, reason
   ('deposit_entries', 'blocks_reference', null, null, 'deposit_recorded', 'end_lease'),
   ('statement_rows', 'blocks_reference', null, null, 'statement_matched', 'void'),
   ('leases', 'forward_only', 'status', null, 'lease_started', 'end_lease'),
-  ('deposit_entries', 'ledger', 'lease_id', null, 'deposit_later', 'deposit'),
-  ('payments', 'ledger', 'payer_party_id', null, 'payment_later', 'payment'),
-  ('payment_allocations', 'ledger', 'invoice_id', null, 'payment_later', 'payment'),
-  ('statement_rows', 'array_reference', 'candidate_invoice_ids', 'invoices', 'statement_matched', 'void'),
+  ('deposit_entries', 'blocks_later_entry', 'lease_id', null, 'deposit_later', 'deposit'),
+  ('payments', 'blocks_later_entry', 'payer_party_id', null, 'payment_later', 'payment'),
+  ('payment_allocations', 'blocks_later_entry', 'invoice_id', null, 'payment_later', 'payment'),
+  ('statement_rows', 'blocks_id_array', 'candidate_invoice_ids', 'invoices', 'statement_matched', 'void'),
   ('change_batches', 'bookkeeping', null, null, null, null),
   ('agent_jobs', 'bookkeeping', null, null, null, null),
   ('agent_runs', 'bookkeeping', null, null, null, null),
@@ -220,7 +216,7 @@ begin
 
   for v_rule in
     select r.* from private.undo_rules r
-    where r.kind = 'ledger' and r.table_name in (select t.table_name from private.batch_rows(p_batch_id) t where t.created and not t.removed)
+    where r.kind = 'blocks_later_entry' and r.table_name in (select t.table_name from private.batch_rows(p_batch_id) t where t.created and not t.removed)
   loop
     return query execute format(
       $q$
@@ -236,7 +232,7 @@ begin
     using p_batch_id;
   end loop;
 
-  for v_rule in select r.* from private.undo_rules r where r.kind = 'array_reference' loop
+  for v_rule in select r.* from private.undo_rules r where r.kind = 'blocks_id_array' loop
     return query execute format(
       $q$ select %1$L::text, c.id, %3$L::text, %4$L::text from public.%1$I c where c.%2$I && $1 $q$,
       v_rule.table_name, v_rule.column_name, v_rule.reason, v_rule.flow)
@@ -246,8 +242,6 @@ end;
 $$;
 revoke all on function private.undo_blockers(uuid) from public;
 
--- Every row the batch wrote, then each ledger's parent (a deposit's lease), locked before the blockers are read: a write
--- to any of them that is in flight commits first and is seen, or waits until the undo is done.
 create function private.lock_batch_rows(p_batch_id uuid)
 returns void
 language plpgsql
@@ -261,12 +255,24 @@ begin
   loop
     execute format('select from public.%I where id = any ($1) order by id for update', v_lock.table_name) using v_lock.ids;
   end loop;
+end;
+$$;
+revoke all on function private.lock_batch_rows(uuid) from public;
+
+create function private.lock_ledger_parents(p_batch_id uuid)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_lock record;
+begin
   for v_lock in
     select r.table_name, r.column_name, c.confrelid::regclass as parent
     from private.undo_rules r
     join pg_catalog.pg_attribute a on a.attrelid = format('public.%I', r.table_name)::regclass and a.attname = r.column_name
     join pg_catalog.pg_constraint c on c.conrelid = a.attrelid and c.contype = 'f' and a.attnum = any (c.conkey)
-    where r.kind = 'ledger'
+    where r.kind = 'blocks_later_entry'
     order by c.confrelid::regclass::text, r.table_name
   loop
     execute format('select from %s p where p.id in (select c.%I from public.%I c where c.id = any ($1)) order by p.id for update',
@@ -275,7 +281,7 @@ begin
   end loop;
 end;
 $$;
-revoke all on function private.lock_batch_rows(uuid) from public;
+revoke all on function private.lock_ledger_parents(uuid) from public;
 
 create function private.undo_restore(p_table text, p_row_id uuid, p_image jsonb)
 returns void
@@ -305,7 +311,6 @@ end;
 $$;
 revoke all on function private.undo_restore(text, uuid, jsonb) from public;
 
--- A held deposit never goes below zero, also when an entry leaves the ledger: an undo, or the lease's own deletion.
 create function private.keep_deposit_held()
 returns trigger
 language plpgsql
@@ -344,6 +349,7 @@ begin
   end if;
 
   perform private.lock_batch_rows(p_batch_id);
+  perform private.lock_ledger_parents(p_batch_id);
   select coalesce(jsonb_agg(distinct to_jsonb(b)), '[]') into v_blockers from private.undo_blockers(p_batch_id) b;
   if v_blockers <> '[]' then
     return jsonb_build_object('undone', false, 'blockers', v_blockers);

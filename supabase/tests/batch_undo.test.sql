@@ -216,8 +216,6 @@ select lives_ok($$ select public.record_deposit_entry('00000000-0000-4000-8000-0
 select ok((select array_agg(distinct b ->> 'reason' || ':' || (b ->> 'flow')) @> array['deposit_recorded:end_lease'] from jsonb_array_elements(public.undo_change_batch(:held) -> 'blockers') b),
   'a deposit entered by hand on the lease blocks the undo');
 
--- A batch's deposit or payment on a lease or bill that existed before it: a later entry that someone else made may rest
--- on it, so undo refuses rather than take it out from under them.
 \set receipt '''00000000-0000-4000-8000-0000000c4e0a'''
 select pg_temp.open_batch(:receipt, :'a');
 select lives_ok($$ select public.record_deposit_entry('00000000-0000-4000-8000-0000000c4d02', 'received', 7000000, '2026-03-01', '00000000-0000-4000-8000-0000000c4f02') $$,
@@ -231,13 +229,13 @@ select is((select jsonb_agg(b - 'row_id') from jsonb_array_elements(public.undo_
 select is((select held_vnd from public.lease_deposits where lease_id = '00000000-0000-4000-8000-0000000c4d02'), 0::bigint,
   'and the lease holds nothing, not less than nothing');
 reset role;
-create temporary table ledger_rules as select * from private.undo_rules where kind = 'ledger';
-delete from private.undo_rules where kind = 'ledger';
+create temporary table later_entry_rules as select * from private.undo_rules where kind = 'blocks_later_entry';
+delete from private.undo_rules where kind = 'blocks_later_entry';
 select tests.act_as('admin.a@test.esta.test');
 select throws_ok(format('select public.undo_change_batch(%L)', :receipt), '23514', 'ESTA_DEPOSIT_EXCEEDS_HELD',
-  'without the ledger rule, the deposit guard still refuses an undo that would hold less than nothing');
+  'without the later-entry rule, the deposit guard still refuses an undo that would hold less than nothing');
 reset role;
-insert into private.undo_rules select * from ledger_rules;
+insert into private.undo_rules select * from later_entry_rules;
 
 select id as bill from public.invoices where lease_id = '00000000-0000-4000-8000-0000000c4d02' and status = 'issued' order by period_start limit 1 \gset
 \set payment '''00000000-0000-4000-8000-0000000c4e0b'''
@@ -258,7 +256,6 @@ select is((select jsonb_agg(b - 'row_id' order by b ->> 'table_name') from jsonb
   '[{"flow": "payment", "reason": "payment_later", "table_name": "payment_allocations"}, {"flow": "payment", "reason": "payment_later", "table_name": "payments"}]',
   'a later payment from the same tenant on the same bill blocks undoing the batch''s payment and its allocation');
 
--- A bill the batch issued goes with the batch, unless something uses it: here a bank statement line suggests it.
 \set matched '''00000000-0000-4000-8000-0000000c4e0c'''
 select lives_ok(format('select pg_temp.rental_batch(%L, %L)', :matched, 9), 'a batch adds and starts the lease on Phòng 9');
 select is((select issued_bills from public.change_batch_history(:'a') where id = :matched),

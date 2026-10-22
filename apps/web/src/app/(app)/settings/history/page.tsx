@@ -55,6 +55,7 @@ export default async function ChangeHistoryPage() {
           <ul data-testid="batch-list" className="flex max-w-3xl flex-col divide-y divide-rule rounded-lg border border-rule bg-surface shadow-card">
             {batches.map((batch) => {
               const { time, date } = activityTime(batch.applied_at ?? batch.planned_at, env.ESTA_TIMEZONE);
+              const bills = batch.issued_bills.map((bill) => t('bill', { number: bill.number, month: formatMonthYear(bill.period_start, intl.locale) })).join('; ');
               const lines = (
                 <>
                   <p className="text-body font-semibold text-ink wrap-anywhere">{batch.summary}</p>
@@ -87,17 +88,7 @@ export default async function ChangeHistoryPage() {
                     <UndoBatchRow
                       batchId={batch.id}
                       summary={batch.summary}
-                      body={[
-                        t('undoBody'),
-                        ...(batch.issued_bills.length === 0
-                          ? []
-                          : [
-                              t('undoBills', {
-                                count: batch.issued_bills.length,
-                                bills: batch.issued_bills.map((bill) => t('bill', { number: bill.number, month: formatMonthYear(bill.period_start, intl.locale) })).join('; '),
-                              }),
-                            ]),
-                      ].join(' ')}
+                      body={batch.issued_bills.length === 0 ? t('undoBody') : `${t('undoBody')} ${t('undoBills', { count: batch.issued_bills.length, bills })}`}
                     >
                       {lines}
                     </UndoBatchRow>
