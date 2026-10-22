@@ -59,7 +59,7 @@ export async function LedgerTable({ table, caption, marked }: { table: ExportTab
   };
 
   return (
-    <div role="region" aria-label={caption} tabIndex={0} className="max-h-192 overflow-auto rounded-md border border-rule max-sm:max-h-none max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:border-t">
+    <div role="region" aria-label={caption} tabIndex={0} className="max-h-112 overflow-auto rounded-md border border-rule max-sm:max-h-none max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:border-t">
       {marked === null ? null : <ScrollIntoView id={ledgerRowId(marked.key)} />}
       <Table className="max-sm:block">
         <caption className="sr-only">{caption}</caption>
