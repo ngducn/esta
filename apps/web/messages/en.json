@@ -1760,5 +1760,28 @@
     "viewerNote": "You can view the readings but not change them.",
     "priceNote": "Assumption: electricity and water are charged at the price set on each meter. Ministry of Industry and Trade rules cap what renters may be charged for electricity, so check the price before sending bills.",
     "monthNav": "Choose the month"
+  },
+  "history": {
+    "title": "Change history",
+    "intro": "What Claude changed in Esta at your request, newest first. Undo puts a whole group of changes back as it was.",
+    "settingsLink": "Changes made through Claude",
+    "settingsLinkHint": "See and undo what Claude changed.",
+    "empty": "Nothing has been changed through Claude yet.",
+    "via": "via Claude",
+    "status": "{status, select, applied {Applied} partial {Partly applied} undone {Undone} other {}}",
+    "entry": "{name} · {time} {date}",
+    "someone": "A member",
+    "archived": "{count, plural, one {# property Claude added is now in <link>Archived</link>.} other {# properties Claude added are now in <link>Archived</link>.}}",
+    "undo": "Undo",
+    "undoTitle": "Undo “{summary}”?",
+    "undoBody": "Esta puts back everything this group changed. Properties Claude added go to Archived, where you can restore them at any time.",
+    "undoing": "Undoing…",
+    "refused": "This can't be undone.",
+    "reason": "{reason, select, invoice_issued {A bill has been issued for this lease.} payment_recorded {A payment has been recorded for this lease.} deposit_recorded {A deposit has been recorded for this lease.} lease_started {A started lease can't go back to a draft.} edited_after {Someone changed this again afterwards.} in_use {Other records use what Claude added.} deposit_later {Another deposit entry was recorded for this lease afterwards.} payment_later {Another payment was recorded afterwards for the same bill or tenant.} statement_matched {A bank statement line matches a bill Claude issued.} other {}}",
+    "flow": "{flow, select, void {Open the bill in Collections and use Void bill.} end_lease {Open the lease on the Rental tab and use End lease.} edit {Edit it on its own screen.} deposit {Open the lease on the Rental tab and record a correcting entry under Deposit.} payment {Open the bill in Collections to see what was paid.} other {}}",
+    "failed": "Couldn't undo. Check the connection and try again.",
+    "undoBills": "{count, plural, one {Esta also removes the bill Claude issued: {bills}.} other {Esta also removes the # bills Claude issued: {bills}.}}",
+    "bill": "{number} ({month})",
+    "alreadyUndone": "This batch was already undone. Reload the page to see it."
   }
 }

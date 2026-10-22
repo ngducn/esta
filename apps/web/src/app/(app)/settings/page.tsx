@@ -1,5 +1,7 @@
+import { ChevronRight, History } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { DisplaySettingsForm, type SaveStatus } from '@/components/shell/display-settings-form';
+import { IntentLink } from '@/components/shell/intent-link';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { requireMember } from '@/server/member';
 import { getThemePreference } from '@/server/theme';
@@ -11,9 +13,10 @@ function parseStatus(value: string | string[] | undefined): SaveStatus {
 }
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const [nav, sections, member, locale, theme, { status }] = await Promise.all([
+  const [nav, sections, history, member, locale, theme, { status }] = await Promise.all([
     getTranslations('nav'),
     getTranslations('sections'),
+    getTranslations('history'),
     requireMember(),
     getLocale(),
     getThemePreference(),
@@ -30,6 +33,22 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         settings={{ locale, textScale: member.textScale, density: member.density, theme }}
         status={parseStatus(status)}
       />
+      {member.isOperator ? (
+        <IntentLink
+          href="/settings/history"
+          data-testid="history-link"
+          className="flex max-w-3xl items-center gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card hover:bg-surface-2 sm:px-5"
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
+            <History className="size-5" strokeWidth={1.8} aria-hidden="true" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-lead font-bold">{history('settingsLink')}</span>
+            <span className="text-small text-ink-muted">{history('settingsLinkHint')}</span>
+          </span>
+          <ChevronRight className="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+        </IntentLink>
+      ) : null}
     </div>
   );
 }

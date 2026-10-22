@@ -4,6 +4,7 @@ import type { Json } from '@esta/db';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
+import type { Db } from './db';
 import { leaseActivate } from './activation-op';
 import { depositRecord } from './deposit-ops';
 import { documentAttach } from './document-attach';
@@ -217,15 +218,16 @@ const failed: ItemOutcome = { status: 'refused', refusal: { kind: 'failed' } };
  * recording the outcomes, the next one after the lease plans every item again: what already landed plans as unchanged
  * and counts as landed, and the rest apply.
  */
-export async function applyPlan(ctx: LocalContext, planId: string): Promise<Result<AppliedBatch, ApplyRefusal>> {
+export async function applyPlan(ctx: LocalContext, planId: string, itemDb: Db): Promise<Result<AppliedBatch, ApplyRefusal>> {
   const claimed = await claim(ctx, planId, ctx.clock.now());
   if (claimed === null) return refuse(await unclaimable(ctx, planId));
 
   const plan = storedPlanSchema.parse(claimed);
   const items: Reported<ItemOutcome>[] = [];
+  const itemCtx = { ...ctx, db: itemDb };
   for (const [index, item] of plan.items.entries()) {
     const blocked = blockedBy(item.needs, items);
-    const outcome: ItemOutcome = blocked === null ? await OPS[item.op].settle(ctx, item.input, item.change).catch(() => failed) : { status: 'refused', refusal: blocked };
+    const outcome: ItemOutcome = blocked === null ? await OPS[item.op].settle(itemCtx, item.input, item.change).catch(() => failed) : { status: 'refused', refusal: blocked };
     items.push({ ...outcome, index, op: item.op, id: item.id });
   }
   const status = items.every((item) => item.status !== 'refused') ? 'applied' : 'partial';

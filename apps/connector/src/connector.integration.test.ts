@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
 import { importFolders } from './files';
 import { localFiles } from './local-files';
-import { appliedSchema, call, clientAt, demoProperty, plannedSchema, sessionFiles, setClock, signIn, startConnector, type Connector } from './test/connector';
+import { appliedSchema, batchClientFor, call, clientAt, plannedSchema, sessionFiles, setClock, signIn, startConnector, type Connector } from './test/connector';
+import { demoProperty } from './test/demo-property';
 
 // Run against a fresh `pnpm db:reset`.
 const OPERATOR = 'ryan.lane9@demo.esta.test';
@@ -212,7 +213,7 @@ describe('plans and applies the changes Ryan approved', () => {
         ])
       ).json(),
     );
-    const applied = await applyPlan({ ...(await laneContext()), db: droppingQueriesOn(db, property(9, 'bao-loc')) }, planned.planId);
+    const applied = await applyPlan(await laneContext(), planned.planId, droppingQueriesOn(batchClientFor(db, planned.planId), property(9, 'bao-loc')));
     expect(applied).toMatchObject({ ok: true, value: { status: 'partial', items: [{ status: 'landed' }, { status: 'refused', refusal: { kind: 'failed' } }, { status: 'landed' }] } });
     const batch = await db.from('change_batches').select('status, outcomes').eq('id', planned.planId).single();
     expect(batch.data).toMatchObject({ status: 'partial', outcomes: [{ status: 'landed' }, { status: 'refused' }, { status: 'landed' }] });

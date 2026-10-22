@@ -35,6 +35,7 @@ describe('connector tools', () => {
       'plan_changes',
       'read_spreadsheet',
       'resolve_address',
+      'undo_batch',
     ]);
   });
 

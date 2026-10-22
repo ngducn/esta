@@ -355,33 +355,39 @@ export type Database = {
           actor_id: string
           actor_kind: string
           at: string
+          batch_id: string | null
           diff: Json
           household_id: string
           id: number
           row_id: string
           table_name: string
+          via: string | null
         }
         Insert: {
           action: string
           actor_id: string
           actor_kind: string
           at?: string
+          batch_id?: string | null
           diff: Json
           household_id: string
           id?: never
           row_id: string
           table_name: string
+          via?: string | null
         }
         Update: {
           action?: string
           actor_id?: string
           actor_kind?: string
           at?: string
+          batch_id?: string | null
           diff?: Json
           household_id?: string
           id?: never
           row_id?: string
           table_name?: string
+          via?: string | null
         }
         Relationships: []
       }
@@ -2879,6 +2885,21 @@ export type Database = {
         }
         Returns: string
       }
+      change_batch_history: {
+        Args: { p_household_id: string; p_limit?: number }
+        Returns: {
+          applied_at: string
+          archived_properties: number
+          id: string
+          issued_bills: Json
+          planned_at: string
+          planner_name: string
+          status: string
+          summary: string
+          undone_at: string
+          via: string
+        }[]
+      }
       claim_abandoned_agent_job: {
         Args: { p_as_of: string; worker_id: string }
         Returns: {
@@ -3220,6 +3241,7 @@ export type Database = {
         Args: { p_lease_id: string; p_reason: string; p_terminated_on: string }
         Returns: undefined
       }
+      undo_change_batch: { Args: { p_batch_id: string }; Returns: Json }
       undo_payment: { Args: { p_payment_id: string }; Returns: undefined }
       update_my_display_settings: {
         Args: { p_density: string; p_locale: string; p_text_scale: number }

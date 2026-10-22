@@ -1,17 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
-import { spawn } from 'node:child_process';
 import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { z } from 'zod';
-import { call, stdioConnector } from '../apps/connector/src/test/stdio.ts';
-import { parseSlot } from '../scripts/slot.ts';
+import { call } from '../apps/connector/src/test/stdio.ts';
+import { connectorFor, connectorLogin } from './helpers/connector';
 import { DEMO_PASSWORD } from './helpers/password';
 import { DESKTOP, openNewHousehold, PHONE, seriousAxeViolations, serviceGet, shot, storedObject } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
-const slot = String(parseSlot(process.env.ESTA_SLOT));
 
 const PAPERS = [
   { file: 'so-hong-demo-le-van-sy.jpg', category: 'certificate', title: 'Sổ hồng Demo Lê Văn Sỹ', byHand: 'Sổ hồng Demo tải tay' },
@@ -20,13 +18,6 @@ const PAPERS = [
 
 const plannedSchema = z.object({ planId: z.string(), items: z.array(z.object({ status: z.literal('change'), id: z.string() })) });
 const appliedSchema = z.object({ status: z.literal('applied') });
-
-/** `pnpm connector:login` as the README tells Ryan to run it, with his answers typed in. */
-function connectorLogin(sessionFile: string, email: string) {
-  const child = spawn('pnpm', ['--silent', '--dir', repoRoot, 'connector:login'], { env: { ...process.env, ESTA_SLOT: slot, ESTA_SESSION_FILE: sessionFile }, stdio: ['pipe', 'ignore', 'inherit'] });
-  child.stdin.end(`${email}\n${DEMO_PASSWORD}\n`);
-  return new Promise<number | null>((resolve) => child.on('exit', resolve));
-}
 
 async function previewSizes(page: Page, storagePath: string) {
   const folder = storagePath.replace(/[^/]+$/, '');
@@ -58,7 +49,7 @@ test('a paper Claude files from the import folder looks in the vault exactly lik
   const sessionFile = join(work, 'session.json');
   const email = await openNewHousehold(page, 'light', PHONE, DEMO_PASSWORD);
   expect(await connectorLogin(sessionFile, email), 'the connector signs in as the new operator').toBe(0);
-  const connector = stdioConnector({ command: 'pnpm', args: ['--silent', '--dir', repoRoot, 'connector'], env: { ESTA_SLOT: slot, ESTA_SESSION_FILE: sessionFile, ESTA_IMPORT_ROOTS: imports } });
+  const connector = connectorFor(sessionFile, { ESTA_IMPORT_ROOTS: imports });
   try {
     await connector.connect();
     const { suggestions } = z

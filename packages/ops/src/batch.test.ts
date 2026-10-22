@@ -92,7 +92,7 @@ describe('applyPlan with needs', () => {
   it('refuses an item whose needed item was refused at apply as blocked, without planning it, and ends partial', async () => {
     const stored = { v: 1, items: [0, 1, 2].map((index) => ({ op: 'property.edit', id: null, needs: index === 1 ? [0] : [], input: { id: MISSING, set: { notes: 'Demo' } }, change: {} })) };
     const { db, sent } = fakeDb((request) => (request.table !== 'change_batches' ? [] : [{ id: PLAN_ID, plan: stored }]));
-    const applied = await applyPlan(batchContext(db), PLAN_ID);
+    const applied = await applyPlan(batchContext(db), PLAN_ID, db);
     expect(applied).toMatchObject({
       ok: true,
       value: { status: 'partial', items: [{ status: 'refused', refusal: { kind: 'not_found' } }, { status: 'refused', refusal: { kind: 'blocked', by: [0] } }, { status: 'refused', refusal: { kind: 'not_found' } }] },
@@ -100,10 +100,19 @@ describe('applyPlan with needs', () => {
     expect(sent.filter((request) => request.table === 'properties')).toHaveLength(2);
   });
 
+  it("sends the items through the batch's tagged session and the claim and the outcomes through the plain one", async () => {
+    const plan = { v: 1, items: [{ op: 'property.edit', id: null, needs: [], input: { id: MISSING, set: { notes: 'Demo' } }, change: {} }] };
+    const plain = fakeDb((request) => (request.table === 'change_batches' ? [{ id: PLAN_ID, plan }] : []));
+    const tagged = fakeDb();
+    await applyPlan(batchContext(plain.db), PLAN_ID, tagged.db);
+    expect(plain.sent.map((request) => request.table)).toEqual(['change_batches', 'change_batches']);
+    expect(tagged.sent.map((request) => request.table)).toEqual(['properties']);
+  });
+
   it('reads a plan stored before refs existed as needing nothing', async () => {
     const stored = { v: 1, items: [{ op: 'property.edit', id: null, input: { id: MISSING, set: { notes: 'Demo' } }, change: {} }] };
     const { db } = fakeDb((request) => (request.table !== 'change_batches' ? [] : [{ id: PLAN_ID, plan: stored }]));
-    expect(await applyPlan(batchContext(db), PLAN_ID)).toMatchObject({ ok: true, value: { items: [{ status: 'refused', refusal: { kind: 'not_found' } }] } });
+    expect(await applyPlan(batchContext(db), PLAN_ID, db)).toMatchObject({ ok: true, value: { items: [{ status: 'refused', refusal: { kind: 'not_found' } }] } });
   });
 });
 
@@ -131,7 +140,7 @@ describe('previews', () => {
       if (request.table === 'rpc/preview_lease_bills') return [{ ...demoBills[0], rent_vnd: 9_500_000 }];
       return request.table === 'rpc/activate_lease' ? [OCTOBER] : [];
     });
-    expect(await applyPlan(batchContext(db), PLAN_ID)).toEqual({
+    expect(await applyPlan(batchContext(db), PLAN_ID, db)).toEqual({
       ok: true,
       value: { planId: PLAN_ID, status: 'applied', items: [{ index: 0, op: 'lease.activate', id: null, status: 'landed', output: { lease_id: LEASE, invoices: [OCTOBER] } }] },
     });

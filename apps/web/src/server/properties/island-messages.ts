@@ -39,3 +39,8 @@ export async function mapIslandIntl() {
   const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return { locale, messages: { map: messages.map } };
 }
+
+export async function historyIslandIntl() {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  return { locale, messages: { history: messages.history, components: { confirm: messages.components.confirm } } };
+}
