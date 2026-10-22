@@ -5,8 +5,6 @@ select plan(21);
 
 select tests.create_household('a') as a \gset
 
--- Dĩ An on 02/11/2026. Phòng 1 to 3 bill from the 25th with owner-metered utilities; their October bills went out on
--- 03/10 when September's readings were complete. Phòng 3 also has a water meter.
 select set_config('esta.actor', 'system:test', true);
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
   ('00000000-0000-4000-8000-0000000000a1', :'a', 'Dãy trọ Dĩ An', 'DIAN', 'rooming_house', 'rental');
@@ -52,7 +50,6 @@ create function pg_temp.reading(p_meter text, p_month date) returns integer lang
   select r.reading from public.meter_readings r where r.meter_id = ('00000000-0000-4000-8000-00000000' || p_meter)::uuid and r.reading_month = p_month;
 $$;
 
--- October goes out with an extra digit typed in Phòng 1 and Phòng 2 (27.000 kWh instead of 100).
 select tests.act_as('member.a@test.esta.test');
 select results_eq($$ select saved, issued from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-10-01', '[
     {"meter_id": "00000000-0000-4000-8000-00000000d11e", "reading": 29847}, {"meter_id": "00000000-0000-4000-8000-00000000d12e", "reading": 31120},
@@ -60,7 +57,6 @@ select results_eq($$ select saved, issued from public.save_meter_readings('00000
   $$ values (4, 3) $$, 'October saves and each room''s bill from 25/11 issues');
 select is(pg_temp.bill_total('1', '2026-11-25'), 97000000::bigint, 'Phòng 1''s bill from 25/11 charges the 27.000 kWh');
 
--- Before December is drafted, a correction's credit waits for it: it must fit in December's rent.
 reset role;
 select tests.clear_request();
 update public.test_clock set frozen_now = '2026-11-03T09:00:00+07:00';
@@ -81,7 +77,6 @@ select lives_ok(format($$ select * from public.run_invoicing(%L, '2026-11-26', '
   'the nightly run on 26/11 drafts December');
 select is(pg_temp.bill_total('1', '2026-12-25'), 750000::bigint, 'Phòng 1''s December draft carries the 500 kWh credit');
 
--- Once December is drafted, a correction's credit must fit in it.
 reset role;
 select tests.act_as('member.a@test.esta.test');
 select throws_ok($$ select * from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-10-01',
@@ -97,8 +92,6 @@ select results_eq(
   $$ values ('rent'::text, 1, 2500000::bigint, 2500000::bigint), ('adjustment', 700, -3500, -2450000) $$,
   'and December''s draft carries the 700 kWh credit beside its rent');
 
--- Phòng 2 (the audit's probe 07): October is corrected after November billed on top of the typo, so the two
--- adjustments cancel; correcting November too leaves October's credit alone on January's draft.
 select results_eq($$ select saved, issued from public.save_meter_readings('00000000-0000-4000-8000-0000000000a1', '2026-11-01',
   '[{"meter_id": "00000000-0000-4000-8000-00000000d12e", "reading": 31220}]') $$,
   $$ values (1, 1) $$, 'Phòng 2''s November, read on top of the typo, issues December');
@@ -119,7 +112,6 @@ select throws_ok($$ select * from public.save_meter_readings('00000000-0000-4000
   '55000', 'ESTA_READING_CORRECTION_TOO_LARGE', 'correcting November too is refused, since October''s credit would pass January''s bill');
 select is(pg_temp.bill_total('2', '2027-01-25'), 2500000::bigint, 'and January''s draft keeps its total');
 
--- Phòng 3 (the audit's Demo 7): the tenant leaves on 20/11, after the bill from 25/11 carried October's use.
 reset role;
 select tests.clear_request();
 select tests.act_as('member.a@test.esta.test');

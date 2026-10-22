@@ -12,7 +12,7 @@ vi.mock('@/server/supabase/server', () => ({
   createSessionClient: async () => ({ from: () => query({ data: read.rows, error: null }), rpc: () => query({ data: read.rows, error: null }) }),
 }));
 
-/** A PostgREST builder that returns every row `invoice_balances` holds for the household, whatever the filters. */
+/** A PostgREST builder, for a table or an RPC, that returns every row `read.rows` holds, whatever the filters. */
 function query(result: { data: unknown; error: null }) {
   const builder = {
     select: () => builder,

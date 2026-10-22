@@ -52,7 +52,6 @@ export const headerCells = (grid: StatementGrid, headerRow: number): string[] =>
 
 const ZIP = [0x50, 0x4b, 0x03, 0x04];
 
-/** The decoder reads a date cell by its calendar day, without the time of day a sheet may store with it. */
 function statementCell(value: unknown): StatementCell {
   const cell = sheetCell(value);
   return cell?.type === 'date' ? cell.text.slice(0, 10) : (cell?.text ?? null);

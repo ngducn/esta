@@ -46,7 +46,7 @@ export type ReceiptModel<Labels extends Record<string, string>> = {
   readonly period: string;
   readonly lines: readonly { readonly label: string; readonly amount: string }[];
   readonly total: string;
-  /** Null for a total below zero, which a meter credit larger than the rent once made and which has no words. */
+  /** Null for a total below zero. */
   readonly totalWords: string | null;
   /** Null on a notice, which has nothing received to print. */
   readonly received: string | null;

@@ -1,16 +1,25 @@
--- Meter corrections after a bill went out (the 2026-10-21 audit of LSE-4 and LSE-5). A correction's credit must fit in
--- the bill it lands on, so save_meter_readings refuses one that would take that bill below zero; and terminate_lease
--- says how many meter months its lease can no longer bill, with the count save_meter_readings already gave, now in
--- one function both call.
+-- Meter corrections after a bill went out (LSE-4, LSE-5). A correction's credit must fit in the bill it lands on, so
+-- save_meter_readings refuses one that would take that bill below zero; and terminate_lease says how many meter months
+-- its lease can no longer bill.
 
--- What each meter month of the lease's chain is owed or was over-billed (LSE-4), from 20261007402600 meter_lines: the
--- month's use (due) and what issued bills charged for it (billed), with the chain's first bill that is not void and
--- starts after the month (invoice_id). A month that bill drafts (drafted) becomes a utility line on it; any other goes
--- on the chain's earliest draft as an adjustment.
+create function private.meter_month_billed(p_meter_id uuid, p_month date)
+returns integer
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce(sum(case when l.unit_price_vnd < 0 then -l.quantity else l.quantity end), 0)::integer
+  from public.invoice_lines l
+  join public.invoices i on i.id = l.invoice_id
+  where i.status = 'issued' and l.meter_id = p_meter_id and l.reading_month = p_month;
+$$;
+revoke all on function private.meter_month_billed(uuid, date) from public;
+
+-- What each meter month of the lease's chain is owed or was over-billed (LSE-4), from 20261007402600 meter_lines.
 create function private.meter_owed(p_lease public.leases)
 returns table (
-  invoice_id uuid, lease_id uuid, drafted boolean, reading_month date, meter_id uuid, kind text, price bigint, previous integer,
-  reading integer, due integer, billed integer
+  next_bill_id uuid, lease_id uuid, line_on_draft boolean, reading_month date, meter_id uuid, kind text, price bigint,
+  previous integer, reading integer, used_units integer, billed_units integer
 )
 language sql
 stable
@@ -33,12 +42,7 @@ as $$
   select
     b.id, b.lease_id, not w.charged and b.status = 'draft', u.reading_month, u.meter_id, m.kind,
     (m.pricing ->> 'unit_price_vnd')::bigint, u.previous_reading, u.reading, coalesce(u.used, 0),
-    coalesce((
-      select sum(case when l.unit_price_vnd < 0 then -l.quantity else l.quantity end)
-      from public.invoice_lines l
-      join public.invoices i on i.id = l.invoice_id
-      where i.status = 'issued' and l.meter_id = u.meter_id and l.reading_month = u.reading_month
-    ), 0)::integer
+    private.meter_month_billed(u.meter_id, u.reading_month)
   from public.meter_usage u
   join public.meters m on m.id = u.meter_id and m.unit_id = p_lease.unit_id
   cross join lateral private.meter_month_owner(u.meter_id, u.reading_month) w
@@ -54,6 +58,7 @@ as $$
 $$;
 revoke all on function private.meter_owed(public.leases) from public;
 
+-- The 20261007402600 meter_lines over private.meter_owed.
 create or replace function private.meter_lines(p_lease public.leases)
 returns table (
   invoice_id uuid, kind text, meter_id uuid, reading_month date, quantity integer, unit_price_vnd bigint, amount_vnd bigint,
@@ -73,21 +78,21 @@ as $$
     limit 1
   )
   select
-    o.invoice_id, o.kind, o.meter_id, o.reading_month, o.due - o.billed, o.price, (o.due - o.billed) * o.price,
+    o.next_bill_id, o.kind, o.meter_id, o.reading_month, o.used_units - o.billed_units, o.price, (o.used_units - o.billed_units) * o.price,
     format('Tiền %s tháng %s: %s %s (%s → %s)', case o.kind when 'electricity' then 'điện' else 'nước' end, to_char(o.reading_month, 'MM/YYYY'),
-      private.grouped(o.due - o.billed), case o.kind when 'electricity' then 'kWh' else 'm³' end, private.grouped(o.previous), private.grouped(o.reading)),
+      private.grouped(o.used_units - o.billed_units), case o.kind when 'electricity' then 'kWh' else 'm³' end, private.grouped(o.previous), private.grouped(o.reading)),
     case o.kind when 'electricity' then 1 else 2 end
   from owed o
-  where o.drafted and o.lease_id = p_lease.id and o.due > o.billed
+  where o.line_on_draft and o.lease_id = p_lease.id and o.used_units > o.billed_units
   union all
   select
-    d.id, 'adjustment', o.meter_id, o.reading_month, abs(o.due - o.billed), case when o.due > o.billed then o.price else -o.price end, (o.due - o.billed) * o.price,
+    d.id, 'adjustment', o.meter_id, o.reading_month, abs(o.used_units - o.billed_units), case when o.used_units > o.billed_units then o.price else -o.price end, (o.used_units - o.billed_units) * o.price,
     format('Điều chỉnh tiền %s tháng %s: %s%s %s', case o.kind when 'electricity' then 'điện' else 'nước' end, to_char(o.reading_month, 'MM/YYYY'),
-      case when o.due > o.billed then '+' else '-' end, private.grouped(abs(o.due - o.billed)), case o.kind when 'electricity' then 'kWh' else 'm³' end),
+      case when o.used_units > o.billed_units then '+' else '-' end, private.grouped(abs(o.used_units - o.billed_units)), case o.kind when 'electricity' then 'kWh' else 'm³' end),
     3
   from owed o
   cross join next_draft d
-  where not o.drafted and d.lease_id = p_lease.id and o.due <> o.billed;
+  where not o.line_on_draft and d.lease_id = p_lease.id and o.used_units <> o.billed_units;
 $$;
 
 -- [app rule] A meter correction's credit fits in the bill it lands on: no draft of the lease's chain, and no bill issued
@@ -122,7 +127,7 @@ as $$
     and (
       exists (select 1 from bills b where b.status = 'draft')
       or coalesce((select n.rent_vnd from next_period n)
-        + (select coalesce(sum((o.due - o.billed) * o.price), 0) from private.meter_owed(p_lease) o where not o.drafted), 0) >= 0
+        + (select coalesce(sum((o.used_units - o.billed_units) * o.price), 0) from private.meter_owed(p_lease) o where not o.line_on_draft), 0) >= 0
     );
 $$;
 revoke all on function private.meter_credit_fits(public.leases, timestamptz) from public;
@@ -140,12 +145,7 @@ as $$
     select u.meter_id, u.reading_month, w.lease_id
     from public.meter_usage u
     cross join lateral private.meter_month_owner(u.meter_id, u.reading_month) w
-    where u.meter_id = any (p_meter_ids) and u.used > 0 and u.used <> coalesce((
-      select sum(case when il.unit_price_vnd < 0 then -il.quantity else il.quantity end)
-      from public.invoice_lines il
-      join public.invoices i on i.id = il.invoice_id
-      where i.status = 'issued' and il.meter_id = u.meter_id and il.reading_month = u.reading_month
-    ), 0)
+    where u.meter_id = any (p_meter_ids) and u.used > 0 and u.used <> private.meter_month_billed(u.meter_id, u.reading_month)
   )
   select w.meter_id, w.reading_month, w.lease_id
   from owned w
@@ -235,8 +235,6 @@ begin
     raise exception 'ESTA_READING_CORRECTION_TOO_LARGE' using errcode = '55000';
   end if;
 
-  -- The screen says how many of this month's readings no bill will carry, so Mẹ can renew the lease, collect them
-  -- herself or deduct them from the deposit.
   select count(*)::integer into unbilled
   from private.unbilled_meter_months(array(select (e ->> 'meter_id')::uuid from jsonb_array_elements(p_readings) e)) u
   where u.reading_month = p_reading_month;

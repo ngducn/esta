@@ -21,7 +21,6 @@ async function xlsx(grid: readonly (readonly (string | number | null | Date)[])[
 
 type SheetValue = string | { readonly stored: string };
 
-/** A one-sheet workbook whose number cells hold `stored` exactly as written, zipped without compression. */
 function storedXlsx(rows: readonly (readonly SheetValue[])[]): Uint8Array<ArrayBuffer> {
   const cell = (value: SheetValue, column: number, row: number) => {
     const at = `${String.fromCodePoint(65 + column)}${row + 1}`;
