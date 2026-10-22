@@ -45,6 +45,11 @@ export function formatVndCompact(amount: Vnd, locale: Locale): string {
   return formatVnd(amount, locale);
 }
 
+/** A rate in basis points as a percent with up to two decimals: 650 is `6,5%`. */
+export function formatBps(bps: number, locale: Locale): string {
+  return `${formatDecimal(bps / 100, 2, locale)}%`;
+}
+
 export function formatArea(squareMeters: number, locale: Locale): string {
   return `${formatDecimal(squareMeters, 2, locale)} m²`;
 }

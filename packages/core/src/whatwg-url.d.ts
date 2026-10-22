@@ -4,6 +4,7 @@ declare class URLSearchParams {
 
 declare class URL {
   constructor(input: string, base?: string | URL);
+  static parse(input: string, base?: string | URL): URL | null;
   readonly href: string;
   readonly protocol: string;
   readonly hostname: string;
