@@ -34,7 +34,7 @@ const CHOICES = new Set<InputKind>(['form', 'use_form', 'annotation_kind', 'util
 /** How the review shows a value it cannot read. A number takes the decimal comma, so 1.255 shows as `1,255`, never as `1.255`, which reads as 1255. */
 const unread = (raw: unknown): string => (typeof raw === 'number' ? measureInputText(raw) : String(raw ?? ''));
 
-export async function fieldViews(fields: readonly ReviewField[], rootList: 'certificate' | 'bill'): Promise<FieldView[]> {
+export async function fieldViews(fields: readonly ReviewField[], rootList: 'certificate' | 'bill' | 'lease'): Promise<FieldView[]> {
   const [t, locale] = await Promise.all([getTranslations('extraction'), getLocale()]);
   const lang = locale === 'en' ? 'en' : 'vi';
   const format = (kind: InputKind, value: unknown): string => {

@@ -854,7 +854,10 @@
     "documentsViewerEmpty": "Chưa có giấy tờ nào cho hợp đồng này.",
     "markVoid": "Đã hủy",
     "terminateBlockedBy": "Hóa đơn {number} đã phát hành cho kỳ sau ngày này. Nếu lập nhầm, hãy hủy hóa đơn đó rồi kết thúc hợp đồng.",
-    "terminateOpenBill": "Mở hóa đơn {number}"
+    "terminateOpenBill": "Mở hóa đơn {number}",
+    "fromContract": "Từ hợp đồng đã quét",
+    "fromContractIntro": "Các ô có dấu này lấy từ hợp đồng đã quét. Kiểm tra lại rồi lưu.",
+    "errorDocument": "Hợp đồng đã quét này đã thuộc về một hợp đồng thuê khác."
   },
   "propertyOwners": {
     "title": "Chủ sở hữu",
@@ -1697,7 +1700,7 @@
     "documentAlt": "{title}, trang {page}",
     "documentUnavailable": "Không mở được ảnh. Tải lại trang để thử lại.",
     "pageLoading": "Đang mở trang {page}",
-    "section": "{list, select, holders {Người đứng tên {n}} parcels {Thửa đất {n}} purposes {Mục đích sử dụng {n}} structures {Nhà, công trình {n}} annotations {Thay đổi sau khi cấp {n}} bill {Hóa đơn} other {Giấy chứng nhận}}",
+    "section": "{list, select, holders {Người đứng tên {n}} parcels {Thửa đất {n}} purposes {Mục đích sử dụng {n}} structures {Nhà, công trình {n}} annotations {Thay đổi sau khi cấp {n}} bill {Hóa đơn} lease {Hợp đồng thuê} other {Giấy chứng nhận}}",
     "fields": {
       "form": "Mẫu sổ",
       "serialNo": "Số phát hành (số seri)",
@@ -1729,12 +1732,23 @@
       "billKind": "Loại dịch vụ",
       "provider": "Nhà cung cấp",
       "customerCode": "Mã khách hàng",
-      "billHolder": "Tên khách hàng"
+      "billHolder": "Tên khách hàng",
+      "tenantName": "Người thuê",
+      "tenantPhone": "Số điện thoại người thuê",
+      "unitLabel": "Phòng hoặc căn",
+      "startDate": "Ngày bắt đầu",
+      "endDate": "Ngày kết thúc",
+      "termMonths": "Thời hạn (tháng)",
+      "rent": "Tiền thuê mỗi tháng",
+      "cycleMonths": "Kỳ thanh toán (tháng)",
+      "deposit": "Tiền cọc"
     },
     "option": "{kind, select, form {{value, select, so_do_pre2009 {Sổ đỏ (trước 2009)} so_hong_pre2009 {Sổ hồng (trước 2009)} gcn_2009_2024 {Giấy chứng nhận 2009 đến 2024} gcn_2024 {Giấy chứng nhận từ 01/08/2024} paper_only {Giấy tay, chưa có sổ} other {{value}}}} use_form {{value, select, private {Sử dụng riêng} shared {Sử dụng chung} other {{value}}}} annotation_kind {{value, select, mortgage {Thế chấp} mortgage_release {Giải chấp} transfer {Chuyển nhượng} change_of_area {Thay đổi diện tích} other {Khác}}} utility_kind {{value, select, electricity {Điện} water {Nước} internet {Internet} other {Khác}}} term {{value, select, long_term {Lâu dài} other {{value}}}} other {{value}}}",
     "optionNone": "Chưa chọn",
     "reviewLink": "Xem lại",
-    "manualLink": "Nhập tay"
+    "manualLink": "Nhập tay",
+    "createLease": "Tạo hợp đồng thuê từ tài liệu này",
+    "openLease": "Mở hợp đồng thuê"
   },
   "receipt": {
     "title": "{kind, select, notice {Thông báo tiền thuê} other {Biên nhận tiền thuê}}",

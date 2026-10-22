@@ -854,7 +854,10 @@
     "documentsViewerEmpty": "This lease has no documents yet.",
     "markVoid": "Voided",
     "terminateBlockedBy": "Bill {number} is issued for a period after this day. If it was a mistake, void that bill, then end the lease.",
-    "terminateOpenBill": "Open bill {number}"
+    "terminateOpenBill": "Open bill {number}",
+    "fromContract": "From the scanned contract",
+    "fromContractIntro": "Fields with this mark come from the scanned contract. Check them, then save.",
+    "errorDocument": "This scanned contract already belongs to another lease."
   },
   "propertyOwners": {
     "title": "Owners",
@@ -1697,7 +1700,7 @@
     "documentAlt": "{title}, page {page}",
     "documentUnavailable": "The image did not open. Reload the page to try again.",
     "pageLoading": "Opening page {page}",
-    "section": "{list, select, holders {Holder {n}} parcels {Parcel {n}} purposes {Land use {n}} structures {Building {n}} annotations {Change after issue {n}} bill {Bill} other {Certificate}}",
+    "section": "{list, select, holders {Holder {n}} parcels {Parcel {n}} purposes {Land use {n}} structures {Building {n}} annotations {Change after issue {n}} bill {Bill} lease {Lease} other {Certificate}}",
     "fields": {
       "form": "Certificate form",
       "serialNo": "Serial number",
@@ -1729,12 +1732,23 @@
       "billKind": "Service",
       "provider": "Provider",
       "customerCode": "Customer code",
-      "billHolder": "Customer name"
+      "billHolder": "Customer name",
+      "tenantName": "Tenant",
+      "tenantPhone": "Tenant phone",
+      "unitLabel": "Room or unit",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "termMonths": "Term (months)",
+      "rent": "Monthly rent",
+      "cycleMonths": "Payment cycle (months)",
+      "deposit": "Deposit"
     },
     "option": "{kind, select, form {{value, select, so_do_pre2009 {Red book (before 2009)} so_hong_pre2009 {Pink book (before 2009)} gcn_2009_2024 {Certificate 2009 to 2024} gcn_2024 {Certificate from 1 Aug 2024} paper_only {Handwritten paper, no certificate} other {{value}}}} use_form {{value, select, private {Private use} shared {Shared use} other {{value}}}} annotation_kind {{value, select, mortgage {Mortgage} mortgage_release {Mortgage release} transfer {Transfer} change_of_area {Change of area} other {Other}}} utility_kind {{value, select, electricity {Electricity} water {Water} internet {Internet} other {Other}}} term {{value, select, long_term {Long term} other {{value}}}} other {{value}}}",
     "optionNone": "Not chosen",
     "reviewLink": "Review",
-    "manualLink": "Enter by hand"
+    "manualLink": "Enter by hand",
+    "createLease": "Create a lease from this document",
+    "openLease": "Open the lease"
   },
   "receipt": {
     "title": "{kind, select, notice {Rent notice} other {Rent receipt}}",

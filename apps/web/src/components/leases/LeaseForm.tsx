@@ -2,7 +2,7 @@
 
 import { BILLING_CYCLES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS, UTILITIES_MODES, activationRefusals, type ActivationRefusal, type LeaseFormDefaults } from '@esta/core/lease';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ScanText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,13 +16,14 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useNoticeToast } from '@/components/undo-toast';
 import { useHydrated } from '@/lib/use-hydrated';
+import { FromContractMark } from './from-contract-mark';
 import { defaultsToValues, readDraft, type Invalid, type LeaseFormValues } from './lease-form-values';
 import { TenantQuickAdd } from './TenantQuickAdd';
 
 const loadDialog = () => import('./ActivateLeaseDialog');
 const ActivateLeaseDialog = lazy(loadDialog);
 
-type FormError = 'invalid' | 'notDraft' | 'network' | null;
+type FormError = 'invalid' | 'notDraft' | 'document' | 'network' | null;
 
 const asDefault = (text: string) => {
   const date = parseOptionalDateInput(text);
@@ -30,6 +31,13 @@ const asDefault = (text: string) => {
 };
 
 export type LeaseFormUnit = { readonly id: string; readonly label: string; readonly defaults: LeaseFormDefaults };
+
+/** A new lease filled from a scanned contract (P3-19): the contract, the fields it filled and the tenant it names. */
+export type ContractPrefill = {
+  readonly documentId: string;
+  readonly prefilled: readonly (keyof LeaseFormValues)[];
+  readonly tenant: { readonly fullName: string; readonly phone: string | null } | null;
+};
 
 /**
  * The lease form (LSE-2) for a new lease or a draft. Controlled fields would drop what is typed before React hydrates,
@@ -42,6 +50,7 @@ export function LeaseForm({
   units,
   tenants: initialTenants,
   activateOnOpen,
+  contract = null,
 }: {
   propertyId: string;
   leaseId: string | null;
@@ -49,6 +58,7 @@ export function LeaseForm({
   units: readonly LeaseFormUnit[];
   tenants: readonly Tenant[];
   activateOnOpen: boolean;
+  contract?: ContractPrefill | null;
 }) {
   const t = useTranslations('leases');
   const router = useRouter();
@@ -63,12 +73,16 @@ export function LeaseForm({
   const [pending, startTransition] = useTransition();
   const set = <K extends keyof LeaseFormValues>(key: K, value: LeaseFormValues[K]) => setValues((current) => ({ ...current, [key]: value }));
   const rentalHref = `/properties/${propertyId}/rental`;
+  // A field keeps the mark only while it holds what the contract said.
+  const scanned = (key: keyof LeaseFormValues) => (contract?.prefilled.includes(key) === true && values[key] === initial[key] ? <FromContractMark label={t('fromContract')} /> : null);
   const leaseHref = (id: string) => `${rentalHref}/leases/${id}`;
 
   const chooseUnit = (unitId: string) => {
     const unit = units.find((candidate) => candidate.id === unitId);
     if (unit === undefined) return;
-    setValues((current) => (leaseId === null ? defaultsToValues({ ...current, unitId }, unit.defaults) : { ...current, unitId }));
+    // A new lease takes the room's defaults, except for what the scanned contract said.
+    const keep = (current: LeaseFormValues) => Object.fromEntries((contract?.prefilled ?? []).map((key) => [key, current[key]]));
+    setValues((current) => (leaseId === null ? { ...defaultsToValues({ ...current, unitId }, unit.defaults), ...keep(current), unitId } : { ...current, unitId }));
   };
 
   const save = (then: 'stay' | 'activate') => {
@@ -81,7 +95,7 @@ export function LeaseForm({
     }
     setInvalid(null);
     startTransition(async () => {
-      const result = await saveLease(propertyId, leaseId, draft.value).catch(() => ({ ok: false, reason: 'failed' }) as const);
+      const result = await saveLease(propertyId, leaseId, draft.value, contract?.documentId ?? null).catch(() => ({ ok: false, reason: 'failed' }) as const);
       if (!result.ok) {
         setError(result.reason === 'failed' ? 'network' : result.reason);
         return;
@@ -119,6 +133,12 @@ export function LeaseForm({
             {t('formLoading')}
           </p>
         )}
+        {contract === null ? null : (
+          <p data-testid="from-contract-intro" className="flex items-start gap-3 rounded-md bg-surface-2 px-4 py-3 text-body text-ink-2">
+            <ScanText className="mt-0.5 size-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+            <span className="min-w-0 break-words">{t('fromContractIntro')}</span>
+          </p>
+        )}
         <Group title={t('groupTenant')}>
           <FormSelect
             label={t('unitField')}
@@ -128,6 +148,7 @@ export function LeaseForm({
             options={units.map((unit) => ({ value: unit.id, label: unit.label }))}
             onChange={chooseUnit}
           />
+          {scanned('unitId')}
           <FormSelect
             label={t('tenantField')}
             testId="lease-tenant"
@@ -137,7 +158,10 @@ export function LeaseForm({
             options={tenants.map((tenant) => ({ value: tenant.id, label: tenant.phone === null ? tenant.fullName : `${tenant.fullName} · ${tenant.phone}` }))}
             onChange={(tenantId) => set('tenantId', tenantId)}
           />
+          {scanned('tenantId')}
           <TenantQuickAdd
+            initial={contract?.tenant !== null && contract?.tenant !== undefined && initial.tenantId === '' ? contract.tenant : null}
+            mark={t('fromContract')}
             onAdded={(tenant) => {
               setTenants((current) => [...current, tenant].toSorted((a, b) => a.fullName.localeCompare(b.fullName, 'vi')));
               set('tenantId', tenant.id);
@@ -146,9 +170,13 @@ export function LeaseForm({
         </Group>
         <Group title={t('groupTerm')}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <DateInput label={t('startField')} {...asDefault(initial.startText)} onTextChange={(text) => set('startText', text)} />
+            <div className="flex flex-col gap-1">
+              <DateInput label={t('startField')} {...asDefault(initial.startText)} onTextChange={(text) => set('startText', text)} />
+              {scanned('startText')}
+            </div>
             <div className="flex flex-col gap-1">
               <DateInput label={t('endField')} {...asDefault(initial.endText)} onTextChange={(text) => set('endText', text)} />
+              {scanned('endText')}
               <p className="text-small text-ink-muted">{invalid === 'endBeforeStart' ? null : t('endHint')}</p>
               {invalid === 'endBeforeStart' ? (
                 <p role="alert" className="text-small text-overdue">
@@ -162,21 +190,28 @@ export function LeaseForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
               <MoneyInput key={`rent-${values.unitId}`} label={t('rentField')} defaultText={values.rentText} onTextChange={(text) => set('rentText', text)} />
+              {scanned('rentText')}
               {invalid === 'rentZero' ? (
                 <p role="alert" data-testid="rent-zero" className="text-small text-overdue">
                   {t('rentZero')}
                 </p>
               ) : null}
             </div>
-            <MoneyInput key={`deposit-${values.unitId}`} label={t('depositField')} defaultText={values.depositText} onTextChange={(text) => set('depositText', text)} />
-            <FormSelect
-              label={t('cycleField')}
-              testId="lease-cycle"
-              selectId="lease-cycle"
-              value={String(values.cycle)}
-              options={option(BILLING_CYCLES, (months) => t('cycle', { months }))}
-              onChange={(cycle) => set('cycle', BILLING_CYCLES.find((months) => String(months) === cycle) ?? 1)}
-            />
+            <div className="flex flex-col gap-1">
+              <MoneyInput key={`deposit-${values.unitId}`} label={t('depositField')} defaultText={values.depositText} onTextChange={(text) => set('depositText', text)} />
+              {scanned('depositText')}
+            </div>
+            <div className="flex flex-col gap-1">
+              <FormSelect
+                label={t('cycleField')}
+                testId="lease-cycle"
+                selectId="lease-cycle"
+                value={String(values.cycle)}
+                options={option(BILLING_CYCLES, (months) => t('cycle', { months }))}
+                onChange={(cycle) => set('cycle', BILLING_CYCLES.find((months) => String(months) === cycle) ?? 1)}
+              />
+              {scanned('cycle')}
+            </div>
             <FormSelect
               label={t('utilitiesField')}
               testId="lease-utilities"
@@ -273,7 +308,7 @@ export function LeaseForm({
         </details>
         {error === null ? null : (
           <p role="alert" data-testid="form-error" className="text-body text-overdue">
-            {{ invalid: t('errorInvalid'), notDraft: t('errorNotDraft'), network: t('errorNetwork') }[error]}
+            {{ invalid: t('errorInvalid'), notDraft: t('errorNotDraft'), document: t('errorDocument'), network: t('errorNetwork') }[error]}
           </p>
         )}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

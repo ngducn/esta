@@ -4,7 +4,7 @@ import type { FieldDecision } from '@esta/core/extraction/acceptance';
 import type { SchemaName } from '@esta/core/extraction/fields';
 import { formatArea } from '@esta/core/format';
 import { purposesMismatch } from '@esta/core/properties/area';
-import { CircleCheck, CloudOff, FileSearch, Images, Save } from 'lucide-react';
+import { CircleCheck, CloudOff, FilePlus2, FileSearch, Images, Save } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
@@ -20,6 +20,13 @@ import type { FieldView } from '@/server/extraction/field-views';
 import { ExtractionFieldRow, rowArea, type RowError } from './extraction-field-row';
 
 export type ReviewMode = 'waiting' | 'review' | 'manual' | 'accepted' | 'rejected' | 'none';
+
+/** Where an accepted reading goes: a certificate to the legal tab, a bill to the rental tab, a lease contract into a new lease. */
+function nextStep(schemaName: SchemaName, propertyId: string, documentId: string): { readonly href: string; readonly tab: 'legal' | 'rental' | null } {
+  if (schemaName === 'lease_v1') return { href: `/properties/${propertyId}/rental/leases/new?fromDocument=${documentId}`, tab: null };
+  const tab = schemaName === 'utility_bill_v1' ? 'rental' : 'legal';
+  return { href: `/properties/${propertyId}/${tab}`, tab };
+}
 
 /** Mẹ waits on this page, so it asks every second for the first half minute, then backs off as the tiles do. */
 const REVIEW_POLL: readonly PollStep[] = [
@@ -57,6 +64,7 @@ export function ReviewPanel({
   canEdit,
   landUseCodes,
   propertyId,
+  leaseId = null,
   properties,
   savedHref,
 }: {
@@ -76,6 +84,8 @@ export function ReviewPanel({
   canEdit: boolean;
   landUseCodes: readonly LandUseCode[];
   propertyId: string | null;
+  /** The lease a scanned contract already belongs to. */
+  leaseId?: string | null;
   properties: readonly { readonly id: string; readonly nickname: string }[];
   /** Where a save goes instead of the property's tab: the wizard's own review step, which then confirms the address. */
   savedHref?: string;
@@ -131,7 +141,7 @@ export function ReviewPanel({
       );
       setOutcome(result);
       if (!result.ok) return;
-      if (savedHref === undefined) router.push(`/properties/${result.propertyId}/${schemaName === 'utility_bill_v1' ? 'rental' : 'legal'}`);
+      if (savedHref === undefined) router.push(nextStep(schemaName, result.propertyId, documentId).href);
       else router.refresh();
     });
 
@@ -207,11 +217,7 @@ export function ReviewPanel({
               {t('acceptedTitle')}
             </h2>
             <p className="text-body text-ink-2">{t('acceptedBody')}</p>
-            {propertyId === null ? null : (
-              <a className={cn(buttonVariants({ variant: 'outline' }), 'self-start')} href={`/properties/${propertyId}/${schemaName === 'utility_bill_v1' ? 'rental' : 'legal'}`}>
-                {t('openTab', { tab: schemaName === 'utility_bill_v1' ? 'rental' : 'legal' })}
-              </a>
-            )}
+            {propertyId === null ? null : <AcceptedLink {...nextStep(schemaName, propertyId, documentId)} leaseHref={leaseId === null ? null : `/properties/${propertyId}/rental/leases/${leaseId}`} canEdit={canEdit} />}
           </section>
         ) : null}
         {mode === 'rejected' || mode === 'none' ? (
@@ -317,4 +323,29 @@ export function ReviewPanel({
       </div>
     </div>
   );
+}
+
+function AcceptedLink({ href, tab, leaseHref, canEdit }: { href: string; tab: 'legal' | 'rental' | null; leaseHref: string | null; canEdit: boolean }) {
+  const t = useTranslations('extraction');
+  const className = cn(buttonVariants({ variant: 'outline' }), 'self-start');
+  if (tab !== null) {
+    return (
+      <a className={className} href={href}>
+        {t('openTab', { tab })}
+      </a>
+    );
+  }
+  if (leaseHref !== null) {
+    return (
+      <a className={className} href={leaseHref} data-testid="open-lease">
+        {t('openLease')}
+      </a>
+    );
+  }
+  return canEdit ? (
+    <a className={cn(buttonVariants(), 'self-start')} href={href} data-testid="create-lease">
+      <FilePlus2 aria-hidden="true" />
+      {t('createLease')}
+    </a>
+  ) : null;
 }

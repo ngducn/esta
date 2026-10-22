@@ -16,6 +16,8 @@ export type ReviewDocument = {
   readonly pageCount: number;
   readonly propertyId: string | null;
   readonly category: string;
+  /** The lease a scanned contract already belongs to (P3-19). */
+  readonly leaseId: string | null;
 };
 
 export type ReviewExtraction = { readonly id: string; readonly status: ExtractionStatus; readonly schemaName: SchemaName; readonly result: unknown };
@@ -38,7 +40,7 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
   const supabase = await createSessionClient();
   const { data: document } = await supabase
     .from('documents')
-    .select('id, title, mime, page_count, property_id, category')
+    .select('id, title, mime, page_count, property_id, category, lease_id')
     .eq('household_id', member.household.id)
     .eq('id', documentId)
     .is('deleted_at', null)
@@ -71,6 +73,7 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
       pageCount: document.page_count ?? 1,
       propertyId: document.property_id,
       category: document.category,
+      leaseId: document.lease_id,
     },
     extraction,
     fileUrl,
@@ -92,6 +95,9 @@ const MODES = {
   rejected: 'rejected',
 } as const satisfies Readonly<Record<ExtractionStatus, string>>;
 
+/** How the review heads the fields that sit outside any list. */
+const ROOT_LIST = { certificate_v1: 'certificate', utility_bill_v1: 'bill', lease_v1: 'lease' } as const satisfies Record<SchemaName, string>;
+
 export type ReviewPanelState = { readonly status: ExtractionStatus; readonly mode: (typeof MODES)[ExtractionStatus]; readonly fields: readonly FieldView[] };
 
 /** The panel's mode and its rows: the read's fields to check, or for a failed read the empty form to fill by hand. */
@@ -99,6 +105,6 @@ export async function reviewPanelState(extraction: ReviewExtraction | null): Pro
   const status = extraction?.status ?? 'none';
   const mode = MODES[status];
   const reviewed = extraction === null ? [] : mode === 'review' ? reviewFields(extraction.schemaName, extraction.result) : mode === 'manual' ? reviewFields(extraction.schemaName, null) : [];
-  const fields = await fieldViews(reviewed, extraction?.schemaName === 'utility_bill_v1' ? 'bill' : 'certificate');
+  const fields = await fieldViews(reviewed, ROOT_LIST[extraction?.schemaName ?? 'certificate_v1']);
   return { status, mode, fields };
 }
