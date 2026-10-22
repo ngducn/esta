@@ -7,6 +7,7 @@ import { NATIONAL_ID_VECTORS } from '../agent-schemas/national-id-vectors';
 import { reduceNationalIds } from '../agent-schemas/reduce-national-ids';
 import {
   planCertificateAcceptance,
+  planLeaseAcceptance,
   readValues,
   planUtilityBillAcceptance,
   rowId,
@@ -279,5 +280,24 @@ describe('planUtilityBillAcceptance', () => {
     expect(planOf(result).acceptedFields['customer_code']).toEqual({ decision: 'accepted', value: 'PE0901000001' });
     const elsewhere = accounts.map((account) => ({ ...account, propertyId: '00000000-0000-4000-8000-0000000000b9' }));
     expect(tables(planUtilityBillAcceptance(bill, acceptAll(billFile.bill, 'utility_bill_v1'), { accounts: elsewhere }))).toEqual(['utility_accounts']);
+  });
+});
+
+describe('planLeaseAcceptance', () => {
+  const lease = {
+    tenant_name: { value: 'Lê Văn Demo', confidence: 0.98, page: 1 },
+    tenant_phone: { value: '0903 123 456', confidence: 0.97, page: 1 },
+    rent_vnd: { value: 3_500_000, confidence: 0.99, page: 1 },
+    billing_cycle_months: { value: 1, confidence: 0.95, page: 1 },
+  };
+
+  it('writes no row, keeping the accepted values for the lease form', () => {
+    const plan = planOf(planLeaseAcceptance({ ...extraction, result: lease }, { tenant_name: { kind: 'accepted' }, rent_vnd: { kind: 'edited', value: '3tr8' } }));
+    expect(plan.steps).toEqual([]);
+    expect(plan.acceptedFields).toEqual({ tenant_name: { decision: 'accepted', value: 'Lê Văn Demo' }, rent_vnd: { decision: 'edited', value: 3_800_000 } });
+  });
+
+  it('refuses a cycle the lease form cannot bill', () => {
+    expect(planLeaseAcceptance({ ...extraction, result: lease }, { billing_cycle_months: { kind: 'edited', value: '2' } })).toEqual({ ok: false, reason: 'out_of_range', paths: ['billing_cycle_months'] });
   });
 });

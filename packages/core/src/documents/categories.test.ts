@@ -16,9 +16,10 @@ describe('DOCUMENT_CATEGORIES', () => {
     expect(DOCUMENT_CATEGORY_IDS.filter((id) => DOCUMENT_CATEGORIES[id].sensitivity === 'sensitive').toSorted()).toEqual(['certificate', 'id_card']);
   });
 
-  it('names an extraction schema only where one exists, leaving lease contracts to P3-19', () => {
+  it('names an extraction schema only where one exists', () => {
     expect(DOCUMENT_CATEGORY_IDS.filter((id) => DOCUMENT_CATEGORIES[id].extractionSchema !== null).map((id) => [id, DOCUMENT_CATEGORIES[id].extractionSchema])).toEqual([
       ['certificate', 'certificate_v1'],
+      ['lease_contract', 'lease_v1'],
       ['utility_bill', 'utility_bill_v1'],
     ]);
   });

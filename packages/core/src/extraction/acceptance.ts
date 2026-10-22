@@ -333,7 +333,16 @@ export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, deci
   return finish(collected, decided);
 }
 
+/**
+ * A lease writes nothing on review: the accepted values wait for the lease form (`leaseFieldsFromExtraction`), and the
+ * lease is saved only when Mẹ confirms it there.
+ */
+export function planLeaseAcceptance(extraction: AcceptanceExtraction, decisions: Decisions): PlanResult {
+  return finish({ steps: [], missing: [], invalid: [] }, decide('lease_v1', extraction.result, decisions));
+}
+
 export const PLANNERS = {
   certificate_v1: planCertificateAcceptance,
   utility_bill_v1: planUtilityBillAcceptance,
+  lease_v1: planLeaseAcceptance,
 } as const satisfies Record<SchemaName, (extraction: AcceptanceExtraction, decisions: Decisions, context: PlanContext) => PlanResult>;

@@ -1,5 +1,4 @@
-import { certificateV1Schema } from '../agent-schemas/certificate_v1';
-import { utilityBillV1Schema } from '../agent-schemas/utility_bill_v1';
+import { AGENT_SCHEMAS } from '../agent-schemas';
 import { parseDateInput } from '../parse/date-input';
 import { INPUT_KINDS } from './fields';
 import { REQUIRED_FIELDS, type SchemaName } from './required-fields';
@@ -19,10 +18,9 @@ export type ExtractionScore = {
 
 type Leaf = { readonly value: unknown; readonly confidence: number };
 
-const SCHEMAS = { certificate_v1: certificateV1Schema, utility_bill_v1: utilityBillV1Schema } as const satisfies Record<SchemaName, unknown>;
-
 const AREA_LEAVES = new Set(['area_m2', 'footprint_m2', 'floor_area_m2']);
-const DATE_LEAVES = new Set(['issued_on', 'date']);
+const DATE_LEAVES = new Set(['issued_on', 'date', 'start_date', 'end_date']);
+const PHONE_LEAVES = new Set(['tenant_phone']);
 const CODE_LEAVES = new Set(['land_use_code']);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -43,6 +41,7 @@ export function normalizeValue(leafName: string, value: unknown): string | null 
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (typeof value !== 'string') return null;
   const text = value.normalize('NFC').replace(/\s+/g, ' ').trim();
+  if (PHONE_LEAVES.has(leafName)) return text.replace(/\D/gu, '');
   if (DATE_LEAVES.has(leafName)) {
     const parsed = parseDateInput(text);
     return parsed.ok ? parsed.value : text;
@@ -84,7 +83,7 @@ function sameValues(a: readonly string[], b: readonly string[]): boolean {
  * A result the schema rejects scores no hit in `required` or `nullTruth`.
  */
 export function scoreExtraction(schemaName: SchemaName, truth: unknown, result: unknown): ExtractionScore {
-  const schemaValid = SCHEMAS[schemaName].safeParse(result).success;
+  const schemaValid = AGENT_SCHEMAS[schemaName].schema.safeParse(result).success;
   const slots = REQUIRED_FIELDS[schemaName].map((field) => {
     const expected = valuesAt(truth, field);
     return { field, isNull: expected.length === 0, hit: schemaValid && sameValues(expected, valuesAt(result, field)) };

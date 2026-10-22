@@ -9,7 +9,7 @@ const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 const CONSUMPTION_UNIT = /\s*(?:kwh|m3|m³|số)\s*$/iu;
 
 /** Reads an amount printed the Vietnamese way, so `1.234.567 đ` is 1234567. */
-function parseAmount(raw: unknown): unknown {
+export function parseAmount(raw: unknown): unknown {
   if (typeof raw !== 'string') return raw;
   const parsed = parseVndInput(raw);
   return parsed.ok ? parsed.value : raw;

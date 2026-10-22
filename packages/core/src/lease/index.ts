@@ -17,3 +17,4 @@ export {
 export { unitLeaseMark, type LeaseMark } from './marks';
 export { RENEWAL_INCREASE_BPS, RENEWAL_ROUNDING_VND, amendmentStarts, renewalRent, renewalStart } from './changes';
 export { leaseTimeline, type PeriodMark, type TimelineInvoice, type TimelineRow } from './timeline';
+export { leaseFieldsFromExtraction, type LeaseFromContract, type LeaseTermsFromContract } from './fromExtraction';
