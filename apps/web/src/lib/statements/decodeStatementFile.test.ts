@@ -1,6 +1,7 @@
-import { decodeStatement, decodeStatementCsv, renderCsv, STATEMENT_LAYOUTS, type ColumnPreset } from '@esta/core/matching';
+import { decodeStatement, decodeStatementCsv, planImport, renderCsv, STATEMENT_LAYOUTS, type ColumnPreset, type StatementRow, type StoredLine } from '@esta/core/matching';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { crc32 } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import writeXlsxFile from 'write-excel-file/node';
 import { scenarioGrid, UNRECOGNIZED_COLUMNS, unrecognizedGrid } from '../../../../../packages/core/src/matching/statement-scenario';
@@ -16,6 +17,52 @@ async function xlsx(grid: readonly (readonly (string | number | null | Date)[])[
   );
   const buffer = await writeXlsxFile(data, {}).toBuffer();
   return new Uint8Array(buffer);
+}
+
+type SheetValue = string | { readonly stored: string };
+
+/** A one-sheet workbook whose number cells hold `stored` exactly as written, zipped without compression. */
+function storedXlsx(rows: readonly (readonly SheetValue[])[]): Uint8Array<ArrayBuffer> {
+  const cell = (value: SheetValue, column: number, row: number) => {
+    const at = `${String.fromCodePoint(65 + column)}${row + 1}`;
+    return typeof value === 'string' ? `<c r="${at}" t="inlineStr"><is><t>${value}</t></is></c>` : `<c r="${at}"><v>${value.stored}</v></c>`;
+  };
+  const main = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const relationships = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const parts = {
+    'xl/workbook.xml': `<workbook xmlns="${main}" xmlns:r="${relationships}"><sheets><sheet name="Sao kê" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${relationships}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+    'xl/worksheets/sheet1.xml': `<worksheet xmlns="${main}"><sheetData>${rows.map((row, r) => `<row>${row.map((value, c) => cell(value, c, r)).join('')}</row>`).join('')}</sheetData></worksheet>`,
+  };
+  const entries: Buffer[] = [];
+  const directory: Buffer[] = [];
+  let offset = 0;
+  for (const [path, text] of Object.entries(parts)) {
+    const name = Buffer.from(path);
+    const data = Buffer.from(text);
+    const header = (fields: Buffer, signature: number, at: number) => {
+      fields.writeUInt32LE(signature, 0);
+      fields.writeUInt32LE(crc32(data), at);
+      fields.writeUInt32LE(data.length, at + 4);
+      fields.writeUInt32LE(data.length, at + 8);
+      fields.writeUInt16LE(name.length, at + 12);
+      return fields;
+    };
+    const local = header(Buffer.alloc(30), 0x04034b50, 14);
+    const central = header(Buffer.alloc(46), 0x02014b50, 16);
+    central.writeUInt32LE(offset, 42);
+    entries.push(local, name, data);
+    directory.push(central, name);
+    offset += local.length + name.length + data.length;
+  }
+  const listing = Buffer.concat(directory);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(directory.length / 2, 8);
+  end.writeUInt16LE(directory.length / 2, 10);
+  end.writeUInt32LE(listing.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return new Uint8Array(Buffer.concat([...entries, listing, end]));
 }
 
 async function read(bytes: Uint8Array<ArrayBuffer>, name: string): Promise<StatementFile> {
@@ -40,6 +87,40 @@ describe('decodeStatementFile', () => {
     expect(decoded).toEqual(decodeStatement(grid));
     expect(headerCells(file.grid, 0)).toEqual(STATEMENT_LAYOUTS.b.columns.map((column) => column.header));
     expect(decoded.ok && decoded.value.rejected).toEqual([{ index: 15, field: 'amount', reason: 'fractional' }]);
+  });
+
+  const transfers: (readonly SheetValue[])[] = [
+    ['Ngày GD', 'Số tham chiếu', 'Số tiền', 'Diễn giải'],
+    ['05/10/2026', { stored: '20261005123456789012' }, { stored: '3500000' }, 'ESTA 7K2QX9MP'],
+    ['06/10/2026', { stored: '20261006123456789034' }, { stored: '2800000' }, 'CK TIEN PHONG DEMO'],
+  ];
+
+  it('keeps every digit of a long reference stored as a number', async () => {
+    const decoded = (await read(storedXlsx(transfers), 'sao-ke.xlsx')).decode();
+    expect(decoded.ok && decoded.value.rows.map((row) => [row.bankRef, row.amount])).toEqual([
+      ['20261005123456789012', 3_500_000],
+      ['20261006123456789034', 2_800_000],
+    ]);
+  });
+
+  it('plans the lines of one statement once when its workbook and then its CSV are imported', async () => {
+    const rowsOf = async (bytes: Uint8Array<ArrayBuffer>, name: string): Promise<StatementRow[]> => {
+      const decoded = (await read(bytes, name)).decode();
+      return decoded.ok ? decoded.value.rows : [];
+    };
+    const sheetRows = await rowsOf(storedXlsx(transfers), 'sao-ke.xlsx');
+    const csvRows = await rowsOf(bytesOf(renderCsv(transfers.map((row) => row.map((cell) => (typeof cell === 'string' ? cell : cell.stored))))), 'sao-ke.csv');
+    const stored: StoredLine[] = planImport(sheetRows, [], []).rows.map(({ row: { date, amount, bankRef, description }, fingerprint }) => ({
+      date,
+      amount,
+      bankRef,
+      description,
+      fingerprint,
+      importId: 'import-xlsx',
+      sameAccount: true,
+    }));
+    expect(stored).toHaveLength(2);
+    expect(planImport(csvRows, [], stored)).toEqual({ rows: [], known: ['import-xlsx', 'import-xlsx'] });
   });
 
   it('reads a date cell as its calendar day', async () => {
