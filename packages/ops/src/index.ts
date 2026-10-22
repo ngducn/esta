@@ -33,6 +33,7 @@ export {
 export type { FileProblem, FileRefusal, LocalContext, LocalFile, LocalFiles, LocalPreviews } from './files';
 export { dbRefusal, idSchema, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
 export type { Db } from './db';
+export { readLedgerFacts, readLedgerStart, type LedgerFacts } from './ledger';
 export { invoiceIssue, invoiceVoid, type InvoiceChanged, type InvoiceRefusal } from './invoice-ops';
 export { leaseCreate, leaseEdit, type LeaseRefusal, type LeaseSaved } from './lease-ops';
 export { readLeases, readLeaseSchedule, scheduleUntil, tenantRowSchema, withTenants, type LeaseWithTenant, type Tenant } from './leases';

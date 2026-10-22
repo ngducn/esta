@@ -2663,6 +2663,49 @@ export type Database = {
       }
     }
     Views: {
+      allocation_facts: {
+        Row: {
+          amount_vnd: number | null
+          household_id: string | null
+          invoice_id: string | null
+          lease_id: string | null
+          method: string | null
+          payment_id: string | null
+          property_id: string | null
+          received_on: string | null
+          unit_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_balances"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_payment_id_fkey"
+            columns: ["household_id", "payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       document_status: {
         Row: {
           document_id: string | null
