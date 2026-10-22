@@ -76,6 +76,14 @@ describe('leaseCreate', () => {
     ]);
   });
 
+  it('refuses the contract as linked when another lease took it between plan and insert', async () => {
+    const free = fakeDb((request) => (request.table === 'documents' ? [{ property_id: PROPERTY, category: 'lease_contract', lease_id: null }] : [])).db;
+    const planned = await leaseCreate.plan(context(free, roomAndTenant), parsed(leaseCreate.input, { id: LEASE, lease: demoDraft, document_id: TENANT }));
+    if (!planned.ok || planned.value.kind !== 'change') throw new Error('expected a change');
+    const { db } = fakeDb(undefined, () => ({ code: '23514', message: 'ESTA_LEASE_DOCUMENT', details: '', hint: '' }));
+    expect(await leaseCreate.apply(context(db), planned.value.change)).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'document_id', code: 'linked' }] } });
+  });
+
   it('plans unchanged once its minted id is stored', async () => {
     const { db } = fakeDb((request) => (request.table === 'leases' ? [storedLease()] : []));
     expect(await leaseCreate.plan(context(db), parsed(leaseCreate.input, { id: LEASE, lease: demoDraft }))).toEqual({ ok: true, value: { kind: 'unchanged', current: { id: LEASE } } });

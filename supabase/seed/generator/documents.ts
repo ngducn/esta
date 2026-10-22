@@ -124,7 +124,6 @@ export const documents = publicTable('documents', ({ household, properties }) =>
 
 const LEASE_READING: unknown = JSON.parse(readFileSync(join(repoRoot, 'fixtures/leases/lease-di-an-phong-8-photo/truth.json'), 'utf8')).lease;
 
-/** Every field of the Phòng 8 contract's reading as Mẹ accepts it on review, built by the planner the review saves with. */
 function acceptedReading(extraction: { id: string; householdId: string; propertyId: string; documentId: string }) {
   const decisions = Object.fromEntries(reviewFields('lease_v1', LEASE_READING).map((field) => [field.path, { kind: 'accepted' as const }]));
   const planned = planLeaseAcceptance({ ...extraction, result: LEASE_READING }, decisions);

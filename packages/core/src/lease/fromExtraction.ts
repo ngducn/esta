@@ -15,18 +15,17 @@ export type LeaseFromContract = {
 };
 
 const { shape } = leaseV1Schema;
-/** One `accepted_fields` entry: the value read or typed, held to its leaf's own bounds; anything else reads as absent. */
-const entry = <T extends z.ZodType>(value: T) => z.object({ value }).optional().catch(undefined);
+const entryOrAbsent = <T extends z.ZodType>(value: T) => z.object({ value }).optional().catch(undefined);
 const acceptedLeaseSchema = z.object({
-  tenant_name: entry(shape.tenant_name.shape.value),
-  tenant_phone: entry(shape.tenant_phone.shape.value),
-  unit_label: entry(shape.unit_label.shape.value),
-  start_date: entry(shape.start_date.shape.value),
-  end_date: entry(shape.end_date.shape.value),
-  term_months: entry(shape.term_months.shape.value),
-  rent_vnd: entry(shape.rent_vnd.shape.value.refine((rent) => rent !== 0)),
-  billing_cycle_months: entry(shape.billing_cycle_months.shape.value),
-  deposit_vnd: entry(shape.deposit_vnd.shape.value),
+  tenant_name: entryOrAbsent(shape.tenant_name.shape.value),
+  tenant_phone: entryOrAbsent(shape.tenant_phone.shape.value),
+  unit_label: entryOrAbsent(shape.unit_label.shape.value),
+  start_date: entryOrAbsent(shape.start_date.shape.value),
+  end_date: entryOrAbsent(shape.end_date.shape.value),
+  term_months: entryOrAbsent(shape.term_months.shape.value),
+  rent_vnd: entryOrAbsent(shape.rent_vnd.shape.value.refine((rent) => rent !== 0)),
+  billing_cycle_months: entryOrAbsent(shape.billing_cycle_months.shape.value),
+  deposit_vnd: entryOrAbsent(shape.deposit_vnd.shape.value),
 });
 
 const sameLabel = (label: string) => label.normalize('NFC').replace(/\s+/gu, ' ').trim().toLocaleLowerCase('vi');

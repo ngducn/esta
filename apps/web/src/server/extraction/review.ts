@@ -95,7 +95,6 @@ const MODES = {
   rejected: 'rejected',
 } as const satisfies Readonly<Record<ExtractionStatus, string>>;
 
-/** How the review heads the fields that sit outside any list. */
 const ROOT_LIST = { certificate_v1: 'certificate', utility_bill_v1: 'bill', lease_v1: 'lease' } as const satisfies Record<SchemaName, string>;
 
 export type ReviewPanelState = { readonly status: ExtractionStatus; readonly mode: (typeof MODES)[ExtractionStatus]; readonly fields: readonly FieldView[] };

@@ -6,7 +6,6 @@ import { changedColumns, dbRefusal, idSchema, invalid, optionalIdSchema, type Ch
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 import { LEASE_DRAFT_KEYS, viewRows, type ViewRows } from './view';
 
-/** `document_id` names the lease contract the terms were read from (P3-19), which then belongs to the lease. */
 const createInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), lease: leaseDraftSchema, document_id: optionalIdSchema.default(null) });
 const editInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), set: z.partialRecord(z.enum(LEASE_DRAFT_KEYS), z.unknown()) });
 
@@ -37,7 +36,6 @@ async function tenantRefusal(ctx: OpContext, path: string, tenantId: string | nu
   return tenant === undefined ? issue(path, 'not_found') : null;
 }
 
-/** A contract can join a new lease only when it is a live lease contract on the lease's property that no lease holds yet. */
 async function documentRefusal(ctx: OpContext, documentId: string | null, propertyId: string): Promise<CommonRefusal | null> {
   if (documentId === null) return null;
   const { data, error } = await ctx.db
@@ -56,7 +54,7 @@ const draftOf = (lease: ViewRows['leases']) => Object.fromEntries(LEASE_DRAFT_KE
 
 /**
  * Saves a draft lease under the id the caller minted, on the property its unit belongs to. `create_lease` is the one
- * insert, and links the contract in the same transaction.
+ * insert, and links the `document_id` contract to the lease in the same transaction (P3-19).
  */
 export const leaseCreate = defineOp<z.output<typeof createInputSchema>, NewLease, LeaseSaved>({
   creates: 'leases',
@@ -74,7 +72,7 @@ export const leaseCreate = defineOp<z.output<typeof createInputSchema>, NewLease
   },
   async apply(ctx, { id, row, document_id }) {
     const { error } = await ctx.db.rpc('create_lease', { p_household_id: ctx.householdId, p_id: id, p_lease: row, ...(document_id === null ? {} : { p_document_id: document_id }) });
-    return error ? refuse(dbRefusal(error, { ESTA_LEASE_DOCUMENT: { kind: 'conflict' } })) : { ok: true, value: { id } };
+    return error ? refuse(dbRefusal(error, { ESTA_LEASE_DOCUMENT: issue('document_id', 'linked') })) : { ok: true, value: { id } };
   },
   writes: ({ id, row }) => [{ kind: 'create', table: 'leases', row: { id, ...row } }],
 });

@@ -44,7 +44,6 @@ function certificateUpload(dir: string, truth: FixtureTruth): () => Promise<Uplo
   return async () => ({ name: 'photos.pdf', mimeType: 'application/pdf', buffer: await photosPdf(truth.files.map((name) => read(dir, name))) });
 }
 
-/** A one-file fixture whose `truth.json` holds its truth under `key` and, when it prints any, its full ID numbers. */
 function singleFile(dir: string, id: string, schemaName: 'utility_bill_v1' | 'lease_v1', key: 'bill' | 'lease'): ExtractionFixture {
   const truth = JSON.parse(read(dir, 'truth.json').toString('utf8')) as { files: string[]; printed_id_numbers?: string[] } & Record<typeof key, unknown>;
   const [name = ''] = truth.files;

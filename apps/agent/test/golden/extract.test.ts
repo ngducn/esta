@@ -15,7 +15,6 @@ const fixtures = extractionFixtures();
 const replay = (schemaName: ExtractionFixture['schemaName'], upload: UploadFile) =>
   withExtractSession(schemaName, upload, async ({ request, saved }) => ({ run: await replaySession(request, DEFAULT_REPLAY_DIR), saved: saved() }));
 
-/** Replays each fixture, checks no full ID survives, and sums the three §7.2 ratios. */
 async function scoreFixtures(list: readonly ExtractionFixture[]) {
   let schemaValid: Ratio = { hits: 0, total: 0 };
   let required: Ratio = { hits: 0, total: 0 };

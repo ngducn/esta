@@ -48,8 +48,8 @@ function leaseWriteRefusal(reason: LeaseRefusal | CommonRefusal): Extract<LeaseW
 }
 
 /**
- * Saves a draft; an active lease changes only through an amendment (P3-08). A new lease filled from a scanned contract
- * names it, and the contract joins the lease (P3-19).
+ * Saves a draft; an active lease changes only through an amendment (P3-08). `documentId` names the scanned contract a
+ * new lease was filled from, which then joins the lease; an edit ignores it (P3-19).
  */
 export async function saveLease(propertyId: unknown, leaseId: unknown, raw: unknown, documentId: unknown = null): Promise<LeaseWrite> {
   const ctx = await webOpContext();

@@ -73,16 +73,14 @@ export function LeaseForm({
   const [pending, startTransition] = useTransition();
   const set = <K extends keyof LeaseFormValues>(key: K, value: LeaseFormValues[K]) => setValues((current) => ({ ...current, [key]: value }));
   const rentalHref = `/properties/${propertyId}/rental`;
-  // A field keeps the mark only while it holds what the contract said.
-  const scanned = (key: keyof LeaseFormValues) => (contract?.prefilled.includes(key) === true && values[key] === initial[key] ? <FromContractMark label={t('fromContract')} /> : null);
+  const contractMark = (key: keyof LeaseFormValues) => (contract?.prefilled.includes(key) === true && values[key] === initial[key] ? <FromContractMark label={t('fromContract')} /> : null);
   const leaseHref = (id: string) => `${rentalHref}/leases/${id}`;
 
   const chooseUnit = (unitId: string) => {
     const unit = units.find((candidate) => candidate.id === unitId);
     if (unit === undefined) return;
-    // A new lease takes the room's defaults, except for what the scanned contract said.
-    const keep = (current: LeaseFormValues) => Object.fromEntries((contract?.prefilled ?? []).map((key) => [key, current[key]]));
-    setValues((current) => (leaseId === null ? { ...defaultsToValues({ ...current, unitId }, unit.defaults), ...keep(current), unitId } : { ...current, unitId }));
+    const contractValues = (current: LeaseFormValues) => Object.fromEntries((contract?.prefilled ?? []).map((key) => [key, current[key]]));
+    setValues((current) => (leaseId === null ? { ...defaultsToValues({ ...current, unitId }, unit.defaults), ...contractValues(current), unitId } : { ...current, unitId }));
   };
 
   const save = (then: 'stay' | 'activate') => {
@@ -148,7 +146,7 @@ export function LeaseForm({
             options={units.map((unit) => ({ value: unit.id, label: unit.label }))}
             onChange={chooseUnit}
           />
-          {scanned('unitId')}
+          {contractMark('unitId')}
           <FormSelect
             label={t('tenantField')}
             testId="lease-tenant"
@@ -158,7 +156,7 @@ export function LeaseForm({
             options={tenants.map((tenant) => ({ value: tenant.id, label: tenant.phone === null ? tenant.fullName : `${tenant.fullName} · ${tenant.phone}` }))}
             onChange={(tenantId) => set('tenantId', tenantId)}
           />
-          {scanned('tenantId')}
+          {contractMark('tenantId')}
           <TenantQuickAdd
             initial={contract?.tenant !== null && contract?.tenant !== undefined && initial.tenantId === '' ? contract.tenant : null}
             mark={t('fromContract')}
@@ -172,11 +170,11 @@ export function LeaseForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
               <DateInput label={t('startField')} {...asDefault(initial.startText)} onTextChange={(text) => set('startText', text)} />
-              {scanned('startText')}
+              {contractMark('startText')}
             </div>
             <div className="flex flex-col gap-1">
               <DateInput label={t('endField')} {...asDefault(initial.endText)} onTextChange={(text) => set('endText', text)} />
-              {scanned('endText')}
+              {contractMark('endText')}
               <p className="text-small text-ink-muted">{invalid === 'endBeforeStart' ? null : t('endHint')}</p>
               {invalid === 'endBeforeStart' ? (
                 <p role="alert" className="text-small text-overdue">
@@ -190,7 +188,7 @@ export function LeaseForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
               <MoneyInput key={`rent-${values.unitId}`} label={t('rentField')} defaultText={values.rentText} onTextChange={(text) => set('rentText', text)} />
-              {scanned('rentText')}
+              {contractMark('rentText')}
               {invalid === 'rentZero' ? (
                 <p role="alert" data-testid="rent-zero" className="text-small text-overdue">
                   {t('rentZero')}
@@ -199,7 +197,7 @@ export function LeaseForm({
             </div>
             <div className="flex flex-col gap-1">
               <MoneyInput key={`deposit-${values.unitId}`} label={t('depositField')} defaultText={values.depositText} onTextChange={(text) => set('depositText', text)} />
-              {scanned('depositText')}
+              {contractMark('depositText')}
             </div>
             <div className="flex flex-col gap-1">
               <FormSelect
@@ -210,7 +208,7 @@ export function LeaseForm({
                 options={option(BILLING_CYCLES, (months) => t('cycle', { months }))}
                 onChange={(cycle) => set('cycle', BILLING_CYCLES.find((months) => String(months) === cycle) ?? 1)}
               />
-              {scanned('cycle')}
+              {contractMark('cycle')}
             </div>
             <FormSelect
               label={t('utilitiesField')}

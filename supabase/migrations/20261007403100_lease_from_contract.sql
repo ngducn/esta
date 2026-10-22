@@ -4,7 +4,6 @@ alter table public.document_extractions drop constraint document_extractions_sch
 alter table public.document_extractions
   add constraint document_extractions_schema_name_check check (schema_name in ('certificate_v1', 'utility_bill_v1', 'lease_v1'));
 
--- The one SQL list of extractable categories and their schemas, as DOCUMENT_CATEGORIES in packages/core names them.
 create function private.extraction_schema(p_category text)
 returns text
 language sql
@@ -38,7 +37,6 @@ create policy agent_jobs_insert_extract on public.agent_jobs
     )
   );
 
--- The P2-03 body, reading the schema from private.extraction_schema.
 create or replace function public.enqueue_extract_document(p_document_id uuid, p_as_of timestamptz)
 returns uuid
 language plpgsql
@@ -90,9 +88,8 @@ begin
 end;
 $$;
 
--- The one insert of a draft lease. With a document, the contract it was read from joins the lease in the same
--- transaction: a lease contract on the same property that belongs to no lease yet, or the insert is undone.
--- Security invoker: RLS decides both writes as it would for the member's own statements.
+-- The one insert of a draft lease. With p_document_id, that lease contract joins the lease in the same transaction; it
+-- must be on the same property and belong to no lease yet, or the insert is undone with ESTA_LEASE_DOCUMENT.
 create function public.create_lease(p_household_id uuid, p_id uuid, p_lease jsonb, p_document_id uuid default null)
 returns uuid
 language plpgsql
