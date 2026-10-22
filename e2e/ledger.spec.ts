@@ -3,7 +3,9 @@ import { readFile } from 'node:fs/promises';
 import readXlsxFile from 'read-excel-file/node';
 import { memberRest as rest } from './helpers/auth-api';
 import { laneProperty } from './helpers/seed';
-import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations } from './helpers/wizard';
+
+const pause = recordForPr();
 
 const finance = (lane: number, key: string, query = '') => `/properties/${laneProperty(lane, key)}/finance${query}`;
 
@@ -37,6 +39,12 @@ async function axe(page: Page) {
   return seriousAxeViolations(page);
 }
 
+async function downloadExcel(page: Page) {
+  const [download] = await Promise.all([page.waitForEvent('download'), ledger(page).getByRole('link', { name: 'Tải Excel' }).click()]);
+  const [first] = await readXlsxFile(await readFile(await download.path()));
+  return { name: download.suggestedFilename(), rows: first?.data ?? [] };
+}
+
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
 
 async function incomeSql(page: Page, propertyId: string, from: string, to: string) {
@@ -47,6 +55,7 @@ async function incomeSql(page: Page, propertyId: string, from: string, to: strin
 test('Mẹ opens Dãy trọ Dĩ An Thu chi for 2026: October income is the database sum, and each net is income minus expenses (FIN-2)', async ({ page }) => {
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   await page.goto(finance(1, 'di-an'));
+  await pause(page);
   await expect(ledger(page).getByRole('heading', { name: 'Thu chi năm 2026' })).toBeVisible();
   const table = await screenTable(page);
   const october = table.months.find((month) => month.key === '2026-10');
@@ -56,6 +65,13 @@ test('Mẹ opens Dãy trọ Dĩ An Thu chi for 2026: October income is the datab
   for (const id of table.ids) expect(table.totals[id], `${id} total is the sum of the months`).toBe(sum(table.months.map(({ amounts }) => amounts[id] ?? 0)));
   expect(await noSidewaysScroll(page)).toBe(true);
   expect(await axe(page)).toEqual([]);
+  await pause(page);
+  await ledger(page).locator('[data-month="2026-10"]').scrollIntoViewIfNeeded();
+  await pause(page);
+  const excel = await downloadExcel(page);
+  expect(excel.name).toBe('DIAN-thu-chi-2026.xlsx');
+  expect(excel.rows.at(-1), 'the phone download totals what the screen shows').toEqual(['Tổng cộng', ...table.ids.map((id) => table.totals[id])]);
+  await pause(page);
 });
 
 test('a link to ?month=2026-10 opens that year with October marked and in view, and keeps the mark on reload', async ({ page }) => {
@@ -81,13 +97,11 @@ test('Ryan downloads Nhà phố Q7 as Excel and CSV: both totals equal the scree
   expect(table.totals.repair, 'Sửa chữa total').toBe(sum(repairs.map((row) => row.amount_vnd)));
   expect(table.totals.repair).toBeGreaterThan(0);
 
-  const [excel] = await Promise.all([page.waitForEvent('download'), ledger(page).getByRole('link', { name: 'Tải Excel' }).click()]);
-  expect(excel.suggestedFilename()).toBe('Q7-thu-chi-2026.xlsx');
-  const [first] = await readXlsxFile(await readFile(await excel.path()));
-  const sheet = first?.data ?? [];
-  expect(sheet[0], 'the header row').toEqual(table.columns);
-  expect(sheet).toHaveLength(table.months.length + 2);
-  expect(sheet.at(-1), 'the totals row').toEqual(['Tổng cộng', ...table.ids.map((id) => table.totals[id])]);
+  const excel = await downloadExcel(page);
+  expect(excel.name).toBe('Q7-thu-chi-2026.xlsx');
+  expect(excel.rows[0], 'the header row').toEqual(table.columns);
+  expect(excel.rows).toHaveLength(table.months.length + 2);
+  expect(excel.rows.at(-1), 'the totals row').toEqual(['Tổng cộng', ...table.ids.map((id) => table.totals[id])]);
 
   const [csv] = await Promise.all([page.waitForEvent('download'), ledger(page).getByRole('link', { name: 'Tải CSV' }).click()]);
   expect(csv.suggestedFilename()).toBe('Q7-thu-chi-2026.csv');
