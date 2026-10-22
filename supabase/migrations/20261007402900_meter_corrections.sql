@@ -97,7 +97,7 @@ $$;
 
 -- [app rule] A meter correction's credit fits in the bill it lands on: no draft of the lease's chain, and no bill issued
 -- at p_issued_at, totals below zero; and before the chain's next period is drafted, that period's rent covers the
--- adjustments waiting for it. A chain with no period left has no bill for a credit to take below zero.
+-- adjustments waiting for it. A chain with no period left has no rent to absorb a credit.
 create function private.meter_credit_fits(p_lease public.leases, p_issued_at timestamptz)
 returns boolean
 language sql
@@ -126,8 +126,8 @@ as $$
     )
     and (
       exists (select 1 from bills b where b.status = 'draft')
-      or coalesce((select n.rent_vnd from next_period n)
-        + (select coalesce(sum((o.used_units - o.billed_units) * o.price), 0) from private.meter_owed(p_lease) o where not o.line_on_draft), 0) >= 0
+      or coalesce((select n.rent_vnd from next_period n), 0)
+        + (select coalesce(sum((o.used_units - o.billed_units) * o.price), 0) from private.meter_owed(p_lease) o where not o.line_on_draft) >= 0
     );
 $$;
 revoke all on function private.meter_credit_fits(public.leases, timestamptz) from public;
@@ -243,7 +243,8 @@ end;
 $$;
 
 -- The 20261007306700 termination, now returning how many meter months its lease can no longer bill: a month whose bill
--- Mẹ voided so the lease could end before it is billed to no one (private.unbilled_meter_months).
+-- Mẹ voided so the lease could end before it is billed to no one (private.unbilled_meter_months). An end that shortens
+-- the draft carrying a meter credit below that credit is refused (private.meter_credit_fits).
 drop function public.terminate_lease(uuid, date, text);
 create function public.terminate_lease(p_lease_id uuid, p_terminated_on date, p_reason text)
 returns integer
@@ -272,6 +273,10 @@ begin
   set status = 'terminated', terminated_on = p_terminated_on, end_date = p_terminated_on, termination_reason = btrim(p_reason)
   where l.id = v_lease.id;
   perform private.issue_invoices(v_lease.id, least(private.business_date(v_now), p_terminated_on), v_now);
+  if v_lease.utilities_mode = 'metered_by_owner'
+    and exists (select 1 from public.leases l where l.id = v_lease.id and not private.meter_credit_fits(l, v_now)) then
+    raise exception 'ESTA_LEASE_METER_CREDIT_TOO_LARGE' using errcode = '55000';
+  end if;
   return (
     select count(*)::integer
     from private.unbilled_meter_months(array(select m.id from public.meters m where m.unit_id = v_lease.unit_id)) u
@@ -281,3 +286,66 @@ end;
 $$;
 revoke all on function public.terminate_lease(uuid, date, text) from public, anon;
 grant execute on function public.terminate_lease(uuid, date, text) to authenticated;
+
+-- The 20261007306700 amendment, refusing new terms that leave a draft's meter credit larger than its rent
+-- (private.meter_credit_fits).
+create or replace function public.amend_lease(
+  p_lease_id uuid,
+  p_effective_period_start date,
+  p_rent_vnd bigint default null,
+  p_billing_cycle_months integer default null,
+  p_reason text default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_lease public.leases := private.member_lease(p_lease_id);
+  v_now timestamptz := private.audit_now();
+  v_today date := private.business_date(v_now);
+  v_id uuid;
+  v_stranded date;
+begin
+  if v_lease.status <> 'active' then
+    raise exception 'ESTA_LEASE_NOT_ACTIVE' using errcode = '55000';
+  end if;
+  if p_effective_period_start is null or p_effective_period_start <= v_today then
+    raise exception 'ESTA_AMENDMENT_NOT_AFTER_AS_OF' using errcode = '22023';
+  end if;
+  if p_effective_period_start <= v_lease.paid_through_date or exists (
+    select 1 from public.invoices i where i.lease_id = v_lease.id and i.status = 'issued' and i.period_end >= p_effective_period_start
+  ) then
+    raise exception 'ESTA_AMENDMENT_ALREADY_BILLED' using errcode = '22023';
+  end if;
+  if p_rent_vnd is null and p_billing_cycle_months is null then
+    raise exception 'ESTA_AMENDMENT_EMPTY' using errcode = '22023';
+  end if;
+  if exists (select 1 from public.lease_amendments a where a.lease_id = v_lease.id and a.effective_period_start = p_effective_period_start) then
+    raise exception 'ESTA_AMENDMENT_DUPLICATE' using errcode = '23505';
+  end if;
+  insert into public.lease_amendments (household_id, lease_id, effective_period_start, changes, reason)
+  values (
+    v_lease.household_id, v_lease.id, p_effective_period_start,
+    jsonb_strip_nulls(jsonb_build_object('rent_vnd', p_rent_vnd, 'billing_cycle_months', p_billing_cycle_months)),
+    nullif(btrim(p_reason), '')
+  )
+  returning id into v_id;
+  select min(a.effective_period_start) into v_stranded
+  from public.lease_amendments a
+  where a.lease_id = v_lease.id and a.effective_period_start not in (
+    select s.period_start from private.lease_periods(v_lease, (select max(b.effective_period_start) from public.lease_amendments b where b.lease_id = v_lease.id)) s
+  );
+  if v_stranded is not null then
+    raise exception '%', case when v_stranded = p_effective_period_start then 'ESTA_AMENDMENT_NOT_A_PERIOD_START' else 'ESTA_AMENDMENT_MOVES_LATER' end
+      using errcode = '22023';
+  end if;
+  delete from public.invoices i where i.lease_id = v_lease.id and i.status = 'draft' and i.period_start >= p_effective_period_start;
+  perform private.issue_invoices(v_lease.id, v_today, v_now);
+  if v_lease.utilities_mode = 'metered_by_owner' and not private.meter_credit_fits(v_lease, v_now) then
+    raise exception 'ESTA_LEASE_METER_CREDIT_TOO_LARGE' using errcode = '55000';
+  end if;
+  return v_id;
+end;
+$$;

@@ -132,6 +132,7 @@ const CHANGE_REFUSALS = {
   ESTA_TERMINATION_REASON: 'reason_required',
   ESTA_TERMINATION_DATE: 'date_outside_lease',
   ESTA_TERMINATION_BEFORE_ISSUED: 'before_issued',
+  ESTA_LEASE_METER_CREDIT_TOO_LARGE: 'meter_credit_too_large',
   ESTA_LEASE_NOT_RENEWABLE: 'not_renewable',
   ESTA_LEASE_OPEN_ENDED: 'open_ended',
   ESTA_LEASE_ALREADY_RENEWED: 'already_renewed',
