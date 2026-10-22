@@ -14,7 +14,7 @@ The operator sees every batch Claude applied through the connector on `/settings
 
 ## Driving it with the verify skill
 
-- Batches come only from the connector. Sign a new household's operator in with `pnpm connector:login` (`ESTA_SESSION_FILE` set to a temporary file), then plan and apply through `pnpm connector` as `e2e/connector-history.spec.ts` does, or run `pnpm --dir apps/connector test:integration`, which leaves batches on lanes 7, 8 and 9 (sign in as `ryan.lane9@demo.esta.test`).
+- Batches come only from the connector. Sign a new household's operator in with `pnpm connector:login` (`ESTA_SESSION_FILE` set to a temporary file), then plan and apply through `pnpm connector` as `e2e/connector-history.spec.ts` does, or run `pnpm --dir apps/connector test:integration`, which leaves batches on lanes 7 and 9 (sign in as `ryan.lane9@demo.esta.test`).
 - To see a refusal, change a row the batch wrote on its own screen first, for example archive a property Claude added.
 
 ## Gotchas
