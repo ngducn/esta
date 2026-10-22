@@ -10,5 +10,5 @@ export type ExportRow = { readonly key: string; readonly cells: readonly ExportC
  */
 export type ExportTable = { readonly columns: readonly ExportColumn[]; readonly rows: readonly ExportRow[]; readonly totals: ExportRow };
 
-export const text = (value: string): ExportCell => ({ kind: 'text', value: value.normalize('NFC') });
-export const amount = (value: Vnd): ExportCell => ({ kind: 'vnd', value });
+export const textCell = (value: string): ExportCell => ({ kind: 'text', value: value.normalize('NFC') });
+export const vndCell = (value: Vnd): ExportCell => ({ kind: 'vnd', value });

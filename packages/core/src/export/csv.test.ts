@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { vnd } from '../money/vnd';
 import { toCsv } from './csv';
-import { amount, text, type ExportTable } from './table';
+import { textCell, vndCell, type ExportTable } from './table';
 
 const table: ExportTable = {
   columns: [
@@ -10,10 +10,10 @@ const table: ExportTable = {
     { id: 'income', label: 'Thu' },
   ],
   rows: [
-    { key: '2026-09', cells: [text('09/2026'), text('Sửa mái, sơn tường'), amount(vnd(3_000_000))] },
-    { key: '2026-10', cells: [text('10/2026'), text('Nguye\u0302\u0303n "Demo"'), amount(vnd(-750_000))] },
+    { key: '2026-09', cells: [textCell('09/2026'), textCell('Sửa mái, sơn tường'), vndCell(vnd(3_000_000))] },
+    { key: '2026-10', cells: [textCell('10/2026'), textCell('Nguye\u0302\u0303n "Demo"'), vndCell(vnd(-750_000))] },
   ],
-  totals: { key: 'total', cells: [text('Cả năm'), text(''), amount(vnd(2_250_000))] },
+  totals: { key: 'total', cells: [textCell('Cả năm'), textCell(''), vndCell(vnd(2_250_000))] },
 };
 
 describe('toCsv', () => {
