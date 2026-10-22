@@ -403,7 +403,9 @@ as $$
     (
       select coalesce(jsonb_agg(jsonb_build_object('number', i.number, 'period_start', i.period_start) order by i.period_start, i.number), '[]')
       from public.invoices i
-      where i.id in (select a.row_id from public.audit_log a where a.batch_id = b.id and a.via = 'claude' and a.table_name = 'invoices' and a.action = 'insert')
+      where i.status = 'issued'
+        and i.id in (select a.row_id from public.audit_log a where a.batch_id = b.id and a.via = 'claude' and a.table_name = 'invoices' and a.action = 'insert')
+        and i.id in (select a.row_id from public.audit_log a where a.batch_id = b.id and a.via = 'claude' and a.table_name = 'invoices' and a.diff -> 'status' ->> 'new' = 'issued')
     )
   from public.change_batches b
   left join public.household_members m on m.household_id = b.household_id and m.user_id = b.created_by

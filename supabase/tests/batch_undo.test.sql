@@ -263,8 +263,8 @@ select is((select jsonb_agg(b - 'row_id' order by b ->> 'table_name') from jsonb
 select lives_ok(format('select pg_temp.rental_batch(%L, %L)', :matched, 9), 'a batch adds and starts the lease on Phòng 9');
 select is((select issued_bills from public.change_batch_history(:'a') where id = :matched),
   (select jsonb_agg(jsonb_build_object('number', number, 'period_start', period_start) order by period_start) from public.invoices
-   where lease_id = '00000000-0000-4000-8000-0000000c4d09'),
-  'the history names each bill the batch issued, which an undo removes');
+   where lease_id = '00000000-0000-4000-8000-0000000c4d09' and status = 'issued'),
+  'the history names each bill the batch issued, which an undo removes, and not the drafts it planned');
 reset role;
 insert into public.bank_accounts (id, household_id, bank_bin, account_no, account_name) values
   ('00000000-0000-4000-8000-0000000c4a0c', :'a', (select bin from public.bank_bins order by bin limit 1), '0123456789', 'DEMO');
