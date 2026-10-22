@@ -12,6 +12,7 @@ import { parseSlot, slotWorkdir } from '../../../scripts/slot.ts';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
 import { appliedSchema, call, clientAt, env, laneContext, ROOT, plannedSchema, sessionFiles, signIn, startConnector, type Connector } from './test/connector';
 import { demoProperty } from './test/demo-property';
+import { actAs, blockedOn, psqlSession } from './test/psql';
 
 // Run against a fresh `pnpm db:reset`.
 const LANE = 7;
@@ -179,12 +180,14 @@ const rental = (label: string, phone: string) => [
   { op: 'deposit.record', input: deposit({ $ref: 'lease' }) },
 ];
 
+const HOUSEHOLD = seedId(`seed:household:lane-${LANE}`);
+
 /** The nightly invoicing for lane 7 alone, as the cron route runs it with the service role. */
 async function nightlyRun(asOf: string) {
   const response = await fetch(`${env.ESTA_IT_SUPABASE_URL}/rest/v1/rpc/run_invoicing`, {
     method: 'POST',
     headers: { ...e2eServiceHeaders(), 'content-type': 'application/json' },
-    body: JSON.stringify({ p_household_id: seedId(`seed:household:lane-${LANE}`), p_as_of: asOf, p_issued_at: `${asOf}T00:30:00+07:00` }),
+    body: JSON.stringify({ p_household_id: HOUSEHOLD, p_as_of: asOf, p_issued_at: `${asOf}T00:30:00+07:00` }),
   });
   expect(response.ok, await response.text()).toBe(true);
 }
@@ -365,5 +368,52 @@ describe('a Demo rental Claude applied, undone from the connector', () => {
     expect(refused.isError).toBe(true);
     expect(refused.json()).toMatchObject({ kind: 'undo_blocked', blockers: expect.arrayContaining([expect.objectContaining({ table_name: 'invoices', reason: 'invoice_issued', flow: 'void' })]) });
     expect(tablesUndoRestores()).toEqual(before);
+  });
+});
+
+describe('an undo racing a write to what the batch added', () => {
+  const RYAN = seedId(`seed:user:ryan-lane-${LANE}`);
+  const ME = seedId(`seed:user:me-lane-${LANE}`);
+
+  /** Holds `write` open in one connection, starts Ryan's undo in another, commits the write, and returns the undo's answer. */
+  async function undoDuring(batchId: string, write: string) {
+    const [writer, undoer] = [psqlSession(), psqlSession()];
+    try {
+      await writer.run(write);
+      const undone = undoer.run(`${actAs(RYAN)} select public.undo_change_batch('${batchId}');`);
+      await blockedOn('undo_change_batch');
+      await writer.run('commit;');
+      const answer = (await undone).split('\n').at(-1) ?? '';
+      await undoer.run('commit;');
+      return JSON.parse(answer) as unknown;
+    } finally {
+      await Promise.all([writer.close(), undoer.close()]);
+    }
+  }
+
+  it("refuses as edited when Mẹ's edit of the tenant Claude added commits while the undo waits, and keeps her edit", async () => {
+    const planned = plannedSchema.parse((await plan('Demo: thêm người thuê Khoa Demo', [{ op: 'person.create', input: { person: { full_name: 'Khoa Demo', phone: '0901 777 011', id_last4: null } } }])).json());
+    const tenant = planned.items[0]?.id ?? '';
+    expect(await apply(planned.planId)).toMatchObject({ status: 'applied' });
+    const answer = await undoDuring(planned.planId, `${actAs(ME)} update public.parties set phone = '+84987000111' where id = '${tenant}';`);
+    expect(answer).toMatchObject({ undone: false, blockers: [{ table_name: 'parties', row_id: tenant, reason: 'edited_after', flow: 'edit' }] });
+    expect((await db.from('parties').select('phone').eq('id', tenant).single()).data).toEqual({ phone: '+84987000111' });
+  });
+
+  it('refuses as billed when the nightly run issues a bill for the lease Claude added while the undo waits, and keeps the bill', async () => {
+    const planned = plannedSchema.parse((await plan('Demo: Phòng 11 ở Q1 cho chị Lan Demo', rental('Phòng 11', '0901 777 012'))).json());
+    const lease = planned.items[2]?.id ?? '';
+    expect(await apply(planned.planId)).toMatchObject({ status: 'applied' });
+    const nightly = `begin; select set_config('request.headers', '{"x-esta-actor": "system:cron"}', true); set local role service_role;
+      select public.run_invoicing('${HOUSEHOLD}', '2026-11-01', '2026-11-01T00:30:00+07:00');`;
+    expect(await undoDuring(planned.planId, nightly)).toMatchObject({
+      undone: false,
+      blockers: expect.arrayContaining([expect.objectContaining({ table_name: 'invoices', reason: 'invoice_issued', flow: 'void' })]),
+    });
+    const bills = await db.from('invoices').select('period_start, status').eq('lease_id', lease).order('period_start');
+    expect(bills.data?.slice(0, 2)).toEqual([
+      { period_start: '2026-10-01', status: 'issued' },
+      { period_start: '2026-11-01', status: 'issued' },
+    ]);
   });
 });

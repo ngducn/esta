@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(61);
+select plan(71);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as admin_a \gset
@@ -216,6 +216,67 @@ select lives_ok($$ select public.record_deposit_entry('00000000-0000-4000-8000-0
 select ok((select array_agg(distinct b ->> 'reason' || ':' || (b ->> 'flow')) @> array['deposit_recorded:end_lease'] from jsonb_array_elements(public.undo_change_batch(:held) -> 'blockers') b),
   'a deposit entered by hand on the lease blocks the undo');
 
+-- A batch's deposit or payment on a lease or bill that existed before it: a later entry that someone else made may rest
+-- on it, so undo refuses rather than take it out from under them.
+\set receipt '''00000000-0000-4000-8000-0000000c4e0a'''
+select pg_temp.open_batch(:receipt, :'a');
+select lives_ok($$ select public.record_deposit_entry('00000000-0000-4000-8000-0000000c4d02', 'received', 7000000, '2026-03-01', '00000000-0000-4000-8000-0000000c4f02') $$,
+  'a batch records the deposit of a lease entered before it');
+select pg_temp.close_batch(:receipt);
+select lives_ok($$ select public.record_deposit_entry('00000000-0000-4000-8000-0000000c4d02', 'refunded', 7000000, '2026-10-06', '00000000-0000-4000-8000-0000000c4f0a') $$,
+  'later the deposit is refunded by hand, against what the batch recorded');
+select is((select jsonb_agg(b - 'row_id') from jsonb_array_elements(public.undo_change_batch(:receipt) -> 'blockers') b),
+  '[{"flow": "deposit", "reason": "deposit_later", "table_name": "deposit_entries"}]',
+  'the later refund blocks undoing the receipt, and the flow is the lease''s deposit ledger');
+select is((select held_vnd from public.lease_deposits where lease_id = '00000000-0000-4000-8000-0000000c4d02'), 0::bigint,
+  'and the lease holds nothing, not less than nothing');
+reset role;
+create temporary table ledger_rules as select * from private.undo_rules where kind = 'ledger';
+delete from private.undo_rules where kind = 'ledger';
+select tests.act_as('admin.a@test.esta.test');
+select throws_ok(format('select public.undo_change_batch(%L)', :receipt), '23514', 'ESTA_DEPOSIT_EXCEEDS_HELD',
+  'without the ledger rule, the deposit guard still refuses an undo that would hold less than nothing');
+reset role;
+insert into private.undo_rules select * from ledger_rules;
+
+select id as bill from public.invoices where lease_id = '00000000-0000-4000-8000-0000000c4d02' and status = 'issued' order by period_start limit 1 \gset
+\set payment '''00000000-0000-4000-8000-0000000c4e0b'''
+select tests.act_as('admin.a@test.esta.test');
+select pg_temp.open_batch(:payment, :'a');
+reset role;
+select set_config('esta.via', 'claude', true), set_config('esta.batch', :payment, true);
+insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method) values
+  ('00000000-0000-4000-8000-0000000c490b', :'a', '00000000-0000-4000-8000-0000000c4c01', 1000000, '2026-10-05', 'cash');
+insert into public.payment_allocations (household_id, payment_id, invoice_id, amount_vnd) values (:'a', '00000000-0000-4000-8000-0000000c490b', :'bill', 1000000);
+select set_config('esta.via', '', true), set_config('esta.batch', '', true);
+insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method) values
+  ('00000000-0000-4000-8000-0000000c491b', :'a', '00000000-0000-4000-8000-0000000c4c01', 1000000, '2026-10-06', 'cash');
+insert into public.payment_allocations (household_id, payment_id, invoice_id, amount_vnd) values (:'a', '00000000-0000-4000-8000-0000000c491b', :'bill', 1000000);
+select tests.act_as('admin.a@test.esta.test');
+select pg_temp.close_batch(:payment);
+select is((select jsonb_agg(b - 'row_id' order by b ->> 'table_name') from jsonb_array_elements(public.undo_change_batch(:payment) -> 'blockers') b),
+  '[{"flow": "payment", "reason": "payment_later", "table_name": "payment_allocations"}, {"flow": "payment", "reason": "payment_later", "table_name": "payments"}]',
+  'a later payment from the same tenant on the same bill blocks undoing the batch''s payment and its allocation');
+
+-- A bill the batch issued goes with the batch, unless something uses it: here a bank statement line suggests it.
+\set matched '''00000000-0000-4000-8000-0000000c4e0c'''
+select lives_ok(format('select pg_temp.rental_batch(%L, %L)', :matched, 9), 'a batch adds and starts the lease on Phòng 9');
+select is((select issued_bills from public.change_batch_history(:'a') where id = :matched),
+  (select jsonb_agg(jsonb_build_object('number', number, 'period_start', period_start)) from public.invoices where lease_id = '00000000-0000-4000-8000-0000000c4d09'),
+  'the history names the October bill the batch issued, which an undo removes');
+reset role;
+insert into public.bank_accounts (id, household_id, bank_bin, account_no, account_name) values
+  ('00000000-0000-4000-8000-0000000c4a0c', :'a', (select bin from public.bank_bins order by bin limit 1), '0123456789', 'DEMO');
+insert into public.statement_imports (id, household_id, bank_account_id, file_name, column_mapping) values
+  ('00000000-0000-4000-8000-0000000c4a0d', :'a', '00000000-0000-4000-8000-0000000c4a0c', 'demo.csv', '{}');
+insert into public.statement_rows (household_id, import_id, row_index, posted_on, amount_vnd, description, fingerprint, status, candidate_invoice_ids)
+  select :'a', '00000000-0000-4000-8000-0000000c4a0d', 0, '2026-10-05', 9000000, 'Demo chuyen tien', repeat('c', 64), 'unmatched', array_agg(id)
+  from public.invoices where lease_id = '00000000-0000-4000-8000-0000000c4d09';
+select tests.act_as('admin.a@test.esta.test');
+select is((select jsonb_agg(b - 'row_id') from jsonb_array_elements(public.undo_change_batch(:matched) -> 'blockers') b),
+  '[{"flow": "void", "reason": "statement_matched", "table_name": "statement_rows"}]',
+  'a statement line that suggests the bill blocks the undo, though it names the bill in a list and not by key');
+
 -- Who may undo.
 reset role;
 select tests.act_as('admin.b@test.esta.test');
@@ -276,8 +337,13 @@ select throws_ok(format($$ update public.change_batches set status = 'undone', u
 reset role;
 
 -- History, newest first, for the household's members only.
+update public.change_batches b set created_at = '2026-10-07T02:00:00Z'::timestamptz + make_interval(secs => o.n)
+  from (select id, row_number() over (order by id) as n from public.change_batches where household_id = :'a') o where b.id = o.id;
 select tests.act_as('viewer.a@test.esta.test');
-select is((select count(*)::int from public.change_batch_history(:'a')), 8, 'a member reads every applied, partial or undone batch, not planned or applying ones');
+select is((select count(*)::int from public.change_batch_history(:'a')), 11, 'a member reads every applied, partial or undone batch, not planned or applying ones');
+select is(array(select id from public.change_batch_history(:'a')),
+  array(select id from public.change_batches where household_id = :'a' and status <> 'applying' order by created_at desc),
+  'batches planned at the same time read newest first');
 select is((select archived_properties from public.change_batch_history(:'a') where id = :edit), 1, 'the history counts the property an undo moved to the trash');
 select is((select status from public.change_batch_history(:'a') where id = :rental), 'undone', 'and shows the undone batch as undone');
 select is((select planner_name from public.change_batch_history(:'a') where id = :rental), 'Ryan Demo', 'with who applied it');
@@ -297,7 +363,8 @@ $$, 'every household table has the audit trigger or is bookkeeping in the undo r
 select is_empty($$ select table_name from private.undo_rules except
   select relname from pg_catalog.pg_class where relnamespace = 'public'::regnamespace and relkind = 'r' $$,
   'every undo rule names a table that exists');
-select ok((select bool_and(x.reason = any (array['edited_after', 'lease_started', 'invoice_issued', 'payment_recorded', 'deposit_recorded', 'in_use']))
+select ok((select bool_and(x.reason = any (array['edited_after', 'lease_started', 'invoice_issued', 'payment_recorded', 'deposit_recorded', 'in_use',
+    'deposit_later', 'payment_later', 'statement_matched']))
   from private.undo_rules x where x.kind <> 'bookkeeping'), 'every reason is one the screens explain');
 
 select is(has_function_privilege('anon', 'public.undo_change_batch(uuid)', 'execute'), false, 'an anonymous caller cannot undo');
