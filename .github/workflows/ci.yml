@@ -51,7 +51,13 @@ jobs:
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
           version: 2.90.0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/supabase-images
+          key: supabase-images-${{ github.job }}-2.90.0-v1
+      - run: tools/ci/images.sh load ~/.cache/supabase-images
       - run: tools/ci/db-start.sh -x studio,realtime,imgproxy,mailpit
+      - run: tools/ci/images.sh save ~/.cache/supabase-images
       - name: Reset twice and compare checksums
         # The Supabase CLI can answer 502 while db reset restarts the Storage container; one restart of the stack and
         # one retry clear it, as tools/ci-local.sh does.
@@ -94,7 +100,13 @@ jobs:
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
           version: 2.90.0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/supabase-images
+          key: supabase-images-${{ github.job }}-2.90.0-v1
+      - run: tools/ci/images.sh load ~/.cache/supabase-images
       - run: tools/ci/db-start.sh -x studio,realtime,imgproxy,postgres-meta
+      - run: tools/ci/images.sh save ~/.cache/supabase-images
       - name: Run the shard on a production build, retrying a failed test once
         run: pnpm e2e $PROJECTS --shard="$SHARD" --retries=1 --reporter=list,blob
         env:
