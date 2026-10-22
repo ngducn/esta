@@ -2,6 +2,7 @@ import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { LEGAL_STATUSES, PROPERTY_KINDS, USE_MODES, preferPhrase, type PropertyViewRow } from '@esta/core/properties';
 import { z } from 'zod';
 import type { Db } from './db';
+import { readAll } from './kit';
 
 /** A row of `property_list_rows`. The lease facts need the Clock's date, which a view does not have, so callers add them. */
 export type PropertyRow = Omit<PropertyViewRow, 'leasedUnitCount' | 'monthlyRentVnd'>;
@@ -59,24 +60,18 @@ const propertyRowSchema = z
 /** LIKE treats `%`, `_` and `\` as syntax and PostgREST reads `*` as `%`, so a typed one must match only itself. */
 const likeToken = (token: string) => `%${token.replace(/[\\%_]/g, '\\$&').replaceAll('*', '')}%`;
 
-/** PostgREST caps a response at `max_rows` (1000 in `supabase/config.toml`), and a household may hold more. */
-const PAGE_SIZE = 1000;
-
 /**
  * The household's properties whose `search_text` holds every token (`searchTokens` from core), all of them with no
  * token, narrowed by `preferPhrase`. RLS limits the rows to the member's households; the household predicate keeps a
  * member of two to one list.
  */
 export async function searchProperties(db: Db, householdId: string, tokens: readonly string[]): Promise<readonly PropertyRow[]> {
-  const rows: PropertyRow[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
+  const rows = await readAll('the property list', (from, to) => {
     let query = db.from('property_list_rows').select(PROPERTY_ROW_COLUMNS).eq('household_id', householdId);
     for (const token of tokens) query = query.ilike('search_text', likeToken(token));
-    const { data, error } = await query.order('id').range(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`Reading the property list failed: ${error.message}`);
-    rows.push(...z.array(propertyRowSchema).parse(data));
-    if (data.length < PAGE_SIZE) return preferPhrase(rows, tokens);
-  }
+    return query.order('id').range(from, to);
+  });
+  return preferPhrase(z.array(propertyRowSchema).parse(rows), tokens);
 }
 
 export type PropertyDetailRow = PropertyRow & { readonly kindDetails: Readonly<Record<string, unknown>> };

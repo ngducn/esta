@@ -59,3 +59,19 @@ export function changedColumns<T>(current: T, next: T, keys: readonly (keyof T)[
   }
   return Object.keys(set).length === 0 ? null : { before, set };
 }
+
+/** PostgREST caps a response at `max_rows` (1000 in `supabase/config.toml`), and a household may hold more. */
+const PAGE_SIZE = 1000;
+
+type Page<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
+
+/** Every row of a read, a page at a time; `page` must order the rows so that pages do not overlap. */
+export async function readAll<T>(what: string, page: (from: number, to: number) => Page<T>): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await page(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`Reading ${what} failed: ${error.message}`);
+    rows.push(...(data ?? []));
+    if ((data ?? []).length < PAGE_SIZE) return rows;
+  }
+}

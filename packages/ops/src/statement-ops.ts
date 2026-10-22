@@ -2,11 +2,9 @@ import { planImport, type ImportInvoice, type ImportRow, type StoredLine } from 
 import { vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { z } from 'zod';
-import { dbRefusal, idSchema, type CommonRefusal } from './kit';
+import { dbRefusal, idSchema, readAll, type CommonRefusal } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 
-/** PostgREST caps a response at `max_rows` (1000 in `supabase/config.toml`), and a household may hold more. */
-const PAGE_SIZE = 1000;
 const MAX_ROWS = 5000;
 
 const lineIndex = z.number().int().min(0).max(100_000);
@@ -64,18 +62,6 @@ const SENTINELS: Readonly<Record<string, CommonRefusal>> = {
   ESTA_IMPORT_NOT_FOUND: { kind: 'not_found' },
   ESTA_STATEMENT_ROWS: { kind: 'invalid', issues: [{ path: 'rows', code: 'invalid_value' }] },
 };
-
-type Page<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-
-async function readAll<T>(what: string, page: (from: number, to: number) => Page<T>): Promise<T[]> {
-  const rows: T[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await page(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`Reading ${what} failed: ${error.message}`);
-    rows.push(...(data ?? []));
-    if ((data ?? []).length < PAGE_SIZE) return rows;
-  }
-}
 
 const invoiceSchema = z.object({
   id: z.uuid(),
