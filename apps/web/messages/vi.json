@@ -1760,5 +1760,25 @@
     "viewerNote": "Bạn chỉ xem được chỉ số, không sửa được.",
     "priceNote": "Giả định: tiền điện nước tính theo giá đặt cho từng đồng hồ. Quy định của Bộ Công Thương giới hạn giá điện thu của người thuê nhà, nên hãy kiểm tra giá trước khi gửi hóa đơn.",
     "monthNav": "Chọn tháng"
+  },
+  "history": {
+    "title": "Lịch sử thay đổi",
+    "intro": "Những gì Claude đã sửa trong Esta theo lời bạn, mới nhất ở trên. Hoàn tác đưa cả nhóm thay đổi về như trước.",
+    "settingsLink": "Lịch sử thay đổi qua Claude",
+    "settingsLinkHint": "Xem và hoàn tác những gì Claude đã sửa.",
+    "empty": "Chưa có thay đổi nào qua Claude.",
+    "via": "qua Claude",
+    "status": "{status, select, applied {Đã áp dụng} partial {Áp dụng một phần} undone {Đã hoàn tác} other {}}",
+    "entry": "{name} · {time} {date}",
+    "someone": "Thành viên",
+    "archived": "{count, plural, other {# tài sản Claude đã thêm nay ở <link>Đã lưu trữ</link>.}}",
+    "undo": "Hoàn tác",
+    "undoTitle": "Hoàn tác “{summary}”?",
+    "undoBody": "Esta đưa mọi thứ nhóm này đã sửa về như trước. Tài sản Claude đã thêm sẽ vào Đã lưu trữ, khôi phục được bất cứ lúc nào.",
+    "undoing": "Đang hoàn tác…",
+    "refused": "Không hoàn tác được.",
+    "reason": "{reason, select, invoice_issued {Đã phát hành hóa đơn cho hợp đồng này.} payment_recorded {Đã ghi nhận tiền thu cho hợp đồng này.} deposit_recorded {Đã ghi tiền cọc cho hợp đồng này.} lease_started {Hợp đồng đã bắt đầu thì không quay lại bản nháp được.} edited_after {Có người đã sửa lại phần này sau đó.} in_use {Có dữ liệu khác đang dùng phần Claude đã thêm.} other {}}",
+    "flow": "{flow, select, void {Hãy dùng Hủy hóa đơn trong mục Thu tiền.} end_lease {Hãy dùng Kết thúc hợp đồng trong tab Cho thuê.} edit {Hãy sửa trực tiếp trên màn hình đó.} other {}}",
+    "failed": "Chưa hoàn tác được. Kiểm tra mạng rồi thử lại."
   }
 }

@@ -10,7 +10,8 @@ import { businessChecksums } from '../../../scripts/db-checksum.ts';
 import { e2eServiceHeaders } from '../../../scripts/e2e-service.ts';
 import { parseSlot, slotWorkdir } from '../../../scripts/slot.ts';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
-import { appliedSchema, call, clientAt, demoProperty, env, laneContext, ROOT, plannedSchema, sessionFiles, signIn, startConnector, type Connector } from './test/connector';
+import { appliedSchema, call, clientAt, env, laneContext, ROOT, plannedSchema, sessionFiles, signIn, startConnector, type Connector } from './test/connector';
+import { demoProperty } from './test/demo-property';
 
 // Run against a fresh `pnpm db:reset`.
 const LANE = 7;

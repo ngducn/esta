@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
 import { importFolders } from './files';
 import { localFiles } from './local-files';
-import { appliedSchema, batchClientFor, call, clientAt, demoProperty, plannedSchema, sessionFiles, setClock, signIn, startConnector, type Connector } from './test/connector';
+import { appliedSchema, batchClientFor, call, clientAt, plannedSchema, sessionFiles, setClock, signIn, startConnector, type Connector } from './test/connector';
+import { demoProperty } from './test/demo-property';
 
 // Run against a fresh `pnpm db:reset`.
 const OPERATOR = 'ryan.lane9@demo.esta.test';
