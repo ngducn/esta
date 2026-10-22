@@ -17,6 +17,7 @@ import { agentJobs, agentRuns } from './agent.ts';
 import { renderSeed } from './sql.ts';
 import { units } from './units.ts';
 import { utilityAccounts } from './utility-accounts.ts';
+import { valuations } from './valuations.ts';
 import { isVariantName, VARIANTS, type VariantName } from './variants.ts';
 
 const EMITTERS: readonly Emitter[] = [
@@ -39,6 +40,7 @@ const EMITTERS: readonly Emitter[] = [
   documents,
   documentExtractions,
   expenses,
+  valuations,
   agentJobs,
   agentRuns,
 ];
