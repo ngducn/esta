@@ -3475,6 +3475,58 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
+## Prefill a lease from a photo of the contract (P3-19)
+
+**Depends on.** P2-03 for `extract_document`, P2-07 for the review screen, P2-05 for the `ocr_text` writer, P3-07 and P3-08 for the lease form, the lease detail and `documents.lease_id`, and connector C2b (#239) for the `leaseCreate` op.
+
+**Files.**
+
+- [ ] Create `packages/core/src/agent-schemas/lease_v1.ts` with its test, and register it in `AGENT_SCHEMAS`, `REQUIRED_FIELDS`, `EXTRACTION_FIELDS` and `PLANNERS`. Set `DOCUMENT_CATEGORIES.lease_contract.extractionSchema` to `lease_v1` and change the index and category tests that held it null.
+- [ ] Create `packages/core/src/lease/fromExtraction.ts` and `packages/core/src/lease/fromExtraction.test.ts`.
+- [ ] Add the `lease_v1` rules to `apps/agent/src/prompts/extract-document.ts`.
+- [ ] Create `fixtures/certificates/generator/leases.tsx`, which renders three synthetic leases with their truth into `fixtures/leases/`, add them to `extractionFixtures` and the golden test, and record them with `pnpm agent:record --kind extract_document --only <ids>`.
+- [ ] Create `supabase/migrations/20261007403100_lease_from_contract.sql` and `supabase/tests/lease_from_contract.test.sql`.
+- [ ] Edit `packages/ops/src/lease-ops.ts` and its test, `apps/web/src/server/actions/leases.ts`, the lease page under `apps/web/src/app/(app)/properties/[id]/rental/leases/[leaseId]/`, `apps/web/src/components/leases/LeaseForm.tsx`, `TenantQuickAdd.tsx` and `lease-form-values.ts`, and the review panel and loader under `apps/web/src/components/extraction/` and `apps/web/src/server/extraction/`.
+- [ ] Extend `supabase/seed/generator/documents.ts` and add the seeded extraction. Create `e2e/lease-from-contract.spec.ts`. Edit `docs/spec/AGENT.md` §5.1 and `apps/web/messages/vi.json` and `en.json`.
+
+**Build.**
+
+- [ ] Define `lease_v1` as AGENT.md §5 leaves `{ value, confidence, page }`: tenant name, tenant phone, tenant ID last four (never a full ID, SPEC D11), property address as printed, room or unit label, start date, end date, term in months, rent in đồng per month, payment cycle in months (1, 3, 6 or 12), due day, deposit in đồng and notes, plus an optional top-level `full_text`. Money reads with `parseVndInput` and dates are `IsoDate`.
+- [ ] Widen `document_extractions.schema_name` to `lease_v1` and map `lease_contract` to it in `enqueue_extract_document`, so a lease contract upload queues extraction (DOC-6).
+- [ ] Review the fields that land on the lease form: tenant name and phone, unit, start, end, term, rent, cycle and deposit. Accepting writes no business row. It marks the extraction `accepted` with `accepted_fields`, and the P2-05 writer copies `full_text` into `documents.ocr_text` for a `normal` document. Saving the review opens the prefilled lease form.
+- [ ] `leaseFieldsFromExtraction(acceptedFields, units)` maps the accepted values to lease draft terms: the unit whose label matches, start, end (start plus the term when the contract prints only a term), rent, cycle and deposit, and the tenant's name and phone. A value that does not read as its kind is left out, never guessed.
+- [ ] A `lease_contract` with an `accepted` extraction and no lease offers `Tạo hợp đồng thuê từ tài liệu này`, which opens `/properties/[id]/rental/leases/new?fromDocument=<id>`. The form marks each prefilled field `Từ hợp đồng đã quét` until Mẹ changes it. An existing tenant with the same name and phone is chosen; otherwise the quick add opens with the name and phone filled. Nothing is saved until Mẹ presses a save button.
+- [ ] `leaseCreate` takes an optional `document_id`. Its apply calls `public.create_lease`, which inserts the draft and sets `documents.lease_id` in one transaction under the member's RLS, and refuses a document that is not a lease contract on the same property or already belongs to another lease. This is the one lease insert, for the web and the connector.
+- [ ] Seed one synthetic `lease_contract` for `di-an` Phòng 8 with an `accepted` `lease_v1` extraction in every household. Names contain Demo.
+
+**You see.**
+
+- [ ] On the seeded Phòng 8 contract, `Tạo hợp đồng thuê từ tài liệu này` opens the lease form with the tenant, dates, rent, cycle and deposit filled, each marked `Từ hợp đồng đã quét`.
+- [ ] Saving that form creates a draft lease on Phòng 8, and the contract shows under the lease's documents.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `lease_v1.test.ts` parses a full lease, reads `3.500.000 đ` as 3500000, refuses a full ID in `tenant_id_last4` and an unknown cycle. `fromExtraction.test.ts` covers every mapped field, an end date from a term, a unit label that matches none, and a value that does not read.
+- [ ] `lease_from_contract.test.sql` proves the lease and the document link land together or not at all, that another household's document is refused, and that a lease contract upload queues `lease_v1`.
+- [ ] The golden extraction test scores the three leases in replay at the AGENT.md §7.2 targets.
+- [ ] `e2e/lease-from-contract.spec.ts` drives upload, review, the prefilled form and the save at 390, with axe. Run `pnpm check`, `pnpm db:test`, `pnpm e2e e2e/lease-from-contract.spec.ts e2e/leases.spec.ts e2e/extraction-review.spec.ts`.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with a reason.
+
+**Verify, live.** Per `docs/plan/trail/verification-tiers.md` for a rigorous PR, at the PR head, per the boot recipe.
+
+- [ ] Live lane (Sonnet). As `me.lane2@demo.esta.test` at 390x844, light, open the seeded Phòng 8 contract, create the lease from it and save. Then upload a second lease photo, review it and confirm. Pass when every prefilled value matches the contract, the draft lease exists, and `documents.lease_id` names it.
+- [ ] Regression lane. On `main` and at head, add a lease on `di-an` Phòng 7 by hand. Pass when both save the same draft.
+- [ ] Audit lane (Opus, adversarial). Read the diff for a full ID reaching a row, a value the form shows that the contract did not say, a second lease write path, and a document linked across households.
+- [ ] Second-opinion audit on `create_lease` and the `leaseCreate` change.
+
+**Verify, perf.** None beyond CI. The lease route gains one read when `fromDocument` is set.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA, with the `ci` check green.
+- [ ] Bugbot triage done.
+- [ ] Ryan gets a short plain-language summary with the flow GIF.
+
 Phase 4. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict.
 
 ## Compute the owner tax position from versioned rules (P4-01)
