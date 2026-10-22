@@ -132,6 +132,7 @@ const CHANGE_REFUSALS = {
   ESTA_TERMINATION_REASON: 'reason_required',
   ESTA_TERMINATION_DATE: 'date_outside_lease',
   ESTA_TERMINATION_BEFORE_ISSUED: 'before_issued',
+  ESTA_LEASE_METER_CREDIT_TOO_LARGE: 'meter_credit_too_large',
   ESTA_LEASE_NOT_RENEWABLE: 'not_renewable',
   ESTA_LEASE_OPEN_ENDED: 'open_ended',
   ESTA_LEASE_ALREADY_RENEWED: 'already_renewed',
@@ -179,16 +180,19 @@ export async function amendLease(leaseId: unknown, raw: unknown): Promise<LeaseC
 
 const terminationSchema = z.strictObject({ terminatedOn: isoDateSchema, reason: text(1000) });
 
-/** LSE-2: the lease ends on the chosen day for the stated reason, and no period after that day is ever billed (#144). */
-export async function terminateLease(leaseId: unknown, raw: unknown): Promise<LeaseChange> {
+/**
+ * LSE-2: the lease ends on the chosen day for the stated reason, and no period after that day is ever billed (#144). The
+ * value is how many meter months the lease can no longer bill, such as a month whose bill was voided so it could end.
+ */
+export async function terminateLease(leaseId: unknown, raw: unknown): Promise<LeaseChange<{ readonly unbilled: number }>> {
   const id = uuid.safeParse(leaseId);
   if (!id.success) return { ok: false, reason: 'invalid' };
   const value = terminationSchema.safeParse(raw);
   if (!value.success) return { ok: false, reason: value.error.issues.some((issue) => issue.path[0] === 'reason') ? 'reason_required' : 'invalid' };
   const supabase = await createSessionClient();
-  const { error } = await supabase.rpc('terminate_lease', { p_lease_id: id.data, p_terminated_on: value.data.terminatedOn, p_reason: value.data.reason });
+  const { data, error } = await supabase.rpc('terminate_lease', { p_lease_id: id.data, p_terminated_on: value.data.terminatedOn, p_reason: value.data.reason });
   revalidateLeases();
-  return error ? { ok: false, reason: changeRefusal(error) } : { ok: true, value: undefined };
+  return error ? { ok: false, reason: changeRefusal(error) } : { ok: true, value: { unbilled: data } };
 }
 
 const renewalSchema = z.strictObject({

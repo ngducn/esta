@@ -18,6 +18,7 @@ const ERRORS = {
   belowPrevious: 'errorBelowPrevious',
   aboveNext: 'errorAboveNext',
   useTooLarge: 'errorTooLarge',
+  correctionTooLarge: 'errorCorrectionTooLarge',
   monthAfterToday: 'errorMonth',
   notFound: 'errorNetwork',
   failed: 'errorNetwork',

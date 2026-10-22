@@ -112,11 +112,29 @@ describe('knownLines: the same statement under other columns records nothing twi
     expect(knownLines(valuedOn('2026-09-30'), storedOf(saturday)).map((line) => line?.importId)).toEqual(['import-1']);
   });
 
-  it('records a line with the same reference and amount 4 days away as a new transfer', () => {
-    const first = storedOf([row('CK TIEN PHONG', 2_800_000, '2026-10-03', '000123')]);
-    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2026-10-07', '000123')], first)).toEqual([undefined]);
-    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2026-09-29', '000123')], first)).toEqual([undefined]);
-    expect(knownLines([row('CK TIEN PHONG', 2_500_000, '2026-10-04', '000123')], first)).toEqual([undefined]);
+  it('knows a line with the same reference and amount re-dated past the 30/4 break, up to 14 days away', () => {
+    const first = storedOf([row('CK TIEN PHONG', 2_800_000, '2027-04-29', 'FT27119000123')]);
+    const after = (amount: number, date: string, stored = first) => knownLines([row('CK TIEN PHONG', amount, date, 'FT27119000123')], stored).map((line) => line?.importId);
+    expect(after(2_800_000, '2027-05-04')).toEqual(['import-1']);
+    expect(after(2_800_000, '2027-05-13')).toEqual(['import-1']);
+    expect(after(2_800_000, '2027-04-15')).toEqual(['import-1']);
+    expect(after(2_800_000, '2027-05-14')).toEqual([undefined]);
+    expect(after(2_500_000, '2027-04-29')).toEqual([undefined]);
+    expect(after(2_800_000, '2027-05-04', storedOf([row('CK TIEN PHONG', 2_800_000, '2027-04-29', 'FT27119000123')], 'import-1', false))).toEqual([undefined]);
+  });
+
+  it('records the same reference and amount a month later as a new transfer, as when a bank reuses a short reference for the next rent', () => {
+    const april = storedOf([row('CK TIEN PHONG', 2_800_000, '2027-04-29', 'FT27119000123')]);
+    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2027-05-29', 'FT27119000123')], april)).toEqual([undefined]);
+    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2027-03-29', 'FT27119000123')], april)).toEqual([undefined]);
+  });
+
+  it('keeps the window for lines whose references differ or that carry none', () => {
+    const first = storedOf([row('CK TIEN PHONG', 2_800_000, '2027-04-29', 'FT27119000123')]);
+    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2027-04-30', 'FT27120000456')], first)).toEqual([undefined]);
+    const unreferenced = storedOf([row('CK TIEN PHONG', 2_800_000, '2027-04-29', '')]);
+    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2027-05-02', '')], unreferenced).map((line) => line?.importId)).toEqual(['import-1']);
+    expect(knownLines([row('CK TIEN PHONG', 2_800_000, '2027-05-04', '')], unreferenced)).toEqual([undefined]);
   });
 
   it('reads the same day from a date column with a time or without one, so the line is known', () => {

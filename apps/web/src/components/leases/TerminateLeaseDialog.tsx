@@ -64,7 +64,8 @@ export default function TerminateLeaseDialog({
         setRefusal(result.reason);
         return;
       }
-      notice(t('terminated', { unit: unitLabel, date: formatDate(date, locale) }));
+      const ended = t('terminated', { unit: unitLabel, date: formatDate(date, locale) });
+      notice(result.value.unbilled === 0 ? ended : `${ended} ${t('terminatedUnbilled', { count: result.value.unbilled })}`);
       router.refresh();
       onClose();
     });
