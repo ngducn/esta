@@ -9,7 +9,6 @@ const pause = recordForPr();
 
 const finance = (lane: number, key: string, query = '') => `/properties/${laneProperty(lane, key)}/finance${query}`;
 
-/** `45.000.000 ₫`, `-950.000 ₫` or `45,000,000 ₫` as integer đồng; a stacked cell also carries its label first. */
 function amountOf(text: string): number {
   const match = /([-−]?)([\d.,]+)\s₫$/.exec(text.trim());
   if (match === null) throw new Error(`No amount in "${text}"`);
@@ -32,7 +31,6 @@ async function screenTable(page: Page) {
   };
 }
 
-/** With the pointer parked and motion off, so axe never measures a button mid hover fade. */
 async function axe(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.mouse.move(0, 0);

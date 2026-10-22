@@ -24,10 +24,6 @@ const total = (table: ExportTable, column: string) => {
   return cell?.kind === 'vnd' ? cell.value : vnd(0);
 };
 
-/**
- * Thu chi (FIN-1, FIN-2): the property's ledger for one year and its expenses below it. `?year=` picks the year;
- * `?month=2026-10` opens that month's year and marks its row.
- */
 export default async function PropertyFinancePage({
   params,
   searchParams,

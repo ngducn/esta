@@ -1,4 +1,4 @@
-import type { ExportCell, ExportColumn, ExportRow, ExportTable } from '@esta/core/export';
+import type { ExportCell, ExportRow, ExportTable } from '@esta/core/export';
 import { formatVnd } from '@esta/core/format';
 import { getLocale } from 'next-intl/server';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,12 +7,8 @@ import { ScrollIntoView } from './scroll-into-view';
 
 const ALWAYS_SHOWN = new Set(['income', 'expenses', 'noi']);
 
-export const ledgerRowId = (key: string) => `ledger-${key}`;
+const ledgerRowId = (key: string) => `ledger-${key}`;
 
-/**
- * The ledger's one `ExportTable` as the Thu chi tab shows it. Below 640 px each month stacks into label and amount lines,
- * leaving out the categories it spent nothing on.
- */
 export async function LedgerTable({ table, caption, marked }: { table: ExportTable; caption: string; marked: { key: string; label: string } | null }) {
   const locale = await getLocale();
   const value = (cell: ExportCell | undefined) => (cell === undefined ? '' : cell.kind === 'vnd' ? formatVnd(cell.value, locale) : cell.value);
@@ -33,7 +29,7 @@ export async function LedgerTable({ table, caption, marked }: { table: ExportTab
           {value(line.cells[0])}
           {isMarked ? <span className="ml-2 text-small font-semibold text-accent">{marked.label}</span> : null}
         </TableHead>
-        {amountColumns.map((column: ExportColumn, index) => {
+        {amountColumns.map((column, index) => {
           const cell = line.cells[index + 1];
           const zero = cell?.kind === 'vnd' && cell.value === 0;
           return (

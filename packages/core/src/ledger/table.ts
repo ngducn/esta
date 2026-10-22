@@ -13,7 +13,6 @@ export type LedgerLabels = {
   readonly category: (id: ExpenseCategory) => string;
 };
 
-/** The ledger as the Thu chi tab, its CSV and its spreadsheet show it: a column only for the categories the range spent on. */
 export function ledgerToExportTable(ledger: Ledger, labels: LedgerLabels): ExportTable {
   const categories = EXPENSE_CATEGORY_IDS.filter((id) => ledger.totals.byCategory[id] !== 0);
   const amounts = (sums: LedgerSums): ExportCell[] => [
@@ -30,7 +29,7 @@ export function ledgerToExportTable(ledger: Ledger, labels: LedgerLabels): Expor
       { id: 'expenses', label: labels.expenses },
       { id: 'noi', label: labels.noi },
     ],
-    rows: ledger.months.map((row) => ({ key: row.month.slice(0, 7), cells: [textCell(labels.monthName(row.month)), ...amounts(row)] })),
+    rows: ledger.months.map((row) => ({ key: row.monthStart.slice(0, 7), cells: [textCell(labels.monthName(row.monthStart)), ...amounts(row)] })),
     totals: { key: 'total', cells: [textCell(labels.total), ...amounts(ledger.totals)] },
   };
 }

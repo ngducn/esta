@@ -21,7 +21,6 @@ const NO_STORE = { 'Cache-Control': 'private, no-store' };
 
 const CONTENT_TYPE = { csv: 'text/csv; charset=utf-8', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } as const;
 
-/** `Tải CSV` and `Tải Excel` on Thu chi (FIN-2): the tab's table for one year, read with the member's session. */
 export async function GET(request: Request) {
   const query = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   const member = query.success ? await getCurrentMember() : null;

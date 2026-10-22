@@ -11,14 +11,12 @@ import { createSessionClient } from '@/server/supabase/server';
 
 export type LedgerYear = { readonly table: ExportTable; readonly empty: boolean };
 
-/** A past year runs to 31 December; this year stops at the end of today's month, so no future month shows a zero. */
 function yearRange(year: number, today: IsoDate): { from: IsoDate; to: IsoDate } {
   const from = isoDate(`${year}-01-01`);
   const endOfMonth = addDays(addMonths(firstOfMonth(today), 1), -1);
   return { from, to: today.startsWith(`${year}-`) ? endOfMonth : isoDate(`${year}-12-31`) };
 }
 
-/** The property's Thu chi table for one year (FIN-2), the one table the tab, the CSV and the spreadsheet render. */
 export async function loadLedgerYear(householdId: string, propertyId: string, year: number, today: IsoDate): Promise<LedgerYear> {
   const range = yearRange(year, today);
   const [facts, t] = await Promise.all([readLedgerFacts(await createSessionClient(), householdId, { propertyId, ...range }), getTranslations('ledger')]);
@@ -36,7 +34,6 @@ export async function loadLedgerYear(householdId: string, propertyId: string, ye
   return { table, empty: facts.incomes.length === 0 && facts.expenses.length === 0 };
 }
 
-/** Every year from the property's first income or expense to this year, newest first. */
 export async function loadLedgerYears(householdId: string, propertyId: string, today: IsoDate): Promise<readonly number[]> {
   const start = await readLedgerStart(await createSessionClient(), householdId, propertyId);
   const thisYear = Number(today.slice(0, 4));

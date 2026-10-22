@@ -7,7 +7,6 @@ const cell = (value: ExportCell, bold: boolean): CellObject => ({
   ...(bold ? { fontWeight: 'bold' } : {}),
 });
 
-/** One sheet: the header, a row of integer đồng per line formatted `#,##0`, and the totals in bold. */
 export function toXlsx(table: ExportTable, sheet: string): Promise<Buffer> {
   const header = table.columns.map((column): CellObject => ({ value: column.label, type: String, fontWeight: 'bold' }));
   const rows = table.rows.map((row) => row.cells.map((value) => cell(value, false)));

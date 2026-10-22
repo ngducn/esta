@@ -3,7 +3,6 @@ import type { IsoDate } from '../date/iso-date';
 import { EXPENSE_CATEGORY_IDS, type ExpenseCategory } from '../expenses';
 import { vnd, type Vnd } from '../money/vnd';
 
-/** Money a tenant paid that settled a bill, on the day the payment was received (`allocation_facts`). */
 export type IncomeFact = { readonly receivedOn: IsoDate; readonly amountVnd: Vnd };
 export type ExpenseFact = { readonly paidOn: IsoDate; readonly category: ExpenseCategory; readonly amountVnd: Vnd };
 
@@ -13,8 +12,7 @@ export type LedgerSums = {
   readonly expensesVnd: Vnd;
   readonly noiVnd: Vnd;
 };
-/** `month` is the month's first day. */
-export type LedgerMonth = LedgerSums & { readonly month: IsoDate };
+export type LedgerMonth = LedgerSums & { readonly monthStart: IsoDate };
 export type Ledger = { readonly months: readonly LedgerMonth[]; readonly totals: LedgerSums };
 
 type Tally = { income: number; byCategory: Record<ExpenseCategory, number> };
@@ -31,10 +29,7 @@ function sums(tally: Tally): LedgerSums {
   };
 }
 
-/**
- * FIN-2 on a cash basis: one row per month from `from` to `to`, both inclusive, with income on the day it was received
- * and expenses on the day they were paid. Facts outside the range are left out, and the totals are the months' sums.
- */
+/** One row per month from `from` to `to`, both inclusive. Facts outside the range are left out. */
 export function buildLedger({ incomes, expenses, from, to }: { incomes: readonly IncomeFact[]; expenses: readonly ExpenseFact[]; from: IsoDate; to: IsoDate }): Ledger {
   const tallies = new Map<IsoDate, Tally>();
   for (let month = firstOfMonth(from); month <= to; month = addMonths(month, 1)) tallies.set(month, emptyTally());
@@ -52,5 +47,5 @@ export function buildLedger({ incomes, expenses, from, to }: { incomes: readonly
     total.income += tally.income;
     for (const id of EXPENSE_CATEGORY_IDS) total.byCategory[id] += tally.byCategory[id];
   }
-  return { months: [...tallies].map(([month, tally]) => ({ month, ...sums(tally) })), totals: sums(total) };
+  return { months: [...tallies].map(([monthStart, tally]) => ({ monthStart, ...sums(tally) })), totals: sums(total) };
 }

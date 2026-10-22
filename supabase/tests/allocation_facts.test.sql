@@ -23,7 +23,6 @@ insert into public.leases (id, household_id, property_id, unit_id, tenant_party_
    '00000000-0000-4000-8000-00000000a0a5', '2026-01-01', null, 3000000, 3000000, 'active'),
   ('00000000-0000-4000-8000-00000000e0b1', :'b', '00000000-0000-4000-8000-0000000000b1',
    private.whole_unit_id('00000000-0000-4000-8000-0000000000b1'), '00000000-0000-4000-8000-00000000b0b1', '2026-01-01', null, 9000000, 9000000, 'active');
--- Phòng 5's September and October bills, and b's October bill.
 insert into public.invoices (id, household_id, lease_id, period_start, period_end, due_date, issue_on, number, status, issued_at) values
   ('00000000-0000-4000-8000-0000000f0509', :'a', '00000000-0000-4000-8000-00000000e005', '2026-09-01', '2026-09-30', '2026-09-01', '2026-09-01', 'DIAN-202609-005', 'issued', '2026-09-01T00:30:00+07:00'),
   ('00000000-0000-4000-8000-0000000f0510', :'a', '00000000-0000-4000-8000-00000000e005', '2026-10-01', '2026-10-31', '2026-10-01', '2026-10-01', 'DIAN-202610-005', 'issued', '2026-10-01T00:30:00+07:00'),
@@ -32,7 +31,6 @@ insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd
   (:'a', '00000000-0000-4000-8000-0000000f0509', 'rent', 3000000, 3000000),
   (:'a', '00000000-0000-4000-8000-0000000f0510', 'rent', 3000000, 3000000),
   (:'b', '00000000-0000-4000-8000-0000000f0b10', 'rent', 9000000, 9000000);
--- September's bill was paid in two transfers, the second received in October.
 insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method) values
   ('00000000-0000-4000-8000-0000000c0501', :'a', '00000000-0000-4000-8000-00000000a0a5', 2000000, '2026-09-05', 'bank_transfer'),
   ('00000000-0000-4000-8000-0000000c0502', :'a', '00000000-0000-4000-8000-00000000a0a5', 1000000, '2026-10-02', 'cash'),
@@ -61,7 +59,6 @@ select results_eq(
   'b reads its own allocation and nothing of a');
 
 select tests.act_as('member.a@test.esta.test');
--- Phòng 5 owes October's 3.000.000 and sends 3.500.000: the extra 500.000 stays as credit.
 select results_eq(
   $$ select allocated_vnd from public.record_payment('00000000-0000-4000-8000-0000000f0510', 3000000, 3500000, 'bank_transfer', '2026-10-06', '00000000-0000-4000-8000-0000000d0001') $$,
   $$ values (3000000::bigint) $$,
@@ -82,7 +79,6 @@ select throws_ok(
   $$ select public.void_invoice('00000000-0000-4000-8000-0000000f0509', 'Nhập nhầm') $$,
   '23514', 'ESTA_INVOICE_HAS_PAYMENTS', 'a bill with payments cannot be voided');
 
--- Deposits: Phòng 5 hands over 3.000.000 in January; 1.200.000 of it settles October's bill on the 7th.
 select lives_ok(
   $$ select public.record_deposit_entry('00000000-0000-4000-8000-00000000e005', 'received', 3000000, '2026-01-01', '00000000-0000-4000-8000-0000000d0002') $$,
   'a deposit is received');
@@ -97,7 +93,6 @@ select results_eq(
   $$ values ('2026-10-07'::date, 'deposit'::text, 1200000::bigint) $$,
   'a deposit applied to a bill is income on the day it was applied (SPEC §5.4)');
 
--- No member can void a paid bill; were one void anyway, its allocations would still be left out.
 reset role;
 set local session_replication_role = replica;
 update public.invoices set status = 'void', voided_reason = 'test', share_token = null where id = '00000000-0000-4000-8000-0000000f0509';

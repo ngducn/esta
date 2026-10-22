@@ -4,10 +4,7 @@ export type ExportCell = { readonly kind: 'vnd'; readonly value: Vnd } | { reado
 export type ExportColumn = { readonly id: string; readonly label: string };
 export type ExportRow = { readonly key: string; readonly cells: readonly ExportCell[] };
 
-/**
- * One table that a screen, a CSV and a spreadsheet all render, so their figures cannot drift. Each row has one cell per
- * column, and `totals` is the last line.
- */
+/** Each row, `totals` included, has one cell per column. */
 export type ExportTable = { readonly columns: readonly ExportColumn[]; readonly rows: readonly ExportRow[]; readonly totals: ExportRow };
 
 export const textCell = (value: string): ExportCell => ({ kind: 'text', value: value.normalize('NFC') });

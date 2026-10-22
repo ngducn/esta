@@ -65,7 +65,7 @@ const PAGE_SIZE = 1000;
 
 type Page<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
 
-/** Every row of a read, a page at a time; `page` must order the rows so that pages do not overlap. */
+/** `page` must order the rows, or PostgREST ranges can overlap and skip rows. */
 export async function readAll<T>(what: string, page: (from: number, to: number) => Page<T>): Promise<T[]> {
   const rows: T[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {

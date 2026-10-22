@@ -11,12 +11,12 @@ const expense = (paidOn: string, category: ExpenseCategory, amount: number): Exp
   amountVnd: vnd(amount),
 });
 const year2026 = { from: isoDate('2026-01-01'), to: isoDate('2026-12-31') };
-const month = (ledger: ReturnType<typeof buildLedger>, first: string) => ledger.months.find((row) => row.month === first);
+const month = (ledger: ReturnType<typeof buildLedger>, first: string) => ledger.months.find((row) => row.monthStart === first);
 
 describe('buildLedger (FIN-2)', () => {
   it('lists every month of the range in order, an empty month at zero', () => {
     const ledger = buildLedger({ incomes: [income('2026-03-05', 4_000_000)], expenses: [], ...year2026 });
-    expect(ledger.months.map((row) => row.month)).toEqual([
+    expect(ledger.months.map((row) => row.monthStart)).toEqual([
       '2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01',
       '2026-07-01', '2026-08-01', '2026-09-01', '2026-10-01', '2026-11-01', '2026-12-01',
     ]);
@@ -29,7 +29,6 @@ describe('buildLedger (FIN-2)', () => {
   });
 
   it('counts money on the day it was received, whatever month the bill is for', () => {
-    // A September transfer settling the October bill lands in September.
     const ledger = buildLedger({ incomes: [income('2026-09-28', 5_000_000)], expenses: [], ...year2026 });
     expect(month(ledger, '2026-09-01')?.incomeVnd).toBe(5_000_000);
     expect(month(ledger, '2026-10-01')?.incomeVnd).toBe(0);

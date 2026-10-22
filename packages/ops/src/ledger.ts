@@ -15,7 +15,7 @@ const expenseSchema = z
 
 export type LedgerFacts = { readonly incomes: readonly IncomeFact[]; readonly expenses: readonly ExpenseFact[] };
 
-/** A property's income (`allocation_facts`) and live expenses dated from `from` to `to`, both inclusive (FIN-2). */
+/** Income and live expenses dated from `from` to `to`, both inclusive. */
 export async function readLedgerFacts(db: Db, householdId: string, { propertyId, from, to }: { propertyId: string; from: IsoDate; to: IsoDate }): Promise<LedgerFacts> {
   const [incomes, expenses] = await Promise.all([
     readAll('the ledger income', (start, end) =>
@@ -46,7 +46,6 @@ export async function readLedgerFacts(db: Db, householdId: string, { propertyId,
   return { incomes: z.array(incomeSchema).parse(incomes), expenses: z.array(expenseSchema).parse(expenses) };
 }
 
-/** The day of the property's first income or live expense, or null when it has neither. */
 export async function readLedgerStart(db: Db, householdId: string, propertyId: string): Promise<IsoDate | null> {
   const [income, expense] = await Promise.all([
     db.from('allocation_facts').select('day:received_on').eq('household_id', householdId).eq('property_id', propertyId).order('received_on').limit(1),
