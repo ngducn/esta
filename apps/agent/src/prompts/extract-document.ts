@@ -44,7 +44,7 @@ const SCHEMAS: Record<AgentSchemaName, { readonly document: string; readonly sha
       'rent_vnd is the rent for one month and deposit_vnd the deposit (tiền cọc, tiền đặt cọc), each an integer number of đồng, so "3.500.000 đ" and "3,5 triệu" are 3500000.',
       'billing_cycle_months is how many months each payment covers: 1 for monthly (hàng tháng), 3 for each quarter (quý), 6, or 12. due_day is the day of the month rent is due, as an integer.',
       'notes is the text of the other terms about money as printed, such as electricity, water and service charges or a rent increase, or null.',
-      'full_text is a plain string, not a leaf: every line of printed text on the contract, in reading order, joined with newlines.',
+      'full_text is a plain string, not a leaf: every line of printed text on the contract, in reading order, joined with newlines, with every ID number written as its last 4 digits only.',
     ],
   },
 };

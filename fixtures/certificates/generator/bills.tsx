@@ -130,20 +130,21 @@ export async function renderBill(bill: BillFacts): Promise<ReadonlyMap<string, U
 
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
-async function main(): Promise<void> {
+/** Writes each rendered fixture under `root/<id>/` and its file hashes to `root/manifest.json`. */
+export async function writeFixtures<T extends { readonly id: string }>(root: string, items: readonly T[], render: (item: T) => Promise<ReadonlyMap<string, Uint8Array>>): Promise<string> {
   const manifest: Record<string, Record<string, string>> = {};
-  for (const bill of BILLS) {
-    const dir = join(BILLS_DIR, bill.id);
+  for (const item of items) {
+    const dir = join(root, item.id);
     mkdirSync(dir, { recursive: true });
-    const files = await renderBill(bill);
+    const files = await render(item);
     for (const [name, bytes] of files) writeFileSync(join(dir, name), bytes);
-    manifest[bill.id] = Object.fromEntries([...files].map(([name, bytes]) => [name, sha256(bytes)]));
+    manifest[item.id] = Object.fromEntries([...files].map(([name, bytes]) => [name, sha256(bytes)]));
   }
-  const path = join(BILLS_DIR, 'manifest.json');
+  const path = join(root, 'manifest.json');
   const next = `${JSON.stringify(manifest, null, 2)}\n`;
   const previous = existsSync(path) ? readFileSync(path, 'utf8') : null;
   writeFileSync(path, next);
-  console.log(`${BILLS.length} bills, manifest ${previous === next ? 'unchanged' : 'written'}`);
+  return `${items.length} fixtures, manifest ${previous === next ? 'unchanged' : 'written'}`;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) console.log(await writeFixtures(BILLS_DIR, BILLS, renderBill));

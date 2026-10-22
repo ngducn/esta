@@ -4,6 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import { rngFor } from '../../../supabase/seed/generator/rng.ts';
 import { BILLS, BILLS_DIR } from './bills.tsx';
 import { degrade } from './degrade.ts';
+import { LEASES, LEASES_DIR } from './leases.tsx';
 import { FIXTURE_SEED, FIXTURE_SPECS, FIXTURES_DIR, rasterize, type FixtureTruth } from './generate.ts';
 import { Page } from './templates/parts.tsx';
 
@@ -12,7 +13,7 @@ export type UploadFile = { readonly name: string; readonly mimeType: 'applicatio
 
 export type ExtractionFixture = {
   readonly id: string;
-  readonly schemaName: 'certificate_v1' | 'utility_bill_v1';
+  readonly schemaName: 'certificate_v1' | 'utility_bill_v1' | 'lease_v1';
   readonly truth: unknown;
   readonly printedIdNumbers: readonly string[];
   upload(): Promise<UploadFile>;
@@ -43,21 +44,24 @@ function certificateUpload(dir: string, truth: FixtureTruth): () => Promise<Uplo
   return async () => ({ name: 'photos.pdf', mimeType: 'application/pdf', buffer: await photosPdf(truth.files.map((name) => read(dir, name))) });
 }
 
-/** The sixteen certificate fixtures and the two bills the golden extraction test scores (AGENT.md §7.2). */
+/** A one-file fixture whose `truth.json` holds its truth under `key` and, when it prints any, its full ID numbers. */
+function singleFile(dir: string, id: string, schemaName: 'utility_bill_v1' | 'lease_v1', key: 'bill' | 'lease'): ExtractionFixture {
+  const truth = JSON.parse(read(dir, 'truth.json').toString('utf8')) as { files: string[]; printed_id_numbers?: string[] } & Record<typeof key, unknown>;
+  const [name = ''] = truth.files;
+  const mimeType = name.endsWith('.pdf') ? ('application/pdf' as const) : ('image/jpeg' as const);
+  return { id, schemaName, truth: truth[key], printedIdNumbers: truth.printed_id_numbers ?? [], upload: async () => ({ name, mimeType, buffer: read(dir, name) }) };
+}
+
+/** The sixteen certificate fixtures, the two bills and the three leases the golden extraction test scores (AGENT.md §7.2). */
 export function extractionFixtures(): ExtractionFixture[] {
   const certificates = FIXTURE_SPECS.map(({ id }) => {
     const dir = join(FIXTURES_DIR, id);
     const truth = JSON.parse(read(dir, 'truth.json').toString('utf8')) as FixtureTruth;
     return { id, schemaName: 'certificate_v1' as const, truth: truth.certificate, printedIdNumbers: truth.printed_id_numbers, upload: certificateUpload(dir, truth) };
   });
-  const bills = BILLS.map(({ id }) => {
-    const dir = join(BILLS_DIR, id);
-    const truth = JSON.parse(read(dir, 'truth.json').toString('utf8')) as { files: string[]; bill: unknown };
-    const [name = ''] = truth.files;
-    const mimeType = name.endsWith('.pdf') ? ('application/pdf' as const) : ('image/jpeg' as const);
-    return { id, schemaName: 'utility_bill_v1' as const, truth: truth.bill, printedIdNumbers: [], upload: async () => ({ name, mimeType, buffer: read(dir, name) }) };
-  });
-  return [...certificates, ...bills];
+  const bills = BILLS.map(({ id }) => singleFile(join(BILLS_DIR, id), id, 'utility_bill_v1', 'bill'));
+  const leases = LEASES.map(({ id }) => singleFile(join(LEASES_DIR, id), id, 'lease_v1', 'lease'));
+  return [...certificates, ...bills, ...leases];
 }
 
 /** A copy that differs from its base by a trailing PDF comment, so its own recording can script the model's answers. */
