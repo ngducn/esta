@@ -51,7 +51,7 @@ jobs:
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
           version: 2.90.0
-      - run: tools/ci/db-start.sh -x studio,realtime,imgproxy,mailpit,postgres-meta
+      - run: tools/ci/db-start.sh -x studio,realtime,imgproxy,mailpit
       - name: Reset twice and compare checksums
         # The Supabase CLI can answer 502 while db reset restarts the Storage container; one restart of the stack and
         # one retry clear it, as tools/ci-local.sh does.
