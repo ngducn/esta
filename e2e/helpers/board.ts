@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { memberRest } from './auth-api';
+import { memberRest, signedIn } from './auth-api';
 
 /** A collections board row in one group, found by its place as the row prints it. */
 export const boardRow = (page: Page, group: 'overdue' | 'due' | 'notDue' | 'paid', place: string) =>
@@ -19,7 +19,7 @@ export async function storedInvoice(page: Page, id: string): Promise<StoredInvoi
  * none), so a rule that records one leaves the household as seeded. A page that never signed in has nothing to undo.
  */
 export async function undoSheetPayments(page: Page, householdId: string): Promise<void> {
-  if (!(await page.context().cookies()).some((cookie) => cookie.name.startsWith('sb-'))) return;
+  if (!(await signedIn(page))) return;
   const recorded = await memberRest<{ id: string }[]>(page, 'GET', `payments?household_id=eq.${householdId}&idempotency_key=not.is.null&select=id`);
   for (const { id } of recorded) await memberRest(page, 'POST', 'rpc/undo_payment', { p_payment_id: id });
 }

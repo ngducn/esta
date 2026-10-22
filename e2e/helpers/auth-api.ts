@@ -13,6 +13,11 @@ export const authApi = {
   headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '' },
 };
 
+/** Whether the page holds a Supabase session, so an `afterEach` cleanup can skip a rule that never signed in. */
+export async function signedIn(page: Page): Promise<boolean> {
+  return (await page.context().cookies()).some((cookie) => cookie.name.startsWith('sb-'));
+}
+
 /** PostgREST as the signed-in member, so RLS and the grants decide what it reads and writes. */
 export async function memberCall(page: Page, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, data?: unknown): Promise<APIResponse> {
   return page.request.fetch(`${restUrl}/${path}`, {

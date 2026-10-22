@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { VALUATION_SEEDS } from '../supabase/seed/generator/valuations.ts';
-import { inEnglishAt130, memberRest as rest } from './helpers/auth-api';
+import { inEnglishAt130, memberRest as rest, signedIn } from './helpers/auth-api';
 import { stubTiles } from './helpers/map-tiles';
 import { laneHousehold, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
@@ -24,7 +24,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test.afterEach(async ({ page }) => {
-  if (!(await page.context().cookies()).some((cookie) => cookie.name.startsWith('sb-'))) return;
+  if (!(await signedIn(page))) return;
   await rest(page, 'DELETE', `valuations?id=not.in.(${SEEDED.join(',')})`);
 });
 
