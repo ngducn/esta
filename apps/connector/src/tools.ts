@@ -9,6 +9,7 @@ import { unitSchema } from '@esta/core/schemas/units';
 import type { Result } from '@esta/core/result';
 import {
   applyPlan,
+  batchUndo,
   findPerson,
   findProperty,
   getLease,
@@ -22,6 +23,7 @@ import {
   planChanges,
   planRequestSchema,
   PLAN_TTL_MINUTES,
+  runOp,
   suggestCurrentUnits,
   type Db,
   type LocalContext,
@@ -258,6 +260,21 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
       if (!applied.ok) return { data: applied.reason, log: `batch=${plan_id} reason=${applied.reason.kind}`, isError: true };
       const landed = applied.value.items.filter((item) => item.status === 'landed').length;
       return { data: applied.value, log: `batch=${plan_id} status=${applied.value.status} items=${applied.value.items.length} landed=${landed}` };
+    }),
+  );
+
+  server.registerTool(
+    'undo_batch',
+    {
+      description:
+        'Undo a batch Claude applied, all of it or nothing, when Ryan asks. A property the batch added goes to Đã lưu trữ, where he can restore it. Refused as undo_blocked, with each blocking row, its reason and the flow Ryan uses instead, once an issued bill, a payment, a deposit or a later edit depends on the batch.',
+      inputSchema: z.object({ batch_id: idSchema }),
+    },
+    guarded('undo_batch', deps, async (ctx, { batch_id }: { batch_id: string }) => {
+      const undone = await runOp(batchUndo, ctx, { batch_id });
+      return undone.ok
+        ? { data: undone.value, log: `batch=${batch_id} undone=1` }
+        : { data: undone.reason, log: `batch=${batch_id} reason=${undone.reason.kind}`, isError: true };
     }),
   );
 }

@@ -6,9 +6,11 @@ import { LEASE_COLUMNS } from '@esta/core/schemas/lease';
 import { depositRecord, leaseActivate, leaseCreate, leaseEdit, personCreate, propertyCreate, runOp, unitCreate, type Db } from '@esta/ops';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { businessChecksums } from '../../../scripts/db-checksum.ts';
 import { e2eServiceHeaders } from '../../../scripts/e2e-service.ts';
+import { parseSlot, slotWorkdir } from '../../../scripts/slot.ts';
 import { seedId } from '../../../supabase/seed/generator/ids.ts';
-import { appliedSchema, call, clientAt, demoProperty, env, laneContext, plannedSchema, sessionFiles, signIn, startConnector, type Connector } from './test/connector';
+import { appliedSchema, call, clientAt, demoProperty, env, laneContext, ROOT, plannedSchema, sessionFiles, signIn, startConnector, type Connector } from './test/connector';
 
 // Run against a fresh `pnpm db:reset`.
 const LANE = 7;
@@ -337,5 +339,31 @@ describe('a lease with its deposit and paid-through started by talking to Claude
       ]),
     });
     expect((await call(connector, 'list_leases', { property_id: Q1 })).json()).toMatchObject({ leases: expect.arrayContaining([expect.objectContaining(summary)]) });
+  });
+});
+
+/** Every table but the audit log and the batches, whose undo rows and status are the history of the undo itself. */
+const tables = () => businessChecksums(slotWorkdir(ROOT, parseSlot(env.ESTA_SLOT))).filter((table) => table.table !== 'change_batches');
+
+describe('a Demo rental Claude applied, undone from the connector', () => {
+  it('puts every table back as it was before the apply', async () => {
+    const planned = plannedSchema.parse((await plan('Demo: Phòng 7 ở Q1 cho chị Lan Demo', rental('Phòng 7', '0901 777 007'))).json());
+    const before = tables();
+    expect(await apply(planned.planId)).toMatchObject({ status: 'applied', items: Array.from({ length: 5 }, () => ({ status: 'landed' })) });
+    expect(tables()).not.toEqual(before);
+    expect((await call(connector, 'undo_batch', { batch_id: planned.planId })).json()).toEqual({ batch_id: planned.planId, archived_properties: 0 });
+    expect(tables()).toEqual(before);
+    expect((await db.from('change_batches').select('status').eq('id', planned.planId).single()).data).toEqual({ status: 'undone' });
+  });
+
+  it('refuses once the nightly run issued a bill for the lease, says to void it, and changes nothing', async () => {
+    const planned = plannedSchema.parse((await plan('Demo: Phòng 8 ở Q1 cho chị Lan Demo', rental('Phòng 8', '0901 777 008'))).json());
+    expect(await apply(planned.planId)).toMatchObject({ status: 'applied' });
+    await nightlyRun('2026-11-01');
+    const before = tables();
+    const refused = await call(connector, 'undo_batch', { batch_id: planned.planId });
+    expect(refused.isError).toBe(true);
+    expect(refused.json()).toMatchObject({ kind: 'undo_blocked', blockers: expect.arrayContaining([expect.objectContaining({ table_name: 'invoices', reason: 'invoice_issued', flow: 'void' })]) });
+    expect(tables()).toEqual(before);
   });
 });
