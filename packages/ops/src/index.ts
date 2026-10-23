@@ -47,7 +47,7 @@ export { statementColumnsSchema, statementCommit, statementImport, statementLink
 export { propertyCreate, propertyEdit, type CodeTaken, type PropertySaved } from './property-ops';
 export { findPerson, findProperty, getLease, getProperty, listLeases, listProperties, personQuerySchema, rankCandidates, rankPeople, type ReadContext } from './read';
 export { readReportSnapshot } from './reports';
-export { readOtherBusinessRevenue, readTaxInputs } from './tax';
+export { readOtherBusinessRevenue, readOtherBusinessRevenues, readOwners, readTaxInputs, readTaxRows, type Owner } from './tax';
 export { taxInputSave, type TaxInputSaved } from './tax-ops';
 export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
 export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
