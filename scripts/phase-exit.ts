@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { isIsoDate } from '../packages/core/src/date/iso-date.ts';
+import { NORTH_STAR_PHASE_4, verifyNorthStar } from './northstar-report.ts';
 
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
@@ -13,6 +14,7 @@ export type PhaseCheck =
       readonly commands: readonly (readonly string[])[];
       /** Test files, from the repo root, that must name `id`; the row fails before running when one does not. */
       readonly cites?: readonly string[];
+      readonly playwrightReport?: (json: string) => Outcome;
     }
   | { readonly id: string; readonly verify: (repoRoot: string) => Outcome };
 
@@ -152,20 +154,29 @@ export function flakyTests(log: string): string[] {
   return titles;
 }
 
-type CitedFiles = { core?: readonly string[]; web?: readonly string[]; pgtap?: readonly string[]; e2e?: readonly string[] };
+type CitedFiles = {
+  core?: readonly string[];
+  web?: readonly string[];
+  /** apps/web `*.integration.test.ts` files, run on a fresh full seed through scripts/web-integration.ts. */
+  integration?: readonly string[];
+  pgtap?: readonly string[];
+  e2e?: readonly string[];
+};
 
 /** An acceptance row runs exactly the tests that cite its id, and checks that each one does. */
 function cited(id: string, files: CitedFiles): PhaseCheck {
   const core = (files.core ?? []).map((file) => `src/${file}`);
   const web = (files.web ?? []).map((file) => `src/${file}`);
+  const integration = (files.integration ?? []).map((file) => `src/${file}`);
   const pgtap = (files.pgtap ?? []).map((name) => `supabase/tests/${name}.test.sql`);
   const specs = (files.e2e ?? []).map((name) => `e2e/${name}.spec.ts`);
   return {
     id,
-    cites: [...core.map((file) => `packages/core/${file}`), ...web.map((file) => `apps/web/${file}`), ...pgtap, ...specs],
+    cites: [...core.map((file) => `packages/core/${file}`), ...[...web, ...integration].map((file) => `apps/web/${file}`), ...pgtap, ...specs],
     commands: [
       ...(core.length === 0 ? [] : [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', ...core]]),
       ...(web.length === 0 ? [] : [['pnpm', '--filter', '@esta/web', 'exec', 'vitest', 'run', ...web]]),
+      ...(integration.length === 0 ? [] : [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts', ...integration]]),
       ...(pgtap.length === 0 ? [] : [['pnpm', 'db:test', ...pgtap]]),
       ...specs.map(e2e),
     ],
@@ -249,6 +260,21 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'VietQR', verify: (repoRoot) => verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8')) },
     { id: 'Mom', verify: (repoRoot) => verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8')) },
   ],
+  // Every row that reads the database resets it first. FND-7 ends on the `full` seed after `northstar`; the integration
+  // row's cron test moves every household and north-star resets to its own variant, so those two go last.
+  '4': [
+    cited('FIN-3', { core: ['tax/position.test.ts'] }),
+    { id: 'FND-7', commands: [['pnpm', 'db:seed:check', '--variant', 'northstar'], ['pnpm', 'db:seed:check']] },
+    { id: 'Seed', commands: [['pnpm', 'seed:coverage'], ['pnpm', 'db:reset'], ['pnpm', 'seed:coverage', '--database'], ['pnpm', 'seed:facts']] },
+    cited('FIN-4', { core: ['reports/reports.test.ts', 'reports/summaries.test.ts'], integration: ['server/reports/snapshot.integration.test.ts'] }),
+    { id: 'RLS', commands: [['pnpm', 'db:test']] },
+    { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
+    {
+      id: 'North-star',
+      commands: [['pnpm', 'e2e:northstar', '--retries=0', '--reporter=list,json']],
+      playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR_PHASE_4),
+    },
+  ],
 };
 
 export function uncited(repoRoot: string, check: PhaseCheck): string[] {
@@ -271,12 +297,12 @@ const readLog = (path: string) => {
   }
 };
 
-export type RunCommand = (command: readonly string[], log: string) => number;
+export type RunCommand = (command: readonly string[], log: string, env: Readonly<Record<string, string>>) => number;
 
-const runCommand: RunCommand = ([program = '', ...args], log) => {
+const runCommand: RunCommand = ([program = '', ...args], log, env) => {
   const fd = openSync(log, 'a');
   try {
-    const result = spawnSync(program, args, { stdio: ['ignore', fd, fd] });
+    const result = spawnSync(program, args, { stdio: ['ignore', fd, fd], env: { ...process.env, ...env } });
     return result.error === undefined ? (result.status ?? 1) : 1;
   } finally {
     closeSync(fd);
@@ -315,10 +341,18 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
       outcome = { pass: false, detail: `${uncited(repoRoot, check).join(', ')} never names ${check.id}` };
     } else {
       const rowLog = join(logs, `${check.id}.log`);
+      const report = join(logs, `${check.id}.json`);
       log = rowLog;
       writeFileSync(rowLog, '');
-      const failedCommand = check.commands.find((command) => run(command, rowLog) !== 0);
-      outcome = { pass: failedCommand === undefined, detail: failedCommand === undefined ? rowLog : `${failedCommand.join(' ')} failed, log ${rowLog}` };
+      rmSync(report, { force: true });
+      const env = check.playwrightReport === undefined ? {} : { PLAYWRIGHT_JSON_OUTPUT_FILE: report };
+      const failedCommand = check.commands.find((command) => run(command, rowLog, env) !== 0);
+      if (failedCommand !== undefined) outcome = { pass: false, detail: `${failedCommand.join(' ')} failed, log ${rowLog}` };
+      else if (check.playwrightReport === undefined) outcome = { pass: true, detail: rowLog };
+      else {
+        const read = check.playwrightReport(readLog(report));
+        outcome = { pass: read.pass, detail: `${read.detail}, log ${rowLog}` };
+      }
     }
     const seconds = Math.round((performance.now() - started) / 1000);
     print(`${outcome.pass ? 'PASS' : 'FAIL'}  ${check.id.padEnd(6)} ${String(seconds).padStart(4)} s  ${outcome.detail}`);

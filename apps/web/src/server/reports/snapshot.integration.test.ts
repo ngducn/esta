@@ -3,7 +3,7 @@ import { checkReportInvariants, holds, monthlyCollections, occupancy, ownerSumma
 import { computeTaxPosition } from '@esta/core/tax';
 import { readReportSnapshot, readTaxInputs } from '@esta/ops';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { seedId } from '../../../../../supabase/seed/generator/ids.ts';
+import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 import { signedInAs } from '@/test/stack';
 
@@ -18,10 +18,9 @@ const ownerLabels = { owner: 'o', revenue: 'r', income: 'i', expenses: 'e', vat:
 const YEAR = { ...yearPeriod(2026, PERIOD.asOf), asOf: PERIOD.asOf };
 const cell = (table: { rows: readonly { key: string; cells: readonly { value: unknown }[] }[] }, key: string, index: number) => table.rows.find((row) => row.key === key)?.cells[index]?.value;
 
-const READ_ONLY_LANES = [1, 2, 4];
-const WRITTEN_LANE = 10;
-const HOUSEHOLD = seedId(`seed:household:lane-${WRITTEN_LANE}`);
-const { client, signIn } = memberClient(`ryan.lane${WRITTEN_LANE}@demo.esta.test`, HOUSEHOLD);
+const READ = integrationLane(import.meta.url, 0);
+const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url, 1);
+const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 const { activateLease, createTenant, saveLease, terminateLease } = await import('@/server/actions/leases');
 const created: string[] = [];
 
@@ -63,11 +62,11 @@ afterAll(async () => {
 });
 
 describe('readReportSnapshot on the full seed (FIN-4)', () => {
-  it.each(READ_ONLY_LANES)(
-    'lane %i: every invariant holds for every month from 2025-10 to 2026-10 and every property',
-    async (lane) => {
-      const member = await signedInAs(`ryan.lane${lane}@demo.esta.test`);
-      const household = seedId(`seed:household:lane-${lane}`);
+  it(
+    'every invariant holds for every month from 2025-10 to 2026-10 and every property',
+    async () => {
+      const member = await signedInAs(READ.ryan);
+      const { household } = READ;
       const snapshot = await readReportSnapshot(member, household, PERIOD);
       const checks = checkReportInvariants(snapshot, {
         pnl: propertyPnl(snapshot, pnlLabels),
@@ -93,11 +92,11 @@ describe('readReportSnapshot on the full seed (FIN-4)', () => {
 });
 
 describe('occupancy, the portfolio and the owner summary on the full seed (FIN-4, FIN-5)', () => {
-  it.each(READ_ONLY_LANES)(
-    'lane %i: Kho Biên Hòa has stood empty 70 days and Dĩ An Phòng 8 67, and each owner has their tax card revenue',
-    async (lane) => {
-      const member = await signedInAs(`ryan.lane${lane}@demo.esta.test`);
-      const household = seedId(`seed:household:lane-${lane}`);
+  it(
+    'Kho Biên Hòa has stood empty 70 days and Dĩ An Phòng 8 67, and each owner has their tax card revenue',
+    async () => {
+      const member = await signedInAs(READ.ryan);
+      const { household } = READ;
       const snapshot = await readReportSnapshot(member, household, YEAR);
       const table = occupancy(snapshot, occupancyLabels);
       const unit = (property: string, unitLabel: string) => snapshot.units.find((candidate) => candidate.propertyName.includes(property) && candidate.label === unitLabel)?.id ?? '';

@@ -1,14 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 import { service } from '@/test/stack';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
 // 2026-10-07. A void cannot be undone and the cron test reads every seeded lease, so this file bills its own Demo
-// property in lane 5: Phòng A's October bill went out by mistake, Phòng B paid October and holds November's draft.
-
-// seedId('seed:household:lane-5'), supabase/seed/README.md
-const HOUSEHOLD = 'afea77b8-4754-58e8-8c51-3b3118315b50';
-const { client, signIn } = memberClient('ryan.lane5@demo.esta.test', HOUSEHOLD);
+// property in its lane: Phòng A's October bill went out by mistake, Phòng B paid October and holds November's draft.
+const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url);
+const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 
 const { addReceivingAccount, issueInvoice, voidInvoice } = await import('./invoices');
 const { terminateLease } = await import('./leases');

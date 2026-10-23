@@ -344,7 +344,7 @@ test('step 6: the October board shows Phòng 6 overdue 6 days and Mẹ copies it
   await holdForRecording(page);
 });
 
-test.skip('step 7: the 2026-10-08 morning brief lists the overdue room, the ending lease and a market item (Phase 5, P5-10)', () => {});
+test.fixme('step 7: the 2026-10-08 morning brief lists the overdue room, the ending lease and a market item (Phase 5, P5-10)', () => {});
 test('step 8: the next morning Mẹ opens her tax card and reads her 2026 rent, with the six new leases, against 500 million VND (FIN-3)', async ({ page, request }) => {
   await setClock(request, '2026-10-08T07:05:00+07:00');
   await open(page, ME, 'light', PHONE);
@@ -363,4 +363,4 @@ test('step 8: the next morning Mẹ opens her tax card and reads her 2026 rent, 
   await shot(page, 'p4-04-northstar-step8-390-light');
   await holdForRecording(page);
 });
-test.skip('step 9: Ryan asks how much Dĩ An collected this month and gets the exact amount (Phase 5, P5-10)', () => {});
+test.fixme('step 9: Ryan asks how much Dĩ An collected this month and gets the exact amount (Phase 5, P5-10)', () => {});

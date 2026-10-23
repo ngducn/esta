@@ -16,16 +16,16 @@ import {
   type OpenBill,
 } from '../../../../../fixtures/statements/household.ts';
 import { UNRECOGNIZED_COLUMNS } from '../../../../../packages/core/src/matching/statement-scenario';
-import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { decodeStatementFile, fileColumns, headerCells, pickedHeader, picksOf, type StatementFile } from '@/lib/statements/decodeStatementFile';
+import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) sets the slot's database clock to 2026-10-07. The file adds its
-// own Demo rooming house and receiving account to lane 8, whose six leases owe October, and imports the statement
+// own Demo rooming house and receiving account to its lane, whose six leases owe October, and imports the statement
 // fixtures/statements/household.ts writes for those bills in each of the three layouts, and as layout D, a bank Esta
 // does not recognize, read under the columns a person picks (P3-21).
-const HOUSEHOLD = seedId('seed:household:lane-8');
-const { client, signIn } = memberClient('ryan.lane8@demo.esta.test', HOUSEHOLD);
+const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url);
+const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 
 const { importStatement, commitStatement } = await import('./statements');
 const { loadColumnPresets, loadStatementImport } = await import('@/server/statements/load');

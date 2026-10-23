@@ -2,14 +2,13 @@ import { isoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import { parsePropertyFilters } from '@esta/core/properties';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
 // AS_OF_INSTANT; run against a fresh `pnpm db:reset`.
-
-// seedId('seed:household:lane-3'), supabase/seed/README.md
-const HOUSEHOLD = '77551982-f791-5e3b-8cc6-0622735344d4';
-const { client, signIn } = memberClient('ryan.lane3@demo.esta.test', HOUSEHOLD);
+const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url);
+const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 
 const { activateLease, amendLease, createTenant, previewActivation, renewLease, saveLease, terminateLease } = await import('./leases');
 const { listProperties } = await import('@/server/properties/list');

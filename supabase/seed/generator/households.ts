@@ -14,12 +14,12 @@ export const DEMO_PASSWORD = 'Esta.Demo.2026';
 /** bcrypt of DEMO_PASSWORD with a fixed salt, so two resets write the same row and `pnpm db:seed:check` holds. */
 const DEMO_PASSWORD_HASH = '$2a$10$u1mv4wjbn6w/SSL9RjrAf.LYsbPVWP/onnlzESyk11NTt3hHDZ/6i';
 
+export function laneSeed(lane: number): HouseholdSeed {
+  return { key: `lane-${lane}`, name: `Gia đình Demo ${lane}`, emailSuffix: `.lane${lane}` };
+}
+
 export function householdSeeds(laneCount: number): HouseholdSeed[] {
-  const lanes = Array.from({ length: laneCount }, (_, index): HouseholdSeed => ({
-    key: `lane-${index + 1}`,
-    name: `Gia đình Demo ${index + 1}`,
-    emailSuffix: `.lane${index + 1}`,
-  }));
+  const lanes = Array.from({ length: laneCount }, (_, index) => laneSeed(index + 1));
   return [{ key: 'demo', name: 'Gia đình Demo', emailSuffix: '' }, ...lanes];
 }
 
@@ -39,7 +39,7 @@ export function userId(person: Person, household: HouseholdSeed) {
   return seedId(`seed:user:${personKey(person, household)}`);
 }
 
-function email(person: Person, household: HouseholdSeed): string {
+export function personEmail(person: Person, household: HouseholdSeed): string {
   return `${person}${household.emailSuffix}@demo.esta.test`;
 }
 
@@ -51,7 +51,7 @@ const authUsers: Emitter = {
       id: userId(person, household),
       aud: 'authenticated',
       role: 'authenticated',
-      email: email(person, household),
+      email: personEmail(person, household),
       encrypted_password: DEMO_PASSWORD_HASH,
       email_confirmed_at: asOf,
       raw_app_meta_data: { provider: 'email', providers: ['email'] },
@@ -72,7 +72,7 @@ const authIdentities: Emitter = {
         id: seedId(`seed:identity:${personKey(person, household)}`),
         provider_id: user,
         user_id: user,
-        identity_data: { sub: user, email: email(person, household), email_verified: true },
+        identity_data: { sub: user, email: personEmail(person, household), email_verified: true },
         provider: 'email',
       };
     }),
@@ -91,7 +91,7 @@ const householdMembers = publicTable('household_members', ({ household }) =>
     id: memberId(person, household),
     household_id: householdId(household),
     user_id: userId(person, household),
-    invited_email: email(person, household),
+    invited_email: personEmail(person, household),
     role: 'admin' as const,
     is_operator: isOperator,
     display_name: fullName,

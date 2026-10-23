@@ -1,13 +1,12 @@
 import { isoDate } from '@esta/core/date';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
-// 2026-10-07; run against a fresh `pnpm db:reset`. Lane 9 is read only here.
-
-// seedId('seed:household:lane-9') and its two owner parties, supabase/seed/README.md
-const HOUSEHOLD = '49343d1d-20ea-5afc-8ad0-9faefda645db';
-const { client, signIn } = memberClient('me.lane9@demo.esta.test', HOUSEHOLD);
+// 2026-10-07; run against a fresh `pnpm db:reset`.
+const { household: HOUSEHOLD, me: EMAIL } = integrationLane(import.meta.url);
+const { client, signIn } = memberClient(EMAIL, HOUSEHOLD);
 const { loadTaxCard, loadTaxOwners, loadTaxYears } = await import('./load');
 
 const ASOF = isoDate('2026-10-07');
@@ -39,7 +38,7 @@ describe('the tax card on the full seed (FIN-3, SPEC §9.3)', () => {
   });
 
   it('opens on the signed-in member, offers 2025 and 2026, and has no rule for 2025', async () => {
-    const { data } = await client.from('household_members').select('id').eq('household_id', HOUSEHOLD).eq('invited_email', 'me.lane9@demo.esta.test').single();
+    const { data } = await client.from('household_members').select('id').eq('household_id', HOUSEHOLD).eq('invited_email', EMAIL).single();
     expect((await loadTaxOwners(HOUSEHOLD, data?.id ?? ''))[0]?.id).toBe(me);
     expect(await loadTaxYears(HOUSEHOLD, ASOF)).toEqual([2026, 2025]);
     expect(await loadTaxCard(HOUSEHOLD, { partyId: me, year: 2025, asOf: ASOF })).toEqual({ kind: 'no_rule', year: 2025 });
