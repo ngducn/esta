@@ -1,4 +1,5 @@
 import { boardMonthParam, parseBoardMonth } from '@esta/core/collections';
+import { EXPENSE_CATEGORY_IDS } from '@esta/core/expenses';
 import type { ExportTable } from '@esta/core/export';
 import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
@@ -8,7 +9,7 @@ import { notFound } from 'next/navigation';
 import { ChoiceLinks } from '@/components/choice-links';
 import { ExpenseActions } from '@/components/expenses/expense-actions';
 import { ExpenseList } from '@/components/expenses/expense-list';
-import { LedgerTable } from '@/components/ledger/ledger-table';
+import { ReportTable } from '@/components/reports/report-table';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { getClock } from '@/server/clock';
 import { queryParam } from '@/server/documents/vault';
@@ -17,6 +18,8 @@ import { loadLedgerYear, loadLedgerYears } from '@/server/ledger/load';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { PropertyDetailFrame } from '../detail-frame';
+
+const CATEGORY_COLUMNS: ReadonlySet<string> = new Set(EXPENSE_CATEGORY_IDS);
 
 const total = (table: ExportTable, column: string) => {
   const cell = table.totals.cells[table.columns.findIndex((candidate) => candidate.id === column)];
@@ -39,7 +42,7 @@ export default async function PropertyFinancePage({
   const today = clock.today();
   const monthParam = queryParam(query.month);
   const marked = boardMonthParam(parseBoardMonth(monthParam, today)) === monthParam ? monthParam : null;
-  const years = await loadLedgerYears(member.household.id, id, today);
+  const years = await loadLedgerYears(member.household.id, today, id);
   const requested = Number(queryParam(query.year) || marked?.slice(0, 4));
   const year = years.includes(requested) ? requested : Number(today.slice(0, 4));
   const [ledger, rows, t, tLedger, locale] = await Promise.all([
@@ -81,8 +84,10 @@ export default async function PropertyFinancePage({
           </div>
         ) : (
           <>
-            <LedgerTable
+            <ReportTable
               table={ledger.table}
+              optional={CATEGORY_COLUMNS}
+              strong="noi"
               caption={tLedger('caption', { year })}
               marked={marked?.startsWith(`${year}-`) ? { key: marked, label: tLedger('marked') } : null}
             />

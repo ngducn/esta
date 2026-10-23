@@ -3,6 +3,7 @@ import { AddressLookup } from './address-lookup';
 import { LiveParse } from './live-parse';
 import { checkRow, sections, type CheckedRow } from './sections';
 import { AllocationSection } from './sections/AllocationSection';
+import { ReportsSection } from './sections/reports';
 import { ScheduleSection } from './sections/ScheduleSection';
 import { TaxSection } from './sections/tax';
 import { VietQrSection } from './sections/VietQrSection';
@@ -61,6 +62,7 @@ export default async function DevCorePage({ searchParams }: { searchParams: Prom
       <ScheduleSection />
       <AllocationSection />
       <TaxSection taxYear={taxYear} />
+      <ReportsSection />
 
       {checked.map((section) => (
         <section key={section.id} aria-labelledby={`${section.id}-heading`} data-section={section.id}>

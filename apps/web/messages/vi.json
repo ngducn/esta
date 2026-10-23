@@ -399,7 +399,6 @@
   "sections": {
     "documents": "Tài liệu sẽ cất sổ đỏ, hợp đồng và CCCD ở một chỗ, tìm được ngay bằng một ô tìm kiếm.",
     "assistant": "Trợ lý sẽ để lại ghi chú mỗi sáng về tiền thu chậm, hợp đồng sắp hết hạn và giấy tờ còn thiếu.",
-    "reports": "Thẻ thuế cho thuê nhà đã có: doanh thu dự kiến so với ngưỡng 500 triệu và thuế ước tính. Thu chi của từng tài sản theo năm sẽ có sau.",
     "settings": "Hiển thị đi theo tài khoản của bạn. Gia đình, thành viên và tài khoản nhận tiền sẽ có ở đây trong bản cập nhật tới.",
     "soonTitle": "Sắp có trong bản cập nhật tới",
     "adjustDisplay": "Chỉnh cỡ chữ và giao diện"
@@ -1174,7 +1173,6 @@
     "errorInvalid": "Số tiền chưa đúng. Kiểm tra lại rồi lưu.",
     "errorForbidden": "Bạn chỉ có quyền xem nên không lưu được.",
     "errorFailed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
-    "reportsOpen": "Mở thẻ thuế",
     "amount": "Số tiền cả năm {year}"
   },
   "devTax": {
@@ -1901,5 +1899,47 @@
     "portfolioBasis": "Theo lần định giá gần nhất của từng bất động sản, cũ nhất ngày {date}.",
     "portfolioMissing": "{count, plural, other {# bất động sản chưa có định giá}}",
     "portfolioOpen": "Xem bất động sản"
+  },
+  "reports": {
+    "picker": "Chọn báo cáo",
+    "tax": "Thuế",
+    "pnl": "Lãi lỗ theo tài sản",
+    "rentRoll": "Danh sách thuê",
+    "collections": "Thu tiền theo tháng",
+    "years": "Năm",
+    "pnlTitle": "Lãi lỗ theo tài sản năm {year}",
+    "pnlBasis": "Tiền thu tính vào tháng nhận được tiền, như tab Thu chi của từng tài sản.",
+    "pnlEmpty": "Chưa có tài sản nào. Thêm tài sản để xem lãi lỗ.",
+    "rentRollTitle": "Danh sách thuê ngày {date}",
+    "rentRollBasis": "Các hợp đồng đang hiệu lực hôm nay. Hợp đồng đã kết thúc hoặc chấm dứt không có ở đây.",
+    "rentRollEmpty": "Hôm nay chưa có hợp đồng nào đang hiệu lực.",
+    "collectionsTitle": "Thu tiền theo tháng năm {year}",
+    "collectionsBasis": "Hóa đơn tính vào tháng đến hạn. Còn nợ là số tiền chưa thu được tính đến hôm nay.",
+    "collectionsEmpty": "Chưa có hóa đơn nào đến hạn trong năm {year}.",
+    "property": "Tài sản",
+    "income": "Thu",
+    "expenses": "Tổng chi",
+    "noi": "Còn lại",
+    "place": "Nơi thuê",
+    "tenant": "Người thuê",
+    "rent": "Tiền thuê mỗi tháng",
+    "cycle": "Kỳ thu",
+    "cycleMonths": "{months, plural, other {# tháng}}",
+    "paidThrough": "Đã thu đến",
+    "nextDue": "Hạn kế tiếp",
+    "deposit": "Tiền cọc đang giữ",
+    "endDate": "Ngày hết hạn",
+    "openEnded": "Không thời hạn",
+    "none": "Chưa có",
+    "month": "Tháng",
+    "monthName": "Tháng {month}",
+    "billed": "Phải thu",
+    "collected": "Đã thu",
+    "outstanding": "Còn nợ",
+    "total": "Tổng cộng",
+    "downloadExcel": "Tải Excel",
+    "pnlSheet": "Lãi lỗ {year}",
+    "rentRollSheet": "Danh sách thuê",
+    "collectionsSheet": "Thu tiền {year}"
   }
 }
