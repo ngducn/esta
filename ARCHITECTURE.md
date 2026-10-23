@@ -99,7 +99,7 @@ A client component calls a server action inside a transition, maps a thrown call
 
 `useDeferredDialog` in `apps/web/src/components/use-deferred-dialog.ts` opens a lazy sheet or dialog. It keeps the popup mounted so the exit motion runs, preloads on hover and focus, and sets `aria-haspopup` and `aria-expanded`. Do not mount a sheet only while it is open: a `Sheet`, `Dialog` or `AlertDialog` rendered with a bare `open` is one (`hand-rolled-lazy-sheet`).
 
-**Home.** One form-sheet shell that owns the title, the error, and the cancel and submit row. It does not exist yet. Issue #193 creates it. Until then, do not copy the footer row markup into another sheet (`sheet-footer-markup`).
+**Home.** One form-sheet shell that owns the title, the error, and the cancel and submit row. Issue #193 creates it. Its start is `SheetFooter` in `apps/web/src/components/sheet-footer.tsx`, which owns the error and the cancel and save row: a new form sheet uses it, and #193 grows it into the whole shell. Until then, do not copy the footer row markup into another sheet (`sheet-footer-markup`).
 
 ## Toasts
 

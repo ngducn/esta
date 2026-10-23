@@ -46,6 +46,22 @@ describe('valuationCreate', () => {
     expect(writes(sent)).toEqual([]);
   });
 
+  it.each([
+    [true, { ok: true, value: { id: VALUATION } }],
+    [false, { ok: false, reason: { kind: 'conflict' } }],
+  ])('when a second tap loses the insert race to the first (first one stored: %s), it answers %j', async (firstStored, answer) => {
+    let inserted = false;
+    const { db } = fakeDb(
+      (request) => (request.table === 'valuations' ? (inserted && firstStored ? [{ id: VALUATION }] : []) : live(request)),
+      (request) => {
+        if (request.table !== 'valuations' || request.method !== 'POST') return null;
+        inserted = true;
+        return { code: '23505', message: 'duplicate key value violates unique constraint "valuations_pkey"' };
+      },
+    );
+    expect(await runOp(valuationCreate, context(db), quote)).toEqual(answer);
+  });
+
   it('refuses a valuation dated after the Clock day, whoever calls it', async () => {
     const { db, sent } = fakeDb(live);
     expect(await runOp(valuationCreate, context(db), { ...quote, asOf: '2026-10-08' })).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'asOf', code: 'after_today' }] } });
