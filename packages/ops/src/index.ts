@@ -45,6 +45,8 @@ export { personCreate, type PersonRefusal, type PersonSaved, type PossibleDuplic
 export { statementColumnsSchema, statementCommit, statementImport, statementLink, type LinkRefusal, type StatementCommitted, type StatementImported, type StatementRefusal } from './statement-ops';
 export { propertyCreate, propertyEdit, type CodeTaken, type PropertySaved } from './property-ops';
 export { findPerson, findProperty, getLease, getProperty, listLeases, listProperties, personQuerySchema, rankCandidates, rankPeople, type ReadContext } from './read';
+export { readOtherBusinessRevenue, readTaxInputs } from './tax';
+export { taxInputSave, type TaxInputSaved } from './tax-ops';
 export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
 export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
 export { readLivePropertyIds, readValuations } from './valuations';
