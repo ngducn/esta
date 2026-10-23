@@ -156,7 +156,7 @@ export function runWorkedExample(example: WorkedExample, rule: TaxRule): WorkedE
       selfDeclaredVnd: position.selfDeclaredVnd,
       vatVnd: position.vatEstimateVnd,
       pitVnd: position.pitEstimateVnd,
-      withheldVnd: vnd(position.withheldLeases.reduce((sum, lease) => sum + lease.projectedVnd, 0)),
+      withheldVnd: position.withheldVnd,
       notes: position.noteKeys,
     };
   });

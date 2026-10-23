@@ -18,6 +18,7 @@ export type TaxPosition = {
   overThreshold: boolean;
   /** Projected rental revenue minus the leases whose tenant withholds the tax. */
   selfDeclaredVnd: Vnd;
+  withheldVnd: Vnd;
   withheldLeases: readonly WithheldLease[];
   vatEstimateVnd: Vnd;
   pitEstimateVnd: Vnd;
@@ -41,7 +42,7 @@ export function computeTaxPosition(input: {
   const withheldLeases = attribution.leases
     .filter((lease) => lease.taxPayer === 'tenant_withholds')
     .map(({ leaseId, propertyId, accruedVnd, projectedVnd }) => ({ leaseId, propertyId, accruedVnd, projectedVnd }));
-  const withheldVnd = withheldLeases.reduce((sum, lease) => sum + lease.projectedVnd, 0);
+  const withheldVnd = vnd(withheldLeases.reduce((sum, lease) => sum + lease.projectedVnd, 0));
   const selfDeclaredVnd = vnd(attribution.projectedVnd - withheldVnd);
   const thresholdTotalVnd = vnd(attribution.projectedVnd + otherBusinessRevenueVnd);
   const thresholdVnd = rule.thresholdVnd;
@@ -56,6 +57,7 @@ export function computeTaxPosition(input: {
     progressBp: Number((BigInt(thresholdTotalVnd) * BigInt(BP_PER_UNIT)) / BigInt(thresholdVnd)),
     overThreshold,
     selfDeclaredVnd,
+    withheldVnd,
     withheldLeases,
     vatEstimateVnd: applyBp(VAT_BASES[rule.vatBase](base), rule.vatRateBp),
     pitEstimateVnd: applyBp(PIT_BASES[rule.pitBase](base), rule.pitRateBp),

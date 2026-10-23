@@ -12,6 +12,7 @@ import { memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { signIn } from './helpers/inbucket';
 import { chooseFromBoard, commitLines, confirmSuggestion, expectFilters, line, openPreview } from './helpers/statements';
+import { cardVnd, expectedTaxPosition } from './helpers/tax';
 import { setClock } from './helpers/test-clock';
 import { acceptEvery, editField, fixture, followReadyNotice, open, PHONE, recordForPr, serviceGet, shot, START, startWizard, step, toast, vnd } from './helpers/wizard';
 
@@ -344,5 +345,22 @@ test('step 6: the October board shows Phòng 6 overdue 6 days and Mẹ copies it
 });
 
 test.skip('step 7: the 2026-10-08 morning brief lists the overdue room, the ending lease and a market item (Phase 5, P5-10)', () => {});
-test.skip('step 8: the tax card shows year-to-date rent against 500 million VND (Phase 4, P4-05)', () => {});
+test('step 8: the next morning Mẹ opens her tax card and reads her 2026 rent, with the six new leases, against 500 million VND (FIN-3)', async ({ page, request }) => {
+  await setClock(request, '2026-10-08T07:05:00+07:00');
+  await open(page, ME, 'light', PHONE);
+  await page.goto('/reports/tax');
+  const expected = await expectedTaxPosition(page, 'Nguyễn Thị Demo', 2026, '2026-10-08');
+  await expect(page.getByTestId('tax-projected')).toHaveText(cardVnd(expected.projectedVnd));
+  await expect(page.getByTestId('tax-threshold-rule')).toHaveAttribute('data-progress-bp', String(expected.progressBp));
+  await expect(page.getByTestId('tax-progress')).toHaveText(
+    expected.overThreshold ? `Vượt ngưỡng ${cardVnd(500_000_000)}` : `Đạt ${Math.floor(expected.progressBp / 100)}% ngưỡng ${cardVnd(500_000_000)}`,
+  );
+  await expect(page.getByTestId('tax-accrued')).toHaveText(`Đã ghi nhận đến 08/10/2026: ${cardVnd(expected.accruedVnd)}`);
+  await expect(page.getByTestId('tax-vat')).toHaveText(cardVnd(expected.vatEstimateVnd));
+  await expect(page.getByTestId('tax-pit')).toHaveText(cardVnd(expected.pitEstimateVnd));
+  await expect(page.getByTestId('tax-lease').filter({ hasText: PROPERTY })).toHaveCount(ROOMS.length);
+  await expect(page.getByTestId('tax-disclaimer').first()).toHaveText(/^Ước tính, không phải tư vấn thuế\. Nguồn: /);
+  await shot(page, 'p4-04-northstar-step8-390-light');
+  await holdForRecording(page);
+});
 test.skip('step 9: Ryan asks how much Dĩ An collected this month and gets the exact amount (Phase 5, P5-10)', () => {});

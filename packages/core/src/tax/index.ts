@@ -12,6 +12,7 @@ export type {
   TaxPayer,
 } from './attribute';
 export { TAX_WORKED_EXAMPLES, runWorkedExample, type WorkedExample, type WorkedExampleOwner } from './examples';
+export { TAX_LEASE_COLUMNS, ownershipShareRowSchema, taxLeaseRowSchema, toTaxInputs, type TaxInputs, type TaxRows } from './inputs';
 export { TAX_NOTES, activeTaxNotes, type TaxNoteKey, type TaxNoteLabel } from './notes';
 export { computeTaxPosition, type TaxPosition, type WithheldLease } from './position';
 export {

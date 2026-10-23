@@ -4,13 +4,12 @@ import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { Download } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChoiceLinks } from '@/components/choice-links';
 import { ExpenseActions } from '@/components/expenses/expense-actions';
 import { ExpenseList } from '@/components/expenses/expense-list';
 import { LedgerTable } from '@/components/ledger/ledger-table';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { cn } from '@/lib/utils';
 import { getClock } from '@/server/clock';
 import { queryParam } from '@/server/documents/vault';
 import { loadPropertyExpenses } from '@/server/expenses/load';
@@ -71,26 +70,10 @@ export default async function PropertyFinancePage({
             </p>
           )}
         </div>
-        {years.length > 1 ? (
-          <nav aria-label={t('years')}>
-            <ul className="flex flex-wrap gap-2">
-              {years.map((option) => (
-                <li key={option}>
-                  <Link
-                    href={`/properties/${id}/finance?year=${option}`}
-                    aria-current={option === year ? 'page' : undefined}
-                    className={cn(
-                      'inline-flex min-h-touch items-center rounded-full border px-4 text-small font-semibold figures transition-colors duration-(--duration-fast) ease-standard',
-                      option === year ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:border-field',
-                    )}
-                  >
-                    {option}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        ) : null}
+        <ChoiceLinks
+          label={t('years')}
+          choices={years.map((option) => ({ key: String(option), label: String(option), href: `/properties/${id}/finance?year=${option}`, current: option === year }))}
+        />
         {ledger.empty ? (
           <div data-testid="ledger-empty" className="flex flex-col gap-1 text-body">
             <p className="font-semibold text-ink">{tLedger('empty', { year })}</p>

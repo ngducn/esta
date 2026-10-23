@@ -241,8 +241,7 @@ describe('computeTaxPosition properties', () => {
     fc.assert(
       fc.property(fc.array(lease, { maxLength: 6 }), other, (leases, otherVnd) => {
         const result = position(leases, otherVnd);
-        const withheld = result.withheldLeases.reduce((sum, item) => sum + item.projectedVnd, 0);
-        expect(result.selfDeclaredVnd + withheld).toBe(result.projectedVnd);
+        expect(result.selfDeclaredVnd + result.withheldVnd).toBe(result.projectedVnd);
       }),
       params,
     );

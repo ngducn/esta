@@ -104,7 +104,7 @@ describe('computeTaxPosition', () => {
     expect(result.withheldLeases).toEqual([
       { leaseId: withheld.leaseId, propertyId: 'home', accruedVnd: 0, projectedVnd: 200_000_000 },
     ]);
-    expect(result).toMatchObject({ thresholdTotalVnd: 700_000_000, selfDeclaredVnd: 500_000_000 });
+    expect(result).toMatchObject({ thresholdTotalVnd: 700_000_000, selfDeclaredVnd: 500_000_000, withheldVnd: 200_000_000 });
   });
 
   it('activates notes from the registry', () => {

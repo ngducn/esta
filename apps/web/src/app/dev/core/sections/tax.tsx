@@ -1,18 +1,17 @@
 import { formatVnd, type Locale } from '@esta/core/format';
 import type { Vnd } from '@esta/core/money';
 import {
-  TAX_NOTES,
   TAX_WORKED_EXAMPLES,
   runWorkedExample,
   selectTaxRule,
   taxRuleRowSchema,
-  type TaxNoteKey,
   type TaxRule,
   type TaxRuleSelection,
   type WorkedExampleOwner,
 } from '@esta/core/tax';
 import { isDeepStrictEqual } from 'node:util';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { taxNoteText } from '@/components/tax/note-text';
 import { createSessionClient } from '@/server/supabase/server';
 
 const EXAMPLE_YEAR = 2026;
@@ -43,14 +42,6 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
   const selected: TaxRuleSelection | null = loaded.ok ? selectTaxRule(loaded.rules, year) : null;
   const exampleRule = loaded.ok ? selectTaxRule(loaded.rules, EXAMPLE_YEAR) : null;
 
-  function noteText(key: TaxNoteKey, rule: TaxRule): string {
-    const note = TAX_NOTES[key];
-    const text = note.showsRuleNote ? notes(note.messageKey, { note: rule.note ?? '' }) : notes(note.messageKey);
-    if (note.label === 'assumption') return `${notes('labelAssumption')}: ${text}`;
-    if (note.label === 'ask_accountant') return `${notes('labelAskAccountant')}: ${text}`;
-    return text;
-  }
-
   const rows = TAX_WORKED_EXAMPLES.map((example) => {
     const actual = exampleRule?.kind === 'rule' ? runWorkedExample(example, exampleRule.rule) : [];
     return { example, actual, matches: isDeepStrictEqual(actual, example.expected) };
@@ -77,7 +68,7 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
         {selected?.kind === 'rule' && (
           <>
             <p data-testid="tax-source">{notes('source', { citation: selected.rule.sourceCitation })}</p>
-            {selected.rule.note !== null && <p data-testid="tax-rule-note">{noteText('pit_effective_date', selected.rule)}</p>}
+            {selected.rule.note !== null && <p data-testid="tax-rule-note">{taxNoteText('pit_effective_date', selected.rule, notes)}</p>}
             <p>{notes('estimateDisclaimer')}</p>
           </>
         )}
@@ -114,7 +105,7 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
                         .map((owner) => t('withheld', { label: notes('tenantWithholds'), amount: money(owner.withheldVnd) })),
                       ...[...new Set(actual.flatMap((owner) => owner.notes))]
                         .filter((key) => key !== 'estimate_disclaimer' && key !== 'pit_effective_date')
-                        .map((key) => noteText(key, rule)),
+                        .map((key) => taxNoteText(key, rule, notes)),
                     ],
               ],
               ['result', t('result'), [matches ? 'OK' : 'MISMATCH']],

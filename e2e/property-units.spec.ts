@@ -135,24 +135,24 @@ test('rule 3: an electricity account on Phòng 2 lists under Phòng 2 and a wate
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('rule 4: Tài sản sorted by Giá thuê leads with Mặt bằng Quận 1 at 30 tr and leaves the land without rent last (PRP-8)', async ({ page }) => {
+test('rule 4: Tài sản sorted by Giá thuê leads with Dãy trọ Dĩ An at 15,6 tr and leaves the land without rent last (PRP-8)', async ({ page }) => {
   await open(page, 'ryan.lane4@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
   await page.getByRole('combobox', { name: /^Sắp xếp/ }).selectOption({ label: 'Giá thuê' });
   await expect(page).toHaveURL(/[?&]sort=rent/);
   const cards = page.getByTestId('property-card');
   await expect(cards.getByRole('heading', { level: 2 })).toHaveText([
-    'Mặt bằng Quận 1',
     'Dãy trọ Dĩ An',
     'Nhà phố Q7',
     'Căn hộ Thủ Đức',
+    'Mặt bằng Quận 1',
     'Đất Bảo Lộc',
     'Đất vườn Long An',
     'Kho Biên Hòa',
   ]);
   // Since P3-07 the card shows the rent of active leases; Kho Biên Hòa's last lease ended on 2026-07-29.
   const rent = 'Tiền thuê mỗi tháng';
-  await expect(cards.getByTestId('property-rent')).toHaveText([`${rent}30 tr`, `${rent}15,6 tr`, `${rent}15 tr`, `${rent}9 tr`]);
+  await expect(cards.getByTestId('property-rent')).toHaveText([`${rent}15,6 tr`, `${rent}15 tr`, `${rent}9 tr`, `${rent}2,5 tr`]);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 

@@ -94,7 +94,7 @@ export const LEASE_SEEDS: readonly LeaseSeed[] = [
     property: 'q1',
     unit: 1,
     tenant: company('Hộ kinh doanh Demo Bến Thành', '0909 222 333'),
-    terms: terms('2026-03-01', '2029-02-28', 30_000_000, 12, null),
+    terms: terms('2026-03-01', '2029-02-28', 2_500_000, 12, null),
     depositVnd: 60_000_000,
     taxPayer: 'owner',
   },

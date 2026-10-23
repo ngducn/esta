@@ -11,7 +11,7 @@ import { certificates, parcels, structures } from './legal.ts';
 import { meters } from './meters.ts';
 import { billingSql, depositEntries, leaseAmendments, leases, tenants } from './leasing.ts';
 import { ownershipShares } from './ownership.ts';
-import { parties } from './parties.ts';
+import { ownerTaxInputs, parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
 import { agentJobs, agentRuns } from './agent.ts';
 import { renderSeed } from './sql.ts';
@@ -23,6 +23,7 @@ import { isVariantName, VARIANTS, type VariantName } from './variants.ts';
 const EMITTERS: readonly Emitter[] = [
   ...HOUSEHOLD_EMITTERS,
   parties,
+  ownerTaxInputs,
   bankAccounts,
   vendors,
   properties,

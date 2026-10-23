@@ -50,3 +50,9 @@ export async function historyIslandIntl() {
   const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return { locale, messages: { history: messages.history, components: { confirm: messages.components.confirm } } };
 }
+
+/** The tax card's other revenue form: its own labels and the money field's. */
+export async function taxIslandIntl() {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  return { locale, messages: { taxCard: messages.taxCard, components: { money: messages.components.money } } };
+}

@@ -121,13 +121,13 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('lane 11: a placeholder section shows no control, because none of its actions works yet', async ({ page }) => {
+test('lane 11: a placeholder section shows only the controls that work, so Báo cáo offers the tax card and Trợ lý nothing', async ({ page }) => {
   onlyOn('mobile');
   await signIn(page, 'me.lane1@demo.esta.test');
-  for (const path of ['/assistant', '/reports']) {
+  for (const [path, links] of [['/assistant', []], ['/reports', ['Mở thẻ thuế']]] as const) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 }), path).toBeVisible();
-    await expect(page.getByRole('main').getByRole('link'), `${path} links`).toHaveCount(0);
+    await expect(page.getByRole('main').getByRole('link'), `${path} links`).toHaveText(links);
     await expect(page.getByRole('main').getByRole('button'), `${path} buttons`).toHaveCount(0);
   }
 });
