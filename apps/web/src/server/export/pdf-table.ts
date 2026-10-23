@@ -5,11 +5,10 @@ import type { PDFDocument, PDFFont, PDFPage } from 'pdf-lib';
 import type { ColorToken } from '@/design/tokens';
 import { openPdf, tone, wrap } from '@/server/receipts/pdf';
 
-/** What the PDF says above the table: the report's title and the lines under it. */
 export type PdfHeader = { readonly title: string; readonly notes: readonly string[]; readonly locale: Locale };
 
-/** A4 landscape in PDF points (ISO 216, 297 × 210 mm). */
-const A4_LANDSCAPE = { width: 841.89, height: 595.28 } as const;
+const POINTS_PER_MM = 72 / 25.4;
+const A4_LANDSCAPE = { width: 297 * POINTS_PER_MM, height: 210 * POINTS_PER_MM } as const;
 const MARGIN = 36;
 const SIZE = 9;
 const LEADING = 1.35;
@@ -25,7 +24,7 @@ const cellText = (cell: ExportCell | undefined, locale: Locale) => {
 };
 
 function heading(pen: Pen, value: string, font: PDFFont, size: number, color: ColorToken): void {
-  for (const line of wrap(value, font, size, A4_LANDSCAPE.width - 2 * MARGIN)) {
+  for (const line of wrap(value.normalize('NFC'), font, size, A4_LANDSCAPE.width - 2 * MARGIN)) {
     pen.page.drawText(line, { x: MARGIN, y: pen.y - size, size, font, color: tone(color) });
     pen.y -= size * LEADING;
   }

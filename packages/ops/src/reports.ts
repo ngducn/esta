@@ -18,7 +18,6 @@ const unitRowSchema = z
     (row): ReportUnit => ({ id: row.id, propertyId: row.property_id, propertyName: row.property.nickname, label: row.label, wholeUnit: row.kind === 'whole', availableFrom: row.available_from }),
   );
 
-/** The units of the household's live properties let as rentals (AGENT.md §5.3 W4). */
 async function readRentalUnits(db: Db, householdId: string): Promise<ReportUnit[]> {
   const rows = await readAll('rental units', (from, to) =>
     db
@@ -57,7 +56,7 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
     readLeaseNames(db, householdId, rolled),
     readInvoices(db, householdId, { leaseIds: ids }),
     readLeaseSchedule(db, ids, scheduleUntil(rolled, asOf)),
-    readOwners(db, householdId, [...new Set(tax.shares.map((share) => share.partyId))]),
+    readOwners(db, householdId, [...new Set([...tax.shares.map((share) => share.partyId), ...tax.leases.flatMap((lease) => lease.declaringPartyId ?? [])])]),
   ]);
   return {
     from,

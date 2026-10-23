@@ -253,7 +253,7 @@ describe('periodsFromSchedule', () => {
 
 
 describe('splitByShares', () => {
-  it('splits 100.000.001 at 60/40 as 60.000.001 and 40.000.000, the earlier share taking the tie', () => {
+  it('splits 100.000.001 at 60/40 as 60.000.001 and 40.000.000', () => {
     expect(splitByShares(vnd(100_000_001), [{ propertyId: 'p', partyId: 'me', shareBp: 6_000 }, { propertyId: 'p', partyId: 'ryan', shareBp: 4_000 }])).toEqual({
       owners: [{ partyId: 'me', amountVnd: 60_000_001 }, { partyId: 'ryan', amountVnd: 40_000_000 }],
       unattributedVnd: 0,

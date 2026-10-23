@@ -30,7 +30,6 @@ export function vacantDays(unit: ReportUnit, tenancies: readonly ReportTenancy[]
   return since === null || since > asOf ? null : daysBetween(since, asOf);
 }
 
-/** The unit's days in the period from the first day it could be let, and how many of them a lease was in effect. */
 function daysOf(unit: ReportUnit, tenancies: readonly ReportTenancy[], from: IsoDate, through: IsoDate) {
   const starts = [unit.availableFrom, ...tenancies.map((lease) => lease.start_date)].filter((day): day is IsoDate => day !== null).toSorted();
   const first = starts[0] !== undefined && starts[0] > from ? starts[0] : from;

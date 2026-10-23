@@ -9,7 +9,6 @@ vi.mock('server-only', () => ({}));
 
 const owners = Array.from({ length: 60 }, (_, index) => `Chủ sở hữu Demo ${String(index + 1).padStart(2, '0')}`);
 
-/** The owner summary's shape, the first owner typed decomposed as some phone keyboards send it. */
 const table: ExportTable = {
   columns: [
     { id: 'owner', label: 'Chủ sở hữu' },
@@ -28,7 +27,10 @@ describe('toPdfTable (FIN-4)', () => {
     const bytes = await toPdfTable(table, { title: 'Tổng kết năm 2026 theo chủ sở hữu', notes: ['Ước tính, không phải tư vấn thuế'], locale: 'vi' });
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPageCount()).toBeGreaterThan(1);
-    expect(pdf.getPages().map((page) => page.getSize())).toEqual(pdf.getPages().map(() => ({ width: 841.89, height: 595.28 })));
+    for (const page of pdf.getPages()) {
+      expect(page.getWidth()).toBeCloseTo(841.89, 2);
+      expect(page.getHeight()).toBeCloseTo(595.28, 2);
+    }
 
     const pages = (await pdfText(bytes)).replaceAll('\u00a0', ' ').split('\n\n');
     expect(pages).toHaveLength(pdf.getPageCount());

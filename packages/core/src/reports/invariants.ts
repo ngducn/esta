@@ -19,7 +19,6 @@ export type InvariantCheck =
   | { readonly kind: 'monthIncome'; readonly propertyId: string; readonly month: IsoDate; readonly expectedVnd: Vnd; readonly reportedVnd: Vnd }
   | { readonly kind: 'pnlIncome'; readonly propertyId: string; readonly expectedVnd: Vnd; readonly reportedVnd: Vnd | null }
   | { readonly kind: 'totals'; readonly report: keyof ReportTables; readonly column: string; readonly expected: number; readonly reported: number }
-  /** The owner summary's total for a P&L column against the P&L's, so the owners' shares add up to the properties. */
   | { readonly kind: 'ownerSplit'; readonly column: string; readonly expectedVnd: Vnd; readonly reportedVnd: Vnd | null };
 
 export const holds = (check: InvariantCheck): boolean => (check.kind === 'totals' ? check.expected === check.reported : check.expectedVnd === check.reportedVnd);

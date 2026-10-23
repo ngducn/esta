@@ -22,7 +22,6 @@ const NO_STORE = { 'Cache-Control': 'private, no-store' };
 
 const CONTENT_TYPE = { csv: 'text/csv; charset=utf-8', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pdf: 'application/pdf' } as const;
 
-/** A table to download, with its sheet name, file name, and the title and lines a PDF prints above it. */
 type Download = { readonly table: ExportTable; readonly sheet: string; readonly file: string; readonly title: string; readonly notes: readonly string[] };
 type Params = Record<string, string>;
 

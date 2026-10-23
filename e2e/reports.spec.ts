@@ -14,7 +14,6 @@ frozenAtStart();
 const report = (page: Page) => page.getByTestId('report');
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
 
-/** Each money column's totals cell is the sum of the cells above it. */
 function expectAmountTotals(table: Awaited<ReturnType<typeof readReportTable>>) {
   for (const id of Object.keys(table.totals.amounts)) expect(table.totals.amounts[id], `${id} total`).toBe(sum(table.rows.map((row) => row.amounts[id] ?? 0)));
 }

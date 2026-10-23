@@ -25,7 +25,6 @@ const collator = new Intl.Collator('vi', { numeric: true });
 
 type Split = { income: number; expenses: number };
 
-/** Each property's P&L income and expenses for the period, split by its ownership shares the way tax attribution splits revenue. */
 function splitLedgers(snapshot: ReportSnapshot): Map<string, Split> {
   const split = new Map<string, Split>();
   const add = (key: string, field: keyof Split, amount: Vnd) => {
@@ -58,7 +57,7 @@ export function ownerSummary(snapshot: ReportSnapshot, labels: OwnerSummaryLabel
     return { key: owner.id, name: owner.name, position: inputs.kind === 'rule' ? computeTaxPosition(inputs) : null, split: split.get(owner.id) ?? { income: 0, expenses: 0 } };
   });
   const rest = split.get(UNATTRIBUTED);
-  const lines = rest === undefined || rest.income + rest.expenses === 0 ? owners : [...owners, { key: UNATTRIBUTED, name: labels.unattributed, position: null, split: rest }];
+  const lines = rest === undefined || (rest.income === 0 && rest.expenses === 0) ? owners : [...owners, { key: UNATTRIBUTED, name: labels.unattributed, position: null, split: rest }];
   const tax = (position: TaxPosition | null, field: 'projectedVnd' | 'vatEstimateVnd' | 'pitEstimateVnd', key: string): ExportCell => {
     if (position !== null) return vndCell(position[field]);
     return textCell(key === UNATTRIBUTED ? '' : labels.noRule);
