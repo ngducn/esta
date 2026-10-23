@@ -68,7 +68,7 @@ export async function ReportTable({
                 ((zero && optional.has(column.id)) || (cell?.kind === 'text' && cell.value === '')) && 'max-sm:hidden',
               )}
             >
-              <span aria-hidden="true" className="text-start text-ink-2 sm:hidden">
+              <span aria-hidden="true" className="text-start whitespace-normal text-ink-2 sm:hidden">
                 {column.label}
               </span>
               {value(cell)}
