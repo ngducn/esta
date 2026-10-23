@@ -29,7 +29,7 @@ Every merge had a clean rigorous verdict and a green Actions `ci` at the exact h
   - The scope moved: seed coverage, the FND-7 checksum extension, north-star step 8 and the Phase 4 exit evidence go to P4-05.
   - The quality raise (the hand-rolled action-call count, 38 to 40, until #193) is accepted by the root, subject to the health lane.
 - **#261, the Phase 3 exit** (d75ffe7c): Ryan's to merge. After it come the two-bank-app VietQR scan and the Mom test.
-- **#61** (the number guard): parked.
+- **#61** (the number guard): closed unmerged 2026-10-23 at Ryan's request. The branch `esta/p5-11-number-guard` stays for P5-03, and the Phase 5 re-cut folds the P5-11 row into P5-03.
 - **Queue after these:** P4-01 then P4-04 (tax core and the tax card, Opus audit), then P4-05 (reports and the Phase 4 exit). Then the cleanup round: #193 action hook, #265 to #268, #271, #272, #274, #276, #278, #279, #281 and the older lows. #149 and #197 must land before real data.
 
 ## Questions waiting for Ryan
