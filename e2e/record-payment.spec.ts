@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
+import { signedIn } from './helpers/auth-api';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
 import { setClock } from './helpers/test-clock';
@@ -32,7 +33,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test.afterEach(async ({ page }) => {
-  if ((await page.context().cookies()).some((cookie) => cookie.name.startsWith('sb-'))) await undoRecorded(page);
+  if (await signedIn(page)) await undoRecorded(page);
 });
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {

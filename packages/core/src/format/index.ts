@@ -45,6 +45,10 @@ export function formatVndCompact(amount: Vnd, locale: Locale): string {
   return formatVnd(amount, locale);
 }
 
+export function formatBps(bps: number, locale: Locale): string {
+  return `${formatDecimal(bps / 100, 2, locale)}%`;
+}
+
 export function formatArea(squareMeters: number, locale: Locale): string {
   return `${formatDecimal(squareMeters, 2, locale)} m²`;
 }

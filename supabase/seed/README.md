@@ -106,6 +106,7 @@ Keys added by the generator:
 | Invoice line | `seed:invoice-line:<household>:<property>:<n>:<period start>:<line>` | `seed:invoice-line:demo:di-an:5:2026-09-25:1` |
 | Vendor party | `seed:party:vendor-<household>:<vendor>` | `seed:party:vendor-demo:tho-sua` |
 | Expense | `seed:expense:<household>:<property>:<yyyy-mm>:<n>`, `<n>` counting the property's expenses in that month | `seed:expense:lane-1:q7:2026-08:1` |
+| Valuation | `seed:valuation:<household>:<property>` | `seed:valuation:lane-3:bao-loc` |
 | Deposit entry | `seed:deposit-entry:<household>:<property>:<n>:<kind>` | `seed:deposit-entry:lane-7:di-an:7:received` |
 | Receiving bank account | `seed:bank-account:<household>` | `seed:bank-account:lane-2` |
 
@@ -130,6 +131,10 @@ Inserting a property makes its `whole` unit `Toàn bộ` (migration `20261007202
 `expenses.ts` seeds twelve months of expenses, October 2025 to September 2026, the same in every household (SPEC §9.3): repairs, upkeep and the fire insurance on `q7`, the monthly management fee of 1.200.000 VND on `thu-duc`, repairs on `di-an`, the broker and notary fees of the `q1` lease, a clean-out of `bien-hoa`, and the 2026 land tax on `bao-loc`. `long-an` has none, so its Thu chi tab shows the empty year. Four vendor parties (`Thợ sửa nhà Demo`, `Thợ điện nước Demo`, `Ban quản lý Chung cư Demo Bình Thọ` and `Môi giới Demo Quận 1`) are the payees.
 
 Nhà phố Q7's `repair` expenses paid in 2026 total **8.650.000 VND** (3.200.000 on 2026-02-20, 950.000 on 2026-05-14 and 4.500.000 on 2026-08-22). AGENT.md §7.4 question 7 and P4-02's lane 7 read this figure; `generator.test.ts` fails when the seed and this line disagree.
+
+## Valuations
+
+`valuations.ts` gives every property one valuation, the same in every household (SPEC §9.3, FIN-5): `q7` 14.500.000.000 VND by broker quote on 2026-06-15 with a source link, `thu-duc` 4.200.000.000 from comparables on 2026-05-20, `di-an` 6.800.000.000 as the family's estimate on 2026-03-10, `q1` 7.200.000.000 by broker quote on 2026-07-01, `bien-hoa` 7.500.000.000 from the state price table on 2026-02-01, `long-an` 1.850.000.000 as the family's estimate on 2025-11-15, and `bao-loc` 3.200.000.000 from the state price table on 2026-04-20. Home's portfolio figure is **45.250.000.000 VND** (`45,25 tỷ`) in the `full` variant and 38.450.000.000 without `di-an` in `northstar`, dated from 15/11/2025. `q1`'s 30.000.000 a month on 7.200.000.000 is a gross yield of exactly 5%.
 
 ## Cover photos and bulk properties
 

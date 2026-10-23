@@ -14,10 +14,10 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { DateInput } from '@/components/date-input';
 import { MoneyInput } from '@/components/money/money-input';
-import { StatusShape } from '@/components/status-mark';
+import { SheetFooter } from '@/components/sheet-footer';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { useOnline } from '@/lib/use-online';
 import { cn } from '@/lib/utils';
@@ -269,20 +269,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
           )}
         </div>
 
-        <div className="sticky bottom-0 mt-auto flex flex-col gap-3 border-t border-rule bg-surface px-5 pt-4 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
-          {error === null ? null : (
-            <p role="alert" data-testid="payment-error" className="flex items-start gap-2 text-body text-overdue">
-              <StatusShape status="overdue" className="mt-1 size-4" />
-              <span className="min-w-0 wrap-anywhere">{error}</span>
-            </p>
-          )}
-          <div className="flex gap-2">
-            <SheetClose className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>{t('cancel')}</SheetClose>
-            <button type="button" data-testid="payment-save" onClick={save} disabled={pending} className={cn(buttonVariants({ variant: 'primary' }), 'flex-[2]')}>
-              {pending ? t('saving') : t('save')}
-            </button>
-          </div>
-        </div>
+        <SheetFooter error={error} labels={{ cancel: t('cancel'), save: t('save'), saving: t('saving') }} pending={pending} onSave={save} testId="payment" />
       </SheetContent>
     </Sheet>
   );

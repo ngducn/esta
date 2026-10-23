@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { setClock } from './helpers/test-clock';
-import { memberRest as rest } from './helpers/auth-api';
+import { memberRest as rest, signedIn } from './helpers/auth-api';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
@@ -46,7 +46,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test.afterEach(async ({ page }) => {
-  if (!(await page.context().cookies()).some((cookie) => cookie.name.startsWith('sb-'))) return;
+  if (!(await signedIn(page))) return;
   await page.context().setOffline(false);
   await rest(page, 'PATCH', `expenses?${WRITTEN_BY_TESTS}&deleted_at=is.null`, { deleted_at: SPEC_TODAY });
   await rest(page, 'PATCH', `documents?${WRITTEN_BY_TESTS}&category=eq.invoice_receipt&deleted_at=is.null`, { deleted_at: SPEC_TODAY });

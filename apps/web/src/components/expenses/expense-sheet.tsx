@@ -20,12 +20,12 @@ import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, useTransition } from 'react';
 import { DateInput } from '@/components/date-input';
 import { FieldMessage } from '@/components/field-message';
-import { TextField } from '@/components/form-parts';
+import { NoteField, TextField } from '@/components/form-parts';
 import { MoneyInput } from '@/components/money/money-input';
 import { FormSelect } from '@/components/properties/address-picker';
-import { StatusShape } from '@/components/status-mark';
+import { SheetFooter } from '@/components/sheet-footer';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { useOnline } from '@/lib/use-online';
 import { cn } from '@/lib/utils';
@@ -312,21 +312,7 @@ export function ExpenseSheet({
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor={`${fieldId}-note`} className="text-body font-semibold text-ink">
-                {t('note')} <span className="font-normal text-ink-muted">({t('optional')})</span>
-              </label>
-              <textarea
-                id={`${fieldId}-note`}
-                data-testid="expense-note"
-                value={note}
-                rows={2}
-                maxLength={MAX_EXPENSE_NOTE}
-                disabled={pending}
-                onChange={(event) => setNote(event.target.value)}
-                className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
-              />
-            </div>
+            <NoteField labels={{ note: t('note'), optional: t('optional') }} value={note} onChange={setNote} maxLength={MAX_EXPENSE_NOTE} disabled={pending} testId="expense-note" />
 
             <ReceiptField receipt={receipt} disabled={pending} onPick={() => setErrors((errors) => without(errors, 'save'))} />
 
@@ -339,22 +325,13 @@ export function ExpenseSheet({
           </div>
         </div>
 
-        <div className="sticky bottom-0 mt-auto flex flex-col gap-3 border-t border-rule bg-surface px-5 pt-4 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
-          {errors.save === undefined ? null : (
-            <p role="alert" data-testid="expense-error" className="flex items-start gap-2 text-body text-overdue">
-              <StatusShape status="overdue" className="mt-1 size-4" />
-              <span className="min-w-0 wrap-anywhere">{t(errors.save)}</span>
-            </p>
-          )}
-          <div className="flex gap-2">
-            <SheetClose disabled={pending} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
-              {t('cancel')}
-            </SheetClose>
-            <button type="button" data-testid="expense-save" onClick={save} disabled={pending} className={cn(buttonVariants({ variant: 'primary' }), 'flex-[2]')}>
-              {pending ? t('saving') : t('save')}
-            </button>
-          </div>
-        </div>
+        <SheetFooter
+          error={errors.save === undefined ? null : t(errors.save)}
+          labels={{ cancel: t('cancel'), save: t('save'), saving: t('saving') }}
+          pending={pending}
+          onSave={save}
+          testId="expense"
+        />
       </SheetContent>
     </Sheet>
   );

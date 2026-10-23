@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import type { IsoDate } from '../date/iso-date';
 import { documentTitleSchema, sentDocumentSchema } from '../documents/file';
-import { MAX_AMOUNT_VND, type Vnd } from '../money/vnd';
-import { parseOptionalDateInput, type DateInputReason } from '../parse/date-input';
-import { parseVndInput, type VndInputReason } from '../parse/vnd-input';
-import type { Result } from '../result';
+import type { Vnd } from '../money/vnd';
+import { parsePastDateOrToday, type PastDateReason } from '../parse/date-input';
+import { parseStorableVnd, type StorableVndReason } from '../parse/vnd-input';
 import { EXPENSE_CATEGORY_IDS } from './categories';
 
 export const MAX_EXPENSE_NOTE = 1000;
@@ -14,24 +13,8 @@ export const NEW_VENDOR_TAG = 'contractor';
 /** The tags of the parties the vendor picker offers: the people and firms an owner pays for work on a property. */
 export const VENDOR_TAGS = [NEW_VENDOR_TAG, 'broker', 'other'] as const;
 
-export type AmountProblem = VndInputReason | 'not_positive';
-export type PaidOnProblem = Exclude<DateInputReason, 'empty'> | 'after_today';
-
-/** `3tr5` is 3.500.000; a text that does not read is refused, never taken as 0, and so is one past the ceiling. */
-function readAmount(text: string): Result<Vnd, AmountProblem> {
-  const parsed = parseVndInput(text);
-  if (!parsed.ok) return parsed;
-  if (parsed.value <= 0) return { ok: false, reason: 'not_positive' };
-  return parsed.value > MAX_AMOUNT_VND ? { ok: false, reason: 'too_large' } : parsed;
-}
-
-/** An empty date is the Clock's business date; a later day is refused. */
-function readPaidOn(text: string, today: IsoDate): Result<IsoDate, PaidOnProblem> {
-  const parsed = parseOptionalDateInput(text);
-  if (!parsed.ok) return parsed;
-  const day = parsed.value ?? today;
-  return day <= today ? { ok: true, value: day } : { ok: false, reason: 'after_today' };
-}
+export type AmountProblem = StorableVndReason;
+export type PaidOnProblem = PastDateReason;
 
 const vendorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('existing'), id: z.uuid() }),
@@ -76,8 +59,8 @@ export function readExpense(
 ): { readonly ok: true; readonly value: ExpenseInput } | { readonly ok: false; readonly problems: ExpenseProblems } {
   const texts = textsSchema.safeParse(input);
   const fields = fieldsSchema.safeParse(input);
-  const amount = texts.success ? readAmount(texts.data.amount) : null;
-  const paidOn = texts.success ? readPaidOn(texts.data.paidOn, today) : null;
+  const amount = texts.success ? parseStorableVnd(texts.data.amount) : null;
+  const paidOn = texts.success ? parsePastDateOrToday(texts.data.paidOn, today) : null;
   if (fields.success && amount?.ok && paidOn?.ok) return { ok: true, value: { ...fields.data, amount: amount.value, paidOn: paidOn.value } };
   return {
     ok: false,

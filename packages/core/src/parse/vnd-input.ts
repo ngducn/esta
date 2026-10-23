@@ -1,4 +1,4 @@
-import { vnd, type Vnd } from '../money/vnd';
+import { MAX_AMOUNT_VND, vnd, type Vnd } from '../money/vnd';
 import type { Result } from '../result';
 import { foldVietnamese } from '../search/fold';
 import { parseDecimal, toSafeNumber, toWholeDong, type AmountReason, type Decimal } from './decimal';
@@ -82,4 +82,13 @@ export function parseVndInput(text: string): Result<Vnd, VndInputReason> {
 
   const safe = toSafeNumber(total);
   return safe.ok ? { ok: true, value: vnd(safe.value) } : safe;
+}
+
+export type StorableVndReason = VndInputReason | 'not_positive';
+
+export function parseStorableVnd(text: string): Result<Vnd, StorableVndReason> {
+  const parsed = parseVndInput(text);
+  if (!parsed.ok) return parsed;
+  if (parsed.value <= 0) return { ok: false, reason: 'not_positive' };
+  return parsed.value > MAX_AMOUNT_VND ? { ok: false, reason: 'too_large' } : parsed;
 }

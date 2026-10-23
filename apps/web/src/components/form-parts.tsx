@@ -19,6 +19,8 @@ export function Group({ id, title, aside, children }: { id?: string; title: stri
   );
 }
 
+const LINK_KEYBOARD = { type: 'url', autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false } as const;
+
 export function TextField({
   label,
   hint,
@@ -40,7 +42,7 @@ export function TextField({
   inputId?: string;
   className?: string;
   maxLength?: number;
-  inputMode?: 'text' | 'decimal' | 'numeric';
+  inputMode?: 'text' | 'decimal' | 'numeric' | 'url';
 }) {
   const generated = useId();
   const id = inputId ?? generated;
@@ -60,6 +62,7 @@ export function TextField({
         value={value}
         maxLength={maxLength}
         inputMode={inputMode}
+        {...(inputMode === 'url' ? LINK_KEYBOARD : {})}
         autoComplete="off"
         aria-invalid={error !== null}
         aria-describedby={hint === undefined ? `${id}-message` : `${id}-hint ${id}-message`}
@@ -67,6 +70,41 @@ export function TextField({
         className={className === undefined ? 'mt-1' : `mt-1 ${className}`}
       />
       <FieldMessage id={`${id}-message`} error={error} />
+    </div>
+  );
+}
+
+export function NoteField({
+  labels,
+  value,
+  onChange,
+  maxLength,
+  disabled,
+  testId,
+}: {
+  labels: { readonly note: string; readonly optional: string };
+  value: string;
+  onChange: (text: string) => void;
+  maxLength: number;
+  disabled: boolean;
+  testId: string;
+}) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-body font-semibold text-ink">
+        {labels.note} <span className="font-normal text-ink-muted">({labels.optional})</span>
+      </label>
+      <textarea
+        id={id}
+        data-testid={testId}
+        value={value}
+        rows={2}
+        maxLength={maxLength}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
+      />
     </div>
   );
 }

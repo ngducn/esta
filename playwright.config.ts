@@ -31,6 +31,7 @@ const sharedClock = [
   'documents-multipage.spec.ts',
   'property-wizard.spec.ts',
   'northstar.spec.ts',
+  'valuations.spec.ts',
   'expenses.spec.ts',
   'meters.spec.ts',
   'statement-import.spec.ts',

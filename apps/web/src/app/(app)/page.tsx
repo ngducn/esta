@@ -3,6 +3,7 @@ import { Suspense, type ReactNode } from 'react';
 import { OfflineNotice } from '@/components/collections/offline-notice';
 import { HomeMapStrip } from '@/components/home/HomeMapStrip';
 import { MonthCollection } from '@/components/home/MonthCollection';
+import { PortfolioFigure } from '@/components/home/PortfolioFigure';
 import { TodayList } from '@/components/home/TodayList';
 import { SectionErrorBoundary } from '@/components/section-error-boundary';
 import { SkeletonHome } from '@/components/skeleton';
@@ -10,15 +11,12 @@ import { ToastHost } from '@/components/undo-toast';
 import { getClock } from '@/server/clock';
 import { loadHome } from '@/server/home/load';
 import { requireMember } from '@/server/member';
+import { loadPortfolio } from '@/server/valuations/load';
 import { mapIslandIntl, paymentIslandIntl } from '@/server/properties/island-messages';
 import { getThemePreference } from '@/server/theme';
 
-/**
- * Places later phases fill: P5-04 the morning brief note, P4-06 the portfolio figure. Each renders nothing until then,
- * so Home never shows an empty box.
- */
-type HomeSlots = { readonly brief: ReactNode; readonly portfolio: ReactNode };
-const SLOTS: HomeSlots = { brief: null, portfolio: null };
+type HomeSlots = { readonly brief: ReactNode };
+const SLOTS: HomeSlots = { brief: null };
 
 async function Home() {
   const [member, clock, t, onboarding, toast] = await Promise.all([
@@ -30,8 +28,9 @@ async function Home() {
   ]);
   const asOf = clock.today();
   const canRecord = member.role !== 'viewer';
-  const [home, paymentIntl, mapIntl, theme] = await Promise.all([
+  const [home, portfolio, paymentIntl, mapIntl, theme] = await Promise.all([
     loadHome(member.household.id, asOf, canRecord),
+    loadPortfolio(member.household.id, asOf),
     canRecord ? paymentIslandIntl() : null,
     mapIslandIntl(),
     getThemePreference(),
@@ -49,7 +48,7 @@ async function Home() {
         <div className="flex flex-col gap-5">
           <MonthCollection month={home.month} board={home.board} collected={home.collected} />
           {SLOTS.brief}
-          {SLOTS.portfolio}
+          <PortfolioFigure portfolio={portfolio} />
         </div>
       </div>
       {home.pins.length === 0 ? null : (

@@ -50,6 +50,7 @@
     "./schemas/units": "./src/schemas/units.ts",
     "./search": "./src/search/fold.ts",
     "./tax": "./src/tax/index.ts",
+    "./valuations": "./src/valuations/index.ts",
     "./vietqr": "./src/vietqr/index.ts"
   },
   "scripts": {

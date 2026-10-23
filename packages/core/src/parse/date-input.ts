@@ -26,3 +26,12 @@ export function parseOptionalDateInput(text: string): Result<IsoDate | null, Exc
   if (parsed.ok) return parsed;
   return parsed.reason === 'empty' ? { ok: true, value: null } : { ok: false, reason: parsed.reason };
 }
+
+export type PastDateReason = Exclude<DateInputReason, 'empty'> | 'after_today';
+
+export function parsePastDateOrToday(text: string, today: IsoDate): Result<IsoDate, PastDateReason> {
+  const parsed = parseOptionalDateInput(text);
+  if (!parsed.ok) return parsed;
+  const day = parsed.value ?? today;
+  return day <= today ? { ok: true, value: day } : { ok: false, reason: 'after_today' };
+}

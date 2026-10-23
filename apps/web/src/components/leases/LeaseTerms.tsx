@@ -1,4 +1,4 @@
-import { formatDate, formatVnd } from '@esta/core/format';
+import { formatBps, formatDate, formatVnd } from '@esta/core/format';
 import type { IsoDate } from '@esta/core/date';
 import { collectedThrough, currentMonthlyRent } from '@esta/core/lease';
 import type { Vnd } from '@esta/core/money';
@@ -19,8 +19,6 @@ function Fact({ label, testId, children }: { label: string; testId?: string; chi
 }
 
 export type LeaseLink = { readonly href: string; readonly startDate: IsoDate | null };
-
-const percentText = (bps: number, locale: string) => `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(bps / 100)}%`;
 
 /**
  * LSE-2: what the lease says, with the rent in force on the Clock's date after increases and amendments, the deposit from
@@ -89,7 +87,7 @@ export function LeaseTerms({
           {escalation.kind === 'none'
             ? t('escalationNone')
             : escalation.kind === 'percent'
-              ? t('escalationPercentLine', { percent: percentText(escalation.valueBps, locale), months: escalation.everyMonths })
+              ? t('escalationPercentLine', { percent: formatBps(escalation.valueBps, locale), months: escalation.everyMonths })
               : t('escalationFixedLine', { amount: formatVnd(escalation.valueVnd, locale), months: escalation.everyMonths })}
         </Fact>
         <Fact label={t('paidThroughLabel')}>

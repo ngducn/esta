@@ -2634,6 +2634,77 @@ export type Database = {
           },
         ]
       }
+      valuations: {
+        Row: {
+          as_of: string
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          method: string
+          note: string | null
+          property_id: string
+          source_url: string | null
+          updated_at: string
+          value_vnd: number
+        }
+        Insert: {
+          as_of: string
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          method: string
+          note?: string | null
+          property_id: string
+          source_url?: string | null
+          updated_at?: string
+          value_vnd: number
+        }
+        Update: {
+          as_of?: string
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          method?: string
+          note?: string | null
+          property_id?: string
+          source_url?: string | null
+          updated_at?: string
+          value_vnd?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "valuations_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "valuations_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "valuations_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "valuations_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       worker_heartbeats: {
         Row: {
           agent_mode: string

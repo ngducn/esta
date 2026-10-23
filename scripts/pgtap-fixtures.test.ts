@@ -14,9 +14,9 @@ describe('invoice_balances_parity.test.sql', () => {
   });
 });
 
-describe('expenses.test.sql', () => {
+describe.each(['expenses.test.sql', 'valuations.test.sql'])('%s', (file) => {
   it('tries the amount CHECK at the core ceiling and one đồng above it', () => {
-    const sql = readFileSync(join(tests, 'expenses.test.sql'), 'utf8');
+    const sql = readFileSync(join(tests, file), 'utf8');
     expect(sql.match(/^\\set amount_ceiling (\d+)$/m)?.[1]).toBe(String(MAX_AMOUNT_VND));
     expect(sql).toContain(":'a', :amount_ceiling),");
     expect(sql).toContain(":'a', :amount_ceiling + 1),");

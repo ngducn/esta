@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { formatArea, formatDate, formatDateLong, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact } from './index';
+import { formatArea, formatBps, formatDate, formatDateLong, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact } from './index';
 
 const NBSP = '\u00a0';
 
@@ -66,6 +66,14 @@ describe('formatVndCompact', () => {
     expect(formatVndCompact(vnd(499), 'vi')).toBe(`499${NBSP}₫`);
     expect(formatVndCompact(vnd(500), 'vi')).toBe('1 nghìn');
     expect(formatVndCompact(vnd(0), 'en')).toBe(`0${NBSP}₫`);
+  });
+});
+
+describe('formatBps', () => {
+  it('writes basis points as a percent with up to two decimals', () => {
+    expect(formatBps(650, 'vi')).toBe('6,5%');
+    expect(formatBps(653, 'en')).toBe('6.53%');
+    expect(formatBps(500, 'vi')).toBe('5%');
   });
 });
 

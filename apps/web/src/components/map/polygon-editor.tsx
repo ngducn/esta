@@ -7,6 +7,7 @@ import { normalizeRing, ringToGeoJson, type GeoPoint } from '@esta/core/maps';
 import { Eraser, PenLine, Save, SquareDashed, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId } from 'react';
+import { EstimatePill } from '@/components/estimate-pill';
 import { FieldMessage } from '@/components/field-message';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { isLocale } from '@/i18n/locale';
@@ -65,7 +66,7 @@ export function PolygonEditor({
         {shown.kind === 'valid' ? (
           <span data-testid="boundary-area" className="flex flex-wrap items-center gap-2 text-ink">
             <span className="figures">{t('area', { area: formatArea(Math.round(shown.squareMeters), locale) })}</span>
-            <span className="rounded-full border border-rule bg-surface-2 px-2.5 py-0.5 text-small font-semibold text-ink-2">{t('estimate')}</span>
+            <EstimatePill label={t('estimate')} />
           </span>
         ) : mode === 'off' ? (
           <span className="text-ink-muted">{t('boundaryNone')}</span>
