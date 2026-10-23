@@ -1,7 +1,8 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import readXlsxFile from 'read-excel-file/node';
 import { memberRest as rest } from './helpers/auth-api';
+import { readReportTable } from './helpers/report-table';
 import { laneProperty } from './helpers/seed';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations } from './helpers/wizard';
 
@@ -9,26 +10,11 @@ const pause = recordForPr();
 
 const finance = (lane: number, key: string, query = '') => `/properties/${laneProperty(lane, key)}/finance${query}`;
 
-function amountOf(text: string): number {
-  const match = /([-−]?)([\d.,]+)\s₫$/.exec(text.trim());
-  if (match === null) throw new Error(`No amount in "${text}"`);
-  return (match[1] === '' ? 1 : -1) * Number(match[2]?.replace(/[.,]/g, ''));
-}
-
 const ledger = (page: Page) => page.getByTestId('ledger');
-const amountIn = async (row: Locator, column: string) => amountOf(await row.locator(`[data-column="${column}"]`).innerText());
 
 async function screenTable(page: Page) {
-  const columns = await ledger(page).locator('thead th').evaluateAll((cells) => cells.map((cell) => cell.textContent?.trim() ?? ''));
-  const ids = await ledger(page).getByTestId('ledger-total').locator('[data-column]').evaluateAll((cells) => cells.map((cell) => cell.getAttribute('data-column') ?? ''));
-  const months = await ledger(page).getByTestId('ledger-month').all();
-  const read = async (row: Locator): Promise<Record<string, number>> => Object.fromEntries(await Promise.all(ids.map(async (id) => [id, await amountIn(row, id)] as const)));
-  return {
-    columns,
-    ids,
-    months: await Promise.all(months.map(async (row) => ({ key: (await row.getAttribute('data-month')) ?? '', amounts: await read(row) }))),
-    totals: await read(ledger(page).getByTestId('ledger-total')),
-  };
+  const table = await readReportTable(ledger(page));
+  return { columns: table.columns, ids: table.ids, months: table.rows.map((row) => ({ key: row.key, amounts: row.amounts })), totals: table.totals.amounts };
 }
 
 async function axe(page: Page) {
@@ -64,7 +50,7 @@ test('Mẹ opens Dãy trọ Dĩ An Thu chi for 2026: October income is the datab
   expect(await noSidewaysScroll(page)).toBe(true);
   expect(await axe(page)).toEqual([]);
   await pause(page);
-  await ledger(page).locator('[data-month="2026-10"]').scrollIntoViewIfNeeded();
+  await ledger(page).locator('[data-key="2026-10"]').scrollIntoViewIfNeeded();
   await pause(page);
   const excel = await downloadExcel(page);
   expect(excel.name).toBe('DIAN-thu-chi-2026.xlsx');
@@ -75,7 +61,7 @@ test('Mẹ opens Dãy trọ Dĩ An Thu chi for 2026: October income is the datab
 test('a link to ?month=2026-10 opens that year with October marked and in view, and keeps the mark on reload', async ({ page }) => {
   await open(page, 'ryan.lane4@demo.esta.test', 'dark', DESKTOP);
   await page.goto(finance(4, 'di-an', '?month=2026-10'));
-  const october = ledger(page).locator('[data-month="2026-10"]');
+  const october = ledger(page).locator('[data-key="2026-10"]');
   await expect(october).toHaveAttribute('aria-current', 'date');
   await expect(october).toBeInViewport();
   await expect(ledger(page).locator('[aria-current="date"]')).toHaveCount(1);

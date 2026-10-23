@@ -39,6 +39,7 @@ const sharedClock = [
   'home.spec.ts',
   'lease-from-contract.spec.ts',
   'tax-card.spec.ts',
+  'reports.spec.ts',
 ];
 
 export default defineConfig({

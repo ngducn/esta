@@ -39,7 +39,7 @@ test('rule 1: Mẹ opens her tax card from Báo cáo and reads 2026 against the 
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
   await page.goto('/reports');
   await pause(page);
-  await page.getByRole('link', { name: 'Mở thẻ thuế' }).click();
+  await page.getByTestId('report-picker').getByRole('link', { name: 'Thuế' }).click();
   await expect(page).toHaveURL(/\/reports\/tax$/);
   await expect(page.getByTestId('tax-owners').getByRole('link', { name: ME })).toHaveAttribute('aria-current', 'page');
   const expected = await expectedTaxPosition(page, ME, 2026, '2026-10-07');
