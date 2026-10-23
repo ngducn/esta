@@ -9,6 +9,7 @@ You are one independent verifier lane for one PR of the Esta v1 stack (github.co
 3. Ports. Use the web port and browse port the root gives you. Pass the web port with `PORT=<port>` or `-p <port>` to Next.js. Once `scripts/slot.ts` exists (P0-02 on), use `ESTA_SLOT=<slot>` instead.
 4. Browser. Use gstack browse with an isolated daemon so lanes never share a browser: `export BROWSE_STATE_FILE=/tmp/swarm-<pr id>/worker-<n>/browse.json BROWSE_PORT=<browse port>` and `B=~/.claude/skills/gstack/browse/dist/browse`. Only `http:`, `https:` and `file:` URLs are allowed. `$B viewport 390x844` or `$B viewport 1440x900` before screenshots. Run `$B stop` when done. From P0-10 on, follow `.claude/skills/verify/SKILL.md` instead, still with your own BROWSE_ variables.
 5. Save every screenshot to `/tmp/swarm-<pr id>/worker-<n>/<slug>.png` and Read each PNG you cite so you have seen it.
+6. Build the code map in your worktree before you read code: `GRAPHIFY_BACKEND=none graphify extract . --code-only && graphify cluster-only . --no-label --no-viz`. Then use `graphify explain <symbol>` to find a function's callers and imports before you grep for them (see Rules, "Code map"). Your report's method line says how many graphify calls you made.
 
 ## Rules
 

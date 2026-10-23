@@ -13,7 +13,7 @@ You own one PR of Esta v1 from build to merge-ready (see the 2026-10-15 update i
 ## Lifecycle
 
 0. Run `gh issue list --state open --search "<pr id lowercase> in:title"` (for example `p0-09`). Every open issue tagged with your PR id is part of your scope; close it from your PR with `Closes #<n>` and a red test.
-1. Work in the worktree you are given, on branch `esta/<pr id lowercase>-<slug>` created from the base branch the root names. Use `ESTA_SLOT=<slot the root names>` for every local stack you start.
+1. Work in the worktree you are given, on branch `esta/<pr id lowercase>-<slug>` created from the base branch the root names. Use `ESTA_SLOT=<slot the root names>` for every local stack you start. Build the Graphify code map in the worktree now (see Rules, "Code map") and use `graphify explain` before grepping for callers.
 2. Within about 15 minutes, start `decisions.tsv` in the worktree root per the show-me-your-work skill (keep it uncommitted), push a first snapshot, and open the PR ready (never draft) with `gh pr create --base <base branch>`. Title in Conventional Commits with the PR id as scope, for example `feat(p0-01): scaffold the pnpm monorepo and CI`. Body per opening-a-pr.md.
 3. Build every Files and Build box of your section. Name the data shape first. Push after every verifiable unit with hooks on.
 4. Self-prove on the real artifact. Run every Verify, unit box. Drive the You see boxes yourself on the real surface (gstack browse before P0-10 merges, the project verify skill after). Save evidence under `/tmp/owner-<pr id>/`.
