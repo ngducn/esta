@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_OPTIONS, seedTables, type SeedTables } from '../supabase/seed/generator/index.ts';
 import { householdId } from '../supabase/seed/generator/households.ts';
-import { databaseProblems, generatorProblems, migrationTables, readMigrations, SEED_EXEMPT, WRITTEN_BY_DATABASE } from './seed-coverage.ts';
+import { catalogProblems, databaseProblems, generatorProblems, migrationTables, readMigrations, SEED_EXEMPT, WRITTEN_BY_DATABASE } from './seed-coverage.ts';
 
 const repoRoot = new URL('..', import.meta.url).pathname;
 const tables = migrationTables(readMigrations(repoRoot));
@@ -53,6 +53,20 @@ describe('generatorProblems', () => {
   it('gives every exemption a reason', () => {
     expect(known.every((table) => tables.includes(table))).toBe(true);
     expect(Object.values(SEED_EXEMPT).every((reason) => reason.trim().length > 10)).toBe(true);
+  });
+});
+
+describe('catalogProblems', () => {
+  it('passes when the migrations create exactly the tables the database has', () => {
+    expect(catalogProblems(tables, [...tables].reverse())).toEqual([]);
+  });
+
+  it('fails a migration list that differs from the catalog, naming each side', () => {
+    const catalog = [...tables.filter((table) => table !== 'valuations'), 'rent_reviews'];
+    expect(catalogProblems(tables, catalog)).toEqual([
+      'public.rent_reviews is in the database but seed-coverage.ts reads no migration that creates it',
+      'public.valuations is created by a migration but the database has no such table',
+    ]);
   });
 });
 

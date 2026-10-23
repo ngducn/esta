@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { isIsoDate } from '../packages/core/src/date/iso-date.ts';
+import { NORTH_STAR_PHASE_4, verifyNorthStar } from './northstar-report.ts';
 
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
@@ -13,6 +14,7 @@ export type PhaseCheck =
       readonly commands: readonly (readonly string[])[];
       /** Test files, from the repo root, that must name `id`; the row fails before running when one does not. */
       readonly cites?: readonly string[];
+      readonly playwrightReport?: (json: string) => Outcome;
     }
   | { readonly id: string; readonly verify: (repoRoot: string) => Outcome };
 
@@ -267,7 +269,11 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     cited('FIN-4', { core: ['reports/reports.test.ts', 'reports/summaries.test.ts'], integration: ['server/reports/snapshot.integration.test.ts'] }),
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
-    { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
+    {
+      id: 'North-star',
+      commands: [['pnpm', 'e2e:northstar', '--retries=0', '--reporter=list,json']],
+      playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR_PHASE_4),
+    },
   ],
 };
 
@@ -291,12 +297,12 @@ const readLog = (path: string) => {
   }
 };
 
-export type RunCommand = (command: readonly string[], log: string) => number;
+export type RunCommand = (command: readonly string[], log: string, env: Readonly<Record<string, string>>) => number;
 
-const runCommand: RunCommand = ([program = '', ...args], log) => {
+const runCommand: RunCommand = ([program = '', ...args], log, env) => {
   const fd = openSync(log, 'a');
   try {
-    const result = spawnSync(program, args, { stdio: ['ignore', fd, fd] });
+    const result = spawnSync(program, args, { stdio: ['ignore', fd, fd], env: { ...process.env, ...env } });
     return result.error === undefined ? (result.status ?? 1) : 1;
   } finally {
     closeSync(fd);
@@ -335,10 +341,18 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
       outcome = { pass: false, detail: `${uncited(repoRoot, check).join(', ')} never names ${check.id}` };
     } else {
       const rowLog = join(logs, `${check.id}.log`);
+      const report = join(logs, `${check.id}.json`);
       log = rowLog;
       writeFileSync(rowLog, '');
-      const failedCommand = check.commands.find((command) => run(command, rowLog) !== 0);
-      outcome = { pass: failedCommand === undefined, detail: failedCommand === undefined ? rowLog : `${failedCommand.join(' ')} failed, log ${rowLog}` };
+      rmSync(report, { force: true });
+      const env = check.playwrightReport === undefined ? {} : { PLAYWRIGHT_JSON_OUTPUT_FILE: report };
+      const failedCommand = check.commands.find((command) => run(command, rowLog, env) !== 0);
+      if (failedCommand !== undefined) outcome = { pass: false, detail: `${failedCommand.join(' ')} failed, log ${rowLog}` };
+      else if (check.playwrightReport === undefined) outcome = { pass: true, detail: rowLog };
+      else {
+        const read = check.playwrightReport(readLog(report));
+        outcome = { pass: read.pass, detail: `${read.detail}, log ${rowLog}` };
+      }
     }
     const seconds = Math.round((performance.now() - started) / 1000);
     print(`${outcome.pass ? 'PASS' : 'FAIL'}  ${check.id.padEnd(6)} ${String(seconds).padStart(4)} s  ${outcome.detail}`);

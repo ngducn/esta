@@ -118,9 +118,23 @@ describe('checkPhase', () => {
     expect(commands['Seed']).toEqual(['pnpm seed:coverage', 'pnpm db:reset', 'pnpm seed:coverage --database', 'pnpm seed:facts']);
     expect(commands['FIN-4']?.slice(1)).toEqual(['pnpm db:reset', 'node scripts/web-integration.ts src/server/reports/snapshot.integration.test.ts']);
     expect(commands['IT']).toEqual(['pnpm db:reset', 'node scripts/web-integration.ts']);
-    expect(commands['North-star']).toEqual(['pnpm e2e:northstar --retries=1 --reporter=list']);
+    expect(commands['North-star']).toEqual(['pnpm e2e:northstar --retries=0 --reporter=list,json']);
     const ids = (PHASE_CHECKS['4'] ?? []).map((check) => check.id);
     expect(ids.slice(-2)).toEqual(['IT', 'North-star']);
+  });
+
+  it('fails the phase 4 north-star row when Playwright exits 0 with step 8 skipped, and never reads an earlier report', () => {
+    const northStar = (PHASE_CHECKS['4'] ?? []).find((check) => check.id === 'North-star');
+    if (northStar === undefined || !('playwrightReport' in northStar)) throw new Error('phase 4 has a north-star row that reads the Playwright report');
+    const spec = (title: string, status: string, type = 'serial') => ({ title, tests: [{ status, annotations: [{ type }] }] });
+    const report = (step8: string) => ({
+      suites: [{ specs: [...['steps 1 and 2', 'step 3', 'step 4', 'step 5', 'step 6'].map((title) => spec(`${title}: x`, 'expected')), spec('step 7: x', 'skipped', 'fixme'), spec('step 8: x', step8, step8 === 'skipped' ? 'skip' : 'serial'), spec('step 9: x', 'skipped', 'fixme')] }],
+    });
+    const run = (commands: readonly (readonly string[])[]) => runPhase('9', { '9': [{ ...northStar, commands }] }).lines;
+    const write = (step8: string) => node(`require('node:fs').writeFileSync(process.env.PLAYWRIGHT_JSON_OUTPUT_FILE, ${JSON.stringify(JSON.stringify(report(step8)))})`);
+    expect(run([write('expected')])).toEqual([expect.stringMatching(/^PASS {2}North-star .*steps 1, 2, 3, 4, 5, 6, 8 passed; 7, 9 fixme/)]);
+    expect(run([node('process.exit(0)')])).toEqual([expect.stringMatching(/^FAIL {2}North-star .*Playwright wrote no JSON report/)]);
+    expect(run([write('skipped')])).toEqual([expect.stringMatching(/^FAIL {2}North-star .*step 8 skipped/)]);
   });
 
   it('runs the lease prefill spec P3-19 brings for DOC-6', () => {

@@ -1,11 +1,13 @@
 // Usage: pnpm seed:coverage [--database]. Without a flag it reads the `full` generator's rows, as `pnpm check` runs it;
-// with --database it counts the rows of every table per household on the ESTA_SLOT stack after `pnpm db:reset`.
+// with --database it counts the rows of every table in the catalog per household on the ESTA_SLOT stack after
+// `pnpm db:reset`, and fails when the migrations it parses create other tables than the catalog holds.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DEFAULT_OPTIONS, seedTables, type SeedTables } from '../supabase/seed/generator/index.ts';
 import { householdId } from '../supabase/seed/generator/households.ts';
 import { query } from './db-checksum.ts';
 import { parseSlot, slotWorkdir } from './slot.ts';
+import { publicTables } from './table-coverage.ts';
 
 /** Tables the seed leaves empty in every household, each with the reason. */
 export const SEED_EXEMPT: Readonly<Record<string, string>> = {
@@ -19,9 +21,9 @@ export const SEED_EXEMPT: Readonly<Record<string, string>> = {
   worker_heartbeats: 'runtime: the running worker writes it; a fresh reset reads "never"',
   test_clock: 'runtime: set by pnpm clock:set and the tests (FND-9)',
   change_batches: "runtime: the connector's history of plans Claude applied, with their undo",
-  agent_items: "runtime: the worker's inbox items; SPEC §9.3 leaves nothing waiting for review",
+  agent_items: 'runtime: the agent worker writes it as it runs',
   statement_imports:
-    'a seeded import would remember its column mapping and claim the fixture transfers, so the LSE-8 specs would not start from a first import; SPEC §9.3 ships the statements as fixture files',
+    'a seeded import would remember its column mapping and claim the fixture transfers, so the LSE-8 specs would not start from a first import; SPEC §9.3 lists the bank statements as fixture files',
   statement_rows: 'the lines of a statement import, as statement_imports',
 };
 
@@ -51,6 +53,13 @@ export function readMigrations(repoRoot: string): string[] {
     .filter((name) => name.endsWith('.sql'))
     .sort()
     .map((name) => readFileSync(join(dir, name), 'utf8'));
+}
+
+export function catalogProblems(parsed: readonly string[], catalog: readonly string[]): string[] {
+  return [
+    ...catalog.filter((table) => !parsed.includes(table)).map((table) => `public.${table} is in the database but seed-coverage.ts reads no migration that creates it`),
+    ...parsed.filter((table) => !catalog.includes(table)).map((table) => `public.${table} is created by a migration but the database has no such table`),
+  ];
 }
 
 function staleEntries(tables: readonly string[]): string[] {
@@ -104,17 +113,19 @@ function countRows(workdir: string, tables: readonly string[]): { households: st
   return { households, counts: query<HouseholdCount>(workdir, selects.join('\nunion all\n')) };
 }
 
+function checkDatabase(workdir: string, parsed: readonly string[]): { tables: string[]; problems: string[] } {
+  const tables = publicTables(workdir).map(({ name }) => name);
+  const { households, counts } = countRows(workdir, tables);
+  return { tables, problems: [...catalogProblems(parsed, tables), ...databaseProblems(tables, households, counts)] };
+}
+
 if (import.meta.main) {
   const repoRoot = join(import.meta.dirname, '..');
-  const tables = migrationTables(readMigrations(repoRoot));
+  const parsed = migrationTables(readMigrations(repoRoot));
   const database = process.argv.includes('--database');
-  let problems: string[];
-  if (database) {
-    const { households, counts } = countRows(slotWorkdir(repoRoot, parseSlot(process.env.ESTA_SLOT)), tables);
-    problems = databaseProblems(tables, households, counts);
-  } else {
-    problems = generatorProblems(tables, seedTables(DEFAULT_OPTIONS));
-  }
+  const { tables, problems } = database
+    ? checkDatabase(slotWorkdir(repoRoot, parseSlot(process.env.ESTA_SLOT)), parsed)
+    : { tables: parsed, problems: generatorProblems(parsed, seedTables(DEFAULT_OPTIONS)) };
   for (const problem of problems) console.error(problem);
   const seeded = tables.filter((table) => !(table in SEED_EXEMPT)).length;
   if (problems.length === 0) console.log(`Seed coverage${database ? ' on the database' : ''}: ${seeded} business tables have rows in every household; ${tables.length - seeded} exempt.`);
