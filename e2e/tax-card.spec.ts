@@ -2,13 +2,16 @@ import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { laneHousehold, laneLease, laneLeasePath } from './helpers/seed';
+import { setClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
 import { cardVnd, expectedTaxPosition, printedVnd } from './helpers/tax';
-import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, shot } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START } from './helpers/wizard';
 
 const pause = recordForPr();
 
-test.beforeEach(() => test.skip(test.info().project.name !== 'mobile', 'each rule sets its own viewport, and rules 4 and 5 write their lane'));
+test.beforeEach(async ({ request }) => {
+  await setClock(request, START);
+});
 
 const ME = 'Nguyễn Thị Demo';
 const RYAN = 'Trần Minh Demo';
@@ -163,4 +166,12 @@ test('rule 10: in English at 130% the card reads in English with the same figure
     expect(await clippedText(page)).toEqual([]);
     expect(await seriousAxeViolations(page)).toEqual([]);
   });
+});
+
+test('rule 11: a household with no owner yet is told where to add one, and the card shows no figure', async ({ page }) => {
+  await openNewHousehold(page, 'light', PHONE);
+  await page.goto('/reports/tax');
+  await expect(page.getByTestId('tax-no-owners')).toHaveText('Chưa có ai được ghi là chủ sở hữu. Thêm chủ sở hữu ở tab Pháp lý của một tài sản.');
+  await expect(page.getByTestId('tax-position')).toHaveCount(0);
+  await expect(page.getByTestId('tax-owners')).toHaveCount(0);
 });

@@ -1147,6 +1147,7 @@
     "title": "Rental tax",
     "owners": "Owner",
     "years": "Year",
+    "noOwners": "No one is recorded as an owner yet. Add owners on a property’s Legal tab.",
     "projected": "Projected rental revenue for {year}",
     "progress": "{percent}% of the {threshold} threshold",
     "over": "Over the {threshold} threshold",

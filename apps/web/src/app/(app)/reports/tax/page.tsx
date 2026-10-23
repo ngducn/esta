@@ -29,7 +29,11 @@ export default async function TaxCardPage({ searchParams }: { searchParams: Prom
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-h2 break-words lg:text-h1">{t('title')}</h1>
-      {owner === undefined ? null : (
+      {owner === undefined ? (
+        <p data-testid="tax-no-owners" className="rounded-lg border border-rule bg-surface p-5 text-body text-ink shadow-card sm:p-6">
+          {t('noOwners')}
+        </p>
+      ) : (
         <div className="flex flex-col gap-3">
           <ChoiceLinks label={t('owners')} testId="tax-owners" choices={owners.map((candidate) => ({ key: candidate.id, label: candidate.name, href: href(candidate.id, year), current: candidate.id === owner.id }))} />
           <ChoiceLinks label={t('years')} testId="tax-years" choices={years.map((option) => ({ key: String(option), label: String(option), href: href(owner.id, option), current: option === year }))} />

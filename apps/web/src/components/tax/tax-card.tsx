@@ -112,20 +112,21 @@ function LeaseRows({ lines, label, locale, testId }: { lines: readonly TaxLeaseL
         <li key={line.leaseId}>
           <Link
             href={line.href}
+            prefetch={false}
             data-testid={testId}
             data-lease-id={line.leaseId}
             className="flex min-h-touch flex-wrap items-center gap-x-3 gap-y-1 py-3 text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:text-ink-2"
           >
-            <span className="flex min-w-0 flex-[1_1_12rem] flex-col">
+            <span className="flex min-w-0 flex-[1_1_9rem] flex-col">
               <span className="font-semibold wrap-anywhere">
                 {line.property}, {line.unit}
               </span>
               <span className="text-small text-ink-2">{label(line)}</span>
             </span>
-            <span className="ms-auto shrink-0 text-end font-semibold figures">
+            <span className="ms-auto flex shrink-0 items-center gap-3 font-semibold figures">
               <data value={line.projectedVnd}>{formatVnd(line.projectedVnd, locale)}</data>
+              <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
             </span>
-            <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
           </Link>
         </li>
       ))}

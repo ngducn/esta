@@ -1147,6 +1147,7 @@
     "title": "Thuế cho thuê nhà",
     "owners": "Chủ sở hữu",
     "years": "Năm",
+    "noOwners": "Chưa có ai được ghi là chủ sở hữu. Thêm chủ sở hữu ở tab Pháp lý của một tài sản.",
     "projected": "Doanh thu cho thuê dự kiến cả năm {year}",
     "progress": "Đạt {percent}% ngưỡng {threshold}",
     "over": "Vượt ngưỡng {threshold}",
