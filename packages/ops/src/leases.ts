@@ -30,6 +30,30 @@ export async function withTenants(db: Db, householdId: string, leases: readonly 
   return leases.map((lease) => ({ ...lease, tenant: lease.tenant_party_id === null ? null : (tenants.get(lease.tenant_party_id) ?? null) }));
 }
 
+export type LeaseNames = {
+  readonly units: ReadonlyMap<string, { readonly label: string; readonly whole: boolean }>;
+  readonly properties: ReadonlyMap<string, string>;
+  readonly held: ReadonlyMap<string, number>;
+};
+
+/** The unit labels, property nicknames and held deposits a lease summary names. */
+export async function readLeaseNames(db: Db, householdId: string, leases: readonly LeaseRow[]): Promise<LeaseNames> {
+  if (leases.length === 0) return { units: new Map(), properties: new Map(), held: new Map() };
+  const ids = (key: 'id' | 'unit_id' | 'property_id') => [...new Set(leases.map((lease) => lease[key]))];
+  const [units, properties, held] = await Promise.all([
+    db.from('units').select('id, label, kind').eq('household_id', householdId).in('id', ids('unit_id')),
+    db.from('properties').select('id, nickname').eq('household_id', householdId).in('id', ids('property_id')),
+    db.from('lease_deposits').select('lease_id, held_vnd').eq('household_id', householdId).in('lease_id', ids('id')),
+  ]);
+  const failed = units.error ?? properties.error ?? held.error;
+  if (failed) throw new Error(`Reading the leases' units, properties and deposits failed: ${failed.message}`);
+  return {
+    units: new Map(units.data?.map((unit) => [unit.id, { label: unit.label, whole: unit.kind === 'whole' }])),
+    properties: new Map(properties.data?.map((property) => [property.id, property.nickname])),
+    held: new Map(held.data?.flatMap((row) => (row.lease_id === null ? [] : [[row.lease_id, row.held_vnd ?? 0]]))),
+  };
+}
+
 /** An open-ended lease plans this far ahead, enough for the amendment picker and a year of timeline. */
 const OPEN_ENDED_MONTHS = 24;
 

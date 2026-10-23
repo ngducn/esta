@@ -8,22 +8,26 @@ import type { Db } from './db';
 import { readAll } from './kit';
 
 const amountSchema = z.number().int().positive().transform(vnd);
-const incomeSchema = z.object({ received_on: isoDateSchema, amount_vnd: amountSchema }).transform((row): IncomeFact => ({ receivedOn: row.received_on, amountVnd: row.amount_vnd }));
+type OfProperty = { readonly propertyId: string };
+
+const incomeSchema = z
+  .object({ property_id: z.uuid(), received_on: isoDateSchema, amount_vnd: amountSchema })
+  .transform((row): IncomeFact & OfProperty => ({ propertyId: row.property_id, receivedOn: row.received_on, amountVnd: row.amount_vnd }));
 const expenseSchema = z
-  .object({ paid_on: isoDateSchema, category: z.enum(EXPENSE_CATEGORY_IDS), amount_vnd: amountSchema })
-  .transform((row): ExpenseFact => ({ paidOn: row.paid_on, category: row.category, amountVnd: row.amount_vnd }));
+  .object({ property_id: z.uuid(), paid_on: isoDateSchema, category: z.enum(EXPENSE_CATEGORY_IDS), amount_vnd: amountSchema })
+  .transform((row): ExpenseFact & OfProperty => ({ propertyId: row.property_id, paidOn: row.paid_on, category: row.category, amountVnd: row.amount_vnd }));
 
-export type LedgerFacts = { readonly incomes: readonly IncomeFact[]; readonly expenses: readonly ExpenseFact[] };
+export type LedgerFacts = { readonly incomes: readonly (IncomeFact & OfProperty)[]; readonly expenses: readonly (ExpenseFact & OfProperty)[] };
 
-/** Income and live expenses dated from `from` to `to`, both inclusive. */
-export async function readLedgerFacts(db: Db, householdId: string, { propertyId, from, to }: { propertyId: string; from: IsoDate; to: IsoDate }): Promise<LedgerFacts> {
+/** Income and live expenses dated from `from` to `to`, both inclusive, of one property or, without one, of every property. */
+export async function readLedgerFacts(db: Db, householdId: string, { propertyId, from, to }: { propertyId?: string; from: IsoDate; to: IsoDate }): Promise<LedgerFacts> {
+  const scope = propertyId === undefined ? { household_id: householdId } : { household_id: householdId, property_id: propertyId };
   const [incomes, expenses] = await Promise.all([
     readAll('the ledger income', (start, end) =>
       db
         .from('allocation_facts')
-        .select('received_on, amount_vnd')
-        .eq('household_id', householdId)
-        .eq('property_id', propertyId)
+        .select('property_id, received_on, amount_vnd')
+        .match(scope)
         .gte('received_on', from)
         .lte('received_on', to)
         .order('payment_id')
@@ -33,9 +37,8 @@ export async function readLedgerFacts(db: Db, householdId: string, { propertyId,
     readAll('the ledger expenses', (start, end) =>
       db
         .from('expenses')
-        .select('paid_on, category, amount_vnd')
-        .eq('household_id', householdId)
-        .eq('property_id', propertyId)
+        .select('property_id, paid_on, category, amount_vnd')
+        .match(scope)
         .is('deleted_at', null)
         .gte('paid_on', from)
         .lte('paid_on', to)
@@ -46,10 +49,12 @@ export async function readLedgerFacts(db: Db, householdId: string, { propertyId,
   return { incomes: z.array(incomeSchema).parse(incomes), expenses: z.array(expenseSchema).parse(expenses) };
 }
 
-export async function readLedgerStart(db: Db, householdId: string, propertyId: string): Promise<IsoDate | null> {
+/** The day of the first income or live expense of one property or, without one, of every property; null when there is none. */
+export async function readLedgerStart(db: Db, householdId: string, propertyId?: string): Promise<IsoDate | null> {
+  const scope = propertyId === undefined ? { household_id: householdId } : { household_id: householdId, property_id: propertyId };
   const [income, expense] = await Promise.all([
-    db.from('allocation_facts').select('day:received_on').eq('household_id', householdId).eq('property_id', propertyId).order('received_on').limit(1),
-    db.from('expenses').select('day:paid_on').eq('household_id', householdId).eq('property_id', propertyId).is('deleted_at', null).order('paid_on').limit(1),
+    db.from('allocation_facts').select('day:received_on').match(scope).order('received_on').limit(1),
+    db.from('expenses').select('day:paid_on').match(scope).is('deleted_at', null).order('paid_on').limit(1),
   ]);
   if (income.error) throw new Error(`Reading the first income failed: ${income.error.message}`);
   if (expense.error) throw new Error(`Reading the first expense failed: ${expense.error.message}`);
