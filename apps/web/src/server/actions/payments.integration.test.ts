@@ -3,12 +3,14 @@ import { isoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 import type { PaymentInput } from './payments';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
 // 2026-10-07; run against a fresh `pnpm db:reset`. Every payment recorded here is undone, so the seed stays as it was.
-const { client, signIn } = memberClient('ryan.lane9@demo.esta.test', 'unused');
+const { household, ryan } = integrationLane(import.meta.url);
+const { client, signIn } = memberClient(ryan, household);
 
 const { recordPayment, undoPayment } = await import('./payments');
 

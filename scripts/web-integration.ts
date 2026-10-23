@@ -1,6 +1,7 @@
 // Usage: ESTA_SLOT=<n> node scripts/web-integration.ts. Runs apps/web's *.integration.test.ts against that slot's stack.
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { runsAlone } from '../apps/web/src/test/lanes.ts';
 import { parseSlot, slotPorts } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 
@@ -23,8 +24,6 @@ const vitest = (...filters: string[]) =>
       ESTA_IT_MAILBOX: `http://127.0.0.1:${slotPorts(slot).inbucket}/api/v1`,
     },
   }).status ?? 1;
-// The cron test moves every household past the seed date, so it runs alone after the others.
-const CRON_TEST = 'src/server/cron/cron.integration.test.ts';
-const status = vitest('integration', '--exclude', CRON_TEST) || vitest(CRON_TEST);
+const status = vitest('integration', ...runsAlone.flatMap((file) => ['--exclude', file])) || (runsAlone.length > 0 ? vitest(...runsAlone) : 0);
 clock('off');
 process.exit(status);

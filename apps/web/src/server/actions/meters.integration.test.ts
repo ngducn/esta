@@ -1,14 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { seedId } from '../../../../../supabase/seed/generator/ids';
+import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 import { service } from '@/test/stack';
 
 // `pnpm test:integration` (scripts/web-integration.ts) sets the slot's database clock to 2026-10-07, so the month
-// before it, September, is the one being read. The file bills its own Demo rooming house in lane 9, with August's
+// before it, September, is the one being read. The file bills its own Demo rooming house in its lane, with August's
 // readings already in: Phòng A and Phòng B bill from the 25th, their September bills issued and October's drafted;
 // Phòng C bills by calendar month, its October bill issued and November's drafted.
-const HOUSEHOLD = seedId('seed:household:lane-9');
-const { client, signIn } = memberClient('me.lane9@demo.esta.test', HOUSEHOLD);
+const { household: HOUSEHOLD, me } = integrationLane(import.meta.url);
+const { client, signIn } = memberClient(me, HOUSEHOLD);
 
 const { saveReadings } = await import('./meters');
 

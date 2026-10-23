@@ -6,13 +6,12 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { DEMO_PASSWORD } from '../../../../../supabase/seed/generator/households.ts';
-import { seedId } from '../../../../../supabase/seed/generator/ids.ts';
+import { integrationLane } from '@/test/lanes';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack; run against a fresh `pnpm db:reset`.
 // Reads only, so the seed stays as it was.
 const { ESTA_IT_SUPABASE_URL: url, ESTA_IT_ANON_KEY: anonKey } = z.object({ ESTA_IT_SUPABASE_URL: z.url(), ESTA_IT_ANON_KEY: z.string().min(1) }).parse(process.env);
-const EMAIL = 'ryan.lane8@demo.esta.test';
-const HOUSEHOLD = seedId('seed:household:lane-8');
+const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url);
 const client: SupabaseClient<Database> = createClient<Database>(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
 vi.mock('server-only', () => ({}));
@@ -22,7 +21,7 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => cl
 const { listProperties } = await import('./list');
 
 beforeAll(async () => {
-  const { error } = await client.auth.signInWithPassword({ email: EMAIL, password: DEMO_PASSWORD });
+  const { error } = await client.auth.signInWithPassword({ email: ryan, password: DEMO_PASSWORD });
   if (error) throw error;
 });
 
