@@ -1748,6 +1748,57 @@ export type Database = {
           },
         ]
       }
+      owner_tax_inputs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          notes: string | null
+          other_business_revenue_vnd: number
+          party_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          notes?: string | null
+          other_business_revenue_vnd?: number
+          party_id: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          notes?: string | null
+          other_business_revenue_vnd?: number
+          party_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_tax_inputs_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_tax_inputs_household_id_party_id_fkey"
+            columns: ["household_id", "party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       ownership_shares: {
         Row: {
           created_at: string
