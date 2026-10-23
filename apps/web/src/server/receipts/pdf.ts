@@ -1,6 +1,7 @@
 import 'server-only';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
+import type { Locale } from '@esta/core/format';
 import { qrMatrix } from '@/lib/qr';
 import type { ColorToken } from '@/design/tokens';
 import { A5_PT, receiptColor, receiptFont, type Receipt } from './kit';
@@ -109,18 +110,24 @@ function qrBlock(pen: Pen, receipt: Receipt): void {
   pen.y = Math.min(pen.y, top - QR_PT);
 }
 
+/** A new Esta PDF with its title and language set and the receipt's regular and bold fonts embedded and subset. */
+export async function openPdf(title: string, locale: Locale): Promise<{ pdf: PDFDocument; regular: PDFFont; bold: PDFFont }> {
+  const pdf = await PDFDocument.create();
+  pdf.registerFontkit(fontkit);
+  pdf.setTitle(title, { showInWindowTitleBar: true });
+  pdf.setLanguage(locale === 'vi' ? 'vi-VN' : 'en-US');
+  pdf.setCreator('Esta');
+  pdf.setProducer('Esta');
+  const [regular, bold] = await Promise.all([pdf.embedFont(receiptFont(400), { subset: true }), pdf.embedFont(receiptFont(700), { subset: true })]);
+  return { pdf, regular, bold };
+}
+
 /**
  * LSE-6: the A5 receipt, or the notice while nothing is received, with the font embedded and subset, so its text
  * extracts as Studio stores it.
  */
 export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create();
-  pdf.registerFontkit(fontkit);
-  pdf.setTitle(receipt.title, { showInWindowTitleBar: true });
-  pdf.setLanguage('vi-VN');
-  pdf.setCreator('Esta');
-  pdf.setProducer('Esta');
-  const [regular, bold] = await Promise.all([pdf.embedFont(receiptFont(400), { subset: true }), pdf.embedFont(receiptFont(700), { subset: true })]);
+  const { pdf, regular, bold } = await openPdf(receipt.title, 'vi');
   const pen: Pen = { pdf, page: pdf.addPage([A5_PT.width, A5_PT.height]), regular, bold, y: TOP };
 
   rightText(pen, `${receipt.labels.number} ${receipt.number}`, { size: 9, color: 'ink-muted' });

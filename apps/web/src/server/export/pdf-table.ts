@@ -1,11 +1,9 @@
 import 'server-only';
-import fontkit from '@pdf-lib/fontkit';
 import { numberOf, type ExportCell, type ExportRow, type ExportTable } from '@esta/core/export';
 import { formatCount, formatVnd, type Locale } from '@esta/core/format';
-import { PDFDocument, type PDFFont, type PDFPage } from 'pdf-lib';
+import type { PDFDocument, PDFFont, PDFPage } from 'pdf-lib';
 import type { ColorToken } from '@/design/tokens';
-import { receiptFont } from '@/server/receipts/kit';
-import { tone, wrap } from '@/server/receipts/pdf';
+import { openPdf, tone, wrap } from '@/server/receipts/pdf';
 
 /** What the PDF says above the table: the report's title and the lines under it. */
 export type PdfHeader = { readonly title: string; readonly notes: readonly string[]; readonly locale: Locale };
@@ -39,13 +37,7 @@ function heading(pen: Pen, value: string, font: PDFFont, size: number, color: Co
  * the receipt's static instances, embedded and subset, so the text extracts in NFC as written.
  */
 export async function toPdfTable(table: ExportTable, header: PdfHeader): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create();
-  pdf.registerFontkit(fontkit);
-  pdf.setTitle(header.title, { showInWindowTitleBar: true });
-  pdf.setLanguage(header.locale === 'vi' ? 'vi-VN' : 'en-US');
-  pdf.setCreator('Esta');
-  pdf.setProducer('Esta');
-  const [regular, bold] = await Promise.all([pdf.embedFont(receiptFont(400), { subset: true }), pdf.embedFont(receiptFont(700), { subset: true })]);
+  const { pdf, regular, bold } = await openPdf(header.title, header.locale);
 
   const shares = table.columns.map((_, index) => (index === 0 ? FIRST_COLUMN_SHARE : 1));
   const unit = (A4_LANDSCAPE.width - 2 * MARGIN) / shares.reduce((sum, share) => sum + share, 0);

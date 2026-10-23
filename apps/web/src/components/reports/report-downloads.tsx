@@ -3,6 +3,7 @@
 import { Download } from 'lucide-react';
 import { useState, type MouseEvent } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { saveBlob } from '@/lib/save-blob';
 
 export type ReportDownload = { readonly href: string; readonly file: string; readonly label: string; readonly testId: string };
 
@@ -18,9 +19,7 @@ export function ReportDownloads({ downloads, failedLabel }: { downloads: readonl
     try {
       const response = await fetch(href);
       if (!response.ok) throw new Error(`The download answered ${response.status}`);
-      const url = URL.createObjectURL(await response.blob());
-      Object.assign(document.createElement('a'), { href: url, download: file }).click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      saveBlob(await response.blob(), file);
     } catch (error) {
       console.error(error);
       setFailed(true);

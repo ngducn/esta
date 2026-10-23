@@ -14,6 +14,11 @@ frozenAtStart();
 const report = (page: Page) => page.getByTestId('report');
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
 
+/** Each money column's totals cell is the sum of the cells above it. */
+function expectAmountTotals(table: Awaited<ReturnType<typeof readReportTable>>) {
+  for (const id of Object.keys(table.totals.amounts)) expect(table.totals.amounts[id], `${id} total`).toBe(sum(table.rows.map((row) => row.amounts[id] ?? 0)));
+}
+
 async function axe(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.mouse.move(0, 0);
@@ -43,7 +48,7 @@ test('lane 1: Ryan opens Báo cáo, and each property P&L income for 2026 is the
     expect(row.amounts.income, row.cells['#0']).toBe(sum(facts.filter((fact) => fact.property_id === row.key).map((fact) => fact.amount_vnd)));
   }
   expect(table.rows.find((row) => row.key === laneProperty(1, 'di-an'))?.amounts.income, 'the seed received rent at Dĩ An').toBeGreaterThan(0);
-  for (const id of Object.keys(table.totals.amounts)) expect(table.totals.amounts[id], `${id} total`).toBe(sum(table.rows.map((row) => row.amounts[id] ?? 0)));
+  expectAmountTotals(table);
   expect(await axe(page)).toEqual([]);
 
   await page.getByTestId('report-picker').getByRole('link', { name: 'Thuế' }).click();
@@ -66,7 +71,7 @@ test('lane 2: Mẹ reads the rent roll on her phone: the leases in effect today,
   expect(table.rows.map((row) => row.cells['#0'])).not.toContain('Phòng 7, Dãy trọ Dĩ An');
   expect(table.rows.map((row) => row.key)).not.toContain(laneLease(2, 'di-an', 7));
   expect(table.rows.find((row) => row.key === laneLease(2, 'thu-duc', 1))?.cells.endDate).toBe('01/11/2026');
-  for (const id of Object.keys(table.totals.amounts)) expect(table.totals.amounts[id], `${id} total`).toBe(sum(table.rows.map((row) => row.amounts[id] ?? 0)));
+  expectAmountTotals(table);
   expect(await noSidewaysScroll(page)).toBe(true);
   expect(await axe(page)).toEqual([]);
 });
@@ -92,7 +97,7 @@ test("lane 3: October's collections equal what was allocated to October's bills,
   expect(room5?.outstanding_vnd, "Phòng 5's September bill is unpaid").toBeGreaterThan(0);
   expect(row('2026-09')?.outstanding, 'September outstanding').toBe(sum(september.map((bill) => bill.outstanding_vnd)));
   expect(row('2026-09')?.outstanding).toBeGreaterThanOrEqual(room5?.outstanding_vnd ?? Infinity);
-  for (const id of Object.keys(table.totals.amounts)) expect(table.totals.amounts[id], `${id} total`).toBe(sum(table.rows.map((line) => line.amounts[id] ?? 0)));
+  expectAmountTotals(table);
   expect(await axe(page)).toEqual([]);
 });
 
@@ -152,7 +157,7 @@ test("lane 5: Danh mục tài sản puts Quận 1's gross yield at its contracte
   expect(row?.amounts.annualRent).toBe(monthly * 12);
   const bp = Math.round((monthly * 12 * 10_000) / (latest?.value_vnd ?? Infinity));
   expect(row?.cells.yield).toBe(`${(bp / 100).toFixed(2).replace('.', ',').replace(/,?0+$/, '')}%`);
-  for (const id of Object.keys(table.totals.amounts)) expect(table.totals.amounts[id], `${id} total`).toBe(sum(table.rows.map((line) => line.amounts[id] ?? 0)));
+  expectAmountTotals(table);
   expect(await axe(page)).toEqual([]);
 });
 

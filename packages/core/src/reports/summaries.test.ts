@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import taxRules from '../../../../supabase/seed/reference/tax_rules.json';
 import { isoDate as d, type IsoDate } from '../date/iso-date';
 import type { ExportTable } from '../export/table';
 import { vnd } from '../money/vnd';
@@ -147,21 +148,7 @@ describe('portfolioSummary (FIN-5)', () => {
 
 const ME = uuid();
 const RYAN = uuid();
-const RULE = taxRuleRowSchema.parse({
-  kind: 'vn_rental_individual',
-  effective_from: '2026-01-01',
-  effective_to: null,
-  params: {
-    threshold_vnd: 500_000_000,
-    threshold_scope: 'all_business_revenue_of_person',
-    vat_rate_bp: 500,
-    vat_base: 'total_rental_revenue_when_over_threshold',
-    pit_rate_bp: 500,
-    pit_base: 'revenue_above_threshold',
-  },
-  source_citation: 'Nguồn Demo',
-  note: null,
-});
+const RULE = taxRuleRowSchema.parse(taxRules[0]);
 const taxLease = (id: string, propertyId: string, declaringPartyId: string | null = null) => ({ id, propertyId, active: true, terminatedOn: null, taxPayer: 'owner' as const, declaringPartyId, recurringCharges: [] });
 const monthly = (leaseId: string, rent: number) => schedulePeriods(leaseId, '2026-01-01', rent, 12).map(({ start, end, rentVnd }) => ({ leaseId, start, end, rentVnd }));
 const LABELS = { owner: 'Chủ sở hữu', revenue: 'Doanh thu', income: 'Đã nhận', expenses: 'Chi phí', vat: 'GTGT', pit: 'TNCN', total: 'Tổng cộng', unattributed: 'Chưa ghi chủ', noRule: 'Chưa có quy định' };

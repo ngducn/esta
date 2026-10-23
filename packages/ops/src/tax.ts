@@ -21,7 +21,11 @@ export async function readOtherBusinessRevenues(db: Db, householdId: string, yea
 
 /** The other business revenue saved for an owner and year; no row reads as 0. */
 export async function readOtherBusinessRevenue(db: Db, householdId: string, { partyId, year }: { partyId: string; year: number }) {
-  return (await readOtherBusinessRevenues(db, householdId, year)).get(partyId) ?? vnd(0);
+  const saved = await rows(
+    'other business revenue',
+    db.from('owner_tax_inputs').select('other_business_revenue_vnd').eq('household_id', householdId).eq('party_id', partyId).eq('year', year),
+  );
+  return vnd(z.number().int().nonnegative().parse(saved[0]?.other_business_revenue_vnd ?? 0));
 }
 
 export type Owner = { readonly id: string; readonly name: string; readonly memberId: string | null };
