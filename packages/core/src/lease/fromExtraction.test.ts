@@ -40,6 +40,12 @@ describe('leaseFieldsFromExtraction', () => {
     expect(leaseFieldsFromExtraction({ ...rest, term_months: accepted(12) }, UNITS).terms.end_date).toBe('2027-10-14');
   });
 
+  it('ends a term-only lease where its last rent period ends, so 31/01 for one month ends 27/02', () => {
+    const { end_date: _end, ...rest } = contract;
+    expect(leaseFieldsFromExtraction({ ...rest, start_date: accepted('2026-01-31'), term_months: accepted(1) }, UNITS).terms.end_date).toBe('2026-02-27');
+    expect(leaseFieldsFromExtraction({ ...rest, start_date: accepted('2026-01-15'), term_months: accepted(12) }, UNITS).terms.end_date).toBe('2027-01-14');
+  });
+
   it('keeps a printed end date over the term', () => {
     expect(leaseFieldsFromExtraction({ ...contract, term_months: accepted(6) }, UNITS).terms.end_date).toBe('2027-10-14');
   });
@@ -73,6 +79,12 @@ describe('leaseFieldsFromExtraction', () => {
     expect(leaseFieldsFromExtraction(noPhone, UNITS).tenant).toEqual({ fullName: 'Lê Văn Demo', phone: null });
   });
 
+  it('names the tenant in NFC when the contract was read in NFD', () => {
+    const nfd = 'Lê Văn Demo'.normalize('NFD');
+    expect(nfd).not.toBe('Lê Văn Demo');
+    expect(leaseFieldsFromExtraction({ ...contract, tenant_name: accepted(nfd) }, UNITS).tenant?.fullName).toBe('Lê Văn Demo');
+  });
+
   it('reads nothing from a value that is not an accepted-fields record', () => {
     expect(leaseFieldsFromExtraction(null, UNITS)).toEqual({ terms: {}, tenant: null });
     expect(leaseFieldsFromExtraction({ rent_vnd: 3_500_000 }, UNITS)).toEqual({ terms: {}, tenant: null });
@@ -81,17 +93,23 @@ describe('leaseFieldsFromExtraction', () => {
 
 describe('contractTenant', () => {
   const tenants = [
-    { id: 't1', fullName: 'Lê Văn Demo', phone: '0903 999 999' },
-    { id: 't2', fullName: 'LÊ VĂN  DEMO', phone: '0903 123 456' },
+    { id: 't1', fullName: 'Lê Văn Demo', phone: '+84903999999' },
+    { id: 't2', fullName: 'LÊ VĂN  DEMO', phone: '+84903123456' },
+    { id: 't3', fullName: 'Trần Thị Demo', phone: 'chưa có' },
   ];
 
-  it('finds the tenant with the same name and phone, whatever the spacing and case', () => {
-    expect(contractTenant(tenants, { fullName: 'Lê Văn Demo', phone: '0903123456' })?.id).toBe('t2');
+  it.each(['0903123456', '0903 123 456', '0903.123.456', '+84 903 123 456'])('finds the stored tenant with the same name when the contract prints %s', (phone) => {
+    expect(contractTenant(tenants, { fullName: 'Lê Văn Demo', phone })?.id).toBe('t2');
   });
 
-  it('treats a namesake with another phone, or a contract without a phone, as nobody known', () => {
+  it('treats a namesake with another phone, another name on the same phone, or a contract without a phone, as nobody known', () => {
     expect(contractTenant(tenants, { fullName: 'Lê Văn Demo', phone: '0911 000 000' })).toBeNull();
+    expect(contractTenant(tenants, { fullName: 'Phạm Văn Demo', phone: '0903 123 456' })).toBeNull();
     expect(contractTenant(tenants, { fullName: 'Lê Văn Demo', phone: null })).toBeNull();
     expect(contractTenant(tenants, null)).toBeNull();
+  });
+
+  it('matches nobody on a phone that does not read as a phone', () => {
+    expect(contractTenant(tenants, { fullName: 'Trần Thị Demo', phone: 'không rõ' })).toBeNull();
   });
 });

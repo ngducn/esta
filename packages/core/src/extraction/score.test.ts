@@ -60,6 +60,10 @@ describe('scoreExtraction', () => {
     expect(normalizeValue('issued_on', '07/10/2026')).toBe('2026-10-07');
   });
 
+  it.each(['0903123456', '0903 123 456', '0903.123.456', '+84 903 123 456'])('matches a phone printed %s to its E.164 truth', (printed) => {
+    expect(normalizeValue('tenant_phone', printed)).toBe(normalizeValue('tenant_phone', '+84903123456'));
+  });
+
   it('counts a missing field as a miss', () => {
     const { serial_no: _dropped, ...withoutSerial } = certificate();
     expect(hitOf(withoutSerial, 'serial_no')).toBe(false);
