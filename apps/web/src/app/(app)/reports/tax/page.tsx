@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { ChoiceLinks } from '@/components/choice-links';
 import { PropertyIntl } from '@/components/properties/property-intl';
+import { ReportPicker } from '@/components/reports/report-picker';
 import { OtherRevenueForm } from '@/components/tax/other-revenue-form';
 import { TaxLeasesCard, TaxNotesCard, TaxPositionCard } from '@/components/tax/tax-card';
 import { getClock } from '@/server/clock';
@@ -29,6 +30,7 @@ export default async function TaxCardPage({ searchParams }: { searchParams: Prom
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-h2 break-words lg:text-h1">{t('title')}</h1>
+      <ReportPicker current="tax" />
       {owner === undefined ? (
         <p data-testid="tax-no-owners" className="rounded-lg border border-rule bg-surface p-5 text-body text-ink shadow-card sm:p-6">
           {t('noOwners')}

@@ -75,7 +75,7 @@ export function parseInventory(text: string): InventoryRow[] {
     const pr = line
       .split('|')
       .map((cell) => cell.trim())
-      .find((cell) => /^P\d-\d{2}$/.test(cell));
+      .find((cell) => /^P\d-\d{2}[a-z]?$/.test(cell));
     if (pr) rows.push({ phase, pr, text: line });
   }
   return rows;

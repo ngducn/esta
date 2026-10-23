@@ -399,7 +399,6 @@
   "sections": {
     "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",
     "assistant": "The assistant will leave a note every morning about late rent, leases ending soon and missing papers.",
-    "reports": "The rental tax card is here: projected revenue against the 500 million threshold and estimated tax. Each property’s income and costs by year come later.",
     "settings": "Display settings follow your account. The household, members and receiving bank accounts arrive here in the next update.",
     "soonTitle": "Coming in the next update",
     "adjustDisplay": "Adjust text size and theme"
@@ -1174,7 +1173,6 @@
     "errorInvalid": "The amount is not right. Check it and save again.",
     "errorForbidden": "You can only view, so this cannot be saved.",
     "errorFailed": "Not saved. Check the connection and try again.",
-    "reportsOpen": "Open the tax card",
     "amount": "Amount for {year}"
   },
   "devTax": {
@@ -1901,5 +1899,47 @@
     "portfolioBasis": "From each property's latest valuation, the oldest dated {date}.",
     "portfolioMissing": "{count, plural, one {# property has no valuation} other {# properties have no valuation}}",
     "portfolioOpen": "View properties"
+  },
+  "reports": {
+    "picker": "Choose a report",
+    "tax": "Tax",
+    "pnl": "Profit and loss by property",
+    "rentRoll": "Rent roll",
+    "collections": "Collections by month",
+    "years": "Year",
+    "pnlTitle": "Profit and loss by property, {year}",
+    "pnlBasis": "Income counts in the month the money arrived, as on each property's Ledger tab.",
+    "pnlEmpty": "No properties yet. Add a property to see its profit and loss.",
+    "rentRollTitle": "Rent roll on {date}",
+    "rentRollBasis": "Leases in effect today, including a terminated lease until its termination date.",
+    "rentRollEmpty": "No lease is in effect today.",
+    "collectionsTitle": "Collections by month, {year}",
+    "collectionsBasis": "Bills count in the month they fall due. Not yet collected is what is unpaid today, including bills not yet due.",
+    "collectionsEmpty": "No bills fall due in {year}.",
+    "property": "Property",
+    "income": "Income",
+    "expenses": "Expenses",
+    "noi": "Net",
+    "place": "Unit",
+    "tenant": "Tenant",
+    "rent": "Monthly rent",
+    "cycle": "Billing cycle",
+    "cycleMonths": "{months, plural, one {# month} other {# months}}",
+    "paidThrough": "Collected through",
+    "nextDue": "Next due",
+    "deposit": "Deposit held",
+    "endDate": "End date",
+    "openEnded": "Open-ended",
+    "none": "None",
+    "month": "Month",
+    "monthName": "{month}",
+    "billed": "Billed",
+    "collected": "Collected",
+    "outstanding": "Not yet collected",
+    "total": "Total",
+    "downloadExcel": "Download Excel",
+    "pnlSheet": "Profit and loss {year}",
+    "rentRollSheet": "Rent roll",
+    "collectionsSheet": "Collections {year}"
   }
 }

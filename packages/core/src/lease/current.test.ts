@@ -3,7 +3,7 @@ import { isoDate as d } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import { schedulePeriods } from '../schedule/fixtures';
 import { leaseRowSchema } from '../schemas/lease';
-import { currentLease, rentInEffect } from './current';
+import { currentLease, inEffect, rentInEffect } from './current';
 
 let next = 0;
 const uuid = () => `00000000-0000-4000-8000-${String((next += 1)).padStart(12, '0')}`;
@@ -63,6 +63,18 @@ describe('currentLease (the lease a unit shows)', () => {
     const ended = row({ status: 'ended', end_date: '2026-09-15' });
     expect(currentLease([ended, draft], d('2026-10-07'))).toBe(draft);
     expect(currentLease([ended], d('2026-10-07'))).toBeUndefined();
+  });
+});
+
+describe('inEffect (the leases the rent roll lists)', () => {
+  it('keeps a lease terminated from a later date until that date, and drops one terminated earlier, an ended one, a draft and one not yet started', () => {
+    const asOf = d('2026-10-07');
+    expect(inEffect(row({ status: 'terminated', end_date: '2026-12-15', terminated_on: '2026-12-15' }), asOf)).toBe(true);
+    expect(inEffect(row({ status: 'terminated', end_date: '2026-10-01', terminated_on: '2026-10-01' }), asOf)).toBe(false);
+    expect(inEffect(row({ status: 'ended', end_date: '2026-07-31' }), asOf)).toBe(false);
+    expect(inEffect(row({ status: 'draft', start_date: null }), asOf)).toBe(false);
+    expect(inEffect(row({ start_date: '2026-11-01' }), asOf)).toBe(false);
+    expect(inEffect(old, asOf)).toBe(true);
   });
 });
 

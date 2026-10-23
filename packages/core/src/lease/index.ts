@@ -1,6 +1,6 @@
 export { collectedThrough, type BilledPeriod } from './collected';
 export { LEASE_DEFAULTS, leaseDefaultKey, leaseDefaults, type LeaseDefault, type LeaseDefaultKey, type LeaseFormDefaults } from './defaults';
-export { currentLease, holdsUnit, rentInEffect } from './current';
+export { currentLease, holdsUnit, inEffect, rentInEffect } from './current';
 export { currentMonthlyRent } from './monthlyRent';
 export { LEASE_TRANSITIONS, activationRefusals, type ActivationFacts, type ActivationRefusal } from './state';
 export {

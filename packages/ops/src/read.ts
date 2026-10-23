@@ -4,11 +4,10 @@ import { compareVietnameseNames } from '@esta/core/names';
 import { normalizePhone, phoneText, type Phone } from '@esta/core/phone';
 import { currentAddressText, KIND_FIELDS, searchTokens } from '@esta/core/properties';
 import type { Result } from '@esta/core/result';
-import type { LeaseRow } from '@esta/core/schemas/lease';
 import { idLast4Schema } from '@esta/core/schemas/party';
 import { z } from 'zod';
 import type { Db } from './db';
-import { readLeases, readLeaseSchedule, scheduleUntil, withTenants, type LeaseWithTenant } from './leases';
+import { readLeaseNames, readLeases, readLeaseSchedule, scheduleUntil, withTenants, type LeaseNames, type LeaseWithTenant } from './leases';
 import type { OpContext } from './op';
 import { readPropertyDetail, searchProperties, type PropertyRow } from './properties';
 import type { ViewRows } from './view';
@@ -123,26 +122,6 @@ export async function findPerson(ctx: ReadContext, query: z.output<typeof person
   return { ok: true, value: rankPeople(data, { tokens: searchTokens(query.name ?? ''), phone: phone?.value ?? null, idLast4: query.id_last4 ?? null }) };
 }
 
-type LeaseNames = { readonly units: ReadonlyMap<string, string>; readonly properties: ReadonlyMap<string, string>; readonly held: ReadonlyMap<string, number> };
-
-/** The unit labels, property nicknames and held deposits a lease summary names. */
-async function leaseNames(ctx: ReadContext, leases: readonly LeaseRow[]): Promise<LeaseNames> {
-  if (leases.length === 0) return { units: new Map(), properties: new Map(), held: new Map() };
-  const ids = (key: 'id' | 'unit_id' | 'property_id') => [...new Set(leases.map((lease) => lease[key]))];
-  const [units, properties, held] = await Promise.all([
-    ctx.db.from('units').select('id, label').eq('household_id', ctx.householdId).in('id', ids('unit_id')),
-    ctx.db.from('properties').select('id, nickname').eq('household_id', ctx.householdId).in('id', ids('property_id')),
-    ctx.db.from('lease_deposits').select('lease_id, held_vnd').eq('household_id', ctx.householdId).in('lease_id', ids('id')),
-  ]);
-  const failed = units.error ?? properties.error ?? held.error;
-  if (failed) throw new Error(`Reading the leases' units, properties and deposits failed: ${failed.message}`);
-  return {
-    units: new Map(units.data?.map((unit) => [unit.id, unit.label])),
-    properties: new Map(properties.data?.map((property) => [property.id, property.nickname])),
-    held: new Map(held.data?.flatMap((row) => (row.lease_id === null ? [] : [[row.lease_id, row.held_vnd ?? 0]]))),
-  };
-}
-
 function leaseSummary(lease: LeaseWithTenant, names: LeaseNames, locale: Locale) {
   const display = (amount: Vnd | null) => (amount === null ? null : formatVnd(amount, locale));
   const held = vnd(names.held.get(lease.id) ?? 0);
@@ -151,7 +130,7 @@ function leaseSummary(lease: LeaseWithTenant, names: LeaseNames, locale: Locale)
     property_id: lease.property_id,
     property: names.properties.get(lease.property_id) ?? null,
     unit_id: lease.unit_id,
-    unit: names.units.get(lease.unit_id) ?? null,
+    unit: names.units.get(lease.unit_id)?.label ?? null,
     tenant: lease.tenant === null ? null : { id: lease.tenant.id, full_name: lease.tenant.fullName, phone: lease.tenant.phone },
     status: lease.status,
     start_date: lease.start_date,
@@ -168,7 +147,7 @@ function leaseSummary(lease: LeaseWithTenant, names: LeaseNames, locale: Locale)
 
 export async function listLeases(ctx: ReadContext, propertyId?: string) {
   const leases = await readLeases(ctx.db, ctx.householdId, propertyId === undefined ? {} : { property_id: propertyId });
-  const [withTenant, names] = await Promise.all([withTenants(ctx.db, ctx.householdId, leases), leaseNames(ctx, leases)]);
+  const [withTenant, names] = await Promise.all([withTenants(ctx.db, ctx.householdId, leases), readLeaseNames(ctx.db, ctx.householdId, leases)]);
   return withTenant.map((lease) => leaseSummary(lease, names, ctx.locale));
 }
 
@@ -178,7 +157,7 @@ export async function getLease(ctx: ReadContext & Pick<OpContext, 'clock'>, id: 
   if (lease === undefined) return null;
   const [[withTenant], names, schedule, invoices] = await Promise.all([
     withTenants(ctx.db, ctx.householdId, [lease]),
-    leaseNames(ctx, [lease]),
+    readLeaseNames(ctx.db, ctx.householdId, [lease]),
     readLeaseSchedule(ctx.db, [id], scheduleUntil([lease], ctx.clock.today())),
     ctx.db.from('invoices').select('id, status').eq('household_id', ctx.householdId).eq('lease_id', id),
   ]);
