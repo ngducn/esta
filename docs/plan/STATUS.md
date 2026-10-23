@@ -106,6 +106,9 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
   - Ledger (#275): money a tenant paid beyond the bill, kept as credit, is not income until it is applied to a bill. A deposit is income only when it is applied to a bill. When the landlord keeps part of a deposit, the ledger does not count that as income.
   - Undo of Claude's changes (#269): undoing a batch also undoes the bills that batch issued, and refuses when a payment or another record references them.
   - Meter corrections (#270): a correction too large for the next bill to absorb is refused when ending, amending or renewing a lease. Mẹ voids the bill that went out with the wrong reading and records again. The recommendation is to let a void re-plan its period instead.
+  - Demo shop rent (#283): the demo Quận 1 shop's rent moved from 30,000,000 to 2,500,000 ₫ a month, billed yearly, so Mẹ lands in the tax band the spec's demo expects (plan line 3556). Its yield reads 0,42% and its 2026 income 30,000,000 ₫; Home is unchanged.
+  - Reports (#286, #289): "Chưa thu" counts every bill not yet paid, due or not. The rent roll lists a lease ended early on a future date until that date. Occupancy's "days vacant in period" counts from the day a unit became available, so Phòng 8 reads 68 there and 67 as days empty now (the W4 figure). On the owner summary, an archived property that earned rent this year counts in revenue (as on the tax card) but not in money received.
+  - Demo data (#291): four tables the app writes while running are not seeded: Trợ lý's work items, Claude's change batches, and imported bank statements and their rows.
 
 ## Needs professional confirmation
 
