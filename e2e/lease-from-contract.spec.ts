@@ -3,7 +3,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
 import { laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, PHONE, START, fixture, open, recordForPr, serviceGet, seriousAxeViolations, shot, toast } from './helpers/wizard';
+import { DESKTOP, PHONE, START, fixture, open, recordForPr, serviceGet, servicePatch, seriousAxeViolations, shot, toast } from './helpers/wizard';
 
 // The replay worker and the test clock are one per slot, so the rules run in order in the `clock` project.
 test.describe.configure({ mode: 'serial' });
@@ -144,4 +144,19 @@ test('rule 2: Mẹ photographs the Phòng 7 contract, checks the reading, and L�
     },
   ]);
   expect((await contractOf(page, documentId))?.lease_id).toBe(leaseId);
+});
+
+test('rule 3: a contract that prints +84 903 123 456 for a tenant on file selects him, with no quick add', async ({ page }) => {
+  await open(page, 'ryan.lane5@demo.esta.test', 'light', PHONE);
+  const [lease] = await serviceGet<{ tenant_party_id: string }[]>(page, `leases?unit_id=eq.${unit(8)}&status=eq.draft&select=tenant_party_id`);
+  const reading = `document_extractions?document_id=eq.${seededContract}&status=eq.accepted`;
+  const [accepted] = await serviceGet<{ accepted_fields: Record<string, object> }[]>(page, `${reading}&select=accepted_fields`);
+  await servicePatch(page, reading, { accepted_fields: { ...accepted?.accepted_fields, tenant_phone: { ...accepted?.accepted_fields.tenant_phone, value: '+84 903 123 456' } } });
+  await servicePatch(page, `documents?id=eq.${seededContract}`, { lease_id: null });
+
+  await page.goto(newLeaseFrom(seededContract));
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await expect(page.getByTestId('from-contract-intro')).toBeVisible();
+  await expect(page.locator('#lease-tenant')).toHaveValue(lease?.tenant_party_id ?? 'missing');
+  await expect(page.locator('#tenant-name'), 'the quick add stays closed for a tenant on file').toHaveCount(0);
 });
