@@ -24,6 +24,11 @@ describe('DOCUMENT_CATEGORIES', () => {
     ]);
   });
 
+  it('exports each category and its schema as the rows private.extraction_schema must return', async () => {
+    const rows = DOCUMENT_CATEGORY_IDS.map((id) => `${id},${DOCUMENT_CATEGORIES[id].extractionSchema ?? ''}`);
+    await expect(`category,extraction_schema\n${rows.join('\n')}\n`).toMatchFileSnapshot('../../../../supabase/tests/fixtures/extraction_schemas.csv');
+  });
+
   it('names each category in both languages', () => {
     for (const locale of ['vi', 'en']) {
       const messages = JSON.parse(readFileSync(join(repoRoot, `apps/web/messages/${locale}.json`), 'utf8')) as { documents: { category: string } };

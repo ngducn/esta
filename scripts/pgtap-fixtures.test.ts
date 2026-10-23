@@ -31,3 +31,12 @@ describe('deposit_ledger_parity.test.sql', () => {
     expect(rows).toEqual(csv);
   });
 });
+
+describe('extraction_schema_parity.test.sql', () => {
+  it('holds exactly the rows of fixtures/extraction_schemas.csv', () => {
+    const [, ...csv] = readFileSync(join(tests, 'fixtures', 'extraction_schemas.csv'), 'utf8').trim().split('\n');
+    const sql = readFileSync(join(tests, 'extraction_schema_parity.test.sql'), 'utf8');
+    const rows = [...sql.matchAll(/\('(\w+)', (?:'(\w+)'|null)\)/g)].map(([, category, schema]) => `${category},${schema ?? ''}`);
+    expect(rows).toEqual(csv);
+  });
+});
