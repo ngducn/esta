@@ -68,6 +68,8 @@ jobs:
           pnpm db:stop
           tools/ci/db-start.sh -x studio,realtime,imgproxy,mailpit,postgres-meta
           pnpm db:seed:check
+      - name: Every business table seeded in every household, and the SPEC 9.3 seed facts
+        run: pnpm seed:coverage --database && pnpm seed:facts
       - run: pnpm db:test
       - name: Generated database types match the migrations
         run: pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
