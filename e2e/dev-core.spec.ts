@@ -232,7 +232,7 @@ test('?taxYear=2025 shows the no_rule state and keeps the examples on the 2026 r
   await page.goto('/dev/core?taxYear=2025#tax');
   const section = page.locator('section[data-section="tax"]');
   await expect(section.getByTestId('tax-rule')).toHaveAttribute('data-state', 'no_rule');
-  await expect(section.getByTestId('tax-no-rule')).toHaveText('Chưa có quy định thuế cho năm 2025');
+  await expect(section.getByTestId('tax-no-rule')).toHaveText('Chưa có quy tắc thuế cho năm 2025');
   await expect(section.getByTestId('tax-source')).toHaveCount(0);
   await expect(section.locator('tr[data-match="match"]')).toHaveCount(7);
 });

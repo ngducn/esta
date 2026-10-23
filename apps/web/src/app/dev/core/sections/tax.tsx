@@ -1,7 +1,6 @@
 import { formatVnd, type Locale } from '@esta/core/format';
 import type { Vnd } from '@esta/core/money';
 import {
-  TAX_NOTES,
   TAX_WORKED_EXAMPLES,
   runWorkedExample,
   selectTaxRule,
@@ -13,6 +12,7 @@ import {
 } from '@esta/core/tax';
 import { isDeepStrictEqual } from 'node:util';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { taxNoteText } from '@/components/tax/note-text';
 import { createSessionClient } from '@/server/supabase/server';
 
 const EXAMPLE_YEAR = 2026;
@@ -43,13 +43,7 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
   const selected: TaxRuleSelection | null = loaded.ok ? selectTaxRule(loaded.rules, year) : null;
   const exampleRule = loaded.ok ? selectTaxRule(loaded.rules, EXAMPLE_YEAR) : null;
 
-  function noteText(key: TaxNoteKey, rule: TaxRule): string {
-    const note = TAX_NOTES[key];
-    const text = note.showsRuleNote ? notes(note.messageKey, { note: rule.note ?? '' }) : notes(note.messageKey);
-    if (note.label === 'assumption') return `${notes('labelAssumption')}: ${text}`;
-    if (note.label === 'ask_accountant') return `${notes('labelAskAccountant')}: ${text}`;
-    return text;
-  }
+  const noteText = (key: TaxNoteKey, rule: TaxRule) => taxNoteText(key, rule, notes);
 
   const rows = TAX_WORKED_EXAMPLES.map((example) => {
     const actual = exampleRule?.kind === 'rule' ? runWorkedExample(example, exampleRule.rule) : [];
