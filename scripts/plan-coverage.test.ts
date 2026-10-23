@@ -141,6 +141,11 @@ describe('coverage', () => {
     ]);
   });
 
+  it('reads a split PR id with a letter suffix as its own row', () => {
+    const text = inventory('Phase 1 exit and the Mom test').replace('| 01 | P1-01 |', '| 01 | P1-01a |');
+    expect(coverage(spec, parseInventory(text)).lines).toContain('PRP-1 -> P1-01a');
+  });
+
   it('fails when the same PR id appears twice', () => {
     const text = inventory('Phase 1 exit and the Mom test').replace('| 02 | P1-02 |', '| 02 | P1-01 |');
     expect(coverage(spec, parseInventory(text)).problems).toEqual(['P1-01 appears in 2 rows']);
