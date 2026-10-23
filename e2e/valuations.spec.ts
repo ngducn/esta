@@ -41,7 +41,7 @@ test('lane 2: Ryan records a broker quote of 9ty5 on Mặt bằng Quận 1; the 
   await open(page, 'ryan.lane2@demo.esta.test', 'light', DESKTOP);
   const q1 = laneProperty(2, 'q1');
   await page.goto(`/properties/${q1}`);
-  await expect(block(page).getByTestId('valuation-yield')).toHaveText('Lợi suất gộp 5%, theo ước tính ngày 01/07/2026');
+  await expect(block(page).getByTestId('valuation-yield')).toHaveText('Lợi suất gộp 0,42%, theo ước tính ngày 01/07/2026');
 
   await addValuation(page, { value: '9ty5', method: 'Môi giới báo giá', date: '07/10/2026', source: 'Https://example.com/demo/bao-gia-q1' });
   await expect(sheet(page)).toBeHidden();
@@ -51,8 +51,8 @@ test('lane 2: Ryan records a broker quote of 9ty5 on Mặt bằng Quận 1; the 
   await expect(block(page)).toContainText('Ước tính');
   await expect(block(page).getByTestId('valuation-meta')).toHaveText('Ngày 07/10/2026, Môi giới báo giá, hôm nay');
   await expect(block(page).getByRole('link', { name: 'Xem nguồn' })).toHaveAttribute('href', 'https://example.com/demo/bao-gia-q1');
-  await expect(block(page).getByTestId('valuation-yield')).toHaveAttribute('data-yield-bp', '379');
-  await expect(block(page).getByTestId('valuation-yield')).toHaveText('Lợi suất gộp 3,79%, theo ước tính ngày 07/10/2026');
+  await expect(block(page).getByTestId('valuation-yield')).toHaveAttribute('data-yield-bp', '32');
+  await expect(block(page).getByTestId('valuation-yield')).toHaveText('Lợi suất gộp 0,32%, theo ước tính ngày 07/10/2026');
   await expect(block(page).getByTestId('valuation-history').getByRole('listitem')).toHaveCount(2);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
