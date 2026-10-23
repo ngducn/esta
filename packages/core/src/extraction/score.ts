@@ -1,5 +1,6 @@
 import { AGENT_SCHEMAS } from '../agent-schemas';
 import { parseDateInput } from '../parse/date-input';
+import { firstPhone } from '../phone';
 import { INPUT_KINDS } from './fields';
 import { REQUIRED_FIELDS, type SchemaName } from './required-fields';
 
@@ -41,7 +42,7 @@ export function normalizeValue(leafName: string, value: unknown): string | null 
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (typeof value !== 'string') return null;
   const text = value.normalize('NFC').replace(/\s+/g, ' ').trim();
-  if (PHONE_LEAVES.has(leafName)) return text.replace(/\D/gu, '');
+  if (PHONE_LEAVES.has(leafName)) return firstPhone([text]) ?? text;
   if (DATE_LEAVES.has(leafName)) {
     const parsed = parseDateInput(text);
     return parsed.ok ? parsed.value : text;

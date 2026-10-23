@@ -3,6 +3,7 @@ import { leaseV1Schema } from '../agent-schemas/lease_v1';
 import { addDays, addMonths } from '../date/calendar';
 import { normalizeName } from '../extraction/acceptance';
 import { vnd } from '../money/vnd';
+import { firstPhone } from '../phone';
 import type { LeaseDraft } from '../schemas/lease';
 
 /** The lease terms a scanned contract fills in; every key is a term the form marks `Từ hợp đồng đã quét`. */
@@ -51,18 +52,16 @@ export function leaseFieldsFromExtraction(acceptedFields: unknown, units: readon
     ...(read.billing_cycle_months?.value == null ? {} : { billing_cycle_months: read.billing_cycle_months.value }),
     ...(read.deposit_vnd?.value == null ? {} : { deposit_vnd: vnd(read.deposit_vnd.value) }),
   };
-  const fullName = read.tenant_name?.value ?? null;
+  const fullName = read.tenant_name?.value?.normalize('NFC') ?? null;
   return { terms, tenant: fullName === null ? null : { fullName, phone: read.tenant_phone?.value ?? null } };
 }
-
-const digits = (phone: string) => phone.replace(/\D/gu, '');
 
 /**
  * The household's tenant the contract names: the same name and the same phone, both read. A namesake without a matching
  * phone is someone else to the form, which then offers the quick add instead.
  */
 export function contractTenant<T extends { readonly fullName: string; readonly phone: string | null }>(tenants: readonly T[], read: LeaseFromContract['tenant']): T | null {
-  if (read === null || read.phone === null) return null;
-  const phone = digits(read.phone);
-  return tenants.find((tenant) => tenant.phone !== null && digits(tenant.phone) === phone && normalizeName(tenant.fullName) === normalizeName(read.fullName)) ?? null;
+  const phone = read === null ? null : firstPhone([read.phone]);
+  if (read === null || phone === null) return null;
+  return tenants.find((tenant) => firstPhone([tenant.phone]) === phone && normalizeName(tenant.fullName) === normalizeName(read.fullName)) ?? null;
 }
