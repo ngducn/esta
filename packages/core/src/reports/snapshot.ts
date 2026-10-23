@@ -2,9 +2,12 @@ import { addDays, addMonths, firstOfMonth } from '../date/calendar';
 import { isoDate, type IsoDate } from '../date/iso-date';
 import type { ExpenseFact, IncomeFact } from '../ledger';
 import type { BilledPeriod } from '../lease/collected';
+import type { LeaseSpan } from '../lease/current';
 import type { Vnd } from '../money/vnd';
 import type { SchedulePeriod } from '../schedule';
 import type { LeaseRow } from '../schemas/lease';
+import type { TaxRows } from '../tax/inputs';
+import type { Valuation } from '../valuations/schema';
 
 export type ReportProperty = { readonly id: string; readonly name: string };
 
@@ -25,6 +28,21 @@ export type ReportLease = LeaseRow & {
   readonly depositHeldVnd: Vnd;
 };
 
+/** A unit of a live property whose use mode is `rental`. */
+export type ReportUnit = {
+  readonly id: string;
+  readonly propertyId: string;
+  readonly propertyName: string;
+  readonly label: string;
+  readonly wholeUnit: boolean;
+  readonly availableFrom: IsoDate | null;
+};
+
+/** A lease on a report unit that was ever signed: active, ended or terminated. */
+export type ReportTenancy = LeaseSpan & { readonly unitId: string };
+
+export type ReportOwner = { readonly id: string; readonly name: string; readonly otherBusinessRevenueVnd: Vnd };
+
 /** What the household's reports read for the period `from` to `to`, both inclusive, and the Clock's date `asOf`. */
 export type ReportSnapshot = {
   readonly from: IsoDate;
@@ -41,6 +59,14 @@ export type ReportSnapshot = {
   readonly leases: readonly ReportLease[];
   readonly leaseInvoices: readonly ReportInvoice[];
   readonly schedule: readonly SchedulePeriod[];
+  readonly units: readonly ReportUnit[];
+  readonly tenancies: readonly ReportTenancy[];
+  /** Every valuation of a live property, any date. */
+  readonly valuations: readonly Valuation[];
+  /** The owner parties and anyone else holding a share, with their other business revenue for the year of `from`. */
+  readonly owners: readonly ReportOwner[];
+  /** The tax card's rows for the year of `from`; leases of archived properties stay, as the year's tax counts them. */
+  readonly tax: Omit<TaxRows, 'otherBusinessRevenueVnd'>;
 };
 
 /** A year's report period: the whole year, or through the end of the Clock's month in the current year. */
@@ -48,6 +74,9 @@ export function yearPeriod(year: number, today: IsoDate): { from: IsoDate; to: I
   const from = isoDate(`${year}-01-01`);
   return { from, to: today.startsWith(`${year}-`) ? addDays(addMonths(firstOfMonth(today), 1), -1) : isoDate(`${year}-12-31`) };
 }
+
+/** The last day of the period the Clock has reached: its end, or today while it runs. */
+export const periodThrough = (snapshot: Pick<ReportSnapshot, 'to' | 'asOf'>): IsoDate => (snapshot.asOf < snapshot.to ? snapshot.asOf : snapshot.to);
 
 export function monthsOf(from: IsoDate, to: IsoDate): IsoDate[] {
   const months: IsoDate[] = [];

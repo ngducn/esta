@@ -3,7 +3,7 @@ import type { ExportCell, ExportTable } from '@esta/core/export';
 import writeXlsxFile, { type CellObject } from 'write-excel-file/node';
 
 const cell = (value: ExportCell, bold: boolean): CellObject => ({
-  ...(value.kind === 'vnd' ? { value: value.value, type: Number, format: '#,##0' } : { value: value.value, type: String }),
+  ...(value.kind === 'text' ? { value: value.value, type: String } : { value: value.value, type: Number, format: '#,##0' }),
   ...(bold ? { fontWeight: 'bold' } : {}),
 });
 

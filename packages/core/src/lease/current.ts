@@ -5,7 +5,7 @@ import type { LeaseRow } from '../schemas/lease';
 import { currentMonthlyRent } from './monthlyRent';
 import type { LeaseStatus } from './types';
 
-type LeaseSpan = { readonly status: LeaseStatus; readonly start_date: IsoDate | null; readonly end_date: IsoDate | null };
+export type LeaseSpan = { readonly status: LeaseStatus; readonly start_date: IsoDate | null; readonly end_date: IsoDate | null };
 
 /**
  * SPEC §5.4: an active lease holds its unit until its end date has passed, a renewal signed early included, and a
@@ -18,6 +18,11 @@ export function holdsUnit(lease: LeaseSpan, asOf: IsoDate): boolean {
 /** Holding its unit and started: a lease whose rent is owed on `asOf`. */
 export function inEffect(lease: LeaseSpan, asOf: IsoDate): boolean {
   return holdsUnit(lease, asOf) && lease.start_date !== null && lease.start_date <= asOf;
+}
+
+/** Whether the lease's rent was owed on `day`, a day that may be past: a lease that has since ended was in effect then as an active one is. */
+export function inEffectOn(lease: LeaseSpan, day: IsoDate): boolean {
+  return inEffect(lease.status === 'ended' ? { ...lease, status: 'active' } : lease, day);
 }
 
 /** The lease a unit shows on `asOf`: the earliest-starting one that holds it, else a draft. */

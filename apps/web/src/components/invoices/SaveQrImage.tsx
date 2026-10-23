@@ -4,6 +4,7 @@ import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { QR_QUIET_MODULES, type QrMatrix } from '@/lib/qr';
+import { saveBlob } from '@/lib/save-blob';
 import type { InvoiceQrView } from '@/server/invoices/qr';
 
 const MODULE_PX = 12;
@@ -50,10 +51,7 @@ export function SaveQrImage({ qr, matrix, labels }: { qr: InvoiceQrView; matrix:
   async function save() {
     setFailed(false);
     try {
-      const url = URL.createObjectURL(await drawQrImage(qr, matrix));
-      const link = Object.assign(document.createElement('a'), { href: url, download: `hoa-don-${qr.number}.png` });
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      saveBlob(await drawQrImage(qr, matrix), `hoa-don-${qr.number}.png`);
     } catch (error) {
       console.error(error);
       setFailed(true);

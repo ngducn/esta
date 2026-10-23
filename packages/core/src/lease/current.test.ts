@@ -3,7 +3,7 @@ import { isoDate as d } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import { schedulePeriods } from '../schedule/fixtures';
 import { leaseRowSchema } from '../schemas/lease';
-import { currentLease, inEffect, rentInEffect } from './current';
+import { currentLease, inEffect, inEffectOn, rentInEffect } from './current';
 
 let next = 0;
 const uuid = () => `00000000-0000-4000-8000-${String((next += 1)).padStart(12, '0')}`;
@@ -94,5 +94,21 @@ describe('rentInEffect (the contracted rent a property list shows)', () => {
   it('is null when no lease is in effect', () => {
     expect(rentInEffect([renewal], [], d('2026-10-07'))).toBeNull();
     expect(rentInEffect([], [], d('2026-10-07'))).toBeNull();
+  });
+});
+
+describe('inEffectOn', () => {
+  const span = (status: 'active' | 'ended' | 'terminated' | 'draft', end: string) => ({ status, start_date: d('2025-11-01'), end_date: d(end) });
+
+  it('counts a lease that has since ended on the days of its term, and not after', () => {
+    expect(inEffectOn(span('ended', '2026-07-29'), d('2026-07-29'))).toBe(true);
+    expect(inEffectOn(span('ended', '2026-07-29'), d('2026-07-30'))).toBe(false);
+    expect(inEffect(span('ended', '2026-07-29'), d('2026-07-29')), 'today, an ended lease holds nothing').toBe(false);
+  });
+
+  it('keeps a terminated lease until its termination date and never counts a draft', () => {
+    expect(inEffectOn(span('terminated', '2026-12-15'), d('2026-12-15'))).toBe(true);
+    expect(inEffectOn(span('draft', '2026-12-15'), d('2026-06-01'))).toBe(false);
+    expect(inEffectOn(span('active', '2026-12-15'), d('2025-10-31')), 'before its start').toBe(false);
   });
 });

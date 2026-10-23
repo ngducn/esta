@@ -45,6 +45,10 @@ export function formatVndCompact(amount: Vnd, locale: Locale): string {
   return formatVnd(amount, locale);
 }
 
+export function formatCount(value: number, locale: Locale): string {
+  return formatDecimal(value, 0, locale);
+}
+
 export function formatBps(bps: number, locale: Locale): string {
   return `${formatDecimal(bps / 100, 2, locale)}%`;
 }

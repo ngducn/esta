@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { vnd } from '../money/vnd';
 import { toCsv } from './csv';
-import { textCell, vndCell, type ExportTable } from './table';
+import { countCell, textCell, vndCell, type ExportTable } from './table';
 
 const table: ExportTable = {
   columns: [
@@ -41,5 +41,9 @@ describe('toCsv', () => {
 
   it('writes amounts as plain integers and the totals line from the table totals', () => {
     expect(lines[3]?.split(',').at(-1)).toBe(String(table.totals.cells[2]?.value));
+  });
+
+  it('writes a count of days as a plain integer', () => {
+    expect(toCsv({ columns: [{ id: 'vacant', label: 'Ngày trống' }], rows: [], totals: { key: 'total', cells: [countCell(1_028)] } }).endsWith('1028\r\n')).toBe(true);
   });
 });

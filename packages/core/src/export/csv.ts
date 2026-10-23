@@ -4,7 +4,7 @@ const BOM = '\uFEFF';
 
 const field = (value: string) => (/[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value);
 
-const cell = (value: ExportCell) => (value.kind === 'vnd' ? String(value.value) : field(value.value));
+const cell = (value: ExportCell) => (value.kind === 'text' ? field(value.value) : String(value.value));
 
 /** RFC 4180 with CRLF lines, behind a UTF-8 byte order mark so Excel opens Vietnamese text as written. */
 export function toCsv(table: ExportTable): string {

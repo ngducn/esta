@@ -1,5 +1,4 @@
-import type { ExportCell, ExportRow, ExportTable } from '@esta/core/export';
-import { formatVnd } from '@esta/core/format';
+import { formatCell, numberOf, numericColumns, type ExportRow, type ExportTable } from '@esta/core/export';
 import { getLocale } from 'next-intl/server';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
@@ -30,8 +29,7 @@ export async function ReportTable({
   strong?: string;
 }) {
   const locale = await getLocale();
-  const value = (cell: ExportCell | undefined) => (cell === undefined ? '' : cell.kind === 'vnd' ? formatVnd(cell.value, locale) : cell.value);
-  const amount = table.columns.map((_, index) => table.totals.cells[index]?.kind === 'vnd');
+  const amount = numericColumns(table);
   const rest = table.columns.slice(1);
 
   const row = (line: ExportRow, kind: 'row' | 'total') => {
@@ -46,12 +44,12 @@ export async function ReportTable({
         className={cn('max-sm:block max-sm:border-b max-sm:border-rule max-sm:py-3', (isMarked || kind === 'total') && 'max-sm:-mx-5 max-sm:px-5', isMarked && 'bg-accent-tint', kind === 'total' && 'bg-surface-2 font-semibold')}
       >
         <TableHead scope="row" className="border-b border-rule bg-transparent align-top text-body font-semibold whitespace-normal text-ink max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-1">
-          {value(line.cells[0])}
+          {formatCell(line.cells[0], locale)}
           {isMarked ? <span className="ml-2 text-small font-semibold text-accent">{marked.label}</span> : null}
         </TableHead>
         {rest.map((column, index) => {
           const cell = line.cells[index + 1];
-          const zero = cell?.kind === 'vnd' && cell.value === 0;
+          const zero = numberOf(cell) === 0;
           return (
             <TableCell
               key={column.id}
@@ -64,10 +62,10 @@ export async function ReportTable({
                 ((zero && optional.has(column.id)) || (cell?.kind === 'text' && cell.value === '')) && 'max-sm:hidden',
               )}
             >
-              <span aria-hidden="true" className="text-start text-ink-2 sm:hidden">
+              <span aria-hidden="true" className="text-start whitespace-normal text-ink-2 sm:hidden">
                 {column.label}
               </span>
-              {value(cell)}
+              {formatCell(cell, locale)}
             </TableCell>
           );
         })}
