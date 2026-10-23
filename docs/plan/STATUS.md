@@ -94,6 +94,12 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
   - Documents (#173): no manual "sensitive" switch. The document's type decides, so Mẹ cannot keep one bill's read text out of search.
   - Dĩ An's October bills in the demo data (#195): nothing in Esta records meter readings until meter entry ships (P3-14), so real nightly billing would issue the six Dĩ An bills due 25/10 on 25/10. The seed issues them on 03/10 through the same one-bill issue step meter entry will use, standing in for September's readings, so the demo matches SPEC §9.3. P3-14 replaces the stand-in with seeded readings.
 
+- Defaults the root chose on 2026-10-23 under the landing grant, now on main. Each works now; say the word to change any of them.
+  - Ledger (#275, SPEC FIN-2): a property's income for a month is the money applied to its bills from payments received that month. Home's `Đã thu` counts by the month a bill is due, so the two never agree month by month. In the demo, October reads 54,000,000 on Home and 10,000,000 in the ledger, because a 45,000,000 transfer arrived on 29/09.
+  - Ledger (#275): money a tenant paid beyond the bill, kept as credit, is not income until it is applied to a bill. A deposit is income only when it is applied to a bill. When the landlord keeps part of a deposit, the ledger does not count that as income.
+  - Undo of Claude's changes (#269): undoing a batch also undoes the bills that batch issued, and refuses when a payment or another record references them.
+  - Meter corrections (#270): a correction too large for the next bill to absorb is refused when ending, amending or renewing a lease. Mẹ voids the bill that went out with the wrong reading and records again. The recommendation is to let a void re-plan its period instead.
+
 ## Needs professional confirmation
 
 - Whether the 2026 rental PIT applies from 1 January or 1 July 2026 (DOMAIN-VN §5). The `tax_rules` row from P0-06 uses 1 January and carries a note that says so. The UI shows "Giả định: Ngày áp dụng thuế TNCN: " followed by the row's note (`TAX_NOTES.pit_effective_date`).
