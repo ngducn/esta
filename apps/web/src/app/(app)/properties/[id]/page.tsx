@@ -110,7 +110,7 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
           valuations={valuations}
           today={clock.today()}
           monthlyRentVnd={property.monthlyRentVnd}
-          scope={valuationIntl === null ? null : { propertyId: property.id, nickname: property.nickname, today: clock.today(), ...valuationIntl }}
+          editScope={valuationIntl === null ? null : { propertyId: property.id, nickname: property.nickname, today: clock.today(), ...valuationIntl }}
         />
       </div>
     </PropertyDetailFrame>

@@ -9,14 +9,9 @@ import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolatio
 
 const hold = recordForPr();
 
-// The sheet dates a valuation on the Clock's day and the block counts its age from it, so the spec runs in the `clock`
-// project on SPEC §9.3's day. Each rule reads its own lane household. A rule that deletes a seeded valuation restores it,
-// and every other valuation a rule writes is removed after it.
 const SEEDED = (Object.keys(VALUATION_SEEDS) as (keyof typeof VALUATION_SEEDS)[]).flatMap((key) =>
   Array.from({ length: 10 }, (_, i) => seedId(`seed:valuation:lane-${i + 1}:${key}`)),
 );
-/** Q1's 30.000.000 a month under its annual lease in effect on 2026-10-07. */
-const Q1_ANNUAL_RENT = 360_000_000;
 const FULL_PORTFOLIO = 45_250_000_000;
 
 test.beforeEach(async ({ request }) => {
@@ -31,9 +26,6 @@ test.afterEach(async ({ page }) => {
 const block = (page: Page) => page.getByTestId('valuation-block');
 const sheet = (page: Page) => page.getByTestId('valuation-sheet');
 const stored = (page: Page, propertyId: string) => rest<{ id: string }[]>(page, 'GET', `valuations?property_id=eq.${propertyId}&select=id`);
-
-/** Rounds half up, as `grossYieldBp` does: annual rent over value in whole basis points. */
-const yieldBp = (annualRent: number, value: number) => Math.floor((annualRent * 20_000 + value) / (2 * value));
 
 async function addValuation(page: Page, { value, method, date, source }: { value: string; method: string; date?: string; source?: string }) {
   await block(page).getByTestId('add-valuation').click();
@@ -59,9 +51,7 @@ test('lane 2: Ryan records a broker quote of 9ty5 on Mặt bằng Quận 1; the 
   await expect(block(page)).toContainText('Ước tính');
   await expect(block(page).getByTestId('valuation-meta')).toHaveText('Ngày 07/10/2026, Môi giới báo giá, hôm nay');
   await expect(block(page).getByRole('link', { name: 'Xem nguồn' })).toHaveAttribute('href', 'https://example.com/demo/bao-gia-q1');
-  const bp = yieldBp(Q1_ANNUAL_RENT, 9_500_000_000);
-  expect(bp, '360.000.000 over 9.500.000.000 is 378,9 bp').toBe(379);
-  await expect(block(page).getByTestId('valuation-yield')).toHaveAttribute('data-yield-bp', String(bp));
+  await expect(block(page).getByTestId('valuation-yield')).toHaveAttribute('data-yield-bp', '379');
   await expect(block(page).getByTestId('valuation-yield')).toHaveText('Lợi suất gộp 3,79%, theo ước tính ngày 07/10/2026');
   await expect(block(page).getByTestId('valuation-history').getByRole('listitem')).toHaveCount(2);
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -83,7 +73,6 @@ test('lane 3: Mẹ opens Đất Bảo Lộc at 390 dark, reads the age of its se
 
   await page.goto(`/properties/${baoLoc}`);
   await block(page).scrollIntoViewIfNeeded();
-  // 2026-04-20 to 2026-10-07 is five whole months and 17 days.
   await expect(block(page).getByTestId('valuation-age')).toHaveAttribute('data-months', '5');
   await expect(block(page).getByTestId('valuation-age')).toHaveText('cách đây 5 tháng');
   await expect(block(page).getByTestId('valuation-latest')).toHaveText('3,2 tỷ');

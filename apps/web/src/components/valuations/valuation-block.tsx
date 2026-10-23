@@ -11,17 +11,11 @@ import type { ValuationScope } from './valuation-sheet';
 type Props = {
   readonly valuations: readonly Valuation[];
   readonly today: IsoDate;
-  /** The rent owed a month under the leases in effect today; `null` when none is, which shows no yield. */
   readonly monthlyRentVnd: Vnd | null;
-  /** What `Thêm định giá` needs; `null` for a viewer, who records nothing. */
-  readonly scope: ValuationScope | null;
+  readonly editScope: ValuationScope | null;
 };
 
-/**
- * FIN-5 on the property's Tổng quan tab: the latest valuation as an estimate with its date, method, age and source,
- * the gross yield it implies, and every valuation recorded.
- */
-export async function ValuationBlock({ valuations, today, monthlyRentVnd, scope }: Props) {
+export async function ValuationBlock({ valuations, today, monthlyRentVnd, editScope }: Props) {
   const [t, locale] = await Promise.all([getTranslations('valuations'), getLocale()]);
   const latest = latestValuation(valuations, today);
   const age = latest === undefined ? null : valuationAge(latest.asOf, today);
@@ -78,7 +72,7 @@ export async function ValuationBlock({ valuations, today, monthlyRentVnd, scope 
                       <span className="figures">{date}</span>, {t('method', { method: valuation.method })}
                     </span>
                   </span>
-                  {scope === null ? null : (
+                  {editScope === null ? null : (
                     <RemoveValuation
                       valuation={valuation}
                       labels={{
@@ -97,7 +91,7 @@ export async function ValuationBlock({ valuations, today, monthlyRentVnd, scope 
           </ul>
         </div>
       )}
-      {scope === null ? null : <AddValuation label={t('add')} scope={scope} />}
+      {editScope === null ? null : <AddValuation label={t('add')} scope={editScope} />}
     </section>
   );
 }

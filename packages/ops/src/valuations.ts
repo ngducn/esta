@@ -2,10 +2,6 @@ import { valuationSchema, type Valuation } from '@esta/core/valuations';
 import type { Db } from './db';
 import { readAll } from './kit';
 
-/**
- * The household's valuations of properties out of the trash, or one property's, newest first; two on the same day list
- * the one recorded last first, which `latestValuation` takes. Home and the property's Tổng quan tab both read this.
- */
 export async function readValuations(db: Db, householdId: string, propertyId: string | null = null): Promise<Valuation[]> {
   const rows = await readAll('valuations', (from, to) => {
     const query = db
@@ -32,7 +28,6 @@ export async function readValuations(db: Db, householdId: string, propertyId: st
   );
 }
 
-/** The ids of the household's properties out of the trash, the ones the portfolio figure counts. */
 export async function readLivePropertyIds(db: Db, householdId: string): Promise<string[]> {
   const { data, error } = await db.from('properties').select('id').eq('household_id', householdId).is('deleted_at', null);
   if (error) throw new Error(`Reading the properties failed: ${error.message}`);

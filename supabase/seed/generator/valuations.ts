@@ -12,10 +12,6 @@ type ValuationSeed = {
   readonly note: string | null;
 };
 
-/**
- * SPEC §9.3: one valuation per property, the same in every household. `q1` at 7.200.000.000 against its 30.000.000 a
- * month gives a gross yield of exactly 5%; `long-an`'s, dated 2025-11-15, is the oldest the portfolio figure names.
- */
 export const VALUATION_SEEDS: Readonly<Record<PropertySeedKey, ValuationSeed>> = {
   q7: { asOf: '2026-06-15', valueVnd: 14_500_000_000, method: 'broker_quote', sourceUrl: 'https://example.com/demo/bao-gia-nha-pho-q7', note: 'Môi giới Demo báo giá qua Zalo' },
   'thu-duc': { asOf: '2026-05-20', valueVnd: 4_200_000_000, method: 'comparables', sourceUrl: null, note: 'Hai căn cùng tầng bán trong quý 2' },

@@ -13,10 +13,6 @@ function revalidateValuations() {
   revalidatePath('/');
 }
 
-/**
- * `Lưu` on the valuation sheet, and `Hoàn tác` after a delete, which sends the deleted row back under its id (FIN-5).
- * The fields are read against the request's Clock day, each refused on its own field.
- */
 export async function createValuation(raw: unknown): Promise<Result<undefined, ValuationRefusal>> {
   const ctx = await webOpContext();
   const read = readValuation(raw, ctx.clock.today());

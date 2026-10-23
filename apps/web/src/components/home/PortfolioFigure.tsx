@@ -6,10 +6,6 @@ import { EstimatePill } from '@/components/estimate-pill';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 
-/**
- * FIN-5 on Home: the sum of each property's latest valuation, always an estimate, with the date it is only as fresh as
- * and how many properties have none. Nothing shows until one property has a valuation.
- */
 export function PortfolioFigure({ portfolio }: { portfolio: Portfolio | null }) {
   const t = useTranslations('valuations');
   const locale = useLocale();

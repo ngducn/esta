@@ -8,7 +8,6 @@ export async function loadPropertyValuations(householdId: string, propertyId: st
   return readValuations(await createSessionClient(), householdId, propertyId);
 }
 
-/** Home's portfolio figure on the Clock's date; `null` when no property has a valuation yet. */
 export async function loadPortfolio(householdId: string, asOf: IsoDate): Promise<Portfolio | null> {
   const db = await createSessionClient();
   const [propertyIds, valuations] = await Promise.all([readLivePropertyIds(db, householdId), readValuations(db, householdId)]);

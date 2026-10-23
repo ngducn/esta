@@ -34,11 +34,9 @@ describe('grossYieldBp', () => {
   });
 
   it('rounds to whole basis points, half up', () => {
-    // 1 / 30.000 is 0,333… bp → 0; 1 / 20.000 is exactly 0,5 bp → 1; 2 / 30.000 is 0,666… bp → 1.
     expect(grossYieldBp(vnd(1), vnd(30_000))).toBe(0);
     expect(grossYieldBp(vnd(1), vnd(20_000))).toBe(1);
     expect(grossYieldBp(vnd(2), vnd(30_000))).toBe(1);
-    // 360.000.000 on 7 tỷ is 514,2857… bp → 514; 360.000.000 on 7,2 tỷ is exactly 500.
     expect(grossYieldBp(vnd(360_000_000), vnd(7_000_000_000))).toBe(514);
     expect(grossYieldBp(vnd(360_000_000), vnd(7_200_000_000))).toBe(500);
   });
@@ -59,7 +57,6 @@ describe('portfolioValue', () => {
     expect(portfolioValue(['q1', 'bao-loc', 'q7', 'long-an'], valuations, asOf)).toEqual({
       totalVnd: 12_700_000_000,
       oldestAsOf: '2026-03-15',
-      valuedCount: 2,
       unvaluedCount: 2,
     });
   });

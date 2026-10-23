@@ -2,7 +2,6 @@
 
 import type { IsoDate } from '@esta/core/date';
 import { formatVndCompact } from '@esta/core/format';
-import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { MAX_SOURCE_URL, MAX_VALUATION_NOTE, readValuation, VALUATION_METHODS, type ValuationMethod, type ValuationProblems } from '@esta/core/valuations';
 import { Check } from 'lucide-react';
 import type { AbstractIntlMessages, Locale } from 'next-intl';
@@ -27,12 +26,11 @@ export type ValuationScope = {
   readonly messages: AbstractIntlMessages;
 };
 
-type SheetProps = { scope: ValuationScope; open: boolean; onOpenChange: (open: boolean) => void; finalFocus: RefObject<HTMLButtonElement | null> };
+type SheetProps = { scope: ValuationScope; valuationId: string; open: boolean; onOpenChange: (open: boolean) => void; finalFocus: RefObject<HTMLButtonElement | null> };
 
 type Errors = ValuationProblems & { readonly method?: true; readonly save?: 'networkError' | 'forbidden' };
 
-/** FIN-5. Five fields, so a sheet (DESIGN-BRIEF §5.3). One opening carries one id, so a retry saves one row. */
-function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
+function ValuationSheet({ scope, valuationId, open, onOpenChange, finalFocus }: SheetProps) {
   const t = useTranslations('valuations');
   const tm = useTranslations('components.money');
   const locale = useLocale();
@@ -41,7 +39,6 @@ function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
   const showNotice = useNoticeToast();
   const fieldId = useId();
   const title = useRef<HTMLHeadingElement>(null);
-  const [id] = useState(() => crypto.randomUUID());
   const [value, setValue] = useState('');
   const [method, setMethod] = useState<ValuationMethod | null>(null);
   const [asOf, setAsOf] = useState('');
@@ -66,7 +63,7 @@ function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
 
   const saved = (amount: string) =>
     showUndo(t('saved', { amount }), () => {
-      deleteValuation({ id })
+      deleteValuation({ id: valuationId })
         .then((undone) => {
           router.refresh();
           showNotice(undone.ok ? t('undoneSave', { amount }) : t('undoFailed'));
@@ -75,12 +72,11 @@ function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
     });
 
   const save = () => {
-    const raw = { id, propertyId: scope.propertyId, method: method ?? '', value, asOf, sourceUrl, note };
+    const raw = { id: valuationId, propertyId: scope.propertyId, method: method ?? '', value, asOf, sourceUrl, note };
     const read = readValuation(raw, scope.today);
-    const next: Errors = { ...(read.ok ? {} : read.reason), ...(method === null ? { method: true } : {}) };
-    const { form: _, ...fields } = next;
+    const { form: _, ...fields }: Errors = { ...(read.ok ? {} : read.reason), ...(method === null ? { method: true } : {}) };
     setErrors(fields);
-    if (Object.keys(fields).length > 0) return;
+    if (!read.ok) return;
     startTransition(async () => {
       const result = await createValuation(raw).catch(() => null);
       if (result?.ok !== true) {
@@ -90,8 +86,7 @@ function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
       }
       onOpenChange(false);
       router.refresh();
-      const read = parseVndInput(value);
-      if (read.ok) saved(formatVndCompact(read.value, locale));
+      saved(formatVndCompact(read.value.valueVnd, locale));
     });
   };
 
@@ -118,7 +113,7 @@ function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
                 >
                   <input
                     type="radio"
-                    name={`method-${id}`}
+                    name={`method-${valuationId}`}
                     value={option}
                     checked={method === option}
                     disabled={pending}

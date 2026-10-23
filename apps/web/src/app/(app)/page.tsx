@@ -15,7 +15,6 @@ import { loadPortfolio } from '@/server/valuations/load';
 import { mapIslandIntl, paymentIslandIntl } from '@/server/properties/island-messages';
 import { getThemePreference } from '@/server/theme';
 
-/** The place P5-04 fills with the morning brief note. It renders nothing until then, so Home never shows an empty box. */
 type HomeSlots = { readonly brief: ReactNode };
 const SLOTS: HomeSlots = { brief: null };
 

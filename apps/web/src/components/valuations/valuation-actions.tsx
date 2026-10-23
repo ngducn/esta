@@ -14,10 +14,9 @@ import type { ValuationScope } from './valuation-sheet';
 const loadSheet = () => import('./valuation-sheet');
 const ValuationIsland = lazy(loadSheet);
 
-/** `Thêm định giá`. Each opening mounts a fresh sheet, so each save carries its own id. */
 export function AddValuation({ label, scope }: { label: string; scope: ValuationScope }) {
   const sheet = useDeferredDialog(loadSheet);
-  const [opening, setOpening] = useState(0);
+  const [valuationId, setValuationId] = useState<string | null>(null);
   return (
     <>
       <Button
@@ -27,16 +26,16 @@ export function AddValuation({ label, scope }: { label: string; scope: Valuation
         className="self-start"
         {...sheet.triggerProps}
         onClick={() => {
-          setOpening((count) => count + 1);
+          setValuationId(crypto.randomUUID());
           sheet.triggerProps.onClick();
         }}
       >
         <Plus aria-hidden="true" />
         {label}
       </Button>
-      {sheet.open === null ? null : (
+      {sheet.open === null || valuationId === null ? null : (
         <Suspense fallback={null}>
-          <ValuationIsland key={opening} scope={scope} open={sheet.open} onOpenChange={sheet.setOpen} finalFocus={sheet.triggerProps.ref} />
+          <ValuationIsland key={valuationId} scope={scope} valuationId={valuationId} open={sheet.open} onOpenChange={sheet.setOpen} finalFocus={sheet.triggerProps.ref} />
         </Suspense>
       )}
     </>
@@ -45,7 +44,6 @@ export function AddValuation({ label, scope }: { label: string; scope: Valuation
 
 export type RemoveLabels = { readonly delete: string; readonly deleteLabel: string; readonly deleted: string; readonly restored: string; readonly failed: string; readonly undoFailed: string };
 
-/** Deletes at once; `Hoàn tác` records the same valuation again under its id, as the sheet would. */
 export function RemoveValuation({ valuation, labels }: { valuation: Valuation; labels: RemoveLabels }) {
   const router = useRouter();
   const showUndo = useUndoToast();

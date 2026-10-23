@@ -71,7 +71,6 @@ export function TextField({
   );
 }
 
-/** An optional free-text note under a sheet's fields, two lines tall and growing with the text scale. */
 export function NoteField({
   labels,
   value,

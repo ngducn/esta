@@ -29,8 +29,7 @@ export function parseOptionalDateInput(text: string): Result<IsoDate | null, Exc
 
 export type PastDateReason = Exclude<DateInputReason, 'empty'> | 'after_today';
 
-/** A date field that records something already done: empty is `today`, and a later day is refused. */
-export function parseDateUpToToday(text: string, today: IsoDate): Result<IsoDate, PastDateReason> {
+export function parsePastDateOrToday(text: string, today: IsoDate): Result<IsoDate, PastDateReason> {
   const parsed = parseOptionalDateInput(text);
   if (!parsed.ok) return parsed;
   const day = parsed.value ?? today;

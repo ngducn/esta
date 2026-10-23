@@ -13,7 +13,6 @@ export const authApi = {
   headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '' },
 };
 
-/** Whether the page holds a Supabase session, so an `afterEach` cleanup can skip a rule that never signed in. */
 export async function signedIn(page: Page): Promise<boolean> {
   return (await page.context().cookies()).some((cookie) => cookie.name.startsWith('sb-'));
 }

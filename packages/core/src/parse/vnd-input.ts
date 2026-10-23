@@ -84,10 +84,9 @@ export function parseVndInput(text: string): Result<Vnd, VndInputReason> {
   return safe.ok ? { ok: true, value: vnd(safe.value) } : safe;
 }
 
-export type PositiveVndReason = VndInputReason | 'not_positive';
+export type StorableVndReason = VndInputReason | 'not_positive';
 
-/** An amount Esta stores: `3tr5` is 3.500.000; text that does not read is refused, never taken as 0, and so is one past the ceiling. */
-export function parsePositiveVnd(text: string): Result<Vnd, PositiveVndReason> {
+export function parseStorableVnd(text: string): Result<Vnd, StorableVndReason> {
   const parsed = parseVndInput(text);
   if (!parsed.ok) return parsed;
   if (parsed.value <= 0) return { ok: false, reason: 'not_positive' };
