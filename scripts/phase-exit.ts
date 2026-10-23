@@ -152,20 +152,29 @@ export function flakyTests(log: string): string[] {
   return titles;
 }
 
-type CitedFiles = { core?: readonly string[]; web?: readonly string[]; pgtap?: readonly string[]; e2e?: readonly string[] };
+type CitedFiles = {
+  core?: readonly string[];
+  web?: readonly string[];
+  /** apps/web `*.integration.test.ts` files, run on a fresh full seed through scripts/web-integration.ts. */
+  integration?: readonly string[];
+  pgtap?: readonly string[];
+  e2e?: readonly string[];
+};
 
 /** An acceptance row runs exactly the tests that cite its id, and checks that each one does. */
 function cited(id: string, files: CitedFiles): PhaseCheck {
   const core = (files.core ?? []).map((file) => `src/${file}`);
   const web = (files.web ?? []).map((file) => `src/${file}`);
+  const integration = (files.integration ?? []).map((file) => `src/${file}`);
   const pgtap = (files.pgtap ?? []).map((name) => `supabase/tests/${name}.test.sql`);
   const specs = (files.e2e ?? []).map((name) => `e2e/${name}.spec.ts`);
   return {
     id,
-    cites: [...core.map((file) => `packages/core/${file}`), ...web.map((file) => `apps/web/${file}`), ...pgtap, ...specs],
+    cites: [...core.map((file) => `packages/core/${file}`), ...[...web, ...integration].map((file) => `apps/web/${file}`), ...pgtap, ...specs],
     commands: [
       ...(core.length === 0 ? [] : [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', ...core]]),
       ...(web.length === 0 ? [] : [['pnpm', '--filter', '@esta/web', 'exec', 'vitest', 'run', ...web]]),
+      ...(integration.length === 0 ? [] : [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts', ...integration]]),
       ...(pgtap.length === 0 ? [] : [['pnpm', 'db:test', ...pgtap]]),
       ...specs.map(e2e),
     ],
@@ -248,6 +257,17 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '3']] },
     { id: 'VietQR', verify: (repoRoot) => verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8')) },
     { id: 'Mom', verify: (repoRoot) => verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8')) },
+  ],
+  // Every row that reads the database resets it first. FND-7 ends on the `full` seed after `northstar`; the integration
+  // row's cron test moves every household and north-star resets to its own variant, so those two go last.
+  '4': [
+    cited('FIN-3', { core: ['tax/position.test.ts'] }),
+    { id: 'FND-7', commands: [['pnpm', 'db:seed:check', '--variant', 'northstar'], ['pnpm', 'db:seed:check']] },
+    { id: 'Seed', commands: [['pnpm', 'seed:coverage'], ['pnpm', 'db:reset'], ['pnpm', 'seed:coverage', '--database'], ['pnpm', 'seed:facts']] },
+    cited('FIN-4', { core: ['reports/reports.test.ts', 'reports/summaries.test.ts'], integration: ['server/reports/snapshot.integration.test.ts'] }),
+    { id: 'RLS', commands: [['pnpm', 'db:test']] },
+    { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
+    { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
   ],
 };
 

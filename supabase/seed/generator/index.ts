@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 import { businessDate, parseInstant, type Instant } from '../../../packages/core/src/index.ts';
-import type { Emitter } from './context.ts';
+import type { Emitter, HouseholdSeed } from './context.ts';
 import { bankAccounts } from './bank-accounts.ts';
 import { HOUSEHOLD_EMITTERS, householdSeeds } from './households.ts';
 import { contractReadingsSql, documentExtractions, documents } from './documents.ts';
@@ -14,7 +14,7 @@ import { ownershipShares } from './ownership.ts';
 import { ownerTaxInputs, parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
 import { agentJobs, agentRuns } from './agent.ts';
-import { renderSeed } from './sql.ts';
+import { renderSeed, type TableRows } from './sql.ts';
 import { units } from './units.ts';
 import { utilityAccounts } from './utility-accounts.ts';
 import { valuations } from './valuations.ts';
@@ -57,7 +57,10 @@ export const DEFAULT_OPTIONS: GenerateOptions = {
   variant: 'full',
 };
 
-export function generate({ lanes, asOf, variant }: GenerateOptions): string {
+export type SeedTables = { readonly households: readonly HouseholdSeed[]; readonly tables: readonly TableRows[]; readonly tail: string };
+
+/** The rows of every table, by household, and the SQL that runs after them for the rows the database writes. */
+export function seedTables({ lanes, asOf, variant }: GenerateOptions): SeedTables {
   const households = householdSeeds(lanes);
   const today = businessDate(asOf, TIMEZONE);
   const omitted: readonly string[] = VARIANTS[variant].omitProperties;
@@ -67,7 +70,12 @@ export function generate({ lanes, asOf, variant }: GenerateOptions): string {
     ...(upsert === true ? { upsert } : {}),
     rows: households.flatMap((household) => rows({ household, properties, asOf, today })),
   }));
-  return renderSeed(tables, asOf, [billingSql(households, { properties }, asOf), contractReadingsSql(households, { properties })].join('\n'));
+  return { households, tables, tail: [billingSql(households, { properties }, asOf), contractReadingsSql(households, { properties })].join('\n') };
+}
+
+export function generate(options: GenerateOptions): string {
+  const { tables, tail } = seedTables(options);
+  return renderSeed(tables, options.asOf, tail);
 }
 
 export const USAGE =

@@ -107,13 +107,30 @@ describe('checkPhase', () => {
     expect(commands['Lighthouse']).toEqual(['pnpm db:reset', 'node scripts/perf/phase-budget.ts --phase 3']);
   });
 
+  it('lists the tax examples, the seed checksum, seed coverage, the report invariants, RLS, integration and north-star for phase 4', () => {
+    expect(PHASE_CHECKS['4']?.map((check) => check.id)).toEqual(['FIN-3', 'FND-7', 'Seed', 'FIN-4', 'RLS', 'IT', 'North-star']);
+  });
+
+  it('resets before every phase 4 row that reads the seed, checks both variants twice and ends with north-star', () => {
+    const commands = Object.fromEntries((PHASE_CHECKS['4'] ?? []).map((check) => [check.id, 'commands' in check ? check.commands.map((command) => command.join(' ')) : []]));
+    expect(commands['FIN-3']).toEqual(['pnpm --filter @esta/core exec vitest run src/tax/position.test.ts']);
+    expect(commands['FND-7']).toEqual(['pnpm db:seed:check --variant northstar', 'pnpm db:seed:check']);
+    expect(commands['Seed']).toEqual(['pnpm seed:coverage', 'pnpm db:reset', 'pnpm seed:coverage --database', 'pnpm seed:facts']);
+    expect(commands['FIN-4']?.slice(1)).toEqual(['pnpm db:reset', 'node scripts/web-integration.ts src/server/reports/snapshot.integration.test.ts']);
+    expect(commands['IT']).toEqual(['pnpm db:reset', 'node scripts/web-integration.ts']);
+    expect(commands['North-star']).toEqual(['pnpm e2e:northstar --retries=1 --reporter=list']);
+    const ids = (PHASE_CHECKS['4'] ?? []).map((check) => check.id);
+    expect(ids.slice(-2)).toEqual(['IT', 'North-star']);
+  });
+
   it('runs the lease prefill spec P3-19 brings for DOC-6', () => {
     const prefill = (PHASE_CHECKS['3'] ?? []).find((check) => check.id === 'DOC-6');
     expect(prefill && 'cites' in prefill && prefill.cites).toEqual(['e2e/lease-from-contract.spec.ts']);
   });
 
   it('runs only files that cite their row id, at least one per row', () => {
-    for (const check of [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? []), ...(PHASE_CHECKS['3'] ?? []).filter((check) => check.id !== 'DOC-6')]) {
+    const rows = [...(PHASE_CHECKS['1'] ?? []), ...(PHASE_CHECKS['2'] ?? []), ...(PHASE_CHECKS['3'] ?? []).filter((check) => check.id !== 'DOC-6'), ...(PHASE_CHECKS['4'] ?? [])];
+    for (const check of rows) {
       if (!('commands' in check) || check.cites === undefined) continue;
       expect(check.cites.length, check.id).toBeGreaterThan(0);
       expect(uncited(repoRoot, check), check.id).toEqual([]);
