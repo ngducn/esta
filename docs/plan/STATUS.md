@@ -28,6 +28,7 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
 | Lows found by review lanes | Lanes | #207, #211, #212, #214, #219, #220, #222, #225, #226; 2026-10-20: #240, #241, #243, #245, #247, #249, #250, #252, #254, #255, #257 | Queued; #220 before real data |
 | Squash migrations before the first deploy | Review | #197 | Before the deploy |
 | Rerun the outsider code review | Target 8.5 or better | Standing orders 16:45 | After the cleanup round |
+| Code map for agents (Graphify, offline, code only) | Ryan, 2026-10-23: "lets include graphify in our workflow... i want to start saving now" | owner-brief.md and lane-brief.md; the root's measurement in `~/.claude/orchestrate/esta/graphify-adoption.md` | On since 2026-10-23 11:40 +07; kept only if agent token use per role does not rise |
 | Receipt wording: `lẻ` in amounts in words, and `Thông báo tiền thuê` for a bill with nothing received | Ryan, 2026-10-20: "use lẻ, and title unpaid ones Thông báo tiền thuê" | #251 | In review |
 
 ## Spike results
