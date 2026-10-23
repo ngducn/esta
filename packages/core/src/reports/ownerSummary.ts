@@ -25,6 +25,8 @@ const collator = new Intl.Collator('vi', { numeric: true });
 
 type Split = { income: number; expenses: number };
 
+type TaxField = 'projectedVnd' | 'vatEstimateVnd' | 'pitEstimateVnd';
+
 function splitLedgers(snapshot: ReportSnapshot): Map<string, Split> {
   const split = new Map<string, Split>();
   const add = (key: string, field: keyof Split, amount: Vnd) => {
@@ -58,11 +60,13 @@ export function ownerSummary(snapshot: ReportSnapshot, labels: OwnerSummaryLabel
   });
   const rest = split.get(UNATTRIBUTED);
   const lines = rest === undefined || (rest.income === 0 && rest.expenses === 0) ? owners : [...owners, { key: UNATTRIBUTED, name: labels.unattributed, position: null, split: rest }];
-  const tax = (position: TaxPosition | null, field: 'projectedVnd' | 'vatEstimateVnd' | 'pitEstimateVnd', key: string): ExportCell => {
+  const tax = (position: TaxPosition | null, field: TaxField, key: string): ExportCell => {
     if (position !== null) return vndCell(position[field]);
     return textCell(key === UNATTRIBUTED ? '' : labels.noRule);
   };
   const sum = (pick: (line: (typeof lines)[number]) => number) => vndCell(vnd(lines.reduce((total, line) => total + pick(line), 0)));
+  const ruled = owners.every((owner) => owner.position !== null);
+  const taxTotal = (field: TaxField) => (ruled ? sum((line) => line.position?.[field] ?? 0) : textCell(labels.noRule));
   return {
     columns: [
       { id: 'owner', label: labels.owner },
@@ -87,11 +91,11 @@ export function ownerSummary(snapshot: ReportSnapshot, labels: OwnerSummaryLabel
       key: 'total',
       cells: [
         textCell(labels.total),
-        sum((line) => line.position?.projectedVnd ?? 0),
+        taxTotal('projectedVnd'),
         sum((line) => line.split.income),
         sum((line) => line.split.expenses),
-        sum((line) => line.position?.vatEstimateVnd ?? 0),
-        sum((line) => line.position?.pitEstimateVnd ?? 0),
+        taxTotal('vatEstimateVnd'),
+        taxTotal('pitEstimateVnd'),
       ],
     },
   };

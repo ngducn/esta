@@ -1,5 +1,4 @@
-import { numberOf, type ExportCell, type ExportRow, type ExportTable } from '@esta/core/export';
-import { formatCount, formatVnd } from '@esta/core/format';
+import { formatCell, numberOf, numericColumns, type ExportRow, type ExportTable } from '@esta/core/export';
 import { getLocale } from 'next-intl/server';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
@@ -30,12 +29,7 @@ export async function ReportTable({
   strong?: string;
 }) {
   const locale = await getLocale();
-  const value = (cell: ExportCell | undefined) => {
-    if (cell === undefined) return '';
-    if (cell.kind === 'vnd') return formatVnd(cell.value, locale);
-    return cell.kind === 'count' ? formatCount(cell.value, locale) : cell.value;
-  };
-  const amount = table.columns.map((_, index) => [table.totals, ...table.rows].some((line) => numberOf(line.cells[index]) !== null));
+  const amount = numericColumns(table);
   const rest = table.columns.slice(1);
 
   const row = (line: ExportRow, kind: 'row' | 'total') => {
@@ -50,7 +44,7 @@ export async function ReportTable({
         className={cn('max-sm:block max-sm:border-b max-sm:border-rule max-sm:py-3', (isMarked || kind === 'total') && 'max-sm:-mx-5 max-sm:px-5', isMarked && 'bg-accent-tint', kind === 'total' && 'bg-surface-2 font-semibold')}
       >
         <TableHead scope="row" className="border-b border-rule bg-transparent align-top text-body font-semibold whitespace-normal text-ink max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-1">
-          {value(line.cells[0])}
+          {formatCell(line.cells[0], locale)}
           {isMarked ? <span className="ml-2 text-small font-semibold text-accent">{marked.label}</span> : null}
         </TableHead>
         {rest.map((column, index) => {
@@ -71,7 +65,7 @@ export async function ReportTable({
               <span aria-hidden="true" className="text-start whitespace-normal text-ink-2 sm:hidden">
                 {column.label}
               </span>
-              {value(cell)}
+              {formatCell(cell, locale)}
             </TableCell>
           );
         })}

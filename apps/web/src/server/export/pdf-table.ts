@@ -1,6 +1,6 @@
 import 'server-only';
-import { numberOf, type ExportCell, type ExportRow, type ExportTable } from '@esta/core/export';
-import { formatCount, formatVnd, type Locale } from '@esta/core/format';
+import { formatCell, numericColumns, type ExportRow, type ExportTable } from '@esta/core/export';
+import type { Locale } from '@esta/core/format';
 import type { PDFDocument, PDFFont, PDFPage } from 'pdf-lib';
 import type { ColorToken } from '@/design/tokens';
 import { openPdf, tone, wrap } from '@/server/receipts/pdf';
@@ -17,12 +17,6 @@ const FIRST_COLUMN_SHARE = 2;
 
 type Pen = { pdf: PDFDocument; page: PDFPage; y: number };
 
-const cellText = (cell: ExportCell | undefined, locale: Locale) => {
-  if (cell === undefined) return '';
-  if (cell.kind === 'vnd') return formatVnd(cell.value, locale);
-  return cell.kind === 'count' ? formatCount(cell.value, locale) : cell.value;
-};
-
 function heading(pen: Pen, value: string, font: PDFFont, size: number, color: ColorToken): void {
   for (const line of wrap(value.normalize('NFC'), font, size, A4_LANDSCAPE.width - 2 * MARGIN)) {
     pen.page.drawText(line, { x: MARGIN, y: pen.y - size, size, font, color: tone(color) });
@@ -38,12 +32,13 @@ function heading(pen: Pen, value: string, font: PDFFont, size: number, color: Co
 export async function toPdfTable(table: ExportTable, header: PdfHeader): Promise<Uint8Array> {
   const { pdf, regular, bold } = await openPdf(header.title, header.locale);
 
+  const numeric = numericColumns(table);
   const shares = table.columns.map((_, index) => (index === 0 ? FIRST_COLUMN_SHARE : 1));
   const unit = (A4_LANDSCAPE.width - 2 * MARGIN) / shares.reduce((sum, share) => sum + share, 0);
   const columns = shares.map((share, index) => ({
     left: MARGIN + unit * shares.slice(0, index).reduce((sum, before) => sum + before, 0),
     width: unit * share,
-    numeric: [table.totals, ...table.rows].some((row) => numberOf(row.cells[index]) !== null),
+    numeric: numeric[index] ?? false,
   }));
   const right = A4_LANDSCAPE.width - MARGIN;
 
@@ -74,7 +69,7 @@ export async function toPdfTable(table: ExportTable, header: PdfHeader): Promise
   };
   const row = (line: ExportRow, font: PDFFont) => {
     const cells = wrapped(
-      line.cells.map((cell) => cellText(cell, header.locale)),
+      line.cells.map((cell) => formatCell(cell, header.locale)),
       font,
     );
     if (pen.y - rowHeight(cells) < MARGIN) {

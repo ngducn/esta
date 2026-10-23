@@ -193,6 +193,11 @@ describe('ownerSummary (FIN-4, FIN-3)', () => {
     expect(row(noRule, ME)).toEqual(['Nguyễn Thị Demo', 'Chưa có quy định', 69_000_001, 600_001, 'Chưa có quy định', 'Chưa có quy định']);
   });
 
+  it('says there is no rule in the totals row of a year with no rule, never a 0', () => {
+    const noRule = ownerSummary({ ...snapshot, tax: { ...snapshot.tax, rules: [] } }, LABELS);
+    expect(noRule.totals.cells.map((cell) => cell.value)).toEqual(['Tổng cộng', 'Chưa có quy định', 110_000_001, 1_000_001, 'Chưa có quy định', 'Chưa có quy định']);
+  });
+
   it('adds up to the P&L, and fails the invariant when a share holder is missing from the owners', () => {
     const pnl = propertyPnl(snapshot, { property: '', income: 'Thu', expenses: 'Chi', noi: '', total: '' });
     expect(checkReportInvariants(snapshot, { pnl, owners: table }).filter((check) => !holds(check))).toEqual([]);

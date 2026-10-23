@@ -1,3 +1,4 @@
+import { formatCount, formatVnd, type Locale } from '../format';
 import type { Vnd } from '../money/vnd';
 
 export type ExportCell =
@@ -17,3 +18,11 @@ export const countCell = (value: number): ExportCell => ({ kind: 'count', value 
 
 /** The number a vnd or count cell holds; `null` for text. */
 export const numberOf = (cell: ExportCell | undefined): number | null => (cell === undefined || cell.kind === 'text' ? null : cell.value);
+
+export const formatCell = (cell: ExportCell | undefined, locale: Locale): string => {
+  if (cell === undefined) return '';
+  if (cell.kind === 'vnd') return formatVnd(cell.value, locale);
+  return cell.kind === 'count' ? formatCount(cell.value, locale) : cell.value;
+};
+
+export const numericColumns = (table: ExportTable): boolean[] => table.columns.map((_, index) => [table.totals, ...table.rows].some((row) => numberOf(row.cells[index]) !== null));

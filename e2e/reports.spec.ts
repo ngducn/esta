@@ -126,7 +126,8 @@ test('lane 4: on her phone, Mẹ reads Kho Biên Hòa empty 70 days and Dĩ An P
   );
   const unit = (property: string, label?: string) => units.find((one) => one.property_id === laneProperty(4, property) && (label === undefined || one.label === label))?.id;
   const row = (key: string | undefined) => table.rows.find((candidate) => candidate.key === key)?.cells;
-  expect(table.columns.at(-1)).toBe('Số ngày đang trống đến 07/10/2026');
+  const label = (id: string) => table.columns[table.ids.indexOf(id) + 1];
+  expect([label('vacant'), label('vacantFor')], 'the in-period count and the W4 count say which they are').toEqual(['Số ngày trống trong kỳ', 'Số ngày đang trống đến 07/10/2026']);
   expect(row(unit('bien-hoa'))?.vacantFor).toBe('70');
   expect(row(unit('di-an', 'Phòng 8'))?.vacantFor).toBe('67');
   expect(row(unit('di-an', 'Phòng 7'))?.vacantFor).toBe('22');
@@ -165,6 +166,7 @@ test("lane 7: Mẹ downloads her owner summary as a PDF holding her name with it
   await page.goto('/reports?report=owners');
   await expect(report(page).getByRole('heading', { name: 'Tổng kết năm 2026 theo chủ sở hữu' })).toBeVisible();
   await expect(report(page).getByText('Ước tính, không phải tư vấn thuế')).toBeVisible();
+  await expect(report(page).getByText('Tài sản đã lưu trữ có tiền thuê trong năm vẫn tính vào doanh thu', { exact: false })).toBeVisible();
   const table = await readReportTable(report(page));
   const [download] = await Promise.all([page.waitForEvent('download'), report(page).getByRole('link', { name: 'Tải PDF' }).click()]);
   expect(download.suggestedFilename()).toBe('chu-so-huu-2026.pdf');
@@ -188,6 +190,14 @@ test("lane 8: on her phone, Mẹ's 2026 revenue on the owner summary is the proj
   expect(projected, 'SPEC §9.3 puts Mẹ between 400 and 500 million').toBeGreaterThanOrEqual(400_000_000);
   expect(await noSidewaysScroll(page)).toBe(true);
   expect(await axe(page)).toEqual([]);
+});
+
+test('lane 8: in 2025, a year with no tax rule, the totals row says so for revenue, VAT and PIT and never shows 0 ₫', async ({ page }) => {
+  await open(page, 'me.lane8@demo.esta.test', 'light', DESKTOP);
+  await page.goto('/reports?report=owners&year=2025');
+  await expect(report(page).getByRole('heading', { name: 'Tổng kết năm 2025 theo chủ sở hữu' })).toBeVisible();
+  const table = await readReportTable(report(page));
+  for (const id of ['revenue', 'vat', 'pit']) expect(table.totals.cells[id], `${id} total`).toBe('Chưa có quy định thuế');
 });
 
 test('lane 9: offline, Tải PDF says it could not download and the report stays on screen', async ({ page }) => {
