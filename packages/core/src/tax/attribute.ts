@@ -140,7 +140,11 @@ function recipientsOf(period: RevenuePeriod, sharesByProperty: Map<string, Owner
   if (period.declaringPartyId !== null) {
     return [{ kind: 'owner', partyId: period.declaringPartyId, basis: { kind: 'declaring_party' }, weight: FULL_SHARE_BP }];
   }
-  const shares = (sharesByProperty.get(period.propertyId) ?? []).filter((share) => share.shareBp > 0);
+  return shareRecipients(sharesByProperty.get(period.propertyId) ?? []);
+}
+
+function shareRecipients(propertyShares: readonly OwnershipShare[]): Recipient[] {
+  const shares = propertyShares.filter((share) => share.shareBp > 0);
   const owned = shares.reduce((sum, share) => sum + share.shareBp, 0);
   const recipients: Recipient[] = shares.map((share) => ({
     kind: 'owner',
@@ -150,6 +154,22 @@ function recipientsOf(period: RevenuePeriod, sharesByProperty: Map<string, Owner
   }));
   if (owned < FULL_SHARE_BP) recipients.push({ kind: 'unattributed', weight: FULL_SHARE_BP - owned });
   return recipients;
+}
+
+export type ShareSplit = { readonly owners: readonly { readonly partyId: string; readonly amountVnd: Vnd }[]; readonly unattributedVnd: Vnd };
+
+/** Splits one property's amount by its ownership shares as tax attribution does, so the parts sum to the amount. */
+export function splitByShares(amountVnd: Vnd, propertyShares: readonly OwnershipShare[]): ShareSplit {
+  const recipients = shareRecipients(propertyShares);
+  const parts = largestRemainder(
+    amountVnd,
+    recipients.map((recipient) => recipient.weight),
+  );
+  const split = recipients.map((recipient, i) => ({ recipient, amountVnd: parts[i] as Vnd }));
+  return {
+    owners: split.flatMap(({ recipient, amountVnd: part }) => (recipient.kind === 'owner' ? [{ partyId: recipient.partyId, amountVnd: part }] : [])),
+    unattributedVnd: split.find(({ recipient }) => recipient.kind === 'unattributed')?.amountVnd ?? vnd(0),
+  };
 }
 
 /**

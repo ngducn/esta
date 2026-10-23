@@ -1,4 +1,4 @@
-export { attributeRevenue, periodsFromSchedule, splitAmountByDays } from './attribute';
+export { attributeRevenue, periodsFromSchedule, splitAmountByDays, splitByShares } from './attribute';
 export type {
   AttributionBasis,
   DateRange,
@@ -8,6 +8,7 @@ export type {
   RecurringCharge,
   RevenueAttribution,
   RevenuePeriod,
+  ShareSplit,
   TaxLease,
   TaxPayer,
 } from './attribute';

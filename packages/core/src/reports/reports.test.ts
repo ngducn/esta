@@ -4,51 +4,19 @@ import { isoDate as d, type IsoDate } from '../date/iso-date';
 import type { ExportTable } from '../export/table';
 import { vnd } from '../money/vnd';
 import { schedulePeriods } from '../schedule/fixtures';
-import { leaseRowSchema } from '../schemas/lease';
 import { monthlyCollections } from './collections';
+import { emptySnapshot, reportLease, testUuid as uuid } from './fixtures';
 import { checkReportInvariants, holds } from './invariants';
 import { propertyPnl } from './propertyPnl';
 import { rentRoll } from './rentRoll';
 import { yearPeriod, type ReportInvoice, type ReportLease, type ReportSnapshot } from './snapshot';
 
-let next = 0;
-const uuid = () => `00000000-0000-4000-8000-${String((next += 1)).padStart(12, '0')}`;
 const DI_AN = uuid();
 const Q7 = uuid();
 const ASOF = d('2026-10-07');
 
-const lease = (unitLabel: string, values: Record<string, unknown> = {}, extra: Partial<ReportLease> = {}): ReportLease => ({
-  ...leaseRowSchema.parse({
-    id: uuid(),
-    property_id: DI_AN,
-    unit_id: uuid(),
-    tenant_party_id: null,
-    start_date: '2025-11-01',
-    end_date: null,
-    rent_vnd: 3_000_000,
-    billing_cycle_months: 1,
-    period_anchor: 'calendar_month',
-    first_period_proration: 'none',
-    due_offset_days: 0,
-    deposit_vnd: 3_000_000,
-    escalation: { kind: 'none' },
-    utilities_mode: 'metered_by_owner',
-    tax_payer: 'owner',
-    notice_days: 30,
-    paid_through_date: null,
-    status: 'active',
-    terminated_on: null,
-    termination_reason: null,
-    renewal_of_lease_id: null,
-    ...values,
-  }),
-  propertyName: 'Dãy trọ Dĩ An Demo',
-  unitLabel,
-  wholeUnit: false,
-  tenantName: `Người thuê ${unitLabel} Demo`,
-  depositHeldVnd: vnd(3_000_000),
-  ...extra,
-});
+const lease = (unitLabel: string, values: Record<string, unknown> = {}, extra: Partial<ReportLease> = {}): ReportLease =>
+  reportLease(typeof values.property_id === 'string' ? values.property_id : DI_AN, unitLabel, values, extra);
 
 const invoice = (leaseId: string, periodStart: string, totalVnd: number, allocatedVnd: number, status: ReportInvoice['status'] = 'issued'): ReportInvoice => ({
   leaseId,
@@ -74,8 +42,7 @@ const septemberRoom5 = invoice(room5.id, '2026-09-01', 3_200_000, 0);
 const octoberRoom10 = invoice(room10.id, '2026-10-01', 3_000_000, 3_000_000);
 
 const snapshot = (period: { from: IsoDate; to: IsoDate }): ReportSnapshot => ({
-  ...period,
-  asOf: ASOF,
+  ...emptySnapshot({ ...period, asOf: ASOF }),
   properties: [
     { id: Q7, name: 'Nhà phố Q7 Demo' },
     { id: DI_AN, name: 'Dãy trọ Dĩ An Demo' },
@@ -204,7 +171,7 @@ describe('checkReportInvariants (FIN-4)', () => {
     const cells = tables.collections.totals.cells.map((cell, index) => (index === 1 ? { kind: 'vnd' as const, value: vnd(15_400_001) } : cell));
     const tampered = { ...tables.collections, totals: { key: 'total', cells } };
     expect(checkReportInvariants(year2026, { ...tables, collections: tampered }).filter((check) => !holds(check))).toEqual([
-      { kind: 'totals', report: 'collections', column: 'billed', expectedVnd: 15_400_000, reportedVnd: 15_400_001 },
+      { kind: 'totals', report: 'collections', column: 'billed', expected: 15_400_000, reported: 15_400_001 },
     ]);
   });
 

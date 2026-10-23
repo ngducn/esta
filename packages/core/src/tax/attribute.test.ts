@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addDays, addMonths } from '../date/calendar';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { attributeRevenue, periodsFromSchedule, splitAmountByDays, type RevenuePeriod, type TaxLease } from './attribute';
+import { attributeRevenue, periodsFromSchedule, splitAmountByDays, splitByShares, type RevenuePeriod, type TaxLease } from './attribute';
 
 const d = isoDate;
 
@@ -251,3 +251,17 @@ describe('periodsFromSchedule', () => {
   });
 });
 
+
+describe('splitByShares', () => {
+  it('splits 100.000.001 at 60/40 as 60.000.001 and 40.000.000, the earlier share taking the tie', () => {
+    expect(splitByShares(vnd(100_000_001), [{ propertyId: 'p', partyId: 'me', shareBp: 6_000 }, { propertyId: 'p', partyId: 'ryan', shareBp: 4_000 }])).toEqual({
+      owners: [{ partyId: 'me', amountVnd: 60_000_001 }, { partyId: 'ryan', amountVnd: 40_000_000 }],
+      unattributedVnd: 0,
+    });
+  });
+
+  it('keeps what no share covers unattributed, all of it when the property has no owner', () => {
+    expect(splitByShares(vnd(1_000), [{ propertyId: 'p', partyId: 'me', shareBp: 9_000 }])).toEqual({ owners: [{ partyId: 'me', amountVnd: 900 }], unattributedVnd: 100 });
+    expect(splitByShares(vnd(1_000), [])).toEqual({ owners: [], unattributedVnd: 1_000 });
+  });
+});
