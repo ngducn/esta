@@ -355,33 +355,39 @@ export type Database = {
           actor_id: string
           actor_kind: string
           at: string
+          batch_id: string | null
           diff: Json
           household_id: string
           id: number
           row_id: string
           table_name: string
+          via: string | null
         }
         Insert: {
           action: string
           actor_id: string
           actor_kind: string
           at?: string
+          batch_id?: string | null
           diff: Json
           household_id: string
           id?: never
           row_id: string
           table_name: string
+          via?: string | null
         }
         Update: {
           action?: string
           actor_id?: string
           actor_kind?: string
           at?: string
+          batch_id?: string | null
           diff?: Json
           household_id?: string
           id?: never
           row_id?: string
           table_name?: string
+          via?: string | null
         }
         Relationships: []
       }
@@ -2657,6 +2663,49 @@ export type Database = {
       }
     }
     Views: {
+      allocation_facts: {
+        Row: {
+          amount_vnd: number | null
+          household_id: string | null
+          invoice_id: string | null
+          lease_id: string | null
+          method: string | null
+          payment_id: string | null
+          property_id: string | null
+          received_on: string | null
+          unit_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_balances"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_invoice_id_fkey"
+            columns: ["household_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_household_id_payment_id_fkey"
+            columns: ["household_id", "payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       document_status: {
         Row: {
           document_id: string | null
@@ -2878,6 +2927,21 @@ export type Database = {
           p_on_date: string
         }
         Returns: string
+      }
+      change_batch_history: {
+        Args: { p_household_id: string; p_limit?: number }
+        Returns: {
+          applied_at: string
+          archived_properties: number
+          id: string
+          issued_bills: Json
+          planned_at: string
+          planner_name: string
+          status: string
+          summary: string
+          undone_at: string
+          via: string
+        }[]
       }
       claim_abandoned_agent_job: {
         Args: { p_as_of: string; worker_id: string }
@@ -3218,8 +3282,9 @@ export type Database = {
       }
       terminate_lease: {
         Args: { p_lease_id: string; p_reason: string; p_terminated_on: string }
-        Returns: undefined
+        Returns: number
       }
+      undo_change_batch: { Args: { p_batch_id: string }; Returns: Json }
       undo_payment: { Args: { p_payment_id: string }; Returns: undefined }
       update_my_display_settings: {
         Args: { p_density: string; p_locale: string; p_text_scale: number }

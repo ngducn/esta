@@ -34,4 +34,5 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 - [Sign in](./sign-in.md) covers an existing member, a wrong code, the invite claim and the language on `/sign-in`.
 - [Onboarding](./onboarding.md) covers a new address creating a household and the invite step.
 - [App shell](./shell.md) covers the tab bar, the sidebar, the account menu and display settings on `/settings`.
+- [Change history and undo](./history.md) covers the batches Claude applied, undo and a refused undo on `/settings/history`.
 - [Trợ lý status and connection check](./assistant.md) covers the worker status line, the operator connection check and the recent runs on `/assistant`.

@@ -36,8 +36,15 @@ export type StoredLine = Pick<StatementRow, 'date' | 'amount' | 'bankRef' | 'des
   readonly sameAccount: boolean;
 };
 
-/** Days apart two readings of one transfer may be dated, as when a value date is read in place of a transaction date. */
+/** Days apart two readings of one transfer without bank references may be dated, as when a value date is read in place of a transaction date. */
 export const KNOWN_WINDOW_DAYS = 3;
+
+/**
+ * Days apart two readings of one transfer with the same bank reference may be dated: a bank re-dates a transfer to its
+ * value date after a break such as Tết or 30/4, and a short reference it reuses must never hide the next month's rent
+ * (issue #266).
+ */
+const KNOWN_REFERENCE_WINDOW_DAYS = 14;
 
 function grouped(lines: readonly StoredLine[], key: (line: StoredLine) => string): Map<string, StoredLine[]> {
   const groups = new Map<string, StoredLine[]>();
@@ -52,10 +59,11 @@ function grouped(lines: readonly StoredLine[], key: (line: StoredLine) => string
 /**
  * The stored line each line of a new statement is, or undefined for a new transfer ([app rule] DOMAIN-VN §9, P3-21), so
  * reading the same statement under other columns records nothing twice. A line is known when the household holds its
- * #58 fingerprint, or when the same account holds a line of the same amount dated within KNOWN_WINDOW_DAYS that, if both
- * carry a bank reference, has the same reference, and otherwise has the same description after `normalizeDescription`.
- * Each stored line answers for one new line at most, an equal reference and then the nearest date first, so the nth
- * identical line of a file is known only while the account holds n of them and two identical counter deposits stay two.
+ * #58 fingerprint, or when the same account holds a line of the same amount that, if both carry a bank reference, has
+ * the same reference and a date within KNOWN_REFERENCE_WINDOW_DAYS, and otherwise has the same description after
+ * `normalizeDescription` and a date within KNOWN_WINDOW_DAYS. Each stored line answers for one new line at most, an equal
+ * reference and then the nearest date first, so the nth identical line of a file is known only while the account holds
+ * n of them and two identical counter deposits stay two.
  */
 export function knownLines(rows: readonly StatementRow[], stored: readonly StoredLine[]): (StoredLine | undefined)[] {
   const byFingerprint = grouped(stored, (line) => line.fingerprint);
@@ -73,9 +81,12 @@ export function knownLines(rows: readonly StatementRow[], stored: readonly Store
     const text = normalizeDescription(row.description);
     const days = (line: StoredLine) => Math.abs(daysBetween(line.date, row.date));
     const referenced = (line: StoredLine) => line.bankRef !== '' && row.bankRef !== '';
-    const same = (line: StoredLine) => (referenced(line) ? line.bankRef === row.bankRef : texts.get(line) === text);
+    const same = (line: StoredLine) =>
+      referenced(line)
+        ? line.bankRef === row.bankRef && days(line) <= KNOWN_REFERENCE_WINDOW_DAYS
+        : texts.get(line) === text && days(line) <= KNOWN_WINDOW_DAYS;
     const [line] = (byAmount.get(String(row.amount)) ?? [])
-      .filter((candidate) => !claimed.has(candidate) && days(candidate) <= KNOWN_WINDOW_DAYS && same(candidate))
+      .filter((candidate) => !claimed.has(candidate) && same(candidate))
       .toSorted((a, b) => Number(!referenced(a)) - Number(!referenced(b)) || days(a) - days(b));
     if (line === undefined) return;
     claimed.add(line);

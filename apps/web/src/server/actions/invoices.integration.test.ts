@@ -95,7 +95,7 @@ describe('invoice actions against local Supabase (LSE-5)', () => {
       headers: { 'x-esta-actor': 'system:cron' },
       body: JSON.stringify({ p_household_id: HOUSEHOLD, p_as_of: '2026-10-07', p_issued_at: '2026-10-07T00:30:00+07:00' }),
     });
-    expect(await terminateLease(ids.leaseA, { terminatedOn: '2026-09-30', reason: 'Demo: người thuê chuyển đi' })).toEqual({ ok: true, value: undefined });
+    expect(await terminateLease(ids.leaseA, { terminatedOn: '2026-09-30', reason: 'Demo: người thuê chuyển đi' })).toEqual({ ok: true, value: { unbilled: 0 } });
     const { data, error } = await client.from('invoices').select('period_start, status').eq('lease_id', ids.leaseA).gte('period_start', '2026-10-01');
     if (error) throw error;
     expect(data, 'October stays void and the November draft goes with the termination').toEqual([{ period_start: '2026-10-01', status: 'void' }]);

@@ -44,6 +44,7 @@
     "terra-draw": "^1.37.0",
     "terra-draw-maplibre-gl-adapter": "^1.5.0",
     "undici": "^8.12.2",
+    "write-excel-file": "4.1.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

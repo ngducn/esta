@@ -4,7 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import connectorPackage from '../package.json' with { type: 'json' };
 import { importFolders, importRoots } from './files';
 import { localFiles } from './local-files';
-import { connectorClient, connectorEnvSchema, currentOperator } from './session';
+import { batchClient, connectorClient, connectorEnvSchema, currentOperator } from './session';
 import { secretStore } from './store';
 import { registerTools } from './tools';
 
@@ -20,7 +20,7 @@ registerTools(server, {
     const operator = await currentOperator(db);
     if (!operator.ok) return operator;
     const clock = await readClock(db, env);
-    return { ok: true, value: { db, householdId: operator.value.householdId, locale: operator.value.locale, clock, files, folders } };
+    return { ok: true, value: { db, householdId: operator.value.householdId, locale: operator.value.locale, clock, files, folders, batchDb: (batchId) => batchClient(env, db, batchId) } };
   },
   log: (line) => console.error(`[connector] ${line}`),
 });

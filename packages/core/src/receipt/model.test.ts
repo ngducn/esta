@@ -65,6 +65,12 @@ describe('buildReceiptModel', () => {
     expect(model.qr).toBeNull();
   });
 
+  it('prints no words for a bill whose meter credit outweighs its rent', () => {
+    const model = buildReceiptModel({ ...partPaid, totalVnd: vnd(-36_875_000), receivedVnd: vnd(0), outstandingVnd: vnd(0) });
+    expect(model.total).toBe('-36.875.000\u00a0₫');
+    expect(model.totalWords).toBeNull();
+  });
+
   it('prints no code when the household has no receiving account', () => {
     expect(buildReceiptModel({ ...partPaid, qr: null }).qr).toBeNull();
   });

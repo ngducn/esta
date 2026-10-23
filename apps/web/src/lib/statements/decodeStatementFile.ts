@@ -12,6 +12,7 @@ import {
   type StatementGrid,
 } from '@esta/core/matching';
 import { parseCsv } from '@esta/core/parse/csv';
+import { SHEET_READ_OPTIONS, sheetCell } from '@esta/core/parse/sheet';
 import type { Result } from '@esta/core/result';
 
 /** Far above a year of one account's lines; the server takes at most 5,000 of them. */
@@ -51,18 +52,16 @@ export const headerCells = (grid: StatementGrid, headerRow: number): string[] =>
 
 const ZIP = [0x50, 0x4b, 0x03, 0x04];
 
-/** A date cell arrives as text, as the decoder expects; read-excel-file gives it as a UTC midnight `Date`. */
-function sheetCell(value: unknown): StatementCell {
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (typeof value === 'string' || typeof value === 'number') return value;
-  return typeof value === 'boolean' ? String(value) : null;
+function statementCell(value: unknown): StatementCell {
+  const cell = sheetCell(value);
+  return cell?.type === 'date' ? cell.text.slice(0, 10) : (cell?.text ?? null);
 }
 
 async function readSheet(bytes: Uint8Array<ArrayBuffer>): Promise<Result<StatementFile, StatementFileReason>> {
   const { readSheet: read } = await import('read-excel-file/browser');
-  const rows = await read(new Blob([bytes])).catch(() => null);
+  const rows = await read(new Blob([bytes]), SHEET_READ_OPTIONS).catch(() => null);
   if (rows === null) return { ok: false, reason: 'unreadable' };
-  const grid = rows.map((row) => row.map(sheetCell));
+  const grid = rows.map((row) => row.map(statementCell));
   return { ok: true, value: { grid, decode: (chosen) => decodeStatement(grid, chosen) } };
 }
 

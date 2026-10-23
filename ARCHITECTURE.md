@@ -34,6 +34,7 @@ All parsing of what Mẹ types or what the assistant reads lives in `packages/co
 - **Decimals.** `parseDecimal` in `packages/core/src/parse/decimal.ts` is a money parser. Đồng have no minor unit, so it reads `1.255` and `1,255` as 1255. Never use it for a quantity with a fractional part (`decimal-parser-outside-parse` counts every import of it, under any name, outside the money and parse modules).
 - **Areas and lengths.** One zod-free parser, `parseMeasureInput` in `packages/core/src/parse/measure.ts`, reads typed areas and lengths with the Vietnamese decimal-comma rule (DOMAIN-VN) and refuses ambiguous input such as "1,255 m²".
 - **Dates.** `IsoDate` and `isIsoDate` live in `packages/core/src/date/iso-date.ts`, and `parseDateInput` in `packages/core/src/parse/date-input.ts`. In a zod schema, use `isoDateSchema`, which also brands the value, instead of `z.string().refine(isIsoDate)` (`hand-rolled-iso-date-schema`). `isoDateSchema` lives in `packages/core/src/schemas/legal.ts` today, and issue #196 moves it and the calendar helpers into `packages/core/src/date`.
+- **Spreadsheet cells.** `sheetCell` and `SHEET_READ_OPTIONS` in `packages/core/src/parse/sheet.ts` turn what read-excel-file returns into a `SheetCell`, with each number as the text the file stored, so a 20-digit bank reference keeps every digit. The web statement reader passes them to `read-excel-file/browser` and the connector to `read-excel-file/node`; each app keeps only its own import of the reader. Do not map read-excel-file values to cells anywhere else.
 
 ## Results
 
@@ -63,7 +64,7 @@ A read moves here before a second surface uses it. A read that only one surface 
 
 ## The connector: apps/connector
 
-`apps/connector` is the MCP surface: sign-in, the session store, the operator check on every call, tool definitions that call `packages/ops`, and the adapters to Ryan's computer that no other surface has. `files.ts` keeps every path inside the import folders (`~/Esta-import` and `ESTA_IMPORT_ROOTS`), `spreadsheet.ts` returns xlsx and CSV cells as the file stored them, and `local-files.ts` implements `LocalFiles`. It holds no query or domain rule of its own: money, dates and CSV rows parse in `packages/core` (`docs/spec/CONNECTOR.md`).
+`apps/connector` is the MCP surface: sign-in, the session store, the operator check on every call, tool definitions that call `packages/ops`, and the adapters to Ryan's computer that no other surface has. `files.ts` keeps every path inside the import folders (`~/Esta-import` and `ESTA_IMPORT_ROOTS`), `spreadsheet.ts` returns xlsx and CSV cells as the file stored them through core's `sheetCell`, and `local-files.ts` implements `LocalFiles`. It holds no query or domain rule of its own: money, dates and CSV rows parse in `packages/core` (`docs/spec/CONNECTOR.md`).
 
 ## Multi-row writes
 

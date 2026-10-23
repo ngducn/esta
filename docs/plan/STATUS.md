@@ -47,7 +47,7 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
 
 - P1-04 (PR #52) at `0da5f67`, 2026-10-17. Findings 2 to 5 are fixed and verified, but LCP stays at 3445 ms against trunk's 2602 ms at load under 5 (the cover photo costs about 650 ms; the shell floor is #56). Every later Phase 1 PR depends on P1-04. Options (A) accept and track to #56 plus a photo-bytes follow-up, (B) a second narrow round on photo bytes after #56, (C) ship without covers; details in the PR #52 park comment.
 - P3-06 (PR #58) at `727db97`, 2026-10-17. The one fix-forward fixed the double post, but its CSV decode fix does not hold: an unterminated quote at a field start is closed by a later quote, and every row in between disappears without a refusal (repro and suggested second-round scope in the PR #58 park comment). Your call: grant a second, narrow round (refuse quoted fields that span a line break), narrow the PR, or close it. Nothing depends on it before P3-15.
-- P5-11 (PR #61) at `a8d00d8`, 2026-10-17, parked again after the operator-granted second round. The structural rewrite closed 33 more probes, but round 3 found a regression (`25\ntriệu` reads as 25) and smaller-count reads on glued tails and Markdown emphasis. The root recommends redesigning the guard to read the rendered plain text, either here or inside P5-03 (PR #61 comment). Nothing needs it before P5-03.
+- P5-11 (PR #61) closed unmerged on 2026-10-23, at Ryan's request and per his 2026-10-17 ruling. The guard is rebuilt in P5-03 over the rendered plain text, starting from the branch `esta/p5-11-number-guard` (`a8d00d8`): its grammar, its 236 tests and the three reviewers' probe sets. Round 3 had found `25\ntriệu` read as 25 and smaller-count reads on glued tails and Markdown emphasis. The Phase 5 re-cut folds the P5-11 inventory row into P5-03.
 - Nothing parked. P0-14 (PR #32) merged on 2026-10-16 as `064303c` after a test-only fix-forward: the create-household e2e helper gave the server one 5 s wait, which ran out under load. The 2026-10-15 note that it also failed at load 4 was wrong; that rerun failed in `db reset` with a Supabase 502, not in Playwright.
 
 ## Decided by Ryan
@@ -98,6 +98,12 @@ The plan's count (43 of 73 PRs merged by 2026-10-20 04:30: expenses #177 and dep
   - Renewal rent change (#172, `[app rule]`): between −50% and +100% of the old rent, rounded half up to 100.000 ₫.
   - Documents (#173): no manual "sensitive" switch. The document's type decides, so Mẹ cannot keep one bill's read text out of search.
   - Dĩ An's October bills in the demo data (#195): nothing in Esta records meter readings until meter entry ships (P3-14), so real nightly billing would issue the six Dĩ An bills due 25/10 on 25/10. The seed issues them on 03/10 through the same one-bill issue step meter entry will use, standing in for September's readings, so the demo matches SPEC §9.3. P3-14 replaces the stand-in with seeded readings.
+
+- Defaults the root chose on 2026-10-23 under the landing grant, now on main. Each works now; say the word to change any of them.
+  - Ledger (#275, SPEC FIN-2): a property's income for a month is the money applied to its bills from payments received that month. Home's `Đã thu` counts by the month a bill is due, so the two never agree month by month. In the demo, October reads 54,000,000 on Home and 10,000,000 in the ledger, because a 45,000,000 transfer arrived on 29/09.
+  - Ledger (#275): money a tenant paid beyond the bill, kept as credit, is not income until it is applied to a bill. A deposit is income only when it is applied to a bill. When the landlord keeps part of a deposit, the ledger does not count that as income.
+  - Undo of Claude's changes (#269): undoing a batch also undoes the bills that batch issued, and refuses when a payment or another record references them.
+  - Meter corrections (#270): a correction too large for the next bill to absorb is refused when ending, amending or renewing a lease. Mẹ voids the bill that went out with the wrong reading and records again. The recommendation is to let a void re-plan its period instead.
 
 ## Needs professional confirmation
 

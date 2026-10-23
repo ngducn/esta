@@ -46,7 +46,8 @@ export type ReceiptModel<Labels extends Record<string, string>> = {
   readonly period: string;
   readonly lines: readonly { readonly label: string; readonly amount: string }[];
   readonly total: string;
-  readonly totalWords: string;
+  /** Null for a total below zero. */
+  readonly totalWords: string | null;
   /** Null on a notice, which has nothing received to print. */
   readonly received: string | null;
   readonly outstanding: string;
@@ -76,7 +77,7 @@ export function buildReceiptModel<Labels extends Record<string, string>>(input: 
     period: formatDateRange(input.periodStart, input.periodEnd, 'vi'),
     lines: input.lines.map((line) => ({ label: nfc(line.label), amount: money(line.amountVnd) })),
     total: money(input.totalVnd),
-    totalWords: nfc(vndInWords(input.totalVnd, 'vi')),
+    totalWords: input.totalVnd < 0 ? null : nfc(vndInWords(input.totalVnd, 'vi')),
     received: kind === 'notice' ? null : money(input.receivedVnd),
     outstanding: money(input.outstandingVnd),
     paid: !owed,

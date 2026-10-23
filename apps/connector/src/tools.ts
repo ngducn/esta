@@ -9,6 +9,7 @@ import { unitSchema } from '@esta/core/schemas/units';
 import type { Result } from '@esta/core/result';
 import {
   applyPlan,
+  batchUndo,
   findPerson,
   findProperty,
   getLease,
@@ -22,7 +23,9 @@ import {
   planChanges,
   planRequestSchema,
   PLAN_TTL_MINUTES,
+  runOp,
   suggestCurrentUnits,
+  type Db,
   type LocalContext,
   type ReadContext,
 } from '@esta/ops';
@@ -33,7 +36,7 @@ import type { ImportFolders } from './files';
 import type { OperatorRefusal } from './session';
 import { MAX_SPREADSHEET_BYTES, readSpreadsheet } from './spreadsheet';
 
-export type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders };
+export type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders; readonly batchDb: (batchId: string) => Db };
 
 export type ToolDeps = {
   /** Checked on every call: the session, its household, and that the member is still its operator. */
@@ -252,10 +255,25 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
       inputSchema: z.object({ plan_id: idSchema }),
     },
     guarded('apply_plan', deps, async (ctx, { plan_id }: { plan_id: string }) => {
-      const applied = await applyPlan(ctx, plan_id);
+      const applied = await applyPlan(ctx, plan_id, ctx.batchDb(plan_id));
       if (!applied.ok) return { data: applied.reason, log: `batch=${plan_id} reason=${applied.reason.kind}`, isError: true };
       const landed = applied.value.items.filter((item) => item.status === 'landed').length;
       return { data: applied.value, log: `batch=${plan_id} status=${applied.value.status} items=${applied.value.items.length} landed=${landed}` };
+    }),
+  );
+
+  server.registerTool(
+    'undo_batch',
+    {
+      description:
+        'Undo a batch Claude applied, all of it or nothing, when Ryan asks. A property the batch added goes to Đã lưu trữ, where he can restore it. Refused as undo_blocked, with each blocking row, its reason and the flow Ryan uses instead, once an issued bill, a payment, a deposit or a later edit depends on the batch. Refused as not_undoable when the batch is already undone.',
+      inputSchema: z.object({ batch_id: idSchema }),
+    },
+    guarded('undo_batch', deps, async (ctx, { batch_id }: { batch_id: string }) => {
+      const undone = await runOp(batchUndo, ctx, { batch_id });
+      return undone.ok
+        ? { data: undone.value, log: `batch=${batch_id} undone=1` }
+        : { data: undone.reason, log: `batch=${batch_id} reason=${undone.reason.kind}`, isError: true };
     }),
   );
 }

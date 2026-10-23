@@ -1,54 +1,65 @@
 # Resume notes for the Esta v1 run
 
-## Where the run is (written 2026-10-21 00:40 +07)
+Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read `docs/plan/trail/standing-orders.md` (newest updates first; the 2026-10-23 00:30 update holds this run's objective and budget), `verification-tiers.md`, `owner-brief.md`, `lane-brief.md`, the tail of `decisions.tsv`, `ARCHITECTURE.md`, `docs/plan/connector-track.md` and `docs/plan/STATUS.md`. Briefs are in `~/.claude/orchestrate/esta/briefs/`; the root's todo is `~/.claude/orchestrate/esta/todo-1023.md`.
 
-Main is 154b44e plus this handoff. On 2026-10-20 a cloud session (claude.ai/code, not Ryan's Mac) took over as root. It ran one owner agent at a time on its single branch `claude/charming-faraday-0wvqtn`, with independent health and live lanes before every merge. Actions `ci` was the gate.
+## Where the run is (written 2026-10-23 07:05 +07)
 
-**Merged in that session, in order:**
-- #239: start a lease with its deposit and paid-through by talking to Claude (connector C2b).
-- #231 and #242: bills with VietQR, the bill page and A5 print (P3-11); then voiding, issuing early, the receiving-account sheet and `payments.bank_account_id` (P3-20).
-- #244: receipts as A5 PDF and Zalo picture (P3-12).
-- #246: polite Zalo reminders and the public `/q/<token>` QR link (P3-13).
-- #248: meter readings on one screen, with metered bills (P3-14). Three fix-forwards: a month billed twice within a lease, a typo that stopped nightly billing, then cross-lease double billing on renewals and tenant changes. Ownership now follows the lease chain.
-- #251: Ryan's receipt decisions (`lẻ` in words; `Thông báo tiền thuê` while nothing is received).
-- #253: bank statement import, commit and bulk confirm (P3-15, split A; P3-21 is the column mapping). Three fix-forwards for a transfer recorded by hand posting again on import. Final rule: hold a line when the lease has an unclaimed hand bank transfer of the same amount, dated 2 days before to 10 days after the line.
-- #256: Home with today's list and `Đã thu X / Y` from the board's own rows (P3-16).
+Main is 0f6a7b93 plus this handoff. The root paused at 07:00 +07 at 26.9% of the meter. Spawning stops at 28% under Ryan's 40% cap. The current window ends at about 10:00 to 10:24 +07; the meter reads 2026-10-22T22:00Z to 2026-10-23T03:00Z. No agent is running. Two PRs are code-ready or nearly so, with Actions runs in flight that no one is watching.
 
-**Broke a standing order:** #248 and #253 each went past the two-fix-forward ceiling (standing orders, 2026-10-19 landing grant) and were merged by the root, not handed to Ryan. Both landed after clean final re-checks. Ryan was told. From now on, stop at the ceiling.
+**Merged this run (2026-10-23):**
+- #273: CI caches the Supabase images and retries rate-limited pulls on the other registry.
+- #269: connector C4, see what Claude changed and undo it.
+- #270: the post-merge audit fix-forward. It stops a meter correction from making a bill negative, and it says when ending a lease drops meter charges.
+- #275: P4-03, the property ledger by month with CSV and Excel export.
 
-**Media standard (Ryan, 2026-10-20: "the PRs you created are not up to par"):** every PR body matches #181 and #248. That means a 390 px flow GIF, 8 to 10 captioned screenshots including edge states, exact evidence, a Design section and the lanes' verdicts. Media is published to the `pr-media` branch. #242, #244 and #246 were backfilled with screenshots and GIFs.
+Every merge had a clean rigorous verdict and a green Actions `ci` at the exact head.
 
-## Next steps
+**Ryan's words this run:** 2026-10-23 00:24: "ok we can continue now, /pstack:poteto-mode resume from last session. this time keep the limit below 40%. im going to bed now. good night, please be diligent with your work".
 
-1. **P3-21:** map a statement's columns once per bank account. No migration; the import already stores `column_mapping`.
-2. **P3-19:** prefill a lease from a contract photo. Blocked here: its golden test needs a live `pnpm agent:record` (no API key in the cloud container). Run it on the Mac.
-3. **P3-17**, the Phase 3 exit: FND-8 at 130%, north-star steps 3 to 6, and `pnpm phase:check 3`. It needs Ryan for VietQR scanned by two bank apps and the Mom test.
-4. **Phase 4:** P4-03 ledger, P4-06 valuations, P4-04 tax card, P4-05 reports. P4-01 and P4-02 are merged.
-5. Open PR #61 (p5-11 number guard) is still parked.
+## Open work, with the next step for each
 
-**Before writing a money PR, write the exact rule into the owner's brief.** #248 and #253 needed several rounds because the plan said what to build but not how matching works across a lease's bills and leases. #256 had its rule up front and passed in one round.
+- **#277, P3-19 lease prefill from a contract photo** (head a2258fc7, code-ready, rigorous).
+  - State: the golden replay meets every target (99.3% of required fields exact). Three synthetic lease recordings were made live through `pnpm agent:record`, costing about 0.38 USD. The owner is done and stopped.
+  - Actions run 39874991360 was in flight at the pause. Check it with `timeout 30 gh pr checks 277`, and rerun failed jobs once on `toomanyrequests`.
+  - Next: start round 1 from the written briefs `lane-pr277-live.md` (Sonnet, slot 5), `lane-pr277-audit.md` (Opus), `lane-pr277-health.md` (Sonnet) and `lane-pr277-second.md` (Sonnet). Give each lane the head SHA in its prompt.
+  - The owner saw three local e2e failures not tied to this PR: duplicate save toasts in documents-extract rule 4 and documents-multipage rule 2, and a hover contrast failure in documents-vault rule 4. If Actions shows them, a lane reruns them alone on main.
+- **#280, P4-06 valuations and the Home portfolio figure** (head c69b2190, rigorous). Built and tested, but `/deslop` and `/no-comments` did not run before the stop.
+  - Actions run 39875283781 was in flight.
+  - Next: start a fresh Opus owner on slot 3 from `briefs/p4-06-finish.md`. Then run round 1 with the same four lanes as #277. Those lane briefs are not written yet; copy the #277 set and point it at valuations, gross yield, the portfolio sum and the migration.
+  - The scope moved: seed coverage, the FND-7 checksum extension, north-star step 8 and the Phase 4 exit evidence go to P4-05.
+  - The quality raise (the hand-rolled action-call count, 38 to 40, until #193) is accepted by the root, subject to the health lane.
+- **#261, the Phase 3 exit** (d75ffe7c): Ryan's to merge. After it come the two-bank-app VietQR scan and the Mom test.
+- **#61** (the number guard): closed unmerged 2026-10-23 at Ryan's request. The branch `esta/p5-11-number-guard` stays for P5-03, and the Phase 5 re-cut folds the P5-11 row into P5-03.
+- **Queue after these:** P4-01 then P4-04 (tax core and the tax card, Opus audit), then P4-05 (reports and the Phase 4 exit). Then the cleanup round: #193 action hook, #265 to #268, #271, #272, #274, #276, #278, #279, #281 and the older lows. #149 and #197 must land before real data.
 
-## Running the stack in the cloud container
+## Questions waiting for Ryan
 
-- Node 24 via `npx -y n install 24` (installs to `$HOME/.n`), then `export PATH=$HOME/.n/bin:$PATH COREPACK_ENABLE_DOWNLOAD_PROMPT=0`. Supabase CLI 2.90.0 from its GitHub release into `/usr/local/bin`.
-- Docker: `(nohup dockerd > /tmp/claude-0/dockerd.log 2>&1 &)`. Images must come from Docker Hub (`SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io`); ECR answers "Data limit exceeded".
-- No IPv6, so Realtime cannot start. Set `[realtime] enabled = false` in the gitignored `supabase/.slots/<k>/supabase/config.toml` (regenerated by `scripts/db.ts`), then `SUPABASE_TELEMETRY_DISABLED=1 SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io supabase start --workdir supabase/.slots/<k>` (or `db reset`). Never commit it.
-- `pnpm db:test` may fail to pull pg_prove; run the pgTAP files through psql with the harness.
-- Heavy jobs: `flock /tmp/claude-0/heavy.lock <cmd>`. Web on port 3400 or higher.
-- One connector test, `files.test.ts` "unreadable entries", fails only because the container runs as root.
-- Lighthouse runs over HTTP/1.1 only (no mkcert or caddy), so LCP sits around 2.5 to 2.8 s on every page there, trunk included. Compare head with trunk in the same container.
+1. From this run, root defaults now on main. Each is listed in STATUS.md; say the word to change any of them.
+   - The ledger counts rent by the day the money arrived. Home counts it by the month the bill is due, so the two never match month by month (in the demo, October is 54,000,000 on Home and 10,000,000 in the ledger).
+   - Money kept as credit is not income until it is applied to a bill.
+   - When the landlord keeps part of a deposit, the ledger does not count it as income.
+   - Undoing a batch of Claude's changes also undoes the bills that batch issued, and refuses when anything references them (#269).
+   - A meter correction too large to absorb is refused at end of lease, amendment and renewal (#270).
+2. How Mẹ fixes a bill that already went out with a wrong meter reading (#270's PR body). The current default is to void it and record again; the recommendation is to let a void re-plan its period.
+3. #267: should a receipt show overpayment kept as credit? The recommendation is yes.
+4. Merge #261 when ready.
+5. Older, still open: see STATUS.md "Waiting for Ryan" (#223, the move-out meter reading, voiding a paid bill, the Zalo link on a phone, the placeholder names, a branch ruleset for `ci`, and others).
 
-## Questions waiting for Ryan (new on 2026-10-20; older ones stay in STATUS.md)
+## Rules added this run
 
-1. Move-out month: whoever's lease chain holds the room on the month's last day pays that month's meters (#248). Recommended: add a move-out reading.
-2. The electricity price rule is one flat rate, `Giả định` (Thông tư 60/2025/TT-BCT not readable from the container).
-3. Statement import (#253): three cases the duplicate hold does not catch. They are a hand payment recorded as the sum of two transfers, one backdated more than 2 days, and one recorded more than 10 days after. Undo for imported payments is #255.
-4. Voiding a paid bill: the default is no (#242).
-5. Tap `Mở Zalo` once on a phone to confirm the link format (#246).
-6. The notice's QR caption "chuyển phần còn lại" on a bill with nothing paid (#252).
-7. May owners push their own `esta/*` branches, so two PRs run at once?
-8. Earlier and still open: #223 (full ID in Claude's change history), the placeholder names, the seed districts, the commit email, the expense button position, the branch ruleset for `ci`, and the live extraction eval.
+- **Budget:** below 40% of Ryan's /usage per 5-hour window. Stop spawning at 28% and pause owners at 34% on `usage-pct.sh`. Nothing else runs in his account overnight, so the meter is trusted. No Fable; owners and audits run on Opus, lanes on Sonnet. Never spawn in the first 20 minutes after the meter's window boundary. Two Opus owners together burned about 18 points an hour in build and CI; one owner plus lanes burns about 9.
+- **Rigorous review is five lanes:** live (Sonnet), adversarial audit (Opus), codebase health (Sonnet), and a second opinion from a different model on the riskiest part that also runs the touched flow on main as the regression lane.
+- **Owners hand back at code-ready** under budget pressure, and the root watches Actions itself. Stop each owner after its report, because a CI watcher of its own resumes it.
 
-## Lows filed on 2026-10-20
+## How CI runs now
 
-#240, #241, #243, #245, #247 (`/collections` is about 209 KB on main, already over the 200 KB budget), #249, #250, #252, #254, #255 and #257. They join the cleanup round's queue.
+Actions runs on every PR push: `timeout 30 gh pr checks <n>`. The db and e2e jobs restore the Supabase images from the Actions cache (#273). The first run after a cache-key change, and main's first post-merge run, start cold and may fail on `toomanyrequests`; rerun the failed jobs once with `gh run rerun <id> --failed`. db:test's pg_prove image is not cached yet (#274). The local fallback is `tools/ci-local.sh`.
+
+## Gotchas
+
+- After a Mac restart, Docker Desktop does not start on its own (`open -a Docker`). Old slot stacks restart with it, so stop them with `ESTA_SLOT=<k> pnpm db:stop` before slots look free.
+- The Mac has Node 25.9; `.nvmrc` names 24.
+- Write the exact money rule into an owner's brief before a money PR. P4-03's "THE MONEY RULE" section was tested case by case by three lanes and held.
+- Leases e2e lane 3 ("second tab already active") fails locally on main too but passes on Actions; it is not a PR finding.
+- `gh` calls can hang. Wrap them in `timeout`.
+- The stale `wt-sheets` worktree is harmless; removing it was blocked by the permission classifier.
