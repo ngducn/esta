@@ -19,6 +19,8 @@ export function Group({ id, title, aside, children }: { id?: string; title: stri
   );
 }
 
+const LINK_KEYBOARD = { type: 'url', autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false } as const;
+
 export function TextField({
   label,
   hint,
@@ -40,7 +42,7 @@ export function TextField({
   inputId?: string;
   className?: string;
   maxLength?: number;
-  inputMode?: 'text' | 'decimal' | 'numeric';
+  inputMode?: 'text' | 'decimal' | 'numeric' | 'url';
 }) {
   const generated = useId();
   const id = inputId ?? generated;
@@ -60,6 +62,7 @@ export function TextField({
         value={value}
         maxLength={maxLength}
         inputMode={inputMode}
+        {...(inputMode === 'url' ? LINK_KEYBOARD : {})}
         autoComplete="off"
         aria-invalid={error !== null}
         aria-describedby={hint === undefined ? `${id}-message` : `${id}-hint ${id}-message`}

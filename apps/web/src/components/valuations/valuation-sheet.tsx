@@ -142,6 +142,7 @@ function ValuationSheet({ scope, valuationId, open, onOpenChange, finalFocus }: 
             testId="valuation-source"
             value={sourceUrl}
             maxLength={MAX_SOURCE_URL}
+            inputMode="url"
             error={errors.sourceUrl === undefined ? null : t('notHttps')}
             onChange={typed(setSourceUrl, 'sourceUrl')}
           />

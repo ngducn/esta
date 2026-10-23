@@ -43,7 +43,7 @@ test('lane 2: Ryan records a broker quote of 9ty5 on Mặt bằng Quận 1; the 
   await page.goto(`/properties/${q1}`);
   await expect(block(page).getByTestId('valuation-yield')).toHaveText('Lợi suất gộp 5%, theo ước tính ngày 01/07/2026');
 
-  await addValuation(page, { value: '9ty5', method: 'Môi giới báo giá', date: '07/10/2026', source: 'https://example.com/demo/bao-gia-q1' });
+  await addValuation(page, { value: '9ty5', method: 'Môi giới báo giá', date: '07/10/2026', source: 'Https://example.com/demo/bao-gia-q1' });
   await expect(sheet(page)).toBeHidden();
   await expect(toast(page)).toContainText('Đã ghi định giá 9,5 tỷ.');
   await expect(block(page).getByTestId('valuation-latest')).toHaveText('9,5 tỷ');
@@ -103,6 +103,9 @@ test('lane 4: an http: source, a later date and no method are refused on their f
 
   await sheet(page).getByRole('radio', { name: 'So sánh giá khu vực', exact: true }).locator('xpath=..').click();
   await sheet(page).getByRole('textbox', { name: 'Ngày định giá' }).fill('08/10/2026');
+  await expect(sheet(page).getByTestId('valuation-source')).toHaveJSProperty('type', 'url');
+  await expect(sheet(page).getByTestId('valuation-source')).toHaveAttribute('autocapitalize', 'none');
+  await expect(sheet(page).getByTestId('valuation-source')).toHaveAttribute('autocorrect', 'off');
   await sheet(page).getByTestId('valuation-source').fill('http://example.com');
   await sheet(page).getByTestId('valuation-save').click();
   await expect(sheet(page).getByText('Liên kết phải bắt đầu bằng https://')).toBeVisible();

@@ -43,6 +43,26 @@ describe('readValuation', () => {
     expect(read({ asOf: '' }).asOf).toBe('2026-10-07');
   });
 
+  it.each([
+    ['HTTPS://example.com', 'https://example.com/'],
+    ['Https://example.com/x', 'https://example.com/x'],
+    ['https:example.com', 'https://example.com/'],
+    ['https:/example.com', 'https://example.com/'],
+    ['https:\\\\example.com', 'https://example.com/'],
+    ['https://Example.com/Bao-Gia', 'https://example.com/Bao-Gia'],
+    ['https://example.com/báo-giá', 'https://example.com/b%C3%A1o-gi%C3%A1'],
+  ])('stores %j as the link it opens, %j', (typed, href) => {
+    expect(read({ sourceUrl: typed }).sourceUrl).toBe(href);
+  });
+
+  it('refuses a link that grows past 2000 characters once encoded', () => {
+    expect(problems({ sourceUrl: `https://example.com/${'đ'.repeat(400)}` })).toEqual({ sourceUrl: 'not_https' });
+  });
+
+  it('refuses https: without a host and a link with a space', () => {
+    for (const sourceUrl of ['https:', 'https://', 'https:///', 'https://example.com/a b']) expect(problems({ sourceUrl })).toEqual({ sourceUrl: 'not_https' });
+  });
+
   it('refuses an http: source on its field', () => {
     expect(problems({ sourceUrl: 'http://example.com' })).toEqual({ sourceUrl: 'not_https' });
   });
@@ -71,6 +91,10 @@ describe('valuationSchema', () => {
 
   it('takes a stored row', () => {
     expect(valuationSchema.parse(row).valueVnd).toBe(9_500_000_000);
+  });
+
+  it('gives a capitalised https source as the link it opens', () => {
+    expect(valuationSchema.parse({ ...row, sourceUrl: 'Https://example.com/x' }).sourceUrl).toBe('https://example.com/x');
   });
 
   it('refuses a value of 0 and an http: source', () => {

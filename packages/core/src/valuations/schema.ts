@@ -12,9 +12,11 @@ export type ValuationMethod = (typeof VALUATION_METHODS)[number];
 export const MAX_VALUATION_NOTE = 1000;
 export const MAX_SOURCE_URL = 2000;
 
-function isHttpsUrl(text: string): boolean {
-  if (text.length > MAX_SOURCE_URL || /\s/.test(text)) return false;
-  return URL.parse(text)?.protocol === 'https:';
+function httpsHref(text: string): string | null {
+  if (/\s/.test(text)) return null;
+  const url = URL.parse(text);
+  if (url?.protocol !== 'https:' || url.href.length > MAX_SOURCE_URL) return null;
+  return url.href;
 }
 
 const trimmedOrNull = (max: number) =>
@@ -30,7 +32,7 @@ export const valuationSchema = z.strictObject({
   asOf: isoDateSchema,
   valueVnd: z.number().int().min(1).max(MAX_AMOUNT_VND).transform(vnd),
   method: z.enum(VALUATION_METHODS),
-  sourceUrl: z.string().refine(isHttpsUrl).nullable(),
+  sourceUrl: z.string().transform(httpsHref).pipe(z.string()).nullable(),
   note: z.string().max(MAX_VALUATION_NOTE).nullable(),
 });
 export type Valuation = z.output<typeof valuationSchema>;
@@ -58,8 +60,9 @@ export function readValuation(input: unknown, today: IsoDate): Result<Valuation,
   const { value, asOf, sourceUrl, ...fields } = texts.data;
   const amount = parseStorableVnd(value);
   const day = parsePastDateOrToday(asOf, today);
-  const https = sourceUrl === null || isHttpsUrl(sourceUrl);
-  if (amount.ok && day.ok && https) return { ok: true, value: { ...fields, valueVnd: amount.value, asOf: day.value, sourceUrl } };
+  const href = sourceUrl === null ? null : httpsHref(sourceUrl);
+  const https = sourceUrl === null || href !== null;
+  if (amount.ok && day.ok && https) return { ok: true, value: { ...fields, valueVnd: amount.value, asOf: day.value, sourceUrl: href } };
   return {
     ok: false,
     reason: {
