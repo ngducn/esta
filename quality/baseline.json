@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 121,
+      "value": 120,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -16,7 +16,6 @@
         "apps/web/src/components/date-input.tsx": 1,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 2,
         "apps/web/src/components/expenses/expense-sheet.tsx": 1,
-        "apps/web/src/components/leases/LeaseForm.tsx": 1,
         "apps/web/src/components/legal/annotation-list.tsx": 1,
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
         "apps/web/src/components/legal/legal-item-actions.tsx": 1,
@@ -61,7 +60,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1281,
+      "value": 1273,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -76,7 +75,6 @@
         "apps/web/src/components/date-input.tsx": 11,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 22,
         "apps/web/src/components/expenses/expense-sheet.tsx": 9,
-        "apps/web/src/components/leases/LeaseForm.tsx": 8,
         "apps/web/src/components/legal/annotation-list.tsx": 6,
         "apps/web/src/components/legal/legal-form-shell.tsx": 12,
         "apps/web/src/components/legal/legal-item-actions.tsx": 40,
