@@ -3,8 +3,6 @@ begin;
 
 select plan(1);
 
--- The rows of fixtures/extraction_schemas.csv, which packages/core/src/documents/categories.test.ts writes from
--- DOCUMENT_CATEGORIES; scripts/pgtap-fixtures.test.ts fails when the two differ.
 select is_empty(
   $$ select category, schema_name, private.extraction_schema(category)
      from (values
