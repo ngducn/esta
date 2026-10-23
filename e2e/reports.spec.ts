@@ -51,7 +51,7 @@ test('lane 2: Mẹ reads the rent roll on her phone: the leases in effect today,
   const active = await rest<{ id: string }[]>(
     page,
     'GET',
-    `leases?household_id=eq.${laneHousehold(2)}&status=eq.active&start_date=lte.2026-10-07&or=(end_date.is.null,end_date.gte.2026-10-07)&select=id`,
+    `leases?household_id=eq.${laneHousehold(2)}&status=in.(active,terminated)&start_date=lte.2026-10-07&or=(end_date.is.null,end_date.gte.2026-10-07)&select=id`,
   );
   expect(table.rows.map((row) => row.key).toSorted()).toEqual(active.map((lease) => lease.id).toSorted());
   expect(table.rows.map((row) => row.cells['#0'])).not.toContain('Phòng 7, Dãy trọ Dĩ An');
@@ -67,6 +67,7 @@ test("lane 3: October's collections equal what was allocated to October's bills,
   await page.goto('/reports?report=collections');
   await expect(report(page).getByRole('heading', { name: 'Thu tiền theo tháng năm 2026' })).toBeVisible();
   const table = await readReportTable(report(page));
+  expect(table.columns, 'money not yet due is not called debt').toEqual(['Tháng', 'Phải thu', 'Đã thu', 'Chưa thu']);
   const due = (from: string, to: string) =>
     rest<{ lease_id: string; total_vnd: number; allocated_vnd: number; outstanding_vnd: number }[]>(
       page,
