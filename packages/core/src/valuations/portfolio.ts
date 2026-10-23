@@ -11,8 +11,8 @@ export function latestValuation<V extends Dated>(newestRecordedFirst: readonly V
   }, undefined);
 }
 
-export function grossYieldBp(annualRentVnd: Vnd, valueVnd: Vnd): number {
-  return scaleRoundHalfUp(annualRentVnd, 10_000, valueVnd, 1);
+export function grossYieldBp(monthlyRentVnd: Vnd, valueVnd: Vnd): number {
+  return scaleRoundHalfUp(monthlyRentVnd, 12 * 10_000, valueVnd, 1);
 }
 
 export type Portfolio = {

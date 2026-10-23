@@ -29,20 +29,22 @@ describe('latestValuation', () => {
 });
 
 describe('grossYieldBp', () => {
-  it('is annual rent over value in basis points', () => {
-    expect(grossYieldBp(vnd(617_500_000), vnd(9_500_000_000))).toBe(650);
+  it('is twelve months of rent over value in basis points', () => {
+    expect(grossYieldBp(vnd(30_000_000), vnd(9_500_000_000))).toBe(379);
+    expect(grossYieldBp(vnd(50_000_000), vnd(6_000_000_000))).toBe(1_000);
   });
 
   it('rounds to whole basis points, half up', () => {
-    expect(grossYieldBp(vnd(1), vnd(30_000))).toBe(0);
-    expect(grossYieldBp(vnd(1), vnd(20_000))).toBe(1);
-    expect(grossYieldBp(vnd(2), vnd(30_000))).toBe(1);
-    expect(grossYieldBp(vnd(360_000_000), vnd(7_000_000_000))).toBe(514);
-    expect(grossYieldBp(vnd(360_000_000), vnd(7_200_000_000))).toBe(500);
+    expect(grossYieldBp(vnd(1), vnd(360_000))).toBe(0);
+    expect(grossYieldBp(vnd(1), vnd(240_001))).toBe(0);
+    expect(grossYieldBp(vnd(1), vnd(240_000))).toBe(1);
+    expect(grossYieldBp(vnd(2), vnd(360_000))).toBe(1);
+    expect(grossYieldBp(vnd(30_000_000), vnd(7_000_000_000))).toBe(514);
+    expect(grossYieldBp(vnd(30_000_000), vnd(7_200_000_000))).toBe(500);
   });
 
   it('stays exact at the amount ceiling', () => {
-    expect(grossYieldBp(vnd(1_000_000_000_000), vnd(1_000_000_000_000))).toBe(10_000);
+    expect(grossYieldBp(vnd(1_000_000_000_000), vnd(1_000_000_000_000))).toBe(120_000);
   });
 });
 

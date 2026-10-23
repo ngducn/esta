@@ -1,6 +1,6 @@
 import type { IsoDate } from '@esta/core/date';
 import { formatBps, formatDate, formatVnd, formatVndCompact } from '@esta/core/format';
-import { vnd, type Vnd } from '@esta/core/money';
+import type { Vnd } from '@esta/core/money';
 import { grossYieldBp, latestValuation, valuationAge, type Valuation } from '@esta/core/valuations';
 import { ExternalLink } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
@@ -19,7 +19,7 @@ export async function ValuationBlock({ valuations, today, monthlyRentVnd, editSc
   const [t, locale] = await Promise.all([getTranslations('valuations'), getLocale()]);
   const latest = latestValuation(valuations, today);
   const age = latest === undefined ? null : valuationAge(latest.asOf, today);
-  const yieldBp = latest === undefined || monthlyRentVnd === null ? null : grossYieldBp(vnd(monthlyRentVnd * 12), latest.valueVnd);
+  const yieldBp = latest === undefined || monthlyRentVnd === null ? null : grossYieldBp(monthlyRentVnd, latest.valueVnd);
   return (
     <section aria-labelledby="valuation-title" data-testid="valuation-block" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card lg:p-6">
       <h2 id="valuation-title" className="text-h3 text-ink">
