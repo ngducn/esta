@@ -43,7 +43,7 @@ function owePartOfPhong7LastMonth() {
   query(workdir, `update public.payments set amount_vnd = 1500000 where id = '${payment}' returning id`);
 }
 
-test('rule 1: the ended Phòng 7 lease holds its 2.800.000 ₫ deposit in one received row, offers deduct and refund, and Tài sản shows the household total', async ({ page }) => {
+test('rule 1: the ended Phòng 7 lease holds its 2.800.000 ₫ deposit in one received row, offers deduct and refund, and Tài sản shows the household total (LSE-9)', async ({ page }) => {
   await open(page, 'ryan.lane7@demo.esta.test', 'dark', DESKTOP);
   await page.goto(laneLeasePath(7, 'di-an', 7));
   await expect(page.getByTestId('lease-status')).toHaveText('Đã kết thúc');

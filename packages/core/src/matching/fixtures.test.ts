@@ -45,7 +45,7 @@ function matched(id: FileId, knownFingerprints?: ReadonlySet<string>): typeof go
   return { rows: rows.map(({ row, fingerprint, match }) => ({ ...row, fingerprint, match })), rejected: decoded.value.rejected };
 }
 
-describe('fixtures/statements', () => {
+describe('fixtures/statements (LSE-8)', () => {
   it('holds the invoices and the golden result the scenario states', async () => {
     await expect(`${JSON.stringify(SCENARIO_INVOICES, null, 2)}\n`).toMatchFileSnapshot(`${DIR}invoices.json`);
     await expect(`${JSON.stringify(golden, null, 2)}\n`).toMatchFileSnapshot(`${DIR}golden.json`);

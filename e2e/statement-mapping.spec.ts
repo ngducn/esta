@@ -3,7 +3,7 @@ import { nextUnrecognizedCsv, statementCsv, unrecognizedCsv, valueDatedCsv } fro
 import { isoDate } from '../packages/core/src/date/iso-date.ts';
 import { UNRECOGNIZED_COLUMNS, UNRECOGNIZED_LAYOUT } from '../packages/core/src/matching/statement-scenario.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
-import { chooseFile, expectGolden, openBills, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
+import { chooseFile, chooseFromBoard, expectGolden, openBills, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, settled, shot, START } from './helpers/wizard';
 
@@ -45,10 +45,7 @@ test('rule 1: Ryan maps the columns of a statement Esta does not recognize and p
   const household = await statementHousehold(page);
   const csv = unrecognizedCsv(household.statement);
 
-  await page.goto('/collections');
-  await page.getByTestId('statement-import-link').click();
-  await expect(page).toHaveURL(/\/collections\/import$/);
-  await chooseFile(page, 'sao-ke-ngan-hang-demo.csv', csv);
+  await chooseFromBoard(page, 'sao-ke-ngan-hang-demo.csv', csv);
   await expect(mapping(page)).toBeVisible();
   await expect(page.getByTestId('mapping-intro')).toHaveText(INTRO_NEW);
   await expect(page.getByTestId('mapping-header-row')).toHaveValue(String(HEADER_ROW));

@@ -28,7 +28,7 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const current = options.find((option) => option.value === value);
-  const step = cn(buttonVariants({ variant: 'outline' }), 'px-3 max-sm:row-start-2');
+  const step = cn(buttonVariants({ variant: 'outline' }), 'px-3');
   const go = (href: string) => startTransition(() => router.push(href, { scroll: false }));
   const follow = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -39,12 +39,13 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <nav aria-label={label} className="grid w-full grid-cols-2 items-center gap-2 sm:flex sm:w-auto">
-          <Link href={previous.href} onClick={(event) => follow(event, previous.href)} className={cn(step, 'max-sm:justify-self-start')} data-testid="month-previous">
+        {/* On a phone the month sits on its own line, and the two steps wrap rather than overlap when long month names at 130% outgrow it (FND-8). */}
+        <nav aria-label={label} className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+          <Link href={previous.href} onClick={(event) => follow(event, previous.href)} className={step} data-testid="month-previous">
             <ChevronLeft aria-hidden="true" />
             {previous.label}
           </Link>
-          <label className="relative col-span-2 row-start-1 flex min-h-touch items-center gap-2 rounded-sm border border-rule-strong bg-surface pr-10 pl-4 text-body font-semibold text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+          <label className="relative flex min-h-touch items-center gap-2 rounded-sm border border-rule-strong bg-surface pr-10 pl-4 text-body font-semibold text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent max-sm:order-first max-sm:basis-full">
             <span className="sr-only">{label}</span>
             <span aria-hidden="true" className="figures">
               {current?.label}
@@ -63,7 +64,7 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 size-5 text-ink-muted" aria-hidden="true" />
           </label>
-          <Link href={next.href} onClick={(event) => follow(event, next.href)} className={cn(step, 'max-sm:justify-self-end')} data-testid="month-next">
+          <Link href={next.href} onClick={(event) => follow(event, next.href)} className={cn(step, 'max-sm:ml-auto')} data-testid="month-next">
             {next.label}
             <ChevronRight aria-hidden="true" />
           </Link>

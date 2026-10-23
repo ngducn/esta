@@ -121,7 +121,7 @@ test('rule 7: the properties list shows the rent of active leases, Đang cho thu
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease paid through 30/09/2026 and sees October issued, due 01/10/2026', async ({ page }) => {
+test('rule 2: Mẹ adds a tenant by name and phone, activates a monthly lease paid through 30/09/2026 and sees October issued, due 01/10/2026 (LSE-1, LSE-3)', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
   const room = await freshRoom(page, 3);
   await page.goto(rentalPath(3, 'di-an'));

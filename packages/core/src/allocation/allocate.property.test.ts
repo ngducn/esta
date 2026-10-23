@@ -33,7 +33,7 @@ const sum = (allocations: readonly Allocation[]) => allocations.reduce((total, a
 const key = (invoice: OpenInvoice): [IsoDate, IsoDate, string] => [invoice.dueDate, invoice.periodStart, invoice.id];
 const older = (a: OpenInvoice, b: OpenInvoice) => key(a).join('|') < key(b).join('|');
 
-describe('allocatePayment, oldest due first', () => {
+describe('allocatePayment, oldest due first (LSE-7)', () => {
   it('allocates only positive amounts, never more than the payment, and leaves no negative credit', () => {
     fc.assert(
       fc.property(payment, invoices, (paid, open) => {

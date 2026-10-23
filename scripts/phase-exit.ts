@@ -3,6 +3,7 @@ import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { isIsoDate } from '../packages/core/src/date/iso-date.ts';
 
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
@@ -44,6 +45,95 @@ export function verifyPingRecord(text: string): Outcome {
   const calls = tool_calls['mcp__esta__household_info'] ?? 0;
   const pass = auth_mode === 'subscription' && agent_mode === 'live' && calls === 1;
   return { pass, detail: `auth ${auth_mode}, agent ${agent_mode}, household_info × ${calls}` };
+}
+
+export const STATUS = 'docs/plan/STATUS.md';
+export const MOM_TEST = 'docs/plan/mom-test.md';
+
+/** Markdown as a reader sees it: without HTML comments or fenced code, where a record could sit unseen. */
+export function shownMarkdown(text: string): string {
+  let fence: string | null = null;
+  return text
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
+    .split('\n')
+    .filter((line) => {
+      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker === undefined) return fence === null;
+      if (fence === null) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      return false;
+    })
+    .join('\n');
+}
+
+/** The body of the shown `## <heading>` section, or nothing when the file has no such section. */
+export function markdownSection(text: string, heading: string): string {
+  const section = shownMarkdown(text)
+    .split(/^## /m)
+    .slice(1)
+    .find((part) => part.slice(0, part.indexOf('\n') === -1 ? undefined : part.indexOf('\n')).trim() === heading);
+  return section === undefined ? '' : section.slice(section.indexOf('\n') + 1);
+}
+
+const VIETQR_RECORD = '- VietQR gate passed on ';
+/** An app's name as typed, in NFC, without the zero-width characters a copy and paste can bring along. */
+const appName = (typed: string) => typed.normalize('NFC').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').trim();
+const appKey = (app: string) => app.toLowerCase().replace(/\s+/g, '');
+const named = (app: string) => /[\p{L}\p{N}]/u.test(app) && !/[<>]/.test(app);
+
+/**
+ * Ryan's one line under `## Decided by Ryan` in STATUS.md once two banking apps have scanned the gate's VietQR and an
+ * invoice's (SPEC §10, Phase 3): `- VietQR gate passed on YYYY-MM-DD: <first app>, <second app>.`, a real date from
+ * 2026 on and two different apps, named.
+ */
+export function verifyVietQrScan(text: string): Outcome {
+  const records = markdownSection(text, 'Decided by Ryan')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith(VIETQR_RECORD));
+  if (records.length === 0) return { pass: false, detail: `waiting for Ryan: no "${VIETQR_RECORD.slice(2).trim()}" line under Decided by Ryan in ${STATUS}` };
+  if (records.length > 1) return { pass: false, detail: `${records.length} "${VIETQR_RECORD.slice(2).trim()}" lines under Decided by Ryan in ${STATUS}; keep one` };
+  const record = /^- VietQR gate passed on (\S+): ([^,]*), ([^,]*?)\.?$/.exec(records[0] ?? '');
+  if (record === null) return { pass: false, detail: `the VietQR line in ${STATUS} names no date and two apps, as "${VIETQR_RECORD}YYYY-MM-DD: <first app>, <second app>."` };
+  const [, date = '', first = '', second = ''] = record.map(appName);
+  const problems = [
+    ...(isIsoDate(date) && Number(date.slice(0, 4)) >= 2026 ? [] : [`${date} is not a date from 2026 on`]),
+    ...[first, second].flatMap((app, i) => (named(app) ? [] : [`the ${i === 0 ? 'first' : 'second'} app is not named`])),
+    ...(named(first) && appKey(first) === appKey(second) ? ['the two apps are the same'] : []),
+  ];
+  return problems.length === 0
+    ? { pass: true, detail: `${first} and ${second} on ${date}` }
+    : { pass: false, detail: `the VietQR line in ${STATUS}: ${problems.join(', ')}` };
+}
+
+const MOM_TASKS = 4;
+const MOM_LIMIT_SECONDS = 120;
+const MOM_ROW = /^\|\s*([1-4])\.[^|]*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|/;
+
+/**
+ * Ryan's table under `## Results` in mom-test.md: one row for each of the four SPEC §10.1 tasks, marked `yes`, with a
+ * time `m:ss` above 0:00 and under 2:00.
+ */
+export function verifyMomTest(text: string): Outcome {
+  const rows = markdownSection(text, 'Results')
+    .split('\n')
+    .map((line) => MOM_ROW.exec(line))
+    .filter((row) => row !== null);
+  const problems: string[] = [];
+  for (let task = 1; task <= MOM_TASKS; task++) {
+    const own = rows.filter((row) => row[1] === String(task));
+    const [row] = own;
+    const time = /^(\d+):([0-5]\d)$/.exec(row?.[2] ?? '');
+    const seconds = time === null ? undefined : Number(time[1]) * 60 + Number(time[2]);
+    if (row === undefined) problems.push(`task ${task} has no row`);
+    else if (own.length > 1) problems.push(`task ${task} has ${own.length} rows`);
+    else if (seconds === undefined) problems.push(`task ${task} has no time`);
+    else if (seconds <= 0 || seconds >= MOM_LIMIT_SECONDS) problems.push(`task ${task} took ${row[2]}`);
+    else if (row[3]?.toLowerCase() !== 'yes') problems.push(`task ${task} is not marked passed`);
+  }
+  return problems.length === 0
+    ? { pass: true, detail: `${MOM_TASKS} of ${MOM_TASKS} tasks passed in under two minutes` }
+    : { pass: false, detail: `waiting for Ryan: ${problems.join(', ')} in ${MOM_TEST}` };
 }
 
 /** Local CI's policy: a test that fails gets one retry, and a test that fails twice fails its row. */
@@ -132,6 +222,32 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
     { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '2']] },
+  ],
+  // The integration tests want a fresh full seed, and their cron test moves every household past SPEC §9.3's day, so
+  // their row resets first and runs right before north-star, which resets to the `northstar` seed.
+  '3': [
+    cited('LSE-1', { e2e: ['leases'] }),
+    cited('LSE-2', { core: ['lease/state.test.ts', 'lease/changes.test.ts'], pgtap: ['leases', 'lease_changes', 'lease_schedule'], e2e: ['leases', 'lease-detail'] }),
+    cited('LSE-3', { pgtap: ['leases', 'lease_schedule', 'lease_changes'], e2e: ['leases'] }),
+    cited('LSE-4', { core: ['meters/consumption.test.ts', 'meters/anomaly.test.ts'], pgtap: ['meters'], e2e: ['meters'] }),
+    cited('LSE-5', { core: ['vietqr/roundtrip.test.ts'], pgtap: ['invoice_void_issue'], e2e: ['invoices'] }),
+    cited('LSE-6', { web: ['server/receipts/pdf.test.ts'], e2e: ['receipts'] }),
+    cited('LSE-7', { core: ['allocation/allocate.property.test.ts'], pgtap: ['record_payment', 'deposits'], e2e: ['record-payment'] }),
+    cited('LSE-8', { core: ['matching/fixtures.test.ts'], pgtap: ['statement_import'], e2e: ['statement-import', 'statement-mapping'] }),
+    cited('LSE-9', { core: ['allocation/deposits.test.ts'], pgtap: ['deposits'], e2e: ['deposits'] }),
+    cited('LSE-10', { core: ['collections/group.test.ts', 'properties/status.test.ts'], pgtap: ['collections'], e2e: ['collections'] }),
+    cited('LSE-11', { core: ['reminder/templates.test.ts', 'phone/phone.test.ts'], pgtap: ['invoice_share_token'], e2e: ['reminder'] }),
+    // The lease prefill from a contract photo (P3-19) brings this spec; the row fails until it merges.
+    cited('DOC-6', { e2e: ['lease-from-contract'] }),
+    cited('FND-8', { e2e: ['fnd8'] }),
+    // Schedule's fast-check samples are pgTAP golden vectors since the database became the one planner (#195).
+    { id: 'PBT', commands: [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', 'src/allocation/allocate.property.test.ts', 'src/matching/match.property.test.ts'], ['pnpm', 'db:test', 'supabase/tests/lease_schedule.test.sql']] },
+    { id: 'RLS', commands: [['pnpm', 'db:test']] },
+    { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
+    { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
+    { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '3']] },
+    { id: 'VietQR', verify: (repoRoot) => verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8')) },
+    { id: 'Mom', verify: (repoRoot) => verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8')) },
   ],
 };
 

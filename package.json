@@ -47,6 +47,7 @@
     "db:test": "node scripts/db.ts test",
     "clock:set": "tsx scripts/clock-set.ts",
     "qr:decode": "tsx scripts/decode-qr.ts",
+    "gate:vietqr": "tsx scripts/gate-vietqr.ts",
     "reference:build": "node scripts/reference/build-csvs.ts && node scripts/reference/build-migration.ts",
     "cron:run": "node scripts/cron-run.ts",
     "fixtures:certificates": "tsx fixtures/certificates/generator/generate.ts",

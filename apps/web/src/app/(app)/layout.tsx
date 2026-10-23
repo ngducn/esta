@@ -30,6 +30,8 @@ export default async function AppLayout({ children }: Readonly<{ children: React
 
   const toItem = ({ key, href }: { key: NavItem['key']; href: string }): NavItem => ({ key, href, label: nav(key) });
   const items = primarySections.map(toItem);
+  // A phone's five tabs share 390 px, and the English section names need 490 at 130% text, so the tabs take short ones (FND-8).
+  const tabs = primarySections.map(({ key, href }): NavItem => ({ key, href, label: nav(`${key}Tab`) }));
   const more = accountSections.map(toItem);
   const name = member.displayName ?? shell('account');
   const initial = monogram(member.displayName);
@@ -60,7 +62,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           </div>
         </header>
         <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">{children}</main>
-        <TabBar items={items} label={shell('sections')} />
+        <TabBar items={tabs} label={shell('sections')} />
       </div>
       <PrefetchTabs />
       <AvatarMenu

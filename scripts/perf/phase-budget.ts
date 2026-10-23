@@ -38,7 +38,13 @@ export const PHASE_2_BUDGETS: readonly Budget[] = [
   { route: '/properties/new', limits: GENERAL },
 ];
 
-const PHASE_BUDGETS: Readonly<Record<string, readonly Budget[]>> = { '1': PHASE_1_BUDGETS, '2': PHASE_2_BUDGETS };
+/** SPEC §7.2 on Home and Collections, the Phase 3 routes it names. */
+export const PHASE_3_BUDGETS: readonly Budget[] = [
+  { route: '/', limits: GENERAL },
+  { route: '/collections', limits: GENERAL },
+];
+
+const PHASE_BUDGETS: Readonly<Record<string, readonly Budget[]>> = { '1': PHASE_1_BUDGETS, '2': PHASE_2_BUDGETS, '3': PHASE_3_BUDGETS };
 
 export function misses(budget: Budget, medians: Medians, { listScriptKb, pinsMs }: Extras = {}): string[] {
   const metrics = (Object.keys(budget.limits) as Metric[]).flatMap((key) => {

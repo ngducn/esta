@@ -46,7 +46,7 @@ async function receiptPdf(page: Page, id: string) {
 /** pdf.js reads the no-break space before ₫ back as a plain space. */
 const amount = (value: number) => `${new Intl.NumberFormat('vi-VN').format(value)} ₫`;
 
-test('rule 1: Thông báo PDF on the unpaid Phòng 3 October bill prints a notice with the tenant in NFC, the lines, the total and its words and no received row, and Ảnh gửi Zalo saves a 1080 × 1527 picture whose code pays the bill', async ({ page }) => {
+test('rule 1: Thông báo PDF on the unpaid Phòng 3 October bill prints a notice with the tenant in NFC, the lines, the total and its words and no received row, and Ảnh gửi Zalo saves a 1080 × 1527 picture whose code pays the bill (LSE-6)', async ({ page }) => {
   await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
   const id = laneInvoice(2, 'di-an', 3, '2026-10-25');
   const bill = await stored(page, id);

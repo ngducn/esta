@@ -7,7 +7,7 @@ import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { boardRow, storedInvoice } from './helpers/board';
 import { laneHousehold, laneInvoice } from './helpers/seed';
-import { chooseFile, expectGolden, laneStatement, line, preview, PROPERTY, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
+import { chooseFile, chooseFromBoard, commitLines, confirmSuggestion, expectFilters, expectGolden, laneStatement, line, openPreview, preview, PROPERTY, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START, toast, vnd } from './helpers/wizard';
 
@@ -25,22 +25,14 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   const household = await statementHousehold(page);
   const csv = statementCsv(household.statement, 'a');
 
-  await page.goto('/collections');
-  await page.getByTestId('statement-import-link').click();
-  await expect(page).toHaveURL(/\/collections\/import$/);
+  await chooseFromBoard(page, 'sao-ke-thang-10.csv', csv);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nhập sao kê');
-  await upload(page, 'sao-ke-thang-10.csv', csv);
   await expect(page.getByTestId('statement-read')).toContainText('sao-ke-thang-10.csv: đọc được 12 dòng.');
   await expect(page.getByTestId('statement-read')).toContainText('1 dòng không đọc được');
   await holdForRecording(page);
-  await page.getByTestId('statement-preview').click();
-  await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
+  await openPreview(page);
 
-  await expect(page.getByTestId('statement-filter-memo_match')).toHaveText('Khớp mã (3)');
-  await expect(page.getByTestId('statement-filter-suggested')).toHaveText('Gợi ý (1)');
-  await expect(page.getByTestId('statement-filter-unmatched')).toHaveText('Chưa khớp (5)');
-  await expect(page.getByTestId('statement-filter-ignored')).toHaveText('Bỏ qua (3)');
-  await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (0)');
+  await expectFilters(page, { memo_match: 3, suggested: 1, unmatched: 5, ignored: 3, posted: 0 });
   await expectGolden(page, household);
   await expect(line(page, 6).getByTestId('statement-target')).toContainText(' hoặc ');
   await expect(line(page, 6).getByRole('checkbox')).toHaveCount(0);
@@ -52,17 +44,14 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   await shot(page, 'p3-15-preview-390-light');
   await holdForRecording(page);
 
-  await page.getByTestId('statement-commit').click();
-  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
+  await commitLines(page, 3);
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (3)');
   await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 0 khoản');
   await expect(page.getByTestId('statement-commit')).toBeDisabled();
   await holdForRecording(page);
 
-  await line(page, 4).getByRole('checkbox', { name: 'Xác nhận gợi ý dòng 4' }).click();
-  await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 1 khoản');
-  await page.getByTestId('statement-commit').click();
-  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 1 khoản. Các khoản đã vào trang Thu tiền.');
+  await confirmSuggestion(page, 4);
+  await commitLines(page, 1);
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (4)');
   await expect(page.getByTestId('statement-committed')).toHaveText('Đã ghi sổ sao kê này.');
   await shot(page, 'p3-15-posted-390-light');
@@ -115,8 +104,7 @@ test('rule 2: at 1440 in dark, a layout B workbook into a second account preview
   await expect(page.getByTestId('statement-line')).toHaveCount(1);
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
-  await page.getByTestId('statement-commit').click();
-  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
+  await commitLines(page, 3);
   expect((await statementPayments(page, household.householdId)).map((payment) => payment.bank_account_id)).toEqual([second, second, second]);
 });
 
@@ -168,8 +156,7 @@ test('rule 5: offline, Ghi sổ keeps the ticked suggestion and says to try agai
   await shot(page, 'p3-15-offline-390-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.context().setOffline(false);
-  await page.getByTestId('statement-commit').click();
-  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 4 khoản. Các khoản đã vào trang Thu tiền.');
+  await commitLines(page, 4);
   expect(await statementPayments(page, household.householdId)).toHaveLength(4);
 });
 
@@ -231,8 +218,7 @@ test('rule 8: a code match on a bill Mẹ already recorded by hand is held, and 
   await expect(page.getByTestId('statement-result')).toHaveText('Đã nối dòng 1 với khoản ghi tay, không thêm tiền.');
   await expect(line(page, 1)).toHaveAttribute('data-status', 'posted');
   await expect(line(page, 1).getByTestId('statement-target')).toContainText('đã ghi tay trước đó');
-  await page.getByTestId('statement-commit').click();
-  await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 2 khoản. Các khoản đã vào trang Thu tiền.');
+  await commitLines(page, 2);
   expect(await statementPayments(page, household.householdId)).toHaveLength(2);
   const hand = await memberRest<{ statement_row_id: string | null }[]>(page, 'GET', `payments?household_id=eq.${household.householdId}&source=eq.manual&select=statement_row_id`);
   expect(hand.map((payment) => payment.statement_row_id !== null)).toEqual([true]);
@@ -279,21 +265,16 @@ test('rule 10: on a seeded lane with September recorded by hand, the October sta
   expect(matches).toHaveLength(3);
   if (suggestion === undefined) throw new Error('The lane statement has no suggestion');
   try {
-    await page.goto('/collections');
-    await page.getByTestId('statement-import-link').click();
-    await expect(page).toHaveURL(/\/collections\/import$/);
-    await chooseFile(page, 'sao-ke-thang-10.csv', statementCsv(statement, 'a'));
+    await chooseFromBoard(page, 'sao-ke-thang-10.csv', statementCsv(statement, 'a'));
     await expect(page.getByTestId('statement-read')).toBeVisible();
     await page.getByTestId('statement-preview').click();
     await expect(page).toHaveURL(/\/collections\/import\/[0-9a-f-]{36}$/, { timeout: 20_000 });
     for (const row of expected) await expect(line(page, row.index)).toHaveAttribute('data-status', row.status);
     await expect(page.getByTestId('statement-filter-held')).toHaveText('Có thể trùng (0)');
     await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 3 khoản');
-    await page.getByTestId('statement-commit').click();
-    await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 3 khoản. Các khoản đã vào trang Thu tiền.');
-    await line(page, suggestion.index).getByRole('checkbox', { name: `Xác nhận gợi ý dòng ${suggestion.index}` }).click();
-    await page.getByTestId('statement-commit').click();
-    await expect(page.getByTestId('statement-result')).toHaveText('Đã ghi sổ 1 khoản. Các khoản đã vào trang Thu tiền.');
+    await commitLines(page, 3);
+    await confirmSuggestion(page, suggestion.index);
+    await commitLines(page, 1);
     for (const row of [...matches, suggestion]) await expect(line(page, row.index)).toHaveAttribute('data-status', 'posted');
 
     const october = matches.map((row) => bills.find((bill) => bill.number === row.invoices[0])?.id);
