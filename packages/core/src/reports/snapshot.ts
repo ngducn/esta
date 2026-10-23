@@ -35,18 +35,13 @@ export type ReportSnapshot = {
   readonly incomes: readonly (IncomeFact & { readonly propertyId: string })[];
   /** Live expenses paid in the period. */
   readonly expenses: readonly (ExpenseFact & { readonly propertyId: string })[];
-  /** Issued invoices due in the period. */
+  /** Issued invoices due in the period on live properties. */
   readonly invoices: readonly ReportInvoice[];
-  /** The rent roll's leases on `asOf`, each with every invoice and scheduled period it has. */
+  /** The leases in effect on `asOf` on live properties, each with every invoice and scheduled period it has. */
   readonly leases: readonly ReportLease[];
   readonly leaseInvoices: readonly ReportInvoice[];
   readonly schedule: readonly SchedulePeriod[];
 };
-
-/** SPEC §5.4 as the rent roll reads it: active, started and not past its end date. Ended and terminated leases never count. */
-export function inRentRoll(lease: Pick<LeaseRow, 'status' | 'start_date' | 'end_date'>, asOf: IsoDate): boolean {
-  return lease.status === 'active' && lease.start_date !== null && lease.start_date <= asOf && (lease.end_date === null || asOf <= lease.end_date);
-}
 
 /** A year's report period: the whole year, or through the end of the Clock's month in the current year. */
 export function yearPeriod(year: number, today: IsoDate): { from: IsoDate; to: IsoDate } {

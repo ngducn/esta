@@ -1,6 +1,7 @@
 import type { IsoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
-import { inRentRoll, type ReportLease, type ReportSnapshot } from '@esta/core/reports';
+import { inEffect } from '@esta/core/lease';
+import type { ReportLease, ReportSnapshot } from '@esta/core/reports';
 import type { Db } from './db';
 import { readInvoices } from './invoices';
 import { readLeaseNames, readLeases, readLeaseSchedule, scheduleUntil, withTenants } from './leases';
@@ -16,7 +17,9 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
   ]);
   if (properties.error) throw new Error(`Reading the properties failed: ${properties.error.message}`);
   const live = new Set(properties.data.map((property) => property.id));
-  const rolled = leases.filter((lease) => live.has(lease.property_id) && inRentRoll(lease, asOf));
+  const liveLeases = leases.filter((lease) => live.has(lease.property_id));
+  const liveLeaseIds = new Set(liveLeases.map((lease) => lease.id));
+  const rolled = liveLeases.filter((lease) => inEffect(lease, asOf));
   const ids = rolled.map((lease) => lease.id);
   const [tenanted, names, leaseInvoices, schedule] = await Promise.all([
     withTenants(db, householdId, rolled),
@@ -31,7 +34,7 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
     properties: properties.data,
     incomes: facts.incomes.filter((fact) => live.has(fact.propertyId)),
     expenses: facts.expenses.filter((fact) => live.has(fact.propertyId)),
-    invoices,
+    invoices: invoices.filter((invoice) => liveLeaseIds.has(invoice.leaseId)),
     leases: tenanted.map(
       (lease): ReportLease => ({
         ...lease,

@@ -62,10 +62,7 @@ const invoice = (leaseId: string, periodStart: string, totalVnd: number, allocat
 });
 
 const room5 = lease('Phòng 5', { paid_through_date: '2026-08-31' });
-const room7Ended = lease('Phòng 7', { status: 'ended', end_date: '2026-07-31' });
-const room2Terminated = lease('Phòng 2', { status: 'terminated', end_date: '2026-10-31', terminated_on: '2026-10-31' });
-const room3Draft = lease('Phòng 3', { status: 'draft' });
-const room4NotYet = lease('Phòng 4', { start_date: '2026-11-01' });
+const room2Terminated = lease('Phòng 2', { status: 'terminated', end_date: '2026-12-15', terminated_on: '2026-12-15', paid_through_date: '2026-10-31' });
 const q7 = lease('Nguyên căn', { property_id: Q7, rent_vnd: 20_000_000, billing_cycle_months: 3, end_date: '2026-11-01', paid_through_date: '2026-12-31' }, {
   propertyName: 'Nhà phố Q7 Demo',
   wholeUnit: true,
@@ -103,12 +100,13 @@ const snapshot = (period: { from: IsoDate; to: IsoDate }): ReportSnapshot => ({
     invoice(room10.id, '2026-10-01', 3_000_000, 0, 'void'),
     invoice(room10.id, '2026-11-01', 3_000_000, 0, 'draft'),
   ],
-  leases: [room5, room7Ended, room2Terminated, room3Draft, room4NotYet, q7, room10],
+  leases: [room5, room2Terminated, q7, room10],
   leaseInvoices: [invoice(room5.id, '2026-08-01', 3_000_000, 3_000_000), septemberRoom5, invoice(room10.id, '2026-09-01', 3_000_000, 3_000_000), octoberRoom10],
   schedule: [
     ...schedulePeriods(room5.id, '2025-11-01', 3_000_000, 14).map((period) => (period.start >= '2026-09-01' ? { ...period, monthlyRentVnd: vnd(3_200_000) } : period)),
     ...schedulePeriods(q7.id, '2026-01-01', 20_000_000, 4, 3),
     ...schedulePeriods(room10.id, '2025-11-01', 3_000_000, 14),
+    ...schedulePeriods(room2Terminated.id, '2025-11-01', 3_000_000, 14),
   ],
 });
 
@@ -157,16 +155,13 @@ describe('propertyPnl (FIN-4)', () => {
 describe('rentRoll (FIN-4)', () => {
   const table = rentRoll(year2026, rollLabels);
 
-  it('lists only the leases in effect on the Clock date: never ended, terminated, draft or not yet started ones', () => {
-    expect(table.rows.map((row) => row.key)).toEqual([room5.id, room10.id, q7.id]);
-  });
-
   it('shows the rent in force, the cycle, paid through, the next due date, the deposit held and the end date', () => {
     expect(text(table)).toEqual([
+      ['Phòng 2 · Dãy trọ Dĩ An Demo', 'Người thuê Phòng 2 Demo', 3_000_000, '1 tháng', '31/10/2026', '01/11/2026', 3_000_000, '15/12/2026'],
       ['Phòng 5 · Dãy trọ Dĩ An Demo', 'Người thuê Phòng 5 Demo', 3_200_000, '1 tháng', '31/08/2026', '01/09/2026', 3_000_000, 'Không thời hạn'],
       ['Phòng 10 · Dãy trọ Dĩ An Demo', '—', 3_000_000, '1 tháng', '31/10/2026', '01/11/2026', 0, 'Không thời hạn'],
       ['Nhà phố Q7 Demo', 'Người thuê Nguyên căn Demo', 20_000_000, '3 tháng', '31/12/2026', '—', 40_000_000, '01/11/2026'],
-      ['Tổng cộng', '', 26_200_000, '', '', '', 43_000_000, ''],
+      ['Tổng cộng', '', 29_200_000, '', '', '', 46_000_000, ''],
     ]);
   });
 

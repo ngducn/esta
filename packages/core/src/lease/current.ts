@@ -16,7 +16,7 @@ export function holdsUnit(lease: LeaseSpan, asOf: IsoDate): boolean {
 }
 
 /** Holding its unit and started: a lease whose rent is owed on `asOf`. */
-function inEffect(lease: LeaseSpan, asOf: IsoDate): boolean {
+export function inEffect(lease: LeaseSpan, asOf: IsoDate): boolean {
   return holdsUnit(lease, asOf) && lease.start_date !== null && lease.start_date <= asOf;
 }
 

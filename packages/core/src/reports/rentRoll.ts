@@ -3,7 +3,7 @@ import { textCell, vndCell, type ExportTable } from '../export/table';
 import { collectedThrough } from '../lease/collected';
 import { currentMonthlyRent } from '../lease/monthlyRent';
 import { vnd } from '../money/vnd';
-import { inRentRoll, type ReportSnapshot } from './snapshot';
+import type { ReportSnapshot } from './snapshot';
 
 export type RentRollLabels = {
   readonly place: string;
@@ -25,13 +25,12 @@ export type RentRollLabels = {
 const collator = new Intl.Collator('vi', { numeric: true });
 
 /**
- * FIN-4: every lease in effect on the snapshot's `asOf`, keyed by its id, with the monthly rent in force then, `Đã thu đến`,
+ * FIN-4: each of the snapshot's leases, keyed by its id, with the monthly rent in force then, `Đã thu đến`,
  * the due date of the first period after it, the deposit held and the end date, and a totals row of rent and deposits.
  */
 export function rentRoll(snapshot: ReportSnapshot, labels: RentRollLabels): ExportTable {
   const { asOf } = snapshot;
   const lines = snapshot.leases
-    .filter((lease) => inRentRoll(lease, asOf))
     .toSorted((a, b) => collator.compare(a.propertyName, b.propertyName) || collator.compare(a.unitLabel, b.unitLabel))
     .map((lease) => {
       const periods = snapshot.schedule.filter((period) => period.leaseId === lease.id);
