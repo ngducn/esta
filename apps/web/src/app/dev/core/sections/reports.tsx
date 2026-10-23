@@ -11,7 +11,7 @@ import { createSessionClient } from '@/server/supabase/server';
 
 type MonthIncome = Extract<InvariantCheck, { kind: 'monthIncome' }>;
 
-/** FIN-4 on the signed-in household: the last 13 months of P&L income against `allocation_facts`, and every totals row. */
+/** FIN-4 on the signed-in household: the last 13 months of P&L income against `allocation_facts`, every totals row, and the owner shares. */
 export async function ReportsSection() {
   const member = await getCurrentMember();
   const heading = (
@@ -27,14 +27,24 @@ export async function ReportsSection() {
       </section>
     );
   }
-  const [clock, t, place, locale] = await Promise.all([getClock(), getTranslations('reports'), getTranslations('collections'), getLocale() as Promise<Locale>]);
+  const [clock, t, place, valuations, locale] = await Promise.all([
+    getClock(),
+    getTranslations('reports'),
+    getTranslations('collections'),
+    getTranslations('valuations'),
+    getLocale() as Promise<Locale>,
+  ]);
   const today = clock.today();
   const period = { from: addMonths(firstOfMonth(today), -12), to: addDays(addMonths(firstOfMonth(today), 1), -1) };
   const snapshot = await readReportSnapshot(await createSessionClient(), member.household.id, { ...period, asOf: today });
+  const messages = { t, place, valuations, locale };
   const checks = checkReportInvariants(snapshot, {
-    pnl: REPORTS.pnl.build(snapshot, t, place, locale),
-    rentRoll: REPORTS['rent-roll'].build(snapshot, t, place, locale),
-    collections: REPORTS.collections.build(snapshot, t, place, locale),
+    pnl: REPORTS.pnl.build(snapshot, messages),
+    rentRoll: REPORTS['rent-roll'].build(snapshot, messages),
+    collections: REPORTS.collections.build(snapshot, messages),
+    occupancy: REPORTS.occupancy.build(snapshot, messages),
+    portfolio: REPORTS.portfolio.build(snapshot, messages),
+    owners: REPORTS.owners.build(snapshot, messages),
   });
   const months = new Map<string, MonthIncome[]>();
   for (const check of checks) if (check.kind === 'monthIncome') months.set(check.month, [...(months.get(check.month) ?? []), check]);
@@ -71,11 +81,19 @@ export async function ReportsSection() {
         </tbody>
       </table>
       <ul className="flex flex-col gap-1 text-small">
-        {others.map((check) => (
-          <li key={check.kind === 'totals' ? `${check.report}.${check.column}` : check.propertyId} data-testid="reports-check" data-matches={holds(check)}>
-            {check.kind === 'totals' ? `${check.report} totals ${check.column}` : `P&L row ${check.propertyId}`}: {holds(check) ? 'pass' : `FAIL, ${check.reportedVnd} against ${check.expectedVnd}`}
-          </li>
-        ))}
+        {others.map((check) => {
+          const [key, name, reported, expected] =
+            check.kind === 'totals'
+              ? [`${check.report}.${check.column}`, `${check.report} totals ${check.column}`, check.reported, check.expected]
+              : check.kind === 'ownerSplit'
+                ? [`owners.${check.column}`, `owner shares of P&L ${check.column}`, check.reportedVnd, check.expectedVnd]
+                : [check.propertyId, `P&L row ${check.propertyId}`, check.reportedVnd, check.expectedVnd];
+          return (
+            <li key={key} data-testid="reports-check" data-matches={holds(check)}>
+              {name}: {holds(check) ? 'pass' : `FAIL, ${reported} against ${expected}`}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

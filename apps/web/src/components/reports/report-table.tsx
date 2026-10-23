@@ -1,5 +1,5 @@
-import type { ExportCell, ExportRow, ExportTable } from '@esta/core/export';
-import { formatVnd } from '@esta/core/format';
+import { numberOf, type ExportCell, type ExportRow, type ExportTable } from '@esta/core/export';
+import { formatCount, formatVnd } from '@esta/core/format';
 import { getLocale } from 'next-intl/server';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
@@ -30,8 +30,12 @@ export async function ReportTable({
   strong?: string;
 }) {
   const locale = await getLocale();
-  const value = (cell: ExportCell | undefined) => (cell === undefined ? '' : cell.kind === 'vnd' ? formatVnd(cell.value, locale) : cell.value);
-  const amount = table.columns.map((_, index) => table.totals.cells[index]?.kind === 'vnd');
+  const value = (cell: ExportCell | undefined) => {
+    if (cell === undefined) return '';
+    if (cell.kind === 'vnd') return formatVnd(cell.value, locale);
+    return cell.kind === 'count' ? formatCount(cell.value, locale) : cell.value;
+  };
+  const amount = table.columns.map((_, index) => [table.totals, ...table.rows].some((line) => numberOf(line.cells[index]) !== null));
   const rest = table.columns.slice(1);
 
   const row = (line: ExportRow, kind: 'row' | 'total') => {
@@ -51,7 +55,7 @@ export async function ReportTable({
         </TableHead>
         {rest.map((column, index) => {
           const cell = line.cells[index + 1];
-          const zero = cell?.kind === 'vnd' && cell.value === 0;
+          const zero = numberOf(cell) === 0;
           return (
             <TableCell
               key={column.id}

@@ -2,7 +2,7 @@ import 'server-only';
 import type { IsoDate } from '@esta/core/date';
 import type { Vnd } from '@esta/core/money';
 import { computeTaxPosition, type LeaseRevenue, type TaxPosition, type TaxRule } from '@esta/core/tax';
-import { readTaxInputs } from '@esta/ops';
+import { readOwners, readTaxInputs } from '@esta/ops';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
@@ -29,16 +29,12 @@ export type TaxCard =
       readonly withheld: readonly TaxLeaseLine[];
     };
 
-const ownerSchema = z.object({ id: z.uuid(), full_name: z.string(), member_id: z.uuid().nullable() });
 const labelSchema = z.object({ id: z.uuid(), unit: z.object({ label: z.string(), property: z.object({ nickname: z.string() }) }) });
 
 /** Owner parties by name, with the one linked to `memberId` first, so the card opens on the signed-in member's own. */
 export async function loadTaxOwners(householdId: string, memberId: string): Promise<TaxOwner[]> {
-  const db = await createSessionClient();
-  const { data, error } = await db.from('parties').select('id, full_name, member_id').eq('household_id', householdId).contains('tags', ['owner']).order('full_name');
-  if (error) throw new Error(`Reading the owners failed: ${error.message}`);
-  const owners = z.array(ownerSchema).parse(data);
-  return owners.toSorted((a, b) => Number(b.member_id === memberId) - Number(a.member_id === memberId)).map((owner) => ({ id: owner.id, name: owner.full_name }));
+  const owners = await readOwners(await createSessionClient(), householdId);
+  return owners.toSorted((a, b) => Number(b.memberId === memberId) - Number(a.memberId === memberId)).map((owner) => ({ id: owner.id, name: owner.name }));
 }
 
 /** From the year the first lease starts to the Clock's year, newest first. */

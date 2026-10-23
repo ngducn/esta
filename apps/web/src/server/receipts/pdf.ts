@@ -9,13 +9,13 @@ const MARGIN = 32;
 const LABEL_COLUMN = 92;
 const QR_PT = 104;
 
-const tone = (token: ColorToken): RGB => {
+export const tone = (token: ColorToken): RGB => {
   const [r, g, b] = receiptColor(token);
   return rgb(r / 255, g / 255, b / 255);
 };
 
 /** Words that fit `width` per line; a word wider than the line keeps its own line rather than breaking a name. */
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
+export function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const lines: string[] = [];
   let line = '';
   for (const word of text.split(' ')) {
