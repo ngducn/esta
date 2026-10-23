@@ -1,0 +1,14 @@
+category,extraction_schema
+certificate,certificate_v1
+lease_contract,lease_v1
+utility_bill,utility_bill_v1
+insurance,
+tax_receipt,
+sale_contract,
+invoice_receipt,
+building_permit,
+drawing,
+handover,
+photo,
+id_card,
+other,

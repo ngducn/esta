@@ -1,0 +1,78 @@
+{
+  "fixture_id": "lease-di-an-phong-8-photo",
+  "variant": "photo",
+  "files": [
+    "page-1.jpg"
+  ],
+  "lease": {
+    "tenant_name": {
+      "value": "Lê Văn Demo",
+      "confidence": 1,
+      "page": 1
+    },
+    "tenant_phone": {
+      "value": "0903 123 456",
+      "confidence": 1,
+      "page": 1
+    },
+    "tenant_id_last4": {
+      "value": "1234",
+      "confidence": 1,
+      "page": 1
+    },
+    "property_address": {
+      "value": "Số 12 đường Demo 7, phường Dĩ An, TP. Dĩ An, tỉnh Bình Dương",
+      "confidence": 1,
+      "page": 1
+    },
+    "unit_label": {
+      "value": "Phòng 8",
+      "confidence": 1,
+      "page": 1
+    },
+    "start_date": {
+      "value": "2026-10-15",
+      "confidence": 1,
+      "page": 1
+    },
+    "end_date": {
+      "value": "2027-10-14",
+      "confidence": 1,
+      "page": 1
+    },
+    "term_months": {
+      "value": 12,
+      "confidence": 1,
+      "page": 1
+    },
+    "rent_vnd": {
+      "value": 3500000,
+      "confidence": 1,
+      "page": 1
+    },
+    "billing_cycle_months": {
+      "value": 1,
+      "confidence": 1,
+      "page": 1
+    },
+    "due_day": {
+      "value": 5,
+      "confidence": 1,
+      "page": 1
+    },
+    "deposit_vnd": {
+      "value": 3500000,
+      "confidence": 1,
+      "page": 1
+    },
+    "notes": {
+      "value": "Tiền điện 3.500 đ/kWh, tiền nước 100.000 đ/người/tháng, theo chỉ số đồng hồ riêng.",
+      "confidence": 1,
+      "page": 1
+    }
+  },
+  "printed_id_numbers": [
+    "079160000123",
+    "074090001234"
+  ]
+}

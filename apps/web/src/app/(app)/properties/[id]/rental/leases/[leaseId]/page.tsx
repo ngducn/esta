@@ -1,11 +1,11 @@
 import { addDays, addMonths } from '@esta/core/date/calendar';
-import { amendmentStarts, currentMonthlyRent, holdsUnit, leaseDefaults, renewalStart } from '@esta/core/lease';
+import { amendmentStarts, contractTenant, currentMonthlyRent, holdsUnit, leaseDefaults, leaseFieldsFromExtraction, renewalStart } from '@esta/core/lease';
 import type { Metadata } from 'next';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
-import { LeaseForm, type LeaseFormUnit } from '@/components/leases/LeaseForm';
-import { newLeaseValues, valuesFromRow } from '@/components/leases/lease-form-values';
+import { LeaseForm, type ContractPrefill, type LeaseFormUnit } from '@/components/leases/LeaseForm';
+import { newLeaseValues, valuesFromRow, withContract } from '@/components/leases/lease-form-values';
 import { LeaseActions, type RenewalOffer } from '@/components/leases/LeaseActions';
 import { LeaseDeposit } from '@/components/leases/LeaseDeposit';
 import { LeaseDocuments } from '@/components/leases/LeaseDocuments';
@@ -15,7 +15,7 @@ import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { StatusMark, StatusShape } from '@/components/status-mark';
 import { getClock } from '@/server/clock';
-import { loadLeaseDocuments } from '@/server/leases/detail';
+import { loadContractReading, loadLeaseDocuments } from '@/server/leases/detail';
 import { loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
@@ -26,6 +26,7 @@ const searchSchema = z.object({
   unit: z.uuid().optional().catch(undefined),
   activate: z.literal('1').optional().catch(undefined),
   renew: z.literal('1').optional().catch(undefined),
+  fromDocument: z.uuid().optional().catch(undefined),
 });
 
 type Params = Promise<{ id: string; leaseId: string }>;
@@ -73,9 +74,11 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   const lease = leaseId === 'new' ? null : (leases.leases.find((candidate) => candidate.id === leaseId) ?? null);
   if ((leaseId === 'new' && !canEdit) || (leaseId !== 'new' && lease === null)) notFound();
 
+  const contract = lease === null && search.fromDocument !== undefined ? await loadContractReading(id, search.fromDocument) : null;
+  const read = contract === null ? null : leaseFieldsFromExtraction(contract, rental.units);
   const unitFor = (unitId: string | undefined) => rental.units.find((unit) => unit.id === unitId);
   const leased = new Set(leases.leases.filter((candidate) => holdsUnit(candidate, asOf)).map((candidate) => candidate.unit_id));
-  const unit = unitFor(lease?.unit_id ?? search.unit) ?? rental.units.find((candidate) => !leased.has(candidate.id)) ?? rental.units[0];
+  const unit = unitFor(lease?.unit_id ?? read?.terms.unit_id ?? search.unit) ?? rental.units.find((candidate) => !leased.has(candidate.id)) ?? rental.units[0];
   if (unit === undefined) notFound();
   const backHref = `/properties/${id}/rental`;
   const summary = lease !== null && !(lease.status === 'draft' && canEdit) ? lease : null;
@@ -87,6 +90,10 @@ export default async function LeasePage({ params, searchParams }: { params: Para
   const { money, date, status, toast } = messages.components;
 
   if (summary === null) {
+    const blank = lease === null ? newLeaseValues(unit.id, leaseDefaults(unit, property.kind)) : valuesFromRow(lease);
+    const filled = read === null ? null : withContract(blank, read.terms, contractTenant(tenants, read.tenant)?.id ?? null);
+    const fromContract: ContractPrefill | null =
+      filled === null || read === null || search.fromDocument === undefined ? null : { documentId: search.fromDocument, prefilled: filled.prefilled, tenant: read.tenant };
     return (
       <div className="flex flex-col gap-5">
         <BackLink href={backHref} label={property.nickname} />
@@ -98,10 +105,11 @@ export default async function LeasePage({ params, searchParams }: { params: Para
           <LeaseForm
             propertyId={id}
             leaseId={lease?.id ?? null}
-            initial={lease === null ? newLeaseValues(unit.id, leaseDefaults(unit, property.kind)) : valuesFromRow(lease)}
+            initial={filled?.values ?? blank}
             units={formUnits}
             tenants={tenants}
             activateOnOpen={search.activate === '1'}
+            contract={fromContract}
           />
         </PropertyIntl>
       </div>

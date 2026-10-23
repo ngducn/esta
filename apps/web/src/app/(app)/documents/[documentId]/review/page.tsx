@@ -55,6 +55,7 @@ export default async function DocumentReviewPage({ params }: { params: Promise<{
           canEdit={review.canEdit}
           landUseCodes={landUseCodes}
           propertyId={document.propertyId}
+          leaseId={document.leaseId}
           properties={review.properties}
         />
       </PropertyIntl>

@@ -213,7 +213,7 @@ export function withinLeafBounds(schemaName: SchemaName, path: string, value: nu
   return schema !== undefined && z.safeParse(schema, value).success;
 }
 
-export type TargetTable = 'parties' | 'certificates' | 'parcels' | 'structures' | 'properties' | 'utility_accounts';
+export type TargetTable = 'parties' | 'certificates' | 'parcels' | 'structures' | 'properties' | 'utility_accounts' | 'leases';
 
 /** Where an accepted value lands. A leaf with no target is not reviewed: no table holds it yet. */
 export type FieldTarget = { readonly table: TargetTable; readonly column: string };
@@ -282,6 +282,21 @@ export const EXTRACTION_FIELDS = {
     field('period', 'period', 'text', null),
     field('amount_vnd', 'amount', 'money', null),
     field('consumption', 'consumption', 'number', null),
+  ],
+  lease_v1: [
+    field('tenant_name', 'tenantName', 'text', to('parties', 'full_name')),
+    field('tenant_phone', 'tenantPhone', 'text', to('parties', 'phone')),
+    field('tenant_id_last4', 'idLast4', 'id_last4', null),
+    field('property_address', 'leaseAddress', 'text', null),
+    field('unit_label', 'unitLabel', 'text', to('leases', 'unit_id')),
+    field('start_date', 'startDate', 'date', to('leases', 'start_date')),
+    field('end_date', 'endDate', 'date', to('leases', 'end_date')),
+    field('term_months', 'termMonths', 'integer', to('leases', 'end_date')),
+    field('rent_vnd', 'rent', 'money', to('leases', 'rent_vnd')),
+    field('billing_cycle_months', 'cycleMonths', 'integer', to('leases', 'billing_cycle_months')),
+    field('due_day', 'dueDay', 'integer', null),
+    field('deposit_vnd', 'deposit', 'money', to('leases', 'deposit_vnd')),
+    field('notes', 'leaseNotes', 'text', null),
   ],
 } as const satisfies Record<SchemaName, readonly FieldDescriptor[]>;
 

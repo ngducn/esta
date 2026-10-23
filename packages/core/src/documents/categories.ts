@@ -11,17 +11,17 @@ export const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 export type DocumentCategorySpec = {
   readonly sensitivity: DocumentSensitivity;
   /** The extraction schema P2-03 enqueues on upload, or null for none. */
-  readonly extractionSchema: 'certificate_v1' | 'utility_bill_v1' | null;
+  readonly extractionSchema: 'certificate_v1' | 'utility_bill_v1' | 'lease_v1' | null;
   readonly mimeTypes: readonly DocumentMimeType[];
 };
 
 /**
  * SPEC §5.5's categories, in the order the upload sheet offers them: the papers Mẹ files most often first. Each id is
- * also its option in the `documents.category` message. `lease_contract` stays null until P3-19 adds `lease_v1`.
+ * also its option in the `documents.category` message.
  */
 export const DOCUMENT_CATEGORIES = {
   certificate: { sensitivity: 'sensitive', extractionSchema: 'certificate_v1', mimeTypes: DOCUMENT_MIME_TYPES },
-  lease_contract: { sensitivity: 'normal', extractionSchema: null, mimeTypes: DOCUMENT_MIME_TYPES },
+  lease_contract: { sensitivity: 'normal', extractionSchema: 'lease_v1', mimeTypes: DOCUMENT_MIME_TYPES },
   utility_bill: { sensitivity: 'normal', extractionSchema: 'utility_bill_v1', mimeTypes: DOCUMENT_MIME_TYPES },
   insurance: { sensitivity: 'normal', extractionSchema: null, mimeTypes: DOCUMENT_MIME_TYPES },
   tax_receipt: { sensitivity: 'normal', extractionSchema: null, mimeTypes: DOCUMENT_MIME_TYPES },

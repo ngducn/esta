@@ -129,7 +129,7 @@ Proposal types, each with a zod schema in `packages/core/proposals` and a handle
 
 1. The web app enqueues the job after upload when the category is `certificate`, `lease_contract` or `utility_bill`.
 2. The worker downloads the file with the service role into the job directory.
-3. The agent reads it with `Read` (images and PDFs) and returns JSON for the category's schema: `certificate_v1` (DOMAIN-VN §2.1), `lease_v1` (landlord and tenant names and phones, property address, unit, start and end, rent, cycle, due day, deposit, escalation text, utilities terms, signed date, notarized), `utility_bill_v1` (provider, customer code, period, amount, consumption, address).
+3. The agent reads it with `Read` (images and PDFs) and returns JSON for the category's schema: `certificate_v1` (DOMAIN-VN §2.1), `lease_v1` (tenant name and phone, the last four digits of the tenant's ID number only, property address as printed, room or unit label, start date, end date or term in months, monthly rent, payment cycle, due day, deposit, and notes that carry escalation and utility terms as printed; P3-19), `utility_bill_v1` (provider, customer code, period, amount, consumption, address).
 4. The worker validates with zod; on failure it sends the validation errors back for up to two repair turns.
 5. Full national ID numbers are reduced to the last 4 digits before saving, whatever the model returns.
 6. `save_extraction` stores the result, and an `agent_item` tells the uploader that review is waiting.

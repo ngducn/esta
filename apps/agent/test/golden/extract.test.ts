@@ -1,6 +1,6 @@
 import { scoreExtraction, type ExtractionScore } from '@esta/core/extraction';
 import { describe, expect, it } from 'vitest';
-import { CRAFTED, extractionFixtures, type UploadFile } from '../../../../fixtures/certificates/generator/uploads.tsx';
+import { CRAFTED, extractionFixtures, type ExtractionFixture, type UploadFile } from '../../../../fixtures/certificates/generator/uploads.tsx';
 import { withExtractSession } from '../../src/jobs/extract-session';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { judgeResult } from '../../src/sdk/result';
@@ -12,35 +12,43 @@ const add = (a: Ratio, b: Ratio): Ratio => ({ hits: a.hits + b.hits, total: a.to
 
 const fixtures = extractionFixtures();
 
-const replay = (schemaName: 'certificate_v1' | 'utility_bill_v1', upload: UploadFile) =>
+const replay = (schemaName: ExtractionFixture['schemaName'], upload: UploadFile) =>
   withExtractSession(schemaName, upload, async ({ request, saved }) => ({ run: await replaySession(request, DEFAULT_REPLAY_DIR), saved: saved() }));
 
+async function scoreFixtures(list: readonly ExtractionFixture[]) {
+  let schemaValid: Ratio = { hits: 0, total: 0 };
+  let required: Ratio = { hits: 0, total: 0 };
+  let confident: Ratio = { hits: 0, total: 0 };
+  for (const fixture of list) {
+    const { run, saved } = await replay(fixture.schemaName, await fixture.upload());
+    expect(judgeResult(run.result).ok, fixture.id).toBe(true);
+    const score: ExtractionScore = scoreExtraction(fixture.schemaName, fixture.truth, saved ?? {});
+    schemaValid = add(schemaValid, { hits: score.schemaValid ? 1 : 0, total: 1 });
+    required = add(required, { hits: score.required.filter((field) => field.hit).length, total: score.required.length });
+    confident = add(confident, { hits: score.highConfidence.correct, total: score.highConfidence.total });
+    const text = JSON.stringify(saved);
+    for (const number of fixture.printedIdNumbers) {
+      expect(text, `${fixture.id} keeps only the last four digits of ${number.slice(-4)}`).not.toContain(number);
+    }
+    expect(text, fixture.id).not.toMatch(/\d{12}/);
+  }
+  console.log(`${list.length} fixtures: schema-valid ${percent(schemaValid).toFixed(1)}%, required exact ${percent(required).toFixed(1)}%, high-confidence precision ${percent(confident).toFixed(1)}%`);
+  expect(percent(schemaValid)).toBe(100);
+  expect(percent(required)).toBeGreaterThanOrEqual(90);
+  expect(percent(confident)).toBeGreaterThanOrEqual(97);
+}
+
 describe('extract_document golden test, replay mode (AGENT.md §7.2)', () => {
-  it('scores sixteen certificates and two bills at the §7.2 targets', async () => {
+  it('scores sixteen certificates, two bills and three leases at the §7.2 targets', async () => {
     expect(fixtures.filter((fixture) => fixture.schemaName === 'certificate_v1')).toHaveLength(16);
     expect(fixtures.filter((fixture) => fixture.schemaName === 'utility_bill_v1')).toHaveLength(2);
-    let schemaValid: Ratio = { hits: 0, total: 0 };
-    let required: Ratio = { hits: 0, total: 0 };
-    let confident: Ratio = { hits: 0, total: 0 };
-    for (const fixture of fixtures) {
-      const { run, saved } = await replay(fixture.schemaName, await fixture.upload());
-      expect(judgeResult(run.result).ok, fixture.id).toBe(true);
-      const score: ExtractionScore = scoreExtraction(fixture.schemaName, fixture.truth, saved ?? {});
-      schemaValid = add(schemaValid, { hits: score.schemaValid ? 1 : 0, total: 1 });
-      required = add(required, { hits: score.required.filter((field) => field.hit).length, total: score.required.length });
-      confident = add(confident, { hits: score.highConfidence.correct, total: score.highConfidence.total });
-      const text = JSON.stringify(saved);
-      for (const number of fixture.printedIdNumbers) {
-        expect(text, `${fixture.id} keeps only the last four digits of ${number.slice(-4)}`).not.toContain(number);
-      }
-      expect(text, fixture.id).not.toMatch(/\d{12}/);
-    }
-    const summary = `schema-valid ${percent(schemaValid).toFixed(1)}%, required exact ${percent(required).toFixed(1)}%, high-confidence precision ${percent(confident).toFixed(1)}%`;
-    console.log(summary);
-    expect(percent(schemaValid)).toBe(100);
-    expect(percent(required)).toBeGreaterThanOrEqual(90);
-    expect(percent(confident)).toBeGreaterThanOrEqual(97);
+    expect(fixtures.filter((fixture) => fixture.schemaName === 'lease_v1')).toHaveLength(3);
+    await scoreFixtures(fixtures);
   }, 60_000);
+
+  it('scores the three leases at the §7.2 targets on their own', async () => {
+    await scoreFixtures(fixtures.filter((fixture) => fixture.schemaName === 'lease_v1'));
+  }, 30_000);
 
   it('saves the repaired area as a number after one rejected answer', async () => {
     const { run, saved } = await replay('certificate_v1', await CRAFTED['repair-invalid-area'].upload());

@@ -1,0 +1,14 @@
+{
+  "lease-di-an-phong-8-photo": {
+    "page-1.jpg": "a909e5417b469d2e3bd1cda314464f37f31ad8139622637f644c3c7a193683ad",
+    "truth.json": "ad51bb9071a3155d24e1b68bc32f98eb91fabac7673db912db78d85a2a2c23eb"
+  },
+  "lease-di-an-phong-7-photo": {
+    "page-1.jpg": "16ac1598e7181c105529f145bf52c517ad561301f42c23de77c3e7c341834a31",
+    "truth.json": "b1ebf5d607bacc6a75898cc984297abc5c612ace516ba1b0b6127ee51ce0bf00"
+  },
+  "lease-thu-duc-scan": {
+    "document.pdf": "4266c514a096dc12ae8a651eae3d57331a55efc7aef09711e22a94cef927036b",
+    "truth.json": "e889022b4d5c73b3b1b4439b2b252fc790529317b408d3be01f055288435f876"
+  }
+}

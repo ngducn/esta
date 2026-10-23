@@ -13,6 +13,7 @@ export const REQUIRED_FIELDS = {
     'serial_no',
   ],
   utility_bill_v1: ['provider', 'customer_code', 'period', 'amount_vnd'],
+  lease_v1: ['tenant_name', 'tenant_phone', 'unit_label', 'start_date', 'end_date', 'rent_vnd', 'billing_cycle_months', 'deposit_vnd'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type SchemaName = keyof typeof REQUIRED_FIELDS;

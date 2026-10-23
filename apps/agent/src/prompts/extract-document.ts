@@ -32,6 +32,21 @@ const SCHEMAS: Record<AgentSchemaName, { readonly document: string; readonly sha
       'full_text is a plain string, not a leaf: every line of printed text on the bill, in reading order, joined with newlines.',
     ],
   },
+  lease_v1: {
+    document: 'a Vietnamese lease contract for a room, an apartment, a house or a shop (hợp đồng thuê phòng, hợp đồng thuê nhà)',
+    shape:
+      '{"tenant_name", "tenant_phone", "tenant_id_last4", "property_address", "unit_label", "start_date", "end_date", "term_months", "rent_vnd", "billing_cycle_months", "due_day", "deposit_vnd", "notes", "full_text"}',
+    rules: [
+      'The tenant is Bên B, Bên thuê or Bên thuê nhà; never read the landlord (Bên A, Bên cho thuê) into a tenant field. tenant_name leaves out titles such as Ông, Bà, Anh or Chị.',
+      'tenant_phone is the tenant\'s phone number exactly as printed. tenant_id_last4 is the last 4 digits of the tenant\'s ID number.',
+      'property_address is the address of the rented place as printed. unit_label is the room or unit as printed, such as "Phòng 8", or null when the whole place is rented.',
+      'Dates are YYYY-MM-DD. start_date is the day the lease starts and end_date the day it ends, or null when only a term is printed. term_months is the term in months, so "1 năm" is 12, or null when none is printed.',
+      'rent_vnd is the rent for one month and deposit_vnd the deposit (tiền cọc, tiền đặt cọc), each an integer number of đồng, so "3.500.000 đ" and "3,5 triệu" are 3500000.',
+      'billing_cycle_months is how many months each payment covers: 1 for monthly (hàng tháng), 3 for each quarter (quý), 6, or 12. due_day is the day of the month rent is due, as an integer.',
+      'notes is the text of the other terms about money as printed, such as electricity, water and service charges or a rent increase, or null.',
+      'full_text is a plain string, not a leaf: every line of printed text on the contract, in reading order, joined with newlines, with every ID number written as its last 4 digits only.',
+    ],
+  },
 };
 
 /**

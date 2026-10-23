@@ -10,9 +10,9 @@ describe('AGENT_SCHEMAS', () => {
     for (const name of named) expect(isAgentSchemaName(name), name).toBe(true);
   });
 
-  it('extracts nothing from a lease contract until lease_v1 arrives (P3-19)', () => {
-    expect(DOCUMENT_CATEGORIES.lease_contract.extractionSchema).toBeNull();
-    expect(isAgentSchemaName('lease_v1')).toBe(false);
+  it('reads a lease contract with lease_v1 (P3-19)', () => {
+    expect(DOCUMENT_CATEGORIES.lease_contract.extractionSchema).toBe('lease_v1');
+    expect(isAgentSchemaName('lease_v1')).toBe(true);
   });
 
   it('scores every schema on its required fields', () => {

@@ -8,15 +8,27 @@ import { createTenant } from '@/server/actions/leases';
 import type { Tenant } from '@/server/leases/load';
 import { TextField } from '@/components/form-parts';
 import { Button } from '@/components/ui/button';
+import { FromContractMark } from './from-contract-mark';
 
 type Invalid = 'name' | 'phone' | null;
 
-/** LSE-1: name and phone only, inside the lease form, so Mẹ never leaves the lease to add who rents. */
-export function TenantQuickAdd({ onAdded }: { onAdded: (tenant: Tenant) => void }) {
+/**
+ * LSE-1: name and phone only, inside the lease form, so Mẹ never leaves the lease to add who rents. A tenant read from a
+ * scanned contract opens it filled in, marked, and still waits for Mẹ to save it.
+ */
+export function TenantQuickAdd({
+  onAdded,
+  initial = null,
+  mark = '',
+}: {
+  onAdded: (tenant: Tenant) => void;
+  initial?: { readonly fullName: string; readonly phone: string | null } | null;
+  mark?: string;
+}) {
   const t = useTranslations('leases');
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [open, setOpen] = useState(initial !== null);
+  const [name, setName] = useState(initial?.fullName ?? '');
+  const [phone, setPhone] = useState(initial?.phone ?? '');
   const [invalid, setInvalid] = useState<Invalid>(null);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -65,6 +77,7 @@ export function TenantQuickAdd({ onAdded }: { onAdded: (tenant: Tenant) => void 
           onChange={setPhone}
         />
       </div>
+      {initial !== null && name === initial.fullName && phone === (initial.phone ?? '') ? <FromContractMark label={mark} /> : null}
       {failed ? (
         <p role="alert" className="text-small text-overdue">
           {t('tenantFailed')}

@@ -1,4 +1,4 @@
-import type { LeaseFormDefaults, TaxPayer, UtilitiesMode } from '@esta/core/lease';
+import type { LeaseFormDefaults, LeaseTermsFromContract, TaxPayer, UtilitiesMode } from '@esta/core/lease';
 import { formatDate } from '@esta/core/format';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { parsePercentBps } from '@esta/core/parse/percent';
@@ -131,4 +131,18 @@ export function newLeaseValues(unitId: string, defaults: LeaseFormDefaults): Lea
     noticeText: '',
   };
   return defaultsToValues(blank, defaults);
+}
+
+/** A new lease's values with what a scanned contract said, and the fields it filled, for their marks (P3-19). */
+export function withContract(values: LeaseFormValues, terms: LeaseTermsFromContract, tenantId: string | null): { values: LeaseFormValues; prefilled: (keyof LeaseFormValues)[] } {
+  const filled: Partial<LeaseFormValues> = {
+    ...(terms.unit_id === undefined ? {} : { unitId: terms.unit_id }),
+    ...(tenantId === null ? {} : { tenantId }),
+    ...(terms.start_date === undefined ? {} : { startText: formatDate(terms.start_date, 'vi') }),
+    ...(terms.end_date === undefined ? {} : { endText: formatDate(terms.end_date, 'vi') }),
+    ...(terms.rent_vnd === undefined ? {} : { rentText: vndInputText(terms.rent_vnd) }),
+    ...(terms.billing_cycle_months === undefined ? {} : { cycle: terms.billing_cycle_months }),
+    ...(terms.deposit_vnd === undefined ? {} : { depositText: vndInputText(terms.deposit_vnd) }),
+  };
+  return { values: { ...values, ...filled }, prefilled: Object.keys(filled) as (keyof LeaseFormValues)[] };
 }

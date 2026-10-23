@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "kind": "extract_document",
+  "inputHash": "0d1eb085954f1f06305032ff4e63c5f417d3963f9cebde402354dd81173bf044",
+  "input": {
+    "version": 1,
+    "kind": "extract_document",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never invent amounts, dates, names or codes.\nRead the file <jobdir>/document.pdf with the Read tool. It is a Vietnamese lease contract for a room, an apartment, a house or a shop (hợp đồng thuê phòng, hợp đồng thuê nhà). Its SHA-256 is 4266c514a096dc12ae8a651eae3d57331a55efc7aef09711e22a94cef927036b.\nThen call save_extraction once with {\"result\": <one JSON object for schema lease_v1 version 1>}. If it lists errors, fix exactly those fields and call it again. When it answers {\"saved\": true}, reply with one short sentence and nothing else.\nThe shape: {\"tenant_name\", \"tenant_phone\", \"tenant_id_last4\", \"property_address\", \"unit_label\", \"start_date\", \"end_date\", \"term_months\", \"rent_vnd\", \"billing_cycle_months\", \"due_day\", \"deposit_vnd\", \"notes\", \"full_text\"}\nRules:\n- Every leaf is {\"value\": ..., \"confidence\": <0 to 1>, \"page\": <page number or null>}. Page numbers count the pages of the file from 1; an image is page 1.\n- Copy names, addresses, codes and other text exactly as printed, with every Vietnamese diacritic.\n- A value that is absent or unreadable, or printed as a lone \"-\" or a blank after its label, is {\"value\": null, \"confidence\": 0, \"page\": null}. An empty list is [].\n- confidence is your probability that the value is exactly right. Handwritten values get confidence at most 0.6.\n- Never write a full national ID number (CCCD, CMND, số định danh) anywhere: keep only its last 4 digits.\n- The tenant is Bên B, Bên thuê or Bên thuê nhà; never read the landlord (Bên A, Bên cho thuê) into a tenant field. tenant_name leaves out titles such as Ông, Bà, Anh or Chị.\n- tenant_phone is the tenant's phone number exactly as printed. tenant_id_last4 is the last 4 digits of the tenant's ID number.\n- property_address is the address of the rented place as printed. unit_label is the room or unit as printed, such as \"Phòng 8\", or null when the whole place is rented.\n- Dates are YYYY-MM-DD. start_date is the day the lease starts and end_date the day it ends, or null when only a term is printed. term_months is the term in months, so \"1 năm\" is 12, or null when none is printed.\n- rent_vnd is the rent for one month and deposit_vnd the deposit (tiền cọc, tiền đặt cọc), each an integer number of đồng, so \"3.500.000 đ\" and \"3,5 triệu\" are 3500000.\n- billing_cycle_months is how many months each payment covers: 1 for monthly (hàng tháng), 3 for each quarter (quý), 6, or 12. due_day is the day of the month rent is due, as an integer.\n- notes is the text of the other terms about money as printed, such as electricity, water and service charges or a rent increase, or null.\n- full_text is a plain string, not a leaf: every line of printed text on the contract, in reading order, joined with newlines, with every ID number written as its last 4 digits only.",
+    "builtInTools": [
+      "Read"
+    ],
+    "mcpTools": [
+      "save_extraction"
+    ],
+    "maxTurns": 8
+  },
+  "label": "lease-thu-duc-scan",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 3,
+  "wallMs": 14844,
+  "toolCalls": [
+    {
+      "name": "Read",
+      "input": {
+        "file_path": "<jobdir>/document.pdf"
+      }
+    },
+    {
+      "name": "mcp__esta__save_extraction",
+      "input": {
+        "result": {
+          "tenant_name": {
+            "value": "Trần Thị Demo",
+            "confidence": 0.97,
+            "page": 1
+          },
+          "tenant_phone": {
+            "value": "0912 345 678",
+            "confidence": 0.97,
+            "page": 1
+          },
+          "tenant_id_last4": {
+            "value": "5678",
+            "confidence": 0.97,
+            "page": 1
+          },
+          "property_address": {
+            "value": "chung cư Demo Riverside, phường Linh Đông, TP. Thủ Đức, TP. Hồ Chí Minh",
+            "confidence": 0.8,
+            "page": 1
+          },
+          "unit_label": {
+            "value": "Căn hộ A-12.05",
+            "confidence": 0.8,
+            "page": 1
+          },
+          "start_date": {
+            "value": "2026-10-01",
+            "confidence": 0.95,
+            "page": 1
+          },
+          "end_date": {
+            "value": null,
+            "confidence": 0,
+            "page": null
+          },
+          "term_months": {
+            "value": 12,
+            "confidence": 0.97,
+            "page": 1
+          },
+          "rent_vnd": {
+            "value": 12500000,
+            "confidence": 0.97,
+            "page": 1
+          },
+          "billing_cycle_months": {
+            "value": 3,
+            "confidence": 0.95,
+            "page": 1
+          },
+          "due_day": {
+            "value": 1,
+            "confidence": 0.9,
+            "page": 1
+          },
+          "deposit_vnd": {
+            "value": 25000000,
+            "confidence": 0.97,
+            "page": 1
+          },
+          "notes": {
+            "value": "Phí quản lý do Bên B trả trực tiếp cho ban quản lý. Giá thuê tăng 5% mỗi năm.",
+            "confidence": 0.92,
+            "page": 1
+          },
+          "full_text": "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc\nHỢP ĐỒNG THUÊ CĂN HỘ\nHôm nay, ngày 25/09/2026, chúng tôi gồm:\nBÊN CHO THUÊ (Bên A)\nÔng/Bà: Nguyễn Thị Demo\nĐiện thoại: 0908 111 222\nSố CCCD: 0123\nĐịa chỉ thường trú: Số 901 Demo, đường số 15, phường Tân Phong, TP. Hồ Chí Minh\nBÊN THUÊ (Bên B)\nÔng/Bà: Trần Thị Demo\nĐiện thoại: 0912 345 678\nSố CCCD: 5678\nĐịa chỉ thường trú: Số 8 Demo, phường Bến Nghé, TP. Hồ Chí Minh\nĐiều 1. Nơi cho thuê\nBên A đồng ý cho Bên B thuê: Căn hộ A-12.05, chung cư Demo Riverside, phường Linh Đông, TP. Thủ Đức, TP. Hồ Chí Minh.\nĐiều 2. Thời hạn thuê\nThời hạn thuê 12 tháng, kể từ ngày 01/10/2026.\nĐiều 3. Giá thuê và thanh toán\nGiá thuê: 12.500.000 đồng/tháng.\nBên B trả tiền thuê mỗi quý (3 tháng một lần), chậm nhất ngày 1 của kỳ thanh toán.\nĐiều 4. Tiền đặt cọc\nBên B đặt cọc 25.000.000 đồng, Bên A hoàn lại khi hết hạn hợp đồng.\nĐiều 5. Các khoản khác\nPhí quản lý do Bên B trả trực tiếp cho ban quản lý. Giá thuê tăng 5% mỗi năm.\nBÊN CHO THUÊ\nBÊN THUÊ"
+        }
+      }
+    }
+  ],
+  "reply": "Tôi đã đọc hợp đồng thuê căn hộ và lưu kết quả trích xuất thành công."
+}

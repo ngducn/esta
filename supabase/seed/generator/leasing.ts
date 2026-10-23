@@ -5,6 +5,7 @@ import { normalizePhone } from '../../../packages/core/src/phone/index.ts';
 import { publicTable, type HouseholdSeed, type SeedContext } from './context.ts';
 import { householdId } from './households.ts';
 import { seedId } from './ids.ts';
+import { quote } from './sql.ts';
 import { METER_ENTRY, septemberReadingsSql } from './meters.ts';
 import type { PropertySeedKey } from './properties.ts';
 import { propertyId, unitId, UNIT_SEEDS } from './units.ts';
@@ -229,7 +230,6 @@ const UNPAID = { property: 'di-an', unit: 5, dueDate: '2026-09-25' } as const;
 /** SPEC §9.3: this tenant pays every month in two partial transfers that sum to the full amount. */
 const TWO_TRANSFERS = { property: 'di-an', unit: 2 } as const;
 
-const sqlText = (text: string) => `'${text.replaceAll("'", "''")}'`;
 
 /**
  * The invoices and payments of every household, written after the tables. The database bills: `end_expired_leases` and
@@ -242,7 +242,7 @@ const sqlText = (text: string) => `'${text.replaceAll("'", "''")}'`;
  */
 export function billingSql(households: readonly HouseholdSeed[], ctx: Pick<SeedContext, 'properties'>, stamp: Instant): string {
   const rows = households.flatMap((household) =>
-    leasesIn(ctx).map((seed) => `(${sqlText(leaseId(household, seed))}, ${sqlText(leaseKey(household, seed))}, ${sqlText(seed.property)}, ${seed.unit})`),
+    leasesIn(ctx).map((seed) => `(${quote(leaseId(household, seed))}, ${quote(leaseKey(household, seed))}, ${quote(seed.property)}, ${seed.unit})`),
   );
   if (rows.length === 0) return '';
   const readings = septemberReadingsSql(households, ctx, stamp);

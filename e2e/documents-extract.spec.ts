@@ -137,7 +137,7 @@ test('rule 1: Mẹ uploads the Bảo Lộc scan, sees Đang đọc, then Chờ x
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('rule 2: only the certificate queues a job keyed by its bytes; the photo and the lease contract queue nothing', async ({ page }) => {
+test('rule 2: the certificate and the lease contract queue a job keyed by their bytes; the photo queues nothing', async ({ page }) => {
   await stopWorker();
   await open(page, 'ryan.lane2@demo.esta.test', 'dark', DESKTOP);
   await page.goto(`/properties/${propertyId(2, 'bao-loc')}/documents`);
@@ -146,13 +146,13 @@ test('rule 2: only the certificate queues a job keyed by its bytes; the photo an
   const lease = await upload(page, await fixture('paper_only-scan').upload(), { category: 'lease_contract', title: 'Hợp đồng lane 2' });
 
   const jobsOf = (id: string) => serviceGet<{ idempotency_key: string; status: string }[]>(page, `agent_jobs?payload->>document_id=eq.${id}&select=idempotency_key,status`);
-  const [{ sha256 } = { sha256: '' }] = await serviceGet<{ sha256: string }[]>(page, `documents?id=eq.${certificate}&select=sha256`);
-  expect(await jobsOf(certificate)).toEqual([{ idempotency_key: `extract_document:${certificate}:${sha256}`, status: 'queued' }]);
-  expect((await extractions(page, certificate)).map((row) => row.status)).toEqual(['queued']);
-  for (const other of [photo, lease]) {
-    expect(await jobsOf(other)).toEqual([]);
-    expect(await extractions(page, other)).toEqual([]);
+  for (const read of [certificate, lease]) {
+    const [{ sha256 } = { sha256: '' }] = await serviceGet<{ sha256: string }[]>(page, `documents?id=eq.${read}&select=sha256`);
+    expect(await jobsOf(read)).toEqual([{ idempotency_key: `extract_document:${read}:${sha256}`, status: 'queued' }]);
+    expect((await extractions(page, read)).map((row) => row.status)).toEqual(['queued']);
   }
+  expect(await jobsOf(photo)).toEqual([]);
+  expect(await extractions(page, photo)).toEqual([]);
   await shot(page, 'p2-03-reading-1440x900-dark');
 });
 

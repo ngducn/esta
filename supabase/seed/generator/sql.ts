@@ -15,7 +15,7 @@ export type TableRows = { readonly table: string; readonly upsert?: boolean; rea
 
 const STAMPED_COLUMNS = ['created_at', 'updated_at'] as const;
 
-function quote(text: string): string {
+export function quote(text: string): string {
   return `'${text.replaceAll("'", "''")}'`;
 }
 

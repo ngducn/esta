@@ -9,7 +9,7 @@ import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { phoneText } from '@esta/core/phone';
 import type { Result } from '@esta/core/result';
 import type { Vnd } from '@esta/core/money';
-import { billRowSchema, leaseActivate, leaseCreate, leaseEdit, personCreate, runOp, settle, type ActivationOpRefusal, type CommonRefusal } from '@esta/ops';
+import { billRowSchema, leaseActivate, leaseCreate, leaseEdit, personCreate, runOp, settle, type ActivationOpRefusal, type CommonRefusal, type LeaseRefusal } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
@@ -33,26 +33,31 @@ export async function createTenant(raw: unknown): Promise<TenantWrite> {
   return { ok: true, tenant: { id, fullName: full_name, phone: phoneText(phone) } };
 }
 
-export type LeaseWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'notDraft' | 'failed' };
+export type LeaseWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'notDraft' | 'document' | 'failed' };
 
 function revalidateLeases() {
   revalidatePath('/properties', 'layout');
   revalidatePath('/collections');
 }
 
-function leaseWriteRefusal(kind: string): Extract<LeaseWrite, { ok: false }>['reason'] {
+function leaseWriteRefusal(reason: LeaseRefusal | CommonRefusal): Extract<LeaseWrite, { ok: false }>['reason'] {
+  const { kind } = reason;
+  if (reason.kind === 'invalid' && reason.issues.some((issue) => issue.path === 'document_id')) return 'document';
   if (kind === 'not_draft' || kind === 'not_found') return 'notDraft';
   return kind === 'invalid' || kind === 'conflict' ? 'invalid' : 'failed';
 }
 
-/** Saves a draft; an active lease changes only through an amendment (P3-08). */
-export async function saveLease(propertyId: unknown, leaseId: unknown, raw: unknown): Promise<LeaseWrite> {
+/**
+ * Saves a draft; an active lease changes only through an amendment (P3-08). `documentId` names the scanned contract a
+ * new lease was filled from, which then joins the lease; an edit ignores it (P3-19).
+ */
+export async function saveLease(propertyId: unknown, leaseId: unknown, raw: unknown, documentId: unknown = null): Promise<LeaseWrite> {
   const ctx = await webOpContext();
   const result =
     leaseId === null
-      ? await runOp(leaseCreate, ctx, { id: randomUUID(), property_id: propertyId, lease: raw })
+      ? await runOp(leaseCreate, ctx, { id: randomUUID(), property_id: propertyId, lease: raw, document_id: documentId })
       : await runOp(leaseEdit, ctx, { id: leaseId, property_id: propertyId, set: raw });
-  if (!result.ok) return { ok: false, reason: leaseWriteRefusal(result.reason.kind) };
+  if (!result.ok) return { ok: false, reason: leaseWriteRefusal(result.reason) };
   revalidateLeases();
   return { ok: true, id: result.value.id };
 }

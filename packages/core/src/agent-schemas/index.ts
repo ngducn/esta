@@ -1,7 +1,9 @@
 import { certificateV1Schema } from './certificate_v1';
+import { leaseV1Schema } from './lease_v1';
 import { utilityBillV1Schema } from './utility_bill_v1';
 
 export { certificateV1Schema, type CertificateV1 } from './certificate_v1';
+export { leaseV1Schema, type LeaseV1 } from './lease_v1';
 export { reduceNationalIds } from './reduce-national-ids';
 export { utilityBillV1Schema, type UtilityBillV1 } from './utility_bill_v1';
 
@@ -12,6 +14,7 @@ export { utilityBillV1Schema, type UtilityBillV1 } from './utility_bill_v1';
 export const AGENT_SCHEMAS = {
   certificate_v1: { schema: certificateV1Schema, version: 1 },
   utility_bill_v1: { schema: utilityBillV1Schema, version: 1 },
+  lease_v1: { schema: leaseV1Schema, version: 1 },
 } as const;
 
 export type AgentSchemaName = keyof typeof AGENT_SCHEMAS;
