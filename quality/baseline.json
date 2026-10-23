@@ -132,7 +132,7 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 40,
+      "value": 41,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -165,12 +165,13 @@
         "apps/web/src/components/rental/utility-account-form.tsx": 1,
         "apps/web/src/components/statements/ImportPreview.tsx": 1,
         "apps/web/src/components/statements/StatementUpload.tsx": 1,
+        "apps/web/src/components/tax/other-revenue-form.tsx": 1,
         "apps/web/src/components/valuations/valuation-actions.tsx": 1,
         "apps/web/src/components/valuations/valuation-sheet.tsx": 1
       }
     },
     "action-failure-mapping": {
-      "value": 32,
+      "value": 33,
       "files": {
         "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
         "apps/web/src/components/documents/document-page.tsx": 1,
@@ -201,7 +202,8 @@
         "apps/web/src/components/rental/unit-sheet.tsx": 1,
         "apps/web/src/components/rental/utility-account-form.tsx": 1,
         "apps/web/src/components/statements/ImportPreview.tsx": 1,
-        "apps/web/src/components/statements/StatementUpload.tsx": 1
+        "apps/web/src/components/statements/StatementUpload.tsx": 1,
+        "apps/web/src/components/tax/other-revenue-form.tsx": 1
       }
     },
     "local-id-schema": {
@@ -579,6 +581,18 @@
       "from": 38,
       "to": 40,
       "reason": "valuation sheet save and the history row delete call their server actions in a transition (until #193)"
+    },
+    {
+      "metric": "hand-rolled-action-call",
+      "from": 40,
+      "to": 41,
+      "reason": "P4-04 other business revenue form on the tax card calls its save action (until #193)"
+    },
+    {
+      "metric": "action-failure-mapping",
+      "from": 32,
+      "to": 33,
+      "reason": "P4-04 other business revenue form on the tax card calls its save action (until #193)"
     }
   ]
 }
