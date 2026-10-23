@@ -34,7 +34,6 @@ export const WRITTEN_BY_DATABASE: Readonly<Record<string, string>> = {
   payment_allocations: 'insert into public.payment_allocations',
 };
 
-/** Every public table the migrations leave standing, in migration order. */
 export function migrationTables(migrations: readonly string[]): string[] {
   const tables = new Set<string>();
   for (const sql of migrations) {
@@ -60,8 +59,7 @@ function staleEntries(tables: readonly string[]): string[] {
     .map((table) => `${table} is listed in seed-coverage.ts but no migration creates it`);
 }
 
-/** The seeded tables, with the households each one has generator rows for. */
-function rowsByHousehold(seed: SeedTables): Map<string, Set<string>> {
+function householdsWithRows(seed: SeedTables): Map<string, Set<string>> {
   const covered = new Map<string, Set<string>>();
   for (const { table, rows } of seed.tables) {
     if (!table.startsWith('public.')) continue;
@@ -72,9 +70,8 @@ function rowsByHousehold(seed: SeedTables): Map<string, Set<string>> {
   return covered;
 }
 
-/** A business table fails when some household gets no generator rows and the database writes none for it either. */
 export function generatorProblems(tables: readonly string[], seed: SeedTables): string[] {
-  const covered = rowsByHousehold(seed);
+  const covered = householdsWithRows(seed);
   const problems = tables.flatMap((table) => {
     if (table in SEED_EXEMPT) return [];
     const statement = WRITTEN_BY_DATABASE[table];
@@ -89,7 +86,6 @@ export function generatorProblems(tables: readonly string[], seed: SeedTables): 
 
 export type HouseholdCount = { readonly table: string; readonly household: string; readonly rows: number };
 
-/** On a seeded database, every business table holds rows in every household. */
 export function databaseProblems(tables: readonly string[], households: readonly string[], counts: readonly HouseholdCount[]): string[] {
   const problems = tables
     .filter((table) => !(table in SEED_EXEMPT) && table !== 'households')

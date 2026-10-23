@@ -2,12 +2,7 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { householdId, laneSeed, personEmail } from '../../../../supabase/seed/generator/households.ts';
 
-/**
- * Which seeded lane households each apps/web integration file owns. `pnpm test:integration` runs the files in parallel,
- * so a file signs in only as its own lanes' members and writes only there: a second sign-in as the same member voids the
- * first one's code, and a shared household shows one file the other's writes. `every-household` runs alone, after the rest.
- * Paths are relative to apps/web; src/test/lanes.test.ts fails on a file missing here or a lane owned twice.
- */
+/** Paths relative to apps/web; ARCHITECTURE.md, Integration lanes. */
 export const INTEGRATION_LANES: Readonly<Record<string, readonly number[] | 'every-household'>> = {
   'src/server/reports/snapshot.integration.test.ts': [1, 10],
   'src/server/tax/load.integration.test.ts': [2],

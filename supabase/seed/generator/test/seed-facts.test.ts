@@ -11,7 +11,7 @@ const SIX_MONTHS_ON = '2027-04-07';
 
 type Row = Readonly<Record<string, string | number | null>>;
 
-/** Every household's rows of `sql`, which selects `household` first; each household must read the same. */
+/** The rows of `sql` by its `household` column; every seeded household must read the same rows. */
 function sameInEveryHousehold(sql: string): Row[] {
   const rows = query<Row & { household: string }>(workdir, sql);
   const byHousehold = new Map<string, Row[]>();

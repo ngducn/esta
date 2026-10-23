@@ -44,7 +44,7 @@
     "db:checksum": "node scripts/db-checksum.ts",
     "db:seed:check": "node scripts/seed-determinism.ts",
     "seed:coverage": "tsx scripts/seed-coverage.ts",
-    "seed:facts": "vitest run supabase/seed/generator/test",
+    "seed:facts": "vitest run supabase/seed/generator/test --exclude 'supabase/.slots/**'",
     "db:types": "node scripts/db.ts types",
     "db:test": "node scripts/db.ts test",
     "clock:set": "tsx scripts/clock-set.ts",
