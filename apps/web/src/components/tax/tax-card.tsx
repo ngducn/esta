@@ -1,6 +1,6 @@
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, formatVnd, type Locale } from '@esta/core/format';
-import { vnd, type Vnd } from '@esta/core/money';
+import type { Vnd } from '@esta/core/money';
 import type { TaxPosition, TaxRule } from '@esta/core/tax';
 import { ChevronRight } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
@@ -151,7 +151,6 @@ export async function TaxLeasesCard({
 }) {
   const [t, locale] = await Promise.all([getTranslations('taxCard'), getLocale() as Promise<Locale>]);
   const label = (line: TaxLeaseLine) => (line.shareBp === null ? t('wholeLease') : t('share', { percent: line.shareBp / 100 }));
-  const withheldTotal = vnd(position.withheldLeases.reduce((sum, lease) => sum + lease.projectedVnd, 0));
   return (
     <section aria-labelledby="tax-leases-title" data-testid="tax-leases" className={CARD}>
       <h2 id="tax-leases-title" className="text-lead font-bold text-ink">
@@ -163,7 +162,7 @@ export async function TaxLeasesCard({
         <details data-testid="tax-withheld" className="group rounded-md border border-rule bg-surface-2">
           <summary className="flex min-h-touch cursor-pointer items-center gap-2 px-4 py-2 text-body font-semibold text-ink">
             <ChevronRight aria-hidden="true" className="size-5 shrink-0 transition-transform duration-(--duration-fast) ease-standard group-open:rotate-90" />
-            <span className="figures">{t('withheld', { count: withheld.length, amount: formatVnd(withheldTotal, locale) })}</span>
+            <span className="figures">{t('withheld', { count: withheld.length, amount: formatVnd(position.withheldVnd, locale) })}</span>
           </summary>
           <div className="flex flex-col gap-2 border-t border-rule bg-surface px-4 pb-1">
             <p className="pt-3 text-small text-ink-2">{t('withheldBody')}</p>

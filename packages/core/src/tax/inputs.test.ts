@@ -78,6 +78,37 @@ describe('toTaxInputs', () => {
     expect(result.accruedVnd).toBe(result.projectedVnd);
   });
 
+  describe('a terminated lease read from its row', () => {
+    const terminated = (terminatedOn: string) => {
+      const row = taxLeaseRowSchema.parse({
+        id: '00000000-0000-4000-8000-000000000001',
+        property_id: '00000000-0000-4000-8000-000000000002',
+        status: 'terminated',
+        terminated_on: terminatedOn,
+        tax_payer: 'owner',
+        declaring_party_id: null,
+      });
+      return position(
+        toTaxInputs(
+          rows({ leases: [row], schedule: monthly(row.id, '2026-01-01', 12, 10_000_000), shares: [{ propertyId: row.propertyId, partyId: ME, shareBp: 10_000 }] }),
+          { partyId: ME, year: 2026, asOf: ASOF },
+        ),
+      );
+    };
+
+    it('projects the rent from the as-of date to a later termination day', () => {
+      expect(terminated('2026-12-15')).toMatchObject({ accruedVnd: 92_258_065, projectedVnd: 114_838_710 });
+    });
+
+    it('projects nothing past an earlier termination day', () => {
+      expect(terminated('2026-03-15')).toMatchObject({ accruedVnd: 24_838_710, projectedVnd: 24_838_710 });
+    });
+
+    it('projects nothing past a termination on the as-of date', () => {
+      expect(terminated('2026-10-07')).toMatchObject({ accruedVnd: 92_258_065, projectedVnd: 92_258_065 });
+    });
+  });
+
   it('splits a co-owned lease by share and gives a declared lease to its declaring party (E5)', () => {
     const shares = [
       { propertyId: 'shared', partyId: ME, shareBp: 5_000 },
@@ -114,6 +145,7 @@ describe('toTaxInputs', () => {
     expect(result.projectedVnd).toBe(700_000_000);
     expect(result.selfDeclaredVnd).toBe(500_000_000);
     expect(result.withheldLeases.map((row) => [row.leaseId, row.projectedVnd])).toEqual([['withheld', 200_000_000]]);
+    expect(result.withheldVnd).toBe(200_000_000);
     expect([result.vatEstimateVnd, result.pitEstimateVnd]).toEqual([25_000_000, 0]);
   });
 
@@ -147,9 +179,10 @@ describe('toTaxInputs', () => {
 describe('tax row schemas', () => {
   const row = { id: '00000000-0000-4000-8000-000000000001', property_id: '00000000-0000-4000-8000-000000000002', terminated_on: null, tax_payer: 'owner', declaring_party_id: null };
 
-  it('reads only an active lease as active', () => {
+  it('reads an ended lease as the only one with no remainder to project', () => {
     expect(taxLeaseRowSchema.parse({ ...row, status: 'active' }).active).toBe(true);
-    expect(taxLeaseRowSchema.parse({ ...row, status: 'terminated', terminated_on: '2026-03-15' })).toMatchObject({ active: false, terminatedOn: '2026-03-15' as IsoDate });
+    expect(taxLeaseRowSchema.parse({ ...row, status: 'terminated', terminated_on: '2026-03-15' })).toMatchObject({ active: true, terminatedOn: '2026-03-15' as IsoDate });
+    expect(taxLeaseRowSchema.parse({ ...row, status: 'ended' }).active).toBe(false);
   });
 
   it('refuses a draft lease and a share outside 1 to 10000 bp', () => {

@@ -23,7 +23,7 @@ export const taxLeaseRowSchema = z
     (row): TaxLease => ({
       id: row.id,
       propertyId: row.property_id,
-      active: row.status === 'active',
+      active: row.status !== 'ended',
       terminatedOn: row.terminated_on,
       taxPayer: row.tax_payer,
       declaringPartyId: row.declaring_party_id,
