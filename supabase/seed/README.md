@@ -87,6 +87,10 @@ Spikes S3 (`spike/s3-admin-units`, 1945c64) and S4 (`spike/s4-vietqr`, a7c9e76) 
 | `tsx supabase/seed/generator/ids.ts <key>` | Prints the id of a seed key |
 | `pnpm db:checksum` | One md5 per public table over every column except `created_at` and `updated_at`, skipping `audit_log`, plus `auth.users` and `auth.identities` over the columns the seed writes (`SEEDED_AUTH_COLUMNS` in `scripts/db-checksum.ts`) |
 | `pnpm db:seed:check` | Resets twice, compares the checksums and exits 1 on any difference (FND-7) |
+| `pnpm db:seed:check --variant northstar` | The same for the `northstar` variant |
+| `pnpm seed:coverage` | Fails when a table the migrations create gets no generator rows in some household, unless the database writes it after them (`WRITTEN_BY_DATABASE`) or `SEED_EXEMPT` gives a reason; `pnpm check` runs it |
+| `pnpm seed:coverage --database` | The same over the slot's seeded database, counting every business table's rows per household |
+| `pnpm seed:facts` | Reads the slot's seeded database and asserts each SPEC §9.3 fact (`generator/test/seed-facts.test.ts`); run it after `pnpm db:reset` |
 
 Every row the generator writes gets `created_at` and `updated_at` from `--as-of` (invoices and their lines, which the database writes, get the reset's own time), and the seed runs with `esta.actor` set to `system:seed`, so its audit rows read `system` and `seed`. Random draws come from `rngFor(scope)`, a fixed stream per scope string; ESLint bans `Math.random`, `Date.now`, `Date()` and `new Date()` without arguments, `performance.now`, and the random functions of `crypto` in the generator.
 

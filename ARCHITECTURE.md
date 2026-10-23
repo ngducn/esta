@@ -125,6 +125,10 @@ Parse external data with zod at the boundary and trust internal types after it. 
 
 Fix the code instead of disabling a rule inline. When an exception is right, put it in `eslint.config.mjs` with a reason, where review sees it (CLAUDE.md, Translations). The count of inline `eslint-disable` comments (`inline-eslint-disable`) only goes down.
 
+## Integration lanes
+
+`pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file.
+
 ## E2E helpers
 
 Shared e2e plumbing lives in `e2e/helpers/`: `PHONE`, `DESKTOP`, `recordForPr` (the `ESTA_E2E_VIDEO=1` recording a PR's video comes from), `seriousAxeViolations`, `noSidewaysScroll`, `rest`, `serviceGet`, `servicePatch`, `vnd` and `toast` in `e2e/helpers/wizard.ts`, `memberCall` and `memberRest` (PostgREST as the signed-in member) in `e2e/helpers/auth-api.ts`, the seeded lane ids in `e2e/helpers/seed.ts`, `setClock` in `e2e/helpers/test-clock.ts`, and `signIn` in `e2e/helpers/inbucket.ts`. A spec imports them. It does not import `@axe-core/playwright` (`e2e-axe-in-spec`), call `slotEnv` (`e2e-slot-env-in-spec`), declare `PHONE` or `DESKTOP` or spell out 390 × 844 or 1440 × 900 (`e2e-viewport-in-spec`), or read the page's `scrollWidth` for its own sideways-scroll check (`e2e-sideways-scroll-in-spec`). A check that one element is not clipped is a different check and does not count.
