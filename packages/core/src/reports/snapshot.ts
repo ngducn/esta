@@ -30,7 +30,6 @@ export type ReportSnapshot = {
   readonly from: IsoDate;
   readonly to: IsoDate;
   readonly asOf: IsoDate;
-  /** Live properties. */
   readonly properties: readonly ReportProperty[];
   /** `allocation_facts` received in the period. */
   readonly incomes: readonly (IncomeFact & { readonly propertyId: string })[];
@@ -55,7 +54,6 @@ export function yearPeriod(year: number, today: IsoDate): { from: IsoDate; to: I
   return { from, to: today.startsWith(`${year}-`) ? addDays(addMonths(firstOfMonth(today), 1), -1) : isoDate(`${year}-12-31`) };
 }
 
-/** The first day of every month from `from` to `to`. */
 export function monthsOf(from: IsoDate, to: IsoDate): IsoDate[] {
   const months: IsoDate[] = [];
   for (let month = firstOfMonth(from); month <= to; month = addMonths(month, 1)) months.push(month);

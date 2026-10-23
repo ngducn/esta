@@ -16,7 +16,6 @@ export type InvoiceSummary = {
   readonly issueOn: IsoDate;
   readonly status: 'draft' | 'issued' | 'void';
   readonly totalVnd: Vnd;
-  /** What payments allocated to it. */
   readonly allocatedVnd: Vnd;
   /** Still owed after allocated payments; an issued invoice with none left is settled. */
   readonly outstandingVnd: Vnd;
