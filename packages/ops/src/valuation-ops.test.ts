@@ -46,6 +46,12 @@ describe('valuationCreate', () => {
     expect(writes(sent)).toEqual([]);
   });
 
+  it('refuses a valuation dated after the Clock day, whoever calls it', async () => {
+    const { db, sent } = fakeDb(live);
+    expect(await runOp(valuationCreate, context(db), { ...quote, asOf: '2026-10-08' })).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'asOf', code: 'after_today' }] } });
+    expect(writes(sent)).toEqual([]);
+  });
+
   it('refuses a property in the trash', async () => {
     const { db, sent } = fakeDb(trashedProperty());
     expect(await runOp(valuationCreate, context(db), quote)).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'propertyId', code: 'not_found' }] } });

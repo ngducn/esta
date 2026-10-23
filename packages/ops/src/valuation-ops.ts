@@ -12,15 +12,12 @@ async function stored(ctx: OpContext, id: string): Promise<boolean> {
   return data !== null;
 }
 
-/**
- * Records a valuation under the id the sheet minted (FIN-5), so a retry, or `Hoàn tác` after a delete, writes the one
- * row. The form's rules, the date not after today among them, are read in core before this runs.
- */
 export const valuationCreate = defineOp<Valuation, Valuation, ValuationSaved>({
   creates: 'valuations',
   input: valuationSchema,
   async plan(ctx, valuation) {
     if (await stored(ctx, valuation.id)) return unchanged({ id: valuation.id });
+    if (valuation.asOf > ctx.clock.today()) return refuse({ kind: 'invalid', issues: [{ path: 'asOf', code: 'after_today' }] });
     const [property] = await viewRows(ctx, 'properties', { id: valuation.propertyId });
     if (property === undefined) return refuse({ kind: 'invalid', issues: [{ path: 'propertyId', code: 'not_found' }] });
     return change(valuation);
@@ -42,7 +39,6 @@ export const valuationCreate = defineOp<Valuation, Valuation, ValuationSaved>({
 
 const deleteInputSchema = z.strictObject({ id: idSchema });
 
-/** Removes a valuation; the screen keeps its values for `Hoàn tác`, which records it again under the same id. */
 export const valuationDelete = defineOp<z.output<typeof deleteInputSchema>, ValuationSaved, ValuationSaved>({
   creates: null,
   input: deleteInputSchema,

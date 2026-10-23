@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(24);
+select plan(25);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -41,10 +41,14 @@ select throws_ok(format($$
   insert into public.valuations (household_id, property_id, as_of, value_vnd, method)
   values (%L, '00000000-0000-4000-8000-0000000000a1', '2026-10-07', 0, 'owner_estimate') $$, :'a'),
   '23514', null, 'a value of 0 is refused');
--- The amount ceiling: MAX_AMOUNT_VND in packages/core/src/money/vnd.ts.
+\set amount_ceiling 1000000000000
+select lives_ok(format($$
+  insert into public.valuations (household_id, property_id, as_of, value_vnd, method)
+  values (%L, '00000000-0000-4000-8000-0000000000a1', '2026-10-07', %s, 'owner_estimate') $$, :'a', :amount_ceiling),
+  'a value at the ceiling is taken');
 select throws_ok(format($$
   insert into public.valuations (household_id, property_id, as_of, value_vnd, method)
-  values (%L, '00000000-0000-4000-8000-0000000000a1', '2026-10-07', 1000000000001, 'owner_estimate') $$, :'a'),
+  values (%L, '00000000-0000-4000-8000-0000000000a1', '2026-10-07', %s, 'owner_estimate') $$, :'a', :amount_ceiling + 1),
   '23514', null, 'a value one đồng above the ceiling is refused');
 select throws_ok(format($$
   insert into public.valuations (household_id, property_id, as_of, value_vnd, method)
@@ -78,7 +82,7 @@ select tests.cannot_write('public.valuations', :'a',
 select tests.act_as('member.a@test.esta.test');
 select isnt_empty($$ delete from public.valuations where id = '00000000-0000-4000-8000-00000000f0a1' returning 1 $$,
   'a member deletes a valuation: there is no soft delete');
-select is((select count(*)::int from public.valuations where household_id = :'a'), 0, 'the deleted valuation is gone');
+select is((select count(*)::int from public.valuations where id = '00000000-0000-4000-8000-00000000f0a1'), 0, 'the deleted valuation is gone');
 
 select finish();
 rollback;
