@@ -40,12 +40,12 @@ export function LeaseDocuments({
   ) : null;
   return (
     <section aria-labelledby="lease-documents" data-testid="lease-documents" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="lease-documents" className="text-lead font-bold text-ink">
+      <h2 id="lease-documents" className="text-lead font-semibold text-ink">
         {t('documentsTitle')}
       </h2>
       {documents.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="flex items-center gap-3 text-body font-semibold text-ink">
+          <p className="flex items-center gap-3 text-body font-medium text-ink">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
               <FileText className="size-5" strokeWidth={1.8} aria-hidden="true" />
             </span>
@@ -62,7 +62,7 @@ export function LeaseDocuments({
                 <Link href={`/documents/${document.id}`} className="flex min-h-touch items-center gap-3 py-2 text-body text-ink hover:text-accent">
                   <FileText className="size-5 shrink-0 text-ink-muted" strokeWidth={1.8} aria-hidden="true" />
                   <span className="flex min-w-0 flex-col">
-                    <span className="font-semibold break-words">{document.title}</span>
+                    <span className="font-medium break-words">{document.title}</span>
                     <span className="text-small text-ink-muted">{category('category', { category: document.category })}</span>
                   </span>
                 </Link>

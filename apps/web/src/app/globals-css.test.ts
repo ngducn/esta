@@ -49,7 +49,7 @@ describe('globals.css', () => {
     expect(typeScale.small.px, 'the compact density floor').toBeGreaterThanOrEqual(15);
   });
 
-  it('offers only the font weights the typefaces ship', async () => {
+  it('offers only the font weights the typefaces ship, none heavier than semibold', async () => {
     const shipped: readonly number[] = Object.values(typefaces).flatMap((face) => face.weights);
     const all = ['font-thin', 'font-light', 'font-normal', 'font-medium', 'font-semibold', 'font-bold', 'font-black'];
     const css = await build(all);
@@ -58,8 +58,8 @@ describe('globals.css', () => {
       ['font-normal', 400],
       ['font-medium', 500],
       ['font-semibold', 600],
-      ['font-bold', 700],
     ]);
     expect(offered.every(([, weight]) => shipped.includes(Number(weight)))).toBe(true);
+    expect(Math.max(...shipped)).toBe(600);
   });
 });

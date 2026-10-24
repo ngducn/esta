@@ -132,7 +132,7 @@ export default function DepositSheet({
 
           {kind === 'applied' ? (
             <fieldset className="flex flex-col gap-1">
-              <legend className="mb-2 text-body font-semibold text-ink">{t('invoiceLegend')}</legend>
+              <legend className="mb-2 text-body font-medium text-ink">{t('invoiceLegend')}</legend>
               {offer.openInvoices.map((candidate) => (
                 <label
                   key={candidate.id}
@@ -165,12 +165,12 @@ export default function DepositSheet({
           <div data-testid="deposit-preview" aria-live="polite" className="flex flex-col gap-0.5 rounded-md border border-rule bg-surface-2 px-4 py-3 text-body">
             <span className="text-ink-2 figures">{t('previewNow', { amount: money(state.heldVnd) })}</span>
             {preview?.ok === true ? (
-              <span data-testid="deposit-held-after" className="font-semibold text-ink figures">
+              <span data-testid="deposit-held-after" className="font-medium text-ink figures">
                 {t('previewAfter', { amount: money(preview.heldVnd) })}
               </span>
             ) : null}
             {overdraw === null ? null : (
-              <span data-testid="deposit-overdraw" data-reason={overdraw.reason} className="flex items-start gap-2 font-semibold text-overdue">
+              <span data-testid="deposit-overdraw" data-reason={overdraw.reason} className="flex items-start gap-2 font-medium text-overdue">
                 <StatusShape status="overdue" className="mt-1 size-4" />
                 <span className="figures">{t(`errors.${OVERDRAW_ERRORS[overdraw.reason]}`, { amount: money(overdraw.limitVnd) })}</span>
               </span>

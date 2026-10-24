@@ -48,7 +48,7 @@ export function LegacyAddressSuggest({
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {t('certificateAddress')}
       </label>
       <p id={`${id}-hint`} className="text-small text-ink-muted">
@@ -89,7 +89,7 @@ export function SuggestionList({
   return (
     <section aria-labelledby={`${id}-suggest`} className="mt-2 flex flex-col gap-2">
       <div className="flex flex-col">
-        <h3 id={`${id}-suggest`} className="text-body font-semibold text-ink">
+        <h3 id={`${id}-suggest`} className="text-body font-medium text-ink">
           {t('suggestTitle')}
         </h3>
         <p className="text-small text-ink-muted">{t('suggestHelp')}</p>
@@ -112,10 +112,10 @@ export function SuggestionList({
               >
                 <MapPin className="mt-0.5 size-5 shrink-0 text-ink-muted" aria-hidden="true" />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-body font-semibold text-ink wrap-anywhere">{suggestion.communeName}</span>
+                  <span className="text-body font-medium text-ink wrap-anywhere">{suggestion.communeName}</span>
                   <span className="text-small text-ink-muted wrap-anywhere">{shortProvinceName(suggestion.provinceName)}</span>
                 </span>
-                {suggestion.partial ? <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-small font-semibold text-ink-2">{t('partial')}</span> : null}
+                {suggestion.partial ? <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-small font-medium text-ink-2">{t('partial')}</span> : null}
                 {picked ? <Check className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden="true" /> : null}
               </button>
             </li>

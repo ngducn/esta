@@ -29,7 +29,7 @@ export function hasChoice(group: FilterGroup, selected: string | null): boolean 
 const SHEET_ID = 'property-filters';
 
 const chip =
-  'inline-flex min-h-touch items-center gap-2 rounded-full border px-4 text-small font-semibold transition-colors duration-(--duration-fast) ease-standard';
+  'inline-flex min-h-touch items-center gap-2 rounded-full border px-4 text-small font-medium transition-colors duration-(--duration-fast) ease-standard';
 
 export function FilterChips({
   groups,
@@ -57,11 +57,11 @@ export function FilterChips({
           'lg:static lg:order-last lg:block lg:basis-full lg:max-h-none lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none',
         )}
       >
-        <h2 className="mb-4 text-lead font-bold lg:sr-only">{labels.title}</h2>
+        <h2 className="mb-4 text-lead font-semibold lg:sr-only">{labels.title}</h2>
         <div className="flex flex-col gap-4 lg:gap-3">
           {groups.map((group) => (
             <section key={group.key} aria-label={group.label} className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
-              <h3 className="text-small font-semibold text-ink-muted lg:w-28 lg:shrink-0">{group.label}</h3>
+              <h3 className="text-small font-medium text-ink-muted lg:w-28 lg:shrink-0">{group.label}</h3>
               <ul className="flex flex-wrap gap-2">
                 {group.chips.map((option) => {
                   const current = filters[group.key] === option.value;

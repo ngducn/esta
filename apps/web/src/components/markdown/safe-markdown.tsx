@@ -24,13 +24,13 @@ const components: Components = {
     const inApp = estaPath(href);
     if (inApp !== null) {
       return (
-        <Link href={inApp} className="font-semibold text-ink underline underline-offset-4">
+        <Link href={inApp} className="font-medium text-ink underline underline-offset-4">
           {children}
         </Link>
       );
     }
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-4">
+      <a href={href} target="_blank" rel="noopener noreferrer" className="font-medium text-ink underline underline-offset-4">
         {children}
       </a>
     );

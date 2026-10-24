@@ -22,7 +22,7 @@ export function LocationCard({ map, locateHref, labels }: { map: LocationMapProp
       </div>
       {map === null ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="flex items-center gap-2 text-body font-semibold text-ink">
+          <p className="flex items-center gap-2 text-body font-medium text-ink">
             <MapPinOff className="size-5 shrink-0 text-ink-muted" strokeWidth={1.9} aria-hidden="true" />
             {labels.none}
           </p>

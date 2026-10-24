@@ -18,7 +18,7 @@ export function TabBar({ items, label }: { items: readonly NavItem[]; label: str
               <IntentLink
                 href={item.href}
                 aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                className="group flex min-h-touch flex-col items-center gap-1 pt-2 pb-2.5 text-center text-small leading-tight font-medium text-ink-muted aria-[current=page]:font-bold aria-[current=page]:text-accent"
+                className="group flex min-h-touch flex-col items-center gap-1 pt-2 pb-2.5 text-center text-small leading-tight font-medium text-ink-muted aria-[current=page]:font-semibold aria-[current=page]:text-accent"
               >
                 <span className="flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-(--duration-fast) ease-standard group-aria-[current=page]:bg-accent-tint group-aria-[current=page]:text-accent">
                   <Icon className="size-5.5 shrink-0" strokeWidth={1.9} aria-hidden="true" />

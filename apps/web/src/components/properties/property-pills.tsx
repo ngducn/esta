@@ -22,7 +22,7 @@ const legalMarks = {
   unknown: 'draft',
 } as const satisfies Record<LegalStatus, MarkStatus>;
 
-const pill = 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold';
+const pill = 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium';
 
 export function UsePill({ useMode, label }: { useMode: UseMode; label: string }) {
   const Icon = useIcons[useMode];

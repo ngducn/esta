@@ -41,11 +41,11 @@ export async function ReportTable({
         data-testid={`report-${kind}`}
         data-key={line.key}
         aria-current={isMarked ? 'date' : undefined}
-        className={cn('max-sm:block max-sm:border-b max-sm:border-rule max-sm:py-3', (isMarked || kind === 'total') && 'max-sm:-mx-5 max-sm:px-5', isMarked && 'bg-accent-tint', kind === 'total' && 'bg-surface-2 font-semibold')}
+        className={cn('max-sm:block max-sm:border-b max-sm:border-rule max-sm:py-3', (isMarked || kind === 'total') && 'max-sm:-mx-5 max-sm:px-5', isMarked && 'bg-accent-tint', kind === 'total' && 'bg-surface-2 font-medium')}
       >
-        <TableHead scope="row" className="border-b border-rule bg-transparent align-top text-body font-semibold whitespace-normal text-ink max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-1">
+        <TableHead scope="row" className="border-b border-rule bg-transparent align-top text-body font-medium whitespace-normal text-ink max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-1">
           {formatCell(line.cells[0], locale)}
-          {isMarked ? <span className="ml-2 text-small font-semibold text-accent">{marked.label}</span> : null}
+          {isMarked ? <span className="ml-2 text-small font-medium text-accent">{marked.label}</span> : null}
         </TableHead>
         {rest.map((column, index) => {
           const cell = line.cells[index + 1];
@@ -58,7 +58,7 @@ export async function ReportTable({
                 'figures align-top max-sm:flex max-sm:justify-between max-sm:gap-4 max-sm:border-0 max-sm:px-0 max-sm:py-0.5',
                 amount[index + 1] ? 'text-end whitespace-nowrap' : 'text-start',
                 zero ? 'text-ink-muted' : 'text-ink',
-                column.id === strong && 'font-semibold',
+                column.id === strong && 'font-medium',
                 ((zero && optional.has(column.id)) || (cell?.kind === 'text' && cell.value === '')) && 'max-sm:hidden',
               )}
             >

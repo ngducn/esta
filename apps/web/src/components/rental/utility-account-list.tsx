@@ -23,7 +23,7 @@ export async function UtilityAccountList({ propertyId, accounts, units, canEdit 
     <div data-testid="account-groups" className="flex flex-col gap-5">
       {groupAccounts(accounts, units, t('wholeProperty')).map((group) => (
         <section key={group.id} aria-labelledby={`accounts-${group.id}`} data-testid="account-group" className="flex flex-col gap-2">
-          <h3 id={`accounts-${group.id}`} className="text-body font-bold text-ink-2">
+          <h3 id={`accounts-${group.id}`} className="text-body font-medium text-ink-2">
             {group.title}
           </h3>
           <ul className="flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
@@ -37,7 +37,7 @@ export async function UtilityAccountList({ propertyId, accounts, units, canEdit 
                       <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
                     </span>
                     <div className="flex min-w-0 flex-col gap-0.5">
-                      <p className="text-body font-bold text-ink">
+                      <p className="text-body font-medium text-ink">
                         {t('utilityKind', { kind: account.kind })}
                         {account.provider === null ? null : <span className="font-normal text-ink-2">{` · ${account.provider}`}</span>}
                       </p>
@@ -45,7 +45,7 @@ export async function UtilityAccountList({ propertyId, accounts, units, canEdit 
                         <p className="text-small text-ink-muted">{t('noCode')}</p>
                       ) : (
                         <p className="text-small text-ink-muted">
-                          {t('customerCode')} <span data-testid="customer-code" className="figures inline-block font-semibold break-all text-ink select-all">{account.customer_code}</span>
+                          {t('customerCode')} <span data-testid="customer-code" className="figures inline-block font-medium break-all text-ink select-all">{account.customer_code}</span>
                         </p>
                       )}
                       {account.holder_name === null ? null : (

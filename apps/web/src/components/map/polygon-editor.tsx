@@ -56,7 +56,7 @@ export function PolygonEditor({
   return (
     <section aria-labelledby={`${id}-title`} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <h3 id={`${id}-title`} className="text-body font-semibold text-ink">
+        <h3 id={`${id}-title`} className="text-body font-medium text-ink">
           {t('boundaryTitle')}
         </h3>
         {mode === 'off' ? null : <p className="text-small text-ink-muted">{mode === 'draw' ? t('drawHelp') : t('editHelp')}</p>}

@@ -21,7 +21,7 @@ export async function OwnersSection({
   if (shares.length === 0) {
     return (
       <div data-testid="owners-empty" className="flex flex-col items-start gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-        <p className="flex items-center gap-3 text-lead font-bold text-ink">
+        <p className="flex items-center gap-3 text-lead font-semibold text-ink">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
             <Users className="size-5" strokeWidth={1.8} aria-hidden="true" />
           </span>
@@ -40,8 +40,8 @@ export async function OwnersSection({
       <ul className="flex flex-col divide-y divide-rule rounded-lg border border-rule bg-surface shadow-card">
         {rows.map((share) => (
           <li key={share.party_id} data-testid="owner-row" data-party={share.party_id} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3 sm:px-5">
-            <p className="min-w-0 flex-1 text-lead font-bold break-words text-ink">{name(share)}</p>
-            <p data-testid="owner-share-value" className="figures text-lead font-bold text-ink">
+            <p className="min-w-0 flex-1 text-lead font-semibold break-words text-ink">{name(share)}</p>
+            <p data-testid="owner-share-value" className="figures text-lead font-medium text-ink">
               {formatShareBp(share.share_bp, locale)}
             </p>
             {share.named_on_certificate || share.since !== null ? (

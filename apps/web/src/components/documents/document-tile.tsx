@@ -55,13 +55,13 @@ export function ExtractionPill({
         <Link
           href={`/documents/${documentId}/review`}
           data-testid="review-link"
-          className={cn('inline-flex min-h-touch items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
+          className={cn('inline-flex min-h-touch items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
         >
           <StatusShape status={pill.mark} className="size-4" />
           <span>{t(pill.label)}</span>
         </Link>
       ) : (
-        <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[pill.mark].pill)}>
+        <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[pill.mark].pill)}>
           <StatusShape status={pill.mark} className="size-4" />
           <span>{t(pill.label)}</span>
         </span>
@@ -115,13 +115,13 @@ export function DocumentTile({
         )}
       </div>
       <div className="flex min-w-0 flex-col gap-1 p-4">
-        <p className="text-small font-semibold text-ink-muted">{document.categoryLabel}</p>
+        <p className="text-small font-medium text-ink-muted">{document.categoryLabel}</p>
         <ExtractionPill documentId={document.id} status={extraction} workerOffline={workerOffline} />
         <Link
           href={`/documents/${document.id}`}
           prefetch={false}
           data-testid="document-link"
-          className="text-body font-bold break-words text-ink underline-offset-4 hover:underline"
+          className="text-body font-medium break-words text-ink underline-offset-4 hover:underline"
         >
           {document.title}
         </Link>
@@ -131,7 +131,7 @@ export function DocumentTile({
           </p>
         ) : null}
         {document.expiry === null ? null : (
-          <p data-testid="document-expiry" className={cn('text-small font-semibold', document.expiry.expired ? 'text-overdue' : 'text-due')}>
+          <p data-testid="document-expiry" className={cn('text-small font-medium', document.expiry.expired ? 'text-overdue' : 'text-due')}>
             {document.expiry.text}
           </p>
         )}

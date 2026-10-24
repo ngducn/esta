@@ -146,7 +146,7 @@ export default function UploadSheet({
         <form noValidate hidden={capturing} onSubmit={save} className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
-              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm bg-ink px-4 text-body font-semibold text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
+              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm bg-ink px-4 text-body font-medium text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
                 <Camera className="size-5" aria-hidden="true" />
                 {t('takePhoto')}
                 <input
@@ -159,7 +159,7 @@ export default function UploadSheet({
                   onChange={(event) => choose(event.target.files?.[0])}
                 />
               </label>
-              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-semibold text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
+              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-medium text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
                 <FolderOpen className="size-5" aria-hidden="true" />
                 {t('chooseFile')}
                 <input
@@ -210,7 +210,7 @@ export default function UploadSheet({
             onChange={changeCategory}
           />
           <div className="flex flex-col gap-1">
-            <label htmlFor={`${fieldId}-property`} className="text-body font-semibold text-ink">
+            <label htmlFor={`${fieldId}-property`} className="text-body font-medium text-ink">
               {t('propertyField')}
             </label>
             <Input id={`${fieldId}-property`} data-testid="document-property" value={nickname} readOnly className="mt-1 bg-surface-2" />
@@ -227,7 +227,7 @@ export default function UploadSheet({
           <DateInput label={t('expiresField')} onValueChange={setExpiresOn} />
           {upload.step === 'uploading' ? <UploadProgress loaded={upload.loaded} total={upload.total} /> : null}
           {upload.step === 'failed' ? (
-            <p role="alert" data-testid="upload-error" className="text-body font-semibold text-overdue">
+            <p role="alert" data-testid="upload-error" className="text-body font-medium text-overdue">
               {t('networkError')}
             </p>
           ) : null}

@@ -228,7 +228,7 @@ export function LeaseForm({
         >
           <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between gap-4 p-5 sm:px-6">
             <span className="flex flex-col gap-0.5">
-              <span className="text-lead font-bold text-ink">{t('groupMore')}</span>
+              <span className="text-lead font-semibold text-ink">{t('groupMore')}</span>
               <span className="text-small text-ink-muted">{t('groupMoreHint')}</span>
             </span>
             <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-ink-muted transition-transform duration-(--duration-fast) group-open:rotate-180" />

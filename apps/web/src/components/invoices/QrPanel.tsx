@@ -21,7 +21,7 @@ function Fact({ label, children, testId }: { label: string; children: React.Reac
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-rule py-2.5 last:border-b-0">
       <dt className="text-small text-ink-muted">{label}</dt>
-      <dd data-testid={testId} className="min-w-0 text-end text-body font-semibold break-words text-ink">
+      <dd data-testid={testId} className="min-w-0 text-end text-body font-medium break-words text-ink">
         {children}
       </dd>
     </div>
@@ -38,7 +38,7 @@ export function QrPanel({ qr, matrix, labels }: { qr: InvoiceQrView; matrix: QrM
       <QrCode matrix={matrix} label={labels.code} className="mx-auto max-w-80 min-w-60" />
       <dl className="flex flex-col">
         <Fact label={labels.amount} testId="qr-amount">
-          <span className="figures text-h3 font-bold">{qr.amountText}</span>
+          <span className="figures text-h3 font-semibold">{qr.amountText}</span>
         </Fact>
         {qr.amountWords === null ? null : (
           <Fact label={labels.amountWords} testId="qr-amount-words">
@@ -46,7 +46,7 @@ export function QrPanel({ qr, matrix, labels }: { qr: InvoiceQrView; matrix: QrM
           </Fact>
         )}
         <Fact label={labels.memo} testId="qr-memo">
-          <span className="figures text-lead font-bold tracking-wide">{qr.memo}</span>
+          <span className="figures text-lead font-medium tracking-wide">{qr.memo}</span>
         </Fact>
         <Fact label={labels.bank} testId="qr-bank">
           {qr.bankName}
@@ -60,7 +60,7 @@ export function QrPanel({ qr, matrix, labels }: { qr: InvoiceQrView; matrix: QrM
       </dl>
       {qr.amountWords === null ? null : (
         <p data-testid="qr-split-note" className="rounded-md border border-rule bg-surface-2 p-3 text-body text-ink">
-          <span className="mr-2 inline-flex rounded-full bg-due-fill px-2.5 py-0.5 text-small font-semibold text-due">{labels.assumption}</span>
+          <span className="mr-2 inline-flex rounded-full bg-due-fill px-2.5 py-0.5 text-small font-medium text-due">{labels.assumption}</span>
           {labels.splitNote}
         </p>
       )}

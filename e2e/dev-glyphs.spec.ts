@@ -6,7 +6,7 @@ import { oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
 import { colors } from '../apps/web/src/design/tokens.ts';
 
 const GLYPHS = readFileSync(new URL('../fixtures/glyph-test-string.txt', import.meta.url), 'utf8').trim();
-const FACES = [{ face: 'sans', variable: '--font-plus-jakarta-sans' }] as const;
+const FACES = [{ face: 'sans', variable: '--font-inter' }] as const;
 
 /** The rendered sRGB of a CSS color, read back through a canvas so oklch, lab and rgb serializations compare alike. */
 function srgbOf(page: Page, cssColor: string): Promise<number[]> {

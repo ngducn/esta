@@ -28,9 +28,9 @@ function Card({ children, className, testId }: { children: ReactNode; className?
 function Total({ label, amount, strong = false, testId }: { label: string; amount: InvoiceDetail['totalVnd']; strong?: boolean; testId: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
-      <dt className={strong ? 'text-lead font-bold text-ink' : 'text-body text-ink-2'}>{label}</dt>
+      <dt className={strong ? 'text-lead font-semibold text-ink' : 'text-body text-ink-2'}>{label}</dt>
       <dd data-testid={testId}>
-        <MoneyDisplay amount={amount} className={strong ? 'text-h3 font-bold text-ink' : 'text-body font-semibold text-ink'} />
+        <MoneyDisplay amount={amount} className={strong ? 'text-h3 font-semibold text-ink' : 'text-body font-semibold text-ink'} />
       </dd>
     </div>
   );
@@ -68,14 +68,14 @@ export async function InvoiceView({
           {place}
         </h1>
         <p className="text-body text-ink-2">
-          <span data-testid="invoice-number" className="figures font-semibold text-ink">
+          <span data-testid="invoice-number" className="figures font-medium text-ink">
             {invoice.number}
           </span>
           {invoice.tenantName === null ? null : <span>{` · ${invoice.tenantName}`}</span>}
         </p>
         <div data-testid="invoice-status" data-status={invoice.status} className="flex flex-wrap items-center gap-2 print:hidden">
           {state === null ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-surface-2 px-3 py-1 text-small font-semibold text-ink-muted">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-surface-2 px-3 py-1 text-small font-medium text-ink-muted">
               <StatusShape status={invoice.status === 'draft' ? 'draft' : 'ended'} className="size-4" />
               {t('status', { status: invoice.status })}
             </span>
@@ -84,7 +84,7 @@ export async function InvoiceView({
           ) : (
             <StatusMark status={GROUP_MARKS[state.group]} />
           )}
-          {invoice.paymentStatus === 'partial' && invoice.status === 'issued' ? <span className="text-small font-semibold text-ink-2">{t('partial')}</span> : null}
+          {invoice.paymentStatus === 'partial' && invoice.status === 'issued' ? <span className="text-small font-medium text-ink-2">{t('partial')}</span> : null}
         </div>
       </div>
 
@@ -93,19 +93,19 @@ export async function InvoiceView({
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 print:grid-cols-2">
             <div>
               <dt className="text-small text-ink-muted">{t('period')}</dt>
-              <dd data-testid="invoice-period" className="figures text-body font-semibold text-ink">
+              <dd data-testid="invoice-period" className="figures text-body font-medium text-ink">
                 {t('periodValue', { start: formatDate(invoice.periodStart, locale), end: formatDate(invoice.periodEnd, locale) })}
               </dd>
             </div>
             <div>
               <dt className="text-small text-ink-muted">{t('due')}</dt>
-              <dd data-testid="invoice-due" className="figures text-body font-semibold text-ink">
+              <dd data-testid="invoice-due" className="figures text-body font-medium text-ink">
                 {formatDate(invoice.dueDate, locale)}
               </dd>
             </div>
           </dl>
           <div>
-            <h2 className="pb-1 text-lead font-bold text-ink">{t('lines')}</h2>
+            <h2 className="pb-1 text-lead font-semibold text-ink">{t('lines')}</h2>
             <ul data-testid="invoice-lines" className="flex flex-col">
               {invoice.lines.map((line, index) => (
                 <li key={index} data-testid="invoice-line" data-kind={line.kind} className="flex items-baseline justify-between gap-4 border-b border-rule py-2.5">
@@ -113,7 +113,7 @@ export async function InvoiceView({
                     {line.description ?? t('lineKind', { kind: line.kind })}
                     {line.quantity === 1 ? null : <span className="figures block text-small text-ink-muted">{t('lineQuantity', { quantity: line.quantity, price: formatVnd(line.unitPriceVnd, locale) })}</span>}
                   </span>
-                  <MoneyDisplay amount={line.amountVnd} className="text-body font-semibold text-ink" />
+                  <MoneyDisplay amount={line.amountVnd} className="text-body font-medium text-ink" />
                 </li>
               ))}
             </ul>
@@ -132,7 +132,7 @@ export async function InvoiceView({
         <Card testId="invoice-qr" className="order-first lg:order-none print:order-none">
           {qr.kind === 'shown' ? (
             <div className="flex flex-col gap-3">
-              <h2 className="text-lead font-bold text-ink">{t('qrTitle')}</h2>
+              <h2 className="text-lead font-semibold text-ink">{t('qrTitle')}</h2>
               <QrPanel qr={qr.qr} matrix={qr.matrix} labels={qr.labels} />
             </div>
           ) : (

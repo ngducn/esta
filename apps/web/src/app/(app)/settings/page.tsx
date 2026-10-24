@@ -43,7 +43,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <History className="size-5" strokeWidth={1.8} aria-hidden="true" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-lead font-bold">{history('settingsLink')}</span>
+            <span className="text-lead font-semibold">{history('settingsLink')}</span>
             <span className="text-small text-ink-muted">{history('settingsLinkHint')}</span>
           </span>
           <ChevronRight className="size-5 shrink-0 text-ink-muted" aria-hidden="true" />

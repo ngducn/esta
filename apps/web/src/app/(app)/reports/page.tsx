@@ -55,7 +55,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             />
           </>
         ) : (
-          <p data-testid="report-empty" className="text-body font-semibold text-ink">
+          <p data-testid="report-empty" className="text-body font-medium text-ink">
             {view.empty}
           </p>
         )}

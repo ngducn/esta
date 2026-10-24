@@ -15,13 +15,13 @@ export async function FinishChecklist({ propertyId, nickname }: { propertyId: st
   return (
     <section data-testid="wizard-finish" aria-labelledby="wizard-finish-title" className="flex max-w-3xl flex-col gap-5 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <div className="flex flex-col gap-2">
-        <h2 id="wizard-finish-title" className="flex items-start gap-2 text-lead font-bold text-ink">
+        <h2 id="wizard-finish-title" className="flex items-start gap-2 text-lead font-semibold text-ink">
           <CircleCheck className="mt-0.5 size-6 shrink-0 text-paid" strokeWidth={2} aria-hidden="true" />
           <span className="min-w-0 break-words">{t('finishTitle', { nickname })}</span>
         </h2>
         <p className="max-w-prose text-body text-pretty text-ink-2">{t('finishBody')}</p>
       </div>
-      <p data-testid="wizard-score" data-percent={score.percent} className="flex items-center gap-3 text-body font-semibold text-ink">
+      <p data-testid="wizard-score" data-percent={score.percent} className="flex items-center gap-3 text-body font-medium text-ink">
         {tc('title')}
         <CompletenessRingView percent={score.percent} label={tc('score', { percent: score.percent })} />
       </p>

@@ -7,7 +7,7 @@ import { isActive, type NavItem } from './nav';
 import { sectionIcons } from './section-icons';
 
 const linkClass =
-  'flex min-h-touch items-center gap-3 rounded-sm px-3 text-body font-medium text-ink-2 transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent-tint aria-[current=page]:font-semibold aria-[current=page]:text-accent';
+  'flex min-h-touch items-center gap-3 rounded-sm px-3 text-body font-medium text-ink-2 transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent-tint aria-[current=page]:font-medium aria-[current=page]:text-accent';
 
 function NavList({ items, pathname }: { items: readonly NavItem[]; pathname: string }) {
   return (
@@ -50,7 +50,7 @@ export function Sidebar({
         <NavList items={items} pathname={pathname} />
       </nav>
       <nav aria-labelledby="sidebar-more" className="flex flex-col gap-1">
-        <p id="sidebar-more" className="px-3 pb-1 text-small font-semibold text-ink-muted">
+        <p id="sidebar-more" className="px-3 pb-1 text-small font-medium text-ink-muted">
           {moreLabel}
         </p>
         <NavList items={more} pathname={pathname} />

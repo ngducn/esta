@@ -69,7 +69,7 @@ function useRow(item: Item, titleId: string, asOf: IsoDate, payment: TodayPaymen
         detail: (
           <>
             {item.rule === 'overdue_invoice' ? <StatusMark status="overdue" days={item.days} /> : <StatusMark status="due" />}
-            <MoneyDisplay amount={bill.outstandingVnd} className="text-body font-semibold text-ink" />
+            <MoneyDisplay amount={bill.outstandingVnd} className="text-body font-medium text-ink" />
             <span className="break-words">{bill.tenantName ?? tc('noTenant')}</span>
           </>
         ),
@@ -112,7 +112,7 @@ function useRow(item: Item, titleId: string, asOf: IsoDate, payment: TodayPaymen
         title: item.document.title,
         detail: (
           <>
-            <span className="font-semibold text-ink">{td('expiry', { days: item.days })}</span>
+            <span className="font-medium text-ink">{td('expiry', { days: item.days })}</span>
             <span className="figures">{formatDate(item.date, locale)}</span>
           </>
         ),
@@ -143,7 +143,7 @@ function TodayRow({ item, titleId, asOf, payment }: { item: Item; titleId: strin
     >
       <span className="self-start pt-0.5">{icon}</span>
       <div className="flex min-w-0 flex-col gap-1.5">
-        <p id={titleId} data-testid="today-title" className="text-body font-semibold break-words text-ink">
+        <p id={titleId} data-testid="today-title" className="text-body font-medium break-words text-ink">
           {title}
         </p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ink-2">{detail}</div>
@@ -163,7 +163,7 @@ export function TodayList({ today, asOf, payment }: { today: TodayListData<HomeS
           {t('todayTitle')}
         </h2>
         {today.total === 0 ? null : (
-          <p data-testid="today-count" className="text-body font-semibold text-ink-muted">
+          <p data-testid="today-count" className="text-body font-medium text-ink-muted">
             {t('todayCount', { count: today.total })}
           </p>
         )}

@@ -56,7 +56,7 @@ async function Home() {
       )}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-small">
         <p className="text-ink-2">{member.displayName === null ? t('signedIn') : t('signedInAs', { name: member.displayName })}</p>
-        <p className="rounded-full border border-rule bg-surface px-3 py-1 font-semibold text-ink-muted">{t('role', { role: onboarding(`roles.${member.role}`) })}</p>
+        <p className="rounded-full border border-rule bg-surface px-3 py-1 font-medium text-ink-muted">{t('role', { role: onboarding(`roles.${member.role}`) })}</p>
       </div>
     </div>
   );

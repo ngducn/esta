@@ -51,7 +51,7 @@ export async function PropertyDetailFrame({
   const score = scores.get(property.id) ?? { percent: 100, failing: [] };
   const screen = (
     <div className="flex flex-col gap-5">
-      <IntentLink href="/properties" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-semibold text-ink-2 hover:text-ink">
+      <IntentLink href="/properties" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-medium text-ink-2 hover:text-ink">
         <ChevronLeft className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
         {t('back')}
       </IntentLink>

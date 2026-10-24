@@ -46,13 +46,13 @@ function StatusCell({ item, month, asOf, locale }: { item: CollectionItem<Collec
     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {state.group === 'overdue' ? <StatusMark status="overdue" days={state.days} /> : <StatusMark status={GROUP_MARKS[state.group]} />}
       {carriedFrom === null ? null : (
-        <span data-testid="carried-from" className="text-small font-semibold text-ink-2">
+        <span data-testid="carried-from" className="text-small font-medium text-ink-2">
           {t('carriedFrom', { month: formatMonthWithin(carriedFrom, month, locale) })}
         </span>
       )}
       {state.group === 'notDue' ? <span className="text-small text-ink-muted">{formatRelativeDue(item.row.dueDate, asOf, locale)}</span> : null}
       {item.row.paymentStatus === 'partial' ? (
-        <span data-testid="row-partial" className="text-small font-semibold text-ink-2">
+        <span data-testid="row-partial" className="text-small font-medium text-ink-2">
           {t('partial')}
         </span>
       ) : null}
@@ -90,7 +90,7 @@ function CollectionsRow({
       className="max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-1.5 max-sm:border-b max-sm:border-rule max-sm:px-4 max-sm:py-3.5 max-sm:last:border-b-0"
     >
       <TableCell className={cn('lg:min-w-60 max-sm:border-0 max-sm:p-0', cell.place)}>
-        <span data-testid="row-place" className="block min-w-0 text-body font-semibold break-words text-ink">
+        <span data-testid="row-place" className="block min-w-0 text-body font-medium break-words text-ink">
           {place}
         </span>
       </TableCell>
@@ -111,7 +111,7 @@ function CollectionsRow({
         <StatusCell item={item} month={month} asOf={asOf} locale={locale} />
       </TableCell>
       <TableCell className={cn('text-end max-sm:border-0 max-sm:p-0', cell.amount)}>
-        <MoneyDisplay amount={item.amountVnd} className="text-body font-bold text-ink" />
+        <MoneyDisplay amount={item.amountVnd} className="text-body font-medium text-ink" />
       </TableCell>
       {/* Wide enough for Nhắc qua Zalo and Xem hợp đồng on one line, so a row's actions take two lines, not three. */}
       <TableCell className={cn('text-end lg:min-w-[19.5rem] max-sm:border-0 max-sm:p-0 max-sm:text-start', cell.actions)}>
@@ -170,16 +170,16 @@ function GroupHeader({ group }: { group: CollectionGroup<CollectionRow> }) {
       <TableHead id={id} scope="rowgroup" colSpan={4} className="bg-surface-2 py-3 max-sm:border-0 max-sm:p-0">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 whitespace-normal">
           <StatusShape status={GROUP_MARKS[group.key]} />
-          <span data-testid="group-title" className="text-lead font-bold text-ink">
+          <span data-testid="group-title" className="text-lead font-semibold text-ink">
             {t('group', { group: group.key })}
           </span>
-          <span data-testid="group-count" className="text-body font-semibold text-ink-muted">
+          <span data-testid="group-count" className="text-body font-medium text-ink-muted">
             {t('groupCount', { count: group.items.length })}
           </span>
         </span>
       </TableHead>
       <TableCell className="bg-surface-2 py-3 text-end max-sm:border-0 max-sm:p-0">
-        {group.items.length === 0 ? null : <MoneyDisplay amount={group.totalVnd} className="text-lead font-bold text-ink" />}
+        {group.items.length === 0 ? null : <MoneyDisplay amount={group.totalVnd} className="text-lead font-medium text-ink" />}
       </TableCell>
       <TableCell aria-hidden="true" className="bg-surface-2 py-3 max-sm:hidden" />
     </TableRow>

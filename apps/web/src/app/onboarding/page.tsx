@@ -50,7 +50,7 @@ export default async function OnboardingPage() {
               {user?.email && <p className="break-all">{t('signedInEmail', { email: user.email })}</p>}
               <p>{t('invitedElsewhere')}</p>
               <form action={signOut}>
-                <button type="submit" className="min-h-touch font-semibold text-ink underline decoration-ink-muted underline-offset-4">
+                <button type="submit" className="min-h-touch font-medium text-ink underline decoration-ink-muted underline-offset-4">
                   {shell('signOut')}
                 </button>
               </form>
@@ -59,7 +59,7 @@ export default async function OnboardingPage() {
         ) : (
           <>
             <div className="flex flex-col gap-2">
-              <p className="flex items-center gap-2 font-semibold text-ink-muted">
+              <p className="flex items-center gap-2 font-medium text-ink-muted">
                 <UserPlus className="size-5 text-accent" strokeWidth={1.8} aria-hidden="true" />
                 {member.household.name}
               </p>

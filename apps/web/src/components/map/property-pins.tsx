@@ -147,7 +147,7 @@ export function PropertyPins({
           }}
           className={inert ? `${pinButton} pointer-events-none opacity-60` : pinButton}
         >
-          <span className={`${pinHead} figures size-9 bg-accent text-body font-bold text-on-accent group-hover:scale-110`}>{group.pins.length}</span>
+          <span className={`${pinHead} figures size-9 bg-accent text-body font-medium text-on-accent group-hover:scale-110`}>{group.pins.length}</span>
         </button>,
         element,
         key,

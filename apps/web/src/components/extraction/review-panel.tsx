@@ -195,7 +195,7 @@ export function ReviewPanel({
         className="flex scroll-mt-4 flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card lg:sticky lg:top-6"
       >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 text-lead font-bold text-ink">
+          <h2 className="flex items-center gap-2 text-lead font-semibold text-ink">
             <Images className="size-5 shrink-0 text-ink-2" strokeWidth={1.8} aria-hidden="true" />
             <span className="min-w-0 break-words">{t('documentPanel')}</span>
           </h2>
@@ -212,7 +212,7 @@ export function ReviewPanel({
         {notice}
         {mode === 'accepted' ? (
           <section data-testid="review-accepted" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card">
-            <h2 className="flex items-center gap-2 text-lead font-bold text-ink">
+            <h2 className="flex items-center gap-2 text-lead font-semibold text-ink">
               <CircleCheck className="size-5 shrink-0 text-paid" strokeWidth={2} aria-hidden="true" />
               {t(leaseToCreate ? 'acceptedLeaseTitle' : 'acceptedTitle')}
             </h2>
@@ -230,7 +230,7 @@ export function ReviewPanel({
             <p data-testid="review-intro" className="text-body text-pretty text-ink-2">
               {mode === 'manual' ? t('manualIntro') : t('intro')}
             </p>
-            {canEdit ? null : <p className="text-body font-semibold text-ink-2">{t('viewerNote')}</p>}
+            {canEdit ? null : <p className="text-body font-medium text-ink-2">{t('viewerNote')}</p>}
             {sections.map((section) => {
               const mismatch =
                 section.list === 'parcels'
@@ -244,7 +244,7 @@ export function ReviewPanel({
               const heading = `${section.key || 'root'}-heading`;
               return (
                 <section key={section.key || 'root'} aria-labelledby={heading} data-testid="review-section" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card">
-                  <h2 id={heading} className="text-lead font-bold break-words text-ink">
+                  <h2 id={heading} className="text-lead font-semibold break-words text-ink">
                     {t('section', { list: section.list, n: section.number })}
                   </h2>
                   {mismatch === null ? null : (
@@ -277,7 +277,7 @@ export function ReviewPanel({
               <section aria-label={t('save')} data-testid="review-save" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card">
                 {propertyId === null ? (
                   <label className="flex flex-col gap-1">
-                    <span className="text-body font-semibold text-ink">{t('propertyLabel')}</span>
+                    <span className="text-body font-medium text-ink">{t('propertyLabel')}</span>
                     <select
                       data-testid="review-property"
                       value={chosenProperty}
@@ -297,7 +297,7 @@ export function ReviewPanel({
                   {t('progress', { done: decided, total: fields.length })}
                 </p>
                 {saveMessage === null ? null : (
-                  <p role="alert" data-testid="review-error" className="text-body font-semibold text-overdue">
+                  <p role="alert" data-testid="review-error" className="text-body font-medium text-overdue">
                     {saveMessage}
                   </p>
                 )}

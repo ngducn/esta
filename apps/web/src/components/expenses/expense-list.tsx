@@ -19,7 +19,7 @@ export async function ExpenseList({ rows, canEdit }: { rows: readonly ExpenseRow
         const body = (
           <>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span data-testid="expense-category" className="text-body font-semibold text-ink">
+              <span data-testid="expense-category" className="text-body font-medium text-ink">
                 {category}
               </span>
               {row.vendor === null ? null : (
@@ -31,7 +31,7 @@ export async function ExpenseList({ rows, canEdit }: { rows: readonly ExpenseRow
                 {date}
               </span>
             </span>
-            <span data-testid="expense-amount" className="shrink-0 text-right text-body font-semibold text-ink figures">
+            <span data-testid="expense-amount" className="shrink-0 text-right text-body font-medium text-ink figures">
               {amount}
             </span>
           </>

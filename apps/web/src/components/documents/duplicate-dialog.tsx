@@ -21,7 +21,7 @@ export function DuplicateDialog({ title, onContinue, onCancel }: { title: string
       data-testid="duplicate-dialog"
       className="flex flex-col gap-3 rounded-md border border-due bg-due-fill p-4"
     >
-      <h3 id={`${id}-title`} className="text-body font-bold text-ink">
+      <h3 id={`${id}-title`} className="text-body font-semibold text-ink">
         {t('duplicateTitle')}
       </h3>
       <p id={`${id}-body`} className="text-body break-words text-ink-2">

@@ -42,13 +42,13 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
       }}
     >
       <div className="flex flex-col gap-1">
-        <h3 id={`${id}-title`} className="text-body font-semibold text-ink">
+        <h3 id={`${id}-title`} className="text-body font-medium text-ink">
           {t('pinTitle')}
         </h3>
         <p className="text-small text-ink-muted">{pin === null ? t('pinHelpEmpty') : t('pinHelpPlaced')}</p>
       </div>
       <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
-        <label className="flex flex-col gap-1.5 text-small font-semibold text-ink">
+        <label className="flex flex-col gap-1.5 text-small font-medium text-ink">
           {t('latitude')}
           <Input
             name="lat"
@@ -60,7 +60,7 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
             className="figures font-normal"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-small font-semibold text-ink">
+        <label className="flex flex-col gap-1.5 text-small font-medium text-ink">
           {t('longitude')}
           <Input
             name="lng"

@@ -209,7 +209,7 @@ export function ExpenseSheet({
               <SheetTitle ref={title} tabIndex={-1} className="outline-none">
                 {editing === null ? t('titleNew') : t('titleEdit')}
               </SheetTitle>
-              <SheetDescription className="font-semibold break-words text-ink">{scope.nickname}</SheetDescription>
+              <SheetDescription className="font-medium break-words text-ink">{scope.nickname}</SheetDescription>
             </div>
 
             {offline ? (
@@ -231,12 +231,12 @@ export function ExpenseSheet({
             />
 
             <fieldset className="flex flex-col gap-2" aria-describedby={`${fieldId}-category`}>
-              <legend className="mb-2 text-body font-semibold text-ink">{t('category')}</legend>
+              <legend className="mb-2 text-body font-medium text-ink">{t('category')}</legend>
               <div className="flex flex-wrap gap-2" data-testid="expense-categories">
                 {EXPENSE_CATEGORY_IDS.map((id) => (
                   <label
                     key={id}
-                    className="flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-field bg-surface px-4 text-body font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-ink has-checked:text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                    className="flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-field bg-surface px-4 text-body font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-ink has-checked:text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
                   >
                     <input
                       type="radio"
@@ -274,7 +274,7 @@ export function ExpenseSheet({
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-x-3 text-body">
                 <p className="text-ink">
-                  <span className="font-semibold">{t('date')}</span>{' '}
+                  <span className="font-medium">{t('date')}</span>{' '}
                   <span data-testid="expense-date" className="figures text-ink-2">
                     {(editing?.paidOn ?? scope.today) === scope.today ? t('dateToday', { date }) : date}
                   </span>

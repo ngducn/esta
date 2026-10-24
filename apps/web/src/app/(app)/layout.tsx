@@ -47,7 +47,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         header={
           <>
             <BrandMark name={app('name')} className="px-2 pt-1" />
-            <p className="rounded-md border border-rule bg-surface-2 px-3 py-2.5 font-semibold break-words text-ink">{member.household.name}</p>
+            <p className="rounded-md border border-rule bg-surface-2 px-3 py-2.5 font-medium break-words text-ink">{member.household.name}</p>
           </>
         }
         footer={<AccountTrigger initial={initial} label={name} detail={role} accessibleName={shell('accountOf', { name })} className="w-full" />}

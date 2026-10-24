@@ -64,12 +64,12 @@ export default function ReminderSheet({
           </div>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-body font-semibold text-ink">{labels.form}</legend>
+            <legend className="mb-2 text-body font-medium text-ink">{labels.form}</legend>
             <div className="flex flex-wrap gap-2">
               {labels.forms.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="inline-flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-field bg-surface px-4 text-body font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="inline-flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-field bg-surface px-4 text-body font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
                 >
                   <input
                     type="radio"
@@ -90,7 +90,7 @@ export default function ReminderSheet({
           </fieldset>
 
           <div className="flex flex-col gap-2">
-            <h3 className="text-body font-semibold text-ink">{labels.text}</h3>
+            <h3 className="text-body font-medium text-ink">{labels.text}</h3>
             <p
               ref={textRef}
               data-testid="reminder-text"
@@ -103,7 +103,7 @@ export default function ReminderSheet({
 
           {target.zalo === null ? null : (
             <p data-testid="reminder-zalo-note" className="rounded-md border border-rule bg-surface-2 p-3 text-body text-ink">
-              <span className="mr-2 inline-flex rounded-full bg-due-fill px-2.5 py-0.5 text-small font-semibold text-due">{labels.assumption}</span>
+              <span className="mr-2 inline-flex rounded-full bg-due-fill px-2.5 py-0.5 text-small font-medium text-due">{labels.assumption}</span>
               {labels.zaloNote}
             </p>
           )}

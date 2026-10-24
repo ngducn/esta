@@ -34,7 +34,7 @@ export function FormSelect({
   const id = selectId ?? generated;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {label}
       </label>
       <div className="relative mt-1">
@@ -109,7 +109,7 @@ function CommuneCombobox({
   const hint = disabled ? t('communeNeedsProvince') : loading ? t('communeLoading') : t('communeHint');
   return (
     <div className="relative flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {t('commune')}
       </label>
       <p id={`${id}-hint`} className="text-small text-ink-muted">
@@ -214,13 +214,13 @@ export function AddressPicker({
       />
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="flex flex-col gap-1">
-          <label htmlFor={houseId} className="text-body font-semibold text-ink">
+          <label htmlFor={houseId} className="text-body font-medium text-ink">
             {t('houseNo')}
           </label>
           <Input id={houseId} value={value.houseNo} autoComplete="off" onChange={(event) => onChange({ ...value, houseNo: event.target.value })} className="mt-1" />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor={streetId} className="text-body font-semibold text-ink">
+          <label htmlFor={streetId} className="text-body font-medium text-ink">
             {t('street')}
           </label>
           <Input id={streetId} value={value.street} autoComplete="off" onChange={(event) => onChange({ ...value, street: event.target.value })} className="mt-1" />

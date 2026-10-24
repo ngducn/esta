@@ -82,7 +82,7 @@ export default function ActivateLeaseDialog({
         />
         {blocked.length > 0 ? null : (
           <section aria-live="polite" data-testid="activation-preview" className="flex flex-col gap-2">
-            <h3 className="text-body font-semibold text-ink">{t('previewTitle')}</h3>
+            <h3 className="text-body font-medium text-ink">{t('previewTitle')}</h3>
             {!readable ? (
               <p className="text-small text-ink-muted">{t('previewNeedsDate')}</p>
             ) : bills === undefined ? (
@@ -96,12 +96,12 @@ export default function ActivateLeaseDialog({
                 {bills.map((bill) => (
                   <li key={bill.periodStart} data-testid="preview-bill" className="flex items-start justify-between gap-3 border-b border-rule p-3 last:border-b-0">
                     <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-body font-semibold text-ink">
+                      <span className="text-body font-medium text-ink">
                         {t('invoicePeriod', { start: formatDate(bill.periodStart, locale), end: formatDate(bill.periodEnd, locale) })}
                       </span>
                       <span className="text-small text-ink-muted">{t(bill.issuesNow ? 'previewIssuesNow' : 'previewLater', { date: formatDate(bill.dueDate, locale) })}</span>
                     </span>
-                    <MoneyDisplay amount={bill.rentVnd} className="text-body font-bold text-ink" />
+                    <MoneyDisplay amount={bill.rentVnd} className="text-body font-medium text-ink" />
                   </li>
                 ))}
               </ul>

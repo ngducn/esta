@@ -112,7 +112,7 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
             title={owners('title')}
             aside={
               shares.length === 0 ? null : (
-                <p data-testid="ownership-total" className="figures text-body font-semibold text-ink">
+                <p data-testid="ownership-total" className="figures text-body font-medium text-ink">
                   {owners('total', { total: formatShareBp(ownershipStatus(shares).totalBp, locale) })}
                 </p>
               )

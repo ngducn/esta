@@ -43,8 +43,8 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
               billed: formatVndCompact(billedVnd, locale),
               label: (chunks) => <span className="text-lead font-semibold text-ink-2">{chunks}</span>,
               amounts: (chunks) => <span className="flex flex-wrap items-baseline gap-x-2.5">{chunks}</span>,
-              big: (chunks) => <span className="figures text-hero font-bold tracking-tight whitespace-nowrap">{chunks}</span>,
-              small: (chunks) => <span className="figures text-h2 font-bold whitespace-nowrap text-ink-muted">{chunks}</span>,
+              big: (chunks) => <span className="figures text-hero font-semibold tracking-tight whitespace-nowrap">{chunks}</span>,
+              small: (chunks) => <span className="figures text-h2 font-semibold whitespace-nowrap text-ink-muted">{chunks}</span>,
               slash: (chunks) => <span aria-hidden="true">{chunks}</span>,
               of: (chunks) => <span className="sr-only">{chunks}</span>,
             })}
@@ -63,7 +63,7 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
             <li key={group.key} data-testid={`month-group-${group.key}`} data-count={group.items.length} className="flex items-center gap-2 text-body whitespace-nowrap text-ink">
               <StatusShape status={GROUP_MARKS[group.key]} />
               <span>{tc('group', { group: group.key })}</span>
-              <span className="figures font-bold">{group.items.length}</span>
+              <span className="figures font-medium">{group.items.length}</span>
             </li>
           ))}
         </ul>

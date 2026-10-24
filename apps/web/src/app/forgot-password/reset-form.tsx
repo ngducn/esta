@@ -106,7 +106,7 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
             <p id="password-hint" className="text-small text-ink-muted">
               {copy.passwordHint}
             </p>
-            <p id="password-error" role="alert" className="min-h-6 font-semibold text-overdue">
+            <p id="password-error" role="alert" className="min-h-6 font-medium text-overdue">
               {passwordError}
             </p>
           </div>
@@ -121,7 +121,7 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
       <form action={action} className="flex flex-col gap-4" noValidate>
         <p className="text-ink-2">{copy.intro}</p>
         <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="font-semibold">
+          <label htmlFor="email" className="font-medium">
             {copy.emailLabel}
           </label>
           <input
@@ -139,7 +139,7 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
             aria-describedby={message === null ? undefined : 'email-error'}
             className={fieldClass}
           />
-          <p id="email-error" role="alert" className="min-h-6 font-semibold text-overdue">
+          <p id="email-error" role="alert" className="min-h-6 font-medium text-overdue">
             {message}
           </p>
         </div>

@@ -117,11 +117,11 @@ export default function DocumentEditSheet({
             onChange={setTags}
           />
           {refusal === null ? null : refusal === 'failed' ? (
-            <p role="alert" data-testid="edit-error" className="text-body font-semibold text-overdue">
+            <p role="alert" data-testid="edit-error" className="text-body font-medium text-overdue">
               {t('updateFailed')}
             </p>
           ) : (
-            <p role="alert" data-testid="edit-invalid" className="text-body font-semibold text-overdue">
+            <p role="alert" data-testid="edit-invalid" className="text-body font-medium text-overdue">
               {t('editInvalid')}
             </p>
           )}

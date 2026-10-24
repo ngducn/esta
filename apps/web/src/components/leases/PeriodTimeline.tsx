@@ -33,7 +33,7 @@ function Mark({ mark }: { mark: PeriodMark }) {
       const shape = mark.kind === 'prepaid' ? 'paid' : mark.kind === 'partial' ? 'due' : mark.kind === 'void' ? 'ended' : 'upcoming';
       const word = { prepaid: t('markPrepaid'), partial: t('markPartial'), void: t('markVoid'), unbilled: t('markUnbilled') }[mark.kind];
       return (
-        <span data-status={mark.kind} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 align-top text-small font-semibold', statusMarks[shape].pill)}>
+        <span data-status={mark.kind} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 align-top text-small font-medium', statusMarks[shape].pill)}>
           <StatusShape status={shape} className="size-4" />
           <span>{word}</span>
         </span>
@@ -54,11 +54,11 @@ function PeriodRow({ row, newRent }: { row: TimelineRow<InvoiceSummary>; newRent
       className="flex flex-col gap-2 border-b border-rule p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5"
     >
       <div className="flex min-w-0 flex-col gap-1">
-        <p className="text-body font-semibold break-words text-ink">{t('invoicePeriod', { start: formatDate(row.start, locale), end: formatDate(row.end, locale) })}</p>
+        <p className="text-body font-medium break-words text-ink">{t('invoicePeriod', { start: formatDate(row.start, locale), end: formatDate(row.end, locale) })}</p>
         <p className="text-small break-words text-ink-muted">
           {invoice === null ? null : (
             <>
-              <IntentLink href={`/collections/invoices/${invoice.id}`} data-testid="invoice-link" className="figures font-semibold text-ink underline decoration-ink-muted underline-offset-4 hover:decoration-ink">
+              <IntentLink href={`/collections/invoices/${invoice.id}`} data-testid="invoice-link" className="figures font-medium text-ink underline decoration-ink-muted underline-offset-4 hover:decoration-ink">
                 {invoice.number}
               </IntentLink>
               {' · '}
@@ -67,14 +67,14 @@ function PeriodRow({ row, newRent }: { row: TimelineRow<InvoiceSummary>; newRent
           {invoice?.status === 'draft' ? t('invoiceDraft', { date: formatDate(invoice.issueOn, locale) }) : t('invoiceDue', { date: formatDate(row.dueDate, locale) })}
         </p>
         {newRent ? (
-          <p data-testid="period-new-rent" className="text-small font-semibold text-accent">
+          <p data-testid="period-new-rent" className="text-small font-medium text-accent">
             {t('timelineNewRent')}
           </p>
         ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-3 sm:justify-end">
         <Mark mark={row.mark} />
-        <MoneyDisplay amount={row.amountVnd} className="text-lead font-bold text-ink" />
+        <MoneyDisplay amount={row.amountVnd} className="text-lead font-medium text-ink" />
       </div>
     </li>
   );
@@ -122,14 +122,14 @@ export function PeriodTimeline({
       <div data-testid="lease-timeline" className="overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
         {folded === 0 ? null : (
           <details data-testid="timeline-earlier" className="group border-b border-rule">
-            <summary className="flex min-h-12 cursor-pointer items-center px-4 text-body font-semibold text-accent sm:px-5">{t('timelineEarlier', { count: folded })}</summary>
+            <summary className="flex min-h-12 cursor-pointer items-center px-4 text-body font-medium text-accent sm:px-5">{t('timelineEarlier', { count: folded })}</summary>
             <div className="border-t border-rule">{list(rows.slice(0, folded))}</div>
           </details>
         )}
         {list(rows.slice(folded, later))}
         {later >= rows.length ? null : (
           <details data-testid="timeline-later" className="group border-t border-rule">
-            <summary className="flex min-h-12 cursor-pointer items-center px-4 text-body font-semibold text-accent sm:px-5">{t('timelineLater', { count: rows.length - later })}</summary>
+            <summary className="flex min-h-12 cursor-pointer items-center px-4 text-body font-medium text-accent sm:px-5">{t('timelineLater', { count: rows.length - later })}</summary>
             <div className="border-t border-rule">{list(rows.slice(later))}</div>
           </details>
         )}

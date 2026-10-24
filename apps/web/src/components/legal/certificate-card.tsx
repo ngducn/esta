@@ -40,14 +40,14 @@ export async function CertificateCard({
       <p
         data-testid="certificate-status"
         data-status={certificate.status}
-        className={cn('inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[mark].pill)}
+        className={cn('inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[mark].pill)}
       >
         <StatusShape status={mark} className="size-4" />
         {t('status', { status: certificate.status })}
       </p>
       {mortgage === null ? null : (
         <div data-testid="certificate-mortgage" className="flex flex-col gap-0.5 rounded-md bg-surface-2 px-3 py-2">
-          <p className="text-body font-semibold break-words text-ink">{t('mortgagedTo', { bank: parties.get(mortgage.bank_party_id)?.fullName ?? '' })}</p>
+          <p className="text-body font-medium break-words text-ink">{t('mortgagedTo', { bank: parties.get(mortgage.bank_party_id)?.fullName ?? '' })}</p>
           <p className="figures text-lead text-ink">{formatVnd(mortgage.amount_vnd, locale)}</p>
           {mortgage.released_on === undefined ? null : (
             <p className="text-small text-ink-muted">{t('mortgageReleased', { date: formatDate(mortgage.released_on, locale) })}</p>

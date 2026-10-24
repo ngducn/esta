@@ -14,7 +14,7 @@ export function UploadProgress({ loaded, total }: { loaded: number; total: numbe
     <div data-testid="upload-progress" className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-body text-ink">
         <span className="figures">{t('progress', { done: megabytes.format(loaded / MB), total: megabytes.format(total / MB) })}</span>
-        <span data-testid="upload-percent" className="figures font-semibold">
+        <span data-testid="upload-percent" className="figures font-medium">
           {t('percent', { percent })}
         </span>
       </div>

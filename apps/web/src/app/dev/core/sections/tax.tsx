@@ -62,7 +62,7 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
       <p className="text-small text-ink-muted">{t('intro')}</p>
 
       <div data-testid="tax-rule" data-year={year} data-state={selected?.kind ?? 'unavailable'} className="flex flex-col gap-1 text-small">
-        <h3 className="font-semibold">{t('ruleFor', { year })}</h3>
+        <h3 className="font-medium">{t('ruleFor', { year })}</h3>
         {!loaded.ok && <p>{t('ruleUnavailable', { reason: loaded.reason })}</p>}
         {selected?.kind === 'no_rule' && <p data-testid="tax-no-rule">{notes('noRule', { year })}</p>}
         {selected?.kind === 'rule' && (
@@ -118,7 +118,7 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
                 className="border-b align-top max-sm:grid max-sm:grid-cols-[auto_1fr] max-sm:gap-x-3 max-sm:py-2"
               >
                 {cells.map(([cell, label, lines]) => (
-                  <td key={cell} className={`py-1 pr-4 wrap-anywhere max-sm:contents ${cell === 'result' && !matches ? 'font-semibold underline' : ''}`}>
+                  <td key={cell} className={`py-1 pr-4 wrap-anywhere max-sm:contents ${cell === 'result' && !matches ? 'font-medium underline' : ''}`}>
                     <span aria-hidden="true" className="font-sans font-normal text-meta sm:hidden">
                       {label}
                     </span>

@@ -32,7 +32,7 @@ export function PinCard({ property, editHref, onClose }: { property: MapProperty
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 sm:p-4">
-        <h2 id={`pin-card-${property.id}`} className="text-lead font-bold break-words text-ink">
+        <h2 id={`pin-card-${property.id}`} className="text-lead font-semibold break-words text-ink">
           <IntentLink href={`/properties/${property.id}`} className="outline-none after:absolute after:inset-0">
             {property.nickname}
           </IntentLink>

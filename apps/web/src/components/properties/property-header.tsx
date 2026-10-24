@@ -47,7 +47,7 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
             </div>
           }
         />
-        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-small font-semibold text-ink shadow-card">
+        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-small font-medium text-ink shadow-card">
           {property.kindLabel}
         </span>
       </div>

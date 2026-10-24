@@ -32,7 +32,7 @@ export function LocationPanel({
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
-          <h2 id="location-panel-title" ref={heading} tabIndex={-1} className="text-lead font-bold break-words text-ink outline-none">
+          <h2 id="location-panel-title" ref={heading} tabIndex={-1} className="text-lead font-semibold break-words text-ink outline-none">
             {t('panelTitle', { nickname })}
           </h2>
           <p className="text-small break-words text-ink-muted">{address}</p>

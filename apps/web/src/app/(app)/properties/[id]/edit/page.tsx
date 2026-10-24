@@ -46,7 +46,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6"
         >
           <div className="flex flex-col gap-1">
-            <h2 id="cover-photo-title" className="text-lead font-bold text-ink">
+            <h2 id="cover-photo-title" className="text-lead font-semibold text-ink">
               {t('photoGroup')}
             </h2>
             <p className="text-small text-ink-muted">{t('photoHint')}</p>
@@ -66,7 +66,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           cancelHref={detailHref}
         />
         <section aria-labelledby="archive-title" className="flex max-w-3xl flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-          <h2 id="archive-title" className="text-lead font-bold text-ink">
+          <h2 id="archive-title" className="text-lead font-semibold text-ink">
             {t('archiveTitle')}
           </h2>
           <p className="text-body text-ink-2">{t('archiveHint')}</p>

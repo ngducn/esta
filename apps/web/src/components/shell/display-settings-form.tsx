@@ -31,7 +31,7 @@ function Choice({
   return (
     <Card>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 flex items-center gap-3 text-lead font-bold">
+        <legend className="mb-1 flex items-center gap-3 text-lead font-semibold">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
             <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
           </span>
@@ -66,13 +66,13 @@ export async function DisplaySettingsForm({ settings, status }: { settings: Disp
         </h2>
         <p className="text-ink-muted">{t('displayIntro')}</p>
         {status === 'saved' && (
-          <p role="status" className="flex items-center gap-2 font-semibold text-paid">
+          <p role="status" className="flex items-center gap-2 font-medium text-paid">
             <Check className="size-5" strokeWidth={2.2} aria-hidden="true" />
             {t('saved')}
           </p>
         )}
         {status === 'failed' && (
-          <p role="alert" className="font-semibold text-overdue">
+          <p role="alert" className="font-medium text-overdue">
             {t('saveFailed')}
           </p>
         )}

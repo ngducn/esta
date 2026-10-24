@@ -45,7 +45,7 @@ function renderTokensCss(): string {
     ...Object.entries(fontWeight).map(([name, value]) => `--font-weight-${name}: ${value};`),
     '--font-serif: initial;',
     '--font-mono: initial;',
-    '--font-sans: var(--font-plus-jakarta-sans);',
+    '--font-sans: var(--font-inter);',
     '--radius-*: initial;',
     ...Object.entries(radius).map(([name, px]) => `--radius-${name}: ${px === radius.full ? 'calc(infinity * 1px)' : rem(px)};`),
     '--shadow-*: initial;',

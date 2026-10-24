@@ -45,7 +45,7 @@ export function PasswordSignInForm({ copy }: { copy: PasswordSignInCopy }) {
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="font-semibold">
+        <label htmlFor="email" className="font-medium">
           {copy.emailLabel}
         </label>
         <input
@@ -78,7 +78,7 @@ export function PasswordSignInForm({ copy }: { copy: PasswordSignInCopy }) {
           {copy.forgotPassword}
         </Link>
       </div>
-      <p id="sign-in-error" role="alert" className="-mt-2 min-h-6 font-semibold text-overdue">
+      <p id="sign-in-error" role="alert" className="-mt-2 min-h-6 font-medium text-overdue">
         {error === null ? null : copy[error.copy]}
       </p>
       <button type="submit" name="intent" value="sign-in" disabled={pending} className={primaryClass}>

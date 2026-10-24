@@ -143,7 +143,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
           <span
             data-testid="lease-status"
             data-status={summary.status}
-            className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-surface-2 px-3 py-1 text-small font-semibold text-ink-2"
+            className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-surface-2 px-3 py-1 text-small font-medium text-ink-2"
           >
             {ended ? <StatusShape status="ended" className="size-4" /> : null}
             <span>{t('status', { status: summary.status })}</span>

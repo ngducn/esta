@@ -28,7 +28,7 @@ export function LandUseCodePicker({
   const name = (option: LandUseCode) => (locale === 'vi' ? option.nameVi : option.nameEn);
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {label}
       </label>
       <Input

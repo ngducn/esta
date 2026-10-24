@@ -79,7 +79,7 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
               </h2>
               {total === null ? null : (
                 <p data-testid="rental-total" className="text-small text-ink-muted">
-                  {t('totalRent')} <span className="figures text-body font-bold text-ink">{formatVnd(total, locale)}</span>
+                  {t('totalRent')} <span className="figures text-body font-medium text-ink">{formatVnd(total, locale)}</span>
                 </p>
               )}
             </div>

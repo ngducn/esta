@@ -134,7 +134,7 @@ export async function VietQrSection() {
 
       <div className="grid gap-6 sm:grid-cols-2">
         <figure data-testid="vietqr-canonical" data-payload={canonical.payload} className="flex flex-col gap-3">
-          <figcaption className="font-semibold">{t('canonical', { amount: money(ESTA_INVOICE.input.outstandingVnd) })}</figcaption>
+          <figcaption className="font-medium">{t('canonical', { amount: money(ESTA_INVOICE.input.outstandingVnd) })}</figcaption>
           <VietQrScan id="vietqr-canonical" payload={canonical.payload} labels={scanLabels} />
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-small tabular-nums">
             <dt>{t('bin')}</dt>
@@ -160,13 +160,13 @@ export async function VietQrSection() {
         </figure>
 
         <figure data-testid="vietqr-overdue" data-payload={overdue.payload} className="flex flex-col gap-3">
-          <figcaption className="font-semibold">{t('overdue', { amount: money(OVERDUE.outstandingVnd) })}</figcaption>
+          <figcaption className="font-medium">{t('overdue', { amount: money(OVERDUE.outstandingVnd) })}</figcaption>
           <VietQrScan id="vietqr-overdue" payload={overdue.payload} labels={scanLabels} />
           <p className="wrap-anywhere font-mono text-small">{overdue.payload}</p>
         </figure>
       </div>
 
-      <h3 className="font-semibold">{t('examples')}</h3>
+      <h3 className="font-medium">{t('examples')}</h3>
       <table className="w-full text-left text-small max-sm:block">
         <thead className="max-sm:sr-only">
           <tr className="border-b">
