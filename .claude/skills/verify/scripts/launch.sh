@@ -57,7 +57,7 @@ pnpm --silent clock:set "$clock"
 
 if [[ -z "$holder" ]]; then
   # `pnpm dev` runs this same command, but pnpm puts it in its own process group and drops signals,
-  # so the recorded pid would not stop the server. The Node pnpm pins (`devEngines.runtime`) runs it, as under pnpm.
+  # so the recorded pid would not stop the server.
   nohup node_modules/.bin/node scripts/web.ts dev >"$RUN_DIR/web.log" 2>&1 &
   echo $! >"$WEB_PID_FILE"
 fi

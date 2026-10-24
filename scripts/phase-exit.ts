@@ -14,7 +14,6 @@ export type PhaseCheck =
       readonly commands: readonly (readonly string[])[];
       /** Test files, from the repo root, that must name `id`; the row fails before running when one does not. */
       readonly cites?: readonly string[];
-      /** Added to the environment of every command in the row. */
       readonly env?: Readonly<Record<string, string>>;
       readonly playwrightReport?: (json: string) => Outcome;
     }
@@ -143,8 +142,7 @@ export function verifyMomTest(text: string): Outcome {
 /** Local CI's policy: a test that fails gets one retry, and a test that fails twice fails its row. */
 const e2e = (spec: string) => ['pnpm', 'e2e', '--retries=1', '--reporter=list', spec];
 
-/** North-star serves the production build, as CI does, so a failure only `next dev` shows cannot fail a phase exit (#292). */
-const northStar = (retries: number, reporter: string) => ({
+const northStarOnBuild = (retries: number, reporter: string) => ({
   id: 'North-star',
   commands: [['pnpm', 'e2e:northstar', `--retries=${retries}`, `--reporter=${reporter}`]],
   env: { ESTA_E2E_SERVER: 'build' },
@@ -240,7 +238,7 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     // The replay golden suite scores every synthetic certificate and bill against AGENT.md §7.2 and fails below a target.
     { id: 'AGT-2', commands: [['pnpm', '--filter', 'agent', 'exec', 'vitest', 'run', 'test/golden/extract.test.ts', 'test/sensitive-documents.test.ts']] },
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
-    northStar(1, 'list'),
+    northStarOnBuild(1, 'list'),
     { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '2']] },
   ],
   // The integration tests want a fresh full seed, and their cron test moves every household past SPEC §9.3's day, so
@@ -264,7 +262,7 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'PBT', commands: [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', 'src/allocation/allocate.property.test.ts', 'src/matching/match.property.test.ts'], ['pnpm', 'db:test', 'supabase/tests/lease_schedule.test.sql']] },
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
-    northStar(1, 'list'),
+    northStarOnBuild(1, 'list'),
     { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '3']] },
     { id: 'VietQR', verify: (repoRoot) => verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8')) },
     { id: 'Mom', verify: (repoRoot) => verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8')) },
@@ -278,7 +276,7 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     cited('FIN-4', { core: ['reports/reports.test.ts', 'reports/summaries.test.ts'], integration: ['server/reports/snapshot.integration.test.ts'] }),
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
-    { ...northStar(0, 'list,json'), playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR_PHASE_4) },
+    { ...northStarOnBuild(0, 'list,json'), playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR_PHASE_4) },
   ],
 };
 
