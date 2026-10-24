@@ -23,3 +23,4 @@ export function isAgentSchemaName(name: string): name is AgentSchemaName {
   return Object.hasOwn(AGENT_SCHEMAS, name);
 }
 export { factHandleSchema, watchNoteSchema, type WatchNote } from './portfolio-watch';
+export { BRIEF_SECTIONS, briefDraftSchema, briefTokens, briefV1Schema, MAX_BRIEF_TOKENS, renderBriefMarkdown, type BriefDraft, type BriefLine, type BriefV1 } from './brief';

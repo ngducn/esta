@@ -27,6 +27,7 @@
     "./guard": "./src/guard/index.ts",
     "./lease": "./src/lease/index.ts",
     "./ledger": "./src/ledger/index.ts",
+    "./links": "./src/links/esta-uri.ts",
     "./maps": "./src/maps/index.ts",
     "./meters": "./src/meters/index.ts",
     "./matching": "./src/matching/index.ts",

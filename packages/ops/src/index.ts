@@ -54,4 +54,5 @@ export { taxInputSave, type TaxInputSaved } from './tax-ops';
 export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
 export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
 export { readLivePropertyIds, readValuations } from './valuations';
+export { existingLinks } from './links';
 export { readWatchLabels, readWatchSnapshot } from './watch';
