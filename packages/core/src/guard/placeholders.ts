@@ -21,14 +21,18 @@ export function maskPlaceholders(template: string): { masked: string; occurrence
 type Cell = { readonly record: Readonly<Record<string, unknown>> | undefined; readonly field: string; readonly value: unknown };
 
 const CITABLE = /_(display|compact|relative|label|name)$/;
+export const DATE_FIELD = /(?:^|_)(?:year|date)_/;
 const UNSAFE = /[\p{Bidi_Control}\uE000-\uF8FF]|(?![\n\r])\p{Cc}/u;
+/** The longest value a placeholder may fill. */
+export const MAX_VALUE_LENGTH = 200;
 
 /** The first rule a cell breaks, in this order. */
 const FILL_RULES: ReadonlyArray<{ readonly rule: NoteRule; readonly breaks: (cell: Cell) => boolean }> = [
   { rule: 'unknown_handle', breaks: ({ record }) => record === undefined },
   { rule: 'unknown_field', breaks: ({ record, field }) => record === undefined || !Object.hasOwn(record, field) },
   { rule: 'not_citable', breaks: ({ field, value }) => typeof value !== 'string' || !CITABLE.test(field) },
-  { rule: 'unsafe_value', breaks: ({ value }) => typeof value === 'string' && UNSAFE.test(value) },
+  { rule: 'unsafe_value', breaks: ({ value }) => typeof value === 'string' && (UNSAFE.test(value) || value.length > MAX_VALUE_LENGTH) },
+  { rule: 'empty_value', breaks: ({ value }) => typeof value === 'string' && value.trim() === '' },
 ];
 
 /** The value as it reads on screen: one line, trimmed. */
@@ -43,15 +47,16 @@ export function fillValue({ handle, field }: Occurrence, sheet: FactSheet): Resu
 /** Backslash-escapes the punctuation Markdown could read as syntax. NBSP and the rest of the value stay as written. */
 export const escapeMarkdown = (value: string) => value.replace(/[\\`*_[\]<>&#!~|{}+-]/g, '\\$&');
 
-const SEAM = /([\uE000-\uF8FF])[\s.,'’·]*(?=([\uE000-\uF8FF]))/gu;
+const SEAM = /([\uE000-\uF8FF])([^\p{L}\p{M}\uE000-\uF8FF]*)(?=([\uE000-\uF8FF]))/gu;
+const DIGIT_GROUP = /^[\s.,'’·]*$/u;
+const readsAsOneNumber = (joiner: string) => DIGIT_GROUP.test(joiner) || !/\s/u.test(joiner);
 
-/** Two values that meet digit to digit across nothing but spaces and dots read as one number. */
 export function seams(shown: string, values: ReadonlyArray<string | undefined>): NoteViolation[] {
-  return [...shown.matchAll(SEAM)].flatMap(([gap, left = '', right = '']) => {
+  return [...shown.matchAll(SEAM)].flatMap(([gap, left = '', joiner = '', right = '']) => {
     const before = values[maskIndex(left)];
     const after = values[maskIndex(right)];
     const touch = before !== undefined && after !== undefined && /\p{N}$/u.test(before) && /^\p{N}/u.test(after);
-    return touch ? [{ rule: 'seam', text: `${gap}${right}` }] : [];
+    return touch && readsAsOneNumber(joiner) ? [{ rule: 'seam', text: `${gap}${right}` }] : [];
   });
 }
 

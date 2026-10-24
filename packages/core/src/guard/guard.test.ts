@@ -3,14 +3,27 @@ import { isoDate } from '../date/iso-date';
 import { formatBps, formatCount, formatDate, formatDayMonth, formatRelativeDue, formatVnd, formatVndCompact } from '../format';
 import { vnd } from '../money/vnd';
 import { PROBES_NO_NUMBER_SHOWN, PROBES_R2A, PROBES_R2C } from './fixtures/probes';
-import { checkNote, MAX_NOTE_LENGTH, repairMessage, visibleText, type FactSheet, type NoteRule, type NoteViolation } from './index';
+import { checkNote, MAX_NOTE_LENGTH, MAX_VALUE_LENGTH, repairMessage, visibleText, type FactSheet, type NoteRule, type NoteViolation } from './index';
 import { WORDS } from './words';
 
 const sheet = (records: Record<string, Readonly<Record<string, unknown>>>): FactSheet => new Map(Object.entries(records));
 const EMPTY = sheet({});
 const SHEET = sheet({
-  f1: { count_display: '12', a_display: '3', days_overdue_display: '12', x_display: '5', unit_label: 'Phòng 5', code_display: 'a*b', days_overdue: 12, due_date: '2026-09-25' },
-  f2: { b_display: '500', owner_name: 'Nguyễn Thị Demo' },
+  f1: {
+    count_display: '12',
+    a_display: '3',
+    days_overdue_display: '12',
+    x_display: '5',
+    unit_label: 'Phòng 5',
+    property_label: 'Nhà trọ Demo',
+    code_display: 'a*b',
+    day_display: '05',
+    month_display: '10',
+    start_year_display: '2019',
+    days_overdue: 12,
+    due_date: '2026-09-25',
+  },
+  f2: { b_display: '500', owner_name: 'Nguyễn Thị Demo', year_display: '2026' },
 });
 
 function violations(template: string, facts: FactSheet = SHEET): NoteViolation[] {
@@ -40,14 +53,14 @@ describe('model text without digits', () => {
   it.each<[string, NoteRule]>([
     ['Còn nợ &#49; triệu', 'number'],
     ['Còn nợ &#x31; triệu', 'number'],
-    ['Quá hạn &#x202E; ngày', 'bidi'],
-    ['Quá hạn &#8238; ngày', 'bidi'],
-    ['Quá hạn &rlm; ngày', 'bidi'],
-    ['Quá hạn \u202E ngày', 'bidi'],
-    ['Quá hạn <b>&#x202E;</b> ngày', 'bidi'],
+    ['Quá hạn &#x202E; ngày', 'invisible'],
+    ['Quá hạn &#8238; ngày', 'invisible'],
+    ['Quá hạn &rlm; ngày', 'invisible'],
+    ['Quá hạn \u202E ngày', 'invisible'],
+    ['Quá hạn <b>&#x202E;</b> ngày', 'invisible'],
     ['Còn nợ ｔｒｉệｕ', 'word'],
-    ['Còn nợ tri\u00ADệu', 'word'],
-    ['Còn nợ tr\u200Biệu', 'word'],
+    ['Còn nợ tri\u00ADệu', 'invisible'],
+    ['Còn nợ tr\u200Biệu', 'invisible'],
     ['Còn nợ тriệu', 'script'],
     ['Còn nợ 三百万', 'script'],
     ['Còn nợ ba triệu rưỡi', 'word'],
@@ -88,6 +101,9 @@ describe('model text without digits', () => {
   });
 
   it('rejects Markdown the parser slows down on, and keeps ordinary nesting and emphasis', () => {
+    expect(rules('Phòng trống\n'.repeat(150).trimEnd())).toEqual([]);
+    expect(rules('Phòng trống\n'.repeat(151).trimEnd())).toEqual(['too_long']);
+    expect(rules('a\n=\n'.repeat(100))).toEqual(['too_long']);
     expect(rules('+ + + + + + + + + Phòng trống')).toEqual(['too_long']);
     expect(rules('> > > > - > - > - Phòng trống')).toEqual(['too_long']);
     expect(rules('*a'.repeat(401))).toEqual(['too_long']);
@@ -96,13 +112,135 @@ describe('model text without digits', () => {
   });
 
   it('lets a table word pass in the compounds it lists and near a placeholder', () => {
-    for (const note of ['Hợp đồng sắp hết hạn.', 'Đồng hồ điện chưa ghi.', 'Công ty quản lý gọi.', 'Tỷ lệ lấp đầy cao.', 'Năm nay thu khá.', 'Thuê từ năm {{f1.count_display}}.', 'Trả đầu tư.', 'Mua ti vi mới.']) {
+    for (const note of ['Hợp đồng sắp hết hạn.', 'Đồng hồ điện chưa ghi.', 'Công ty quản lý gọi.', 'Tỷ lệ lấp đầy cao.', 'Năm nay thu khá.', 'Thuê từ năm {{f1.start_year_display}}.', 'Trả đầu tư.', 'Mua ti vi mới.']) {
       expect(rules(note), note).toEqual([]);
     }
   });
 
   it('keeps the table keys in the form the guard looks them up in', () => {
     for (const key of WORDS.keys()) expect(key).toBe(key.normalize('NFKC').toLowerCase());
+  });
+});
+
+describe('the review probes of #311', () => {
+  it.each<[string, NoteRule]>([
+    ['Thuế cho thuê quý III cần nộp sớm.', 'word'],
+    ['Kê khai thuế quý IV của {{f1.unit_label}}.', 'word'],
+    ['Đã nộp quý I.', 'word'],
+    ['Phòng IV còn trống.', 'word'],
+    ['Tầng II đang sửa.', 'word'],
+    ['Khách ở dãy XII trả trễ.', 'word'],
+    ['Room VII is overdue.', 'word'],
+    ['Theo Điều XIV của hợp đồng.', 'word'],
+    ['Ký từ mmxxvi.', 'word'],
+    ['Còn nợ ba&#8203;triệu.', 'invisible'],
+    ['Còn nợ tri&shy;ệu.', 'invisible'],
+    ['Còn nợ tri&ZeroWidthSpace;ệu.', 'invisible'],
+    ['Còn nợ tri\u2060ệu.', 'invisible'],
+    ['Nợ {{f1.a_display}}&#8203;{{f2.b_display}}', 'invisible'],
+    ['Nợ {{f1.a_display}}/{{f2.b_display}}', 'seam'],
+    ['Nợ {{f1.a_display}}-{{f2.b_display}}', 'seam'],
+    ['Nợ {{f1.a_display}}:{{f2.b_display}}', 'seam'],
+    ['Nợ {{f1.a_display}}–{{f2.b_display}}', 'seam'],
+    ['Nợ {{f1.a_display}}^{{f2.b_display}}', 'seam'],
+    ['Nợ {{f1.a_display}}*{{f2.b_display}}', 'seam'],
+    ['Nợ {{f1.a_display}}_{{f2.b_display}}', 'seam'],
+    ['Ngày {{f1.day_display}}/{{f1.month_display}}/{{f2.year_display}}', 'seam'],
+    ['Mẹ có năm {{f1.property_label}} đang trống.', 'word'],
+    ['{{f1.unit_label}} năm tháng chưa trả tiền.', 'word'],
+    ['Thuê từ năm {{f1.count_display}}.', 'word'],
+    ['Hạn đóng tiền là mùng một hằng tháng.', 'word'],
+    ['Hạn nộp là mồng một.', 'word'],
+    ['Hợp đồng hết hạn tháng một.', 'word'],
+    ['Khách hẹn trả vào hăm sau.', 'word'],
+    ['Thu tiền vào ngày rằm.', 'word'],
+    ['Thợ tới vào chủ nhật.', 'word'],
+    ['Khách thứ nhất đã trả.', 'word'],
+    ['Phòng đạt 💯 điểm.', 'symbol'],
+    ['Còn 🔟 ngày.', 'symbol'],
+    ['Còn #\u20E3 ngày.', 'symbol'],
+    ['Tăng ％ so với', 'symbol'],
+    ['Tăng ٪ so với', 'symbol'],
+    ['Tăng ﹪ so với', 'symbol'],
+    ['Ranked thirteenth of all.', 'word'],
+    ['This is the twentieth day overdue.', 'word'],
+    ['Rent is a hundredth of the value.', 'word'],
+    ['The building has a score of rooms.', 'word'],
+    ['Lease runs a fortnight.', 'word'],
+    ['Rent rose twofold.', 'word'],
+    ['Rent is nought.', 'word'],
+    ['Nil vacancy this month.', 'word'],
+    ['Còn {{f1.count_display}} k', 'word'],
+    ['Cách chợ {{f1.count_display}} m', 'word'],
+    ['Còn nợ ba k', 'word'],
+  ])('rejects %j as %s', (template, rule) => {
+    expect(rules(template)).toContain(rule);
+  });
+
+  it.each([
+    'Xu hướng giá thuê ở Dĩ An đang chững lại.',
+    'Xu thế chung là giá tăng chậm.',
+    'Tỷ suất cho thuê khá tốt.',
+    'Tỉ suất lợi nhuận ổn định.',
+    'Tỷ giá đang ổn định.',
+    'Tỉ mỉ kiểm tra biên bản bàn giao.',
+    'Bất đồng giữa các khách thuê.',
+    'Giá thuê tương đồng với khu bên cạnh.',
+    'Nhà nằm cạnh cánh đồng lúa.',
+    'Sổ đỏ đứng tên đồng sở hữu của {{f2.owner_name}}.',
+    'Các đồng thừa kế cần ký văn bản thỏa thuận.',
+    'Cần sự đồng thuận của tất cả chủ sở hữu.',
+    'Khách đồng tình với mức giá mới.',
+    'Họ là đồng chủ sở hữu.',
+    'Họ đồng thuê một phòng.',
+    'Nhà ở vùng đồng bằng.',
+    'Đồng phục bảo vệ mới.',
+    'Thị trường Đồng Nai có nhiều dãy trọ mới.',
+    'Nhà ở Đồng Tháp, Đồng Xoài và Đồng Hới đều trống.',
+    'Theo thông tư mới của Bộ Tài chính, mẹ cần kê khai lại.',
+    'Chi phí linh tinh trong tháng khá nhiều.',
+    'Khách hẹn trả vào ngày mốt.',
+    'Khách thuê lâu năm vừa báo chuyển đi.',
+    'Giá thuê có thể tăng trong vài năm nữa.',
+    'Mấy năm gần đây giá ổn định.',
+    'Nhà có khách quanh năm.',
+    'Khách đã ở được một năm.',
+    'Doanh thu năm qua tăng đều.',
+    'Doanh thu năm rồi thấp hơn.',
+    'Mẹ nhớ nộp thuế trước Tết năm mới.',
+    'Năm kia giá còn thấp.',
+    'Năm đó khách đông.',
+    'Năm này thu khá.',
+    'Kỳ tính thuế năm dương lịch kết thúc cuối tháng.',
+    'Tết theo năm âm lịch.',
+    'Năm tính thuế này doanh thu gần ngưỡng.',
+    'Báo cáo năm tài chính đã xong.',
+    'Sinh viên thuê theo năm học.',
+    'Năm đầu khách trả đúng hạn.',
+    'Năm cuối hợp đồng cần xem lại giá.',
+    'Năm thuế này cần kê khai sớm.',
+    'Năm vừa qua thu khá.',
+    'Nhà ở Năm Căn vẫn chưa có khách.',
+    'Thuê từ năm {{f1.start_year_display}}.',
+    'Khách ở dãy B trả trễ.',
+    'Tòa B còn trống.',
+    'The tenant in Block B paid.',
+    'Khu D đang sửa.',
+    'Lô M đã bán.',
+    'Mỗi tháng một lần mẹ ghi điện.',
+    'Hồ sơ cần CCCD hoặc CMND.',
+    'Phòng VIP có ban công.',
+    'Công ty LLC đã ký.',
+    'Bản HD đã gửi.',
+    'Sơn MIX đã mua.',
+  ])('accepts %j', (note) => {
+    expect(violations(note)).toEqual([]);
+  });
+
+  it('keeps rejecting nicknames and place names that are number words; the prompt asks for _name and _label fields', () => {
+    for (const note of ['Chú Ba ở {{f1.unit_label}} đã trả.', 'Cô Tư hỏi về hợp đồng.', 'Căn hộ ở Hai Bà Trưng đang trống.', 'Sổ vẫn đứng tên ba.']) {
+      expect(rules(note), note).toContain('word');
+    }
   });
 });
 
@@ -127,6 +265,23 @@ describe('filling placeholders', () => {
 
   it.each(['Phòng\u202E 5', 'Phòng \uE001', 'Phòng\u0007 5'])('rejects the value %j as unsafe', (value) => {
     expect(rules('Xem {{f1.unit_label}}', sheet({ f1: { unit_label: value } }))).toEqual(['unsafe_value']);
+  });
+
+  it('rejects a value longer than the cap as unsafe', () => {
+    expect(rules('Xem {{f1.unit_label}}', sheet({ f1: { unit_label: 'a'.repeat(MAX_VALUE_LENGTH + 1) } }))).toEqual(['unsafe_value']);
+    expect(rules('Xem {{f1.unit_label}}', sheet({ f1: { unit_label: 'a'.repeat(MAX_VALUE_LENGTH) } }))).toEqual([]);
+  });
+
+  it.each(['', '  ', ' \n '])('rejects the blank value %j with a hint to say it is missing', (value) => {
+    const found = violations('Xem {{f1.unit_label}}', sheet({ f1: { unit_label: value } }));
+    expect(found).toEqual([{ rule: 'empty_value', text: '{{f1.unit_label}}' }]);
+    expect(repairMessage(found)).toContain('missing');
+  });
+
+  it('rejects a note that grows past the filled cap', () => {
+    const long = sheet({ f1: { unit_label: '*'.repeat(MAX_VALUE_LENGTH) } });
+    expect(rules('{{f1.unit_label}} và '.repeat(9), long)).toEqual([]);
+    expect(rules('{{f1.unit_label}} và '.repeat(10), long)).toEqual(['too_long']);
   });
 
   it('escapes Markdown in a value so it renders as typed, and lists what it cited', () => {

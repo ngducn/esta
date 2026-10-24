@@ -776,7 +776,6 @@ export const PROBES_R2C: readonly string[] = [
   '5\\. a',
   '0. a',
   '00. a',
-  '1. a\n1. b',
   '2. a\n2. b',
   '99999999999. a',
   '1234567890. a\n1. a',
@@ -830,10 +829,8 @@ export const PROBES_R2C: readonly string[] = [
   '25\u{2028}triệu',
   '25\u{A0}triệu',
   'a\u{200E}f\u{200E}12',
-  '<a@b.com>',
 ];
 
-/** The probes that put no number on screen: a number only in a link target, a list that starts at 1, or none at all. */
 export const PROBES_NO_NUMBER_SHOWN: readonly string[] = [
   '\u{0}',
   '[x]: y',
@@ -841,4 +838,6 @@ export const PROBES_NO_NUMBER_SHOWN: readonly string[] = [
   '<div',
   '[VnExpress](https://vnexpress.net/gia-dat-q7-4812345.html)',
   '- 1. a',
+  '1. a\n1. b',
+  '<a@b.com>',
 ];
