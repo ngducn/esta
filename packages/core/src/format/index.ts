@@ -92,7 +92,7 @@ export function formatRelativeDue(due: IsoDate, today: IsoDate, locale: Locale):
   return days === 0 ? 'due today' : `due in ${count}`;
 }
 
-const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
+export const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
 
 /** `10/2026` (read after `tháng`) or `October 2026`, for the month that holds `date`. */
 export function formatMonthYear(date: IsoDate, locale: Locale): string {
