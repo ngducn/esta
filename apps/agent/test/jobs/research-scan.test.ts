@@ -156,8 +156,9 @@ describe('research_scan job', () => {
 
     tables.agent_jobs.push(job('job-2'));
     expect(await pollOnce(worker)).toBe(true);
-    expect(tables.agent_jobs[1]).toMatchObject({ status: 'done' });
+    expect(tables.agent_jobs[1]).toMatchObject({ status: 'done', result: expect.objectContaining({ empty: false }) });
     expect(tables.research_items, 'every link is stored already').toHaveLength(4);
+    expect(tables.agent_items, 'no empty note on a day that has news').toEqual([]);
   });
 });
 

@@ -54,13 +54,21 @@ export function researchScanRequest(input: ScanRequestInput): PreparedJob {
     },
     async finish() {
       if (!topics.wasRead()) throw new Error('The model ended without reading research_topics');
-      const empty = items.kept.length === 0;
+      const empty = items.kept.length === 0 && !(await storedToday(input));
       if (empty) {
         await guardedWriter({ ...input, sheet }, 'research_scan').save({ kind: 'research_scan_empty', severity: 'info', title: EMPTY_NOTE[input.locale], body_md: null, related: {}, dedupe_key: `research_scan_empty:${input.asOf}` });
       }
       return { as_of: input.asOf, kept: items.kept.map(({ id, url_normalized, relevance, cited }) => ({ id, url_normalized, relevance, cited })), dropped: [...items.dropped], fetched: fetched.size, empty };
     },
   };
+}
+
+/** Whether an earlier scan today stored news, so a rerun that adds nothing does not tell Mẹ there is none. */
+async function storedToday({ db, householdId, asOf, timezone }: ScanRequestInput): Promise<boolean> {
+  const { data, error } = await db.from('research_items').select('created_at').eq('household_id', householdId).order('created_at', { ascending: false }).limit(1);
+  if (error) throw new Error(`Reading today's research items failed: ${error.message}`);
+  const latest = data[0]?.created_at;
+  return typeof latest === 'string' && businessDate(parseInstant(latest), timezone) === asOf;
 }
 
 async function scanCaps(db: AgentDb, householdId: string): Promise<ScanCaps> {
