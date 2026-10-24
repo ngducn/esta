@@ -16,7 +16,7 @@ export async function Inbox({ notes, today, timezone }: { notes: readonly InboxN
   const t = await getTranslations('assistant');
   const unread = notes.filter((note) => note.status === 'new').length;
   return (
-    <section aria-labelledby="inbox-heading" data-testid="inbox" className="flex flex-col gap-3">
+    <section aria-labelledby="inbox-heading" data-testid="inbox" className="flex max-w-3xl flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="inbox-heading" className="text-h3 font-semibold text-ink">
           {t('inbox')}
