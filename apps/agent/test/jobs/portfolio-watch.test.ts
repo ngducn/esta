@@ -10,8 +10,9 @@ import { DEFAULT_REPLAY_DIR, writeRecording } from '../../src/replay/store';
 import { canonicalInput, replaySession } from '../../src/sdk/session';
 import { fakeDb, type Recorded } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
-import { mcpToolName, runTool } from '../../src/tools/server';
+import { mcpToolName } from '../../src/tools/server';
 import { CASES, clockOn, HOUSEHOLD, labels, snapshot } from '../full-seed';
+import { toolCaller } from '../replay-worker';
 
 const clock = clockOn('2026-10-07T06:45:00+07:00');
 
@@ -21,12 +22,7 @@ function setup(tables: Record<string, Row[]> = { agent_items: [] }, jobId = 'job
   const writes: Recorded[] = [];
   const db = fakeDb(tables, writes);
   const prepared = portfolioWatchRequest({ db, householdId: HOUSEHOLD, jobId, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels }) });
-  const call = (name: string, input: Record<string, unknown> = {}) => {
-    const tool = prepared.tools.get(mcpToolName(name));
-    if (tool === undefined) throw new Error(`no ${name}`);
-    return runTool(tool, input);
-  };
-  return { tables, writes, prepared, call };
+  return { tables, writes, prepared, call: toolCaller(prepared) };
 }
 
 const items = (tables: Record<string, Row[]>) => tables.agent_items ?? [];

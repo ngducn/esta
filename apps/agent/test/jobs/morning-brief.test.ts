@@ -8,9 +8,8 @@ import { JOBS } from '../../src/jobs/registry';
 import { pollOnce } from '../../src/runner';
 import { fakeDb } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
-import { mcpToolName, runTool } from '../../src/tools/server';
 import { clockOn, HOUSEHOLD, labels, seedRecords, snapshot } from '../full-seed';
-import { replayWorker } from '../replay-worker';
+import { replayWorker, toolCaller } from '../replay-worker';
 
 type Row = Record<string, unknown>;
 
@@ -108,12 +107,7 @@ const draft = (patch: Row = {}) => ({ summary: 'Sáng nay có việc cần làm.
 
 function tools(tables = tablesWith()) {
   const prepared = request(tables);
-  const call = (name: string, input: Row = {}) => {
-    const tool = prepared.tools.get(mcpToolName(name));
-    if (tool === undefined) throw new Error(`no ${name}`);
-    return runTool(tool, input);
-  };
-  return { tables, prepared, call };
+  return { tables, prepared, call: toolCaller(prepared) };
 }
 
 describe('create_brief', () => {
