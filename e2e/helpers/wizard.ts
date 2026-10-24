@@ -86,6 +86,15 @@ export async function servicePatch(page: Page, path: string, data: unknown) {
   expect(response.ok(), await response.text()).toBe(true);
 }
 
+/** Inserts the row, or overwrites the one with its id, so a rerun on one seed starts from the same state. */
+export async function serviceUpsert(page: Page, table: string, row: Record<string, unknown>) {
+  const response = await page.request.post(`${rest}/${table}`, {
+    headers: { ...service, 'content-type': 'application/json', prefer: 'resolution=merge-duplicates' },
+    data: row,
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+}
+
 export async function seriousAxeViolations(page: Page): Promise<string[]> {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
