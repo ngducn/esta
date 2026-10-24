@@ -46,7 +46,7 @@ export const COLLECTION_ROW_ACTIONS: readonly CollectionRowAction[] = [
     label: 'openLease',
     forViewer: true,
     href: (row) => `/properties/${row.propertyId}/rental/leases/${row.leaseId}`,
-    appliesTo: () => true,
+    appliesTo: (item) => !item.row.propertyArchived,
   },
 ];
 

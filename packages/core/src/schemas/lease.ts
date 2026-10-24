@@ -9,12 +9,14 @@ import { vndSchema } from './property';
 const moneySchema = vndSchema.refine((amount) => amount <= MAX_AMOUNT_VND);
 const cycleSchema = z.union(BILLING_CYCLES.map((cycle) => z.literal(cycle)));
 const everyMonths = z.number().int().min(1).max(120);
+/** Rounds each step to a multiple of this many đồng, so 0 cannot divide. */
+const roundingSchema = moneySchema.refine((amount) => amount >= 1);
 
 /** `leases.escalation` as SPEC §5.4 stores it: `value` is basis points for `percent` and đồng for `fixed`. */
 export const escalationJsonSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
-  z.object({ kind: z.literal('percent'), value: z.number().int().min(1).max(10_000), every_months: everyMonths, rounding_vnd: moneySchema.optional() }),
-  z.object({ kind: z.literal('fixed'), value: moneySchema, every_months: everyMonths, rounding_vnd: moneySchema.optional() }),
+  z.object({ kind: z.literal('percent'), value: z.number().int().min(1).max(10_000), every_months: everyMonths, rounding_vnd: roundingSchema.optional() }),
+  z.object({ kind: z.literal('fixed'), value: moneySchema, every_months: everyMonths, rounding_vnd: roundingSchema.optional() }),
 ]);
 export type EscalationJson = z.output<typeof escalationJsonSchema>;
 

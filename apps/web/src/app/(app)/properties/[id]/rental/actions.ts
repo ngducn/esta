@@ -101,14 +101,18 @@ export async function addRooms(propertyId: unknown, raw: unknown): Promise<Renta
 
 const directionSchema = z.enum(['up', 'down']);
 
-async function reorderUnits(propertyId: unknown, order: (units: readonly Unit[]) => SortChange[]): Promise<RentalWrite> {
+/** `null` from `order` refuses the request; an empty list is a move that changes nothing. */
+async function reorderUnits(propertyId: unknown, order: (units: readonly Unit[]) => SortChange[] | null): Promise<RentalWrite> {
   const target = await scope(propertyId);
   if (target === null) return { ok: false, reason: 'invalid' };
   const { supabase, match } = target;
   const { units } = await loadPropertyRental(match.property_id);
-  for (const change of order(units)) {
-    const { error } = await supabase.from('units').update({ sort_order: change.sort_order }).match(match).eq('id', change.id);
+  const changes = units.length === 0 ? null : order(units);
+  if (changes === null) return { ok: false, reason: 'failed' };
+  for (const change of changes) {
+    const { data, error } = await supabase.from('units').update({ sort_order: change.sort_order }).match(match).eq('id', change.id).select('id');
     if (error) return failure(error);
+    if (data.length === 0) return { ok: false, reason: 'failed' };
   }
   revalidateRental();
   return { ok: true, id: match.property_id };
@@ -118,7 +122,7 @@ export async function moveUnitAction(propertyId: unknown, unitId: unknown, direc
   const item = uuid.safeParse(unitId);
   const way = directionSchema.safeParse(direction);
   if (!item.success || !way.success) return { ok: false, reason: 'invalid' };
-  return reorderUnits(propertyId, (units) => moveUnit(units, item.data, way.data));
+  return reorderUnits(propertyId, (units) => (units.some((unit) => unit.id === item.data) ? moveUnit(units, item.data, way.data) : null));
 }
 
 export async function sortUnitsByRoomNumber(propertyId: unknown): Promise<RentalWrite> {

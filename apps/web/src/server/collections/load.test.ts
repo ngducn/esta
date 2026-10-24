@@ -75,6 +75,7 @@ describe('loadCollectionRows', () => {
         invoice_id: '00000000-0000-4000-8000-0000000b0001',
         property_id: '00000000-0000-4000-8000-0000000c0001',
         property_nickname: 'Dãy trọ Demo',
+        property_archived: false,
         unit_label: 'Phòng 1',
         unit_kind: 'room',
         lease_id: ROOM_5,
@@ -90,5 +91,29 @@ describe('loadCollectionRows', () => {
     const [row] = await loadCollectionRows(HOUSEHOLD_ID, isoDate('2027-02-01'));
     expect(row?.totalVnd).toBe(-91_650_000);
     expect(row?.outstandingVnd).toBe(0);
+  });
+
+  test('marks a bill whose property was archived while it was still owed', async () => {
+    read.rows = [
+      {
+        invoice_id: '00000000-0000-4000-8000-0000000b0002',
+        property_id: '00000000-0000-4000-8000-0000000c0002',
+        property_nickname: 'Nhà Demo đã bán',
+        property_archived: true,
+        unit_label: 'Toàn bộ',
+        unit_kind: 'whole',
+        lease_id: ROOM_7,
+        tenant_name: null,
+        number: 'SOLD-202609-001',
+        due_date: '2026-09-05',
+        total_vnd: 9_000_000,
+        allocated_vnd: 0,
+        outstanding_vnd: 9_000_000,
+        payment_status: 'unpaid',
+      },
+    ];
+    const [row] = await loadCollectionRows(HOUSEHOLD_ID, isoDate('2026-10-01'));
+    expect(row?.propertyArchived).toBe(true);
+    expect(row?.outstandingVnd).toBe(9_000_000);
   });
 });

@@ -11,6 +11,8 @@ import { createSessionClient } from '@/server/supabase/server';
 export type CollectionRow = CollectionCandidate & {
   /** A whole unit is named by its property alone. */
   readonly wholeUnit: boolean;
+  /** The property was archived while this bill was still owed; its pages are gone, so the row links nowhere. */
+  readonly propertyArchived: boolean;
   readonly leaseId: string;
   readonly tenantName: string | null;
   readonly number: string;
@@ -23,6 +25,7 @@ const candidateSchema = z
     invoice_id: z.uuid(),
     property_id: z.uuid(),
     property_nickname: z.string(),
+    property_archived: z.boolean(),
     unit_label: z.string(),
     unit_kind: z.string(),
     lease_id: z.uuid(),
@@ -41,6 +44,7 @@ const candidateSchema = z
       propertyName: row.property_nickname,
       unitLabel: row.unit_label,
       wholeUnit: row.unit_kind === 'whole',
+      propertyArchived: row.property_archived,
       leaseId: row.lease_id,
       tenantName: row.tenant_name,
       number: row.number,

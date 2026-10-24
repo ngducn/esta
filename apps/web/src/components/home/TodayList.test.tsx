@@ -16,6 +16,7 @@ const phong5: CollectionRow = {
   propertyName: 'Dãy trọ Dĩ An',
   unitLabel: 'Phòng 5',
   wholeUnit: false,
+  propertyArchived: false,
   leaseId: '00000000-0000-4000-8000-0000000c0001',
   tenantName: 'Hoàng Văn Em Demo',
   number: 'DIAN-202609-002',

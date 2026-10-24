@@ -266,3 +266,25 @@ test('the property cards show each property worst payment state for the month (L
   await expect(card('Nhà phố Q7').locator('[data-status="paid"]').first()).toHaveText('Đã thu tháng 10');
   await expect(card('Mặt bằng Quận 1').locator('[data-status="overdue"], [data-status="due"]')).toHaveCount(0);
 });
+
+test('archiving Dãy trọ Dĩ An keeps the rent Phòng 5 still owes on the board, marked as archived (#134)', async ({ page }) => {
+  const diAn = seedId('seed:property:lane-9:di-an');
+  await open(page, 'ryan.lane9@demo.esta.test', 'light', PHONE);
+  await page.goto(`/properties/${diAn}/edit`);
+  await page.getByTestId('archive-property').click();
+  await expect(page).toHaveURL(/\/properties$/);
+  try {
+    await page.goto('/collections');
+    await expect(page.getByTestId('collections-board')).toBeVisible();
+    const overdue = row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An');
+    await expect(overdue.locator('[data-status="overdue"]')).toHaveText('Quá hạn 12 ngày');
+    await expect(overdue.getByTestId('row-archived')).toHaveText('Tài sản đã lưu trữ');
+    await expect(overdue.getByTestId('row-action-open-lease')).toHaveCount(0);
+    await expect(overdue.getByRole('button', { name: 'Ghi nhận' })).toBeVisible();
+    expect(await placesIn(group(page, 'paid'))).toEqual(['Căn hộ Thủ Đức', 'Nhà phố Q7']);
+  } finally {
+    await page.goto('/properties/archived');
+    await page.getByTestId('archived-row').filter({ hasText: 'Dãy trọ Dĩ An' }).getByTestId('restore-property').click();
+    await expect(page.getByTestId('archived-row').filter({ hasText: 'Dãy trọ Dĩ An' })).toHaveCount(0);
+  }
+});
