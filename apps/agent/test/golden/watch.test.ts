@@ -25,7 +25,7 @@ describe('portfolio_watch golden facts on the full seed at 2026-10-07 (AGENT.md 
     expect(facts).toHaveLength(WATCH_GOLDEN.expected.length);
   });
 
-  it.each(WATCH_GOLDEN.must_not_fire)('does not fire $rule_id $subject_key ($why)', ({ rule_id, subject_key }) => {
+  it.each(WATCH_GOLDEN.must_not_fire.map((row) => ({ ...row, named: row.subject_key ?? 'for any subject' })))('does not fire $rule_id $named ($why)', ({ rule_id, subject_key }) => {
     const subject = subject_key === undefined ? undefined : subjectKey(subject_key, household);
     expect(facts.filter((fact) => fact.ruleId === rule_id && (subject === undefined || fact.subjectKey === subject))).toEqual([]);
   });
