@@ -1,12 +1,10 @@
 import { daysBetween } from '../../date/calendar';
 import { defineRule } from '../types';
 
-/**
- * A lease that ended a while ago and still holds a deposit. A deposit is owed money, so a lease of an archived property
- * still counts, as an owed bill of one does on the collections board.
- */
+/** A lease that ended a while ago and still holds a deposit. */
 export const w06DepositUnsettled = defineRule({
   id: 'W6',
+  scope: 'all',
   thresholds: { afterDays: 14 },
   repeat: 'daily',
   find: ({ asOf, leases }, { afterDays }) =>

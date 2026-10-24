@@ -9,7 +9,7 @@
     { "rule_id": "W4", "subject_key": "unit:di-an:phong-8", "severity": "watch", "why": "67 days since available_from 2026-08-01" },
     { "rule_id": "W5", "subject_key": "document:q7:insurance", "severity": "watch", "why": "expires 2026-10-30, 23 days" },
     { "rule_id": "W6", "subject_key": "lease:di-an:phong-7", "severity": "action", "why": "ended 2026-09-15, 22 days, deposit held" },
-    { "rule_id": "W7", "subject_key": "party:nguyen-thi-demo:2026", "severity": "watch", "why": "projected 2026 revenue between 80% and 100% of threshold" },
+    { "rule_id": "W7", "subject_key": "owner:nguyen-thi-demo:2026", "severity": "watch", "why": "projected 2026 revenue between 80% and 100% of threshold" },
     { "rule_id": "W11", "subject_key": "property:long-an", "severity": "info", "why": "completeness below 60%" }
   ],
   "must_not_fire": [
@@ -24,7 +24,7 @@
     { "rule_id": "W4", "subject_key": "unit:long-an:1", "why": "use_mode held" },
     { "rule_id": "W4", "subject_key": "unit:bao-loc:1", "why": "use_mode held" },
     { "rule_id": "W6", "subject_key": "lease:bien-hoa", "why": "deposit refunded 2026-08-05" },
-    { "rule_id": "W7", "subject_key": "party:tran-minh-demo:2026", "why": "below 80% of threshold" },
+    { "rule_id": "W7", "subject_key": "owner:tran-minh-demo:2026", "why": "below 80% of threshold" },
     { "rule_id": "W8", "why": "readings with read_on 2026-10-03" },
     { "rule_id": "W9", "why": "Phòng 5 has one short past-due invoice, not two" },
     { "rule_id": "W10", "why": "no extraction waiting more than 3 days" }

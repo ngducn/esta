@@ -4,6 +4,7 @@ import { defineRule } from '../types';
 /** An issued invoice past its due date and not fully paid, read as the collections board reads it, so the days agree. */
 export const w01Overdue = defineRule({
   id: 'W1',
+  scope: 'all',
   thresholds: { actionAfterDays: 7 },
   repeat: 'daily',
   find: ({ asOf, invoices }, { actionAfterDays }) =>

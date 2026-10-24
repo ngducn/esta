@@ -26,15 +26,12 @@ export const WATCH_RULES: readonly WatchRule[] = [
   w11LowCompleteness,
 ];
 
-/** Every rule's facts on the snapshot's date, in rule order and then by subject, so two runs list them alike. */
+/** Every rule's facts on the snapshot's date, in rule order and then by subject. */
 export function evaluateWatch(snapshot: WatchSnapshot): WatchFact[] {
   return WATCH_RULES.flatMap((rule) => rule.evaluate(snapshot).toSorted((a, b) => a.subjectKey.localeCompare(b.subjectKey)));
 }
 
-/**
- * The key that keeps an `action` fact to one item per period: the day for most rules, the tax year for W7, so the owner
- * hears that the threshold is reached once a year and not every morning after.
- */
+/** The key that keeps an `action` fact to one item per period of its rule's `repeat`. */
 export function watchDedupeKey(fact: Pick<WatchFact, 'ruleId' | 'subjectKey'>, asOf: WatchSnapshot['asOf']): string {
   const rule = WATCH_RULES.find((entry) => entry.id === fact.ruleId);
   return `watch:${fact.ruleId}:${fact.subjectKey}:${rule?.repeat === 'yearly' ? asOf.slice(0, 4) : asOf}`;

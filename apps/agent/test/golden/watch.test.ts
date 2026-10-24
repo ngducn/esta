@@ -35,7 +35,7 @@ describe('portfolio_watch golden facts on the full seed at 2026-10-07 (AGENT.md 
       ...snapshot.invoices.map((row) => `invoice:${row.id}`),
       ...snapshot.leases.map((row) => `lease:${row.id}`),
       ...snapshot.units.map((row) => `unit:${row.id}`),
-      ...snapshot.taxPositions.map((row) => `party:${row.partyId}:${row.year}`),
+      ...snapshot.taxPositions.map((row) => `owner:${row.partyId}:${row.year}`),
     ]);
     const named = WATCH_GOLDEN.must_not_fire.flatMap((row) => (row.subject_key === undefined ? [] : [subjectKey(row.subject_key, household)]));
     expect(named.filter((key) => !present.has(key))).toEqual([]);

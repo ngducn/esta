@@ -1,4 +1,3 @@
-// Reads the seeded database of the ESTA_SLOT stack after `pnpm db:reset` (the `full` variant): `pnpm seed:facts`.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { compareFacts, WATCH_GOLDEN } from '../../../../apps/agent/test/golden/watch-golden.ts';

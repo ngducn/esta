@@ -18,7 +18,6 @@ const depositEntrySchema = z
   .object({ id: z.uuid(), lease_id: z.uuid(), kind: z.enum(DEPOSIT_KINDS), amount_vnd: z.number().int().transform(vnd), on_date: isoDateSchema })
   .transform((row) => ({ id: row.id, leaseId: row.lease_id, kind: row.kind, amountVnd: row.amount_vnd, onDate: row.on_date }));
 
-/** Each lease's deposit held on `asOf`, from the entries dated by then. */
 async function readHeldDeposits(db: Db, householdId: string, asOf: IsoDate): Promise<Map<string, Vnd>> {
   const entries = z.array(depositEntrySchema).parse(
     await readAll('deposit entries', (from, to) =>
@@ -36,7 +35,6 @@ async function readHeldDeposits(db: Db, householdId: string, asOf: IsoDate): Pro
   return held;
 }
 
-/** Each owner's FIN-3 position for the year of `asOf`, as the tax card computes it; an owner with no rule for the year has none. */
 async function readTaxPositions(db: Db, householdId: string, asOf: IsoDate) {
   const year = Number(asOf.slice(0, 4));
   const [tax, otherRevenue] = await Promise.all([readTaxRows(db, householdId, year), readOtherBusinessRevenues(db, householdId, year)]);
@@ -49,7 +47,6 @@ async function readTaxPositions(db: Db, householdId: string, asOf: IsoDate) {
   });
 }
 
-/** Documents whose latest reading waits for review, dated by the business day the extraction was created. */
 async function readWaitingExtractions(db: Db, householdId: string, timezone: string) {
   const waiting = await readRows('waiting reviews', db.from('document_status').select('document_id, extraction_id').eq('household_id', householdId).eq('status', 'needs_review'));
   const documentIds = waiting.flatMap((row) => (row.document_id === null ? [] : [row.document_id]));
@@ -66,7 +63,6 @@ async function readWaitingExtractions(db: Db, householdId: string, timezone: str
   });
 }
 
-/** The latest reading of each active meter on or before `asOf`, looking back to the start of the previous month. */
 async function readMeters(db: Db, householdId: string, asOf: IsoDate) {
   const [meters, readings] = await Promise.all([
     readAll('meters', (from, to) => db.from('meters').select('id, unit_id').eq('household_id', householdId).eq('active', true).order('id').range(from, to)),
@@ -79,11 +75,7 @@ async function readMeters(db: Db, householdId: string, asOf: IsoDate) {
   return meters.map((meter) => ({ id: meter.id, unitId: meter.unit_id, lastReadOn: last.get(meter.id) ?? null }));
 }
 
-/**
- * One household as the watch rules (AGENT.md §5.3) read it on `asOf`. Every date window is anchored on `asOf`, never on
- * the database's clock. Pass a member's session: the service role cannot run `private.payment_status` behind
- * `invoice_balances`, and `lease_schedule` returns no periods to it, so its tax positions would read zero.
- */
+/** One household as the watch rules (AGENT.md §5.3) read it on `asOf`. */
 export async function readWatchSnapshot(db: Db, householdId: string, { asOf, timezone }: { asOf: IsoDate; timezone: string }): Promise<WatchSnapshot> {
   const [properties, completeness, units, leases, held, invoices, documents, meters, taxPositions, extractions] = await Promise.all([
     readAll('properties', (from, to) => db.from('properties').select('id, kind, use_mode, deleted_at').eq('household_id', householdId).order('id').range(from, to)),

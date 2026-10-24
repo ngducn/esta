@@ -153,13 +153,13 @@ describe('W7 tax threshold', () => {
 
   it('is silent at 79.99%, watch at 80% and action at 100%', () => {
     expect([7_999, 8_000, 9_999, 10_000].map((bp) => severities('W7', { taxPositions: [position(bp)] }))).toEqual([[], ['watch'], ['watch'], ['action']]);
-    expect(facts('W7', { taxPositions: [position(8_000)] })[0]?.subjectKey).toBe('party:o1:2026');
+    expect(facts('W7', { taxPositions: [position(8_000)] })[0]?.subjectKey).toBe('owner:o1:2026');
   });
 
   it('keeps one action item a year for the owner while every other rule keeps one a day', () => {
-    const tax = { ruleId: 'W7', subjectKey: 'party:o1:2026' } as const;
+    const tax = { ruleId: 'W7', subjectKey: 'owner:o1:2026' } as const;
     expect(watchDedupeKey(tax, isoDate('2026-10-07'))).toBe(watchDedupeKey(tax, isoDate('2026-12-31')));
-    expect(watchDedupeKey(tax, isoDate('2026-10-07'))).toBe('watch:W7:party:o1:2026:2026');
+    expect(watchDedupeKey(tax, isoDate('2026-10-07'))).toBe('watch:W7:owner:o1:2026:2026');
     const overdue = { ruleId: 'W1', subjectKey: 'invoice:i1' } as const;
     expect(watchDedupeKey(overdue, isoDate('2026-10-07'))).not.toBe(watchDedupeKey(overdue, isoDate('2026-10-08')));
   });

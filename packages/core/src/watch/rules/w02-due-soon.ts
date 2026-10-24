@@ -5,6 +5,7 @@ import { defineRule } from '../types';
 /** An issued invoice not yet paid that falls due today or within the next few days. */
 export const w02DueSoon = defineRule({
   id: 'W2',
+  scope: 'all',
   thresholds: { withinDays: 3 },
   repeat: 'daily',
   find: ({ asOf, invoices }, { withinDays }) =>

@@ -18,21 +18,22 @@ const OWNER_PERSON: Readonly<Record<string, string>> = { 'nguyen-thi-demo': 'me'
 
 /** AGENT.md §7.1 names each subject by its place in the seed; this is the key of the record the seed puts there (supabase/seed/README.md). */
 export function subjectKey(readable: string, household: string): string {
-  const [kind, place, unit, extra] = readable.split(':');
-  const unitNo = unit?.replace(/^phong-/, '');
+  const [kind, place = '', ...rest] = readable.split(':');
+  const room = (unit = '1') => unit.replace(/^phong-/, '');
   const property = seedId(`seed:property:${household}:${place}`);
   switch (kind) {
-    case 'invoice':
-      // Dĩ An bills each room's period on its first day, so the due date is the period start the invoice id carries.
-      return `invoice:${seedId(`seed:invoice:${household}:${place}:${unitNo}:${extra}`)}`;
+    case 'invoice': {
+      const [unit, periodStart] = rest;
+      return `invoice:${seedId(`seed:invoice:${household}:${place}:${room(unit)}:${periodStart}`)}`;
+    }
     case 'lease':
-      return `lease:${seedId(`seed:lease:${household}:${place}:${unitNo ?? 1}`)}`;
+      return `lease:${seedId(`seed:lease:${household}:${place}:${room(rest[0])}`)}`;
     case 'unit':
-      return `unit:${unit === 'whole' ? seedId(`esta:unit:whole:${property}`) : seedId(`seed:unit:${household}:${place}:${unitNo}`)}`;
+      return `unit:${rest[0] === 'whole' ? seedId(`esta:unit:whole:${property}`) : seedId(`seed:unit:${household}:${place}:${room(rest[0])}`)}`;
     case 'document':
-      return `document:${seedId(`seed:document:${household}:${place}:${unit}`)}`;
-    case 'party':
-      return `party:${seedId(`seed:party:${OWNER_PERSON[place ?? '']}-${household}`)}:${unit}`;
+      return `document:${seedId(`seed:document:${household}:${place}:${rest[0]}`)}`;
+    case 'owner':
+      return `owner:${seedId(`seed:party:${OWNER_PERSON[place]}-${household}`)}:${rest[0]}`;
     case 'property':
       return `property:${property}`;
     default:

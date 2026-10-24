@@ -4,14 +4,12 @@ import type { IsoDate } from '../date/iso-date';
 import { LEASE_STATUSES } from '../lease/types';
 import { PROPERTY_KINDS, USE_MODES } from '../properties/kinds';
 import { isoDateSchema } from '../schemas/legal';
+import { liveSnapshot } from './lookup';
 import { vndSchema } from '../schemas/property';
 
 const id = z.string().min(1);
 
-/**
- * One household as the watch rules read it on `asOf`. Rows are not pre-filtered by any rule: each rule decides what it
- * passes over, so archived properties stay here and the rules that only care about live ones drop them.
- */
+/** One household as the watch rules read it on `asOf`, archived properties included. */
 export const watchSnapshotSchema = z.object({
   householdId: id,
   asOf: isoDateSchema,
@@ -21,7 +19,7 @@ export const watchSnapshotSchema = z.object({
       kind: z.enum(PROPERTY_KINDS),
       useMode: z.enum(USE_MODES),
       archived: z.boolean(),
-      /** SPEC §5.3 completeness, 0 to 100; null for an archived property, which is not scored. */
+      /** SPEC §5.3 completeness; null for an archived property, which is not scored. */
       completenessPercent: z.number().int().min(0).max(100).nullable(),
     }),
   ),
@@ -66,19 +64,21 @@ export type WatchRuleId = 'W1' | 'W2' | 'W3' | 'W4' | 'W5' | 'W6' | 'W7' | 'W8' 
 /** The figures behind a fact, by name: counts and đồng as integers, dates as `IsoDate`. */
 export type WatchNumbers = Readonly<Record<string, number | IsoDate | null>>;
 
-/** `subjectKey` is `<kind>:<record id>`, and W7's adds the tax year, so one owner's facts in two years stay apart. */
-export type WatchFact = { readonly ruleId: WatchRuleId; readonly subjectKey: string; readonly severity: WatchSeverity; readonly numbers: WatchNumbers };
+export type WatchSubjectKey = `${'invoice' | 'lease' | 'unit' | 'document' | 'meter' | 'tenant' | 'property'}:${string}` | `owner:${string}:${number}`;
+
+export type WatchFact = { readonly ruleId: WatchRuleId; readonly subjectKey: WatchSubjectKey; readonly severity: WatchSeverity; readonly numbers: WatchNumbers };
 
 export type WatchFinding = Omit<WatchFact, 'ruleId'>;
 
 type Thresholds = Readonly<Record<string, number>>;
 
 /**
- * One rule of AGENT.md §5.3. Its thresholds are data on the entry, so a test or a reader sees the boundary without
- * reading the function. `repeat` is how often an `action` fact may become its own item: W7 once per tax year, the rest daily.
+ * One rule of AGENT.md §5.3. `scope: 'live'` hands it only what belongs to properties that are not archived; owed money
+ * and tax read `'all'`. `repeat` is how often an `action` fact may become its own item.
  */
 export type WatchRuleSpec<T extends Thresholds> = {
   readonly id: WatchRuleId;
+  readonly scope: 'live' | 'all';
   readonly thresholds: T;
   readonly repeat: 'daily' | 'yearly';
   readonly find: (snapshot: WatchSnapshot, thresholds: T) => readonly WatchFinding[];
@@ -87,5 +87,5 @@ export type WatchRuleSpec<T extends Thresholds> = {
 export type WatchRule<T extends Thresholds = Thresholds> = Omit<WatchRuleSpec<T>, 'find'> & { readonly evaluate: (snapshot: WatchSnapshot) => WatchFact[] };
 
 export function defineRule<T extends Thresholds>({ find, ...rule }: WatchRuleSpec<T>): WatchRule<T> {
-  return { ...rule, evaluate: (snapshot) => find(snapshot, rule.thresholds).map((finding) => ({ ruleId: rule.id, ...finding })) };
+  return { ...rule, evaluate: (snapshot) => find(rule.scope === 'live' ? liveSnapshot(snapshot) : snapshot, rule.thresholds).map((finding) => ({ ruleId: rule.id, ...finding })) };
 }
