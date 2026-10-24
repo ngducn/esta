@@ -7,7 +7,7 @@ Ryan's own Claude chats reach Esta through the connector, which docs/spec/CONNEC
 ## 1. Principles
 
 1. **The agent proposes, people dispose.** The agent never writes business tables (properties, leases, invoices, payments, expenses, certificates, documents). It writes only agent-owned tables (§10) and `document_extractions`. Anything that changes business data is a proposal a person approves; the web app executes approvals under that person's session so RLS and the audit log attribute the change to them.
-2. **Numbers come from tools, not from the model.** Tools return the aggregates an answer needs (totals, counts, differences, ratios), so the model never does arithmetic. A guard (§6.3) rejects output containing a number that is not in this run's tool results.
+2. **Numbers come from tools, not from the model.** Tools return the aggregates an answer needs (totals, counts, differences, ratios), so the model never does arithmetic. The model never types a number either: it writes a placeholder that names a tool field, and Esta fills it from the tool data (§6.3).
 3. **Deterministic first.** Rules that can be computed (overdue, expiring, vacancy, thresholds) are computed in `packages/core/watch` and SQL. The model ranks, groups and words them.
 4. **Cite everything external.** Research output carries source URLs, source names and publication dates. Summaries are in the agent's own words with at most one short quote per source.
 5. **Vietnamese by default.** Output language follows the household locale, or the language of the question in Ask.
@@ -89,7 +89,7 @@ Idempotency keys: `{kind}:{household_id}:{local_date}` for daily jobs, `{kind}:{
 
 ## 4. Tools
 
-All tools are built per job with the household id bound in a closure. Every query filters by it. A unit test calls each tool with a job for household A and asserts zero rows from household B. Tools return the aggregates listed so answers never need arithmetic. Every numeric field also comes with a `_display` string formatted by `packages/core/format` in the household locale (for example `gross_yield_bp: 650` with `gross_yield_display: "6,5%"`, amounts with full and compact forms), so the model copies display strings instead of converting units.
+All tools are built per job with the household id bound in a closure. Every query filters by it. A unit test calls each tool with a job for household A and asserts zero rows from household B. Tools return the aggregates listed so answers never need arithmetic. Every numeric field also comes with a `_display` string formatted by `packages/core/format` in the household locale (for example `gross_yield_bp: 650` with `gross_yield_display: "6,5%"`, amounts with full and compact forms), so the model cites display strings instead of converting units. Each record a tool returns carries a handle (`f1`, `f2`, …), and the model cites one of its fields as `{{f3.outstanding_display}}` (§6.3).
 
 Read tools (no sensitive document content):
 
@@ -201,7 +201,8 @@ Target: first visible text within 10 seconds when the worker is online.
 
 ```text
 Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.
-You may only use the tools provided. Every number you write must appear in a tool result from this run.
+You may only use the tools provided. Never type a digit, an amount or currency word, or a number word.
+For every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.
 Do not calculate totals, differences or ratios yourself; call the tool that returns them.
 Never invent amounts, dates, names or sources. If information is missing, say so plainly.
 You cannot change business records. To suggest a change, use create_proposal.
@@ -218,7 +219,21 @@ Every job's final output is JSON validated by zod schemas in `packages/core/agen
 
 ### 6.3 Number guard
 
-Before writing any item or message, extract every number from the generated text (Vietnamese and English formats, including "3,5 tr", "1,2 tỷ", "6,5%", dates and day counts), normalize each to a canonical value, and check it against the allowed set: canonical values found anywhere in this run's tool results (raw fields, `_display` strings, and numbers inside labels such as "Phòng 5"), plus the context values injected into the prompt (today's date, the household name). Percent and basis-point forms of the same value are equal after normalization. A violation triggers one repair turn naming the offending numbers; a second violation fails the job and creates an `info` item with audience `operator` containing the offending text. Mẹ never sees it.
+Ryan ruled on 2026-10-24 ("Placeholders") that the model never types a number. This replaced the free-text number parser this section used to specify, which let invented numbers through two adversarial review rounds on #61 and two on #309.
+
+1. **Handles.** Each record a tool returns carries a handle: `f` and the record's position among this run's records (`f1`, `f2`, …), assigned in call order, so a replay assigns the same handles. A placeholder `{{f3.outstanding_display}}` cites one field of one record. A field is citable when its value is a string and its name ends in `_display`, `_compact`, `_relative`, `_label` or `_name`. Tools format every number into such a field with `packages/core/src/format` (§4), so the guard never formats.
+2. **Fill.** `checkNote(template, sheet)` in `packages/core/src/guard` replaces each placeholder with its field's string, Markdown punctuation escaped, and returns the filled text. A placeholder that names no record of this run, no field of the record, or a field that is not citable is a violation, and so is any `{{` or `}}` left over.
+3. **Residue.** The model's own text is the template with every placeholder masked. The guard renders it as `SafeMarkdown` shows it (character references decoded, raw HTML as literal text, images dropped, links as their text) and rejects:
+   - any character of Unicode category Number, in any script: digits, full-width and other-script digits, superscripts, circled numbers, fractions, Roman numerals;
+   - a currency symbol, `%` or `‰`;
+   - a bidi control character, which reorders what is shown;
+   - a word from the table in `packages/core/src/guard/words.ts`: amount and currency words (`triệu`, `tỷ`, `nghìn`, `trăm`, `tr`, `k`, `đồng`, `VND`, `million`, `percent`, …, with and without diacritics), number words (`hai` to `mười`, `mươi`, `lăm`, `rưỡi`, `nửa`, `two`, `dozen`, `half`, …) and month and weekday names. `một` and `one` pass because they also serve as articles. A table word that is also part of a common compound passes in that compound only (`hợp đồng`, `đồng hồ`, `tỷ lệ`, `công ty`, `năm nay`), and `năm` next to a placeholder reads as "year";
+   - a placeholder glued to a letter, as in `{{f1.count_display}}k`.
+4. **Seams.** Two filled values with a digit at their seam, separated by nothing but spaces, dots or commas, are a violation, because `{{f1.a}}.{{f2.b}}` reads as one number. Filling must not change what renders around a value: the filled note must render as the masked template with each mask replaced by its value.
+5. **Repair.** A violation triggers one repair turn naming each offending text and its rule. A second violation fails the job and creates an `info` item with audience `operator` holding the template and the offending text. Mẹ never sees it.
+6. **Storage.** The stored note is the filled text. The job result keeps the template and the cited values for audit.
+
+[app rule] Left unchecked, by decision: `không`, the negation word, which reads as zero only before a unit the table rejects; vague quantifiers (`vài`, `mấy`, `nhiều`, `few`, `several`); relative day words (`hôm nay`, `ngày mai`), for which the prompt asks for the tools' `_relative` fields; and text that does not render, such as link targets.
 
 ## 7. Evaluation
 
@@ -278,7 +293,7 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 
 ## 8. Replay mode
 
-`ESTA_AGENT_MODE=replay` replaces model calls with recordings stored in `{ESTA_REPLAY_DIR}/{job_kind}/{input_hash}.json`, where `ESTA_REPLAY_DIR` defaults to `fixtures/agent-replay`. The input hash is the SHA-256 of the canonical input: the prompt, the kind's tools and `maxTurns`, and a schema version. Before hashing, the input is canonicalized: the job's household name becomes `<household>`, UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps become `<time:n>`, taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Tools, the `PreToolUse` policy, validation, the number guard and all writes run for real: the worker replays each recorded tool call through the job's own tools. A missing recording fails the job at once, with no retry, and its error names the 64-character hash and `pnpm agent:record`. Replay needs no credential and records auth mode `none` and cost 0. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
+`ESTA_AGENT_MODE=replay` replaces model calls with recordings stored in `{ESTA_REPLAY_DIR}/{job_kind}/{input_hash}.json`, where `ESTA_REPLAY_DIR` defaults to `fixtures/agent-replay`. The input hash is the SHA-256 of the canonical input: the prompt, the kind's tools and `maxTurns`, and a schema version. Before hashing, the input is canonicalized: the job's household name becomes `<household>`, UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps become `<time:n>`, taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Recorded model text holds number placeholders (§6.3), not values, so it fills from the current run's tool data. Tools, the `PreToolUse` policy, validation, the number guard and all writes run for real: the worker replays each recorded tool call through the job's own tools. A missing recording fails the job at once, with no retry, and its error names the 64-character hash and `pnpm agent:record`. Replay needs no credential and records auth mode `none` and cost 0. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
 
 ## 9. Limits, failures and UX
 

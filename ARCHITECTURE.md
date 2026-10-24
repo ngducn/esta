@@ -36,6 +36,10 @@ All parsing of what Mẹ types or what the assistant reads lives in `packages/co
 - **Dates.** `IsoDate` and `isIsoDate` live in `packages/core/src/date/iso-date.ts`, and `parseDateInput` in `packages/core/src/parse/date-input.ts`. In a zod schema, use `isoDateSchema`, which also brands the value, instead of `z.string().refine(isIsoDate)` (`hand-rolled-iso-date-schema`). `isoDateSchema` lives in `packages/core/src/schemas/legal.ts` today, and issue #196 moves it and the calendar helpers into `packages/core/src/date`.
 - **Spreadsheet cells.** `sheetCell` and `SHEET_READ_OPTIONS` in `packages/core/src/parse/sheet.ts` turn what read-excel-file returns into a `SheetCell`, with each number as the text the file stored, so a 20-digit bank reference keeps every digit. The web statement reader passes them to `read-excel-file/browser` and the connector to `read-excel-file/node`; each app keeps only its own import of the reader. Do not map read-excel-file values to cells anywhere else.
 
+## Numbers in assistant text
+
+The assistant never types a number (AGENT.md §6.3). It cites tool fields as `{{f3.outstanding_display}}`, and `checkNote` in `packages/core/src/guard` fills them and rejects any number left in the model's own text as `SafeMarkdown` renders it. Every job that writes model text calls `checkNote` before it saves. Do not write a second number check or parse numbers out of model text.
+
 ## Results
 
 A function that can fail in an expected way returns `Result<T, Reason>` from `packages/core/src/result.ts`. `Reason` defaults to a string and may be a refusal object, as the ops layer's are (`{ kind: 'code_taken', code, takenBy }`). Do not spell out another failure arm, an object type or interface with `ok: false`, whether it sits in a union, a named member or an intersection (`ad-hoc-result-type`). Issue #196 folds the five core siblings (`Parsed`, `PlanResult`, `TlvResult`, `DecodeResult`, `DepositLedgerResult`) into it.
