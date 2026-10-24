@@ -6,6 +6,13 @@
   "engines": {
     "node": ">=24"
   },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.22.0",
+      "onFail": "download"
+    }
+  },
   "scripts": {
     "dev": "node scripts/web.ts dev",
     "dev:lan": "node scripts/dev-lan.ts",

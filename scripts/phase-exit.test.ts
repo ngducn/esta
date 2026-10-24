@@ -137,6 +137,18 @@ describe('checkPhase', () => {
     expect(run([write('skipped')])).toEqual([expect.stringMatching(/^FAIL {2}North-star .*step 8 skipped/)]);
   });
 
+  it('serves the production build to every north-star row, as CI does, so a next dev failure cannot fail a phase exit (#292)', () => {
+    const rows = Object.values(PHASE_CHECKS).flatMap((checks) => checks.filter((check) => check.id === 'North-star'));
+    expect(rows).toHaveLength(3);
+    for (const row of rows) expect('env' in row && row.env).toEqual({ ESTA_E2E_SERVER: 'build' });
+  });
+
+  it("hands a row's environment to each of its commands", () => {
+    const servesBuild = node(`process.exit(process.env.ESTA_E2E_SERVER === 'build' ? 0 : 1)`);
+    expect(runPhase('9', { '9': [{ id: 'Env', commands: [servesBuild], env: { ESTA_E2E_SERVER: 'build' } }] }).lines).toEqual([expect.stringMatching(/^PASS {2}Env /)]);
+    expect(runPhase('9', { '9': [{ id: 'Env', commands: [servesBuild] }] }).lines).toEqual([expect.stringMatching(/^FAIL {2}Env /)]);
+  });
+
   it('runs the lease prefill spec P3-19 brings for DOC-6', () => {
     const prefill = (PHASE_CHECKS['3'] ?? []).find((check) => check.id === 'DOC-6');
     expect(prefill && 'cites' in prefill && prefill.cites).toEqual(['e2e/lease-from-contract.spec.ts']);
