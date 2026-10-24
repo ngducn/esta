@@ -361,3 +361,26 @@ describe('repairMessage', () => {
     expect(message).toContain('{{fN.field}}');
   });
 });
+
+describe('a plain-text note, such as a title', () => {
+  const plain = (template: string) => checkNote(template, SHEET, 'plain');
+
+  it('reads the literal text, so an entity or Markdown syntax hides nothing', () => {
+    for (const template of ['Phòng &#53; quá hạn', '`12` ngày', '[x](https://a/1)']) {
+      const result = plain(template);
+      expect(result.ok, template).toBe(false);
+      if (!result.ok) expect(result.reason.map((v) => v.rule)).toContain('number');
+    }
+  });
+
+  it('fills a value as written, with no Markdown escape', () => {
+    const result = plain('{{f1.unit_label}} có mã {{f1.code_display}}');
+    expect(result.ok && result.value.text).toBe('Phòng 5 có mã a*b');
+  });
+
+  it('still rejects a typed number and an unknown field', () => {
+    expect(plain('Phòng 5 quá hạn').ok).toBe(false);
+    const unknown = plain('{{f1.missing_display}} quá hạn');
+    expect(!unknown.ok && unknown.reason.map((v) => v.rule)).toEqual(['unknown_field']);
+  });
+});

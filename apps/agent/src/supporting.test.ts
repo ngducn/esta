@@ -1,7 +1,7 @@
 import { isoDate, parseInstant, type Clock } from '@esta/core';
 import { describe, expect, it } from 'vitest';
 import { beat } from './heartbeat';
-import { jobSpec, JOBS } from './jobs/registry';
+import { DAILY_JOBS, jobSpec, JOBS } from './jobs/registry';
 import { fakeDb, type Recorded } from './test/fake-db';
 import { pingTools } from './jobs/ping';
 import { isEstaToolName } from './tools/server';
@@ -31,6 +31,11 @@ describe('job registry', () => {
 
   it('defines extract_document with Read, save_extraction, 8 turns and 5 minutes', () => {
     expect(JOBS.extract_document).toMatchObject({ builtInTools: ['Read'], mcpTools: ['save_extraction'], maxTurns: 8, timeoutMs: 300_000, modelRole: 'routine' });
+  });
+
+  it('defines portfolio_watch with watch_facts and create_item, 6 turns, 3 minutes, daily at 06:40', () => {
+    expect(JOBS.portfolio_watch).toMatchObject({ builtInTools: [], mcpTools: ['watch_facts', 'create_item'], maxTurns: 6, timeoutMs: 180_000, schedule: { daily: '06:40' } });
+    expect(DAILY_JOBS).toEqual([{ kind: 'portfolio_watch', daily: '06:40' }]);
   });
 
   it('knows no other kind', () => {

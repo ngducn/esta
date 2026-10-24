@@ -1,6 +1,7 @@
 import type { Clock } from '@esta/core';
 import { AGENT_SCHEMAS, reduceNationalIds, type AgentSchemaName } from '@esta/core/agent-schemas';
 import { flattenLeaves } from '@esta/core/extraction';
+import type { Locale } from '@esta/core/format';
 import type { Json } from '@esta/db';
 import { z } from 'zod';
 import type { AgentDb } from '../supabase';
@@ -8,8 +9,6 @@ import { ToolRejection } from './server';
 
 /** The first answer and two repair turns (AGENT.md §5.1 step 4). */
 export const MAX_SAVE_ATTEMPTS = 3;
-
-type Locale = 'vi' | 'en';
 
 const ITEM_TITLES = {
   review: { vi: (title: string) => `Đã đọc xong ${title}. Mời bạn kiểm tra lại.`, en: (title: string) => `Finished reading ${title}. Please check it.` },
@@ -22,8 +21,6 @@ const ITEM_TITLES = {
 /** The document title is typed text and may hold a full ID; an item the assistant writes keeps only its last four (D11). */
 export const itemTitle = (item: keyof typeof ITEM_TITLES, locale: Locale, documentTitle: string): string =>
   ITEM_TITLES[item][locale](reduceNationalIds(documentTitle));
-
-export const localeOf = (locale: string): Locale => (locale === 'en' ? 'en' : 'vi');
 
 export type Validated = { readonly ok: true; readonly result: Record<string, unknown>; readonly fieldConfidence: Record<string, number> } | { readonly ok: false; readonly errors: string };
 

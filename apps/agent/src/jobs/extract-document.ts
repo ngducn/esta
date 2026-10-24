@@ -4,7 +4,8 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { extractDocumentPrompt } from '../prompts/extract-document';
-import { extractionSaver, itemTitle, localeOf, writeExtraction, type PersistExtraction } from '../tools/save-extraction';
+import { householdLocale } from '../tools/household-info';
+import { extractionSaver, itemTitle, writeExtraction, type PersistExtraction } from '../tools/save-extraction';
 import { estaTool } from '../tools/server';
 import type { AgentDb } from '../supabase';
 import type { AgentJob, JobContext, PreparedJob } from './registry';
@@ -51,12 +52,6 @@ function payloadOf(job: AgentJob) {
   const parsed = payloadSchema.safeParse(job.payload);
   if (!parsed.success) throw new InvalidJobError(`extract_document ${job.id} has no document_id and extraction_id in its payload`);
   return parsed.data;
-}
-
-async function householdLocale(db: AgentDb, householdId: string) {
-  const { data, error } = await db.from('households').select('locale').eq('id', householdId).single();
-  if (error) throw new Error(`Reading the household failed: ${error.message}`);
-  return localeOf(data.locale);
 }
 
 /** Every read is filtered by the job's household, so a payload naming another household's document finds nothing (FND-2). */
@@ -128,7 +123,7 @@ export async function prepareExtractDocument({ db, job, jobDir, clock }: JobCont
 }
 
 /** After the last attempt: the extraction reads failed and admins get one item with a Retry action (AGENT.md §9). */
-export async function failExtractDocument({ db, job, clock }: Omit<JobContext, 'jobDir'>): Promise<void> {
+export async function failExtractDocument({ db, job, clock }: Omit<JobContext, 'jobDir' | 'timezone'>): Promise<void> {
   const payload = payloadSchema.safeParse(job.payload);
   if (!payload.success) return;
   const { data: failed, error } = await db

@@ -81,13 +81,24 @@ export function formatDateLong(date: IsoDate, locale: Locale): string {
   return `${WEEKDAYS[locale][weekday(date)]}, ${formatDate(date, locale)}`;
 }
 
+/** `12 ngày` or `12 days`, a count of days with its unit. */
+export function formatDays(days: number, locale: Locale): string {
+  if (locale === 'vi') return `${days} ngày`;
+  return `${days} ${Math.abs(days) === 1 ? 'day' : 'days'}`;
+}
+
+/** `2026`: a year is never grouped, unlike a count (`2.026`). */
+export function formatYear(year: number): string {
+  return String(year);
+}
+
 export function formatRelativeDue(due: IsoDate, today: IsoDate, locale: Locale): string {
   const days = daysBetween(today, due);
   if (locale === 'vi') {
-    if (days < 0) return `quá hạn ${-days} ngày`;
-    return days === 0 ? 'đến hạn hôm nay' : `còn ${days} ngày`;
+    if (days < 0) return `quá hạn ${formatDays(-days, 'vi')}`;
+    return days === 0 ? 'đến hạn hôm nay' : `còn ${formatDays(days, 'vi')}`;
   }
-  const count = `${Math.abs(days)} ${Math.abs(days) === 1 ? 'day' : 'days'}`;
+  const count = formatDays(Math.abs(days), 'en');
   if (days < 0) return `${count} overdue`;
   return days === 0 ? 'due today' : `due in ${count}`;
 }

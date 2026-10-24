@@ -2,8 +2,8 @@ import { query, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
 import type { RunMode } from '../env';
 import type { JobSpec } from '../jobs/registry';
-import type { CanonicalInput, Canonicalizer } from '../replay/canonicalize';
-import { readRecording } from '../replay/store';
+import { inputHash, type CanonicalInput, type Canonicalizer } from '../replay/canonicalize';
+import { readRecording, recordingPath } from '../replay/store';
 import { estaServer, runTool, type EstaTools } from '../tools/server';
 import { buildSdkEnv, buildSdkOptions } from './options';
 import { decideToolUse, pathPolicyHook, type ToolPolicy } from './path-policy';
@@ -81,7 +81,9 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
  * policy denies is booked as a permission denial, as the SDK books a PreToolUse deny, and the replay goes on.
  */
 export async function replaySession(request: SessionRequest, replayDir: string): Promise<SessionRun> {
-  const recording = readRecording(replayDir, canonicalInput(request));
+  const input = canonicalInput(request);
+  const recording = readRecording(replayDir, input);
+  console.log(`[agent] replay ${recordingPath(replayDir, input.kind, inputHash(input))}`);
   const policy = toolPolicy(request);
   const toolCalls: ToolCall[] = [];
   const permissionDenials: { tool_name: string; tool_use_id: string; tool_input: Json }[] = [];

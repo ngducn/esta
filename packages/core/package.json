@@ -8,6 +8,7 @@
     "./allocation": "./src/allocation/index.ts",
     "./address": "./src/address/format-current.ts",
     "./agent": "./src/agent/worker-status.ts",
+    "./agent-schedule": "./src/agent-schedule/index.ts",
     "./agent-schemas": "./src/agent-schemas/index.ts",
     "./extraction": "./src/extraction/score.ts",
     "./extraction/acceptance": "./src/extraction/acceptance.ts",
