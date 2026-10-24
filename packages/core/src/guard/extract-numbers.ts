@@ -162,8 +162,8 @@ function readTail(tokens: readonly Token[], at: number, numeral: Decimal, magnit
   return { last: at + 1, magnitude, tail: BigInt(next.core) * lower };
 }
 
-/** `5 000 000`: digit groups split by spaces join only as one valid grouping; any other digit run next to them is unreadable. */
-function joinSpaceGroups(tokens: readonly Token[], at: number, digits: string): { last: number; digits: string; glued: string } | null {
+/** `5 000 000`: digit groups split by spaces join only as one valid grouping. */
+function joinSpaceGroups(tokens: readonly Token[], at: number, digits: string): { last: number; digits: string; glued: string } {
   let last = at;
   let joined = digits;
   let glued = '';
@@ -171,7 +171,7 @@ function joinSpaceGroups(tokens: readonly Token[], at: number, digits: string): 
     const next = tokens[last + 1];
     if (next === undefined || !/^\d/u.test(next.body) || !next.bare) break;
     const group = /^(\d{3})(\D.*)?$/u.exec(next.core);
-    if (group === null || !/^\d{1,3}$/.test(digits)) return null;
+    if (group === null || !/^\d{1,3}$/.test(digits)) break;
     joined += group[1];
     glued = group[2] ?? '';
     last += 1;
@@ -216,7 +216,6 @@ function readQuantity(tokens: readonly Token[], at: number, locale: Locale, curr
   const match = /^(\d[\d.,]*)(.*)$/u.exec(core);
   if (match === null) return 'unreadable';
   const spaced = joinSpaceGroups(tokens, at, match[1] ?? '');
-  if (spaced === null) return 'unreadable';
   const numeral = readNumeral(spaced.digits, locale);
   const glued = readUnits(spaced.last === at ? (match[2] ?? '') : spaced.glued);
   if (numeral === null || glued === null) return 'unreadable';
@@ -258,7 +257,9 @@ function readNumberPhrase(tokens: readonly Token[], at: number, locale: Locale):
   if (quantity === 'unreadable') return unreadable(tokens, start);
   const { last, reading } = quantity;
   const after = tokens[last + 1];
+  // Digits right after a number (`5.000 000`), or a unit after its closing mark (`(25) triệu`), join it in a reader's eye.
   if (tokens[last]?.closed !== true && after !== undefined && /^\d/u.test(after.body) && after.bare) return unreadable(tokens, last + 1);
+  if (/^[)\]}"”’'»]+$/u.test(tokens[last]?.trail ?? '') && (unitWord(after)?.unit ?? 'count') !== 'count') return unreadable(tokens, last + 1);
   if (reading.units.unit !== 'count' || reading.tail !== 0n || tokens[last]?.closed === true || !CONNECTIVES.has(after?.word ?? '')) return { last, values: [canonical(reading)] };
   const upperToken = tokens[last + 2];
   const upper = upperToken === undefined || readDateToken(upperToken.core) !== undefined || !upperToken.bare ? null : readQuantity(tokens, last + 2, locale, false);

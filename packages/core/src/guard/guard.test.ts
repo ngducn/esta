@@ -149,6 +149,10 @@ describe('a reader and the guard see the same number (#61 round 3)', () => {
     expect(values('2tỷđ')).toEqual([amount(2_000_000_000)]);
   });
 
+  it.each(['(25) triệu', '“25” triệu', '"25" tr'])('reads %s, a unit after the number\u2019s closing mark, as unreadable', (text) => {
+    expect(values(text)).toEqual([null]);
+  });
+
   it.each(['25⠀triệu', '2́5 triệu', '25x triệu', '5m', '25d'])('reads %s, whose digits share a token with an unknown mark, as unreadable', (text) => {
     expect(values(text)).toEqual([null]);
   });
@@ -203,6 +207,10 @@ describe('checkNumbers against one run (AGENT.md §6.3)', () => {
   it('passes a note made of the run’s numbers and display strings', () => {
     expect(offending('**Phòng 5** ở Nhà trọ Dĩ An quá hạn 12 ngày, còn nợ 3.500.000 ₫ (3,5 triệu), hạn 25/09/2026.')).toEqual([]);
     expect(offending('Hợp đồng Căn hộ Thủ Đức hết hạn ngày 01/11/2026, còn 25 ngày.')).toEqual([]);
+  });
+
+  it('allows an amount field quoted as a bare number', () => {
+    expect(offending('Còn nợ 3.500.000.', [{ outstanding_vnd: 3_500_000 }])).toEqual([]);
   });
 
   it('rejects an invented day count', () => {
@@ -266,6 +274,10 @@ describe('checkNumbers against one run (AGENT.md §6.3)', () => {
   it('ignores an image, which SafeMarkdown never shows, and area units', () => {
     expect(onScreenText('Trước ![5 tỷ](https://example.com/a.png) sau')).toBe('Trước sau');
     expect(offending('Diện tích 125,5 m².', [{ area_m2: 125.5 }])).toEqual([]);
+  });
+
+  it('ends a number at a comma or period, so the next word is never its unit', () => {
+    expect(offending('Phòng 5, đồng thời Căn hộ Thủ Đức còn 25 ngày.')).toEqual([]);
   });
 
   it('reports each offending number once, as written', () => {

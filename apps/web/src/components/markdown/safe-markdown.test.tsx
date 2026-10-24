@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react';
+import { onScreenText, readableText } from '@esta/core/guard';
 import { describe, expect, it } from 'vitest';
 import { SafeMarkdown } from './safe-markdown';
 
@@ -45,5 +46,35 @@ describe('SafeMarkdown', () => {
     const container = renderMarkdown('**Cần làm**\n\n- Phòng 5\n- Phòng 7');
     expect(container.querySelector('strong')?.textContent).toBe('Cần làm');
     expect([...container.querySelectorAll('li')].map((item) => item.textContent)).toEqual(['Phòng 5', 'Phòng 7']);
+  });
+});
+
+describe('the number guard reads what SafeMarkdown shows', () => {
+  it.each([
+    '**25** triệu',
+    '25 *triệu*',
+    '`25` triệu',
+    '**5**.000.000 ₫',
+    '5\\.000\\.000 ₫',
+    '25\ntriệu',
+    'Dòng một  \nDòng hai 12 ngày',
+    '5<!-- -->000.000 ₫',
+    'Trước <b onclick="x()">3 tr</b> sau',
+    'Trước ![5 tỷ](https://example.com/a.png) sau',
+    '[Phòng 5](esta://property/3f1c2a9e-5b7d-4c1a-9e2f-7a6b5c4d3e2f) quá hạn',
+    '[nguồn 2026](http://example.com/tin)',
+    '# Tiêu đề 7/10\n\nĐoạn 1,2 tỷ\n\n- mục 3\n- mục 4\n\n> trích 5%',
+    '1. Phòng 5\n2. Phòng 7',
+    '```\n15.000.000 ₫\n```',
+    '[ref 9]\n\n[ref 9]: https://example.com/9',
+    'a​5 000 ₫',
+  ])('reads %j as the rendered text', (markdown) => {
+    expect(onScreenText(markdown)).toBe(readableText(renderMarkdown(markdown).textContent ?? ''));
+  });
+
+  it('reads the numbers of an ordered list that does not start at 1', () => {
+    const list = renderMarkdown('13. Phòng 5\n14. Phòng 7').querySelector('ol');
+    expect(list?.getAttribute('start')).toBe('13');
+    expect(onScreenText('13. Phòng 5\n14. Phòng 7')).toBe('13. Phòng 5 14. Phòng 7');
   });
 });
