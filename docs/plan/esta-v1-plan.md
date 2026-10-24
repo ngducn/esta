@@ -4377,34 +4377,34 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Files.**
 
-- [ ] Create `apps/web/src/app/(app)/assistant/market/page.tsx`, `apps/web/src/components/assistant/citation-chip.tsx`, `apps/web/src/components/assistant/market-item.tsx`, `apps/web/src/components/assistant/assistant-header.tsx` (the Trợ lý heading and its Hộp thư and Thị trường tabs, on `apps/web/src/components/shell/section-tabs.tsx`, which the property tabs now share), `apps/web/src/server/agent/research.ts`, `packages/core/src/research/touches.ts` (which items concern a property, for the filter) and `e2e/assistant-market.spec.ts`.
-- [ ] Create `packages/core/src/research/quote.ts` and `packages/core/src/parse/page-dates.ts` with their tests: the quote and date checks against the text WebFetch returned.
-- [ ] Extend `apps/agent/src/sdk/path-policy.ts`, `apps/agent/src/sdk/session.ts`, `apps/agent/src/tools/add-research-item.ts`, `apps/agent/src/tools/create-brief.ts`, `apps/agent/src/jobs/morning-brief.ts`, `apps/agent/src/runner.ts` (failed same-day inputs), the `research_scan` prompt, and re-hand-write the `research_scan` recordings with quotes of whole phrases.
+- [x] Create `apps/web/src/app/(app)/assistant/market/page.tsx`, `apps/web/src/components/assistant/citation-chip.tsx`, `apps/web/src/components/assistant/market-item.tsx`, `apps/web/src/components/assistant/assistant-header.tsx` (the Trợ lý heading and its Hộp thư and Thị trường tabs, on `apps/web/src/components/shell/section-tabs.tsx`, which the property tabs now share), `apps/web/src/server/agent/research.ts`, `packages/core/src/research/touches.ts` (which items concern a property, for the filter) and `e2e/assistant-market.spec.ts`.
+- [x] Create `packages/core/src/research/quote.ts` and `packages/core/src/parse/page-dates.ts` with their tests: the quote and date checks against the text WebFetch returned.
+- [x] Extend `apps/agent/src/sdk/path-policy.ts`, `apps/agent/src/sdk/session.ts`, `apps/agent/src/tools/add-research-item.ts`, `apps/agent/src/tools/create-brief.ts`, `apps/agent/src/jobs/morning-brief.ts`, `apps/agent/src/runner.ts` (failed same-day inputs), the `research_scan` prompt, and re-hand-write the `research_scan` recordings with quotes of whole phrases.
 
 **Build.**
 
-- [ ] Fix the five checks of #323 before Mẹ sees an item. WebFetch may open only a page this run's WebSearch returned (normalized compare), and the hook books any other fetch as a denial. `source_name` passes the number guard as plain text, with the page's host as `{{f0.host_label}}`. `published_on` must appear in the fetched text, or the item drops as `date_unconfirmed`; an `effective_on` the text does not hold is stored as null. A quote holds at least three words and matches the page at word boundaries. `source_url` stores the normalized fetched link.
-- [ ] Feed `morning_brief` up to 3 of today's research items with relevance at least 0.6, most relevant first. Esta writes these `Thị trường` lines itself from the stored items, not the model (Ryan's coordinator accepted it 2026-10-25): each line is the item's title, which passed the number guard when the scan stored it, and a source chip (source name and `dd/mm/yyyy`) that opens the https source. The `morning_brief` prompt and recording stay as they are, because one recording serves every household and a household without research items has no handles to cite.
-- [ ] Name a failed `research_scan` in the brief's `Còn thiếu` section, beside the inputs still queued or running.
-- [ ] Build the Thị trường tab beside Hộp thư on Trợ lý. It lists items newest first with title, `why_it_matters_vi`, numbered citation chips showing source name and `dd/mm/yyyy`, a property filter, today's empty note when the scan kept nothing, and a read-only `Chủ đề theo dõi` list of topics with no edit control.
+- [x] Fix the five checks of #323 before Mẹ sees an item. WebFetch may open only a page this run's WebSearch returned (normalized compare), and the hook books any other fetch as a denial. `source_name` passes the number guard as plain text, with the page's host as `{{f0.host_label}}`. `published_on` must appear in the fetched text, or the item drops as `date_unconfirmed`; an `effective_on` the text does not hold is stored as null. A quote holds at least three words and matches the page at word boundaries. `source_url` stores the normalized fetched link.
+- [x] Feed `morning_brief` up to 3 of today's research items with relevance at least 0.6, most relevant first. Esta writes these `Thị trường` lines itself from the stored items, not the model (Ryan's coordinator accepted it 2026-10-25): each line is the item's title, which passed the number guard when the scan stored it, and a source chip (source name and `dd/mm/yyyy`) that opens the https source. The `morning_brief` prompt and recording stay as they are, because one recording serves every household and a household without research items has no handles to cite.
+- [x] Name a failed `research_scan` in the brief's `Còn thiếu` section, beside the inputs still queued or running.
+- [x] Build the Thị trường tab beside Hộp thư on Trợ lý. It lists items newest first with title, `why_it_matters_vi`, numbered citation chips showing source name and `dd/mm/yyyy`, a property filter, today's empty note when the scan kept nothing, and a read-only `Chủ đề theo dõi` list of topics with no edit control.
 - [ ] Run `/impeccable harden` on the Thị trường tab for long Vietnamese titles and source names, 130% text scale, empty, loading, error and offline states.
 
 **You see.**
 
-- [ ] At 2026-10-07 07:05, Thị trường for me.lane2 lists the replayed items, each with at least one citation chip and a date.
-- [ ] The brief gains a `Thị trường` section with at most 3 items, each with a source chip.
-- [ ] A replayed empty run shows `Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.`.
+- [x] At 2026-10-07 07:05, Thị trường for me.lane2 lists the replayed items, each with at least one citation chip and a date.
+- [x] The brief gains a `Thị trường` section with at most 3 items, each with a source chip.
+- [x] A replayed empty run shows `Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.`.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `quote.test.ts` and `page-dates.test.ts` cover a quote under three words, `50` inside `150`, a lone digit, and the date forms `dd/mm/yyyy`, `d/m/yyyy`, `yyyy-mm-dd` and `ngày d tháng m năm yyyy`.
-- [ ] `apps/agent/test/jobs/research-scan.test.ts` covers, each failing without its fix: a fetch of a page no search returned denied and booked, a typed digit in `source_name` sent back for repair, an unconfirmed `published_on` dropped and an unconfirmed `effective_on` stored as null, a short or mid-word quote refused, and `source_url` stored normalized.
-- [ ] `apps/agent/test/jobs/morning-brief.test.ts` covers today's three most relevant items of 0.6 or more under `Thị trường` with their source chips, and a failed `research_scan` named under `Còn thiếu`.
-- [ ] Golden tests in AGENT.md §7 for `research_scan` and `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
-- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-market.spec.ts`, `pnpm e2e e2e/morning-brief.spec.ts` and `pnpm e2e e2e/assistant-inbox.spec.ts`.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [x] `quote.test.ts` and `page-dates.test.ts` cover a quote under three words, `50` inside `150`, a lone digit, and the date forms `dd/mm/yyyy`, `d/m/yyyy`, `yyyy-mm-dd` and `ngày d tháng m năm yyyy`.
+- [x] `apps/agent/test/jobs/research-scan.test.ts` covers, each failing without its fix: a fetch of a page no search returned denied and booked, a typed digit in `source_name` sent back for repair, an unconfirmed `published_on` dropped and an unconfirmed `effective_on` stored as null, a short or mid-word quote refused, and `source_url` stored normalized.
+- [x] `apps/agent/test/jobs/morning-brief.test.ts` covers today's three most relevant items of 0.6 or more under `Thị trường` with their source chips, and a failed `research_scan` named under `Còn thiếu`.
+- [x] Golden tests in AGENT.md §7 for `research_scan` and `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [x] Run `pnpm check`, then `pnpm e2e e2e/assistant-market.spec.ts`, `pnpm e2e e2e/morning-brief.spec.ts` and `pnpm e2e e2e/assistant-inbox.spec.ts`.
+- [x] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-market.spec.ts`.
+- [x] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-market.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
 
