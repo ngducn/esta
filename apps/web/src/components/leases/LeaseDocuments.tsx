@@ -4,11 +4,13 @@ import { FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { lazy, Suspense, useState } from 'react';
+import { lazy } from 'react';
 import { Button } from '@/components/ui/button';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import type { LeaseDocument } from '@/server/leases/detail';
 
-const UploadSheet = lazy(() => import('@/components/documents/upload-sheet'));
+const loadUploadSheet = () => import('@/components/documents/upload-sheet');
+const UploadSheet = lazy(loadUploadSheet);
 
 /**
  * The papers filed under this lease, shown plainly (Ryan's 2026-10-19 ruling: no blur, no gate). With none, the one
@@ -31,9 +33,9 @@ export function LeaseDocuments({
   const t = useTranslations('leases');
   const category = useTranslations('documents');
   const router = useRouter();
-  const [uploading, setUploading] = useState(false);
+  const uploading = useDeferredDialog(loadUploadSheet);
   const upload = canEdit ? (
-    <Button type="button" variant="outline" data-testid="lease-upload" onClick={() => setUploading(true)}>
+    <Button type="button" variant="outline" data-testid="lease-upload" {...uploading.triggerProps}>
       <Upload aria-hidden="true" />
       {t('uploadContract')}
     </Button>
@@ -72,22 +74,21 @@ export function LeaseDocuments({
           {upload}
         </>
       )}
-      {uploading ? (
-        <Suspense fallback={null}>
-          <UploadSheet
-            propertyId={propertyId}
-            nickname={nickname}
-            initialFile={null}
-            leaseId={leaseId}
-            initialCategory="lease_contract"
-            onClose={() => setUploading(false)}
-            onSaved={() => {
-              setUploading(false);
-              router.refresh();
-            }}
-          />
-        </Suspense>
-      ) : null}
+      <DeferredPopup
+        dialog={uploading}
+        popup={UploadSheet}
+        props={{
+          propertyId,
+          nickname,
+          initialFile: null,
+          leaseId,
+          initialCategory: 'lease_contract',
+          onSaved: () => {
+            uploading.setOpen(false);
+            router.refresh();
+          },
+        }}
+      />
     </section>
   );
 }

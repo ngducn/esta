@@ -5,11 +5,13 @@ import { FileSignature } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { useAction } from '@/components/use-action';
 import { saveWizardUse } from '@/server/properties/wizard';
 
 const MAX_ROOMS = 50;
@@ -41,7 +43,7 @@ export function StepUse({
   const [count, setCount] = useState(() => String(Math.max(rooms, suggestedRooms ?? 0) || ''));
   const [invalid, setInvalid] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const roomingHouse = kind === 'rooming_house';
 
   const submit = (event: FormEvent) => {
@@ -52,11 +54,10 @@ export function StepUse({
     setInvalid(bad);
     if (bad) return;
     setFailed(false);
-    startTransition(async () => {
-      const result = await saveWizardUse(propertyId, { useMode: use, rooms: roomingHouse ? parsed : 0 }).catch(() => ({ ok: false }) as const);
-      if (result.ok) router.push(next);
-      else setFailed(true);
-    });
+    run(
+      () => saveWizardUse(propertyId, { useMode: use, rooms: roomingHouse ? parsed : 0 }),
+      (result) => (result.ok ? router.push(next) : setFailed(true)),
+    );
   };
 
   return (
@@ -92,11 +93,7 @@ export function StepUse({
           <p className="text-small text-ink-2">{t('leasesHelp')}</p>
         </div>
       </div>
-      {failed ? (
-        <p role="alert" data-testid="wizard-error" className="text-body font-medium text-overdue">
-          {t('saveFailed')}
-        </p>
-      ) : null}
+      <FormAlert message={failed ? t('saveFailed') : null} data-testid="wizard-error" />
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={pending} data-testid="save-use">
           {t('saveAndContinue')}

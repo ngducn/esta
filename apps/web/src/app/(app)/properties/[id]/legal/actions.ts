@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import type { Result } from '@esta/core/result';
 import { ownershipSharesSchema } from '@esta/core/schemas/ownership';
 import { newPartiesSchema, type NewParty } from '@esta/core/schemas/party';
 import { z } from 'zod';
@@ -19,7 +20,7 @@ export type DeletedLegalItem = {
   readonly unlinked: { readonly parcels: readonly string[]; readonly structures: readonly string[] };
 };
 
-export type LegalDelete = { readonly ok: true; readonly deleted: DeletedLegalItem } | { readonly ok: false };
+export type LegalDelete = Result<DeletedLegalItem>;
 
 const uuid = z.uuid();
 const FOREIGN_KEY_VIOLATION = '23503';
@@ -75,14 +76,14 @@ export async function deleteLegalItem(propertyId: unknown, kind: unknown, itemId
   const property = uuid.safeParse(propertyId);
   const table = legalKindSchema.safeParse(kind);
   const item = uuid.safeParse(itemId);
-  if (!property.success || !table.success || !item.success) return { ok: false };
+  if (!property.success || !table.success || !item.success) return { ok: false, reason: 'failed' };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const householdId = member.household.id;
   const [parcels, structures] =
     table.data === 'certificates'
       ? await Promise.all([linkedIds('parcels', householdId, item.data), linkedIds('structures', householdId, item.data)])
       : [[], []];
-  if (parcels === null || structures === null) return { ok: false };
+  if (parcels === null || structures === null) return { ok: false, reason: 'failed' };
   const { data, error } = await legalTable(supabase, table.data)
     .delete()
     .eq('household_id', householdId)
@@ -90,9 +91,9 @@ export async function deleteLegalItem(propertyId: unknown, kind: unknown, itemId
     .eq('id', item.data)
     .select(LEGAL_KINDS[table.data].columns as string)
     .maybeSingle();
-  if (error || data === null) return { ok: false };
+  if (error || data === null) return { ok: false, reason: 'failed' };
   revalidateLegal(property.data);
-  return { ok: true, deleted: { kind: table.data, propertyId: property.data, row: data as unknown as DeletedLegalItem['row'], unlinked: { parcels, structures } } };
+  return { ok: true, value: { kind: table.data, propertyId: property.data, row: data as unknown as DeletedLegalItem['row'], unlinked: { parcels, structures } } };
 }
 
 const deletedSchema = z.object({

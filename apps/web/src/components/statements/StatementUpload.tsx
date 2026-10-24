@@ -6,11 +6,12 @@ import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { useAction } from '@/components/use-action';
 import type { FileColumns, Picks, StatementFile, StatementFileReason } from '@/lib/statements/decodeStatementFile';
 import { useHydrated } from '@/lib/use-hydrated';
 import { importStatement } from '@/server/actions/statements';
@@ -79,7 +80,7 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [earlier, setEarlier] = useState<string | null>(null);
-  const [saving, startSaving] = useTransition();
+  const { pending: saving, run } = useAction();
   const hydrated = useHydrated();
   const read = view?.problem === null ? view.read : null;
   const ready = read !== null && read.rows.length > 0;
@@ -121,17 +122,20 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
     event.preventDefault();
     if (view === null || read === null || !ready) return;
     setError(null);
-    startSaving(async () => {
-      const result = await importStatement(importInput(view, read, accountId)).catch(() => ({ ok: false, reason: { kind: 'failed' } }) as const);
-      if (result.ok) {
-        router.push(`/collections/import/${result.value.import_id}${result.value.known > 0 ? `?known=${result.value.known}` : ''}`);
-        return;
-      }
-      if (result.reason.kind === 'nothingNew') {
-        setView(null);
-        setEarlier(result.reason.importId);
-      } else setError(t('errorFailed'));
-    });
+    run(
+      () => importStatement(importInput(view, read, accountId)),
+      (result) => {
+        if (result.ok) {
+          router.push(`/collections/import/${result.value.import_id}${result.value.known > 0 ? `?known=${result.value.known}` : ''}`);
+          return;
+        }
+        if (result.reason.kind === 'nothingNew') {
+          setView(null);
+          setEarlier(result.reason.importId);
+        } else setError(t('errorFailed'));
+      },
+      { ok: false, reason: { kind: 'failed' } } as const,
+    );
   };
 
   const counts =

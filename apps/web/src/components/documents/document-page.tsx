@@ -4,10 +4,13 @@ import { ChevronLeft, Download, PencilLine } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { lazy, Suspense, useState, useTransition } from 'react';
+import { lazy, useState } from 'react';
+import { FormAlert } from '@/components/form-alert';
 import { DocumentPager } from '@/components/extraction/document-pager';
 import { Button } from '@/components/ui/button';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
 import { downloadDocument, updateDocument, type DocumentEdit } from '@/server/documents/actions';
@@ -15,7 +18,8 @@ import type { DocumentPageData } from '@/server/documents/detail';
 import { ExtractionPill } from './document-tile';
 import { useDocumentStatuses } from './use-document-status';
 
-const EditSheet = lazy(() => import('./document-edit-sheet'));
+const loadEditSheet = () => import('./document-edit-sheet');
+const EditSheet = lazy(loadEditSheet);
 
 /**
  * One document: its pages through a signed URL, `Tải xuống` logged as a download, the review status with its link,
@@ -28,29 +32,34 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
   const showUndo = useUndoToast();
   const notice = useNoticeToast();
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState(false);
+  const edit = useDeferredDialog(loadEditSheet);
   const [downloadFailed, setDownloadFailed] = useState(false);
-  const [downloading, startDownload] = useTransition();
+  const { pending: downloading, run } = useAction();
+  const undo = useAction();
   const { document } = data;
   const extraction = useDocumentStatuses(document.id, data.statuses, { by: 'document' });
 
   const download = () =>
-    startDownload(async () => {
-      const url = await downloadDocument(document.id).catch(() => null);
-      setDownloadFailed(url === null);
-      if (url !== null) window.location.assign(url);
-    });
+    run(
+      () => downloadDocument(document.id),
+      (url) => {
+        setDownloadFailed(url === null);
+        if (url !== null) window.location.assign(url);
+      },
+      null,
+    );
 
   const saved = (title: string, previous: DocumentEdit) => {
-    setEditing(false);
+    edit.setOpen(false);
     router.refresh();
     showUndo(t('updated', { title }), () => {
-      void updateDocument(previous)
-        .catch(() => ({ ok: false }) as const)
-        .then((result) => {
+      undo.run(
+        () => updateDocument(previous),
+        (result) => {
           if (!result.ok) notice(t('undoFailed'));
           router.refresh();
-        });
+        },
+      );
     });
   };
 
@@ -81,17 +90,13 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
               {t('download')}
             </Button>
             {data.canEdit ? (
-              <Button type="button" variant="outline" data-testid="edit-document" disabled={!hydrated} onClick={() => setEditing(true)}>
+              <Button type="button" variant="outline" data-testid="edit-document" disabled={!hydrated} {...edit.triggerProps}>
                 <PencilLine aria-hidden="true" />
                 {t('edit')}
               </Button>
             ) : null}
           </div>
-          {downloadFailed ? (
-            <p role="alert" className="text-body font-medium text-overdue">
-              {t('downloadFailed')}
-            </p>
-          ) : null}
+          <FormAlert message={downloadFailed ? t('downloadFailed') : null} />
         </header>
         <div className="lg:order-1">
           <DocumentPager
@@ -107,11 +112,7 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
           />
         </div>
       </div>
-      {editing ? (
-        <Suspense fallback={null}>
-          <EditSheet document={document} properties={data.properties} onClose={() => setEditing(false)} onSaved={saved} />
-        </Suspense>
-      ) : null}
+      <DeferredPopup dialog={edit} popup={EditSheet} props={{ document, properties: data.properties, onSaved: saved }} />
     </div>
   );
 }

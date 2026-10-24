@@ -3,46 +3,31 @@
 import { Archive, ArchiveRestore } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { archiveProperty, restoreProperty } from '@/app/(app)/properties/actions';
-import { StatusShape } from '@/components/status-mark';
+import { FormAlert } from '@/components/form-alert';
 import { useUndoToast } from '@/components/undo-toast';
 import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { Button } from '@/components/ui/button';
+import { useAction } from '@/components/use-action';
 import { ARCHIVED_PARAM } from './property-form-values';
 
 function useWrite() {
-  const [pending, startTransition] = useTransition();
-  const [failed, setFailed] = useState(false);
-  const run = (write: () => Promise<{ ok: boolean }>, then: () => void) =>
-    startTransition(async () => {
-      setFailed(false);
-      const result = await write().catch(() => ({ ok: false }));
-      if (result.ok) then();
-      else setFailed(true);
-    });
-  return { pending, failed, run };
-}
-
-function WriteError({ failed }: { failed: boolean }) {
   const t = useTranslations('propertyForm');
-  return (
-    <p role="status" aria-live="polite" className="flex min-h-7 items-start gap-2 text-body">
-      {failed ? (
-        <>
-          <StatusShape status="overdue" className="mt-1 size-4" />
-          <span className="text-overdue">{t('errorNetwork')}</span>
-        </>
-      ) : null}
-    </p>
-  );
+  const { pending, run } = useAction();
+  const [error, setError] = useState<string | null>(null);
+  const write = (call: () => Promise<{ ok: boolean }>, then: () => void) => {
+    setError(null);
+    run(call, (result) => (result.ok ? then() : setError(t('errorNetwork'))), { ok: false });
+  };
+  return { pending, error, write };
 }
 
 /** Archiving is reversible, so it takes no dialog (DESIGN-BRIEF §4): the list it lands on offers `Hoàn tác`. */
 export function ArchiveButton({ propertyId }: { propertyId: string }) {
   const t = useTranslations('propertyForm');
   const router = useRouter();
-  const { pending, failed, run } = useWrite();
+  const { pending, error, write } = useWrite();
   return (
     <div className="flex flex-col items-start gap-1">
       <Button
@@ -50,12 +35,12 @@ export function ArchiveButton({ propertyId }: { propertyId: string }) {
         variant="outline"
         disabled={pending}
         data-testid="archive-property"
-        onClick={() => run(() => archiveProperty(propertyId), () => router.push(`/properties?${ARCHIVED_PARAM}=${propertyId}`))}
+        onClick={() => write(() => archiveProperty(propertyId), () => router.push(`/properties?${ARCHIVED_PARAM}=${propertyId}`))}
       >
         <Archive aria-hidden="true" />
         {t('archive')}
       </Button>
-      <WriteError failed={failed} />
+      <FormAlert message={error} />
     </div>
   );
 }
@@ -88,14 +73,14 @@ export function ArchivedUndo({ propertyId, nickname }: { propertyId: string; nic
 
 export function RestoreButton({ propertyId, label }: { propertyId: string; label: string }) {
   const router = useRouter();
-  const { pending, failed, run } = useWrite();
+  const { pending, error, write } = useWrite();
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button type="button" variant="outline" disabled={pending} data-testid="restore-property" onClick={() => run(() => restoreProperty(propertyId), () => router.refresh())}>
+      <Button type="button" variant="outline" disabled={pending} data-testid="restore-property" onClick={() => write(() => restoreProperty(propertyId), () => router.refresh())}>
         <ArchiveRestore aria-hidden="true" />
         {label}
       </Button>
-      <WriteError failed={failed} />
+      <FormAlert message={error} />
     </div>
   );
 }

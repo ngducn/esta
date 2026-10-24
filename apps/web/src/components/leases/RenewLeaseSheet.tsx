@@ -8,14 +8,15 @@ import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { parsePercentBps } from '@esta/core/parse/percent';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { renewLease, type LeaseChangeRefusal, type PaidThroughRefusal } from '@/server/actions/leases';
 import { DateInput } from '@/components/date-input';
 import { TextField } from '@/components/form-parts';
 import { MoneyDisplay } from '@/components/money/money-display';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { FormSheet } from '@/components/form-sheet';
 import { useNoticeToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { ChangeRefusal } from './change-refusal';
 import { PaidThroughField } from './paid-through-field';
 
@@ -38,15 +39,16 @@ export default function RenewLeaseSheet({
   lastRentVnd,
   defaultEnd,
   leasesHref,
-  onClose,
-}: {
+  open,
+  onOpenChange,
+  finalFocus,
+}: PopupProps & {
   leaseId: string;
   start: IsoDate;
   startsBeforeToday: boolean;
   lastRentVnd: Vnd;
   defaultEnd: IsoDate;
   leasesHref: string;
-  onClose: () => void;
 }) {
   const t = useTranslations('leases');
   const locale = useLocale();
@@ -56,87 +58,80 @@ export default function RenewLeaseSheet({
   const [endText, setEndText] = useState(() => formatDate(defaultEnd, locale));
   const [paidThroughText, setPaidThroughText] = useState('');
   const [refusal, setRefusal] = useState<LeaseChangeRefusal | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const increase = readIncrease(increaseText);
   const rent = increase === null ? null : renewalRent(lastRentVnd, increase);
   const end = parseOptionalDateInput(endText);
   const paidThrough = parseOptionalDateInput(paidThroughText);
   const paidThroughRefusal: PaidThroughRefusal | null = refusal === 'paid_through_invalid' || refusal === 'paid_through_before_start' ? refusal : null;
 
-  const save = () =>
-    startTransition(async () => {
-      if (increase === null || !end.ok || !paidThrough.ok) return;
-      const result = await renewLease(leaseId, { increaseBps: increase, endDate: end.value, paidThrough: paidThroughText }).catch(
-        () => ({ ok: false, reason: 'failed' }) as const,
-      );
-      if (!result.ok) {
-        setRefusal(result.reason);
-        return;
-      }
-      notice(t('renewed', { date: formatDate(start, locale) }));
-      router.push(`${leasesHref}/${result.value}`);
-      onClose();
-    });
+  const save = () => {
+    if (increase === null || !end.ok || !paidThrough.ok) return;
+    run(
+      () => renewLease(leaseId, { increaseBps: increase, endDate: end.value, paidThrough: paidThroughText }),
+      (result) => {
+        if (!result.ok) {
+          setRefusal(result.reason);
+          return;
+        }
+        notice(t('renewed', { date: formatDate(start, locale) }));
+        router.push(`${leasesHref}/${result.value}`);
+        onOpenChange(false);
+      },
+    );
+  };
 
   return (
-    <Sheet open onOpenChange={(open) => (open ? null : onClose())}>
-      <SheetContent data-testid="renew-sheet">
-        <div className="flex flex-col gap-2">
-          <SheetTitle>{t('renewTitle')}</SheetTitle>
-          <SheetDescription>{t('renewBody', { date: formatDate(start, locale) })}</SheetDescription>
-        </div>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            save();
+    <FormSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      finalFocus={finalFocus}
+      testId="renew-sheet"
+      title={t('renewTitle')}
+      description={t('renewBody', { date: formatDate(start, locale) })}
+      labels={{ cancel: t('cancel'), submit: t('renewSave'), pending: t('working') }}
+      submitTestId="renew-save"
+      pending={pending}
+      submitDisabled={rent === null || !end.ok || !paidThrough.ok}
+      onSubmit={save}
+      error={<ChangeRefusal reason={paidThroughRefusal === null ? refusal : null} />}
+    >
+      <TextField
+        label={t('renewIncreaseField')}
+        hint={t('renewIncreaseHint')}
+        value={increaseText}
+        onChange={(text) => {
+          setIncreaseText(text);
+          setRefusal(null);
+        }}
+        error={increase === null ? t('invalidPercent') : null}
+        testId="renew-increase"
+        inputMode="decimal"
+        maxLength={8}
+      />
+      <section aria-live="polite" data-testid="renew-preview" className="flex flex-col gap-1 rounded-md border border-rule bg-surface-2 p-4">
+        <span className="text-small text-ink-muted">{t('renewPreview')}</span>
+        {rent === null ? <span className="text-body text-ink-2">{t('invalidPercent')}</span> : <MoneyDisplay amount={rent} variant="large" className="text-start text-ink" />}
+        <span className="text-small text-ink-2">{t('renewPreviewFrom', { rent: formatVnd(lastRentVnd, locale) })}</span>
+      </section>
+      <DateInput
+        label={t('renewEndField')}
+        defaultValue={defaultEnd}
+        onTextChange={(text) => {
+          setEndText(text);
+          setRefusal(null);
+        }}
+      />
+      <p className="-mt-2 text-small text-ink-muted">{t('endHint')}</p>
+      {startsBeforeToday ? (
+        <PaidThroughField
+          refusal={paidThroughRefusal}
+          onTextChange={(text) => {
+            setPaidThroughText(text);
+            setRefusal(null);
           }}
-        >
-          <TextField
-            label={t('renewIncreaseField')}
-            hint={t('renewIncreaseHint')}
-            value={increaseText}
-            onChange={(text) => {
-              setIncreaseText(text);
-              setRefusal(null);
-            }}
-            error={increase === null ? t('invalidPercent') : null}
-            testId="renew-increase"
-            inputMode="decimal"
-            maxLength={8}
-          />
-          <section aria-live="polite" data-testid="renew-preview" className="flex flex-col gap-1 rounded-md border border-rule bg-surface-2 p-4">
-            <span className="text-small text-ink-muted">{t('renewPreview')}</span>
-            {rent === null ? <span className="text-body text-ink-2">{t('invalidPercent')}</span> : <MoneyDisplay amount={rent} variant="large" className="text-start text-ink" />}
-            <span className="text-small text-ink-2">{t('renewPreviewFrom', { rent: formatVnd(lastRentVnd, locale) })}</span>
-          </section>
-          <DateInput
-            label={t('renewEndField')}
-            defaultValue={defaultEnd}
-            onTextChange={(text) => {
-              setEndText(text);
-              setRefusal(null);
-            }}
-          />
-          <p className="-mt-2 text-small text-ink-muted">{t('endHint')}</p>
-          {startsBeforeToday ? (
-            <PaidThroughField
-              refusal={paidThroughRefusal}
-              onTextChange={(text) => {
-                setPaidThroughText(text);
-                setRefusal(null);
-              }}
-            />
-          ) : null}
-          <ChangeRefusal reason={paidThroughRefusal === null ? refusal : null} />
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <SheetClose render={<Button type="button" variant="outline" />}>{t('cancel')}</SheetClose>
-            <Button type="submit" data-testid="renew-save" disabled={pending || rent === null || !end.ok || !paidThrough.ok}>
-              {pending ? t('working') : t('renewSave')}
-            </Button>
-          </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+        />
+      ) : null}
+    </FormSheet>
   );
 }

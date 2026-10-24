@@ -3,10 +3,11 @@
 import type { GeoPoint } from '@esta/core/maps';
 import dynamic from 'next/dynamic';
 import { NextIntlClientProvider, useTranslations, type AbstractIntlMessages } from 'next-intl';
-import { useOptimistic, useState, useTransition } from 'react';
+import { useOptimistic, useState } from 'react';
 import { setPropertyBoundary, setPropertyLocation } from '@/app/(app)/properties/location-actions';
 import { useUndoToast } from '@/components/undo-toast';
 import { UndoToastProvider } from '@/components/undo-toast-provider';
+import { useAction } from '@/components/use-action';
 import type { Theme } from '@/design/tokens';
 import type { Locale } from '@/i18n/locale';
 import { MapCanvas } from './map-canvas';
@@ -51,7 +52,7 @@ function MapView({ properties, theme, canEdit, locate, query }: Props) {
     setDraftFor(locate?.id ?? null);
     setDraft(NO_DRAFT);
   }
-  const [saving, startSaving] = useTransition();
+  const { pending: saving, run } = useAction();
 
   const target = locate === null ? null : (properties.find((property) => property.id === locate.id) ?? null);
   const [pin, setOptimisticPin] = useOptimistic<GeoPoint | null>(target?.location ?? null);
@@ -61,31 +62,32 @@ function MapView({ properties, theme, canEdit, locate, query }: Props) {
 
   const savePin = (point: GeoPoint) => {
     if (target === null) return;
-    startSaving(async () => {
-      setOptimisticPin(point);
-      const result = await setPropertyLocation(target.id, point);
-      setDraft((current) => ({ ...current, preview: null, failed: !result.ok }));
-      if (!result.ok) return;
-      showUndo(t('pinSaved', { nickname: target.nickname }), () =>
-        startSaving(async () => {
-          await setPropertyLocation(target.id, result.previous);
-        }),
-      );
-    });
+    run(
+      () => {
+        // The optimistic pin only shows when it is set inside the transition, before the save is awaited.
+        setOptimisticPin(point);
+        return setPropertyLocation(target.id, point);
+      },
+      (result) => {
+        setDraft((current) => ({ ...current, preview: null, failed: !result.ok }));
+        if (!result.ok) return;
+        showUndo(t('pinSaved', { nickname: target.nickname }), () => run(() => setPropertyLocation(target.id, result.previous), () => undefined));
+      },
+    );
   };
 
   const saveBoundary = (ring: readonly GeoPoint[] | null) => {
     if (target === null) return;
-    startSaving(async () => {
-      const result = await setPropertyBoundary(target.id, ring);
-      setDraft((current) => (result.ok ? { ...current, draw: 'off', ring: null, failed: false } : { ...current, failed: true }));
-      if (!result.ok) return;
-      showUndo(t(ring === null ? 'boundaryCleared' : 'boundarySaved', { nickname: target.nickname }), () =>
-        startSaving(async () => {
-          await setPropertyBoundary(target.id, result.previous);
-        }),
-      );
-    });
+    run(
+      () => setPropertyBoundary(target.id, ring),
+      (result) => {
+        setDraft((current) => (result.ok ? { ...current, draw: 'off', ring: null, failed: false } : { ...current, failed: true }));
+        if (!result.ok) return;
+        showUndo(t(ring === null ? 'boundaryCleared' : 'boundarySaved', { nickname: target.nickname }), () =>
+          run(() => setPropertyBoundary(target.id, result.previous), () => undefined),
+        );
+      },
+    );
   };
 
   return (

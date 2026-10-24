@@ -58,8 +58,8 @@ const syntax = ({ scope, find, ...metric }: SyntaxSmell): Metric => ({
 
 const EXTRACT: Home = { use: 'Extract the shared part once, in the module ARCHITECTURE.md names for that concern, and call it from both places.' };
 const ACTION_HOOK: Home = {
-  use: 'The shared action hook `useAction` in apps/web/src/components/use-action.ts, which issue #193 creates.',
-  pending: { issue: 193, names: ['useAction'] },
+  use: 'The shared action hook `useAction` in apps/web/src/components/use-action.ts.',
+  helpers: [{ name: 'useAction', file: 'apps/web/src/components/use-action.ts' }],
 };
 const OPS_KIT = 'packages/ops/src/kit.ts';
 const WIZARD_HELPERS = 'e2e/helpers/wizard.ts';
@@ -155,7 +155,13 @@ export const METRICS: readonly Metric[] = [
   syntax({
     id: 'hand-rolled-lazy-sheet',
     message: 'A sheet or dialog is rendered with a bare `open`, so its parent mounts it only while open and it loses its exit motion and `aria-expanded`.',
-    home: { use: '`useDeferredDialog` in apps/web/src/components/use-deferred-dialog.ts.', helpers: [{ name: 'useDeferredDialog', file: 'apps/web/src/components/use-deferred-dialog.ts' }] },
+    home: {
+      use: '`useDeferredDialog` and `DeferredPopup` in apps/web/src/components/use-deferred-dialog.tsx.',
+      helpers: [
+        { name: 'useDeferredDialog', file: 'apps/web/src/components/use-deferred-dialog.tsx' },
+        { name: 'DeferredPopup', file: 'apps/web/src/components/use-deferred-dialog.tsx' },
+      ],
+    },
     section: 'sheets-and-dialogs',
     scope: WEB_UI,
     find: alwaysOpenPopups,
@@ -163,9 +169,15 @@ export const METRICS: readonly Metric[] = [
   syntax({
     id: 'sheet-footer-markup',
     message: 'A sheet or dialog repeats the footer row markup.',
-    home: { use: 'One form-sheet shell that owns the title, error, cancel and submit row, which issue #193 creates.', pending: { issue: 193, names: [] } },
+    home: {
+      use: '`FormSheet` in apps/web/src/components/form-sheet.tsx, or `FormActions` in apps/web/src/components/form-actions.tsx for a row inside a custom sheet.',
+      helpers: [
+        { name: 'FormSheet', file: 'apps/web/src/components/form-sheet.tsx' },
+        { name: 'FormActions', file: 'apps/web/src/components/form-actions.tsx' },
+      ],
+    },
     section: 'sheets-and-dialogs',
-    scope: WEB_UI,
+    scope: without(WEB_UI, /^apps\/web\/src\/components\/form-actions\.tsx$/),
     find: classLists('flex-col-reverse', 'sm:flex-row', 'sm:justify-end'),
   }),
   syntax({

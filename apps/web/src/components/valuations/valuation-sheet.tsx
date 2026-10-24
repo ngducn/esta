@@ -7,15 +7,17 @@ import { Check } from 'lucide-react';
 import type { AbstractIntlMessages, Locale } from 'next-intl';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useId, useRef, useState, useTransition, type RefObject } from 'react';
+import { useId, useRef, useState } from 'react';
 import { DateInput } from '@/components/date-input';
 import { FieldMessage } from '@/components/field-message';
 import { NoteField, TextField } from '@/components/form-parts';
 import { MoneyInput } from '@/components/money/money-input';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { SheetFooter } from '@/components/sheet-footer';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
 import { createValuation, deleteValuation } from '@/server/actions/valuations';
 
 export type ValuationScope = {
@@ -26,11 +28,12 @@ export type ValuationScope = {
   readonly messages: AbstractIntlMessages;
 };
 
-type SheetProps = { scope: ValuationScope; valuationId: string; open: boolean; onOpenChange: (open: boolean) => void; finalFocus: RefObject<HTMLButtonElement | null> };
+type SheetProps = PopupProps & { scope: ValuationScope };
 
 type Errors = ValuationProblems & { readonly method?: true; readonly save?: 'networkError' | 'forbidden' };
 
-function ValuationSheet({ scope, valuationId, open, onOpenChange, finalFocus }: SheetProps) {
+function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
+  const [valuationId] = useState(() => crypto.randomUUID());
   const t = useTranslations('valuations');
   const tm = useTranslations('components.money');
   const locale = useLocale();
@@ -45,7 +48,7 @@ function ValuationSheet({ scope, valuationId, open, onOpenChange, finalFocus }: 
   const [sourceUrl, setSourceUrl] = useState('');
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Errors>({});
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const clear = (field: keyof Errors) => setErrors(({ [field]: _, ...rest }) => rest);
   const typed = (set: (text: string) => void, field: keyof Errors) => (text: string) => {
     set(text);
@@ -77,17 +80,20 @@ function ValuationSheet({ scope, valuationId, open, onOpenChange, finalFocus }: 
     const { form: _, ...fields }: Errors = { ...(read.ok ? {} : read.reason), ...(method === null ? { method: true } : {}) };
     setErrors(fields);
     if (!read.ok) return;
-    startTransition(async () => {
-      const result = await createValuation(raw).catch(() => null);
-      if (result?.ok !== true) {
-        const reason = result?.reason;
-        setErrors(reason?.kind === 'fields' ? reason.problems : { save: reason?.kind === 'forbidden' ? 'forbidden' : 'networkError' });
-        return;
-      }
-      onOpenChange(false);
-      router.refresh();
-      saved(formatVndCompact(read.value.valueVnd, locale));
-    });
+    run(
+      () => createValuation(raw),
+      (result) => {
+        if (result?.ok !== true) {
+          const reason = result?.reason;
+          setErrors(reason?.kind === 'fields' ? reason.problems : { save: reason?.kind === 'forbidden' ? 'forbidden' : 'networkError' });
+          return;
+        }
+        onOpenChange(false);
+        router.refresh();
+        saved(formatVndCompact(read.value.valueVnd, locale));
+      },
+      null,
+    );
   };
 
   return (

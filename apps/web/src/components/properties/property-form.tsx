@@ -13,15 +13,16 @@ import {
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useId, useRef, useState, useTransition, type FormEvent } from 'react';
-import { createProperty, loadCommunes, updateProperty, type PropertyWrite } from '@/app/(app)/properties/actions';
+import { useId, useRef, useState, type FormEvent } from 'react';
+import { createProperty, loadCommunes, updateProperty } from '@/app/(app)/properties/actions';
 import { useFocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { DateInput } from '@/components/date-input';
 import { Group, TextField } from '@/components/form-parts';
 import { FieldMessage } from '@/components/field-message';
+import { FormAlert } from '@/components/form-alert';
 import { MoneyInput } from '@/components/money/money-input';
-import { StatusShape } from '@/components/status-mark';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { useAction } from '@/components/use-action';
 import { useHydrated } from '@/lib/use-hydrated';
 import type { CurrentUnitSuggestion } from '@esta/ops';
 import type { AdminUnitOption } from '@/server/address/suggest';
@@ -65,7 +66,7 @@ export function PropertyForm({
   const [codeEdited, setCodeEdited] = useState(propertyId !== null);
   const [invalid, setInvalid] = useState<Invalid | null>(null);
   const [error, setError] = useState<FormError | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const hydrated = useHydrated();
   useFocusAnchor(hydrated);
   const [communes, setCommunes] = useState<{ province: string | null; options: readonly AdminUnitOption[] }>({
@@ -133,23 +134,19 @@ export function PropertyForm({
       acquisition_price_vnd: price === null ? null : price.value,
       notes: values.notes,
     };
-    startTransition(async () => {
-      let result: PropertyWrite;
-      try {
-        result = propertyId === null ? await createProperty(input) : await updateProperty(propertyId, input);
-      } catch {
-        setError({ kind: 'network' });
-        return;
-      }
-      if (result.ok) {
-        router.push(wizardNext ?? `/properties/${result.id}`);
-        return;
-      }
-      if (result.reason === 'code_taken') {
-        setInvalid({ field: 'code' });
-        setError({ kind: 'code_taken', code: result.code, takenBy: result.takenBy });
-      } else setError({ kind: result.reason === 'invalid' ? 'invalid' : 'network' });
-    });
+    run(
+      () => (propertyId === null ? createProperty(input) : updateProperty(propertyId, input)),
+      (result) => {
+        if (result.ok) {
+          router.push(wizardNext ?? `/properties/${result.id}`);
+          return;
+        }
+        if (result.reason === 'code_taken') {
+          setInvalid({ field: 'code' });
+          setError({ kind: 'code_taken', code: result.code, takenBy: result.takenBy });
+        } else setError({ kind: result.reason === 'invalid' ? 'invalid' : 'network' });
+      },
+    );
   };
 
   const errorText =
@@ -267,12 +264,7 @@ export function PropertyForm({
         </Group>
 
         <div className="flex flex-col gap-3">
-          {errorText === null ? null : (
-            <p role="alert" data-testid="form-error" className="flex items-start gap-2 text-body text-overdue">
-              <StatusShape status="overdue" className="mt-1 size-4" />
-              <span className="wrap-anywhere">{errorText}</span>
-            </p>
-          )}
+          <FormAlert message={errorText} data-testid="form-error" />
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" disabled={pending} data-testid="save-property">
               {pending ? t('saving') : wizardNext !== null ? t('saveAndContinue') : propertyId === null ? t('save') : t('saveChanges')}

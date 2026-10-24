@@ -1,9 +1,9 @@
 'use client';
 
 import { QrCode } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { useDeferredDialog } from '@/components/use-deferred-dialog';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import type { InvoiceQrView } from '@/server/invoices/qr';
 import type { QrSheetLabels } from './QrSheet';
 
@@ -25,18 +25,14 @@ export function QrAction({
   qr: InvoiceQrView;
   labels: QrSheetLabels;
 }) {
-  const { open, setOpen, triggerProps } = useDeferredDialog(loadSheet);
+  const dialog = useDeferredDialog(loadSheet);
   return (
     <>
-      <button type="button" data-testid="row-action-qr" {...triggerProps} className={buttonVariants({ variant: 'outline' })}>
+      <button type="button" data-testid="row-action-qr" {...dialog.triggerProps} className={buttonVariants({ variant: 'outline' })}>
         <QrCode aria-hidden="true" />
         {label}
       </button>
-      {open === null ? null : (
-        <Suspense fallback={null}>
-          <QrSheet open={open} onOpenChange={setOpen} title={title} description={description} invoiceHref={invoiceHref} qr={qr} labels={labels} />
-        </Suspense>
-      )}
+      <DeferredPopup dialog={dialog} popup={QrSheet} props={{ title, description, invoiceHref, qr, labels }} />
     </>
   );
 }

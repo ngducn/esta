@@ -4,10 +4,11 @@ import type { IsoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type FormEvent, type KeyboardEvent } from 'react';
+import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { Button } from '@/components/ui/button';
 import { useNoticeToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
 import { saveReadings, type MeterActionRefusal } from '@/server/actions/meters';
 import type { MeterRoom } from '@/server/meters/load';
 import { MeterRow, useReadingCheck } from './MeterRow';
@@ -41,7 +42,7 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
   const router = useRouter();
   const notice = useNoticeToast();
   const check = useReadingCheck();
-  const [saving, startSaving] = useTransition();
+  const { pending: saving, run } = useAction();
   const [error, setError] = useState<string | null>(null);
   const [values, setValues] = useState<Readonly<Record<string, string>>>(() =>
     Object.fromEntries(rooms.flatMap((room) => room.meters.map((meter) => [meter.id, meter.stored === null ? '' : String(meter.stored.reading)]))),
@@ -65,16 +66,18 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
       notice(t('nothingChanged'));
       return;
     }
-    startSaving(async () => {
-      const result = await saveReadings({ property_id: propertyId, reading_month: month, readings }).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      if (!result.ok) {
-        setError(t(ERRORS[result.reason]));
-        return;
-      }
-      const { issued, unbilled } = result.value;
-      notice(unbilled === 0 ? t('saved', { month: monthLabel, issued }) : `${t('saved', { month: monthLabel, issued })} ${t('unbilled', { count: unbilled })}`);
-      router.refresh();
-    });
+    run(
+      () => saveReadings({ property_id: propertyId, reading_month: month, readings }),
+      (result) => {
+        if (!result.ok) {
+          setError(t(ERRORS[result.reason]));
+          return;
+        }
+        const { issued, unbilled } = result.value;
+        notice(unbilled === 0 ? t('saved', { month: monthLabel, issued }) : `${t('saved', { month: monthLabel, issued })} ${t('unbilled', { count: unbilled })}`);
+        router.refresh();
+      },
+    );
   };
 
   return (

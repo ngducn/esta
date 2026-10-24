@@ -6,7 +6,7 @@ import { vnd, type Vnd } from '@esta/core/money';
 import { parseDateInput } from '@esta/core/parse/date-input';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { useLocale, useTranslations } from 'next-intl';
-import { lazy, Suspense, useState } from 'react';
+import { lazy, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataTable, type DataColumn } from '@/components/data-table';
 import { DateInput } from '@/components/date-input';
@@ -16,7 +16,7 @@ import { MoneyInput } from '@/components/money/money-input';
 import { StatusMark, type StatusMarkProps } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { useUndoToast } from '@/components/undo-toast';
-import { useDeferredDialog } from '@/components/use-deferred-dialog';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 
 const loadSheetPopup = () => import('./sheet-demo-popup');
 const SheetDemoPopup = lazy(loadSheetPopup);
@@ -163,11 +163,7 @@ export function SheetDemo() {
       <Button variant="outline" {...dialog.triggerProps}>
         {t('openSheet')}
       </Button>
-      {dialog.open === null ? null : (
-        <Suspense fallback={null}>
-          <SheetDemoPopup open={dialog.open} onOpenChange={dialog.setOpen} finalFocus={dialog.triggerProps.ref} />
-        </Suspense>
-      )}
+      <DeferredPopup dialog={dialog} popup={SheetDemoPopup} props={{}} />
     </>
   );
 }

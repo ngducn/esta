@@ -1,9 +1,9 @@
 'use client';
 
 import { Pencil, Plus } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { useDeferredDialog } from '@/components/use-deferred-dialog';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import type { OwnershipSheetProps } from './ownership-sheet-popup';
 
 const loadPopup = () => import('./ownership-sheet-popup');
@@ -18,11 +18,7 @@ export function OwnershipSheet({ label, adding, ...props }: OwnershipSheetProps 
         <Icon aria-hidden="true" />
         {label}
       </button>
-      {dialog.open === null ? null : (
-        <Suspense fallback={null}>
-          <OwnershipSheetPopup open={dialog.open} onOpenChange={dialog.setOpen} finalFocus={dialog.triggerProps.ref} {...props} />
-        </Suspense>
-      )}
+      <DeferredPopup dialog={dialog} popup={OwnershipSheetPopup} props={props} />
     </>
   );
 }

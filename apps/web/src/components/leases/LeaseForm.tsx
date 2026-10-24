@@ -6,15 +6,19 @@ import { ChevronDown, ScanText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { lazy, Suspense, useState, useTransition, type FormEvent } from 'react';
+import { lazy, useState, type FormEvent } from 'react';
 import { saveLease } from '@/server/actions/leases';
 import type { Tenant } from '@/server/leases/load';
 import { DateInput } from '@/components/date-input';
 import { Group, TextField } from '@/components/form-parts';
 import { MoneyInput } from '@/components/money/money-input';
+import { FormActions } from '@/components/form-actions';
+import { FormAlert } from '@/components/form-alert';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useNoticeToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { useHydrated } from '@/lib/use-hydrated';
 import { FromContractMark } from './from-contract-mark';
 import { defaultsToValues, readDraft, type Invalid, type LeaseFormValues } from './lease-form-values';
@@ -68,9 +72,9 @@ export function LeaseForm({
   const [tenants, setTenants] = useState(initialTenants);
   const [invalid, setInvalid] = useState<Invalid>(null);
   const [error, setError] = useState<FormError>(null);
-  const [activating, setActivating] = useState(activateOnOpen && leaseId !== null);
+  const activation = useDeferredDialog(loadDialog, activateOnOpen && leaseId !== null);
   const [more, setMore] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const set = <K extends keyof LeaseFormValues>(key: K, value: LeaseFormValues[K]) => setValues((current) => ({ ...current, [key]: value }));
   const rentalHref = `/properties/${propertyId}/rental`;
   const contractMark = (key: keyof LeaseFormValues) => (contract?.prefilled.includes(key) === true && values[key] === initial[key] ? <FromContractMark label={t('fromContract')} /> : null);
@@ -92,21 +96,23 @@ export function LeaseForm({
       return;
     }
     setInvalid(null);
-    startTransition(async () => {
-      const result = await saveLease(propertyId, leaseId, draft.value, contract?.documentId ?? null).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      if (!result.ok) {
-        setError(result.reason === 'failed' ? 'network' : result.reason);
-        return;
-      }
-      if (leaseId === null) {
-        router.replace(`${leaseHref(result.id)}${then === 'activate' ? '?activate=1' : ''}`);
-        if (then === 'stay') notice(t('savedDraft'));
-        return;
-      }
-      router.refresh();
-      if (then === 'activate') void loadDialog().then(() => setActivating(true));
-      else notice(t('savedDraft'));
-    });
+    run(
+      () => saveLease(propertyId, leaseId, draft.value, contract?.documentId ?? null),
+      (result) => {
+        if (!result.ok) {
+          setError(result.reason === 'failed' ? 'network' : result.reason);
+          return;
+        }
+        if (leaseId === null) {
+          router.replace(`${leaseHref(result.id)}${then === 'activate' ? '?activate=1' : ''}`);
+          if (then === 'stay') notice(t('savedDraft'));
+          return;
+        }
+        router.refresh();
+        if (then === 'activate') void loadDialog().then(() => activation.setOpen(true));
+        else notice(t('savedDraft'));
+      },
+    );
   };
 
   const submit = (event: FormEvent) => {
@@ -304,12 +310,11 @@ export function LeaseForm({
             />
           </div>
         </details>
-        {error === null ? null : (
-          <p role="alert" data-testid="form-error" className="text-body text-overdue">
-            {{ invalid: t('errorInvalid'), notDraft: t('errorNotDraft'), document: t('errorDocument'), network: t('errorNetwork') }[error]}
-          </p>
-        )}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <FormAlert
+          message={error === null ? null : { invalid: t('errorInvalid'), notDraft: t('errorNotDraft'), document: t('errorDocument'), network: t('errorNetwork') }[error]}
+          data-testid="form-error"
+        />
+        <FormActions>
           <Link href={rentalHref} className={buttonVariants({ variant: 'quiet' })}>
             {t('cancel')}
           </Link>
@@ -319,22 +324,20 @@ export function LeaseForm({
           <Button type="button" disabled={pending} data-testid="activate-lease" onPointerEnter={() => void loadDialog()} onClick={() => save('activate')}>
             {t('activate')}
           </Button>
-        </div>
+        </FormActions>
       </fieldset>
-      {activating && leaseId !== null ? (
-        <Suspense fallback={null}>
-          <ActivateLeaseDialog
-            leaseId={leaseId}
-            blocked={blocked()}
-            onClose={() => {
-              setActivating(false);
-              if (activateOnOpen) router.replace(leaseHref(leaseId));
-              else router.refresh();
-            }}
-            onActivated={() => router.replace(leaseHref(leaseId))}
-          />
-        </Suspense>
-      ) : null}
+      {leaseId === null ? null : (
+        <DeferredPopup
+          dialog={activation}
+          popup={ActivateLeaseDialog}
+          props={{
+            leaseId,
+            blocked: blocked(),
+            onDismiss: () => (activateOnOpen ? router.replace(leaseHref(leaseId)) : router.refresh()),
+            onActivated: () => router.replace(leaseHref(leaseId)),
+          }}
+        />
+      )}
     </form>
   );
 }

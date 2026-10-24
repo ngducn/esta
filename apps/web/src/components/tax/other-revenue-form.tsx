@@ -4,10 +4,11 @@ import { formatVnd } from '@esta/core/format';
 import type { Vnd } from '@esta/core/money';
 import { vndInputText } from '@esta/core/properties/form';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { MoneyInput } from '@/components/money/money-input';
 import { StatusShape } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { useAction } from '@/components/use-action';
 import { saveOtherBusinessRevenue, type TaxSaveRefusal } from '@/server/tax/actions';
 
 const ERRORS = { empty: 'errorEmpty', invalid: 'errorInvalid', forbidden: 'errorForbidden', failed: 'errorFailed' } as const satisfies Record<TaxSaveRefusal, string>;
@@ -21,13 +22,13 @@ export function OtherRevenueForm({ partyId, year, savedVnd, canEdit }: { partyId
   const locale = useLocale();
   const [text, setText] = useState(() => vndInputText(savedVnd));
   const [status, setStatus] = useState<'idle' | 'saved' | TaxSaveRefusal>('idle');
-  const [pending, startSaving] = useTransition();
+  const { pending, run } = useAction();
 
   const save = () =>
-    startSaving(async () => {
-      const result = await saveOtherBusinessRevenue({ partyId, year, amount: text }).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      setStatus(result.ok ? 'saved' : result.reason);
-    });
+    run(
+      () => saveOtherBusinessRevenue({ partyId, year, amount: text }),
+      (result) => setStatus(result.ok ? 'saved' : result.reason),
+    );
 
   return (
     <section aria-labelledby="tax-other-title" data-testid="tax-other-revenue" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">

@@ -24,7 +24,7 @@ const insurance: DocumentDetail = {
   tags: [],
 };
 
-const open = () => renderInLocale(<DocumentEditSheet document={insurance} properties={[]} onClose={() => undefined} onSaved={() => undefined} />);
+const open = () => renderInLocale(<DocumentEditSheet open onOpenChange={() => undefined} finalFocus={{ current: null }} document={insurance} properties={[]} onSaved={() => undefined} />);
 
 const typeExpiry = (text: string) => {
   const field = screen.getByLabelText('Ngày hết hạn (nếu có)');

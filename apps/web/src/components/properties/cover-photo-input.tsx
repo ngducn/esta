@@ -3,11 +3,12 @@
 import { ImagePlus, RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useEffect, useId, useRef, useState, useTransition } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { removeCoverPhoto, requestCoverPhotoUpload, setCoverPhoto } from '@/app/(app)/properties/actions';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { StatusShape } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
+import { useAction } from '@/components/use-action';
 import { useHydrated } from '@/lib/use-hydrated';
 import { resizePhoto, type ResizeRefusal } from './resize-photo';
 
@@ -33,7 +34,7 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
   const router = useRouter();
   const inputId = useId();
   const picker = useRef<HTMLInputElement>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const [failure, setFailure] = useState<{ reason: Failure; file: File | null } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const hydrated = useHydrated();
@@ -42,29 +43,36 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
     if (preview !== null) URL.revokeObjectURL(preview);
   }, [preview]);
 
-  const send = (file: File) =>
-    startTransition(async () => {
-      setFailure(null);
-      const reason = await upload(propertyId, file).catch((): Failure => 'upload');
-      if (reason !== null) {
-        setFailure({ reason, file });
-        return;
-      }
-      setPreview(URL.createObjectURL(file));
-      router.refresh();
-    });
+  const send = (file: File) => {
+    setFailure(null);
+    run(
+      () => upload(propertyId, file),
+      (reason) => {
+        if (reason !== null) {
+          setFailure({ reason, file });
+          return;
+        }
+        setPreview(URL.createObjectURL(file));
+        router.refresh();
+      },
+      'upload' as const,
+    );
+  };
 
-  const remove = () =>
-    startTransition(async () => {
-      setFailure(null);
-      const removed = await removeCoverPhoto(propertyId).catch(() => ({ ok: false as const }));
-      if (!removed.ok) {
-        setFailure({ reason: 'upload', file: null });
-        return;
-      }
-      setPreview(null);
-      router.refresh();
-    });
+  const remove = () => {
+    setFailure(null);
+    run(
+      () => removeCoverPhoto(propertyId),
+      (removed) => {
+        if (!removed.ok) {
+          setFailure({ reason: 'upload', file: null });
+          return;
+        }
+        setPreview(null);
+        router.refresh();
+      },
+    );
+  };
 
   const shown = preview ?? photoUrl;
   const message =

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { qrMatrix } from '@/lib/qr';
 import type { InvoiceQrView } from '@/server/invoices/qr';
 import { QrPanel, type QrLabels } from './QrPanel';
@@ -14,14 +15,13 @@ export type QrSheetLabels = QrLabels & { readonly close: string; readonly openIn
 export default function QrSheet({
   open,
   onOpenChange,
+  finalFocus,
   title,
   description,
   invoiceHref,
   qr,
   labels,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+}: PopupProps & {
   title: string;
   description: string;
   /** Null when the code pays no bill. */
@@ -32,7 +32,7 @@ export default function QrSheet({
   const matrix = useMemo(() => qrMatrix(qr.payload), [qr.payload]);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent data-testid="qr-sheet" className="gap-4">
+      <SheetContent data-testid="qr-sheet" finalFocus={finalFocus} className="gap-4">
         <div className="flex flex-col gap-1">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>

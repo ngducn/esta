@@ -4,13 +4,14 @@ import { formatDate } from '@esta/core/format';
 import type { ActivationRefusal } from '@esta/core/lease';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { activateLease, previewActivation, type ActivationRefusalReason, type BillPreview } from '@/server/actions/leases';
 import { MoneyDisplay } from '@/components/money/money-display';
-import { StatusShape } from '@/components/status-mark';
-import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogClose, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/dialog';
+import { FormAlert } from '@/components/form-alert';
+import { FormSheet } from '@/components/form-sheet';
 import { useNoticeToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { PaidThroughField } from './paid-through-field';
 
 /**
@@ -21,12 +22,16 @@ import { PaidThroughField } from './paid-through-field';
 export default function ActivateLeaseDialog({
   leaseId,
   blocked,
-  onClose,
+  open,
+  onOpenChange,
+  finalFocus,
+  onDismiss,
   onActivated,
-}: {
+}: PopupProps & {
   leaseId: string;
   blocked: readonly ActivationRefusal[];
-  onClose: () => void;
+  /** Runs when the dialog closes without activating. */
+  onDismiss: () => void;
   onActivated: () => void;
 }) {
   const t = useTranslations('leases');
@@ -35,7 +40,7 @@ export default function ActivateLeaseDialog({
   const [paidThrough, setPaidThrough] = useState('');
   const [preview, setPreview] = useState<{ readonly paidThrough: string; readonly bills: readonly BillPreview[] | null } | null>(null);
   const [refusals, setRefusals] = useState<readonly ActivationRefusalReason[]>(blocked);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const readable = parseOptionalDateInput(paidThrough).ok;
   const bills = readable && preview?.paidThrough === paidThrough ? preview.bills : undefined;
   const dateRefused = refusals.includes('paid_through_invalid');
@@ -55,78 +60,82 @@ export default function ActivateLeaseDialog({
   }, [blocked.length, leaseId, paidThrough, readable]);
 
   const activate = () =>
-    startTransition(async () => {
-      const result = await activateLease(leaseId, paidThrough).catch(() => ({ ok: false, reasons: ['failed'] }) as const);
-      if (!result.ok) {
-        setRefusals(result.reasons);
-        return;
-      }
-      const month = result.issuedMonth === null ? 'none' : String(Number(result.issuedMonth.slice(5, 7)));
-      notice(t('activated', { month }).trim());
-      onActivated();
-    });
+    run(
+      () => activateLease(leaseId, paidThrough),
+      (result) => {
+        if (!result.ok) {
+          setRefusals(result.reasons);
+          return;
+        }
+        const month = result.issuedMonth === null ? 'none' : String(Number(result.issuedMonth.slice(5, 7)));
+        notice(t('activated', { month }).trim());
+        onActivated();
+      },
+      { ok: false, reasons: ['failed'] } as const,
+    );
 
   return (
-    <AlertDialog open onOpenChange={(open) => (open ? null : onClose())}>
-      <AlertDialogContent data-testid="activate-dialog" className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
-        <div className="flex flex-col gap-2">
-          <AlertDialogTitle>{t('activateTitle')}</AlertDialogTitle>
-          <AlertDialogDescription>{t('activateBody')}</AlertDialogDescription>
-        </div>
-        <PaidThroughField
-          refusal={dateRefused ? 'paid_through_invalid' : null}
-          onTextChange={(text) => {
-            setPaidThrough(text);
-            setRefusals((current) => current.filter((reason) => reason !== 'paid_through_invalid'));
-          }}
-        />
-        {blocked.length > 0 ? null : (
-          <section aria-live="polite" data-testid="activation-preview" className="flex flex-col gap-2">
-            <h3 className="text-body font-medium text-ink">{t('previewTitle')}</h3>
-            {!readable ? (
-              <p className="text-small text-ink-muted">{t('previewNeedsDate')}</p>
-            ) : bills === undefined ? (
-              <p className="text-small text-ink-muted">{t('previewLoading')}</p>
-            ) : bills === null ? (
-              <p className="text-small text-overdue">{t('previewFailed')}</p>
-            ) : bills.length === 0 ? (
-              <p className="text-small text-ink-2">{t('previewNone')}</p>
-            ) : (
-              <ul className="flex flex-col rounded-md border border-rule">
-                {bills.map((bill) => (
-                  <li key={bill.periodStart} data-testid="preview-bill" className="flex items-start justify-between gap-3 border-b border-rule p-3 last:border-b-0">
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-body font-medium text-ink">
-                        {t('invoicePeriod', { start: formatDate(bill.periodStart, locale), end: formatDate(bill.periodEnd, locale) })}
-                      </span>
-                      <span className="text-small text-ink-muted">{t(bill.issuesNow ? 'previewIssuesNow' : 'previewLater', { date: formatDate(bill.dueDate, locale) })}</span>
-                    </span>
-                    <MoneyDisplay amount={bill.rentVnd} className="text-body font-medium text-ink" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
-        {listed.length === 0 ? null : (
-          <div role="alert" data-testid="activate-refusals">
-            <ul className="flex flex-col gap-2">
+    <FormSheet
+      surface="dialog"
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) onDismiss();
+      }}
+      finalFocus={finalFocus}
+      testId="activate-dialog"
+      title={t('activateTitle')}
+      description={t('activateBody')}
+      labels={{ cancel: t('cancel'), submit: t('activate'), pending: t('activating') }}
+      submitTestId="confirm-activate"
+      pending={pending}
+      submitDisabled={blocked.length > 0 || bills === undefined}
+      onSubmit={activate}
+      error={
+        listed.length === 0 ? null : (
+          <div data-testid="activate-refusals" className="flex flex-col gap-2">
             {listed.map((reason) => (
-              <li key={reason} className="flex items-start gap-2 text-body text-overdue">
-                <StatusShape status="overdue" className="mt-1 size-4" />
-                <span>{t('refusal', { reason })}</span>
-              </li>
+              <FormAlert key={reason} message={t('refusal', { reason })} />
             ))}
-            </ul>
           </div>
-        )}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <AlertDialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</AlertDialogClose>
-          <Button type="button" data-testid="confirm-activate" disabled={pending || blocked.length > 0 || bills === undefined} onClick={activate}>
-            {pending ? t('activating') : t('activate')}
-          </Button>
-        </div>
-      </AlertDialogContent>
-    </AlertDialog>
+        )
+      }
+    >
+      <PaidThroughField
+        refusal={dateRefused ? 'paid_through_invalid' : null}
+        onTextChange={(text) => {
+          setPaidThrough(text);
+          setRefusals((current) => current.filter((reason) => reason !== 'paid_through_invalid'));
+        }}
+      />
+      {blocked.length > 0 ? null : (
+        <section aria-live="polite" data-testid="activation-preview" className="flex flex-col gap-2">
+          <h3 className="text-body font-medium text-ink">{t('previewTitle')}</h3>
+          {!readable ? (
+            <p className="text-small text-ink-muted">{t('previewNeedsDate')}</p>
+          ) : bills === undefined ? (
+            <p className="text-small text-ink-muted">{t('previewLoading')}</p>
+          ) : bills === null ? (
+            <p className="text-small text-overdue">{t('previewFailed')}</p>
+          ) : bills.length === 0 ? (
+            <p className="text-small text-ink-2">{t('previewNone')}</p>
+          ) : (
+            <ul className="flex flex-col rounded-md border border-rule">
+              {bills.map((bill) => (
+                <li key={bill.periodStart} data-testid="preview-bill" className="flex items-start justify-between gap-3 border-b border-rule p-3 last:border-b-0">
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-body font-medium text-ink">
+                      {t('invoicePeriod', { start: formatDate(bill.periodStart, locale), end: formatDate(bill.periodEnd, locale) })}
+                    </span>
+                    <span className="text-small text-ink-muted">{t(bill.issuesNow ? 'previewIssuesNow' : 'previewLater', { date: formatDate(bill.dueDate, locale) })}</span>
+                  </span>
+                  <MoneyDisplay amount={bill.rentVnd} className="text-body font-medium text-ink" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+    </FormSheet>
   );
 }

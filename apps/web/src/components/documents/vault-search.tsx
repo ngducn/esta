@@ -3,7 +3,8 @@
 import { Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { searchDocuments, type VaultSearch } from '@/server/documents/search';
+import { useAction } from '@/components/use-action';
+import { searchDocuments } from '@/server/documents/search';
 import type { SearchState } from '@/server/documents/vault';
 
 const DEBOUNCE_MS = 250;
@@ -34,22 +35,24 @@ export function VaultSearch({
   const [state, setState] = useState<SearchState>(initial);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const latest = useRef(0);
+  const { run } = useAction();
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  function run(query: string) {
+  function search(query: string) {
     const ticket = ++latest.current;
     if (query === '') {
       setState({ step: 'idle' });
       return;
     }
     setState({ step: 'searching', query });
-    void searchDocuments(query, propertyId)
-      .catch((): VaultSearch => ({ ok: false }))
-      .then((result) => {
+    run(
+      () => searchDocuments(query, propertyId),
+      (result) => {
         if (ticket !== latest.current) return;
         setState(result.ok ? { step: 'done', query, tiles: result.tiles, capped: result.capped } : { step: 'failed', query });
-      });
+      },
+    );
   }
 
   function update(next: string) {
@@ -58,7 +61,7 @@ export function VaultSearch({
     timer.current = setTimeout(() => {
       const query = next.trim();
       writeQuery(query);
-      run(query);
+      search(query);
     }, DEBOUNCE_MS);
   }
 
@@ -68,7 +71,7 @@ export function VaultSearch({
         event.preventDefault();
         clearTimeout(timer.current);
         writeQuery(value.trim());
-        run(value.trim());
+        search(value.trim());
       }}>
         <label className="flex min-h-touch items-center gap-2.5 rounded-md border border-field bg-surface px-3.5 shadow-card focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
           <Search className="size-5 shrink-0 text-ink-muted" aria-hidden="true" />

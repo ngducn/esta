@@ -1,7 +1,8 @@
 import type { Unit, UtilityAccount } from '@esta/core/schemas/units';
 import { Droplet, Plug, Wifi, Zap, type LucideIcon } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { AccountActions } from './account-actions';
+import { deleteAccount, restoreAccount } from '@/app/(app)/properties/[id]/rental/actions';
+import { ItemActions } from '@/components/item-actions';
 
 const kindIcons = { electricity: Zap, water: Droplet, internet: Wifi, other: Plug } as const satisfies Record<UtilityAccount['kind'], LucideIcon>;
 
@@ -57,9 +58,11 @@ export async function UtilityAccountList({ propertyId, accounts, units, canEdit 
                     </div>
                   </div>
                   {canEdit ? (
-                    <AccountActions
-                      propertyId={propertyId}
-                      accountId={account.id}
+                    <ItemActions
+                      compact
+                      editHref={`/properties/${propertyId}/rental/accounts/${account.id}`}
+                      remove={deleteAccount.bind(null, propertyId, account.id)}
+                      restore={restoreAccount}
                       labels={{
                         edit: t('edit'),
                         editLabel: t('editLabel', { label: name }),

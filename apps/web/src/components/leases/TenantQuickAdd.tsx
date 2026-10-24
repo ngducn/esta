@@ -3,11 +3,14 @@
 import { normalizePhone } from '@esta/core/phone';
 import { UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { createTenant } from '@/server/actions/leases';
 import type { Tenant } from '@/server/leases/load';
+import { FormActions } from '@/components/form-actions';
+import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
 import { Button } from '@/components/ui/button';
+import { useAction } from '@/components/use-action';
 import { FromContractMark } from './from-contract-mark';
 
 type Invalid = 'name' | 'phone' | null;
@@ -31,7 +34,7 @@ export function TenantQuickAdd({
   const [phone, setPhone] = useState(initial?.phone ?? '');
   const [invalid, setInvalid] = useState<Invalid>(null);
   const [failed, setFailed] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
 
   if (!open) {
     return (
@@ -47,18 +50,20 @@ export function TenantQuickAdd({
     const wrong: Invalid = name.trim() === '' ? 'name' : normalizePhone(phone).ok ? null : 'phone';
     setInvalid(wrong);
     if (wrong !== null) return;
-    startTransition(async () => {
-      const result = await createTenant({ full_name: name, phone }).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      if (result.ok) {
-        onAdded(result.tenant);
-        setOpen(false);
-        setName('');
-        setPhone('');
-        return;
-      }
-      if (result.reason === 'failed') setFailed(true);
-      else setInvalid(result.reason);
-    });
+    run(
+      () => createTenant({ full_name: name, phone }),
+      (result) => {
+        if (result.ok) {
+          onAdded(result.tenant);
+          setOpen(false);
+          setName('');
+          setPhone('');
+          return;
+        }
+        if (result.reason === 'failed') setFailed(true);
+        else setInvalid(result.reason);
+      },
+    );
   };
 
   return (
@@ -78,19 +83,15 @@ export function TenantQuickAdd({
         />
       </div>
       {initial !== null && name === initial.fullName && phone === (initial.phone ?? '') ? <FromContractMark label={mark} /> : null}
-      {failed ? (
-        <p role="alert" className="text-small text-overdue">
-          {t('tenantFailed')}
-        </p>
-      ) : null}
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <FormAlert message={failed ? t('tenantFailed') : null} />
+      <FormActions>
         <Button type="button" variant="quiet" onClick={() => setOpen(false)}>
           {t('cancel')}
         </Button>
         <Button type="button" variant="outline" disabled={pending} data-testid="save-tenant" onClick={save}>
           {pending ? t('savingTenant') : t('saveTenant')}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

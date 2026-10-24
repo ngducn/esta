@@ -6,11 +6,12 @@ import type { Result } from '@esta/core/result';
 import type { StatementCommitted } from '@esta/ops';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAction } from '@/components/use-action';
 import { cn } from '@/lib/utils';
 import { commitStatement, linkStatementLine } from '@/server/actions/statements';
 import { LINE_STATUSES, type BillLabel, type LineStatus, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
@@ -124,7 +125,7 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
   const [picks, setPicks] = useState<Readonly<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
-  const [saving, startSaving] = useTransition();
+  const { pending: saving, run } = useAction();
 
   const suggestions = lines.filter((line) => line.status === 'suggested');
   const ticked = suggestions.filter((line) => chosen.has(line.id)).length;
@@ -142,11 +143,10 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
       return next;
     });
 
-  const run = (call: () => Promise<Result<StatementCommitted, 'failed'>>, said: (done: StatementCommitted) => string) => {
+  const save = (call: () => Promise<Result<StatementCommitted, 'failed'>>, said: (done: StatementCommitted) => string) => {
     setError(null);
     setResult(null);
-    startSaving(async () => {
-      const outcome = await call().catch(() => ({ ok: false, reason: 'failed' }) as const);
+    run(call, (outcome) => {
       if (!outcome.ok) {
         setError(t('errorFailed'));
         return;
@@ -158,13 +158,13 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
     });
   };
   const commit = () =>
-    run(
+    save(
       () => commitStatement({ import_id: importId, confirmed_row_ids: [...chosen] }),
       ({ posted, skipped }) => [posted > 0 || skipped === 0 ? t('posted', { count: posted }) : null, skipped > 0 ? t('skipped', { count: skipped }) : null].filter(Boolean).join(' '),
     );
   const pickOf = (line: StatementLine) => picks[line.id] ?? preselected(line);
   const link = (line: StatementLine) =>
-    run(() => linkStatementLine({ import_id: importId, row_id: line.id, payment_id: pickOf(line) ?? '' }), () => t('linked', { line: line.index }));
+    save(() => linkStatementLine({ import_id: importId, row_id: line.id, payment_id: pickOf(line) ?? '' }), () => t('linked', { line: line.index }));
 
   const pick = (value: Filter, label: string) => (
     <button

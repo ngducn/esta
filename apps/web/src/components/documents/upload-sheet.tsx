@@ -9,9 +9,12 @@ import { DateInput } from '@/components/date-input';
 import { FieldMessage } from '@/components/field-message';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
+import { FormActions } from '@/components/form-actions';
+import { FormAlert } from '@/components/form-alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { ACCEPT } from '@/lib/upload/prepare';
 import { useObjectUrl } from '@/lib/use-object-url';
 import { registerDocument } from '@/server/documents/actions';
@@ -27,16 +30,17 @@ export default function UploadSheet({
   initialFile,
   leaseId = null,
   initialCategory = 'certificate',
-  onClose,
+  open,
+  onOpenChange,
+  finalFocus,
   onSaved,
-}: {
+}: PopupProps & {
   propertyId: string;
   nickname: string;
   initialFile: File | null;
   /** A lease's contract or handover papers: the document is filed under that lease (P3-08). */
   leaseId?: string | null;
   initialCategory?: DocumentCategory;
-  onClose: () => void;
   onSaved: (saved: { documentId: string; title: string }) => void;
 }) {
   const t = useTranslations('documents');
@@ -96,7 +100,7 @@ export default function UploadSheet({
       return;
     }
     setLeaving(null);
-    if (target === 'close') onClose();
+    if (target === 'close') onOpenChange(false);
     else setCapturing(false);
   };
 
@@ -122,8 +126,8 @@ export default function UploadSheet({
   const busy = upload.step === 'preparing' || upload.step === 'signing' || upload.step === 'uploading';
   const megabytes = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   return (
-    <Sheet open onOpenChange={(open) => (open || busy ? undefined : leave('close'))}>
-      <SheetContent ref={sheet} data-testid="upload-sheet">
+    <Sheet open={open} onOpenChange={(next) => (next || busy ? undefined : leave('close'))}>
+      <SheetContent ref={sheet} data-testid="upload-sheet" finalFocus={finalFocus}>
         <div className="flex flex-col gap-1">
           <SheetTitle>{capturing ? t('captureTitle') : t('sheetTitle')}</SheetTitle>
           <SheetDescription>{capturing ? t('captureBody') : t('sheetBody')}</SheetDescription>
@@ -226,23 +230,19 @@ export default function UploadSheet({
           />
           <DateInput label={t('expiresField')} onValueChange={setExpiresOn} />
           {upload.step === 'uploading' ? <UploadProgress loaded={upload.loaded} total={upload.total} /> : null}
-          {upload.step === 'failed' ? (
-            <p role="alert" data-testid="upload-error" className="text-body font-medium text-overdue">
-              {t('networkError')}
-            </p>
-          ) : null}
+          <FormAlert message={upload.step === 'failed' ? t('networkError') : null} data-testid="upload-error" />
           {leaving !== null && !capturing ? (
             <LeaveConfirm count={unsaved} onKeep={() => setLeaving(null)} onDiscard={() => leave(leaving, true)} />
           ) : upload.step === 'duplicate' ? (
             <DuplicateDialog title={upload.duplicates.map((duplicate) => duplicate.title).join(', ')} onCancel={dismiss} onContinue={proceed} />
           ) : (
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <FormActions>
               <SheetClose render={<Button type="button" variant="outline" disabled={busy} />}>{t('cancel')}</SheetClose>
               <Button type="submit" data-testid="save-document" disabled={busy}>
                 {upload.step === 'failed' ? <RotateCw aria-hidden="true" /> : null}
                 {upload.step === 'failed' ? t('retry') : t('save')}
               </Button>
-            </div>
+            </FormActions>
           )}
         </form>
       </SheetContent>

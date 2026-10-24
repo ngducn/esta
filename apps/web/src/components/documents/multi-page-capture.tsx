@@ -4,6 +4,7 @@ import { MAX_DOCUMENT_BYTES } from '@esta/core/documents';
 import { Camera, ChevronLeft, Images } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { FormActions } from '@/components/form-actions';
 import { Button } from '@/components/ui/button';
 import { buildPdfFromImages } from '@/lib/capture/build-pdf';
 import { downscaleForPdf } from '@/lib/capture/downscale';
@@ -44,14 +45,14 @@ export function LeaveConfirm({ count, onKeep, onDiscard }: { count: number; onKe
       <p id={`${id}-body`} className="text-body text-ink-2">
         {t('leaveBody')}
       </p>
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <FormActions>
         <Button ref={keep} type="button" variant="outline" data-testid="keep-pages" onClick={onKeep}>
           {t('keepPages')}
         </Button>
         <Button type="button" variant="primary" data-testid="discard-pages" onClick={onDiscard}>
           {t('discardPages', { count })}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

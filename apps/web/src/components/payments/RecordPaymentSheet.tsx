@@ -11,14 +11,16 @@ import { vndInputText } from '@esta/core/properties/form';
 import { Banknote, Landmark, PiggyBank } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState } from 'react';
 import { DateInput } from '@/components/date-input';
 import { MoneyInput } from '@/components/money/money-input';
 import { SheetFooter } from '@/components/sheet-footer';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
 import { useOnline } from '@/lib/use-online';
 import { cn } from '@/lib/utils';
 import { recordPayment, undoPayment, type PaymentMethod, type RecordPaymentRefusal } from '@/server/actions/payments';
@@ -64,7 +66,7 @@ const REFUSAL_MESSAGES = {
  * sheet keeps the open invoices it opened with and sends what they owed, so `record_payment` can refuse it once someone
  * else has recorded the row.
  */
-export default function RecordPaymentSheet({ open, onOpenChange, target }: { open: boolean; onOpenChange: (open: boolean) => void; target: PaymentTarget }) {
+export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, target }: PopupProps & { target: PaymentTarget }) {
   const t = useTranslations('payments');
   const locale = useLocale();
   const router = useRouter();
@@ -80,7 +82,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
   const [chosen, setChosen] = useState<readonly string[] | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const offline = !useOnline();
 
   const parsed = parseVndInput(amount);
@@ -110,38 +112,38 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
     const refusal = refuse();
     setError(refusal);
     if (refusal !== null || method === null) return;
-    startTransition(async () => {
-      const owedVnd = owedFor(openInvoices, target.invoiceId, chosen);
-      const bankAccountId = method === 'bank_transfer' ? (target.account?.id ?? null) : null;
-      const result = await recordPayment({ invoiceId: target.invoiceId, owedVnd, amount, method, receivedOn: date, idempotencyKey, invoiceIds: chosen, bankAccountId }).catch(
-        () => ({ ok: false, reason: 'failed' }) as const,
-      );
-      if (!result.ok) {
-        if (isBoardChanged(result.reason)) {
-          onOpenChange(false);
-          router.refresh();
-          showNotice(t(`errors.${result.reason}`, { place: target.shortPlace }));
-        } else {
-          setError(t(`errors.${REFUSAL_MESSAGES[result.reason]}`));
-        }
-        return;
-      }
-      onOpenChange(false);
-      router.refresh();
-      showUndo(t('saved', { amount: money(result.payment.amountVnd), place: target.shortPlace }), () => {
-        undoPayment(result.payment.id)
-          .then((undone) => {
+    const owedVnd = owedFor(openInvoices, target.invoiceId, chosen);
+    const bankAccountId = method === 'bank_transfer' ? (target.account?.id ?? null) : null;
+    run(
+      () => recordPayment({ invoiceId: target.invoiceId, owedVnd, amount, method, receivedOn: date, idempotencyKey, invoiceIds: chosen, bankAccountId }),
+      (result) => {
+        if (!result.ok) {
+          if (isBoardChanged(result.reason)) {
+            onOpenChange(false);
             router.refresh();
-            showNotice(t(undone.ok ? 'undone' : 'undoFailed', { place: target.shortPlace }));
-          })
-          .catch(() => showNotice(t('undoFailed')));
-      });
-    });
+            showNotice(t(`errors.${result.reason}`, { place: target.shortPlace }));
+          } else {
+            setError(t(`errors.${REFUSAL_MESSAGES[result.reason]}`));
+          }
+          return;
+        }
+        onOpenChange(false);
+        router.refresh();
+        showUndo(t('saved', { amount: money(result.payment.amountVnd), place: target.shortPlace }), () => {
+          undoPayment(result.payment.id)
+            .then((undone) => {
+              router.refresh();
+              showNotice(t(undone.ok ? 'undone' : 'undoFailed', { place: target.shortPlace }));
+            })
+            .catch(() => showNotice(t('undoFailed')));
+        });
+      },
+    );
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent data-testid="record-payment-sheet" initialFocus={title} className="gap-0 p-0 pb-0">
+      <SheetContent data-testid="record-payment-sheet" initialFocus={title} finalFocus={finalFocus} className="gap-0 p-0 pb-0">
         <div className="flex flex-col gap-4 p-5 sm:p-6">
           <div className="flex flex-col gap-1">
             <SheetTitle ref={title} tabIndex={-1} className="outline-none">

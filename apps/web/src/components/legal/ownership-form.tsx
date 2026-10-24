@@ -7,13 +7,15 @@ import { usedNewParties } from '@esta/core/schemas/party';
 import { X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useId, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { saveOwnershipShares } from '@/app/(app)/properties/[id]/legal/actions';
 import { DateInput } from '@/components/date-input';
+import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
 import { StatusShape } from '@/components/status-mark';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAction } from '@/components/use-action';
 import { cn } from '@/lib/utils';
 import type { PartyOption } from '@/server/properties/legal';
 import { PartyAdder } from './party-picker';
@@ -129,7 +131,7 @@ export function OwnershipForm({
   );
   const [showErrors, setShowErrors] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const router = useRouter();
 
   const byId = new Map(parties.map((party) => [party.id, party]));
@@ -158,15 +160,16 @@ export function OwnershipForm({
     }
     setShowErrors(false);
     setFailed(false);
-    startTransition(async () => {
-      const result = await saveOwnershipShares(propertyId, values, usedNewParties(newParties, values.map((value) => value.party_id))).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      if (result.ok) {
-        onSaved?.();
-        if (savedHref !== undefined) router.push(savedHref);
-      }
-      else if (result.reason === 'invalid') setShowErrors(true);
-      else setFailed(true);
-    });
+    run(
+      () => saveOwnershipShares(propertyId, values, usedNewParties(newParties, values.map((value) => value.party_id))),
+      (result) => {
+        if (result.ok) {
+          onSaved?.();
+          if (savedHref !== undefined) router.push(savedHref);
+        } else if (result.reason === 'invalid') setShowErrors(true);
+        else setFailed(true);
+      },
+    );
   };
 
   const running =
@@ -217,12 +220,7 @@ export function OwnershipForm({
           <span className="figures font-medium">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
           {running === null ? null : <span className="figures text-ink-2">{running}</span>}
         </p>
-        {showErrors || failed ? (
-          <p role="alert" data-testid="ownership-error" className="flex items-start gap-2 text-body text-overdue">
-            <StatusShape status="overdue" className="mt-1 size-4" />
-            <span>{failed ? t('failed') : t('invalid')}</span>
-          </p>
-        ) : null}
+        <FormAlert message={failed ? t('failed') : showErrors ? t('invalid') : null} data-testid="ownership-error" />
         <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
           {cancel}
           <Button type="submit" disabled={pending} data-testid="save-ownership">

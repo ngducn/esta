@@ -4,13 +4,14 @@ import { formatDate } from '@esta/core/format';
 import type { IsoDate } from '@esta/core/date';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { terminateLease, type LeaseChangeRefusal } from '@/server/actions/leases';
 import { DateInput } from '@/components/date-input';
 import { TextField } from '@/components/form-parts';
-import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogClose, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/dialog';
+import { FormSheet } from '@/components/form-sheet';
 import { useNoticeToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { IntentLink } from '@/components/shell/intent-link';
 import { ChangeRefusal } from './change-refusal';
 import type { IssuedBill } from './LeaseActions';
@@ -33,12 +34,13 @@ export default function TerminateLeaseDialog({
   leaseId,
   unitLabel,
   issuedBills,
-  onClose,
-}: {
+  open,
+  onOpenChange,
+  finalFocus,
+}: PopupProps & {
   leaseId: string;
   unitLabel: string;
   issuedBills: readonly IssuedBill[];
-  onClose: () => void;
 }) {
   const t = useTranslations('leases');
   const locale = useLocale();
@@ -47,64 +49,67 @@ export default function TerminateLeaseDialog({
   const [date, setDate] = useState<IsoDate | null>(null);
   const [reason, setReason] = useState('');
   const [refusal, setRefusal] = useState<LeaseChangeRefusal | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
 
   const blocking =
     refusal === 'before_issued' && date !== null ? issuedBills.toSorted((a, b) => a.periodStart.localeCompare(b.periodStart)).find((bill) => bill.periodStart > date) : undefined;
 
-  const confirm = () =>
-    startTransition(async () => {
-      if (date === null) return;
-      if (reason.trim() === '') {
-        setRefusal('reason_required');
-        return;
-      }
-      const result = await terminateLease(leaseId, { terminatedOn: date, reason }).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      if (!result.ok) {
-        setRefusal(result.reason);
-        return;
-      }
-      const ended = t('terminated', { unit: unitLabel, date: formatDate(date, locale) });
-      notice(result.value.unbilled === 0 ? ended : `${ended} ${t('terminatedUnbilled', { count: result.value.unbilled })}`);
-      router.refresh();
-      onClose();
-    });
+  const confirm = () => {
+    if (date === null) return;
+    if (reason.trim() === '') {
+      setRefusal('reason_required');
+      return;
+    }
+    run(
+      () => terminateLease(leaseId, { terminatedOn: date, reason }),
+      (result) => {
+        if (!result.ok) {
+          setRefusal(result.reason);
+          return;
+        }
+        const ended = t('terminated', { unit: unitLabel, date: formatDate(date, locale) });
+        notice(result.value.unbilled === 0 ? ended : `${ended} ${t('terminatedUnbilled', { count: result.value.unbilled })}`);
+        router.refresh();
+        onOpenChange(false);
+      },
+    );
+  };
 
   return (
-    <AlertDialog open onOpenChange={(open) => (open ? null : onClose())}>
-      <AlertDialogContent data-testid="terminate-dialog" className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
-        <div className="flex flex-col gap-2">
-          <AlertDialogTitle data-testid="terminate-question">
-            {date === null ? t('terminateTitle') : t('terminateConfirm', { unit: unitLabel, date: formatDate(date, locale) })}
-          </AlertDialogTitle>
-          <AlertDialogDescription>{t('terminateBody')}</AlertDialogDescription>
-        </div>
-        <DateInput
-          label={t('terminateDateField')}
-          onValueChange={(value) => {
-            setDate(value);
-            setRefusal(null);
-          }}
-        />
-        <TextField
-          label={t('terminateReasonField')}
-          value={reason}
-          onChange={(text) => {
-            setReason(text);
-            if (refusal === 'reason_required') setRefusal(null);
-          }}
-          error={null}
-          testId="terminate-reason"
-          maxLength={1000}
-        />
-        {blocking === undefined ? <ChangeRefusal reason={refusal} /> : <BlockingBill bill={blocking} />}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <AlertDialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</AlertDialogClose>
-          <Button type="button" data-testid="terminate-confirm" disabled={pending || date === null} onClick={confirm}>
-            {pending ? t('working') : t('actionTerminate')}
-          </Button>
-        </div>
-      </AlertDialogContent>
-    </AlertDialog>
+    <FormSheet
+      surface="dialog"
+      open={open}
+      onOpenChange={onOpenChange}
+      finalFocus={finalFocus}
+      testId="terminate-dialog"
+      title={date === null ? t('terminateTitle') : t('terminateConfirm', { unit: unitLabel, date: formatDate(date, locale) })}
+      titleTestId="terminate-question"
+      description={t('terminateBody')}
+      labels={{ cancel: t('cancel'), submit: t('actionTerminate'), pending: t('working') }}
+      submitTestId="terminate-confirm"
+      pending={pending}
+      submitDisabled={date === null}
+      onSubmit={confirm}
+      error={blocking === undefined ? <ChangeRefusal reason={refusal} /> : <BlockingBill bill={blocking} />}
+    >
+      <DateInput
+        label={t('terminateDateField')}
+        onValueChange={(value) => {
+          setDate(value);
+          setRefusal(null);
+        }}
+      />
+      <TextField
+        label={t('terminateReasonField')}
+        value={reason}
+        onChange={(text) => {
+          setReason(text);
+          if (refusal === 'reason_required') setRefusal(null);
+        }}
+        error={null}
+        testId="terminate-reason"
+        maxLength={1000}
+      />
+    </FormSheet>
   );
 }

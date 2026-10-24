@@ -9,14 +9,16 @@ import { parseVndInput } from '@esta/core/parse/vnd-input';
 import { vndInputText } from '@esta/core/properties/form';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState } from 'react';
 import { DateInput } from '@/components/date-input';
+import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
 import { MoneyInput } from '@/components/money/money-input';
 import { StatusShape } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
 import { cn } from '@/lib/utils';
 import { recordDeposit, type RecordDepositRefusal } from '@/server/actions/deposits';
 import type { DepositOffer, DepositRowView } from './DepositLedger';
@@ -79,7 +81,7 @@ export default function DepositSheet({
   const [date, setDate] = useState(() => formatDate(offer.today, locale));
   const [note, setNote] = useState('');
   const [error, setError] = useState<SheetError | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const money = (value: Vnd) => formatVnd(value, locale);
 
   const parsedAmount = parseVndInput(amount);
@@ -104,19 +106,19 @@ export default function DepositSheet({
     const refusal = refuse();
     setError(refusal);
     if (refusal !== null || overdraw !== null || !parsedAmount.ok) return;
-    startTransition(async () => {
-      const result = await recordDeposit({ leaseId: offer.leaseId, kind, invoiceId, amount, onDate: date, note, idempotencyKey }).catch(
-        () => ({ ok: false, reason: 'failed' }) as const,
-      );
-      if (!result.ok) {
-        const shown = SERVER_ERRORS[result.reason];
-        if (shown === 'changed') router.refresh();
-        setError(shown);
-        return;
-      }
-      notice(t('saved', { kind, amount: money(parsedAmount.value) }));
-      onOpenChange(false);
-    });
+    run(
+      () => recordDeposit({ leaseId: offer.leaseId, kind, invoiceId, amount, onDate: date, note, idempotencyKey }),
+      (result) => {
+        if (!result.ok) {
+          const shown = SERVER_ERRORS[result.reason];
+          if (shown === 'changed') router.refresh();
+          setError(shown);
+          return;
+        }
+        notice(t('saved', { kind, amount: money(parsedAmount.value) }));
+        onOpenChange(false);
+      },
+    );
   };
 
   return (
@@ -194,12 +196,7 @@ export default function DepositSheet({
         </div>
 
         <div className="sticky bottom-0 mt-auto flex flex-col gap-3 border-t border-rule bg-surface px-5 pt-4 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
-          {error === null || error === 'noteRequired' ? null : (
-            <p role="alert" data-testid="deposit-error" data-reason={error} className="flex items-start gap-2 text-body text-overdue">
-              <StatusShape status="overdue" className="mt-1 size-4" />
-              <span className="min-w-0 wrap-anywhere">{t(`errors.${error}`)}</span>
-            </p>
-          )}
+          <FormAlert message={error === null || error === 'noteRequired' ? null : t(`errors.${error}`)} data-testid="deposit-error" data-reason={error} />
           <div className="flex gap-2">
             <SheetClose className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>{t('cancel')}</SheetClose>
             <button
