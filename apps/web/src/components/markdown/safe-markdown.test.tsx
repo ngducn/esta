@@ -1,3 +1,4 @@
+import { visibleText } from '@esta/core/guard';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SafeMarkdown } from './safe-markdown';
@@ -45,5 +46,59 @@ describe('SafeMarkdown', () => {
     const container = renderMarkdown('**Cần làm**\n\n- Phòng 5\n- Phòng 7');
     expect(container.querySelector('strong')?.textContent).toBe('Cần làm');
     expect([...container.querySelectorAll('li')].map((item) => item.textContent)).toEqual(['Phòng 5', 'Phòng 7']);
+  });
+});
+
+const collapse = (text: string) => text.replace(/\s+/gu, ' ').trim();
+
+describe('the number guard reads what SafeMarkdown shows', () => {
+  it.each([
+    '**25** triệu',
+    '- Phòng 5\n- 500.000 ₫',
+    '## Phòng 5\n\n12 ngày',
+    '25 *triệu*',
+    '`25` triệu',
+    '5\\.000\\.000 ₫',
+    '25\ntriệu',
+    'Dòng một  \nDòng hai 12 ngày',
+    '5<!-- -->000.000 ₫',
+    'Trước <b onclick="x()">3 tr</b> sau',
+    'Quá hạn <b>&#x202E;</b> ngày',
+    '&#53;&#48; triệu &nbsp;25 5&shy;000 ₫ &rlm;',
+    '[Phòng 5](esta://property/3f1c2a9e-5b7d-4c1a-9e2f-7a6b5c4d3e2f) quá hạn',
+    '[nguồn 2026](http://example.com/tin) <https://x.com/25>',
+    '# Tiêu đề 7/10\n\nĐoạn 1,2 tỷ\n\n- mục 3\n- mục 4\n\n> trích 5%',
+    '1. Phòng 5\n2. Phòng 7',
+    '```\n15.000.000 ₫\n```',
+    '    code 5\n\n~~~\n25\n~~~',
+    '[ref 9]\n\n[ref 9]: https://example.com/9',
+    '<img src="x" alt="5 tỷ"> <br/>25 <table><tr><td>25</td></tr></table>',
+    '<div>\n- 25\n</div>\n\n<details><summary>5</summary>25 tỷ</details>',
+    '<!--\n25\n-->\n\nx <!-- 25 --> y <?php 25 ?> <![CDATA[25]]>',
+    '- a\n  - 5\n  - 6\n\n> 1. a',
+    '***25*** _25_ triệu __25__triệu 2*5*0 \\*25',
+    'Heading\n---\n25\n\n# 25 #\n\n#25',
+    'a\u0000b 25',
+    '25 \u200Btriệu 25\u00A0triệu a\u200Ef\u200E12',
+  ])('reads %j as the rendered text', (markdown) => {
+    expect(collapse(visibleText(markdown))).toBe(collapse(renderMarkdown(markdown).textContent ?? ''));
+  });
+
+  it('reads the numbers of an ordered list that does not start at 1', () => {
+    const list = renderMarkdown('13. Phòng 5\n14. Phòng 7').querySelector('ol');
+    expect(list?.getAttribute('start')).toBe('13');
+    expect(visibleText('13. Phòng 5\n14. Phòng 7')).toBe('13.\nPhòng 5\n14.\nPhòng 7');
+  });
+
+  it.each([
+    ['Trước ![5 tỷ](https://example.com/a.png) sau', '5 tỷ'],
+    ['Xem [nguồn](https://x "12 triệu")', '12 triệu'],
+    ['![a](https://x/a.png "3 tr")', '3 tr'],
+    ["[a]\n\n[a]: <https://x> '5 tỷ'", '5 tỷ'],
+    ['```js 25 tỷ\nx\n```', 'js 25 tỷ'],
+  ])('reads %j as everything rendered plus %j, which another renderer may show', (markdown, hidden) => {
+    const read = collapse(visibleText(markdown));
+    for (const word of collapse(renderMarkdown(markdown).textContent ?? '').split(' ')) expect(read).toContain(word);
+    expect(read).toContain(hidden);
   });
 });
