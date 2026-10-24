@@ -1021,7 +1021,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] The section has a `Chạy kiểm tra` button, the newest ping with its status (`Đang chờ`, `Đang chạy`, `Xong` or `Lỗi`) and its reply through `SafeMarkdown` or its error, and `Lần chạy gần đây`, the last 10 runs newest first (by `started_at`, then `created_at`) in the P0-12 table with time as `07/10/2026 09:00`, auth mode, agent mode, model, turns, cost and tool calls. `runConnectionCheck()` in `actions.ts` inserts the `ping` through the session client with `requested_by` set to the user and `run_after` from the Clock. `connection-check.tsx` refreshes the route every 2 s while the newest ping is queued or running.
 - [ ] Extend the seed generator in `supabase/seed/generator/agent.ts` with one `done` ping job and its run in every household, keyed `seed:agent-job:ping-<household>` and `seed:agent-run:ping-<household>`, with timestamps from the frozen clock (FND-7). It seeds no heartbeat, so a fresh reset shows the `never` line until a worker starts.
 - [ ] Rewrite AGENT.md §2.2 with the S1 corrections (`tools` per kind instead of `allowedTools`, the `PreToolUse` hook, `is_error`, `CLAUDE_CONFIG_DIR`, `alwaysLoad`). Change §2.1 to up to 3 retries after 1, 5 and 25 minutes. Add the household-name placeholder and `ESTA_REPLAY_DIR` to §8, `agent_jobs.result`, `agent_runs.household_id` and auth mode `none` to §10, and a `ping` case to §7. Add `ESTA_REPLAY_DIR` to SPEC §8 and `.env.example`.
-- [ ] Run `/impeccable harden` on `/assistant` for the offline and `never` lines, a long reply, a failed ping, an empty run table and 130% text scale. The `Trợ lý` shape and its tabs stay with P5-03.
+- [ ] Run `/impeccable harden` on `/assistant` for the offline and `never` lines, a long reply, a failed ping, an empty run table and 130% text scale. The `Trợ lý` shape and its tabs stay with P5-03c.
 
 **You see.**
 
@@ -1970,7 +1970,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] Build `save_extraction` in `save-extraction.ts`. It updates the extraction row named in the job payload to `needs_review` with `result`, `field_confidence`, `model` and `job_id`, and creates one `agent_items` row (kind `alert`, severity `info`, audience `all`, `dedupe_key` `extract_review:{extraction_id}`) titled `Đã đọc xong <title>. Mời bạn kiểm tra lại.` in the household locale. A re-run after a crash rewrites the same row and hits the same dedupe key. After the last retry fails, the worker sets the extraction `failed` and creates an `info` item for admins with a Retry action (AGENT.md §9).
 - [ ] Generate the two utility bill fixtures with `Demo` parties and truth files. Record every certificate and bill fixture with `pnpm agent:record --kind extract_document` (live, allowed) and commit the recordings for Ryan to review as code. Add two crafted recordings, `repair-invalid-area` (the first answer fails zod) and `deny-outside-read` (asks to `Read` `/etc/hosts`), and a blank-page fixture whose recording fails validation three times.
 - [ ] Add `useDocumentStatus(documentId)`, a Realtime subscription to `document_extractions` filtered by document, and show the status on `DocumentTile` as a pill, `Đang đọc` for `queued` and `running`, `Chờ xem lại` for `needs_review`, `Không đọc được` for `failed`, nothing for `none` or `accepted`. The pill links nowhere until P2-07 adds the review page. When the worker heartbeat is older than 5 minutes the tile reads `Trợ lý ngoại tuyến` in place of `Đang đọc`.
-- [ ] Add `listNewItems(householdId)` in `items.ts` on the session client and `NewItems` on the Trợ lý page under the P0-15 status line, a list of `agent_items` in status `new` with title and time, `Chưa có việc mới` when empty. P5-03 generalizes it into `Hộp thư`.
+- [ ] Add `listNewItems(householdId)` in `items.ts` on the session client and `NewItems` on the Trợ lý page under the P0-15 status line, a list of `agent_items` in status `new` with title and time, `Chưa có việc mới` when empty. P5-03c generalizes it into `Hộp thư`.
 - [ ] Extend `e2e/helpers/agent-worker.ts` use in `e2e/documents-extract.spec.ts`, which starts the replay worker through `startAgentWorker` for its tests and stops it by pid.
 
 **You see.**
@@ -4115,68 +4115,100 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
 
-## Guard numbers in agent output and run portfolio_watch (P5-03)
+## Fill numbers in assistant notes from tool data, never from the model (P5-03a)
 
-**Depends on.** P5-02.
+**Depends on.** P5-02. Split from P5-03 for the 800-line rule (2026-10-24). It absorbs P5-11 (#61, closed). Rebuilt on Ryan's ruling of 2026-10-24 ("Placeholders"), which replaced the free-text number parser of #309 (closed).
 
 **Files.**
 
-- [ ] Create `packages/core/src/guard/extractNumbers.ts`, `packages/core/src/guard/normalize.ts`, `packages/core/src/guard/checkNumbers.ts`, `packages/core/src/guard/guard.test.ts` and `packages/core/src/guard/guard.bench.ts`.
-- [ ] Create `packages/core/src/agent-schedule/planDailyJobs.ts` and its test.
-- [ ] Create `apps/agent/src/replay/canonicalize.ts` and `apps/agent/src/replay/placeholders.ts`, replacing the P0-15 skeleton hashing.
-- [ ] Create `apps/agent/src/tools/write/createItem.ts`, `apps/agent/src/jobs/portfolioWatch.ts` and `packages/core/src/agent-schemas/portfolioWatch.ts`.
-- [ ] Create `fixtures/agent-replay/portfolio_watch/` and `fixtures/agent-replay-cases/guard-violation/`.
-- [ ] Add the items list to `apps/web/src/app/dev/agent/` and `e2e/dev-agent.spec.ts`.
+- [ ] Create `packages/core/src/guard/` exported as `@esta/core/guard`: `visible-text.ts` (Markdown to the text `SafeMarkdown` shows), `words.ts` (the word table), `residue.ts`, `placeholders.ts` and `index.ts`.
+- [ ] Create `packages/core/src/guard/guard.test.ts` and `guard.bench.ts`, and add a parity block to `apps/web/src/components/markdown/safe-markdown.test.tsx`.
 
 **Build.**
 
-- [ ] Name the data shape. `CanonicalNumber` in `packages/core/src/guard/normalize.ts` is a tagged union of `{ kind: 'amount', vnd }`, `{ kind: 'ratio', bp }`, `{ kind: 'date', iso }` and `{ kind: 'count', value }`. Percent and basis points both normalize to `bp`, so `6,5%` equals `650`.
-- [ ] Implement `extractNumbers(text, locale)` for Vietnamese and English forms (`3,5 tr`, `1,2 tỷ`, `15.000.000 ₫`, `850 nghìn`, `3.5M ₫`, `6,5%`, `07/10/2026`, `12 ngày`, `Phòng 5`) and `collectAllowed(toolResults, context)` over raw fields, `_display` strings and numbers inside labels, plus the injected date and household name. `checkNumbers(text, allowed)` returns the offending substrings.
-- [ ] Run the guard inside the write path. `create_item` in `apps/agent/src/tools/write/createItem.ts` checks `title` and `body_md` against the run's allowed set. A first violation returns an `is_error` tool result naming the numbers, which is the repair turn. A second violation fails the job and writes an `info` item with audience `operator` holding the offending text. Mẹ never sees it.
+- [ ] Write AGENT.md §6.3 first, dated, as Ryan's ruling, and update §1 principle 2, the §4 handle note, the §6.1 prompt and §8.
+- [ ] Name the data shape. A `FactSheet` maps each handle (`f1`, `f2`, … in call order) to the record a tool returned. A placeholder `{{f3.outstanding_display}}` names one citable field: a string whose name ends in `_display`, `_compact`, `_relative`, `_label` or `_name`. A `NoteViolation` is `{ rule, text }`, with `rule` a key of one table that also words the repair hint.
+- [ ] `checkNote(template, sheet)` returns `Result<FilledNote, NoteViolation[]>`. It masks the placeholders, renders the model's own text as `SafeMarkdown` shows it, and rejects any Unicode Number character, currency symbol, `%`, bidi control, table word or glued placeholder. It then fills each placeholder from the sheet, rejects an unknown handle or field, a field that is not citable, two values that join into one number, and a fill that changes what renders around a value. `repairMessage` words the repair turn.
+
+**Verify, unit.**
+
+- [ ] Every round-2 bypass from #309 written as model text is rejected: digits in any script, entity digits (`&#49;`), bidi controls written as entities (`&#x202E;`), magnitude and currency words with and without diacritics.
+- [ ] A placeholder naming a missing field, a missing handle or a field of another run's sheet is rejected.
+- [ ] Realistic notes (overdue, lease ending, vacancy, deposit, tax threshold, `Tiền phòng {{f1.outstanding_display}}`) fill to exactly the strings `packages/core/src/format` writes.
+- [ ] The SafeMarkdown parity block renders a Markdown corpus and checks the guard's text equals the rendered text.
+- [ ] A mutation pass breaks each rule in turn and a test turns red for each. `pnpm check` passes.
+
+**Verify, perf.**
+
+- [ ] `checkNote` on a 300-token note stays under 5 ms (vitest bench, `guard.bench.ts`).
+
+**Review gate.** None. The root runs one adversarial round on the guard at code-ready.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>`.
+
+## Run portfolio_watch every morning and list its items on Trợ lý (P5-03b)
+
+**Depends on.** P5-03a.
+
+**Files.**
+
+- [ ] Create a migration that lets the worker's service role read the watch snapshot (`payment_status` grant and the `lease_schedule` membership check), with pgTAP.
+- [ ] Create `packages/core/src/agent-schedule/planDailyJobs.ts` and its test.
+- [ ] Extend `apps/agent/src/replay/canonicalize.ts` where AGENT.md §8 needs more than the P0-15 placeholders.
+- [ ] Create `apps/agent/src/tools/write/createItem.ts`, `apps/agent/src/jobs/portfolioWatch.ts` and `packages/core/src/agent-schemas/portfolioWatch.ts`.
+- [ ] Create `fixtures/agent-replay/portfolio_watch/` and `fixtures/agent-replay-cases/guard-violation/`.
+- [ ] Add the operator items list to the Trợ lý page, which replaced `/dev/agent` in P0-15.
+
+**Build.**
+
+- [ ] Run the P5-03a guard inside the write path. Every record a tool returns carries its handle, and the run keeps them in one `FactSheet`. `create_item` in `apps/agent/src/tools/write/createItem.ts` passes `title` and `body_md` to `checkNote` with the run's sheet and stores the filled text. A first violation returns an `is_error` tool result with `repairMessage`, which is the repair turn. A second violation fails the job and writes an `info` item with audience `operator` holding the offending text. Mẹ never sees it.
 - [ ] Complete replay canonicalization per AGENT.md §8. UUIDs become `<id:n>`, memo codes `<memo:n>`, and the household name `<household>`, so the ten lane households replay one recording. Outputs map placeholders back to the current run's values. `ESTA_REPLAY_DIR` overrides the recording root for named cases. A missing recording fails with the hash and the `pnpm agent:record` hint.
 - [ ] Write the `portfolio_watch` job in `apps/agent/src/jobs/portfolioWatch.ts` with tools `watch_facts` and `create_item` only (S1 `tools` per kind and the `PreToolUse` path hook), `maxTurns` 6 and a 3 minute timeout. Validate the output with `packages/core/src/agent-schemas/portfolioWatch.ts`. Reject any item whose `related` facts are not in this run's facts, and require every `action` fact to be covered. Dedupe keys are `watch:{rule_id}:{subject_key}:{local_date}` per action item and `watch_digest:{local_date}` for the grouped item.
 - [ ] Encode the AGENT.md §3 schedule as data next to each job handler (`schedule: { daily: '06:40' }`). `planDailyJobs(registry, lastTickAt, now)` in `packages/core/src/agent-schedule/planDailyJobs.ts` returns today's missing jobs in schedule order with idempotency keys `{kind}:{household_id}:{local_date}`, backfilling only today. The scheduler in `apps/agent/src/scheduler/` inserts them with `on conflict do nothing`.
-- [ ] Add an items list to `/dev/agent` read through the session client (RLS applies). It shows kind, severity, audience, title, dedupe key, and a `link ok` check per `esta://` link.
-- [ ] Run `pnpm agent:record` once for `portfolio_watch` on the `full` seed at 2026-10-07 06:40 and commit the recording. Ryan reviews the recording diff like code.
+- [ ] Add an items list to the Trợ lý page read through the session client (RLS applies). It shows kind, severity, audience, title, dedupe key, and a `link ok` check per `esta://` link.
+- [ ] Hand-write the `portfolio_watch` recording on the `full` seed at 2026-10-07 06:40, labelled hand-written in the recording and the PR body (root, 2026-10-24). The live recording waits for P5-10's live run. Ryan reviews the recording diff like code.
 
 **You see.**
 
-- [ ] With the clock at 2026-10-07 06:45 and the worker in replay, `/dev/agent` shows a `portfolio_watch` run `done` and 4 new items, three `action` (W1 Phòng 5, W3 `thu-duc`, W6 Phòng 7) and one grouped item covering the two W4 facts, W5, W7 and W11.
-- [ ] With `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/guard-violation`, the run reads `failed` with error `number_guard`, and ryan's `/dev/agent` items list shows one `operator` item containing the offending text.
+- [ ] With the clock at 2026-10-07 06:45 and the worker in replay, the Trợ lý page shows a `portfolio_watch` run `done` and 4 new items, three `action` (W1 Phòng 5, W3 `thu-duc`, W6 Phòng 7) and one grouped item covering the two W4 facts, W5, W7 and W11.
+- [ ] With `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/guard-violation`, the run reads `failed` with error `number_guard`, and ryan's items list on the Trợ lý page shows one `operator` item containing the offending text.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/guard/guard.test.ts` gains cases for every AGENT.md §6.3 format, `vi` and `en` thousands separators (`1.500` and `1,500`), percent and bp equality, a date written as `7/10` and as `07/10/2026`, `Phòng 5` allowed by its label, the household name `Gia đình Demo 3` allowed by context, and an invented `13 ngày` rejected.
 - [ ] `packages/core/src/agent-schedule/planDailyJobs.test.ts` gains cases for a late start at 07:30 (jobs come back in schedule order), a restart after jobs exist (nothing new), and a day change (only the new day).
 - [ ] `apps/agent/test/replay.test.ts` gains cases proving two lane households hash to one recording and that placeholders map back to each household's ids.
 - [ ] `apps/agent/test/jobs/portfolioWatch.test.ts` covers the happy path, an added fact rejected, an uncovered action fact rejected, one guard repair turn that then passes, two violations failing the job with an operator item, and a rerun creating no duplicate items.
 - [ ] Golden tests in AGENT.md §7 for `portfolio_watch` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
-- [ ] Run `pnpm check`, then `pnpm e2e e2e/dev-agent.spec.ts`.
+- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-agent.spec.ts`.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
 
-- [ ] Lane 1. Regression lane against trunk. At trunk and head, ryan.lane1 enqueues `ping` from `/dev/agent` at 1440x900 light with the worker in replay. Trunk has no `portfolio_watch`, so the lane then gates head with the clock at 2026-10-07 06:45. Save `p5-03-regression-watch-run.png`. Pass when `ping` reads `done` on both sides and head shows the `portfolio_watch` run `done` with 4 items (3 `action`, 1 grouped).
-- [ ] Lane 2. ryan.lane2 enqueues `portfolio_watch` again for the same day from `/dev/agent` at 390x844 light. Save `p5-03-rerun-no-dupes.png`. Pass when the second enqueue is refused by the idempotency key or completes with 0 new items, and the items list still has 4 rows.
-- [ ] Lane 3. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/guard-violation`, ryan.lane3 runs `portfolio_watch` from `/dev/agent` at 1440x900 dark. Save `p5-03-guard-operator.png`. Pass when the run reads `failed` with `number_guard` and one `operator` item shows the offending number.
-- [ ] Lane 4. On the lane 3 slot, me.lane4 opens `/dev/agent` items at 390x844 dark. Save `p5-03-guard-hidden-from-me.png`. Pass when no `operator` item appears and Studio confirms the item exists for that household.
-- [ ] Lane 5. On its own slot, the lane stops the worker, sets the clock to 2026-10-08 07:30 and restarts it, and ryan.lane5 opens `/dev/agent` at 1440x900 light. Save `p5-03-backfill-today.png`. Pass when one `portfolio_watch` job exists with key `portfolio_watch:<household id>:2026-10-08` and no extra 2026-10-07 job was inserted.
-- [ ] Lane 6. ryan.lane6 opens the grouped item in `/dev/agent` at 390x844 light. Save `p5-03-links-resolve.png`. Pass when every `esta://` link shows `link ok` and the item names `bien-hoa` 70 days and Phòng 8 67 days.
+- [ ] Lane 1. Regression lane against trunk. At trunk and head, ryan.lane1 enqueues `ping` from the Trợ lý page at 1440x900 light with the worker in replay. Trunk has no `portfolio_watch`, so the lane then gates head with the clock at 2026-10-07 06:45. Save `p5-03-regression-watch-run.png`. Pass when `ping` reads `done` on both sides and head shows the `portfolio_watch` run `done` with 4 items (3 `action`, 1 grouped).
+- [ ] Lane 2. ryan.lane2 enqueues `portfolio_watch` again for the same day from the Trợ lý page at 390x844 light. Save `p5-03-rerun-no-dupes.png`. Pass when the second enqueue is refused by the idempotency key or completes with 0 new items, and the items list still has 4 rows.
+- [ ] Lane 3. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/guard-violation`, ryan.lane3 runs `portfolio_watch` from the Trợ lý page at 1440x900 dark. Save `p5-03-guard-operator.png`. Pass when the run reads `failed` with `number_guard` and one `operator` item shows the offending number.
+- [ ] Lane 4. On the lane 3 slot, me.lane4 opens the Trợ lý page items at 390x844 dark. Save `p5-03-guard-hidden-from-me.png`. Pass when no `operator` item appears and Studio confirms the item exists for that household.
+- [ ] Lane 5. On its own slot, the lane stops the worker, sets the clock to 2026-10-08 07:30 and restarts it, and ryan.lane5 opens the Trợ lý page at 1440x900 light. Save `p5-03-backfill-today.png`. Pass when one `portfolio_watch` job exists with key `portfolio_watch:<household id>:2026-10-08` and no extra 2026-10-07 job was inserted.
+- [ ] Lane 6. ryan.lane6 opens the grouped item in the Trợ lý page at 390x844 light. Save `p5-03-links-resolve.png`. Pass when every `esta://` link shows `link ok` and the item names `bien-hoa` 70 days and Phòng 8 67 days.
 - [ ] Lane 7. The lane queries `agent_items` for household lane7 in Studio at 1440x900 dark. Save `p5-03-w1-item-text.png`. Pass when the W1 item body contains `quá hạn 12 ngày` and the outstanding amount equal to the collections board for Phòng 5.
 - [ ] Lane 8. The lane runs `portfolio_watch` for lane8 and lane9 and opens `agent_runs` in Studio at 1440x900 light. Save `p5-03-shared-recording.png`. Pass when both runs read `agent_mode = replay` and the worker log names the same recording file for both.
 - [ ] Lane 9. On its own slot with `ESTA_REPLAY_DIR` pointing at an empty directory, ryan.lane9 runs `portfolio_watch` at 390x844 dark. Save `p5-03-missing-recording.png`. Pass when the job error contains `missing recording`, the input hash and `pnpm agent:record`.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted. ryan.lane10 switches to English, text scale 130% and dark at 390x844, finds the overdue Dĩ An room on the collections board, copies its reminder, then opens `/dev/agent` items. Save `p5-03-seed10-english.png`. Pass when the board shows Phòng 5 `Overdue 12 days`, the W1 item names Phòng 5 and 12 days, and no row clips text.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. ryan.lane10 switches to English, text scale 130% and dark at 390x844, finds the overdue Dĩ An room on the collections board, copies its reminder, then opens the Trợ lý page items. Save `p5-03-seed10-english.png`. Pass when the board shows Phòng 5 `Overdue 12 days`, the W1 item names Phòng 5 and 12 days, and no row clips text.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. `checkNumbers` time on a 300-token text against 2,000 allowed values (vitest bench), `portfolio_watch` job wall time in replay, and scheduler tick time.
-- [ ] Probe. Run `packages/core/src/guard/guard.bench.ts`, 10 replay runs of `portfolio_watch` and 20 scheduler ticks per side, interleaved, at trunk and head.
-- [ ] Baseline. Trunk has no guard and no `portfolio_watch`, so compare scheduler tick time across sides and record head values for the rest as the first baseline.
-- [ ] Rule. Fail when `checkNumbers` exceeds 5 ms, `portfolio_watch` in replay exceeds 10 s, or the scheduler tick grows more than 20% over trunk.
+- [ ] Metric. `portfolio_watch` job wall time in replay, and scheduler tick time.
+- [ ] Probe. Run 10 replay runs of `portfolio_watch` and 20 scheduler ticks per side, interleaved, at trunk and head.
+- [ ] Baseline. Trunk has no `portfolio_watch`, so compare scheduler tick time across sides and record head values for the rest as the first baseline.
+- [ ] Rule. Fail when `portfolio_watch` in replay exceeds 10 s, or the scheduler tick grows more than 20% over trunk.
 
-**Review gate.** None. P5-03 is not review-gated.
+**Review gate.** None. P5-03b is not review-gated.
 
 **Merge.**
 
@@ -4185,9 +4217,42 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>` once every PR below it has merged.
 
+## Read and dismiss assistant items in the Hộp thư tab (P5-03c)
+
+**Depends on.** P5-03b. Split from P5-03 for the 800-line rule (2026-10-24).
+
+**Files.**
+
+- [ ] Create the `Hộp thư` tab in `apps/web/src/app/(app)/assistant/`, generalizing `NewItems` from P0-15, and `apps/web/src/components/assistant/AssistantNote.tsx`.
+- [ ] Create `e2e/assistant-inbox.spec.ts`. Add keys to `apps/web/messages/vi.json` and `en.json`.
+
+**Build.**
+
+- [ ] Run `/impeccable shape Trợ lý` and record the confirmed brief in the PR body before building. It covers the three tabs (Hộp thư, Thị trường, Hỏi) and holds DESIGN-BRIEF §5.5 (monogram, time stamp, linked numbers, no sparkle icons, no chat bubbles, no typing animation). P5-04 builds on it.
+- [ ] List the household's items newest first with the Trợ lý monogram and `HH:mm` stamp, the body through `SafeMarkdown`. Each item has `Đã đọc` and `Ẩn` text buttons through the session client. `Ẩn` sets `dismissed` with the undo toast `Đã ẩn ghi chú. Hoàn tác`.
+- [ ] Members never see an `operator` item (RLS from P0-15); operators see it marked.
+- [ ] Move Home's `Cần làm hôm nay` checks onto the watch registry (#307) if it fits the size cap, else leave #307 open and say so.
+
+**You see.**
+
+- [ ] At 2026-10-07 07:05, me.lane2 opens Trợ lý at 390x844 and reads the W1 note naming Phòng 5 `quá hạn 12 ngày`, taps `Ẩn` on the grouped note and sees `Đã ẩn ghi chú. Hoàn tác`.
+
+**Verify, unit.**
+
+- [ ] `pnpm check`, then `pnpm e2e e2e/assistant-inbox.spec.ts`, with axe clean on `/assistant`.
+- [ ] `pnpm design:detect` with zero findings, `/impeccable critique` with every high-severity point fixed, and two to four screenshots at 390x844 vi light and dark and 1440x900.
+
+**Review gate.** None.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] The root squash-merges with `gh pr merge --squash --match-head-commit <verified head>`.
+
 ## Write the morning brief and show it in the Trợ lý inbox and on Home (P5-04)
 
-**Depends on.** P5-03, P3-16.
+**Depends on.** P5-03c, P3-16.
 
 **Files.**
 
@@ -4426,7 +4491,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Name the data shape. A conversation is `conversations` with `sdk_session_id`. A turn is a user `messages` row plus one assistant row whose `status` moves `streaming` to `done` or `error`, with `refs` holding the resolved `esta://` targets.
 - [ ] Write `sendQuestion(conversationId, text)` as a server action on the session client. It inserts the user message and enqueues `ask` with key `ask:{message_id}`.
 - [ ] Write the `ask` job with all read tools and `create_proposal`, `maxTurns` 15, a 2 minute timeout, the routine model, and the deep model when an operator ticks `Suy nghĩ kỹ hơn`. `cwd` is `conversations/{conversation_id}` under `ESTA_AGENT_HOME`. The job resumes `sdk_session_id` and stores the new one. Output language follows the question.
-- [ ] Stream in `apps/agent/src/jobs/askStream.ts`. The worker buffers model text to sentence boundaries, runs the number guard on each sentence against the tool results so far, and appends passing sentences to the assistant row at most every 300 ms. A violating sentence stops the stream, the repair turn replaces the row content, and a second violation sets `error` with the operator item from P5-03.
+- [ ] Stream in `apps/agent/src/jobs/askStream.ts`. The worker buffers model text to sentence boundaries, runs the number guard on each sentence against the tool results so far, and appends passing sentences to the assistant row at most every 300 ms. A violating sentence stops the stream, the repair turn replaces the row content, and a second violation sets `error` with the operator item from P5-03b.
 - [ ] Render the Hỏi tab as a plain conversation page, not chat bubbles. It subscribes to the assistant row through Realtime and renders `AgentMarkdown` with GFM tables enabled for answers that are lists. `esta://` links open in-app. Streaming text appears without a typing animation, and a static `Trợ lý đang trả lời` line shows until the first sentence.
 - [ ] Run `pnpm agent:record` for the ten AGENT.md §7.4 questions plus the lane follow-up and missing-data questions, and commit the recordings.
 - [ ] Run `/impeccable harden` on the Hỏi tab for long Vietnamese questions and answers, 130% text scale, empty, loading, error and offline states.
@@ -5329,6 +5394,6 @@ Contradictions resolved in Phase 0, each in the spec file named, per SPEC §0. P
 
 - Read `CLAUDE.md`, `PRODUCT.md` and `docs/spec/SPEC.md` before any PR. Read `docs/spec/DOMAIN-VN.md` before PRs that touch certificates, addresses, money, tax, VietQR or names. Read `docs/spec/DESIGN-BRIEF.md` and `DESIGN.md` before UI PRs. Read `docs/spec/AGENT.md` before agent and extraction PRs.
 - Spike reports live on `spike/s1-agent-sdk`, `spike/s2-fonts`, `spike/s3-admin-units`, `spike/s4-vietqr` and `spike/s7-receipt`.
-- Run `skills/how/SKILL.md` before building P0-02, P0-03, P0-07, P0-15, P3-04 and P5-03, because each sets a pattern many later PRs copy.
-- Run `skills/interrogate/SKILL.md` on P0-02 (RLS and audit), P0-15 (worker sandbox), P2-02 (storage access), P3-02, P3-03 and P3-04 (money core and invoicing), P4-01 (tax), P5-11 (number guard), P5-06 (approvals under the user's session) and P6-05 (CSP and headers) before shipping.
+- Run `skills/how/SKILL.md` before building P0-02, P0-03, P0-07, P0-15, P3-04 and P5-03b, because each sets a pattern many later PRs copy.
+- Run `skills/interrogate/SKILL.md` on P0-02 (RLS and audit), P0-15 (worker sandbox), P2-02 (storage access), P3-02, P3-03 and P3-04 (money core and invoicing), P4-01 (tax), P5-03a (number guard), P5-06 (approvals under the user's session) and P6-05 (CSP and headers) before shipping.
 - The root keeps its decision trail in `.audit/decisions.tsv` per `skills/show-me-your-work/SKILL.md`, and each owner keeps its own `decisions.tsv`. The Phase 5 live run records its outputs in `docs/plan/trail/`.
