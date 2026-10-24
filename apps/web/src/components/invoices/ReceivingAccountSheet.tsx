@@ -4,10 +4,9 @@ import { bankAccountName } from '@esta/core/vietqr';
 import { useRef, useState, type RefObject } from 'react';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
-import { buttonVariants } from '@/components/ui/button-variants';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
-import { addReceivingAccount, type AccountActionRefusal } from '@/server/actions/invoices';
+import { SheetFooter } from '@/components/sheet-footer';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { addReceivingAccount, editReceivingAccount, type AccountActionRefusal } from '@/server/actions/receiving-accounts';
 import { ActionRefusal } from './ActionRefusal';
 import { useBillAction } from './use-bill-action';
 
@@ -16,6 +15,9 @@ export type BankOption = { readonly value: string; readonly label: string };
 export type AccountSheetLabels = {
   readonly title: string;
   readonly body: string;
+  readonly addMoreBody: string;
+  readonly editTitle: string;
+  readonly editBody: string;
   readonly bank: string;
   readonly bankPick: string;
   readonly accountNo: string;
@@ -28,12 +30,23 @@ export type AccountSheetLabels = {
   readonly refusals: Readonly<Record<AccountActionRefusal, string>>;
 };
 
+/** The stored account an edit starts from. */
+export type AccountFields = { readonly id: string; readonly bin: string; readonly accountNo: string; readonly accountName: string };
+
+/** Adding says whether the new account becomes the default bills pay into; editing starts from the stored account. */
+export type AccountSheetMode = { readonly kind: 'add'; readonly becomesDefault: boolean } | { readonly kind: 'edit'; readonly account: AccountFields };
+
 /** Refusals that belong under one field; the rest show above the buttons. */
 const FIELD_REFUSALS: ReadonlySet<AccountActionRefusal> = new Set(['bank', 'accountNo', 'accountName']);
 
+function heading(mode: AccountSheetMode, labels: AccountSheetLabels) {
+  if (mode.kind === 'edit') return { title: labels.editTitle, body: labels.editBody };
+  return { title: labels.title, body: mode.becomesDefault ? labels.body : labels.addMoreBody };
+}
+
 /**
- * PLT-1's receiving account, offered on a bill when the household has none, so its QR can be made. The name folds to
- * the uppercase ASCII banks print as Mẹ types. Settings manages accounts later (P6-01).
+ * PLT-1's receiving account, added from a bill that has no account or from Cài đặt, and edited from Cài đặt. The name
+ * folds to the uppercase ASCII banks print as Mẹ types.
  */
 export default function ReceivingAccountSheet({
   open,
@@ -41,18 +54,21 @@ export default function ReceivingAccountSheet({
   finalFocus,
   banks,
   labels,
+  mode,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   finalFocus: RefObject<HTMLButtonElement | null>;
   banks: readonly BankOption[];
   labels: AccountSheetLabels;
+  mode: AccountSheetMode;
 }) {
   const title = useRef<HTMLHeadingElement>(null);
-  const [id] = useState(() => crypto.randomUUID());
-  const [bank, setBank] = useState('');
-  const [accountNo, setAccountNo] = useState('');
-  const [accountName, setAccountName] = useState('');
+  const stored = mode.kind === 'edit' ? mode.account : null;
+  const [id] = useState(() => stored?.id ?? crypto.randomUUID());
+  const [bank, setBank] = useState(stored?.bin ?? '');
+  const [accountNo, setAccountNo] = useState(stored?.accountNo ?? '');
+  const [accountName, setAccountName] = useState(stored?.accountName ?? '');
   const { refusal, setRefusal, pending, run } = useBillAction<AccountActionRefusal>(() => onOpenChange(false));
   const typed = (set: (value: string) => void) => (value: string) => {
     set(value);
@@ -60,8 +76,12 @@ export default function ReceivingAccountSheet({
   };
   const folded = bankAccountName(accountName);
   const fieldError = (field: AccountActionRefusal) => (refusal === field ? labels.refusals[field] : null);
+  const text = heading(mode, labels);
 
-  const save = () => run(() => addReceivingAccount({ id, bank_bin: bank, account_no: accountNo, account_name: accountName }));
+  const save = () => {
+    const account = { id, bank_bin: bank, account_no: accountNo, account_name: accountName };
+    run(() => (mode.kind === 'edit' ? editReceivingAccount(account) : addReceivingAccount(account)));
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -69,9 +89,9 @@ export default function ReceivingAccountSheet({
         <div className="flex flex-col gap-4 p-5 sm:p-6">
           <div className="flex flex-col gap-1">
             <SheetTitle ref={title} tabIndex={-1} className="outline-none">
-              {labels.title}
+              {text.title}
             </SheetTitle>
-            <SheetDescription>{labels.body}</SheetDescription>
+            <SheetDescription>{text.body}</SheetDescription>
           </div>
           <div className="flex flex-col gap-1">
             <FormSelect label={labels.bank} value={bank} options={banks} placeholder={labels.bankPick} onChange={typed(setBank)} testId="account-bank" />
@@ -98,15 +118,13 @@ export default function ReceivingAccountSheet({
             )}
           </div>
         </div>
-        <div className="sticky bottom-0 mt-auto flex flex-col gap-3 border-t border-rule bg-surface px-5 pt-4 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
-          <ActionRefusal message={refusal === null || FIELD_REFUSALS.has(refusal) ? null : labels.refusals[refusal]} />
-          <div className="flex gap-2">
-            <SheetClose className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>{labels.close}</SheetClose>
-            <button type="button" data-testid="account-save" onClick={save} disabled={pending} className={cn(buttonVariants({ variant: 'primary' }), 'flex-[2]')}>
-              {pending ? labels.saving : labels.save}
-            </button>
-          </div>
-        </div>
+        <SheetFooter
+          error={refusal === null || FIELD_REFUSALS.has(refusal) ? null : labels.refusals[refusal]}
+          labels={{ cancel: labels.close, save: labels.save, saving: labels.saving }}
+          pending={pending}
+          onSave={save}
+          testId="account"
+        />
       </SheetContent>
     </Sheet>
   );

@@ -24,7 +24,8 @@ export default function QrSheet({
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
-  invoiceHref: string;
+  /** Null where the code pays no bill, as Cài đặt's sample. */
+  invoiceHref: string | null;
   qr: InvoiceQrView;
   labels: QrSheetLabels;
 }) {
@@ -38,10 +39,12 @@ export default function QrSheet({
         </div>
         <QrPanel qr={qr} matrix={matrix} labels={labels} />
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Link href={invoiceHref} data-testid="qr-open-invoice" className={buttonVariants({ variant: 'quiet', className: '-ml-2' })}>
-            {labels.openInvoice}
-          </Link>
-          <SheetClose className={buttonVariants({ variant: 'secondary' })}>{labels.close}</SheetClose>
+          {invoiceHref === null ? null : (
+            <Link href={invoiceHref} data-testid="qr-open-invoice" className={buttonVariants({ variant: 'quiet', className: '-ml-2' })}>
+              {labels.openInvoice}
+            </Link>
+          )}
+          <SheetClose className={buttonVariants({ variant: 'secondary', className: 'ml-auto' })}>{labels.close}</SheetClose>
         </div>
       </SheetContent>
     </Sheet>

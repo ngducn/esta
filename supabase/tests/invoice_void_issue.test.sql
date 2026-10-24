@@ -141,9 +141,8 @@ select is((select bank_account_id from public.payments where idempotency_key = '
   'the payment names the account');
 select tests.clear_request();
 reset role;
-delete from public.bank_accounts where id = '00000000-0000-4000-8000-00000000aa01';
-select is((select bank_account_id from public.payments where idempotency_key = '00000000-0000-4000-8000-00000000c104'), null,
-  'removing the account keeps the payment and forgets where it landed');
+select throws_ok($$ delete from public.bank_accounts where id = '00000000-0000-4000-8000-00000000aa01' $$,
+  '23503', null, 'the account a payment landed in cannot be removed, so the payment keeps where it landed');
 
 select * from finish();
 rollback;
