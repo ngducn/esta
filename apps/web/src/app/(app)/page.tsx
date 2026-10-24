@@ -36,7 +36,7 @@ async function Home() {
     canRecord ? paymentIslandIntl() : null,
     mapIslandIntl(),
     getThemePreference(),
-    latestBrief(member.household.id),
+    latestBrief(member.household.id, clock.now()),
   ]);
   const payment = home.payment === null || paymentIntl === null ? null : { ...home.payment, intl: paymentIntl };
 

@@ -74,10 +74,18 @@ export async function listInbox({ household, role, isOperator }: Pick<Member, 'h
 
 export type LatestBrief = { readonly title: string; readonly createdAt: Instant };
 
-/** The newest morning brief: Home shows its summary on its own day, and its time says when Trợ lý last ran. */
-export async function latestBrief(householdId: string): Promise<LatestBrief | null> {
+/** The newest morning brief as of the clock: Home shows its summary on its own day, and its time says when Trợ lý last ran. */
+export async function latestBrief(householdId: string, asOf: Instant): Promise<LatestBrief | null> {
   const supabase = await createSessionClient();
-  const { data, error } = await supabase.from('agent_items').select('title, created_at').eq('household_id', householdId).eq('kind', 'brief').order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const { data, error } = await supabase
+    .from('agent_items')
+    .select('title, created_at')
+    .eq('household_id', householdId)
+    .eq('kind', 'brief')
+    .lte('created_at', asOf)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
   if (error) throw new Error(`Reading the morning brief failed: ${error.message}`);
   return data === null ? null : { title: data.title, createdAt: parseInstant(data.created_at) };
 }

@@ -1,15 +1,13 @@
-import { wallClockStamp, workerStatus } from '@esta/core/agent';
+import { workerStatus } from '@esta/core/agent';
 import { parseInstant } from '@esta/core';
 import { describe, expect, it } from 'vitest';
 import { renderInLocale } from '@/test/render';
 import { WorkerStatusLine } from './worker-status-line';
 
 const now = parseInstant('2026-10-07T09:06:00+07:00');
-const line = (lastSeenAt: string | null, locale: 'vi' | 'en' = 'vi', ranAt: string | null = null) =>
-  renderInLocale(
-    <WorkerStatusLine status={workerStatus(lastSeenAt === null ? null : parseInstant(lastSeenAt), now)} lastRun={ranAt === null ? null : wallClockStamp(parseInstant(ranAt), now)} />,
-    locale,
-  ).getByTestId('worker-status').textContent;
+const line = (lastSeenAt: string | null, locale: 'vi' | 'en' = 'vi') =>
+  renderInLocale(<WorkerStatusLine status={workerStatus(lastSeenAt === null ? null : parseInstant(lastSeenAt), now)} />, locale)
+    .getByTestId('worker-status').textContent;
 
 describe('WorkerStatusLine', () => {
   it('reads online with the heartbeat time', () => {
@@ -30,17 +28,5 @@ describe('WorkerStatusLine', () => {
 
   it('reads online in English', () => {
     expect(line('2026-10-07T09:06:00+07:00', 'en')).toBe('Assistant is online. Updated at 09:06.');
-  });
-
-  it('reads when Trợ lý last ran once a brief says so', () => {
-    expect(line('2026-10-07T09:06:00+07:00', 'vi', '2026-10-07T07:00:00+07:00')).toBe('Trợ lý chạy lúc 07:00.');
-  });
-
-  it('adds the date when Trợ lý last ran on an earlier day', () => {
-    expect(line('2026-10-07T09:06:00+07:00', 'en', '2026-10-06T07:00:00+07:00')).toBe('Assistant ran at 07:00 06/10/2026.');
-  });
-
-  it('keeps the offline notice whatever ran before', () => {
-    expect(line('2026-10-07T09:00:00+07:00', 'vi', '2026-10-07T07:00:00+07:00')).toBe('Trợ lý ngoại tuyến từ 09:00. Việc mới sẽ chạy khi máy hoạt động lại.');
   });
 });

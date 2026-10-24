@@ -5,7 +5,7 @@ import { Eye, History, Play, PlugZap, type LucideIcon } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { Inbox } from '@/components/assistant/inbox';
-import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
+import { stampLabel, WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
@@ -210,11 +210,12 @@ async function OperatorTools({ householdId, failed, workerOnline }: { householdI
 export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ check?: string; watch?: string }> }) {
   const clock = await getClock();
   const member = await requireMember();
-  const [lastSeenAt, notes, brief, nav, toast, { check, watch }] = await Promise.all([
+  const [lastSeenAt, notes, brief, nav, t, toast, { check, watch }] = await Promise.all([
     getWorkerHeartbeat(clock.now()),
     listInbox(member),
-    latestBrief(member.household.id),
+    latestBrief(member.household.id, clock.now()),
     getTranslations('nav'),
+    getTranslations('assistant'),
     getTranslations('components.toast'),
     searchParams,
   ]);
@@ -223,7 +224,12 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <h1 className="text-h2 break-words lg:text-h1">{nav('assistant')}</h1>
-        {status.kind === 'offline' ? null : <WorkerStatusLine status={status} lastRun={brief === null ? null : wallClockStamp(brief.createdAt, clock.now(), env.ESTA_TIMEZONE)} />}
+        {status.kind === 'offline' ? null : <WorkerStatusLine status={status} />}
+        {brief === null ? null : (
+          <p data-testid="worker-ran" className="text-small text-ink-muted figures">
+            {t('ranAt', { time: stampLabel(wallClockStamp(brief.createdAt, clock.now(), env.ESTA_TIMEZONE)) })}
+          </p>
+        )}
       </div>
       <ToastHost labels={{ region: toast('region'), undo: toast('undo') }}>
         <Inbox notes={notes} today={clock.today()} timezone={env.ESTA_TIMEZONE} />
