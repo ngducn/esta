@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, open, PHONE, serviceGet, seriousAxeViolations } from './helpers/wizard';
+import { clippedText } from './helpers/text-scale';
+import { DESKTOP, noSidewaysScroll, open, PHONE, serviceGet, servicePatch, seriousAxeViolations } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -76,4 +77,21 @@ test('on her phone in dark, Mẹ filters Thị trường to Dãy trọ Dĩ An an
 
   await page.getByRole('link', { name: /^Tất cả/ }).click();
   await expect(items(page)).toHaveCount(4);
+});
+
+test('in English at 130% text, Thị trường reads in English, keeps dates as dd/mm/yyyy and cuts no long title or source', async ({ page }) => {
+  await open(page, ME, 'dark', PHONE);
+  const member = `household_members?id=eq.${seedId(`seed:member:me-lane-${LANE}`)}`;
+  await servicePatch(page, member, { locale: 'en', text_scale: 130 });
+  try {
+    await page.goto('/assistant/market');
+    await expect(page.getByRole('navigation', { name: 'Assistant sections' }).getByRole('link', { name: 'Market' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('market-count')).toHaveText('4 items');
+    await expect(items(page).first().getByTestId('citation-chip')).toContainText('Tin tức Demo · 05/10/2026');
+    await expect(page.getByRole('heading', { name: 'Topics followed' })).toBeVisible();
+    expect(await noSidewaysScroll(page)).toBe(true);
+    expect(await clippedText(page)).toEqual([]);
+  } finally {
+    await servicePatch(page, member, { locale: 'vi', text_scale: 100 });
+  }
 });
