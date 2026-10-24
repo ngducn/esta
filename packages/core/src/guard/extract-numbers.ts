@@ -1,5 +1,6 @@
 import { MONTHS_EN, type Locale } from '../format';
-import { isoFromParts, readNumeral, times, toNumber, type CanonicalNumber, type Decimal } from './normalize';
+import type { Decimal } from '../parse/decimal';
+import { canonicalDate, readNumeral, times, toNumber, type CanonicalNumber } from './normalize';
 import { readableText } from './on-screen-text';
 
 /** A number as written and as read. `value: null` is a token with a digit that no reading takes whole. */
@@ -221,14 +222,15 @@ function readQuantity(tokens: readonly Token[], at: number, locale: Locale, curr
   if (numeral === null || glued === null) return 'unreadable';
   const words = readWordUnits(tokens, spaced.last, glued, numeral);
   if (words === null) return 'unreadable';
-  let { last, units } = words;
+  const { last } = words;
+  let { units } = words;
   if (currency) {
     if (units.unit !== 'count' && units.unit !== 'amount') return 'unreadable';
     units = { unit: 'amount', magnitude: units.magnitude };
   }
   const reading = { numeral, units, tail: words.tail, sign: core === token.core ? token.sign : '' };
   if (units.unit === 'count' && tokens[last]?.closed !== true && HALF.has(tokens[last + 1]?.word ?? '')) {
-    return { last: last + 1, reading: { ...reading, numeral: { units: numeral.units * 10n + 5n * 10n ** BigInt(numeral.scale), scale: numeral.scale + 1 } } };
+    return { last: last + 1, reading: { ...reading, numeral: { digits: numeral.digits * 10n + 5n * 10n ** BigInt(numeral.scale), scale: numeral.scale + 1 } } };
   }
   return { last, reading };
 }
@@ -274,9 +276,9 @@ function readDateToken(core: string): CanonicalNumber | null | undefined {
   const dayMonth = /^(\d{1,2})\/(\d{1,2})(?:\/(\d+))?$/u.exec(core);
   const monthYear = /^(\d{1,2})\/(\d{4})$/u.exec(core);
   let date: string | null;
-  if (iso !== null) date = isoFromParts(Number(iso[1]), Number(iso[2]), iso[3] === undefined ? null : Number(iso[3]));
-  else if (monthYear !== null) date = isoFromParts(Number(monthYear[2]), Number(monthYear[1]), null);
-  else if (dayMonth !== null) date = dayMonth[3] !== undefined && dayMonth[3].length !== 4 ? null : isoFromParts(dayMonth[3] === undefined ? null : Number(dayMonth[3]), Number(dayMonth[2]), Number(dayMonth[1]));
+  if (iso !== null) date = canonicalDate(Number(iso[1]), Number(iso[2]), iso[3] === undefined ? null : Number(iso[3]));
+  else if (monthYear !== null) date = canonicalDate(Number(monthYear[2]), Number(monthYear[1]), null);
+  else if (dayMonth !== null) date = dayMonth[3] !== undefined && dayMonth[3].length !== 4 ? null : canonicalDate(dayMonth[3] === undefined ? null : Number(dayMonth[3]), Number(dayMonth[2]), Number(dayMonth[1]));
   else return undefined;
   return date === null ? null : { kind: 'date', iso: date };
 }
@@ -288,7 +290,7 @@ function readDateWords(tokens: readonly Token[], at: number): Phrase | null {
   const token = tokens[at];
   if (token === undefined) return null;
   const date = (last: number, year: number | null, month: number, day: number | null): Phrase => {
-    const iso = isoFromParts(year, month, day);
+    const iso = canonicalDate(year, month, day);
     return { last, values: [iso === null ? null : { kind: 'date', iso }] };
   };
   const yearAfter = (index: number, word?: string): { year: number | null; last: number } => {

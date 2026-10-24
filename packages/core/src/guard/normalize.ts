@@ -1,5 +1,6 @@
 import { daysInMonth } from '../date/iso-date';
 import type { Locale } from '../format';
+import type { Decimal } from '../parse/decimal';
 
 /**
  * A number as a reader takes it, whatever way it was written. Percent and basis points are both `ratio`, so `6,5%`
@@ -12,8 +13,6 @@ export type CanonicalNumber =
   | { readonly kind: 'date'; readonly iso: string }
   | { readonly kind: 'count'; readonly value: number };
 
-/** `units / 10^scale`, kept exact so a decimal times a magnitude is checked as an integer. */
-export type Decimal = { readonly units: bigint; readonly scale: number };
 
 const GROUP: Record<Locale, string> = { vi: '.', en: ',' };
 
@@ -23,34 +22,34 @@ const GROUP: Record<Locale, string> = { vi: '.', en: ',' };
  * reader and 1500 to another. Separators that disagree, or groups that are not three digits, are unreadable.
  */
 export function readNumeral(text: string, locale: Locale): Decimal | null {
-  if (/^\d+$/.test(text)) return { units: BigInt(text), scale: 0 };
+  if (/^\d+$/.test(text)) return { digits: BigInt(text), scale: 0 };
   const grouped = /^(\d{1,3}([.,])\d{3}(?:\2\d{3})*)(?:([.,])(\d+))?$/.exec(text);
   if (grouped !== null) {
     const [, integer = '', group = '', decimalMark, fraction = ''] = grouped;
     const groups = integer.split(group).length - 1;
     if (decimalMark === group) return null;
     if (decimalMark === undefined && groups === 1 && group !== GROUP[locale]) return null;
-    return { units: BigInt(integer.replaceAll(group, '') + fraction), scale: fraction.length };
+    return { digits: BigInt(integer.replaceAll(group, '') + fraction), scale: fraction.length };
   }
   const decimal = /^(\d+)[.,](\d+)$/.exec(text);
   if (decimal === null) return null;
   const [, integer = '', fraction = ''] = decimal;
   if (fraction.length === 3) return null;
-  return { units: BigInt(integer + fraction), scale: fraction.length };
+  return { digits: BigInt(integer + fraction), scale: fraction.length };
 }
 
 /** The exact integer `decimal × factor`, or null when it has a fraction left. */
-export function times(decimal: Decimal, factor: bigint, divisor = 1n): bigint | null {
-  const denominator = 10n ** BigInt(decimal.scale) * divisor;
-  const product = decimal.units * factor;
+export function times(decimal: Decimal, factor: bigint): bigint | null {
+  const denominator = 10n ** BigInt(decimal.scale);
+  const product = decimal.digits * factor;
   return product % denominator === 0n ? product / denominator : null;
 }
 
 export function toNumber(decimal: Decimal): number {
-  return Number(decimal.units) / 10 ** decimal.scale;
+  return Number(decimal.digits) / 10 ** decimal.scale;
 }
 
-export function isoFromParts(year: number | null, month: number, day: number | null): string | null {
+export function canonicalDate(year: number | null, month: number, day: number | null): string | null {
   if (month < 1 || month > 12) return null;
   const mm = String(month).padStart(2, '0');
   if (day === null) return year === null ? `--${mm}` : `${year}-${mm}`;
