@@ -10,17 +10,9 @@ import { z } from 'zod';
 import { readCompleteness } from './completeness';
 import type { Db } from './db';
 import { readInvoices } from './invoices';
-import { readAll } from './kit';
+import { readAll, readRows } from './kit';
 import { readLeases } from './leases';
 import { readOtherBusinessRevenues, readTaxOwners, readTaxRows } from './tax';
-
-type Rows<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-
-async function rows<T>(what: string, read: Rows<T>): Promise<T[]> {
-  const { data, error } = await read;
-  if (error) throw new Error(`Reading ${what} failed: ${error.message}`);
-  return data ?? [];
-}
 
 const depositEntrySchema = z
   .object({ id: z.uuid(), lease_id: z.uuid(), kind: z.enum(DEPOSIT_KINDS), amount_vnd: z.number().int().transform(vnd), on_date: isoDateSchema })
@@ -59,13 +51,13 @@ async function readTaxPositions(db: Db, householdId: string, asOf: IsoDate) {
 
 /** Documents whose latest reading waits for review, dated by the business day the extraction was created. */
 async function readWaitingExtractions(db: Db, householdId: string, timezone: string) {
-  const waiting = await rows('waiting reviews', db.from('document_status').select('document_id, extraction_id').eq('household_id', householdId).eq('status', 'needs_review'));
+  const waiting = await readRows('waiting reviews', db.from('document_status').select('document_id, extraction_id').eq('household_id', householdId).eq('status', 'needs_review'));
   const documentIds = waiting.flatMap((row) => (row.document_id === null ? [] : [row.document_id]));
   const extractionIds = waiting.flatMap((row) => (row.extraction_id === null ? [] : [row.extraction_id]));
   if (documentIds.length === 0) return [];
   const [documents, extractions] = await Promise.all([
-    rows('waiting documents', db.from('documents').select('id, property_id').eq('household_id', householdId).is('deleted_at', null).in('id', documentIds)),
-    rows('waiting extractions', db.from('document_extractions').select('id, document_id, created_at').eq('household_id', householdId).in('id', extractionIds)),
+    readRows('waiting documents', db.from('documents').select('id, property_id').eq('household_id', householdId).is('deleted_at', null).in('id', documentIds)),
+    readRows('waiting extractions', db.from('document_extractions').select('id, document_id, created_at').eq('household_id', householdId).in('id', extractionIds)),
   ]);
   const live = new Map(documents.map((document) => [document.id, document.property_id]));
   return extractions.flatMap((extraction) => {
@@ -89,7 +81,8 @@ async function readMeters(db: Db, householdId: string, asOf: IsoDate) {
 
 /**
  * One household as the watch rules (AGENT.md §5.3) read it on `asOf`. Every date window is anchored on `asOf`, never on
- * the database's clock. The client's RLS or service role scopes it; every query also filters by the household.
+ * the database's clock. Pass a member's session: the service role cannot run `private.payment_status` behind
+ * `invoice_balances`, and `lease_schedule` returns no periods to it, so its tax positions would read zero.
  */
 export async function readWatchSnapshot(db: Db, householdId: string, { asOf, timezone }: { asOf: IsoDate; timezone: string }): Promise<WatchSnapshot> {
   const [properties, completeness, units, leases, held, invoices, documents, meters, taxPositions, extractions] = await Promise.all([

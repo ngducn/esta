@@ -3,25 +3,20 @@ import { vnd, type Vnd } from '@esta/core/money';
 import { ownershipShareRowSchema, TAX_LEASE_COLUMNS, taxLeaseRowSchema, taxRuleRowSchema, toTaxInputs, type TaxInputs, type TaxRows } from '@esta/core/tax';
 import { z } from 'zod';
 import type { Db } from './db';
+import { readRows } from './kit';
 import { readLeaseSchedule } from './leases';
 
 const TAX_RULE_COLUMNS = 'kind, effective_from, effective_to, params, source_citation, note';
 
-async function rows<T>(what: string, read: PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
-  const { data, error } = await read;
-  if (error) throw new Error(`Reading ${what} failed: ${error.message}`);
-  return data ?? [];
-}
-
 /** Each party's other business revenue saved for the year; a party with no row is absent. */
 export async function readOtherBusinessRevenues(db: Db, householdId: string, year: number): Promise<Map<string, Vnd>> {
-  const saved = await rows('other business revenue', db.from('owner_tax_inputs').select('party_id, other_business_revenue_vnd').eq('household_id', householdId).eq('year', year));
+  const saved = await readRows('other business revenue', db.from('owner_tax_inputs').select('party_id, other_business_revenue_vnd').eq('household_id', householdId).eq('year', year));
   return new Map(saved.map((row) => [row.party_id, vnd(z.number().int().nonnegative().parse(row.other_business_revenue_vnd))]));
 }
 
 /** The other business revenue saved for an owner and year; no row reads as 0. */
 export async function readOtherBusinessRevenue(db: Db, householdId: string, { partyId, year }: { partyId: string; year: number }) {
-  const saved = await rows(
+  const saved = await readRows(
     'other business revenue',
     db.from('owner_tax_inputs').select('other_business_revenue_vnd').eq('household_id', householdId).eq('party_id', partyId).eq('year', year),
   );
@@ -35,7 +30,7 @@ const ownerSchema = z.object({ id: z.uuid(), full_name: z.string(), member_id: z
 /** The household's parties tagged owner, and the parties `alsoIds` names, by name. */
 export async function readOwners(db: Db, householdId: string, alsoIds: readonly string[] = []): Promise<Owner[]> {
   const query = db.from('parties').select('id, full_name, member_id').eq('household_id', householdId);
-  const read = await rows('owners', (alsoIds.length === 0 ? query.contains('tags', ['owner']) : query.or(`tags.cs.{owner},id.in.(${alsoIds.join(',')})`)).order('full_name').order('id'));
+  const read = await readRows('owners', (alsoIds.length === 0 ? query.contains('tags', ['owner']) : query.or(`tags.cs.{owner},id.in.(${alsoIds.join(',')})`)).order('full_name').order('id'));
   return z.array(ownerSchema).parse(read);
 }
 
@@ -51,9 +46,9 @@ export function readTaxOwners(db: Db, householdId: string, tax: Pick<TaxRows, 's
 export async function readTaxRows(db: Db, householdId: string, year: number): Promise<Omit<TaxRows, 'otherBusinessRevenueVnd'>> {
   const yearEnd = isoDate(`${year}-12-31`);
   const [leases, shares, rules] = await Promise.all([
-    rows('tax leases', db.from('leases').select(TAX_LEASE_COLUMNS).eq('household_id', householdId).neq('status', 'draft').lte('start_date', yearEnd).order('id')),
-    rows('ownership shares', db.from('ownership_shares').select('property_id, party_id, share_bp').eq('household_id', householdId).order('id')),
-    rows('tax rules', db.from('tax_rules').select(TAX_RULE_COLUMNS)),
+    readRows('tax leases', db.from('leases').select(TAX_LEASE_COLUMNS).eq('household_id', householdId).neq('status', 'draft').lte('start_date', yearEnd).order('id')),
+    readRows('ownership shares', db.from('ownership_shares').select('property_id, party_id, share_bp').eq('household_id', householdId).order('id')),
+    readRows('tax rules', db.from('tax_rules').select(TAX_RULE_COLUMNS)),
   ]);
   const taxLeases = z.array(taxLeaseRowSchema).parse(leases);
   const schedule = await readLeaseSchedule(

@@ -42,11 +42,9 @@ export function subjectKey(readable: string, household: string): string {
 
 export const triple = (fact: Pick<WatchFact, 'ruleId' | 'subjectKey' | 'severity'>) => `${fact.ruleId} ${fact.subjectKey} ${fact.severity}`;
 
-/** The golden set for one seeded household, as `triple`s. */
 export const expectedTriples = (household: string) =>
   WATCH_GOLDEN.expected.map((row) => `${row.rule_id} ${subjectKey(row.subject_key, household)} ${row.severity}`);
 
-/** Which expected facts are missing and which facts are extra. */
 export function compareFacts(facts: readonly WatchFact[], household: string) {
   const expected = expectedTriples(household);
   const actual = facts.map(triple);

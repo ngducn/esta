@@ -65,6 +65,13 @@ const PAGE_SIZE = 1000;
 
 type Page<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
 
+/** One read's rows, or a thrown error naming `what`. */
+export async function readRows<T>(what: string, read: Page<T>): Promise<T[]> {
+  const { data, error } = await read;
+  if (error) throw new Error(`Reading ${what} failed: ${error.message}`);
+  return data ?? [];
+}
+
 /** `page` must order the rows, or PostgREST ranges can overlap and skip rows. */
 export async function readAll<T>(what: string, page: (from: number, to: number) => Page<T>): Promise<T[]> {
   const rows: T[] = [];
