@@ -1087,13 +1087,12 @@
     "accountMakeDefault": "Make default",
     "accountRemove": "Remove",
     "accountRemoveTitle": "Remove the {bank} account {number}?",
-    "accountRemoveBody": "QR codes will no longer pay into this account.",
+    "accountRemoveBody": "The account leaves the list. Bills and recorded money stay as they are.",
     "accountRemoveConfirm": "Remove account",
     "accountKeep": "Keep",
     "accountSample": "Sample QR",
     "accountSampleTitle": "Sample QR for {bank}",
-    "accountSampleBody": "Scan it with a banking app to check that the holder name shows correctly. No need to transfer.",
-    "accountSampleNumber": "Sample QR for checking"
+    "accountSampleBody": "Scan it with a banking app to check that the holder name shows correctly. No need to transfer."
   },
   "map": {
     "region": "Property map",
@@ -1518,7 +1517,7 @@
     "accountSave": "Save account",
     "accountSaving": "Saving…",
     "accountClose": "Close",
-    "accountRefusal": "{reason, select, bank {Choose a bank.} accountNo {An account number has only digits and letters, at most 19.} accountName {Enter the account holder, at most 50 characters.} duplicate {The household already has this account.} isDefault {This is the default account. Make another account the default before you remove it.} inUse {Money is recorded into this account, so it stays to keep the collection history right.} notFound {This account no longer exists. Reload the page.} forbidden {Only an admin can change receiving accounts.} other {Not saved. Check the connection and try again.}}",
+    "accountRefusal": "{reason, select, bank {Choose a bank.} accountNo {An account number has only digits and letters, at most 19.} accountName {Enter the account holder, at most 50 characters.} duplicate {The household already has this account.} isDefault {This is the default account. Make another account the default before you remove it.} inUse {Money is recorded into this account, so it stays to keep the collection history right.} numberLocked {Money is recorded into this account, so its bank and number cannot change. You can still correct the holder name. To receive money into another number, add a new account.} notFound {This account no longer exists. Reload the page.} forbidden {Only an admin can change receiving accounts.} other {Not saved. Check the connection and try again.}}",
     "receiptPdf": "{kind, select, notice {Notice PDF} other {Receipt PDF}}",
     "receiptPng": "Picture for Zalo"
   },

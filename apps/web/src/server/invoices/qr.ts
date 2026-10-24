@@ -23,8 +23,8 @@ export type PayableQr = {
   readonly accountName: string;
 };
 
-/** What the QR sheet and the bill show and the saved picture prints. */
-export type InvoiceQrView = PayableQr & { readonly number: string };
+/** What the QR sheet and the bill show. `number` names the saved picture; a code that pays no bill has none to save. */
+export type InvoiceQrView = PayableQr & { readonly number: string | null };
 
 const accountSchema = z
   .object({
@@ -89,8 +89,8 @@ const SAMPLE_TRANSFER_VND = vnd(10_000);
 const SAMPLE_MEMO_CODE = 'TAIKHOAN';
 
 /** Cài đặt's sample: a small transfer built as a bill's code is, so Mẹ's bank app shows the holder name it will show tenants. */
-export function sampleQr(account: PayeeAccount, label: string, locale: Locale): InvoiceQrView {
-  return { ...transferQr(account, SAMPLE_TRANSFER_VND, SAMPLE_MEMO_CODE, locale), number: label };
+export function sampleQr(account: PayeeAccount, locale: Locale): InvoiceQrView {
+  return { ...transferQr(account, SAMPLE_TRANSFER_VND, SAMPLE_MEMO_CODE, locale), number: null };
 }
 
 /** LSE-5: only an issued bill with something still owed shows a code, for the outstanding amount and its memo. */

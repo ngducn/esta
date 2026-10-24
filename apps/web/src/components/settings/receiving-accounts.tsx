@@ -51,17 +51,17 @@ export async function ReceivingAccounts({ member }: { member: Member }) {
                 <li key={account.id} data-testid="receiving-account" data-default={account.isDefault} className="flex flex-col gap-3 p-5 sm:p-6">
                   <div className="flex flex-col gap-0.5">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h3 id={headingId} className="text-lead font-bold break-words">
+                      <h3 id={headingId} className="text-lead font-semibold break-words">
                         {account.bankName}
                       </h3>
                       {account.isDefault ? (
-                        <span data-testid="account-default" className="inline-flex items-center gap-1 rounded-full border border-rule bg-surface-2 px-2.5 py-0.5 text-small font-semibold text-ink">
+                        <span data-testid="account-default" className="inline-flex items-center gap-1 rounded-full border border-rule bg-surface-2 px-2.5 py-0.5 text-small font-medium text-ink">
                           <Check className="size-4" strokeWidth={2.2} aria-hidden="true" />
                           {t('accountDefault')}
                         </span>
                       ) : null}
                     </div>
-                    <p data-testid="account-number" className="figures text-body font-semibold break-all text-ink">
+                    <p data-testid="account-number" className="figures text-body font-medium break-all text-ink">
                       {account.accountNo}
                     </p>
                     <p data-testid="account-holder" className="text-small break-words text-ink-2">
@@ -74,7 +74,7 @@ export async function ReceivingAccounts({ member }: { member: Member }) {
                       title={t('accountSampleTitle', { bank: account.bankName })}
                       description={t('accountSampleBody')}
                       invoiceHref={null}
-                      qr={sampleQr(account, t('accountSampleNumber'), locale)}
+                      qr={sampleQr(account, locale)}
                       labels={qrLabels}
                     />
                     {sheet === null ? null : (

@@ -15,7 +15,7 @@ import {
 import { revalidatePath } from 'next/cache';
 import { webOpContext } from '@/server/ops';
 
-export type AccountActionRefusal = 'bank' | 'accountNo' | 'accountName' | 'duplicate' | 'isDefault' | 'inUse' | 'notFound' | 'forbidden' | 'failed';
+export type AccountActionRefusal = 'bank' | 'accountNo' | 'accountName' | 'duplicate' | 'isDefault' | 'inUse' | 'numberLocked' | 'notFound' | 'forbidden' | 'failed';
 
 const FIELD_REFUSALS: Readonly<Record<string, AccountActionRefusal>> = { bank_bin: 'bank', account_no: 'accountNo', account_name: 'accountName' };
 
@@ -24,6 +24,7 @@ const KIND_REFUSALS: Partial<Record<(BankAccountRefusal | CommonRefusal)['kind']
   duplicate: 'duplicate',
   is_default: 'isDefault',
   in_use: 'inUse',
+  number_locked: 'numberLocked',
   not_found: 'notFound',
   forbidden: 'forbidden',
 };

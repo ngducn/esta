@@ -149,11 +149,13 @@ describe('receiving account actions against local Supabase (PLT-1)', () => {
     expect((await accounts()).filter((row) => row.is_default).map((row) => row.id)).toEqual([added]);
   });
 
-  it('refuses to remove the default and an account a payment landed in, and removes an unused one once', async () => {
+  it('refuses to remove the default and an account a payment landed in, keeps the number of that account but corrects its holder, and removes an unused one once', async () => {
     expect(await removeReceivingAccount({ id: added })).toEqual({ ok: false, reason: 'isDefault' });
     expect(await setDefaultReceivingAccount({ id: seeded })).toEqual({ ok: true, value: undefined });
     await post('payments', { household_id: HOUSEHOLD, amount_vnd: 3_000_000, received_on: '2026-10-05', method: 'bank_transfer', bank_account_id: added });
     expect(await removeReceivingAccount({ id: added })).toEqual({ ok: false, reason: 'inUse' });
+    expect(await editReceivingAccount({ id: added, ...account, account_no: `0073 000 ${run}` })).toEqual({ ok: false, reason: 'numberLocked' });
+    expect(await editReceivingAccount({ id: added, ...account, account_name: 'Trần Minh Demo' })).toEqual({ ok: true, value: undefined });
     expect(await addReceivingAccount({ id: spare, ...account, account_no: `0072 000 ${run}` })).toEqual({ ok: true, value: undefined });
     expect(await removeReceivingAccount({ id: spare })).toEqual({ ok: true, value: undefined });
     expect(await removeReceivingAccount({ id: spare })).toEqual({ ok: true, value: undefined });

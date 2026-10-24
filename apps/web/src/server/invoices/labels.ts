@@ -7,7 +7,7 @@ import type { AccountActionRefusal } from '@/server/actions/receiving-accounts';
 import { createSessionClient } from '@/server/supabase/server';
 
 const INVOICE_REFUSALS = ['reasonRequired', 'notIssued', 'notDraft', 'hasPayments', 'notFound', 'failed'] as const satisfies readonly InvoiceActionRefusal[];
-const ACCOUNT_REFUSALS = ['bank', 'accountNo', 'accountName', 'duplicate', 'isDefault', 'inUse', 'notFound', 'forbidden', 'failed'] as const satisfies readonly AccountActionRefusal[];
+const ACCOUNT_REFUSALS = ['bank', 'accountNo', 'accountName', 'duplicate', 'isDefault', 'inUse', 'numberLocked', 'notFound', 'forbidden', 'failed'] as const satisfies readonly AccountActionRefusal[];
 
 /** The bill's `Phát hành` and `Hủy hóa đơn` words, with the void question naming the bill. */
 export async function loadInvoiceActionLabels(number: string): Promise<InvoiceActionLabels> {

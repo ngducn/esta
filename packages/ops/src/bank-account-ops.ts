@@ -22,12 +22,19 @@ const idInputSchema = z.strictObject({ id: idSchema });
 type IdInput = z.output<typeof idInputSchema>;
 
 export type BankAccountSaved = { readonly id: string };
-/** `is_default` and `in_use` refuse a removal: bills pay into the default, and a payment keeps the account it landed in. */
-export type BankAccountRefusal = { readonly kind: 'unknown_bank' | 'duplicate' | 'is_default' | 'in_use' };
+/**
+ * `is_default` and `in_use` refuse a removal: bills pay into the default, and a payment keeps the account it landed in.
+ * `number_locked` refuses a new bank or number for an account a payment or statement names.
+ */
+export type BankAccountRefusal = { readonly kind: 'unknown_bank' | 'duplicate' | 'is_default' | 'in_use' | 'number_locked' };
 
 const ACCOUNT_COLUMNS = ['bank_bin', 'account_no', 'account_name'] as const satisfies readonly (keyof AccountColumns)[];
 
-const SENTINELS = { ESTA_BANK_ACCOUNT_NOT_FOUND: { kind: 'not_found' } } as const;
+const SENTINELS = {
+  ESTA_BANK_ACCOUNT_NOT_FOUND: { kind: 'not_found' },
+  ESTA_BANK_ACCOUNT_IS_DEFAULT: { kind: 'is_default' },
+  ESTA_BANK_ACCOUNT_NUMBER_LOCKED: { kind: 'number_locked' },
+} as const;
 
 type Table = 'bank_accounts' | 'bank_bins' | 'payments' | 'statement_imports';
 
@@ -52,11 +59,16 @@ async function takenByAnother(ctx: OpContext, { id, bank_bin, account_no }: Acco
   return data.length > 0;
 }
 
+async function named(ctx: OpContext, id: string): Promise<boolean> {
+  const references = await Promise.all([exists(ctx, 'payments', { bank_account_id: id }), exists(ctx, 'statement_imports', { bank_account_id: id })]);
+  return references.includes(true);
+}
+
 type Written = { readonly data: readonly { id: string }[] | null; readonly error: DatabaseError | null };
 
 /** RLS hides a write a non-admin attempts while the row still reads, so no row back from a stored account is `forbidden`. */
-async function settled(ctx: OpContext, id: string, { data, error }: Written): Promise<Result<BankAccountSaved, CommonRefusal>> {
-  if (error) return refuse(dbRefusal(error));
+async function settled(ctx: OpContext, id: string, { data, error }: Written): Promise<Result<BankAccountSaved, BankAccountRefusal | CommonRefusal>> {
+  if (error) return refuse(dbRefusal(error, SENTINELS));
   if (data !== null && data.length > 0) return { ok: true, value: { id } };
   return refuse((await stored(ctx, id)) === null ? { kind: 'not_found' } : { kind: 'forbidden' });
 }
@@ -71,7 +83,7 @@ export const bankAccountCreate = defineOp<AccountInput, NewAccount, BankAccountS
   async plan(ctx, input) {
     if (await exists(ctx, 'bank_accounts', { id: input.id })) return unchanged({ id: input.id });
     if (!(await exists(ctx, 'bank_bins', { bin: input.bank_bin }))) return refuse({ kind: 'unknown_bank' });
-    if (await exists(ctx, 'bank_accounts', { bank_bin: input.bank_bin, account_no: input.account_no })) return refuse({ kind: 'duplicate' });
+    if (await takenByAnother(ctx, input)) return refuse({ kind: 'duplicate' });
     return change({ ...input, is_default: !(await exists(ctx, 'bank_accounts', { is_default: true })) });
   },
   async apply(ctx, account) {
@@ -80,7 +92,10 @@ export const bankAccountCreate = defineOp<AccountInput, NewAccount, BankAccountS
   },
 });
 
-/** Corrects the bank, number or name of an account, read as Mẹ types them, as the add sheet reads them. */
+/**
+ * Corrects the bank, number or name of an account, read as Mẹ types them, as the add sheet reads them. Once a payment
+ * or statement names the account, only the holder name changes.
+ */
 export const bankAccountEdit = defineOp<AccountInput, AccountEdit, BankAccountSaved, BankAccountRefusal>({
   creates: null,
   input: accountInputSchema,
@@ -90,8 +105,10 @@ export const bankAccountEdit = defineOp<AccountInput, AccountEdit, BankAccountSa
     const { id, ...next } = input;
     const changed = changedColumns<AccountColumns>(current, next, ACCOUNT_COLUMNS);
     if (changed === null) return unchanged({ id });
+    const renumbered = 'bank_bin' in changed.set || 'account_no' in changed.set;
+    if (renumbered && (await named(ctx, id))) return refuse({ kind: 'number_locked' });
     if ('bank_bin' in changed.set && !(await exists(ctx, 'bank_bins', { bin: input.bank_bin }))) return refuse({ kind: 'unknown_bank' });
-    if (('bank_bin' in changed.set || 'account_no' in changed.set) && (await takenByAnother(ctx, input))) return refuse({ kind: 'duplicate' });
+    if (renumbered && (await takenByAnother(ctx, input))) return refuse({ kind: 'duplicate' });
     return change({ id, ...changed });
   },
   async apply(ctx, { id, set }) {
@@ -122,8 +139,7 @@ export const bankAccountDelete = defineOp<IdInput, IdInput, BankAccountSaved, Ba
     const current = await stored(ctx, id);
     if (current === null) return unchanged({ id });
     if (current.is_default) return refuse({ kind: 'is_default' });
-    const named = await Promise.all([exists(ctx, 'payments', { bank_account_id: id }), exists(ctx, 'statement_imports', { bank_account_id: id })]);
-    return named.includes(true) ? refuse({ kind: 'in_use' }) : change({ id });
+    return (await named(ctx, id)) ? refuse({ kind: 'in_use' }) : change({ id });
   },
   async apply(ctx, { id }) {
     return settled(ctx, id, await ctx.db.from('bank_accounts').delete().eq('household_id', ctx.householdId).eq('id', id).select('id'));

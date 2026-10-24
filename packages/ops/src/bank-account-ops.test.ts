@@ -78,6 +78,26 @@ describe('bankAccountEdit', () => {
     expect(await bankAccountEdit.plan(context(holding({}, other).db), input)).toEqual({ ok: false, reason: { kind: 'duplicate' } });
   });
 
+  it('keeps the bank and number of an account a payment or statement names, and still corrects its holder name', async () => {
+    for (const table of ['payments', 'statement_imports']) {
+      const named = (sent: Sent) => (sent.table === table && sent.query.get('bank_account_id') === `eq.${ACCOUNT}` ? [{}] : sent.table === 'bank_bins' ? [{}] : []);
+      for (const change of [{ account_no: '999' }, { bank_bin: '970422' }]) {
+        const input = bankAccountEdit.input.parse({ ...typed, ...change });
+        expect(await bankAccountEdit.plan(context(holding({}, named).db), input), table).toEqual({ ok: false, reason: { kind: 'number_locked' } });
+      }
+      const renamed = bankAccountEdit.input.parse({ ...typed, account_name: 'Trần Minh Demo' });
+      expect(await bankAccountEdit.plan(context(holding({}, named).db), renamed), table).toMatchObject({ ok: true, value: { kind: 'change' } });
+    }
+  });
+
+  it('reads the trigger that keeps a named number as number locked when a payment lands between the plan and the save', async () => {
+    const locked = fakeDb(
+      (sent) => (sent.method === 'GET' && sent.table === 'bank_accounts' && sent.query.get('id') === `eq.${ACCOUNT}` ? [STORED] : []),
+      (sent) => (sent.method === 'PATCH' ? { code: '23001', message: 'ESTA_BANK_ACCOUNT_NUMBER_LOCKED' } : null),
+    ).db;
+    expect(await runOp(bankAccountEdit, context(locked), { ...typed, account_no: '999' })).toEqual({ ok: false, reason: { kind: 'number_locked' } });
+  });
+
   it('reads an update RLS hid from a member who is not an admin as forbidden', async () => {
     const { db } = holding({});
     expect(await runOp(bankAccountEdit, context(db), { ...typed, account_name: 'Trần Minh Demo' })).toEqual({ ok: false, reason: { kind: 'forbidden' } });
@@ -117,6 +137,14 @@ describe('bankAccountDelete', () => {
       const named = holding({}, (sent) => (sent.table === table && sent.query.get('bank_account_id') === `eq.${ACCOUNT}` ? [{}] : []));
       expect(await bankAccountDelete.plan(context(named.db), { id: ACCOUNT }), table).toEqual({ ok: false, reason: { kind: 'in_use' } });
     }
+  });
+
+  it('reads the trigger that keeps the default as is_default when the account became the default after the plan', async () => {
+    const { db } = fakeDb(
+      (sent) => (sent.table === 'bank_accounts' && sent.method === 'GET' ? [STORED] : []),
+      (sent) => (sent.method === 'DELETE' ? { code: '23001', message: 'ESTA_BANK_ACCOUNT_IS_DEFAULT' } : null),
+    );
+    expect(await runOp(bankAccountDelete, context(db), { id: ACCOUNT })).toEqual({ ok: false, reason: { kind: 'is_default' } });
   });
 
   it('explains a payment that landed between the plan and the delete as in use', async () => {

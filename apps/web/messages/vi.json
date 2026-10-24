@@ -1087,13 +1087,12 @@
     "accountMakeDefault": "Đặt làm mặc định",
     "accountRemove": "Xóa",
     "accountRemoveTitle": "Xóa tài khoản {bank} {number}?",
-    "accountRemoveBody": "Mã QR sẽ không còn chuyển tiền vào tài khoản này.",
+    "accountRemoveBody": "Tài khoản sẽ không còn trong danh sách. Hóa đơn và tiền đã ghi không thay đổi.",
     "accountRemoveConfirm": "Xóa tài khoản",
     "accountKeep": "Giữ lại",
     "accountSample": "Mã QR mẫu",
     "accountSampleTitle": "Mã QR mẫu của {bank}",
-    "accountSampleBody": "Quét bằng ứng dụng ngân hàng để xem tên chủ tài khoản hiện ra có đúng không. Không cần chuyển tiền.",
-    "accountSampleNumber": "Mã QR mẫu để kiểm tra"
+    "accountSampleBody": "Quét bằng ứng dụng ngân hàng để xem tên chủ tài khoản hiện ra có đúng không. Không cần chuyển tiền."
   },
   "map": {
     "region": "Bản đồ tài sản",
@@ -1518,7 +1517,7 @@
     "accountSave": "Lưu tài khoản",
     "accountSaving": "Đang lưu…",
     "accountClose": "Đóng",
-    "accountRefusal": "{reason, select, bank {Chọn ngân hàng.} accountNo {Số tài khoản chỉ gồm chữ số và chữ cái, tối đa 19 ký tự.} accountName {Nhập tên chủ tài khoản, tối đa 50 ký tự.} duplicate {Gia đình đã có tài khoản này.} isDefault {Đây là tài khoản mặc định. Đặt tài khoản khác làm mặc định trước khi xóa.} inUse {Đã có tiền ghi nhận vào tài khoản này, nên tài khoản được giữ lại để lịch sử thu tiền đúng.} notFound {Tài khoản này không còn nữa. Tải lại trang.} forbidden {Chỉ quản trị viên mới thay đổi được tài khoản nhận tiền.} other {Chưa lưu được. Kiểm tra kết nối rồi thử lại.}}",
+    "accountRefusal": "{reason, select, bank {Chọn ngân hàng.} accountNo {Số tài khoản chỉ gồm chữ số và chữ cái, tối đa 19 ký tự.} accountName {Nhập tên chủ tài khoản, tối đa 50 ký tự.} duplicate {Gia đình đã có tài khoản này.} isDefault {Đây là tài khoản mặc định. Đặt tài khoản khác làm mặc định trước khi xóa.} inUse {Đã có tiền ghi nhận vào tài khoản này, nên tài khoản được giữ lại để lịch sử thu tiền đúng.} numberLocked {Đã có tiền ghi nhận vào tài khoản này, nên không đổi được ngân hàng hay số tài khoản. Bạn vẫn sửa được tên chủ tài khoản. Muốn nhận tiền vào số khác, hãy thêm tài khoản mới.} notFound {Tài khoản này không còn nữa. Tải lại trang.} forbidden {Chỉ quản trị viên mới thay đổi được tài khoản nhận tiền.} other {Chưa lưu được. Kiểm tra kết nối rồi thử lại.}}",
     "receiptPdf": "{kind, select, notice {Thông báo PDF} other {Biên nhận PDF}}",
     "receiptPng": "Ảnh gửi Zalo"
   },
