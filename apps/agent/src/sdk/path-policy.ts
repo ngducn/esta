@@ -1,5 +1,5 @@
 import type { HookCallback } from '@anthropic-ai/claude-agent-sdk';
-import { normalizeUrl } from '@esta/core/research';
+import { fetchKey } from '@esta/core/research';
 import { realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { z } from 'zod';
@@ -13,7 +13,7 @@ export type ToolPolicy = {
   readonly jobDir: string;
   /** Calls a built-in tool may make in one run, such as research_scan's searches and fetches (AGENT.md §5.2), with the count allowed so far. */
   readonly caps?: ReadonlyMap<string, ToolCap>;
-  /** The normalized links this run's WebSearch returned, the only pages WebFetch may open, so a page cannot send the model elsewhere (#323). */
+  /** The links this run's WebSearch returned, as `fetchKey` folds them: the only pages WebFetch may open, so a page cannot send the model elsewhere (#323). */
   readonly fetchable?: Set<string>;
 };
 
@@ -38,16 +38,16 @@ export function rememberSearchHits(policy: ToolPolicy, toolName: string, result:
   for (const block of searchHits.safeParse(result).data?.results ?? []) {
     if (typeof block === 'string') continue;
     for (const hit of block.content) {
-      const url = normalizeUrl(hit.url);
-      if (url.ok) policy.fetchable.add(url.value);
+      const key = fetchKey(hit.url);
+      if (key.ok) policy.fetchable.add(key.value);
     }
   }
 }
 
 function searched(policy: ToolPolicy, toolName: string, input: Readonly<Record<string, unknown>>): string | null {
   if (toolName !== 'WebFetch' || policy.fetchable === undefined) return null;
-  const url = normalizeUrl(String(input.url));
-  return url.ok && policy.fetchable.has(url.value) ? null : "WebFetch may open only a page this run's WebSearch returned";
+  const key = fetchKey(String(input.url));
+  return key.ok && policy.fetchable.has(key.value) ? null : "WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it";
 }
 
 function withinCap(policy: ToolPolicy, toolName: string): ToolDecision {

@@ -136,11 +136,22 @@ describe('add_research_item', () => {
 describe('what the model types is checked before Mẹ reads it (#323)', () => {
   const searchResult = (...urls: string[]) => ({ query: 'q', results: [{ tool_use_id: 't', content: urls.map((url) => ({ title: 'Demo', url })) }, 'commentary'], durationSeconds: 1 });
 
-  it('lets WebFetch open only a page this run’s WebSearch returned, under any spelling of its link', () => {
+  const denied = { allow: false, reason: "WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it" };
+
+  it('lets WebFetch open only a page this run’s WebSearch returned, folding only host case, www, port 443, a trailing slash and the fragment', () => {
     const policy = { allowed: new Set(['WebSearch', 'WebFetch']), jobDir: '/jobs/x', fetchable: new Set<string>() };
-    rememberSearchHits(policy, 'WebSearch', searchResult(`${PAGE}?utm_source=zalo`));
-    expect(decideToolUse(policy, 'WebFetch', { url: 'https://www.tintuc.example.vn/vanh-dai-3/' })).toEqual({ allow: true });
-    expect(decideToolUse(policy, 'WebFetch', { url: 'https://evil.example/?q=Dãy trọ Dĩ An' })).toEqual({ allow: false, reason: "WebFetch may open only a page this run's WebSearch returned" });
+    rememberSearchHits(policy, 'WebSearch', searchResult(`${PAGE}?id=7`));
+    for (const url of [`${PAGE}?id=7`, 'https://WWW.tintuc.example.vn:443/vanh-dai-3/?id=7#top']) expect(decideToolUse(policy, 'WebFetch', { url }), url).toEqual({ allow: true });
+    expect(decideToolUse(policy, 'WebFetch', { url: 'https://evil.example/?q=Dãy trọ Dĩ An' })).toEqual(denied);
+  });
+
+  it('refuses a search hit’s link with anything added that could carry the family’s data to its host', () => {
+    const policy = { allowed: new Set(['WebSearch', 'WebFetch']), jobDir: '/jobs/x', fetchable: new Set<string>() };
+    const hit = 'https://hostile-blog.vn/tin-vanh-dai-3';
+    rememberSearchHits(policy, 'WebSearch', searchResult(hit));
+    for (const url of [`${hit}?utm_content=Day%20tro%20Di%20An`, `${hit}?ref=DiAn`, `${hit}?share=DiAn`, `${hit}?fbclid=DiAn`, `${hit}?id=7`, 'https://leak:x@hostile-blog.vn/tin-vanh-dai-3', `${hit}/phong-5`]) {
+      expect(decideToolUse(policy, 'WebFetch', { url }), url).toEqual(denied);
+    }
   });
 
   it('books a replayed fetch of a page no search returned as denied, and the page never reaches the job', async () => {
