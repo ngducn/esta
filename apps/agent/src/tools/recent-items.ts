@@ -6,7 +6,6 @@ import type { CitedRecord, RunSheet } from './fact-sheet';
 
 const KINDS = ['alert', 'research_scan_empty'];
 
-/** Which stored research items recent_items also answers: those of the last `days` days, at `minRelevance` or above. */
 export type ResearchWindow = { readonly days: number; readonly minRelevance: number; readonly limit: number };
 
 export type ResearchRecord = { readonly title_label: string; readonly source_name: string; readonly published_display: string };
@@ -15,7 +14,6 @@ type Binding = { readonly db: AgentDb; readonly householdId: string; readonly as
 
 const DAY_MS = 86_400_000;
 
-/** The instant `days` days before the clock's now, the window research_title_similar dedupes over too. */
 export async function daysAgo(clock: () => Promise<Clock>, days: number): Promise<string> {
   return new Date(Date.parse((await clock()).now()) - days * DAY_MS).toISOString();
 }

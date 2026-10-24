@@ -33,9 +33,7 @@ export type PreparedJob = {
   readonly tools: EstaTools;
   /** Checks the job's effects and returns `agent_jobs.result`; throws when the model did not do the task. */
   finish(run: { readonly reply: string; readonly model: string }): Promise<Json>;
-  /** Calls each of the kind's built-in tools may make in this run, read from the household's settings. */
   readonly caps?: Readonly<Record<string, number>>;
-  /** Receives each built-in tool's answer, such as the page WebFetch read. */
   observe?(call: BuiltInResult): void;
 };
 
@@ -82,7 +80,6 @@ export const JOBS = {
     kind: 'research_scan',
     builtInTools: ['WebSearch', 'WebFetch'],
     mcpTools: ['research_topics', 'list_properties', 'recent_items', 'add_research_item'],
-    // AGENT.md says 30; 12 searches, 8 fetches, 3 reads and an item per article leave no room for repair turns when the model calls one tool a turn (#318).
     maxTurns: 40,
     timeoutMs: 10 * 60_000,
     modelRole: 'routine',

@@ -1,7 +1,6 @@
 create extension if not exists pg_trgm with schema extensions;
 
--- What research_scan searches for, derived from the portfolio each run (AGENT.md §5.2). Members read them; only the
--- worker writes them, so v1 has no edit control.
+-- What research_scan searches for, derived from the portfolio each run (AGENT.md §5.2).
 create table public.research_topics (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households (id) on delete cascade,
@@ -59,8 +58,6 @@ drop policy research_items_delete on public.research_items;
 revoke insert, update, delete on table public.research_topics from authenticated;
 revoke insert, update, delete on table public.research_items from authenticated;
 
--- The highest title similarity among the household's items stored since p_since, compared without diacritics so a
--- title retyped with or without them still matches (AGENT.md §5.2 dedupes above 0.6 over 30 days).
 create function public.research_title_similar(p_household_id uuid, p_title text, p_since timestamptz)
 returns real
 language sql

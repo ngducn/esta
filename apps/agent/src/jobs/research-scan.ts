@@ -21,14 +21,13 @@ const EMPTY_NOTE: Readonly<Record<Locale, string>> = {
   en: "There is no notable news for the family's areas today.",
 };
 
-/** AGENT.md §5.2 defaults; `household_settings.agent` may lower or raise them. */
-const capsSchema = z.object({ research_searches: z.int().min(0).max(50).default(12), research_fetches: z.int().min(0).max(50).default(8) });
+/** AGENT.md §5.2 maximums, which `household_settings.agent` may lower; maxTurns 40 is sized for them. */
+const capsSchema = z.object({ research_searches: z.int().min(0).max(12).catch(12), research_fetches: z.int().min(0).max(8).catch(8) });
 
 const fetchedPage = z.object({ code: z.number(), result: z.string(), url: z.string().optional() });
 
 export type ScanRequestInput = Omit<ResearchBinding, 'sheet' | 'topics' | 'properties' | 'fetched'> & { readonly timezone: string; readonly caps: ScanCaps };
 
-/** The research_scan request, built here for the worker and the golden test alike, so a recording hashes the prompt the worker ships. */
 export function researchScanRequest(input: ScanRequestInput): PreparedJob {
   const { sheet, cite } = runSheet();
   const topics = researchTopicsTool(input.db, input.householdId, cite);
@@ -63,7 +62,6 @@ export function researchScanRequest(input: ScanRequestInput): PreparedJob {
   };
 }
 
-/** Whether an earlier scan today stored news, so a rerun that adds nothing does not tell Mẹ there is none. */
 async function storedToday({ db, householdId, asOf, timezone }: ScanRequestInput): Promise<boolean> {
   const { data, error } = await db.from('research_items').select('created_at').eq('household_id', householdId).order('created_at', { ascending: false }).limit(1);
   if (error) throw new Error(`Reading today's research items failed: ${error.message}`);
@@ -79,7 +77,6 @@ async function scanCaps(db: AgentDb, householdId: string): Promise<ScanCaps> {
   return { WebSearch: research_searches, WebFetch: research_fetches };
 }
 
-/** The business date of the household's last research_scan that finished, the keep rule's "since the last run". */
 async function lastSuccessOn(db: AgentDb, householdId: string, timezone: string): Promise<IsoDate | null> {
   const { data, error } = await db.from('agent_jobs').select('finished_at').eq('household_id', householdId).eq('kind', 'research_scan').eq('status', 'done').order('finished_at', { ascending: false }).limit(1);
   if (error) throw new Error(`Reading the last research scan failed: ${error.message}`);

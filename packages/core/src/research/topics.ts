@@ -2,7 +2,6 @@ import { shortProvinceName } from '../address/format-current';
 import type { PropertyKind } from '../properties/kinds';
 import { NATIONAL_TOPICS } from './national-topics';
 
-/** One topic research_scan searches for. `key` is stable across runs, so a rerun updates the same row. */
 export type ResearchTopic = {
   readonly key: string;
   readonly label: string;
@@ -43,14 +42,13 @@ const formerly = (names: readonly string[]) => (names.length === 0 ? '' : ` (${n
  */
 export function deriveResearchTopics(properties: readonly TopicProperty[], adminUnits: ReadonlyMap<string, string>, legacy: readonly LegacyUnit[]): ResearchTopic[] {
   const nameOf = (code: string) => adminUnits.get(code) ?? code;
-  // A commune that gave only part of itself would name a district most of whose people live elsewhere.
-  const legacyOf = (communes: readonly string[]) => legacy.filter((unit) => unit.whole && communes.includes(unit.newCommuneCode));
+  const wholeMergersInto = (communes: readonly string[]) => legacy.filter((unit) => unit.whole && communes.includes(unit.newCommuneCode));
   const ids = (held: readonly TopicProperty[]) => held.map((property) => property.id);
 
   const provinces = distinct(properties.map((property) => property.provinceCode)).toSorted().map((code): ResearchTopic => {
     const held = properties.filter((property) => property.provinceCode === code);
     const name = shortProvinceName(nameOf(code));
-    const former = distinct(legacyOf(held.map((property) => property.communeCode)).map((unit) => shortProvinceName(unit.oldProvinceName))).filter((old) => !samePlace(old, name));
+    const former = distinct(wholeMergersInto(held.map((property) => property.communeCode)).map((unit) => shortProvinceName(unit.oldProvinceName))).filter((old) => !samePlace(old, name));
     const rented = distinct(held.map((property) => RENTED_AS[property.kind])).join(', ');
     const queries = [name, ...former].flatMap((place) => [`bảng giá đất ${place}`, `quy hoạch ${place}`, `hạ tầng giao thông ${place} vành đai metro cao tốc`, `thị trường cho thuê ${rented} ${place}`]);
     return { key: `province:${code}`, label: `${name}${formerly(former)}`, query_templates: queries, province_codes: [code], property_ids: ids(held), source: 'auto' };
@@ -61,7 +59,7 @@ export function deriveResearchTopics(properties: readonly TopicProperty[], admin
     const provinceCode = held[0]?.provinceCode ?? '';
     const province = shortProvinceName(nameOf(provinceCode));
     const commune = nameOf(code);
-    const units = legacyOf([code]);
+    const units = wholeMergersInto([code]);
     const former = distinct([...units.map((unit) => shortProvinceName(unit.oldDistrictName)), ...units.map((unit) => shortProvinceName(unit.oldProvinceName)).filter((old) => !samePlace(old, province))]);
     const area = former[0] ?? province;
     return {

@@ -24,7 +24,6 @@ const recordingSchema = z.object({
   numTurns: z.number().int().nonnegative(),
   /** The live run's wall time, kept for the perf budget (any live recording within 120 s). */
   wallMs: z.number().int().nonnegative().optional(),
-  /** `result` holds a built-in tool's answer, such as the page WebFetch read, which replays to the job's checks. */
   toolCalls: z.array(z.object({ name: z.string(), input: z.record(z.string(), z.unknown()), result: z.unknown().optional() })),
   reply: z.string(),
 });

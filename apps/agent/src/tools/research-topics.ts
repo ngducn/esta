@@ -3,7 +3,6 @@ import type { AgentDb } from '../supabase';
 import type { CitedRecord, RunSheet } from './fact-sheet';
 import { adminUnitNames, readHeldProperties } from './list-properties';
 
-/** The household's topics from its properties as they stand, under current and pre-2025 names (AGENT.md §5.2). */
 async function deriveTopics(db: AgentDb, householdId: string): Promise<ResearchTopic[]> {
   const held = (await readHeldProperties(db, householdId)).flatMap(({ id, kind, communeCode, provinceCode }) => (communeCode === null || provinceCode === null ? [] : [{ id, kind, communeCode, provinceCode }]));
   const communes = [...new Set(held.map((property) => property.communeCode))];
@@ -16,10 +15,6 @@ async function deriveTopics(db: AgentDb, householdId: string): Promise<ResearchT
   return deriveResearchTopics(held, names, units);
 }
 
-/**
- * Brings `research_topics` in line with the portfolio before the scan: one upsert by topic key, then the automatic
- * topics of properties the household no longer holds turn inactive. Both statements converge, so a rerun is a no-op.
- */
 export async function syncResearchTopics(db: AgentDb, householdId: string): Promise<void> {
   const topics = await deriveTopics(db, householdId);
   const upsert = await db.from('research_topics').upsert(
@@ -47,7 +42,6 @@ export async function syncResearchTopics(db: AgentDb, householdId: string): Prom
 
 export type TopicRecord = { readonly topic_label: string; readonly query_templates: readonly string[]; readonly province_codes: readonly string[] };
 
-/** `research_topics`: the household's active topics as citable records. A second call answers the same records. */
 export function researchTopicsTool(db: AgentDb, householdId: string, cite: RunSheet['cite']) {
   const records = new Map<string, CitedRecord<TopicRecord>>();
   let listed: Array<CitedRecord<TopicRecord>> | undefined;

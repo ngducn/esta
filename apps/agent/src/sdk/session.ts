@@ -11,7 +11,6 @@ import { fromSdkResult, type SessionResult } from './result';
 
 export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
 
-/** A built-in tool's answer, such as the page WebFetch read, which a job may check its writes against. */
 export type BuiltInResult = ToolCall & { readonly result: unknown };
 
 export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[] };
@@ -23,7 +22,6 @@ export type SessionRequest = {
   readonly configDir: string;
   readonly tools: EstaTools;
   readonly canon: Canonicalizer;
-  /** Calls each built-in tool may make in this run. */
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
 };
@@ -43,7 +41,7 @@ function toolPolicy({ spec, jobDir, tools, caps }: SessionRequest): ToolPolicy {
   return { allowed: new Set([...spec.builtInTools, ...tools.keys()]), jobDir, ...(caps === undefined ? {} : { caps: toolCaps(caps) }) };
 }
 
-/** Hands each built-in tool's answer to the job; the SDK runs PostToolUse only for a call that succeeded. */
+/** The SDK runs PostToolUse only for a call that succeeded. */
 function observeHook(request: SessionRequest): HookCallback {
   return async (input) => {
     if (input.hook_event_name === 'PostToolUse' && !request.tools.has(input.tool_name)) {

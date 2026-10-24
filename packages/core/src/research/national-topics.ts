@@ -1,4 +1,4 @@
-/** The standing national topics every household follows (AGENT.md §5.2), kept as data so a new one is one entry. */
+/** The standing national topics every household follows (AGENT.md §5.2). */
 export const NATIONAL_TOPICS = [
   {
     key: 'national:land_law',

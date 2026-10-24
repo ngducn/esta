@@ -16,11 +16,9 @@ export type ResearchBinding = {
   readonly locale: Locale;
   readonly asOf: IsoDate;
   readonly lastSuccessOn: IsoDate | null;
-  /** The run's sheet; each call adds `f0`, the item's own source, on a copy. */
   readonly sheet: FactSheet;
   readonly topics: ReadonlyMap<string, { readonly province_codes: readonly string[] }>;
   readonly properties: ReadonlyMap<string, { readonly id: string }>;
-  /** The text WebFetch returned in this run for each page it read, by normalized link. */
   readonly fetched: ReadonlyMap<string, string>;
   clock(): Promise<Clock>;
 };
@@ -46,7 +44,6 @@ function handlesIn(list: readonly string[], known: ReadonlyMap<string, unknown>,
   if (unknown.length > 0) throw new ToolRejection(`${unknown.join(', ')}: not a ${tool} record of this run. Use only the handles ${tool} returned.`);
 }
 
-/** `f0` for one item: its publication date and the phrases copied from its page, which the page must hold word for word. */
 function sourceRecord(draft: ResearchItemDraft, page: string, locale: Locale): Record<string, string> {
   const text = squash(page);
   const missing = draft.quotes.filter((quote) => !text.includes(squash(quote)));
@@ -54,11 +51,7 @@ function sourceRecord(draft: ResearchItemDraft, page: string, locale: Locale): R
   return Object.fromEntries([['published_display', formatDate(draft.published_on, locale)], ...draft.quotes.map((quote, i) => [`quote_${i + 1}_label`, squash(quote)])]);
 }
 
-/**
- * `add_research_item` for research_scan (AGENT.md §5.2). It keeps an item only from a page fetched in this run, new
- * under the keep rule, and not a stored link or title of the last 30 days; the texts pass the number guard with the
- * item's own repair turn, and the summary holds at most 60 words as it reads.
- */
+/** `add_research_item` for research_scan (AGENT.md §5.2). */
 export function researchItemWriter(binding: ResearchBinding) {
   const guards = new Map<string, { readonly sheet: Map<string, Readonly<Record<string, unknown>>>; readonly guard: ReturnType<typeof guardedWriter> }>();
   const kept: Kept[] = [];

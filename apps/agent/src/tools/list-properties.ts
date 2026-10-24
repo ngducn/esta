@@ -13,7 +13,6 @@ export type HeldProperty = {
   readonly kind: PropertyKind;
   readonly useMode: string;
   readonly legalStatus: string;
-  /** Null when the property has no current address yet. */
   readonly communeCode: string | null;
   readonly provinceCode: string | null;
 };
@@ -58,7 +57,7 @@ export type PropertyRecord = {
   readonly province_name: string | null;
 };
 
-/** `list_properties` (AGENT.md §4): the household's properties as citable records. A second call answers the same records. */
+/** `list_properties` (AGENT.md §4). */
 export function listPropertiesTool(db: AgentDb, householdId: string, cite: RunSheet['cite']) {
   const records = new Map<string, CitedRecord<PropertyRecord>>();
   let listed: Array<CitedRecord<PropertyRecord>> | undefined;

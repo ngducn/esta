@@ -40,7 +40,6 @@ const item = (patch: Row = {}): Row => ({
   ...patch,
 });
 
-/** A prepared scan whose tools have read the topics and properties, with `pages` already fetched in this run. */
 async function scan(options: { pages?: Record<string, string>; similarity?: number; overrides?: Parameters<typeof scanRequest>[1] } = {}) {
   const tables = researchTables();
   const db = withTitleCheck(fakeDb(tables), tables);
@@ -64,7 +63,7 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
     expect(decideToolUse(policy, 'WebSearch', { query: ' ' }).allow).toBe(false);
   });
 
-  it('reads the caps from the household settings, defaulting to 12 and 8', async () => {
+  it('reads the caps from the household settings, which may lower 12 and 8 but not raise them', async () => {
     const tables = researchTables();
     const worker = replayWorker(fakeDb(tables), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
     const prepare = (agent: Row) => {
@@ -73,6 +72,7 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
     };
     expect((await prepare({})).caps).toEqual({ WebSearch: 12, WebFetch: 8 });
     expect((await prepare({ research_searches: 4, research_fetches: 2 })).caps).toEqual({ WebSearch: 4, WebFetch: 2 });
+    expect((await prepare({ research_searches: 30, research_fetches: 8 })).caps).toEqual({ WebSearch: 12, WebFetch: 8 });
   });
 });
 

@@ -9,16 +9,8 @@ export type ResearchKind = (typeof RESEARCH_KINDS)[number];
 /** `summary_vi` as it reads, after its placeholders fill (AGENT.md §5.2). */
 export const MAX_SUMMARY_TOKENS = 60;
 
-/** A research item at or above this relevance may join the morning brief's market section. */
-export const BRIEF_RELEVANCE = 0.6;
-
 export const MAX_QUOTES = 3;
 
-/**
- * What `add_research_item` takes from the model. The texts are templates the number guard fills; `topics` and
- * `properties` are handles of this run's research_topics and list_properties records; `quotes` are short phrases copied
- * from the text WebFetch returned for `source_url`, which the texts cite as `{{f0.quote_1_label}}` and on.
- */
 export const researchItemDraftSchema = z
   .object({
     source_url: z.string().trim().min(1).max(2000),

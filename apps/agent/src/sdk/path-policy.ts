@@ -19,7 +19,6 @@ export const toolCaps = (caps: Readonly<Record<string, number>>): ReadonlyMap<st
 
 const PATH_FIELDS: ReadonlyMap<string, string> = new Map([['Read', 'file_path']]);
 
-/** The web tools' input rules: a search needs a query, and a fetch reads one https page (AGENT.md §5.2: do not crawl). */
 type InputRule = (input: Readonly<Record<string, unknown>>) => string | null;
 
 const WEB_RULES: ReadonlyMap<string, InputRule> = new Map<string, InputRule>([

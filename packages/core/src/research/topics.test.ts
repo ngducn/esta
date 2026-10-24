@@ -16,7 +16,6 @@ const ADMIN_UNITS = new Map([
   ['27694', 'Phường Long An'],
 ]);
 
-/** The seven properties of the `full` seed, by key, with their current commune and province. */
 const SEED: readonly TopicProperty[] = [
   { id: 'q7', kind: 'townhouse', provinceCode: '79', communeCode: '27475' },
   { id: 'thu-duc', kind: 'apartment', provinceCode: '79', communeCode: '26824' },
@@ -29,7 +28,6 @@ const SEED: readonly TopicProperty[] = [
 
 const unit = (newCommuneCode: string, oldProvinceName: string, oldDistrictName: string, whole = true): LegacyUnit => ({ newCommuneCode, oldProvinceName, oldDistrictName, whole });
 
-/** The NSO conversion rows for those communes (`admin_unit_legacy_map.csv`), one per old district. */
 const LEGACY: readonly LegacyUnit[] = [
   unit('24823', 'Tỉnh Lâm Đồng', 'Thành phố Bảo Lộc'),
   unit('25942', 'Tỉnh Bình Dương', 'Thành phố Dĩ An'),
