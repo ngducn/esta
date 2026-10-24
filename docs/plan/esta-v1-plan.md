@@ -4377,20 +4377,16 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Files.**
 
-- [ ] Create `supabase/migrations/20261007000600_research_dedupe.sql` with `pg_trgm`, a trigram index on `research_items.title_vi` and `research_title_similar(p_household_id, p_title, p_since)`.
-- [ ] Create `packages/core/src/research/topics.ts`, `packages/core/src/research/nationalTopics.ts`, `packages/core/src/research/normalizeUrl.ts`, `packages/core/src/research/keepRule.ts` and their tests.
-- [ ] Create `apps/agent/src/jobs/researchScan.ts`, `apps/agent/src/tools/write/addResearchItem.ts`, `packages/core/src/agent-schemas/research.ts` and `fixtures/agent-replay/research_scan/`.
-- [ ] Create `apps/web/src/app/(app)/assistant/market/page.tsx` and `e2e/assistant-market.spec.ts`. Extend `supabase/tests/agent_research_conversations.test.sql` and the seed generator.
+- [ ] Create `apps/web/src/app/(app)/assistant/market/page.tsx`, `apps/web/src/components/assistant/citation-chip.tsx`, `apps/web/src/components/assistant/assistant-tabs.tsx`, `apps/web/src/server/agent/research.ts` and `e2e/assistant-market.spec.ts`.
+- [ ] Create `packages/core/src/research/page-check.ts` and its test: the quote and date checks against the text WebFetch returned.
+- [ ] Extend `apps/agent/src/sdk/path-policy.ts`, `apps/agent/src/tools/add-research-item.ts`, `apps/agent/src/tools/create-brief.ts`, `apps/agent/src/tools/recent-items.ts`, the `morning_brief` and `research_scan` prompts, and re-hand-write the `morning_brief` and `research_scan` recordings.
 
 **Build.**
 
-- [ ] Name the data shape. `ResearchTopic` is `{ label, query_templates, province_codes, property_ids, source: 'auto' }`. `deriveResearchTopics(properties, adminUnits, legacyMap)` in `packages/core/src/research/topics.ts` returns one topic per province and commune held, using current and legacy names (Bình Dương for `di-an`, Long An for `long-an`), plus the national topics stored as data in `nationalTopics.ts`.
-- [ ] Extend the seed generator to write the derived `research_topics` for every household with the same function.
-- [ ] Write the `research_scan` job with the AGENT.md §3 tools, `maxTurns` 30, a 10 minute timeout and schedule `06:00`. The S1 `PreToolUse` hook counts `WebSearch` and `WebFetch` calls and denies calls past the caps in `household_settings.agent` (default 12 and 8). In replay, search and fetch results come from the recording and CI makes no network call.
-- [ ] Implement `add_research_item` in `apps/agent/src/tools/write/addResearchItem.ts`. It normalizes the URL with `normalizeUrl()`, applies `keepRule()` (published since the last successful run, or within 7 days on the first run, or a rule effective within 60 days), drops duplicates by URL or `research_title_similar` above 0.6 over 30 days, checks `summary_vi` at most 60 tokens, and runs the number guard.
-- [ ] Write one `research_scan_empty` item `Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.` when a run keeps nothing. A source that fails to fetch is dropped and the run continues.
-- [ ] Feed `morning_brief` up to 3 items with relevance at least 0.6 into `market`, each with a citation chip. Re-record the `morning_brief` recording.
-- [ ] Build the Thị trường tab. It lists items newest first with title, `why_it_matters_vi`, numbered citation chips showing source name and `dd/mm/yyyy`, a property filter, and a read-only `Chủ đề theo dõi` list of topics with no edit control.
+- [ ] Fix the five checks of #323 before Mẹ sees an item. WebFetch may open only a page this run's WebSearch returned (normalized compare), and the hook books any other fetch as a denial. `source_name` passes the number guard as plain text, with the page's host as `{{f0.host_label}}`. `published_on` must appear in the fetched text, or the item drops as `date_unconfirmed`; an `effective_on` the text does not hold is stored as null. A quote holds at least three words and matches the page at word boundaries. `source_url` stores the normalized fetched link.
+- [ ] Feed `morning_brief` up to 3 of today's research items with relevance at least 0.6 through `recent_items`; `create_brief` takes a `market` list whose lines pass the number guard, asks for a line for each item while there is room, and renders each with its source chip (source name and `dd/mm/yyyy`, opening the https source). Re-hand-write the `morning_brief` recording.
+- [ ] Name a failed `research_scan` in the brief's `Còn thiếu` section, beside the inputs still queued or running.
+- [ ] Build the Thị trường tab beside Hộp thư on Trợ lý. It lists items newest first with title, `why_it_matters_vi`, numbered citation chips showing source name and `dd/mm/yyyy`, a property filter, today's empty note when the scan kept nothing, and a read-only `Chủ đề theo dõi` list of topics with no edit control.
 - [ ] Run `/impeccable harden` on the Thị trường tab for long Vietnamese titles and source names, 130% text scale, empty, loading, error and offline states.
 
 **You see.**
@@ -4401,12 +4397,11 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/research/topics.test.ts` gains cases for the seven seed properties giving TP. Hồ Chí Minh, Đồng Nai, Tây Ninh and Lâm Đồng topics with the legacy names Bình Dương and Long An, and the national topics present once.
-- [ ] `normalizeUrl.test.ts` gains cases for tracking parameters, `www.`, trailing slash and fragment. `keepRule.test.ts` gains cases for 7 days on the first run and a rule effective in 59 and 61 days.
-- [ ] `apps/agent/test/jobs/researchScan.test.ts` covers caps denied by the hook, an unreachable source dropped, URL and title duplicates dropped, the empty item, and related property ids that exist (AGT-5).
-- [ ] `supabase/tests/agent_research_conversations.test.sql` gains a case for `research_title_similar` scoped to one household. Run `pnpm db:test`.
+- [ ] `packages/core/src/research/page-check.test.ts` covers a quote under three words, `50` inside `150`, a lone digit, and the date forms `dd/mm/yyyy`, `d/m/yyyy`, `yyyy-mm-dd` and `ngày d tháng m năm yyyy`.
+- [ ] `apps/agent/test/jobs/research-scan.test.ts` covers, each failing without its fix: a fetch of a page no search returned denied and booked, a typed digit in `source_name` sent back for repair, an unconfirmed `published_on` dropped and an unconfirmed `effective_on` stored as null, a short or mid-word quote refused, and `source_url` stored normalized.
+- [ ] `apps/agent/test/jobs/morning-brief.test.ts` covers the market lines owed for each eligible item, a market line through the number guard, and a failed `research_scan` named under `Còn thiếu`.
 - [ ] Golden tests in AGENT.md §7 for `research_scan` and `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
-- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-market.spec.ts` and `pnpm e2e e2e/assistant-inbox.spec.ts`.
+- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-market.spec.ts`, `pnpm e2e e2e/morning-brief.spec.ts` and `pnpm e2e e2e/assistant-inbox.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-market.spec.ts`.
