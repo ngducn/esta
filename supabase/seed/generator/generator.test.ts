@@ -9,6 +9,9 @@ import { DEFAULT_OPTIONS, generate, parseOptions } from './index.ts';
 import { PROPERTY_SEEDS } from './properties.ts';
 import { createRng, rngFor } from './rng.ts';
 import { renderSeed } from './sql.ts';
+import type { VariantName } from './variants.ts';
+
+const valueRows = (statement: string) => statement.split(/\n(?= {2}\(|on conflict)/).filter((line) => line.startsWith('  ('));
 
 function insertedRows(sql: string, table: string): string[] {
   const statement = sql.split(';\n').find((part) => part.includes(`insert into ${table} (`));
@@ -63,6 +66,13 @@ describe('generate', () => {
     expect(northstar.filter((row) => row.includes('Dãy trọ Dĩ An') || row.includes("'DIAN'"))).toEqual([]);
   });
 
+  it("leaves the watch's morning notes in every household, and none about Dĩ An in northstar", () => {
+    const titles = (variant: VariantName) => insertedRows(generate({ ...DEFAULT_OPTIONS, lanes: 1, variant }), 'public.agent_items').map((row) => row.split("'")[11]);
+    expect(titles('full')).toEqual(Array(2).fill(['Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày', 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 25 ngày', 'Ba việc cần để ý']).flat());
+    expect(titles('northstar')).toEqual(Array(2).fill(['Hợp đồng Căn hộ Thủ Đức hết hạn sau 25 ngày', 'Hai việc cần để ý']).flat());
+    expect(generate({ ...DEFAULT_OPTIONS, variant: 'northstar' })).not.toMatch(/Phòng 8 Dãy trọ Dĩ An để trống/);
+  });
+
   it('marks the database as seeded, which production never is', () => {
     expect(generate(DEFAULT_OPTIONS)).toContain('insert into private.local_stack default values on conflict do nothing;');
   });
@@ -76,8 +86,9 @@ describe('generate', () => {
     expect(statements.length).toBeGreaterThan(0);
     for (const statement of statements) {
       expect(statement).toMatch(/\(.*created_at, updated_at\) values/);
-      for (const row of statement.split('\n').filter((line) => line.startsWith('  ('))) {
-        expect(row).toMatch(/'2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\),?$/);
+      const stamps = statement.includes('insert into public.agent_items ') ? /'2026-10-07T02:00:00\.000Z'\),?$/ : /'2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\),?$/;
+      for (const row of valueRows(statement)) {
+        expect(row).toMatch(stamps);
       }
     }
     expect(sql).toMatch(/'manual', '2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\n\s*from pg_temp\.seed_transfer;/);

@@ -5,34 +5,43 @@ import type { Member } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { retryHint, type RetryHint } from './retry-hint';
 
-export type NewItem = {
+const INBOX = ['new', 'read'] as const;
+export type InboxStatus = (typeof INBOX)[number];
+
+export type InboxNote = {
   readonly id: string;
   readonly title: string;
+  readonly bodyMd: string | null;
+  readonly status: InboxStatus;
+  readonly operatorOnly: boolean;
   readonly createdAt: Instant;
   readonly retry: RetryHint | null;
-  /** The review of the document the item is about, where a read is checked or a failed one is entered by hand. */
   readonly reviewHref: string | null;
 };
 
-const related = z.object({ document_id: z.uuid() });
+const fields = z.object({ status: z.enum(INBOX), audience: z.enum(['all', 'operator']) });
+const related = z.object({ document_id: z.uuid(), extraction_id: z.uuid() });
 
-/** The household's unread assistant items, newest first. RLS keeps operator items to operators (FND-2). */
-export async function listNewItems({ household, role }: Pick<Member, 'household' | 'role'>): Promise<NewItem[]> {
+export async function listInbox({ household, role }: Pick<Member, 'household' | 'role'>): Promise<InboxNote[]> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('agent_items')
-    .select('id, title, created_at, proposal, related')
+    .select('id, title, body_md, status, audience, created_at, proposal, related')
     .eq('household_id', household.id)
-    .eq('status', 'new')
+    .in('status', INBOX)
     .order('created_at', { ascending: false })
     .order('id')
-    .limit(20);
-  if (error) throw new Error(`Reading the assistant items failed: ${error.message}`);
+    .limit(50);
+  if (error) throw new Error(`Reading the assistant inbox failed: ${error.message}`);
   return data.map((row) => {
+    const { status, audience } = fields.parse(row);
     const document = related.safeParse(row.related);
     return {
       id: row.id,
       title: row.title,
+      bodyMd: row.body_md,
+      status,
+      operatorOnly: audience === 'operator',
       createdAt: parseInstant(row.created_at),
       retry: retryHint(row.proposal, role),
       reviewHref: document.success ? `/documents/${document.data.document_id}/review` : null,

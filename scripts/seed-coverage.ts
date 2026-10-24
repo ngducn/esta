@@ -21,7 +21,6 @@ export const SEED_EXEMPT: Readonly<Record<string, string>> = {
   worker_heartbeats: 'runtime: the running worker writes it; a fresh reset reads "never"',
   test_clock: 'runtime: set by pnpm clock:set and the tests (FND-9)',
   change_batches: "runtime: the connector's history of plans Claude applied, with their undo",
-  agent_items: 'runtime: the agent worker writes it as it runs',
   statement_imports:
     'a seeded import would remember its column mapping and claim the fixture transfers, so the LSE-8 specs would not start from a first import; SPEC §9.3 lists the bank statements as fixture files',
   statement_rows: 'the lines of a statement import, as statement_imports',

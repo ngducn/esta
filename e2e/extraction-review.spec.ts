@@ -386,7 +386,7 @@ test('main flow: Mẹ opens the waiting review from the Trợ lý item, fixes th
   await open(page, 'me.lane7@demo.esta.test', 'light', PHONE);
   const documentId = await uploadAndRead(page, 7, 'long-an', 'gcn_2024-photo', 'Sổ hồng Long An lane 7');
   await page.goto('/assistant');
-  const item = page.getByTestId('new-item').filter({ hasText: 'Đã đọc xong Sổ hồng Long An lane 7. Mời bạn kiểm tra lại.' });
+  const item = page.getByTestId('inbox-item').filter({ hasText: 'Đã đọc xong Sổ hồng Long An lane 7. Mời bạn kiểm tra lại.' });
   await item.first().getByTestId('item-review').click();
   await expect(page).toHaveURL(`/documents/${documentId}/review`);
   const marked = page.locator('[data-testid="extraction-field"][data-needs-check="true"]').first();
@@ -400,7 +400,7 @@ test('main flow: Mẹ opens the waiting review from the Trợ lý item, fixes th
   await expect(page).toHaveURL(`/properties/${propertyId(7, 'long-an')}/legal`, { timeout: 15_000 });
   await expect(page.getByText(/Thửa số 56\b/).first()).toBeVisible();
   await page.goto('/assistant');
-  await expect(page.locator(`[data-testid="new-item"]:has(a[href="/documents/${documentId}/review"])`), 'the item leaves the new list once reviewed').toHaveCount(0);
+  await expect(page.locator(`[data-testid="inbox-item"]:has(a[href="/documents/${documentId}/review"])`), 'the item leaves the new list once reviewed').toHaveCount(0);
 });
 
 test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ page, request }) => {

@@ -121,13 +121,15 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('lane 11: a placeholder section shows only the controls that work, so Trợ lý offers nothing', async ({ page }) => {
+test('lane 11: a section shows only the controls that work, so Trợ lý offers each note its own buttons and nothing else', async ({ page }) => {
   onlyOn('mobile');
   await signIn(page, 'me.lane1@demo.esta.test');
   await page.goto('/assistant');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.getByRole('main').getByRole('link')).toHaveCount(0);
-  await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
+  const main = page.getByRole('main');
+  await expect(main.getByTestId('inbox-item').first()).toBeVisible();
+  await expect(main.getByRole('link')).toHaveCount(0);
+  await expect(main.getByRole('button')).toHaveCount(await main.getByTestId('inbox-item').getByRole('button').count());
 });
 
 test('lane 2: at 1440 px the sidebar is 240 px, content at most 1200 px, and no tab bar renders', async ({ page }) => {

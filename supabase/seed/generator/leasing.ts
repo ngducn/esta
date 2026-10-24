@@ -222,10 +222,10 @@ export const depositEntries = publicTable('deposit_entries', (ctx) =>
 const HISTORY_FROM = '2025-10-01';
 
 /** SPEC §9.3 "today". Like every other seeded fact, the invoices are that day's state whatever `--as-of` says. */
-const SPEC_TODAY = '2026-10-07';
+export const SPEC_TODAY = '2026-10-07';
 
 /** SPEC §9.3: the one issued invoice due before SPEC_TODAY that nobody paid. */
-const UNPAID = { property: 'di-an', unit: 5, dueDate: '2026-09-25' } as const;
+export const UNPAID = { property: 'di-an', unit: 5, dueDate: '2026-09-25' } as const;
 
 /** SPEC §9.3: this tenant pays every month in two partial transfers that sum to the full amount. */
 const TWO_TRANSFERS = { property: 'di-an', unit: 2 } as const;
