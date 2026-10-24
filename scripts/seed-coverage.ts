@@ -19,6 +19,8 @@ export const SEED_EXEMPT: Readonly<Record<string, string>> = {
   audit_log: 'runtime: the audit trigger writes it on every change, the seed included',
   document_access_log: 'runtime: written when someone opens or downloads a document (DOC-4)',
   worker_heartbeats: 'runtime: the running worker writes it; a fresh reset reads "never"',
+  research_items:
+    'runtime: research_scan writes them at 06:00 from its replay recording; seeded items would hold the recorded links, so the replayed scan would drop every one as a duplicate and write the empty note instead',
   test_clock: 'runtime: set by pnpm clock:set and the tests (FND-9)',
   change_batches: "runtime: the connector's history of plans Claude applied, with their undo",
   statement_imports:
