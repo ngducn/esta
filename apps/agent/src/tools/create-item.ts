@@ -28,7 +28,7 @@ export type NoteBinding = {
 };
 
 /** What the job result keeps of each note for audit: the model's templates and the values that filled them (AGENT.md §6.3). */
-export type WrittenNote = { readonly dedupe_key: string; readonly title: string; readonly body_md: string; readonly cited: FilledNote['cited']; readonly added: boolean };
+export type WrittenNote = { readonly dedupe_key: string; readonly title: string; readonly body_md: string; readonly cited: Array<FilledNote['cited'][number]>; readonly added: boolean };
 
 const SEVERITY_ORDER: readonly WatchSeverity[] = ['info', 'watch', 'action'];
 
@@ -45,7 +45,8 @@ function fenced(text: string): string {
 
 async function writeGuardItem(binding: NoteBinding, note: WatchNote, found: readonly NoteViolation[]): Promise<void> {
   const words = GUARD_ITEM[binding.locale];
-  const list = found.map(({ rule, text }) => `- ${JSON.stringify(text)}: ${rule}`).join('\n');
+  const once = new Map(found.map((violation) => [`${violation.rule}\u0000${violation.text}`, violation]));
+  const list = [...once.values()].map(({ rule, text }) => `- ${JSON.stringify(text)}: ${rule}`).join('\n');
   const { error } = await binding.db.from('agent_items').upsert(
     {
       household_id: binding.householdId,

@@ -41,9 +41,10 @@ function start(): { worker: Worker; stop: () => void } {
     clock,
     (error) => console.error(`[agent] heartbeat: ${error instanceof Error ? error.message : String(error)}`),
   );
-  const stopScheduler = startScheduler(db, env.ESTA_TIMEZONE, clock, (error) =>
-    console.error(`[agent] scheduler: ${error instanceof Error ? error.message : String(error)}`),
-  );
+  const stopScheduler =
+    env.ESTA_AGENT_SCHEDULE === 'on'
+      ? startScheduler(db, env.ESTA_TIMEZONE, clock, (error) => console.error(`[agent] scheduler: ${error instanceof Error ? error.message : String(error)}`))
+      : () => undefined;
   console.log(`[agent] worker ${workerId} started: agent mode ${mode.agentMode}, auth mode ${mode.authMode}`);
   return {
     worker,

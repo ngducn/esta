@@ -33,6 +33,9 @@ export type PingCheck = {
   readonly requestedAt: Instant;
 };
 
+/** The latest portfolio_watch job: whether it ran, why it failed, and how many new notes it wrote. */
+export type WatchCheck = Omit<PingCheck, 'reply'> & { readonly notesAdded: number | null };
+
 export type AgentRun = {
   readonly id: string;
   readonly startedAt: Instant;
@@ -45,21 +48,18 @@ export type AgentRun = {
 };
 
 const pingResult = z.object({ reply: z.string() });
+const watchResult = z.object({ notes: z.array(z.object({ added: z.boolean() })) });
 const toolCalls = z.record(z.string(), z.number().int().nonnegative());
 const jobStatus = z.enum(jobStatuses);
 
 /** Operator diagnostics. RLS returns no row to anyone else, and the page asks only for operators (PLT-1). */
-export async function getConnectionCheck(householdId: string): Promise<{ latest: PingCheck | null; runs: readonly AgentRun[] }> {
+export async function getConnectionCheck(householdId: string): Promise<{ latest: PingCheck | null; watch: WatchCheck | null; runs: readonly AgentRun[] }> {
   const supabase = await createSessionClient();
-  const [jobs, runs] = await Promise.all([
-    supabase
-      .from('agent_jobs')
-      .select('status, result, error, run_after')
-      .eq('household_id', householdId)
-      .eq('kind', 'ping')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+  const latestOf = (kind: 'ping' | 'portfolio_watch') =>
+    supabase.from('agent_jobs').select('status, result, error, run_after').eq('household_id', householdId).eq('kind', kind).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const [jobs, watchJobs, runs] = await Promise.all([
+    latestOf('ping'),
+    latestOf('portfolio_watch'),
     supabase
       .from('agent_runs')
       .select('id, started_at, auth_mode, agent_mode, model, num_turns, cost_estimate_usd, tool_calls')
@@ -69,6 +69,8 @@ export async function getConnectionCheck(householdId: string): Promise<{ latest:
       .limit(10),
   ]);
   if (jobs.error) throw new Error(`Reading the connection check failed: ${jobs.error.message}`);
+  if (watchJobs.error) throw new Error(`Reading the watch run failed: ${watchJobs.error.message}`);
+  const watch = watchJobs.data;
   if (runs.error) throw new Error(`Reading the agent runs failed: ${runs.error.message}`);
   const job = jobs.data;
   return {
@@ -80,6 +82,15 @@ export async function getConnectionCheck(householdId: string): Promise<{ latest:
             reply: pingResult.safeParse(job.result).data?.reply ?? null,
             error: job.error,
             requestedAt: parseInstant(job.run_after),
+          },
+    watch:
+      watch === null
+        ? null
+        : {
+            status: jobStatus.parse(watch.status),
+            error: watch.error,
+            requestedAt: parseInstant(watch.run_after),
+            notesAdded: watchResult.safeParse(watch.result).data?.notes.filter((note) => note.added).length ?? null,
           },
     runs: runs.data.map((run) => ({
       id: run.id,

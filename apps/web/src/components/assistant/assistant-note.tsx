@@ -3,7 +3,37 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { cn } from '@/lib/utils';
-import type { InboxNote } from '@/server/agent/items';
+import type { InboxNote, NoteDiagnostics } from '@/server/agent/items';
+
+/** Operator-only: what the worker wrote beside the note, and whether each of its links names a readable record. */
+async function Diagnostics({ diagnostics }: { diagnostics: NoteDiagnostics }) {
+  const t = await getTranslations('assistant');
+  return (
+    <dl data-testid="note-diagnostics" className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-rule pt-3 text-small text-ink-2">
+      <dt className="text-ink-muted">{t('diagnosticsKind')}</dt>
+      <dd>{t('diagnosticsKindValue', { kind: diagnostics.kind, severity: diagnostics.severity, audience: diagnostics.audience })}</dd>
+      <dt className="text-ink-muted">{t('diagnosticsDedupe')}</dt>
+      <dd data-testid="note-dedupe" className="wrap-anywhere">
+        {diagnostics.dedupeKey}
+      </dd>
+      {diagnostics.links.length === 0 ? null : (
+        <>
+          <dt className="text-ink-muted">{t('diagnosticsLinks')}</dt>
+          <dd>
+            <ul className="flex flex-col gap-1">
+              {diagnostics.links.map((link) => (
+                <li key={link.href} data-testid="note-link" data-ok={link.ok} className="flex flex-wrap gap-x-2">
+                  <span className="wrap-anywhere">{link.href}</span>
+                  <span className={cn('font-medium', link.ok ? 'text-ink' : 'text-overdue')}>{t(link.ok ? 'linkOk' : 'linkMissing')}</span>
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </>
+      )}
+    </dl>
+  );
+}
 
 export async function AssistantNote({ note, time, actions }: { note: InboxNote; time: string; actions?: ReactNode }) {
   const [t, review] = await Promise.all([getTranslations('assistant'), getTranslations('extraction')]);
@@ -38,6 +68,7 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
           {note.retry === null ? review('reviewLink') : review('manualLink')}
         </Link>
       )}
+      {note.diagnostics === null ? null : <Diagnostics diagnostics={note.diagnostics} />}
       {actions}
     </article>
   );

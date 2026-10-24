@@ -16,6 +16,8 @@ export const envSchema = z.object({
   ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
   ESTA_FROZEN_NOW: text,
   ESTA_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
+  /** `off` leaves the daily jobs unqueued, for e2e workers that must not race a spec's own job rows. */
+  ESTA_AGENT_SCHEDULE: z.enum(['on', 'off']).default('on'),
 });
 
 export type AgentEnv = z.infer<typeof envSchema>;

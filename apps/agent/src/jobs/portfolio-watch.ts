@@ -1,7 +1,6 @@
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import { describeFacts, evaluateWatch, type DescribedFact, type WatchLabels, type WatchSnapshot } from '@esta/core/watch';
-import type { Json } from '@esta/db';
 import { readWatchLabels, readWatchSnapshot } from '@esta/ops';
 import { portfolioWatchPrompt } from '../prompts/portfolio-watch';
 import { watchNoteWriter, type NoteBinding } from '../tools/create-item';
@@ -43,7 +42,7 @@ export function portfolioWatchRequest(input: WatchRequestInput): PreparedJob {
       if (!read) throw new Error('The model ended without reading watch_facts');
       const missed = [...facts].filter(([handle, { fact }]) => fact.severity === 'action' && !notes.covered.has(handle));
       if (missed.length > 0) throw new Error(`The model left action facts without a note: ${missed.map(([handle, { fact }]) => `${handle} (${fact.ruleId})`).join(', ')}`);
-      return { as_of: input.asOf, facts: facts.size, notes: notes.written } as unknown as Json;
+      return { as_of: input.asOf, facts: facts.size, notes: [...notes.written] };
     },
   };
 }

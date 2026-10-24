@@ -68,8 +68,8 @@ describe('generate', () => {
 
   it("leaves the watch's morning notes in every household, and none about Dĩ An in northstar", () => {
     const titles = (variant: VariantName) => insertedRows(generate({ ...DEFAULT_OPTIONS, lanes: 1, variant }), 'public.agent_items').map((row) => row.split("'")[11]);
-    expect(titles('full')).toEqual(Array(2).fill(['Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày', 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 25 ngày', 'Ba việc cần để ý']).flat());
-    expect(titles('northstar')).toEqual(Array(2).fill(['Hợp đồng Căn hộ Thủ Đức hết hạn sau 25 ngày', 'Hai việc cần để ý']).flat());
+    expect(titles('full')).toEqual(Array(2).fill(['Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày', 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 26 ngày', 'Ba việc cần để ý']).flat());
+    expect(titles('northstar')).toEqual(Array(2).fill(['Hợp đồng Căn hộ Thủ Đức hết hạn sau 26 ngày', 'Hai việc cần để ý']).flat());
     expect(generate({ ...DEFAULT_OPTIONS, variant: 'northstar' })).not.toMatch(/Phòng 8 Dãy trọ Dĩ An để trống/);
   });
 

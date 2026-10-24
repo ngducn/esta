@@ -1053,7 +1053,19 @@
     "dismissLabel": "Ẩn ghi chú: {title}",
     "dismissed": "Đã ẩn ghi chú.",
     "noteFailed": "Chưa lưu được. Thử lại sau ít phút.",
-    "restoreFailed": "Chưa đưa ghi chú trở lại được. Tải lại trang rồi thử lại."
+    "restoreFailed": "Chưa đưa ghi chú trở lại được. Tải lại trang rồi thử lại.",
+    "watch": "Theo dõi buổi sáng",
+    "watchIntro": "Mỗi sáng lúc 06:40, Trợ lý xem lại tiền thuê, hợp đồng, phòng trống và giấy tờ rồi để lại ghi chú trong Hộp thư. Chạy lại trong ngày không tạo ghi chú trùng.",
+    "runWatch": "Chạy theo dõi",
+    "watchSendFailed": "Chưa gửi được yêu cầu theo dõi. Thử lại sau ít phút.",
+    "noWatch": "Chưa chạy theo dõi lần nào.",
+    "watchNotes": "{count, plural, =0 {Không có ghi chú mới} other {# ghi chú mới}}",
+    "diagnosticsKind": "Loại",
+    "diagnosticsKindValue": "{kind} · {severity} · {audience}",
+    "diagnosticsDedupe": "Khóa chống trùng",
+    "diagnosticsLinks": "Liên kết",
+    "linkOk": "link ok",
+    "linkMissing": "không tìm thấy"
   },
   "settings": {
     "display": "Hiển thị",
