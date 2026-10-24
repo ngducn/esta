@@ -13,7 +13,7 @@ You own one PR of Esta v1 from build to merge-ready (see the 2026-10-15 update i
 ## Lifecycle
 
 0. Run `gh issue list --state open --search "<pr id lowercase> in:title"` (for example `p0-09`). Every open issue tagged with your PR id is part of your scope; close it from your PR with `Closes #<n>` and a red test.
-1. Work in the worktree you are given, on branch `esta/<pr id lowercase>-<slug>` created from the base branch the root names. Use `ESTA_SLOT=<slot the root names>` for every local stack you start. Build the Graphify code map in the worktree now (see Rules, "Code map") and use `graphify explain` before grepping for callers.
+1. Work in the worktree you are given, on branch `esta/<pr id lowercase>-<slug>` created from the base branch the root names. Use `ESTA_SLOT=<slot the root names>` for every local stack you start.
 2. Within about 15 minutes, start `decisions.tsv` in the worktree root per the show-me-your-work skill (keep it uncommitted), push a first snapshot, and open the PR ready (never draft) with `gh pr create --base <base branch>`. Title in Conventional Commits with the PR id as scope, for example `feat(p0-01): scaffold the pnpm monorepo and CI`. Body per opening-a-pr.md.
 3. Build every Files and Build box of your section. Name the data shape first. Push after every verifiable unit with hooks on.
 4. Self-prove on the real artifact. Run every Verify, unit box. Drive the You see boxes yourself on the real surface (gstack browse before P0-10 merges, the project verify skill after). Save evidence under `/tmp/owner-<pr id>/`.
@@ -38,6 +38,5 @@ You own one PR of Esta v1 from build to merge-ready (see the 2026-10-15 update i
 - Never create or change a cloud project, deploy, send real email, add a paid service or a new external data source. Stop and report instead.
 - Money is integer VND. No `new Date()` in domain code. No `any`. Every user-facing string goes through next-intl. Design tokens only.
 - Keep comments to a non-obvious why. No phase-narrating comments.
-- Code map (Graphify, from 2026-10-23 on Ryan's order). In your worktree, build the map once after setup and again after a rebase: `GRAPHIFY_BACKEND=none graphify extract . --code-only && graphify cluster-only . --no-label --no-viz` (about 15 s, offline; `graphify-out/` is excluded from git). Use `graphify explain <symbol>` for a function's callers and imports and `graphify path <A> <B>` to trace a flow, in place of repeated greps; a plain-language `graphify query` finds little in this repo. The map points; it is never evidence. Read the code before you change or rely on it.
 - If the plan section is wrong or impossible as written, do the smallest correct thing, record why in decisions.tsv and in the PR body under Tradeoffs, and tell the root.
 - Size (2026-10-19): keep a PR to one user outcome and its product code (everything except tests, migrations' pgTAP, generated types, seed and message files) under about 800 added lines. When the product code will pass that, stop and propose a split by user outcome to the root before building further. Tests have no cap.
