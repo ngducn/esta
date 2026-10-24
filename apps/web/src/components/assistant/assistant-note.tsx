@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { cn } from '@/lib/utils';
 import type { InboxNote, NoteDiagnostics } from '@/server/agent/items';
+import { AssistantMonogram } from './monogram';
 
 /** Operator-only: what the worker wrote beside the note, and whether each of its links names a readable record. */
 async function Diagnostics({ diagnostics }: { diagnostics: NoteDiagnostics }) {
@@ -39,12 +40,11 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
   const [t, review] = await Promise.all([getTranslations('assistant'), getTranslations('extraction')]);
   const unread = note.status === 'new';
   return (
-    <article data-testid="inbox-item" data-status={note.status} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <article data-testid="inbox-item" data-status={note.status} data-kind={note.isBrief ? 'brief' : undefined} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-accent text-small font-semibold text-accent">
-          {t('monogram')}
-        </span>
+        <AssistantMonogram />
         <span className="text-small font-medium text-ink">{t('author')}</span>
+        {note.isBrief ? <span className="text-small text-ink-2">{t('briefLabel')}</span> : null}
         <time dateTime={note.createdAt} className="text-small text-ink-muted figures">
           {time}
         </time>

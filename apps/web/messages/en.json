@@ -134,7 +134,9 @@
     "offline": "Could not load. Check the network connection and try again.",
     "errorTitle": "Overview did not load",
     "errorBody": "Check the network connection and try again. Recorded payments are safe.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "briefNone": "Trợ lý has not written today’s note yet.",
+    "briefOpen": "Open the inbox"
   },
   "components": {
     "loading": "Loading",
@@ -1065,7 +1067,9 @@
     "diagnosticsDedupe": "Dedupe key",
     "diagnosticsLinks": "Links",
     "linkOk": "link ok",
-    "linkMissing": "not found"
+    "linkMissing": "not found",
+    "ranAt": "Assistant ran at {time}.",
+    "briefLabel": "Morning brief"
   },
   "settings": {
     "display": "Display",

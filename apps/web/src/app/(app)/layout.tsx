@@ -1,13 +1,17 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { workerStatus } from '@esta/core/agent';
 import { formatDateLong } from '@esta/core/format';
+import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { BrandMark } from '@/components/brand-mark';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
 import { accountSections, primarySections, type NavItem } from '@/components/shell/nav';
 import { PrefetchTabs } from '@/components/shell/prefetch-tabs';
 import { Sidebar } from '@/components/shell/sidebar';
 import { TabBar } from '@/components/shell/tab-bar';
+import { getWorkerHeartbeat } from '@/server/assistant';
 import { getClock } from '@/server/clock';
+import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
 
 /** Vietnamese names put the given name last, so the monogram takes its first letter. */
@@ -17,9 +21,10 @@ function monogram(displayName: string | null): string | null {
 }
 
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const [member, clock, locale, nav, shell, language, onboarding, app] = await Promise.all([
+  const [member, clock, lastSeenAt, locale, nav, shell, language, onboarding, app] = await Promise.all([
     requireMember(),
     getClock(),
+    getClock().then((current) => getWorkerHeartbeat(current.now())),
     getLocale(),
     getTranslations('nav'),
     getTranslations('shell'),
@@ -28,6 +33,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     getTranslations('app'),
   ]);
 
+  const worker = workerStatus(lastSeenAt, clock.now(), env.ESTA_TIMEZONE);
   const toItem = ({ key, href }: { key: NavItem['key']; href: string }): NavItem => ({ key, href, label: nav(key) });
   const items = primarySections.map(toItem);
   // A phone's five tabs share 390 px, and the English section names need 490 at 130% text, so the tabs take short ones (FND-8).
@@ -61,7 +67,15 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             <AccountTrigger initial={initial} label={shell('account')} accessibleName={shell('account')} compact />
           </div>
         </header>
-        <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">{children}</main>
+        <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
+          {/* A stopped worker only queues new work, so every page says so, never only Trợ lý (AGENT.md §9). */}
+          {worker.kind === 'offline' ? (
+            <div className="mb-5">
+              <WorkerStatusLine status={worker} lastRun={null} />
+            </div>
+          ) : null}
+          {children}
+        </main>
         <TabBar items={tabs} label={shell('sections')} />
       </div>
       <PrefetchTabs />
