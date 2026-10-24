@@ -13,7 +13,7 @@ import { billingSql, depositEntries, leaseAmendments, leases, tenants } from './
 import { ownershipShares } from './ownership.ts';
 import { ownerTaxInputs, parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
-import { agentJobs, agentRuns } from './agent.ts';
+import { agentItems, agentJobs, agentRuns } from './agent.ts';
 import { renderSeed, type TableRows } from './sql.ts';
 import { units } from './units.ts';
 import { utilityAccounts } from './utility-accounts.ts';
@@ -44,6 +44,7 @@ const EMITTERS: readonly Emitter[] = [
   valuations,
   agentJobs,
   agentRuns,
+  agentItems,
 ];
 
 const TIMEZONE = 'Asia/Ho_Chi_Minh';

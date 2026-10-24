@@ -24,7 +24,8 @@ export type SeedContext = {
 export type Emitter = { readonly table: string; readonly upsert?: boolean; rows(ctx: SeedContext): readonly SqlRow[] };
 
 type PublicTable = keyof Database['public']['Tables'];
-type Generated = 'id' | 'created_by' | 'created_at' | 'updated_at';
+// `created_at` stays settable for a row whose time is content, such as an assistant note's; every other row takes the stamp.
+type Generated = 'id' | 'created_by' | 'updated_at';
 type Insert<T extends PublicTable> = Omit<TablesInsert<T>, Generated>;
 
 // The generated types say `unknown` for PostGIS columns; the seed writes them as EWKT text.

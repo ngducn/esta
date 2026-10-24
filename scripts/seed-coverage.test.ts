@@ -47,7 +47,7 @@ describe('generatorProblems', () => {
   });
 
   it('fails an exemption or a database table no migration creates', () => {
-    expect(generatorProblems(tables.filter((table) => table !== 'agent_items'), seed)).toEqual(['agent_items is listed in seed-coverage.ts but no migration creates it']);
+    expect(generatorProblems(tables.filter((table) => table !== 'change_batches'), seed)).toEqual(['change_batches is listed in seed-coverage.ts but no migration creates it']);
   });
 
   it('gives every exemption a reason', () => {
