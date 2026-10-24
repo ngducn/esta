@@ -56,10 +56,9 @@ async function householdName(db: AgentDb, householdId: string): Promise<string> 
   return data.name;
 }
 
-/** The job's own directory, `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5). */
-/** The same-day jobs a job waits for that are still queued or running, and those that failed for good (AGENT.md §3). */
 type Inputs = { readonly waiting: readonly string[]; readonly failed: readonly string[] };
 
+/** The job's own directory, `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5). */
 async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: Inputs): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };

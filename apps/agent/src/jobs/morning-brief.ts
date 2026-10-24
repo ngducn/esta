@@ -23,7 +23,6 @@ const FAILED_INPUT: InputLines = {
   research_scan: { vi: 'Hôm nay Trợ lý không tìm được tin thị trường.', en: "The assistant could not look for market news today." },
 };
 
-/** AGENT.md §5.4: research items of relevance 0.6 or more are eligible for the brief, three at most. */
 const MARKET_RELEVANCE = 0.6;
 
 export type BriefRequestInput = Omit<BriefBinding, 'sheet' | 'facts' | 'missingInputs' | 'market'> & {

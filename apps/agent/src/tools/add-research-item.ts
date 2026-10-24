@@ -50,7 +50,6 @@ const QUOTE_REFUSAL = {
   not_on_page: 'not on the page WebFetch returned as whole words',
 } as const;
 
-/** The item's own record `f0`: its date, its host for a source name with a digit, and each quote checked against the page (#323). */
 function sourceRecord(draft: ResearchItemDraft, url: URL, page: string, locale: Locale): Record<string, string> {
   const checked = draft.quotes.map((quote) => ({ quote, found: quoteOnPage(quote, page) }));
   const refused = checked.flatMap(({ quote, found }) => (found.ok ? [] : [`${JSON.stringify(quote)}: ${QUOTE_REFUSAL[found.reason]}`]));
