@@ -190,7 +190,7 @@ test('rule 5: Mẹ deletes the Q7 structure and Hoàn tác brings it back', asyn
   await page.goto(legalPath(5, 'q7'));
   const structure = page.getByTestId('structures-card');
   await expect(structure).toHaveCount(1);
-  await structure.getByTestId('delete-legal-item').click();
+  await structure.getByTestId('delete-item').click();
   const toast = page.getByRole('region', { name: 'Thông báo' });
   await expect(toast).toContainText('Đã xóa Nhà ở riêng lẻ.', { timeout: 15_000 });
   await expect(structure).toHaveCount(0);

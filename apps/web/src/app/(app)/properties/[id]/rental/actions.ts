@@ -1,6 +1,7 @@
 'use server';
 
 import { moveUnit, sortByRoomNumber, type SortChange } from '@esta/core/properties';
+import type { Result } from '@esta/core/result';
 import { addRoomsSchema, unitSchema, utilityAccountSchema, type Unit } from '@esta/core/schemas/units';
 import { runOp, unitCreate, type CommonRefusal, type UnitRefusal } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
@@ -181,17 +182,17 @@ export async function saveAccount(propertyId: unknown, accountId: unknown, raw: 
   return { ok: true, id: data.id };
 }
 
-export type AccountDelete = { readonly ok: true; readonly deleted: DeletedAccount } | { readonly ok: false };
+export type AccountDelete = Result<DeletedAccount>;
 
 export async function deleteAccount(propertyId: unknown, accountId: unknown): Promise<AccountDelete> {
   const target = await scope(propertyId);
   const item = uuid.safeParse(accountId);
-  if (target === null || !item.success) return { ok: false };
+  if (target === null || !item.success) return { ok: false, reason: 'failed' };
   const { supabase, match } = target;
   const { data, error } = await supabase.from('utility_accounts').delete().match(match).eq('id', item.data).select(ACCOUNT_COLUMNS).maybeSingle();
-  if (error || data === null) return { ok: false };
+  if (error || data === null) return { ok: false, reason: 'failed' };
   revalidateRental();
-  return { ok: true, deleted: { propertyId: match.property_id, row: data } };
+  return { ok: true, value: { propertyId: match.property_id, row: data } };
 }
 
 const deletedAccountSchema = z.object({ propertyId: uuid, row: utilityAccountSchema.extend({ id: uuid }) });

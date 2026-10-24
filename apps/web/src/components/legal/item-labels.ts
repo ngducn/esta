@@ -1,9 +1,9 @@
 import 'server-only';
 import { getTranslations } from 'next-intl/server';
 import type { LegalKind } from '@/server/properties/legal';
-import type { LegalItemActionLabels } from './legal-item-actions';
+import type { ItemActionLabels } from '@/components/item-actions';
 
-export async function itemActionLabels(kind: LegalKind, name: string): Promise<LegalItemActionLabels> {
+export async function itemActionLabels(kind: LegalKind, name: string): Promise<ItemActionLabels> {
   const t = await getTranslations('propertyLegal');
   const item = t('itemName', { kind, name });
   return {

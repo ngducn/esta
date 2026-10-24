@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 120,
+      "value": 118,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -15,11 +15,9 @@
         "apps/web/src/app/sign-in/password-form.tsx": 1,
         "apps/web/src/components/date-input.tsx": 1,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 2,
-        "apps/web/src/components/expenses/expense-sheet.tsx": 1,
+        "apps/web/src/components/expenses/expense-sheet.tsx": 2,
         "apps/web/src/components/legal/annotation-list.tsx": 1,
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
-        "apps/web/src/components/legal/legal-item-actions.tsx": 1,
-        "apps/web/src/components/rental/account-actions.test.tsx": 2,
         "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
         "apps/web/src/components/rental/unit-list.test.tsx": 1,
         "apps/web/src/server/documents/actions.test.ts": 3,
@@ -60,7 +58,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1273,
+      "value": 1233,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -74,12 +72,10 @@
         "apps/web/src/app/sign-in/password-form.tsx": 18,
         "apps/web/src/components/date-input.tsx": 11,
         "apps/web/src/components/documents/virtual-vault-rows.tsx": 22,
-        "apps/web/src/components/expenses/expense-sheet.tsx": 9,
+        "apps/web/src/components/expenses/expense-sheet.tsx": 18,
         "apps/web/src/components/legal/annotation-list.tsx": 6,
         "apps/web/src/components/legal/legal-form-shell.tsx": 12,
-        "apps/web/src/components/legal/legal-item-actions.tsx": 40,
-        "apps/web/src/components/rental/account-actions.test.tsx": 14,
-        "apps/web/src/components/rental/add-rooms-sheet.tsx": 13,
+        "apps/web/src/components/rental/add-rooms-sheet.tsx": 18,
         "apps/web/src/components/rental/unit-list.test.tsx": 7,
         "apps/web/src/server/documents/actions.test.ts": 29,
         "apps/web/src/server/expenses/actions.test.ts": 8,
@@ -132,78 +128,14 @@
       }
     },
     "hand-rolled-action-call": {
-      "value": 41,
-      "files": {
-        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
-        "apps/web/src/components/documents/document-page.tsx": 1,
-        "apps/web/src/components/expenses/expense-sheet.tsx": 2,
-        "apps/web/src/components/extraction/review-panel.tsx": 2,
-        "apps/web/src/components/invoices/use-bill-action.ts": 1,
-        "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
-        "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/DepositSheet.tsx": 1,
-        "apps/web/src/components/leases/LeaseForm.tsx": 1,
-        "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/TenantQuickAdd.tsx": 1,
-        "apps/web/src/components/leases/TerminateLeaseDialog.tsx": 1,
-        "apps/web/src/components/legal/legal-form-shell.tsx": 1,
-        "apps/web/src/components/legal/legal-item-actions.tsx": 1,
-        "apps/web/src/components/legal/ownership-form.tsx": 1,
-        "apps/web/src/components/map/paste-maps-link.tsx": 1,
-        "apps/web/src/components/map/properties-map.tsx": 4,
-        "apps/web/src/components/meters/MeterEntryList.tsx": 1,
-        "apps/web/src/components/payments/RecordPaymentSheet.tsx": 1,
-        "apps/web/src/components/properties/archive-button.tsx": 1,
-        "apps/web/src/components/properties/cover-photo-input.tsx": 2,
-        "apps/web/src/components/properties/property-form.tsx": 1,
-        "apps/web/src/components/property-wizard/address-confirm.tsx": 1,
-        "apps/web/src/components/property-wizard/step-use.tsx": 1,
-        "apps/web/src/components/rental/account-actions.tsx": 1,
-        "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
-        "apps/web/src/components/rental/unit-list.tsx": 2,
-        "apps/web/src/components/rental/unit-sheet.tsx": 1,
-        "apps/web/src/components/rental/utility-account-form.tsx": 1,
-        "apps/web/src/components/statements/ImportPreview.tsx": 1,
-        "apps/web/src/components/statements/StatementUpload.tsx": 1,
-        "apps/web/src/components/tax/other-revenue-form.tsx": 1,
-        "apps/web/src/components/valuations/valuation-actions.tsx": 1,
-        "apps/web/src/components/valuations/valuation-sheet.tsx": 1
-      }
+      "value": 0,
+      "files": {}
     },
     "action-failure-mapping": {
-      "value": 33,
+      "value": 3,
       "files": {
-        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
-        "apps/web/src/components/documents/document-page.tsx": 1,
         "apps/web/src/components/documents/use-document-upload.ts": 1,
-        "apps/web/src/components/documents/vault-search.tsx": 1,
-        "apps/web/src/components/expenses/expense-sheet.tsx": 1,
-        "apps/web/src/components/extraction/review-panel.tsx": 1,
-        "apps/web/src/components/invoices/use-bill-action.ts": 1,
-        "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
-        "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/DepositSheet.tsx": 1,
-        "apps/web/src/components/leases/LeaseForm.tsx": 1,
-        "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/TenantQuickAdd.tsx": 1,
-        "apps/web/src/components/leases/TerminateLeaseDialog.tsx": 1,
-        "apps/web/src/components/legal/legal-form-shell.tsx": 1,
-        "apps/web/src/components/legal/legal-item-actions.tsx": 1,
-        "apps/web/src/components/legal/ownership-form.tsx": 1,
-        "apps/web/src/components/meters/MeterEntryList.tsx": 1,
-        "apps/web/src/components/payments/RecordPaymentSheet.tsx": 1,
-        "apps/web/src/components/properties/archive-button.tsx": 1,
-        "apps/web/src/components/properties/cover-photo-input.tsx": 1,
-        "apps/web/src/components/property-wizard/step-photo.tsx": 2,
-        "apps/web/src/components/property-wizard/step-use.tsx": 1,
-        "apps/web/src/components/rental/account-actions.tsx": 1,
-        "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
-        "apps/web/src/components/rental/unit-list.tsx": 2,
-        "apps/web/src/components/rental/unit-sheet.tsx": 1,
-        "apps/web/src/components/rental/utility-account-form.tsx": 1,
-        "apps/web/src/components/statements/ImportPreview.tsx": 1,
-        "apps/web/src/components/statements/StatementUpload.tsx": 1,
-        "apps/web/src/components/tax/other-revenue-form.tsx": 1
+        "apps/web/src/components/property-wizard/step-photo.tsx": 2
       }
     },
     "local-id-schema": {
@@ -268,36 +200,12 @@
       }
     },
     "hand-rolled-lazy-sheet": {
-      "value": 8,
-      "files": {
-        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
-        "apps/web/src/components/documents/upload-sheet.tsx": 1,
-        "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
-        "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/TerminateLeaseDialog.tsx": 1,
-        "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
-        "apps/web/src/components/rental/unit-sheet.tsx": 1
-      }
+      "value": 0,
+      "files": {}
     },
     "sheet-footer-markup": {
-      "value": 14,
-      "files": {
-        "apps/web/src/components/confirm-dialog-popup.tsx": 1,
-        "apps/web/src/components/documents/document-edit-sheet.tsx": 1,
-        "apps/web/src/components/documents/duplicate-dialog.tsx": 1,
-        "apps/web/src/components/documents/multi-page-capture.tsx": 1,
-        "apps/web/src/components/documents/upload-sheet.tsx": 1,
-        "apps/web/src/components/invoices/VoidInvoiceDialog.tsx": 1,
-        "apps/web/src/components/leases/ActivateLeaseDialog.tsx": 1,
-        "apps/web/src/components/leases/AmendLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/LeaseForm.tsx": 1,
-        "apps/web/src/components/leases/RenewLeaseSheet.tsx": 1,
-        "apps/web/src/components/leases/TenantQuickAdd.tsx": 1,
-        "apps/web/src/components/leases/TerminateLeaseDialog.tsx": 1,
-        "apps/web/src/components/rental/add-rooms-sheet.tsx": 1,
-        "apps/web/src/components/rental/unit-sheet.tsx": 1
-      }
+      "value": 0,
+      "files": {}
     },
     "upload-pipeline": {
       "value": 5,
@@ -327,12 +235,12 @@
       }
     },
     "ad-hoc-result-type": {
-      "value": 46,
+      "value": 44,
       "files": {
         "apps/agent/src/sdk/result.ts": 1,
         "apps/agent/src/tools/save-extraction.ts": 1,
-        "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 4,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 3,
+        "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 3,
+        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 2,
         "apps/web/src/app/(app)/properties/actions.ts": 4,
         "apps/web/src/app/(app)/properties/location-actions.ts": 1,
         "apps/web/src/components/extraction/review-panel.tsx": 1,
