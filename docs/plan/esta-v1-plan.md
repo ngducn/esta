@@ -4378,13 +4378,13 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 **Files.**
 
 - [ ] Create `apps/web/src/app/(app)/assistant/market/page.tsx`, `apps/web/src/components/assistant/citation-chip.tsx`, `apps/web/src/components/assistant/assistant-tabs.tsx`, `apps/web/src/server/agent/research.ts` and `e2e/assistant-market.spec.ts`.
-- [ ] Create `packages/core/src/research/page-check.ts` and its test: the quote and date checks against the text WebFetch returned.
-- [ ] Extend `apps/agent/src/sdk/path-policy.ts`, `apps/agent/src/tools/add-research-item.ts`, `apps/agent/src/tools/create-brief.ts`, `apps/agent/src/tools/recent-items.ts`, the `morning_brief` and `research_scan` prompts, and re-hand-write the `morning_brief` and `research_scan` recordings.
+- [ ] Create `packages/core/src/research/quote.ts` and `packages/core/src/parse/page-dates.ts` with their tests: the quote and date checks against the text WebFetch returned.
+- [ ] Extend `apps/agent/src/sdk/path-policy.ts`, `apps/agent/src/tools/add-research-item.ts`, `apps/agent/src/tools/create-brief.ts`, `apps/agent/src/tools/recent-items.ts`, the `morning_brief` and `research_scan` prompts, and re-hand-write the `research_scan` recordings with quotes of whole phrases.
 
 **Build.**
 
 - [ ] Fix the five checks of #323 before Mẹ sees an item. WebFetch may open only a page this run's WebSearch returned (normalized compare), and the hook books any other fetch as a denial. `source_name` passes the number guard as plain text, with the page's host as `{{f0.host_label}}`. `published_on` must appear in the fetched text, or the item drops as `date_unconfirmed`; an `effective_on` the text does not hold is stored as null. A quote holds at least three words and matches the page at word boundaries. `source_url` stores the normalized fetched link.
-- [ ] Feed `morning_brief` up to 3 of today's research items with relevance at least 0.6 through `recent_items`; `create_brief` takes a `market` list whose lines pass the number guard, asks for a line for each item while there is room, and renders each with its source chip (source name and `dd/mm/yyyy`, opening the https source). Re-hand-write the `morning_brief` recording.
+- [ ] Feed `morning_brief` up to 3 of today's research items with relevance at least 0.6, most relevant first. Esta writes these `Thị trường` lines itself from the stored items, not the model (Ryan's coordinator accepted it 2026-10-25): each line is the item's title, which passed the number guard when the scan stored it, and a source chip (source name and `dd/mm/yyyy`) that opens the https source. The `morning_brief` prompt and recording stay as they are, because one recording serves every household and a household without research items has no handles to cite.
 - [ ] Name a failed `research_scan` in the brief's `Còn thiếu` section, beside the inputs still queued or running.
 - [ ] Build the Thị trường tab beside Hộp thư on Trợ lý. It lists items newest first with title, `why_it_matters_vi`, numbered citation chips showing source name and `dd/mm/yyyy`, a property filter, today's empty note when the scan kept nothing, and a read-only `Chủ đề theo dõi` list of topics with no edit control.
 - [ ] Run `/impeccable harden` on the Thị trường tab for long Vietnamese titles and source names, 130% text scale, empty, loading, error and offline states.
@@ -4397,9 +4397,9 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/research/page-check.test.ts` covers a quote under three words, `50` inside `150`, a lone digit, and the date forms `dd/mm/yyyy`, `d/m/yyyy`, `yyyy-mm-dd` and `ngày d tháng m năm yyyy`.
+- [ ] `quote.test.ts` and `page-dates.test.ts` cover a quote under three words, `50` inside `150`, a lone digit, and the date forms `dd/mm/yyyy`, `d/m/yyyy`, `yyyy-mm-dd` and `ngày d tháng m năm yyyy`.
 - [ ] `apps/agent/test/jobs/research-scan.test.ts` covers, each failing without its fix: a fetch of a page no search returned denied and booked, a typed digit in `source_name` sent back for repair, an unconfirmed `published_on` dropped and an unconfirmed `effective_on` stored as null, a short or mid-word quote refused, and `source_url` stored normalized.
-- [ ] `apps/agent/test/jobs/morning-brief.test.ts` covers the market lines owed for each eligible item, a market line through the number guard, and a failed `research_scan` named under `Còn thiếu`.
+- [ ] `apps/agent/test/jobs/morning-brief.test.ts` covers today's three most relevant items of 0.6 or more under `Thị trường` with their source chips, and a failed `research_scan` named under `Còn thiếu`.
 - [ ] Golden tests in AGENT.md §7 for `research_scan` and `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-market.spec.ts`, `pnpm e2e e2e/morning-brief.spec.ts` and `pnpm e2e e2e/assistant-inbox.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
