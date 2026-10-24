@@ -58,14 +58,22 @@ const invoiceRowSchema = z
 
 const INVOICE_COLUMNS = 'id, lease_id, number, period_start, period_end, due_date, issue_on, status, total_vnd, allocated_vnd, outstanding_vnd, payment_status';
 
-export type InvoiceScope = { readonly leaseIds: readonly string[] } | { readonly issuedDueFrom: IsoDate; readonly issuedDueTo: IsoDate };
+export type InvoiceScope =
+  | { readonly leaseIds: readonly string[] }
+  | { readonly issuedDueFrom: IsoDate; readonly issuedDueTo: IsoDate }
+  | { readonly issuedOnOrBefore: IsoDate };
 
-/** Invoices with their balances from `invoice_balances`, earliest period first: every one of these leases, or the issued ones due in a range. */
+/** Invoices with their balances from `invoice_balances`, earliest period first: every one of these leases, the issued ones due in a range, or every one issued by a date. */
 export async function readInvoices(db: Db, householdId: string, scope: InvoiceScope): Promise<InvoiceSummary[]> {
   if ('leaseIds' in scope && scope.leaseIds.length === 0) return [];
   const rows = await readAll('invoices', (from, to) => {
     const query = db.from('invoice_balances').select(INVOICE_COLUMNS).eq('household_id', householdId);
-    const scoped = 'leaseIds' in scope ? query.in('lease_id', [...scope.leaseIds]) : query.eq('status', 'issued').gte('due_date', scope.issuedDueFrom).lte('due_date', scope.issuedDueTo);
+    const scoped =
+      'leaseIds' in scope
+        ? query.in('lease_id', [...scope.leaseIds])
+        : 'issuedOnOrBefore' in scope
+          ? query.eq('status', 'issued').lte('issue_on', scope.issuedOnOrBefore)
+          : query.eq('status', 'issued').gte('due_date', scope.issuedDueFrom).lte('due_date', scope.issuedDueTo);
     return scoped.order('period_start').order('id').range(from, to);
   });
   return z.array(invoiceRowSchema).parse(rows);

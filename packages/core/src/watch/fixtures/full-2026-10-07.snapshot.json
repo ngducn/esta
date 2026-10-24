@@ -1,0 +1,1136 @@
+{
+  "householdId": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+  "asOf": "2026-10-07",
+  "properties": [
+    {
+      "id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "kind": "townhouse",
+      "useMode": "rental",
+      "archived": false,
+      "completenessPercent": 100
+    },
+    {
+      "id": "62d33252-02ba-5610-bd9a-12474774014c",
+      "kind": "residential_land",
+      "useMode": "held",
+      "archived": false,
+      "completenessPercent": 100
+    },
+    {
+      "id": "76617818-0470-5207-bb06-e64633a3e8de",
+      "kind": "warehouse",
+      "useMode": "rental",
+      "archived": false,
+      "completenessPercent": 95
+    },
+    {
+      "id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "kind": "rooming_house",
+      "useMode": "rental",
+      "archived": false,
+      "completenessPercent": 100
+    },
+    {
+      "id": "aac9372d-5c96-53b5-86df-b9db8d17f226",
+      "kind": "agricultural_land",
+      "useMode": "held",
+      "archived": false,
+      "completenessPercent": 30
+    },
+    {
+      "id": "ce067ac1-653c-5d9c-ac37-b6e379156593",
+      "kind": "commercial_space",
+      "useMode": "rental",
+      "archived": false,
+      "completenessPercent": 91
+    },
+    {
+      "id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "kind": "apartment",
+      "useMode": "rental",
+      "archived": false,
+      "completenessPercent": 100
+    }
+  ],
+  "units": [
+    {
+      "id": "135c97a2-2ee2-584e-9a89-95a555e7323e",
+      "propertyId": "62d33252-02ba-5610-bd9a-12474774014c",
+      "availableFrom": null
+    },
+    {
+      "id": "21da3d96-c8d5-54c1-b21d-0604afe216e6",
+      "propertyId": "ce067ac1-653c-5d9c-ac37-b6e379156593",
+      "availableFrom": null
+    },
+    {
+      "id": "3162a63a-d993-514f-b9f3-8fdcb5788988",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": null
+    },
+    {
+      "id": "3235f0be-74ec-5d46-9d23-67f9cb26d40d",
+      "propertyId": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "availableFrom": null
+    },
+    {
+      "id": "4a8d4887-e69b-5bd1-a4c2-beb4205e50fb",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": null
+    },
+    {
+      "id": "5833b77f-bba4-529a-9b3b-600f0f7d6f61",
+      "propertyId": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "availableFrom": null
+    },
+    {
+      "id": "5f190bd3-8874-5c2a-b068-420ad98ea7f0",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": null
+    },
+    {
+      "id": "688b236c-c148-5880-afec-a86fe996dcff",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": null
+    },
+    {
+      "id": "8077b3de-de29-5b2c-829c-d3c864fdefde",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": null
+    },
+    {
+      "id": "80d47268-48d7-5473-aa36-f72f85cac4df",
+      "propertyId": "76617818-0470-5207-bb06-e64633a3e8de",
+      "availableFrom": null
+    },
+    {
+      "id": "c802eb3b-e841-5657-bcf1-a4f1e5edb58d",
+      "propertyId": "aac9372d-5c96-53b5-86df-b9db8d17f226",
+      "availableFrom": null
+    },
+    {
+      "id": "d51ab9f3-547c-54e1-9c62-f87bfc590dea",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": "2026-08-01"
+    },
+    {
+      "id": "f3295844-4743-5167-a5aa-c337e0ec0a0a",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": null
+    },
+    {
+      "id": "fe8e8765-0fa3-513d-bb81-c40164718fe5",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "availableFrom": null
+    }
+  ],
+  "leases": [
+    {
+      "id": "895efeb3-e0d9-5e28-b4f7-ae7eec3e64a0",
+      "unitId": "3235f0be-74ec-5d46-9d23-67f9cb26d40d",
+      "propertyId": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "tenantId": "d387463a-0899-5158-9c4f-d6c08fc6e5df",
+      "status": "active",
+      "start_date": "2025-01-01",
+      "end_date": "2027-12-31",
+      "renewed": false,
+      "depositHeldVnd": 30000000
+    },
+    {
+      "id": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "unitId": "688b236c-c148-5880-afec-a86fe996dcff",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "tenantId": "5b7eb2c7-1eab-5d48-a1bd-ec3428195e68",
+      "status": "active",
+      "start_date": "2025-03-25",
+      "end_date": "2027-06-24",
+      "renewed": false,
+      "depositHeldVnd": 2500000
+    },
+    {
+      "id": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "unitId": "4a8d4887-e69b-5bd1-a4c2-beb4205e50fb",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "tenantId": "ed5e10b6-9161-5c65-b08b-aa2c4f51b865",
+      "status": "active",
+      "start_date": "2025-06-25",
+      "end_date": "2027-06-24",
+      "renewed": false,
+      "depositHeldVnd": 2500000
+    },
+    {
+      "id": "598a394c-b18a-5cab-ae3d-e0fa6d92f8e5",
+      "unitId": "80d47268-48d7-5473-aa36-f72f85cac4df",
+      "propertyId": "76617818-0470-5207-bb06-e64633a3e8de",
+      "tenantId": "95a2f2b5-3fa8-57a4-ba56-b68791dac535",
+      "status": "ended",
+      "start_date": "2025-07-30",
+      "end_date": "2026-07-29",
+      "renewed": false,
+      "depositHeldVnd": 0
+    },
+    {
+      "id": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "unitId": "f3295844-4743-5167-a5aa-c337e0ec0a0a",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "tenantId": "7c438826-a2ab-5437-89bb-3f26a44bb743",
+      "status": "ended",
+      "start_date": "2025-09-16",
+      "end_date": "2026-09-15",
+      "renewed": false,
+      "depositHeldVnd": 2800000
+    },
+    {
+      "id": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "unitId": "8077b3de-de29-5b2c-829c-d3c864fdefde",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "tenantId": "b363e286-5597-5afc-bac9-5d18c78d195c",
+      "status": "active",
+      "start_date": "2025-09-25",
+      "end_date": "2027-06-24",
+      "renewed": false,
+      "depositHeldVnd": 2500000
+    },
+    {
+      "id": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "unitId": "5833b77f-bba4-529a-9b3b-600f0f7d6f61",
+      "propertyId": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "tenantId": "92ba00e5-3d7e-5240-ae7d-4c8ad49bc4f8",
+      "status": "active",
+      "start_date": "2025-11-01",
+      "end_date": "2026-11-01",
+      "renewed": false,
+      "depositHeldVnd": 18000000
+    },
+    {
+      "id": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "unitId": "5f190bd3-8874-5c2a-b068-420ad98ea7f0",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "tenantId": "baf7469a-ac17-5c57-af18-d0c32f21279e",
+      "status": "active",
+      "start_date": "2026-01-25",
+      "end_date": "2027-06-24",
+      "renewed": false,
+      "depositHeldVnd": 2500000
+    },
+    {
+      "id": "1809d052-456b-56e2-a238-be56d3234864",
+      "unitId": "3162a63a-d993-514f-b9f3-8fdcb5788988",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "tenantId": "8179517a-a08e-561a-815f-d028882c4567",
+      "status": "active",
+      "start_date": "2026-02-25",
+      "end_date": "2027-06-24",
+      "renewed": false,
+      "depositHeldVnd": 2800000
+    },
+    {
+      "id": "09e0d1ce-debb-5897-b940-3e601ec1bca8",
+      "unitId": "21da3d96-c8d5-54c1-b21d-0604afe216e6",
+      "propertyId": "ce067ac1-653c-5d9c-ac37-b6e379156593",
+      "tenantId": "af0394d4-c52e-555f-b97e-970ff8ccbbf0",
+      "status": "active",
+      "start_date": "2026-03-01",
+      "end_date": "2029-02-28",
+      "renewed": false,
+      "depositHeldVnd": 60000000
+    },
+    {
+      "id": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
+      "unitId": "fe8e8765-0fa3-513d-bb81-c40164718fe5",
+      "propertyId": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "tenantId": "8905baa6-b1a8-5ffe-a7ce-03a2d9187929",
+      "status": "active",
+      "start_date": "2026-05-25",
+      "end_date": "2027-06-24",
+      "renewed": false,
+      "depositHeldVnd": 2800000
+    }
+  ],
+  "invoices": [
+    {
+      "id": "29a95b70-cf7a-5825-9c29-35efbfc1dce4",
+      "leaseId": "598a394c-b18a-5cab-ae3d-e0fa6d92f8e5",
+      "dueDate": "2025-10-01",
+      "totalVnd": 36000000,
+      "allocatedVnd": 36000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "60d6784b-32cb-5d65-8a96-af84be8b0753",
+      "leaseId": "895efeb3-e0d9-5e28-b4f7-ae7eec3e64a0",
+      "dueDate": "2025-10-01",
+      "totalVnd": 45000000,
+      "allocatedVnd": 45000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "095a00f6-37d9-5a84-9815-92482f3668d6",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2025-10-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "1217aea1-418a-58a3-a38c-a071b925dc22",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2025-10-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "1e02f298-773c-59aa-9346-61667e0a4bef",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2025-10-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "d233ed36-d3f3-5a40-98a7-a85aab6f3d02",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2025-10-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "91d76079-8189-56d9-9e83-dc1dccb6984b",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2025-11-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "aa4f0f0c-4cc7-5d66-b2d4-f0ca64a775e0",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2025-11-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "3ea15edc-5fb3-53c8-870d-cca31cfcc9f8",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2025-11-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "5323a66d-03a9-5804-bed9-7439ff98d762",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2025-11-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "5cb5f245-82ad-555c-b3b4-85e0dc7f702c",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2025-11-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "5d140d1b-06fb-5fe5-8449-4b97f7d4c962",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2025-12-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "1dd23800-548a-5bdf-81d0-b3ff528e6238",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2025-12-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "3033c40a-45a3-5e76-8aed-5bfcc9285454",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2025-12-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "34fe8bad-c675-5a87-9ca4-6aedf432947c",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2025-12-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "b2b7d33f-4b30-517f-9373-bf28addc8249",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2025-12-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "4305bff8-2f9c-50ff-934d-20f4d5a135dd",
+      "leaseId": "895efeb3-e0d9-5e28-b4f7-ae7eec3e64a0",
+      "dueDate": "2026-01-01",
+      "totalVnd": 45000000,
+      "allocatedVnd": 45000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "5188dfe6-635f-5c60-bd81-f68875425a88",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-01-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "a98b2361-d74f-5fb0-8994-9326bf881155",
+      "leaseId": "598a394c-b18a-5cab-ae3d-e0fa6d92f8e5",
+      "dueDate": "2026-01-01",
+      "totalVnd": 36000000,
+      "allocatedVnd": 36000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "98a7c7fb-2f88-570e-aff4-14aa89031cc5",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-01-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "020bb39e-dab7-5dfc-a63d-b69cd9207fd1",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-01-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "21eecb2e-616e-58bd-b52f-e02a087aa1f8",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-01-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "8a99a83d-6b41-5a46-a95f-464ad5bad389",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-01-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "9960554b-b351-5661-8e01-2897e2460948",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-01-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "f477d1c4-38de-5b23-8eec-1d11a9c55a29",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-02-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "7d1a7da3-cf4f-5322-a819-9da0d5f15f96",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-02-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "0c121248-422b-5072-a0a2-8a414ced2863",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-02-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "3a98165b-bc96-53fb-a843-e612d875f6f7",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-02-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "52bdd6ec-7615-5a9c-8f95-eaa1525a6e82",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-02-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "70c364ed-3a8c-5298-9f3e-24b91f319ddc",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-02-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "7c5ad18c-513a-56e8-ad35-c46c38658174",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-02-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "11bec999-30e5-5443-af62-20fd30dab967",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-03-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "75761cd2-8053-56ec-81eb-9bf689395431",
+      "leaseId": "09e0d1ce-debb-5897-b940-3e601ec1bca8",
+      "dueDate": "2026-03-01",
+      "totalVnd": 30000000,
+      "allocatedVnd": 30000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "d40f1cb5-73cc-5c69-b016-a3aa603f8ef0",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-03-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "598037d7-3020-535b-adb5-aaca897a39e6",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-03-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "83d70af7-c8da-50e7-9913-a6eb1c227e7f",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-03-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "a6fef672-9d3b-52db-b85c-d783c72f856f",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-03-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "cc8dee5b-30a2-592d-9c78-137d7a2c644a",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-03-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "e3237f75-3fa3-5125-8103-48f9fed7f9ba",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-03-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "2b3bd154-e029-578d-a181-52f536eda9cb",
+      "leaseId": "598a394c-b18a-5cab-ae3d-e0fa6d92f8e5",
+      "dueDate": "2026-04-01",
+      "totalVnd": 36000000,
+      "allocatedVnd": 36000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "897177ea-93b7-5d47-90d8-7fee0bc0e1cf",
+      "leaseId": "895efeb3-e0d9-5e28-b4f7-ae7eec3e64a0",
+      "dueDate": "2026-04-01",
+      "totalVnd": 45000000,
+      "allocatedVnd": 45000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "a3a423d6-f169-51d8-a49d-2fa3f802eb71",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-04-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "6bb68a89-c76d-58ef-b979-591affcce263",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-04-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "4fce85e2-fa95-51e3-a8fb-cb75b9ad7f29",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-04-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "79c27de6-b808-550b-b29c-9a4e75158b6b",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-04-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "96caf211-f63f-5255-a966-4331f5460f2f",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-04-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "cc118346-18d3-5abe-826b-fe2faf0ff988",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-04-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "f0750ca0-b813-5524-a003-e715eecb0483",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-04-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "c53c3412-5583-5e5c-81c7-e580544c73ef",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-05-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "b77569d3-ce7f-5fee-8bd6-d0ecdcaf8ad2",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-05-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "091380e6-e1df-5d73-be50-d5fb675028a9",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-05-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "0b349c80-3fbc-5647-abcf-6e8f55435908",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-05-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "110f1cfb-47da-5b3c-bf10-019b7a58a093",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-05-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "772057ac-7a97-5f41-b97a-77a6b7f41bc2",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-05-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "7d339cdb-677b-5462-85c4-7afc611e97aa",
+      "leaseId": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
+      "dueDate": "2026-05-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "80aaa7f3-2290-5a72-9bfb-1ecb8cb558b3",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-05-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "2258c69d-1079-52bd-95f5-c8e8b7fb3567",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-06-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "32b94b34-e720-5421-9be0-573bc4f06897",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-06-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "20a7f9a0-481c-5e33-b316-caab3a85831c",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-06-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "2656fa03-aab5-5b23-b333-252cb956dd97",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-06-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "2a1b4b3c-dc2d-5f38-bf51-6acc7bbe865d",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-06-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "4a62e3b0-8bf6-5767-a3de-c83a64977cd3",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-06-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "89c92aca-ed33-546d-991b-83285ca54ce8",
+      "leaseId": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
+      "dueDate": "2026-06-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "d4337f5d-5dcf-5887-a434-05d456d4d136",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-06-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "77a49b89-4d43-5c2d-8d26-f8b8b8697099",
+      "leaseId": "598a394c-b18a-5cab-ae3d-e0fa6d92f8e5",
+      "dueDate": "2026-07-01",
+      "totalVnd": 11347826,
+      "allocatedVnd": 11347826,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "7e5bd7fe-c7b7-5436-a90f-c1be35e10113",
+      "leaseId": "895efeb3-e0d9-5e28-b4f7-ae7eec3e64a0",
+      "dueDate": "2026-07-01",
+      "totalVnd": 45000000,
+      "allocatedVnd": 45000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "ecafc4c0-717d-5264-98f3-2bdd18e869f8",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-07-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "4cb0b4cc-8c9e-5dc6-b599-3450dccab710",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-07-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "19e9824f-199f-5ea2-a3f9-62ff912f1ae7",
+      "leaseId": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
+      "dueDate": "2026-07-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "2041b80e-cbe8-5aae-ae48-72014dacd0f6",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-07-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "2ba5e5dd-ba68-5292-a4ee-2843e26b8cd2",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-07-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "586137cc-0fbd-52c1-a469-fc8ed6bee5f3",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-07-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "bbd2bca9-b6f0-5200-9bf7-451b2e21634d",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-07-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "d9833fbd-bf95-5ddf-8f14-b524c49f47d5",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-07-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "cb041d24-fb6e-56a2-ae32-2ab1bfd7a1c8",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-08-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "beb9776a-58b7-5bd5-bbed-3fd5453dc91c",
+      "leaseId": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
+      "dueDate": "2026-08-16",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "00e2d236-d22d-5e9a-84ea-737ef64a9c61",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-08-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "46bc687f-35f2-5a62-9d68-919a5c98936b",
+      "leaseId": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
+      "dueDate": "2026-08-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "808a1f9b-5c15-5129-9f22-3be383d15a77",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-08-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "9b91320c-bafc-5333-b0f4-85dcc0cd052f",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-08-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "a9da43a5-8a52-5dbd-bc88-e15ceaf1bb6a",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-08-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "f0dbb116-cfb0-53c2-bcd4-dd4938e074fc",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-08-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "a2bc5456-6a64-5b9a-86eb-a2efedee3c66",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-09-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "05acc5d1-b257-5365-9975-49f43895a179",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-09-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "4fb8ee4e-7e24-57f8-9ef9-80cb37bc03a3",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-09-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "7701f9ca-8056-5db5-a157-d131407b52cd",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-09-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 0,
+      "paymentStatus": "unpaid"
+    },
+    {
+      "id": "879b4250-5dc0-5fec-81ab-0f64f14576d9",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-09-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "b522493c-c891-5591-ada9-3824a3071e2a",
+      "leaseId": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
+      "dueDate": "2026-09-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 2800000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "fec2e71d-2ea1-5f9e-b617-0bfb74a106f9",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-09-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 2500000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "35edba8f-bc8c-5605-849a-b72f6c31f315",
+      "leaseId": "895efeb3-e0d9-5e28-b4f7-ae7eec3e64a0",
+      "dueDate": "2026-10-01",
+      "totalVnd": 45000000,
+      "allocatedVnd": 45000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "f36376eb-c1d6-5718-aff5-c5bfdc259f80",
+      "leaseId": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
+      "dueDate": "2026-10-01",
+      "totalVnd": 9000000,
+      "allocatedVnd": 9000000,
+      "paymentStatus": "paid"
+    },
+    {
+      "id": "38730fbf-790e-5592-bf63-67dcd882c89a",
+      "leaseId": "1809d052-456b-56e2-a238-be56d3234864",
+      "dueDate": "2026-10-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 0,
+      "paymentStatus": "unpaid"
+    },
+    {
+      "id": "38fe5f3a-0d26-59ab-9323-4e56c1411e4f",
+      "leaseId": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
+      "dueDate": "2026-10-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 0,
+      "paymentStatus": "unpaid"
+    },
+    {
+      "id": "4e1ce3bb-74b0-501e-85e6-92518d08f3a7",
+      "leaseId": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
+      "dueDate": "2026-10-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 0,
+      "paymentStatus": "unpaid"
+    },
+    {
+      "id": "5a41e93d-8abc-53b1-a7c3-5cfa5baad3c1",
+      "leaseId": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
+      "dueDate": "2026-10-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 0,
+      "paymentStatus": "unpaid"
+    },
+    {
+      "id": "97979fcf-2450-5dd2-977b-eb3ed9075bdf",
+      "leaseId": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
+      "dueDate": "2026-10-25",
+      "totalVnd": 2800000,
+      "allocatedVnd": 0,
+      "paymentStatus": "unpaid"
+    },
+    {
+      "id": "f396d47a-b4d3-5802-8992-ec5657fd01c5",
+      "leaseId": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
+      "dueDate": "2026-10-25",
+      "totalVnd": 2500000,
+      "allocatedVnd": 0,
+      "paymentStatus": "unpaid"
+    }
+  ],
+  "documents": [
+    {
+      "id": "d5e4859c-b7ed-5996-9ada-b85bed2894f1",
+      "propertyId": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "expiresOn": "2026-10-30"
+    }
+  ],
+  "meters": [
+    {
+      "id": "016e0af1-3c5d-5b68-895d-918dd11d588c",
+      "unitId": "fe8e8765-0fa3-513d-bb81-c40164718fe5",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "33b334fa-13d5-5347-a659-80c9da62fdba",
+      "unitId": "5f190bd3-8874-5c2a-b068-420ad98ea7f0",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "42cb15a3-061c-5ad1-861d-0a044da98253",
+      "unitId": "3162a63a-d993-514f-b9f3-8fdcb5788988",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "4422c0f1-c54a-5f66-8f0d-2751bdaa345a",
+      "unitId": "3162a63a-d993-514f-b9f3-8fdcb5788988",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "4ef72164-9e35-52a3-a52f-53bbbaa6ee2e",
+      "unitId": "d51ab9f3-547c-54e1-9c62-f87bfc590dea",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "578d32a4-978a-532a-bb6e-332a82455334",
+      "unitId": "f3295844-4743-5167-a5aa-c337e0ec0a0a",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "754c0730-0408-5ece-a7f7-f9d3e67c1438",
+      "unitId": "4a8d4887-e69b-5bd1-a4c2-beb4205e50fb",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "7a8863ae-f1b3-52ca-a1c5-c584a63e41d6",
+      "unitId": "688b236c-c148-5880-afec-a86fe996dcff",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "7d340ff9-f73f-5516-9b56-b2d9bcd9042e",
+      "unitId": "4a8d4887-e69b-5bd1-a4c2-beb4205e50fb",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "9359aacc-ebfe-50fd-95cf-820253ea21f0",
+      "unitId": "688b236c-c148-5880-afec-a86fe996dcff",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "9cbe0b57-64c6-5367-ba6b-0d5e894d9563",
+      "unitId": "5f190bd3-8874-5c2a-b068-420ad98ea7f0",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "bd8a6b32-2612-59c5-9393-b66c756fda64",
+      "unitId": "8077b3de-de29-5b2c-829c-d3c864fdefde",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "cf06589c-fab8-5307-893d-dd7d38122735",
+      "unitId": "8077b3de-de29-5b2c-829c-d3c864fdefde",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "cf1aba01-3a86-5204-8823-c875ddcc22d6",
+      "unitId": "fe8e8765-0fa3-513d-bb81-c40164718fe5",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "d55216b0-786b-5104-9daf-2ed315e59332",
+      "unitId": "d51ab9f3-547c-54e1-9c62-f87bfc590dea",
+      "lastReadOn": "2026-10-03"
+    },
+    {
+      "id": "f9fbfded-8946-55e9-8df7-0b638bed9d58",
+      "unitId": "f3295844-4743-5167-a5aa-c337e0ec0a0a",
+      "lastReadOn": "2026-10-03"
+    }
+  ],
+  "taxPositions": [
+    {
+      "partyId": "5107e10c-018b-5f2d-ad73-f0ad36ca7467",
+      "year": 2026,
+      "projectedVnd": 482658469,
+      "thresholdTotalVnd": 482658469,
+      "thresholdVnd": 500000000,
+      "progressBp": 9653
+    },
+    {
+      "partyId": "d825b7a8-43f6-5ab6-bfdf-114cdd8be7f7",
+      "year": 2026,
+      "projectedVnd": 86823913,
+      "thresholdTotalVnd": 86823913,
+      "thresholdVnd": 500000000,
+      "progressBp": 1736
+    }
+  ],
+  "extractions": []
+}

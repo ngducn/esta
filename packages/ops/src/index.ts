@@ -19,6 +19,7 @@ export {
 export { batchUndo, UNDO_FLOWS, UNDO_REASONS, type BatchUndone, type UndoBlocker, type UndoRefusal } from './batch-undo';
 export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDefault, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
 export { readClock, type ClockEnv } from './clock';
+export { readCompleteness, type PropertyCompleteness } from './completeness';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';
 export {
@@ -52,3 +53,4 @@ export { taxInputSave, type TaxInputSaved } from './tax-ops';
 export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
 export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
 export { readLivePropertyIds, readValuations } from './valuations';
+export { readWatchSnapshot } from './watch';
