@@ -130,7 +130,7 @@ test('rule 1: Mẹ uploads the Bảo Lộc scan, sees Đang đọc, then Chờ x
   expect(items).toEqual([{ title: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }]);
 
   await page.goto('/assistant');
-  const item = page.getByTestId('new-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first();
+  const item = page.getByTestId('inbox-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first();
   await expect(item).toBeVisible();
   await expect(item, 'dated by the frozen test clock').toContainText('07/10/2026');
   await shot(page, 'p2-03-new-items-390x844-light');
@@ -273,7 +273,7 @@ test('rule 7: a blank page fails after every attempt, the tile reads Không đ�
   );
   expect(items).toEqual([{ severity: 'info', proposal: expect.objectContaining({ type: 'retry_job', min_role: 'admin' }) }]);
   await page.goto('/assistant');
-  const item = page.getByTestId('new-item').filter({ hasText: 'Trợ lý không đọc được Trang trống lane 7.' });
+  const item = page.getByTestId('inbox-item').filter({ hasText: 'Trợ lý không đọc được Trang trống lane 7.' });
   await expect(item.getByText('Bạn có thể nhập tay.', { exact: true })).toBeVisible();
   await expect(item).not.toContainText('thử lại');
 });
@@ -306,7 +306,7 @@ test('rule 9: in English at 130% and dark, the pill and the list read in English
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.goto('/assistant');
   await expect(page.getByRole('heading', { name: 'New items' })).toBeVisible();
-  await expect(page.getByTestId('new-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first()).toBeVisible();
+  await expect(page.getByTestId('inbox-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   } finally {
     await patch({ locale: 'vi', text_scale: 100 });

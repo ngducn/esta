@@ -3,12 +3,9 @@
 import type { Result } from '@esta/core/result';
 import { Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { FormAlert } from '@/components/form-alert';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
-import { useAction } from '@/components/use-action';
+import { useUndoableAction } from '@/components/use-undoable-action';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
 
@@ -39,29 +36,10 @@ const compactButton = 'min-h-touch px-3 text-small';
  * tap changes nothing. It stays disabled until hydration, so a tap before the click handler exists does nothing.
  */
 export function ItemActions<Deleted>({ editHref, remove, restore, labels, compact = false }: ItemActionsProps<Deleted>) {
-  const router = useRouter();
-  const showUndo = useUndoToast();
-  const showNotice = useNoticeToast();
   const hydrated = useHydrated();
-  const { pending, run } = useAction();
-  const [error, setError] = useState<string | null>(null);
+  const { pending, error, perform } = useUndoableAction({ failed: labels.deleteFailed, restoreFailed: labels.restoreFailed });
   const button = cn(buttonVariants({ variant: 'outline' }), compact && compactButton);
-
-  const onDelete = () => {
-    setError(null);
-    run(remove, (result) => {
-      if (!result.ok) {
-        setError(labels.deleteFailed);
-        return;
-      }
-      router.refresh();
-      showUndo(labels.deleted, () => {
-        restore(result.value)
-          .then((restored) => (restored.ok ? router.refresh() : showNotice(labels.restoreFailed)))
-          .catch(() => showNotice(labels.restoreFailed));
-      });
-    });
-  };
+  const onDelete = () => perform(remove, { message: labels.deleted, restore });
 
   return (
     <div className={cn('flex flex-col gap-1', compact ? 'sm:items-end' : 'items-end')}>
