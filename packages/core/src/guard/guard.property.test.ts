@@ -14,7 +14,7 @@ describe('every string the app formats reads back as the value it shows', () => 
   it('reads a full amount exactly', () => {
     fc.assert(
       fc.property(amounts, locales, (amount, locale) => {
-        expect(read(formatVnd(vnd(amount), locale), locale)).toEqual([{ kind: 'amount', vnd: amount }]);
+        expect(read(formatVnd(vnd(amount), locale), locale)).toEqual([{ kind: 'amount', vnd: BigInt(amount) }]);
       }),
     );
   });
@@ -33,8 +33,8 @@ describe('every string the app formats reads back as the value it shows', () => 
   it('reads counts, rates and dates exactly', () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 99_999_999 }), fc.integer({ min: 0, max: 100_000 }), dates, locales, (count, bp, date, locale) => {
-        expect(read(formatCount(count, locale), locale)).toEqual([{ kind: 'count', value: count }]);
-        expect(read(formatBps(bp, locale), locale)).toEqual([{ kind: 'ratio', bp }]);
+        expect(read(formatCount(count, locale), locale)).toEqual([{ kind: 'count', value: String(count) }]);
+        expect(read(formatBps(bp, locale), locale)).toEqual([{ kind: 'ratio', bp: BigInt(bp) }]);
         expect(read(formatDate(date, locale), locale)).toEqual([{ kind: 'date', iso: date }]);
         expect(read(formatDayMonth(date, locale), locale)).toEqual([{ kind: 'date', iso: `--${date.slice(5)}` }]);
         expect(read(formatMonthYear(date, locale), locale)).toEqual([{ kind: 'date', iso: date.slice(0, 7) }]);
@@ -45,7 +45,7 @@ describe('every string the app formats reads back as the value it shows', () => 
   it('reads a due phrase as its day count', () => {
     fc.assert(
       fc.property(dates, fc.integer({ min: -400, max: 400 }).filter((days) => days !== 0), locales, (today, days, locale) => {
-        expect(read(formatRelativeDue(addDays(today, days), today, locale), locale)).toEqual([{ kind: 'count', value: Math.abs(days) }]);
+        expect(read(formatRelativeDue(addDays(today, days), today, locale), locale)).toEqual([{ kind: 'count', value: String(Math.abs(days)) }]);
       }),
     );
   });

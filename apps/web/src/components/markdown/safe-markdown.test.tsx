@@ -52,6 +52,8 @@ describe('SafeMarkdown', () => {
 describe('the number guard reads what SafeMarkdown shows', () => {
   it.each([
     '**25** triệu',
+    '- Phòng 5\n- 500.000 ₫',
+    '## Phòng 5\n\n12 ngày',
     '25 *triệu*',
     '`25` triệu',
     '**5**.000.000 ₫',
@@ -69,12 +71,12 @@ describe('the number guard reads what SafeMarkdown shows', () => {
     '[ref 9]\n\n[ref 9]: https://example.com/9',
     'a​5 000 ₫',
   ])('reads %j as the rendered text', (markdown) => {
-    expect(onScreenText(markdown)).toBe(readableText(renderMarkdown(markdown).textContent ?? ''));
+    expect(onScreenText(markdown).join(' ')).toBe(readableText(renderMarkdown(markdown).textContent ?? ''));
   });
 
   it('reads the numbers of an ordered list that does not start at 1', () => {
     const list = renderMarkdown('13. Phòng 5\n14. Phòng 7').querySelector('ol');
     expect(list?.getAttribute('start')).toBe('13');
-    expect(onScreenText('13. Phòng 5\n14. Phòng 7')).toBe('13. Phòng 5 14. Phòng 7');
+    expect(onScreenText('13. Phòng 5\n14. Phòng 7')).toEqual(['13.', 'Phòng 5', '14.', 'Phòng 7']);
   });
 });

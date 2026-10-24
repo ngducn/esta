@@ -1,41 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { isoDate } from '../date/iso-date';
-import type { Locale } from '../format';
-import { checkNumbers, collectAllowed, extractNumbers, onScreenText, type CanonicalNumber } from './index';
-
-const amount = (vnd: number): CanonicalNumber => ({ kind: 'amount', vnd });
-const count = (value: number): CanonicalNumber => ({ kind: 'count', value });
-const ratio = (bp: number): CanonicalNumber => ({ kind: 'ratio', bp });
-const date = (iso: string): CanonicalNumber => ({ kind: 'date', iso });
-
-const values = (text: string, locale: Locale = 'vi') => extractNumbers(onScreenText(text), locale).map((number) => number.value);
-
-/** One portfolio_watch run: the W1 fact for Phòng 5 with its display strings, and the labels other facts carry. */
-const RUN = [
-  {
-    facts: [
-      {
-        rule_id: 'W1',
-        subject_key: 'invoice:3f1c2a9e-5b7d-4c1a-9e2f-7a6b5c4d3e2f',
-        unit_label: 'Phòng 5',
-        property_label: 'Nhà trọ Dĩ An',
-        days_overdue: 12,
-        outstanding_vnd: 3_500_000,
-        outstanding_display: '3.500.000 ₫',
-        outstanding_compact: '3,5 tr',
-        due_date: '2026-09-25',
-      },
-      { rule_id: 'W3', property_label: 'Căn hộ Thủ Đức', days_left: 25, end_date: '2026-11-01' },
-      { rule_id: 'W7', progress_bp: 8240, progress_display: '82,4%', threshold_vnd: 500_000_000 },
-      { rule_id: 'W5', property_label: 'Nhà phố Q7', unit_id: 'unit-777' },
-    ],
-  },
-];
-
-const allowedFor = (results: readonly unknown[] = RUN, locale: Locale = 'vi') =>
-  collectAllowed(results, { today: isoDate('2026-10-07'), householdName: 'Gia đình Demo 3', locale });
-
-const offending = (markdown: string, results: readonly unknown[] = RUN, locale: Locale = 'vi') => checkNumbers(onScreenText(markdown), allowedFor(results, locale));
+import { extractNumbers } from './index';
+import { amount, count, ratio, date, values, offending } from './fixtures';
 
 describe('extractNumbers reads every AGENT.md §6.3 form', () => {
   it.each([
@@ -203,84 +168,126 @@ describe('a partial reading never stands in for a larger number (#61 round 2)', 
   });
 });
 
-describe('checkNumbers against one run (AGENT.md §6.3)', () => {
-  it('passes a note made of the run’s numbers and display strings', () => {
-    expect(offending('**Phòng 5** ở Nhà trọ Dĩ An quá hạn 12 ngày, còn nợ 3.500.000 ₫ (3,5 triệu), hạn 25/09/2026.')).toEqual([]);
-    expect(offending('Hợp đồng Căn hộ Thủ Đức hết hạn ngày 01/11/2026, còn 25 ngày.')).toEqual([]);
+describe('a number the guard cannot read whole is unreadable, never a smaller number (#309 review)', () => {
+  it.each([
+    '3 triệu 5 nghìn',
+    '3 triệu 5 ngàn đồng',
+    '3 triệu 5 trăm',
+    '3 triệu 5 trăm nghìn',
+    '3 triệu 5 đồng',
+    '3 triệu 5 ₫',
+    '3 triệu 5k',
+    '3 triệu 5 k',
+    '3 triệu rưỡi nghìn',
+    '1 tỷ 2 triệu',
+    '1 tỷ 2 nghìn',
+    '2 tỷ 5 triệu',
+    '1 tỷ 25 triệu',
+    '1.5 tỷ 2 triệu',
+    '1,5 tỷ rưỡi',
+    '2,5 rưỡi',
+    'từ 3 triệu đến 4',
+  ])('reads %s, an amount word the grammar did not take, as unreadable', (text) => {
+    expect(values(text)).toEqual([null]);
   });
 
-  it('allows an amount field quoted as a bare number', () => {
-    expect(offending('Còn nợ 3.500.000.', [{ outstanding_vnd: 3_500_000 }])).toEqual([]);
+  it.each([
+    '3 triệu mấy',
+    '5 chục triệu',
+    '5 mươi ngàn',
+    '5 vạn',
+    '5 củ',
+    '12 củ',
+    '5 bil',
+    '5 tỏi',
+    '5 lít',
+    '12 lít',
+    '5 USD',
+    '5 cây vàng',
+    '3,5 m ₫',
+    '5 – đ',
+    '5 _triệu',
+    '5 `triệu',
+    '5 ~triệu',
+    '12 • triệu',
+    '5 /₫',
+  ])('reads %s, a word that changes the number beside it, as unreadable', (text) => {
+    expect(values(text)).toEqual([null]);
   });
 
-  it('rejects an invented day count', () => {
-    expect(offending('Phòng 5 quá hạn 13 ngày.')).toEqual(['13']);
+  it.each(['mỗi tháng 10 triệu', 'Mỗi tháng 12 triệu', 'Tiền thuê tháng 10 triệu', 'Giá 25/9 tỷ', 'Giá 1/2 tỷ'])(
+    'reads %s, a date or fraction followed by an amount word, as unreadable',
+    (text) => {
+      expect(values(text)).toEqual([null]);
+    },
+  );
+
+  it('flags a month a reader takes as an amount even when today is that month', () => {
+    expect(offending('Phòng 5 thu mỗi tháng 10 triệu.')).toEqual(['tháng 10 triệu']);
   });
 
-  it('allows a room number by its label and the household name by context', () => {
-    expect(offending('Phòng 5', [{ unit_label: 'Phòng 5' }])).toEqual([]);
-    expect(offending('Gia đình Demo 3 có một việc cần làm.', [])).toEqual([]);
+  it('gives every bare number of a list the unit of the number after it', () => {
+    expect(values('Giá 3 hoặc 3,5 triệu.')).toEqual([amount(3_000_000), amount(3_500_000)]);
+    expect(values('Giá khoảng 3, 3,5 triệu.')).toEqual([amount(3_000_000), amount(3_500_000)]);
+    expect(values('Giá 3 hay 4 triệu.')).toEqual([amount(3_000_000), amount(4_000_000)]);
+    expect(offending('Giá khoảng 3 hoặc 3,5 triệu.', [{ vacant_units: 3, outstanding_vnd: 3_500_000 }])).toEqual(['3 hoặc 3,5 triệu']);
   });
 
-  it('allows today written as 7/10 and as 07/10/2026, and no other day', () => {
-    expect(offending('Hôm nay 7/10, tức 07/10/2026.', [])).toEqual([]);
-    expect(offending('Hạn 8/10.', [])).toEqual(['8/10']);
+  it('reads a half after a count, and rưởi as rưỡi', () => {
+    expect(values('3 triệu rưởi')).toEqual([amount(3_500_000)]);
+    expect(values('Phòng 8 đã trống 2 tháng rưỡi.')).toEqual([count(8), count('2.5')]);
+    expect(values('gần 2 năm rưỡi')).toEqual([count('2.5')]);
+    expect(offending('Phòng 8 đã trống 2 tháng rưỡi.', [{ unit_label: 'Phòng 8', invoices: 2 }])).toEqual(['2 tháng rưỡi']);
   });
 
-  it('treats a percent and its basis points as one value', () => {
-    expect(offending('Đạt 82,4% ngưỡng, tức 8240 bp.')).toEqual([]);
-    expect(offending('Đạt 6,5%.', [{ yield_bp: 650 }])).toEqual([]);
-    expect(offending('Yield 6.5%.', [{ yield_display: '6.5%' }], 'en')).toEqual([]);
+  it('flags every word holding a bidi control, which reorders what Mẹ sees', () => {
+    expect(offending('Quá hạn ‮12‬ ngày.')).toEqual(['U+202E12U+202C']);
+    expect(offending('Quá hạn ‭‮21 ngày')).toEqual(['U+202DU+202E21', '21']);
+    expect(offending('Quá hạn ⁧ 12 ngày.')).toEqual(['U+2067']);
+  });
+});
+
+describe('labels and blocks keep their numbers apart (#309 review)', () => {
+  it.each([
+    '**Phòng 5** — quá hạn 12 ngày.',
+    'Phòng 5 - quá hạn 12 ngày',
+    'Phòng 5 – 3.500.000 ₫',
+    '**Phòng 5** – 3.500.000 ₫, quá hạn 12 ngày.',
+    '- **Phòng 5** — 3,5 tr (quá hạn 12 ngày)',
+    'Phòng 5 đồng thời quá hạn 12 ngày',
+    'Phòng 5 ~ 12 ngày',
+    '3.500.000 ₫ – 12 ngày quá hạn',
+    '- Phòng 5\n- 3.500.000 ₫',
+    '## Phòng 5\n\n12 ngày quá hạn',
+    '**Phòng 5**\n\n3.500.000 ₫',
+  ])('passes %j', (markdown) => {
+    expect(offending(markdown)).toEqual([]);
   });
 
-  it('reads the tool’s display strings in the household locale', () => {
-    expect(offending('Owes 1,500 ₫.', [{ owed_display: '1,500 ₫' }], 'en')).toEqual([]);
-    expect(offending('Còn nợ 1.500 ₫.', [{ owed_display: '1.500 ₫' }], 'vi')).toEqual([]);
+  it('joins a soft line break, so digits on the next line still read as one number', () => {
+    expect(values('Phòng 5\n350.000 ₫')).toEqual([null]);
   });
 
-  it('never lets a smaller count satisfy an amount, or an amount field satisfy a percent', () => {
-    expect(offending('Còn nợ 12 ₫.')).toEqual(['12 ₫']);
-    expect(offending('Còn nợ 25 triệu.', [{ days: 25 }])).toEqual(['25 triệu']);
-    expect(offending('Đạt 12%.')).toEqual(['12%']);
+  it('reads a d/m as a date only after a date word or alone, and as two counts otherwise', () => {
+    expect(values('7/10 phòng đã cho thuê')).toEqual([count(7), count(10)]);
+    expect(offending('7/10 phòng đã cho thuê', [])).toEqual(['7/10']);
+    expect(values('Hạn đóng 25/09.')).toEqual([date('--09-25')]);
+    expect(values('Phòng 7 kết thúc 15/9.')).toEqual([count(7), date('--09-15')]);
   });
 
-  it('never lets a year inside a date satisfy a count', () => {
-    expect(offending('Quá hạn 2026 ngày.', [])).toEqual(['2026']);
+  it('reads tháng and năm after a number as a duration, not a date', () => {
+    expect(values('Trống 2 tháng 10 ngày.')).toEqual([count(2), count(10)]);
+    expect(values('Hợp đồng 2 năm, giá 3 triệu năm 2026.')).toEqual([count(2), amount(3_000_000), date('2026')]);
   });
 
-  it('lets a negative value be quoted unsigned, and a written minus sign only match a negative value', () => {
-    expect(offending('Chênh lệch 1.500.000 ₫.', [{ change_vnd: -1_500_000 }])).toEqual([]);
-    expect(offending('Lỗ -1.500.000 ₫.', [{ change_vnd: -1_500_000 }])).toEqual([]);
-    expect(offending('Lỗ -1.500.000 ₫.', [{ change_vnd: 1_500_000 }])).toEqual(['-1.500.000 ₫']);
+  it('reads a day of the month without its month as unreadable', () => {
+    expect(values('ngày 12 hết hạn')).toEqual([null]);
   });
 
-  it('allows a token with digits that reads as no number only when a tool string holds it whole', () => {
-    expect(offending('Nhà phố Q7 sắp hết hạn bảo hiểm.')).toEqual([]);
-    expect(offending('Mã 777.')).toEqual(['777']);
-    expect(offending('Hóa đơn INV12.')).toEqual(['INV12']);
-    expect(offending('Mã ESTA 7K2QX9MQ.', [{ memo_code: '7K2QX9MP' }])).toEqual(['7K2QX9MQ']);
-  });
-
-  it('checks the numbers an ordered list shows when it does not start at 1', () => {
-    expect(offending('1. Phòng 5\n2. Căn hộ Thủ Đức')).toEqual([]);
-    expect(offending('13. Phòng 5 quá hạn')).toEqual(['13']);
-  });
-
-  it('checks link text and ignores the link target', () => {
-    expect(offending('[Phòng 5](esta://property/3f1c2a9e-5b7d-4c1a-9e2f-7a6b5c4d3e2f) quá hạn 12 ngày')).toEqual([]);
-    expect(offending('[quá hạn 40 ngày](esta://property/3f1c2a9e-5b7d-4c1a-9e2f-7a6b5c4d3e2f)')).toEqual(['40']);
-  });
-
-  it('ignores an image, which SafeMarkdown never shows, and area units', () => {
-    expect(onScreenText('Trước ![5 tỷ](https://example.com/a.png) sau')).toBe('Trước sau');
-    expect(offending('Diện tích 125,5 m².', [{ area_m2: 125.5 }])).toEqual([]);
-  });
-
-  it('ends a number at a comma or period, so the next word is never its unit', () => {
-    expect(offending('Phòng 5, đồng thời Căn hộ Thủ Đức còn 25 ngày.')).toEqual([]);
-  });
-
-  it('reports each offending number once, as written', () => {
-    expect(offending('40 ngày, rồi 40 ngày, rồi **41** ngày')).toEqual(['40', '41']);
+  it('reads năm with four digits as a year, and allows today’s year', () => {
+    expect(values('năm 2026')).toEqual([date('2026')]);
+    expect(offending('Trong năm 2026, Phòng 5 quá hạn 12 ngày.')).toEqual([]);
+    expect(offending('Doanh thu năm 2025.', [])).toEqual(['năm 2025']);
+    expect(offending('Doanh thu năm 2025.', [{ tax_year: 2025 }])).toEqual([]);
   });
 });

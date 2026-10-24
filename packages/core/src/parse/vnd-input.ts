@@ -5,15 +5,23 @@ import { parseDecimal, toSafeNumber, toWholeDong, type AmountReason, type Decima
 
 export type VndInputReason = AmountReason | 'ambiguous_separators' | 'ambiguous_shorthand';
 
-const UNITS: Readonly<Record<string, bigint>> = {
-  ty: 1_000_000_000n,
-  ti: 1_000_000_000n,
-  trieu: 1_000_000n,
-  tr: 1_000_000n,
-  nghin: 1_000n,
-  ngan: 1_000n,
-  k: 1_000n,
-};
+export const FOLDED_VND_MAGNITUDES: ReadonlyMap<string, bigint> = new Map([
+  ['ty', 1_000_000_000n],
+  ['ti', 1_000_000_000n],
+  ['billion', 1_000_000_000n],
+  ['bn', 1_000_000_000n],
+  ['trieu', 1_000_000n],
+  ['tr', 1_000_000n],
+  ['million', 1_000_000n],
+  ['mil', 1_000_000n],
+  ['mln', 1_000_000n],
+  ['nghin', 1_000n],
+  ['ngan', 1_000n],
+  ['k', 1_000n],
+  ['thousand', 1_000n],
+  ['tram', 100n],
+  ['hundred', 100n],
+]);
 
 const HALF = 'ruoi';
 const CURRENCY_SUFFIX = /\s*(?:₫|đ|d|dong|vnd)$/;
@@ -51,7 +59,7 @@ export function parseVndInput(text: string): Result<Vnd, VndInputReason> {
   let last: { unit: bigint; scale: number } | undefined;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i] ?? '';
-    const unit = tokens[i + 1] === undefined ? undefined : UNITS[tokens[i + 1] ?? ''];
+    const unit = FOLDED_VND_MAGNITUDES.get(tokens[i + 1] ?? '');
 
     if (last !== undefined && i === tokens.length - 1 && (token === HALF || /^\d{1,3}$/.test(token))) {
       if (last.scale > 0) return { ok: false, reason: 'ambiguous_shorthand' };

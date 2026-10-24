@@ -1,3 +1,4 @@
+import type { Locale } from '../format';
 import type { Result } from '../result';
 
 /** An exact decimal: `digits / 10 ** scale`. */
@@ -37,6 +38,28 @@ export function parseDecimal(text: string): Decimal | null {
       isThousandsGrouping(integerGroups));
   if (!integerValid) return null;
   return { digits: BigInt(integerGroups.join('') + fraction), scale: fraction.length };
+}
+
+const LOCALE_GROUP: Record<Locale, string> = { vi: '.', en: ',' };
+
+/**
+ * Reads a count, rate or amount as a household's locale writes it. A single separator before exactly three digits
+ * is a thousands group in the locale that groups with it and unreadable in the other, because `1,500` is 1,5 to one
+ * reader and 1500 to another. Separators that disagree, or groups that are not three digits, are unreadable.
+ */
+export function parseLocaleNumeral(text: string, locale: Locale): Decimal | null {
+  if (/^\d+$/.test(text)) return { digits: BigInt(text), scale: 0 };
+  const grouped = /^(\d{1,3}([.,])\d{3}(?:\2\d{3})*)(?:([.,])(\d+))?$/.exec(text);
+  if (grouped !== null) {
+    const [, integer = '', group = '', decimalMark, fraction = ''] = grouped;
+    if (decimalMark === group) return null;
+    if (decimalMark === undefined && integer.split(group).length === 2 && group !== LOCALE_GROUP[locale]) return null;
+    return { digits: BigInt(integer.replaceAll(group, '') + fraction), scale: fraction.length };
+  }
+  const decimal = /^(\d+)[.,](\d+)$/.exec(text);
+  if (decimal === null) return null;
+  const [, integer = '', fraction = ''] = decimal;
+  return fraction.length === 3 ? null : { digits: BigInt(integer + fraction), scale: fraction.length };
 }
 
 export function toWholeDong(decimal: Decimal, multiplier: bigint): Result<bigint, AmountReason> {

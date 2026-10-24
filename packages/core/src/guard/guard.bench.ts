@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { formatVnd, formatVndCompact } from '../format';
 import { vnd } from '../money/vnd';
-import { checkNumbers, collectAllowed, onScreenText } from './index';
+import { checkNumbers, collectAllowed } from './index';
 
 /** 2,000 allowed values, as a large run's tool results would give: amounts with their display strings, day counts and labels. */
 const results = Array.from({ length: 500 }, (_, index) => ({
@@ -21,7 +21,7 @@ test('the guard checks a 300-token note against 2,000 allowed values in under 5 
   expect(note.split(/\s+/).length).toBeGreaterThanOrEqual(300);
   expect(allowed.keys.size).toBeGreaterThanOrEqual(2_000);
   const result = await bench('checkNumbers, 300 tokens', () => {
-    checkNumbers(onScreenText(note), allowed);
+    checkNumbers(note, allowed);
   }).run();
   console.info(`checkNumbers, 300 tokens: mean ${result.latency.mean.toFixed(3)} ms, p99 ${result.latency.p99.toFixed(3)} ms`);
   expect(result.latency.mean).toBeLessThan(5);

@@ -56,6 +56,7 @@ describe('parseVndInput', () => {
     ['3k5', 3_500],
     ['2 triệu rưỡi', 2_500_000],
     ['1tr2 đ', 1_200_000],
+    ['12 million', 12_000_000],
   ])('parses %s', (text, value) => {
     expect(parseVndInput(text)).toEqual({ ok: true, value });
   });
