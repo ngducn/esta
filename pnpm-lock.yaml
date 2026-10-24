@@ -467,10 +467,16 @@ importers:
 
   packages/core:
     dependencies:
+      mdast-util-from-markdown:
+        specifier: ^2.1.0
+        version: 2.1.0
       zod:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       '@types/pngjs':
         specifier: 6.0.5
         version: 6.0.5
