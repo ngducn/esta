@@ -24,7 +24,7 @@ export default function QrSheet({
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
-  /** Null where the code pays no bill, as Cài đặt's sample. */
+  /** Null when the code pays no bill. */
   invoiceHref: string | null;
   qr: InvoiceQrView;
   labels: QrSheetLabels;

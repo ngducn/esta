@@ -27,7 +27,6 @@ $$;
 revoke all on function public.set_default_bank_account(uuid) from public, anon;
 grant execute on function public.set_default_bank_account(uuid) to authenticated;
 
--- A payment keeps the account it landed in: removing that account is refused, as statement_imports already refuses it.
 alter table public.payments
   drop constraint payments_bank_account_fkey,
   add constraint payments_bank_account_fkey foreign key (household_id, bank_account_id) references public.bank_accounts (household_id, id);

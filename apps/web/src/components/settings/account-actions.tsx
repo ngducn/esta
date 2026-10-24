@@ -20,7 +20,7 @@ export type AccountActionLabels = {
   readonly refusals: Readonly<Record<AccountActionRefusal, string>>;
 };
 
-/** `Đặt làm mặc định` and `Xóa` on an account that is not the default; the default is neither moved from nor removed here. */
+/** `Đặt làm mặc định` and `Xóa` on an account that is not the default. */
 export function AccountActions({ id, removeTitle, describedBy, labels }: { id: string; removeTitle: string; describedBy: string; labels: AccountActionLabels }) {
   const { refusal, pending, run } = useBillAction<AccountActionRefusal>();
   const confirm = useDeferredDialog(loadConfirm);

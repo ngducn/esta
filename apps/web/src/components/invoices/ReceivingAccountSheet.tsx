@@ -30,7 +30,6 @@ export type AccountSheetLabels = {
   readonly refusals: Readonly<Record<AccountActionRefusal, string>>;
 };
 
-/** The stored account an edit starts from. */
 export type AccountFields = { readonly id: string; readonly bin: string; readonly accountNo: string; readonly accountName: string };
 
 /** Adding says whether the new account becomes the default bills pay into; editing starts from the stored account. */
@@ -44,10 +43,7 @@ function heading(mode: AccountSheetMode, labels: AccountSheetLabels) {
   return { title: labels.title, body: mode.becomesDefault ? labels.body : labels.addMoreBody };
 }
 
-/**
- * PLT-1's receiving account, added from a bill that has no account or from Cài đặt, and edited from Cài đặt. The name
- * folds to the uppercase ASCII banks print as Mẹ types.
- */
+/** PLT-1's receiving account, added or edited. The name folds to the uppercase ASCII banks print as Mẹ types. */
 export default function ReceivingAccountSheet({
   open,
   onOpenChange,

@@ -8,10 +8,7 @@ import { loadAccountSheet } from '@/server/invoices/labels';
 import { loadQrLabels, loadReceivingAccounts, sampleQr } from '@/server/invoices/qr';
 import { AccountActions } from './account-actions';
 
-/**
- * PLT-1 `Tài khoản nhận tiền`: every account with its sample QR, so Mẹ can scan it before tenants rely on it. Only an
- * admin adds, edits, moves the default or removes; everyone else reads the same list.
- */
+/** PLT-1 `Tài khoản nhận tiền`: every account with its sample QR, so Mẹ can scan it before tenants rely on it. */
 export async function ReceivingAccounts({ member }: { member: Member }) {
   const admin = member.role === 'admin';
   const [t, locale, accounts, qrLabels, sheet] = await Promise.all([

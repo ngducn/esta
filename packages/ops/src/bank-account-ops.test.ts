@@ -51,7 +51,6 @@ describe('bankAccountCreate', () => {
 
 const STORED = { bank_bin: '970436', account_no: '0123456789', account_name: 'NGUYEN THI DEMO', is_default: false };
 
-/** A household holding ACCOUNT as STORED; `also` answers every other request. */
 function holding(account: Partial<typeof STORED> | null, also: (sent: Sent) => readonly unknown[] = () => []) {
   return fakeDb((sent) => {
     const read = sent.method === 'GET' && sent.table === 'bank_accounts' && sent.query.get('id') === `eq.${ACCOUNT}`;

@@ -8,8 +8,6 @@ import { memberRest } from './helpers/auth-api';
 import { laneHousehold } from './helpers/seed';
 import { noSidewaysScroll, open, PHONE, seriousAxeViolations } from './helpers/wizard';
 
-// Every rule writes lane 7's receiving accounts, so the spec runs once, at the phone size, and puts the seeded default
-// back after each rule. No other spec writes lane 7's accounts, and the default never goes missing while it runs.
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const HOUSEHOLD = laneHousehold(7);
 const SEEDED = seedId('seed:bank-account:lane-7');

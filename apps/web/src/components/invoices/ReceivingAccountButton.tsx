@@ -9,7 +9,7 @@ import type { AccountSheetLabels, AccountSheetMode, BankOption } from './Receivi
 const loadSheet = () => import('./ReceivingAccountSheet');
 const ReceivingAccountSheet = lazy(loadSheet);
 
-/** Opens the account sheet: to add one, on a bill without an account or in Cài đặt, or to edit one in Cài đặt. Admins only. */
+/** Opens the account sheet to add or edit one. Admins only. */
 export function ReceivingAccountButton({
   label,
   banks,

@@ -33,15 +33,15 @@ function accountRefusal(reason: BankAccountRefusal | CommonRefusal): AccountActi
   return KIND_REFUSALS[reason.kind] ?? 'failed';
 }
 
-/** Every bill, the board, Home and Cài đặt read the receiving accounts, so a change redraws them all. */
+const redrawEveryAccountReader = () => revalidatePath('/', 'layout');
+
 async function runAccountOp<I, C>(op: Op<I, C, BankAccountSaved, BankAccountRefusal>, raw: unknown): Promise<Result<undefined, AccountActionRefusal>> {
   const result = await runOp(op, await webOpContext(), raw);
   if (!result.ok) return { ok: false, reason: accountRefusal(result.reason) };
-  revalidatePath('/', 'layout');
+  redrawEveryAccountReader();
   return { ok: true, value: undefined };
 }
 
-/** PLT-1's receiving account, from Cài đặt or from a bill when the household has none. Only an admin adds one. */
 export async function addReceivingAccount(raw: unknown): Promise<Result<undefined, AccountActionRefusal>> {
   return runAccountOp(bankAccountCreate, raw);
 }

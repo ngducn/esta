@@ -10,7 +10,6 @@ import type { QrSheetLabels } from './QrSheet';
 const loadSheet = () => import('./QrSheet');
 const QrSheet = lazy(loadSheet);
 
-/** `Mã QR` on a board row opens the code for what the row still owes; in Cài đặt it opens an account's sample. */
 export function QrAction({
   label,
   title,
