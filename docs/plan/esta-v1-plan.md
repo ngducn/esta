@@ -4377,9 +4377,9 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Files.**
 
-- [ ] Create `apps/web/src/app/(app)/assistant/market/page.tsx`, `apps/web/src/components/assistant/citation-chip.tsx`, `apps/web/src/components/assistant/assistant-tabs.tsx`, `apps/web/src/server/agent/research.ts` and `e2e/assistant-market.spec.ts`.
+- [ ] Create `apps/web/src/app/(app)/assistant/market/page.tsx`, `apps/web/src/components/assistant/citation-chip.tsx`, `apps/web/src/components/assistant/market-item.tsx`, `apps/web/src/components/assistant/assistant-header.tsx` (the Trợ lý heading and its Hộp thư and Thị trường tabs, on `apps/web/src/components/shell/section-tabs.tsx`, which the property tabs now share), `apps/web/src/server/agent/research.ts`, `packages/core/src/research/touches.ts` (which items concern a property, for the filter) and `e2e/assistant-market.spec.ts`.
 - [ ] Create `packages/core/src/research/quote.ts` and `packages/core/src/parse/page-dates.ts` with their tests: the quote and date checks against the text WebFetch returned.
-- [ ] Extend `apps/agent/src/sdk/path-policy.ts`, `apps/agent/src/tools/add-research-item.ts`, `apps/agent/src/tools/create-brief.ts`, `apps/agent/src/tools/recent-items.ts`, the `morning_brief` and `research_scan` prompts, and re-hand-write the `research_scan` recordings with quotes of whole phrases.
+- [ ] Extend `apps/agent/src/sdk/path-policy.ts`, `apps/agent/src/sdk/session.ts`, `apps/agent/src/tools/add-research-item.ts`, `apps/agent/src/tools/create-brief.ts`, `apps/agent/src/jobs/morning-brief.ts`, `apps/agent/src/runner.ts` (failed same-day inputs), the `research_scan` prompt, and re-hand-write the `research_scan` recordings with quotes of whole phrases.
 
 **Build.**
 

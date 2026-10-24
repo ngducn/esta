@@ -56,7 +56,10 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                       className={cn(chip, choice.current ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:border-field')}
                     >
                       <span className="break-words">{choice.label}</span>
-                      <span className={cn('font-medium tabular-nums', !choice.current && 'text-ink-muted')}>{choice.count}</span>
+                      <span aria-hidden="true" className={cn('font-medium tabular-nums', !choice.current && 'text-ink-muted')}>
+                        {choice.count}
+                      </span>
+                      <span className="sr-only">{t('count', { count: choice.count })}</span>
                     </Link>
                   </li>
                 ))}
@@ -68,11 +71,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
               {market.emptyToday}
             </p>
           )}
-          {shown.length === 0 ? (
-            <p data-testid="market-empty" className={card}>
-              {selected === null ? t('empty') : t('emptyFor', { property: selected.nickname })}
-            </p>
-          ) : (
+          {shown.length > 0 ? (
             <ul className="flex flex-col gap-3">
               {shown.map((item) => (
                 <li key={item.id}>
@@ -80,6 +79,10 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                 </li>
               ))}
             </ul>
+          ) : selected === null && market.emptyToday !== null ? null : (
+            <p data-testid="market-empty" className={card}>
+              {selected === null ? t('empty') : t('emptyFor', { property: selected.nickname })}
+            </p>
           )}
         </section>
         <aside aria-labelledby="topics-heading" data-testid="topics" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
