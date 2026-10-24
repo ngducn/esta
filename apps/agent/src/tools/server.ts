@@ -5,6 +5,8 @@ export const SERVER_NAME = 'esta';
 
 export const mcpToolName = (name: string): string => `mcp__${SERVER_NAME}__${name}`;
 
+const briefLine = z.object({ text: z.string(), related: z.array(z.string()) });
+
 /** Esta's tools as the model sees them. A job's `prepare` binds each to the job's household (AGENT.md §4). */
 const CATALOG = {
   household_info: {
@@ -20,6 +22,15 @@ const CATALOG = {
     description:
       'Save one note for the household: {"title": one line of plain text, "body_md": Markdown, "related": the handles of the facts it covers}. It answers {"saved": true}, or names what to fix before you call it again.',
     input: { title: z.string(), body_md: z.string(), related: z.array(z.string()) },
+  },
+  recent_items: {
+    description: 'Return the notes already left for the household today. Each has a handle, a kind, a severity and its title as title_label.',
+    input: {},
+  },
+  create_brief: {
+    description:
+      'Save the morning brief: {"summary": one line of plain text, "todo": [lines], "watch": [lines]}, each line {"text": one line of plain text, "related": the handles of the facts it tells}. It answers {"saved": true}, or names what to fix before you call it again.',
+    input: { summary: z.string(), todo: z.array(briefLine), watch: z.array(briefLine) },
   },
   save_extraction: {
     description:

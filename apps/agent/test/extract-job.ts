@@ -53,7 +53,7 @@ export const extractJob = (payload: { document_id: string; extraction_id: string
 export async function attempt(db: ReturnType<typeof fakeDb>, job: AgentJob, { crash = false } = {}) {
   const jobDir = newJobDir();
   try {
-    const prepared = await prepareExtractDocument({ db, job, jobDir, timezone: 'Asia/Ho_Chi_Minh', clock });
+    const prepared = await prepareExtractDocument({ db, job, jobDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], clock });
     const run = await replaySession(
       { spec: JOBS.extract_document, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo 1', jobDir }) },
       DEFAULT_REPLAY_DIR,

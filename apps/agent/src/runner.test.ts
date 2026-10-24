@@ -3,10 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clock, DOCUMENT_A, EXTRACTION_A, extractJob, JOB_A, NOW, twoHouseholds } from '../test/extract-job';
-import { DEFAULT_REPLAY_DIR } from './replay/store';
-import { nextAttempt, pollOnce, type Worker } from './runner';
-import type { AgentDb } from './supabase';
+import { DOCUMENT_A, EXTRACTION_A, extractJob, JOB_A, NOW, twoHouseholds } from '../test/extract-job';
+import { replayWorker } from '../test/replay-worker';
+import { nextAttempt, pollOnce } from './runner';
 
 const asOf = parseInstant('2026-10-07T09:00:00+07:00');
 const error = { kind: 'error', message: 'Overloaded' } as const;
@@ -28,22 +27,6 @@ describe('nextAttempt', () => {
     expect(nextAttempt({ attempts: 1, max_attempts: 4 }, { kind, message: 'x' }, asOf)).toEqual({ status: 'failed' });
   });
 });
-
-type JobRow = Record<string, unknown>;
-
-/**
- * A replay worker on the fake client. Its claims hand out a copy of the first matching row, locked by this worker, as
- * `claim_agent_job` and `claim_abandoned_agent_job` do; a job running under the worker `stopped` counts as abandoned.
- */
-function replayWorker(db: AgentDb, jobs: JobRow[], jobsDir: string): Worker {
-  const rpc = async (name: string, args: { worker_id: string; p_as_of: string }) => {
-    const abandoned = name === 'claim_abandoned_agent_job';
-    const row = jobs.find((candidate) => (abandoned ? candidate.status === 'running' && candidate.locked_by === 'stopped' : candidate.status === 'queued'));
-    if (row !== undefined) Object.assign(row, { status: 'running', locked_by: args.worker_id, locked_at: args.p_as_of });
-    return { data: row === undefined ? [] : [{ ...row }], error: null };
-  };
-  return { db: Object.assign(db, { rpc }), workerId: 'w2', mode: { agentMode: 'replay', authMode: 'none' }, jobsDir, configDir: jobsDir, replayDir: DEFAULT_REPLAY_DIR, clock } as unknown as Worker;
-}
 
 describe('pollOnce', () => {
   const jobsDir = mkdtempSync(join(tmpdir(), 'esta-runner-'));

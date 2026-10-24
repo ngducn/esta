@@ -123,7 +123,7 @@ export async function prepareExtractDocument({ db, job, jobDir, clock }: JobCont
 }
 
 /** After the last attempt: the extraction reads failed and admins get one item with a Retry action (AGENT.md §9). */
-export async function failExtractDocument({ db, job, clock }: Omit<JobContext, 'jobDir' | 'timezone'>): Promise<void> {
+export async function failExtractDocument({ db, job, clock }: Pick<JobContext, 'db' | 'job' | 'clock'>): Promise<void> {
   const payload = payloadSchema.safeParse(job.payload);
   if (!payload.success) return;
   const { data: failed, error } = await db

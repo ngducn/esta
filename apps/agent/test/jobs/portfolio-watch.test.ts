@@ -1,6 +1,4 @@
-import { clockAt, parseInstant } from '@esta/core';
 import { isoDate } from '@esta/core/date';
-import { watchSnapshotSchema, type WatchLabels } from '@esta/core/watch';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,19 +11,9 @@ import { canonicalInput, replaySession } from '../../src/sdk/session';
 import { fakeDb, type Recorded } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { mcpToolName, runTool } from '../../src/tools/server';
+import { CASES, clockOn, HOUSEHOLD, labels, snapshot } from '../full-seed';
 
-const ROOT = join(import.meta.dirname, '../../../..');
-const snapshot = watchSnapshotSchema.parse(JSON.parse(readFileSync(join(ROOT, 'packages/core/src/watch/fixtures/full-2026-10-07.snapshot.json'), 'utf8')));
-const rawLabels = JSON.parse(readFileSync(join(import.meta.dirname, '../fixtures/full-2026-10-07.labels.json'), 'utf8')) as Record<keyof WatchLabels, Record<string, never>>;
-const labels: WatchLabels = {
-  properties: new Map(Object.entries(rawLabels.properties)),
-  units: new Map(Object.entries(rawLabels.units)),
-  parties: new Map(Object.entries(rawLabels.parties)),
-  documents: new Map(Object.entries(rawLabels.documents)),
-};
-const HOUSEHOLD = snapshot.householdId;
-const CASES = join(ROOT, 'fixtures/agent-replay-cases');
-const clock = () => Promise.resolve(clockAt({ kind: 'table', now: parseInstant('2026-10-07T06:45:00+07:00') }, 'Asia/Ho_Chi_Minh'));
+const clock = clockOn('2026-10-07T06:45:00+07:00');
 
 type Row = Record<string, unknown>;
 

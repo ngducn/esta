@@ -1,5 +1,5 @@
 import type { Clock } from '@esta/core';
-import { watchNoteSchema, type WatchNote } from '@esta/core/agent-schemas';
+import { watchNoteSchema } from '@esta/core/agent-schemas';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import { checkNote, repairMessage, type FactSheet, type FilledNote, type NoteViolation } from '@esta/core/guard';
@@ -43,7 +43,10 @@ function fenced(text: string): string {
   return `${fence}\n${text}\n${fence}`;
 }
 
-async function writeGuardItem(binding: NoteBinding, note: WatchNote, found: readonly NoteViolation[]): Promise<void> {
+export type GuardItemBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'clock'>;
+
+/** The operator-only item a note's second guard violation leaves, with the model's draft as written (AGENT.md §6.3). */
+export async function writeGuardItem(binding: GuardItemBinding, draft: string, found: readonly NoteViolation[]): Promise<void> {
   const words = GUARD_ITEM[binding.locale];
   const once = new Map(found.map((violation) => [`${violation.rule}\u0000${violation.text}`, violation]));
   const list = [...once.values()].map(({ rule, text }) => `- ${JSON.stringify(text)}: ${rule}`).join('\n');
@@ -54,7 +57,7 @@ async function writeGuardItem(binding: NoteBinding, note: WatchNote, found: read
       severity: 'info',
       audience: 'operator',
       title: words.title,
-      body_md: `${words.found}\n\n${list}\n\n${words.draft}\n\n${fenced(`${note.title}\n\n${note.body_md}`)}`,
+      body_md: `${words.found}\n\n${list}\n\n${words.draft}\n\n${fenced(draft)}`,
       dedupe_key: `number_guard:${binding.jobId}`,
       job_id: binding.jobId,
       created_at: (await binding.clock()).now(),
@@ -96,7 +99,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       const found = [...(title.ok ? [] : title.reason), ...(body.ok ? [] : body.reason)];
       violations += 1;
       if (violations === 1) throw new ToolRejection(`${repairMessage(found)}\nFix these and call create_item again.`);
-      await writeGuardItem(binding, note, found);
+      await writeGuardItem(binding, `${note.title}\n\n${note.body_md}`, found);
       throw new NumberGuardError('number_guard: a note still held text the number guard rejects after its repair turn; the operator note has it');
     }
 

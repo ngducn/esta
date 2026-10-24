@@ -5,6 +5,7 @@ import type { AgentDb } from '../supabase';
 import type { EstaToolName, EstaTools } from '../tools/server';
 import { failExtractDocument, prepareExtractDocument } from './extract-document';
 import { preparePing } from './ping';
+import { prepareMorningBrief } from './morning-brief';
 import { preparePortfolioWatch } from './portfolio-watch';
 
 export type ModelRole = 'routine' | 'deep';
@@ -18,6 +19,8 @@ export type JobContext = {
   readonly jobDir: string;
   /** The business timezone, which dates a row the way the clock's `today` does. */
   readonly timezone: string;
+  /** The kinds in the spec's `waitsFor` still queued or running today when the job stopped waiting for them. */
+  readonly waiting: readonly string[];
   /** The worker's clock, read when a row's time is written, so a frozen test clock dates it (FND-9). */
   clock(): Promise<Clock>;
 };
@@ -40,10 +43,12 @@ export type JobSpec = {
   readonly modelRole: ModelRole;
   /** A job the scheduler queues for every household once a day at `HH:mm` in the business timezone (AGENT.md §3). */
   readonly schedule?: { readonly daily: string };
+  /** Daily kinds whose same-day job must finish first; the runner reschedules the job while one is queued or running (AGENT.md §3). */
+  readonly waitsFor?: readonly string[];
   readonly handler: {
     prepare(context: JobContext): Promise<PreparedJob>;
     /** Runs once the job has no attempt left, so the household sees the failure (AGENT.md §9). */
-    onFailed?(context: Omit<JobContext, 'jobDir' | 'timezone'>, error: string): Promise<void>;
+    onFailed?(context: Pick<JobContext, 'db' | 'job' | 'clock'>, error: string): Promise<void>;
   };
 };
 
@@ -76,6 +81,17 @@ export const JOBS = {
     modelRole: 'routine',
     schedule: { daily: '06:40' },
     handler: { prepare: preparePortfolioWatch },
+  },
+  morning_brief: {
+    kind: 'morning_brief',
+    builtInTools: [],
+    mcpTools: ['watch_facts', 'recent_items', 'create_brief'],
+    maxTurns: 6,
+    timeoutMs: 3 * 60_000,
+    modelRole: 'routine',
+    schedule: { daily: '07:00' },
+    waitsFor: ['research_scan', 'portfolio_watch'],
+    handler: { prepare: prepareMorningBrief },
   },
 } as const satisfies Record<string, JobSpec>;
 
