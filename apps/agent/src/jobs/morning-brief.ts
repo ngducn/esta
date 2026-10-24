@@ -8,7 +8,6 @@ import { estaTool } from '../tools/server';
 import { readWatch, watchFactsTool, type WatchRead } from '../tools/watch-facts';
 import type { JobContext, PreparedJob } from './registry';
 
-/** The brief's line for an input it waited for and went without (AGENT.md §3). */
 const MISSING_INPUT: Readonly<Record<string, Readonly<Record<Locale, string>>>> = {
   portfolio_watch: { vi: 'Ghi chú theo dõi sáng nay chưa xong.', en: "This morning's watch notes are not done yet." },
   research_scan: { vi: 'Tin thị trường hôm nay chưa có.', en: "Today's market news is not in yet." },

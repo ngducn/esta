@@ -68,7 +68,6 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           </div>
         </header>
         <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
-          {/* A stopped worker only queues new work, so every page says so, never only Trợ lý (AGENT.md §9). */}
           {worker.kind === 'offline' ? (
             <div className="mb-5">
               <WorkerStatusLine status={worker} />

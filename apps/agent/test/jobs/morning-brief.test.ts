@@ -43,7 +43,6 @@ const daily = (kind: string, patch: Row = {}): Row => ({
   ...patch,
 });
 
-/** The worker on a clock the test moves; prepare reads the watch from the fixture instead of the fake client. */
 function stack(inputs: Row[]) {
   let now = `${TODAY}T07:00:00+07:00`;
   const clock = () => clockOn(now)();
@@ -82,11 +81,15 @@ describe('morning_brief waits for its inputs (AGENT.md §3)', () => {
     expect(body(tables).match(/^- /gm)).toHaveLength(9);
   });
 
-  it('runs at once beside a queued research_scan, a kind not registered yet, and says nothing is missing', async () => {
-    const { brief, tables, worker } = stack([daily('research_scan', { run_after: '2026-10-08T00:00:00.000Z' })]);
+  it('waits for a queued research_scan the same way, and names the market news when it goes without it', async () => {
+    const { brief, tables, worker, at } = stack([daily('research_scan', { run_after: '2026-10-08T00:00:00.000Z' })]);
     expect(await pollOnce(worker)).toBe(true);
-    expect(brief).toMatchObject({ status: 'done', payload: {}, result: expect.objectContaining({ missing_inputs: [] }) });
-    expect(body(tables)).not.toContain('Còn thiếu');
+    expect(brief).toMatchObject({ status: 'queued', run_after: '2026-10-07T00:05:00.000Z', payload: { reschedules: 1 } });
+    brief.payload = { reschedules: 3 };
+    at('07:05');
+    expect(await pollOnce(worker)).toBe(true);
+    expect(brief).toMatchObject({ status: 'done', result: expect.objectContaining({ missing_inputs: ['research_scan'] }) });
+    expect(body(tables)).toMatch(/\*\*Còn thiếu\*\*\n\n- Tin thị trường hôm nay chưa có\.$/);
   });
 
   it('runs at once when the day’s portfolio_watch is done', async () => {

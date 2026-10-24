@@ -3,7 +3,6 @@ import { watchSnapshotSchema, type WatchLabels } from '@esta/core/watch';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** The full seed's demo household on SPEC §9.3's day, as the watch reads it (AGENT.md §7). */
 export const ROOT = join(import.meta.dirname, '../../..');
 export const snapshot = watchSnapshotSchema.parse(JSON.parse(readFileSync(join(ROOT, 'packages/core/src/watch/fixtures/full-2026-10-07.snapshot.json'), 'utf8')));
 const rawLabels = JSON.parse(readFileSync(join(import.meta.dirname, 'fixtures/full-2026-10-07.labels.json'), 'utf8')) as Record<keyof WatchLabels, Record<string, never>>;

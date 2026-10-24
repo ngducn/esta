@@ -14,13 +14,10 @@ export type BriefBinding = NoteBinding & {
 export type WrittenBrief = { readonly dedupe_key: string; readonly draft: BriefDraft; readonly cited: Array<FilledNote['cited'][number]>; readonly left_out: string[]; readonly added: boolean };
 
 const SECTION_ROOM = { todo: 5, watch: 5 } as const;
-/** `agent_items.title` holds at most 300 characters. */
-const MAX_TITLE = 300;
 
 const rejected = (lines: readonly string[]) => new ToolRejection(`${lines.join('\n')}\nFix these and call create_brief again.`);
 
-/** Facts the brief must tell while its section has room: every action fact under todo, every watch fact under todo or watch. */
-function untold(draft: BriefDraft, facts: ReadonlyMap<string, DescribedFact>): string[] {
+function owedFacts(draft: BriefDraft, facts: ReadonlyMap<string, DescribedFact>): string[] {
   const told = (lines: BriefDraft['todo']) => new Set(lines.flatMap((line) => line.related));
   const [todo, either] = [told(draft.todo), told([...draft.todo, ...draft.watch])];
   return [...facts].flatMap(([handle, { fact }]) => {
@@ -47,7 +44,7 @@ export function briefWriter(binding: BriefBinding) {
     const lines = [...draft.todo, ...draft.watch];
     const unknown = [...new Set(lines.flatMap((line) => line.related))].filter((handle) => !binding.facts.has(handle));
     if (unknown.length > 0) throw rejected([`${unknown.join(', ')}: not a fact a tool returned in this run. Relate only facts your tools returned.`]);
-    const missing = untold(draft, binding.facts);
+    const missing = owedFacts(draft, binding.facts);
     if (missing.length > 0) throw rejected(missing);
 
     const [summary, ...texts] = await guard.fill(
@@ -56,7 +53,6 @@ export function briefWriter(binding: BriefBinding) {
     );
     const filled = lines.map((line, i): BriefLine => ({ text: texts[i]?.text ?? '', link: binding.facts.get(line.related[0] ?? '')?.link ?? '' }));
     const title = summary?.text ?? '';
-    if (title.length > MAX_TITLE) throw rejected([`summary: ${title.length} characters once filled > ${MAX_TITLE}. Shorten it.`]);
     const brief = briefV1Schema.safeParse({
       locale: binding.locale,
       summary: title,

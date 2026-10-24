@@ -4,7 +4,6 @@ import { laneHousehold } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, seriousAxeViolations, vnd } from './helpers/wizard';
 
-// The scheduler queues the brief for every household on the slot's one clock, so the spec runs in the `clock` project.
 test.describe.configure({ mode: 'serial' });
 
 const LANE = 6;

@@ -31,7 +31,7 @@ export type BriefLine = z.infer<typeof lineSchema>;
 
 type SectionKey = 'todo' | 'watch' | 'market' | 'missing_inputs';
 
-/** The brief's sections in the order they render. Reordering this list is the whole change to lead with another one. */
+/** The brief's sections in the order they render. */
 export const BRIEF_SECTIONS: ReadonlyArray<{ readonly key: SectionKey; readonly heading: Readonly<Record<Locale, string>> }> = [
   { key: 'todo', heading: { vi: 'Cần làm', en: 'To do' } },
   { key: 'watch', heading: { vi: 'Theo dõi', en: 'Keep an eye on' } },
@@ -64,7 +64,7 @@ export function briefTokens(brief: Brief): number {
 export const briefV1Schema = z
   .object({
     locale: z.enum(['vi', 'en']),
-    summary: z.string().min(1),
+    summary: z.string().min(1).max(300),
     todo: z.array(lineSchema).max(5),
     watch: z.array(lineSchema).max(5),
     market: z.array(lineSchema).max(3),

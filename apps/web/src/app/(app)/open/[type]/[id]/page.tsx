@@ -12,7 +12,6 @@ async function propertyOf(supabase: Session, table: 'leases' | 'units' | 'meters
   return data.property_id;
 }
 
-/** The screen each record an assistant link names opens on; RLS answers no row for a record the member cannot read. */
 async function screenOf(supabase: Session, { type, id }: EstaRoute): Promise<string> {
   switch (type) {
     case 'invoice':

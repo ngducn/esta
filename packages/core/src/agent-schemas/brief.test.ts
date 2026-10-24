@@ -39,11 +39,16 @@ describe('renderBriefMarkdown', () => {
 describe('briefV1Schema', () => {
   it('accepts a brief of 300 words and rejects one of 301', () => {
     const words = (count: number) => Array.from({ length: count }, () => 'chữ').join(' ');
-    const base = briefTokens(brief({ summary: 'x' }));
-    expect(briefV1Schema.safeParse(brief({ summary: words(300 - base + 1) })).success).toBe(true);
-    const over = briefV1Schema.safeParse(brief({ summary: words(301 - base + 1) }));
+    const padded = (text: string) => brief({ watch: [{ text, link: link(9) }] });
+    const base = briefTokens(padded('x'));
+    expect(briefV1Schema.safeParse(padded(words(300 - base + 1))).success).toBe(true);
+    const over = briefV1Schema.safeParse(padded(words(301 - base + 1)));
     expect(over.success).toBe(false);
     expect(over.error?.issues[0]?.message).toBe('301 words > 300');
+  });
+
+  it('rejects a summary longer than the 300 characters a title holds', () => {
+    expect(briefV1Schema.safeParse(brief({ summary: 'a'.repeat(301) })).success).toBe(false);
   });
 
   it('rejects a line whose link is not an esta:// record link', () => {

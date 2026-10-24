@@ -3,13 +3,11 @@ import Link from 'next/link';
 import Markdown, { type Components, type UrlTransform } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
-/** `/open/{type}/{id}` finds the record's screen, since a lease or a room needs its property's id in the path. */
 function estaPath(url: string): string | null {
   const route = parseEstaUri(url);
   return route.ok ? `/open/${route.value.type}/${route.value.id}` : null;
 }
 
-/** SPEC §7.1: paragraphs, lists, bold and links; any other element shows its text only. */
 const ALLOWED = ['p', 'ul', 'ol', 'li', 'strong', 'a', 'br'];
 
 /** Keeps only `https:` and resolvable `esta:` links; anything else loses its href and renders as text (SPEC §7.1). */
