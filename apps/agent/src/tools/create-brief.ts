@@ -1,8 +1,8 @@
 import { briefDraftSchema, briefV1Schema, renderBriefMarkdown, type BriefDraft, type BriefLine } from '@esta/core/agent-schemas';
-import { checkNote, repairMessage, type FilledNote, type NoteViolation } from '@esta/core/guard';
-import type { DescribedFact, WatchSeverity } from '@esta/core/watch';
+import type { FilledNote } from '@esta/core/guard';
+import type { DescribedFact } from '@esta/core/watch';
 import { existingLinks } from '@esta/ops';
-import { NumberGuardError, writeGuardItem, type NoteBinding } from './create-item';
+import { guardedWriter, severityOf, type NoteBinding } from './create-item';
 import { ToolRejection } from './server';
 
 export type BriefBinding = NoteBinding & {
@@ -16,7 +16,6 @@ export type WrittenBrief = { readonly dedupe_key: string; readonly draft: BriefD
 const SECTION_ROOM = { todo: 5, watch: 5 } as const;
 /** `agent_items.title` holds at most 300 characters. */
 const MAX_TITLE = 300;
-const SEVERITY_ORDER: readonly WatchSeverity[] = ['info', 'watch', 'action'];
 
 const rejected = (lines: readonly string[]) => new ToolRejection(`${lines.join('\n')}\nFix these and call create_brief again.`);
 
@@ -33,11 +32,11 @@ function untold(draft: BriefDraft, facts: ReadonlyMap<string, DescribedFact>): s
 
 /**
  * `create_brief` for morning_brief. Each line names the facts it tells and links to the first one's record; the summary
- * and every line pass the number guard as plain text, and the job stores the summary as the title and the sections as
- * the body, one brief per day.
+ * and every line pass the number guard as plain text through the same writer as create_item, and the job stores the
+ * summary as the title and the sections as the body, one brief per day.
  */
 export function briefWriter(binding: BriefBinding) {
-  let violations = 0;
+  const guard = guardedWriter(binding, 'create_brief');
   let saved: WrittenBrief | null = null;
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true }> {
@@ -51,56 +50,41 @@ export function briefWriter(binding: BriefBinding) {
     const missing = untold(draft, binding.facts);
     if (missing.length > 0) throw rejected(missing);
 
-    const summary = checkNote(draft.summary, binding.sheet, 'plain');
-    const checks = new Map(lines.map((entry) => [entry, checkNote(entry.text, binding.sheet, 'plain')]));
-    const found: NoteViolation[] = [summary, ...checks.values()].flatMap((check) => (check.ok ? [] : check.reason));
-    if (found.length > 0) {
-      violations += 1;
-      if (violations === 1) throw rejected([repairMessage(found)]);
-      await writeGuardItem(binding, JSON.stringify(draft, null, 2), found);
-      throw new NumberGuardError('number_guard: the brief still held text the number guard rejects after its repair turn; the operator note has it');
-    }
-
-    const filled = (section: BriefDraft['todo']): BriefLine[] =>
-      section.map((entry) => {
-        const check = checks.get(entry);
-        return { text: check?.ok === true ? check.value.text : '', link: binding.facts.get(entry.related[0] ?? '')?.link ?? '' };
-      });
-    const title = summary.ok ? summary.value.text : '';
+    const [summary, ...texts] = await guard.fill(
+      [draft.summary, ...lines.map((line) => line.text)].map((template) => ({ template, format: 'plain' as const })),
+      JSON.stringify(draft, null, 2),
+    );
+    const filled = lines.map((line, i): BriefLine => ({ text: texts[i]?.text ?? '', link: binding.facts.get(line.related[0] ?? '')?.link ?? '' }));
+    const title = summary?.text ?? '';
     if (title.length > MAX_TITLE) throw rejected([`summary: ${title.length} characters once filled > ${MAX_TITLE}. Shorten it.`]);
-    const brief = briefV1Schema.safeParse({ locale: binding.locale, summary: title, todo: filled(draft.todo), watch: filled(draft.watch), market: [], missing_inputs: binding.missingInputs });
+    const brief = briefV1Schema.safeParse({
+      locale: binding.locale,
+      summary: title,
+      todo: filled.slice(0, draft.todo.length),
+      watch: filled.slice(draft.todo.length),
+      market: [],
+      missing_inputs: binding.missingInputs,
+    });
     if (!brief.success) throw rejected(brief.error.issues.map((issue) => `${issue.path.join('.') || 'brief'}: ${issue.message}. Shorten the brief.`));
 
-    const links = [...new Set([...brief.data.todo, ...brief.data.watch, ...brief.data.market].map((entry) => entry.link))];
+    const links = [...new Set(filled.map((line) => line.link))];
     const present = await existingLinks(binding.db, binding.householdId, links);
     const dead = links.filter((link) => !present.has(link));
     if (dead.length > 0) throw new Error(`The brief links to records the household does not have: ${dead.join(', ')}`);
 
-    const told = new Set(lines.flatMap((entry) => entry.related));
-    const related = [...told].flatMap((handle) => binding.facts.get(handle) ?? []);
-    const severity = SEVERITY_ORDER[Math.max(0, ...related.map(({ fact }) => SEVERITY_ORDER.indexOf(fact.severity)))] ?? 'info';
+    const told = new Set(lines.flatMap((line) => line.related));
+    const facts = [...told].flatMap((handle) => binding.facts.get(handle) ?? []);
     const dedupeKey = `brief:${binding.asOf}`;
-    const { data, error } = await binding.db
-      .from('agent_items')
-      .upsert(
-        {
-          household_id: binding.householdId,
-          kind: 'brief',
-          severity,
-          audience: 'all',
-          title,
-          body_md: renderBriefMarkdown(brief.data),
-          related: { facts: related.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links },
-          dedupe_key: dedupeKey,
-          job_id: binding.jobId,
-          created_at: (await binding.clock()).now(),
-        },
-        { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true },
-      )
-      .select('id');
-    if (error) throw new Error(`create_brief failed: ${error.message}`);
+    const added = await guard.save({
+      kind: 'brief',
+      severity: severityOf(facts),
+      title,
+      body_md: renderBriefMarkdown(brief.data),
+      related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links },
+      dedupe_key: dedupeKey,
+    });
     const leftOut = [...binding.facts].filter(([handle]) => !told.has(handle)).map(([handle, { fact }]) => `${handle} (${fact.ruleId})`);
-    saved = { dedupe_key: dedupeKey, draft, cited: [summary, ...checks.values()].flatMap((check) => (check.ok ? check.value.cited : [])), left_out: leftOut, added: data.length > 0 };
+    saved = { dedupe_key: dedupeKey, draft, cited: [summary, ...texts].flatMap((note) => note?.cited ?? []), left_out: leftOut, added };
     return { saved: true };
   }
 

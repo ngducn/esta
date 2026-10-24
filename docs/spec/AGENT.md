@@ -78,7 +78,7 @@ Re-check the help center article before production deploy; record the date check
 | `extract_document` | Upload in an extractable category | routine | Read (job dir only), `save_extraction` | 8 | 5 min |
 | `research_scan` | Daily 06:00 and manual | routine | WebSearch, WebFetch, `research_topics`, `recent_items`, `list_properties`, `add_research_item`, `create_item` | 30 | 10 min |
 | `portfolio_watch` | Daily 06:40 | routine | `watch_facts`, `create_item` | 6 | 3 min |
-| `morning_brief` | Daily 07:00 | routine | `watch_facts`, `recent_items`, `create_item` | 6 | 3 min |
+| `morning_brief` | Daily 07:00 | routine | `watch_facts`, `recent_items`, `create_brief` | 6 | 3 min |
 | `weekly_review` | Sunday 08:00 | deep | All read tools, WebSearch, WebFetch, `create_item`, `create_proposal` | 25 | 10 min |
 | `ask` | Message in a conversation | routine (deep on request) | All read tools, `create_proposal` | 15 | 2 min |
 | `backup_export` | Daily 02:00 | none (no model) | n/a | n/a | 20 min |
@@ -119,6 +119,7 @@ Write tools:
 | `save_extraction(document_id, schema_name, result, field_confidence)` | `document_extractions` row with status `needs_review` |
 | `add_research_item(...)` | `research_items` (unique on normalized URL per household) |
 | `create_item(kind, severity, audience, title, body_md, related, citations, dedupe_key)` | `agent_items` |
+| `create_brief(summary, todo, watch)` | One `brief` item a day in `agent_items`: each line is plain text naming the facts it tells, and the tool links it to the first fact's record and renders the sections (§5.4). It fills and checks every text through the same number guard writer as `create_item` |
 | `create_proposal(type, params, rationale, related, dedupe_key)` | `agent_items` with kind `proposal` |
 
 Proposal types, each with a zod schema in `packages/core/proposals` and a handler in the web app: `create_task`, `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change`, `flag_data_issue`. Unknown types are rejected by the tool.
@@ -180,6 +181,8 @@ Composes today's watch facts and eligible research items into one `brief` item (
 - "Theo dõi" with up to 5 watch items.
 - "Thị trường" with up to 3 research items, each with its source chip.
 - At most 300 whitespace-separated tokens. Every number passes the guard. Every link resolves to an existing record.
+
+The model drafts the summary and the lines through `create_brief`; `renderBriefMarkdown` in `packages/core/src/agent-schemas/brief.ts` writes the sections in the order `BRIEF_SECTIONS` lists them, and the summary is the item's title, which Home shows as one line. While a section has room, `create_brief` asks for a line for every action fact under "Cần làm" and every watch fact under "Theo dõi", so no fact drops out unseen; the job result lists any it left out. When the brief ran without an input it waited for (§3), a last section "Còn thiếu" names it. "Thị trường" joins with `research_scan` (P5-05).
 
 ### 5.5 weekly_review
 
