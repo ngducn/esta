@@ -37,7 +37,7 @@ describe('sensitive documents reach the agent only through their own extraction 
   it('gives Read, or any tool that returns file bytes, to extract_document only', () => {
     for (const spec of Object.values(JOBS)) {
       if (spec.kind === 'extract_document') continue;
-      expect(spec.builtInTools, spec.kind).toEqual([]);
+      expect(spec.builtInTools.filter((name) => name !== 'WebSearch' && name !== 'WebFetch'), spec.kind).toEqual([]);
       expect(spec.mcpTools, spec.kind).not.toContain('save_extraction');
     }
   });

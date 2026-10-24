@@ -76,6 +76,8 @@ async function runSession(worker: Worker, job: AgentJob, waiting: readonly strin
       configDir: worker.configDir,
       tools: prepared.tools,
       canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: resolvedDir }),
+      ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
+      ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
     };
     session = worker.mode.agentMode === 'live' ? await liveSession(request, worker.mode) : await replaySession(request, worker.replayDir);
     const outcome = judgeResult(session.result);

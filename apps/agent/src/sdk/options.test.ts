@@ -31,6 +31,7 @@ describe('buildSdkOptions', () => {
       env: {},
       server: estaServer(new Map(), () => undefined),
       preToolUse: async () => ({}),
+      postToolUse: async () => ({}),
       abortController: new AbortController(),
     });
     expect(options).toMatchObject({
@@ -45,6 +46,7 @@ describe('buildSdkOptions', () => {
       persistSession: false,
     });
     expect(options.hooks?.PreToolUse).toHaveLength(1);
+    expect(options.hooks?.PostToolUse).toHaveLength(1);
     expect(Object.keys(options.mcpServers ?? {})).toEqual(['esta']);
   });
 });

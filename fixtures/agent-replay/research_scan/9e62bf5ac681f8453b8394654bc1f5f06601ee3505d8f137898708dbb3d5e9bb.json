@@ -1,0 +1,393 @@
+{
+  "version": 1,
+  "kind": "research_scan",
+  "inputHash": "9e62bf5ac681f8453b8394654bc1f5f06601ee3505d8f137898708dbb3d5e9bb",
+  "input": {
+    "version": 1,
+    "kind": "research_scan",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never type a digit, an amount or currency word, or a number word.\nFor every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.\nWrite every person's name or nickname and every place name through its _name or _label placeholder, such as {{f2.tenant_name}}, because names like chú Ba or Hai Bà Trưng hold number words.\nDo not calculate totals, differences or ratios yourself; call the tool that returns them.\nNever invent amounts, dates, names or sources. If information is missing, say so plainly.\nYou cannot change business records.\nWrite in Vietnamese. Use the household's terms: sổ, thửa đất, hợp đồng thuê, tiền cọc, kỳ thanh toán.\nTone: calm, polite, concise, like a careful family accountant. No exclamation marks, no emoji.\nToday is 2026-10-07 in Asia/Ho_Chi_Minh.\n\nTask: the morning market scan. Find news that matters to the family's properties: land price tables, planning and zoning, infrastructure such as ring roads, metro lines, expressways, airports and bridges, the rental market for the kinds of property held, and the national rules on land, rental tax and mortgage rates.\n1. Call research_topics, list_properties and recent_items once each. recent_items lists the research items already stored; never add those again.\n2. Search with WebSearch using the topics' query_templates, Vietnamese first and English where useful. This run may make 12 searches and 8 fetches; calls past that are refused.\n3. Prefer official sources (*.gov.vn, chinhphu.vn, baochinhphu.vn, provincial portals, thuvienphapluat.vn, luatvietnam.vn) and established press. Never use forums or listing sites. Fetch single articles with WebFetch; do not crawl.\n4. For each fetched article that is new and material, call add_research_item once. title_vi, summary_vi and why_it_matters_vi are your own words in plain text on one line: summary_vi at most sixty words, why_it_matters_vi naming the properties or provinces it touches through their _label or _name placeholders. topics and properties are the handles the item concerns.\n5. The number rule holds for those three texts. A figure, a road or a law number from the article, such as the name of a ring road, goes into quotes copied exactly from the page WebFetch returned, and the text cites it as {{f0.quote_1_label}}; the publication date is {{f0.published_display}}. published_on, effective_on and relevance are data fields, not text.\n6. If add_research_item answers dropped, move on. If it names an error, fix exactly that and call it again for that item.\n7. Never pad: if nothing is new and material, add nothing. Esta writes the note that says so.\nWhen you are done, reply with the single word: xong.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "research_topics",
+      "list_properties",
+      "recent_items",
+      "add_research_item"
+    ],
+    "maxTurns": 40
+  },
+  "label": "Hand-written for the full seed at 2026-10-07 06:00 (P5-05) with synthetic Demo search and fetch results on fake example.vn domains; the live recording waits for the P5-10 live run.",
+  "model": "hand-written",
+  "numTurns": 20,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__research_topics",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__list_properties",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__recent_items",
+      "input": {}
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "hạ tầng giao thông Bình Dương vành đai metro cao tốc"
+      },
+      "result": {
+        "query": "hạ tầng giao thông Bình Dương vành đai metro cao tốc",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Vành đai 3 đoạn qua Dĩ An sắp khởi công (Demo)",
+                "url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong"
+              },
+              {
+                "title": "Metro Bình Dương vẫn đang nghiên cứu (Demo)",
+                "url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "quy hoạch Tây Ninh"
+      },
+      "result": {
+        "query": "quy hoạch Tây Ninh",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Khu dân cư mới ở Tây Ninh (Demo)",
+                "url": "https://congthongtin.tayninh.example.vn/quy-hoach/khu-dan-cu-moi"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "bảng giá đất TP. Đồng Nai"
+      },
+      "result": {
+        "query": "bảng giá đất TP. Đồng Nai",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Đồng Nai điều chỉnh bảng giá đất (Demo)",
+                "url": "https://www.baodemo.example.vn/dong-nai-dieu-chinh-bang-gia-dat/?utm_source=zalo&utm_medium=share"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "khai thuế cho thuê tài sản hướng dẫn"
+      },
+      "result": {
+        "query": "khai thuế cho thuê tài sản hướng dẫn",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Thông tư hướng dẫn khai thuế cho thuê nhà (Demo)",
+                "url": "https://phapluat.example.vn/thong-tu-huong-dan-khai-thue-cho-thue-nha"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "thị trường cho thuê đất nông nghiệp Long An"
+      },
+      "result": {
+        "query": "thị trường cho thuê đất nông nghiệp Long An",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Giá thuê đất nông nghiệp ở Tây Ninh đi ngang (Demo)",
+                "url": "https://nhadat.example.vn/thi-truong/gia-thue-dat-nong-nghiep-tay-ninh"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 248,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài đăng ngày 05/10/2026 (bài Demo). Thành phố đã duyệt kế hoạch thi công Vành đai 3 đoạn qua phường Dĩ An, dự kiến khởi công tháng 12/2026. Việc giải phóng mặt bằng đang được thành phố chủ trì.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://congthongtin.tayninh.example.vn/quy-hoach/khu-dan-cu-moi",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 25,
+        "code": 404,
+        "codeText": "Not Found",
+        "result": "Không tìm thấy trang.",
+        "durationMs": 900,
+        "url": "https://congthongtin.tayninh.example.vn/quy-hoach/khu-dan-cu-moi"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://www.baodemo.example.vn/dong-nai-dieu-chinh-bang-gia-dat/?utm_source=zalo&utm_medium=share",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 224,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài đăng ngày 06/10/2026 (bài Demo). Hội đồng nhân dân thành phố Đồng Nai thông qua bảng giá đất điều chỉnh, áp dụng từ 01/01/2027, tăng ở các phường trung tâm cũ của Biên Hòa.",
+        "durationMs": 900,
+        "url": "https://www.baodemo.example.vn/dong-nai-dieu-chinh-bang-gia-dat/?utm_source=zalo&utm_medium=share"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://phapluat.example.vn/thong-tu-huong-dan-khai-thue-cho-thue-nha",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 176,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài đăng ngày 20/09/2026 (bài Demo). Bộ Tài chính ban hành thông tư hướng dẫn cá nhân cho thuê nhà khai thuế theo kỳ, có hiệu lực từ 15/11/2026.",
+        "durationMs": 900,
+        "url": "https://phapluat.example.vn/thong-tu-huong-dan-khai-thue-cho-thue-nha"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://nhadat.example.vn/thi-truong/gia-thue-dat-nong-nghiep-tay-ninh",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 137,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài đăng ngày 03/10/2026 (bài Demo). Giá thuê đất nông nghiệp quanh Tân An gần như không đổi so với năm trước.",
+        "durationMs": 900,
+        "url": "https://nhadat.example.vn/thi-truong/gia-thue-dat-nong-nghiep-tay-ninh"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 113,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài đăng ngày 15/08/2026 (bài Demo). Tuyến metro Bình Dương vẫn đang ở giai đoạn nghiên cứu.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu"
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong",
+        "source_name": "Tin tức Demo",
+        "published_on": "2026-10-05",
+        "effective_on": null,
+        "kind": "infrastructure",
+        "relevance": 0.9,
+        "title_vi": "Sắp khởi công {{f0.quote_1_label}} đoạn qua {{f18.commune_name}}",
+        "summary_vi": "Theo bài đăng ngày {{f0.published_display}}, thành phố đã duyệt kế hoạch thi công {{f0.quote_1_label}} đoạn qua {{f18.commune_name}}, dự kiến khởi công {{f0.quote_2_label}}. Việc giải phóng mặt bằng do thành phố chủ trì.",
+        "why_it_matters_vi": "{{f18.property_label}} nằm gần tuyến đường, nên giá thuê phòng có thể tăng khi đường thông xe.",
+        "topics": [
+          "f2",
+          "f14"
+        ],
+        "properties": [
+          "f18"
+        ],
+        "quotes": [
+          "Vành đai 3",
+          "tháng 12/2026"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://congthongtin.tayninh.example.vn/quy-hoach/khu-dan-cu-moi",
+        "source_name": "Cổng thông tin Demo",
+        "published_on": "2026-10-06",
+        "effective_on": null,
+        "kind": "planning",
+        "relevance": 0.5,
+        "title_vi": "Quy hoạch khu dân cư mới ở {{f19.province_name}}",
+        "summary_vi": "Trang không mở được.",
+        "why_it_matters_vi": "{{f19.property_label}} ở cùng tỉnh.",
+        "topics": [
+          "f15"
+        ],
+        "properties": [
+          "f19"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://www.baodemo.example.vn/dong-nai-dieu-chinh-bang-gia-dat/?utm_source=zalo&utm_medium=share",
+        "source_name": "Báo Demo",
+        "published_on": "2026-10-06",
+        "effective_on": "2027-01-01",
+        "kind": "land_price",
+        "relevance": 0.65,
+        "title_vi": "{{f17.province_name}} điều chỉnh bảng giá đất từ {{f0.quote_1_label}}",
+        "summary_vi": "Hội đồng nhân dân {{f17.province_name}} thông qua bảng giá đất điều chỉnh, áp dụng từ {{f0.quote_1_label}}, tăng ở các phường trung tâm cũ.",
+        "why_it_matters_vi": "{{f17.property_label}} ở {{f17.commune_name}} có thể chịu tiền thuê đất và thuế cao hơn.",
+        "topics": [
+          "f13",
+          "f3"
+        ],
+        "properties": [
+          "f17"
+        ],
+        "quotes": [
+          "01/01/2027"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://baodemo.example.vn/dong-nai-dieu-chinh-bang-gia-dat",
+        "source_name": "Báo Demo",
+        "published_on": "2026-10-06",
+        "effective_on": "2027-01-01",
+        "kind": "land_price",
+        "relevance": 0.65,
+        "title_vi": "Bảng giá đất mới ở {{f17.province_name}}",
+        "summary_vi": "Cùng bài báo trên.",
+        "why_it_matters_vi": "{{f17.property_label}}.",
+        "topics": [
+          "f13"
+        ],
+        "properties": [
+          "f17"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://phapluat.example.vn/thong-tu-huong-dan-khai-thue-cho-thue-nha",
+        "source_name": "Pháp luật Demo",
+        "published_on": "2026-09-20",
+        "effective_on": "2026-11-15",
+        "kind": "legal_tax",
+        "relevance": 0.7,
+        "title_vi": "Hướng dẫn mới về khai thuế cho thuê nhà có hiệu lực từ {{f0.quote_1_label}}",
+        "summary_vi": "Bộ Tài chính ban hành thông tư hướng dẫn cá nhân cho thuê nhà khai thuế theo kỳ, áp dụng từ {{f0.quote_1_label}}.",
+        "why_it_matters_vi": "Gia đình đang cho thuê {{f18.property_label}}, {{f21.property_label}} và {{f20.property_label}}, nên cần xem lại cách khai thuế.",
+        "topics": [
+          "f11"
+        ],
+        "properties": [
+          "f18",
+          "f21",
+          "f20"
+        ],
+        "quotes": [
+          "15/11/2026"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://nhadat.example.vn/thi-truong/gia-thue-dat-nong-nghiep-tay-ninh",
+        "source_name": "Nhà đất Demo",
+        "published_on": "2026-10-03",
+        "effective_on": null,
+        "kind": "market_rent",
+        "relevance": 0.4,
+        "title_vi": "Giá thuê đất nông nghiệp ở {{f19.province_name}} đi ngang",
+        "summary_vi": "Giá thuê đất nông nghiệp quanh {{f19.commune_name}} gần như không đổi so với cùng kỳ.",
+        "why_it_matters_vi": "{{f19.property_label}} đang để giữ, chưa cho thuê.",
+        "topics": [
+          "f15",
+          "f7"
+        ],
+        "properties": [
+          "f19"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu",
+        "source_name": "Tin tức Demo",
+        "published_on": "2026-08-15",
+        "effective_on": null,
+        "kind": "infrastructure",
+        "relevance": 0.5,
+        "title_vi": "Metro ở {{f18.province_name}} vẫn đang nghiên cứu",
+        "summary_vi": "Tuyến metro vẫn ở giai đoạn nghiên cứu.",
+        "why_it_matters_vi": "{{f18.property_label}} ở gần.",
+        "topics": [
+          "f14"
+        ],
+        "properties": [
+          "f18"
+        ]
+      }
+    }
+  ],
+  "reply": "xong"
+}

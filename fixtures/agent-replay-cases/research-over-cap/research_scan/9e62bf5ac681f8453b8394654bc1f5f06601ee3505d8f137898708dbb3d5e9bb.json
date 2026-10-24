@@ -1,0 +1,447 @@
+{
+  "version": 1,
+  "kind": "research_scan",
+  "inputHash": "9e62bf5ac681f8453b8394654bc1f5f06601ee3505d8f137898708dbb3d5e9bb",
+  "input": {
+    "version": 1,
+    "kind": "research_scan",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never type a digit, an amount or currency word, or a number word.\nFor every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.\nWrite every person's name or nickname and every place name through its _name or _label placeholder, such as {{f2.tenant_name}}, because names like chú Ba or Hai Bà Trưng hold number words.\nDo not calculate totals, differences or ratios yourself; call the tool that returns them.\nNever invent amounts, dates, names or sources. If information is missing, say so plainly.\nYou cannot change business records.\nWrite in Vietnamese. Use the household's terms: sổ, thửa đất, hợp đồng thuê, tiền cọc, kỳ thanh toán.\nTone: calm, polite, concise, like a careful family accountant. No exclamation marks, no emoji.\nToday is 2026-10-07 in Asia/Ho_Chi_Minh.\n\nTask: the morning market scan. Find news that matters to the family's properties: land price tables, planning and zoning, infrastructure such as ring roads, metro lines, expressways, airports and bridges, the rental market for the kinds of property held, and the national rules on land, rental tax and mortgage rates.\n1. Call research_topics, list_properties and recent_items once each. recent_items lists the research items already stored; never add those again.\n2. Search with WebSearch using the topics' query_templates, Vietnamese first and English where useful. This run may make 12 searches and 8 fetches; calls past that are refused.\n3. Prefer official sources (*.gov.vn, chinhphu.vn, baochinhphu.vn, provincial portals, thuvienphapluat.vn, luatvietnam.vn) and established press. Never use forums or listing sites. Fetch single articles with WebFetch; do not crawl.\n4. For each fetched article that is new and material, call add_research_item once. title_vi, summary_vi and why_it_matters_vi are your own words in plain text on one line: summary_vi at most sixty words, why_it_matters_vi naming the properties or provinces it touches through their _label or _name placeholders. topics and properties are the handles the item concerns.\n5. The number rule holds for those three texts. A figure, a road or a law number from the article, such as the name of a ring road, goes into quotes copied exactly from the page WebFetch returned, and the text cites it as {{f0.quote_1_label}}; the publication date is {{f0.published_display}}. published_on, effective_on and relevance are data fields, not text.\n6. If add_research_item answers dropped, move on. If it names an error, fix exactly that and call it again for that item.\n7. Never pad: if nothing is new and material, add nothing. Esta writes the note that says so.\nWhen you are done, reply with the single word: xong.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "research_topics",
+      "list_properties",
+      "recent_items",
+      "add_research_item"
+    ],
+    "maxTurns": 40
+  },
+  "label": "Hand-written case: thirteen searches and nine fetches, one past each cap, so the hook denies the last of each (P5-05 lane 7).",
+  "model": "hand-written",
+  "numTurns": 24,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__research_topics",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__list_properties",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__recent_items",
+      "input": {}
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 1"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 1",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-1"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 2"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 2",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-2"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 3"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 3",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-3"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 4"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 4",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-4"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 5"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 5",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-5"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 6"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 6",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-6"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 7"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 7",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-7"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 8"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 8",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-8"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 9"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 9",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-9"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 10"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 10",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-10"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 11"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 11",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-11"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 12"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 12",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-12"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "tin bất động sản Demo 13"
+      },
+      "result": {
+        "query": "tin bất động sản Demo 13",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin Demo",
+                "url": "https://tintuc.example.vn/demo-13"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-1",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 1, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-1"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-2",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 2, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-2"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-3",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 3, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-3"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-4",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 4, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-4"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-5",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 5, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-5"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-6",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 6, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-6"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-7",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 7, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-7"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-8",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 8, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-8"
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/demo-9",
+        "prompt": "Tóm tắt nội dung chính, ngày đăng và các con số quan trọng của bài viết."
+      },
+      "result": {
+        "bytes": 37,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Bài Demo 9, đăng ngày 01/08/2026.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/demo-9"
+      }
+    }
+  ],
+  "reply": "xong"
+}

@@ -47,13 +47,24 @@ describe('job registry', () => {
       waitsFor: ['research_scan', 'portfolio_watch'],
     });
     expect(DAILY_JOBS).toEqual([
+      { kind: 'research_scan', daily: '06:00' },
       { kind: 'portfolio_watch', daily: '06:40' },
       { kind: 'morning_brief', daily: '07:00' },
     ]);
   });
 
+  it('defines research_scan with the web tools and its four Esta tools, 40 turns, 10 minutes, daily at 06:00', () => {
+    expect(JOBS.research_scan).toMatchObject({
+      builtInTools: ['WebSearch', 'WebFetch'],
+      mcpTools: ['research_topics', 'list_properties', 'recent_items', 'add_research_item'],
+      maxTurns: 40,
+      timeoutMs: 600_000,
+      schedule: { daily: '06:00' },
+    });
+  });
+
   it('knows no other kind', () => {
-    expect(jobSpec('research_scan')).toBeUndefined();
+    expect(jobSpec('weekly_review')).toBeUndefined();
     expect(jobSpec('toString')).toBeUndefined();
   });
 

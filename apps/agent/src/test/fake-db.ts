@@ -50,6 +50,11 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
         filters.push((row) => values.includes(row[column]));
         return builder;
       },
+      gte(column: string, value: number | string) {
+        const at = (v: unknown) => (typeof v === 'string' && typeof value === 'string' ? Date.parse(v) : Number(v));
+        filters.push((row) => at(row[column]) >= at(value));
+        return builder;
+      },
       is(column: string, value: unknown) {
         filters.push((row) => (row[column] ?? null) === value);
         return builder;
