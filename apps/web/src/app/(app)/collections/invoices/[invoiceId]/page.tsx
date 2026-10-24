@@ -83,9 +83,11 @@ export default async function InvoicePage({ params }: { params: Params }) {
         {invoice.status === 'issued' ? (
           <ReceiptLinks invoiceId={invoice.id} labels={{ pdf: t('receiptPdf', { kind: receiptKind(invoice.totalVnd, invoice.allocatedVnd) }), png: t('receiptPng') }} />
         ) : null}
-        <IntentLink href={`/properties/${invoice.propertyId}/rental/leases/${invoice.leaseId}`} className={buttonVariants({ variant: 'outline' })}>
-          {t('openLease')}
-        </IntentLink>
+        {invoice.propertyArchived ? null : (
+          <IntentLink href={`/properties/${invoice.propertyId}/rental/leases/${invoice.leaseId}`} className={buttonVariants({ variant: 'outline' })}>
+            {t('openLease')}
+          </IntentLink>
+        )}
       </div>
     </div>
   );

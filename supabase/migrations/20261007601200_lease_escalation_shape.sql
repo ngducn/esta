@@ -16,7 +16,7 @@ as $$
     false);
 $$;
 revoke all on function private.jsonb_whole_between(jsonb, bigint, bigint) from public;
-grant execute on function private.jsonb_whole_between(jsonb, bigint, bigint) to authenticated;
+grant execute on function private.jsonb_whole_between(jsonb, bigint, bigint) to authenticated, service_role;
 
 alter table public.leases drop constraint leases_escalation_check;
 alter table public.leases add constraint leases_escalation_check check (

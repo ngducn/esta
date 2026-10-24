@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(66);
+select plan(69);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -71,6 +71,13 @@ select lives_ok(
 select lives_ok(
   $$ update public.leases set escalation = '{"kind": "none"}' where id = '00000000-0000-4000-8000-00000000e001' $$,
   'no increase is saved');
+select ok(not has_function_privilege('anon', 'private.jsonb_whole_between(jsonb, bigint, bigint)', 'execute'), 'anon cannot run the escalation shape helper');
+select is(private.jsonb_whole_between('500'::jsonb, 1, 10000), true, 'a member runs the helper on a whole number without a permission error (#128)');
+select tests.act_as_service('{"x-esta-actor": "system:test"}');
+select lives_ok(
+  $$ update public.leases set escalation = '{"kind": "percent", "value": 500, "every_months": 12}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  'the service role, which the agent and cron write leases with, passes the escalation check');
+select tests.act_as('member.a@test.esta.test');
 select throws_ok(
   $$ update public.leases set status = 'active', paid_through_date = '2026-09-30' where id = '00000000-0000-4000-8000-00000000e001' $$,
   '42501', 'permission denied for table leases', 'a member cannot activate by writing the status, which would skip issuance (#144)');
