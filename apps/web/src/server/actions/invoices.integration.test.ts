@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 import { service } from '@/test/stack';
@@ -9,7 +9,8 @@ import { service } from '@/test/stack';
 const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url);
 const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 
-const { addReceivingAccount, issueInvoice, voidInvoice } = await import('./invoices');
+const { issueInvoice, voidInvoice } = await import('./invoices');
+const { addReceivingAccount, editReceivingAccount, removeReceivingAccount, setDefaultReceivingAccount } = await import('./receiving-accounts');
 const { terminateLease } = await import('./leases');
 
 const run = Math.floor(Math.random() * 1e6)
@@ -101,20 +102,63 @@ describe('invoice actions against local Supabase (LSE-5)', () => {
   });
 });
 
-describe('receiving account action against local Supabase (PLT-1)', () => {
+describe('receiving account actions against local Supabase (PLT-1)', () => {
   const account = { bank_bin: '970436', account_no: `0071 000 ${run}`, account_name: 'Trần Minh Demo' };
+  const added = crypto.randomUUID();
+  const spare = crypto.randomUUID();
+  let seeded = '';
+
+  async function accounts() {
+    const { data, error } = await client.from('bank_accounts').select('id, account_no, account_name, is_default').eq('household_id', HOUSEHOLD).order('created_at');
+    if (error) throw error;
+    return data;
+  }
+
+  beforeAll(async () => {
+    seeded = (await accounts()).find((row) => row.is_default)?.id ?? '';
+    expect(seeded, 'the lane is seeded with a default account').not.toBe('');
+  });
+
+  afterAll(async () => {
+    await service(`/rest/v1/payments?household_id=eq.${HOUSEHOLD}&bank_account_id=eq.${added}`, { method: 'DELETE' });
+    await setDefaultReceivingAccount({ id: seeded });
+    for (const id of [added, spare]) await removeReceivingAccount({ id });
+  });
 
   it('adds a second account as Mẹ types it, which does not replace the default', async () => {
-    const id = crypto.randomUUID();
-    expect(await addReceivingAccount({ id, ...account })).toEqual({ ok: true, value: undefined });
-    const { data, error } = await client.from('bank_accounts').select('account_no, account_name, is_default').eq('id', id).single();
-    if (error) throw error;
-    expect(data).toEqual({ account_no: `0071000${run}`, account_name: 'TRAN MINH DEMO', is_default: false });
+    expect(await addReceivingAccount({ id: added, ...account })).toEqual({ ok: true, value: undefined });
+    expect((await accounts()).find((row) => row.id === added)).toEqual({ id: added, account_no: `0071000${run}`, account_name: 'TRAN MINH DEMO', is_default: false });
   });
 
   it('refuses the same account twice, a bank NAPAS does not list and a name with nothing printable', async () => {
     expect(await addReceivingAccount({ id: crypto.randomUUID(), ...account })).toEqual({ ok: false, reason: 'duplicate' });
     expect(await addReceivingAccount({ id: crypto.randomUUID(), ...account, bank_bin: '999999' })).toEqual({ ok: false, reason: 'bank' });
     expect(await addReceivingAccount({ id: crypto.randomUUID(), ...account, account_name: '  ' })).toEqual({ ok: false, reason: 'accountName' });
+  });
+
+  it('edits the name as the add sheet reads it, and refuses a number the default already has', async () => {
+    expect(await editReceivingAccount({ id: added, ...account, account_name: 'Nguyễn Thị  Demo' })).toEqual({ ok: true, value: undefined });
+    expect((await accounts()).find((row) => row.id === added)?.account_name).toBe('NGUYEN THI DEMO');
+    const [{ account_no: taken = '' } = {}] = (await accounts()).filter((row) => row.id === seeded);
+    expect(await editReceivingAccount({ id: added, ...account, account_no: taken })).toEqual({ ok: false, reason: 'duplicate' });
+  });
+
+  it('moves the default so exactly one account is the default, and a second tap changes nothing', async () => {
+    expect(await setDefaultReceivingAccount({ id: added })).toEqual({ ok: true, value: undefined });
+    expect(await setDefaultReceivingAccount({ id: added })).toEqual({ ok: true, value: undefined });
+    expect((await accounts()).filter((row) => row.is_default).map((row) => row.id)).toEqual([added]);
+  });
+
+  it('refuses to remove the default and an account a payment landed in, keeps the number of that account but corrects its holder, and removes an unused one once', async () => {
+    expect(await removeReceivingAccount({ id: added })).toEqual({ ok: false, reason: 'isDefault' });
+    expect(await setDefaultReceivingAccount({ id: seeded })).toEqual({ ok: true, value: undefined });
+    await post('payments', { household_id: HOUSEHOLD, amount_vnd: 3_000_000, received_on: '2026-10-05', method: 'bank_transfer', bank_account_id: added });
+    expect(await removeReceivingAccount({ id: added })).toEqual({ ok: false, reason: 'inUse' });
+    expect(await editReceivingAccount({ id: added, ...account, account_no: `0073 000 ${run}` })).toEqual({ ok: false, reason: 'numberLocked' });
+    expect(await editReceivingAccount({ id: added, ...account, account_name: 'Trần Minh Demo' })).toEqual({ ok: true, value: undefined });
+    expect(await addReceivingAccount({ id: spare, ...account, account_no: `0072 000 ${run}` })).toEqual({ ok: true, value: undefined });
+    expect(await removeReceivingAccount({ id: spare })).toEqual({ ok: true, value: undefined });
+    expect(await removeReceivingAccount({ id: spare })).toEqual({ ok: true, value: undefined });
+    expect((await accounts()).map((row) => row.id).toSorted()).toEqual([added, seeded].toSorted());
   });
 });

@@ -5,13 +5,13 @@ import { useState } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { QR_QUIET_MODULES, type QrMatrix } from '@/lib/qr';
 import { saveBlob } from '@/lib/save-blob';
-import type { InvoiceQrView } from '@/server/invoices/qr';
+import type { PayableQr } from '@/server/invoices/qr';
 
 const MODULE_PX = 12;
 const LINE_PX = 52;
 
 /** The code over the amount, memo and account, in the page's typeface and the QR tokens, as a PNG. */
-async function drawQrImage(qr: InvoiceQrView, matrix: QrMatrix): Promise<Blob> {
+async function drawQrImage(qr: PayableQr, number: string, matrix: QrMatrix): Promise<Blob> {
   await document.fonts.ready;
   const style = getComputedStyle(document.documentElement);
   const [paper, ink, family] = [style.getPropertyValue('--qr-paper'), style.getPropertyValue('--qr-ink'), getComputedStyle(document.body).fontFamily];
@@ -21,7 +21,7 @@ async function drawQrImage(qr: InvoiceQrView, matrix: QrMatrix): Promise<Blob> {
     { text: qr.memo, weight: 600, px: 34 },
     { text: `${qr.bankName} · ${qr.accountNo}`, weight: 500, px: 28 },
     { text: qr.accountName, weight: 500, px: 28 },
-    { text: qr.number, weight: 400, px: 24 },
+    { text: number, weight: 400, px: 24 },
   ];
   const canvas = document.createElement('canvas');
   canvas.width = side;
@@ -46,12 +46,12 @@ async function drawQrImage(qr: InvoiceQrView, matrix: QrMatrix): Promise<Blob> {
 }
 
 /** `Lưu ảnh`: the picture Mẹ sends in Zalo, named after the bill. */
-export function SaveQrImage({ qr, matrix, labels }: { qr: InvoiceQrView; matrix: QrMatrix; labels: { save: string; failed: string } }) {
+export function SaveQrImage({ qr, number, matrix, labels }: { qr: PayableQr; number: string; matrix: QrMatrix; labels: { save: string; failed: string } }) {
   const [failed, setFailed] = useState(false);
   async function save() {
     setFailed(false);
     try {
-      saveBlob(await drawQrImage(qr, matrix), `hoa-don-${qr.number}.png`);
+      saveBlob(await drawQrImage(qr, number, matrix), `hoa-don-${number}.png`);
     } catch (error) {
       console.error(error);
       setFailed(true);

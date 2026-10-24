@@ -4693,7 +4693,32 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 Phase 6. The detailed sections for this phase are re-cut at phase start from `docs/plan/trail/slice-matrix.md` and `docs/plan/trail/pr-inventory.md`, which win where they conflict.
 
+## Set up receiving accounts in Cài đặt (P6-01a)
+
+Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the account QR?" It takes the bank accounts boxes of P6-01 forward; P6-01 keeps the rest as P6-01b (`docs/plan/trail/pr-inventory.md`).
+
+**Depends on.** P3-20.
+
+**Build.**
+
+- [ ] Run `/impeccable shape` on the section and record the brief in the PR body.
+- [ ] Section `Tài khoản nhận tiền` on `/settings`, above `Hiển thị`: every account with bank short name, the full account number, the holder name and a `Mặc định` mark on the default. The P3-20 add-account sheet is generalized to add and edit; no second form, parser or action.
+- [ ] Set the default through `set_default_bank_account(p_id)`, one definer function that checks the caller is an admin and leaves exactly one default.
+- [ ] Remove an account behind a confirm that names it. The default cannot be removed, and neither can an account a payment or a statement import names, so the money history keeps where it landed. `payments.bank_account_id` stops nulling itself on delete.
+- [ ] A sample VietQR per account (10.000 ₫, memo `ESTA TAIKHOAN`) in the existing QR sheet, so Mẹ can scan it with her bank app and check the holder name before tenants rely on it.
+- [ ] Viewers and members see the list and the sample QR with no write buttons.
+
+**You see.**
+
+- [ ] As Ryan in lane household 7 at 390x844, adding `Trần Minh Demo` at Vietcombank shows `TRAN MINH DEMO` under the field, the new row appears, and `Đặt làm mặc định` moves the `Mặc định` mark to it.
+- [ ] The sample QR scans to the account's BIN and number, 10.000 ₫ and `ESTA TAIKHOAN`.
+- [ ] Removing the default or an account a payment names is refused with a sentence that says why.
+
+**Verify, unit.** `supabase/tests/receiving_accounts.test.sql` (pgTAP), the ops unit tests, `apps/web/src/server/actions/invoices.integration.test.ts` and `e2e/settings-accounts.spec.ts`.
+
 ## Build settings for household, members, bank accounts, notifications and the assistant (P6-01)
+
+**Split (2026-10-24).** The bank accounts section, `set_default_bank_account` and its boxes below moved to P6-01a. The rest of this section is P6-01b.
 
 **Depends on.** P5-10.
 
@@ -5279,7 +5304,7 @@ pdf-lib with @pdf-lib/fontkit renders the A5 receipt PDF, and satori with @resvg
 - **No Vercel platform skill is installed.** P6-07 installs one before its first `vercel` call, as poteto-mode requires for managed platforms.
 - **Two `[app rule]` choices await professional confirmation.** P4-01 leaves metered electricity and water out of taxable revenue, and P6-02's per-party delete clears a person's details while keeping their leases and payments. Both are labelled and listed in STATUS.md.
 - **P3-13 adds an unauthenticated route.** `/q/[token]` serves a tenant the QR image for one invoice through a `security definer` function granted to `anon`, because LSE-11 asks for a QR image link. Tokens are unguessable and expire, and the page shows only the amount, memo, bank and account name. The data-safety audit lane reviews P3-13, and P6-05's headers and CSP cover the route.
-- **New households have no receiving bank account until P6-01.** Only seeded households show a QR before Settings ships.
+- **New households have no receiving bank account until P6-01a.** Only seeded households show a QR before Settings ships.
 - **Growth intent meets subscription auth.** PRODUCT.md records other families as a future audience, but AGENT.md §2.5 allows subscription auth for this household only. Any second household in production must switch `ESTA_AUTH_MODE` to `api_key` first. P6-06 records this in DEPLOY.md.
 - **The Impeccable engine in git is darwin-arm64 only.** CI on Linux downloads the engine version pinned in `.claude/skills/impeccable/scripts/VERSION` through the repo's launcher before `pnpm design:detect`, as P0-01 shipped. The download is checked only against a checksum from the same release, so issue #3 pins the digest in the repo, and P0-11 closes it.
 - **gstack browse cannot emulate a color scheme.** P0-11 adds a `data-theme` attribute with a cookie, and the verify skill switches themes through it.

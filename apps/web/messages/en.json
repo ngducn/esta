@@ -399,7 +399,7 @@
   "sections": {
     "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",
     "assistant": "The assistant will leave a note every morning about late rent, leases ending soon and missing papers.",
-    "settings": "Display settings follow your account. The household, members and receiving bank accounts arrive here in the next update.",
+    "settings": "Receiving accounts and display settings. The household and members arrive here in the next update.",
     "soonTitle": "Coming in the next update",
     "adjustDisplay": "Adjust text size and theme"
   },
@@ -1075,7 +1075,24 @@
     },
     "save": "Save",
     "saved": "Display settings saved.",
-    "saveFailed": "Not saved. Check the connection and try again."
+    "saveFailed": "Not saved. Check the connection and try again.",
+    "accounts": "Receiving accounts",
+    "accountsIntro": "QR codes on every bill pay into the default account.",
+    "accountsReadOnly": "Only an admin can change these accounts.",
+    "accountsEmpty": "No receiving account yet. Add one so bills carry a transfer QR code.",
+    "accountsEmptyReadOnly": "No receiving account yet. An admin of the household adds one so bills carry a QR code.",
+    "accountDefault": "Default",
+    "accountAdd": "Add account",
+    "accountEdit": "Edit",
+    "accountMakeDefault": "Make default",
+    "accountRemove": "Remove",
+    "accountRemoveTitle": "Remove the {bank} account {number}?",
+    "accountRemoveBody": "The account leaves the list. Bills and recorded money stay as they are.",
+    "accountRemoveConfirm": "Remove account",
+    "accountKeep": "Keep",
+    "accountSample": "Sample QR",
+    "accountSampleTitle": "Sample QR for {bank}",
+    "accountSampleBody": "Scan it with a banking app to check that the holder name shows correctly. No need to transfer."
   },
   "map": {
     "region": "Property map",
@@ -1488,6 +1505,9 @@
     "addAccount": "Add receiving account",
     "accountTitle": "Receiving account",
     "accountBody": "The QR code on every bill sends money to this account.",
+    "accountAddMoreBody": "The new account is not the default yet. Tap Make default when you want bill QR codes to pay into it.",
+    "accountEditTitle": "Edit receiving account",
+    "accountEditBody": "Match it to the bank card. QR codes use the new details as soon as you save.",
     "accountBank": "Bank",
     "accountBankPick": "Choose a bank",
     "accountNo": "Account number",
@@ -1497,7 +1517,7 @@
     "accountSave": "Save account",
     "accountSaving": "Saving…",
     "accountClose": "Close",
-    "accountRefusal": "{reason, select, bank {Choose a bank.} accountNo {An account number has only digits and letters, at most 19.} accountName {Enter the account holder, at most 50 characters.} duplicate {The household already has this account.} forbidden {Only an admin can add a receiving account.} other {Not saved. Check the connection and try again.}}",
+    "accountRefusal": "{reason, select, bank {Choose a bank.} accountNo {An account number has only digits and letters, at most 19.} accountName {Enter the account holder, at most 50 characters.} duplicate {The household already has this account.} isDefault {This is the default account. Make another account the default before you remove it.} inUse {Money is recorded into this account, so it stays to keep the collection history right.} numberLocked {Money is recorded into this account, so its bank and number cannot change. You can still correct the holder name. To receive money into another number, add a new account.} notFound {This account no longer exists. Reload the page.} forbidden {Only an admin can change receiving accounts.} other {Not saved. Check the connection and try again.}}",
     "receiptPdf": "{kind, select, notice {Notice PDF} other {Receipt PDF}}",
     "receiptPng": "Picture for Zalo"
   },

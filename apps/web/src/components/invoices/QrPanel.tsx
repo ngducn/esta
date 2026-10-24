@@ -64,9 +64,11 @@ export function QrPanel({ qr, matrix, labels }: { qr: InvoiceQrView; matrix: QrM
           {labels.splitNote}
         </p>
       )}
-      <div className="print:hidden">
-        <SaveQrImage qr={qr} matrix={matrix} labels={{ save: labels.save, failed: labels.saveFailed }} />
-      </div>
+      {qr.number === null ? null : (
+        <div className="print:hidden">
+          <SaveQrImage qr={qr} number={qr.number} matrix={matrix} labels={{ save: labels.save, failed: labels.saveFailed }} />
+        </div>
+      )}
     </div>
   );
 }

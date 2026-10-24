@@ -10,7 +10,6 @@ import type { QrSheetLabels } from './QrSheet';
 const loadSheet = () => import('./QrSheet');
 const QrSheet = lazy(loadSheet);
 
-/** `Mã QR` on a board row: opens the code for what the row still owes. */
 export function QrAction({
   label,
   title,
@@ -22,7 +21,7 @@ export function QrAction({
   label: string;
   title: string;
   description: string;
-  invoiceHref: string;
+  invoiceHref: string | null;
   qr: InvoiceQrView;
   labels: QrSheetLabels;
 }) {

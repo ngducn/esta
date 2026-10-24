@@ -17,7 +17,7 @@ export {
   type PlanRequest,
 } from './batch';
 export { batchUndo, UNDO_FLOWS, UNDO_REASONS, type BatchUndone, type UndoBlocker, type UndoRefusal } from './batch-undo';
-export { bankAccountCreate, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
+export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDefault, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
 export { readClock, type ClockEnv } from './clock';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';

@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
-import { AddReceivingAccount } from '@/components/invoices/AddReceivingAccount';
+import { ReceivingAccountButton } from '@/components/invoices/ReceivingAccountButton';
 import { InvoiceActions } from '@/components/invoices/InvoiceActions';
 import { InvoiceView, type QrState } from '@/components/invoices/InvoiceView';
 import { PrintButton } from '@/components/invoices/PrintButton';
@@ -41,7 +41,7 @@ async function noAccountAction(role: Member['role']) {
   const t = await getTranslations('invoices');
   if (role !== 'admin') return <p className="text-body text-ink-2">{t('noAccountAsk')}</p>;
   const { banks, labels } = await loadAccountSheet();
-  return <AddReceivingAccount label={t('addAccount')} banks={banks} labels={labels} />;
+  return <ReceivingAccountButton label={t('addAccount')} banks={banks} labels={labels} mode={{ kind: 'add', becomesDefault: true }} />;
 }
 
 /** Issuing a draft, voiding an unpaid issued bill, or why a paid one cannot be voided ([app rule]). */

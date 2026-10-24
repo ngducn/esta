@@ -157,6 +157,7 @@ test('rule 4: a paid bill, a draft and a household without a receiving account s
   await page.screenshot({ path: test.info().outputPath('bill-draft-390-dark.png'), fullPage: true });
 
   const account = seedId('seed:bank-account:lane-4');
+  query(workdir, `update public.bank_accounts set is_default = false where id = '${account}' returning id`);
   query(workdir, `delete from public.bank_accounts where id = '${account}' returning id`);
   try {
     await page.goto(invoicePath(invoiceId(4, 'di-an', 3, '2026-10-25')));
@@ -302,6 +303,7 @@ test('rule 8: Mẹ issues November’s draft early with Phát hành, and the bil
 test('rule 9: with no receiving account Mẹ adds one from the bill, its code pays into it, and a transfer on the board names it', async ({ page }) => {
   await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
   const seeded = seedId('seed:bank-account:lane-8');
+  query(workdir, `update public.bank_accounts set is_default = false where id = '${seeded}' returning id`);
   query(workdir, `delete from public.bank_accounts where id = '${seeded}' returning id`);
   try {
     const id = invoiceId(8, 'di-an', 3, '2026-10-25');
@@ -338,6 +340,7 @@ test('rule 9: with no receiving account Mẹ adds one from the bill, its code pa
     expect(query(workdir, `select method from public.payments where bank_account_id = '${added?.id ?? ''}'`)).toEqual([{ method: 'bank_transfer' }]);
   } finally {
     query(workdir, `delete from public.payments where bank_account_id in (select id from public.bank_accounts where household_id = '${laneHousehold(8)}') returning id`);
+    query(workdir, `update public.bank_accounts set is_default = false where household_id = '${laneHousehold(8)}' and is_default returning id`);
     query(workdir, `delete from public.bank_accounts where household_id = '${laneHousehold(8)}' returning id`);
     query(workdir, `insert into public.bank_accounts (id, household_id, bank_bin, account_no, account_name, owner_party_id, is_default)
       values ('${seeded}', '${laneHousehold(8)}', '${ACCOUNT.bin}', '${ACCOUNT.accountNo}', '${ACCOUNT.accountName}', '${seedId('seed:party:me-lane-8')}', true) returning id`);

@@ -3369,6 +3369,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      set_default_bank_account: { Args: { p_id: string }; Returns: undefined }
       set_my_locale: { Args: { p_locale: string }; Returns: undefined }
       set_ownership_shares: {
         Args: { p_property_id: string; p_shares: Json }

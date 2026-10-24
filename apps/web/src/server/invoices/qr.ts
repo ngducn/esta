@@ -1,6 +1,6 @@
 import 'server-only';
 import { formatVnd, vndInWords, type Locale } from '@esta/core/format';
-import type { Vnd } from '@esta/core/money';
+import { vnd, type Vnd } from '@esta/core/money';
 import { buildInvoiceQr, invoiceMemo, VIETQR_RULES, type ReceivingAccount } from '@esta/core/vietqr';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
@@ -8,8 +8,8 @@ import type { QrSheetLabels } from '@/components/invoices/QrSheet';
 import type { OwedBill } from '@/server/collections/load';
 import { createSessionClient } from '@/server/supabase/server';
 
-/** The household's default receiving account with the bank's name as payers know it. */
-export type ReceivingAccountView = ReceivingAccount & { readonly id: string; readonly bankName: string };
+/** A household's receiving account with the bank's name as payers know it. */
+export type ReceivingAccountView = ReceivingAccount & { readonly id: string; readonly bankName: string; readonly isDefault: boolean };
 
 /** The code for what is still owed with what the payer's bank app will show, ready for the page's language. */
 export type PayableQr = {
@@ -23,14 +23,30 @@ export type PayableQr = {
   readonly accountName: string;
 };
 
-/** What the QR sheet and the bill show and the saved picture prints. */
-export type InvoiceQrView = PayableQr & { readonly number: string };
+/** What the QR sheet and the bill show. `number` names the saved picture; a code that pays no bill has none to save. */
+export type InvoiceQrView = PayableQr & { readonly number: string | null };
 
 const accountSchema = z
-  .object({ id: z.uuid(), bank_bin: z.string(), account_no: z.string(), account_name: z.string(), bank: z.object({ short_name: z.string().nullable(), name: z.string() }) })
-  .transform((row): ReceivingAccountView => ({ id: row.id, bin: row.bank_bin, accountNo: row.account_no, accountName: row.account_name, bankName: row.bank.short_name ?? row.bank.name }));
+  .object({
+    id: z.uuid(),
+    bank_bin: z.string(),
+    account_no: z.string(),
+    account_name: z.string(),
+    is_default: z.boolean(),
+    bank: z.object({ short_name: z.string().nullable(), name: z.string() }),
+  })
+  .transform(
+    (row): ReceivingAccountView => ({
+      id: row.id,
+      bin: row.bank_bin,
+      accountNo: row.account_no,
+      accountName: row.account_name,
+      bankName: row.bank.short_name ?? row.bank.name,
+      isDefault: row.is_default,
+    }),
+  );
 
-const ACCOUNT_SELECT = 'id, bank_bin, account_no, account_name, bank:bank_bins(short_name, name)';
+const ACCOUNT_SELECT = 'id, bank_bin, account_no, account_name, is_default, bank:bank_bins(short_name, name)';
 
 export async function loadReceivingAccount(householdId: string): Promise<ReceivingAccountView | null> {
   const supabase = await createSessionClient();
@@ -51,19 +67,30 @@ type QrSource = { readonly status: 'draft' | 'issued' | 'void'; readonly number:
 
 type PayeeAccount = Pick<ReceivingAccountView, 'bin' | 'accountNo' | 'accountName' | 'bankName'>;
 
-/** The code for `outstandingVnd` into `account`, or null when nothing is owed. */
-export function payableQr(account: PayeeAccount, outstandingVnd: Vnd, memoCode: string, locale: Locale): PayableQr | null {
-  if (outstandingVnd <= 0) return null;
-  const qr = buildInvoiceQr({ account, outstandingVnd, memoCode });
+function transferQr(account: PayeeAccount, amountVnd: Vnd, memoCode: string, locale: Locale): PayableQr {
+  const qr = buildInvoiceQr({ account, outstandingVnd: amountVnd, memoCode });
   return {
     payload: qr.payload,
-    amountText: formatVnd(outstandingVnd, locale),
-    amountWords: qr.amountInQr ? null : vndInWords(outstandingVnd, locale),
+    amountText: formatVnd(amountVnd, locale),
+    amountWords: qr.amountInQr ? null : vndInWords(amountVnd, locale),
     memo: invoiceMemo(memoCode),
     bankName: account.bankName,
     accountNo: account.accountNo,
     accountName: account.accountName,
   };
+}
+
+/** The code for `outstandingVnd` into `account`, or null when nothing is owed. */
+export function payableQr(account: PayeeAccount, outstandingVnd: Vnd, memoCode: string, locale: Locale): PayableQr | null {
+  return outstandingVnd <= 0 ? null : transferQr(account, outstandingVnd, memoCode, locale);
+}
+
+const SAMPLE_TRANSFER_VND = vnd(10_000);
+const SAMPLE_MEMO_CODE = 'TAIKHOAN';
+
+/** Cài đặt's sample: a small transfer built as a bill's code is, so Mẹ's bank app shows the holder name it will show tenants. */
+export function sampleQr(account: PayeeAccount, locale: Locale): InvoiceQrView {
+  return { ...transferQr(account, SAMPLE_TRANSFER_VND, SAMPLE_MEMO_CODE, locale), number: null };
 }
 
 /** LSE-5: only an issued bill with something still owed shows a code, for the outstanding amount and its memo. */
