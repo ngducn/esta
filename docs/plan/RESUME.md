@@ -54,21 +54,9 @@ Each had a clean rigorous verdict (live or gates, Opus audit, health, and a seco
    - four runtime tables left out of the demo data.
 5. Older questions: STATUS.md "Waiting for Ryan" (#267, #270's wrong-meter fix, #223 and others).
 
-## Graphify (adopted 2026-10-23 on Ryan's order)
+## Graphify (removed 2026-10-24)
 
-- **Setup.** Hooks live in the main checkout's `.claude/settings.local.json`. Building the map is a numbered setup step in owner-brief.md and lane-brief.md.
-- **Measurement.** Run `~/.claude/orchestrate/esta/bin/agent-usage.py`. The rule and the per-PR quality log are in `~/.claude/orchestrate/esta/graphify-adoption.md`.
-- **First judgment at 12 lane agents: INCONCLUSIVE.**
-
-| Role | Change in median cost |
-| --- | --- |
-| Audit | +60% |
-| Short reviews | +19% |
-| Owner-run Opus reviews | −57% |
-| Owners | −44% (biased low by small fix-forwards) |
-
-  No wrong-graph incidents so far. Lanes use it lightly, about 1 to 4 calls, mostly the build, and `explain` often finds no node.
-- **Decide at 25 lane agents.** Keep it only if the median cost change across roles is negative.
+Removed by its pre-registered rule at 29 lane agents: median lane cost +32%, light use. Ryan confirmed "yeah cut off Graphify" on 2026-10-24. Do not re-add unless Ryan asks; the numbers are in `~/.claude/orchestrate/esta/graphify-adoption.md`.
 
 ## Rules added this run
 
