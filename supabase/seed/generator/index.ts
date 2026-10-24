@@ -14,6 +14,7 @@ import { ownershipShares } from './ownership.ts';
 import { ownerTaxInputs, parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
 import { agentItems, agentJobs, agentRuns } from './agent.ts';
+import { researchTopics } from './research.ts';
 import { renderSeed, type TableRows } from './sql.ts';
 import { units } from './units.ts';
 import { utilityAccounts } from './utility-accounts.ts';
@@ -45,6 +46,7 @@ const EMITTERS: readonly Emitter[] = [
   agentJobs,
   agentRuns,
   agentItems,
+  researchTopics,
 ];
 
 const TIMEZONE = 'Asia/Ho_Chi_Minh';

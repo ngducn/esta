@@ -2258,6 +2258,137 @@ export type Database = {
           },
         ]
       }
+      research_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_on: string | null
+          household_id: string
+          id: string
+          job_id: string | null
+          kind: string
+          province_codes: string[]
+          published_on: string
+          related_property_ids: string[]
+          relevance: number
+          source_name: string
+          source_url: string
+          summary_vi: string
+          title_vi: string
+          updated_at: string
+          url_normalized: string
+          why_it_matters_vi: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_on?: string | null
+          household_id: string
+          id?: string
+          job_id?: string | null
+          kind: string
+          province_codes?: string[]
+          published_on: string
+          related_property_ids?: string[]
+          relevance: number
+          source_name: string
+          source_url: string
+          summary_vi: string
+          title_vi: string
+          updated_at?: string
+          url_normalized: string
+          why_it_matters_vi: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_on?: string | null
+          household_id?: string
+          id?: string
+          job_id?: string | null
+          kind?: string
+          province_codes?: string[]
+          published_on?: string
+          related_property_ids?: string[]
+          relevance?: number
+          source_name?: string
+          source_url?: string
+          summary_vi?: string
+          title_vi?: string
+          updated_at?: string
+          url_normalized?: string
+          why_it_matters_vi?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_items_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_items_household_id_job_id_fkey"
+            columns: ["household_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "agent_jobs"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      research_topics: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          label: string
+          property_ids: string[]
+          province_codes: string[]
+          query_templates: string[]
+          source: string
+          topic_key: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          label: string
+          property_ids?: string[]
+          province_codes?: string[]
+          query_templates: string[]
+          source?: string
+          topic_key: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          label?: string
+          property_ids?: string[]
+          province_codes?: string[]
+          query_templates?: string[]
+          source?: string
+          topic_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_topics_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       statement_imports: {
         Row: {
           bank_account_id: string
@@ -3299,6 +3430,10 @@ export type Database = {
           p_paid_through?: string
         }
         Returns: string
+      }
+      research_title_similar: {
+        Args: { p_household_id: string; p_since: string; p_title: string }
+        Returns: number
       }
       run_invoicing: {
         Args: { p_as_of: string; p_household_id: string; p_issued_at: string }
