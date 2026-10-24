@@ -127,7 +127,7 @@ Fix the code instead of disabling a rule inline. When an exception is right, put
 
 ## Integration lanes
 
-`pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file.
+`pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file. The `db` job in CI runs it after pgTAP, and the `ci` job fails when it fails.
 
 ## E2E helpers
 
