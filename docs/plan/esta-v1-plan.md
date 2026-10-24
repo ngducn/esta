@@ -121,7 +121,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `apps/web/src/server/env.test.ts` gains cases for a missing required variable, an unknown `ESTA_ENV` value and the `development` default. `apps/web/src/server/dev-guard.test.ts` gains one case per `ESTA_ENV` value, with only `production` returning false. Run `pnpm check`.
 - [ ] `e2e/root.spec.ts` loads `/` and `/dev`. Run `pnpm e2e e2e/root.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/root.spec.ts`.
 - [ ] CI is green on the PR head.
 
@@ -268,7 +268,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/clock.spec.ts` sets the clock through `/api/test/clock`, asserts the date line, advances one day and asserts again. Run `pnpm e2e e2e/clock.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/clock.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -340,7 +340,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/dev-core.spec.ts` asserts zero `MISMATCH` rows. Run `pnpm e2e e2e/dev-core.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-core.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -406,7 +406,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/i18n.spec.ts` covers the default and the `en` cookie. Run `pnpm e2e e2e/i18n.spec.ts`.
 - [ ] Run `pnpm check`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/i18n.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -480,7 +480,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/dev-core.spec.ts` gains the address section. Run `pnpm e2e e2e/dev-core.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-core.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -677,7 +677,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/auth.spec.ts` covers FND-1. A new email reads its code through `e2e/helpers/inbucket.ts`, signs in and lands on onboarding. An invited email lands directly in the household with the invited role. Run `pnpm e2e e2e/auth.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/auth.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -810,7 +810,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/dev-glyphs.spec.ts` asserts `document.fonts.check` is true for each face with the glyph string, and equal widths for `1.111.111 ₫` and `8.888.888 ₫` in the figure face. Run `pnpm e2e e2e/dev-glyphs.spec.ts`.
 - [ ] Run `pnpm glyphs:check`. Run `pnpm check`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-glyphs.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -882,7 +882,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/dev-components.spec.ts` asserts the `[data-state-card]` count equals the registry size in both themes. Run `pnpm e2e e2e/dev-components.spec.ts`.
 - [ ] Run `pnpm check`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-components.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -956,7 +956,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/shell.spec.ts` covers navigation to each section, the avatar menu, and 130% on all five sections at 390 px with no overflow. Run `pnpm e2e e2e/shell.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/shell.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -1037,7 +1037,7 @@ Each live lane runs in its own worktree at the PR head. Drive through the skill 
 - [ ] `e2e/assistant-status.spec.ts` runs serially in one project with a worker from `e2e/helpers/agent-worker.ts`, because the worker and the test clock are shared per slot. It resets the clock to `2026-10-07T09:00:00+07:00` and restarts the worker before each rule. Run `pnpm e2e e2e/assistant-status.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/assistant` for Mẹ and for Ryan in `e2e/assistant-status.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1243,7 +1243,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] `e2e/properties-list.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/properties-list.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/properties` in `e2e/properties-list.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1316,7 +1316,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] `e2e/properties-map.spec.ts` asserts the live rules below with long links and refused short-link shapes, which need no network. Run `pnpm e2e e2e/properties-map.spec.ts e2e/properties-list.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/properties?view=map` and the location panel in `e2e/properties-map.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1387,7 +1387,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] `e2e/property-detail.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/property-detail.spec.ts e2e/properties-list.spec.ts e2e/properties-map.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/properties/[id]` and `/properties/[id]/activity` in `e2e/property-detail.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1457,7 +1457,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] `e2e/property-form.spec.ts` asserts the live rules below and creates one property of each of the ten kinds (PRP-1, PRP-4). Run `pnpm e2e e2e/property-form.spec.ts e2e/properties-list.spec.ts e2e/property-detail.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/properties/new` and `/properties/[id]/edit` in `e2e/property-form.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1532,7 +1532,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] Run `pnpm db:seed:check`, which compares two resets over the three new tables (FND-7).
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-legal.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-legal.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1602,7 +1602,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] Run `pnpm db:seed:check`, which compares two resets over `ownership_shares` (FND-7).
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-owners.spec.ts e2e/properties-list.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-owners.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1677,7 +1677,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] Run `pnpm db:seed:check`, which compares two resets over both new tables (FND-7).
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-units.spec.ts e2e/properties-list.spec.ts`. The spec also deletes `Phòng 8`, taps `Hoàn tác` and asserts its `available_from` returns.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-units.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1750,7 +1750,7 @@ Phase 1. The sections below run in delivery order (`Seq` 01 to 09 in `docs/plan/
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm e2e e2e/property-completeness.spec.ts e2e/properties-list.spec.ts e2e/property-detail.spec.ts`.
 - [ ] Run `pnpm phase:check 1`, which covers PRP-1 to PRP-6 and PRP-8, RLS for every Phase 1 table and the Lighthouse budgets on Properties.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/property-completeness.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1904,7 +1904,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] `e2e/documents-upload.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-upload.spec.ts e2e/property-completeness.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/properties/[id]/documents` with the sheet open in `e2e/documents-upload.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -1989,7 +1989,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] `e2e/documents-extract.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-extract.spec.ts e2e/documents-upload.spec.ts e2e/assistant-status.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm db:seed:check` (FND-7).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/properties/[id]/documents` and `/assistant` in `e2e/documents-extract.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -2067,7 +2067,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] `e2e/extraction-review.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/extraction-review.spec.ts e2e/property-legal.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/documents/[documentId]/review` in `e2e/extraction-review.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -2141,7 +2141,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] `e2e/documents-vault.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-vault.spec.ts e2e/documents-upload.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on `/documents` and `/documents/[documentId]` in `e2e/documents-vault.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -2208,7 +2208,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] `e2e/documents-multipage.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/documents-multipage.spec.ts e2e/documents-upload.spec.ts`.
 - [ ] Run `pnpm check`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the sheet with the capture open in `e2e/documents-multipage.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -2283,7 +2283,7 @@ Phase 2. The sections below are current as of the 2026-10-17 re-cut and run in d
 - [ ] `e2e/northstar.spec.ts` steps 1 and 2 pass with `pnpm e2e:northstar` (FND-1, PRP-7, DOC-6). `e2e/property-wizard.spec.ts` asserts the live rules below. Run `pnpm e2e e2e/property-wizard.spec.ts e2e/property-form.spec.ts`.
 - [ ] Run `pnpm check`. Run `pnpm db:test`. Run `pnpm phase:check 2`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on every wizard step in `e2e/property-wizard.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Lane rules run as Playwright assertions, and one Sonnet verifier lane drives the load-bearing behavior at the PR head, per the boot recipe.
@@ -2726,7 +2726,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `apps/web/src/server/actions/leases.integration.test.ts` runs the LSE-3 canonical activation and asserts one issued invoice for October due `2026-10-01`, a second activation call that inserts nothing, and a refused activation without rent (LSE-2, LSE-3).
 - [ ] `e2e/leases.spec.ts` covers quick-add with phone normalization, edit a draft, activate and the unit tab update at 390 and 1440. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/leases.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/leases.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -2798,7 +2798,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `leases.integration.test.ts` gains an amendment that leaves every issued invoice byte-identical, a termination that removes later drafts only, a renewal linked to its source, and a terminate refused on an `ended` lease (LSE-2).
 - [ ] `e2e/lease-detail.spec.ts` covers the timeline, amend, terminate and renew at 390 and 1440. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/lease-detail.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/lease-detail.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -2880,7 +2880,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `supabase/tests/collections.test.sql` proves `collection_candidates` excludes drafts and voided invoices and returns no other household's rows.
 - [ ] `e2e/collections.spec.ts` asserts the October board at 390 and 1440. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/collections.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/collections.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -2949,7 +2949,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `payments.integration.test.ts` covers a full cash payment, a partial transfer, an overpayment with credit, undo, and each deposit action (LSE-7, LSE-9).
 - [ ] `e2e/record-payment.spec.ts` counts taps from the row to the saved payment and asserts 3. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/record-payment.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/record-payment.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -3019,7 +3019,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `invoices.integration.test.ts` covers issuing a draft, refusing to issue twice, voiding with a reason, refusing a void without one, and a voided period that `runInvoicing` does not recreate (LSE-5).
 - [ ] `e2e/invoices.spec.ts` decodes the saved QR image and asserts amount, memo and CRC, and asserts the split note at 600,000,000. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/invoices.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/invoices.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -3089,7 +3089,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `apps/web/src/server/receipts/pdf.test.ts` extracts text with pdfjs-dist and finds the fixture tenant `Đặng Thị Hường Demo` in NFC (LSE-6). `model.test.ts` covers paid and unpaid invoices.
 - [ ] `e2e/receipts.spec.ts` downloads both formats and checks the PDF page size and the PNG dimensions. Run `pnpm check` and `pnpm e2e e2e/receipts.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/receipts.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -3155,7 +3155,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `invoice_share_token.test.sql` proves `anon` gets only the listed columns for an issued token, nothing for a voided or draft invoice, and cannot select `invoices` directly.
 - [ ] `e2e/reminders.spec.ts` asserts the copied text with clipboard permissions and the `Mở Zalo` href (LSE-11). Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/reminders.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/reminders.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -3225,7 +3225,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `meters.integration.test.ts` covers complete readings issuing drafts, partial readings leaving drafts as `draft`, and a late reading producing an adjustment on the next draft while the issued invoice stays unchanged (LSE-4).
 - [ ] `e2e/meters.spec.ts` enters eight rooms at 390 and 1440 (LSE-4). Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/meters.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/meters.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -3301,7 +3301,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `statements.integration.test.ts` imports each of the three fixtures for a test household, compares statuses with the golden files, commits, re-imports and asserts zero new payments, equal fingerprints and a refused fractional row (LSE-8).
 - [ ] `e2e/statement-import.spec.ts` covers upload, mapping, preview, commit and bulk confirm at 1440 and 390. Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/statement-import.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/statement-import.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. Each lane writes its statement with `pnpm tsx fixtures/statements/generate.ts --household <n>`.
@@ -3369,7 +3369,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `packages/core/src/today/rules.test.ts` gains the full-seed set at `2026-10-07`, the cap at `2026-10-25` where nine candidates yield seven items, a renewed lease excluded, and an empty snapshot.
 - [ ] `e2e/home.spec.ts` asserts the three items and the figure at 390 and 1440. Run `pnpm check` and `pnpm e2e e2e/home.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/home.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -3439,7 +3439,7 @@ Phase 3. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Run `pnpm db:test`, `pnpm e2e e2e/fnd8.spec.ts` and `pnpm e2e:northstar`.
 - [ ] Run `pnpm e2e` for every Phase 3 spec, `e2e/leases.spec.ts` through `e2e/home.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/fnd8.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -3637,7 +3637,7 @@ Phase 4. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] The FND-7 checksum script covers `expenses` and two resets match.
 - [ ] Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/expenses.spec.ts` (FIN-1).
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] Run `/impeccable harden` on the screen for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/expenses.spec.ts`.
 
@@ -3712,7 +3712,7 @@ Phase 4. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `supabase/tests/allocation_facts.test.sql` gains household A versus B isolation through the view and viewer read access (FND-2).
 - [ ] Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/ledger.spec.ts`. The spec reads the downloaded XLSX with `exceljs` and compares its totals row to the screen totals.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] Run `/impeccable harden` on the screen for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/ledger.spec.ts`.
 
@@ -3786,7 +3786,7 @@ Phase 4. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `e2e/tax-card.spec.ts` covers seed 8 (Mẹ reads threshold progress), the withheld group, the other revenue round trip and the 2025 `no_rule` state.
 - [ ] Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/tax-card.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] Run `/impeccable harden` on the screen for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/tax-card.spec.ts`.
 
@@ -3859,7 +3859,7 @@ Phase 4. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `e2e/reports.spec.ts` downloads the P&L XLSX and the owner summary PDF, reads them with `exceljs` and `pdfjs-dist`, and asserts their totals equal the screen totals.
 - [ ] Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/reports.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] Run `/impeccable harden` on the screen for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/reports.spec.ts`.
 
@@ -3940,7 +3940,7 @@ Phase 4. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] `scripts/seed-coverage.ts` exits 0 and the FND-7 checksum matches across two resets of the `full` and `northstar` variants.
 - [ ] Run `pnpm check`, `pnpm db:test`, `pnpm e2e e2e/valuations.spec.ts` and `pnpm e2e:northstar`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] Run `/impeccable harden` on the screen for long Vietnamese names and addresses, 130% text scale, empty, loading, error and offline states.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/valuations.spec.ts` and `e2e/northstar.spec.ts`.
 
@@ -4083,7 +4083,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Golden tests in AGENT.md §7 for `portfolio_watch` facts pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/dev-core.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/dev-core.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -4185,7 +4185,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Golden tests in AGENT.md §7 for `portfolio_watch` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -4289,7 +4289,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Golden tests in AGENT.md §7 for `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-inbox.spec.ts` and `pnpm e2e e2e/home.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-inbox.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -4403,7 +4403,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [x] Golden tests in AGENT.md §7 for `research_scan` and `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [x] Run `pnpm check`, then `pnpm e2e e2e/assistant-market.spec.ts`, `pnpm e2e e2e/morning-brief.spec.ts` and `pnpm e2e e2e/assistant-inbox.spec.ts`.
 - [x] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [x] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-market.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -4480,7 +4480,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Golden tests in AGENT.md §7 for `create_proposal` validation pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-proposals.spec.ts`, `pnpm e2e e2e/tasks.spec.ts` and `pnpm e2e e2e/home.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-proposals.spec.ts` and `e2e/tasks.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. Each lane seeds its proposal with `pnpm agent:propose` from `fixtures/proposals/`, with the clock at 2026-10-07 07:05.
@@ -4551,7 +4551,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Golden tests in AGENT.md §7 for `ask` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-ask.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-ask.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay.
@@ -4624,7 +4624,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Golden tests in AGENT.md §7 for `weekly_review` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-diagnostics.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-diagnostics.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. Lanes that move the clock run on their own slot.
@@ -4761,7 +4761,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Run `pnpm e2e e2e/assistant-proposals.spec.ts` and `pnpm e2e e2e/email-brief.spec.ts` for approval audit (AGT-6) and the brief email (PLT-4).
 - [ ] Run `pnpm check` and `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/northstar.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. North-star lanes run on their own slot on the `northstar` seed.
@@ -4863,7 +4863,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] `supabase/tests/settings_guards.test.sql` proves the last-admin trigger on update and delete, `set_default_bank_account` leaves exactly one default, a member of household A cannot call it for household B, a viewer cannot write any settings table, and a member cannot edit another member's `notification_preferences` (FND-2). Run `pnpm db:test`.
 - [ ] `e2e/settings.spec.ts` covers section visibility for admin, viewer and operator, the bank account add and default flow, an invite claimed by a new email in Inbucket, and the last-admin error. Run `pnpm e2e e2e/settings.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/settings.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -4941,7 +4941,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] `apps/agent/test/backup_export.test.ts` proves a rerun on the same date writes no second folder, 31 dated folders shrink to 30, and exports older than 24 hours are deleted (PLT-3).
 - [ ] `e2e/export.spec.ts` covers the full export round trip into an empty slot-9 database with `pnpm db:reset:empty`, the multi-part split with `ESTA_EXPORT_PART_MB=1`, per-party export, and the redaction refusal and success. Run `pnpm e2e e2e/export.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/export.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -5011,7 +5011,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] `supabase/tests/onboarding_setting.test.sql` proves household isolation and that a viewer cannot write `onboarding` (FND-2). Run `pnpm db:test`.
 - [ ] `e2e/first-run.spec.ts` covers sign-up through all three steps and the dismiss with undo. `e2e/empty-states.spec.ts` visits every `EMPTY_STATES` surface in a new household and asserts one message and one primary action. A test fails when a list route has no registry entry. Run `pnpm e2e e2e/first-run.spec.ts` and `pnpm e2e e2e/empty-states.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/empty-states.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -5078,7 +5078,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] `e2e/routes.test.ts` covers registry completeness. Every unit test touched by a fix still passes. Run `pnpm check`.
 - [ ] Run `pnpm e2e` for the full suite, since the passes touch shared components.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/a11y-all.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -5147,7 +5147,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] `e2e/security-headers.spec.ts` asserts every header on `/`, `/settings` and an API route, and fails on any `securitypolicyviolation` event across `APP_ROUTES`. Run `pnpm e2e e2e/security-headers.spec.ts`.
 - [ ] `e2e/perf-lists.spec.ts` scrolls the 1,000-row Tài sản, Tài liệu and Thu tiền lists and asserts the rendered row count stays under 100. Run `pnpm e2e e2e/perf-lists.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/security-headers.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -5217,7 +5217,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] Run `pnpm db:test` on a fresh reset to prove every migration applies in order, as the cloud push will.
 - [ ] Run `ESTA_E2E_BUILD=prod pnpm e2e:northstar` and the full `pnpm e2e` suite on the production build. Every acceptance id from FND-1 to PLT-4 that has a spec passes.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/a11y-all.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
@@ -5289,7 +5289,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] Run `pnpm db:test` locally and `supabase db push --dry-run` on both projects, which list zero pending migrations after the push.
 - [ ] Run `pnpm e2e e2e/security-headers.spec.ts` against the preview URL.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/a11y-all.spec.ts` run against the preview URL.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe.
