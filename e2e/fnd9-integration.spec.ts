@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { parseSlot, slotPorts } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
-import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
+import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
 
@@ -73,7 +73,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test.afterAll(async ({ request }) => {
-  await worker.stop();
+  await stopAndForget(worker);
   await request.delete('/api/test/clock', { headers: cron });
 });
 

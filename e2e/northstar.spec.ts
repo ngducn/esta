@@ -7,7 +7,7 @@ import { isoDate } from '../packages/core/src/date/iso-date.ts';
 import { vnd as asVnd } from '../packages/core/src/money/vnd.ts';
 import { draftReminder } from '../packages/core/src/reminder/templates.ts';
 import { decodeQrPng } from '../scripts/decode-qr.ts';
-import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
+import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { signIn } from './helpers/inbucket';
@@ -48,7 +48,7 @@ let diAn = '';
 let october: Bill[] = [];
 
 test.afterAll(async ({ request }) => {
-  await worker?.stop();
+  await stopAndForget(worker);
   await setClock(request, null);
 });
 

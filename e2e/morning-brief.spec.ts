@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
+import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { laneHousehold } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, seriousAxeViolations, vnd } from './helpers/wizard';
@@ -14,7 +14,7 @@ const SUMMARY = 'Hôm nay cần nhắc tiền thuê Phòng 5 Dãy trọ Dĩ An, 
 let worker: AgentWorker | undefined;
 
 test.afterAll(async ({ request }) => {
-  await worker?.stop();
+  await stopAndForget(worker);
   await setClock(request, null);
 });
 

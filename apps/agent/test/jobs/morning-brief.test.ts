@@ -1,5 +1,5 @@
 import { isoDate } from '@esta/core/date';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
@@ -163,6 +163,17 @@ describe('create_brief', () => {
     const { call } = tools();
     const [first, second] = [await call('watch_facts'), await call('watch_facts')];
     expect(second.text).toBe(first.text);
+  });
+
+  it('saves the sanitize case after the guard refuses its <b> tag, with its HTML and http link as escaped text', async () => {
+    const recording = JSON.parse(readFileSync(join(import.meta.dirname, '../../../../fixtures/agent-replay-cases/brief-html/morning_brief/e4d91aefa2f5ee62d000dc44bca59ab828b5e07243fbca37e6317004959e98fd.json'), 'utf8')) as { toolCalls: Array<{ name: string; input: Record<string, unknown> }> };
+    const { tables, call } = tools();
+    const answers = [];
+    for (const { name, input } of recording.toolCalls) answers.push(await call(name.replace('mcp__esta__', ''), input));
+    expect(answers.map((answer) => answer.isError)).toEqual([false, false, true, false]);
+    const shown = body(tables).split('\n').find((text) => text.includes('onclick')) ?? '';
+    expect(shown).toContain('\\<strong onclick');
+    expect(shown).toContain('\\[bấm đây\\](http://evil.test/pay)');
   });
 
   it('fails the job when the model ends without saving the brief', async () => {

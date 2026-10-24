@@ -40,6 +40,11 @@
     letter-spacing: -0.02em;
   }
 
+  b,
+  strong {
+    font-weight: 600;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,

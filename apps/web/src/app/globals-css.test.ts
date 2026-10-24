@@ -62,4 +62,12 @@ describe('globals.css', () => {
     expect(offered.every(([, weight]) => shipped.includes(Number(weight)))).toBe(true);
     expect(Math.max(...shipped)).toBe(600);
   });
+
+  it('sets bold Markdown and <b> to semibold, not the bolder (700) preflight gives them', async () => {
+    const css = await build([]);
+    const weights = [...css.matchAll(/(?:^|[},])\s*((?:[a-z0-9]+,\s*)*(?:b|strong)(?:,\s*[a-z0-9]+)*)\s*\{([^}]*)\}/g)]
+      .filter(([, selectors]) => selectors?.split(/,\s*/).includes('strong'))
+      .flatMap(([, , body]) => [...(body ?? '').matchAll(/font-weight:\s*([^;]+);/g)].map((m) => m[1]?.trim()));
+    expect(weights.at(-1)).toBe('600');
+  });
 });

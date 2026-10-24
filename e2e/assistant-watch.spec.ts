@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { join } from 'node:path';
-import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
+import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, seriousAxeViolations, vnd } from './helpers/wizard';
 
@@ -14,7 +14,7 @@ const GUARD_TITLE = 'Trợ lý đã giữ lại một ghi chú có số tự gõ
 let worker: AgentWorker | undefined;
 
 test.afterAll(async ({ request }) => {
-  await worker?.stop();
+  await stopAndForget(worker);
   await setClock(request, null);
 });
 

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
-import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
+import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { setClock } from './helpers/test-clock';
 import {
   acceptEvery,
@@ -42,7 +42,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test.afterAll(async ({ request }) => {
-  await worker?.stop();
+  await stopAndForget(worker);
   await setClock(request, null);
 });
 
