@@ -1,11 +1,12 @@
 import type { IsoDate } from '@esta/core/date';
 import { addMonths } from '@esta/core/date/calendar';
+import { vnd, type Vnd } from '@esta/core/money';
 import { phoneText } from '@esta/core/phone';
 import type { SchedulePeriod } from '@esta/core/schedule';
 import { LEASE_COLUMNS, leaseRowSchema, schedulePeriodRowSchema, type LeaseRow } from '@esta/core/schemas/lease';
 import { z } from 'zod';
 import type { Db } from './db';
-import { idSchema } from './kit';
+import { idSchema, readAll } from './kit';
 
 export type Tenant = { readonly id: string; readonly fullName: string; readonly phone: string | null };
 export type LeaseWithTenant = LeaseRow & { readonly tenant: Tenant | null };
@@ -36,6 +37,19 @@ export type LeaseNames = {
   readonly held: ReadonlyMap<string, number>;
 };
 
+/**
+ * What each lease holds, from the `lease_deposits` view: the one sum of a deposit ledger, so a same-day receipt and
+ * application never depend on an order a second reader would have to guess. All the household's leases, or these.
+ */
+export async function readHeldDeposits(db: Db, householdId: string, leaseIds?: readonly string[]): Promise<Map<string, Vnd>> {
+  if (leaseIds?.length === 0) return new Map();
+  const rows = await readAll('held deposits', (from, to) => {
+    const query = db.from('lease_deposits').select('lease_id, held_vnd').eq('household_id', householdId);
+    return (leaseIds === undefined ? query : query.in('lease_id', [...leaseIds])).order('lease_id').range(from, to);
+  });
+  return new Map(rows.flatMap((row) => (row.lease_id === null ? [] : [[row.lease_id, vnd(row.held_vnd ?? 0)] as const])));
+}
+
 /** The unit labels, property nicknames and held deposits a lease summary names. */
 export async function readLeaseNames(db: Db, householdId: string, leases: readonly LeaseRow[]): Promise<LeaseNames> {
   if (leases.length === 0) return { units: new Map(), properties: new Map(), held: new Map() };
@@ -43,14 +57,14 @@ export async function readLeaseNames(db: Db, householdId: string, leases: readon
   const [units, properties, held] = await Promise.all([
     db.from('units').select('id, label, kind').eq('household_id', householdId).in('id', ids('unit_id')),
     db.from('properties').select('id, nickname').eq('household_id', householdId).in('id', ids('property_id')),
-    db.from('lease_deposits').select('lease_id, held_vnd').eq('household_id', householdId).in('lease_id', ids('id')),
+    readHeldDeposits(db, householdId, ids('id')),
   ]);
-  const failed = units.error ?? properties.error ?? held.error;
-  if (failed) throw new Error(`Reading the leases' units, properties and deposits failed: ${failed.message}`);
+  const failed = units.error ?? properties.error;
+  if (failed) throw new Error(`Reading the leases' units and properties failed: ${failed.message}`);
   return {
     units: new Map(units.data?.map((unit) => [unit.id, { label: unit.label, whole: unit.kind === 'whole' }])),
     properties: new Map(properties.data?.map((property) => [property.id, property.nickname])),
-    held: new Map(held.data?.flatMap((row) => (row.lease_id === null ? [] : [[row.lease_id, row.held_vnd ?? 0]]))),
+    held,
   };
 }
 

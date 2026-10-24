@@ -23,7 +23,7 @@ const collator = new Intl.Collator('vi', { numeric: true });
  * AGENT.md §5.3 W4: how long a unit no lease holds has stood empty on `asOf`, from its last lease's end date, else from
  * `available_from`; `'leased'` while a lease holds it and `null` with no date to count from.
  */
-export function vacantDays(unit: ReportUnit, tenancies: readonly ReportTenancy[], asOf: IsoDate): number | 'leased' | null {
+export function vacantDays(unit: Pick<ReportUnit, 'availableFrom'>, tenancies: readonly Omit<ReportTenancy, 'unitId'>[], asOf: IsoDate): number | 'leased' | null {
   if (tenancies.some((lease) => holdsUnit(lease, asOf))) return 'leased';
   const lastEnd = tenancies.reduce<IsoDate | null>((last, lease) => (lease.end_date !== null && lease.end_date <= asOf && (last === null || lease.end_date > last) ? lease.end_date : last), null);
   const since = lastEnd ?? unit.availableFrom;

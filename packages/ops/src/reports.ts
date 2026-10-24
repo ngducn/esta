@@ -9,7 +9,7 @@ import { readInvoices } from './invoices';
 import { readAll } from './kit';
 import { readLeaseNames, readLeases, readLeaseSchedule, scheduleUntil, withTenants } from './leases';
 import { readLedgerFacts } from './ledger';
-import { readOtherBusinessRevenues, readOwners, readTaxRows } from './tax';
+import { readOtherBusinessRevenues, readTaxOwners, readTaxRows } from './tax';
 import { readValuations } from './valuations';
 
 const unitRowSchema = z
@@ -56,7 +56,7 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
     readLeaseNames(db, householdId, rolled),
     readInvoices(db, householdId, { leaseIds: ids }),
     readLeaseSchedule(db, ids, scheduleUntil(rolled, asOf)),
-    readOwners(db, householdId, [...new Set([...tax.shares.map((share) => share.partyId), ...tax.leases.flatMap((lease) => lease.declaringPartyId ?? [])])]),
+    readTaxOwners(db, householdId, tax),
   ]);
   return {
     from,
