@@ -1,6 +1,8 @@
 import type { HookCallback } from '@anthropic-ai/claude-agent-sdk';
+import { normalizeUrl } from '@esta/core/research';
 import { realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
+import { z } from 'zod';
 import { mcpToolName } from '../tools/server';
 
 export type ToolDecision = { readonly allow: true } | { readonly allow: false; readonly reason: string };
@@ -11,6 +13,8 @@ export type ToolPolicy = {
   readonly jobDir: string;
   /** Calls a built-in tool may make in one run, such as research_scan's searches and fetches (AGENT.md §5.2), with the count allowed so far. */
   readonly caps?: ReadonlyMap<string, ToolCap>;
+  /** The normalized links this run's WebSearch returned, the only pages WebFetch may open, so a page cannot send the model elsewhere (#323). */
+  readonly fetchable?: Set<string>;
 };
 
 export type ToolCap = { readonly max: number; used: number };
@@ -25,6 +29,26 @@ const WEB_RULES: ReadonlyMap<string, InputRule> = new Map<string, InputRule>([
   ['WebSearch', (input) => (typeof input.query === 'string' && input.query.trim() !== '' ? null : 'WebSearch needs a query')],
   ['WebFetch', (input) => (typeof input.url === 'string' && /^https:\/\/[^\s/]+/i.test(input.url) ? null : 'WebFetch reads one https page')],
 ]);
+
+const searchHits = z.object({ results: z.array(z.union([z.object({ content: z.array(z.object({ url: z.string() })) }), z.string()])) });
+
+/** Adds the links a WebSearch call returned to the pages WebFetch may open. */
+export function rememberSearchHits(policy: ToolPolicy, toolName: string, result: unknown): void {
+  if (toolName !== 'WebSearch' || policy.fetchable === undefined) return;
+  for (const block of searchHits.safeParse(result).data?.results ?? []) {
+    if (typeof block === 'string') continue;
+    for (const hit of block.content) {
+      const url = normalizeUrl(hit.url);
+      if (url.ok) policy.fetchable.add(url.value);
+    }
+  }
+}
+
+function searched(policy: ToolPolicy, toolName: string, input: Readonly<Record<string, unknown>>): string | null {
+  if (toolName !== 'WebFetch' || policy.fetchable === undefined) return null;
+  const url = normalizeUrl(String(input.url));
+  return url.ok && policy.fetchable.has(url.value) ? null : "WebFetch may open only a page this run's WebSearch returned";
+}
 
 function withinCap(policy: ToolPolicy, toolName: string): ToolDecision {
   const cap = policy.caps?.get(toolName);
@@ -65,7 +89,7 @@ export function decideToolUse(policy: ToolPolicy, toolName: string, input: Reado
   if (toolName.startsWith(ESTA_TOOL_PREFIX)) return { allow: true };
   const web = WEB_RULES.get(toolName);
   if (web !== undefined) {
-    const broken = web(input);
+    const broken = web(input) ?? searched(policy, toolName, input);
     return broken === null ? withinCap(policy, toolName) : { allow: false, reason: broken };
   }
   const field = PATH_FIELDS.get(toolName);

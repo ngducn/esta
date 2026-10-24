@@ -6,7 +6,7 @@ import { inputHash, type CanonicalInput, type Canonicalizer } from '../replay/ca
 import { readRecording, recordingPath } from '../replay/store';
 import { estaServer, runTool, type EstaTools } from '../tools/server';
 import { buildSdkEnv, buildSdkOptions } from './options';
-import { decideToolUse, pathPolicyHook, toolCaps, type ToolPolicy } from './path-policy';
+import { decideToolUse, pathPolicyHook, rememberSearchHits, toolCaps, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
 
 export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
@@ -38,15 +38,25 @@ export function canonicalInput({ spec, prompt, canon }: Pick<SessionRequest, 'sp
 }
 
 function toolPolicy({ spec, jobDir, tools, caps }: SessionRequest): ToolPolicy {
-  return { allowed: new Set([...spec.builtInTools, ...tools.keys()]), jobDir, ...(caps === undefined ? {} : { caps: toolCaps(caps) }) };
+  return {
+    allowed: new Set([...spec.builtInTools, ...tools.keys()]),
+    jobDir,
+    ...(caps === undefined ? {} : { caps: toolCaps(caps) }),
+    ...(spec.builtInTools.includes('WebFetch') ? { fetchable: new Set<string>() } : {}),
+  };
+}
+
+function observeBuiltIn(request: SessionRequest, policy: ToolPolicy, call: BuiltInResult): void {
+  rememberSearchHits(policy, call.name, call.result);
+  request.observe?.(call);
 }
 
 /** The SDK runs PostToolUse only for a call that succeeded. */
-function observeHook(request: SessionRequest): HookCallback {
+function observeHook(request: SessionRequest, policy: ToolPolicy): HookCallback {
   return async (input) => {
     if (input.hook_event_name === 'PostToolUse' && !request.tools.has(input.tool_name)) {
       const toolInput = typeof input.tool_input === 'object' && input.tool_input !== null ? (input.tool_input as Record<string, unknown>) : {};
-      request.observe?.({ name: input.tool_name, input: toolInput, result: input.tool_response });
+      observeBuiltIn(request, policy, { name: input.tool_name, input: toolInput, result: input.tool_response });
     }
     return {};
   };
@@ -56,6 +66,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   const abortController = new AbortController();
   const timer = setTimeout(() => abortController.abort(), request.spec.timeoutMs);
   const toolFailures: unknown[] = [];
+  const policy = toolPolicy(request);
   const options = buildSdkOptions({
     spec: request.spec,
     jobDir: request.jobDir,
@@ -65,8 +76,8 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
       toolFailures.push(error);
       abortController.abort();
     }),
-    preToolUse: pathPolicyHook(toolPolicy(request), (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
-    postToolUse: observeHook(request),
+    preToolUse: pathPolicyHook(policy, (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
+    postToolUse: observeHook(request, policy),
     abortController,
   });
   const toolCalls: ToolCall[] = [];
@@ -115,7 +126,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     // The recording already holds the model's next turn, so the answer is dropped; an error other than a rejection fails the job.
     const tool = request.tools.get(call.name);
     if (tool !== undefined) await runTool(tool, input);
-    else if (call.result !== undefined) request.observe?.({ name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
+    else if (call.result !== undefined) observeBuiltIn(request, policy, { name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
   }
   return {
     result: {
