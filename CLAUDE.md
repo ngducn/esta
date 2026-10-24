@@ -17,7 +17,7 @@ Locked decisions are in SPEC §3. Do not change them; raise a conflict instead.
 
 Phase 0 makes every command below real. Keep this list accurate as the repo evolves.
 
-Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `ESTA_SLOT=k` (default 0) adds 100·k to every port so stacks run side by side; `pnpm dev`, `pnpm start`, `pnpm clock:set`, `pnpm cron:run`, `pnpm e2e` and every `db:*` command honor it. `PORT` overrides the web port.
+`.nvmrc` and `devEngines.runtime` in `package.json` pin Node 24.22.0, and pnpm downloads that Node and runs every script on it, whatever `node` is on PATH (a Node before 24.21.0 loads Next twice under `next dev`, #292); `packageManager` pins pnpm. `ESTA_SLOT=k` (default 0) adds 100·k to every port so stacks run side by side; `pnpm dev`, `pnpm start`, `pnpm clock:set`, `pnpm cron:run`, `pnpm e2e` and every `db:*` command honor it. `PORT` overrides the web port.
 
 | Command | Does |
 | --- | --- |
@@ -33,7 +33,7 @@ Use the Node LTS in `.nvmrc`; `packageManager` in `package.json` pins pnpm. `EST
 | `pnpm db:checksum` / `pnpm db:seed:check` | One md5 per public table and per seeded auth table; reset twice and fail on any checksum difference (FND-7) |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints), then fails on a public table without RLS or a pgTAP file naming it; takes `supabase/tests/<name>.test.sql` paths to run only those files |
-| `pnpm phase:check <n>` | Runs phase n's exit checks (`PHASE_CHECKS` in `scripts/phase-exit.ts`) and prints one PASS or FAIL row per id; exits 1 on any FAIL |
+| `pnpm phase:check <n>` | Runs phase n's exit checks (`PHASE_CHECKS` in `scripts/phase-exit.ts`) and prints one PASS or FAIL row per id; exits 1 on any FAIL; its north-star rows serve the production build, as CI does |
 | `pnpm check` | i18n parity, plan coverage and the quality baseline, then typecheck, lint and unit tests in every workspace |
 | `pnpm quality` | Counts copied code (jscpd), files over 400 and 1,000 lines, and the smells in `scripts/quality/metrics.ts` (matched on the syntax tree), and fails when a count rises above `quality/baseline.json`, falls without an update, or when the baseline holds more than it did where the branch forked from `origin/main` without a recorded raise (`ARCHITECTURE.md`); `--update` rewrites it from today's counts up to main's, and `--update --allow-raise "<reason>"` goes above main with the reason recorded for review |
 | `pnpm i18n:parity` | Compares `apps/web/messages/vi.json` and `en.json` (see Translations) |
