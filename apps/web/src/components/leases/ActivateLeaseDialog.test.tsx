@@ -13,7 +13,7 @@ const SEPTEMBER = { periodStart: '2026-09-15', periodEnd: '2026-10-14', dueDate:
 async function open() {
   renderInLocale(
     <UndoToastProvider>
-      <ActivateLeaseDialog leaseId={LEASE} blocked={[]} onClose={() => undefined} onActivated={() => undefined} />
+      <ActivateLeaseDialog open onOpenChange={() => undefined} finalFocus={{ current: null }} leaseId={LEASE} blocked={[]} onDismiss={() => undefined} onActivated={() => undefined} />
     </UndoToastProvider>,
   );
   await act(async () => undefined);

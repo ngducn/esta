@@ -7,10 +7,12 @@ import { purposesMismatch } from '@esta/core/properties/area';
 import { CircleCheck, CloudOff, FilePlus2, FileSearch, Images, Save } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useDocumentStatuses, type PollStep } from '@/components/documents/use-document-status';
+import { FormAlert } from '@/components/form-alert';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { useAction } from '@/components/use-action';
 import { cn } from '@/lib/utils';
 import type { DocumentStatuses, ExtractionStatus } from '@/server/documents/extraction-status';
 import { rejectExtraction, saveExtractionReview, type ReviewSave } from '@/server/extraction/actions';
@@ -99,7 +101,7 @@ export function ReviewPanel({
   const [editing, setEditing] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<ReviewSave | { ok: false; reason: 'reject_failed' } | null>(null);
   const [chosenProperty, setChosenProperty] = useState('');
-  const [saving, startSaving] = useTransition();
+  const { pending: saving, run } = useAction();
   const pager = useRef<HTMLDivElement>(null);
 
   const polled = useDocumentStatuses(documentId, statuses, { by: 'document', steps: REVIEW_POLL });
@@ -133,25 +135,24 @@ export function ReviewPanel({
     });
   };
 
-  const save = () =>
-    startSaving(async () => {
-      if (extractionId === null) return;
-      const result = await saveExtractionReview(extractionId, decisions, propertyId === null && chosenProperty !== '' ? chosenProperty : null).catch(
-        (): ReviewSave => ({ ok: false, reason: 'failed' }),
-      );
+  const save = () => {
+    if (extractionId === null) return;
+    run(() => saveExtractionReview(extractionId, decisions, propertyId === null && chosenProperty !== '' ? chosenProperty : null), (result) => {
       setOutcome(result);
       if (!result.ok) return;
       if (savedHref === undefined) router.push(nextStep(schemaName, result.propertyId, documentId).href);
       else router.refresh();
     });
+  };
 
-  const reject = () =>
-    startSaving(async () => {
-      if (extractionId === null) return;
-      const ok = await rejectExtraction(extractionId).catch(() => false);
-      if (ok) router.refresh();
-      else setOutcome({ ok: false, reason: 'reject_failed' });
-    });
+  const reject = () => {
+    if (extractionId === null) return;
+    run(
+      () => rejectExtraction(extractionId),
+      (ok) => (ok ? router.refresh() : setOutcome({ ok: false, reason: 'reject_failed' })),
+      false,
+    );
+  };
 
   const saveMessage =
     outcome === null || outcome.ok
@@ -296,11 +297,7 @@ export function ReviewPanel({
                 <p data-testid="review-progress" className="text-body text-ink-2 figures">
                   {t('progress', { done: decided, total: fields.length })}
                 </p>
-                {saveMessage === null ? null : (
-                  <p role="alert" data-testid="review-error" className="text-body font-medium text-overdue">
-                    {saveMessage}
-                  </p>
-                )}
+                <FormAlert message={saveMessage} data-testid="review-error" />
                 <div className="flex flex-wrap gap-3">
                   <Button type="button" data-testid="review-submit" disabled={saving || extractionId === null} onClick={save}>
                     <Save aria-hidden="true" />

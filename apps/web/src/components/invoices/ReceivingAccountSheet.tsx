@@ -7,7 +7,7 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { SheetFooter } from '@/components/sheet-footer';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { addReceivingAccount, editReceivingAccount, type AccountActionRefusal } from '@/server/actions/receiving-accounts';
-import { ActionRefusal } from './ActionRefusal';
+import { FormAlert } from '@/components/form-alert';
 import { useBillAction } from './use-bill-action';
 
 export type BankOption = { readonly value: string; readonly label: string };
@@ -91,7 +91,7 @@ export default function ReceivingAccountSheet({
           </div>
           <div className="flex flex-col gap-1">
             <FormSelect label={labels.bank} value={bank} options={banks} placeholder={labels.bankPick} onChange={typed(setBank)} testId="account-bank" />
-            <ActionRefusal message={fieldError('bank')} />
+            <FormAlert message={fieldError('bank')} />
           </div>
           <TextField label={labels.accountNo} value={accountNo} onChange={typed(setAccountNo)} error={fieldError('accountNo')} testId="account-no" inputMode="numeric" maxLength={30} />
           <div className="flex flex-col gap-1">

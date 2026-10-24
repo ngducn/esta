@@ -4,12 +4,13 @@ import { UTILITY_KINDS, type UtilityAccount, type UtilityKind } from '@esta/core
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { saveAccount } from '@/app/(app)/properties/[id]/rental/actions';
 import { useFocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { useAction } from '@/components/use-action';
 import { useHydrated } from '@/lib/use-hydrated';
 import { RentalFormError, type RentalFormErrorKind } from './rental-form-error';
 
@@ -29,7 +30,7 @@ export function UtilityAccountForm({
   const router = useRouter();
   const hydrated = useHydrated();
   useFocusAnchor(hydrated);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const [error, setError] = useState<RentalFormErrorKind>(null);
   const [values, setValues] = useState({
     kind: initial?.kind ?? ('electricity' as UtilityKind),
@@ -53,14 +54,16 @@ export function UtilityAccountForm({
       unit_id: values.unitId === '' ? null : values.unitId,
       note: values.note,
     };
-    startTransition(async () => {
-      const result = await saveAccount(propertyId, accountId, value).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      if (result.ok) {
-        router.push(tabHref);
-        return;
-      }
-      setError(result.reason === 'failed' ? 'network' : result.reason);
-    });
+    run(
+      () => saveAccount(propertyId, accountId, value),
+      (result) => {
+        if (result.ok) {
+          router.push(tabHref);
+          return;
+        }
+        setError(result.reason === 'failed' ? 'network' : result.reason);
+      },
+    );
   };
 
   return (

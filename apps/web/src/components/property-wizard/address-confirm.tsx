@@ -3,9 +3,11 @@
 import { MapPinned } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
+import { FormAlert } from '@/components/form-alert';
 import { SuggestionList } from '@/components/properties/legacy-address-suggest';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { useAction } from '@/components/use-action';
 import type { CurrentUnitSuggestion } from '@esta/ops';
 import { confirmCurrentAddress } from '@/server/properties/wizard';
 
@@ -26,16 +28,17 @@ export function AddressConfirm({
   const t = useTranslations('propertyWizard');
   const [current, setCurrent] = useState(picked);
   const [failed, setFailed] = useState(false);
-  const [saving, startSaving] = useTransition();
+  const { pending: saving, run } = useAction();
   const saved = suggestions.find((suggestion) => suggestion.communeCode === current);
 
-  const pick = (suggestion: CurrentUnitSuggestion) =>
-    startSaving(async () => {
-      setFailed(false);
-      const ok = await confirmCurrentAddress(propertyId, { communeCode: suggestion.communeCode, provinceCode: suggestion.provinceCode }).catch(() => false);
-      if (ok) setCurrent(suggestion.communeCode);
-      else setFailed(true);
-    });
+  const pick = (suggestion: CurrentUnitSuggestion) => {
+    setFailed(false);
+    run(
+      () => confirmCurrentAddress(propertyId, { communeCode: suggestion.communeCode, provinceCode: suggestion.provinceCode }),
+      (ok) => (ok ? setCurrent(suggestion.communeCode) : setFailed(true)),
+      false,
+    );
+  };
 
   return (
     <section data-testid="address-confirm" aria-labelledby="address-confirm-title" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
@@ -62,11 +65,7 @@ export function AddressConfirm({
           {t('addressSaved', { commune: saved.communeName })}
         </p>
       )}
-      {failed ? (
-        <p role="alert" className="text-body font-medium text-overdue">
-          {t('addressFailed')}
-        </p>
-      ) : null}
+      <FormAlert message={failed ? t('addressFailed') : null} />
       <Link href={continueHref} data-testid="review-continue" className={`${buttonVariants({ variant: saved === undefined ? 'outline' : 'primary' })} self-start`}>
         {saved === undefined ? t('later') : t('continue')}
       </Link>

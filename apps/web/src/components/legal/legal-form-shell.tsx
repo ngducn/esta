@@ -4,11 +4,12 @@ import type { NewParty } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { saveLegalItem } from '@/app/(app)/properties/[id]/legal/actions';
 import { useFocusAnchor } from '@/components/completeness/use-focus-anchor';
-import { StatusShape } from '@/components/status-mark';
+import { FormAlert } from '@/components/form-alert';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { useAction } from '@/components/use-action';
 import { useHydrated } from '@/lib/use-hydrated';
 import type { LegalKind } from '@/server/properties/legal';
 
@@ -38,7 +39,7 @@ export function LegalFormShell({
   const router = useRouter();
   const hydrated = useHydrated();
   useFocusAnchor(hydrated);
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const [error, setError] = useState<'invalid' | 'network' | null>(null);
   const tabHref = `/properties/${propertyId}/legal`;
 
@@ -50,14 +51,16 @@ export function LegalFormShell({
       return;
     }
     setError(null);
-    startTransition(async () => {
-      const result = await saveLegalItem(propertyId, kind, itemId, input, newParties?.() ?? []).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      if (result.ok) {
-        router.push(tabHref);
-        return;
-      }
-      setError(result.reason === 'invalid' ? 'invalid' : 'network');
-    });
+    run(
+      () => saveLegalItem(propertyId, kind, itemId, input, newParties?.() ?? []),
+      (result) => {
+        if (result.ok) {
+          router.push(tabHref);
+          return;
+        }
+        setError(result.reason === 'invalid' ? 'invalid' : 'network');
+      },
+    );
   };
 
   return (
@@ -70,12 +73,7 @@ export function LegalFormShell({
         )}
         {children}
         <div className="flex flex-col gap-3">
-          {error === null ? null : (
-            <p role="alert" data-testid="form-error" className="flex items-start gap-2 text-body text-overdue">
-              <StatusShape status="overdue" className="mt-1 size-4" />
-              <span className="wrap-anywhere">{error === 'invalid' ? t('errorInvalid') : t('errorNetwork')}</span>
-            </p>
-          )}
+          <FormAlert message={error === null ? null : error === 'invalid' ? t('errorInvalid') : t('errorNetwork')} data-testid="form-error" />
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" disabled={pending} data-testid="save-legal-item">
               {pending ? t('saving') : t('save')}

@@ -3,10 +3,11 @@
 import { parseMapsUrl, type GeoPoint } from '@esta/core/maps';
 import { Check, ClipboardPaste, TriangleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useId, useRef, useState, useTransition } from 'react';
+import { useId, useRef, useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Input } from '@/components/ui/input';
+import { useAction } from '@/components/use-action';
 import { useHydrated } from '@/lib/use-hydrated';
 import { resolveMapsLink, type MapsLinkFailure, type MapsLinkResult } from '@/server/maps/actions';
 
@@ -54,17 +55,20 @@ export function PasteMapsLink({
   const t = useTranslations('map');
   const id = useId();
   const [failure, setFailure] = useState<MapsLinkFailure | null>(null);
-  const [reading, startReading] = useTransition();
+  const { pending: reading, run } = useAction();
   const hydrated = useHydrated();
   const form = useRef<HTMLFormElement>(null);
 
   const read = (value: string) => {
     if (value.trim() === '') return;
-    startReading(async () => {
-      const result = await readLink(value);
-      setFailure(result.ok ? null : result.reason);
-      onPreview(result.ok ? { point: { lat: result.lat, lng: result.lng }, outsideVietnam: result.outsideVietnam } : null);
-    });
+    run(
+      () => readLink(value),
+      (result) => {
+        setFailure(result.ok ? null : result.reason);
+        onPreview(result.ok ? { point: { lat: result.lat, lng: result.lng }, outsideVietnam: result.outsideVietnam } : null);
+      },
+      { ok: false, reason: 'unreachable' } as const,
+    );
   };
 
   const message = failure === null ? null : t('linkError', { reason: FAILURE_MESSAGE[failure] });

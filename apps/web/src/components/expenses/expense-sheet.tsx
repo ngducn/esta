@@ -17,7 +17,7 @@ import { vndInputText } from '@esta/core/properties/form';
 import { Check, Trash2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useId, useRef, useState, useTransition } from 'react';
+import { useId, useRef, useState } from 'react';
 import { DateInput } from '@/components/date-input';
 import { FieldMessage } from '@/components/field-message';
 import { NoteField, TextField } from '@/components/form-parts';
@@ -27,6 +27,7 @@ import { SheetFooter } from '@/components/sheet-footer';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
 import { useOnline } from '@/lib/use-online';
 import { cn } from '@/lib/utils';
 import { deleteExpense, restoreExpense, saveExpense, type ExpenseSaved } from '@/server/expenses/actions';
@@ -82,7 +83,7 @@ export function ExpenseSheet({
     initialFile: request.kind === 'new' ? request.receipt : null,
   });
   const [errors, setErrors] = useState<Errors>({});
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const offline = !useOnline();
 
   const editingVendor = editing?.vendor ?? null;
@@ -143,47 +144,54 @@ export function ExpenseSheet({
       if (next.paidOn !== undefined) setEditingDate(true);
       return;
     }
-    startTransition(async () => {
-      const linked = await receipt.linked(defaultDocumentTitle(t('receiptDocument'), scope.nickname));
-      if (linked === false) {
-        setErrors({ save: 'receiptBlocking' });
-        return;
-      }
-      const result = await saveExpense({ ...raw, receipt: linked }).catch(() => null);
-      if (result === null) {
-        setErrors({ save: 'networkError' });
-        return;
-      }
-      if (!result.ok) {
-        if (result.reason === 'forbidden') setErrors({ save: 'forbidden' });
-        else if (result.reason === 'invalid' && (result.problems.amount !== undefined || result.problems.paidOn !== undefined)) setErrors(result.problems);
-        else setErrors({ save: 'networkError' });
-        return;
-      }
-      finish(result);
-    });
+    run(
+      async () => {
+        const linked = await receipt.linked(defaultDocumentTitle(t('receiptDocument'), scope.nickname));
+        return linked === false ? ('receiptBlocking' as const) : saveExpense({ ...raw, receipt: linked });
+      },
+      (result) => {
+        if (result === 'receiptBlocking') {
+          setErrors({ save: 'receiptBlocking' });
+          return;
+        }
+        if (result === null) {
+          setErrors({ save: 'networkError' });
+          return;
+        }
+        if (!result.ok) {
+          if (result.reason === 'forbidden') setErrors({ save: 'forbidden' });
+          else if (result.reason === 'invalid' && (result.problems.amount !== undefined || result.problems.paidOn !== undefined)) setErrors(result.problems);
+          else setErrors({ save: 'networkError' });
+          return;
+        }
+        finish(result);
+      },
+      null,
+    );
   };
 
   const remove = () => {
     if (editing === null) return;
-    startTransition(async () => {
-      const removed = await deleteExpense(editing.id).catch(() => ({ ok: false }));
-      if (!removed.ok) {
-        setErrors({ save: 'networkError' });
-        return;
-      }
-      onOpenChange(false);
-      router.refresh();
-      const amountLabel = money(editing.amountVnd);
-      showUndo(t('deleted', { amount: amountLabel }), () => {
-        restoreExpense(editing.id)
-          .then((restored) => {
-            router.refresh();
-            showNotice(restored.ok ? t('restored', { amount: amountLabel }) : t('undoFailed'));
-          })
-          .catch(() => showNotice(t('undoFailed')));
-      });
-    });
+    run(
+      () => deleteExpense(editing.id),
+      (removed) => {
+        if (!removed.ok) {
+          setErrors({ save: 'networkError' });
+          return;
+        }
+        onOpenChange(false);
+        router.refresh();
+        const amountLabel = money(editing.amountVnd);
+        showUndo(t('deleted', { amount: amountLabel }), () => {
+          restoreExpense(editing.id)
+            .then((restored) => {
+              router.refresh();
+              showNotice(restored.ok ? t('restored', { amount: amountLabel }) : t('undoFailed'));
+            })
+            .catch(() => showNotice(t('undoFailed')));
+        });
+      },
+    );
   };
 
   const { preview } = receipt;
