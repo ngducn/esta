@@ -155,7 +155,7 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     const sum = (key: 'total_vnd' | 'allocated_vnd' | 'outstanding_vnd') => october.reduce((total, bill) => total + bill[key], 0);
     expect(october.filter((bill) => bill.lease_id === gone.leaseId).map((bill) => bill.outstanding_vnd), 'the board lists it').toEqual(owed.map((invoice) => invoice.outstandingVnd));
     const row = monthlyCollections(snapshot, collectionLabels).rows.find((one) => one.key === '2026-10');
-    expect(row?.cells.map((cell) => cell.value)).toEqual(['2026-10-01', sum('total_vnd') + 1, sum('allocated_vnd'), sum('outstanding_vnd')]);
+    expect(row?.cells.map((cell) => cell.value)).toEqual(['2026-10-01', sum('total_vnd'), sum('allocated_vnd'), sum('outstanding_vnd')]);
     const without = monthlyCollections({ ...snapshot, invoices: snapshot.invoices.filter((invoice) => invoice.leaseId !== gone.leaseId) }, collectionLabels).rows.find((one) => one.key === '2026-10');
     expect(row?.cells[3]?.value, "the deleted property's bill is in the owed total").toBe(Number(without?.cells[3]?.value) + owed.reduce((total, invoice) => total + invoice.outstandingVnd, 0));
   }, 30_000);
