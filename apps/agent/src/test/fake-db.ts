@@ -40,6 +40,9 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
         filters.push((row) => row[column] === value);
         return builder;
       },
+      order() {
+        return builder;
+      },
       in(column: string, values: readonly unknown[]) {
         filters.push((row) => values.includes(row[column]));
         return builder;
@@ -59,14 +62,28 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
         all.push({ ...row });
         return { error: null };
       },
-      upsert: async (row: Row, options?: { onConflict?: string; ignoreDuplicates?: boolean }) => {
-        if (refusal !== null) return { error: refusal };
+      upsert: (rows: Row | Row[], options?: { onConflict?: string; ignoreDuplicates?: boolean }) => {
         const keys = options?.onConflict?.split(',') ?? ['id'];
-        const existing = all.find((other) => keys.every((key) => other[key] === row[key]));
-        writes.push({ table, op: 'upsert', row });
-        if (existing === undefined) all.push({ ...row });
-        else if (options?.ignoreDuplicates !== true) Object.assign(existing, row);
-        return { error: null };
+        // Applied once, when the caller awaits it or its `.select()`; `data` holds the rows it inserted.
+        const apply = () => {
+          if (refusal !== null) return { data: null, error: refusal };
+          const added: Row[] = [];
+          for (const row of Array.isArray(rows) ? rows : [rows]) {
+            const existing = all.find((other) => keys.every((key) => other[key] === row[key]));
+            writes.push({ table, op: 'upsert', row });
+            if (existing === undefined) {
+              all.push({ id: `${table}-${all.length + 1}`, ...row });
+              added.push(row);
+            } else if (options?.ignoreDuplicates !== true) Object.assign(existing, row);
+          }
+          return { data: added, error: null };
+        };
+        return {
+          select: async () => apply(),
+          then<T>(resolve: (value: { error: { message: string } | null }) => T, reject?: (reason: unknown) => T) {
+            return Promise.resolve(apply()).then(resolve, reject);
+          },
+        };
       },
       delete: () => ({
         lt: async (column: string, value: unknown) => {

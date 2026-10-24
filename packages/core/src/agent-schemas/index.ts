@@ -22,3 +22,4 @@ export type AgentSchemaName = keyof typeof AGENT_SCHEMAS;
 export function isAgentSchemaName(name: string): name is AgentSchemaName {
   return Object.hasOwn(AGENT_SCHEMAS, name);
 }
+export { factHandleSchema, watchNoteSchema, type WatchNote } from './portfolio-watch';

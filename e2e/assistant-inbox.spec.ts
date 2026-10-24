@@ -10,8 +10,8 @@ const LANE = 9;
 const ME = `me.lane${LANE}@demo.esta.test`;
 const RYAN = `ryan.lane${LANE}@demo.esta.test`;
 const NOTES = {
-  overdue: { id: seedId(`seed:agent-item:W1-lane-${LANE}`), title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày' },
-  leaseEnding: { id: seedId(`seed:agent-item:W3-lane-${LANE}`), title: 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 25 ngày' },
+  overdue: { id: seedId(`seed:agent-item:W1-lane-${LANE}`), title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày' },
+  leaseEnding: { id: seedId(`seed:agent-item:W3-lane-${LANE}`), title: 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 26 ngày' },
   watch: { id: seedId(`seed:agent-item:watch-lane-${LANE}`), title: 'Ba việc cần để ý' },
 };
 const OPERATOR_NOTE = { id: seedId(`e2e:agent-item:operator-lane-${LANE}`), title: 'Trợ lý cần Ryan đăng nhập lại Demo' };
@@ -43,7 +43,7 @@ test('Mẹ reads the overdue note, marks it read, hides the grouped note, undoes
   const board = page.getByTestId('group-overdue').getByTestId('collections-row').filter({ has: page.getByTestId('row-place').getByText('Phòng 5, Dãy trọ Dĩ An', { exact: true }) });
   await expect(board, 'the note owes what the collections board shows for Phòng 5').toContainText(vnd('2.800.000'));
   await page.goto('/assistant');
-  await expect(overdue.locator('time')).toHaveText('06:45');
+  await expect(overdue.locator('time')).toHaveText('06/10 06:45');
   await expect(overdue.getByTestId('note-unread')).toHaveText('Mới');
 
   await overdue.getByRole('button', { name: `Đã đọc: ${NOTES.overdue.title}` }).click();

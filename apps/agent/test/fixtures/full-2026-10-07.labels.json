@@ -1,0 +1,101 @@
+{
+ "properties": {
+  "07eb773b-2bc6-5a14-8745-f0f8af8028f4": "Nhà phố Q7",
+  "62d33252-02ba-5610-bd9a-12474774014c": "Đất Bảo Lộc",
+  "76617818-0470-5207-bb06-e64633a3e8de": "Kho Biên Hòa",
+  "93cc970b-f9c2-52f5-bc34-1f1edb76742c": "Dãy trọ Dĩ An",
+  "aac9372d-5c96-53b5-86df-b9db8d17f226": "Đất vườn Long An",
+  "ce067ac1-653c-5d9c-ac37-b6e379156593": "Mặt bằng Quận 1",
+  "e0a3916c-3943-52b9-9368-00ecf0505a90": "Căn hộ Thủ Đức"
+ },
+ "units": {
+  "135c97a2-2ee2-584e-9a89-95a555e7323e": {
+   "label": "Lô đất",
+   "whole": false
+  },
+  "21da3d96-c8d5-54c1-b21d-0604afe216e6": {
+   "label": "Mặt bằng tầng trệt",
+   "whole": false
+  },
+  "3162a63a-d993-514f-b9f3-8fdcb5788988": {
+   "label": "Phòng 5",
+   "whole": false
+  },
+  "3235f0be-74ec-5d46-9d23-67f9cb26d40d": {
+   "label": "Toàn bộ",
+   "whole": true
+  },
+  "4a8d4887-e69b-5bd1-a4c2-beb4205e50fb": {
+   "label": "Phòng 2",
+   "whole": false
+  },
+  "5833b77f-bba4-529a-9b3b-600f0f7d6f61": {
+   "label": "Toàn bộ",
+   "whole": true
+  },
+  "5f190bd3-8874-5c2a-b068-420ad98ea7f0": {
+   "label": "Phòng 4",
+   "whole": false
+  },
+  "688b236c-c148-5880-afec-a86fe996dcff": {
+   "label": "Phòng 1",
+   "whole": false
+  },
+  "8077b3de-de29-5b2c-829c-d3c864fdefde": {
+   "label": "Phòng 3",
+   "whole": false
+  },
+  "80d47268-48d7-5473-aa36-f72f85cac4df": {
+   "label": "Toàn bộ",
+   "whole": true
+  },
+  "c802eb3b-e841-5657-bcf1-a4f1e5edb58d": {
+   "label": "Lô đất",
+   "whole": false
+  },
+  "d51ab9f3-547c-54e1-9c62-f87bfc590dea": {
+   "label": "Phòng 8",
+   "whole": false
+  },
+  "f3295844-4743-5167-a5aa-c337e0ec0a0a": {
+   "label": "Phòng 7",
+   "whole": false
+  },
+  "fe8e8765-0fa3-513d-bb81-c40164718fe5": {
+   "label": "Phòng 6",
+   "whole": false
+  }
+ },
+ "parties": {
+  "5107e10c-018b-5f2d-ad73-f0ad36ca7467": "Nguyễn Thị Demo",
+  "5b7eb2c7-1eab-5d48-a1bd-ec3428195e68": "Nguyễn Văn An Demo",
+  "7c438826-a2ab-5437-89bb-3f26a44bb743": "Bùi Văn Hùng Demo",
+  "8179517a-a08e-561a-815f-d028882c4567": "Hoàng Văn Em Demo",
+  "8905baa6-b1a8-5ffe-a7ce-03a2d9187929": "Đặng Thị Giang Demo",
+  "92ba00e5-3d7e-5240-ae7d-4c8ad49bc4f8": "Phạm Thị Lan Demo",
+  "95a2f2b5-3fa8-57a4-ba56-b68791dac535": "Công ty Demo Kho Vận Đồng Nai",
+  "9b814465-03ac-52e1-8a18-caa76a9305ac": "Ban quản lý Chung cư Demo Bình Thọ",
+  "a1468662-4899-5dc9-b7e6-b40365a81b3d": "Thợ sửa nhà Demo",
+  "a336204b-d951-5658-9fee-e6cdaac906f6": "Thợ điện nước Demo",
+  "af0394d4-c52e-555f-b97e-970ff8ccbbf0": "Hộ kinh doanh Demo Bến Thành",
+  "b363e286-5597-5afc-bac9-5d18c78d195c": "Lê Văn Cường Demo",
+  "baf7469a-ac17-5c57-af18-d0c32f21279e": "Võ Thị Dung Demo",
+  "d387463a-0899-5158-9c4f-d6c08fc6e5df": "Công ty TNHH Demo Phát Đạt",
+  "d825b7a8-43f6-5ab6-bfdf-114cdd8be7f7": "Trần Minh Demo",
+  "ed5e10b6-9161-5c65-b08b-aa2c4f51b865": "Trần Thị Bình Demo",
+  "f19fb451-3cdf-5de2-89a5-493f44ebb23c": "Ngân hàng Demo",
+  "f5230f15-3d93-5468-b674-0ee4b483a199": "Môi giới Demo Quận 1"
+ },
+ "documents": {
+  "245c96c7-9e9c-5cdd-a8fc-ab418a5daf43": "Sổ hồng Thủ Đức",
+  "5db381f2-a8fb-5df5-ae55-14068a861578": "Sổ hồng Q7",
+  "6823d517-125a-5537-b6fc-40754bcac422": "Sổ hồng Quận 1",
+  "93fd45e9-49c8-58d0-94a3-f6d87dd43609": "Sổ hồng Bảo Lộc",
+  "96549932-7a9d-5c45-8eef-eec5c49c74b2": "Sổ đỏ Biên Hòa",
+  "9d3c2673-b702-5b64-968e-db0aacb0ea73": "Hợp đồng thuê Căn hộ Thủ Đức",
+  "c597c957-bf23-5af7-a049-a0da5b037a73": "Hợp đồng thuê Phòng 8 Dĩ An",
+  "d5e4859c-b7ed-5996-9ada-b85bed2894f1": "Bảo hiểm cháy nổ Nhà phố Q7",
+  "e4fd163d-50ee-5aef-a34a-825295c98bf9": "Sổ hồng Dĩ An",
+  "e92598ca-c478-59e7-9e0b-92c86c171ed6": "CCCD Nguyễn Thị Demo"
+ }
+}

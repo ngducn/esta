@@ -11,6 +11,16 @@ const CATALOG = {
     description: 'Return the household name, member count, property count and locale.',
     input: {},
   },
+  watch_facts: {
+    description:
+      "Return today's facts from the watch rules. Each fact has a handle (f1, f2, …), a rule_id, a severity (action, watch or info), names and figures as text fields to cite as {{fN.field}}.",
+    input: {},
+  },
+  create_item: {
+    description:
+      'Save one note for the household: {"title": one line of plain text, "body_md": Markdown, "related": the handles of the facts it covers}. It answers {"saved": true}, or names what to fix before you call it again.',
+    input: { title: z.string(), body_md: z.string(), related: z.array(z.string()) },
+  },
   save_extraction: {
     description:
       'Save the JSON you read from the document, as {"result": <the object>}. It answers {"saved": true}, or lists the fields to fix before you call it again.',

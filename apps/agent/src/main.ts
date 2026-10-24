@@ -9,11 +9,12 @@ import { assertStartAllowed, parseAgentEnv } from './env';
 import { startHeartbeat } from './heartbeat';
 import { DEFAULT_REPLAY_DIR } from './replay/store';
 import { pollOnce, type Worker } from './runner';
+import { startScheduler } from './scheduler';
 import { serviceClient } from './supabase';
 
 const IDLE_POLL_MS = 1_000;
 
-function start(): { worker: Worker; stopHeartbeat: () => void } {
+function start(): { worker: Worker; stop: () => void } {
   const env = parseAgentEnv(process.env);
   const mode = assertStartAllowed(env);
   const host = hostname();
@@ -31,6 +32,7 @@ function start(): { worker: Worker; stopHeartbeat: () => void } {
     jobsDir: join(home, 'jobs'),
     configDir,
     replayDir: env.ESTA_REPLAY_DIR ?? DEFAULT_REPLAY_DIR,
+    timezone: env.ESTA_TIMEZONE,
     clock,
   };
   const stopHeartbeat = startHeartbeat(
@@ -39,8 +41,18 @@ function start(): { worker: Worker; stopHeartbeat: () => void } {
     clock,
     (error) => console.error(`[agent] heartbeat: ${error instanceof Error ? error.message : String(error)}`),
   );
+  const stopScheduler =
+    env.ESTA_AGENT_SCHEDULE === 'on'
+      ? startScheduler(db, env.ESTA_TIMEZONE, clock, (error) => console.error(`[agent] scheduler: ${error instanceof Error ? error.message : String(error)}`))
+      : () => undefined;
   console.log(`[agent] worker ${workerId} started: agent mode ${mode.agentMode}, auth mode ${mode.authMode}`);
-  return { worker, stopHeartbeat };
+  return {
+    worker,
+    stop: () => {
+      stopHeartbeat();
+      stopScheduler();
+    },
+  };
 }
 
 let started: ReturnType<typeof start>;
@@ -55,7 +67,7 @@ let stopping = false;
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
     stopping = true;
-    started.stopHeartbeat();
+    started.stop();
   });
 }
 

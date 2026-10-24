@@ -10,6 +10,7 @@ import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
 import { liveSession, replaySession, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
+import { NumberGuardError } from './tools/create-item';
 import { mcpToolName } from './tools/server';
 
 export type { AgentJob } from './jobs/registry';
@@ -21,13 +22,14 @@ export type Worker = {
   readonly jobsDir: string;
   readonly configDir: string;
   readonly replayDir: string;
+  readonly timezone: string;
   clock(): Promise<Clock>;
 };
 
 const BACKOFF_MINUTES = [1, 5, 25] as const;
 
-/** A retry cannot fix a missing recording, a rejected credential or a job whose rows do not line up (AGT-1). */
-const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording', 'invalid_job']);
+/** A retry cannot fix a missing recording, a rejected credential, a job whose rows do not line up (AGT-1) or a second guard violation (AGENT.md §6.3). */
+const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording', 'invalid_job', 'number_guard']);
 
 export type NextStep = { readonly status: 'queued'; readonly runAfter: Instant } | { readonly status: 'failed' };
 
@@ -41,6 +43,7 @@ export function nextAttempt(job: Pick<AgentJob, 'attempts' | 'max_attempts'>, fa
 function failureOf(error: unknown): Failure {
   const message = error instanceof Error ? error.message : String(error);
   if (error instanceof MissingRecordingError) return { kind: 'missing_recording', message };
+  if (error instanceof NumberGuardError) return { kind: 'number_guard', message };
   return { kind: error instanceof InvalidJobError ? 'invalid_job' : 'error', message };
 }
 
@@ -62,7 +65,7 @@ async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome
   let session: SessionRun | null = null;
   try {
     const resolvedDir = realpathSync(jobDir);
-    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, clock: () => worker.clock() });
+    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, timezone: worker.timezone, clock: () => worker.clock() });
     const bound = [...prepared.tools.keys()].toSorted().join(',');
     if (bound !== spec.mcpTools.map(mcpToolName).toSorted().join(',')) throw new Error(`${job.kind} bound the tools ${bound}, not its kind's`);
     const request = {

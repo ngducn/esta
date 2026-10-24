@@ -1,3 +1,4 @@
+import type { Locale } from '@esta/core/format';
 import type { AgentDb } from '../supabase';
 
 export type HouseholdInfo = {
@@ -23,4 +24,12 @@ export async function householdInfo(db: AgentDb, householdId: string): Promise<H
     property_count: properties.count ?? 0,
     locale: household.data.locale,
   };
+}
+
+export const localeOf = (locale: string): Locale => (locale === 'en' ? 'en' : 'vi');
+
+export async function householdLocale(db: AgentDb, householdId: string): Promise<Locale> {
+  const { data, error } = await db.from('households').select('locale').eq('id', householdId).single();
+  if (error) throw new Error(`Reading the household failed: ${error.message}`);
+  return localeOf(data.locale);
 }

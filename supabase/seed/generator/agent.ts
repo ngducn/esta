@@ -1,5 +1,5 @@
 import type { Json } from '../../../packages/db/src/index.ts';
-import { daysBetween } from '../../../packages/core/src/date/calendar.ts';
+import { addDays, daysBetween } from '../../../packages/core/src/date/calendar.ts';
 import { isoDate, type IsoDate } from '../../../packages/core/src/date/iso-date.ts';
 import { formatDate, formatVnd } from '../../../packages/core/src/format/index.ts';
 import { vnd } from '../../../packages/core/src/money/vnd.ts';
@@ -87,8 +87,12 @@ function watchFacts(household: HouseholdSeed, has: (key: PropertySeedKey) => boo
   return facts;
 }
 
+/**
+ * The notes of a watch run the morning before SPEC_TODAY, so the job that runs on SPEC_TODAY writes that day's notes
+ * beside them rather than repeating them under the same date.
+ */
 export const agentItems = publicTable('agent_items', ({ household, properties }) => {
-  const today = isoDate(SPEC_TODAY);
+  const runDay = addDays(isoDate(SPEC_TODAY), -1);
   const has = (key: PropertySeedKey) => properties.some((property) => property.key === key);
   const note = (rule: string, second: number, severity: 'action' | 'watch', fact: string, title: string, body: string, related: Json): SeedRow<'agent_items'> => ({
     id: seedId(`seed:agent-item:${rule}-${household.key}`),
@@ -101,7 +105,7 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
     related,
     status: 'new',
     dedupe_key: `seed:watch:${fact}`,
-    created_at: `${SPEC_TODAY}T06:45:${String(second).padStart(2, '0')}+07:00`,
+    created_at: `${runDay}T06:45:${String(second).padStart(2, '0')}+07:00`,
   });
 
   const notes: SeedRow<'agent_items'>[] = [];
@@ -109,21 +113,21 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
     const lease = leaseOf(UNPAID.property, UNPAID.unit);
     const unit = unitOf(household, UNPAID.property, UNPAID.unit);
     const owed = formatVnd(vnd(lease.terms.rentVnd), 'vi');
-    const title = `${unit.label} ${nickname(UNPAID.property)} quá hạn ${daysBetween(isoDate(UNPAID.dueDate), today)} ngày`;
+    const title = `${unit.label} ${nickname(UNPAID.property)} quá hạn ${daysBetween(isoDate(UNPAID.dueDate), runDay)} ngày`;
     const body = `Hóa đơn của ${lease.tenant.fullName} đến hạn ngày ${date(UNPAID.dueDate)} vẫn chưa thanh toán. Còn nợ ${owed}.`;
     notes.push(note('W1', 30, 'action', `W1:lease:${seedLeaseId(household, lease)}:${UNPAID.dueDate}`, title, body, { property_id: propertyId(household, UNPAID.property), unit_id: unit.id, lease_id: seedLeaseId(household, lease) }));
   }
   if (has('thu-duc')) {
     const lease = leaseOf('thu-duc');
     const id = seedLeaseId(household, lease);
-    const title = `Hợp đồng ${nickname('thu-duc')} hết hạn sau ${daysBetween(today, lease.terms.endDate)} ngày`;
+    const title = `Hợp đồng ${nickname('thu-duc')} hết hạn sau ${daysBetween(runDay, lease.terms.endDate)} ngày`;
     const body = `Hợp đồng với ${lease.tenant.fullName} kết thúc ngày ${date(lease.terms.endDate)} và chưa có hợp đồng gia hạn.`;
     notes.push(note('W3', 20, 'action', `W3:lease:${id}`, title, body, { property_id: propertyId(household, 'thu-duc'), lease_id: id }));
   }
-  const facts = watchFacts(household, has, today);
+  const facts = watchFacts(household, has, runDay);
   if (facts.length > 0) {
     const title = `${COUNT_WORDS[facts.length - 1] ?? facts.length} việc cần để ý`;
-    notes.push(note('watch', 10, 'watch', `group:${SPEC_TODAY}`, title, facts.map((fact) => `- ${fact.line}`).join('\n'), { facts: facts.map((fact) => fact.related) }));
+    notes.push(note('watch', 10, 'watch', `group:${runDay}`, title, facts.map((fact) => `- ${fact.line}`).join('\n'), { facts: facts.map((fact) => fact.related) }));
   }
   return notes;
 });

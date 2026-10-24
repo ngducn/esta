@@ -13,6 +13,7 @@ if (!servers.some((name) => name === server)) throw new Error(`ESTA_E2E_SERVER m
 const sharedClock = [
   'clock.spec.ts',
   'assistant-status.spec.ts',
+  'assistant-watch.spec.ts',
   'fnd9-integration.spec.ts',
   'fnd8.spec.ts',
   'property-detail.spec.ts',

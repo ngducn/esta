@@ -76,11 +76,14 @@ function rejected(violations: readonly NoteViolation[], placeholders: readonly s
   return { ok: false, reason: dedupe(violations.map(({ rule, text }) => ({ rule, text: readable(text) }))) };
 }
 
+/** `markdown` reads the note as `SafeMarkdown` renders it; `plain` reads it as literal text, as a title or an email subject shows. */
+export type NoteFormat = 'markdown' | 'plain';
+
 /**
  * Fills each `{{fN.field}}` in `template` from `sheet` and rejects any number the model typed itself, in the text as
- * `SafeMarkdown` renders it (AGENT.md §6.3).
+ * it renders in `format` (AGENT.md §6.3).
  */
-export function checkNote(template: string, sheet: FactSheet): Result<FilledNote, NoteViolation[]> {
+export function checkNote(template: string, sheet: FactSheet, format: NoteFormat = 'markdown'): Result<FilledNote, NoteViolation[]> {
   if (template.length > MAX_NOTE_LENGTH) return rejected([{ rule: 'too_long', text: `${template.length} > ${MAX_NOTE_LENGTH}` }]);
   const typed = template.match(MASKS);
   if (typed !== null) return rejected(typed.map((char) => ({ rule: 'malformed', text: char })));
@@ -88,7 +91,8 @@ export function checkNote(template: string, sheet: FactSheet): Result<FilledNote
   const { masked, occurrences } = maskPlaceholders(template);
   const complex = tooComplex(masked);
   if (complex !== undefined) return rejected([{ rule: 'too_long', text: complex }]);
-  const shown = visibleText(masked);
+  const plain = format === 'plain';
+  const shown = plain ? masked : visibleText(masked);
   const fills = occurrences.map((occurrence) => fillValue(occurrence, sheet));
   const values = fills.map((fill) => (fill.ok ? fill.value : undefined));
   const placeholders = occurrences.map(({ placeholder }) => placeholder);
@@ -97,9 +101,9 @@ export function checkNote(template: string, sheet: FactSheet): Result<FilledNote
   const found = [...residue(shown, isDate), ...unfilled, ...seams(shown, values)];
   if (found.length > 0) return rejected(found, placeholders);
 
-  const text = masked.replace(MASKS, (mask) => escapeMarkdown(values[maskIndex(mask)] ?? ''));
+  const text = masked.replace(MASKS, (mask) => (plain ? (values[maskIndex(mask)] ?? '') : escapeMarkdown(values[maskIndex(mask)] ?? '')));
   if (text.length > MAX_FILLED_LENGTH) return rejected([{ rule: 'too_long', text: `${text.length} > ${MAX_FILLED_LENGTH} once filled` }]);
-  const moved = layoutChange(shown, text, values);
+  const moved = plain ? [] : layoutChange(shown, text, values);
   if (moved.length > 0) return rejected(moved, placeholders);
   return { ok: true, value: { text, template, cited: placeholders.map((placeholder, i) => ({ placeholder, value: values[i] ?? '' })) } };
 }

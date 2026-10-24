@@ -1,7 +1,7 @@
 import { businessDate, type Instant } from '@esta/core';
 import { wallTime, workerStatus } from '@esta/core/agent';
 import { formatDate } from '@esta/core/format';
-import { History, Play, PlugZap, type LucideIcon } from 'lucide-react';
+import { Eye, History, Play, PlugZap, type LucideIcon } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { Inbox } from '@/components/assistant/inbox';
@@ -18,7 +18,7 @@ import { getConnectionCheck, getWorkerHeartbeat, type AgentRun, type PingCheck }
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
-import { runConnectionCheck } from './actions';
+import { runConnectionCheck, runWatch } from './actions';
 import { RefreshWhilePending } from './connection-check';
 
 export const generateMetadata = () => sectionMetadata('assistant');
@@ -38,34 +38,71 @@ function CardHeading({ id, icon: Icon, children }: { id: string; icon: LucideIco
   );
 }
 
-async function LatestPing({ ping }: { ping: PingCheck | null }) {
+type JobView = Pick<PingCheck, 'status' | 'error' | 'requestedAt'>;
+
+async function LatestJob({ job, testId, empty, children }: { job: JobView | null; testId: 'ping' | 'watch'; empty: string; children?: ReactNode }) {
   const t = await getTranslations('assistant');
-  if (ping === null) return <p className="text-ink-muted">{t('noCheck')}</p>;
-  const mark = jobMarks[ping.status];
+  if (job === null) return <p className="text-ink-muted">{empty}</p>;
+  const mark = jobMarks[job.status];
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span
-          data-testid="ping-status"
-          data-status={ping.status}
+          data-testid={`${testId}-status`}
+          data-status={job.status}
           className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[mark].pill)}
         >
           <StatusShape status={mark} className="size-4" />
-          <span>{t(`jobStatus.${ping.status}`)}</span>
+          <span>{t(`jobStatus.${job.status}`)}</span>
         </span>
-        <span className="text-small text-ink-muted">{t('latestCheck', { time: dateTime(ping.requestedAt) })}</span>
+        <span className="text-small text-ink-muted">{t('latestCheck', { time: dateTime(job.requestedAt) })}</span>
       </div>
-      {ping.reply !== null ? (
-        <div data-testid="ping-reply">
-          <SafeMarkdown>{ping.reply}</SafeMarkdown>
-        </div>
-      ) : null}
-      {ping.error !== null && ping.status !== 'done' ? (
-        <p data-testid="ping-error" className="text-small wrap-anywhere text-ink-2">
-          {ping.error}
+      {children}
+      {job.error !== null && job.status !== 'done' ? (
+        <p data-testid={`${testId}-error`} className="text-small wrap-anywhere text-ink-2">
+          {job.error}
         </p>
       ) : null}
     </div>
+  );
+}
+
+type JobCardProps = {
+  readonly id: string;
+  readonly icon: LucideIcon;
+  readonly title: string;
+  readonly intro: string;
+  readonly action: () => Promise<void>;
+  readonly runLabel: string;
+  readonly pending: boolean;
+  readonly failedText: string | null;
+  readonly children: ReactNode;
+};
+
+function JobCard({ id, icon, title, intro, action, runLabel, pending, failedText, children }: JobCardProps) {
+  return (
+    <section aria-labelledby={`${id}-heading`} data-testid={id} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex max-w-prose min-w-0 flex-col gap-2">
+          <CardHeading id={`${id}-heading`} icon={icon}>
+            {title}
+          </CardHeading>
+          <p className="text-body text-pretty text-ink-2">{intro}</p>
+        </div>
+        <form action={action}>
+          <button type="submit" disabled={pending} className={buttonVariants({ variant: 'primary' })}>
+            <Play aria-hidden="true" />
+            {runLabel}
+          </button>
+        </form>
+      </div>
+      {failedText === null ? null : (
+        <p role="alert" className="font-medium text-overdue">
+          {failedText}
+        </p>
+      )}
+      <div className="border-t border-rule pt-4">{children}</div>
+    </section>
   );
 }
 
@@ -116,41 +153,50 @@ async function RecentRuns({ runs }: { runs: readonly AgentRun[] }) {
   );
 }
 
+const isPending = (job: JobView | null) => job?.status === 'queued' || job?.status === 'running';
+
 /** Operator-only: the server never renders this for anyone else, so Mẹ's HTML carries no diagnostics (PLT-1). */
-async function ConnectionCheck({ householdId, sendFailed, workerOnline }: { householdId: string; sendFailed: boolean; workerOnline: boolean }) {
-  const [t, { latest, runs }] = await Promise.all([getTranslations('assistant'), getConnectionCheck(householdId)]);
-  const pending = latest?.status === 'queued' || latest?.status === 'running';
+async function OperatorTools({ householdId, failed, workerOnline }: { householdId: string; failed: { check: boolean; watch: boolean }; workerOnline: boolean }) {
+  const [t, { latest, watch, runs }] = await Promise.all([getTranslations('assistant'), getConnectionCheck(householdId)]);
   return (
     <>
-      <section
-        aria-labelledby="connection-heading"
-        data-testid="connection-check"
-        className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6"
+      <JobCard
+        id="connection-check"
+        icon={PlugZap}
+        title={t('check')}
+        intro={t('checkIntro')}
+        action={runConnectionCheck}
+        runLabel={t('runCheck')}
+        pending={isPending(latest)}
+        failedText={failed.check ? t('checkSendFailed') : null}
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex max-w-prose min-w-0 flex-col gap-2">
-            <CardHeading id="connection-heading" icon={PlugZap}>
-              {t('check')}
-            </CardHeading>
-            <p className="text-body text-pretty text-ink-2">{t('checkIntro')}</p>
-          </div>
-          <form action={runConnectionCheck}>
-            <button type="submit" disabled={pending} className={buttonVariants({ variant: 'primary' })}>
-              <Play aria-hidden="true" />
-              {t('runCheck')}
-            </button>
-          </form>
-        </div>
-        {sendFailed ? (
-          <p role="alert" className="font-medium text-overdue">
-            {t('checkSendFailed')}
-          </p>
-        ) : null}
-        <div className="border-t border-rule pt-4">
-          <LatestPing ping={latest} />
-        </div>
-        <RefreshWhilePending pending={pending && workerOnline} />
-      </section>
+        <LatestJob job={latest} testId="ping" empty={t('noCheck')}>
+          {latest === null || latest.reply === null ? null : (
+            <div data-testid="ping-reply">
+              <SafeMarkdown>{latest.reply}</SafeMarkdown>
+            </div>
+          )}
+        </LatestJob>
+      </JobCard>
+      <JobCard
+        id="watch-run"
+        icon={Eye}
+        title={t('watch')}
+        intro={t('watchIntro')}
+        action={runWatch}
+        runLabel={t('runWatch')}
+        pending={isPending(watch)}
+        failedText={failed.watch ? t('watchSendFailed') : null}
+      >
+        <LatestJob job={watch} testId="watch" empty={t('noWatch')}>
+          {watch?.status === 'done' && watch.notesAdded !== null ? (
+            <p data-testid="watch-notes" className="text-body text-ink-2">
+              {t('watchNotes', { count: watch.notesAdded })}
+            </p>
+          ) : null}
+        </LatestJob>
+      </JobCard>
+      <RefreshWhilePending pending={(isPending(latest) || isPending(watch)) && workerOnline} />
       <section aria-labelledby="runs-heading" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
         <CardHeading id="runs-heading" icon={History}>
           {t('recentRuns')}
@@ -161,10 +207,10 @@ async function ConnectionCheck({ householdId, sendFailed, workerOnline }: { hous
   );
 }
 
-export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ check?: string }> }) {
+export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ check?: string; watch?: string }> }) {
   const clock = await getClock();
   const member = await requireMember();
-  const [lastSeenAt, notes, nav, toast, { check }] = await Promise.all([
+  const [lastSeenAt, notes, nav, toast, { check, watch }] = await Promise.all([
     getWorkerHeartbeat(clock.now()),
     listInbox(member),
     getTranslations('nav'),
@@ -182,7 +228,7 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
         <Inbox notes={notes} today={clock.today()} timezone={env.ESTA_TIMEZONE} />
       </ToastHost>
       {member.isOperator ? (
-        <ConnectionCheck householdId={member.household.id} sendFailed={check === 'failed'} workerOnline={status.kind === 'online'} />
+        <OperatorTools householdId={member.household.id} failed={{ check: check === 'failed', watch: watch === 'failed' }} workerOnline={status.kind === 'online'} />
       ) : null}
     </div>
   );

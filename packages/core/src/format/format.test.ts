@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { formatArea, formatBps, formatDate, formatDateLong, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact } from './index';
+import { formatArea, formatBps, formatDate, formatDateLong, formatDays, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact, formatYear } from './index';
 
 const NBSP = '\u00a0';
 
@@ -139,6 +139,18 @@ describe('formatRelativeDue', () => {
 
   it('counts across a leap day', () => {
     expect(formatRelativeDue(isoDate('2024-02-28'), isoDate('2024-03-01'), 'vi')).toBe('quá hạn 2 ngày');
+  });
+});
+
+describe('formatDays and formatYear', () => {
+  it('writes a day count with its unit', () => {
+    expect(formatDays(70, 'vi')).toBe('70 ngày');
+    expect(formatDays(1, 'en')).toBe('1 day');
+    expect(formatDays(22, 'en')).toBe('22 days');
+  });
+
+  it('never groups a year the way a count is grouped', () => {
+    expect(formatYear(2026)).toBe('2026');
   });
 });
 

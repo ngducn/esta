@@ -3,7 +3,7 @@ import type { IsoDate } from '@esta/core/date';
 import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
 import { vnd } from '@esta/core/money';
 import { computeTaxPosition, toTaxInputs } from '@esta/core/tax';
-import { carryDepositsToRenewals, watchSnapshotSchema, type WatchSnapshot } from '@esta/core/watch';
+import { carryDepositsToRenewals, watchSnapshotSchema, type WatchLabels, type WatchSnapshot } from '@esta/core/watch';
 import { readCompleteness } from './completeness';
 import type { Db } from './db';
 import { readInvoices } from './invoices';
@@ -101,4 +101,20 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
     taxPositions,
     extractions,
   });
+}
+
+/** The names the watch facts are told by: every property, unit, party and document of the household. */
+export async function readWatchLabels(db: Db, householdId: string): Promise<WatchLabels> {
+  const [properties, units, parties, documents] = await Promise.all([
+    readAll('property names', (from, to) => db.from('properties').select('id, nickname').eq('household_id', householdId).order('id').range(from, to)),
+    readAll('unit labels', (from, to) => db.from('units').select('id, label, kind').eq('household_id', householdId).order('id').range(from, to)),
+    readAll('party names', (from, to) => db.from('parties').select('id, full_name').eq('household_id', householdId).order('id').range(from, to)),
+    readAll('document titles', (from, to) => db.from('documents').select('id, title').eq('household_id', householdId).order('id').range(from, to)),
+  ]);
+  return {
+    properties: new Map(properties.map((property) => [property.id, property.nickname])),
+    units: new Map(units.map((unit) => [unit.id, { label: unit.label, whole: unit.kind === 'whole' }])),
+    parties: new Map(parties.map((party) => [party.id, party.full_name])),
+    documents: new Map(documents.map((document) => [document.id, document.title])),
+  };
 }
