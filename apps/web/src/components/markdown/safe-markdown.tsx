@@ -1,5 +1,6 @@
 import { parseEstaUri } from '@esta/core/links';
 import Link from 'next/link';
+import { CitationChip } from '@/components/assistant/citation-chip';
 import Markdown, { type Components, type UrlTransform } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
@@ -10,7 +11,7 @@ function estaPath(url: string): string | null {
 
 const ALLOWED = ['p', 'ul', 'ol', 'li', 'strong', 'a', 'br'];
 
-/** Keeps only `https:` and resolvable `esta:` links; anything else loses its href and renders as text (SPEC §7.1). */
+/** Keeps only `https:` and resolvable `esta:` links; anything else loses its href and renders as text (SPEC §7.1). An `https:` link is a source Trợ lý cites, so it renders as a citation chip. */
 const keepSafeUrl: UrlTransform = (url) => {
   if (/^https:\/\//i.test(url)) return url;
   return estaPath(url) === null ? null : url;
@@ -27,11 +28,7 @@ const components: Components = {
         </Link>
       );
     }
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="font-medium text-ink underline underline-offset-4">
-        {children}
-      </a>
-    );
+    return <CitationChip href={href}>{children}</CitationChip>;
   },
 };
 

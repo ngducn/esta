@@ -1069,7 +1069,36 @@
     "linkOk": "link ok",
     "linkMissing": "not found",
     "ranAt": "Assistant ran at {time}.",
-    "briefLabel": "Morning brief"
+    "briefLabel": "Morning brief",
+    "tabs": "Assistant sections",
+    "tab": {
+      "inbox": "Inbox",
+      "market": "Market"
+    },
+    "market": {
+      "title": "Market",
+      "heading": "Market news",
+      "count": "{count, plural, =0 {No news} one {# item} other {# items}}",
+      "filter": "Filter by property",
+      "all": "All",
+      "empty": "No market news yet. Every morning at 06:00 the assistant looks for planning, land price, infrastructure and legal news for the family's areas.",
+      "emptyFor": "No news concerns {property} yet.",
+      "why": "Why it matters:",
+      "source": "{name} · {date}",
+      "sourceLabel": "Source {index}: {name}, {date}. Opens in a new tab",
+      "effectiveOn": "In effect from {date}",
+      "kind": {
+        "infrastructure": "Infrastructure",
+        "land_price": "Land prices",
+        "legal_tax": "Law and tax",
+        "market_rent": "Rents",
+        "planning": "Planning",
+        "other": "Other news"
+      },
+      "topics": "Topics followed",
+      "topicsIntro": "The assistant looks for news on these topics. They come from the family's properties and update when the properties change.",
+      "noTopics": "No topics yet. Add a property so the assistant knows where to look."
+    }
   },
   "settings": {
     "display": "Display",
