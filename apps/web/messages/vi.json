@@ -136,7 +136,10 @@
     "errorBody": "Kiểm tra kết nối mạng rồi thử lại. Số tiền đã ghi nhận vẫn an toàn.",
     "retry": "Thử lại",
     "briefNone": "Trợ lý chưa viết ghi chú hôm nay.",
-    "briefOpen": "Xem hộp thư"
+    "briefOpen": "Xem hộp thư",
+    "taskToday": "Đến hạn hôm nay",
+    "taskLate": "Hạn {date}",
+    "openTasks": "Xem việc cần làm"
   },
   "components": {
     "loading": "Đang tải",
@@ -1098,7 +1101,25 @@
       "topics": "Chủ đề theo dõi",
       "topicsIntro": "Trợ lý tìm tin theo các chủ đề này. Chủ đề lấy từ tài sản của gia đình và tự cập nhật khi tài sản thay đổi.",
       "noTopics": "Chưa có chủ đề nào. Thêm tài sản để Trợ lý biết nên tìm tin ở đâu."
-    }
+    },
+    "proposalLabel": "Đề xuất",
+    "proposalDue": "Hạn {date}",
+    "approve": "Đồng ý",
+    "approveLabel": "Đồng ý: {title}",
+    "skip": "Bỏ qua",
+    "skipLabel": "Bỏ qua đề xuất: {title}",
+    "skipped": "Đã bỏ qua đề xuất.",
+    "approved": "Đã đồng ý",
+    "notApplicable": "Đề xuất này không còn áp dụng.",
+    "approveFailed": "Chưa thực hiện được. Thử lại sau ít phút.",
+    "tasks": "Việc cần làm",
+    "tasksEmpty": "Chưa có việc nào. Khi bạn đồng ý một đề xuất của Trợ lý, việc đó hiện ở đây.",
+    "taskDone": "Xong",
+    "taskDoneLabel": "Xong: {title}",
+    "taskDoneToast": "Đã xong một việc.",
+    "taskDue": "Hạn {date}",
+    "taskNoDue": "Chưa có hạn",
+    "taskRestoreFailed": "Chưa đưa việc trở lại được. Tải lại trang rồi thử lại."
   },
   "settings": {
     "display": "Hiển thị",

@@ -11,6 +11,7 @@ import type { PaymentAccount } from '@/components/payments/RecordPaymentSheet';
 import { loadCollectionRows, loadOpenInvoices, type CollectionRow, type PaymentInvoice } from '@/server/collections/load';
 import { loadReceivingAccount } from '@/server/invoices/qr';
 import { createSessionClient } from '@/server/supabase/server';
+import { loadOpenTasks } from '@/server/tasks/load';
 
 export type HomeLease = TodaySnapshot['leases'][number] & { readonly propertyId: string; readonly wholeUnit: boolean };
 
@@ -116,15 +117,16 @@ async function mapPins(db: Db, householdId: string): Promise<MapPin[]> {
 export async function loadHome(householdId: string, asOf: IsoDate, canRecord: boolean): Promise<HomeView> {
   const db = await createSessionClient();
   const month = firstOfMonth(asOf);
-  const [bills, leases, documents, reviews, pins] = await Promise.all([
+  const [bills, leases, documents, reviews, tasks, pins] = await Promise.all([
     loadCollectionRows(householdId, month),
     endingLeases(db, householdId, asOf),
     expiringDocuments(db, householdId, asOf),
     waitingReviews(db, householdId),
+    loadOpenTasks(householdId, asOf),
     mapPins(db, householdId),
   ]);
   const board = groupCollections(bills, month, asOf);
-  const today = todayItems<HomeSnapshot>({ bills, leases, documents, reviews }, asOf);
+  const today = todayItems<HomeSnapshot>({ bills, leases, documents, reviews, tasks }, asOf);
   const paying = canRecord && today.items.some((item) => item.action === 'recordPayment');
   const [openInvoices, account] = paying ? await Promise.all([loadOpenInvoices(householdId), loadReceivingAccount(householdId)]) : [new Map(), null];
   return {

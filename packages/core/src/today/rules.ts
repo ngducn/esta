@@ -29,16 +29,20 @@ export type TodayDocument = { readonly documentId: string; readonly title: strin
 /** A document whose latest extraction waits in `needs_review` (`document_status`). */
 export type TodayReview = { readonly documentId: string; readonly title: string };
 
+/** An open task, typed by a member or approved from a proposal. */
+export type TodayTask = { readonly taskId: string; readonly title: string; readonly dueOn: IsoDate | null; readonly propertyName: string | null };
+
 /** What Home reads on `asOf`. Each list may hold rows a rule passes over; the rules decide what is due today. */
 export type TodaySnapshot = {
   readonly bills: readonly TodayBill[];
   readonly leases: readonly TodayLease[];
   readonly documents: readonly TodayDocument[];
   readonly reviews: readonly TodayReview[];
+  readonly tasks: readonly TodayTask[];
 };
 
 /** The one thing each item lets you do: open the payment sheet, the renew sheet, the document or its review. */
-export type TodayAction = 'recordPayment' | 'renew' | 'openDocument' | 'review';
+export type TodayAction = 'recordPayment' | 'renew' | 'openDocument' | 'review' | 'openTask';
 
 type Of<S extends TodaySnapshot, K extends keyof TodaySnapshot> = S[K][number];
 
@@ -47,7 +51,8 @@ export type TodayItem<S extends TodaySnapshot = TodaySnapshot> =
   | { readonly rule: 'due_today'; readonly action: 'recordPayment'; readonly date: IsoDate; readonly bill: Of<S, 'bills'> }
   | { readonly rule: 'lease_ending'; readonly action: 'renew'; readonly date: IsoDate; readonly days: number; readonly lease: Of<S, 'leases'> }
   | { readonly rule: 'document_expiring'; readonly action: 'openDocument'; readonly date: IsoDate; readonly days: number; readonly document: Of<S, 'documents'> }
-  | { readonly rule: 'extraction_waiting'; readonly action: 'review'; readonly date: IsoDate; readonly review: Of<S, 'reviews'> };
+  | { readonly rule: 'extraction_waiting'; readonly action: 'review'; readonly date: IsoDate; readonly review: Of<S, 'reviews'> }
+  | { readonly rule: 'task_due'; readonly action: 'openTask'; readonly date: IsoDate; readonly task: Of<S, 'tasks'> };
 
 export type TodayRuleId = TodayItem['rule'];
 
@@ -61,7 +66,7 @@ export type TodayRule = {
 
 /**
  * Home's `Cần làm hôm nay`, as pure rules over one snapshot on the Clock's date. A late bill comes first, then what
- * expires if nobody acts (a lease, a paper), then a reading waiting for review, then the bills due today, so the items
+ * expires if nobody acts (a lease, a paper), then a task due by today, then a reading waiting for review, then the bills due today, so the items
  * the cap hides are bills, which `Xem tất cả ở Thu tiền` lists. A bill's state is the board's `collectionState`, so a
  * paid, voided or drafted bill never shows and an overdue one reads the same days here and there.
  */
@@ -100,14 +105,21 @@ export const TODAY_RULES: readonly TodayRule[] = [
       }),
   },
   {
-    id: 'extraction_waiting',
+    id: 'task_due',
     priority: 4,
+    action: 'openTask',
+    find: (snapshot, asOf) =>
+      snapshot.tasks.flatMap((task) => (task.dueOn !== null && task.dueOn <= asOf ? [{ rule: 'task_due', action: 'openTask', date: task.dueOn, task } as const] : [])),
+  },
+  {
+    id: 'extraction_waiting',
+    priority: 5,
     action: 'review',
     find: (snapshot, asOf) => snapshot.reviews.map((review) => ({ rule: 'extraction_waiting', action: 'review', date: asOf, review }) as const),
   },
   {
     id: 'due_today',
-    priority: 5,
+    priority: 6,
     action: 'recordPayment',
     find: (snapshot, asOf) => snapshot.bills.flatMap((bill) => (collectionState(bill, asOf).group === 'due' ? [{ rule: 'due_today', action: 'recordPayment', date: bill.dueDate, bill } as const] : [])),
   },
@@ -132,6 +144,8 @@ function place(item: TodayItem): string {
       return item.document.title;
     case 'extraction_waiting':
       return item.review.title;
+    case 'task_due':
+      return item.task.title;
   }
 }
 

@@ -1,7 +1,7 @@
 import type { IsoDate } from '@esta/core/date';
 import { formatDate } from '@esta/core/format';
 import type { TodayItem, TodayList as TodayListData } from '@esta/core/today';
-import { CalendarClock, FileClock, ReceiptText, ScanText } from 'lucide-react';
+import { CalendarClock, FileClock, ListTodo, ReceiptText, ScanText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -37,6 +37,8 @@ function itemKey(item: Item): string {
       return `${item.rule}:${item.document.documentId}`;
     case 'extraction_waiting':
       return `${item.rule}:${item.review.documentId}`;
+    case 'task_due':
+      return `${item.rule}:${item.task.taskId}`;
   }
 }
 
@@ -129,6 +131,18 @@ function useRow(item: Item, titleId: string, asOf: IsoDate, payment: TodayPaymen
           ) : (
             <ActionLink href={`/documents/${item.review.documentId}/review`} label={tx('reviewLink')} describedBy={titleId} />
           ),
+      };
+    case 'task_due':
+      return {
+        icon: <ListTodo aria-hidden="true" className={iconClass} />,
+        title: item.task.title,
+        detail: (
+          <>
+            {item.date < asOf ? <span className="font-medium text-ink">{t('taskLate', { date: formatDate(item.date, locale) })}</span> : <span>{t('taskToday')}</span>}
+            {item.task.propertyName === null ? null : <span className="break-words">{item.task.propertyName}</span>}
+          </>
+        ),
+        action: <ActionLink href="/assistant#tasks" label={t('openTasks')} describedBy={titleId} />,
       };
   }
 }

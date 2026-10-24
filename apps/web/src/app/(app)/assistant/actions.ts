@@ -1,7 +1,7 @@
 'use server';
 
 import type { Result } from '@esta/core/result';
-import { agentItemSetStatus, runOp } from '@esta/ops';
+import { agentItemSetStatus, proposalApprove, runOp, taskSetStatus, type ProposalDecided } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getClock } from '@/server/clock';
@@ -31,5 +31,22 @@ export async function setNoteStatus(raw: unknown): Promise<Result<undefined, { r
   const saved = await runOp(agentItemSetStatus, await webOpContext(), raw);
   if (!saved.ok) return { ok: false, reason: { kind: 'failed' } };
   revalidatePath('/assistant');
+  return { ok: true, value: undefined };
+}
+
+/** Đồng ý: the proposal's effect lands as the member, once; a second tap answers what the first decided (AGT-6). */
+export async function approveProposal(raw: unknown): Promise<Result<ProposalDecided['status'], { readonly kind: 'failed' }>> {
+  const decided = await runOp(proposalApprove, await webOpContext(), raw);
+  if (!decided.ok) return { ok: false, reason: { kind: 'failed' } };
+  revalidatePath('/assistant');
+  revalidatePath('/');
+  return { ok: true, value: decided.value.status };
+}
+
+export async function setTaskStatus(raw: unknown): Promise<Result<undefined, { readonly kind: 'failed' }>> {
+  const saved = await runOp(taskSetStatus, await webOpContext(), raw);
+  if (!saved.ok) return { ok: false, reason: { kind: 'failed' } };
+  revalidatePath('/assistant');
+  revalidatePath('/');
   return { ok: true, value: undefined };
 }
