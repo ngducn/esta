@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addDays } from '../date/calendar';
 import { isoDate, type IsoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
+import { carryDepositsToRenewals } from './deposits';
 import { evaluateWatch, watchDedupeKey } from './registry';
 import type { WatchRuleId, WatchSnapshot } from './types';
 
@@ -29,6 +30,7 @@ const lease = (over: Partial<Lease> = {}): Lease => ({
 const invoice = (over: Partial<Invoice> = {}): Invoice => ({
   id: 'i1',
   leaseId: 'l1',
+  periodStart: addDays(AS_OF, -30),
   dueDate: AS_OF,
   totalVnd: vnd(1_000_000),
   allocatedVnd: vnd(0),
@@ -146,6 +148,48 @@ describe('W6 deposit unsettled', () => {
     expect(unsettled(60, 0)).toEqual([]);
     expect(unsettled(60, 2_800_000, { properties: [property({ archived: true })] })).toEqual(['action']);
   });
+
+  it('is silent for a renewed lease, which hands its deposit to the renewal, and for a draft', () => {
+    const old = lease({ id: 'old', status: 'ended', end_date: d(-20), renewed: true, depositHeldVnd: vnd(0) });
+    expect(severities('W6', { leases: [old, lease({ id: 'new', start_date: d(-19), end_date: d(300) })] })).toEqual([]);
+    expect(unsettled(60, 2_800_000, { leases: [lease({ status: 'draft', end_date: d(-60), depositHeldVnd: vnd(2_800_000) })] })).toEqual([]);
+  });
+
+  it('fires again when the last lease of the chain ends and still holds the deposit', () => {
+    const chain = [
+      lease({ id: 'old', status: 'ended', end_date: d(-40), renewed: true }),
+      lease({ id: 'new', status: 'ended', start_date: d(-39), end_date: d(-20), depositHeldVnd: vnd(2_800_000) }),
+    ];
+    expect(facts('W6', { leases: chain }).map((fact) => fact.subjectKey)).toEqual(['lease:new']);
+  });
+});
+
+describe('carryDepositsToRenewals', () => {
+  const held = new Map([['a', vnd(2_800_000)]]);
+
+  it('moves a deposit along the renewal chain to the last lease', () => {
+    const chain = [
+      { id: 'a', renewalOfLeaseId: null },
+      { id: 'b', renewalOfLeaseId: 'a' },
+      { id: 'c', renewalOfLeaseId: 'b' },
+    ];
+    expect(carryDepositsToRenewals(chain, held)).toEqual(new Map([['c', 2_800_000]]));
+    expect(carryDepositsToRenewals(chain.toReversed(), held)).toEqual(new Map([['c', 2_800_000]]));
+  });
+
+  it('adds up what two leases of one chain hold and leaves an unrenewed lease where it is', () => {
+    const chain = [
+      { id: 'a', renewalOfLeaseId: null },
+      { id: 'b', renewalOfLeaseId: 'a' },
+      { id: 'x', renewalOfLeaseId: null },
+    ];
+    const both = new Map([...held, ['b', vnd(500_000)], ['x', vnd(900_000)]]);
+    expect(carryDepositsToRenewals(chain, both)).toEqual(new Map([['b', 3_300_000], ['x', 900_000]]));
+  });
+
+  it('stops at a renewal loop', () => {
+    expect(carryDepositsToRenewals([{ id: 'a', renewalOfLeaseId: 'b' }, { id: 'b', renewalOfLeaseId: 'a' }], held).size).toBe(1);
+  });
 });
 
 describe('W7 tax threshold', () => {
@@ -197,6 +241,24 @@ describe('W9 short payments', () => {
 
   it('reads 90% paid as paid enough', () => {
     expect(short([900_000, 0])).toEqual([]);
+  });
+
+  it('reads the same invoices in any input order when several fall due on one day', () => {
+    const same = (id: string, periodStart: string, paid: number) => invoice({ id, periodStart: isoDate(periodStart), dueDate: d(-5), allocatedVnd: vnd(paid), paymentStatus: paid === 0 ? 'unpaid' : 'partial' });
+    const [oldest, middle, newest] = [same('i1', '2026-08-01', 1_000_000), same('i2', '2026-09-01', 0), same('i3', '2026-10-01', 0)];
+    const orders = [
+      [oldest, middle, newest],
+      [newest, middle, oldest],
+      [middle, newest, oldest],
+      [oldest, newest, middle],
+    ];
+    expect(orders.map((invoices) => facts('W9', { invoices }).map((fact) => fact.numbers.invoices))).toEqual(orders.map(() => [2]));
+  });
+
+  it('breaks a tie of due date and period by id, so two short invoices of one month count as two', () => {
+    const month = (id: string) => invoice({ id, periodStart: isoDate('2026-09-01'), dueDate: d(-5), allocatedVnd: vnd(0), paymentStatus: 'unpaid' });
+    expect(facts('W9', { invoices: [month('b'), month('a')] })).toEqual(facts('W9', { invoices: [month('a'), month('b')] }));
+    expect(severities('W9', { invoices: [month('a'), month('b')] })).toEqual(['watch']);
   });
 
   it('reads only invoices already due', () => {

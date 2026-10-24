@@ -1,4 +1,6 @@
 import { deriveDepositLedger } from '@esta/core/allocation';
+import { isoDate } from '@esta/core/date';
+import { readWatchSnapshot } from '@esta/ops';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { integrationLane } from '@/test/lanes';
@@ -84,5 +86,19 @@ describe('deposit actions against local Supabase (LSE-9)', () => {
     const { data, error } = await client.from('lease_deposits').select('held_vnd').eq('household_id', HOUSEHOLD);
     if (error) throw error;
     expect(await loadHeldDepositTotal(HOUSEHOLD)).toBe(data.reduce((sum, row) => sum + z.number().int().parse(row.held_vnd), 0));
+  });
+
+  it('reads the watch snapshot over a same-day receipt and deduction whose ids sort the other way round', async () => {
+    let unlucky = false;
+    for (let attempt = 0; attempt < 40 && !unlucky; attempt += 1) {
+      const emptied = String((await heldInDatabase()) + 10_000_000);
+      const received = await recordDeposit(entry('received', '10tr', '07/10/2026'));
+      const deduction = await recordDeposit(entry('deduction', emptied, '07/10/2026', 'Sửa cửa Demo'));
+      if (!received.ok || !deduction.ok) throw new Error('A same-day pair was refused');
+      unlucky = deduction.value < received.value;
+    }
+    expect(unlucky, 'a deduction id below its receipt id within 40 pairs').toBe(true);
+    const snapshot = await readWatchSnapshot(client, HOUSEHOLD, { asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh' });
+    expect(snapshot.leases.find((lease) => lease.id === leaseId)?.depositHeldVnd).toBe(0);
   });
 });

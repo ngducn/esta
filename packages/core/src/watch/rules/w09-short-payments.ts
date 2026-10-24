@@ -1,6 +1,6 @@
 import { defineRule } from '../types';
 
-/** A tenant whose last few invoices already due were each paid short of the share that counts as paid. */
+/** A tenant whose last few invoices already due, latest due date then latest period then id, were each paid short of the share that counts as paid. */
 export const w09ShortPayments = defineRule({
   id: 'W9',
   scope: 'all',
@@ -14,7 +14,7 @@ export const w09ShortPayments = defineRule({
       if (tenantId !== undefined && invoice.dueDate < asOf) byTenant.set(tenantId, [...(byTenant.get(tenantId) ?? []), invoice]);
     }
     return [...byTenant].flatMap(([tenantId, due]) => {
-      const last = due.toSorted((a, b) => b.dueDate.localeCompare(a.dueDate)).slice(0, count);
+      const last = due.toSorted((a, b) => b.dueDate.localeCompare(a.dueDate) || b.periodStart.localeCompare(a.periodStart) || b.id.localeCompare(a.id)).slice(0, count);
       const short = last.every((invoice) => invoice.allocatedVnd * 10_000 < invoice.totalVnd * paidBelowBp);
       if (last.length < count || !short) return [];
       return [{ subjectKey: `tenant:${tenantId}`, severity: 'watch', numbers: { invoices: last.length, latest_due_date: last[0]?.dueDate ?? null } }];

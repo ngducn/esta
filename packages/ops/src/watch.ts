@@ -1,39 +1,15 @@
-import { deriveDepositLedger, DEPOSIT_KINDS } from '@esta/core/allocation';
 import { businessDate, parseInstant } from '@esta/core';
 import type { IsoDate } from '@esta/core/date';
 import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
-import { vnd, type Vnd } from '@esta/core/money';
-import { isoDateSchema } from '@esta/core/schemas/legal';
+import { vnd } from '@esta/core/money';
 import { computeTaxPosition, toTaxInputs } from '@esta/core/tax';
-import { watchSnapshotSchema, type WatchSnapshot } from '@esta/core/watch';
-import { z } from 'zod';
+import { carryDepositsToRenewals, watchSnapshotSchema, type WatchSnapshot } from '@esta/core/watch';
 import { readCompleteness } from './completeness';
 import type { Db } from './db';
 import { readInvoices } from './invoices';
 import { readAll, readRows } from './kit';
-import { readLeases } from './leases';
+import { readHeldDeposits, readLeases } from './leases';
 import { readOtherBusinessRevenues, readTaxOwners, readTaxRows } from './tax';
-
-const depositEntrySchema = z
-  .object({ id: z.uuid(), lease_id: z.uuid(), kind: z.enum(DEPOSIT_KINDS), amount_vnd: z.number().int().transform(vnd), on_date: isoDateSchema })
-  .transform((row) => ({ id: row.id, leaseId: row.lease_id, kind: row.kind, amountVnd: row.amount_vnd, onDate: row.on_date }));
-
-async function readHeldDeposits(db: Db, householdId: string, asOf: IsoDate): Promise<Map<string, Vnd>> {
-  const entries = z.array(depositEntrySchema).parse(
-    await readAll('deposit entries', (from, to) =>
-      db.from('deposit_entries').select('id, lease_id, kind, amount_vnd, on_date').eq('household_id', householdId).lte('on_date', asOf).order('id').range(from, to),
-    ),
-  );
-  const byLease = new Map<string, (typeof entries)[number][]>();
-  for (const entry of entries) byLease.set(entry.leaseId, [...(byLease.get(entry.leaseId) ?? []), entry]);
-  const held = new Map<string, Vnd>();
-  for (const [leaseId, own] of byLease) {
-    const ledger = deriveDepositLedger(own);
-    if (!ledger.ok) throw new Error(`The deposit of lease ${leaseId} does not add up: ${ledger.reason}`);
-    held.set(leaseId, ledger.value.heldVnd);
-  }
-  return held;
-}
 
 async function readTaxPositions(db: Db, householdId: string, asOf: IsoDate) {
   const year = Number(asOf.slice(0, 4));
@@ -82,7 +58,7 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
     readCompleteness(db, householdId),
     readAll('units', (from, to) => db.from('units').select('id, property_id, available_from').eq('household_id', householdId).order('id').range(from, to)),
     readLeases(db, householdId),
-    readHeldDeposits(db, householdId, asOf),
+    readHeldDeposits(db, householdId),
     readInvoices(db, householdId, { issuedOnOrBefore: asOf }),
     readAll('expiring documents', (from, to) =>
       db.from('documents').select('id, property_id, expires_on').eq('household_id', householdId).is('deleted_at', null).gte('expires_on', asOf).order('id').range(from, to),
@@ -92,6 +68,10 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
     readWaitingExtractions(db, householdId, timezone),
   ]);
   const signed = leases.filter((lease) => lease.status !== 'draft');
+  const deposits = carryDepositsToRenewals(
+    signed.map((lease) => ({ id: lease.id, renewalOfLeaseId: lease.renewal_of_lease_id })),
+    held,
+  );
   const renewed = new Set(signed.flatMap((lease) => (lease.renewal_of_lease_id === null ? [] : [lease.renewal_of_lease_id])));
   return watchSnapshotSchema.parse({
     householdId,
@@ -113,9 +93,9 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
       start_date: lease.start_date,
       end_date: lease.end_date,
       renewed: renewed.has(lease.id),
-      depositHeldVnd: held.get(lease.id) ?? 0,
+      depositHeldVnd: deposits.get(lease.id) ?? 0,
     })),
-    invoices: invoices.map(({ id, leaseId, dueDate, totalVnd, allocatedVnd, outstandingVnd, paymentStatus }) => ({ id, leaseId, dueDate, totalVnd, allocatedVnd, outstandingVnd, paymentStatus })),
+    invoices: invoices.map(({ id, leaseId, periodStart, dueDate, totalVnd, allocatedVnd, outstandingVnd, paymentStatus }) => ({ id, leaseId, periodStart, dueDate, totalVnd, allocatedVnd, outstandingVnd, paymentStatus })),
     documents: documents.map((document) => ({ id: document.id, propertyId: document.property_id, expiresOn: document.expires_on })),
     meters,
     taxPositions,

@@ -1,4 +1,6 @@
 import { isoDate } from '@esta/core/date';
+import { evaluateWatch } from '@esta/core/watch';
+import { readWatchSnapshot } from '@esta/ops';
 import { formatDate } from '@esta/core/format';
 import { parsePropertyFilters } from '@esta/core/properties';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -233,6 +235,23 @@ describe('amend, terminate and renew against local Supabase (LSE-2, LSE-3, #144)
       expect(data, `${rent} + ${increaseBps} bps`).toEqual({ start_date: '2026-12-01', end_date: '2027-11-30', rent_vnd: renewed, status: 'active', renewal_of_lease_id: lease.id });
       expect(await renewLease(lease.id, { increaseBps, endDate: null, paidThrough: '' })).toEqual({ ok: false, reason: 'already_renewed' });
     }
+  });
+
+  it('W6 stays silent for a renewed lease, whose deposit the renewal holds, and fires when the renewal ends holding it', async () => {
+    const lease = await activeLease({ start_date: '2025-12-01', end_date: '2026-11-30', deposit_vnd: 5_000_000 }, '30/09/2026');
+    const received = await client.rpc('record_deposit_entry', { p_lease_id: lease.id, p_kind: 'received', p_amount_vnd: 5_000_000, p_on_date: '2026-10-07', p_idempotency_key: crypto.randomUUID() });
+    if (received.error) throw received.error;
+    const renewed = await renewLease(lease.id, { increaseBps: 0, endDate: '2027-11-30', paidThrough: '' });
+    if (!renewed.ok) throw new Error(renewed.reason);
+    const watch = async (asOf: string) => {
+      const snapshot = await readWatchSnapshot(client, HOUSEHOLD, { asOf: isoDate(asOf), timezone: 'Asia/Ho_Chi_Minh' });
+      return { snapshot, w6: evaluateWatch(snapshot).filter((fact) => fact.ruleId === 'W6').map((fact) => fact.subjectKey) };
+    };
+    const during = await watch('2026-12-17');
+    expect(during.w6).not.toContain(`lease:${lease.id}`);
+    expect(during.snapshot.leases.find((row) => row.id === lease.id)).toMatchObject({ renewed: true, depositHeldVnd: 0 });
+    expect(during.snapshot.leases.find((row) => row.id === renewed.value)?.depositHeldVnd).toBe(5_000_000);
+    expect((await watch('2027-12-20')).w6).toContain(`lease:${renewed.value}`);
   });
 
   it('a renewal reads its typed paid-through date as activation does, refusing one off the calendar or before the renewal starts', async () => {

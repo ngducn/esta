@@ -19,7 +19,7 @@
     { "rule_id": "W1", "subject_key": "invoice:di-an:phong-4:2026-10-25", "why": "not yet due" },
     { "rule_id": "W1", "subject_key": "invoice:di-an:phong-5:2026-10-25", "why": "not yet due" },
     { "rule_id": "W1", "subject_key": "invoice:di-an:phong-6:2026-10-25", "why": "not yet due" },
-    { "rule_id": "W2", "why": "no issued invoice due 2026-10-08 to 2026-10-10" },
+    { "rule_id": "W2", "why": "no issued invoice due 2026-10-07 to 2026-10-10" },
     { "rule_id": "W4", "subject_key": "unit:di-an:phong-7", "why": "22 days, not more than 30" },
     { "rule_id": "W4", "subject_key": "unit:long-an:1", "why": "use_mode held" },
     { "rule_id": "W4", "subject_key": "unit:bao-loc:1", "why": "use_mode held" },

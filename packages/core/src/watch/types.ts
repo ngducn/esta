@@ -24,7 +24,7 @@ export const watchSnapshotSchema = z.object({
     }),
   ),
   units: z.array(z.object({ id, propertyId: id, availableFrom: isoDateSchema.nullable() })),
-  /** Every lease past draft, with the deposit held on `asOf`. */
+  /** Every lease past draft, with the deposit held on `asOf`, carried to the last lease of a renewal chain. */
   leases: z.array(
     z.object({
       id,
@@ -41,7 +41,7 @@ export const watchSnapshotSchema = z.object({
   ),
   /** Every invoice issued on or before `asOf`, with its allocated total and what is still owed, as `invoice_balances` reads it. */
   invoices: z.array(
-    z.object({ id, leaseId: id, dueDate: isoDateSchema, totalVnd: vndSchema, allocatedVnd: vndSchema, outstandingVnd: vndSchema, paymentStatus: z.enum(PAYMENT_STATUSES) }),
+    z.object({ id, leaseId: id, periodStart: isoDateSchema, dueDate: isoDateSchema, totalVnd: vndSchema, allocatedVnd: vndSchema, outstandingVnd: vndSchema, paymentStatus: z.enum(PAYMENT_STATUSES) }),
   ),
   /** Documents not deleted whose expiry date is on or after `asOf`. */
   documents: z.array(z.object({ id, propertyId: id.nullable(), expiresOn: isoDateSchema })),

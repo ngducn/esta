@@ -167,6 +167,8 @@ Rules live in `packages/core/watch` as a registry of pure functions over a snaps
 | W10 extraction waiting | Extraction in `needs_review` for more than 3 days | `info` |
 | W11 low completeness | Property completeness below 60% | `info`, at most one property per day, lowest first |
 
+[app rule] W2 counts an invoice due today, so it covers today and the next 3 days. W3 counts a lease terminated on a future date as active until that date. W6 reads a renewal chain as one deposit: a renewed lease passes its held balance to its renewal (`renew_lease` writes no entries for the new lease), so W6 fires once the last lease of the chain has ended more than 14 days ago. W9 orders a tenant's invoices by due date, then period start, then id, and counts every invoice, so two short invoices of one month make the pair.
+
 The model receives the facts and writes one `agent_item` per action fact and one grouped item for watch and info facts. It may merge related facts but may not add facts.
 
 ### 5.4 morning_brief
@@ -237,7 +239,7 @@ Expected fact set for 2026-10-07 on the `full` seed (SPEC §9.3). Test: set equa
 | W7 | owner Nguyễn Thị Demo | watch | projected 2026 revenue between 80% and 100% of threshold |
 | W11 | property `long-an` | info | completeness below 60% |
 
-Must not fire: W1 for the Dĩ An invoices due 2026-10-25 (not yet due); W2 (no issued invoice due 2026-10-08 to 2026-10-10); W4 for `di-an` Phòng 7 (22 days) or for `long-an` and `bao-loc` (use_mode held); W6 for `bien-hoa` (deposit refunded 2026-08-05); W7 for Trần Minh Demo; W8 (readings with `read_on` 2026-10-03); W9 (Phòng 5 has one short past-due invoice, not two); W10.
+Must not fire: W1 for the Dĩ An invoices due 2026-10-25 (not yet due); W2 (no issued invoice due 2026-10-07 to 2026-10-10); W4 for `di-an` Phòng 7 (22 days) or for `long-an` and `bao-loc` (use_mode held); W6 for `bien-hoa` (deposit refunded 2026-08-05); W7 for Trần Minh Demo; W8 (readings with `read_on` 2026-10-03); W9 (Phòng 5 has one short past-due invoice, not two); W10.
 
 ### 7.2 Extraction
 
