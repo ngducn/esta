@@ -1,6 +1,7 @@
 'use client';
 
 import type { RefObject } from 'react';
+import { FormActions } from '@/components/form-actions';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogClose, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/dialog';
 
@@ -23,12 +24,12 @@ export default function ConfirmDialogPopup({ open, onOpenChange, finalFocus, tit
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description === undefined ? null : <AlertDialogDescription>{description}</AlertDialogDescription>}
         </div>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <FormActions>
           <AlertDialogClose render={<Button variant="outline" />}>{cancelLabel}</AlertDialogClose>
           <AlertDialogClose render={<Button variant="primary" />} onClick={onConfirm}>
             {confirmLabel}
           </AlertDialogClose>
-        </div>
+        </FormActions>
       </AlertDialogContent>
     </AlertDialog>
   );

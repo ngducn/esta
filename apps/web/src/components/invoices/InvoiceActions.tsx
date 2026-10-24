@@ -1,10 +1,10 @@
 'use client';
 
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { Button } from '@/components/ui/button';
-import { useDeferredDialog } from '@/components/use-deferred-dialog';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { issueInvoice, type InvoiceActionRefusal } from '@/server/actions/invoices';
-import { ActionRefusal } from './ActionRefusal';
+import { FormAlert } from '@/components/form-alert';
 import { useBillAction } from './use-bill-action';
 
 const loadVoidDialog = () => import('./VoidInvoiceDialog');
@@ -43,12 +43,8 @@ export function InvoiceActions({ invoiceId, status, labels }: { invoiceId: strin
           {labels.voidAction}
         </Button>
       )}
-      <ActionRefusal message={refusal === null ? null : labels.refusals[refusal]} />
-      {dialog.open === null ? null : (
-        <Suspense fallback={null}>
-          <VoidInvoiceDialog open={dialog.open} onOpenChange={dialog.setOpen} finalFocus={dialog.triggerProps.ref} invoiceId={invoiceId} labels={labels} />
-        </Suspense>
-      )}
+      <FormAlert message={refusal === null ? null : labels.refusals[refusal]} />
+      <DeferredPopup dialog={dialog} popup={VoidInvoiceDialog} props={{ invoiceId, labels }} />
     </div>
   );
 }

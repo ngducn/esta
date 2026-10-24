@@ -2,8 +2,9 @@
 
 import { Banknote } from 'lucide-react';
 import type { AbstractIntlMessages, Locale } from 'next-intl';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, useEffect } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import type { PaymentTarget } from './RecordPaymentSheet';
 
 /** The sheet's message subset, for a screen with no intl provider of its own. */
@@ -32,28 +33,19 @@ function warmOnFirstIntent(load: () => Promise<unknown>) {
  * the row's prefill. Given `intl`, the sheet brings its own intl provider (`RecordPaymentIsland`).
  */
 export function RecordPaymentAction({ label, target, intl, describedBy }: { label: string; target: PaymentTarget; intl?: PaymentIntl; describedBy?: string }) {
-  const [open, setOpen] = useState(false);
-  const [opening, setOpening] = useState(0);
-  useEffect(() => warmOnFirstIntent(intl === undefined ? loadSheet : loadIsland), [intl]);
-  const sheet = { open, onOpenChange: setOpen, target };
+  const load = intl === undefined ? loadSheet : loadIsland;
+  const dialog = useDeferredDialog(load);
+  useEffect(() => warmOnFirstIntent(load), [load]);
   return (
     <>
-      <button
-        type="button"
-        data-testid="row-action-record-payment"
-        aria-haspopup="dialog"
-        aria-describedby={describedBy}
-        onClick={() => {
-          setOpening((count) => count + 1);
-          setOpen(true);
-        }}
-        className={buttonVariants({ variant: 'outline' })}
-      >
+      <button type="button" data-testid="row-action-record-payment" aria-describedby={describedBy} {...dialog.triggerProps} className={buttonVariants({ variant: 'outline' })}>
         <Banknote aria-hidden="true" />
         {label}
       </button>
-      {opening === 0 ? null : (
-        <Suspense fallback={null}>{intl === undefined ? <RecordPaymentSheet key={opening} {...sheet} /> : <RecordPaymentIsland key={opening} {...sheet} intl={intl} />}</Suspense>
+      {intl === undefined ? (
+        <DeferredPopup dialog={dialog} popup={RecordPaymentSheet} props={{ target }} />
+      ) : (
+        <DeferredPopup dialog={dialog} popup={RecordPaymentIsland} props={{ target, intl }} />
       )}
     </>
   );

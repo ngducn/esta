@@ -10,12 +10,15 @@ import { ArrowDown, ArrowDown01, ArrowUp, ArrowUpDown, Check, FileSignature, Fil
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { lazy, Suspense, useEffect, useRef, useState, useTransition } from 'react';
+import { lazy, useEffect, useRef, useState } from 'react';
 import { deleteUnit, moveUnitAction, restoreUnit, sortUnitsByRoomNumber } from '@/app/(app)/properties/[id]/rental/actions';
 import { MoneyDisplay } from '@/components/money/money-display';
+import { FormAlert } from '@/components/form-alert';
 import { StatusMark } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { useAction } from '@/components/use-action';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { cn } from '@/lib/utils';
 
 const loadUnitSheet = () => import('./unit-sheet');
@@ -32,7 +35,6 @@ export type UnitLease = {
   readonly endsOn: IsoDate | null;
 };
 
-type Open = { readonly sheet: 'unit'; readonly unit: Unit | null } | { readonly sheet: 'rooms'; readonly existing: readonly string[] } | null;
 type Direction = 'up' | 'down';
 
 const small = 'min-h-touch px-3 text-small';
@@ -61,8 +63,9 @@ export function UnitList({
   const router = useRouter();
   const showUndo = useUndoToast();
   const showNotice = useNoticeToast();
-  const [open, setOpen] = useState<Open>(null);
-  const [pending, startTransition] = useTransition();
+  const addRooms = useDeferredDialog(loadAddRoomsSheet);
+  const addUnit = useDeferredDialog(loadUnitSheet);
+  const { pending, run } = useAction();
   const [error, setError] = useState<string | null>(null);
   const [reorderOn, setReorderOn] = useState(false);
   const reordering = reorderOn && canEdit && units.length > 1;
@@ -84,39 +87,40 @@ export function UnitList({
     (buttons.find((button) => button.dataset.move === moved.direction) ?? buttons[0])?.focus();
   }, [units, pending]);
 
-  const reorder = (write: () => Promise<{ readonly ok: boolean }>) =>
-    startTransition(async () => {
-      setError(null);
-      const result = await write().catch(() => ({ ok: false }) as const);
+  const reorder = (write: () => Promise<{ readonly ok: boolean }>) => {
+    setError(null);
+    run(write, (result) => {
       if (result.ok) router.refresh();
       else {
         lastMove.current = null;
         setError(t('moveFailed'));
       }
     });
+  };
 
   const move = (unit: Unit, direction: Direction) => {
     lastMove.current = { id: unit.id, direction, before: units };
     reorder(() => moveUnitAction(propertyId, unit.id, direction));
   };
 
-  const remove = (unit: Unit) =>
-    startTransition(async () => {
-      setError(null);
-      const result = await deleteUnit(propertyId, unit.id).catch(() => ({ ok: false }) as const);
-      if (!result.ok) {
-        setError('hasLeases' in result ? t('deleteHasLeases', { label: unit.label }) : t('deleteFailed'));
-        return;
-      }
-      router.refresh();
-      showUndo(t('deleted', { label: unit.label }), () => {
-        restoreUnit(result.deleted)
-          .then((restored) => (restored.ok ? router.refresh() : showNotice(t('restoreFailed'))))
-          .catch(() => showNotice(t('restoreFailed')));
-      });
-    });
-
-  const close = () => setOpen(null);
+  const remove = (unit: Unit) => {
+    setError(null);
+    run(
+      () => deleteUnit(propertyId, unit.id),
+      (result) => {
+        if (!result.ok) {
+          setError('hasLeases' in result ? t('deleteHasLeases', { label: unit.label }) : t('deleteFailed'));
+          return;
+        }
+        router.refresh();
+        showUndo(t('deleted', { label: unit.label }), () => {
+          restoreUnit(result.deleted)
+            .then((restored) => (restored.ok ? router.refresh() : showNotice(t('restoreFailed'))))
+            .catch(() => showNotice(t('restoreFailed')));
+        });
+      },
+    );
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -138,10 +142,7 @@ export function UnitList({
             <button
               type="button"
               data-testid="add-rooms"
-              aria-haspopup="dialog"
-              onPointerEnter={() => void loadAddRoomsSheet()}
-              onFocus={() => void loadAddRoomsSheet()}
-              onClick={() => setOpen({ sheet: 'rooms', existing: units.map((unit) => unit.label) })}
+              {...addRooms.triggerProps}
               className={buttonVariants({ variant: 'primary' })}
             >
               <Plus aria-hidden="true" />
@@ -152,10 +153,7 @@ export function UnitList({
             <button
               type="button"
               data-testid="add-unit"
-              aria-haspopup="dialog"
-              onPointerEnter={() => void loadUnitSheet()}
-              onFocus={() => void loadUnitSheet()}
-              onClick={() => setOpen({ sheet: 'unit', unit: null })}
+              {...addUnit.triggerProps}
               className={buttonVariants({ variant: roomingHouse ? 'outline' : 'primary' })}
             >
               <Plus aria-hidden="true" />
@@ -176,11 +174,7 @@ export function UnitList({
         </div>
       ) : null}
       {reordering ? <p className="text-body text-ink-2">{t('reorderHint')}</p> : null}
-      {error === null ? null : (
-        <p role="alert" className="text-small text-overdue">
-          {error}
-        </p>
-      )}
+      <FormAlert message={error} />
       <ol ref={list} data-testid="unit-list" className="@container flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
         {units.map((unit, index) => {
           const facts = [t('unitKind', { kind: unit.kind }), unit.area_m2 === null ? null : formatArea(unit.area_m2, locale)].filter((fact) => fact !== null);
@@ -207,21 +201,7 @@ export function UnitList({
               </div>
               <div className="flex flex-wrap gap-2 @3xl:justify-end">
                 <LeaseLink propertyId={propertyId} unit={unit} lease={leases[unit.id]} canEdit={canEdit} />
-              {canEdit ? (
-                <>
-                  <button
-                    type="button"
-                    aria-haspopup="dialog"
-                    onPointerEnter={() => void loadUnitSheet()}
-                    onClick={() => setOpen({ sheet: 'unit', unit })}
-                    aria-label={t('editLabel', { label: unit.label })}
-                    className={cn(buttonVariants({ variant: 'outline' }), small)}
-                  >
-                    <Pencil aria-hidden="true" />
-                    {t('edit')}
-                  </button>
-                </>
-              ) : null}
+                {canEdit ? <EditUnitButton propertyId={propertyId} unit={unit} otherUnits={units.length - 1} onDelete={unit.kind === 'whole' ? null : remove} /> : null}
               {reordering ? (
                 <div className="ml-auto flex rounded-sm border border-rule-strong bg-surface @3xl:ml-0">
                   <MoveButton direction="up" label={unit.label} disabled={pending || index === 0} onMove={() => move(unit, 'up')} />
@@ -233,19 +213,23 @@ export function UnitList({
           );
         })}
       </ol>
-      <Suspense fallback={null}>
-        {open?.sheet === 'unit' ? (
-          <UnitSheet
-            propertyId={propertyId}
-            unit={open.unit}
-            otherUnits={units.length - (open.unit === null ? 0 : 1)}
-            onClose={close}
-            onDelete={open.unit === null || open.unit.kind === 'whole' ? null : remove}
-          />
-        ) : null}
-        {open?.sheet === 'rooms' ? <AddRoomsSheet propertyId={propertyId} existing={open.existing} onClose={close} /> : null}
-      </Suspense>
+      <DeferredPopup dialog={addUnit} popup={UnitSheet} props={{ propertyId, unit: null, otherUnits: units.length, onDelete: null }} />
+      <DeferredPopup dialog={addRooms} popup={AddRoomsSheet} props={{ propertyId, existing: units.map((unit) => unit.label) }} />
     </div>
+  );
+}
+
+function EditUnitButton({ propertyId, unit, otherUnits, onDelete }: { propertyId: string; unit: Unit; otherUnits: number; onDelete: ((unit: Unit) => void) | null }) {
+  const t = useTranslations('propertyRental');
+  const sheet = useDeferredDialog(loadUnitSheet);
+  return (
+    <>
+      <button type="button" aria-label={t('editLabel', { label: unit.label })} className={cn(buttonVariants({ variant: 'outline' }), small)} {...sheet.triggerProps}>
+        <Pencil aria-hidden="true" />
+        {t('edit')}
+      </button>
+      <DeferredPopup dialog={sheet} popup={UnitSheet} props={{ propertyId, unit, otherUnits, onDelete }} />
+    </>
   );
 }
 

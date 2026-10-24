@@ -4,12 +4,14 @@ import { acceptsMime, DOCUMENT_CATEGORY_IDS, isDocumentCategory, type DocumentCa
 import { formatDate } from '@esta/core/format';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { useLocale, useTranslations } from 'next-intl';
-import { useId, useState, useTransition, type FormEvent } from 'react';
+import { useId, useState } from 'react';
 import { DateInput } from '@/components/date-input';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { FormAlert } from '@/components/form-alert';
+import { FormSheet } from '@/components/form-sheet';
+import { useAction } from '@/components/use-action';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { updateDocument, type DocumentEdit } from '@/server/documents/actions';
 import type { DocumentDetail } from '@/server/documents/detail';
 
@@ -23,12 +25,13 @@ type Refusal = 'failed' | 'invalid' | null;
 export default function DocumentEditSheet({
   document,
   properties,
-  onClose,
+  open,
+  onOpenChange,
+  finalFocus,
   onSaved,
-}: {
+}: PopupProps & {
   document: DocumentDetail;
   properties: readonly { readonly id: string; readonly nickname: string }[];
-  onClose: () => void;
   onSaved: (title: string, previous: DocumentEdit) => void;
 }) {
   const t = useTranslations('documents');
@@ -40,12 +43,11 @@ export default function DocumentEditSheet({
   const [expiresText, setExpiresText] = useState(document.expiresOn === null ? '' : formatDate(document.expiresOn, locale));
   const [tags, setTags] = useState(document.tags.join(', '));
   const [refusal, setRefusal] = useState<Refusal>(null);
-  const [pending, startSave] = useTransition();
+  const { pending, run } = useAction();
   const titleMissing = title.trim() === '';
   const wrongCategory = !acceptsMime(category, document.mime);
 
-  const save = (event: FormEvent) => {
-    event.preventDefault();
+  const save = () => {
     if (titleMissing || wrongCategory) return;
     // An emptied field clears the date on purpose; one that does not read as a date must not clear it.
     const expiresOn = parseOptionalDateInput(expiresText);
@@ -53,86 +55,84 @@ export default function DocumentEditSheet({
       setRefusal('invalid');
       return;
     }
-    startSave(async () => {
-      const result = await updateDocument({
-        documentId: document.id,
-        title: title.trim(),
-        category,
-        propertyId: propertyId === NO_PROPERTY ? null : propertyId,
-        expiresOn: expiresOn.value,
-        tags: splitTags(tags),
-      }).catch(() => ({ ok: false, reason: 'failed' }) as const);
-      setRefusal(result.ok ? null : 'failed');
-      if (result.ok) onSaved(title.trim(), result.previous);
-    });
+    run(
+      () =>
+        updateDocument({
+          documentId: document.id,
+          title: title.trim(),
+          category,
+          propertyId: propertyId === NO_PROPERTY ? null : propertyId,
+          expiresOn: expiresOn.value,
+          tags: splitTags(tags),
+        }),
+      (result) => {
+        setRefusal(result.ok ? null : 'failed');
+        if (result.ok) onSaved(title.trim(), result.previous);
+      },
+    );
   };
 
   return (
-    <Sheet open onOpenChange={(open) => (open || pending ? undefined : onClose())}>
-      <SheetContent data-testid="edit-sheet">
-        <div className="flex flex-col gap-1">
-          <SheetTitle>{t('editTitle')}</SheetTitle>
-          <SheetDescription>{t('editBody')}</SheetDescription>
-        </div>
-        <form noValidate onSubmit={save} className="flex flex-col gap-5">
-          <TextField
-            label={t('titleField')}
-            inputId={`${fieldId}-title`}
-            testId="edit-title"
-            value={title}
-            maxLength={200}
-            error={titleMissing ? t('titleRequired') : null}
-            onChange={setTitle}
-          />
-          <div className="flex flex-col gap-1">
-            <FormSelect
-              label={t('categoryField')}
-              testId="edit-category"
-              value={category}
-              options={DOCUMENT_CATEGORY_IDS.map((id) => ({ value: id, label: t('category', { category: id }) }))}
-              onChange={(next) => (isDocumentCategory(next) ? setCategory(next) : undefined)}
-            />
-            {wrongCategory ? (
-              <p role="alert" className="text-small text-overdue">
-                {t('categoryMismatch')}
-              </p>
-            ) : null}
-          </div>
-          <FormSelect
-            label={t('propertyField')}
-            testId="edit-property"
-            value={propertyId}
-            options={[...properties.map((property) => ({ value: property.id, label: property.nickname })), { value: NO_PROPERTY, label: t('noProperty') }]}
-            onChange={setPropertyId}
-          />
-          <DateInput label={t('expiresField')} {...(document.expiresOn === null ? {} : { defaultValue: document.expiresOn })} onTextChange={setExpiresText} />
-          <TextField
-            label={t('tagsField')}
-            hint={t('tagsHint')}
-            inputId={`${fieldId}-tags`}
-            testId="edit-tags"
-            value={tags}
-            maxLength={400}
-            error={null}
-            onChange={setTags}
-          />
-          {refusal === null ? null : refusal === 'failed' ? (
-            <p role="alert" data-testid="edit-error" className="text-body font-medium text-overdue">
-              {t('updateFailed')}
-            </p>
-          ) : (
-            <p role="alert" data-testid="edit-invalid" className="text-body font-medium text-overdue">
-              {t('editInvalid')}
-            </p>
-          )}
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <SheetClose render={<Button type="button" variant="outline" disabled={pending} />}>{t('cancel')}</SheetClose>
-            <Button type="submit" data-testid="save-edit" disabled={pending}>
-              {t('save')}
-            </Button>
-          </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+    <FormSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      finalFocus={finalFocus}
+      testId="edit-sheet"
+      title={t('editTitle')}
+      description={t('editBody')}
+      labels={{ cancel: t('cancel'), submit: t('save'), pending: t('save') }}
+      submitTestId="save-edit"
+      pending={pending}
+      onSubmit={save}
+      error={
+        refusal === null ? null : refusal === 'failed' ? (
+          <FormAlert message={t('updateFailed')} data-testid="edit-error" />
+        ) : (
+          <FormAlert message={t('editInvalid')} data-testid="edit-invalid" />
+        )
+      }
+    >
+      <TextField
+        label={t('titleField')}
+        inputId={`${fieldId}-title`}
+        testId="edit-title"
+        value={title}
+        maxLength={200}
+        error={titleMissing ? t('titleRequired') : null}
+        onChange={setTitle}
+      />
+      <div className="flex flex-col gap-1">
+        <FormSelect
+          label={t('categoryField')}
+          testId="edit-category"
+          value={category}
+          options={DOCUMENT_CATEGORY_IDS.map((id) => ({ value: id, label: t('category', { category: id }) }))}
+          onChange={(next) => (isDocumentCategory(next) ? setCategory(next) : undefined)}
+        />
+        {wrongCategory ? (
+          <p role="alert" className="text-small text-overdue">
+            {t('categoryMismatch')}
+          </p>
+        ) : null}
+      </div>
+      <FormSelect
+        label={t('propertyField')}
+        testId="edit-property"
+        value={propertyId}
+        options={[...properties.map((property) => ({ value: property.id, label: property.nickname })), { value: NO_PROPERTY, label: t('noProperty') }]}
+        onChange={setPropertyId}
+      />
+      <DateInput label={t('expiresField')} {...(document.expiresOn === null ? {} : { defaultValue: document.expiresOn })} onTextChange={setExpiresText} />
+      <TextField
+        label={t('tagsField')}
+        hint={t('tagsHint')}
+        inputId={`${fieldId}-tags`}
+        testId="edit-tags"
+        value={tags}
+        maxLength={400}
+        error={null}
+        onChange={setTags}
+      />
+    </FormSheet>
   );
 }

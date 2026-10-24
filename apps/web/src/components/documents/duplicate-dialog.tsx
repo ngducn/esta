@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useRef } from 'react';
+import { FormActions } from '@/components/form-actions';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -27,14 +28,14 @@ export function DuplicateDialog({ title, onContinue, onCancel }: { title: string
       <p id={`${id}-body`} className="text-body break-words text-ink-2">
         {t('duplicateBody', { title })}
       </p>
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <FormActions>
         <Button ref={cancel} type="button" variant="outline" onClick={onCancel}>
           {t('cancel')}
         </Button>
         <Button type="button" variant="primary" onClick={onContinue}>
           {t('uploadAnyway')}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

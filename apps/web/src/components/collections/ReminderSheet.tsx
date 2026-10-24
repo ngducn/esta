@@ -5,6 +5,7 @@ import { Check, Copy, MessageCircle } from 'lucide-react';
 import { useId, useMemo, useRef, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import type { PopupProps } from '@/components/use-deferred-dialog';
 import { cn } from '@/lib/utils';
 import type { ReminderLabels, ReminderTarget } from '@/server/reminders/board';
 
@@ -18,12 +19,11 @@ type CopyState = 'idle' | 'copied' | 'failed';
 export default function ReminderSheet({
   open,
   onOpenChange,
+  finalFocus,
   title,
   target,
   labels,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+}: PopupProps & {
   title: string;
   target: ReminderTarget;
   labels: ReminderLabels;
@@ -51,7 +51,7 @@ export default function ReminderSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent data-testid="reminder-sheet" initialFocus={titleRef} className="gap-0 p-0 pb-0">
+      <SheetContent data-testid="reminder-sheet" initialFocus={titleRef} finalFocus={finalFocus} className="gap-0 p-0 pb-0">
         <div className="flex flex-col gap-5 p-5 sm:p-6">
           <div className="flex flex-col gap-1">
             <SheetTitle ref={titleRef} tabIndex={-1} className="break-words outline-none">

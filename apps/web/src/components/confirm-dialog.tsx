@@ -1,9 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { Button } from '@/components/ui/button';
-import { useDeferredDialog } from '@/components/use-deferred-dialog';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 
 const loadPopup = () => import('./confirm-dialog-popup');
 const ConfirmDialogPopup = lazy(loadPopup);
@@ -26,20 +26,11 @@ export function ConfirmDialog({ title, description, triggerLabel, confirmLabel, 
       <Button variant="outline" {...dialog.triggerProps}>
         {triggerLabel}
       </Button>
-      {dialog.open === null ? null : (
-        <Suspense fallback={null}>
-          <ConfirmDialogPopup
-            open={dialog.open}
-            onOpenChange={dialog.setOpen}
-            finalFocus={dialog.triggerProps.ref}
-            title={title}
-            confirmLabel={confirmLabel}
-            cancelLabel={t('cancel')}
-            onConfirm={onConfirm}
-            {...(description === undefined ? {} : { description })}
-          />
-        </Suspense>
-      )}
+      <DeferredPopup
+        dialog={dialog}
+        popup={ConfirmDialogPopup}
+        props={{ title, confirmLabel, cancelLabel: t('cancel'), onConfirm, ...(description === undefined ? {} : { description }) }}
+      />
     </>
   );
 }

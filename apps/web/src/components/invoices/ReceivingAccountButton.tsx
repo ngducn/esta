@@ -1,9 +1,9 @@
 'use client';
 
 import { Pencil, Plus } from 'lucide-react';
-import { lazy, Suspense, useState } from 'react';
+import { lazy } from 'react';
 import { Button } from '@/components/ui/button';
-import { useDeferredDialog } from '@/components/use-deferred-dialog';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import type { AccountSheetLabels, AccountSheetMode, BankOption } from './ReceivingAccountSheet';
 
 const loadSheet = () => import('./ReceivingAccountSheet');
@@ -24,7 +24,6 @@ export function ReceivingAccountButton({
   describedBy?: string;
 }) {
   const sheet = useDeferredDialog(loadSheet);
-  const [opening, setOpening] = useState(0);
   const adding = mode.kind === 'add';
   const Icon = adding ? Plus : Pencil;
   return (
@@ -36,19 +35,11 @@ export function ReceivingAccountButton({
         aria-describedby={describedBy}
         className="self-start"
         {...sheet.triggerProps}
-        onClick={() => {
-          setOpening((count) => count + 1);
-          sheet.triggerProps.onClick();
-        }}
       >
         <Icon aria-hidden="true" />
         {label}
       </Button>
-      {sheet.open === null ? null : (
-        <Suspense fallback={null}>
-          <ReceivingAccountSheet key={opening} open={sheet.open} onOpenChange={sheet.setOpen} finalFocus={sheet.triggerProps.ref} banks={banks} labels={labels} mode={mode} />
-        </Suspense>
-      )}
+      <DeferredPopup dialog={sheet} popup={ReceivingAccountSheet} props={{ banks, labels, mode }} />
     </>
   );
 }

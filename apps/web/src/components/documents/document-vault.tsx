@@ -4,10 +4,11 @@ import { FilePlus2, Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { lazy, Suspense, useState, type DragEvent, type ReactNode } from 'react';
+import { lazy, useState, type DragEvent, type ReactNode } from 'react';
 import { StatusShape, statusMarks } from '@/components/status-mark';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
+import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { useHydrated } from '@/lib/use-hydrated';
 import { cn } from '@/lib/utils';
 import { archiveDocument } from '@/server/documents/actions';
@@ -20,7 +21,8 @@ import type { SearchState } from '@/server/documents/vault';
 import { VaultSearch } from './vault-search';
 import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
 
-const UploadSheet = lazy(() => import('./upload-sheet'));
+const loadUploadSheet = () => import('./upload-sheet');
+const UploadSheet = lazy(loadUploadSheet);
 
 /** The household's vault on Tài liệu, or one property's on its Tài liệu tab, where documents are added. */
 export type VaultScope =
@@ -28,8 +30,6 @@ export type VaultScope =
   | { readonly kind: 'property'; readonly propertyId: string; readonly nickname: string };
 
 export type ExpiringItem = { readonly id: string; readonly title: string; readonly propertyName: string | null; readonly text: string };
-
-type Opened = { readonly file: File | null } | null;
 
 function ExpiringSoon({ items }: { items: readonly ExpiringItem[] }) {
   const t = useTranslations('documents');
@@ -120,7 +120,8 @@ export function DocumentVault({
   const hydrated = useHydrated();
   const showUndo = useUndoToast();
   const notice = useNoticeToast();
-  const [opened, setOpened] = useState<Opened>(null);
+  const upload = useDeferredDialog(loadUploadSheet);
+  const [droppedFile, setDroppedFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const extraction = useDocumentStatuses(scope.kind === 'property' ? scope.propertyId : scope.householdId, statuses, { by: scope.kind });
   const propertyId = scope.kind === 'property' ? scope.propertyId : null;
@@ -141,11 +142,13 @@ export function DocumentVault({
     event.preventDefault();
     setDragging(false);
     const file = event.dataTransfer.files[0];
-    if (file !== undefined) setOpened({ file });
+    if (file === undefined) return;
+    setDroppedFile(file);
+    upload.setOpen(true);
   };
 
   const saved = ({ documentId, title }: { documentId: string; title: string }) => {
-    setOpened(null);
+    upload.setOpen(false);
     router.refresh();
     showUndo(t('saved', { title }), () => {
       void archiveDocument(documentId)
@@ -165,7 +168,16 @@ export function DocumentVault({
             {t('tabTitle')}
           </h2>
           {uploads ? (
-            <Button id="upload" data-testid="add-document" disabled={!hydrated} onClick={() => setOpened({ file: null })}>
+            <Button
+              id="upload"
+              data-testid="add-document"
+              disabled={!hydrated}
+              {...upload.triggerProps}
+              onClick={() => {
+                setDroppedFile(null);
+                upload.triggerProps.onClick();
+              }}
+            >
               <FilePlus2 aria-hidden="true" />
               {t('add')}
             </Button>
@@ -216,10 +228,8 @@ export function DocumentVault({
           />
         </>
       )}
-      {opened === null || scope.kind !== 'property' ? null : (
-        <Suspense fallback={null}>
-          <UploadSheet propertyId={scope.propertyId} nickname={scope.nickname} initialFile={opened.file} onClose={() => setOpened(null)} onSaved={saved} />
-        </Suspense>
+      {scope.kind !== 'property' ? null : (
+        <DeferredPopup dialog={upload} popup={UploadSheet} props={{ propertyId: scope.propertyId, nickname: scope.nickname, initialFile: droppedFile, onSaved: saved }} />
       )}
     </section>
   );
