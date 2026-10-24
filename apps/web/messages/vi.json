@@ -399,7 +399,7 @@
   "sections": {
     "documents": "Tài liệu sẽ cất sổ đỏ, hợp đồng và CCCD ở một chỗ, tìm được ngay bằng một ô tìm kiếm.",
     "assistant": "Trợ lý sẽ để lại ghi chú mỗi sáng về tiền thu chậm, hợp đồng sắp hết hạn và giấy tờ còn thiếu.",
-    "settings": "Hiển thị đi theo tài khoản của bạn. Gia đình, thành viên và tài khoản nhận tiền sẽ có ở đây trong bản cập nhật tới.",
+    "settings": "Tài khoản nhận tiền và cài đặt hiển thị. Gia đình và thành viên sẽ có ở đây trong bản cập nhật tới.",
     "soonTitle": "Sắp có trong bản cập nhật tới",
     "adjustDisplay": "Chỉnh cỡ chữ và giao diện"
   },

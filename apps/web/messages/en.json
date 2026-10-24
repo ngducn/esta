@@ -399,7 +399,7 @@
   "sections": {
     "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",
     "assistant": "The assistant will leave a note every morning about late rent, leases ending soon and missing papers.",
-    "settings": "Display settings follow your account. The household, members and receiving bank accounts arrive here in the next update.",
+    "settings": "Receiving accounts and display settings. The household and members arrive here in the next update.",
     "soonTitle": "Coming in the next update",
     "adjustDisplay": "Adjust text size and theme"
   },

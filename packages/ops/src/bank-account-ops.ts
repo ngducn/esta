@@ -1,7 +1,7 @@
 import type { Result } from '@esta/core/result';
 import { bankAccountName, bankAccountNo } from '@esta/core/vietqr';
 import { z } from 'zod';
-import { changedColumns, dbRefusal, idSchema, type Changed, type CommonRefusal } from './kit';
+import { changedColumns, dbRefusal, idSchema, type Changed, type CommonRefusal, type DatabaseError } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 
 const typed = (read: (text: string) => string | null) =>
@@ -52,8 +52,12 @@ async function takenByAnother(ctx: OpContext, { id, bank_bin, account_no }: Acco
   return data.length > 0;
 }
 
-/** RLS hides a write a non-admin attempts while the row still reads, so an empty result on a stored row is `forbidden`. */
-async function missedWrite(ctx: OpContext, id: string): Promise<Result<never, CommonRefusal>> {
+type Written = { readonly data: readonly { id: string }[] | null; readonly error: DatabaseError | null };
+
+/** RLS hides a write a non-admin attempts while the row still reads, so no row back from a stored account is `forbidden`. */
+async function settled(ctx: OpContext, id: string, { data, error }: Written): Promise<Result<BankAccountSaved, CommonRefusal>> {
+  if (error) return refuse(dbRefusal(error));
+  if (data !== null && data.length > 0) return { ok: true, value: { id } };
   return refuse((await stored(ctx, id)) === null ? { kind: 'not_found' } : { kind: 'forbidden' });
 }
 
@@ -91,9 +95,7 @@ export const bankAccountEdit = defineOp<AccountInput, AccountEdit, BankAccountSa
     return change({ id, ...changed });
   },
   async apply(ctx, { id, set }) {
-    const { data, error } = await ctx.db.from('bank_accounts').update(set).eq('household_id', ctx.householdId).eq('id', id).select('id');
-    if (error) return refuse(dbRefusal(error));
-    return data.length === 0 ? missedWrite(ctx, id) : { ok: true, value: { id } };
+    return settled(ctx, id, await ctx.db.from('bank_accounts').update(set).eq('household_id', ctx.householdId).eq('id', id).select('id'));
   },
 });
 
@@ -124,8 +126,6 @@ export const bankAccountDelete = defineOp<IdInput, IdInput, BankAccountSaved, Ba
     return named.includes(true) ? refuse({ kind: 'in_use' }) : change({ id });
   },
   async apply(ctx, { id }) {
-    const { data, error } = await ctx.db.from('bank_accounts').delete().eq('household_id', ctx.householdId).eq('id', id).select('id');
-    if (error) return refuse(dbRefusal(error));
-    return data.length === 0 ? missedWrite(ctx, id) : { ok: true, value: { id } };
+    return settled(ctx, id, await ctx.db.from('bank_accounts').delete().eq('household_id', ctx.householdId).eq('id', id).select('id'));
   },
 });
