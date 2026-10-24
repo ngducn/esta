@@ -65,7 +65,7 @@ export async function TaxPositionCard({ position, rule, otherBusinessRevenueVnd,
         <h2 id="tax-position-title" className="text-body font-medium text-ink-2">
           {t('projected', { year })}
         </h2>
-        <p data-testid="tax-projected" className="text-hero font-semibold tracking-tight text-ink figures">
+        <p data-testid="tax-projected" className="text-h1 font-semibold tracking-tight text-ink figures sm:text-hero">
           <data value={position.projectedVnd}>{money(position.projectedVnd)}</data>
         </p>
         <ThresholdRule position={position} label={progress} />

@@ -24,7 +24,7 @@ export function AddressBlock({ legal, current }: { legal: string | null; current
       {lines.map((line) => (
         <div key={line.key} data-line={line.key} className="grid gap-x-4 sm:col-span-2 sm:grid-cols-subgrid">
           <dt className="text-small text-ink-muted sm:pt-0.5">{line.label}</dt>
-          <dd className={cn('text-body break-words', line.muted ? 'text-ink-muted' : 'text-ink')}>{line.text}</dd>
+          <dd className={cn('break-words', line.muted ? 'text-small text-ink-muted' : 'text-body text-ink')}>{line.text}</dd>
         </div>
       ))}
     </dl>

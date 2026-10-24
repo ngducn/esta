@@ -30,7 +30,7 @@ receipts="$out/../server/receipts/fonts"
 mkdir -p "$receipts"
 cp "$out/LICENSE-OFL.txt" "$receipts/LICENSE-OFL.txt"
 for weight in Regular:400 SemiBold:600; do
-  fonttools fonttools varLib.instancer --quiet "$work/Inter-Variable.ttf" "wght=${weight#*:}" opsz=14 -o "$work/${weight%%:*}.ttf"
+  fonttools fonttools varLib.instancer --quiet "$work/Inter-Variable.ttf" "wght=${weight#*:}" opsz=14 --update-name-table -o "$work/${weight%%:*}.ttf"
   fonttools pyftsubset "$work/${weight%%:*}.ttf" --unicodes="$vietnamese_and_basic_latin,U+00A0-00FF" --layout-features="$text_features,tnum" \
     --name-IDs='*' --no-hinting --output-file="$receipts/Inter-${weight%%:*}.ttf"
 done
