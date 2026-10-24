@@ -4,7 +4,6 @@ import { laneHousehold } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { open, PHONE, serviceGet, servicePatch, serviceUpsert, seriousAxeViolations, toast, vnd } from './helpers/wizard';
 
-// The test clock is one per slot, so this spec runs in the `clock` project, one test at a time.
 test.describe.configure({ mode: 'serial' });
 
 const LANE = 9;
@@ -40,6 +39,10 @@ test('Mẹ reads the overdue note, marks it read, hides the grouped note, undoes
   await expect(overdue).toContainText('Hoàng Văn Em Demo');
   await expect(overdue).toContainText('25/09/2026');
   await expect(overdue).toContainText(vnd('2.800.000'));
+  await page.goto('/collections');
+  const board = page.getByTestId('group-overdue').getByTestId('collections-row').filter({ has: page.getByTestId('row-place').getByText('Phòng 5, Dãy trọ Dĩ An', { exact: true }) });
+  await expect(board, 'the note owes what the collections board shows for Phòng 5').toContainText(vnd('2.800.000'));
+  await page.goto('/assistant');
   await expect(overdue.locator('time')).toHaveText('06:45');
   await expect(overdue.getByTestId('note-unread')).toHaveText('Mới');
 

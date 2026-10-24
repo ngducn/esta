@@ -11,6 +11,8 @@ import { createRng, rngFor } from './rng.ts';
 import { renderSeed } from './sql.ts';
 import type { VariantName } from './variants.ts';
 
+const valueRows = (statement: string) => statement.split(/\n(?= {2}\(|on conflict)/).filter((line) => line.startsWith('  ('));
+
 function insertedRows(sql: string, table: string): string[] {
   const statement = sql.split(';\n').find((part) => part.includes(`insert into ${table} (`));
   return statement === undefined ? [] : statement.split('\n').filter((line) => line.startsWith('  ('));
@@ -84,10 +86,8 @@ describe('generate', () => {
     expect(statements.length).toBeGreaterThan(0);
     for (const statement of statements) {
       expect(statement).toMatch(/\(.*created_at, updated_at\) values/);
-      // An assistant note's time is what the card shows, so only its updated_at takes the stamp.
       const stamps = statement.includes('insert into public.agent_items ') ? /'2026-10-07T02:00:00\.000Z'\),?$/ : /'2026-10-07T02:00:00\.000Z', '2026-10-07T02:00:00\.000Z'\),?$/;
-      // A row ends where the next begins, since a note's Markdown body spans lines.
-      for (const row of statement.split(/\n(?= {2}\(|on conflict)/).filter((line) => line.startsWith('  ('))) {
+      for (const row of valueRows(statement)) {
         expect(row).toMatch(stamps);
       }
     }

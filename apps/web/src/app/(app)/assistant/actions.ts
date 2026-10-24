@@ -20,7 +20,6 @@ export async function runConnectionCheck(): Promise<void> {
   revalidatePath('/assistant');
 }
 
-/** Marks an inbox note read, hides it, or puts it back for `Hoàn tác`. */
 export async function setNoteStatus(raw: unknown): Promise<Result<undefined, { readonly kind: 'failed' }>> {
   const saved = await runOp(agentItemSetStatus, await webOpContext(), raw);
   if (!saved.ok) return { ok: false, reason: { kind: 'failed' } };

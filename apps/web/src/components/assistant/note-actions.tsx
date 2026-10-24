@@ -20,7 +20,6 @@ export type NoteActionLabels = {
 
 const button = buttonVariants({ variant: 'outline' });
 
-/** `Đã đọc` updates the card in place; `Ẩn` takes it off the list, and `Hoàn tác` puts it back as it was, read or unread. */
 export function NoteActions({ id, status, labels }: { id: string; status: InboxStatus; labels: NoteActionLabels }) {
   const hydrated = useHydrated();
   const { pending, error, perform } = useUndoableAction({ failed: labels.failed, restoreFailed: labels.restoreFailed });

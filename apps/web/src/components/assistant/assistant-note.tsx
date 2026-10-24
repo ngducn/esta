@@ -5,10 +5,6 @@ import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { cn } from '@/lib/utils';
 import type { InboxNote } from '@/server/agent/items';
 
-/**
- * One note from Trợ lý on its own card: who wrote it and when, the title, the body as safe Markdown, and the actions
- * the screen passes. Unread is a dot, the word `Mới` and a heavier title, never color alone.
- */
 export async function AssistantNote({ note, time, actions }: { note: InboxNote; time: string; actions?: ReactNode }) {
   const [t, review] = await Promise.all([getTranslations('assistant'), getTranslations('extraction')]);
   const unread = note.status === 'new';

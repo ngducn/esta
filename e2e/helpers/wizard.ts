@@ -86,7 +86,6 @@ export async function servicePatch(page: Page, path: string, data: unknown) {
   expect(response.ok(), await response.text()).toBe(true);
 }
 
-/** Inserts the row, or overwrites the one with its id, so a rerun on one seed starts from the same state. */
 export async function serviceUpsert(page: Page, table: string, row: Record<string, unknown>) {
   const response = await page.request.post(`${rest}/${table}`, {
     headers: { ...service, 'content-type': 'application/json', prefer: 'resolution=merge-duplicates' },

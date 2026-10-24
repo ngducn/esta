@@ -8,14 +8,9 @@ import { useAction } from '@/components/use-action';
 
 export type Undo<T> = {
   readonly message: string;
-  /** Reverses the write from what it returned. A refusal or a throw shows `restoreFailed` in a toast, as the row may be gone. */
   readonly restore: (value: T) => Promise<{ readonly ok: boolean }>;
 };
 
-/**
- * A write on one item that refreshes the screen when it lands, shows one error line when it fails, and, given `undo`,
- * offers `Hoàn tác` in the toast.
- */
 export function useUndoableAction({ failed, restoreFailed }: { readonly failed: string; readonly restoreFailed: string }) {
   const router = useRouter();
   const showUndo = useUndoToast();

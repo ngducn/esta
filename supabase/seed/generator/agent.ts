@@ -65,7 +65,6 @@ const nickname = (key: PropertySeedKey) => PROPERTY_SEEDS.find((seed) => seed.ke
 const date = (value: string) => formatDate(isoDate(value), 'vi');
 const COUNT_WORDS = ['Một', 'Hai', 'Ba'];
 
-/** The watch facts of SPEC §9.3's day that one grouped note words, for the properties the variant has. */
 function watchFacts(household: HouseholdSeed, has: (key: PropertySeedKey) => boolean, today: IsoDate): Watch[] {
   const facts: Watch[] = [];
   const insurance = DOCUMENT_SEEDS.find((seed) => seed.key === 'q7:insurance');
@@ -88,11 +87,6 @@ function watchFacts(household: HouseholdSeed, has: (key: PropertySeedKey) => boo
   return facts;
 }
 
-/**
- * What the portfolio watch left at 06:45 on SPEC §9.3's day, worded from the seed's own facts: the W1 and W3 action
- * notes, then one note grouping the watch facts. Like the invoices, they are that day's state whatever `--as-of` says,
- * and their `created_at` is the time Mẹ reads on the card, so it is set here rather than stamped.
- */
 export const agentItems = publicTable('agent_items', ({ household, properties }) => {
   const today = isoDate(SPEC_TODAY);
   const has = (key: PropertySeedKey) => properties.some((property) => property.key === key);
@@ -114,13 +108,10 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
   if (has(UNPAID.property)) {
     const lease = leaseOf(UNPAID.property, UNPAID.unit);
     const unit = unitOf(household, UNPAID.property, UNPAID.unit);
-    // Rooms bill from the 25th with no due offset, so the period starts on its due date, the key `billingSql` mints.
-    const invoice = seedId(`seed:invoice:${household.key}:${UNPAID.property}:${UNPAID.unit}:${UNPAID.dueDate}`);
-    // Nobody paid this invoice and its period bills rent alone (the September readings go on October's), so the rent is what is owed.
     const owed = formatVnd(vnd(lease.terms.rentVnd), 'vi');
     const title = `${unit.label} ${nickname(UNPAID.property)} quá hạn ${daysBetween(isoDate(UNPAID.dueDate), today)} ngày`;
     const body = `Hóa đơn của ${lease.tenant.fullName} đến hạn ngày ${date(UNPAID.dueDate)} vẫn chưa thanh toán. Còn nợ ${owed}.`;
-    notes.push(note('W1', 30, 'action', `W1:invoice:${invoice}`, title, body, { property_id: propertyId(household, UNPAID.property), unit_id: unit.id, lease_id: seedLeaseId(household, lease), invoice_id: invoice }));
+    notes.push(note('W1', 30, 'action', `W1:lease:${seedLeaseId(household, lease)}:${UNPAID.dueDate}`, title, body, { property_id: propertyId(household, UNPAID.property), unit_id: unit.id, lease_id: seedLeaseId(household, lease) }));
   }
   if (has('thu-duc')) {
     const lease = leaseOf('thu-duc');
@@ -131,7 +122,6 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
   }
   const facts = watchFacts(household, has, today);
   if (facts.length > 0) {
-    // The facts sit under `facts`, so the inbox never reads the insurance paper's id as a review link.
     const title = `${COUNT_WORDS[facts.length - 1] ?? facts.length} việc cần để ý`;
     notes.push(note('watch', 10, 'watch', `group:${SPEC_TODAY}`, title, facts.map((fact) => `- ${fact.line}`).join('\n'), { facts: facts.map((fact) => fact.related) }));
   }

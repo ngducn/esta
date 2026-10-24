@@ -16,17 +16,12 @@ export type InboxNote = {
   readonly operatorOnly: boolean;
   readonly createdAt: Instant;
   readonly retry: RetryHint | null;
-  /** The review of the document the note is about, where a read is checked or a failed one is entered by hand. */
   readonly reviewHref: string | null;
 };
 
 const fields = z.object({ status: z.enum(INBOX), audience: z.enum(['all', 'operator']) });
-const related = z.object({ document_id: z.uuid() });
+const related = z.object({ document_id: z.uuid(), extraction_id: z.uuid() });
 
-/**
- * The household's open assistant notes, unread and read, newest first. A hidden note or one already handled leaves the
- * inbox. RLS keeps operator notes to operators (FND-2).
- */
 export async function listInbox({ household, role }: Pick<Member, 'household' | 'role'>): Promise<InboxNote[]> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase

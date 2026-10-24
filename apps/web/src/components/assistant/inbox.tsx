@@ -6,14 +6,12 @@ import type { InboxNote } from '@/server/agent/items';
 import { AssistantNote } from './assistant-note';
 import { NoteActions } from './note-actions';
 
-/** `HH:mm` for a note from today, `dd/MM HH:mm` for an earlier one. */
 function noteTime(note: InboxNote, today: IsoDate, timezone: string): string {
   const day = businessDate(note.createdAt, timezone);
   const time = wallTime(note.createdAt, timezone);
   return day === today ? time : `${formatDayMonth(day, 'vi')} ${time}`;
 }
 
-/** Trợ lý's notes on the ground, one card each, newest first. */
 export async function Inbox({ notes, today, timezone }: { notes: readonly InboxNote[]; today: IsoDate; timezone: string }) {
   const t = await getTranslations('assistant');
   const unread = notes.filter((note) => note.status === 'new').length;
