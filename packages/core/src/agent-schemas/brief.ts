@@ -3,10 +3,9 @@ import type { Locale } from '../format';
 import { escapeMarkdown } from '../guard';
 import { parseEstaUri } from '../links/esta-uri';
 import { factHandleSchema } from './portfolio-watch';
+import { oneLine, wordCount } from './text';
 
 export const MAX_BRIEF_TOKENS = 300;
-
-const oneLine = (max: number) => z.string().trim().min(1).max(max).regex(/^[^\r\n]*$/, 'one line');
 
 const draftLineSchema = z.object({ text: oneLine(300), related: z.array(factHandleSchema).min(1).max(10) }).strict();
 
@@ -57,7 +56,7 @@ const sections = (brief: Brief) =>
 /** Whitespace-separated words as the brief reads: the summary, each heading and each line. */
 export function briefTokens(brief: Brief): number {
   const text = [brief.summary, ...sections(brief).flatMap(({ heading, lines }) => [heading, ...lines.map((line) => line.text)])].join(' ');
-  return text.split(/\s+/u).filter(Boolean).length;
+  return wordCount(text);
 }
 
 /** The filled brief the job stores: its summary is the note's title and `renderBriefMarkdown` writes its body. */

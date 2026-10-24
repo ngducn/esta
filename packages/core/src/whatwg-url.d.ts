@@ -9,5 +9,7 @@ declare class URL {
   readonly protocol: string;
   readonly hostname: string;
   readonly pathname: string;
+  readonly port: string;
+  readonly search: string;
   readonly searchParams: URLSearchParams;
 }
