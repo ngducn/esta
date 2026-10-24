@@ -35,7 +35,7 @@ const invoiceSchema = z.object({
   lease: z.object({
     id: z.uuid(),
     property_id: z.uuid(),
-    unit: z.object({ label: z.string(), kind: z.string(), property: z.object({ nickname: z.string() }) }),
+    unit: z.object({ label: z.string(), kind: z.string(), property: z.object({ nickname: z.string(), deleted_at: z.string().nullable() }) }),
     tenant: z.object({ full_name: z.string() }).nullable(),
   }),
   lines: z.array(lineSchema),
@@ -57,6 +57,8 @@ export type InvoiceDetail = {
   readonly leaseId: string;
   readonly propertyId: string;
   readonly propertyName: string;
+  /** The property was archived while this bill was owed; its pages are gone, so the bill links to no lease. */
+  readonly propertyArchived: boolean;
   readonly unitLabel: string;
   readonly wholeUnit: boolean;
   readonly tenantName: string | null;
@@ -70,7 +72,7 @@ export type InvoiceDetail = {
 const INVOICE_SELECT =
   'id, number, memo_code, status, period_start, period_end, due_date, issue_on, voided_reason, ' +
   'lease:leases!invoices_household_id_lease_id_fkey(id, property_id, ' +
-  'unit:units!leases_household_id_property_id_unit_id_fkey(label, kind, property:properties!units_household_id_property_id_fkey(nickname)), ' +
+  'unit:units!leases_household_id_property_id_unit_id_fkey(label, kind, property:properties!units_household_id_property_id_fkey(nickname, deleted_at)), ' +
   'tenant:parties!leases_household_id_tenant_party_id_fkey(full_name)), ' +
   'lines:invoice_lines(kind, description, quantity, unit_price_vnd, amount_vnd, sort_order)';
 
@@ -99,6 +101,7 @@ export async function loadInvoice(householdId: string, invoiceId: string): Promi
     leaseId: row.lease.id,
     propertyId: row.lease.property_id,
     propertyName: row.lease.unit.property.nickname,
+    propertyArchived: row.lease.unit.property.deleted_at !== null,
     unitLabel: row.lease.unit.label,
     wholeUnit: row.lease.unit.kind === 'whole',
     tenantName: row.lease.tenant?.full_name ?? null,

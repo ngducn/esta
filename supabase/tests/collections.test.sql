@@ -1,9 +1,9 @@
 begin;
 \ir _harness.psql
 
-select plan(30);
+select plan(34);
 
-select tests.create_household('a') as a, tests.create_household('b') as b \gset
+select tests.create_household('a') as a, tests.create_household('b') as b, tests.create_household('c') as c \gset
 
 select set_config('esta.actor', 'system:test', true);
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
@@ -35,6 +35,25 @@ insert into public.invoices (id, household_id, lease_id, period_start, period_en
   ('00000000-0000-4000-8000-0000000f00b1', :'b', '00000000-0000-4000-8000-00000000e0b1', '2026-10-01', '2026-10-31', '2026-10-05', '2026-10-01', 'B1-202610-001', 'issued', '2026-10-01T00:30:00+07:00', null);
 insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd, amount_vnd)
 select household_id, id, 'rent', 2800000, 2800000 from public.invoices;
+
+-- Household c archived its only property while 001 (due in September) was still unpaid and 002 (due in October) was paid.
+insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
+  ('00000000-0000-4000-8000-0000000000c1', :'c', 'Nhà đã bán', 'SOLD', 'townhouse', 'rental');
+insert into public.parties (id, household_id, kind, full_name, tags) values
+  ('00000000-0000-4000-8000-00000000c0c1', :'c', 'individual', 'Người thuê C Demo', array['tenant']);
+insert into public.leases (id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, status) values
+  ('00000000-0000-4000-8000-00000000e0c1', :'c', '00000000-0000-4000-8000-0000000000c1',
+   private.whole_unit_id('00000000-0000-4000-8000-0000000000c1'), '00000000-0000-4000-8000-00000000c0c1', '2026-01-01', null, 9000000, 'active');
+insert into public.invoices (id, household_id, lease_id, period_start, period_end, due_date, issue_on, number, status, issued_at) values
+  ('00000000-0000-4000-8000-0000000f00c1', :'c', '00000000-0000-4000-8000-00000000e0c1', '2026-09-01', '2026-09-30', '2026-09-05', '2026-09-01', 'SOLD-202609-001', 'issued', '2026-09-01T00:30:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f00c2', :'c', '00000000-0000-4000-8000-00000000e0c1', '2026-10-01', '2026-10-31', '2026-10-05', '2026-10-01', 'SOLD-202610-002', 'issued', '2026-10-01T00:30:00+07:00');
+insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd, amount_vnd)
+select household_id, id, 'rent', 9000000, 9000000 from public.invoices where household_id = :'c';
+insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method) values
+  ('00000000-0000-4000-8000-0000000c00c2', :'c', '00000000-0000-4000-8000-00000000c0c1', 9000000, '2026-10-05', 'bank_transfer');
+insert into public.payment_allocations (household_id, payment_id, invoice_id, amount_vnd) values
+  (:'c', '00000000-0000-4000-8000-0000000c00c2', '00000000-0000-4000-8000-0000000f00c2', 9000000);
+update public.properties set deleted_at = '2026-10-06T09:00:00+07:00' where id = '00000000-0000-4000-8000-0000000000c1';
 
 insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method) values
   ('00000000-0000-4000-8000-0000000c0001', :'a', '00000000-0000-4000-8000-00000000a0a5', 2800000, '2026-07-26', 'cash'),
@@ -142,6 +161,23 @@ select results_eq(
   $$ select number, payment_status from public.collection_candidates('2026-10-01') $$,
   $$ values ('B1-202610-001', 'paid') $$,
   'household b sees only its own board');
+
+select tests.act_as('viewer.c@test.esta.test');
+select results_eq(
+  $$ select number, property_archived, outstanding_vnd from public.collection_candidates('2026-10-01') order by due_date $$,
+  $$ values ('SOLD-202609-001', true, 9000000::bigint) $$,
+  'an archived property keeps its unpaid invoice on the board, marked archived, and drops the one already paid (#134)');
+select results_eq(
+  $$ select number from public.collection_candidates('2026-09-01') $$,
+  $$ values ('SOLD-202609-001') $$,
+  'the unpaid invoice stays in its own month too');
+select is_empty(
+  $$ select 1 from public.collection_candidates('2026-10-01') where not property_archived $$,
+  'a live property is not marked archived');
+select tests.act_as('viewer.a@test.esta.test');
+select is(
+  (select bool_or(property_archived) from public.collection_candidates('2026-10-01')), false,
+  'household a, with no archived property, marks nothing archived');
 
 select tests.clear_request();
 reset role;

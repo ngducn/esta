@@ -137,27 +137,26 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     expect(cell(portfolioSummary(year, portfolioLabels), later.propertyId, 3), "a later termination still owes this year's rent").toBe(48_000_000);
   }, 30_000);
 
-  it("leaves a deleted property's unpaid bill out, so October's collections are collection_candidates' October bills", async () => {
+  it("counts a deleted property's unpaid bill in October's collections, as the board does, and leaves its rooms out of occupancy", async () => {
     const gone = await letTownhouseOwingOctober();
     const before = await readReportSnapshot(client, HOUSEHOLD, PERIOD);
-    expect(before.invoices.filter((invoice) => invoice.leaseId === gone.leaseId && invoice.outstandingVnd > 0), "October's bill is unpaid").toHaveLength(1);
+    const owed = before.invoices.filter((invoice) => invoice.leaseId === gone.leaseId && invoice.outstandingVnd > 0);
+    expect(owed, "October's bill is unpaid").toHaveLength(1);
     const deleted = await client.from('properties').update({ deleted_at: '2026-10-07T02:00:00Z' }).eq('id', gone.propertyId);
     if (deleted.error) throw deleted.error;
 
     const snapshot = await readReportSnapshot(client, HOUSEHOLD, PERIOD);
-    expect(snapshot.invoices.filter((invoice) => invoice.leaseId === gone.leaseId)).toEqual([]);
+    expect(snapshot.invoices.filter((invoice) => invoice.leaseId === gone.leaseId), 'the owed bill stays').toEqual(owed);
     expect(snapshot.units.map((unit) => unit.propertyId), "a deleted property's rooms leave occupancy").not.toContain(gone.propertyId);
     expect(portfolioSummary(snapshot, portfolioLabels).rows.map((row) => row.key), 'and the portfolio').not.toContain(gone.propertyId);
     const { data, error } = await client.rpc('collection_candidates', { p_month: '2026-10-01' });
     if (error) throw error;
     const october = data.filter((bill) => bill.due_date >= '2026-10-01');
     const sum = (key: 'total_vnd' | 'allocated_vnd' | 'outstanding_vnd') => october.reduce((total, bill) => total + bill[key], 0);
-    expect(october.map((bill) => bill.lease_id)).not.toContain(gone.leaseId);
-    expect(monthlyCollections(snapshot, collectionLabels).rows.find((row) => row.key === '2026-10')?.cells.map((cell) => cell.value)).toEqual([
-      '2026-10-01',
-      sum('total_vnd'),
-      sum('allocated_vnd'),
-      sum('outstanding_vnd'),
-    ]);
+    expect(october.filter((bill) => bill.lease_id === gone.leaseId).map((bill) => bill.outstanding_vnd), 'the board lists it').toEqual(owed.map((invoice) => invoice.outstandingVnd));
+    const row = monthlyCollections(snapshot, collectionLabels).rows.find((one) => one.key === '2026-10');
+    expect(row?.cells.map((cell) => cell.value)).toEqual(['2026-10-01', sum('total_vnd'), sum('allocated_vnd'), sum('outstanding_vnd')]);
+    const without = monthlyCollections({ ...snapshot, invoices: snapshot.invoices.filter((invoice) => invoice.leaseId !== gone.leaseId) }, collectionLabels).rows.find((one) => one.key === '2026-10');
+    expect(row?.cells[3]?.value, "the deleted property's bill is in the owed total").toBe(Number(without?.cells[3]?.value) + owed.reduce((total, invoice) => total + invoice.outstandingVnd, 0));
   }, 30_000);
 });

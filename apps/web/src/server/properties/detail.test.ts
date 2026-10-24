@@ -84,6 +84,7 @@ const overdueRoom = {
   invoice_id: 'a3b0c6a4-0f43-5d55-9d55-3a0b1b8f7c11',
   property_id: PROPERTY_ID,
   property_nickname: 'Dãy trọ Dĩ An',
+  property_archived: false,
   unit_label: 'Phòng 5',
   unit_kind: 'room',
   lease_id: '04826c70-a540-56b8-9de6-1a44987c371f',

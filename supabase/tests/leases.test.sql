@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(58);
+select plan(69);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -45,6 +45,39 @@ select throws_ok(
 select lives_ok(
   $$ update public.leases set rent_vnd = 3000000, deposit_vnd = 3000000 where id = '00000000-0000-4000-8000-00000000e001' $$,
   'a draft takes rent and deposit edits');
+
+-- #186: a rent increase with no interval, a zero step or a zero rounding is refused when it is saved, not at activation.
+select throws_ok(
+  $$ update public.leases set escalation = '{"kind": "percent", "value": 500}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  '23514', null, 'a percent increase without an interval is refused');
+select throws_ok(
+  $$ update public.leases set escalation = '{"kind": "fixed", "value": 200000, "every_months": 0}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  '23514', null, 'an interval of 0 months is refused');
+select throws_ok(
+  $$ update public.leases set escalation = '{"kind": "percent", "value": 0, "every_months": 12}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  '23514', null, 'a percent step of 0 is refused');
+select throws_ok(
+  $$ update public.leases set escalation = '{"kind": "fixed", "value": 200000, "every_months": 12, "rounding_vnd": 0}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  '23514', null, 'a rounding of 0 is refused');
+select throws_ok(
+  $$ update public.leases set escalation = '{"kind": "percent", "value": "5", "every_months": 12}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  '23514', null, 'a step written as text is refused');
+select throws_ok(
+  $$ update public.leases set escalation = '{"kind": "percent", "value": 500, "every_months": 12.5}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  '23514', null, 'a fractional interval is refused');
+select lives_ok(
+  $$ update public.leases set escalation = '{"kind": "percent", "value": 500, "every_months": 12, "rounding_vnd": 1000}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  'a whole percent step with its interval is saved');
+select lives_ok(
+  $$ update public.leases set escalation = '{"kind": "none"}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  'no increase is saved');
+select ok(not has_function_privilege('anon', 'private.jsonb_whole_between(jsonb, bigint, bigint)', 'execute'), 'anon cannot run the escalation shape helper');
+select is(private.jsonb_whole_between('500'::jsonb, 1, 10000), true, 'a member runs the helper on a whole number without a permission error (#128)');
+select tests.act_as_service('{"x-esta-actor": "system:test"}');
+select lives_ok(
+  $$ update public.leases set escalation = '{"kind": "percent", "value": 500, "every_months": 12}' where id = '00000000-0000-4000-8000-00000000e001' $$,
+  'the service role, which the agent and cron write leases with, passes the escalation check');
+select tests.act_as('member.a@test.esta.test');
 select throws_ok(
   $$ update public.leases set status = 'active', paid_through_date = '2026-09-30' where id = '00000000-0000-4000-8000-00000000e001' $$,
   '42501', 'permission denied for table leases', 'a member cannot activate by writing the status, which would skip issuance (#144)');

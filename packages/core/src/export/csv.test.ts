@@ -46,4 +46,16 @@ describe('toCsv', () => {
   it('writes a count of days as a plain integer', () => {
     expect(toCsv({ columns: [{ id: 'vacant', label: 'Ngày trống' }], rows: [], totals: { key: 'total', cells: [countCell(1_028)] } }).endsWith('1028\r\n')).toBe(true);
   });
+
+  it.each(['=1+1', '+84 90', '-cmd', '@SUM(A1)', '\tTab', '\rReturn', '=HYPERLINK("http://x","y")'])('writes typed text %j as text, not a formula', (typed) => {
+    const [header, row] = toCsv({ columns: [{ id: 'c', label: typed }], rows: [], totals: { key: 'total', cells: [textCell(typed)] } }).slice(1).split('\r\n');
+    const written = (line: string | undefined) => line?.replace(/^"|"$/g, '').replaceAll('""', '"');
+    expect(written(header)).toBe(`'${typed}`);
+    expect(written(row)).toBe(`'${typed}`);
+  });
+
+  it('leaves negative amounts and ordinary text alone', () => {
+    const csv = toCsv({ columns: [{ id: 'c', label: 'Thu' }], rows: [{ key: 'a', cells: [vndCell(vnd(-750_000))] }], totals: { key: 'total', cells: [textCell('Tổng - cả năm')] } });
+    expect(csv.slice(1)).toBe('Thu\r\n-750000\r\nTổng - cả năm\r\n');
+  });
 });

@@ -93,6 +93,11 @@ function CollectionsRow({
         <span data-testid="row-place" className="block min-w-0 text-body font-medium break-words text-ink">
           {place}
         </span>
+        {row.propertyArchived ? (
+          <span data-testid="row-archived" className="text-small font-medium text-ink-2">
+            {t('propertyArchived')}
+          </span>
+        ) : null}
       </TableCell>
       <TableCell className={cn('text-body text-ink-2 max-sm:border-0 max-sm:p-0', cell.tenant)}>
         <span data-testid="row-tenant" className="break-words">

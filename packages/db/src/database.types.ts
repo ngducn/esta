@@ -3141,6 +3141,7 @@ export type Database = {
           payment_status: string
           period_end: string
           period_start: string
+          property_archived: boolean
           property_id: string
           property_nickname: string
           tenant_name: string

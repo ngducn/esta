@@ -1328,6 +1328,7 @@
     "groupEmpty": "{group, select, overdue {Nobody is overdue.} due {No invoice is due today.} notDue {No invoice is waiting to fall due.} other {No invoice is paid yet.}}",
     "empty": "No invoices in {month}.",
     "place": "{unit}, {property}",
+    "propertyArchived": "Property archived",
     "noTenant": "No tenant",
     "carriedFrom": "from {month}",
     "dueOn": "Due {date}",
