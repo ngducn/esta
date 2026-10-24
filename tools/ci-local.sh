@@ -185,6 +185,7 @@ run_job() {
 			pnpm db:start && empty_photos &&
 			{ if node -e 'process.exit(require("./package.json").scripts["db:seed:check"]?0:1)'; then reset_db pnpm db:seed:check; else reset_db pnpm db:reset; fi; } &&
 			pnpm db:test &&
+			pnpm --filter web test:integration &&
 			pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
 		;;
 	e2e)

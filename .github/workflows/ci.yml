@@ -71,6 +71,10 @@ jobs:
       - name: Every business table seeded in every household, and the SPEC 9.3 seed facts
         run: pnpm seed:coverage --database && pnpm seed:facts
       - run: pnpm db:test
+      - name: Screens and reports against the seeded database
+        # Each file works in its own seeded household, so the files do not collide; scripts/web-integration.ts sets the
+        # test clock first and clears it after.
+        run: pnpm --filter web test:integration
       - name: Generated database types match the migrations
         run: pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
 
