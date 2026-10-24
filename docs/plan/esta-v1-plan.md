@@ -4346,8 +4346,8 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **You see.**
 
-- [ ] At 2026-10-07 06:05 on the `full` seed, `research_items` for lane households holds the replayed items, each with an https source, a source name and a publication date, and the operator's `Lần chạy gần đây` table shows the run.
-- [ ] A replayed empty run leaves the item `Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.` in Hộp thư.
+- [x] At 2026-10-07 06:05 on the `full` seed, `research_items` for lane households holds the replayed items, each with an https source, a source name and a publication date, and the operator's `Lần chạy gần đây` table shows the run.
+- [x] A replayed empty run leaves the item `Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.` in Hộp thư.
 
 **Verify, unit.**
 
@@ -4356,18 +4356,18 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [x] `apps/agent/test/jobs/research-scan.test.ts` covers caps denied by the hook, an unreachable source dropped, URL and title duplicates dropped, the empty item, per-item repair turns and related property ids that exist (AGT-5).
 - [x] `supabase/tests/research.test.sql` covers `research_title_similar` scoped to one household. Run `pnpm db:test`.
 - [x] The `research_scan` golden test (`apps/agent/test/golden/research.test.ts`) passes in replay.
-- [ ] Run `pnpm check`.
+- [x] Run `pnpm check`.
 
 **Verify, live.**
 
-- [ ] Lane 4. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/research-empty`, the scan for lane4 writes only the empty item.
-- [ ] Lane 5. A second `research_scan` for the same day from the queue reads `done` and the `research_items` count is unchanged.
-- [ ] Lane 7. With `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/research-over-cap`, the run's `agent_runs` row shows 13 `WebSearch` and 9 `WebFetch` calls with one of each in `permission_denials`.
-- [ ] Lane 8. Every stored `summary_vi` has at most 60 whitespace-separated tokens and every `related_property_ids` entry exists in `properties`.
+- [x] Lane 4. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/research-empty`, the scan for lane4 writes only the empty item.
+- [x] Lane 5. A second `research_scan` for the same day from the queue reads `done` and the `research_items` count is unchanged.
+- [x] Lane 7. With `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/research-over-cap`, the run's `agent_runs` row shows 13 `WebSearch` and 9 `WebFetch` calls with one of each in `permission_denials`.
+- [x] Lane 8. Every stored `summary_vi` has at most 60 whitespace-separated tokens and every `related_property_ids` entry exists in `properties`.
 
 **Verify, perf.**
 
-- [ ] `research_scan` in replay under 20 s; `EXPLAIN (ANALYZE)` of `research_title_similar` under 50 ms over 20 queries.
+- [x] `research_scan` in replay under 20 s; `EXPLAIN (ANALYZE)` of `research_title_similar` under 50 ms over 20 queries.
 
 **Review gate.** None; P5-05b carries the screens.
 
