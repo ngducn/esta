@@ -132,7 +132,7 @@ test('rule 1: Mẹ uploads the Bảo Lộc scan, sees Đang đọc, then Chờ x
   await page.goto('/assistant');
   const item = page.getByTestId('inbox-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first();
   await expect(item).toBeVisible();
-  await expect(item, 'dated by the frozen test clock').toContainText('07/10/2026');
+  await expect(item.locator('time'), 'timed by the frozen test clock').toHaveText('09:00');
   await shot(page, 'p2-03-new-items-390x844-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
@@ -305,7 +305,7 @@ test('rule 9: in English at 130% and dark, the pill and the list read in English
   await expect(pill(page, documentId)).toHaveText('Ready for review', { timeout: 10_000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.goto('/assistant');
-  await expect(page.getByRole('heading', { name: 'New items' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
   await expect(page.getByTestId('inbox-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   } finally {
