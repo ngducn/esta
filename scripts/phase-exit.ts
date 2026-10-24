@@ -14,6 +14,8 @@ export type PhaseCheck =
       readonly commands: readonly (readonly string[])[];
       /** Test files, from the repo root, that must name `id`; the row fails before running when one does not. */
       readonly cites?: readonly string[];
+      /** Added to the environment of every command in the row. */
+      readonly env?: Readonly<Record<string, string>>;
       readonly playwrightReport?: (json: string) => Outcome;
     }
   | { readonly id: string; readonly verify: (repoRoot: string) => Outcome };
@@ -141,6 +143,13 @@ export function verifyMomTest(text: string): Outcome {
 /** Local CI's policy: a test that fails gets one retry, and a test that fails twice fails its row. */
 const e2e = (spec: string) => ['pnpm', 'e2e', '--retries=1', '--reporter=list', spec];
 
+/** North-star serves the production build, as CI does, so a failure only `next dev` shows cannot fail a phase exit (#292). */
+const northStar = (retries: number, reporter: string) => ({
+  id: 'North-star',
+  commands: [['pnpm', 'e2e:northstar', `--retries=${retries}`, `--reporter=${reporter}`]],
+  env: { ESTA_E2E_SERVER: 'build' },
+});
+
 /** The titles Playwright's list reporter prints under its `N flaky` line: tests that failed once and then passed. */
 export function flakyTests(log: string): string[] {
   const lines = log.split('\n');
@@ -231,7 +240,7 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     // The replay golden suite scores every synthetic certificate and bill against AGENT.md §7.2 and fails below a target.
     { id: 'AGT-2', commands: [['pnpm', '--filter', 'agent', 'exec', 'vitest', 'run', 'test/golden/extract.test.ts', 'test/sensitive-documents.test.ts']] },
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
-    { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
+    northStar(1, 'list'),
     { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '2']] },
   ],
   // The integration tests want a fresh full seed, and their cron test moves every household past SPEC §9.3's day, so
@@ -255,7 +264,7 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     { id: 'PBT', commands: [['pnpm', '--filter', '@esta/core', 'exec', 'vitest', 'run', 'src/allocation/allocate.property.test.ts', 'src/matching/match.property.test.ts'], ['pnpm', 'db:test', 'supabase/tests/lease_schedule.test.sql']] },
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
-    { id: 'North-star', commands: [['pnpm', 'e2e:northstar', '--retries=1', '--reporter=list']] },
+    northStar(1, 'list'),
     { id: 'Lighthouse', commands: [['pnpm', 'db:reset'], ['node', 'scripts/perf/phase-budget.ts', '--phase', '3']] },
     { id: 'VietQR', verify: (repoRoot) => verifyVietQrScan(readFileSync(join(repoRoot, STATUS), 'utf8')) },
     { id: 'Mom', verify: (repoRoot) => verifyMomTest(readFileSync(join(repoRoot, MOM_TEST), 'utf8')) },
@@ -269,11 +278,7 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     cited('FIN-4', { core: ['reports/reports.test.ts', 'reports/summaries.test.ts'], integration: ['server/reports/snapshot.integration.test.ts'] }),
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
-    {
-      id: 'North-star',
-      commands: [['pnpm', 'e2e:northstar', '--retries=0', '--reporter=list,json']],
-      playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR_PHASE_4),
-    },
+    { ...northStar(0, 'list,json'), playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR_PHASE_4) },
   ],
 };
 
@@ -345,7 +350,7 @@ export function checkPhase(phase: string, { repoRoot, checks = PHASE_CHECKS, run
       log = rowLog;
       writeFileSync(rowLog, '');
       rmSync(report, { force: true });
-      const env = check.playwrightReport === undefined ? {} : { PLAYWRIGHT_JSON_OUTPUT_FILE: report };
+      const env = check.playwrightReport === undefined ? { ...check.env } : { ...check.env, PLAYWRIGHT_JSON_OUTPUT_FILE: report };
       const failedCommand = check.commands.find((command) => run(command, rowLog, env) !== 0);
       if (failedCommand !== undefined) outcome = { pass: false, detail: `${failedCommand.join(' ')} failed, log ${rowLog}` };
       else if (check.playwrightReport === undefined) outcome = { pass: true, detail: rowLog };
