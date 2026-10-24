@@ -114,6 +114,7 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
   if (has(UNPAID.property)) {
     const lease = leaseOf(UNPAID.property, UNPAID.unit);
     const unit = unitOf(household, UNPAID.property, UNPAID.unit);
+    // Rooms bill from the 25th with no due offset, so the period starts on its due date, the key `billingSql` mints.
     const invoice = seedId(`seed:invoice:${household.key}:${UNPAID.property}:${UNPAID.unit}:${UNPAID.dueDate}`);
     // Nobody paid this invoice and its period bills rent alone (the September readings go on October's), so the rent is what is owed.
     const owed = formatVnd(vnd(lease.terms.rentVnd), 'vi');

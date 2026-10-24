@@ -43,7 +43,7 @@ test('Mẹ reads the overdue note, marks it read, hides the grouped note, undoes
   await expect(overdue.locator('time')).toHaveText('06:45');
   await expect(overdue.getByTestId('note-unread')).toHaveText('Mới');
 
-  await overdue.getByRole('button', { name: `Đánh dấu đã đọc: ${NOTES.overdue.title}` }).click();
+  await overdue.getByRole('button', { name: `Đã đọc: ${NOTES.overdue.title}` }).click();
   await expect(overdue).toHaveAttribute('data-status', 'read');
   await expect(overdue.getByTestId('note-unread'), 'a read note drops the dot and the word Mới').toHaveCount(0);
   await expect(overdue.getByTestId('note-read')).toHaveCount(0);
@@ -51,7 +51,7 @@ test('Mẹ reads the overdue note, marks it read, hides the grouped note, undoes
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   const watch = note(page, NOTES.watch.title);
-  await watch.getByTestId('note-dismiss').click();
+  await watch.getByRole('button', { name: `Ẩn ghi chú: ${NOTES.watch.title}` }).click();
   await expect(watch).toHaveCount(0);
   await expect(toast(page)).toContainText('Đã ẩn ghi chú.');
   await toast(page).getByRole('button', { name: 'Hoàn tác' }).click();

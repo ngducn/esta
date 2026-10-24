@@ -1048,7 +1048,7 @@
     "unread": "Mới",
     "operatorOnly": "Chỉ người vận hành",
     "markRead": "Đã đọc",
-    "markReadLabel": "Đánh dấu đã đọc: {title}",
+    "markReadLabel": "Đã đọc: {title}",
     "dismiss": "Ẩn",
     "dismissLabel": "Ẩn ghi chú: {title}",
     "dismissed": "Đã ẩn ghi chú.",
