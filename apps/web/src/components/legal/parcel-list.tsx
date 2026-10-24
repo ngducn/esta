@@ -8,7 +8,7 @@ import { LegalCard } from './legal-card';
 export async function ParcelTotal({ parcels }: { parcels: readonly LegalRow<'parcels'>[] }) {
   const [t, locale] = await Promise.all([getTranslations('propertyLegal'), getLocale()]);
   return (
-    <p data-testid="land-area-total" className="figures text-body font-semibold text-ink">
+    <p data-testid="land-area-total" className="figures text-body font-medium text-ink">
       {t('totalLandArea', { area: formatArea(sumLandArea(parcels), locale) })}
     </p>
   );
@@ -53,7 +53,7 @@ export async function ParcelList({
                   const known = codes.get(purpose.land_use_code);
                   return (
                     <li key={`${purpose.land_use_code}-${index}`} data-testid="purpose" data-code={purpose.land_use_code} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2">
-                      <span className="figures text-body font-bold text-ink">{purpose.land_use_code}</span>
+                      <span className="figures text-body font-medium text-ink">{purpose.land_use_code}</span>
                       <span className={known === undefined ? 'text-small text-ink-muted italic' : 'text-body text-ink-2'}>
                         {known === undefined ? t('unknownCode') : locale === 'vi' ? known.nameVi : known.nameEn}
                       </span>

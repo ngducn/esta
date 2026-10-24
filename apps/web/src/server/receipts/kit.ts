@@ -36,18 +36,18 @@ export const receiptColor = (token: ColorToken): Rgb => oklchToSrgb255(colors[to
 
 export const receiptHex = (token: ColorToken) => oklchHex(colors[token].light);
 
-export type ReceiptFont = { readonly weight: 400 | 700; readonly data: Buffer };
+export type ReceiptFont = { readonly weight: 400 | 600; readonly data: Buffer };
 
 let fonts: readonly ReceiptFont[] | undefined;
 
 /**
- * Static instances of the app's Plus Jakarta Sans subset (`pnpm fonts:build`). They load from `process.cwd()`, which
+ * Static instances of the app's Inter subset (`pnpm fonts:build`). They load from `process.cwd()`, which
  * `next.config.ts` traces into the route, because pdf-lib and satori take TrueType bytes, not a CSS font.
  */
 export function receiptFonts(): readonly ReceiptFont[] {
-  fonts ??= ([['Regular', 400], ['Bold', 700]] as const).map(([name, weight]) => ({
+  fonts ??= ([['Regular', 400], ['SemiBold', 600]] as const).map(([name, weight]) => ({
     weight,
-    data: readFileSync(join(process.cwd(), 'src/server/receipts/fonts', `PlusJakartaSans-${name}.ttf`)),
+    data: readFileSync(join(process.cwd(), 'src/server/receipts/fonts', `Inter-${name}.ttf`)),
   }));
   return fonts;
 }

@@ -108,7 +108,7 @@ export function ExtractionFieldRow({
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-1 basis-48 flex-col gap-0.5">
-          <p className="text-small font-semibold text-ink-muted">{label}</p>
+          <p className="text-small font-medium text-ink-muted">{label}</p>
           <p data-testid="field-value" className={cn('text-body break-words', value === null ? 'text-ink-muted' : 'text-ink')}>
             {value ?? t('empty')}
           </p>
@@ -118,20 +118,20 @@ export function ExtractionFieldRow({
             </p>
           ) : null}
           {message === null ? null : (
-            <p data-testid="field-error" className={cn('text-small font-semibold', error === null ? 'text-due' : 'text-overdue')}>
+            <p data-testid="field-error" className={cn('text-small font-medium', error === null ? 'text-due' : 'text-overdue')}>
               {message}
             </p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {field.marked && decision === undefined ? (
-            <span data-testid="needs-check" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks.due.pill)}>
+            <span data-testid="needs-check" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks.due.pill)}>
               <StatusShape status="due" className="size-4" />
               <span>{t('needsCheck')}</span>
             </span>
           ) : null}
           {decision === undefined ? null : (
-            <span data-testid="decided" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks.paid.pill)}>
+            <span data-testid="decided" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks.paid.pill)}>
               <StatusShape status="paid" className="size-4" />
               <span>{t('decision', { decision: decision.kind })}</span>
             </span>
@@ -176,7 +176,7 @@ export function ExtractionFieldRow({
         <div data-testid="field-editor" className="flex flex-col gap-3 rounded-md bg-surface-2 p-4">
           {editor === 'select' ? (
             <label className="flex flex-col gap-1">
-              <span className="text-body font-semibold text-ink">{label}</span>
+              <span className="text-body font-medium text-ink">{label}</span>
               <select
                 className="min-h-touch rounded-md border border-field bg-surface px-3 text-body text-ink"
                 defaultValue={startText}
@@ -198,7 +198,7 @@ export function ExtractionFieldRow({
             <MoneyInput label={label} defaultText={startText} onTextChange={edit} />
           ) : (
             <label className="flex flex-col gap-1">
-              <span className="text-body font-semibold text-ink">{label}</span>
+              <span className="text-body font-medium text-ink">{label}</span>
               <Input
                 data-testid="field-input"
                 defaultValue={startText}

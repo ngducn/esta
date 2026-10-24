@@ -30,7 +30,7 @@ export function UndoBatchRow({ batchId, summary, body, children }: { batchId: st
               <p className="text-overdue">{t(state.status === 'failed' ? 'failed' : 'alreadyUndone')}</p>
             ) : (
               <div className="flex max-w-prose flex-col gap-1">
-                <p className="font-semibold text-overdue">{t('refused')}</p>
+                <p className="font-medium text-overdue">{t('refused')}</p>
                 <ul className="flex flex-col gap-1 text-ink-2">
                   {state.blockers.map(({ reason, flow }) => (
                     <li key={reason}>

@@ -19,7 +19,7 @@ export function SortSelect({ label, value, options }: { label: string; value: st
   }
 
   return (
-    <label className="relative flex min-h-touch items-center gap-2 rounded-sm lg:ml-auto border border-rule-strong bg-surface pr-9 pl-3.5 text-small font-semibold text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+    <label className="relative flex min-h-touch items-center gap-2 rounded-sm lg:ml-auto border border-rule-strong bg-surface pr-9 pl-3.5 text-small font-medium text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
       <span className="text-ink-muted">{label}</span>
       <span aria-hidden="true">{current?.label}</span>
       <select

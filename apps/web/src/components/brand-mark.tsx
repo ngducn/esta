@@ -9,7 +9,7 @@ export function BrandMark({ name, className }: { name: string; className?: strin
           <path d={brandHousePath} />
         </svg>
       </span>
-      <span className="text-h3 font-bold tracking-tight text-ink">{name}</span>
+      <span className="text-h3 font-semibold tracking-tight text-ink">{name}</span>
     </span>
   );
 }

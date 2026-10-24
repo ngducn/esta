@@ -51,7 +51,7 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
             </div>
           }
         />
-        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-small font-semibold text-ink shadow-card">
+        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-small font-medium text-ink shadow-card">
           {card.kindLabel}
         </span>
       </div>
@@ -63,7 +63,7 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
             <StatusPill key={pill.label} status={pill.status} label={pill.label} />
           ))}
         </div>
-        <h2 className="text-lead font-bold break-words text-ink">
+        <h2 className="text-lead font-semibold break-words text-ink">
           <IntentLink href={`/properties/${card.id}`} className="outline-none after:absolute after:inset-0">
             {card.nickname}
           </IntentLink>
@@ -83,7 +83,7 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
           {card.rent === null ? null : (
             <p data-testid="property-rent" className="flex flex-wrap items-baseline gap-x-2 text-small text-ink-muted">
               {card.rent.label}
-              <span className="figures text-lead font-bold text-ink">{card.rent.amount}</span>
+              <span className="figures text-lead font-medium text-ink">{card.rent.amount}</span>
             </p>
           )}
           <CompletenessRingView {...card.completeness} />

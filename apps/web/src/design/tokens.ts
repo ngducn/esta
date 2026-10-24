@@ -55,8 +55,8 @@ export const typeScale = {
   'hero-xl': { px: 44, leading: leading.tight },
 } as const satisfies Record<string, { px: number; leading: number }>;
 
-/** The weights the variable font ships; Tailwind offers no other `font-*` weight. */
-export const fontWeight = { normal: 400, medium: 500, semibold: 600, bold: 700 } as const;
+/** The weights the variable font ships; Tailwind offers no other `font-*` weight. Nothing is heavier than semibold (Ryan, 2026-10-24). */
+export const fontWeight = { normal: 400, medium: 500, semibold: 600 } as const;
 
 export const spacing = { unitPx: 4, touchPx: 44 } as const;
 
@@ -91,10 +91,10 @@ export const motion = {
 
 export const typefaces = {
   sans: {
-    family: 'Plus Jakarta Sans',
-    file: 'PlusJakartaSans-Variable.woff2',
+    family: 'Inter',
+    file: 'Inter-Variable.woff2',
     weights: Object.values(fontWeight),
-    opticalSize: false,
+    opticalSize: true,
     requiredFeatures: ['tnum'],
   },
 } as const satisfies Record<

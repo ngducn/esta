@@ -9,7 +9,7 @@ export function Group({ id, title, aside, children }: { id?: string; title: stri
   return (
     <section id={id} aria-labelledby={headingId} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id={headingId} className="text-lead font-bold text-ink">
+        <h2 id={headingId} className="text-lead font-semibold text-ink">
           {title}
         </h2>
         {aside}
@@ -48,7 +48,7 @@ export function TextField({
   const id = inputId ?? generated;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {label}
       </label>
       {hint === undefined ? null : (
@@ -92,7 +92,7 @@ export function NoteField({
   const id = useId();
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {labels.note} <span className="font-normal text-ink-muted">({labels.optional})</span>
       </label>
       <textarea

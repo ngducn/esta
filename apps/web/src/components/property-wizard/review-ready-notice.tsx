@@ -37,7 +37,7 @@ export function ReviewReadyNotice({ documentId, statuses, reviewHref }: { docume
     return (
       <Notice tone="accent" icon={<ReadyIcon ready={ready} />} state={ready ? 'ready' : 'failed'}>
         {ready ? t('ready') : t('readFailed')}{' '}
-        <Link href={reviewHref} data-testid="review-ready-link" className="font-semibold text-accent underline underline-offset-4 hover:text-ink">
+        <Link href={reviewHref} data-testid="review-ready-link" className="font-medium text-accent underline underline-offset-4 hover:text-ink">
           {ready ? t('readyLink') : t('readFailedLink')}
         </Link>
       </Notice>

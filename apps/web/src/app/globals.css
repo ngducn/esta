@@ -4,7 +4,7 @@
 @layer base {
   html {
     font-size: calc(100% * var(--text-scale));
-    font-family: var(--font-plus-jakarta-sans);
+    font-family: var(--font-inter);
     background-color: var(--ground);
     color: var(--ink);
   }
@@ -36,7 +36,7 @@
 
   h1,
   h2 {
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.02em;
   }
 

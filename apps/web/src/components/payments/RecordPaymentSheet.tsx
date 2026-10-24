@@ -148,7 +148,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
               {t('title')}
             </SheetTitle>
             <SheetDescription className="flex flex-col">
-              <span data-testid="payment-place" className="font-semibold break-words text-ink">
+              <span data-testid="payment-place" className="font-medium break-words text-ink">
                 {target.place}
               </span>
               {target.tenantName === null ? null : <span className="break-words text-ink-2">{target.tenantName}</span>}
@@ -165,14 +165,14 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
 
           {plan?.ok === true ? (
             <div data-testid="payment-allocation" className="flex flex-col gap-1 text-body">
-              <p className="font-semibold text-ink">{t('allocation')}</p>
+              <p className="font-medium text-ink">{t('allocation')}</p>
               <ul className="flex flex-col gap-0.5">
                 {plan.value.allocations.map((allocation) => {
                   const invoice = byId.get(allocation.invoiceId);
                   if (invoice === undefined) return null;
                   const rest = invoice.outstandingVnd - allocation.amountVnd;
                   return (
-                    <li key={allocation.invoiceId} className={cn('figures', rest > 0 ? 'font-semibold text-due' : 'text-ink-2')}>
+                    <li key={allocation.invoiceId} className={cn('figures', rest > 0 ? 'font-medium text-due' : 'text-ink-2')}>
                       {rest > 0
                         ? t('allocationShort', { month: month(invoice), amount: money(allocation.amountVnd), rest: money(vnd(rest)) })
                         : t('allocationSettled', { month: month(invoice), amount: money(allocation.amountVnd) })}
@@ -181,7 +181,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
                 })}
               </ul>
               {plan.value.creditVnd > 0 ? (
-                <p data-testid="payment-credit" className="flex items-start gap-2 font-semibold text-ink">
+                <p data-testid="payment-credit" className="flex items-start gap-2 font-medium text-ink">
                   <PiggyBank aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-ink-muted" />
                   {target.tenantName === null
                     ? t('creditNoTenant', { amount: money(plan.value.creditVnd) })
@@ -224,12 +224,12 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
           ) : null}
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-body font-semibold text-ink">{t('method')}</legend>
+            <legend className="mb-2 text-body font-medium text-ink">{t('method')}</legend>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
               {METHODS.map(({ value, label, Icon }) => (
                 <label
                   key={value}
-                  className="flex min-h-touch cursor-pointer items-center gap-2 rounded-md border border-field bg-surface px-3 py-2.5 text-body font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="flex min-h-touch cursor-pointer items-center gap-2 rounded-md border border-field bg-surface px-3 py-2.5 text-body font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
                 >
                   <input
                     type="radio"
@@ -257,7 +257,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, target }: { ope
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-x-3 text-body">
               <p className="text-ink">
-                <span className="font-semibold">{t('date')}</span>{' '}
+                <span className="font-medium">{t('date')}</span>{' '}
                 <span data-testid="payment-date" className="figures text-ink-2">
                   {t('dateToday', { date: formatDate(target.today, locale) })}
                 </span>

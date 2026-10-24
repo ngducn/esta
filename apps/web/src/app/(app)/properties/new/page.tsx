@@ -110,7 +110,7 @@ export default async function NewPropertyPage({ searchParams }: { searchParams: 
       <header className="flex max-w-3xl flex-col gap-3">
         <h1 className="text-h2 break-words lg:text-h1">{property === null ? t('pageTitle') : property.nickname}</h1>
         <div className="flex flex-col gap-2">
-          <p data-testid="wizard-progress" className="text-body font-semibold text-ink-2 figures">
+          <p data-testid="wizard-progress" className="text-body font-medium text-ink-2 figures">
             {t('progress', { n: position + 1, total: path.length, step: state.step })}
           </p>
           <ol aria-hidden="true" className="flex gap-1.5">

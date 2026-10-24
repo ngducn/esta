@@ -51,12 +51,12 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
 
   return (
     <section aria-labelledby="lease-deposit-ledger" data-testid="deposit-ledger" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="lease-deposit-ledger" className="text-lead font-bold text-ink">
+      <h2 id="lease-deposit-ledger" className="text-lead font-semibold text-ink">
         {t('title')}
       </h2>
       {rows.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="flex items-center gap-3 text-body font-semibold text-ink">
+          <p className="flex items-center gap-3 text-body font-medium text-ink">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
               <PiggyBank className="size-5" strokeWidth={1.8} aria-hidden="true" />
             </span>
@@ -86,8 +86,8 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
                 data-kind={row.kind}
                 className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 border-b border-rule py-3 last:border-b-0"
               >
-                <span className="text-body font-semibold text-ink">{t('kind', { kind: row.kind })}</span>
-                <MoneyDisplay amount={vnd(row.kind === 'received' ? row.amountVnd : -row.amountVnd)} variant="signed" className="text-body font-semibold text-ink" />
+                <span className="text-body font-medium text-ink">{t('kind', { kind: row.kind })}</span>
+                <MoneyDisplay amount={vnd(row.kind === 'received' ? row.amountVnd : -row.amountVnd)} variant="signed" className="text-body font-medium text-ink" />
                 <span className="text-small text-ink-muted figures">{formatDate(row.onDate, locale)}</span>
                 <span className="text-end text-small text-ink-muted figures">{t('heldAfter', { amount: formatVnd(row.heldVnd, locale) })}</span>
                 {row.invoicePeriodStart === null ? null : (

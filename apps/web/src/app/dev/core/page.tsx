@@ -35,7 +35,7 @@ const COLUMNS: readonly Column[] = [
     label: 'Result',
     cell: 'result',
     value: (row) => (row.matches ? 'OK' : 'MISMATCH'),
-    className: (row) => (row.matches ? '' : 'font-semibold underline'),
+    className: (row) => (row.matches ? '' : 'font-medium underline'),
   },
 ];
 

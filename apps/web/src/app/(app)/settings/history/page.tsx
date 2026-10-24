@@ -58,11 +58,11 @@ export default async function ChangeHistoryPage() {
               const bills = batch.issued_bills.map((bill) => t('bill', { number: bill.number, month: formatMonthYear(bill.period_start, intl.locale) })).join('; ');
               const lines = (
                 <>
-                  <p className="text-body font-semibold text-ink wrap-anywhere">{batch.summary}</p>
+                  <p className="text-body font-medium text-ink wrap-anywhere">{batch.summary}</p>
                   <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-ink-muted">
-                    <span className="rounded-full bg-surface-2 px-2 font-semibold text-ink-2">{t('via')}</span>
+                    <span className="rounded-full bg-surface-2 px-2 font-medium text-ink-2">{t('via')}</span>
                     <span>{t('entry', { name: batch.planner_name ?? t('someone'), time, date })}</span>
-                    <span data-testid="batch-status" className={batch.status === 'undone' ? 'font-semibold text-ink-2' : undefined}>
+                    <span data-testid="batch-status" className={batch.status === 'undone' ? 'font-medium text-ink-2' : undefined}>
                       {t('status', { status: batch.status })}
                     </span>
                   </p>
@@ -71,7 +71,7 @@ export default async function ChangeHistoryPage() {
                       {t.rich('archived', {
                         count: batch.archived_properties,
                         link: (chunks) => (
-                          <Link href="/properties/archived" className="font-semibold text-ink underline underline-offset-4 hover:decoration-2">
+                          <Link href="/properties/archived" className="font-medium text-ink underline underline-offset-4 hover:decoration-2">
                             {chunks}
                           </Link>
                         ),

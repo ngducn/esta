@@ -42,7 +42,7 @@ export default async function TaxCardPage({ searchParams }: { searchParams: Prom
         </div>
       )}
       {card?.kind === 'no_rule' ? (
-        <p data-testid="tax-no-rule" className="rounded-lg border border-rule bg-surface p-5 text-body font-semibold text-ink shadow-card sm:p-6">
+        <p data-testid="tax-no-rule" className="rounded-lg border border-rule bg-surface p-5 text-body font-medium text-ink shadow-card sm:p-6">
           {notes('noRule', { year })}
         </p>
       ) : null}

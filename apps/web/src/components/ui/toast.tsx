@@ -47,7 +47,7 @@ function ToastList() {
     >
       <ToastPrimitive.Content className="flex items-center gap-2 py-1 pr-1 pl-4">
         <ToastPrimitive.Title className="flex-1 py-2 text-body text-pretty" />
-        <ToastPrimitive.Action className="min-h-touch shrink-0 rounded-sm px-3 text-body font-semibold underline decoration-surface/60 underline-offset-4 hover:decoration-surface focus-visible:outline-surface" />
+        <ToastPrimitive.Action className="min-h-touch shrink-0 rounded-sm px-3 text-body font-medium underline decoration-surface/60 underline-offset-4 hover:decoration-surface focus-visible:outline-surface" />
       </ToastPrimitive.Content>
     </ToastPrimitive.Root>
   ));

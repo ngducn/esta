@@ -38,7 +38,7 @@ export default async function ArchivedPropertiesPage() {
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-body font-semibold text-ink wrap-anywhere">{property.nickname}</span>
+                    <span className="text-body font-medium text-ink wrap-anywhere">{property.nickname}</span>
                     <span className="text-small text-ink-muted">{t('kind', { kind: property.kind })}</span>
                   </span>
                   {member.role === 'viewer' ? null : <RestoreButton propertyId={property.id} label={t('restore')} />}

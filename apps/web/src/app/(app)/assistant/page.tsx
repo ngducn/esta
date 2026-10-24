@@ -28,7 +28,7 @@ const dateTime = (instant: Instant) => `${formatDate(businessDate(instant, env.E
 
 function CardHeading({ id, icon: Icon, children }: { id: string; icon: LucideIcon; children: ReactNode }) {
   return (
-    <h2 id={id} className="flex items-center gap-3 text-lead font-bold text-ink">
+    <h2 id={id} className="flex items-center gap-3 text-lead font-semibold text-ink">
       <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
         <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
       </span>
@@ -47,7 +47,7 @@ async function LatestPing({ ping }: { ping: PingCheck | null }) {
         <span
           data-testid="ping-status"
           data-status={ping.status}
-          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[mark].pill)}
+          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[mark].pill)}
         >
           <StatusShape status={mark} className="size-4" />
           <span>{t(`jobStatus.${ping.status}`)}</span>
@@ -141,7 +141,7 @@ async function ConnectionCheck({ householdId, sendFailed, workerOnline }: { hous
           </form>
         </div>
         {sendFailed ? (
-          <p role="alert" className="font-semibold text-overdue">
+          <p role="alert" className="font-medium text-overdue">
             {t('checkSendFailed')}
           </p>
         ) : null}

@@ -80,7 +80,7 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
   return (
     <form noValidate onSubmit={submit} data-testid="meter-form" className="flex flex-col gap-4">
       <div className="rounded-lg border border-rule bg-surface shadow-card">
-        <div aria-hidden="true" className="hidden border-b border-rule px-6 py-3 text-small font-semibold text-ink-muted lg:grid lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
+        <div aria-hidden="true" className="hidden border-b border-rule px-6 py-3 text-small font-medium text-ink-muted lg:grid lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
           <span>{t('roomColumn')}</span>
           {KINDS.map((kind) => (
             <span key={kind}>{t('kind', { kind })}</span>
@@ -99,7 +99,7 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
               className="grid gap-4 border-b border-rule px-4 py-4 last:border-b-0 sm:px-6 lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-6 lg:py-3"
             >
               <div className="flex flex-wrap items-baseline gap-x-3 lg:flex-col lg:gap-0">
-                <h2 id={`room-${room.unitId}`} className="text-lead font-bold break-words text-ink">
+                <h2 id={`room-${room.unitId}`} className="text-lead font-semibold break-words text-ink">
                   {room.label}
                 </h2>
                 {readOn === undefined ? null : (

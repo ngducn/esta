@@ -40,14 +40,14 @@ export function AddressConfirm({
   return (
     <section data-testid="address-confirm" aria-labelledby="address-confirm-title" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <div className="flex flex-col gap-1">
-        <h2 id="address-confirm-title" className="flex items-center gap-2 text-lead font-bold text-ink">
+        <h2 id="address-confirm-title" className="flex items-center gap-2 text-lead font-semibold text-ink">
           <MapPinned className="size-5 shrink-0 text-ink-2" strokeWidth={1.8} aria-hidden="true" />
           {t('addressTitle')}
         </h2>
         <p className="max-w-prose text-body text-pretty text-ink-2">{t('addressBody')}</p>
       </div>
       <div className="flex flex-col gap-1 rounded-md bg-surface-2 px-4 py-3">
-        <p className="text-small font-semibold text-ink-2">{t('addressOnCertificate')}</p>
+        <p className="text-small font-medium text-ink-2">{t('addressOnCertificate')}</p>
         <p data-testid="certificate-address-text" className="text-body break-words text-ink">
           {certificateAddress}
         </p>
@@ -63,7 +63,7 @@ export function AddressConfirm({
         </p>
       )}
       {failed ? (
-        <p role="alert" className="text-body font-semibold text-overdue">
+        <p role="alert" className="text-body font-medium text-overdue">
           {t('addressFailed')}
         </p>
       ) : null}

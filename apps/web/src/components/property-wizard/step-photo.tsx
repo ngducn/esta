@@ -36,7 +36,7 @@ type Phase =
   | { readonly step: 'failed'; readonly reason: 'network' | 'code_taken'; readonly takenBy?: string };
 
 const pickerClass =
-  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm px-4 text-body font-semibold has-[:disabled]:cursor-not-allowed has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
+  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
 
 /** Step 1 (PRP-7): the certificate photo or a skip, then the nickname and kind; leaving it creates the property. */
 export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
@@ -177,7 +177,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
     return (
       <section aria-labelledby={`${fieldId}-capture`} className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card">
         <div className="flex flex-col gap-1">
-          <h2 id={`${fieldId}-capture`} className="text-lead font-bold text-ink">
+          <h2 id={`${fieldId}-capture`} className="text-lead font-semibold text-ink">
             {td('captureTitle')}
           </h2>
           <p className="text-body text-ink-2">{td('captureBody')}</p>
@@ -207,7 +207,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
       <fieldset disabled={!hydrated || busy} className="flex min-w-0 flex-col gap-5">
         <section aria-labelledby={`${fieldId}-question`} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
           <div className="flex flex-col gap-1">
-            <h2 id={`${fieldId}-question`} className="text-lead font-bold text-ink">
+            <h2 id={`${fieldId}-question`} className="text-lead font-semibold text-ink">
               {t('photoQuestion')}
             </h2>
             <p className="max-w-prose text-body text-pretty text-ink-2">{t('photoHelp')}</p>
@@ -316,7 +316,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
         </p>
       ) : null}
       {errorText === null ? null : (
-        <p role="alert" data-testid="wizard-error" className="text-body font-semibold break-words text-overdue">
+        <p role="alert" data-testid="wizard-error" className="text-body font-medium break-words text-overdue">
           {errorText}
         </p>
       )}

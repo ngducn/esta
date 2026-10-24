@@ -21,7 +21,7 @@ export function PortfolioFigure({ portfolio }: { portfolio: Portfolio | null }) 
         </Link>
       </div>
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span data-testid="portfolio-total" data-total-vnd={portfolio.totalVnd} className="figures text-hero font-bold tracking-tight whitespace-nowrap text-ink">
+        <span data-testid="portfolio-total" data-total-vnd={portfolio.totalVnd} className="figures text-hero font-semibold tracking-tight whitespace-nowrap text-ink">
           {formatVndCompact(portfolio.totalVnd, locale)}
         </span>
         <EstimatePill label={t('estimate')} />

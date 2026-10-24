@@ -82,7 +82,7 @@ export function ColumnMapping({ grid, picks, onPicks, preset, intro, sample, pro
     );
   };
   const kind = (split: boolean, label: string) => (
-    <label className="flex min-h-touch cursor-pointer items-center gap-2 rounded-md border border-field bg-surface px-3 py-2.5 text-body font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
+    <label className="flex min-h-touch cursor-pointer items-center gap-2 rounded-md border border-field bg-surface px-3 py-2.5 text-body font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
       <input type="radio" name="mapping-amount-kind" checked={picks.split === split} disabled={disabled} onChange={() => onPicks({ ...picks, split })} className="size-5 shrink-0 accent-accent" />
       <span className="min-w-0 break-words">{label}</span>
     </label>
@@ -91,7 +91,7 @@ export function ColumnMapping({ grid, picks, onPicks, preset, intro, sample, pro
   return (
     <section aria-labelledby="mapping-title" data-testid="column-mapping" className="flex flex-col gap-5 border-t border-rule pt-5">
       <div className="flex flex-col gap-1">
-        <h2 id="mapping-title" className="text-lead font-bold text-ink">
+        <h2 id="mapping-title" className="text-lead font-semibold text-ink">
           {t('mappingTitle')}
         </h2>
         <p data-testid="mapping-intro" className="max-w-prose text-body text-ink-2">
@@ -111,7 +111,7 @@ export function ColumnMapping({ grid, picks, onPicks, preset, intro, sample, pro
       </div>
       <div className="grid gap-4 sm:grid-cols-2">{(['date', 'description', 'bankRef'] as const).map(select)}</div>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-body font-semibold text-ink">{t('amountLegend')}</legend>
+        <legend className="mb-2 text-body font-medium text-ink">{t('amountLegend')}</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {kind(false, t('amountSigned'))}
           {kind(true, t('amountSplit'))}
@@ -119,7 +119,7 @@ export function ColumnMapping({ grid, picks, onPicks, preset, intro, sample, pro
         <div className="grid gap-4 sm:grid-cols-2">{(picks.split ? (['credit', 'debit'] as const) : (['amount'] as const)).map(select)}</div>
       </fieldset>
       <div className="flex flex-col gap-3 rounded-md bg-surface-2 p-4">
-        <h3 className="text-body font-semibold text-ink">{t('sampleTitle')}</h3>
+        <h3 className="text-body font-medium text-ink">{t('sampleTitle')}</h3>
         {sample.length === 0 ? null : (
           <ol data-testid="mapping-sample" className="flex flex-col">
             {sample.map((row) => (
@@ -128,7 +128,7 @@ export function ColumnMapping({ grid, picks, onPicks, preset, intro, sample, pro
                   <span data-testid="mapping-sample-date" className="figures min-w-0 text-small text-ink-muted">
                     {formatDate(row.date, locale)}
                   </span>
-                  <span data-testid="mapping-sample-amount" className={cn('figures shrink-0 text-body font-semibold whitespace-nowrap', row.amount < 0 ? 'text-ink-muted' : 'text-ink')}>
+                  <span data-testid="mapping-sample-amount" className={cn('figures shrink-0 text-body font-medium whitespace-nowrap', row.amount < 0 ? 'text-ink-muted' : 'text-ink')}>
                     {formatVnd(row.amount, locale)}
                   </span>
                 </div>

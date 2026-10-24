@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority';
 
 /** Kept apart from the base-ui Button so a link or a client island can take the classes without the primitive's runtime. */
 export const buttonVariants = cva(
-  'inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center gap-2 rounded-sm px-4 text-body font-semibold transition-colors duration-(--duration-fast) ease-standard select-none disabled:cursor-not-allowed data-disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0',
+  'inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center gap-2 rounded-sm px-4 text-body font-medium transition-colors duration-(--duration-fast) ease-standard select-none disabled:cursor-not-allowed data-disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0',
   {
     variants: {
       variant: {

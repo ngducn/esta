@@ -15,7 +15,6 @@ const WEIGHT_CLASS: Record<number, string> = {
   400: 'font-normal',
   500: 'font-medium',
   600: 'font-semibold',
-  700: 'font-bold',
 };
 const FACE_CLASS = { sans: 'font-sans' } as const;
 const SPECIMEN_SIZES = [
@@ -65,7 +64,7 @@ export default function DevGlyphsPage() {
           The DESIGN-BRIEF §5.1 glyph string in every face and weight the tokens use, the figure column, and every color
           pair with its contrast ratio in both themes.
         </p>
-        <p className="figures font-semibold" data-testid="contrast-summary">
+        <p className="figures font-medium" data-testid="contrast-summary">
           {passing}/{checks.length} pair checks pass across light and dark
         </p>
       </header>
@@ -121,7 +120,7 @@ export default function DevGlyphsPage() {
             <p className="font-medium leading-tight" data-testid="specimen-name">
               Đặng Thị Hường
             </p>
-            <p className="figures font-semibold leading-tight" data-testid="specimen-amount">
+            <p className="figures font-medium leading-tight" data-testid="specimen-amount">
               {formatVnd(vnd(3_500_000), 'vi')}
             </p>
           </div>
@@ -137,7 +136,7 @@ export default function DevGlyphsPage() {
             <li key={status} className="flex items-start justify-between gap-4" data-status={status}>
               <span className="flex items-center gap-2">
                 <StatusShape status={status} />
-                <span className="font-semibold" style={{ color: `var(--${status})` }}>
+                <span className="font-medium" style={{ color: `var(--${status})` }}>
                   {status}
                 </span>
               </span>

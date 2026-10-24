@@ -40,7 +40,7 @@ function Fact({ label, value, strong = false }: { label: string; value: string; 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', padding: '14px 0', borderBottom: `1px solid ${hex('rule-strong')}` }}>
       <div style={muted}>{label}</div>
-      <div style={{ display: 'flex', fontWeight: strong ? 700 : 400, fontSize: strong ? 44 : 34 }}>{value}</div>
+      <div style={{ display: 'flex', fontWeight: strong ? 600 : 400, fontSize: strong ? 44 : 34 }}>{value}</div>
     </div>
   );
 }
@@ -50,9 +50,9 @@ type SharedQrT = Awaited<ReturnType<typeof getTranslations<'invoices'>>>;
 function SharedQrPicture({ shared, t, paid }: { shared: SharedQr; t: SharedQrT; paid: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 72, background: hex('surface'), color: hex('ink'), fontFamily: FAMILY, fontSize: 34, lineHeight: 1.45 }}>
-      <div style={{ display: 'flex', fontWeight: 700, fontSize: 48, lineHeight: 1.3, marginBottom: 24 }}>{t('qrTitle')}</div>
+      <div style={{ display: 'flex', fontWeight: 600, fontSize: 48, lineHeight: 1.3, marginBottom: 24 }}>{t('qrTitle')}</div>
       {shared.kind === 'paid' ? (
-        <div style={{ display: 'flex', color: hex('paid'), fontWeight: 700, fontSize: 40 }}>{paid}</div>
+        <div style={{ display: 'flex', color: hex('paid'), fontWeight: 600, fontSize: 40 }}>{paid}</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <img src={qrImage(shared.qr.payload)} width={QR_PX} height={QR_PX} alt={t('qrCode')} style={{ alignSelf: 'center' }} />

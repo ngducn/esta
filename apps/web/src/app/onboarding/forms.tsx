@@ -8,7 +8,7 @@ import { NAME_MAX_LENGTH } from './limits';
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
 
 const fieldClass = 'min-h-touch w-full rounded-md border border-field bg-surface px-3.5 text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted aria-invalid:border-overdue';
-const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
+const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-medium text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
 
 const initialCreate: CreateHouseholdState = { householdName: '', displayName: '', errors: {} };
 const initialInvite: InviteState = { status: 'idle' };
@@ -46,7 +46,7 @@ function TextField({
   const errorId = `${name}-error`;
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={name} className="font-semibold">
+      <label htmlFor={name} className="font-medium">
         {label}
       </label>
       <p id={hintId} className="text-small text-ink-muted">
@@ -65,7 +65,7 @@ function TextField({
         className={fieldClass}
       />
       {error !== null && (
-        <p id={errorId} role="alert" className="font-semibold text-overdue">
+        <p id={errorId} role="alert" className="font-medium text-overdue">
           {error}
         </p>
       )}
@@ -98,7 +98,7 @@ export function CreateHouseholdForm() {
         autoComplete="name"
       />
       {state.errors.form === 'failed' && (
-        <p role="alert" className="font-semibold text-overdue">
+        <p role="alert" className="font-medium text-overdue">
           {t('createFailed')}
         </p>
       )}
@@ -118,7 +118,7 @@ export function InviteForm() {
   return (
     <form ref={form} action={action} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="font-semibold">
+        <label htmlFor="email" className="font-medium">
           {t('inviteEmail')}
         </label>
         <input
@@ -137,7 +137,7 @@ export function InviteForm() {
         />
       </div>
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 font-semibold">{t('role')}</legend>
+        <legend className="mb-2 font-medium">{t('role')}</legend>
         {ROLES.map((role) => (
           <label
             key={role}
@@ -151,17 +151,17 @@ export function InviteForm() {
               className="mt-0.5 size-5 shrink-0 accent-ink"
             />
             <span>
-              <span className="block font-semibold">{t(`roles.${role}`)}</span>
+              <span className="block font-medium">{t(`roles.${role}`)}</span>
               <span className="block text-small text-ink-muted">{t(`roleHints.${role}`)}</span>
             </span>
           </label>
         ))}
       </fieldset>
-      <p role="status" className="min-h-6 font-semibold">
+      <p role="status" className="min-h-6 font-medium">
         {state.status === 'invited' ? t('invited', { email: state.email, role: t(`roles.${state.role}`) }) : null}
       </p>
       {error !== null && (
-        <p id="invite-error" role="alert" className="font-semibold text-overdue">
+        <p id="invite-error" role="alert" className="font-medium text-overdue">
           {error}
         </p>
       )}

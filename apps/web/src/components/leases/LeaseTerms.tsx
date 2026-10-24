@@ -53,7 +53,7 @@ export function LeaseTerms({
   const rentChanges = amendments.flatMap((amendment) => (amendment.changes.rentVnd === undefined ? [] : [{ ...amendment, rentVnd: amendment.changes.rentVnd }]));
   return (
     <section aria-labelledby="lease-terms" data-testid="lease-terms" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="lease-terms" className="text-lead font-bold text-ink">
+      <h2 id="lease-terms" className="text-lead font-semibold text-ink">
         {t('termsTitle')}
       </h2>
       <dl className="flex flex-col gap-3">
@@ -104,14 +104,14 @@ export function LeaseTerms({
         ) : null}
         {renewalOf === null ? null : (
           <Fact label={t('renewalOfLabel')}>
-            <Link href={renewalOf.href} data-testid="lease-renewal-of" className="font-semibold text-accent underline underline-offset-4">
+            <Link href={renewalOf.href} data-testid="lease-renewal-of" className="font-medium text-accent underline underline-offset-4">
               {t('renewalOf')}
             </Link>
           </Fact>
         )}
         {renewedBy === null || renewedBy.startDate === null ? null : (
           <Fact label={t('renewedByLabel')}>
-            <Link href={renewedBy.href} data-testid="lease-renewed-by" className="font-semibold text-accent underline underline-offset-4">
+            <Link href={renewedBy.href} data-testid="lease-renewed-by" className="font-medium text-accent underline underline-offset-4">
               {t('renewedBy', { date: formatDate(renewedBy.startDate, locale) })}
             </Link>
           </Fact>

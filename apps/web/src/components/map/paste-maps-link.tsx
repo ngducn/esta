@@ -81,7 +81,7 @@ export function PasteMapsLink({
         }}
       >
         <div className="flex flex-col gap-1">
-          <h3 id={`${id}-title`} className="text-body font-semibold text-ink">
+          <h3 id={`${id}-title`} className="text-body font-medium text-ink">
             {t('pasteTitle')}
           </h3>
           <p id={`${id}-help`} className="text-small text-ink-muted">

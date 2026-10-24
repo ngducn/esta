@@ -31,7 +31,7 @@ function SheetContent({ className, children, ...props }: SheetPrimitive.Popup.Pr
 }
 
 function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
-  return <SheetPrimitive.Title className={cn('text-h3 font-bold text-ink', className)} {...props} />;
+  return <SheetPrimitive.Title className={cn('text-h3 font-semibold text-ink', className)} {...props} />;
 }
 
 function SheetDescription({ className, ...props }: SheetPrimitive.Description.Props) {

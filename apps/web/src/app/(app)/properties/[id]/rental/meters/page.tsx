@@ -66,13 +66,13 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           <nav aria-label={t('monthNav')} className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-start">
             {monthLink(-1)}
-            <p data-testid="meter-month" aria-current="page" className="figures order-first basis-full text-lead font-bold text-ink sm:order-none sm:basis-auto sm:px-1">
+            <p data-testid="meter-month" aria-current="page" className="figures order-first basis-full text-lead font-semibold text-ink sm:order-none sm:basis-auto sm:px-1">
               {t('monthHeading', { month: monthLabel })}
             </p>
             {month < latest ? monthLink(1) : null}
           </nav>
           {rooms.length === 0 ? null : (
-            <p data-testid="meter-remaining" data-status={status} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks[status].pill)}>
+            <p data-testid="meter-remaining" data-status={status} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[status].pill)}>
               <StatusShape status={status} className="size-4" />
               {remaining === 0 ? t('complete', { count: rooms.length }) : t('remaining', { count: remaining })}
             </p>

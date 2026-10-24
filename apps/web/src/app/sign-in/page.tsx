@@ -37,7 +37,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <p className="text-ink-muted">{app('tagline')}</p>
       </div>
       {google && error === 'google' && (
-        <p role="alert" className="font-semibold text-overdue">
+        <p role="alert" className="font-medium text-overdue">
           {t('googleFailed')}
         </p>
       )}

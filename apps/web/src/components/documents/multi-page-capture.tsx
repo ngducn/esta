@@ -17,7 +17,7 @@ type Move = Extract<CaptureAction, { url: string }>['type'];
 
 const PHOTO_TYPES = 'image/jpeg,image/png,image/webp';
 const pickerClass =
-  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm px-4 text-body font-semibold has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-rule has-[:disabled]:text-ink-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
+  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-rule has-[:disabled]:text-ink-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
 
 /**
  * Asks inside the sheet, as the duplicate warning does, so the sheet's focus trap never holds the answer out of reach.
@@ -38,7 +38,7 @@ export function LeaveConfirm({ count, onKeep, onDiscard }: { count: number; onKe
       data-testid="leave-confirm"
       className="flex flex-col gap-3 rounded-md border border-due bg-due-fill p-4"
     >
-      <h3 id={`${id}-title`} className="text-body font-bold text-ink">
+      <h3 id={`${id}-title`} className="text-body font-semibold text-ink">
         {t('leaveTitle', { count })}
       </h3>
       <p id={`${id}-body`} className="text-body text-ink-2">
@@ -188,7 +188,7 @@ export function MultiPageCapture({
             />
           </label>
         </div>
-        <p role="status" data-testid="capture-status" className={cn('text-small', full ? 'font-semibold text-ink' : 'text-ink-muted')}>
+        <p role="status" data-testid="capture-status" className={cn('text-small', full ? 'font-medium text-ink' : 'text-ink-muted')}>
           {full ? t('pageLimit') : pending > 0 ? t('processingPhoto') : t('pagesCaptured', { count: pages.length })}
         </p>
       </div>
@@ -201,7 +201,7 @@ export function MultiPageCapture({
                 {/* eslint-disable-next-line @next/next/no-img-element -- a local blob URL of a photo taken in this tab */}
                 <img src={page.url} alt={t('pageAlt', { number: index + 1 })} className="h-20 w-16 shrink-0 rounded-xs border border-rule bg-surface object-contain" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <p data-testid="capture-page-number" className="text-body font-semibold text-ink">
+                  <p data-testid="capture-page-number" className="text-body font-medium text-ink">
                     {label}
                   </p>
                   <div role="group" aria-label={label} className="flex flex-wrap gap-2">
@@ -227,7 +227,7 @@ export function MultiPageCapture({
         </ol>
       )}
       {problem === null ? null : (
-        <p role="alert" data-testid="capture-error" className="text-body font-semibold text-overdue">
+        <p role="alert" data-testid="capture-error" className="text-body font-medium text-overdue">
           {t(problem)}
         </p>
       )}

@@ -63,13 +63,13 @@ Light is the default whatever the device setting says. Dark applies only when th
 
 ### 5.1 Typography
 
-- One face: **Plus Jakarta Sans** (OFL, variable, weights 400 to 700), self-hosted from `apps/web/src/fonts/` and subset to Vietnamese and basic Latin by `pnpm fonts:build`. It covers every code point of the glyph test string at every weight used, and its `tnum` feature gives uniform-width digits; its default digits are already lining. `pnpm glyphs:check` guards the shipped file.
+- One face: **Inter** (OFL, variable, weights 400 to 600 and optical size 14 to 32; Ryan's decision of 2026-10-24, replacing Plus Jakarta Sans at 700 because the bold weights made every screen heavy), self-hosted from `apps/web/src/fonts/` and subset to Vietnamese and basic Latin by `pnpm fonts:build`. It covers every code point of the glyph test string at every weight used, and its `tnum` feature gives uniform-width digits; its default digits are already lining, and it has ₫. `pnpm glyphs:check` guards the shipped file.
 - Amounts use the `figures` utility (tabular figures) and sit right-aligned in tables.
-- Source Sans 3 and Source Serif 4 (spike S2) are retired. Be Vietnam Pro still fails the tabular figures check.
-- Never Inter, Arial, Roboto or system defaults as the identity face.
+- Source Sans 3 and Source Serif 4 (spike S2) are retired. Geist was tried first and has no ₫; Be Vietnam Pro still fails the tabular figures check (DESIGN.md, "Why this face").
+- Never Arial, Roboto or system defaults as the identity face.
 - Glyph test string for `/dev/glyphs` and the coverage script:
   `Đặng Thị Hường, Nguyễn Văn Ước, Phường Dĩ An, Thửa đất số 1234, tờ bản đồ số 56. ẫ ặ ữ ỡ ự ể ộ ổ ỗ ờ ở ợ ụ ủ ứ ừ ử ữ ỳ ỷ ỹ Ỵ. 0123456789 ₫ m² ½`
-- Scale: 13 meta (captions only), 15 small, 16 body, 18 lead and card titles, 20 h3, 24 h2 and phone page titles, 30 h1, 34 and 44 for summary figures. Headings are 700 with -0.02em tracking.
+- Scale: 13 meta (captions only), 15 small, 16 body, 18 lead and card titles, 20 h3, 24 h2 and phone page titles, 30 h1, 34 and 44 for summary figures. Weights: body 400, labels, buttons and list amounts 500, headings and summary figures 600, nothing heavier. Headings keep -0.02em tracking.
 
 ### 5.2 Color
 

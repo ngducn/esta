@@ -31,7 +31,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function Amount({ label, amount, strong = false, size = 30, ruled = false }: { label: string; amount: string; strong?: boolean; size?: number; ruled?: boolean }) {
   const rule: CSSProperties = ruled ? { borderBottom: `1px solid ${hex('rule-strong')}` } : {};
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 24, padding: '7px 0', fontWeight: strong ? 700 : 400, fontSize: size, ...rule }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 24, padding: '7px 0', fontWeight: strong ? 600 : 400, fontSize: size, ...rule }}>
       <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>{label}</div>
       <div style={{ flexShrink: 0 }}>{amount}</div>
     </div>
@@ -39,15 +39,15 @@ function Amount({ label, amount, strong = false, size = 30, ruled = false }: { l
 }
 
 function Payment({ receipt }: { receipt: Receipt }) {
-  if (receipt.paid) return <div style={{ display: 'flex', color: hex('paid'), fontWeight: 700, fontSize: 36 }}>{receipt.labels.paidInFull}</div>;
+  if (receipt.paid) return <div style={{ display: 'flex', color: hex('paid'), fontWeight: 600, fontSize: 36 }}>{receipt.labels.paidInFull}</div>;
   if (receipt.qr === null) return null;
   return (
     <div style={{ display: 'flex', flex: 1, gap: 36, alignItems: 'center' }}>
       <img src={qrImage(receipt.qr.payload)} width={QR_PX} height={QR_PX} alt={receipt.labels.scanToPay} style={{ flexShrink: 0 }} />
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: 2 }}>
-        <div style={{ fontWeight: 700 }}>{receipt.labels.scanToPay}</div>
+        <div style={{ fontWeight: 600 }}>{receipt.labels.scanToPay}</div>
         <div style={note}>{receipt.labels.memo}</div>
-        <div style={{ fontWeight: 700, fontSize: 36 }}>{receipt.qr.memo}</div>
+        <div style={{ fontWeight: 600, fontSize: 36 }}>{receipt.qr.memo}</div>
         <div style={note}>{receipt.labels.account}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 16 }}>
           <span>{receipt.qr.bank}</span>
@@ -65,24 +65,24 @@ function ReceiptPicture({ receipt }: { receipt: Receipt }) {
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minHeight: PNG_PX.height, padding: 80, background: hex('surface'), color: hex('ink'), fontFamily: FAMILY, fontSize: 30, lineHeight: 1.45 }}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 24, paddingBottom: 16, borderBottom: `3px solid ${hex('ink')}` }}>
-          <div style={{ display: 'flex', flex: 1, minWidth: 0, fontWeight: 700, fontSize: 34 }}>{receipt.header}</div>
+          <div style={{ display: 'flex', flex: 1, minWidth: 0, fontWeight: 600, fontSize: 34 }}>{receipt.header}</div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0, fontSize: 26, ...muted }}>
             <span>{receipt.labels.number}</span>
             <span>{receipt.number}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', fontWeight: 700, fontSize: 56, lineHeight: 1.3, marginTop: 32 }}>{receipt.title}</div>
+        <div style={{ display: 'flex', fontWeight: 600, fontSize: 56, lineHeight: 1.3, marginTop: 32 }}>{receipt.title}</div>
         <div style={{ display: 'flex', gap: 8, fontSize: 26, marginTop: 4, marginBottom: 24, ...muted }}>
           <span>{receipt.labels.issuedOn}</span>
           <span>{receipt.issuedOn}</span>
         </div>
         <Field label={receipt.labels.tenant}>
-          <span style={{ fontWeight: 700 }}>{receipt.tenant}</span>
+          <span style={{ fontWeight: 600 }}>{receipt.tenant}</span>
         </Field>
         <Field label={receipt.labels.place}>{receipt.place}</Field>
         <Field label={receipt.labels.period}>{receipt.period}</Field>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 28 }}>
-          <div style={{ display: 'flex', fontWeight: 700, fontSize: 32 }}>{receipt.labels.lines}</div>
+          <div style={{ display: 'flex', fontWeight: 600, fontSize: 32 }}>{receipt.labels.lines}</div>
           {receipt.lines.map((line, index) => (
             <Amount key={index} label={line.label} amount={line.amount} ruled />
           ))}

@@ -58,7 +58,7 @@ export function AddressLookup() {
                 data-merge-kind={row.merge_kind}
                 className="border-b pb-2"
               >
-                <p className="font-semibold">
+                <p className="font-medium">
                   {row.rank}. {row.commune_name} ({row.commune_code})
                 </p>
                 <p>

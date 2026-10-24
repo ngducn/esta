@@ -38,7 +38,7 @@ export function MoneyInput({ label, defaultText = '', onValueChange, onTextChang
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {label}
       </label>
       <p id={`${id}-hint`} className="text-small text-ink-muted">
@@ -62,7 +62,7 @@ export function MoneyInput({ label, defaultText = '', onValueChange, onTextChang
         enterKeyHint="done"
         aria-invalid={error !== null}
         aria-describedby={`${id}-hint ${id}-message`}
-        className={cn('mt-1', large && 'min-h-16 text-h2 font-bold figures')}
+        className={cn('mt-1', large && 'min-h-16 text-h2 font-semibold figures')}
       />
       {name === undefined ? null : <input type="hidden" name={name} value={result.ok ? result.value : ''} />}
       <FieldMessage id={`${id}-message`} error={error}>

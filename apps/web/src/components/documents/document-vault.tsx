@@ -35,7 +35,7 @@ function ExpiringSoon({ items }: { items: readonly ExpiringItem[] }) {
   const t = useTranslations('documents');
   return (
     <section aria-labelledby="expiring-title" data-testid="expiring-soon" className="flex flex-col gap-2 rounded-lg border border-rule bg-surface p-4 shadow-card sm:p-5">
-      <h2 id="expiring-title" className="text-lead font-bold text-ink">
+      <h2 id="expiring-title" className="text-lead font-semibold text-ink">
         {t('expiringTitle')}
       </h2>
       {items.length === 0 ? (
@@ -45,12 +45,12 @@ function ExpiringSoon({ items }: { items: readonly ExpiringItem[] }) {
           {items.map((item) => (
             <li key={item.id} data-testid="expiring-item" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 first:pt-0 last:pb-0">
               <div className="flex min-w-0 flex-col">
-                <Link href={`/documents/${item.id}`} prefetch={false} className="text-body font-semibold break-words text-ink underline-offset-4 hover:underline">
+                <Link href={`/documents/${item.id}`} prefetch={false} className="text-body font-medium break-words text-ink underline-offset-4 hover:underline">
                   {item.title}
                 </Link>
                 {item.propertyName === null ? null : <span className="text-small break-words text-ink-muted">{item.propertyName}</span>}
               </div>
-              <span data-testid="expiring-days" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-semibold', statusMarks.due.pill)}>
+              <span data-testid="expiring-days" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks.due.pill)}>
                 <StatusShape status="due" className="size-4" />
                 {item.text}
               </span>
@@ -75,7 +75,7 @@ function SearchResults({ state, render }: { state: SearchState; render: (tile: V
       );
     case 'failed':
       return (
-        <p role="alert" data-testid="search-error" className="rounded-lg border border-rule bg-surface p-4 text-body font-semibold text-overdue shadow-card">
+        <p role="alert" data-testid="search-error" className="rounded-lg border border-rule bg-surface p-4 text-body font-medium text-overdue shadow-card">
           {t('loadFailed')}
         </p>
       );
@@ -86,7 +86,7 @@ function SearchResults({ state, render }: { state: SearchState; render: (tile: V
         </p>
       ) : (
         <section aria-labelledby="results-title" data-testid="vault-results" className="flex flex-col gap-3">
-          <h2 id="results-title" aria-live="polite" className="text-lead font-bold text-ink">
+          <h2 id="results-title" aria-live="polite" className="text-lead font-semibold text-ink">
             {t('results', { count: state.tiles.length })}
           </h2>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{state.tiles.map(render)}</ul>
@@ -187,7 +187,7 @@ export function DocumentVault({
           )}
         >
           <Upload className="size-6 text-ink-muted" aria-hidden="true" />
-          <p className="text-body font-semibold text-ink">{t('dropZone')}</p>
+          <p className="text-body font-medium text-ink">{t('dropZone')}</p>
           <p className="text-small text-ink-muted">{t('fileRule')}</p>
         </div>
       ) : null}

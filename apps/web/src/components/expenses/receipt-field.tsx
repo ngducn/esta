@@ -56,7 +56,7 @@ export function useReceipt({ propertyId, filed, initialFile }: { propertyId: str
 export type Receipt = ReturnType<typeof useReceipt>;
 
 const pickerClass =
-  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-semibold text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
+  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-medium text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
 
 export function ReceiptField({ receipt, disabled, onPick }: { receipt: Receipt; disabled: boolean; onPick: () => void }) {
   const t = useTranslations('expenses');
@@ -73,7 +73,7 @@ export function ReceiptField({ receipt, disabled, onPick }: { receipt: Receipt; 
 
   return (
     <section aria-labelledby={`${fieldId}-title`} className="flex flex-col gap-3" data-testid="expense-receipt">
-      <h3 id={`${fieldId}-title`} className="text-body font-semibold text-ink">
+      <h3 id={`${fieldId}-title`} className="text-body font-medium text-ink">
         {t('receiptTitle')} <span className="font-normal text-ink-muted">({t('optional')})</span>
       </h3>
       {kept === null ? null : (

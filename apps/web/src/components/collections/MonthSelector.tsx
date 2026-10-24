@@ -45,7 +45,7 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
             <ChevronLeft aria-hidden="true" />
             {previous.label}
           </Link>
-          <label className="relative flex min-h-touch items-center gap-2 rounded-sm border border-rule-strong bg-surface pr-10 pl-4 text-body font-semibold text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent max-sm:order-first max-sm:basis-full">
+          <label className="relative flex min-h-touch items-center gap-2 rounded-sm border border-rule-strong bg-surface pr-10 pl-4 text-body font-medium text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent max-sm:order-first max-sm:basis-full">
             <span className="sr-only">{label}</span>
             <span aria-hidden="true" className="figures">
               {current?.label}

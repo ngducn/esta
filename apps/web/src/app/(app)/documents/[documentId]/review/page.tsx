@@ -32,7 +32,7 @@ export default async function DocumentReviewPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href={back} className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-semibold text-ink-2 hover:text-ink">
+      <Link href={back} className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-medium text-ink-2 hover:text-ink">
         <ChevronLeft className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
         {t('back')}
       </Link>

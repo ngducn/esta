@@ -72,7 +72,7 @@ export function SignUpForm({ copy }: { copy: SignUpCopy }) {
     <form action={action} className="flex flex-col gap-4" noValidate>
       <p className="text-ink-2">{copy.intro}</p>
       <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="font-semibold">
+        <label htmlFor="email" className="font-medium">
           {copy.emailLabel}
         </label>
         <input
@@ -107,7 +107,7 @@ export function SignUpForm({ copy }: { copy: SignUpCopy }) {
           {copy.passwordHint}
         </p>
       </div>
-      <p id="sign-up-error" role="alert" className="min-h-6 font-semibold text-overdue">
+      <p id="sign-up-error" role="alert" className="min-h-6 font-medium text-overdue">
         {message}
       </p>
       <button type="submit" name="intent" value="send" disabled={pending} className={primaryClass}>

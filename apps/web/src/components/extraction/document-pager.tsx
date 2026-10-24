@@ -152,7 +152,7 @@ export function DocumentPager({
                 data-testid="page-tab"
                 onClick={() => onPage(number)}
                 className={cn(
-                  'min-h-touch rounded-sm border px-3 text-small font-semibold',
+                  'min-h-touch rounded-sm border px-3 text-small font-medium',
                   number === shown ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:bg-surface-2',
                 )}
               >

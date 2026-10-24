@@ -68,7 +68,7 @@ export function VaultGroups({
               data-testid={`group-by-${option}`}
               onClick={() => setBy(option)}
               className={cn(
-                'flex min-h-touch flex-1 items-center justify-center rounded-sm px-4 text-body font-semibold whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard',
+                'flex min-h-touch flex-1 items-center justify-center rounded-sm px-4 text-body font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard',
                 by === option ? 'bg-ink text-surface' : 'text-ink-2 hover:bg-surface-2',
               )}
             >
@@ -82,7 +82,7 @@ export function VaultGroups({
       ) : (
         groups.map((group, groupIndex) => (
           <section key={group.key} data-testid="vault-group" data-group={group.key} aria-labelledby={`group-${group.key}`} className="flex flex-col gap-3">
-            <h3 id={`group-${group.key}`} className="flex flex-wrap items-baseline gap-x-2 text-lead font-bold break-words text-ink">
+            <h3 id={`group-${group.key}`} className="flex flex-wrap items-baseline gap-x-2 text-lead font-semibold break-words text-ink">
               <span data-testid="group-label">{group.label}</span>
               <span data-testid="group-count" className="text-small font-normal text-ink-muted">
                 {t('groupCount', { count: group.tiles.length })}

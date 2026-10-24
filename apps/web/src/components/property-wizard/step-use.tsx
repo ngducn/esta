@@ -61,7 +61,7 @@ export function StepUse({
 
   return (
     <form noValidate onSubmit={submit} data-testid="wizard-use" className="flex max-w-3xl flex-col gap-5 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 className="text-lead font-bold text-ink">{t('useTitle')}</h2>
+      <h2 className="text-lead font-semibold text-ink">{t('useTitle')}</h2>
       <FormSelect
         label={tf('useMode')}
         testId="use-mode"
@@ -88,12 +88,12 @@ export function StepUse({
       <div className="flex items-start gap-3 rounded-md bg-surface-2 px-4 py-3">
         <FileSignature className="mt-0.5 size-5 shrink-0 text-ink-2" strokeWidth={1.8} aria-hidden="true" />
         <div className="flex min-w-0 flex-col gap-0.5">
-          <p className="text-body font-semibold text-ink">{t('leasesLater')}</p>
+          <p className="text-body font-medium text-ink">{t('leasesLater')}</p>
           <p className="text-small text-ink-2">{t('leasesHelp')}</p>
         </div>
       </div>
       {failed ? (
-        <p role="alert" data-testid="wizard-error" className="text-body font-semibold text-overdue">
+        <p role="alert" data-testid="wizard-error" className="text-body font-medium text-overdue">
           {t('saveFailed')}
         </p>
       ) : null}

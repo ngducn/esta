@@ -59,7 +59,7 @@ function OwnerRow({
       <fieldset className="flex min-w-0 flex-col gap-3">
         <legend className="sr-only">{name}</legend>
         <div className="flex items-start justify-between gap-3">
-          <p aria-hidden="true" className="min-w-0 pt-2.5 text-lead font-bold break-words text-ink">
+          <p aria-hidden="true" className="min-w-0 pt-2.5 text-lead font-semibold break-words text-ink">
             {name}
           </p>
           <Button type="button" variant="quiet" aria-label={t('removeLabel', { name })} onClick={onRemove} data-testid="owner-remove">
@@ -214,7 +214,7 @@ export function OwnershipForm({
       >
         <p data-testid="ownership-running-total" className="flex flex-wrap items-center gap-x-2 rounded-md bg-surface-2 px-3 py-2 text-body text-ink">
           {running === null ? <StatusShape status="paid" className="size-4" /> : <StatusShape status="due" className="size-4" />}
-          <span className="figures font-semibold">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
+          <span className="figures font-medium">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
           {running === null ? null : <span className="figures text-ink-2">{running}</span>}
         </p>
         {showErrors || failed ? (

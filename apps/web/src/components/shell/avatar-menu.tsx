@@ -106,12 +106,12 @@ export function AccountTrigger({
       className={`flex min-h-touch max-w-full min-w-touch items-center rounded-sm py-1.5 text-left text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 ${compact ? 'shrink-0 gap-2 px-1' : 'gap-3 px-2'} ${className ?? ''}`}
     >
       {initial !== null && (
-        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-body font-semibold text-surface">
+        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-body font-medium text-surface">
           {initial}
         </span>
       )}
       <span className="flex min-w-0 flex-col">
-        <span className={compact ? 'font-semibold whitespace-nowrap' : 'font-semibold break-words'}>{label}</span>
+        <span className={compact ? 'font-medium whitespace-nowrap' : 'font-medium break-words'}>{label}</span>
         {detail && <span className="text-small text-ink-muted break-words">{detail}</span>}
       </span>
     </button>

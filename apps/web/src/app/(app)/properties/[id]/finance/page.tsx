@@ -79,7 +79,7 @@ export default async function PropertyFinancePage({
         />
         {ledger.empty ? (
           <div data-testid="ledger-empty" className="flex flex-col gap-1 text-body">
-            <p className="font-semibold text-ink">{tLedger('empty', { year })}</p>
+            <p className="font-medium text-ink">{tLedger('empty', { year })}</p>
             <p className="text-ink-2">{tLedger('emptyAction')}</p>
           </div>
         ) : (
@@ -123,7 +123,7 @@ export default async function PropertyFinancePage({
         </div>
         {shown.length === 0 ? (
           <div data-testid="expense-empty" className="flex flex-col gap-1 text-body">
-            <p className="font-semibold text-ink">{t('empty', { year })}</p>
+            <p className="font-medium text-ink">{t('empty', { year })}</p>
             {canEdit ? <p className="text-ink-2">{t('emptyAction')}</p> : null}
           </div>
         ) : (

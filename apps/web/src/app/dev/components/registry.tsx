@@ -50,7 +50,7 @@ function Focused({ on, children }: { on: keyof typeof focusRing; children: React
 function TextField({ t, id, value, disabled = false, error }: { t: DevT; id: string; value: string; disabled?: boolean; error?: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {t('samples.nicknameLabel')}
       </label>
       <Input
@@ -313,11 +313,11 @@ export const registry: readonly RegistryEntry[] = [
         state: 'default',
         render: (t) => (
           <Card className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-lead font-bold text-ink">
+            <h3 className="flex items-center gap-2 text-lead font-semibold text-ink">
               <Wallet className="size-5 text-accent" aria-hidden="true" />
               {t('samples.tableCaption')}
             </h3>
-            <MoneyDisplay amount={vnd(29_000_000)} variant="compact" className="text-start text-hero font-bold tracking-tight" />
+            <MoneyDisplay amount={vnd(29_000_000)} variant="compact" className="text-start text-hero font-semibold tracking-tight" />
             <StatusMark status="overdue" days={12} />
           </Card>
         ),

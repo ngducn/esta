@@ -291,7 +291,7 @@ function NotesField({ label, value, onChange }: { label: string; value: string; 
   const id = useId();
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-semibold text-ink">
+      <label htmlFor={id} className="text-body font-medium text-ink">
         {label}
       </label>
       <textarea

@@ -10,7 +10,7 @@ export async function OwnershipWarning({ status }: { status: OwnershipStatus }) 
   return (
     <p role="status" data-testid="ownership-warning" data-state={status.state} className="flex items-start gap-2 rounded-md bg-due-fill px-3 py-2.5 text-body text-due">
       <StatusShape status="due" className="mt-0.5" />
-      <span className="figures font-semibold">{status.state === 'under' ? t('warningUnder', { total }) : t('warningOver', { total })}</span>
+      <span className="figures font-medium">{status.state === 'under' ? t('warningUnder', { total }) : t('warningOver', { total })}</span>
     </p>
   );
 }

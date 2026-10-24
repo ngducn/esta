@@ -222,7 +222,7 @@ export async function AllocationSection() {
       </h2>
       <p className="text-small text-ink-muted">{t('intro')}</p>
 
-      <h3 className="font-semibold">{t('payments')}</h3>
+      <h3 className="font-medium">{t('payments')}</h3>
       <DevTable
         columns={allocationColumns}
         rows={allocationRows.map((row) => {
@@ -243,7 +243,7 @@ export async function AllocationSection() {
         })}
       />
 
-      <h3 className="font-semibold">{t('deposits')}</h3>
+      <h3 className="font-medium">{t('deposits')}</h3>
       <DevTable
         columns={depositColumns}
         rows={depositRows.map((row) => {

@@ -156,7 +156,7 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
         disabled={!hydrated || saving}
       />
       <div className="flex flex-col gap-2">
-        <p className="text-body font-semibold text-ink">{t('file')}</p>
+        <p className="text-body font-medium text-ink">{t('file')}</p>
         <p className="text-small text-ink-muted">{t('fileHint')}</p>
         <label className={buttonVariants({ variant: 'outline', className: 'mt-1 w-fit cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent' })}>
           <FileSpreadsheet aria-hidden="true" />

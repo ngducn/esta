@@ -17,8 +17,8 @@ async function drawQrImage(qr: InvoiceQrView, matrix: QrMatrix): Promise<Blob> {
   const [paper, ink, family] = [style.getPropertyValue('--qr-paper'), style.getPropertyValue('--qr-ink'), getComputedStyle(document.body).fontFamily];
   const side = (matrix.size + QR_QUIET_MODULES * 2) * MODULE_PX;
   const lines = [
-    { text: qr.amountText, weight: 700, px: 40 },
-    { text: qr.memo, weight: 700, px: 34 },
+    { text: qr.amountText, weight: 600, px: 40 },
+    { text: qr.memo, weight: 600, px: 34 },
     { text: `${qr.bankName} · ${qr.accountNo}`, weight: 500, px: 28 },
     { text: qr.accountName, weight: 500, px: 28 },
     { text: qr.number, weight: 400, px: 24 },

@@ -13,7 +13,7 @@ type ErrorLabels = { title: string; body: string; retry: string };
 export const SectionErrorBoundary = catchError<{ labels: ErrorLabels }>(function SectionError({ labels }, { retry }) {
   return (
     <section role="alert" className="flex max-w-3xl flex-col items-start gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h1 className="flex items-center gap-3 text-lead font-bold text-ink">
+      <h1 className="flex items-center gap-3 text-lead font-semibold text-ink">
         <TriangleAlert className="size-6 shrink-0 text-overdue" aria-hidden="true" />
         {labels.title}
       </h1>

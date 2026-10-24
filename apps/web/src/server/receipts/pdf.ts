@@ -118,7 +118,7 @@ export async function openPdf(title: string, locale: Locale): Promise<{ pdf: PDF
   pdf.setLanguage(locale === 'vi' ? 'vi-VN' : 'en-US');
   pdf.setCreator('Esta');
   pdf.setProducer('Esta');
-  const [regular, bold] = await Promise.all([pdf.embedFont(receiptFont(400), { subset: true }), pdf.embedFont(receiptFont(700), { subset: true })]);
+  const [regular, bold] = await Promise.all([pdf.embedFont(receiptFont(400), { subset: true }), pdf.embedFont(receiptFont(600), { subset: true })]);
   return { pdf, regular, bold };
 }
 

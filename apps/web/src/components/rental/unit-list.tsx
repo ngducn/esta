@@ -188,13 +188,13 @@ export function UnitList({
             <li key={unit.id} data-testid="unit-row" data-id={unit.id} data-kind={unit.kind} className="flex flex-col gap-3 border-b border-rule p-4 last:border-b-0 sm:px-5 @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-4">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <h3 data-testid="unit-label" className="min-w-0 text-lead font-bold break-words text-ink">
+                  <h3 data-testid="unit-label" className="min-w-0 text-lead font-semibold break-words text-ink">
                     {unit.label}
                   </h3>
                   {unit.list_rent_vnd === null ? (
                     <span className="text-small text-ink-muted">{t('noRent')}</span>
                   ) : (
-                    <MoneyDisplay amount={unit.list_rent_vnd} className="text-lead font-semibold text-ink" />
+                    <MoneyDisplay amount={unit.list_rent_vnd} className="text-lead font-medium text-ink" />
                   )}
                 </div>
                 <p className="text-small text-ink-muted">{facts.join(' · ')}</p>
@@ -259,7 +259,7 @@ function MoveButton({ direction, label, disabled, onMove }: { direction: Directi
       disabled={disabled}
       aria-label={direction === 'up' ? t('moveUpLabel', { label }) : t('moveDownLabel', { label })}
       className={cn(
-        'inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 px-3 text-small font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard select-none',
+        'inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 px-3 text-small font-medium text-ink transition-colors duration-(--duration-fast) ease-standard select-none',
         'first:rounded-l-sm last:rounded-r-sm not-first:border-l not-first:border-rule-strong hover:bg-surface-2 active:bg-rule disabled:cursor-not-allowed disabled:text-ink-muted disabled:hover:bg-transparent',
         '[&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0',
       )}
@@ -282,7 +282,7 @@ function UnitLeaseLine({ lease }: { lease: UnitLease | undefined }) {
       {mark.kind === 'draft' ? <StatusMark status="draft" /> : null}
       {mark.kind === 'vacant' ? <StatusMark status="vacant" /> : null}
       {lease.tenantName === null ? null : (
-        <p data-testid="unit-tenant" className="text-body font-semibold break-words text-ink">
+        <p data-testid="unit-tenant" className="text-body font-medium break-words text-ink">
           {lease.tenantName}
         </p>
       )}

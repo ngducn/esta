@@ -11,12 +11,12 @@ export type Around = readonly [before: string, after: string];
 export const fieldClass =
   'min-h-touch w-full rounded-md border border-field bg-surface px-3.5 text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted aria-invalid:border-overdue';
 export const primaryClass =
-  'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
+  'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 font-medium text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
 const secondaryClass =
-  'min-h-touch px-2 font-semibold text-ink underline decoration-ink-muted underline-offset-4 disabled:no-underline disabled:opacity-60';
+  'min-h-touch px-2 font-medium text-ink underline decoration-ink-muted underline-offset-4 disabled:no-underline disabled:opacity-60';
 export const outlineClass =
-  'inline-flex min-h-touch w-full items-center justify-center rounded-sm border border-rule-strong bg-surface px-4 py-2 text-center font-semibold text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2';
-export const linkClass = 'inline-flex min-h-touch items-center font-semibold text-ink underline decoration-ink-muted underline-offset-4';
+  'inline-flex min-h-touch w-full items-center justify-center rounded-sm border border-rule-strong bg-surface px-4 py-2 text-center font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2';
+export const linkClass = 'inline-flex min-h-touch items-center font-medium text-ink underline decoration-ink-muted underline-offset-4';
 
 function ResendButton({ copy, pending }: { copy: { resend: string; resendIn: Around }; pending: boolean }) {
   const [seconds, setSeconds] = useState(RESEND_WAIT_SECONDS);
@@ -51,7 +51,7 @@ export function PasswordField({ id, label, copy, autoComplete, invalid, describe
   const [shown, setShown] = useState(false);
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="font-semibold">
+      <label htmlFor={id} className="font-medium">
         {label}
       </label>
       <div className="relative">
@@ -76,7 +76,7 @@ export function PasswordField({ id, label, copy, autoComplete, invalid, describe
           onClick={() => setShown((was) => !was)}
           aria-controls={id}
           aria-label={shown ? copy.hideLabel : copy.showLabel}
-          className="absolute inset-y-0 right-0 inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 rounded-r-md px-3 font-semibold text-ink-muted transition-colors duration-(--duration-fast) ease-standard hover:text-ink"
+          className="absolute inset-y-0 right-0 inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 rounded-r-md px-3 font-medium text-ink-muted transition-colors duration-(--duration-fast) ease-standard hover:text-ink"
         >
           {shown ? (
             <EyeOff className="size-5" strokeWidth={1.8} aria-hidden="true" />
@@ -124,7 +124,7 @@ export function CodeStep({ action, email, code, sentCount, intent, error, codeIn
         {copy.codeSent[1]}
       </p>
       <div className="flex flex-col gap-2">
-        <label htmlFor="code" className="font-semibold">
+        <label htmlFor="code" className="font-medium">
           {copy.codeLabel}
         </label>
         <input
@@ -143,7 +143,7 @@ export function CodeStep({ action, email, code, sentCount, intent, error, codeIn
           aria-describedby={error === null ? 'code-sent' : 'code-sent code-error'}
           className={`${fieldClass} text-h2 tracking-widest tabular-nums`}
         />
-        <p id="code-error" role="alert" className="min-h-6 font-semibold text-overdue">
+        <p id="code-error" role="alert" className="min-h-6 font-medium text-overdue">
           {error}
         </p>
       </div>

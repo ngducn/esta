@@ -46,49 +46,49 @@ colors:
   vacant-fill-dark: "oklch(27% 0.012 265)"
 typography:
   hero-xl:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "2.75rem"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: 1.3
     fontFeature: "'tnum'"
   hero:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "2.125rem"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: 1.3
     fontFeature: "'tnum'"
   h1:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "1.875rem"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: 1.3
   h2:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "1.5rem"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: 1.3
   h3:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "1.25rem"
     fontWeight: 600
     lineHeight: 1.35
   lead:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "1.125rem"
     fontWeight: 600
     lineHeight: 1.45
   body:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
   small:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.45
   meta:
-    fontFamily: "Plus Jakarta Sans"
+    fontFamily: "Inter"
     fontSize: "0.8125rem"
     fontWeight: 400
     lineHeight: 1.45
@@ -150,19 +150,20 @@ Cool neutrals at hue 265, one lacquer red, and four status pairs. Every value is
 
 ## Typography
 
-**Font:** Plus Jakarta Sans (variable, weights 400 to 700), with a metric-matched Arial fallback.
+**Font:** Inter (variable, weights 400 to 600, optical size 14 to 32), with a metric-matched Arial fallback.
 
-SIL OFL 1.1, self-hosted from `apps/web/src/fonts/` through `next/font/local` and built by `pnpm fonts:build` from google/fonts commit `7085eb89`. The subset keeps basic Latin, the Latin-1 letters Vietnamese uses, the Vietnamese block, ₫ and common punctuation, plus the text layout features and `tnum`. The file is 17 KB and preloaded. A letter outside the subset, such as ü in a foreign name, falls back glyph by glyph.
+SIL OFL 1.1, self-hosted from `apps/web/src/fonts/` through `next/font/local` and built by `pnpm fonts:build` from google/fonts commit `7085eb89`. The subset keeps basic Latin, the Latin-1 letters Vietnamese uses, the Vietnamese block, ₫ and common punctuation, plus the text layout features and `tnum`. The file is 39 KB (the optical size axis doubles it) and preloaded. A letter outside the subset, such as ü in a foreign name, falls back glyph by glyph. The browser's automatic optical sizing draws the tighter display cut at heading sizes.
 
 ### Why this face
 
-The operator picked Plus Jakarta Sans on the canvas. It passed `pnpm glyphs:check` at 400, 500, 600 and 700: all 176 code points of the glyph test string and the Vietnamese letters, and a `tnum` feature with uniform digit widths. It has no `lnum` feature, but its default digits are lining (cap height 745, digits 745 to 757 units). Source Sans 3 and Source Serif 4 from spike S2 (`spike/s2-fonts` at `31dd4a6`) are retired; Be Vietnam Pro still fails the tabular figures check.
+Ryan's decision, 2026-10-24: "make it a bit cleaner with Geist font or something, the bold nature typography kinda makes the whole thing heavy to look at." Plus Jakarta Sans at 700 is retired. Geist was tried first and fails the Full Coverage Rule: it has no ₫ (U+20AB), so every amount would draw its currency sign from the fallback font. Inter is the closest clean neo-grotesk that passes. `pnpm glyphs:check` reads all 176 code points of the glyph test string and the Vietnamese letters at 400, 500 and 600, each at optical size 14 and 32, with a `tnum` feature and uniform digit widths. Candidates checked on 2026-10-24 against the same pinned commit: Geist (no ₫), Be Vietnam Pro (no `tnum`, no arrows), Public Sans (no arrow glyph), Onest (no ₫), DM Sans, Albert Sans, Figtree, Instrument Sans and Schibsted Grotesk (no Vietnamese horn letters), Manrope (passes, but geometric and wide). Source Sans 3 and Source Serif 4 from spike S2 stay retired.
 
 ### Hierarchy
 
-- **Summary figures** (700, 2.125rem `hero` and 2.75rem `hero-xl`, 1.3, `figures`): the one figure a card exists to show, in the compact money form.
-- **Page title** (700, 1.875rem `h1` on desktop and 1.5rem `h2` on phones, -0.02em tracking).
-- **Group title** (600, 1.25rem `h3`), **card title** (700, 1.125rem `lead`).
+- **Summary figures** (600, 2.125rem `hero` and 2.75rem `hero-xl`, 1.3, `figures`): the one figure a card exists to show, in the compact money form.
+- **Page title** (600, 1.875rem `h1` on desktop and 1.5rem `h2` on phones, -0.02em tracking).
+- **Group title** (600, 1.25rem `h3`), **card title** (600, 1.125rem `lead`).
+- **Labels, buttons and list amounts** (500, at `small`, `body` or `lead` size): the one step above body, so a label reads without shouting.
 - **Body** (400, 1rem, 1.5): all running text. 16 px at text scale 1, never smaller.
 - **Small** (400, 0.9375rem, 1.45): secondary lines, labels, dense tables. The floor for any visible text, in either density.
 - **Meta** (400, 0.8125rem, 1.45): reserved for developer pages; the app keeps text at 15 px or more.
@@ -175,7 +176,9 @@ The operator picked Plus Jakarta Sans on the canvas. It passed `pnpm glyphs:chec
 
 **The Leading Rule.** Line height stays at 1.3 or more, so Vietnamese stacked marks (ặ, ữ, ỡ, Ướ) clear the line above, and `pnpm check` fails on any token below 1.3.
 
-**The Self-Hosted Rule.** Never Inter, Arial, Roboto or a system face as the identity face, and never a font CDN.
+**The Weight Ceiling Rule.** Nothing is heavier than 600. The Tailwind weights are `font-normal`, `font-medium` and `font-semibold`; there is no `font-bold`, and `apps/web/src/app/globals-css.test.ts` fails if one comes back. Body is 400, labels, buttons and list amounts 500, headings and the one summary figure of a card 600.
+
+**The Self-Hosted Rule.** Never Arial, Roboto or a system face as the identity face, and never a font CDN. Inter is self-hosted and chosen by Ryan (2026-10-24).
 
 ## Layout
 

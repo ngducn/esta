@@ -77,7 +77,7 @@ export function DataTable<Row>({
             />
             <span id={selectAllId}>{t('selectAll')}</span>
           </label>
-          <p aria-live="polite" data-testid="selection-count" className="text-body font-semibold text-ink">
+          <p aria-live="polite" data-testid="selection-count" className="text-body font-medium text-ink">
             {selected.size > 0 ? t('selected', { count: selected.size }) : null}
           </p>
         </div>
@@ -136,7 +136,7 @@ export function DataTable<Row>({
                           'max-sm:border-0 max-sm:p-0',
                           stacked[placement](selectable),
                           placement === 'amount' && 'text-end whitespace-nowrap figures',
-                          placement === 'primary' && 'max-sm:font-semibold',
+                          placement === 'primary' && 'max-sm:font-medium',
                           placement === 'detail' && 'max-sm:text-small max-sm:text-ink-muted',
                         )}
                       >

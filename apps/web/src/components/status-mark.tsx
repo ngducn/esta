@@ -64,7 +64,7 @@ export function StatusMark(props: StatusMarkProps) {
   return (
     <span
       data-status={props.status}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 align-top text-small font-semibold', statusMarks[props.status].pill)}
+      className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 align-top text-small font-medium', statusMarks[props.status].pill)}
     >
       <StatusShape status={props.status} className="size-4" />
       <span>{word}</span>

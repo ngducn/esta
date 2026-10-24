@@ -31,7 +31,7 @@ export function OtherRevenueForm({ partyId, year, savedVnd, canEdit }: { partyId
 
   return (
     <section aria-labelledby="tax-other-title" data-testid="tax-other-revenue" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="tax-other-title" className="text-lead font-bold text-ink">
+      <h2 id="tax-other-title" className="text-lead font-semibold text-ink">
         {t('otherRevenue')}
       </h2>
       <p className="text-body text-ink-2">{t('otherRevenueBody', { year })}</p>
@@ -66,7 +66,7 @@ export function OtherRevenueForm({ partyId, year, savedVnd, canEdit }: { partyId
           </p>
         </form>
       ) : (
-        <p data-testid="tax-other-readonly" className="text-body font-semibold text-ink figures">
+        <p data-testid="tax-other-readonly" className="text-body font-medium text-ink figures">
           {formatVnd(savedVnd, locale)}
         </p>
       )}

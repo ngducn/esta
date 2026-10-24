@@ -31,7 +31,7 @@ export function OverviewFacts({ facts }: { facts: OverviewFactsData }) {
       <dl data-testid="overview-facts">
         <div className={row}>
           <dt className={term}>{facts.kindTerm}</dt>
-          <dd className="flex items-center gap-2 text-body font-semibold text-ink">
+          <dd className="flex items-center gap-2 text-body font-medium text-ink">
             <KindIcon className="size-5 shrink-0 text-ink-muted" strokeWidth={1.9} aria-hidden="true" />
             {facts.kindLabel}
           </dd>

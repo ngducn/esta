@@ -27,7 +27,7 @@ export function EmptyState({
     <section data-slot="empty-state" className={cn('overflow-hidden rounded-lg border border-rule bg-surface shadow-card', className)}>
       {media}
       <div className="flex flex-col items-start gap-3 p-5 sm:p-6">
-        <h2 className="flex items-center gap-3 text-lead font-bold text-ink">
+        <h2 className="flex items-center gap-3 text-lead font-semibold text-ink">
           {Icon ? (
             <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
               <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />

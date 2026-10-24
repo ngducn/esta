@@ -58,7 +58,7 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
 
   return (
     <div data-testid="document-detail" className="flex flex-col gap-5">
-      <Link href="/documents" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-semibold text-ink-2 hover:text-ink">
+      <Link href="/documents" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-medium text-ink-2 hover:text-ink">
         <ChevronLeft className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
         {t('back')}
       </Link>
@@ -69,7 +69,7 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
             {meta.join(' · ')}
           </p>
           {document.expiryText === null ? null : (
-            <p data-testid="document-expiry" className={cn('text-body font-semibold', document.expiringSoon ? 'text-due' : 'text-ink-2')}>
+            <p data-testid="document-expiry" className={cn('text-body font-medium', document.expiringSoon ? 'text-due' : 'text-ink-2')}>
               {document.expiryText}
             </p>
           )}
@@ -88,7 +88,7 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
             ) : null}
           </div>
           {downloadFailed ? (
-            <p role="alert" className="text-body font-semibold text-overdue">
+            <p role="alert" className="text-body font-medium text-overdue">
               {t('downloadFailed')}
             </p>
           ) : null}
