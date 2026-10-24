@@ -72,7 +72,7 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
     const worker = replayWorker(fakeDb(tables), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
     const prepare = (agent: Row) => {
       tables.household_settings = [{ household_id: RESEARCH_HOUSEHOLD, agent }];
-      return JOBS.research_scan.handler.prepare({ db: worker.db, job: { household_id: RESEARCH_HOUSEHOLD, id: 'job-1' } as never, jobDir: jobsDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], clock: worker.clock });
+      return JOBS.research_scan.handler.prepare({ db: worker.db, job: { household_id: RESEARCH_HOUSEHOLD, id: 'job-1' } as never, jobDir: jobsDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: worker.clock });
     };
     expect((await prepare({})).caps).toEqual({ WebSearch: 12, WebFetch: 8 });
     expect((await prepare({ research_searches: 4, research_fetches: 2 })).caps).toEqual({ WebSearch: 4, WebFetch: 2 });

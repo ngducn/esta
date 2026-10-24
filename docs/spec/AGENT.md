@@ -85,7 +85,7 @@ Re-check the help center article before production deploy; record the date check
 
 Idempotency keys: `{kind}:{household_id}:{local_date}` for daily jobs, `{kind}:{household_id}:{iso_week}` for weekly, `extract_document:{document_id}:{sha256}`, `ask:{message_id}`.
 
-`morning_brief` depends on the same day's `research_scan` and `portfolio_watch`. When the brief is claimed while either is queued or running, it reschedules itself 5 minutes later, up to 3 times, then proceeds and says in one line which input is missing. Backfilled jobs (worker waking late, or a test advancing the clock) are inserted in schedule order, so the dependency holds after backfill too.
+`morning_brief` depends on the same day's `research_scan` and `portfolio_watch`. When the brief is claimed while either is queued or running, it reschedules itself 5 minutes later, up to 3 times, then proceeds and says in one line which input is missing. An input that already failed with no attempt left does not hold the brief back; the brief names it in the same section. Backfilled jobs (worker waking late, or a test advancing the clock) are inserted in schedule order, so the dependency holds after backfill too.
 
 ## 4. Tools
 
@@ -186,7 +186,7 @@ Composes today's watch facts and eligible research items into one `brief` item (
 - "Thị trường" with up to 3 research items, each with its source chip.
 - At most 300 whitespace-separated tokens. Every number passes the guard. Every link resolves to an existing record.
 
-The model drafts the summary and the lines through `create_brief`; `renderBriefMarkdown` in `packages/core/src/agent-schemas/brief.ts` writes the sections in the order `BRIEF_SECTIONS` lists them, and the summary is the item's title, which Home shows as one line. While a section has room, `create_brief` asks for a line for every action fact under "Cần làm" and every watch fact under "Theo dõi", so no fact drops out unseen; the job result lists any it left out. When the brief ran without an input it waited for (§3), a last section "Còn thiếu" names it. "Thị trường" joins with `research_scan` (P5-05).
+The model drafts the summary and the lines through `create_brief`; `renderBriefMarkdown` in `packages/core/src/agent-schemas/brief.ts` writes the sections in the order `BRIEF_SECTIONS` lists them, and the summary is the item's title, which Home shows as one line. While a section has room, `create_brief` asks for a line for every action fact under "Cần làm" and every watch fact under "Theo dõi", so no fact drops out unseen; the job result lists any it left out. When the brief ran without an input it waited for (§3), or that input failed with no attempt left, a last section "Còn thiếu" names it. [app rule] Esta writes "Thị trường" itself from today's stored research items of relevance 0.6 or more, most relevant first: each line is the item's title, which passed the number guard when the scan stored it, and a source chip with the source name and `dd/mm/yyyy` that opens the article. The model does not write these lines, because one replay recording must serve every household, and a household whose scan failed, kept nothing or is still queued has no research handles to cite.
 
 ### 5.5 weekly_review
 

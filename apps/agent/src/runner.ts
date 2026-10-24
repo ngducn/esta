@@ -57,7 +57,10 @@ async function householdName(db: AgentDb, householdId: string): Promise<string> 
 }
 
 /** The job's own directory, `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5). */
-async function runSession(worker: Worker, job: AgentJob, waiting: readonly string[]): Promise<SessionOutcome> {
+/** The same-day jobs a job waits for that are still queued or running, and those that failed for good (AGENT.md §3). */
+type Inputs = { readonly waiting: readonly string[]; readonly failed: readonly string[] };
+
+async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: Inputs): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
   const jobDir = join(worker.jobsDir, job.id);
@@ -66,7 +69,7 @@ async function runSession(worker: Worker, job: AgentJob, waiting: readonly strin
   let session: SessionRun | null = null;
   try {
     const resolvedDir = realpathSync(jobDir);
-    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, timezone: worker.timezone, waiting, clock: () => worker.clock() });
+    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, timezone: worker.timezone, waiting, failed, clock: () => worker.clock() });
     const bound = [...prepared.tools.keys()].toSorted().join(',');
     if (bound !== spec.mcpTools.map(mcpToolName).toSorted().join(',')) throw new Error(`${job.kind} bound the tools ${bound}, not its kind's`);
     const request = {
@@ -90,8 +93,8 @@ async function runSession(worker: Worker, job: AgentJob, waiting: readonly strin
   }
 }
 
-async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, waiting: readonly string[]): Promise<Outcome> {
-  const { outcome, session } = await runSession(worker, job, waiting);
+async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inputs: Inputs): Promise<Outcome> {
+  const { outcome, session } = await runSession(worker, job, inputs);
   const finishedAt = (await worker.clock()).now();
   const { mode, db } = worker;
   const run = await db.from('agent_runs').insert({
@@ -148,16 +151,17 @@ const WAIT_MINUTES = 5;
 const MAX_RESCHEDULES = 3;
 const payloadSchema = z.record(z.string(), z.json());
 
-async function waitingInputs(worker: Worker, job: AgentJob, today: string): Promise<string[]> {
+async function sameDayInputs(worker: Worker, job: AgentJob, today: string): Promise<Inputs> {
   const kinds = jobSpec(job.kind)?.waitsFor ?? [];
-  if (kinds.length === 0) return [];
+  if (kinds.length === 0) return { waiting: [], failed: [] };
   const { data, error } = await worker.db
     .from('agent_jobs')
-    .select('kind')
+    .select('kind, status')
     .in('idempotency_key', kinds.map((kind) => `${kind}:${job.household_id}:${today}`))
-    .in('status', ['queued', 'running']);
+    .in('status', ['queued', 'running', 'failed']);
   if (error) throw new Error(`Reading the job's inputs failed: ${error.message}`);
-  return kinds.filter((kind) => data.some((row) => row.kind === kind));
+  const withStatus = (statuses: readonly string[]) => kinds.filter((kind) => data.some((row) => row.kind === kind && statuses.includes(row.status)));
+  return { waiting: withStatus(['queued', 'running']), failed: withStatus(['failed']) };
 }
 
 async function rescheduleForInputs(worker: Worker, job: AgentJob, waiting: readonly string[], asOf: Instant): Promise<boolean> {
@@ -184,9 +188,9 @@ export async function pollOnce(worker: Worker): Promise<boolean> {
   if (error) throw new Error(`Claiming a job failed: ${error.message}`);
   const job = data[0];
   if (job === undefined) return false;
-  const waiting = await waitingInputs(worker, job, (await worker.clock()).today());
-  if (await rescheduleForInputs(worker, job, waiting, asOf)) return true;
-  const outcome = await finishJob(worker, job, asOf, waiting);
+  const inputs = await sameDayInputs(worker, job, (await worker.clock()).today());
+  if (await rescheduleForInputs(worker, job, inputs.waiting, asOf)) return true;
+  const outcome = await finishJob(worker, job, asOf, inputs);
   console.log(`[agent] ${job.kind} ${job.id} attempt ${job.attempts}: ${outcome.ok ? 'done' : outcome.failure.kind}`);
   return true;
 }
