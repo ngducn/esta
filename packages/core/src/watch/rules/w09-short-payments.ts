@@ -3,7 +3,6 @@ import { defineRule } from '../types';
 /** A tenant whose last few invoices already due were each paid short of the share that counts as paid. */
 export const w09ShortPayments = defineRule({
   id: 'W9',
-  name: 'short payments',
   thresholds: { invoices: 2, paidBelowBp: 9_000 },
   repeat: 'daily',
   find: ({ asOf, leases, invoices }, { invoices: count, paidBelowBp }) => {

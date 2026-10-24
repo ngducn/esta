@@ -3,7 +3,6 @@ import { defineRule } from '../types';
 /** An owner whose projected attributed revenue for the year (SPEC FIN-3) nears or reaches the threshold; the action repeats once a year. */
 export const w07TaxThreshold = defineRule({
   id: 'W7',
-  name: 'tax threshold',
   thresholds: { watchFromBp: 8_000, actionFromBp: 10_000 },
   repeat: 'yearly',
   find: ({ taxPositions }, { watchFromBp, actionFromBp }) =>

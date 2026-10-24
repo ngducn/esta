@@ -41,11 +41,11 @@ export const watchSnapshotSchema = z.object({
       depositHeldVnd: vndSchema,
     }),
   ),
-  /** Issued invoices issued on or before `asOf` and due within the rules' reach, with their allocated totals. */
+  /** Every invoice issued on or before `asOf`, with its allocated total and what is still owed, as `invoice_balances` reads it. */
   invoices: z.array(
-    z.object({ id, leaseId: id, dueDate: isoDateSchema, totalVnd: vndSchema, allocatedVnd: vndSchema, paymentStatus: z.enum(PAYMENT_STATUSES) }),
+    z.object({ id, leaseId: id, dueDate: isoDateSchema, totalVnd: vndSchema, allocatedVnd: vndSchema, outstandingVnd: vndSchema, paymentStatus: z.enum(PAYMENT_STATUSES) }),
   ),
-  /** Live documents with an expiry date on or after `asOf`. */
+  /** Documents not deleted whose expiry date is on or after `asOf`. */
   documents: z.array(z.object({ id, propertyId: id.nullable(), expiresOn: isoDateSchema })),
   /** Active meters with their latest reading on or before `asOf`, looking back to the start of the previous month. */
   meters: z.array(z.object({ id, unitId: id, lastReadOn: isoDateSchema.nullable() })),
@@ -79,7 +79,6 @@ type Thresholds = Readonly<Record<string, number>>;
  */
 export type WatchRuleSpec<T extends Thresholds> = {
   readonly id: WatchRuleId;
-  readonly name: string;
   readonly thresholds: T;
   readonly repeat: 'daily' | 'yearly';
   readonly find: (snapshot: WatchSnapshot, thresholds: T) => readonly WatchFinding[];

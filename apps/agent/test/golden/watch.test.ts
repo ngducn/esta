@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { seedId } from '../../../../supabase/seed/generator/ids.ts';
 import { compareFacts, subjectKey, WATCH_GOLDEN } from './watch-golden';
 
-export const WATCH_FIXTURE = 'packages/core/src/watch/fixtures/full-2026-10-07.snapshot.json';
+const WATCH_FIXTURE = 'packages/core/src/watch/fixtures/full-2026-10-07.snapshot.json';
 
 const snapshot = watchSnapshotSchema.parse(JSON.parse(readFileSync(join(import.meta.dirname, '../../../..', WATCH_FIXTURE), 'utf8')));
 const household = WATCH_GOLDEN.household;

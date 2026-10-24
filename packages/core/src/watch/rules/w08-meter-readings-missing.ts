@@ -5,7 +5,6 @@ import { defineRule } from '../types';
 /** After the first days of a month, a meter of a let room in a live rooming house with no reading taken this month. */
 export const w08MeterReadingsMissing = defineRule({
   id: 'W8',
-  name: 'meter readings missing',
   thresholds: { afterDayOfMonth: 5 },
   repeat: 'daily',
   find: ({ asOf, properties, units, leases, meters }, { afterDayOfMonth }) => {

@@ -5,7 +5,6 @@ import { defineRule } from '../types';
 /** A unit of a live rental property that no lease holds, empty since its last lease ended or since it became available. */
 export const w04Vacancy = defineRule({
   id: 'W4',
-  name: 'vacancy',
   thresholds: { watchAfterDays: 30, actionAfterDays: 90 },
   repeat: 'daily',
   find: ({ asOf, properties, units, leases }, { watchAfterDays, actionAfterDays }) => {

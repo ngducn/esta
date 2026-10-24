@@ -39,6 +39,11 @@ export async function readOwners(db: Db, householdId: string, alsoIds: readonly 
   return z.array(ownerSchema).parse(read);
 }
 
+/** The owner parties and anyone else a year's tax rows attribute revenue to: a shareholder or a lease's declaring party. */
+export function readTaxOwners(db: Db, householdId: string, tax: Pick<TaxRows, 'shares' | 'leases'>): Promise<Owner[]> {
+  return readOwners(db, householdId, [...new Set([...tax.shares.map((share) => share.partyId), ...tax.leases.flatMap((lease) => lease.declaringPartyId ?? [])])]);
+}
+
 /**
  * The household's FIN-3 rows for a year: its non-draft leases with their periods through 31 December, ownership shares
  * and the tax rules. Leases of archived properties stay, because the revenue they earned that year counts.

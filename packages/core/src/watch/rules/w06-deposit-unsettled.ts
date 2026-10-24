@@ -7,7 +7,6 @@ import { defineRule } from '../types';
  */
 export const w06DepositUnsettled = defineRule({
   id: 'W6',
-  name: 'deposit unsettled',
   thresholds: { afterDays: 14 },
   repeat: 'daily',
   find: ({ asOf, leases }, { afterDays }) =>

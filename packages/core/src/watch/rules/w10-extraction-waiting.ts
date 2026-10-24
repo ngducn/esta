@@ -5,7 +5,6 @@ import { defineRule } from '../types';
 /** A live document whose reading has waited for review for more than a few days. */
 export const w10ExtractionWaiting = defineRule({
   id: 'W10',
-  name: 'extraction waiting',
   thresholds: { afterDays: 3 },
   repeat: 'daily',
   find: (snapshot, { afterDays }) => {

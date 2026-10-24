@@ -6,7 +6,6 @@ import { defineRule } from '../types';
 /** A live document that expires within the vault's countdown window; one due today still has 0 days left. */
 export const w05DocumentExpiry = defineRule({
   id: 'W5',
-  name: 'document expiry',
   thresholds: { watchWithinDays: EXPIRY_WINDOW_DAYS, actionWithinDays: 7 },
   repeat: 'daily',
   find: (snapshot, { watchWithinDays, actionWithinDays }) => {

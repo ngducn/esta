@@ -32,6 +32,7 @@ const invoice = (over: Partial<Invoice> = {}): Invoice => ({
   dueDate: AS_OF,
   totalVnd: vnd(1_000_000),
   allocatedVnd: vnd(0),
+  outstandingVnd: vnd(1_000_000),
   paymentStatus: 'unpaid',
   ...over,
 });
@@ -64,7 +65,7 @@ describe('W1 overdue', () => {
   });
 
   it('counts a partly paid invoice by what is still owed and passes over a paid one and one due today', () => {
-    expect(facts('W1', { invoices: [invoice({ dueDate: d(-1), allocatedVnd: vnd(400_000), paymentStatus: 'partial' })] })[0]?.numbers.outstanding_vnd).toBe(600_000);
+    expect(facts('W1', { invoices: [invoice({ dueDate: d(-1), allocatedVnd: vnd(400_000), outstandingVnd: vnd(600_000), paymentStatus: 'partial' })] })[0]?.numbers.outstanding_vnd).toBe(600_000);
     expect(facts('W1', { invoices: [invoice({ dueDate: d(-30), allocatedVnd: vnd(1_000_000), paymentStatus: 'paid' })] })).toEqual([]);
     expect(facts('W1', { invoices: [invoice({ dueDate: AS_OF })] })).toEqual([]);
   });

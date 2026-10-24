@@ -12,7 +12,7 @@ import type { Db } from './db';
 import { readInvoices } from './invoices';
 import { readAll } from './kit';
 import { readLeases } from './leases';
-import { readOtherBusinessRevenues, readOwners, readTaxRows } from './tax';
+import { readOtherBusinessRevenues, readTaxOwners, readTaxRows } from './tax';
 
 type Rows<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
 
@@ -48,7 +48,7 @@ async function readHeldDeposits(db: Db, householdId: string, asOf: IsoDate): Pro
 async function readTaxPositions(db: Db, householdId: string, asOf: IsoDate) {
   const year = Number(asOf.slice(0, 4));
   const [tax, otherRevenue] = await Promise.all([readTaxRows(db, householdId, year), readOtherBusinessRevenues(db, householdId, year)]);
-  const owners = await readOwners(db, householdId, [...new Set(tax.shares.map((share) => share.partyId))]);
+  const owners = await readTaxOwners(db, householdId, tax);
   return owners.flatMap((owner) => {
     const inputs = toTaxInputs({ ...tax, otherBusinessRevenueVnd: otherRevenue.get(owner.id) ?? vnd(0) }, { partyId: owner.id, year, asOf });
     if (inputs.kind === 'no_rule') return [];
@@ -77,7 +77,7 @@ async function readWaitingExtractions(db: Db, householdId: string, timezone: str
 /** The latest reading of each active meter on or before `asOf`, looking back to the start of the previous month. */
 async function readMeters(db: Db, householdId: string, asOf: IsoDate) {
   const [meters, readings] = await Promise.all([
-    rows('meters', db.from('meters').select('id, unit_id').eq('household_id', householdId).eq('active', true).order('id')),
+    readAll('meters', (from, to) => db.from('meters').select('id, unit_id').eq('household_id', householdId).eq('active', true).order('id').range(from, to)),
     readAll('meter readings', (from, to) =>
       db.from('meter_readings').select('id, meter_id, read_on').eq('household_id', householdId).gte('read_on', addMonths(firstOfMonth(asOf), -1)).lte('read_on', asOf).order('id').range(from, to),
     ),
@@ -93,7 +93,7 @@ async function readMeters(db: Db, householdId: string, asOf: IsoDate) {
  */
 export async function readWatchSnapshot(db: Db, householdId: string, { asOf, timezone }: { asOf: IsoDate; timezone: string }): Promise<WatchSnapshot> {
   const [properties, completeness, units, leases, held, invoices, documents, meters, taxPositions, extractions] = await Promise.all([
-    rows('properties', db.from('properties').select('id, kind, use_mode, deleted_at').eq('household_id', householdId).order('id')),
+    readAll('properties', (from, to) => db.from('properties').select('id, kind, use_mode, deleted_at').eq('household_id', householdId).order('id').range(from, to)),
     readCompleteness(db, householdId),
     readAll('units', (from, to) => db.from('units').select('id, property_id, available_from').eq('household_id', householdId).order('id').range(from, to)),
     readLeases(db, householdId),
@@ -130,7 +130,7 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
       renewed: renewed.has(lease.id),
       depositHeldVnd: held.get(lease.id) ?? 0,
     })),
-    invoices: invoices.map(({ id, leaseId, dueDate, totalVnd, allocatedVnd, paymentStatus }) => ({ id, leaseId, dueDate, totalVnd, allocatedVnd, paymentStatus })),
+    invoices: invoices.map(({ id, leaseId, dueDate, totalVnd, allocatedVnd, outstandingVnd, paymentStatus }) => ({ id, leaseId, dueDate, totalVnd, allocatedVnd, outstandingVnd, paymentStatus })),
     documents: documents.map((document) => ({ id: document.id, propertyId: document.property_id, expiresOn: document.expires_on })),
     meters,
     taxPositions,

@@ -254,6 +254,7 @@
       "dueDate": "2025-10-01",
       "totalVnd": 36000000,
       "allocatedVnd": 36000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -262,6 +263,7 @@
       "dueDate": "2025-10-01",
       "totalVnd": 45000000,
       "allocatedVnd": 45000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -270,6 +272,7 @@
       "dueDate": "2025-10-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -278,6 +281,7 @@
       "dueDate": "2025-10-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -286,6 +290,7 @@
       "dueDate": "2025-10-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -294,6 +299,7 @@
       "dueDate": "2025-10-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -302,6 +308,7 @@
       "dueDate": "2025-11-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -310,6 +317,7 @@
       "dueDate": "2025-11-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -318,6 +326,7 @@
       "dueDate": "2025-11-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -326,6 +335,7 @@
       "dueDate": "2025-11-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -334,6 +344,7 @@
       "dueDate": "2025-11-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -342,6 +353,7 @@
       "dueDate": "2025-12-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -350,6 +362,7 @@
       "dueDate": "2025-12-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -358,6 +371,7 @@
       "dueDate": "2025-12-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -366,6 +380,7 @@
       "dueDate": "2025-12-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -374,6 +389,7 @@
       "dueDate": "2025-12-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -382,6 +398,7 @@
       "dueDate": "2026-01-01",
       "totalVnd": 45000000,
       "allocatedVnd": 45000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -390,6 +407,7 @@
       "dueDate": "2026-01-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -398,6 +416,7 @@
       "dueDate": "2026-01-01",
       "totalVnd": 36000000,
       "allocatedVnd": 36000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -406,6 +425,7 @@
       "dueDate": "2026-01-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -414,6 +434,7 @@
       "dueDate": "2026-01-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -422,6 +443,7 @@
       "dueDate": "2026-01-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -430,6 +452,7 @@
       "dueDate": "2026-01-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -438,6 +461,7 @@
       "dueDate": "2026-01-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -446,6 +470,7 @@
       "dueDate": "2026-02-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -454,6 +479,7 @@
       "dueDate": "2026-02-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -462,6 +488,7 @@
       "dueDate": "2026-02-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -470,6 +497,7 @@
       "dueDate": "2026-02-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -478,6 +506,7 @@
       "dueDate": "2026-02-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -486,6 +515,7 @@
       "dueDate": "2026-02-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -494,6 +524,7 @@
       "dueDate": "2026-02-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -502,6 +533,7 @@
       "dueDate": "2026-03-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -510,6 +542,7 @@
       "dueDate": "2026-03-01",
       "totalVnd": 30000000,
       "allocatedVnd": 30000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -518,6 +551,7 @@
       "dueDate": "2026-03-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -526,6 +560,7 @@
       "dueDate": "2026-03-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -534,6 +569,7 @@
       "dueDate": "2026-03-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -542,6 +578,7 @@
       "dueDate": "2026-03-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -550,6 +587,7 @@
       "dueDate": "2026-03-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -558,6 +596,7 @@
       "dueDate": "2026-03-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -566,6 +605,7 @@
       "dueDate": "2026-04-01",
       "totalVnd": 36000000,
       "allocatedVnd": 36000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -574,6 +614,7 @@
       "dueDate": "2026-04-01",
       "totalVnd": 45000000,
       "allocatedVnd": 45000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -582,6 +623,7 @@
       "dueDate": "2026-04-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -590,6 +632,7 @@
       "dueDate": "2026-04-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -598,6 +641,7 @@
       "dueDate": "2026-04-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -606,6 +650,7 @@
       "dueDate": "2026-04-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -614,6 +659,7 @@
       "dueDate": "2026-04-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -622,6 +668,7 @@
       "dueDate": "2026-04-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -630,6 +677,7 @@
       "dueDate": "2026-04-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -638,6 +686,7 @@
       "dueDate": "2026-05-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -646,6 +695,7 @@
       "dueDate": "2026-05-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -654,6 +704,7 @@
       "dueDate": "2026-05-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -662,6 +713,7 @@
       "dueDate": "2026-05-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -670,6 +722,7 @@
       "dueDate": "2026-05-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -678,6 +731,7 @@
       "dueDate": "2026-05-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -686,6 +740,7 @@
       "dueDate": "2026-05-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -694,6 +749,7 @@
       "dueDate": "2026-05-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -702,6 +758,7 @@
       "dueDate": "2026-06-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -710,6 +767,7 @@
       "dueDate": "2026-06-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -718,6 +776,7 @@
       "dueDate": "2026-06-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -726,6 +785,7 @@
       "dueDate": "2026-06-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -734,6 +794,7 @@
       "dueDate": "2026-06-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -742,6 +803,7 @@
       "dueDate": "2026-06-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -750,6 +812,7 @@
       "dueDate": "2026-06-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -758,6 +821,7 @@
       "dueDate": "2026-06-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -766,6 +830,7 @@
       "dueDate": "2026-07-01",
       "totalVnd": 11347826,
       "allocatedVnd": 11347826,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -774,6 +839,7 @@
       "dueDate": "2026-07-01",
       "totalVnd": 45000000,
       "allocatedVnd": 45000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -782,6 +848,7 @@
       "dueDate": "2026-07-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -790,6 +857,7 @@
       "dueDate": "2026-07-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -798,6 +866,7 @@
       "dueDate": "2026-07-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -806,6 +875,7 @@
       "dueDate": "2026-07-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -814,6 +884,7 @@
       "dueDate": "2026-07-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -822,6 +893,7 @@
       "dueDate": "2026-07-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -830,6 +902,7 @@
       "dueDate": "2026-07-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -838,6 +911,7 @@
       "dueDate": "2026-07-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -846,6 +920,7 @@
       "dueDate": "2026-08-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -854,6 +929,7 @@
       "dueDate": "2026-08-16",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -862,6 +938,7 @@
       "dueDate": "2026-08-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -870,6 +947,7 @@
       "dueDate": "2026-08-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -878,6 +956,7 @@
       "dueDate": "2026-08-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -886,6 +965,7 @@
       "dueDate": "2026-08-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -894,6 +974,7 @@
       "dueDate": "2026-08-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -902,6 +983,7 @@
       "dueDate": "2026-08-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -910,6 +992,7 @@
       "dueDate": "2026-09-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -918,6 +1001,7 @@
       "dueDate": "2026-09-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -926,6 +1010,7 @@
       "dueDate": "2026-09-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -934,6 +1019,7 @@
       "dueDate": "2026-09-25",
       "totalVnd": 2800000,
       "allocatedVnd": 0,
+      "outstandingVnd": 2800000,
       "paymentStatus": "unpaid"
     },
     {
@@ -942,6 +1028,7 @@
       "dueDate": "2026-09-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -950,6 +1037,7 @@
       "dueDate": "2026-09-25",
       "totalVnd": 2800000,
       "allocatedVnd": 2800000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -958,6 +1046,7 @@
       "dueDate": "2026-09-25",
       "totalVnd": 2500000,
       "allocatedVnd": 2500000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -966,6 +1055,7 @@
       "dueDate": "2026-10-01",
       "totalVnd": 45000000,
       "allocatedVnd": 45000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -974,6 +1064,7 @@
       "dueDate": "2026-10-01",
       "totalVnd": 9000000,
       "allocatedVnd": 9000000,
+      "outstandingVnd": 0,
       "paymentStatus": "paid"
     },
     {
@@ -982,6 +1073,7 @@
       "dueDate": "2026-10-25",
       "totalVnd": 2800000,
       "allocatedVnd": 0,
+      "outstandingVnd": 2800000,
       "paymentStatus": "unpaid"
     },
     {
@@ -990,6 +1082,7 @@
       "dueDate": "2026-10-25",
       "totalVnd": 2500000,
       "allocatedVnd": 0,
+      "outstandingVnd": 2500000,
       "paymentStatus": "unpaid"
     },
     {
@@ -998,6 +1091,7 @@
       "dueDate": "2026-10-25",
       "totalVnd": 2500000,
       "allocatedVnd": 0,
+      "outstandingVnd": 2500000,
       "paymentStatus": "unpaid"
     },
     {
@@ -1006,6 +1100,7 @@
       "dueDate": "2026-10-25",
       "totalVnd": 2500000,
       "allocatedVnd": 0,
+      "outstandingVnd": 2500000,
       "paymentStatus": "unpaid"
     },
     {
@@ -1014,6 +1109,7 @@
       "dueDate": "2026-10-25",
       "totalVnd": 2800000,
       "allocatedVnd": 0,
+      "outstandingVnd": 2800000,
       "paymentStatus": "unpaid"
     },
     {
@@ -1022,6 +1118,7 @@
       "dueDate": "2026-10-25",
       "totalVnd": 2500000,
       "allocatedVnd": 0,
+      "outstandingVnd": 2500000,
       "paymentStatus": "unpaid"
     }
   ],

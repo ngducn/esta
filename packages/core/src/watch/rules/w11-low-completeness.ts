@@ -3,7 +3,6 @@ import { defineRule } from '../types';
 /** The one live property with the lowest completeness below the bar; ties go to the smaller id, so the pick is stable. */
 export const w11LowCompleteness = defineRule({
   id: 'W11',
-  name: 'low completeness',
   thresholds: { belowPercent: 60 },
   repeat: 'daily',
   find: ({ properties }, { belowPercent }) => {

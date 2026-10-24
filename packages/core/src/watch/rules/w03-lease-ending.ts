@@ -6,7 +6,6 @@ import { defineRule } from '../types';
 /** A lease in effect on a live property, a termination dated ahead included, that ends soon with no renewal signed. */
 export const w03LeaseEnding = defineRule({
   id: 'W3',
-  name: 'lease ending',
   thresholds: { watchWithinDays: 60, actionWithinDays: 30 },
   repeat: 'daily',
   find: (snapshot, { watchWithinDays, actionWithinDays }) => {
