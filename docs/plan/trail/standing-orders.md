@@ -278,3 +278,7 @@ Ryan's words, 2026-10-23, before going to bed: "ok we can continue now, /pstack:
 Objective. Resume the queue in RESUME.md order: the audit fix-forward and connector C4 to merge under the 2026-10-19 landing grant, then P3-19, Phase 4 (P4-03 first) and the cleanup round, as far as the budget allows.
 
 Budget (agent interpretation: per 5-hour window, as every earlier cap was). Each window stays below 40% of Ryan's /usage. Nothing else runs in his account overnight, so the meter is trusted: stop spawning at 28%, pause owners at 34%, and resume when the next window starts. Fable is off (it undercounts on the meter); owners and audits run on Opus, lanes on Sonnet.
+
+## Update 2026-10-24 22:05 +07
+
+Ryan's ruling, 2026-10-24, on how Trợ lý keeps invented numbers from Mẹ: "Placeholders". The model never types a number. It writes placeholders that name a field of this run's tool results (for example `{{f3.outstanding_display}}`, `{{f3.unit_label}}`), and Esta fills them from the tool data when it saves the note. Any digit, amount or currency word, or number word left in the model's own text (checked on the text as it renders, after entities decode) is a violation, as is a placeholder that names no field of this run. This replaces the free-text number parser of AGENT.md §6.3, which leaked through two rounds on #61 and two on #309; #309 closes unmerged. Other rulings today: Inter replaces Plus Jakarta Sans with a 600 ceiling (#295); Graphify removed ("yeah cut off Graphify"); usage stays below 40% per window.
