@@ -35,7 +35,7 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
         ) : null}
       </header>
       <h3 className={cn('text-lead break-words text-ink', unread ? 'font-semibold' : 'font-medium')}>{note.title}</h3>
-      {note.bodyMd === null ? null : <SafeMarkdown>{note.bodyMd}</SafeMarkdown>}
+      {note.bodyMd === null ? null : <SafeMarkdown className="max-w-prose">{note.bodyMd}</SafeMarkdown>}
       {note.retry === null ? null : <p className="text-body break-words text-ink-2">{t(note.retry === 'self' ? 'retrySelf' : 'retryAsk')}</p>}
       {note.reviewHref === null ? null : (
         <Link href={note.reviewHref} data-testid="item-review" className="w-fit text-body font-medium text-ink underline underline-offset-4 hover:decoration-2">
