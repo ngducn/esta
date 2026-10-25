@@ -51,7 +51,6 @@ async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 
 
 export function askRequest(input: AskInput): PreparedJob {
   const { db, householdId, locale, reads, asOf, earlier } = input;
-  // A follow-up's handles start past the ones its session already saw, so one the model remembers can never name a new record.
   const firstHandle = (earlier?.handles ?? 0) + 1;
   const { sheet, cite } = runSheet(firstHandle);
   const properties = listPropertiesTool(db, householdId, cite);

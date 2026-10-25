@@ -37,7 +37,6 @@ const keepListed =
   (url) =>
     refs.includes(url) && estaPath(url) !== null ? url : null;
 
-/** "25 ngày" keeps its number and unit on one line in a narrow cell. */
 const NUMBER_THEN_WORD = /(\d) (?=\p{L})/gu;
 const glueUnits = (node: ReactNode): ReactNode => (typeof node === 'string' ? node.replace(NUMBER_THEN_WORD, '$1\u00a0') : Array.isArray(node) ? node.map(glueUnits) : node);
 

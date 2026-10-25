@@ -36,7 +36,6 @@ begin
     raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
   end if;
 
-  -- The question id keys the message, so a second tap on the same send adds nothing.
   if exists (select 1 from public.messages m where m.id = p_question_id) then
     if exists (select 1 from public.messages m where m.id = p_question_id and m.household_id = p_household_id and m.conversation_id = p_conversation_id and m.role = 'user') then
       return p_conversation_id;
@@ -52,11 +51,9 @@ begin
     if not found then
       raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
     end if;
-    -- A follow-up resumes the session the last answer finished, so it waits until that answer has.
     if exists (select 1 from public.messages m where m.household_id = p_household_id and m.conversation_id = p_conversation_id and m.status = 'streaming') then
       raise exception 'ESTA_ASK_BUSY' using errcode = '55000';
     end if;
-    -- A frozen test clock asks every question at one instant; the thread still reads in the order it was asked.
     select greatest(p_as_of, max(m.created_at) + interval '1 millisecond') into v_asked_at
     from public.messages m where m.household_id = p_household_id and m.conversation_id = p_conversation_id;
     update public.conversations set last_asked_at = v_asked_at where id = p_conversation_id;

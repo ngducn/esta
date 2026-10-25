@@ -56,7 +56,6 @@ const violations = (reply: string) => {
 
 type Turn = { readonly prompt: string; readonly reply: string; readonly toolCalls?: typeof TOOLS };
 
-/** Writes each turn's recording, chained as the runner chains them: every turn after the first resumes the one before. */
 function recordChain(dir: string, turns: readonly Turn[], after?: string): string[] {
   const canon = canonicalizer({ householdName: 'Gia đình Demo' });
   const hashes: string[] = [];
@@ -87,7 +86,6 @@ const FOLLOW_UP_TOOLS = [
 const SEPTEMBER = '{{f11.property_label}} thu {{f16.income_display}} trong tháng {{f16.period_date_display}}.';
 const FOLLOW_UP_PROMPT = askFollowUpPrompt({ today: ASK_CONTEXT.today, question: FOLLOW_UP, firstHandle: 9 });
 
-/** Answers question 1, then asks the follow-up in the same conversation, as ask_question writes it. */
 async function followUp(turns: readonly Turn[]) {
   const dir = tempDir('esta-ask-replay-');
   const [first = ''] = recordChain(dir, [{ prompt: askPrompt({ ...ASK_CONTEXT, question: QUESTION_TEXT }), reply: GOOD, toolCalls: TOOLS }]);

@@ -4,7 +4,7 @@ import { askFollowUpPrompt, askPrompt } from '../../src/prompts/ask';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../../src/replay/store';
-import { canonicalInput } from '../../src/sdk/session';
+import { canonicalInput, replaySessionId } from '../../src/sdk/session';
 import { mcpToolName } from '../../src/tools/server';
 
 export type AskCase = {
@@ -128,7 +128,7 @@ export function casePrompt({ question, follows }: AskCase): string {
 export function caseEarlier({ follows }: AskCase): EarlierTurn | null {
   if (follows === undefined) return null;
   const turnHash = inputHash(caseInput(askCase(follows.id)));
-  return { sessionId: `replay-${turnHash.slice(0, 16)}`, turnHash, handles: follows.firstHandle - 1 };
+  return { sessionId: replaySessionId(turnHash), turnHash, handles: follows.firstHandle - 1 };
 }
 
 export function caseInput(item: AskCase) {

@@ -17,7 +17,6 @@ export function AnswerStream({ id, conversationId, initial, labels }: { id: stri
 
   useEffect(() => {
     if (initial.status !== 'streaming') return;
-    // A follow-up's answer appears above the box she typed in, so bring it into view.
     box.current?.scrollIntoView({ block: 'nearest' });
     const source = new EventSource(`/api/answers/${id}?conversation=${conversationId}`);
     source.onmessage = ({ data }: MessageEvent<string>) => {
@@ -25,7 +24,6 @@ export function AnswerStream({ id, conversationId, initial, labels }: { id: stri
       if (next.success && 'content' in next.data) setShown(next.data);
       else setShown((before) => ({ content: before.content, refs: before.refs, status: 'stalled' }));
       if (!next.success || next.data.status !== 'streaming') source.close();
-      // The page renders the follow-up box closed while an answer streams; a settled answer opens it.
       if (next.success && (next.data.status === 'done' || next.data.status === 'error')) router.refresh();
     };
     source.onerror = () => {

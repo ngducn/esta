@@ -131,14 +131,14 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
 
     // A field's placeholder is the one text a box cuts that no node holds; an empty field must show all of it.
     const measure = document.createElement('canvas').getContext('2d');
+    const placeholderLines = (field: HTMLInputElement | HTMLTextAreaElement, style: CSSStyleDeclaration) =>
+      field instanceof HTMLTextAreaElement ? Math.max(1, Math.floor((field.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom)) / Number.parseFloat(style.lineHeight))) : 1;
     for (const field of document.body.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[placeholder], textarea[placeholder]')) {
       const style = getComputedStyle(field);
       if (field.value !== '' || field.placeholder === '' || style.display === 'none' || style.visibility === 'hidden' || hidden(field) || measure === null) continue;
       measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
       const room = field.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
-      // A text area wraps its placeholder over the lines it shows.
-      const lines = field instanceof HTMLTextAreaElement ? Math.max(1, Math.floor((field.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom)) / Number.parseFloat(style.lineHeight))) : 1;
-      const px = measure.measureText(field.placeholder).width - room * lines;
+      const px = measure.measureText(field.placeholder).width - room * placeholderLines(field, style);
       if (px > 1 && style.textOverflow !== 'ellipsis') found.push({ text: field.placeholder, in: name(field), by: 'its field', px: Math.round(px) });
     }
 

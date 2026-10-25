@@ -36,11 +36,9 @@ function rewriteSigned(request: NextRequest): NextResponse {
 type RecordPage = {
   readonly path: RegExp;
   readonly routes: ReadonlySet<string>;
-  /** Reads the record through RLS, so another household's id finds nothing. */
   find(supabase: SupabaseClient<Database>, id: string): PromiseLike<{ readonly data: unknown; readonly error: unknown }>;
 };
 
-/** The pages that show one household record. */
 const RECORD_PAGES: readonly RecordPage[] = [
   { path: /^\/properties\/([^/]+)(?:\/|$)/, routes: new Set(['new', 'archived']), find: (supabase, id) => supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle() },
   { path: /^\/assistant\/ask\/([^/]+)$/, routes: new Set(), find: (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle() },

@@ -134,6 +134,9 @@ export const replayChunks = (reply: string): string[] => reply.match(REPLAY_CHUN
  * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the
  * policy denies is booked as a permission denial, as the SDK books a PreToolUse deny, and the replay goes on.
  */
+/** A replayed turn's stand-in for the SDK's session id, new each turn as a live one is, so a follow-up's resume shows in replay. */
+export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
+
 export async function replaySession(request: SessionRequest, replayDir: string): Promise<SessionRun> {
   const input = canonicalInput(request);
   const recording = readRecording(replayDir, input);
@@ -163,8 +166,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
       subtype: 'success',
       text: reply,
       numTurns: recording.numTurns,
-      // A stand-in that changes every turn as a live session id does, so a follow-up's resume shows in replay too.
-      sessionId: `replay-${inputHash(input).slice(0, 16)}`,
+      sessionId: replaySessionId(inputHash(input)),
       costUsd: 0,
       usage: {},
       modelUsage: {},
