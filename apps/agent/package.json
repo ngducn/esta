@@ -9,6 +9,7 @@
     "test": "vitest run",
     "golden:ask": "node --import tsx test/golden/ask-cases.ts",
     "golden:ask-fixture": "node --import tsx test/golden/ask-fixture.ts",
+    "golden:weekly": "node --import tsx test/golden/weekly-recording.ts",
     "golden:weekly-fixture": "node --import tsx test/golden/weekly-fixture.ts"
   },
   "dependencies": {

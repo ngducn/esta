@@ -48,7 +48,7 @@ export async function loadDiagnostics(householdId: string, now: Instant): Promis
     supabase.rpc('worker_modes', { p_household_id: householdId, p_seen_by: heartbeatReadBound(now) }),
     supabase.from('agent_runs').select(runColumns).eq('household_id', householdId).lte('started_at', now).order('started_at', { ascending: false }).order('created_at', { ascending: false }).limit(20),
     supabase.from('agent_runs').select('num_turns, cost_estimate_usd, usage, agent_jobs(kind)').eq('household_id', householdId).gt('started_at', weekAgo).lte('started_at', now).limit(5_000),
-    supabase.from('agent_items').select('id, created_at, agent_jobs(kind)').eq('household_id', householdId).like('dedupe_key', 'number\\_guard:%').gt('created_at', weekAgo).order('created_at', { ascending: false }),
+    supabase.from('agent_items').select('id, created_at, agent_jobs(kind)').eq('household_id', householdId).like('dedupe_key', 'number\\_guard:%').gt('created_at', weekAgo).lte('created_at', now).order('created_at', { ascending: false }),
   ]);
   for (const read of [modes, recent, week, held]) if (read.error) throw new Error(`Reading the assistant diagnostics failed: ${read.error.message}`);
   const newer = new Set<string>();

@@ -12,9 +12,10 @@ import { loadDiagnostics, type DiagnosticRun } from '@/server/agent/diagnostics'
 import { getClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 
+/** The tab names the page only for an operator; anyone else reads the not-found page's title. */
 export async function generateMetadata() {
-  const t = await getTranslations('assistant.diagnostics');
-  return { title: t('title') };
+  const [member, t] = await Promise.all([requireMember(), getTranslations('assistant.diagnostics')]);
+  return { title: t(member.isOperator ? 'title' : 'notFoundTitle') };
 }
 
 /** Operator-only: anyone else gets the not-found page, so the route says nothing of what it holds (PLT-1). */
@@ -32,7 +33,9 @@ export default async function DiagnosticsPage() {
   const usd = new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
   const cost = (value: number | null) => textCell(value === null ? assistant('unknown') : usd.format(value));
   const duration = (ms: number) => t('duration', { minutes: Math.floor(Math.round(ms / 1000) / 60), seconds: Math.round(ms / 1000) % 60 });
-  const tools = (run: DiagnosticRun) => Object.entries(run.toolCalls).map(([name, count]) => assistant('toolCall', { name, count })).join(', ') || assistant('noToolCalls');
+  // `mcp__esta__household_info` reads as `household_info`: the SDK's server prefix is one long word a phone cannot wrap.
+  const tools = (run: DiagnosticRun) =>
+    Object.entries(run.toolCalls).map(([name, count]) => assistant('toolCall', { name: name.replace(/^mcp__[^_]+__/, ''), count })).join(', ') || assistant('noToolCalls');
   const runColumns = ['time', 'kind', 'status', 'turns', 'duration', 'model', 'cost', 'toolCalls'] as const;
   const runRow = (run: DiagnosticRun): ExportCell[] => [
     textCell(operatorTime(run.startedAt)),

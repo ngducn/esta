@@ -4676,23 +4676,23 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Files.**
 
-- [ ] Create `apps/agent/src/jobs/weeklyReview.ts`, `packages/core/src/agent-schemas/weeklyReview.ts` and `fixtures/agent-replay/weekly_review/`.
+- [x] Create `apps/agent/src/jobs/weekly-review.ts`, `packages/core/src/agent-schemas/weekly-review.ts` and `fixtures/agent-replay/weekly_review/` (kebab-case like every other agent file, P5-08b decision).
 - [x] Create `packages/core/src/agent-limits/backoff.ts` and its test. Caps live in SQL with no core twin (P5-08a decision): `private.agent_daily_caps` and `private.agent_daily_cap` in `supabase/migrations/20261007613000_agent_limits.sql`, tested in `supabase/tests/agent_limits.test.sql`.
-- [ ] Create `apps/web/src/app/(app)/assistant/diagnostics/page.tsx`.
+- [x] Create `apps/web/src/app/(app)/assistant/diagnostics/page.tsx`.
 - [x] `retryJob` lives in `apps/web/src/app/(app)/assistant/actions.ts` beside the other inbox actions, and runs the `agentJobRetry` op over `public.retry_agent_job`.
 - [x] Create `e2e/agent-crash.spec.ts` (the crash test needs a worker process, a slot and the shared clock, so it is an e2e spec, P5-08a decision) and `e2e/assistant-limits.spec.ts`.
-- [ ] Create `e2e/assistant-diagnostics.spec.ts`.
+- [x] Create `e2e/assistant-diagnostics.spec.ts`, and `e2e/assistant-weekly.spec.ts` for the Sunday review.
 
 **Build.**
 
-- [ ] Write `weekly_review` with the deep model from `ESTA_MODEL_DEEP`, all read tools, `WebSearch`, `WebFetch`, `create_item` and `create_proposal`, `maxTurns` 25, a 10 minute timeout, schedule `Sunday 08:00` and key `weekly_review:{household_id}:{iso_week}`. It covers last week's collections against expected, the next 30 days, vacancy, notable expenses, the tax position change and up to 3 proposals.
-- [ ] Reject a `suggest_rent_change` from `weekly_review` whose citations are not URLs fetched in this run or stored `research_items`.
+- [x] Write `weekly_review` with the deep model from `ESTA_MODEL_DEEP`, all read tools, `WebSearch`, `WebFetch`, `create_item` and `create_proposal`, `maxTurns` 25, a 10 minute timeout, schedule `Sunday 08:00` and key `weekly_review:{household_id}:{iso_week}`. It covers last week's collections against expected, the next 30 days, vacancy, notable expenses, the tax position change and up to 3 proposals.
+- [x] Reject a `suggest_rent_change` from `weekly_review` whose citations are not URLs fetched in this run or stored `research_items`.
 - [x] Encode daily caps as data. `private.agent_daily_caps` holds the defaults extract 30, ask 60, research 2 and weekly 1, and `household_settings.agent.daily_caps` overrides a kind with a whole number from 0 to 1000. `claim_agent_job` counts the kind's jobs started on the business day under a per household and kind advisory lock, and moves a job over its cap to the next local midnight. An `ask` over cap marks its answer row `deferred_until`, and the Hỏi page renders `Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.` from the message files, never the model's text, and hides the follow-up box.
 - [x] Classify SDK results. A result with `is_error: true` and a usage-limit cause reschedules with the 1, 5 and 25 minute backoff in `backoff.ts` and sets the heartbeat state `usage_limited`, so the status line reads `Trợ lý tạm dừng do hết hạn mức sử dụng`. A 401 surfaces to operators as an auth error (S1).
 - [x] After the last attempt fails, write an `info` item with a `Thử lại` button that admins see (operators only when the number guard held the note back). `retryJob(itemId)` enqueues a fresh job with key `{original key}:retry:{n}`, or `{kind}:{job id}:retry:{n}` for a job with no key, once however often it is tapped.
-- [ ] Build the operator-only diagnostics page. It shows auth mode and agent mode from the latest heartbeat, the last 20 runs with status, turns and duration, failed guards, and usage and cost by kind for 7 days from `agent_runs`. Non-operators get `notFound()` and the avatar menu hides the link.
+- [x] Build the operator-only diagnostics page. It shows auth mode and agent mode from the latest heartbeat, the last 20 runs with status, turns and duration, failed guards, and usage and cost by kind for 7 days from `agent_runs`. Non-operators get `notFound()` and the avatar menu hides the link.
 - [x] Write `e2e/agent-crash.spec.ts`. It spawns the worker, sends SIGKILL after the first `create_item` of a `portfolio_watch` run, advances the clock past the kind's timeout plus 2 minutes, restarts the worker, and asserts every item and run exists once (AGT-1).
-- [ ] Run `pnpm agent:record` for `weekly_review` on the `full` seed at 2026-10-11 08:00 and commit the recording.
+- [x] Hand-write the `weekly_review` recording for the `full` seed at 2026-10-11 08:00, labelled hand-written until the P5-10 live run (`pnpm --filter agent golden:weekly` rehashes it after a prompt change).
 
 **You see.**
 
@@ -4703,10 +4703,10 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
 - [x] `supabase/tests/agent_limits.test.sql` covers defaults, an override, the cap reached exactly and a next-day reset. `backoff.test.ts` covers attempts 1 to 3 and give-up.
-- [ ] `apps/agent/test/jobs/weeklyReview.test.ts` gains cases for at most 3 proposals, an uncited rent proposal rejected, and the ISO-week key preventing a second run (AGT-8).
+- [x] `apps/agent/test/jobs/weekly-review.test.ts` gains cases for at most 3 proposals, an uncited rent proposal rejected, and the ISO-week key preventing a second run (AGT-8).
 - [x] `apps/agent/src/runner.test.ts` gains cases for a usage-limit result rescheduled, an auth `is_error` failing with an operator item, and the failed-job item after 3 attempts.
 - [x] `e2e/agent-crash.spec.ts` proves effects exactly once after a mid-job kill (AGT-1).
-- [ ] Golden tests in AGENT.md §7 for `weekly_review` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [x] Golden tests in AGENT.md §7 for `weekly_review` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-diagnostics.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.

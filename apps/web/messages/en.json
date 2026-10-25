@@ -1159,6 +1159,8 @@
       "title": "Assistant diagnostics",
       "intro": "Only operators see this page. Its figures come from the assistant's runs for this household.",
       "back": "Back to the assistant",
+      "notFoundTitle": "Page not found",
+      "notFoundBody": "The link may be wrong, or this page no longer exists.",
       "worker": "Worker",
       "authMode": "Auth",
       "agentMode": "Mode",
@@ -1181,7 +1183,7 @@
         "done": "Done",
         "failed": "Failed",
         "cancelled": "Cancelled",
-        "retried": "Run again later"
+        "retried": "Retried"
       },
       "duration": "{minutes, plural, =0 {{seconds} s} one {# min {seconds} s} other {# min {seconds} s}}",
       "usage": "Usage over 7 days by job kind",

@@ -45,7 +45,6 @@ const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_RENEWAL_END: 'end_date: must be after the lease ends',
 };
 
-/** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
 /** Each cited URL as the stored research item names it, or a page this run fetched; one line per URL that is neither. */
 async function resolveCitations({ db, householdId, citing }: ProposalBinding, urls: readonly string[]): Promise<{ readonly found: Citation[]; readonly refused: string[] }> {
   if (urls.length === 0) return { found: [], refused: [] };
@@ -79,6 +78,7 @@ function subjectIds(params: Readonly<Record<string, unknown>>, sheet: ProposalBi
   );
 }
 
+/** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
 
 /**

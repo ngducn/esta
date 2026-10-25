@@ -1159,6 +1159,8 @@
       "title": "Chẩn đoán Trợ lý",
       "intro": "Chỉ người vận hành thấy trang này. Số liệu lấy từ các lần chạy của Trợ lý cho gia đình này.",
       "back": "Về Trợ lý",
+      "notFoundTitle": "Không tìm thấy trang này",
+      "notFoundBody": "Đường dẫn có thể đã sai, hoặc trang này không còn nữa.",
       "worker": "Máy chạy Trợ lý",
       "authMode": "Xác thực",
       "agentMode": "Chế độ",
