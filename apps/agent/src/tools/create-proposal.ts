@@ -1,6 +1,5 @@
 import { estaUri } from '@esta/core/links';
 import { parseProposal, PROPOSAL_TYPES, isProposalType, type Proposal } from '@esta/core/proposals';
-import { existingLinks } from '@esta/ops';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { guardedWriter, type NoteBinding } from './create-item';
@@ -13,12 +12,28 @@ const inputSchema = z.object({ type: z.string(), params: z.record(z.string(), z.
 const rejected = (lines: readonly string[]) => new ToolRejection(`${lines.join('\n')}\nFix these and call create_proposal again.`);
 
 /** The records a proposal is about, as the `esta://` links its item relates. */
-function subjects(proposal: Proposal): string[] {
-  const { property_id, lease_id } = proposal.params;
-  return [property_id === null ? null : estaUri({ type: 'property', id: property_id }), lease_id === null ? null : estaUri({ type: 'lease', id: lease_id })].filter(
+function subjects({ params }: Proposal): string[] {
+  const property = 'property_id' in params ? params.property_id : null;
+  return [property === null ? null : estaUri({ type: 'property', id: property }), params.lease_id === null ? null : estaUri({ type: 'lease', id: params.lease_id })].filter(
     (link) => link !== null,
   );
 }
+
+/** What `public.proposal_refusal` answers, as the line the model reads to fix its call. */
+const REFUSALS: Readonly<Record<string, string>> = {
+  ESTA_PROPOSAL_PARAMS: 'params: do not match the type',
+  ESTA_PROPOSAL_SUBJECT: 'property_id, lease_id: not a record of this household, archived, or a lease of another property. Use ids a tool returned in this run.',
+  ESTA_LEASE_NOT_ACTIVE: 'lease_id: the lease is not active',
+  ESTA_REMINDER_NOTHING_OWED: 'lease_id: nothing is owed on this lease',
+  ESTA_AMENDMENT_NOT_AFTER_AS_OF: 'effective_period_start: must be after today',
+  ESTA_AMENDMENT_ALREADY_BILLED: 'effective_period_start: that period is already billed or paid; use a later period start',
+  ESTA_AMENDMENT_DUPLICATE: 'effective_period_start: the lease already changes on that date',
+  ESTA_AMENDMENT_NOT_A_PERIOD_START: 'effective_period_start: not a period start of this lease',
+  ESTA_LEASE_NOT_RENEWABLE: 'lease_id: only an active or ended lease renews',
+  ESTA_LEASE_OPEN_ENDED: 'lease_id: an open-ended lease has no end to renew from',
+  ESTA_LEASE_ALREADY_RENEWED: 'lease_id: the lease already has a renewal',
+  ESTA_RENEWAL_END: 'end_date: must be after the lease ends',
+};
 
 /** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
@@ -50,11 +65,13 @@ export function proposalWriter(binding: ProposalBinding) {
     if (!parsed.ok) throw rejected(parsed.reason);
     const proposal = parsed.value;
 
-    const links = subjects(proposal);
-    const present = await existingLinks(binding.db, binding.householdId, links);
-    const missing = links.filter((link) => !present.has(link));
-    if (missing.length > 0) throw rejected([`${missing.join(', ')}: not a record of this household. Use an id a tool returned in this run.`]);
+    const today = (await binding.clock()).today();
+    if (proposal.type === 'create_task' && proposal.params.due_on !== null && proposal.params.due_on < today) throw rejected([`params.due_on: before today, ${today}`]);
+    const { data: refusal, error } = await binding.db.rpc('proposal_refusal', { p_household_id: binding.householdId, p_proposal: proposal });
+    if (error) throw new Error(`Checking the proposal failed: ${error.message}`);
+    if (refusal !== null) throw rejected([REFUSALS[refusal] ?? refusal]);
 
+    const links = subjects(proposal);
     const key = dedupeKey(proposal);
     const added = await guard.save({ kind: 'proposal', severity: 'info', title: proposal.params.title, body_md: body, related: { links }, proposal, dedupe_key: key });
     return { saved: true, added, dedupe_key: key };

@@ -39,7 +39,7 @@ export { readInvoices, type InvoiceScope, type InvoiceSummary } from './invoices
 export { readLedgerFacts, readLedgerStart, type LedgerFacts } from './ledger';
 export { invoiceIssue, invoiceVoid, type InvoiceChanged, type InvoiceRefusal } from './invoice-ops';
 export { leaseCreate, leaseEdit, type LeaseRefusal, type LeaseSaved } from './lease-ops';
-export { readLeases, readLeaseSchedule, scheduleUntil, tenantRowSchema, withTenants, type LeaseWithTenant, type Tenant } from './leases';
+export { readLeaseNames, readLeases, readLeaseSchedule, scheduleUntil, tenantRowSchema, withTenants, type LeaseWithTenant, type Tenant } from './leases';
 export { readMembership } from './member';
 export { meterReadingsSave, type MeterRefusal, type ReadingsSaved } from './meter-ops';
 export { runOp, settle, type Op, type OpContext } from './op';

@@ -1,7 +1,7 @@
 import 'server-only';
 import { businessDate, parseInstant, type Instant, type IsoDate } from '@esta/core';
 import { addDays } from '@esta/core/date/calendar';
-import { parseProposal } from '@esta/core/proposals';
+import { parseProposal, type Proposal } from '@esta/core/proposals';
 import { existingLinks } from '@esta/ops';
 import { z } from 'zod';
 import { env } from '@/server/env';
@@ -14,8 +14,8 @@ export type InboxStatus = (typeof INBOX)[number];
 const DECIDED = ['approved', 'failed'] as const;
 export type NoteStatus = InboxStatus | (typeof DECIDED)[number];
 
-/** A proposal's card details, which Esta writes from the validated params. */
-export type ProposalView = { readonly dueOn: IsoDate | null };
+/** A proposal as the registry reads its stored params, null when they no longer parse. */
+export type ProposalView = { readonly parsed: Proposal | null; readonly dueOn: IsoDate | null };
 
 export type InboxNote = {
   readonly id: string;
@@ -47,7 +47,8 @@ const related = z.object({ document_id: z.uuid(), extraction_id: z.uuid() });
 
 function proposalView(raw: unknown): ProposalView {
   const proposal = parseProposal(raw);
-  return { dueOn: proposal.ok ? proposal.value.params.due_on : null };
+  if (!proposal.ok) return { parsed: null, dueOn: null };
+  return { parsed: proposal.value, dueOn: proposal.value.type === 'create_task' ? proposal.value.params.due_on : null };
 }
 
 /**

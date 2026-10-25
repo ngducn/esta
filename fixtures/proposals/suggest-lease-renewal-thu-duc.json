@@ -1,0 +1,9 @@
+{
+  "params": {
+    "title": "Gia hạn hợp đồng Căn hộ Thủ Đức",
+    "lease_id": "seed:lease:{household}:thu-duc:1",
+    "increase_bps": 500,
+    "end_date": "2027-11-01"
+  },
+  "rationale": "Hợp đồng sắp hết hạn và chưa có hợp đồng gia hạn. Khách thuê ổn định, nên gia hạn với mức tăng nhẹ."
+}

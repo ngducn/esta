@@ -7,10 +7,10 @@ import { servicePatch, serviceUpsert } from './wizard';
 export type TaskProposal = { readonly id: string; readonly title: string };
 
 /**
- * A `create_task` proposal as `create_proposal` stores it, under a fresh id, key and title, so every run approves a
- * new one and never finds the card an earlier run decided on the same clock day.
+ * A proposal as `create_proposal` stores it, under a fresh id, key and title, so every run approves a new one and never
+ * finds the card an earlier run decided on the same clock day.
  */
-export async function seedTaskProposal(page: Page, lane: number, params: { title: string; dueOn: string | null; propertyId?: string | null }): Promise<TaskProposal> {
+export async function seedProposal(page: Page, lane: number, type: string, params: { title: string } & Record<string, unknown>): Promise<TaskProposal> {
   const id = randomUUID();
   const title = `${params.title} ${id.slice(0, 6)}`;
   await serviceUpsert(page, 'agent_items', {
@@ -20,11 +20,14 @@ export async function seedTaskProposal(page: Page, lane: number, params: { title
     severity: 'info',
     title,
     body_md: 'Trợ lý đề xuất việc này cho hôm nay.',
-    proposal: { type: 'create_task', params: { title, due_on: params.dueOn, property_id: params.propertyId ?? null, lease_id: null } },
+    proposal: { type, params: { ...params, title } },
     dedupe_key: `e2e:proposal:${id}`,
   });
   return { id, title };
 }
+
+export const seedTaskProposal = (page: Page, lane: number, params: { title: string; dueOn: string | null; propertyId?: string | null }) =>
+  seedProposal(page, lane, 'create_task', { title: params.title, due_on: params.dueOn, property_id: params.propertyId ?? null, lease_id: null });
 
 export const proposalCard = (page: Page, title: string) => page.getByTestId('inbox-item').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 

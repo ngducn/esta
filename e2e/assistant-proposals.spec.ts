@@ -40,7 +40,7 @@ test('two devices approving at once make one task, and a stale tab reads Đã đ
   await page.goto('/assistant');
   await expect(proposalCard(page, item.title).getByTestId('proposal-approve')).toBeVisible();
 
-  const approve = () => memberRest<string>(page, 'POST', 'rpc/approve_proposal', { p_item_id: item.id, p_params_valid: true });
+  const approve = () => memberRest<string>(page, 'POST', 'rpc/approve_proposal', { p_item_id: item.id });
   expect(await Promise.all([approve(), approve(), approve()])).toEqual(['approved', 'approved', 'approved']);
   expect(await tasksOf(page, item.id)).toHaveLength(1);
 
@@ -83,7 +83,7 @@ test('a viewer reads a proposal without buttons and cannot approve it with a cra
   await page.goto('/assistant');
   await expect(proposalCard(page, item.title)).toBeVisible();
   await expect(proposalCard(page, item.title).getByRole('button')).toHaveCount(0);
-  const crafted = await memberCall(page, 'POST', 'rpc/approve_proposal', { p_item_id: item.id, p_params_valid: true });
+  const crafted = await memberCall(page, 'POST', 'rpc/approve_proposal', { p_item_id: item.id });
   expect(crafted.ok()).toBe(false);
   expect(await statusOf(page, item.id)).toBe('new');
   expect(await tasksOf(page, item.id)).toEqual([]);

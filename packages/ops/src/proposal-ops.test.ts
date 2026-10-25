@@ -1,25 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { runOp } from './op';
 import { proposalApprove } from './proposal-ops';
-import { fakeDb, opContext as context, PROPERTY, type Sent } from './test/fake-db';
+import { fakeDb, opContext as context, type Sent } from './test/fake-db';
 
 const ITEM = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0a20';
-const TASK = { type: 'create_task', params: { title: 'Gọi người thuê Phòng 5', due_on: '2026-10-07', property_id: PROPERTY, lease_id: null } };
-
-const holding = (status: string, proposal: unknown = TASK) => (sent: Sent) => (sent.table === 'agent_items' ? [{ status, proposal }] : []);
+const holding = (status: string) => (sent: Sent) => (sent.table === 'agent_items' ? [{ status }] : []);
 const rpcs = (sent: readonly Sent[]) => sent.filter((request) => request.table.startsWith('rpc/'));
 
 describe('proposalApprove', () => {
-  it('plans the approval with the registry verdict on the stored params', async () => {
-    expect(await proposalApprove.plan(context(fakeDb(holding('new')).db), { id: ITEM })).toEqual({ ok: true, value: { kind: 'change', change: { id: ITEM, paramsValid: true } } });
-    expect(await proposalApprove.plan(context(fakeDb(holding('read', { type: 'create_task', params: { title: '' } })).db), { id: ITEM })).toEqual({
-      ok: true,
-      value: { kind: 'change', change: { id: ITEM, paramsValid: false } },
-    });
-    expect(await proposalApprove.plan(context(fakeDb(holding('new', { type: 'sell_property', params: {} })).db), { id: ITEM })).toEqual({
-      ok: true,
-      value: { kind: 'change', change: { id: ITEM, paramsValid: false } },
-    });
+  it.each(['new', 'read'] as const)('plans the approval of a %s proposal with nothing but its id', async (status) => {
+    expect(await proposalApprove.plan(context(fakeDb(holding(status)).db), { id: ITEM })).toEqual({ ok: true, value: { kind: 'change', change: { id: ITEM } } });
   });
 
   it.each(['approved', 'failed'] as const)('answers what was decided when the proposal is already %s, and calls nothing', async (status) => {
@@ -44,7 +34,7 @@ describe('proposalApprove', () => {
     const failing = (error: { code: string; message: string }) => fakeDb(holding('new'), (sent) => (sent.table.startsWith('rpc/') ? error : null));
     const viewer = failing({ code: 'P0002', message: 'ESTA_PROPOSAL_NOT_FOUND' });
     expect(await runOp(proposalApprove, context(viewer.db), { id: ITEM })).toEqual({ ok: false, reason: { kind: 'not_found' } });
-    expect(rpcs(viewer.sent)).toMatchObject([{ method: 'POST', table: 'rpc/approve_proposal', body: { p_item_id: ITEM, p_params_valid: true } }]);
+    expect(rpcs(viewer.sent)).toMatchObject([{ method: 'POST', table: 'rpc/approve_proposal', body: { p_item_id: ITEM } }]);
     expect(await runOp(proposalApprove, context(failing({ code: '55000', message: 'ESTA_PROPOSAL_DECIDED' }).db), { id: ITEM })).toEqual({ ok: false, reason: { kind: 'dismissed' } });
   });
 });

@@ -2,6 +2,7 @@ import { addDays, addMonths } from '@esta/core/date/calendar';
 import { amendmentStarts, contractTenant, currentMonthlyRent, holdsUnit, leaseDefaults, leaseFieldsFromExtraction, renewalStart } from '@esta/core/lease';
 import type { Metadata } from 'next';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { LeaseForm, type ContractPrefill, type LeaseFormUnit } from '@/components/leases/LeaseForm';
@@ -101,6 +102,14 @@ export default async function LeasePage({ params, searchParams }: { params: Para
           <h1 className="text-h2 break-words text-balance lg:text-h1">{title}</h1>
           {lease === null ? null : <StatusMark status="draft" />}
         </div>
+        {lease === null || lease.renewal_of_lease_id === null ? null : (
+          <p className="flex flex-wrap gap-x-2 text-body text-ink-2">
+            <span>{t('renewalOfLabel')}</span>
+            <Link href={`${backHref}/leases/${lease.renewal_of_lease_id}`} data-testid="lease-renewal-of" className="font-medium text-accent underline underline-offset-4">
+              {t('renewalOf')}
+            </Link>
+          </p>
+        )}
         <PropertyIntl locale={locale} messages={{ leases: messages.leases, components: { money, date, status } }}>
           <LeaseForm
             propertyId={id}

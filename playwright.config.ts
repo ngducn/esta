@@ -46,6 +46,7 @@ const sharedClock = [
   'assistant-market.spec.ts',
   'tasks.spec.ts',
   'assistant-proposals.spec.ts',
+  'proposal-confirm.spec.ts',
 ];
 
 export default defineConfig({

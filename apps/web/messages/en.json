@@ -1119,7 +1119,12 @@
     "taskDoneToast": "Task done.",
     "taskDue": "Due {date}",
     "taskNoDue": "No due date",
-    "taskRestoreFailed": "Could not bring the task back. Reload the page and try again."
+    "taskRestoreFailed": "Could not bring the task back. Reload the page and try again.",
+    "confirmRentChange": "{direction, select, up {Raise the rent for {place} to {amount} from {date}?} down {Lower the rent for {place} to {amount} from {date}?} other {Set the rent for {place} to {amount} from {date}?}}",
+    "confirmRenewal": "Renew the lease for {place} until {date} at {amount} a month?",
+    "confirmCancel": "Cancel",
+    "openLease": "Open the lease",
+    "openReminder": "Open the reminder"
   },
   "settings": {
     "display": "Display",

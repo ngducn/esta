@@ -1,0 +1,9 @@
+{
+  "params": {
+    "title": "Tăng tiền thuê một phòng khác ở Dĩ An",
+    "lease_id": "seed:lease:{household}:di-an:3",
+    "effective_period_start": "2026-11-25",
+    "rent_vnd": 3800000
+  },
+  "rationale": "Giá thuê phòng quanh Dĩ An đã tăng từ đầu năm."
+}

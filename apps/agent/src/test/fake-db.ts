@@ -6,12 +6,21 @@ export type Recorded = { table: string; op: 'upsert' | 'insert' | 'update' | 'de
 
 type Filter = (row: Row) => boolean;
 
+export type FakeRpcs = Record<string, (args: Record<string, unknown>) => unknown>;
+
 /**
  * An in-memory stand-in for the service client: filters, ordering, single reads, updates that mutate the rows in place, upserts
  * that honour `onConflict` with `ignoreDuplicates`, and Storage downloads from `files`. A write to a table named in
- * `refuse` answers that table's error message and changes nothing, as RLS or a lost connection would.
+ * `refuse` answers that table's error message and changes nothing, as RLS or a lost connection would. `rpcs` answers
+ * database functions by name.
  */
-export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], files: Record<string, Uint8Array> = {}, refuse: Record<string, string> = {}): AgentDb {
+export function fakeDb(
+  tables: Record<string, Row[]>,
+  writes: Recorded[] = [],
+  files: Record<string, Uint8Array> = {},
+  refuse: Record<string, string> = {},
+  rpcs: FakeRpcs = {},
+): AgentDb {
   const from = (table: string) => {
     const all = (tables[table] ??= []);
     const refusal = refuse[table] === undefined ? null : { message: refuse[table] };
@@ -124,5 +133,9 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
       },
     }),
   };
-  return { from, storage } as unknown as AgentDb;
+  const rpc = async (name: string, args: Record<string, unknown>) => {
+    const answer = rpcs[name];
+    return answer === undefined ? { data: null, error: { message: `no fake for ${name}` } } : { data: answer(args), error: null };
+  };
+  return { from, storage, rpc } as unknown as AgentDb;
 }

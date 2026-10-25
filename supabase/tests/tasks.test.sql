@@ -25,7 +25,7 @@ insert into public.agent_items (id, household_id, kind, severity, title, dedupe_
   ('00000000-0000-4000-8000-0000000001a3', :'a', 'proposal', 'info', 'Việc đã bỏ qua', 'proposal:a3',
    jsonb_build_object('type', 'create_task', 'params', jsonb_build_object('title', 'Việc đã bỏ qua', 'due_on', null, 'property_id', null, 'lease_id', null))),
   ('00000000-0000-4000-8000-0000000001a4', :'a', 'proposal', 'info', 'Tham số hỏng', 'proposal:a4',
-   jsonb_build_object('type', 'create_task', 'params', jsonb_build_object('title', 'Tham số hỏng'))),
+   jsonb_build_object('type', 'create_task', 'params', jsonb_build_object('title', 'Tham số hỏng', 'due_on', 'tuần sau'))),
   ('00000000-0000-4000-8000-0000000001a5', :'a', 'alert', 'info', 'Một ghi chú', 'note:a5', null),
   ('00000000-0000-4000-8000-0000000001b1', :'b', 'proposal', 'info', 'Đề xuất của B', 'proposal:b1',
    jsonb_build_object('type', 'create_task', 'params', jsonb_build_object('title', 'Đề xuất của B', 'due_on', null, 'property_id', null, 'lease_id', null)));
@@ -64,14 +64,14 @@ select results_eq(
 -- Approving a proposal (AGT-6).
 select throws_ok($$ update public.agent_items set status = 'approved' where id = '00000000-0000-4000-8000-0000000001a1' $$,
   '42501', null, 'a member cannot mark a proposal approved without its effect');
-select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a1', true), 'approved', 'a member approves the task proposal');
+select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a1'), 'approved', 'a member approves the task proposal');
 select results_eq(
   $$ select title, due_on, property_id, source, status from public.tasks where agent_item_id = '00000000-0000-4000-8000-0000000001a1' $$,
   $$ values ('Gọi người thuê Phòng 5'::text, '2026-10-07'::date, '00000000-0000-4000-8000-0000000000a1'::uuid, 'agent_proposal'::text, 'open'::text) $$,
   'its task carries the proposed title, due date and property');
 select is((select (status, decided_by) from public.agent_items where id = '00000000-0000-4000-8000-0000000001a1'),
   ('approved'::text, :'member_a'::uuid), 'the item reads approved, decided by her');
-select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a1', true), 'approved', 'a second approval answers approved');
+select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a1'), 'approved', 'a second approval answers approved');
 select is((select count(*)::int from public.tasks where agent_item_id = '00000000-0000-4000-8000-0000000001a1'), 1, 'and adds no second task');
 select results_eq(
   $$ select table_name, action, actor_kind, actor_id from public.audit_log
@@ -87,15 +87,15 @@ select throws_ok($$ insert into public.tasks (household_id, title, source, agent
   '42501', null, 'nor given a second task by hand');
 
 update public.agent_items set status = 'dismissed' where id = '00000000-0000-4000-8000-0000000001a3';
-select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001a3', true) $$,
+select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001a3') $$,
   '55000', 'ESTA_PROPOSAL_DECIDED', 'a dismissed proposal refuses approval');
 select is((select count(*)::int from public.tasks where agent_item_id = '00000000-0000-4000-8000-0000000001a3'), 0, 'and makes no task');
 
-select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a4', false), 'failed', 'params the registry no longer accepts mark the item failed');
+select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a4'), 'failed', 'params out of shape mark the item failed instead of raising');
 select is((select status from public.agent_items where id = '00000000-0000-4000-8000-0000000001a4'), 'failed', 'it reads failed');
-select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001a5', true) $$,
+select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001a5') $$,
   'P0002', 'ESTA_PROPOSAL_NOT_FOUND', 'a note that is not a proposal cannot be approved');
-select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001b1', true) $$,
+select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001b1') $$,
   'P0002', 'ESTA_PROPOSAL_NOT_FOUND', 'a proposal of another household cannot be approved');
 select is((select status from public.agent_items where id = '00000000-0000-4000-8000-0000000001b1'), null, 'and its item stays out of sight');
 
@@ -105,17 +105,17 @@ reset role;
 select set_config('esta.actor', 'system:test', true);
 update public.properties set deleted_at = now() where id = '00000000-0000-4000-8000-0000000000a2';
 select tests.act_as('viewer.a@test.esta.test');
-select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001a2', true) $$,
+select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000001a2') $$,
   'P0002', 'ESTA_PROPOSAL_NOT_FOUND', 'a viewer cannot approve, even calling the function herself');
 select is_empty($$ update public.agent_items set status = 'dismissed' where id = '00000000-0000-4000-8000-0000000001a2' returning 1 $$,
   'nor dismiss');
 select tests.sees_household('public.tasks', :'a', true);
 select tests.cannot_write('public.tasks', :'a', format($$ insert into public.tasks (household_id, title) values (%L, 'x') $$, :'a'));
 select tests.act_as('member.a@test.esta.test');
-select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a2', true), 'failed', 'a proposal about an archived property fails');
+select is(public.approve_proposal('00000000-0000-4000-8000-0000000001a2'), 'failed', 'a proposal about an archived property fails');
 select is((select count(*)::int from public.tasks where agent_item_id = '00000000-0000-4000-8000-0000000001a2'), 0, 'and makes no task');
 
-select is(has_function_privilege('anon', 'public.approve_proposal(uuid, boolean)', 'execute'), false, 'an anonymous caller cannot approve');
+select is(has_function_privilege('anon', 'public.approve_proposal(uuid)', 'execute'), false, 'an anonymous caller cannot approve');
 
 select * from finish();
 rollback;

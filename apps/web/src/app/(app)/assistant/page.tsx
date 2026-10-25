@@ -15,10 +15,12 @@ import { ToastHost } from '@/components/undo-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { listInbox } from '@/server/agent/items';
+import { loadProposalDetails } from '@/server/agent/proposal-details';
 import { getConnectionCheck, type AgentRun, type PingCheck } from '@/server/assistant';
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
+import { loadReminderLabels } from '@/server/reminders/board';
 import { loadOpenTasks } from '@/server/tasks/load';
 import { runConnectionCheck, runWatch } from './actions';
 import { RefreshWhilePending } from './connection-check';
@@ -220,12 +222,14 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
     searchParams,
   ]);
   const canDecide = member.role !== 'viewer';
+  const details = await loadProposalDetails(member.household.id, notes, clock.today(), canDecide);
+  const reminderLabels = [...details.values()].some((detail) => detail.reminder !== null) ? await loadReminderLabels() : null;
   return (
     <div className="flex flex-col gap-6">
       <AssistantHeader householdId={member.household.id} now={clock.now()} status={status} active="inbox" />
       <ToastHost labels={{ region: toast('region'), undo: toast('undo') }}>
         <TaskList tasks={tasks} today={clock.today()} canEdit={canDecide} />
-        <Inbox notes={notes} today={clock.today()} timezone={env.ESTA_TIMEZONE} canDecide={canDecide} />
+        <Inbox notes={notes} today={clock.today()} timezone={env.ESTA_TIMEZONE} canDecide={canDecide} proposals={{ details, reminderLabels }} />
       </ToastHost>
       {member.isOperator ? (
         <OperatorTools householdId={member.household.id} failed={{ check: check === 'failed', watch: watch === 'failed' }} workerOnline={status.kind === 'online'} />
