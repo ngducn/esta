@@ -9,7 +9,7 @@ import { JOBS } from '../jobs/registry';
 import { canonicalizer, inputHash } from '../replay/canonicalize';
 import { writeRecording } from '../replay/store';
 import { estaTool, mcpToolName, ToolRejection } from '../tools/server';
-import { canonicalInput, liveSession, replaySession, type SessionRequest } from './session';
+import { canonicalInput, liveSession, replaySession, SessionGoneError, type SessionRequest } from './session';
 
 const answersToModel: { isError: boolean; text: string }[] = [];
 
@@ -30,15 +30,26 @@ async function* modelThatSavesOnce({ options }: { options: Options }) {
   yield { type: 'result', subtype: 'success', is_error: false, result: 'Saved.', num_turns: 2, session_id: 's1', total_cost_usd: 0, usage: {}, modelUsage: {}, permission_denials: [] };
 }
 
+const RESUMED = '6f1d2c3b-1111-4222-8333-944455556666';
+
+/** What SDK 0.3.291 does when `resume` names a session its config dir does not hold: an error result, then a throw. */
+async function* cliWithoutTheSession(message = `No conversation found with session ID: ${RESUMED}`) {
+  yield { type: 'result', subtype: 'error_during_execution', is_error: true, errors: [message], num_turns: 0, session_id: 'b7e0c1d2-0000-4000-8000-000000000001', total_cost_usd: 0, usage: {}, modelUsage: {}, permission_denials: [] };
+  throw new Error(`Claude Code returned an error result: ${message}`);
+}
+
+let model: (input: { options: Options }) => AsyncGenerator<unknown> = modelThatSavesOnce;
+
 vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@anthropic-ai/claude-agent-sdk')>()),
-  query: (input: { options: Options }) => modelThatSavesOnce(input),
+  query: (input: { options: Options }) => model(input),
 }));
 
 const jobDir = realpathSync(mkdtempSync(join(tmpdir(), 'esta-session-')));
 afterAll(() => rmSync(jobDir, { recursive: true, force: true }));
 beforeEach(() => {
   answersToModel.length = 0;
+  model = modelThatSavesOnce;
 });
 
 const live = { agentMode: 'live', authMode: 'api_key', credential: { name: 'ANTHROPIC_API_KEY', value: 'unused' }, model: 'claude-sonnet-5-5', deepModel: null } as const;
@@ -81,5 +92,24 @@ describe('the tool error boundary (AGENT.md §9)', () => {
     it('fails the replay session with it instead of turning it into an answer', async () => {
       await expect(replaySaving(() => Promise.reject(failure))).rejects.toBe(failure);
     });
+  });
+});
+
+describe('a turn that resumes a session', () => {
+  const resuming = (): SessionRequest => ({ ...requestSaving(() => Promise.resolve()), spec: JOBS.ask, tools: new Map(), onText: () => Promise.resolve(), resume: { sessionId: RESUMED, afterInputHash: 'a'.repeat(64) } });
+
+  it('live, says the session is gone when the CLI finds no conversation with its id', async () => {
+    model = () => cliWithoutTheSession();
+    await expect(liveSession(resuming(), live)).rejects.toBeInstanceOf(SessionGoneError);
+  });
+
+  it('live, keeps any other error result an ordinary failed session', async () => {
+    model = () => cliWithoutTheSession('API Error: 529 Overloaded');
+    const run = await liveSession(resuming(), live);
+    expect(run.result).toMatchObject({ isError: true, text: 'API Error: 529 Overloaded' });
+  });
+
+  it('in replay, says the session is gone when its config dir does not hold it, before it looks for a recording', async () => {
+    await expect(replaySession({ ...resuming(), configDir: join(jobDir, 'moved-away') }, jobDir)).rejects.toBeInstanceOf(SessionGoneError);
   });
 });

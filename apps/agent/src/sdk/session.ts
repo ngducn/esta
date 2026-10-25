@@ -1,5 +1,7 @@
 import { query, type HookCallback, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { RunMode } from '../env';
 import type { JobSpec, ModelRole } from '../jobs/registry';
 import { InvalidJobError } from '../jobs/extract-document';
@@ -13,6 +15,15 @@ import { fromSdkResult, type SessionResult } from './result';
 export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
 
 export type BuiltInResult = ToolCall & { readonly result: unknown };
+
+export class SessionGoneError extends Error {
+  constructor(sessionId: string) {
+    super(`The session ${sessionId} this turn resumes is gone`);
+    this.name = 'SessionGoneError';
+  }
+}
+
+const SESSION_GONE = 'No conversation found with session ID';
 
 export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[] };
 
@@ -29,6 +40,8 @@ export type SessionRequest = {
   readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
   readonly modelRole?: ModelRole;
 };
+
+const keepsTranscript = (request: SessionRequest) => request.onText !== undefined;
 
 export function canonicalInput({ spec, prompt, canon, resume, modelRole }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon' | 'resume' | 'modelRole'>): CanonicalInput {
   return {
@@ -92,7 +105,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
     preToolUse: pathPolicyHook(policy, (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
     postToolUse: observeHook(request, policy),
     abortController,
-    ...(request.onText === undefined ? {} : { streaming: { resume: request.resume?.sessionId ?? null } }),
+    ...(keepsTranscript(request) ? { streaming: { resume: request.resume?.sessionId ?? null } } : {}),
   });
   const toolCalls: ToolCall[] = [];
   let result: SDKResultMessage | undefined;
@@ -127,6 +140,8 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   }
   if (toolFailures.length > 0) throw toolFailures[0];
   if (result === undefined) throw new Error('The model session ended without a result');
+  const resumed = request.resume?.sessionId ?? null;
+  if (resumed !== null && result.subtype === 'error_during_execution' && result.errors.some((error) => error.startsWith(SESSION_GONE))) throw new SessionGoneError(resumed);
   return { result: fromSdkResult(result, cause), model, toolCalls };
 }
 
@@ -134,15 +149,19 @@ const REPLAY_CHUNK = /.{1,12}/gsu;
 
 export const replayChunks = (reply: string): string[] => reply.match(REPLAY_CHUNK) ?? [];
 
+/** A replayed turn's stand-in for the SDK's session id, new each turn as a live one is, so a follow-up's resume shows in replay. */
+export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
+
+const replayTranscript = (configDir: string, sessionId: string) => join(configDir, 'replay-sessions', `${sessionId}.json`);
+
 /**
  * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the
  * policy denies is booked as a permission denial, as the SDK books a PreToolUse deny, and the replay goes on.
  */
-/** A replayed turn's stand-in for the SDK's session id, new each turn as a live one is, so a follow-up's resume shows in replay. */
-export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
-
 export async function replaySession(request: SessionRequest, replayDir: string): Promise<SessionRun> {
   const input = canonicalInput(request);
+  const resumed = request.resume?.sessionId ?? null;
+  if (resumed !== null && keepsTranscript(request) && !existsSync(replayTranscript(request.configDir, resumed))) throw new SessionGoneError(resumed);
   const recording = readRecording(replayDir, input);
   console.log(`[agent] replay ${recordingPath(replayDir, input.kind, inputHash(input))}`);
   const policy = toolPolicy(request);
@@ -163,7 +182,12 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     else if (call.result !== undefined) observeBuiltIn(request, policy, { name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
   }
   const reply = request.canon.restore(recording.reply);
+  const sessionId = replaySessionId(inputHash(input));
   if (request.onText !== undefined) for (const chunk of replayChunks(reply)) await request.onText(chunk);
+  if (keepsTranscript(request)) {
+    mkdirSync(join(request.configDir, 'replay-sessions'), { recursive: true });
+    writeFileSync(replayTranscript(request.configDir, sessionId), `${JSON.stringify({ inputHash: inputHash(input) })}\n`);
+  }
   return {
     result: {
       isError: recording.isError ?? false,
@@ -171,7 +195,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
       subtype: 'success',
       text: reply,
       numTurns: recording.numTurns,
-      sessionId: replaySessionId(inputHash(input)),
+      sessionId,
       costUsd: 0,
       usage: {},
       modelUsage: {},

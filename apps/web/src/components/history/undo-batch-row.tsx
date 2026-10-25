@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { startTransition, useActionState, type ReactNode } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { undoBatch } from '@/server/actions/batches';
 
 export function UndoBatchRow({ batchId, summary, body, children }: { batchId: string; summary: string; body: string; children: ReactNode }) {

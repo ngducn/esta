@@ -1,6 +1,6 @@
 import type { LegalStatus, UseMode } from '@esta/core/properties';
 import { Briefcase, CirclePause, Hammer, House, KeyRound, Users, type LucideIcon } from 'lucide-react';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
+import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 
 const useIcons = {

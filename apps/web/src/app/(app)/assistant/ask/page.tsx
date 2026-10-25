@@ -10,10 +10,7 @@ import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
 
-export async function generateMetadata() {
-  const t = await getTranslations('assistant.ask');
-  return { title: t('title') };
-}
+export { generateMetadata } from './ask-metadata';
 
 export default async function AskPage() {
   const clock = await getClock();

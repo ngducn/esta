@@ -8,11 +8,11 @@ import type { RunMode } from './env';
 import { writeFailureItems } from './failure-items';
 import type { WorkerState } from './heartbeat';
 import { InvalidJobError } from './jobs/extract-document';
-import { jobSpec, type AgentJob, type JobSpec } from './jobs/registry';
+import { jobSpec, type AgentJob, type JobSpec, type PreparedJob } from './jobs/registry';
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
-import { canonicalInput, liveSession, replaySession, type SessionRequest, type SessionRun } from './sdk/session';
+import { canonicalInput, liveSession, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
 import { NumberGuardError } from './tools/create-item';
 import { mcpToolName } from './tools/server';
@@ -33,8 +33,8 @@ export type Worker = {
   setState(state: WorkerState): void;
 };
 
-/** A retry cannot fix a missing recording, a rejected credential, a job whose rows do not line up (AGT-1) or a second guard violation (AGENT.md §6.3). */
-const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording', 'invalid_job', 'number_guard']);
+/** A retry cannot fix a missing recording, a rejected credential, a job whose rows do not line up (AGT-1), a second guard violation (AGENT.md §6.3) or a lost session. */
+const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording', 'invalid_job', 'number_guard', 'lost_session']);
 
 export type NextStep = { readonly status: 'queued'; readonly runAfter: Instant } | { readonly status: 'failed' };
 
@@ -48,6 +48,7 @@ function failureOf(error: unknown): Failure {
   const message = error instanceof Error ? error.message : String(error);
   if (error instanceof MissingRecordingError) return { kind: 'missing_recording', message };
   if (error instanceof NumberGuardError) return { kind: 'number_guard', message };
+  if (error instanceof SessionGoneError) return { kind: 'lost_session', message };
   return { kind: error instanceof InvalidJobError ? 'invalid_job' : 'error', message };
 }
 
@@ -88,6 +89,20 @@ function runModel(worker: Worker, request: SessionRequest): Promise<SessionRun> 
   return worker.mode.agentMode === 'live' ? liveSession(request, worker.mode) : replaySession(request, worker.replayDir);
 }
 
+async function firstTurnOrRebuilt(worker: Worker, job: AgentJob, prepared: PreparedJob, fresh: SessionRequest): Promise<{ readonly turn: SessionRequest; readonly session: SessionRun }> {
+  const turn = prepared.resume === undefined ? fresh : { ...fresh, resume: prepared.resume };
+  try {
+    return { turn, session: await runModel(worker, turn) };
+  } catch (error) {
+    if (!(error instanceof SessionGoneError) || prepared.rebuild === undefined) throw error;
+    const prompt = await prepared.rebuild();
+    if (prompt === null) throw error;
+    console.warn(`[agent] ${job.kind} ${job.id}: ${error.message}, so it runs in a new session rebuilt from the job's rows`);
+    const rebuilt = { ...fresh, prompt };
+    return { turn: rebuilt, session: await runModel(worker, rebuilt) };
+  }
+}
+
 function followedBy(first: SessionRun, next: SessionRun): SessionRun {
   return {
     result: { ...next.result, numTurns: first.result.numTurns + next.result.numTurns, costUsd: first.result.costUsd + next.result.costUsd },
@@ -116,11 +131,11 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
       ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
       ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
-      ...(prepared.resume === undefined ? {} : { resume: prepared.resume }),
       ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     };
-    let turn = request;
-    session = await runModel(worker, turn);
+    const first = await firstTurnOrRebuilt(worker, job, prepared, request);
+    let turn = first.turn;
+    session = first.session;
     let outcome = judgeResult(session.result);
     while (outcome.ok) {
       const prompt = (await prepared.nextTurn?.()) ?? null;

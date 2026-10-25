@@ -2,13 +2,15 @@ import 'server-only';
 import { parseInstant, type Instant } from '@esta/core';
 import { z } from 'zod';
 import type { Db } from '@esta/ops';
+import { isAnswerState, type AnswerState } from '@/components/assistant/answer-state';
 import { createSessionClient } from '@/server/supabase/server';
 
-import { answerStateSchema, type AnswerState } from '@/components/assistant/answer-state';
-
 const answerRow = { content_md: z.string(), status: z.unknown(), refs: z.unknown(), deferred_until: z.string().nullable() };
-const toAnswer = ({ content_md, status, refs, deferred_until }: { content_md: string; status: unknown; refs: unknown; deferred_until: string | null }): AnswerState =>
-  answerStateSchema.parse({ content: content_md, status: status === 'streaming' && deferred_until !== null ? 'deferred' : status, refs });
+function toAnswer({ content_md, status, refs, deferred_until }: { content_md: string; status: unknown; refs: unknown; deferred_until: string | null }): AnswerState {
+  const answer = { content: content_md, status: status === 'streaming' && deferred_until !== null ? 'deferred' : status, refs };
+  if (!isAnswerState(answer)) throw new Error(`An answer row has status ${JSON.stringify(status)} or refs that are not a list of links`);
+  return answer;
+}
 
 export type ConversationMessage = AnswerState & { readonly id: string; readonly role: 'user' | 'assistant'; readonly createdAt: Instant };
 
@@ -36,10 +38,9 @@ const summarySchema = z
   .object({ id: z.uuid(), title: z.string(), last_asked_at: z.string() })
   .transform((row): ConversationSummary => ({ id: row.id, title: row.title, lastAskedAt: parseInstant(row.last_asked_at) }));
 
-/** The household's conversations, the one asked most recently first. */
 export async function listConversations(householdId: string, limit = 30): Promise<readonly ConversationSummary[]> {
   const db = await createSessionClient();
-  const { data, error } = await db.from('conversations').select('id, title, last_asked_at').eq('household_id', householdId).order('last_asked_at', { ascending: false }).limit(limit);
+  const { data, error } = await db.from('conversations').select('id, title, last_asked_at').eq('household_id', householdId).order('last_asked_at', { ascending: false }).order('id', { ascending: false }).limit(limit);
   if (error) throw new Error(`Reading the conversations failed: ${error.message}`);
   return z.array(summarySchema).parse(data);
 }

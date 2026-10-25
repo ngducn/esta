@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lazy, useState, type DragEvent, type ReactNode } from 'react';
-import { StatusShape, statusMarks } from '@/components/status-mark';
+import { StatusShape, statusMarks } from '@/components/status-shape';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';

@@ -5,7 +5,7 @@ import type { TaxPosition, TaxRule } from '@esta/core/tax';
 import { ChevronRight } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import type { TaxLeaseLine } from '@/server/tax/load';
 import { taxNoteText } from './note-text';
 

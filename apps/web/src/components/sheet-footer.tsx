@@ -1,4 +1,4 @@
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';

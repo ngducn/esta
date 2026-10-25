@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { PaidThroughRefusal } from '@/server/actions/leases';
 import { DateInput } from '@/components/date-input';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 
 /** `Đã thu tiền đến hết ngày`: the one question activation and a late renewal ask about rent collected outside Esta. */
 export function PaidThroughField({ refusal, onTextChange }: { refusal: PaidThroughRefusal | null; onTextChange: (text: string) => void }) {

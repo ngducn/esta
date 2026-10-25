@@ -1,6 +1,6 @@
 import { formatShareBp, type OwnershipStatus } from '@esta/core/properties/ownership';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 
 /** Shown from the saved rows, so it stays until someone saves shares that reach exactly 100% (PRP-3). */
 export async function OwnershipWarning({ status }: { status: OwnershipStatus }) {

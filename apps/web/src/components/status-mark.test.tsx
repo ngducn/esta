@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderInLocale } from '@/test/render';
-import { markStatuses, StatusMark, statusMarks, type StatusMarkProps } from './status-mark';
+import { StatusMark, type StatusMarkProps } from './status-mark';
+import { markStatuses, statusMarks } from './status-shape';
 
 const words = {
   paid: 'Đã thu',

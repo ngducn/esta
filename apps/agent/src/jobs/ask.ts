@@ -3,7 +3,7 @@ import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import type { Json, TablesUpdate } from '@esta/db';
 import { z } from 'zod';
-import { askFollowUpPrompt, askPrompt, askRepairPrompt } from '../prompts/ask';
+import { askFollowUpPrompt, askPrompt, askRepairPrompt, type AskedTurn } from '../prompts/ask';
 import type { AgentDb } from '../supabase';
 import { askReads, type AskReads } from '../tools/ask-reads';
 import { collectionsTool, portfolioOverviewTool } from '../tools/collections';
@@ -30,6 +30,8 @@ export type AskInput = {
   readonly db: AgentDb;
   readonly householdId: string;
   readonly jobId: string;
+  readonly conversationId: string;
+  readonly questionId: string;
   readonly answerId: string;
   readonly locale: Locale;
   readonly asOf: IsoDate;
@@ -49,6 +51,24 @@ async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 
   if (data.length !== 1) throw new Error(`The answer ${answerId} is no longer streaming`);
 }
 
+async function answeredTurnsBefore({ db, householdId, conversationId, questionId }: AskInput): Promise<AskedTurn[]> {
+  const { data, error } = await db.from('messages').select('id, role, content_md, status').eq('household_id', householdId).eq('conversation_id', conversationId).order('created_at');
+  if (error) throw new Error(`Reading the conversation so far failed: ${error.message}`);
+  const before = data.slice(0, Math.max(0, data.findIndex((row) => row.id === questionId)));
+  return before.flatMap((row, index) => {
+    const next = before[index + 1];
+    return row.role === 'user' && next?.role === 'assistant' && next.status === 'done' && next.content_md !== '' ? [{ question: row.content_md, answer: next.content_md }] : [];
+  });
+}
+
+async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn): Promise<string | null> {
+  const turns = await answeredTurnsBefore(input);
+  if (turns.length > 0) return askPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, question: input.question, earlier: turns });
+  const { error } = await input.db.from('conversations').update({ sdk_session_id: null, sdk_turn_hash: null }).eq('household_id', input.householdId).eq('id', input.conversationId).eq('sdk_turn_hash', earlier.turnHash);
+  if (error) throw new Error(`Forgetting the lost session failed: ${error.message}`);
+  return null;
+}
+
 export function askRequest(input: AskInput): PreparedJob {
   const { db, householdId, locale, reads, asOf, earlier } = input;
   const firstHandle = (earlier?.handles ?? 0) + 1;
@@ -59,8 +79,8 @@ export function askRequest(input: AskInput): PreparedJob {
   let repaired = false;
   let answer: Answer | null = null;
   return {
-    prompt: earlier === null ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question }) : askFollowUpPrompt({ today: asOf, question: input.question, firstHandle }),
-    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash } }),
+    prompt: earlier === null ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question }) : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
+    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools: new Map([
       estaTool('list_properties', properties.run),
@@ -106,7 +126,7 @@ export function askRequest(input: AskInput): PreparedJob {
   };
 }
 
-type Turn = { readonly question: string; readonly answerId: string; readonly earlier: EarlierTurn | null; readonly deep: boolean };
+type Turn = { readonly conversationId: string; readonly questionId: string; readonly question: string; readonly answerId: string; readonly earlier: EarlierTurn | null; readonly deep: boolean };
 
 async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   const payload = payloadSchema.safeParse(job.payload);
@@ -123,13 +143,13 @@ async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [], deferred_until: null });
   const { sdk_session_id, sdk_turn_hash, sdk_handles } = conversation.data;
   const earlier = sdk_turn_hash === null ? null : { sessionId: sdk_session_id, turnHash: sdk_turn_hash, handles: sdk_handles };
-  return { question: question.content_md, answerId: answer_id, earlier, deep };
+  return { conversationId: conversation_id, questionId: question_id, question: question.content_md, answerId: answer_id, earlier, deep };
 }
 
 export async function prepareAsk({ db, job, clock, timezone }: JobContext): Promise<PreparedJob> {
   const [turn, locale, now] = await Promise.all([startTurn(db, job), householdLocale(db, job.household_id), clock()]);
   const asOf = now.today();
-  return askRequest({ db, householdId: job.household_id, jobId: job.id, answerId: turn.answerId, locale, asOf, timezone, question: turn.question, earlier: turn.earlier, deep: turn.deep, reads: askReads(db, job.household_id, { locale, asOf }), clock });
+  return askRequest({ db, householdId: job.household_id, jobId: job.id, conversationId: turn.conversationId, questionId: turn.questionId, answerId: turn.answerId, locale, asOf, timezone, question: turn.question, earlier: turn.earlier, deep: turn.deep, reads: askReads(db, job.household_id, { locale, asOf }), clock });
 }
 
 export async function failAsk({ db, job }: Pick<JobContext, 'db' | 'job'>): Promise<void> {

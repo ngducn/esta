@@ -1,6 +1,6 @@
 import { formatDayMonth, formatMonthWithin, type Locale } from '@esta/core/format';
 import type { PropertyStatusMark } from '@esta/core/properties';
-import type { MarkStatus } from '@/components/status-mark';
+import type { MarkStatus } from '@/components/status-shape';
 
 export type StatusPillData = { readonly status: MarkStatus; readonly label: string };
 

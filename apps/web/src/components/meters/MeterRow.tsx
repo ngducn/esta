@@ -7,7 +7,7 @@ import { parseReadingInput } from '@esta/core/parse/measure';
 import { Droplet, Zap } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { KeyboardEvent } from 'react';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { MeterView } from '@/server/meters/load';

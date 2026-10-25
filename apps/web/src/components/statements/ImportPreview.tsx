@@ -8,7 +8,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
+import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAction } from '@/components/use-action';

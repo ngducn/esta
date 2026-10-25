@@ -14,7 +14,7 @@ import { DateInput } from '@/components/date-input';
 import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
 import { MoneyInput } from '@/components/money/money-input';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useNoticeToast } from '@/components/undo-toast';

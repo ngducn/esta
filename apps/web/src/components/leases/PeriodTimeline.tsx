@@ -6,7 +6,8 @@ import type { Amendment, SchedulePeriod } from '@esta/core/schedule';
 import { useLocale, useTranslations } from 'next-intl';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { IntentLink } from '@/components/shell/intent-link';
-import { StatusMark, StatusShape, statusMarks } from '@/components/status-mark';
+import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusMark } from '@/components/status-mark';
 import { cn } from '@/lib/utils';
 import type { InvoiceSummary } from '@/server/leases/load';
 

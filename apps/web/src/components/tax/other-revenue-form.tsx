@@ -6,7 +6,7 @@ import { vndInputText } from '@esta/core/properties/form';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { MoneyInput } from '@/components/money/money-input';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { useAction } from '@/components/use-action';
 import { saveOtherBusinessRevenue, type TaxSaveRefusal } from '@/server/tax/actions';
