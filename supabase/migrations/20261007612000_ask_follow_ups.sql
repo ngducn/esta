@@ -80,7 +80,7 @@ grant execute on function public.ask_question(uuid, uuid, uuid, text, boolean, t
 
 -- The worker's last write of a turn: the answer reads done in the same transaction that hands its session to the next
 -- question, so a follow-up never resumes a turn whose answer failed or one the family never saw.
-create function public.finish_answer(p_household_id uuid, p_answer_id uuid, p_content text, p_refs jsonb, p_session_id text, p_turn_hash text, p_handles integer)
+create function public.finish_answer(p_household_id uuid, p_answer_id uuid, p_content text, p_refs jsonb, p_handles integer, p_session_id text default null, p_turn_hash text default null)
 returns void
 language plpgsql
 volatile
@@ -101,5 +101,5 @@ begin
   where household_id = p_household_id and id = v_conversation_id;
 end;
 $$;
-revoke all on function public.finish_answer(uuid, uuid, text, jsonb, text, text, integer) from public, anon, authenticated;
-grant execute on function public.finish_answer(uuid, uuid, text, jsonb, text, text, integer) to service_role;
+revoke all on function public.finish_answer(uuid, uuid, text, jsonb, integer, text, text) from public, anon, authenticated;
+grant execute on function public.finish_answer(uuid, uuid, text, jsonb, integer, text, text) to service_role;

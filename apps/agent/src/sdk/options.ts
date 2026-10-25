@@ -50,6 +50,6 @@ export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, 
     maxTurns: spec.maxTurns,
     abortController,
     persistSession: streaming !== undefined,
-    ...(streaming === undefined ? {} : { includePartialMessages: true, ...(streaming.resume === null ? {} : { resume: streaming.resume }) }),
+    ...(streaming === undefined ? {} : { includePartialMessages: true, ...(streaming.resume === null ? {} : { resume: streaming.resume, forkSession: true }) }),
   };
 }

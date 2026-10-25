@@ -1,7 +1,8 @@
 import { query, type HookCallback, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
 import type { RunMode } from '../env';
-import type { JobSpec } from '../jobs/registry';
+import type { JobSpec, ModelRole } from '../jobs/registry';
+import { InvalidJobError } from '../jobs/extract-document';
 import { inputHash, type CanonicalInput, type Canonicalizer } from '../replay/canonicalize';
 import { readRecording, recordingPath } from '../replay/store';
 import { estaServer, runTool, type EstaTools } from '../tools/server';
@@ -26,11 +27,13 @@ export type SessionRequest = {
   observe?(call: BuiltInResult): void;
   onText?(delta: string): Promise<void>;
   readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
+  readonly modelRole?: ModelRole;
 };
 
-export function canonicalInput({ spec, prompt, canon, resume }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon' | 'resume'>): CanonicalInput {
+export function canonicalInput({ spec, prompt, canon, resume, modelRole }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon' | 'resume' | 'modelRole'>): CanonicalInput {
   return {
     ...(resume === undefined ? {} : { resumesInputHash: resume.afterInputHash }),
+    ...(modelRole === undefined || modelRole === spec.modelRole ? {} : { modelRole }),
     version: 1,
     kind: spec.kind,
     prompt: canon.canonical(prompt),
@@ -65,7 +68,14 @@ function observeHook(request: SessionRequest, policy: ToolPolicy): HookCallback 
   };
 }
 
+function liveModel(request: SessionRequest, mode: Extract<RunMode, { agentMode: 'live' }>): string {
+  if ((request.modelRole ?? request.spec.modelRole) === 'routine') return mode.model;
+  if (mode.deepModel === null) throw new InvalidJobError(`${request.spec.kind} asks for the deep model, and ESTA_MODEL_DEEP is not set`);
+  return mode.deepModel;
+}
+
 export async function liveSession(request: SessionRequest, mode: Extract<RunMode, { agentMode: 'live' }>): Promise<SessionRun> {
+  const model = liveModel(request, mode);
   const abortController = new AbortController();
   const timer = setTimeout(() => abortController.abort(), request.spec.timeoutMs);
   const toolFailures: unknown[] = [];
@@ -73,7 +83,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   const options = buildSdkOptions({
     spec: request.spec,
     jobDir: request.jobDir,
-    model: mode.model,
+    model,
     env: buildSdkEnv({ credential: mode.credential, configDir: request.configDir, path: process.env.PATH ?? '/usr/bin:/bin' }),
     server: estaServer(request.tools, (error) => {
       toolFailures.push(error);
@@ -113,7 +123,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   }
   if (toolFailures.length > 0) throw toolFailures[0];
   if (result === undefined) throw new Error('The model session ended without a result');
-  return { result: fromSdkResult(result), model: mode.model, toolCalls };
+  return { result: fromSdkResult(result), model, toolCalls };
 }
 
 const REPLAY_CHUNK = /.{1,12}/gsu;
@@ -153,7 +163,8 @@ export async function replaySession(request: SessionRequest, replayDir: string):
       subtype: 'success',
       text: reply,
       numTurns: recording.numTurns,
-      sessionId: null,
+      // A stand-in that changes every turn as a live session id does, so a follow-up's resume shows in replay too.
+      sessionId: `replay-${inputHash(input).slice(0, 16)}`,
       costUsd: 0,
       usage: {},
       modelUsage: {},

@@ -1,4 +1,5 @@
 import { repairMessage, type NoteViolation } from '@esta/core/guard';
+import type { IsoDate } from '@esta/core/date';
 import { systemPrompt } from './system';
 
 export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'language'> & { readonly question: string }): string {
@@ -15,6 +16,17 @@ export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'lan
     '',
     'Question:',
     context.question,
+  ].join('\n');
+}
+
+/** A follow-up continues the session of the conversation's last answer, so its rules and context already hold. */
+export function askFollowUpPrompt({ today, question, firstHandle }: { readonly today: IsoDate; readonly question: string; readonly firstHandle: number }): string {
+  return [
+    `Today is ${today} in Asia/Ho_Chi_Minh. The family member asks a follow-up to the conversation so far. Answer it with the rules of your first task.`,
+    `The handles and placeholders of your earlier answers no longer hold. Call the tools again for every record and figure this answer writes; this turn's handles start at f${firstHandle}.`,
+    '',
+    'Question:',
+    question,
   ].join('\n');
 }
 

@@ -32,6 +32,7 @@ describe('assertStartAllowed', () => {
       authMode: 'subscription',
       credential: { name: 'CLAUDE_CODE_OAUTH_TOKEN', value: 'oauth-token' },
       model: 'm',
+      deepModel: null,
     });
   });
 

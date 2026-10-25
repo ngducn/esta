@@ -41,7 +41,7 @@ beforeEach(() => {
   answersToModel.length = 0;
 });
 
-const live = { agentMode: 'live', authMode: 'api_key', credential: { name: 'ANTHROPIC_API_KEY', value: 'unused' }, model: 'claude-sonnet-5-5' } as const;
+const live = { agentMode: 'live', authMode: 'api_key', credential: { name: 'ANTHROPIC_API_KEY', value: 'unused' }, model: 'claude-sonnet-5-5', deepModel: null } as const;
 
 const requestSaving = (run: () => Promise<unknown>): SessionRequest => ({
   spec: JOBS.extract_document,

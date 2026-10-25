@@ -61,7 +61,7 @@ type Inputs = { readonly waiting: readonly string[]; readonly failed: readonly s
 
 const conversationPayload = z.object({ conversation_id: z.uuid() });
 
-type WorkDir = { readonly dir: string; close(): void };
+type WorkDir = { readonly dir: string; readonly configDir: string; close(): void };
 
 function openWorkDir(worker: Worker, job: AgentJob, spec: JobSpec): WorkDir {
   if (spec.workDir === undefined) {
@@ -69,14 +69,17 @@ function openWorkDir(worker: Worker, job: AgentJob, spec: JobSpec): WorkDir {
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
     const resolved = realpathSync(dir);
-    return { dir: resolved, close: () => rmSync(resolved, { recursive: true, force: true }) };
+    return { dir: resolved, configDir: worker.configDir, close: () => rmSync(resolved, { recursive: true, force: true }) };
   }
   const payload = conversationPayload.safeParse(job.payload);
   if (!payload.success) throw new InvalidJobError(`${job.kind} ${job.id} names no conversation`);
   mkdirSync(join(worker.conversationsDir, payload.data.conversation_id), { recursive: true });
   const dir = join(realpathSync(worker.conversationsDir), payload.data.conversation_id);
   if (realpathSync(dir) !== dir) throw new InvalidJobError(`${job.kind} ${job.id}: the conversation directory is a link`);
-  return { dir, close: () => undefined };
+  // The SDK keeps a session's transcript under its config dir, so it lives with the conversation and outlasts the worker.
+  const configDir = join(dir, 'sdk');
+  mkdirSync(configDir, { recursive: true });
+  return { dir, configDir, close: () => undefined };
 }
 
 function runModel(worker: Worker, request: SessionRequest): Promise<SessionRun> {
@@ -105,12 +108,14 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       spec,
       prompt: prepared.prompt,
       jobDir: work.dir,
-      configDir: worker.configDir,
+      configDir: work.configDir,
       tools: prepared.tools,
       canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: work.dir }),
       ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
       ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
       ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
+      ...(prepared.resume === undefined ? {} : { resume: prepared.resume }),
+      ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     };
     let turn = request;
     session = await runModel(worker, turn);
@@ -123,7 +128,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       outcome = judgeResult(session.result);
     }
     if (!outcome.ok) return { outcome, session };
-    return { outcome: { ...outcome, result: await prepared.finish({ reply: outcome.reply, model: session.model }) }, session };
+    return { outcome: { ...outcome, result: await prepared.finish({ reply: outcome.reply, model: session.model, sessionId: session.result.sessionId, turnHash: inputHash(canonicalInput(turn)) }) }, session };
   } catch (error) {
     return { outcome: { ok: false, failure: failureOf(error) }, session };
   } finally {

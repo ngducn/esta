@@ -3575,8 +3575,8 @@ export type Database = {
           p_handles: number
           p_household_id: string
           p_refs: Json
-          p_session_id: string
-          p_turn_hash: string
+          p_session_id?: string
+          p_turn_hash?: string
         }
         Returns: undefined
       }

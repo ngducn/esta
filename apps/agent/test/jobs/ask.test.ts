@@ -4,13 +4,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
-import { askPrompt, askRepairPrompt } from '../../src/prompts/ask';
+import { askFollowUpPrompt, askPrompt, askRepairPrompt } from '../../src/prompts/ask';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { writeRecording } from '../../src/replay/store';
 import { pollOnce } from '../../src/runner';
 import { canonicalInput } from '../../src/sdk/session';
 import { mcpToolName } from '../../src/tools/server';
 import { ANSWER, answerRow, askTables, askWorker, ASK_JOB, CONVERSATION, QUESTION } from '../ask-seed';
+import { HOUSEHOLD as HOUSEHOLD_ID } from '../full-seed';
 import { ASK_CONTEXT } from '../golden/ask-cases';
 
 const QUESTION_TEXT = 'Tháng này thu được bao nhiêu từ Dĩ An?';
@@ -48,6 +49,27 @@ function recordTurns(replies: readonly string[]): string {
   return dir;
 }
 
+const violations = (reply: string) => {
+  const checked = checkNote(reply, new Map());
+  return checked.ok ? [] : checked.reason;
+};
+
+type Turn = { readonly prompt: string; readonly reply: string; readonly toolCalls?: typeof TOOLS };
+
+/** Writes each turn's recording, chained as the runner chains them: every turn after the first resumes the one before. */
+function recordChain(dir: string, turns: readonly Turn[], after?: string): string[] {
+  const canon = canonicalizer({ householdName: 'Gia đình Demo' });
+  const hashes: string[] = [];
+  let previous = after;
+  for (const { prompt, reply, toolCalls = [] } of turns) {
+    const input = canonicalInput({ spec: JOBS.ask, prompt, canon, ...(previous === undefined ? {} : { resume: { sessionId: null, afterInputHash: previous } }) });
+    writeRecording(dir, { version: 1, kind: 'ask', inputHash: inputHash(input), input, model: 'test', numTurns: toolCalls.length + 1, toolCalls, reply });
+    previous = inputHash(input);
+    hashes.push(previous);
+  }
+  return hashes;
+}
+
 async function run(replies: readonly string[], payload?: Record<string, unknown>) {
   const tables = askTables(QUESTION_TEXT, payload);
   const jobsDir = tempDir('esta-ask-jobs-');
@@ -55,6 +77,36 @@ async function run(replies: readonly string[], payload?: Record<string, unknown>
   await pollOnce(worker);
   const shown = writes.filter(({ table, row }) => table === 'messages' && typeof row.content_md === 'string').map(({ row }) => String(row.content_md));
   return { tables, jobsDir, shown, writes, job: tables.agent_jobs?.[0] as { status: string; error: string | null } };
+}
+
+const FOLLOW_UP = 'Còn tháng 9 thì sao?';
+const FOLLOW_UP_TOOLS = [
+  { name: mcpToolName('list_properties'), input: {} },
+  { name: mcpToolName('ledger'), input: { property: 'f11', year: 2026, month: 9 } },
+];
+const SEPTEMBER = '{{f11.property_label}} thu {{f16.income_display}} trong tháng {{f16.period_date_display}}.';
+const FOLLOW_UP_PROMPT = askFollowUpPrompt({ today: ASK_CONTEXT.today, question: FOLLOW_UP, firstHandle: 9 });
+
+/** Answers question 1, then asks the follow-up in the same conversation, as ask_question writes it. */
+async function followUp(turns: readonly Turn[]) {
+  const dir = tempDir('esta-ask-replay-');
+  const [first = ''] = recordChain(dir, [{ prompt: askPrompt({ ...ASK_CONTEXT, question: QUESTION_TEXT }), reply: GOOD, toolCalls: TOOLS }]);
+  const tables = askTables(QUESTION_TEXT);
+  const { worker, writes } = askWorker(tables, tempDir('esta-ask-jobs-'), dir);
+  await pollOnce(worker);
+  const afterFirst = { ...tables.conversations?.[0] };
+  const ids = { question: '00000000-0000-4000-8000-0000000c0b02', answer: '00000000-0000-4000-8000-0000000c0b03', job: '00000000-0000-4000-8000-0000000c0b04' };
+  tables.messages?.push(
+    { id: ids.question, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'user', content_md: FOLLOW_UP, status: 'done' },
+    { id: ids.answer, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'assistant', content_md: '', status: 'streaming', refs: [] },
+  );
+  tables.agent_jobs?.push({ id: ids.job, household_id: HOUSEHOLD_ID, kind: 'ask', status: 'queued', attempts: 0, max_attempts: 4, run_after: '2026-10-07T00:00:00.000Z', payload: { conversation_id: CONVERSATION, question_id: ids.question, answer_id: ids.answer, deep: false } });
+  const hashes = recordChain(dir, turns, first);
+  const before = writes.length;
+  await pollOnce(worker);
+  const answer = tables.messages?.find((row) => row.id === ids.answer) as { content_md: string; status: string };
+  const shown = writes.slice(before).filter(({ table, row }) => table === 'messages' && typeof row.content_md === 'string').map(({ row }) => String(row.content_md));
+  return { first, hashes, afterFirst, conversation: tables.conversations?.[0], answer, shown, job: tables.agent_jobs?.find((row) => row.id === ids.job) as { status: string; error: string | null } };
 }
 
 describe('the ask job (AGENT.md §5.6)', () => {
@@ -98,6 +150,34 @@ describe('the ask job (AGENT.md §5.6)', () => {
     const streamed = writes.filter(({ row }) => typeof row.content_md === 'string' && row.content_md !== '' && row.status === undefined);
     expect(streamed.length).toBeGreaterThan(1);
     expect(streamed.map(({ row }) => row.refs)).toEqual(streamed.map(({ row }) => answerRow(tables).refs.filter((link: string) => String(row.content_md).includes(link))));
+  });
+
+  it('a follow-up resumes the turn question 1 finished, and its own turn becomes the one the next question resumes', async () => {
+    const { first, hashes, afterFirst, conversation, answer, job } = await followUp([{ prompt: FOLLOW_UP_PROMPT, reply: SEPTEMBER, toolCalls: FOLLOW_UP_TOOLS }]);
+    expect(afterFirst).toMatchObject({ sdk_turn_hash: first, sdk_session_id: `replay-${first.slice(0, 16)}`, sdk_handles: 8 });
+    expect(job).toMatchObject({ status: 'done', error: null });
+    expect(answer).toMatchObject({ status: 'done', content_md: 'Dãy trọ Dĩ An thu 19.300.000\u00a0₫ trong tháng 9/2026.' });
+    expect(conversation).toMatchObject({ sdk_turn_hash: hashes[0], sdk_session_id: `replay-${hashes[0]?.slice(0, 16)}`, sdk_handles: 17 });
+  });
+
+  it('a handle from question 1 names nothing in the follow-up, so its October figure never shows as September', async () => {
+    const stale = 'Đã thu {{f8.income_display}}.';
+    const { answer, shown, job } = await followUp([
+      { prompt: FOLLOW_UP_PROMPT, reply: stale, toolCalls: FOLLOW_UP_TOOLS },
+      { prompt: askRepairPrompt(violations(stale)), reply: SEPTEMBER },
+    ]);
+    expect(job).toMatchObject({ status: 'done', error: null });
+    expect(shown.some((content) => content.includes('1.000.000'))).toBe(false);
+    expect(answer.content_md).toBe('Dãy trọ Dĩ An thu 19.300.000\u00a0₫ trong tháng 9/2026.');
+  });
+
+  it('a follow-up that fails leaves the conversation on question 1\'s turn, so the next question resumes what the family saw', async () => {
+    const { first, conversation, answer } = await followUp([
+      { prompt: FOLLOW_UP_PROMPT, reply: BAD, toolCalls: FOLLOW_UP_TOOLS },
+      { prompt: askRepairPrompt(violations(BAD)), reply: BAD },
+    ]);
+    expect(answer.status).toBe('error');
+    expect(conversation).toMatchObject({ sdk_turn_hash: first, sdk_handles: 8 });
   });
 
   it.each(['../../escape', `${CONVERSATION}/../..`, 'not-a-uuid'])('refuses the conversation id %j and makes no directory for it', async (conversationId) => {

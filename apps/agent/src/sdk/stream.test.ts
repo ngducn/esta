@@ -3,6 +3,7 @@ import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
+import { InvalidJobError } from '../jobs/extract-document';
 import { JOBS } from '../jobs/registry';
 import { canonicalizer } from '../replay/canonicalize';
 import { liveSession, replayChunks } from './session';
@@ -41,11 +42,20 @@ describe('a streaming session (AGENT.md §5.6)', () => {
         onText: async (delta) => void texts.push(delta),
         resume: { sessionId: 's1', afterInputHash: 'a'.repeat(64) },
       },
-      { agentMode: 'live', authMode: 'api_key', model: 'routine-model', credential: { name: 'ANTHROPIC_API_KEY', value: 'test-key' } },
+      { agentMode: 'live', authMode: 'api_key', model: 'routine-model', deepModel: 'deep-model', credential: { name: 'ANTHROPIC_API_KEY', value: 'test-key' } },
     );
     expect(texts).toEqual(['Đã ', 'xem.', '\n\n', 'Hết.']);
     expect(run.result.sessionId).toBe('s2');
-    expect(seen.at(-1)).toMatchObject({ includePartialMessages: true, resume: 's1', persistSession: true, cwd: jobDir });
+    expect(seen.at(-1), 'a follow-up forks, so a failed turn never enters the session the next one resumes').toMatchObject({ includePartialMessages: true, resume: 's1', forkSession: true, persistSession: true, cwd: jobDir, model: 'routine-model' });
+  });
+
+  it('runs an operator\'s deep ask on the deep model, and fails it at once when none is configured', async () => {
+    const request = { spec: JOBS.ask, prompt: 'Câu hỏi', jobDir, configDir: jobDir, tools: new Map(), canon: canonicalizer({ householdName: 'Gia đình Demo' }), onText: async () => undefined, modelRole: 'deep' } as const;
+    const live = { agentMode: 'live', authMode: 'api_key', model: 'routine-model', credential: { name: 'ANTHROPIC_API_KEY', value: 'test-key' } } as const;
+    const run = await liveSession(request, { ...live, deepModel: 'deep-model' });
+    expect(run.model).toBe('deep-model');
+    expect(seen.at(-1)).toMatchObject({ model: 'deep-model' });
+    await expect(liveSession(request, { ...live, deepModel: null })).rejects.toThrow(InvalidJobError);
   });
 
   it('in replay cuts the reply into short pieces that join back to it, never splitting a character', () => {

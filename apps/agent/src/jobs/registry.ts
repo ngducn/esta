@@ -35,12 +35,19 @@ export type PreparedJob = {
   /** Exactly the kind's `mcpTools`, each bound to the job's household. */
   readonly tools: EstaTools;
   /** Checks the job's effects and returns `agent_jobs.result`; throws when the model did not do the task. */
-  finish(run: { readonly reply: string; readonly model: string }): Promise<Json>;
+  finish(run: FinishedRun): Promise<Json>;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
   onText?(delta: string): Promise<void>;
   nextTurn?(): Promise<string | null>;
+  /** The earlier turn this job continues, as a follow-up question does (AGENT.md §8). */
+  readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
+  /** Another model than the kind's, as an operator's Suy nghĩ kỹ hơn asks. */
+  readonly modelRole?: ModelRole;
 };
+
+/** The session the job's last turn ran in, and that turn's replay key, for a job a later one resumes. */
+export type FinishedRun = { readonly reply: string; readonly model: string; readonly sessionId?: string | null; readonly turnHash?: string };
 
 export type JobSpec = {
   readonly kind: string;

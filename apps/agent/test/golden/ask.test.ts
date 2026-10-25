@@ -8,14 +8,13 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { askRequest } from '../../src/jobs/ask';
 import { JOBS } from '../../src/jobs/registry';
-import { askPrompt } from '../../src/prompts/ask';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, readRecording } from '../../src/replay/store';
-import { canonicalInput, replaySession } from '../../src/sdk/session';
+import { replaySession } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
-import { ANSWER, answerRow, askTables } from '../ask-seed';
+import { ANSWER, answerRow, askRpcs, askTables } from '../ask-seed';
 import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
-import { askRecording, ASK_CASES, ASK_CONTEXT } from './ask-cases';
+import { askCase as findCase, askRecording, ASK_CASES, ASK_CONTEXT, caseEarlier, caseInput } from './ask-cases';
 import { replayedReads } from './ask-reads';
 
 const truth = JSON.parse(readFileSync(join(import.meta.dirname, 'ask-ground-truth.json'), 'utf8')) as Array<{ question: string; figure: string; value: string }>;
@@ -41,7 +40,7 @@ async function ask(id: string) {
   const tables = askTables(askCase.question);
   const asOf = isoDate('2026-10-07');
   const prepared = askRequest({
-    db: fakeDb(tables),
+    db: fakeDb(tables, [], {}, {}, askRpcs(tables)),
     householdId: HOUSEHOLD,
     jobId: `golden-${id}`,
     answerId: ANSWER,
@@ -49,22 +48,26 @@ async function ask(id: string) {
     asOf,
     timezone: ASK_CONTEXT.timezone,
     question: askCase.question,
+    earlier: caseEarlier(askCase),
+    deep: askCase.deep === true,
     reads: replayedReads(),
     clock: clockOn('2026-10-07T07:00:00+07:00'),
   });
   const run = await replaySession(
-    { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }) },
+    { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }), ...(prepared.resume === undefined ? {} : { resume: prepared.resume }), ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }) },
     DEFAULT_REPLAY_DIR,
   );
   const repair = await prepared.nextTurn?.();
-  const result = (await prepared.finish({ reply: run.result.text, model: run.model })) as { cited: Array<{ placeholder: string; value: string }> };
+  const result = (await prepared.finish({ reply: run.result.text, model: run.model, sessionId: run.result.sessionId, turnHash: 'a'.repeat(64) })) as { cited: Array<{ placeholder: string; value: string }> };
   const answer = answerRow(tables);
   const present = await existingLinks(fakeDb(seedRecords()), HOUSEHOLD, links(answer.content_md));
-  return { answer, repair, result, missing: links(answer.content_md).filter((link) => !present.has(link)) };
+  return { answer, repair, result, run, conversation: tables.conversations?.[0], missing: links(answer.content_md).filter((link) => !present.has(link)) };
 }
 
 const EXPECTED: Readonly<Record<string, () => string>> = {
   'q1-di-an-income': () => `Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in October 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
+  'q1-deep': () => `Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in October 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
+  'q1-follow-up-september': () => `Tháng 9/2026, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in September 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
   'q2-di-an-overdue': () =>
     `Ở Dãy trọ Dĩ An, chỉ có ${fact('q2', 'di-an units overdue')} đang quá hạn đóng tiền: quá hạn ${fact('q2', 'di-an days overdue')} ngày, còn nợ ${money('q2', 'di-an amount overdue')}.\n\nXem [hóa đơn của ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`,
   'q3-leases-ending': () =>
@@ -87,7 +90,7 @@ const EXPECTED: Readonly<Record<string, () => string>> = {
 describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AGT-7)', () => {
   it.each(ASK_CASES)('$id has its committed hand-written recording', (askCase) => {
     const { input, ...recording } = askRecording(askCase);
-    expect(readRecording(DEFAULT_REPLAY_DIR, canonicalInput({ spec: JOBS.ask, prompt: askPrompt({ ...ASK_CONTEXT, question: askCase.question }), canon: canonicalizer({ householdName: 'Gia đình Demo' }) }))).toEqual({ input, ...recording });
+    expect(readRecording(DEFAULT_REPLAY_DIR, caseInput(askCase))).toEqual({ input, ...recording });
   });
 
   it.each(Object.keys(EXPECTED))('%s states the ground truth with every link resolving, guarded on the first turn', async (id) => {
@@ -102,6 +105,26 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   it('cites question 1 income from the ledger tool, so the figure is the tool value and not typed', async () => {
     const { result } = await ask('q1-di-an-income');
     expect(result.cited.filter(({ placeholder }) => placeholder.endsWith('income_display}}')).map(({ value }) => value)).toEqual([money('q1', 'di-an income received in October 2026')]);
+  });
+
+  it('question 1 hands out eight handles, so its follow-up starts at f9 and resumes question 1\'s turn', async () => {
+    const first = await ask('q1-di-an-income');
+    expect(first.conversation).toMatchObject({ sdk_handles: 8, sdk_session_id: first.run.result.sessionId });
+    const followUp = findCase('q1-follow-up-september');
+    expect(followUp.follows?.firstHandle).toBe(9);
+    expect(caseInput(followUp).resumesInputHash).toBe(askRecording(findCase('q1-di-an-income')).inputHash);
+  });
+
+  it('the follow-up cites September from the ledger, reading the property and month from the session it resumed', async () => {
+    const { result, run } = await ask('q1-follow-up-september');
+    expect(run.toolCalls.map(({ name }) => name.replace(/^mcp__esta__/, ''))).toEqual(['list_properties', 'ledger']);
+    expect(result.cited.filter(({ placeholder }) => placeholder.endsWith('income_display}}')).map(({ value }) => value)).toEqual([money('q1', 'di-an income received in September 2026')]);
+  });
+
+  it('an operator\'s deep ask replays its own recording, made with the deep model', async () => {
+    const { run } = await ask('q1-deep');
+    expect(run.model).toBe('hand-written-deep');
+    expect(caseInput(findCase('q1-deep')).modelRole).toBe('deep');
   });
 
   it('a question the tools cannot answer says the app has no such data and cites no figure', async () => {

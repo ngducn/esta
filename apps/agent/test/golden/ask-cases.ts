@@ -1,5 +1,6 @@
 import { isoDate } from '@esta/core/date';
-import { askPrompt } from '../../src/prompts/ask';
+import type { EarlierTurn } from '../../src/jobs/ask';
+import { askFollowUpPrompt, askPrompt } from '../../src/prompts/ask';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../../src/replay/store';
@@ -11,6 +12,10 @@ export type AskCase = {
   readonly question: string;
   readonly toolCalls: ReadonlyArray<{ readonly name: string; readonly input: Record<string, unknown> }>;
   readonly reply: string;
+  /** A follow-up names the case it follows and the handle its turn starts at, one past the handles that case gave out. */
+  readonly follows?: { readonly id: string; readonly firstHandle: number };
+  /** An operator ticked Suy nghĩ kỹ hơn. */
+  readonly deep?: true;
 };
 
 const PROPERTIES = { name: mcpToolName('list_properties'), input: {} };
@@ -22,6 +27,20 @@ export const ASK_CASES: readonly AskCase[] = [
     question: 'Tháng này thu được bao nhiêu từ Dĩ An?',
     toolCalls: [PROPERTIES, { name: mcpToolName('ledger'), input: { property: 'f3', year: 2026, month: 10 } }],
     reply: 'Từ đầu tháng {{f8.period_date_display}} đến nay, {{f3.property_label}} đã thu {{f8.income_display}} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của {{f3.property_label}}](f8).',
+  },
+  {
+    id: 'q1-deep',
+    question: 'Tháng này thu được bao nhiêu từ Dĩ An?',
+    deep: true,
+    toolCalls: [PROPERTIES, { name: mcpToolName('ledger'), input: { property: 'f3', year: 2026, month: 10 } }],
+    reply: 'Từ đầu tháng {{f8.period_date_display}} đến nay, {{f3.property_label}} đã thu {{f8.income_display}} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của {{f3.property_label}}](f8).',
+  },
+  {
+    id: 'q1-follow-up-september',
+    question: 'Còn tháng 9 thì sao?',
+    follows: { id: 'q1-di-an-income', firstHandle: 9 },
+    toolCalls: [PROPERTIES, { name: mcpToolName('ledger'), input: { property: 'f11', year: 2026, month: 9 } }],
+    reply: 'Tháng {{f16.period_date_display}}, {{f11.property_label}} đã thu {{f16.income_display}} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của {{f11.property_label}}](f16).',
   },
   {
     id: 'missing-market-price',
@@ -93,21 +112,45 @@ export const ASK_CASES: readonly AskCase[] = [
 
 export const ASK_CONTEXT = { locale: 'vi', today: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh' } as const;
 
-export function askRecording(askCase: AskCase, prompt = askPrompt({ ...ASK_CONTEXT, question: askCase.question })): Recording {
-  const input = canonicalInput({ spec: JOBS.ask, prompt, canon: canonicalizer({ householdName: 'Gia đình Demo' }) });
+const canon = () => canonicalizer({ householdName: 'Gia đình Demo' });
+
+export const askCase = (id: string): AskCase => {
+  const found = ASK_CASES.find((candidate) => candidate.id === id);
+  if (found === undefined) throw new Error(`no ask case ${id}`);
+  return found;
+};
+
+export function casePrompt({ question, follows }: AskCase): string {
+  return follows === undefined ? askPrompt({ ...ASK_CONTEXT, question }) : askFollowUpPrompt({ today: ASK_CONTEXT.today, question, firstHandle: follows.firstHandle });
+}
+
+/** The turn a follow-up resumes, as the conversation row holds it after the case it follows finished in replay. */
+export function caseEarlier({ follows }: AskCase): EarlierTurn | null {
+  if (follows === undefined) return null;
+  const turnHash = inputHash(caseInput(askCase(follows.id)));
+  return { sessionId: `replay-${turnHash.slice(0, 16)}`, turnHash, handles: follows.firstHandle - 1 };
+}
+
+export function caseInput(item: AskCase) {
+  const earlier = caseEarlier(item);
+  return canonicalInput({ spec: JOBS.ask, prompt: casePrompt(item), canon: canon(), ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash } }), ...(item.deep ? { modelRole: 'deep' as const } : {}) });
+}
+
+export function askRecording(item: AskCase): Recording {
+  const input = caseInput(item);
   return {
     version: 1,
     kind: 'ask',
     inputHash: inputHash(input),
     input,
-    label: `Hand-written for ${askCase.id} on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.`,
-    model: 'hand-written',
-    numTurns: askCase.toolCalls.length + 1,
-    toolCalls: askCase.toolCalls.map((call) => ({ ...call })),
-    reply: askCase.reply,
+    label: `Hand-written for ${item.id}${item.follows === undefined ? '' : `, resuming ${item.follows.id}`} on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.`,
+    model: item.deep ? 'hand-written-deep' : 'hand-written',
+    numTurns: item.toolCalls.length + 1,
+    toolCalls: item.toolCalls.map((call) => ({ ...call })),
+    reply: item.reply,
   };
 }
 
 if (import.meta.main) {
-  for (const askCase of ASK_CASES) console.log(writeRecording(DEFAULT_REPLAY_DIR, askRecording(askCase)));
+  for (const item of ASK_CASES) console.log(writeRecording(DEFAULT_REPLAY_DIR, askRecording(item)));
 }

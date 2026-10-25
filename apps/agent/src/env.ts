@@ -11,6 +11,7 @@ export const envSchema = z.object({
   CLAUDE_CODE_OAUTH_TOKEN: text,
   ANTHROPIC_API_KEY: text,
   ESTA_MODEL_ROUTINE: text,
+  ESTA_MODEL_DEEP: text,
   ESTA_AGENT_HOME: text,
   ESTA_REPLAY_DIR: text,
   ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
@@ -37,6 +38,8 @@ export type RunMode =
       readonly authMode: AgentEnv['ESTA_AUTH_MODE'];
       readonly credential: Credential;
       readonly model: string;
+      /** Only an operator's Suy nghĩ kỹ hơn asks for it, so a worker without it still starts and fails that one job. */
+      readonly deepModel: string | null;
     };
 
 const CREDENTIAL_FOR = { subscription: 'CLAUDE_CODE_OAUTH_TOKEN', api_key: 'ANTHROPIC_API_KEY' } as const;
@@ -57,5 +60,5 @@ export function assertStartAllowed(env: AgentEnv): RunMode {
   if (env.ESTA_MODEL_ROUTINE === undefined) {
     throw new Error('Refusing to start: ESTA_AGENT_MODE=live needs ESTA_MODEL_ROUTINE, which is not set');
   }
-  return { agentMode: 'live', authMode: env.ESTA_AUTH_MODE, credential: { name, value }, model: env.ESTA_MODEL_ROUTINE };
+  return { agentMode: 'live', authMode: env.ESTA_AUTH_MODE, credential: { name, value }, model: env.ESTA_MODEL_ROUTINE, deepModel: env.ESTA_MODEL_DEEP ?? null };
 }

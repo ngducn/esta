@@ -72,19 +72,19 @@ select throws_ok(
   format($$ select public.ask_question(%L, gen_random_uuid(), '00000000-0000-4000-8000-00000000c0b2', 'Câu hỏi', false, '2026-10-07 09:00+07') $$, :'a'),
   '42501', 'ESTA_FORBIDDEN', 'a question id already used in another conversation is refused');
 -- Calling a function the role may not execute crashes the local Postgres (#128), so the grant is read instead.
-select ok(not has_function_privilege('authenticated', 'public.finish_answer(uuid, uuid, text, jsonb, text, text, integer)', 'execute'), 'no member finishes an answer');
+select ok(not has_function_privilege('authenticated', 'public.finish_answer(uuid, uuid, text, jsonb, integer, text, text)', 'execute'), 'no member finishes an answer');
 
 select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
 select is((select count(*)::int from public.agent_jobs where payload ->> 'conversation_id' = '00000000-0000-4000-8000-00000000c0a1'), 2, 'one job per question');
 select lives_ok(
-  format($$ select public.finish_answer(%L, (select id from public.messages where conversation_id = '00000000-0000-4000-8000-00000000c0a1' and status = 'streaming'), 'Tháng 9 đã thu.', '[]', 'session-2', repeat('a', 64), 16) $$, :'a'),
+  format($$ select public.finish_answer(%L, (select id from public.messages where conversation_id = '00000000-0000-4000-8000-00000000c0a1' and status = 'streaming'), 'Tháng 9 đã thu.', '[]', 16, 'session-2', repeat('a', 64)) $$, :'a'),
   'the worker finishes the follow-up');
 select results_eq(
   $$ select sdk_session_id, sdk_turn_hash, sdk_handles from public.conversations where id = '00000000-0000-4000-8000-00000000c0a1' $$,
   $$ values ('session-2', repeat('a', 64), 16) $$,
   'and hands its session to the next question in the same write');
 select throws_ok(
-  format($$ select public.finish_answer(%L, (select id from public.messages where conversation_id = '00000000-0000-4000-8000-00000000c0a1' and role = 'assistant' order by created_at desc limit 1), 'again', '[]', 'session-3', repeat('b', 64), 20) $$, :'a'),
+  format($$ select public.finish_answer(%L, (select id from public.messages where conversation_id = '00000000-0000-4000-8000-00000000c0a1' and role = 'assistant' order by created_at desc limit 1), 'again', '[]', 20, 'session-3', repeat('b', 64)) $$, :'a'),
   'P0002', 'ESTA_ANSWER_NOT_STREAMING', 'an answer finishes once');
 
 reset role;
