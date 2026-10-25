@@ -1,11 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { join } from 'node:path';
-import { parseSlot } from '../scripts/slot.ts';
-import { slotEnv } from '../scripts/slot-env.ts';
+import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
+import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { readReportTable } from './helpers/report-table';
 import { laneHousehold } from './helpers/seed';
-import { accessToken } from './helpers/session';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, serviceGet, seriousAxeViolations, shot } from './helpers/wizard';
 
@@ -16,9 +15,6 @@ const LANE = 6;
 const RYAN = `ryan.lane${LANE}@demo.esta.test`;
 const GUARD_CASE = join(import.meta.dirname, '..', 'fixtures', 'agent-replay-cases', 'guard-violation');
 const NOW = '2026-10-07T06:45:00+07:00';
-
-const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false });
-const rest = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1`;
 
 let worker: AgentWorker | undefined;
 
@@ -112,24 +108,13 @@ test('Mẹ’s menu has no diagnostics entry, its link shows a plain not-found p
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-08-diagnostics-hidden-390x844-light');
 
-  const modes = await page.request.post(`${rest}/rpc/worker_modes`, {
-    headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '', authorization: `Bearer ${await accessToken(page)}`, 'content-type': 'application/json' },
-    data: { p_household_id: laneHousehold(7), p_seen_by: '2026-10-07T00:00:00Z' },
-  });
-  expect(modes.status()).toBe(200);
-  expect(await modes.json()).toEqual([]);
+  const modes = await memberRest<unknown[]>(page, 'POST', 'rpc/worker_modes', { p_household_id: laneHousehold(7), p_seen_by: '2026-10-07T00:00:00Z' });
+  expect(modes, 'the worker modes answer a non-operator nothing').toEqual([]);
 });
 
 test('in English at 130% and dark, the diagnostics tables stack on a phone with no sideways scroll', async ({ page }) => {
   await open(page, RYAN, 'dark', PHONE);
-  const save = async (choices: string[]) => {
-    await page.goto('/settings');
-    for (const choice of choices) await page.getByRole('radio', { name: new RegExp(`^${choice}`) }).check();
-    await page.getByRole('button', { name: /^(Lưu|Save)$/ }).click();
-    await expect(page.getByRole('status')).toHaveText(/^(Đã lưu cài đặt hiển thị\.|Display settings saved\.)$/);
-  };
-  await save(['English', '130%']);
-  try {
+  await inEnglishAt130(page, seedId(`seed:member:ryan-lane-${LANE}`), async () => {
     await page.goto('/assistant/diagnostics');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Assistant diagnostics');
     const firstRun = page.getByTestId('diagnostics-runs').getByTestId('report-row').first();
@@ -138,7 +123,5 @@ test('in English at 130% and dark, the diagnostics tables stack on a phone with 
     await shot(page, 'p5-08-diagnostics-english-390x844-dark');
     expect(await noSidewaysScroll(page), 'no sideways scroll').toBe(true);
     expect(await seriousAxeViolations(page)).toEqual([]);
-  } finally {
-    await save(['Tiếng Việt', '100%']);
-  }
+  });
 });

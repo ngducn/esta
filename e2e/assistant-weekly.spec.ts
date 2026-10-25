@@ -1,9 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
-import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { setClock } from './helpers/test-clock';
-import { DESKTOP, open, PHONE, rest, serviceGet, seriousAxeViolations, shot, vnd } from './helpers/wizard';
+import { DESKTOP, open, PHONE, serviceGet, serviceUpsert, seriousAxeViolations, shot, vnd } from './helpers/wizard';
 
 // The scheduler queues on the slot's one clock, so the spec runs in the `clock` project.
 test.describe.configure({ mode: 'serial' });
@@ -20,11 +19,6 @@ test.afterAll(async ({ request }) => {
   await setClock(request, null);
 });
 
-async function servicePost(page: Page, path: string, rows: unknown) {
-  const response = await page.request.post(`${rest}/${path}`, { headers: { ...e2eServiceHeaders(), 'content-type': 'application/json', prefer: 'resolution=ignore-duplicates' }, data: rows });
-  expect(response.ok(), await response.text()).toBe(true);
-}
-
 /**
  * Only the full seed's own household has a weekly recording for Sunday 2026-10-11, and no household has one for that
  * day's daily jobs. Every other job the scheduler would queue that morning is queued as cancelled first, so the
@@ -36,12 +30,12 @@ async function onlyTheSeedsWeeklyReview(page: Page) {
     ...households.flatMap(({ id }) => ['research_scan', 'portfolio_watch', 'morning_brief'].map((kind) => ({ kind, household_id: id, idempotency_key: `${kind}:${id}:${SUNDAY}` }))),
     ...households.filter(({ id }) => id !== DEMO).map(({ id }) => ({ kind: 'weekly_review', household_id: id, idempotency_key: `weekly_review:${id}:2026-W41` })),
   ];
-  await servicePost(page, 'agent_jobs?on_conflict=idempotency_key', others.map((job) => ({ ...job, status: 'cancelled', run_after: `${SUNDAY}T00:00:00Z` })));
+  await serviceUpsert(page, 'agent_jobs?on_conflict=idempotency_key', others.map((job) => ({ ...job, status: 'cancelled', run_after: `${SUNDAY}T00:00:00Z` })));
 }
 
 /** The Vành đai 3 item the 06:00 research scan of 2026-10-07 stores, which the weekly rent change cites. */
 async function storedRingRoadItem(page: Page) {
-  await servicePost(page, 'research_items?on_conflict=household_id,url_normalized', {
+  await serviceUpsert(page, 'research_items?on_conflict=household_id,url_normalized', {
     household_id: DEMO,
     url_normalized: RING_ROAD,
     source_url: RING_ROAD,
