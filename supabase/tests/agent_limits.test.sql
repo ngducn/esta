@@ -29,10 +29,10 @@ update public.household_settings set agent = '{}' where household_id = :'b';
 
 -- Three questions in household a, which allows two asks a day.
 select tests.act_as('viewer.a@test.esta.test');
-select public.ask_question(:'a', ('00000000-0000-4000-8000-00000000ca0' || n)::uuid, ('00000000-0000-4000-8000-00000000cb0' || n)::uuid, 'Câu hỏi ' || n, false, '2026-10-07 09:00+07')
+select tests.ask_question(:'a', ('00000000-0000-4000-8000-00000000ca0' || n)::uuid, ('00000000-0000-4000-8000-00000000cb0' || n)::uuid, 'Câu hỏi ' || n, false, '2026-10-07 09:00+07')
 from generate_series(1, 3) n;
 select tests.act_as('viewer.b@test.esta.test');
-select public.ask_question(:'b', '00000000-0000-4000-8000-0000000cc001', '00000000-0000-4000-8000-0000000cd001', 'Câu hỏi b', false, '2026-10-07 09:00+07');
+select tests.ask_question(:'b', '00000000-0000-4000-8000-0000000cc001', '00000000-0000-4000-8000-0000000cd001', 'Câu hỏi b', false, '2026-10-07 09:00+07');
 
 select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
 select is((select count(*)::int from public.claim_agent_job('w1', '2026-10-07 09:00+07')), 1, 'the first ask is claimed');
