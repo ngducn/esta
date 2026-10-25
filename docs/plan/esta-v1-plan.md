@@ -4685,7 +4685,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Build.**
 
-- [x] Write `weekly_review` with the deep model from `ESTA_MODEL_DEEP`, all read tools, `WebSearch`, `WebFetch`, `create_item` and `create_proposal`, `maxTurns` 25, a 10 minute timeout, schedule `Sunday 08:00` and key `weekly_review:{household_id}:{iso_week}`. It covers last week's collections against expected, the next 30 days, vacancy, notable expenses, the tax position change and up to 3 proposals.
+- [x] Write `weekly_review` with the deep model from `ESTA_MODEL_DEEP`, all read tools, `WebSearch`, `WebFetch`, `create_item` and `create_proposal`, `maxTurns` 25, a 10 minute timeout, schedule `Sunday 08:00` and key `weekly_review:{household_id}:{iso_week}`. It covers this month's collections to date against what is due (the figure the collections board shows), the next 30 days, vacancy, notable expenses, the tax position as it stands and up to 3 proposals. The week comes from the job's key, so a `Thử lại` after midnight still writes the week it retries, and the 3-proposal cap counts what earlier attempts of that week stored (fix round 1).
 - [x] Reject a `suggest_rent_change` from `weekly_review` whose citations are not URLs fetched in this run or stored `research_items`.
 - [x] Encode daily caps as data. `private.agent_daily_caps` holds the defaults extract 30, ask 60, research 2 and weekly 1, and `household_settings.agent.daily_caps` overrides a kind with a whole number from 0 to 1000. `claim_agent_job` counts the kind's jobs started on the business day under a per household and kind advisory lock, and moves a job over its cap to the next local midnight. An `ask` over cap marks its answer row `deferred_until`, and the Hỏi page renders `Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.` from the message files, never the model's text, and hides the follow-up box.
 - [x] Classify SDK results. A result with `is_error: true` and a usage-limit cause reschedules with the 1, 5 and 25 minute backoff in `backoff.ts` and sets the heartbeat state `usage_limited`, so the status line reads `Trợ lý tạm dừng do hết hạn mức sử dụng`. A 401 surfaces to operators as an auth error (S1).
@@ -4696,7 +4696,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **You see.**
 
-- [x] With the clock at 2026-10-11 08:05, Hộp thư shows one weekly review note and up to 3 proposals.
+- [x] With the clock at 2026-10-11 08:05, Hộp thư shows one weekly review note, whose collected and due amounts for the month to date equal the collections board, and up to 3 proposals.
 - [x] Ryan's diagnostics page lists the last runs and a 7-day usage table by kind. Mẹ's avatar menu has no diagnostics link.
 - [x] `pnpm e2e e2e/agent-crash.spec.ts` passes with items and runs counted once.
 
@@ -4715,7 +4715,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. Lanes that move the clock run on their own slot.
 
 - [ ] Lane 1. Regression lane against trunk. ryan.lane1 runs `portfolio_watch` from `/dev/agent` at 1440x900 light with the clock at 2026-10-07 06:45, at trunk and head. Trunk has no weekly review, so the lane then gates head at 2026-10-11 08:05 on its own slot. Save `p5-08-regression-weekly.png`. Pass when both sides create the same 4 watch items, caps block nothing, and head shows one `weekly_review` run `done`.
-- [ ] Lane 2. On its own slot at 2026-10-11 08:05, me.lane2 opens Hộp thư at 1440x900 light. Save `p5-08-weekly-note.png`. Pass when the weekly note shows last week's collected and expected amounts equal to the collections board and at most 3 proposals.
+- [ ] Lane 2. On its own slot at 2026-10-11 08:05, me.lane2 opens Hộp thư at 1440x900 light. Save `p5-08-weekly-note.png`. Pass when the weekly note shows the month-to-date collected and due amounts equal to the collections board and at most 3 proposals.
 - [x] Lane 3. The lane sets the `ask` cap to 2 for household lane3 in Studio, and me.lane3 asks 3 questions at 390x844 light. Save `p5-08-ask-cap.png`. Pass when the third answer row reads `Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.` and its job `run_after` is the next local midnight.
 - [x] Lane 4. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/usage-limit`, me.lane4 opens Home at 390x844 dark after a `portfolio_watch` run (the brief waits for its inputs, P5-08a decision). Save `p5-08-usage-limit.png`. Pass when the status line reads `Trợ lý tạm dừng do hết hạn mức sử dụng` and the job shows `run_after` 1 minute later.
 - [x] Lane 5. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/always-fail`, ryan.lane5 opens Hộp thư at 1440x900 dark after 3 attempts, then taps `Thử lại` with the normal recordings restored. Save `p5-08-retry.png`. Pass when the failed item shows `Thử lại` and the retry job ends `done` with key suffix `:retry:1`.
