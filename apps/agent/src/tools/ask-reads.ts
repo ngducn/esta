@@ -3,12 +3,25 @@ import { formatYear, type Locale } from '@esta/core/format';
 import type { InvoicePayment, ReportSnapshot } from '@esta/core/reports';
 import type { OwnershipShare } from '@esta/core/schemas/ownership';
 import { yearPeriod } from '@esta/core/reports';
-import { listLeases, readCollectionRows, readInvoicePayments, readLegalRows, readOwnership, readReportSnapshot, type CollectionRow, type LegalRow } from '@esta/ops';
+import {
+  listLeases,
+  readCollectionRows,
+  readInvoicePayments,
+  readLegalRows,
+  readLivePropertyIds,
+  readOwnership,
+  readPropertyDetail,
+  readReportSnapshot,
+  type CollectionRow,
+  type LegalRow,
+  type PropertyDetailRow,
+} from '@esta/ops';
 import type { AgentDb } from '../supabase';
 import { sameAnswer, type RunSheet } from './fact-sheet';
 import type { PropertyHandles } from './list-properties';
 
-export type LeaseListing = Awaited<ReturnType<typeof listLeases>>[number];
+/** A lease as the lease pages list it; `property_archived` marks one whose property was archived, whose pages are gone. */
+export type LeaseListing = Awaited<ReturnType<typeof listLeases>>[number] & { readonly property_archived: boolean };
 
 export type PropertyLegalFacts = {
   readonly certificates: readonly LegalRow<'certificates'>[];
@@ -25,6 +38,8 @@ export type AskReads = {
   report(year: number): Promise<ReportSnapshot>;
   collections(month: IsoDate): Promise<CollectionRow[]>;
   leases(): Promise<LeaseListing[]>;
+  /** The property's row on the property list and its page, null once archived: the source of its status pills. */
+  property(propertyId: string): Promise<PropertyDetailRow | null>;
   legal(propertyId: string): Promise<PropertyLegalFacts>;
   payments(invoiceIds: readonly string[]): Promise<InvoicePayment[]>;
 };
@@ -41,7 +56,11 @@ export function askReads(db: AgentDb, householdId: string, { locale, asOf }: { r
   return {
     report: sameAnswer((year: number) => readReportSnapshot(db, householdId, { ...yearPeriod(year, asOf), asOf })),
     collections: sameAnswer((month: IsoDate) => readCollectionRows(db, householdId, month)),
-    leases: sameAnswer(() => listLeases({ db, householdId, locale })),
+    leases: sameAnswer(async () => {
+      const [leases, live] = await Promise.all([listLeases({ db, householdId, locale }), readLivePropertyIds(db, householdId).then((ids) => new Set(ids))]);
+      return leases.map((lease) => ({ ...lease, property_archived: !live.has(lease.property_id) }));
+    }),
+    property: sameAnswer((propertyId: string) => readPropertyDetail(db, householdId, propertyId)),
     legal: sameAnswer((propertyId: string) => readPropertyLegal(db, householdId, propertyId)),
     payments: sameAnswer((invoiceIds: readonly string[]) => readInvoicePayments(db, householdId, invoiceIds)),
   };

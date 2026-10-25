@@ -21,6 +21,7 @@ export function recordingReads(reads: AskReads, recorded: RecordedReads): AskRea
     report: kept('report', reads.report),
     collections: kept('collections', reads.collections),
     leases: kept('leases', reads.leases),
+    property: kept('property', reads.property),
     legal: kept('legal', reads.legal),
     payments: kept('payments', reads.payments),
   };
@@ -35,5 +36,5 @@ export function replayedReads(recorded: RecordedReads = JSON.parse(readFileSync(
       if (!Object.hasOwn(recorded, name)) throw new Error(`The ask reads fixture holds no ${name}; run pnpm --filter @esta/agent golden:ask-fixture`);
       return recorded[name] as T;
     };
-  return { report: answer('report'), collections: answer('collections'), leases: answer('leases'), legal: answer('legal'), payments: answer('payments') };
+  return { report: answer('report'), collections: answer('collections'), leases: answer('leases'), property: answer('property'), legal: answer('legal'), payments: answer('payments') };
 }

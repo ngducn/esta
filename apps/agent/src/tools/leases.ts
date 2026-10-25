@@ -5,7 +5,7 @@ import { LEASE_STATUSES } from '@esta/core/lease';
 import { estaUri } from '@esta/core/links';
 import { paymentBehavior } from '@esta/core/reports';
 import { z } from 'zod';
-import type { ReadToolContext } from './ask-reads';
+import type { LeaseListing, ReadToolContext } from './ask-reads';
 import { sameAnswer } from './fact-sheet';
 import { propertyByHandle } from './list-properties';
 import { parseToolInput } from './server';
@@ -17,16 +17,19 @@ const leasesInput = z.strictObject({
 });
 const LEASES_USAGE = 'list_leases takes {"status": draft, active, ended or terminated, "ends_within_days": leases ending from today to that many days ahead, "property": a handle from list_properties}, each optional';
 
-/** `list_leases` (AGENT.md §4): the household's leases, the soonest end first, each with what it rents and to whom. */
+/** `list_leases` (AGENT.md §4): the leases of the household's live properties, the soonest end first, each with what it rents and to whom. A draft never ends within a window, as it has not started. */
 export function listLeasesTool({ reads, locale, asOf, cite, properties }: ReadToolContext) {
   return sameAnswer(async (raw: Record<string, unknown>) => {
     const { status, ends_within_days: within, property } = parseToolInput(leasesInput, raw, LEASES_USAGE);
     const scope = property === undefined ? null : propertyByHandle(properties, property);
     const left = (end: IsoDate | null) => (end === null ? null : daysBetween(asOf, end));
-    const leases = (await reads.leases()).filter((lease) => {
+    const endsWithin = (lease: LeaseListing, window: number) => {
       const days = left(lease.end_date);
-      return (status === undefined || lease.status === status) && (scope === null || lease.property_id === scope.id) && (within === undefined || (days !== null && days >= 0 && days <= within));
-    });
+      return lease.status !== 'draft' && days !== null && days >= 0 && days <= window;
+    };
+    const leases = (await reads.leases()).filter(
+      (lease) => !lease.property_archived && (status === undefined || lease.status === status) && (scope === null || lease.property_id === scope.id) && (within === undefined || endsWithin(lease, within)),
+    );
     return {
       leases: leases
         .toSorted((a, b) => (a.end_date ?? '9999').localeCompare(b.end_date ?? '9999'))

@@ -4,7 +4,7 @@ import { runSheet } from '../../src/tools/fact-sheet';
 import { ledgerTool } from '../../src/tools/ledger';
 import { listPropertiesTool } from '../../src/tools/list-properties';
 import { ToolRejection } from '../../src/tools/server';
-import { askTables } from '../ask-seed';
+import { askTables, withArchivedProperty } from '../ask-seed';
 import { HOUSEHOLD } from '../full-seed';
 
 const DI_AN = '93cc970b-f9c2-52f5-bc34-1f1edb76742c';
@@ -45,6 +45,13 @@ describe('ledger (AGENT.md §4)', () => {
     const diAn = await ledger({ property: 'f3', year: 2026, month: 10 });
     expect(household.ledger).toMatchObject({ property_label: null, link: null });
     expect(household.ledger.income_display).not.toBe(diAn.ledger.income_display);
+  });
+
+  it('leaves an archived property out of the household, as Reports does', async () => {
+    const { ledger } = await ledgerFor(HOUSEHOLD);
+    const live = await ledger({ year: 2026, month: 10 });
+    const { ledger: withArchived } = await ledgerFor(HOUSEHOLD, withArchivedProperty(askTables('')));
+    expect((await withArchived({ year: 2026, month: 10 })).ledger).toMatchObject({ income_display: live.ledger.income_display, expenses_display: live.ledger.expenses_display });
   });
 
   it('counts no payment another household recorded on the property', async () => {

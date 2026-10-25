@@ -166,7 +166,8 @@
       "deposit_display": "30.000.000 ₫",
       "paid_through_date": "2025-09-30",
       "held_deposit_vnd": 30000000,
-      "held_deposit_display": "30.000.000 ₫"
+      "held_deposit_display": "30.000.000 ₫",
+      "property_archived": false
     },
     {
       "id": "8e71881d-3ee9-59a8-8856-9b4ed0fb8f91",
@@ -188,7 +189,8 @@
       "deposit_display": "2.500.000 ₫",
       "paid_through_date": "2025-10-24",
       "held_deposit_vnd": 2500000,
-      "held_deposit_display": "2.500.000 ₫"
+      "held_deposit_display": "2.500.000 ₫",
+      "property_archived": false
     },
     {
       "id": "80b77a3c-a740-56d0-b2d4-8c94207657a8",
@@ -210,7 +212,8 @@
       "deposit_display": "2.500.000 ₫",
       "paid_through_date": "2025-10-24",
       "held_deposit_vnd": 2500000,
-      "held_deposit_display": "2.500.000 ₫"
+      "held_deposit_display": "2.500.000 ₫",
+      "property_archived": false
     },
     {
       "id": "598a394c-b18a-5cab-ae3d-e0fa6d92f8e5",
@@ -232,7 +235,8 @@
       "deposit_display": "24.000.000 ₫",
       "paid_through_date": "2025-09-30",
       "held_deposit_vnd": 0,
-      "held_deposit_display": "0 ₫"
+      "held_deposit_display": "0 ₫",
+      "property_archived": false
     },
     {
       "id": "73291fa8-ec38-56ca-bb6d-00f0b5f4f20e",
@@ -254,7 +258,8 @@
       "deposit_display": "2.800.000 ₫",
       "paid_through_date": "2025-10-15",
       "held_deposit_vnd": 2800000,
-      "held_deposit_display": "2.800.000 ₫"
+      "held_deposit_display": "2.800.000 ₫",
+      "property_archived": false
     },
     {
       "id": "8a314eef-0a3c-5799-a9ca-814cb89daeef",
@@ -276,7 +281,8 @@
       "deposit_display": "2.500.000 ₫",
       "paid_through_date": "2025-10-24",
       "held_deposit_vnd": 2500000,
-      "held_deposit_display": "2.500.000 ₫"
+      "held_deposit_display": "2.500.000 ₫",
+      "property_archived": false
     },
     {
       "id": "19f7abd4-f81a-5135-bcb7-c2ba5cedce43",
@@ -298,7 +304,8 @@
       "deposit_display": "18.000.000 ₫",
       "paid_through_date": null,
       "held_deposit_vnd": 18000000,
-      "held_deposit_display": "18.000.000 ₫"
+      "held_deposit_display": "18.000.000 ₫",
+      "property_archived": false
     },
     {
       "id": "46ffe2f9-3b6c-5b72-8a92-b7bb6acd9c14",
@@ -320,7 +327,8 @@
       "deposit_display": "2.500.000 ₫",
       "paid_through_date": null,
       "held_deposit_vnd": 2500000,
-      "held_deposit_display": "2.500.000 ₫"
+      "held_deposit_display": "2.500.000 ₫",
+      "property_archived": false
     },
     {
       "id": "1809d052-456b-56e2-a238-be56d3234864",
@@ -342,7 +350,8 @@
       "deposit_display": "2.800.000 ₫",
       "paid_through_date": null,
       "held_deposit_vnd": 2800000,
-      "held_deposit_display": "2.800.000 ₫"
+      "held_deposit_display": "2.800.000 ₫",
+      "property_archived": false
     },
     {
       "id": "09e0d1ce-debb-5897-b940-3e601ec1bca8",
@@ -364,7 +373,8 @@
       "deposit_display": "60.000.000 ₫",
       "paid_through_date": null,
       "held_deposit_vnd": 60000000,
-      "held_deposit_display": "60.000.000 ₫"
+      "held_deposit_display": "60.000.000 ₫",
+      "property_archived": false
     },
     {
       "id": "0a0d8f4f-7f30-5262-8cc5-1efa4ffe19e5",
@@ -386,7 +396,8 @@
       "deposit_display": "2.800.000 ₫",
       "paid_through_date": null,
       "held_deposit_vnd": 2800000,
-      "held_deposit_display": "2.800.000 ₫"
+      "held_deposit_display": "2.800.000 ₫",
+      "property_archived": false
     }
   ],
   "report[2026]": {
@@ -6721,6 +6732,36 @@
       ]
     }
   },
+  "property[\"76617818-0470-5207-bb06-e64633a3e8de\"]": {
+    "id": "76617818-0470-5207-bb06-e64633a3e8de",
+    "nickname": "Kho Biên Hòa",
+    "code": "BIENHOA",
+    "kind": "warehouse",
+    "useMode": "rental",
+    "legalStatus": "certified",
+    "coverPhotoPath": null,
+    "addressLine": "C95 Demo Đường số 7",
+    "communeName": "Phường Tân Triều",
+    "provinceCode": "75",
+    "provinceName": "Thành phố Đồng Nai",
+    "certificateAddressText": "Lô C95 Demo, đường số 7, Khu phố 3, Phường Tân Phong, Thành phố Biên Hòa, Tỉnh Đồng Nai",
+    "legacyProvinceNames": [
+      "Tỉnh Đồng Nai"
+    ],
+    "searchText": "kho bien hoa bienhoa c95 demo duong so 7 phuong tan trieu thanh pho dong nai lo c95 demo duong so 7 khu pho 3 phuong tan phong thanh pho bien hoa tinh dong nai phuong tan phong thanh pho bien hoa tinh dong nai xa binh loi huyen vinh cuu tinh dong nai xa tan binh huyen vinh cuu tinh dong nai xa thanh phu huyen vinh cuu tinh dong nai",
+    "location": {
+      "lat": 10.97,
+      "lng": 106.846
+    },
+    "hasBoundary": false,
+    "ownerPartyIds": [
+      "5107e10c-018b-5f2d-ad73-f0ad36ca7467",
+      "d825b7a8-43f6-5ab6-bfdf-114cdd8be7f7"
+    ],
+    "vacantSince": "2026-07-30",
+    "unitCount": 1,
+    "kindDetails": {}
+  },
   "legal[\"62d33252-02ba-5610-bd9a-12474774014c\"]": {
     "certificates": [
       {
@@ -6754,6 +6795,35 @@
       "5107e10c-018b-5f2d-ad73-f0ad36ca7467": "Nguyễn Thị Demo",
       "f19fb451-3cdf-5de2-89a5-493f44ebb23c": "Ngân hàng Demo"
     }
+  },
+  "property[\"ce067ac1-653c-5d9c-ac37-b6e379156593\"]": {
+    "id": "ce067ac1-653c-5d9c-ac37-b6e379156593",
+    "nickname": "Mặt bằng Quận 1",
+    "code": "Q1",
+    "kind": "commercial_space",
+    "useMode": "rental",
+    "legalStatus": "certified",
+    "coverPhotoPath": "0943e55d-b0a6-5aef-839d-07c8693c520e/ce067ac1-653c-5d9c-ac37-b6e379156593/nha-pho.avif",
+    "addressLine": "904 Demo Đường Lê Thánh Tôn",
+    "communeName": "Phường Sài Gòn",
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "certificateAddressText": "Số 904 Demo, đường Lê Thánh Tôn, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh",
+    "legacyProvinceNames": [
+      "Thành phố Hồ Chí Minh"
+    ],
+    "searchText": "mat bang quan 1 q1 904 demo duong le thanh ton phuong sai gon thanh pho ho chi minh so 904 demo duong le thanh ton phuong ben nghe quan 1 thanh pho ho chi minh phuong ben nghe quan 1 thanh pho ho chi minh phuong da kao quan 1 thanh pho ho chi minh phuong nguyen thai binh quan 1 thanh pho ho chi minh",
+    "location": {
+      "lat": 10.778,
+      "lng": 106.702
+    },
+    "hasBoundary": false,
+    "ownerPartyIds": [
+      "5107e10c-018b-5f2d-ad73-f0ad36ca7467"
+    ],
+    "vacantSince": null,
+    "unitCount": 1,
+    "kindDetails": {}
   },
   "payments[[\"4305bff8-2f9c-50ff-934d-20f4d5a135dd\",\"5188dfe6-635f-5c60-bd81-f68875425a88\",\"a98b2361-d74f-5fb0-8994-9326bf881155\",\"98a7c7fb-2f88-570e-aff4-14aa89031cc5\",\"020bb39e-dab7-5dfc-a63d-b69cd9207fd1\",\"21eecb2e-616e-58bd-b52f-e02a087aa1f8\",\"8a99a83d-6b41-5a46-a95f-464ad5bad389\",\"9960554b-b351-5661-8e01-2897e2460948\",\"f477d1c4-38de-5b23-8eec-1d11a9c55a29\",\"7d1a7da3-cf4f-5322-a819-9da0d5f15f96\",\"0c121248-422b-5072-a0a2-8a414ced2863\",\"3a98165b-bc96-53fb-a843-e612d875f6f7\",\"52bdd6ec-7615-5a9c-8f95-eaa1525a6e82\",\"70c364ed-3a8c-5298-9f3e-24b91f319ddc\",\"7c5ad18c-513a-56e8-ad35-c46c38658174\",\"11bec999-30e5-5443-af62-20fd30dab967\",\"75761cd2-8053-56ec-81eb-9bf689395431\",\"d40f1cb5-73cc-5c69-b016-a3aa603f8ef0\",\"598037d7-3020-535b-adb5-aaca897a39e6\",\"83d70af7-c8da-50e7-9913-a6eb1c227e7f\",\"a6fef672-9d3b-52db-b85c-d783c72f856f\",\"cc8dee5b-30a2-592d-9c78-137d7a2c644a\",\"e3237f75-3fa3-5125-8103-48f9fed7f9ba\",\"2b3bd154-e029-578d-a181-52f536eda9cb\",\"897177ea-93b7-5d47-90d8-7fee0bc0e1cf\",\"a3a423d6-f169-51d8-a49d-2fa3f802eb71\",\"6bb68a89-c76d-58ef-b979-591affcce263\",\"4fce85e2-fa95-51e3-a8fb-cb75b9ad7f29\",\"79c27de6-b808-550b-b29c-9a4e75158b6b\",\"96caf211-f63f-5255-a966-4331f5460f2f\",\"cc118346-18d3-5abe-826b-fe2faf0ff988\",\"f0750ca0-b813-5524-a003-e715eecb0483\",\"c53c3412-5583-5e5c-81c7-e580544c73ef\",\"b77569d3-ce7f-5fee-8bd6-d0ecdcaf8ad2\",\"091380e6-e1df-5d73-be50-d5fb675028a9\",\"0b349c80-3fbc-5647-abcf-6e8f55435908\",\"110f1cfb-47da-5b3c-bf10-019b7a58a093\",\"772057ac-7a97-5f41-b97a-77a6b7f41bc2\",\"7d339cdb-677b-5462-85c4-7afc611e97aa\",\"80aaa7f3-2290-5a72-9bfb-1ecb8cb558b3\",\"2258c69d-1079-52bd-95f5-c8e8b7fb3567\",\"32b94b34-e720-5421-9be0-573bc4f06897\",\"20a7f9a0-481c-5e33-b316-caab3a85831c\",\"2656fa03-aab5-5b23-b333-252cb956dd97\",\"2a1b4b3c-dc2d-5f38-bf51-6acc7bbe865d\",\"4a62e3b0-8bf6-5767-a3de-c83a64977cd3\",\"89c92aca-ed33-546d-991b-83285ca54ce8\",\"d4337f5d-5dcf-5887-a434-05d456d4d136\",\"77a49b89-4d43-5c2d-8d26-f8b8b8697099\",\"7e5bd7fe-c7b7-5436-a90f-c1be35e10113\",\"ecafc4c0-717d-5264-98f3-2bdd18e869f8\",\"4cb0b4cc-8c9e-5dc6-b599-3450dccab710\",\"19e9824f-199f-5ea2-a3f9-62ff912f1ae7\",\"2041b80e-cbe8-5aae-ae48-72014dacd0f6\",\"2ba5e5dd-ba68-5292-a4ee-2843e26b8cd2\",\"586137cc-0fbd-52c1-a469-fc8ed6bee5f3\",\"bbd2bca9-b6f0-5200-9bf7-451b2e21634d\",\"d9833fbd-bf95-5ddf-8f14-b524c49f47d5\",\"cb041d24-fb6e-56a2-ae32-2ab1bfd7a1c8\",\"beb9776a-58b7-5bd5-bbed-3fd5453dc91c\",\"00e2d236-d22d-5e9a-84ea-737ef64a9c61\",\"46bc687f-35f2-5a62-9d68-919a5c98936b\",\"808a1f9b-5c15-5129-9f22-3be383d15a77\",\"9b91320c-bafc-5333-b0f4-85dcc0cd052f\",\"a9da43a5-8a52-5dbd-bc88-e15ceaf1bb6a\",\"f0dbb116-cfb0-53c2-bcd4-dd4938e074fc\",\"a2bc5456-6a64-5b9a-86eb-a2efedee3c66\",\"05acc5d1-b257-5365-9975-49f43895a179\",\"4fb8ee4e-7e24-57f8-9ef9-80cb37bc03a3\",\"7701f9ca-8056-5db5-a157-d131407b52cd\",\"879b4250-5dc0-5fec-81ab-0f64f14576d9\",\"b522493c-c891-5591-ada9-3824a3071e2a\",\"fec2e71d-2ea1-5f9e-b617-0bfb74a106f9\",\"35edba8f-bc8c-5605-849a-b72f6c31f315\",\"f36376eb-c1d6-5718-aff5-c5bfdc259f80\",\"38730fbf-790e-5592-bf63-67dcd882c89a\",\"38fe5f3a-0d26-59ab-9323-4e56c1411e4f\",\"4e1ce3bb-74b0-501e-85e6-92518d08f3a7\",\"5a41e93d-8abc-53b1-a7c3-5cfa5baad3c1\",\"97979fcf-2450-5dd2-977b-eb3ed9075bdf\",\"f396d47a-b4d3-5802-8992-ec5657fd01c5\"]]": [
     {

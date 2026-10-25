@@ -42,11 +42,11 @@ function lastSentenceEnd(template: string): number {
   return cut;
 }
 
-/** The guard reads the template with its links resolved, so the 4,000-character limit counts them (#335). */
+/** The guard reads the answer as Hỏi renders it, tables included, with its links resolved, so the 4,000-character limit counts them (#335). */
 function guarded(template: string, sheet: FactSheet): Result<Answer, NoteViolation[]> {
   const linked = resolveLinks(template, sheet);
-  const checked = checkNote(linked.text, sheet, 'markdown');
-  return checked.ok ? { ok: true, value: { ...checked.value, template, refs: linked.refs } } : checked;
+  const checked = checkNote(template, sheet, 'markdown-tables', linked.text);
+  return checked.ok ? { ok: true, value: { ...checked.value, refs: linked.refs } } : checked;
 }
 
 export type AnswerText = { readonly content: string; readonly refs: readonly string[] };

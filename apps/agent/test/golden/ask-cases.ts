@@ -76,7 +76,7 @@ export const ASK_CASES: readonly AskCase[] = [
     id: 'q6-bien-hoa-vacant',
     question: 'Kho Biên Hòa để trống bao lâu rồi?',
     toolCalls: [PROPERTIES, call('property_metrics', { property: 'f2', year: 2026 })],
-    reply: '{{f2.property_label}} đã để trống {{f9.empty_days_display}} ngày, từ ngày {{f9.empty_since_date_display}}.\n\nXem [hồ sơ {{f2.property_label}}](f8).',
+    reply: '{{f2.property_label}} đã để trống {{f9.empty_days_display}} ngày, từ ngày {{f8.empty_since_date_display}}.\n\nXem [hồ sơ {{f2.property_label}}](f8).',
   },
   {
     id: 'q7-q7-repairs',

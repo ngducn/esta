@@ -12,10 +12,10 @@ import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, readRecording } from '../../src/replay/store';
 import { replaySession } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
-import { ANSWER, answerRow, askRpcs, askTables } from '../ask-seed';
+import { ANSWER, answerRow, askRpcs, askTables, withDraftAndArchivedLeases } from '../ask-seed';
 import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
 import { askCase as findCase, askRecording, ASK_CASES, ASK_CONTEXT, caseEarlier, caseInput } from './ask-cases';
-import { replayedReads } from './ask-reads';
+import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
 
 const truth = JSON.parse(readFileSync(join(import.meta.dirname, 'ask-ground-truth.json'), 'utf8')) as Array<{ question: string; figure: string; value: string }>;
 const fact = (question: string, figure: string) => {
@@ -34,7 +34,7 @@ const links = (markdown: string) => [...markdown.matchAll(LINK)].map(([, link]) 
 /** The answer with each link target cut to its type, since record ids are the seed's, not the ground truth's. */
 const shown = (markdown: string) => markdown.replace(LINK, (_, link: string) => `](${link.replace(/\/[0-9a-f-]{36}$/, '/…')})`);
 
-async function ask(id: string) {
+async function ask(id: string, reads = replayedReads()) {
   const askCase = ASK_CASES.find((candidate) => candidate.id === id);
   if (askCase === undefined) throw new Error(`no case ${id}`);
   const tables = askTables(askCase.question);
@@ -50,7 +50,7 @@ async function ask(id: string) {
     question: askCase.question,
     earlier: caseEarlier(askCase),
     deep: askCase.deep === true,
-    reads: replayedReads(),
+    reads,
     clock: clockOn('2026-10-07T07:00:00+07:00'),
   });
   const run = await replaySession(
@@ -78,7 +78,7 @@ const EXPECTED: Readonly<Record<string, () => string>> = {
   'q6-bien-hoa-vacant': () => `Kho Biên Hòa đã để trống ${fact('q6', 'bien-hoa days empty')} ngày, từ ngày ${day('q6', 'bien-hoa empty since')}.\n\nXem [hồ sơ Kho Biên Hòa](esta://property/…).`,
   'q7-q7-repairs': () => `Năm 2026, chi phí sửa chữa của Nhà phố Q7 là ${money('q7', 'q7 repairs paid in 2026')}.\n\nXem từng khoản trong [sổ thu chi của Nhà phố Q7](esta://ledger/…).`,
   'q8-bao-loc-mortgage': () =>
-    `Có. Sổ của Đất Bảo Lộc đang thế chấp tại ${fact('q8', 'bao-loc mortgage bank')}, khoản vay ${money('q8', 'bao-loc mortgage amount')}, đăng ký ngày 12/03/2024.\n\nXem [pháp lý của Đất Bảo Lộc](esta://property/…).`,
+    `Có. Sổ của Đất Bảo Lộc đang thế chấp tại ${fact('q8', 'bao-loc mortgage bank')}, khoản vay ${money('q8', 'bao-loc mortgage amount')}, đăng ký ngày 12/03/2024.\n\nXem [pháp lý của Đất Bảo Lộc](esta://legal/…).`,
   'q9-q1-yield': () =>
     `Lợi suất cho thuê gộp của Mặt bằng Quận 1 là ${formatBps(Number(fact('q9', 'q1 gross yield bp')), 'vi')}. Con số này tính trên tiền thuê hằng tháng ${formatVnd(vnd(2_500_000), 'vi')} và giá trị ước tính ${formatVnd(vnd(7_200_000_000), 'vi')} ngày 01/07/2026.\n\nXem [hồ sơ Mặt bằng Quận 1](esta://property/…).`,
   'q10-late-tenant-english': () =>
@@ -100,6 +100,12 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     expect(shown(answer.content_md)).toBe(EXPECTED[id]?.());
     expect(answer.refs).toEqual([...new Set(links(answer.content_md))]);
     expect(missing).toEqual([]);
+  });
+
+  it.each(['q4-deposits-held'])('%s still states the ground truth beside a draft lease and an archived property\'s lease', async (id) => {
+    const recorded = JSON.parse(readFileSync(ASK_READS_FIXTURE, 'utf8')) as Record<string, unknown>;
+    const { answer } = await ask(id, replayedReads(withDraftAndArchivedLeases(recorded)));
+    expect(shown(answer.content_md)).toBe(EXPECTED[id]?.());
   });
 
   it('cites question 1 income from the ledger tool, so the figure is the tool value and not typed', async () => {

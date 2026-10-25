@@ -63,8 +63,8 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
     to,
     asOf,
     properties: properties.data,
-    incomes: facts.incomes.filter((fact) => live.has(fact.propertyId)),
-    expenses: facts.expenses.filter((fact) => live.has(fact.propertyId)),
+    incomes: facts.incomes,
+    expenses: facts.expenses,
     invoices: invoices.filter((invoice) => liveLeaseIds.has(invoice.leaseId) || invoice.outstandingVnd > 0),
     leases: tenanted.map(
       (lease): ReportLease => ({

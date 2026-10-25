@@ -121,7 +121,7 @@ async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   if (conversation.error) throw new Error(`Reading the conversation failed: ${conversation.error.message}`);
   const question = data.find((row) => row.id === question_id && row.role === 'user');
   if (question === undefined || !data.some((row) => row.id === answer_id && row.role === 'assistant')) throw new InvalidJobError(`ask ${job.id}: the question or its answer is not in conversation ${conversation_id}`);
-  await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '' });
+  await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [] });
   const { sdk_session_id, sdk_turn_hash, sdk_handles } = conversation.data;
   const earlier = sdk_turn_hash === null ? null : { sessionId: sdk_session_id, turnHash: sdk_turn_hash, handles: sdk_handles };
   return { question: question.content_md, answerId: answer_id, earlier, deep };
@@ -136,6 +136,6 @@ export async function prepareAsk({ db, job, clock, timezone }: JobContext): Prom
 export async function failAsk({ db, job }: Pick<JobContext, 'db' | 'job'>): Promise<void> {
   const payload = payloadSchema.pick({ answer_id: true }).safeParse(job.payload);
   if (!payload.success) return;
-  const { error } = await db.from('messages').update({ content_md: '', status: 'error' }).eq('household_id', job.household_id).eq('id', payload.data.answer_id).eq('status', 'streaming');
+  const { error } = await db.from('messages').update({ content_md: '', status: 'error', refs: [] }).eq('household_id', job.household_id).eq('id', payload.data.answer_id).eq('status', 'streaming');
   if (error) throw new Error(`Marking the answer failed: ${error.message}`);
 }

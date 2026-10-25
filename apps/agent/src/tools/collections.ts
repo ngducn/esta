@@ -14,7 +14,7 @@ import { parseToolInput } from './server';
 const inputSchema = z.strictObject({ year: z.number().int().min(2000).max(2100), month: z.number().int().min(1).max(12), property: z.string().optional() });
 const USAGE = 'collections takes {"year", "month": 1 to 12, "property": a handle from list_properties, optional}';
 
-/** `collections` (AGENT.md §4): the collections board for a month (SPEC LSE-10), one record per bill and one per status. */
+/** `collections` (AGENT.md §4): the collections board for a month (SPEC LSE-10), one record per bill and one per status, and the board's `Đã thu X / Y`. */
 export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadToolContext) {
   return sameAnswer(async (raw: Record<string, unknown>) => {
     const { year, month, property } = parseToolInput(inputSchema, raw, USAGE);
@@ -38,7 +38,9 @@ export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadT
       ),
     );
     const totals = groups.map((group) => cite({ status: group.key, count_display: formatCount(group.items.length, locale), total_display: formatVnd(group.totalVnd, locale) }));
-    return { bills, totals };
+    const { collectedVnd, billedVnd } = monthCollected(groups);
+    const month_collected = cite({ month_date_display: formatMonthYear(start, locale), collected_display: formatVnd(collectedVnd, locale), billed_display: formatVnd(billedVnd, locale) });
+    return { bills, totals, month_collected };
   });
 }
 
@@ -62,7 +64,7 @@ export function portfolioOverviewTool({ reads, locale, asOf, cite }: ReadToolCon
       month_date_display: formatMonthYear(month, locale),
       billed_this_month_display: formatVnd(billedVnd, locale),
       collected_this_month_display: formatVnd(collectedVnd, locale),
-      deposits_held_display: formatVnd(vnd(leases.reduce((sum, lease) => sum + lease.held_deposit_vnd, 0)), locale),
+      deposits_held_display: formatVnd(vnd(leases.reduce((sum, lease) => (lease.property_archived || lease.status === 'draft' ? sum : sum + lease.held_deposit_vnd), 0)), locale),
       estimated_value_display: value === null ? null : formatVnd(value.totalVnd, locale),
       oldest_valuation_date_display: value === null ? null : formatDate(value.oldestAsOf, locale),
       unvalued_property_count_display: value === null ? null : formatCount(value.unvaluedCount, locale),

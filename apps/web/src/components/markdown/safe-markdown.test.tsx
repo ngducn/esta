@@ -31,7 +31,7 @@ describe('SafeMarkdown', () => {
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
-  it.each(['property', 'invoice', 'lease', 'unit', 'document', 'party', 'meter', 'ledger'])('opens an esta://%s link inside the app', (type) => {
+  it.each(['property', 'invoice', 'lease', 'unit', 'document', 'party', 'meter', 'ledger', 'legal'])('opens an esta://%s link inside the app', (type) => {
     const link = renderMarkdown(`[Phòng 5](esta://${type}/7c9e6679-7425-40de-944b-e07fc1f90ae7)`).querySelector('a');
     expect(link?.getAttribute('href')).toBe(`/open/${type}/7c9e6679-7425-40de-944b-e07fc1f90ae7`);
     expect(link?.getAttribute('target')).toBeNull();
@@ -139,10 +139,14 @@ describe('the number guard reads what SafeMarkdown shows', () => {
     'a | b\n- | -\n25 | 5',
     '| a \\| 5 | b |\n|---|---|\n| `25` | **3** tr |',
     '| a |\n|:-:|\n    | 25 |\n> 5',
-  ])('reads the answer table %j as literal text, which shows every word the table renders', (markdown) => {
-    const read = collapse(visibleText(markdown));
+    '| Tài sản | Đã thu |\n| --- | --- |\n| [Dĩ An](q|25) |',
+    '| Tài sản | Còn lại |\n| --- | --- |\n| [Thủ Đức](<x|25 ngày>) |',
+    '| [Tài sản](x|2026) | Ghi chú |\n| --- | --- |\n| a | b |',
+    '| [Tài sản](x|2026) | Ghi chú |\n| --- | --- | --- |\n| a | b | c |',
+  ])('reads every cell of the answer table %j as an answer renders it, a pipe in a link target included', (markdown) => {
+    const read = collapse(visibleText(markdown, { tables: true }));
     const shown = render(<SafeMarkdown refs={[]}>{markdown}</SafeMarkdown>).container;
-    for (const cell of shown.querySelectorAll('th, td, p, li')) for (const word of collapse(cell.textContent ?? '').split(' ').filter(Boolean)) expect(read).toContain(word);
+    for (const cell of shown.querySelectorAll('th, td, p, li')) expect(read).toContain(collapse(cell.textContent ?? ''));
   });
 
   it.each([
