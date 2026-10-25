@@ -16,6 +16,7 @@ export {
   type PlanRefusal,
   type PlanRequest,
 } from './batch';
+export { askQuestion, MAX_QUESTION_LENGTH, type Asked } from './ask-ops';
 export { agentItemSetStatus, INBOX_STATUSES, type AgentItemSaved } from './agent-item-ops';
 export { batchUndo, UNDO_FLOWS, UNDO_REASONS, type BatchUndone, type UndoBlocker, type UndoRefusal } from './batch-undo';
 export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDefault, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';

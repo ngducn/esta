@@ -17,6 +17,9 @@ const keepSafeUrl: UrlTransform = (url) => {
   return estaPath(url) === null ? null : url;
 };
 
+/** An answer links only records of the app: an `https:` link renders as its text too (AGENT.md §5.6). */
+const keepInAppUrl: UrlTransform = (url) => (estaPath(url) === null ? null : url);
+
 const components: Components = {
   a: ({ href, children }) => {
     if (typeof href !== 'string' || href === '') return <span>{children}</span>;
@@ -34,12 +37,13 @@ const components: Components = {
 
 /**
  * Model output as Markdown limited to text structure. Raw HTML renders as its literal text because no raw HTML
- * plugin runs, and images are dropped so a reply cannot load a remote URL.
+ * plugin runs, and images are dropped so a reply cannot load a remote URL. `links="in-app"` keeps only links to the
+ * app's own records.
  */
-export function SafeMarkdown({ children, className }: { children: string; className?: string }) {
+export function SafeMarkdown({ children, className, links = 'sources' }: { children: string; className?: string; links?: 'sources' | 'in-app' }) {
   return (
     <div data-slot="safe-markdown" className={cn('flex flex-col gap-2 text-body break-words text-ink-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6', className)}>
-      <Markdown urlTransform={keepSafeUrl} components={components} allowedElements={ALLOWED} unwrapDisallowed>
+      <Markdown urlTransform={links === 'in-app' ? keepInAppUrl : keepSafeUrl} components={components} allowedElements={ALLOWED} unwrapDisallowed>
         {children}
       </Markdown>
     </div>

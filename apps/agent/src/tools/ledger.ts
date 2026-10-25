@@ -37,8 +37,7 @@ const monthStart = (year: number, month: number): IsoDate => isoDate(`${formatYe
 
 /**
  * `ledger` (AGENT.md §4): income by the day each payment was received and live expenses, for one month or one year,
- * of one property or of the whole household, with a record per month of a year. The same call answers the same
- * records under the same handles, so a second call never widens the sheet.
+ * of one property or of the whole household. The same call answers the same record under the same handle.
  */
 export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, properties: ReadonlyMap<string, CitedRecord<PropertyRecord>>, cite: RunSheet['cite']) {
   const answered = new Map<string, unknown>();
@@ -56,9 +55,7 @@ export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, pro
     const to = addDays(addMonths(from, month === undefined ? 12 : 1), -1);
     const ledger = buildLedger({ ...(await readLedgerFacts(db, householdId, { ...(property === null ? {} : { propertyId: property.id }), from, to })), from, to });
     const total = cite(sumsRecord(ledger.totals, month === undefined ? formatYear(year) : formatMonthYear(from, locale), property, locale));
-    const months = month === undefined ? ledger.months.map((row) => cite(sumsRecord(row, formatMonthYear(row.monthStart, locale), property, locale))) : [];
-    const answer = { total, months };
-    answered.set(key, answer);
-    return answer;
+    answered.set(key, total);
+    return total;
   };
 }

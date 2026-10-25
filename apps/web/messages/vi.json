@@ -1076,7 +1076,8 @@
     "tabs": "Các mục của Trợ lý",
     "tab": {
       "inbox": "Hộp thư",
-      "market": "Thị trường"
+      "market": "Thị trường",
+      "ask": "Hỏi"
     },
     "market": {
       "title": "Thị trường",
@@ -1124,7 +1125,24 @@
     "confirmRenewal": "Gia hạn hợp đồng {place} đến {date}, tiền thuê {amount} mỗi tháng?",
     "confirmCancel": "Thôi",
     "openLease": "Xem hợp đồng",
-    "openReminder": "Mở lời nhắc"
+    "openReminder": "Mở lời nhắc",
+    "ask": {
+      "title": "Hỏi Trợ lý",
+      "heading": "Hỏi Trợ lý",
+      "intro": "Trợ lý trả lời từ dữ liệu trong ứng dụng. Mọi con số đều lấy từ sổ sách, không ước tính.",
+      "questionLabel": "Câu hỏi của bạn",
+      "placeholder": "Ví dụ: Tháng này thu được bao nhiêu từ Dĩ An?",
+      "send": "Hỏi",
+      "sending": "Đang gửi",
+      "emptyQuestion": "Hãy viết câu hỏi trước khi gửi.",
+      "longQuestion": "Câu hỏi dài quá. Hãy viết ngắn hơn.",
+      "sendFailed": "Chưa gửi được câu hỏi. Kiểm tra kết nối rồi thử lại.",
+      "asked": "Bạn hỏi",
+      "answering": "Trợ lý đang trả lời",
+      "answerFailed": "Trợ lý chưa trả lời được câu này. Bạn có thể hỏi lại.",
+      "stalled": "Trợ lý chưa trả lời xong. Tải lại trang để xem tiếp.",
+      "askAnother": "Hỏi câu khác"
+    }
   },
   "settings": {
     "display": "Hiển thị",

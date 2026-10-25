@@ -72,6 +72,7 @@ export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now 
   let failure: unknown = null;
 
   const flush = (): Promise<void> => {
+    clearTimeout(timer);
     timer = undefined;
     if (accepted === written) return writing;
     const content = accepted;
@@ -87,12 +88,6 @@ export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now 
     const wait = lastWrite + flushMs - now();
     if (wait <= 0) void flush();
     else timer = setTimeout(() => void flush(), wait);
-  };
-  const settled = async () => {
-    clearTimeout(timer);
-    timer = undefined;
-    await writing;
-    if (failure !== null) throw failure;
   };
 
   return {
@@ -111,7 +106,7 @@ export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now 
       const whole = guarded(template.trim(), sheet);
       if (whole.ok) accepted = whole.value.text;
       await flush();
-      await settled();
+      if (failure !== null) throw failure;
       return whole;
     },
     restart() {
