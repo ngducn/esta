@@ -86,6 +86,13 @@ describe('the ask job (AGENT.md §5.6)', () => {
     expect(String(tables.agent_items?.[0]?.body_md)).toContain(BAD_RESIDUE);
   });
 
+  it('a failed answer keeps no link: the error row clears the refs of the text it showed', async () => {
+    const { tables, writes, job } = await run([`Xem [sổ thu chi](f8). ${BAD_RESIDUE}`, BAD_RESIDUE]);
+    expect(job.status).toBe('failed');
+    expect(writes.some(({ row }) => Array.isArray(row.refs) && row.refs.length === 1), 'the first turn streamed its linked sentence').toBe(true);
+    expect(answerRow(tables)).toMatchObject({ status: 'error', content_md: '', refs: [] });
+  });
+
   it('a turn that only calls tools fails once, saying the model wrote no answer', async () => {
     const { tables, job } = await run(['']);
     expect(job).toMatchObject({ status: 'failed', error: expect.stringMatching(/without writing an answer/) });
