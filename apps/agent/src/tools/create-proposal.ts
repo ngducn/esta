@@ -4,11 +4,14 @@ import { normalizeUrl } from '@esta/core/research';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { guardedWriter, type NoteBinding } from './create-item';
-import { ToolRejection } from './server';
+import { oneAtATime, ToolRejection } from './server';
 
-export type Citing = { readonly fetched: ReadonlySet<string>; readonly maxProposals: number };
+export type Citing = { readonly fetched: ReadonlySet<string> };
 
-export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'> & { readonly citing?: Citing };
+/** At most `max` proposals, `earlier` of them already stored by an earlier attempt of the same run. */
+export type ProposalCap = { readonly max: number; readonly earlier: number };
+
+export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'> & { readonly citing?: Citing; readonly cap?: ProposalCap };
 
 const inputSchema = z.object({ type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string(), citations: z.array(z.string()).max(5).optional() });
 
@@ -81,14 +84,15 @@ const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHas
  */
 export function proposalWriter(binding: ProposalBinding) {
   const guard = guardedWriter(binding, 'create_proposal');
-  const { citing } = binding;
+  const { citing, cap } = binding;
   const saved: string[] = [];
+  let stored = cap?.earlier ?? 0;
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true; added: boolean; dedupe_key: string }> {
     const input = inputSchema.safeParse(raw);
     if (!input.success) throw rejected(input.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`));
     const { type, params, rationale, citations = [] } = input.data;
-    if (citing !== undefined && saved.length >= citing.maxProposals) throw new ToolRejection(`This run already made ${citing.maxProposals} proposals, the most it may make. Do not call create_proposal again.`);
+    if (cap !== undefined && stored >= cap.max) throw new ToolRejection(`This week's review already made ${cap.max} proposals, the most it may make. Do not call create_proposal again.`);
     if (!isProposalType(type)) throw rejected([`type: ${JSON.stringify(type)} is not a proposal type; use one of ${Object.keys(PROPOSAL_TYPES).join(', ')}`]);
     if (citing === undefined && citations.length > 0) throw rejected(['citations: this job cites no sources; leave citations out']);
     if (citing !== undefined && type === 'suggest_rent_change' && citations.length === 0) throw rejected(['citations: a rent change cites the market news it rests on, as URLs of pages WebFetch read in this run or research items recent_items returned']);
@@ -118,9 +122,11 @@ export function proposalWriter(binding: ProposalBinding) {
     const links = subjects(proposal);
     const key = dedupeKey(proposal);
     const added = await guard.save({ kind: 'proposal', severity: 'info', title: proposal.params.title, body_md: body, related: { links }, proposal, citations: sources.found, dedupe_key: key });
+    // A proposal an earlier attempt or an earlier week stored adds no row, so it takes no slot.
+    if (added) stored += 1;
     saved.push(key);
     return { saved: true, added, dedupe_key: key };
   }
 
-  return { write, saved: saved as readonly string[] };
+  return { write: oneAtATime(write), saved: saved as readonly string[] };
 }

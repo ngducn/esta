@@ -79,3 +79,10 @@ export function isoWeek(date: IsoDate): string {
   const week = Math.floor((thursday - epochDay(fromParts(year, 1, 1))) / 7) + 1;
   return `${year}-W${String(week).padStart(2, '0')}`;
 }
+
+/** The Sunday that ends an ISO week written as `isoWeek` writes it: week 1 is the one that holds 4 January. */
+export function isoWeekSunday(week: string): IsoDate {
+  const january4 = fromParts(Number(week.slice(0, 4)), 1, 4);
+  const monday = epochDay(january4) - ((weekday(january4) + 6) % 7);
+  return fromEpochDay(monday + 7 * (Number(week.slice(6)) - 1) + 6);
+}

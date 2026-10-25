@@ -1,6 +1,6 @@
 import { isoDate } from '@esta/core/date';
 import { rmSync } from 'node:fs';
-import { weeklyReviewRequest } from '../../src/jobs/weekly-review';
+import { reviewedWeek, weeklyReviewRequest } from '../../src/jobs/weekly-review';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, recordingPath, writeRecording } from '../../src/replay/store';
@@ -11,8 +11,7 @@ import { replayedReads } from './ask-reads';
 import { WEEKLY_AS_OF, weeklyRecording } from './weekly-fixture';
 
 const recording = weeklyRecording();
-const asOf = isoDate(WEEKLY_AS_OF.slice(0, 10));
-const prepared = weeklyReviewRequest({ db: fakeDb({}), householdId: HOUSEHOLD, jobId: 'weekly-recording', locale: 'vi', asOf, timezone: 'Asia/Ho_Chi_Minh', reads: replayedReads({}), clock: clockOn(WEEKLY_AS_OF) });
+const prepared = weeklyReviewRequest({ db: fakeDb({}), householdId: HOUSEHOLD, jobId: 'weekly-recording', locale: 'vi', ...reviewedWeek({ idempotency_key: null }, isoDate(WEEKLY_AS_OF.slice(0, 10))), earlierProposals: 0, timezone: 'Asia/Ho_Chi_Minh', reads: replayedReads({}), clock: clockOn(WEEKLY_AS_OF) });
 const input = canonicalInput({ spec: JOBS.weekly_review, prompt: prepared.prompt, canon: canonicalizer({ householdName: 'Gia đình Demo' }) });
 const written = writeRecording(DEFAULT_REPLAY_DIR, { ...recording, inputHash: inputHash(input), input });
 const stale = recordingPath(DEFAULT_REPLAY_DIR, recording.kind, recording.inputHash);

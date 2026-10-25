@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { query } from '../../../../scripts/db-checksum.ts';
 import { slotEnv } from '../../../../scripts/slot-env.ts';
 import { parseSlot, slotWorkdir } from '../../../../scripts/slot.ts';
-import { weeklyReviewRequest } from '../../src/jobs/weekly-review';
+import { reviewedWeek, weeklyReviewRequest } from '../../src/jobs/weekly-review';
 import { DEFAULT_REPLAY_DIR, recordingSchema } from '../../src/replay/store';
 import { serviceClient } from '../../src/supabase';
 import { askReads } from '../../src/tools/ask-reads';
@@ -29,10 +29,10 @@ async function main() {
   const db = serviceClient(env.SUPABASE_URL ?? '', env.SUPABASE_SERVICE_ROLE_KEY ?? '', 'weekly-fixture');
   const [household] = query<{ id: string }>(slotWorkdir(root, slot), `select id::text from public.households where name = 'Gia đình Demo'`);
   if (household === undefined) throw new Error('The slot holds no Gia đình Demo; run pnpm db:reset');
-  const asOf = isoDate(WEEKLY_AS_OF.slice(0, 10));
+  const { week, asOf } = reviewedWeek({ idempotency_key: null }, isoDate(WEEKLY_AS_OF.slice(0, 10)));
   const recorded: RecordedReads = {};
   const reads = recordingReads(askReads(db, household.id, { locale: 'vi', asOf }), recorded);
-  const prepared = weeklyReviewRequest({ db, householdId: household.id, jobId: 'weekly-fixture', locale: 'vi', asOf, timezone: 'Asia/Ho_Chi_Minh', reads, clock: clockOn(WEEKLY_AS_OF) });
+  const prepared = weeklyReviewRequest({ db, householdId: household.id, jobId: 'weekly-fixture', locale: 'vi', week, asOf, earlierProposals: 0, timezone: 'Asia/Ho_Chi_Minh', reads, clock: clockOn(WEEKLY_AS_OF) });
   for (const call of weeklyRecording().toolCalls.filter(({ name }) => !/create_(item|proposal)$/.test(name))) {
     const tool = prepared.tools.get(call.name);
     if (tool === undefined) continue;

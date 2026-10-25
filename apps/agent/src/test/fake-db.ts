@@ -9,7 +9,7 @@ type Filter = (row: Row) => boolean;
 export type FakeRpcs = Record<string, (args: Record<string, unknown>) => unknown>;
 
 /**
- * An in-memory stand-in for the service client: filters, ordering, single reads, updates that mutate the rows in place, upserts
+ * An in-memory stand-in for the service client: filters (`like` with `\` escapes), ordering, single reads, updates that mutate the rows in place, upserts
  * that honour `onConflict` with `ignoreDuplicates`, and Storage downloads from `files`. A write to a table named in
  * `refuse` answers that table's error message and changes nothing, as RLS or a lost connection would. `rpcs` answers
  * database functions by name.
@@ -89,6 +89,15 @@ export function fakeDb(
       },
       range(from: number, to: number) {
         window = { from, to };
+        return builder;
+      },
+      like(column: string, pattern: string) {
+        const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+        const source = pattern.replace(/\\(.)|%|_|[^\\%_]+/g, (token: string, escaped: string | undefined) =>
+          escaped !== undefined ? literal(escaped) : token === '%' ? '.*' : token === '_' ? '.' : literal(token),
+        );
+        const like = new RegExp(`^${source}$`, 's');
+        filters.push((row) => typeof row[column] === 'string' && like.test(row[column]));
         return builder;
       },
       is(column: string, value: unknown) {

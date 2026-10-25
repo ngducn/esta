@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseInstant } from '../clock/resolve';
-import { planScheduledJobs, type ScheduledJob } from './plan-jobs';
+import { firstRunKey, planScheduledJobs, scheduledWeek, type ScheduledJob } from './plan-jobs';
 
 const SCHEDULE: ScheduledJob[] = [
   { kind: 'morning_brief', at: '07:00' },
@@ -62,5 +62,19 @@ describe('planScheduledJobs', () => {
     expect(weekly('2026-10-12T09:00:00+07:00'), 'Monday after a missed Sunday').toEqual([]);
     expect(weekly('2026-10-11T23:00:00+07:00', ['weekly_review:h1:2026-W41'])).toEqual([]);
     expect(weekly('2026-10-18T08:00:00+07:00', ['weekly_review:h1:2026-W41'])).toEqual(['weekly_review:h1:2026-W42']);
+  });
+});
+
+describe('scheduledWeek', () => {
+  it('reads the week the scheduler keyed a weekly job by, through any Thử lại', () => {
+    expect(scheduledWeek('weekly_review:h1:2026-W42')).toBe('2026-W42');
+    expect(scheduledWeek('weekly_review:h1:2026-W42:retry:2')).toBe('2026-W42');
+    expect(firstRunKey('weekly_review:h1:2026-W42:retry:2')).toBe('weekly_review:h1:2026-W42');
+  });
+
+  it('names no week for a key the scheduler did not write', () => {
+    expect(scheduledWeek(null)).toBeNull();
+    expect(scheduledWeek('weekly_review:0b6f-job-id:retry:1')).toBeNull();
+    expect(scheduledWeek('morning_brief:h1:2026-10-11')).toBeNull();
   });
 });

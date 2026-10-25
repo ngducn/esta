@@ -16,6 +16,15 @@ export function scheduleKey(job: ScheduledJob, householdId: string, today: IsoDa
   return `${job.kind}:${householdId}:${job.weekday === undefined ? today : isoWeek(today)}`;
 }
 
+/** The key of the run a job repeats: Thử lại keys its new job `{key}:retry:{n}` (`public.retry_agent_job`). */
+export const firstRunKey = (key: string): string => key.replace(/:retry:\d+$/, '');
+
+/** The ISO week `scheduleKey` named for a weekly job, through any retries; null for a key the scheduler did not write. */
+export function scheduledWeek(key: string | null): string | null {
+  const week = key === null ? undefined : firstRunKey(key).split(':').at(-1);
+  return week !== undefined && /^\d{4}-W\d{2}$/.test(week) ? week : null;
+}
+
 function zonedInstant(date: IsoDate, time: string, timezone: string): Instant {
   const guess = Date.parse(`${date}T${time}:00Z`);
   const asIso = new Date(guess).toISOString() as Instant;

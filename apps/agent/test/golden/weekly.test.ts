@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
-import { weeklyReviewRequest } from '../../src/jobs/weekly-review';
+import { reviewedWeek, weeklyReviewRequest } from '../../src/jobs/weekly-review';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { replaySession, type SessionRun } from '../../src/sdk/session';
@@ -34,7 +34,8 @@ const prepared = weeklyReviewRequest({
   householdId: HOUSEHOLD,
   jobId: 'job-weekly',
   locale: 'vi',
-  asOf: isoDate(WEEKLY_AS_OF.slice(0, 10)),
+  ...reviewedWeek({ idempotency_key: null }, isoDate(WEEKLY_AS_OF.slice(0, 10))),
+  earlierProposals: 0,
   timezone: 'Asia/Ho_Chi_Minh',
   reads: replayedReads(JSON.parse(readFileSync(WEEKLY_READS_FIXTURE, 'utf8')) as RecordedReads),
   clock: clockOn(WEEKLY_AS_OF),
