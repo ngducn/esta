@@ -124,7 +124,6 @@ export class ToolRejection extends Error {
   }
 }
 
-/** The tool's input parsed by `schema`, or a rejection that names `usage` and each field to fix. */
 /** Runs a tool's calls one after another, so a write that checks what its run saved sees every earlier call settled. */
 export function oneAtATime<R>(run: (input: Record<string, unknown>) => Promise<R>): (input: Record<string, unknown>) => Promise<R> {
   let last: Promise<unknown> = Promise.resolve();
@@ -135,6 +134,7 @@ export function oneAtATime<R>(run: (input: Record<string, unknown>) => Promise<R
   };
 }
 
+/** The tool's input parsed by `schema`, or a rejection that names `usage` and each field to fix. */
 export function parseToolInput<S extends z.ZodType>(schema: S, raw: unknown, usage: string): z.output<S> {
   const input = schema.safeParse(raw);
   if (!input.success) throw new ToolRejection(`${usage}: ${input.error.issues.map((issue) => issue.path.join('.') || '(root)').join(', ')}`);
