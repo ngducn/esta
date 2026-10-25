@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
-import { answerEventSchema, type AnswerState } from './answer-state';
+import { isAnswerEvent, type AnswerState } from './answer-state';
 
 export type AnswerLabels = Readonly<Record<'streaming' | 'error' | 'stalled', string>>;
 
@@ -16,10 +16,10 @@ export function AnswerStream({ id, conversationId, initial, labels }: { id: stri
     if (initial.status !== 'streaming') return;
     const source = new EventSource(`/api/answers/${id}?conversation=${conversationId}`);
     source.onmessage = ({ data }: MessageEvent<string>) => {
-      const next = answerEventSchema.safeParse(JSON.parse(data));
-      if (next.success && 'content' in next.data) setShown(next.data);
+      const next: unknown = JSON.parse(data);
+      if (isAnswerEvent(next) && 'content' in next) setShown(next);
       else setShown((before) => ({ content: before.content, refs: before.refs, status: 'stalled' }));
-      if (!next.success || next.data.status !== 'streaming') source.close();
+      if (!isAnswerEvent(next) || next.status !== 'streaming') source.close();
     };
     return () => source.close();
   }, [id, conversationId, initial.status]);

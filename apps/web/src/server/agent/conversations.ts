@@ -2,12 +2,15 @@ import 'server-only';
 import { parseInstant, type Instant } from '@esta/core';
 import { z } from 'zod';
 import type { Db } from '@esta/ops';
+import { isAnswerState, type AnswerState } from '@/components/assistant/answer-state';
 import { createSessionClient } from '@/server/supabase/server';
 
-import { answerStateSchema, type AnswerState } from '@/components/assistant/answer-state';
-
 const answerRow = { content_md: z.string(), status: z.unknown(), refs: z.unknown() };
-const toAnswer = ({ content_md, status, refs }: { content_md: string; status: unknown; refs: unknown }): AnswerState => answerStateSchema.parse({ content: content_md, status, refs });
+function toAnswer({ content_md, status, refs }: { content_md: string; status: unknown; refs: unknown }): AnswerState {
+  const answer = { content: content_md, status, refs };
+  if (!isAnswerState(answer)) throw new Error(`An answer row has status ${JSON.stringify(status)} or refs that are not a list of links`);
+  return answer;
+}
 
 export type ConversationMessage = AnswerState & { readonly id: string; readonly role: 'user' | 'assistant'; readonly createdAt: Instant };
 
