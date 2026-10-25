@@ -86,6 +86,9 @@ test('on Sunday at 08:05 Hộp thư holds one weekly review with the board’s m
   for (const { title } of made.slice(1)) await expect(card(page, title)).toHaveAttribute('data-kind', 'proposal');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-08-weekly-note-1440x900-light');
+  await page.setViewportSize(PHONE);
+  await weekly(page).scrollIntoViewIfNeeded();
+  await shot(page, 'p5-08-weekly-note-390x844-light');
 });
 
 test('Mẹ opens the weekly rent change on her phone in dark and finds the stored Vành đai 3 item it cites', async ({ page }) => {

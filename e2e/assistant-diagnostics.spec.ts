@@ -83,6 +83,15 @@ test('Ryan opens diagnostics from his menu and reads the replay worker, the last
   expect(usage.totals.cells['#0']).toBe('Tổng');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-08-diagnostics-1440x900-light');
+
+  await page.setViewportSize(PHONE);
+  expect(await noSidewaysScroll(page), 'no sideways scroll at 390 px').toBe(true);
+  await shot(page, 'p5-08-diagnostics-390x844-light');
+  await page.context().addCookies([{ name: 'esta_theme', value: 'dark', url: test.info().project.use.baseURL ?? '' }]);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'p5-08-diagnostics-390x844-dark');
 });
 
 test('Mẹ’s menu has no diagnostics entry, its link shows a plain not-found page, and the worker modes answer her nothing', async ({ page }) => {
