@@ -7,6 +7,10 @@ const HANDLE_LINK = /\]\((f\d+)\)/g;
 
 export type Answer = FilledNote & { readonly refs: readonly string[] };
 
+/**
+ * Swaps each `](fN)` the model wrote for that record's link, in the template before any value is filled, so a cited
+ * name that holds `](f2)` stays text. `refs` lists what was swapped in, the only links an answer shows live.
+ */
 export function resolveLinks(text: string, sheet: FactSheet): { readonly text: string; readonly refs: string[] } {
   const refs = new Set<string>();
   const resolved = text.replace(HANDLE_LINK, (whole, handle: string) => {
@@ -18,12 +22,16 @@ export function resolveLinks(text: string, sheet: FactSheet): { readonly text: s
   return { text: resolved, refs: [...refs] };
 }
 
+/** A line holding only an ordered list's number, such as `1.`: cut there, it reads as a typed number until its item comes. */
+const LIST_MARKER = /^[ \t]*\d{1,9}$/;
+
 function lastSentenceEnd(template: string): number {
   let cut = 0;
   let brackets = 0;
   let braces = 0;
   for (let at = 0; at < template.length; at += 1) {
     const [here, next] = [template[at] ?? '', template[at + 1]];
+    if (here === '.' && LIST_MARKER.test(template.slice(template.lastIndexOf('\n', at - 1) + 1, at))) continue;
     if (here === '[') brackets += 1;
     else if (here === ']') brackets -= 1;
     else if (here === '{' && next === '{') braces += 1;
@@ -34,12 +42,14 @@ function lastSentenceEnd(template: string): number {
   return cut;
 }
 
+/** The guard reads the template with its links resolved, so the 4,000-character limit counts them (#335). */
 function guarded(template: string, sheet: FactSheet): Result<Answer, NoteViolation[]> {
-  const checked = checkNote(template, sheet, 'markdown');
-  if (!checked.ok) return checked;
-  const { text, refs } = resolveLinks(checked.value.text, sheet);
-  return { ok: true, value: { ...checked.value, text, refs } };
+  const linked = resolveLinks(template, sheet);
+  const checked = checkNote(linked.text, sheet, 'markdown');
+  return checked.ok ? { ok: true, value: { ...checked.value, template, refs: linked.refs } } : checked;
 }
+
+export type AnswerText = { readonly content: string; readonly refs: readonly string[] };
 
 export type AnswerStream = {
   push(delta: string): Promise<void>;
@@ -48,11 +58,11 @@ export type AnswerStream = {
   readonly template: () => string;
 };
 
-export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now }: { sheet: FactSheet; write(content: string): Promise<void>; flushMs?: number; now?: () => number }): AnswerStream {
+export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now }: { sheet: FactSheet; write(answer: AnswerText): Promise<void>; flushMs?: number; now?: () => number }): AnswerStream {
   let template = '';
   let checkedTo = 0;
   let violated = false;
-  let accepted = '';
+  let accepted: AnswerText = { content: '', refs: [] };
   let written: string | null = null;
   let lastWrite = Number.NEGATIVE_INFINITY;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -62,11 +72,11 @@ export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now 
   const flush = (): Promise<void> => {
     clearTimeout(timer);
     timer = undefined;
-    if (accepted === written) return writing;
-    const content = accepted;
-    written = content;
+    if (accepted.content === written) return writing;
+    const answer = accepted;
+    written = answer.content;
     lastWrite = now();
-    writing = writing.then(() => write(content)).catch((error: unknown) => {
+    writing = writing.then(() => write(answer)).catch((error: unknown) => {
       failure ??= error;
     });
     return writing;
@@ -90,13 +100,13 @@ export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now 
         violated = true;
         return;
       }
-      accepted = prefix.value.text;
+      accepted = { content: prefix.value.text, refs: prefix.value.refs };
       schedule();
       if (failure !== null) throw failure;
     },
     async end() {
       const whole = guarded(template.trim(), sheet);
-      if (whole.ok) accepted = whole.value.text;
+      if (whole.ok) accepted = { content: whole.value.text, refs: whole.value.refs };
       await flush();
       if (failure !== null) throw failure;
       return whole;

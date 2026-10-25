@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
-import type { AnswerState } from '@/server/agent/conversations';
+import { answerEventSchema, type AnswerState } from './answer-state';
 
 export type AnswerLabels = Readonly<Record<'streaming' | 'error' | 'stalled', string>>;
 
-type Shown = AnswerState | { readonly content: string; readonly status: 'stalled' };
+type Shown = AnswerState | { readonly content: string; readonly refs: readonly string[]; readonly status: 'stalled' };
 
 export function AnswerStream({ id, conversationId, initial, labels }: { id: string; conversationId: string; initial: AnswerState; labels: AnswerLabels }) {
   const [shown, setShown] = useState<Shown>(initial);
@@ -16,10 +16,10 @@ export function AnswerStream({ id, conversationId, initial, labels }: { id: stri
     if (initial.status !== 'streaming') return;
     const source = new EventSource(`/api/answers/${id}?conversation=${conversationId}`);
     source.onmessage = ({ data }: MessageEvent<string>) => {
-      const next = JSON.parse(data) as AnswerState | { status: 'timeout' | 'gone' };
-      if ('content' in next) setShown(next);
-      else setShown((before) => ({ content: before.content, status: 'stalled' }));
-      if (next.status !== 'streaming') source.close();
+      const next = answerEventSchema.safeParse(JSON.parse(data));
+      if (next.success && 'content' in next.data) setShown(next.data);
+      else setShown((before) => ({ content: before.content, refs: before.refs, status: 'stalled' }));
+      if (!next.success || next.data.status !== 'streaming') source.close();
     };
     return () => source.close();
   }, [id, conversationId, initial.status]);
@@ -27,7 +27,7 @@ export function AnswerStream({ id, conversationId, initial, labels }: { id: stri
   const line = shown.status === 'done' || (shown.status === 'streaming' && shown.content !== '') ? null : labels[shown.status];
   return (
     <div data-testid="answer" data-status={shown.status} aria-busy={streaming} className="flex flex-col gap-3">
-      {shown.content === '' ? null : <SafeMarkdown links="in-app" className="max-w-prose">{shown.content}</SafeMarkdown>}
+      {shown.content === '' ? null : <SafeMarkdown refs={shown.refs} className="max-w-prose">{shown.content}</SafeMarkdown>}
       {line === null ? null : (
         <p role="status" data-testid="answer-line" className="text-body text-ink-muted">
           {line}

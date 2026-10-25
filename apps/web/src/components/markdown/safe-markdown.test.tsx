@@ -43,15 +43,30 @@ describe('SafeMarkdown', () => {
     expect(container.textContent).toBe('Phòng 5');
   });
 
-  it.each(['https://baochinhphu.vn/tin', 'f99', 'f3'])('in an answer, keeps only the text of a link to %s, so an unresolved handle never links', (url) => {
-    const container = render(<SafeMarkdown links="in-app">{`[sổ thu chi](${url})`}</SafeMarkdown>).container;
+  const LEDGER = 'esta://ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7';
+  const answer = (markdown: string, refs: readonly string[] = [LEDGER]) => render(<SafeMarkdown refs={refs}>{markdown}</SafeMarkdown>).container;
+
+  it.each(['https://baochinhphu.vn/tin', 'f99', 'f3', 'esta://property/7c9e6679-7425-40de-944b-e07fc1f90ae7'])('in an answer, keeps only the text of a link to %s, which its run never looked up', (url) => {
+    const container = answer(`[sổ thu chi](${url})`);
     expect(container.querySelector('a')).toBeNull();
     expect(container.textContent).toBe('sổ thu chi');
   });
 
-  it('in an answer, opens an esta:// link inside the app', () => {
-    const link = render(<SafeMarkdown links="in-app">{'[sổ thu chi](esta://ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7)'}</SafeMarkdown>).container.querySelector('a');
-    expect(link?.getAttribute('href')).toBe('/open/ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7');
+  it('in an answer, opens a link its run looked up inside the app', () => {
+    expect(answer(`[sổ thu chi](${LEDGER})`).querySelector('a')?.getAttribute('href')).toBe('/open/ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7');
+  });
+
+  it('in an answer, renders a table, and a bare URL in it stays text', () => {
+    const container = answer(`| Tài sản | Đã thu |\n| --- | ---: |\n| [Dĩ An](${LEDGER}) | 1.000.000 ₫ https://x.vn |`);
+    expect([...container.querySelectorAll('th')].map((cell) => cell.textContent)).toEqual(['Tài sản', 'Đã thu']);
+    expect([...container.querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['Dĩ An', '1.000.000 ₫ https://x.vn']);
+    expect([...container.querySelectorAll('a')].map((link) => link.getAttribute('href'))).toEqual(['/open/ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7']);
+  });
+
+  it('outside an answer, a table stays its literal text', () => {
+    const container = renderMarkdown('| Tài sản | Đã thu |\n| --- | --- |\n| Dĩ An | Có |');
+    expect(container.querySelector('table')).toBeNull();
+    expect(container.textContent).toContain('| Tài sản | Đã thu |');
   });
 
   it('shows a heading, a quote and code as plain text', () => {
@@ -111,6 +126,18 @@ describe('the number guard reads what SafeMarkdown shows', () => {
     const list = renderMarkdown('13. Phòng 5\n14. Phòng 7').querySelector('ol');
     expect(list?.getAttribute('start')).toBe('13');
     expect(visibleText('13. Phòng 5\n14. Phòng 7')).toBe('13.\nPhòng 5\n14.\nPhòng 7');
+  });
+
+  it.each([
+    '| Tài sản | Đã thu |\n| --- | ---: |\n| Dĩ An | 25 |',
+    '| a |\n| --- |\n| x | 5 tỷ |',
+    'a | b\n- | -\n25 | 5',
+    '| a \\| 5 | b |\n|---|---|\n| `25` | **3** tr |',
+    '| a |\n|:-:|\n    | 25 |\n> 5',
+  ])('reads the answer table %j as literal text, which shows every word the table renders', (markdown) => {
+    const read = collapse(visibleText(markdown));
+    const shown = render(<SafeMarkdown refs={[]}>{markdown}</SafeMarkdown>).container;
+    for (const cell of shown.querySelectorAll('th, td, p, li')) for (const word of collapse(cell.textContent ?? '').split(' ').filter(Boolean)) expect(read).toContain(word);
   });
 
   it.each([

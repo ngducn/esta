@@ -33,7 +33,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ c
           <AssistantMonogram />
           <span className="text-small font-medium text-ink">{assistant('author')}</span>
         </header>
-        <AnswerStream id={message.id} conversationId={conversation.id} initial={{ content: message.content, status: message.status }} labels={labels} />
+        <AnswerStream id={message.id} conversationId={conversation.id} initial={{ content: message.content, status: message.status, refs: message.refs }} labels={labels} />
       </article>
     );
 

@@ -5,12 +5,20 @@ const LEDGER = 'esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c';
 const sheet = new Map<string, Record<string, unknown>>([
   ['f1', { handle: 'f1', property_label: 'Dãy trọ Dĩ An' }],
   ['f2', { handle: 'f2', income_display: '1.000.000 ₫', period_date_display: '10/2026', link: LEDGER }],
+  ['f3', { handle: 'f3', property_label: 'Nhà [góc](f2)' }],
 ]);
 
 function stream() {
   const writes: string[] = [];
-  const answer = answerStream({ sheet, write: async (content) => void writes.push(content) });
-  return { answer, writes };
+  const refs: Array<readonly string[]> = [];
+  const answer = answerStream({
+    sheet,
+    write: async (written) => {
+      writes.push(written.content);
+      refs.push(written.refs);
+    },
+  });
+  return { answer, writes, refs };
 }
 
 async function pushAll(answer: ReturnType<typeof stream>['answer'], chunks: readonly string[]) {
@@ -76,6 +84,46 @@ describe('the streamed answer guard (AGENT.md §5.6)', () => {
     const ended = await answer.end();
     expect(ended.ok && ended.value.text).toBe('Dãy trọ Dĩ An đã thu 1.000.000 ₫.');
     expect(writes.at(-1)).toBe('Dãy trọ Dĩ An đã thu 1.000.000 ₫.');
+  });
+});
+
+describe('the stream against the review of the first Hỏi PR (#335)', () => {
+  it('counts the resolved links against the length limit, so a long answer fails the guard and never the database check', async () => {
+    const { answer, writes } = stream();
+    await pushAll(answer, Array.from({ length: 70 }, () => 'Xem [sổ](f2). '));
+    const ended = await answer.end();
+    expect(ended.ok).toBe(false);
+    if (!ended.ok) expect(ended.reason.map(({ rule }) => rule)).toEqual(['too_long']);
+    expect(writes.length).toBeGreaterThan(0);
+    expect(Math.max(...writes.map((content) => content.length))).toBeLessThanOrEqual(4000);
+  });
+
+  it('leaves a cited name that holds `](f2)` as text and links nothing through it', async () => {
+    const { answer } = stream();
+    await pushAll(answer, ['Xem {{f3.property_label}}.']);
+    const ended = await answer.end();
+    expect(ended.ok && ended.value).toMatchObject({ text: 'Xem Nhà \\[góc\\](f2).', refs: [] });
+  });
+
+  it('keeps streaming a numbered list after a line that ends in a colon', async () => {
+    const { answer, writes } = stream();
+    await pushAll(answer, ['Có các khoản sau:\n1.', ' Tiền thuê {{f2.income_display}}.\n2.', ' Tiền điện.']);
+    expect(writes.at(-1)).toBe('Có các khoản sau:\n1. Tiền thuê 1.000.000 ₫.');
+  });
+
+  it('writes the links of the text it shows with that text, and nothing it did not swap in', async () => {
+    const { answer, writes, refs } = stream();
+    await pushAll(answer, ['Xem [sổ](f2). Xem [khác](esta://property/7c9e6679-7425-40de-944b-e07fc1f90ae7). Hết.']);
+    expect(writes.at(-1)).toContain(`[sổ](${LEDGER})`);
+    expect(refs.at(-1)).toEqual([LEDGER]);
+  });
+
+  it('streams a table row by row as it arrives', async () => {
+    const { answer, writes } = stream();
+    await pushAll(answer, ['| Tài sản | Đã thu |\n| --- | --- |\n', '| [{{f1.property_label}}](f2) | {{f2.income_display}} |\n']);
+    const ended = await answer.end();
+    expect(ended.ok && ended.value.text).toBe(`| Tài sản | Đã thu |\n| --- | --- |\n| [Dãy trọ Dĩ An](${LEDGER}) | 1.000.000 ₫ |`);
+    expect(writes.at(-1)).toBe(ended.ok ? ended.value.text : '');
   });
 });
 

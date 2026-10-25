@@ -96,16 +96,16 @@ Read tools (no sensitive document content):
 | Tool | Returns |
 | --- | --- |
 | `household_info` | Household name, member count, property count, locale |
-| `portfolio_overview` | Property and unit counts, occupancy, this month expected and collected totals, held deposits total, estimated value total with dates |
+| `portfolio_overview` | Property and rental unit counts, units leased and occupancy, this month's billed and collected totals, deposits held (including those of ended leases not yet returned), estimated value total with the oldest valuation date and the count of properties without one |
 | `list_properties(filter)` | Ids, nicknames, kinds, current and certificate provinces, use mode, legal status, completeness |
-| `get_property(id)` | Property with parcels, structures, certificates (status, mortgage bank and amount), owners, units, active leases, latest valuation |
-| `property_metrics(property_id, year)` | Contracted annual rent, gross yield in basis points with the valuation used, occupancy, vacancy days per unit |
-| `list_leases(filter)` | Leases with status, rent, cycle, end date, days until end, tenant short name |
+| `get_property(property)` | For one `list_properties` handle: its latest valuation, each certificate (serial, status, mortgage bank, amount and date registered) and its owners with their shares. Units and their leases come from `property_metrics` and `list_leases`; parcels and structures are not read yet |
+| `property_metrics(property, year)` | Monthly and annual rent in effect, gross yield in basis points with the valuation used, leased and rental unit counts, and per unit whether it is leased and, when empty, the days empty and since when |
+| `list_leases(status?, ends_within_days?, property?)` | Leases, the soonest end first, with property, unit, tenant, status, rent, deposit held, start and end dates and days until the end, each linked to its lease |
 | `get_lease(id)` | Lease with periods, invoices, allocations, deposit entries, held deposit |
-| `collections(month, property_id?)` | Same grouping as the collections board (SPEC LSE-10): invoices due in the month plus earlier unpaid ones marked `carried_over`, with derived status and days overdue, plus totals and counts per status |
-| `ledger(property, year, month)` | For one property (a handle from `list_properties`) and one month: one record with the period and the income (allocations by payment received date), expense and net totals, and the property's Thu chi link. P5-07b adds a whole year, the whole household, and the totals by month and by category |
-| `tax_position(owner_party_id, year)` | Output of `packages/core/tax`: accrued-to-date and projected full-year attributed revenue, threshold, remaining to threshold, percent of threshold in bp, estimated owner-paid VAT and PIT, withheld leases, rule source |
-| `payment_behavior(year)` | Per tenant: invoices, invoices paid late (fully allocated after due_date), average days late |
+| `collections(year, month, property?)` | The collections board's own read (`readCollectionRows` in `packages/ops`, SPEC LSE-10): invoices due in the month plus earlier unpaid ones marked `carried_over`, with derived status and days overdue, each linked to its invoice, plus totals and counts per status |
+| `ledger(property?, year, month?)` | For one property (a handle from `list_properties`) or the whole household, and one month or a whole year: one record with the period and the income (allocations by payment received date), expense and net totals and the Thu chi link, one record per expense category with spending, and for a year one record per month |
+| `tax_position(year)` | Per owner, the tax card's own path (`toTaxInputs` and `computeTaxPosition` over `readReportSnapshot`): accrued-to-date and projected full-year attributed revenue, other business revenue, threshold, remaining to threshold, share of threshold, estimated owner-paid VAT and PIT, rule source; `no_rule` when the year has no tax rule |
+| `payment_behavior(year)` | Per tenant, over the year's issued invoices due by today (`paymentBehavior` in `packages/core/reports`): invoices, invoices paid late (fully allocated after due_date), average days late, invoices still overdue; the tenant who paid late most often first, a tie going to the larger late share, then the longer average |
 | `watch_facts(as_of)` | Output of every watch rule (§5.3) with stable ids and the numbers involved |
 | `search_documents(query)` | Titles, categories, ids, property; never OCR text of sensitive documents |
 | `get_document_text(id)` | OCR text; refuses sensitive documents |
@@ -196,10 +196,10 @@ Every Sunday 08:00 with the deep model: last week's collections against expected
 
 1. The member sends a question on Hỏi. `public.ask_question` writes the conversation, her message, an empty assistant row with status `streaming` and the `ask` job, keyed `ask:{question_id}`, in one transaction. A viewer may ask. No member writes `conversations` or `messages` directly.
 2. The worker runs the job in `conversations/{conversation_id}` under `ESTA_AGENT_HOME`, a directory it keeps, and refuses an id that is not a UUID or a directory that is a link. It persists the SDK session; resuming it for a follow-up comes in P5-07c.
-3. The assistant answers with read tools only, may create a proposal (P5-07b), and links a record as `[text](f3)`, with the handle of a record a tool returned in this run. The worker turns that into the record's `esta://` link and stores it in `refs`. A handle with no link stays a bare word, and the page renders every link that is not `esta://` as its text.
-4. Text streams through the number guard (§6.3) a sentence at a time (`apps/agent/src/jobs/askStream.ts`). The worker buffers model text to a sentence boundary outside an open link or placeholder, guards the whole prefix up to it, and writes the filled text that passed to the row at most every 300 ms. A violating sentence stops what the row shows. One repair turn writes the whole answer again from the start and replaces the row's content. A second violation sets the row to `error` with empty content and writes the operator item of §6.3.
+3. The assistant answers with the read tools of §4 and may suggest a change through `create_proposal`, which a member approves in Hộp thư; a viewer's question can leave a proposal, and `approve_proposal` still needs a member. It writes in the language of the question, Vietnamese when unsure. It links a record as `[text](f3)`, with the handle of a record a tool returned in this run. Before the guard fills any value, the worker turns that into the record's `esta://` link and lists it in `refs`, so a cited name that holds `](f2)` stays text and the 4,000-character limit counts the links. Every write of the row carries the `refs` of the text it shows, and the page keeps only those links live: a handle with no link, an `esta://` link the model typed itself and any other URL render as their text.
+4. Text streams through the number guard (§6.3) a sentence at a time (`apps/agent/src/jobs/askStream.ts`). The worker buffers model text to a sentence boundary outside an open link or placeholder, and never at the `.` of a line that holds only an ordered list's number, guards the whole prefix up to it, and writes the filled text that passed to the row at most every 300 ms. A violating sentence stops what the row shows. One repair turn writes the whole answer again from the start and replaces the row's content. A second violation sets the row to `error` with empty content and writes the operator item of §6.3.
 5. The page reads the row through a server-sent events route, `/api/answers/{id}`, that polls it every 250 ms through the member's session client, so RLS is the only boundary and no Supabase key reaches the browser. The route closes when the row reaches `done` or `error`, when the client leaves, and after 5 minutes.
-6. If the tools cannot answer, it says what is missing. It never estimates figures.
+6. If the tools cannot answer, it says what is missing. It never estimates figures. A turn that ends after its tool calls without any text fails the job at once (`invalid_job`), with no retry.
 
 Target: first visible text within 10 seconds when the worker is online.
 
@@ -220,11 +220,13 @@ Tone: calm, polite, concise, like a careful family accountant. No exclamation ma
 Today is {local_date} in Asia/Ho_Chi_Minh.
 ```
 
-Each job appends its own task section and output schema.
+Each job appends its own task section and output schema. The ask job replaces `Write in {locale}` with `Write in the language of the question, Vietnamese when unsure`, so an English question gets an English answer (§7.4 question 10).
 
 ### 6.2 Output schemas
 
 Every job's final output is JSON validated by zod schemas in `packages/core/agent-schemas`. Text fields are Markdown limited to paragraphs, lists, bold and links, and the web app sanitizes them (SPEC §7.1).
+
+An Ask answer may also hold a GFM table, for a list answer such as leases ending soon. `SafeMarkdown` renders tables only when it is given the answer's `refs`, with the table syntax alone (no autolinked URLs, strikethrough or footnotes), so a note in Hộp thư shows a table as its literal text. The number guard reads a table as that literal text, which shows every cell and pipe the table renders and more, so it is never less strict than the screen (`safe-markdown.test.tsx`).
 
 ### 6.3 Number guard
 

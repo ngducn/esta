@@ -12,6 +12,8 @@ test.describe.configure({ mode: 'serial' });
 const pause = recordForPr();
 const Q1 = 'Tháng này thu được bao nhiêu từ Dĩ An?';
 const MARKET = 'Giá thị trường của Đất Bảo Lộc hiện nay là bao nhiêu?';
+const LEASES_ENDING = 'Hợp đồng nào hết hạn trong 60 ngày tới?';
+const LATE_TENANT = 'Which tenant paid late most often this year?';
 
 let worker: AgentWorker | undefined;
 
@@ -78,6 +80,31 @@ test('on her phone in dark, Mẹ asks for a market price the app does not hold, 
   await expect(answer(page).getByRole('link'), 'no record was cited, so nothing links').toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-07-missing-data-390x844-dark');
+});
+
+test('Mẹ asks which leases end in the next sixty days, and the answer is a table whose row opens the lease', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  await askAndTimeFirstSentence(page, LEASES_ENDING);
+  const table = answer(page).getByRole('table');
+  await expect(table.getByRole('columnheader')).toHaveText(['Tài sản', 'Người thuê', 'Ngày hết hạn', 'Còn lại']);
+  await expect(table.getByRole('row'), 'a header and the one lease ending').toHaveCount(2);
+  await expect(table.getByRole('cell').nth(3)).toHaveText(/^\d+ ngày$/);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await noSidewaysScroll(page);
+  await shot(page, 'p5-07-q3-table-390x844-light');
+
+  await pause(page);
+  await table.getByRole('link').click();
+  await expect(page).toHaveURL(/\/properties\/[0-9a-f-]{36}\/rental\/leases\/[0-9a-f-]{36}$/);
+});
+
+test('Ryan asks in English who paid late most often this year, and the answer comes back in English', async ({ page }) => {
+  await open(page, 'ryan.lane2@demo.esta.test', 'dark', PHONE);
+  await askAndTimeFirstSentence(page, LATE_TENANT);
+  await expect(answer(page)).toContainText(/^.+ paid late most often this year: \d+ of \d+ bills were paid in full after their due date, on average \d+ days late\./);
+  await expect(answer(page).getByRole('link', { name: /Demo$/ })).toHaveAttribute('href', /^\/open\/party\/[0-9a-f-]{36}$/);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'p5-07-q10-english-390x844-dark');
 });
 
 test('Ryan reads the Dĩ An answer at desktop width, and another household’s member sees only a not-found screen at its link', async ({ page, browser }) => {

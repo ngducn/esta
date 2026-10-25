@@ -49,7 +49,7 @@ export function askRequest(input: AskInput): PreparedJob {
   const { sheet, cite } = runSheet();
   const properties = listPropertiesTool(db, householdId, cite);
   const context = { reads, locale, asOf, cite, properties: properties.records };
-  const stream = answerStream({ sheet, write: (content) => writeAnswer(input, { content_md: content }) });
+  const stream = answerStream({ sheet, write: ({ content, refs }) => writeAnswer(input, { content_md: content, refs: [...refs] }) });
   let repaired = false;
   let answer: Answer | null = null;
   return {
@@ -82,7 +82,7 @@ export function askRequest(input: AskInput): PreparedJob {
       throw new NumberGuardError('number_guard: the answer still held text the number guard rejects after its repair turn; the operator note has it');
     },
     async finish(): Promise<Json> {
-      if (answer === null || answer.text === '') throw new Error('The model ended without an answer');
+      if (answer === null || answer.text === '') throw new InvalidJobError(`ask ${input.jobId}: the model ended its turn after its tool calls without writing an answer`);
       await writeAnswer(input, { content_md: answer.text, status: 'done', refs: [...answer.refs] });
       return { template: answer.template, cited: answer.cited.map(({ placeholder, value }) => ({ placeholder, value })), refs: [...answer.refs] };
     },

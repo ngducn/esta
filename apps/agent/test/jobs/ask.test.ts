@@ -54,7 +54,7 @@ async function run(replies: readonly string[], payload?: Record<string, unknown>
   const { worker, writes } = askWorker(tables, jobsDir, recordTurns(replies));
   await pollOnce(worker);
   const shown = writes.filter(({ table, row }) => table === 'messages' && typeof row.content_md === 'string').map(({ row }) => String(row.content_md));
-  return { tables, jobsDir, shown, job: tables.agent_jobs?.[0] as { status: string; error: string | null } };
+  return { tables, jobsDir, shown, writes, job: tables.agent_jobs?.[0] as { status: string; error: string | null } };
 }
 
 describe('the ask job (AGENT.md §5.6)', () => {
@@ -84,6 +84,20 @@ describe('the ask job (AGENT.md §5.6)', () => {
     expect(shown.some((content) => content.includes('hai'))).toBe(false);
     expect(tables.agent_items).toEqual([expect.objectContaining({ audience: 'operator', kind: 'system', dedupe_key: `number_guard:${ASK_JOB}` })]);
     expect(String(tables.agent_items?.[0]?.body_md)).toContain(BAD_RESIDUE);
+  });
+
+  it('a turn that only calls tools fails once, saying the model wrote no answer', async () => {
+    const { tables, job } = await run(['']);
+    expect(job).toMatchObject({ status: 'failed', error: expect.stringMatching(/without writing an answer/) });
+    expect(answerRow(tables)).toMatchObject({ status: 'error', content_md: '' });
+  });
+
+  it('an answer may hold a table, and its record links stream with the text', async () => {
+    const { tables, writes } = await run(['| Tài sản | Đã thu |\n| --- | --- |\n| [{{f3.property_label}}](f8) | {{f8.income_display}} |']);
+    expect(answerRow(tables)).toMatchObject({ status: 'done', content_md: expect.stringMatching(/^\| Tài sản \| Đã thu \|\n\| --- \| --- \|\n\| \[Dãy trọ Dĩ An\]\(esta:\/\/ledger\/[0-9a-f-]+\) \| 1\.000\.000\s₫ \|$/) });
+    const streamed = writes.filter(({ row }) => typeof row.content_md === 'string' && row.content_md !== '' && row.status === undefined);
+    expect(streamed.length).toBeGreaterThan(1);
+    expect(streamed.map(({ row }) => row.refs)).toEqual(streamed.map(({ row }) => answerRow(tables).refs.filter((link: string) => String(row.content_md).includes(link))));
   });
 
   it.each(['../../escape', `${CONVERSATION}/../..`, 'not-a-uuid'])('refuses the conversation id %j and makes no directory for it', async (conversationId) => {

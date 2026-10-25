@@ -35,7 +35,11 @@ export function fakeDb(
       }
       return 0;
     };
-    const matching = () => all.filter((row) => filters.every((filter) => filter(row))).toSorted(compare);
+    let window: { readonly from: number; readonly to: number } | null = null;
+    const matching = () => {
+      const rows = all.filter((row) => filters.every((filter) => filter(row))).toSorted(compare);
+      return window === null ? rows : rows.slice(window.from, window.to + 1);
+    };
     const run = () => {
       const rows = matching();
       if (patch !== null) {
@@ -61,7 +65,8 @@ export function fakeDb(
         orders.push({ column, ascending: options?.ascending ?? true });
         return builder;
       },
-      limit() {
+      limit(count: number) {
+        window = { from: 0, to: count - 1 };
         return builder;
       },
       in(column: string, values: readonly unknown[]) {
@@ -82,7 +87,8 @@ export function fakeDb(
         filters.push((row) => Object.entries(values).every(([column, value]) => row[column] === value));
         return builder;
       },
-      range() {
+      range(from: number, to: number) {
+        window = { from, to };
         return builder;
       },
       is(column: string, value: unknown) {

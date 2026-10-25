@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { readAnswer, type AnswerState } from '@/server/agent/conversations';
+import type { AnswerEvent } from '@/components/assistant/answer-state';
+import { readAnswer } from '@/server/agent/conversations';
 import { getCurrentMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 
@@ -10,7 +11,7 @@ const LISTEN_MS = 5 * 60_000;
 const params = z.object({ answerId: z.uuid(), conversation: z.uuid() });
 const headers = { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' };
 
-const event = (state: AnswerState | { readonly status: 'timeout' | 'gone' }) => new TextEncoder().encode(`data: ${JSON.stringify(state)}\n\n`);
+const event = (state: AnswerEvent) => new TextEncoder().encode(`data: ${JSON.stringify(state)}\n\n`);
 
 export async function GET(request: NextRequest, context: { params: Promise<{ answerId: string }> }) {
   const parsed = params.safeParse({ ...(await context.params), conversation: request.nextUrl.searchParams.get('conversation') });
