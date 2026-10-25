@@ -98,6 +98,27 @@ describe('the stream against the review of the first Hỏi PR (#335)', () => {
     expect(Math.max(...writes.map((content) => content.length))).toBeLessThanOrEqual(4000);
   });
 
+  it('counts only the template the model wrote against the 3,000-character limit, and the resolved links against the 4,000 one', async () => {
+    const { answer } = stream();
+    await pushAll(answer, Array.from({ length: 60 }, () => 'Xem [sổ](f2). '));
+    const ended = await answer.end();
+    expect(ended.ok).toBe(true);
+    if (ended.ok) expect(ended.value.text.length).toBeGreaterThan(3000);
+  });
+
+  it.each([
+    '| Tài sản | Đã thu |\n| --- | --- |\n| [Dĩ An](q|25) |',
+    '| Tài sản | Còn lại |\n| --- | --- |\n| [Thủ Đức](<x|25 ngày>) |',
+    '| [Tài sản](x|2026) | Ghi chú |\n| --- | --- | --- |\n| a | b | c |',
+  ])('rejects %j, whose table cell shows a number the link target hid from a reading without tables', async (table) => {
+    const { answer, writes } = stream();
+    await pushAll(answer, [table]);
+    const ended = await answer.end();
+    expect(ended.ok).toBe(false);
+    if (!ended.ok) expect(ended.reason.map(({ rule }) => rule)).toContain('number');
+    expect(writes.join('\n')).not.toMatch(/\d/);
+  });
+
   it('leaves a cited name that holds `](f2)` as text and links nothing through it', async () => {
     const { answer } = stream();
     await pushAll(answer, ['Xem {{f3.property_label}}.']);
