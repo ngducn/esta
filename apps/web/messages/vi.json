@@ -1141,7 +1141,9 @@
       "answering": "Trợ lý đang trả lời",
       "answerFailed": "Trợ lý chưa trả lời được câu này. Bạn có thể hỏi lại.",
       "stalled": "Trợ lý chưa trả lời xong. Tải lại trang để xem tiếp.",
-      "askAnother": "Hỏi câu khác"
+      "askAnother": "Hỏi câu khác",
+      "notFoundTitle": "Không tìm thấy cuộc hỏi này",
+      "notFoundBody": "Câu hỏi này không có trong gia đình bạn, hoặc đường dẫn bị sai."
     }
   },
   "settings": {

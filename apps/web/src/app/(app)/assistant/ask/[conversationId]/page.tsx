@@ -15,9 +15,14 @@ import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
 
-export { generateMetadata } from '../page';
-
 const idSchema = z.uuid();
+
+/** Reads the conversation before the page streams, so another household's id answers 404 with no title of hers. */
+export async function generateMetadata({ params }: { params: Promise<{ conversationId: string }> }) {
+  const [{ conversationId }, member, t] = await Promise.all([params, requireMember(), getTranslations('assistant.ask')]);
+  const conversation = idSchema.safeParse(conversationId).success ? await loadConversation(member.household.id, conversationId) : null;
+  return { title: conversation?.title ?? t('notFoundTitle') };
+}
 
 /** A question and its answer as a plain conversation page, not chat bubbles (DESIGN-BRIEF §5.5). */
 export default async function ConversationPage({ params }: { params: Promise<{ conversationId: string }> }) {

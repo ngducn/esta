@@ -1,5 +1,6 @@
 import 'server-only';
 import { parseInstant, type Instant } from '@esta/core';
+import { cache } from 'react';
 import { z } from 'zod';
 import type { Db } from '@esta/ops';
 import { createSessionClient } from '@/server/supabase/server';
@@ -18,7 +19,7 @@ const messageSchema = z
   .transform((row): ConversationMessage => ({ id: row.id, role: row.role, content: row.content_md, status: row.status, createdAt: parseInstant(row.created_at) }));
 
 /** One conversation with its messages in order, through the member's session; null when RLS shows her none. */
-export async function loadConversation(householdId: string, id: string): Promise<Conversation | null> {
+export const loadConversation = cache(async (householdId: string, id: string): Promise<Conversation | null> => {
   const db = await createSessionClient();
   const [conversation, messages] = await Promise.all([
     db.from('conversations').select('id, title').eq('household_id', householdId).eq('id', id).maybeSingle(),
@@ -28,7 +29,7 @@ export async function loadConversation(householdId: string, id: string): Promise
   if (messages.error) throw new Error(`Reading the messages failed: ${messages.error.message}`);
   if (conversation.data === null) return null;
   return { id: conversation.data.id, title: conversation.data.title, messages: z.array(messageSchema).parse(messages.data) };
-}
+});
 
 /** The answer row the stream route watches; null when the member cannot see it. */
 export async function readAnswer(db: Db, householdId: string, conversationId: string, answerId: string): Promise<AnswerState | null> {
