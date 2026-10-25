@@ -6,7 +6,6 @@ import { parseSlot, slotPorts } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
-import { readReportTable } from './helpers/report-table';
 import { accessToken } from './helpers/session';
 
 // FND-9: one test clock, one web server and one worker per slot, moved a day without restarting either.
@@ -134,7 +133,7 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
 
   const runTimes = async () => {
     await page.goto('/assistant/diagnostics');
-    const times = (await readReportTable(page.getByTestId('diagnostics-runs'))).rows.map(({ cells }) => cells['#0']);
+    const times = await page.getByTestId('diagnostics-runs').getByTestId('report-row').locator('th').allTextContents();
     await page.goto('/assistant');
     return times;
   };
