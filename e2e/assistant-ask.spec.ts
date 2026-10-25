@@ -157,9 +157,11 @@ test('lane 7: Mẹ asks question 1, then Còn tháng 9 thì sao?, and the follow
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page), 'no sideways scroll').toBe(true);
   await shot(page, 'p5-07-follow-up');
+  await pause(page);
 
   await answer(page).nth(1).getByRole('link', { name: 'sổ thu chi của Dãy trọ Dĩ An' }).click();
   await expect(page).toHaveURL(new RegExp(`/properties/${laneProperty(7, 'di-an')}/finance`));
+  await pause(page);
   await page.goto('/assistant/ask');
   await expect(page.getByTestId('conversation-link').first(), 'the conversation she asked last lists first').toContainText(Q1);
   await expect(page.getByTestId('ask-deep'), 'only an operator sees Suy nghĩ kỹ hơn').toHaveCount(0);
@@ -179,6 +181,8 @@ test('lane 8: Ryan ticks Suy nghĩ kỹ hơn and the answer runs on the deep mod
   expect(job?.payload.deep).toBe(true);
   const runs = await serviceGet<{ model: string }[]>(page, `agent_runs?job_id=eq.${job?.id ?? ''}&select=model`);
   expect(runs.map((run) => run.model), 'the deep recording replayed').toEqual(['hand-written-deep']);
+  await settled(page.getByTestId('follow-up').getByTestId('ask-send'));
+  await expect(page.getByTestId('ask-busy'), 'the follow-up box opens once the answer is done').toHaveCount(0);
   await shot(page, 'p5-07-deep-1440x900-dark');
 
   const mother = await browser.newPage();
