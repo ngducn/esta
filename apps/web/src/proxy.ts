@@ -51,6 +51,9 @@ function recordPage(path: RegExp, routes: readonly string[], find: (supabase: Su
   };
 }
 
+/** Hỏi and its saved conversation links now open the thread, as a redirect before any page streams (P5-12). */
+const ASK_PAGES = /^\/assistant\/ask(?:\/[^/]+)?\/?$/;
+
 const GUARDED_PAGES: readonly GuardedPage[] = [
   recordPage(/^\/properties\/([^/]+)(?:\/|$)/, ['new', 'archived'], (supabase, id) => supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle()),
   recordPage(/^\/assistant\/ask\/([^/]+)$/, [], (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle()),
@@ -92,6 +95,7 @@ export async function proxy(request: NextRequest) {
   if (data === null && !isPublicPath(pathname)) return redirectKeepingCookies(request, response, '/sign-in');
   if (data !== null && isAuthPage(pathname)) return redirectKeepingCookies(request, response, '/');
   if (data !== null && (await isHiddenPage(request, { supabase, userId: data.claims.sub }))) return new NextResponse(null, { status: 404, headers: response.headers });
+  if (data !== null && ASK_PAGES.test(pathname)) return redirectKeepingCookies(request, response, '/assistant');
   return response;
 }
 

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { Db } from '@esta/ops';
 import { isAnswerState, type AnswerState } from '@/components/assistant/answer-state';
 import { createSessionClient } from '@/server/supabase/server';
+import { canonicalStamp, inWindow, type Cursor, type Window } from './thread-cursor';
 
 const answerRow = { content_md: z.string(), status: z.unknown(), refs: z.unknown(), deferred_until: z.string().nullable() };
 function toAnswer({ content_md, status, refs, deferred_until }: { content_md: string; status: unknown; refs: unknown; deferred_until: string | null }): AnswerState {
@@ -12,37 +13,34 @@ function toAnswer({ content_md, status, refs, deferred_until }: { content_md: st
   return answer;
 }
 
-export type ConversationMessage = AnswerState & { readonly id: string; readonly role: 'user' | 'assistant'; readonly createdAt: Instant };
-
-export type Conversation = { readonly id: string; readonly title: string; readonly messages: readonly ConversationMessage[] };
+export type ConversationMessage = AnswerState & {
+  readonly id: string;
+  readonly conversationId: string;
+  readonly role: 'user' | 'assistant';
+  readonly createdAt: Instant;
+  readonly cursor: Cursor;
+};
 
 const messageSchema = z
-  .object({ id: z.uuid(), role: z.enum(['user', 'assistant']), created_at: z.string(), ...answerRow })
-  .transform((row): ConversationMessage => ({ id: row.id, role: row.role, createdAt: parseInstant(row.created_at), ...toAnswer(row) }));
+  .object({ id: z.uuid(), conversation_id: z.uuid(), role: z.enum(['user', 'assistant']), created_at: z.string(), ...answerRow })
+  .transform(
+    (row): ConversationMessage => ({
+      id: row.id,
+      conversationId: row.conversation_id,
+      role: row.role,
+      createdAt: parseInstant(row.created_at),
+      cursor: { stamp: canonicalStamp(row.created_at), rank: 1, id: row.id },
+      ...toAnswer(row),
+    }),
+  );
 
-export async function loadConversation(householdId: string, id: string): Promise<Conversation | null> {
+/** A page of the messages of every conversation this member started, which RLS limits her to, from the window's cursor. */
+export async function listMessages(householdId: string, window: Window): Promise<readonly ConversationMessage[]> {
   const db = await createSessionClient();
-  const [conversation, messages] = await Promise.all([
-    db.from('conversations').select('id, title').eq('household_id', householdId).eq('id', id).maybeSingle(),
-    db.from('messages').select('id, role, content_md, status, refs, deferred_until, created_at').eq('household_id', householdId).eq('conversation_id', id).order('created_at'),
-  ]);
-  if (conversation.error) throw new Error(`Reading the conversation failed: ${conversation.error.message}`);
-  if (messages.error) throw new Error(`Reading the messages failed: ${messages.error.message}`);
-  if (conversation.data === null) return null;
-  return { id: conversation.data.id, title: conversation.data.title, messages: z.array(messageSchema).parse(messages.data) };
-}
-
-export type ConversationSummary = { readonly id: string; readonly title: string; readonly lastAskedAt: Instant };
-
-const summarySchema = z
-  .object({ id: z.uuid(), title: z.string(), last_asked_at: z.string() })
-  .transform((row): ConversationSummary => ({ id: row.id, title: row.title, lastAskedAt: parseInstant(row.last_asked_at) }));
-
-export async function listConversations(householdId: string, limit = 30): Promise<readonly ConversationSummary[]> {
-  const db = await createSessionClient();
-  const { data, error } = await db.from('conversations').select('id, title, last_asked_at').eq('household_id', householdId).order('last_asked_at', { ascending: false }).order('id', { ascending: false }).limit(limit);
-  if (error) throw new Error(`Reading the conversations failed: ${error.message}`);
-  return z.array(summarySchema).parse(data);
+  const query = db.from('messages').select('id, conversation_id, role, content_md, status, refs, deferred_until, created_at').eq('household_id', householdId);
+  const { data, error } = await inWindow(query, 1, window);
+  if (error) throw new Error(`Reading the messages failed: ${error.message}`);
+  return z.array(messageSchema).parse(data);
 }
 
 export async function readAnswer(db: Db, householdId: string, conversationId: string, answerId: string): Promise<AnswerState | null> {

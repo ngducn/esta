@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { assistantStatus } from '@/components/assistant/assistant-header';
 import { OperatorCard, operatorTime } from '@/components/assistant/operator-card';
+import { OperatorTools } from '@/components/assistant/operator-tools';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { ReportTable } from '@/components/reports/report-table';
 import { loadDiagnostics, type DiagnosticRun } from '@/server/agent/diagnostics';
@@ -17,16 +18,17 @@ export async function generateMetadata() {
   return { title: t(member.isOperator ? 'title' : 'notFoundTitle') };
 }
 
-export default async function DiagnosticsPage() {
+export default async function DiagnosticsPage({ searchParams }: { searchParams: Promise<{ check?: string; watch?: string }> }) {
   const member = await requireMember();
   if (!member.isOperator) notFound();
   const clock = await getClock();
-  const [t, assistant, locale, status, diagnostics] = await Promise.all([
+  const [t, assistant, locale, status, diagnostics, { check, watch }] = await Promise.all([
     getTranslations('assistant.diagnostics'),
     getTranslations('assistant'),
     getLocale(),
     assistantStatus(clock.now()),
     loadDiagnostics(member.household.id, clock.now()),
+    searchParams,
   ]);
   const usd = new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
   const cost = (value: number | null) => textCell(value === null ? assistant('unknown') : usd.format(value));
@@ -80,6 +82,7 @@ export default async function DiagnosticsPage() {
         <h1 className="text-h2 break-words lg:text-h1">{t('title')}</h1>
         <p className="max-w-prose text-body text-pretty text-ink-2">{t('intro')}</p>
       </div>
+      <OperatorTools householdId={member.household.id} failed={{ check: check === 'failed', watch: watch === 'failed' }} workerOnline={status.kind === 'online'} />
       <OperatorCard id="diagnostics-worker" icon={Server} title={t('worker')}>
         {status.kind === 'offline' || status.kind === 'paused' ? null : <WorkerStatusLine status={status} />}
         {diagnostics.worker === null ? (
