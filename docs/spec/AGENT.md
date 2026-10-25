@@ -318,14 +318,15 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 
 ## 9. Limits, failures and UX
 
-- Per-household daily caps per kind in `household_settings.agent` (defaults: extract 30, ask 60, research 2, weekly 1).
+- Per-household daily caps per kind (defaults in `private.agent_daily_caps`: extract 30, ask 60, research 2, weekly 1; `household_settings.agent.daily_caps` overrides a kind with a whole number from 0 to 1000). `claim_agent_job` enforces them where jobs are claimed: under an advisory lock per household and kind it counts the kind's jobs started on the business day, and moves a job over its cap to the next local midnight. An `ask` over its cap sets its answer row's `deferred_until`, and the Hỏi page says "Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai." from the message files.
 - `agent_runs` records usage and the SDK's cost estimate; operators see the last 7 days by kind in Settings.
-- A run that fails because of a usage limit is rescheduled with backoff, and the status line reads "Trợ lý tạm dừng do hết hạn mức sử dụng".
+- A run that fails because of a usage limit (the SDK's `rate_limit` cause, or its limit text) is rescheduled with the usual backoff, and the worker beats `state = usage_limited`, so every member's status line reads "Trợ lý tạm dừng do hết hạn mức sử dụng" until a session ends without one. [verify] the subscription's limit text in the P5-10 live run.
 
 | Situation | Behavior |
 | --- | --- |
 | Worker offline (heartbeat older than 5 min) | Banner: "Trợ lý ngoại tuyến từ 21:30. Việc mới sẽ chạy khi máy hoạt động lại." Jobs stay queued |
-| Job failed after retries | `info` item with a Retry button for admins |
+| Job failed after retries | `info` item with Thử lại for admins (operators only when the number guard held the note back), keyed `job_failed:{job_id}`; `retry_agent_job` queues one job per tap number, keyed `{original key or kind:job id}:retry:{n}` |
+| Login refused (`auth_error`) | One operator `system` item a day saying the worker cannot sign in to Claude; no error text |
 | Extraction failed | The review screen offers manual entry beside the image |
 | Number guard failure | Job fails; operator-only item with the text; nothing shown to Mẹ |
 | Research source unreachable | Item dropped; the run continues |
@@ -338,8 +339,8 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 - `research_topics`: topic_key (unique per household), label, query_templates, province_codes, property_ids, source (`auto | user`), active.
 - `research_items`: url_normalized (unique per household), source_url, source_name, published_on, effective_on, title_vi, summary_vi, why_it_matters_vi, kind, relevance, related_property_ids, province_codes, job_id.
 - `conversations`: title (the first question), created_by, last_asked_at (orders the list on Hỏi), and the last finished turn's sdk_session_id, sdk_turn_hash and sdk_handles. Members read their household's; only `ask_question` and the worker write.
-- `messages`: conversation_id, role, content_md, status (`streaming | done | error`), job_id, refs jsonb (the `esta://` links the answer resolved). A question is always `done` and non-blank. Members read; only `ask_question` and the worker write.
-- `worker_heartbeats`: worker_id (a UUID per worker process), host_label, version, auth_mode, agent_mode, last_seen_at. No household data and no audit trigger. Members read only `worker_id` and `last_seen_at`, so they never see the hostname; only the service role writes.
+- `messages`: conversation_id, role, content_md, status (`streaming | done | error`), job_id, refs jsonb (the `esta://` links the answer resolved), deferred_until (set while an answer waits for the next day's cap). A question is always `done` and non-blank. Members read; only `ask_question` and the worker write.
+- `worker_heartbeats`: worker_id (a UUID per worker process), host_label, version, auth_mode, agent_mode, state (`ok | usage_limited`), last_seen_at. No household data and no audit trigger. Members read only `worker_id`, `last_seen_at` and `state`, so they never see the hostname; only the service role writes.
 - `notifications`: user_id, channel (`inapp | email | push`), agent_item_id, status, sent_at, error.
 
 `document_extractions` is defined in SPEC §5.5; the agent writes it through `save_extraction` only.

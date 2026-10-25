@@ -4677,33 +4677,35 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 **Files.**
 
 - [ ] Create `apps/agent/src/jobs/weeklyReview.ts`, `packages/core/src/agent-schemas/weeklyReview.ts` and `fixtures/agent-replay/weekly_review/`.
-- [ ] Create `packages/core/src/agent-limits/caps.ts`, `packages/core/src/agent-limits/backoff.ts` and their tests.
-- [ ] Create `apps/web/src/app/(app)/assistant/diagnostics/page.tsx` and `apps/web/src/app/(app)/assistant/actions/retry.ts`.
-- [ ] Create `apps/agent/test/crash.test.ts` and `e2e/assistant-diagnostics.spec.ts`.
+- [x] Create `packages/core/src/agent-limits/backoff.ts` and its test. Caps live in SQL with no core twin (P5-08a decision): `private.agent_daily_caps` and `private.agent_daily_cap` in `supabase/migrations/20261007613000_agent_limits.sql`, tested in `supabase/tests/agent_limits.test.sql`.
+- [ ] Create `apps/web/src/app/(app)/assistant/diagnostics/page.tsx`.
+- [x] `retryJob` lives in `apps/web/src/app/(app)/assistant/actions.ts` beside the other inbox actions, and runs the `agentJobRetry` op over `public.retry_agent_job`.
+- [x] Create `e2e/agent-crash.spec.ts` (the crash test needs a worker process, a slot and the shared clock, so it is an e2e spec, P5-08a decision) and `e2e/assistant-limits.spec.ts`.
+- [ ] Create `e2e/assistant-diagnostics.spec.ts`.
 
 **Build.**
 
 - [ ] Write `weekly_review` with the deep model from `ESTA_MODEL_DEEP`, all read tools, `WebSearch`, `WebFetch`, `create_item` and `create_proposal`, `maxTurns` 25, a 10 minute timeout, schedule `Sunday 08:00` and key `weekly_review:{household_id}:{iso_week}`. It covers last week's collections against expected, the next 30 days, vacancy, notable expenses, the tax position change and up to 3 proposals.
 - [ ] Reject a `suggest_rent_change` from `weekly_review` whose citations are not URLs fetched in this run or stored `research_items`.
-- [ ] Encode daily caps as data. `capFor(kind, settings)` in `packages/core/src/agent-limits/caps.ts` reads `household_settings.agent` with defaults extract 30, ask 60, research 2 and weekly 1. The runner defers a job over its cap to the next local midnight. An `ask` over cap writes `Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.` into the assistant row.
-- [ ] Classify SDK results. A result with `is_error: true` and a usage-limit cause reschedules with the 1, 5 and 25 minute backoff in `backoff.ts` and sets the heartbeat state `usage_limited`, so the status line reads `Trợ lý tạm dừng do hết hạn mức sử dụng`. A 401 surfaces to operators as an auth error (S1).
-- [ ] After the last attempt fails, write an `info` item with a `Thử lại` button that admins see. `retryJob(itemId)` enqueues a fresh job with key `{original key}:retry:{n}`.
+- [x] Encode daily caps as data. `private.agent_daily_caps` holds the defaults extract 30, ask 60, research 2 and weekly 1, and `household_settings.agent.daily_caps` overrides a kind with a whole number from 0 to 1000. `claim_agent_job` counts the kind's jobs started on the business day under a per household and kind advisory lock, and moves a job over its cap to the next local midnight. An `ask` over cap marks its answer row `deferred_until`, and the Hỏi page renders `Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.` from the message files, never the model's text, and hides the follow-up box.
+- [x] Classify SDK results. A result with `is_error: true` and a usage-limit cause reschedules with the 1, 5 and 25 minute backoff in `backoff.ts` and sets the heartbeat state `usage_limited`, so the status line reads `Trợ lý tạm dừng do hết hạn mức sử dụng`. A 401 surfaces to operators as an auth error (S1).
+- [x] After the last attempt fails, write an `info` item with a `Thử lại` button that admins see (operators only when the number guard held the note back). `retryJob(itemId)` enqueues a fresh job with key `{original key}:retry:{n}`, or `{kind}:{job id}:retry:{n}` for a job with no key, once however often it is tapped.
 - [ ] Build the operator-only diagnostics page. It shows auth mode and agent mode from the latest heartbeat, the last 20 runs with status, turns and duration, failed guards, and usage and cost by kind for 7 days from `agent_runs`. Non-operators get `notFound()` and the avatar menu hides the link.
-- [ ] Write `apps/agent/test/crash.test.ts`. It spawns the worker, sends SIGKILL after the first `create_item` of a `portfolio_watch` run, advances the clock past the kind's timeout plus 2 minutes, restarts the worker, and asserts every item exists once (AGT-1).
+- [x] Write `e2e/agent-crash.spec.ts`. It spawns the worker, sends SIGKILL after the first `create_item` of a `portfolio_watch` run, advances the clock past the kind's timeout plus 2 minutes, restarts the worker, and asserts every item and run exists once (AGT-1).
 - [ ] Run `pnpm agent:record` for `weekly_review` on the `full` seed at 2026-10-11 08:00 and commit the recording.
 
 **You see.**
 
 - [ ] With the clock at 2026-10-11 08:05, Hộp thư shows one weekly review note and up to 3 proposals.
 - [ ] Ryan's diagnostics page lists the last runs and a 7-day usage table by kind. Mẹ's avatar menu has no diagnostics link.
-- [ ] `pnpm --filter agent test crash` passes with items counted once.
+- [x] `pnpm e2e e2e/agent-crash.spec.ts` passes with items and runs counted once.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/agent-limits/caps.test.ts` gains cases for defaults, an override, the cap reached exactly and a next-day reset. `backoff.test.ts` covers attempts 1 to 3 and give-up.
+- [x] `supabase/tests/agent_limits.test.sql` covers defaults, an override, the cap reached exactly and a next-day reset. `backoff.test.ts` covers attempts 1 to 3 and give-up.
 - [ ] `apps/agent/test/jobs/weeklyReview.test.ts` gains cases for at most 3 proposals, an uncited rent proposal rejected, and the ISO-week key preventing a second run (AGT-8).
-- [ ] `apps/agent/test/runner.test.ts` gains cases for a usage-limit result rescheduled, an auth `is_error` failing with an operator item, and the failed-job item after 3 attempts.
-- [ ] `apps/agent/test/crash.test.ts` proves effects exactly once after a mid-job kill (AGT-1).
+- [x] `apps/agent/src/runner.test.ts` gains cases for a usage-limit result rescheduled, an auth `is_error` failing with an operator item, and the failed-job item after 3 attempts.
+- [x] `e2e/agent-crash.spec.ts` proves effects exactly once after a mid-job kill (AGT-1).
 - [ ] Golden tests in AGENT.md §7 for `weekly_review` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-diagnostics.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
@@ -4714,12 +4716,12 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 - [ ] Lane 1. Regression lane against trunk. ryan.lane1 runs `portfolio_watch` from `/dev/agent` at 1440x900 light with the clock at 2026-10-07 06:45, at trunk and head. Trunk has no weekly review, so the lane then gates head at 2026-10-11 08:05 on its own slot. Save `p5-08-regression-weekly.png`. Pass when both sides create the same 4 watch items, caps block nothing, and head shows one `weekly_review` run `done`.
 - [ ] Lane 2. On its own slot at 2026-10-11 08:05, me.lane2 opens Hộp thư at 1440x900 light. Save `p5-08-weekly-note.png`. Pass when the weekly note shows last week's collected and expected amounts equal to the collections board and at most 3 proposals.
-- [ ] Lane 3. The lane sets the `ask` cap to 2 for household lane3 in Studio, and me.lane3 asks 3 questions at 390x844 light. Save `p5-08-ask-cap.png`. Pass when the third answer row reads `Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.` and its job `run_after` is the next local midnight.
-- [ ] Lane 4. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/usage-limit`, me.lane4 opens Home at 390x844 dark after a `morning_brief` run. Save `p5-08-usage-limit.png`. Pass when the status line reads `Trợ lý tạm dừng do hết hạn mức sử dụng` and the job shows `run_after` 1 minute later.
-- [ ] Lane 5. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/always-fail`, ryan.lane5 opens Hộp thư at 1440x900 dark after 3 attempts, then taps `Thử lại` with the normal recordings restored. Save `p5-08-retry.png`. Pass when the failed item shows `Thử lại` and the retry job ends `done` with key suffix `:retry:1`.
+- [x] Lane 3. The lane sets the `ask` cap to 2 for household lane3 in Studio, and me.lane3 asks 3 questions at 390x844 light. Save `p5-08-ask-cap.png`. Pass when the third answer row reads `Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.` and its job `run_after` is the next local midnight.
+- [x] Lane 4. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/usage-limit`, me.lane4 opens Home at 390x844 dark after a `portfolio_watch` run (the brief waits for its inputs, P5-08a decision). Save `p5-08-usage-limit.png`. Pass when the status line reads `Trợ lý tạm dừng do hết hạn mức sử dụng` and the job shows `run_after` 1 minute later.
+- [x] Lane 5. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/always-fail`, ryan.lane5 opens Hộp thư at 1440x900 dark after 3 attempts, then taps `Thử lại` with the normal recordings restored. Save `p5-08-retry.png`. Pass when the failed item shows `Thử lại` and the retry job ends `done` with key suffix `:retry:1`.
 - [ ] Lane 6. ryan.lane6 opens diagnostics at 1440x900 light. Save `p5-08-diagnostics.png`. Pass when the page shows agent mode `replay`, the last runs with durations, and a 7-day usage table by kind.
 - [ ] Lane 7. me.lane7 opens the avatar menu, then the diagnostics URL directly, at 390x844 light. Save `p5-08-diagnostics-hidden.png`. Pass when the menu has no diagnostics entry and the URL shows the not-found page.
-- [ ] Lane 8. On its own slot, the lane kills the worker after the first `create_item` of `portfolio_watch`, advances the clock 6 minutes and restarts it, and ryan.lane8 opens `/dev/agent` at 1440x900 dark. Save `p5-08-crash-once.png`. Pass when the job reads `done` with 2 attempts and the items list holds exactly 4 watch items.
+- [x] Lane 8. On its own slot, the lane kills the worker after the first `create_item` of `portfolio_watch`, advances the clock 6 minutes and restarts it, and ryan.lane8 opens `/assistant` at 1440x900 dark (there is no `/dev/agent`). Save `p5-08-crash-once.png`. Pass when the job reads `done` with 2 attempts and the items list holds exactly 4 watch items.
 - [ ] Lane 9. On its own slot at 2026-10-11 08:05, me.lane9 opens a weekly rent proposal at 390x844 dark. Save `p5-08-weekly-citations.png`. Pass when the proposal shows citation chips whose URLs exist in `research_items` or the run's fetch log.
 - [ ] Lane 10. SPEC §9.4 seed 10 adapted. ryan.lane10 switches to English, text scale 130% and dark at 390x844, opens diagnostics and the status line, then finds the overdue Dĩ An room and copies the reminder. Save `p5-08-seed10-english.png`. Pass when diagnostics tables stack without horizontal scroll and the board shows Phòng 5 `Overdue 12 days`.
 
@@ -4728,7 +4730,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Metric. `claim_agent_job` time with cap checks on the `full` seed with 10 lane households, `weekly_review` replay wall time, and Lighthouse mobile LCP and initial JS gzipped for diagnostics on a production build.
 - [ ] Probe. Run 100 claims per side interleaved at trunk and head, 5 replay runs of `weekly_review`, and 5 Lighthouse runs on head.
 - [ ] Baseline. Trunk claims without caps, so compare claim time across sides. Trunk has no weekly review or diagnostics, so take head values as the first baseline.
-- [ ] Rule. Fail when p95 claim time grows more than 20% over trunk or exceeds 20 ms, `weekly_review` in replay exceeds 30 s, or diagnostics initial JS exceeds 200 KB gzipped.
+- [ ] Rule. Fail when p95 claim time exceeds 20 ms, and report its delta in ms over trunk (the root's P5-08a decision: the cap branch adds 0.1 to 0.16 ms to a 0.25 ms claim, so a 20% bar has no meaning at this scale), `weekly_review` in replay exceeds 30 s, or diagnostics initial JS exceeds 200 KB gzipped.
 
 **Review gate.** The operator reviews before merge.
 
