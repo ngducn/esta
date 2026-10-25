@@ -7,7 +7,7 @@ export type Recorded = { table: string; op: 'upsert' | 'insert' | 'update' | 'de
 type Filter = (row: Row) => boolean;
 
 /**
- * An in-memory stand-in for the service client: filters, single reads, updates that mutate the rows in place, upserts
+ * An in-memory stand-in for the service client: filters, ordering, single reads, updates that mutate the rows in place, upserts
  * that honour `onConflict` with `ignoreDuplicates`, and Storage downloads from `files`. A write to a table named in
  * `refuse` answers that table's error message and changes nothing, as RLS or a lost connection would.
  */
@@ -18,7 +18,15 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
     const filters: Filter[] = [];
     let head = false;
     let patch: Row | null = null;
-    const matching = () => all.filter((row) => filters.every((filter) => filter(row)));
+    const orders: Array<{ readonly column: string; readonly ascending: boolean }> = [];
+    const compare = (a: Row, b: Row) => {
+      for (const { column, ascending } of orders) {
+        const [x, y] = [String(a[column] ?? ''), String(b[column] ?? '')];
+        if (x !== y) return (x < y ? -1 : 1) * (ascending ? 1 : -1);
+      }
+      return 0;
+    };
+    const matching = () => all.filter((row) => filters.every((filter) => filter(row))).toSorted(compare);
     const run = () => {
       const rows = matching();
       if (patch !== null) {
@@ -40,7 +48,8 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
         filters.push((row) => row[column] === value);
         return builder;
       },
-      order() {
+      order(column: string, options?: { ascending?: boolean }) {
+        orders.push({ column, ascending: options?.ascending ?? true });
         return builder;
       },
       limit() {
@@ -48,6 +57,11 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
       },
       in(column: string, values: readonly unknown[]) {
         filters.push((row) => values.includes(row[column]));
+        return builder;
+      },
+      gte(column: string, value: number | string) {
+        const at = (v: unknown) => (typeof v === 'string' && typeof value === 'string' ? Date.parse(v) : Number(v));
+        filters.push((row) => at(row[column]) >= at(value));
         return builder;
       },
       is(column: string, value: unknown) {

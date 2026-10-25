@@ -57,6 +57,13 @@ describe('generate', () => {
     expect(sql).toContain("'ryan.lane3@demo.esta.test'");
   });
 
+  it('writes the research topics the worker derives: four provinces, seven wards and the national topics for each household', () => {
+    const topics = insertedRows(generate({ ...DEFAULT_OPTIONS, lanes: 1 }), 'public.research_topics');
+    expect(topics).toHaveLength(30);
+    expect(topics.filter((row) => row.includes("'TP. Hồ Chí Minh (Bình Dương cũ)'"))).toHaveLength(2);
+    expect(topics.filter((row) => row.includes("'Tây Ninh (Long An cũ)'"))).toHaveLength(2);
+  });
+
   it('leaves Dãy trọ Dĩ An out of every household in northstar', () => {
     const full = insertedRows(generate(DEFAULT_OPTIONS), 'public.properties');
     const northstar = insertedRows(generate({ ...DEFAULT_OPTIONS, variant: 'northstar' }), 'public.properties');

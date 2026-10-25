@@ -4325,9 +4325,55 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
-## Scan for market and legal news and show it under Thị trường (P5-05)
+## Scan for market and legal news every morning (P5-05a)
 
-**Depends on.** P5-04.
+**Depends on.** P5-04. Split from P5-05 for the 800-line rule (2026-10-25); P5-05b shows what this PR stores.
+
+**Files.**
+
+- [x] Create `supabase/migrations/20261007606000_research.sql` with `research_topics`, `research_items` (RLS, audit, member read only), `pg_trgm`, a trigram index on the folded `research_items.title_vi` and `research_title_similar(p_household_id, p_title, p_since)`, and `supabase/tests/research.test.sql`.
+- [x] Create `packages/core/src/research/topics.ts`, `national-topics.ts`, `normalize-url.ts`, `keep-rule.ts` and their tests, and `packages/core/src/agent-schemas/research.ts`.
+- [x] Create `apps/agent/src/jobs/research-scan.ts`, `apps/agent/src/tools/add-research-item.ts`, `research-topics.ts`, `list-properties.ts`, the prompt, and `fixtures/agent-replay/research_scan/` with the cases `research-empty` and `research-over-cap`, all hand-written until the P5-10 live run.
+- [x] Extend the seed generator with `research_topics` for every household.
+
+**Build.**
+
+- [x] Name the data shape. `ResearchTopic` is `{ key, label, query_templates, province_codes, property_ids, source: 'auto' }`. `deriveResearchTopics(properties, adminUnits, legacy)` returns one topic per province and commune held, using current and legacy names (Bình Dương for `di-an`, Long An for `long-an`), plus the national topics stored as data in `national-topics.ts`.
+- [x] Extend the seed generator to write the derived `research_topics` for every household with the same function; the job syncs them from the portfolio at the start of each run.
+- [x] Write the `research_scan` job with WebSearch, WebFetch, `research_topics`, `list_properties`, `recent_items` and `add_research_item`, `maxTurns` 40 (repair headroom, #318), a 10 minute timeout and schedule `06:00`. The `PreToolUse` hook counts `WebSearch` and `WebFetch` calls and denies calls past the caps in `household_settings.agent` (`research_searches` 12, `research_fetches` 8). In replay, search and fetch results come from the recording and CI makes no network call.
+- [x] Implement `add_research_item`. It normalizes the URL with `normalizeUrl()`, keeps only a page WebFetch read in this run, applies `keepRule()` (published since the last successful run, or within 7 days on the first run, or a rule effective within 60 days), drops duplicates by URL or `research_title_similar` above 0.6 over 30 days, runs the number guard with one repair turn per item (a figure from the article is quoted from the fetched page and cited as `{{f0.quote_1_label}}`), and checks `summary_vi` at most 60 words as it reads.
+- [x] Write one `research_scan_empty` item `Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.` when a run keeps nothing. A source that fails to fetch is dropped and the run continues; the job result lists every dropped item with its reason.
+
+**You see.**
+
+- [x] At 2026-10-07 06:05 on the `full` seed, `research_items` for lane households holds the replayed items, each with an https source, a source name and a publication date, and the operator's `Lần chạy gần đây` table shows the run.
+- [x] A replayed empty run leaves the item `Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.` in Hộp thư.
+
+**Verify, unit.**
+
+- [x] `packages/core/src/research/topics.test.ts` covers the seven seed properties giving TP. Hồ Chí Minh, Đồng Nai, Tây Ninh and Lâm Đồng topics with the legacy names Bình Dương and Long An, and the national topics present once.
+- [x] `normalize-url.test.ts` covers tracking parameters, `www.`, trailing slash and fragment. `keep-rule.test.ts` covers 7 days on the first run and a rule effective in 59 and 61 days.
+- [x] `apps/agent/test/jobs/research-scan.test.ts` covers caps denied by the hook, an unreachable source dropped, URL and title duplicates dropped, the empty item, per-item repair turns and related property ids that exist (AGT-5).
+- [x] `supabase/tests/research.test.sql` covers `research_title_similar` scoped to one household. Run `pnpm db:test`.
+- [x] The `research_scan` golden test (`apps/agent/test/golden/research.test.ts`) passes in replay.
+- [x] Run `pnpm check`.
+
+**Verify, live.**
+
+- [x] Lane 4. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/research-empty`, the scan for lane4 writes only the empty item.
+- [x] Lane 5. A second `research_scan` for the same day from the queue reads `done` and the `research_items` count is unchanged.
+- [x] Lane 7. With `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/research-over-cap`, the run's `agent_runs` row shows 13 `WebSearch` and 9 `WebFetch` calls with one of each in `permission_denials`.
+- [x] Lane 8. Every stored `summary_vi` has at most 60 whitespace-separated tokens and every `related_property_ids` entry exists in `properties`.
+
+**Verify, perf.**
+
+- [x] `research_scan` in replay under 20 s; `EXPLAIN (ANALYZE)` of `research_title_similar` under 50 ms over 20 queries.
+
+**Review gate.** None; P5-05b carries the screens.
+
+## Show market news under Thị trường and in the morning brief (P5-05b)
+
+**Depends on.** P5-05a. The scan, tables, topics and dedupe boxes below moved to P5-05a; this section keeps the screens, the brief lines and the lanes that read them.
 
 **Files.**
 

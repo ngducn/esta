@@ -24,7 +24,7 @@ const recordingSchema = z.object({
   numTurns: z.number().int().nonnegative(),
   /** The live run's wall time, kept for the perf budget (any live recording within 120 s). */
   wallMs: z.number().int().nonnegative().optional(),
-  toolCalls: z.array(z.object({ name: z.string(), input: z.record(z.string(), z.unknown()) })),
+  toolCalls: z.array(z.object({ name: z.string(), input: z.record(z.string(), z.unknown()), result: z.unknown().optional() })),
   reply: z.string(),
 });
 

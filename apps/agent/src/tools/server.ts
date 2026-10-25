@@ -24,8 +24,35 @@ const CATALOG = {
     input: { title: z.string(), body_md: z.string(), related: z.array(z.string()) },
   },
   recent_items: {
-    description: 'Return the notes already left for the household today. Each has a handle, a kind, a severity and its title as title_label.',
+    description:
+      'Return the notes already left for the household today, each with a handle, a kind, a severity and its title as title_label, and the research items stored recently, each with its title as title_label and its source.',
     input: {},
+  },
+  research_topics: {
+    description: 'Return the topics to search for today. Each has a handle (f1, f2, …), its place or subject as topic_label, and query_templates to search with.',
+    input: {},
+  },
+  list_properties: {
+    description: "Return the household's properties. Each has a handle, its name as property_label, its kind, use mode and legal status, and its current ward and province as commune_name and province_name.",
+    input: {},
+  },
+  add_research_item: {
+    description:
+      'Save one news item from a page you fetched with WebFetch in this run: {"source_url", "source_name", "published_on": YYYY-MM-DD, "effective_on": YYYY-MM-DD or null, "kind", "relevance": 0 to 1, "title_vi", "summary_vi", "why_it_matters_vi", "topics": handles of research_topics, "properties": handles of list_properties, "quotes": up to 3 short phrases copied exactly from the fetched page}. Cite quote n in your texts as {{f0.quote_n_label}} and the publication date as {{f0.published_display}}. It answers {"saved": true}, {"saved": false, "dropped": <why>}, or names what to fix before you call it again.',
+    input: {
+      source_url: z.string(),
+      source_name: z.string(),
+      published_on: z.string(),
+      effective_on: z.string().nullable().optional(),
+      kind: z.string(),
+      relevance: z.number(),
+      title_vi: z.string(),
+      summary_vi: z.string(),
+      why_it_matters_vi: z.string(),
+      topics: z.array(z.string()),
+      properties: z.array(z.string()).optional(),
+      quotes: z.array(z.string()).optional(),
+    },
   },
   create_brief: {
     description:

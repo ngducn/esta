@@ -28,11 +28,12 @@ export type SdkOptionsInputs = {
   readonly env: Record<string, string>;
   readonly server: McpSdkServerConfigWithInstance;
   readonly preToolUse: HookCallback;
+  readonly postToolUse: HookCallback;
   readonly abortController: AbortController;
 };
 
 /** `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to disk. */
-export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, abortController }: SdkOptionsInputs): Options {
+export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, postToolUse, abortController }: SdkOptionsInputs): Options {
   return {
     model,
     cwd: jobDir,
@@ -42,7 +43,7 @@ export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, 
     mcpServers: { [SERVER_NAME]: server },
     tools: [...spec.builtInTools],
     allowedTools: [...spec.builtInTools, ...spec.mcpTools.map(mcpToolName)],
-    hooks: { PreToolUse: [{ hooks: [preToolUse] }] },
+    hooks: { PreToolUse: [{ hooks: [preToolUse] }], PostToolUse: [{ hooks: [postToolUse] }] },
     permissionMode: 'default',
     maxTurns: spec.maxTurns,
     abortController,

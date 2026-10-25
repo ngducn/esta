@@ -1,4 +1,4 @@
-import { query, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
+import { query, type HookCallback, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
 import type { RunMode } from '../env';
 import type { JobSpec } from '../jobs/registry';
@@ -6,10 +6,12 @@ import { inputHash, type CanonicalInput, type Canonicalizer } from '../replay/ca
 import { readRecording, recordingPath } from '../replay/store';
 import { estaServer, runTool, type EstaTools } from '../tools/server';
 import { buildSdkEnv, buildSdkOptions } from './options';
-import { decideToolUse, pathPolicyHook, type ToolPolicy } from './path-policy';
+import { decideToolUse, pathPolicyHook, toolCaps, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
 
 export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
+
+export type BuiltInResult = ToolCall & { readonly result: unknown };
 
 export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[] };
 
@@ -20,6 +22,8 @@ export type SessionRequest = {
   readonly configDir: string;
   readonly tools: EstaTools;
   readonly canon: Canonicalizer;
+  readonly caps?: Readonly<Record<string, number>>;
+  observe?(call: BuiltInResult): void;
 };
 
 export function canonicalInput({ spec, prompt, canon }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon'>): CanonicalInput {
@@ -33,8 +37,19 @@ export function canonicalInput({ spec, prompt, canon }: Pick<SessionRequest, 'sp
   };
 }
 
-function toolPolicy({ spec, jobDir, tools }: SessionRequest): ToolPolicy {
-  return { allowed: new Set([...spec.builtInTools, ...tools.keys()]), jobDir };
+function toolPolicy({ spec, jobDir, tools, caps }: SessionRequest): ToolPolicy {
+  return { allowed: new Set([...spec.builtInTools, ...tools.keys()]), jobDir, ...(caps === undefined ? {} : { caps: toolCaps(caps) }) };
+}
+
+/** The SDK runs PostToolUse only for a call that succeeded. */
+function observeHook(request: SessionRequest): HookCallback {
+  return async (input) => {
+    if (input.hook_event_name === 'PostToolUse' && !request.tools.has(input.tool_name)) {
+      const toolInput = typeof input.tool_input === 'object' && input.tool_input !== null ? (input.tool_input as Record<string, unknown>) : {};
+      request.observe?.({ name: input.tool_name, input: toolInput, result: input.tool_response });
+    }
+    return {};
+  };
 }
 
 export async function liveSession(request: SessionRequest, mode: Extract<RunMode, { agentMode: 'live' }>): Promise<SessionRun> {
@@ -51,6 +66,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
       abortController.abort();
     }),
     preToolUse: pathPolicyHook(toolPolicy(request), (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
+    postToolUse: observeHook(request),
     abortController,
   });
   const toolCalls: ToolCall[] = [];
@@ -99,6 +115,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     // The recording already holds the model's next turn, so the answer is dropped; an error other than a rejection fails the job.
     const tool = request.tools.get(call.name);
     if (tool !== undefined) await runTool(tool, input);
+    else if (call.result !== undefined) request.observe?.({ name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
   }
   return {
     result: {

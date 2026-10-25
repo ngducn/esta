@@ -2,11 +2,13 @@ import type { Clock } from '@esta/core';
 import type { DailyJob } from '@esta/core/agent-schedule';
 import type { Json, Tables } from '@esta/db';
 import type { AgentDb } from '../supabase';
+import type { BuiltInResult } from '../sdk/session';
 import type { EstaToolName, EstaTools } from '../tools/server';
 import { failExtractDocument, prepareExtractDocument } from './extract-document';
 import { preparePing } from './ping';
 import { prepareMorningBrief } from './morning-brief';
 import { preparePortfolioWatch } from './portfolio-watch';
+import { prepareResearchScan } from './research-scan';
 
 export type ModelRole = 'routine' | 'deep';
 
@@ -31,6 +33,8 @@ export type PreparedJob = {
   readonly tools: EstaTools;
   /** Checks the job's effects and returns `agent_jobs.result`; throws when the model did not do the task. */
   finish(run: { readonly reply: string; readonly model: string }): Promise<Json>;
+  readonly caps?: Readonly<Record<string, number>>;
+  observe?(call: BuiltInResult): void;
 };
 
 export type JobSpec = {
@@ -71,6 +75,16 @@ export const JOBS = {
     timeoutMs: 5 * 60_000,
     modelRole: 'routine',
     handler: { prepare: prepareExtractDocument, onFailed: failExtractDocument },
+  },
+  research_scan: {
+    kind: 'research_scan',
+    builtInTools: ['WebSearch', 'WebFetch'],
+    mcpTools: ['research_topics', 'list_properties', 'recent_items', 'add_research_item'],
+    maxTurns: 40,
+    timeoutMs: 10 * 60_000,
+    modelRole: 'routine',
+    schedule: { daily: '06:00' },
+    handler: { prepare: prepareResearchScan },
   },
   portfolio_watch: {
     kind: 'portfolio_watch',
