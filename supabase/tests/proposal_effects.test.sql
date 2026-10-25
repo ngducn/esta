@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(28);
+select plan(32);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -63,7 +63,9 @@ from (values
   ('00000000-0000-4000-8000-0000000002a8', 'create_task', 'Gọi người thuê',
    jsonb_build_object('due_on', null, 'property_id', '00000000-0000-4000-8000-0000000000a2', 'lease_id', '00000000-0000-4000-8000-00000000e051')),
   ('00000000-0000-4000-8000-0000000002a9', 'suggest_rent_change', 'Tăng tiền giữa kỳ',
-   jsonb_build_object('lease_id', '00000000-0000-4000-8000-00000000e021', 'effective_period_start', '2026-12-15', 'rent_vnd', 3800000))
+   jsonb_build_object('lease_id', '00000000-0000-4000-8000-00000000e021', 'effective_period_start', '2026-12-15', 'rent_vnd', 3800000)),
+  ('00000000-0000-4000-8000-000000002a10', 'suggest_lease_renewal', 'Gia hạn Thủ Đức lần nữa',
+   jsonb_build_object('lease_id', '00000000-0000-4000-8000-00000000e211', 'increase_bps', 700, 'end_date', '2027-12-01'))
 ) as proposal (id, type, title, params);
 
 -- What create_proposal asks before it stores a proposal.
@@ -103,7 +105,8 @@ from (values
   ('00000000-0000-4000-8000-0000000002a5'::uuid, 'approved', 'the renewal is approved'),
   ('00000000-0000-4000-8000-0000000002a6'::uuid, 'approved', 'the reminder is approved'),
   ('00000000-0000-4000-8000-0000000002a7'::uuid, 'failed', 'the reminder with nothing owed fails'),
-  ('00000000-0000-4000-8000-0000000002a8'::uuid, 'failed', 'the task naming a lease of another property fails')
+  ('00000000-0000-4000-8000-0000000002a8'::uuid, 'failed', 'the task naming a lease of another property fails'),
+  ('00000000-0000-4000-8000-000000002a10'::uuid, 'failed', 'a second renewal of the lease just renewed fails')
 ) as decisions (id, status, note);
 
 select results_eq(
@@ -141,6 +144,25 @@ select throws_ok(format($$
   insert into public.leases (household_id, property_id, unit_id, start_date, rent_vnd, agent_item_id)
   values (%L, '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a12', '2027-07-01', 2500000, '00000000-0000-4000-8000-0000000002a3') $$, :'a'),
   '42501', 'ESTA_AGENT_ITEM_LINK', 'a member cannot tie a lease she writes to a proposal');
+
+select is((select count(*)::int from public.leases where renewal_of_lease_id = '00000000-0000-4000-8000-00000000e211'), 1,
+  'the second renewal wrote no second draft');
+
+-- The index behind the lock: one assistant renewal per lease, and a discarded draft frees the lease for the next one.
+reset role;
+select throws_ok(format($$
+  insert into public.leases (household_id, property_id, unit_id, start_date, rent_vnd, renewal_of_lease_id, agent_item_id)
+  values (%L, '00000000-0000-4000-8000-0000000000a2', %L, '2026-11-01', 9600000, '00000000-0000-4000-8000-00000000e211', '00000000-0000-4000-8000-000000002a10') $$,
+  :'a', :'whole_unit'),
+  '23505', null, 'a second assistant renewal of one lease cannot exist');
+select tests.act_as('member.a@test.esta.test');
+delete from public.leases where agent_item_id = '00000000-0000-4000-8000-0000000002a5';
+reset role;
+select lives_ok(format($$
+  insert into public.leases (household_id, property_id, unit_id, start_date, rent_vnd, renewal_of_lease_id, agent_item_id)
+  values (%L, '00000000-0000-4000-8000-0000000000a2', %L, '2026-11-01', 9600000, '00000000-0000-4000-8000-00000000e211', '00000000-0000-4000-8000-000000002a10') $$,
+  :'a', :'whole_unit'),
+  'once Mẹ deletes the draft, a new assistant renewal can be written');
 
 select * from finish();
 rollback;

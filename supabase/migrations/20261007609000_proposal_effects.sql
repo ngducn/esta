@@ -199,6 +199,11 @@ grant execute on function public.proposal_refusal(uuid, jsonb) to service_role;
 -- AGT-6 without a caller's verdict (#331): the item is locked, private.proposal_refusal decides under the lock, and the
 -- effect lands as the member in the same transaction. An effect that refuses anyway, such as amend_lease after the
 -- period was issued in between, rolls back to the savepoint and the item reads failed.
+-- One renewal draft per lease from the assistant, even if two approvals ever race past the lock. A discarded draft is
+-- deleted, so it never blocks a later proposal. renew_lease's own renewals carry no agent_item_id and keep its rule.
+create unique index leases_agent_renewal_key on public.leases (renewal_of_lease_id)
+  where agent_item_id is not null and renewal_of_lease_id is not null;
+
 drop function public.approve_proposal(uuid, boolean);
 create function public.approve_proposal(p_item_id uuid)
 returns text
@@ -229,6 +234,13 @@ begin
   end if;
 
   p := v_item.proposal -> 'params';
+  -- Lock the lease before asking, item first and lease second, so two approvals on one lease take turns and the second
+  -- sees what the first wrote, such as its renewal draft. renew_lease and amend_lease take the same lock.
+  if private.param_uuid(p, 'lease_id', false) then
+    perform 1 from public.leases l
+    where l.id = (p ->> 'lease_id')::uuid and l.household_id = v_item.household_id
+    for no key update;
+  end if;
   v_refusal := private.proposal_refusal(v_item.household_id, v_item.proposal, private.business_date(v_now));
   if v_refusal is null then
     begin
