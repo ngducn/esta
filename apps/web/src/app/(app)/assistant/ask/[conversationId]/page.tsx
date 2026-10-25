@@ -10,7 +10,7 @@ import { loadConversation, type ConversationMessage } from '@/server/agent/conve
 import { getClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 
-export { generateMetadata } from '../page';
+export { generateMetadata } from '../ask-metadata';
 
 export default async function ConversationPage({ params }: { params: Promise<{ conversationId: string }> }) {
   const { conversationId } = await params;
