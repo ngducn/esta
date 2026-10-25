@@ -2,7 +2,7 @@ import { collectionState } from '@esta/core/collections';
 import { isoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
 import { describe, expect, it } from 'vitest';
-import type { CollectionRow } from '@/server/collections/load';
+import type { CollectionRow } from '@esta/ops';
 import { collectionRowActions } from './rowActions';
 
 const row: CollectionRow = {

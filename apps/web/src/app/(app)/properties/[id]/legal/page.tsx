@@ -15,7 +15,8 @@ import { PropertyIntl } from '@/components/properties/property-intl';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
-import { loadLandUseCodes, loadOwnership, loadParties, loadPropertyLegal, type LegalKind } from '@/server/properties/legal';
+import type { LegalKind } from '@esta/ops';
+import { loadLandUseCodes, loadOwnership, loadParties, loadPropertyLegal } from '@/server/properties/legal';
 import { PropertyDetailFrame } from '../detail-frame';
 
 function Section({

@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { idSchema } from '@esta/ops';
 import { AnswerStream } from '@/components/assistant/answer-stream';
+import { AnswerView } from '@/components/assistant/answer-view';
 import { AssistantHeader, assistantStatus } from '@/components/assistant/assistant-header';
 import { AssistantMonogram } from '@/components/assistant/monogram';
+import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { loadConversation, type ConversationMessage } from '@/server/agent/conversations';
 import { getClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 
-export { generateMetadata } from '../page';
+export { generateMetadata } from '../ask-metadata';
 
 export default async function ConversationPage({ params }: { params: Promise<{ conversationId: string }> }) {
   const { conversationId } = await params;
@@ -33,7 +35,15 @@ export default async function ConversationPage({ params }: { params: Promise<{ c
           <AssistantMonogram />
           <span className="text-small font-medium text-ink">{assistant('author')}</span>
         </header>
-        <AnswerStream id={message.id} conversationId={conversation.id} initial={{ content: message.content, status: message.status }} labels={labels} />
+        {message.status === 'streaming' ? (
+          <AnswerStream id={message.id} conversationId={conversation.id} initial={{ content: message.content, status: message.status, refs: message.refs }} labels={labels} />
+        ) : (
+          <AnswerView shown={message} labels={labels}>
+            <SafeMarkdown refs={message.refs} className="max-w-prose">
+              {message.content}
+            </SafeMarkdown>
+          </AnswerView>
+        )}
       </article>
     );
 

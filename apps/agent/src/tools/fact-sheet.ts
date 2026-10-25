@@ -16,3 +16,16 @@ export function runSheet(): RunSheet {
     },
   };
 }
+
+/** Answers the same arguments with the same promise, so a repeated tool call keeps its handles and a repeated read runs once. */
+export function sameAnswer<A extends unknown[], T>(run: (...args: A) => Promise<T>): (...args: A) => Promise<T> {
+  const answers = new Map<string, Promise<T>>();
+  return (...args) => {
+    const key = JSON.stringify(args);
+    const earlier = answers.get(key);
+    if (earlier !== undefined) return earlier;
+    const answer = run(...args);
+    answers.set(key, answer);
+    return answer;
+  };
+}

@@ -1,9 +1,13 @@
 import type { Nodes } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfmTableFromMarkdown } from 'mdast-util-gfm-table';
+import { gfmTable } from 'micromark-extension-gfm-table';
 
 /** micromark turns a NUL in the source into U+FFFD, so none is left in the text to collide with. */
 const BREAK = '\u0000';
-const BLOCKS = new Set(['paragraph', 'heading', 'blockquote', 'list', 'listItem', 'code', 'html', 'thematicBreak', 'definition']);
+const BLOCKS = new Set(['paragraph', 'heading', 'blockquote', 'list', 'listItem', 'code', 'html', 'thematicBreak', 'definition', 'tableRow']);
+/** Cells of a row read apart, so two values in neighbouring cells never read as one number. */
+const CELL = ' | ';
 
 /** Words of an attribute such as a title, joined with a space; missing ones add nothing. */
 const attributes = (...parts: ReadonlyArray<string | null | undefined>) => parts.filter((part) => part != null && part !== '').join(' ');
@@ -35,6 +39,8 @@ function pieces(node: Nodes): Piece[] {
       return node.children.flatMap((item, index) => (node.ordered === true && (node.start ?? 1) !== 1 ? [BREAK, `${(node.start ?? 1) + index}.`, item] : [item]));
     case 'link':
       return node.title == null ? inline(node.children) : [...inline(node.children), ' ', node.title];
+    case 'tableRow':
+      return node.children.flatMap((cell, index) => (index === 0 ? [cell] : [CELL, cell]));
     default:
       if (!('children' in node)) return [];
       return FLOW.has(node.type) ? node.children : inline(node.children);
@@ -45,12 +51,13 @@ function pieces(node: Nodes): Piece[] {
  * What `SafeMarkdown` shows for `markdown`, one block per line, raw (no normalization, invisible characters kept):
  * text, code, raw HTML as its literal text, links as their text, and an ordered list's numbers when it does not
  * start at 1. It also keeps what another renderer may show (image alt text, link and image titles, definition
- * titles, a code fence's info string) and never a URL, which may hold record ids.
+ * titles, a code fence's info string) and never a URL, which may hold record ids. With `tables`, it reads GFM tables
+ * as an answer renders them, one row per line, so a `|` inside a link target splits the cell there too.
  */
-export function visibleText(markdown: string): string {
+export function visibleText(markdown: string, { tables = false }: { readonly tables?: boolean } = {}): string {
   const out: string[] = [];
   // An explicit stack, because a model can nest quotes and lists deeper than the call stack goes.
-  const pending: Piece[] = [fromMarkdown(markdown)];
+  const pending: Piece[] = [tables ? fromMarkdown(markdown, { extensions: [gfmTable()], mdastExtensions: [gfmTableFromMarkdown()] }) : fromMarkdown(markdown)];
   for (let piece = pending.pop(); piece !== undefined; piece = pending.pop()) {
     if (typeof piece === 'string') out.push(piece);
     else pending.push(...(BLOCKS.has(piece.type) ? [BREAK, ...pieces(piece), BREAK] : pieces(piece)).reverse());

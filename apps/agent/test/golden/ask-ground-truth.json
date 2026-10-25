@@ -1,1 +1,107 @@
-[{ "question": "q1", "figure": "di-an income received in October 2026", "value": 1000000 }]
+[
+  {
+    "figure": "di-an income received in October 2026",
+    "question": "q1",
+    "value": "1000000"
+  },
+  {
+    "figure": "tenant who paid late most often",
+    "question": "q10",
+    "value": "Trần Thị Bình Demo"
+  },
+  {
+    "figure": "their average days late",
+    "question": "q10",
+    "value": "8"
+  },
+  {
+    "figure": "their bills",
+    "question": "q10",
+    "value": "9"
+  },
+  {
+    "figure": "their bills paid late",
+    "question": "q10",
+    "value": "9"
+  },
+  {
+    "figure": "di-an amount overdue",
+    "question": "q2",
+    "value": "2800000"
+  },
+  {
+    "figure": "di-an days overdue",
+    "question": "q2",
+    "value": "12"
+  },
+  {
+    "figure": "di-an units overdue",
+    "question": "q2",
+    "value": "Phòng 5"
+  },
+  {
+    "figure": "leases ending within 60 days",
+    "question": "q3",
+    "value": "Căn hộ Thủ Đức"
+  },
+  {
+    "figure": "their days left",
+    "question": "q3",
+    "value": "25"
+  },
+  {
+    "figure": "their end dates",
+    "question": "q3",
+    "value": "2026-11-01"
+  },
+  {
+    "figure": "deposits held",
+    "question": "q4",
+    "value": "126400000"
+  },
+  {
+    "figure": "Nguyễn Thị Demo accrued 2026",
+    "question": "q5",
+    "value": "386899628"
+  },
+  {
+    "figure": "Nguyễn Thị Demo projected 2026",
+    "question": "q5",
+    "value": "482658469"
+  },
+  {
+    "figure": "remaining to the 500 million threshold",
+    "question": "q5",
+    "value": "17341531"
+  },
+  {
+    "figure": "bien-hoa days empty",
+    "question": "q6",
+    "value": "70"
+  },
+  {
+    "figure": "bien-hoa empty since",
+    "question": "q6",
+    "value": "2026-07-30"
+  },
+  {
+    "figure": "q7 repairs paid in 2026",
+    "question": "q7",
+    "value": "8650000"
+  },
+  {
+    "figure": "bao-loc mortgage amount",
+    "question": "q8",
+    "value": "2000000000"
+  },
+  {
+    "figure": "bao-loc mortgage bank",
+    "question": "q8",
+    "value": "Ngân hàng Demo"
+  },
+  {
+    "figure": "q1 gross yield bp",
+    "question": "q9",
+    "value": "42"
+  }
+]

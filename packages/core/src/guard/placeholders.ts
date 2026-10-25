@@ -61,9 +61,9 @@ export function seams(shown: string, values: ReadonlyArray<string | undefined>):
 }
 
 /** Filling must not change what renders around a value; returns the first line that does. */
-export function layoutChange(shown: string, filled: string, values: ReadonlyArray<string | undefined>): NoteViolation[] {
+export function layoutChange(shown: string, filled: string, values: ReadonlyArray<string | undefined>, tables: boolean): NoteViolation[] {
   const expected = shown.replace(MASKS, (mask) => values[maskIndex(mask)] ?? '');
-  const actual = visibleText(filled);
+  const actual = visibleText(filled, { tables });
   if (expected === actual) return [];
   const [want, got] = [expected.split('\n'), actual.split('\n')];
   let line = 0;

@@ -1,6 +1,6 @@
 import 'server-only';
 import { getTranslations } from 'next-intl/server';
-import type { LegalKind } from '@/server/properties/legal';
+import type { LegalKind } from '@esta/ops';
 import type { ItemActionLabels } from '@/components/item-actions';
 
 export async function itemActionLabels(kind: LegalKind, name: string): Promise<ItemActionLabels> {

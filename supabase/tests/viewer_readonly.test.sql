@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(22);
+select plan(25);
 
 select tests.create_household('a') as a \gset
 select id as a_admin from public.household_members where household_id = :'a' and role = 'admin' \gset
@@ -40,6 +40,15 @@ select is_empty(
   $$ delete from public.notification_preferences
      where member_id not in (select id from public.household_members where user_id = (select auth.uid())) returning 1 $$,
   'notification_preferences: delete touches no row of another member');
+
+select isnt(public.ask_question(:'a', '00000000-0000-4000-8000-00000000c0a9', 'Tháng này thu được bao nhiêu?', '2026-10-07 09:00+07'), null,
+  'FND-2: a viewer asks on the Hỏi tab, through ask_question only');
+select throws_ok(
+  format($$ insert into public.messages (household_id, conversation_id, role, status, content_md) values (%L, '00000000-0000-4000-8000-00000000c0a9', 'user', 'done', 'Câu khác') $$, :'a'),
+  '42501', null, 'FND-2: but writes no message itself');
+select throws_ok(
+  format($$ insert into public.conversations (household_id, title) values (%L, 'Khác') $$, :'a'),
+  '42501', null, 'FND-2: nor a conversation');
 
 reset role;
 select * from finish();

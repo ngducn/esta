@@ -2,7 +2,8 @@ import { formatDate, formatVnd } from '@esta/core/format';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { StatusShape, statusMarks } from '@/components/status-mark';
 import { cn } from '@/lib/utils';
-import type { LegalRow, PartyOption } from '@/server/properties/legal';
+import type { LegalRow } from '@esta/ops';
+import type { PartyOption } from '@/server/properties/legal';
 import { LegalCard } from './legal-card';
 
 const statusMark = { valid: 'paid', mortgaged: 'due', replaced: 'ended', lost: 'overdue' } as const;

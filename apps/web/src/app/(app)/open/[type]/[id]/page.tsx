@@ -22,6 +22,8 @@ async function screenOf(supabase: Session, { type, id }: EstaRoute): Promise<str
       return `/properties/${id}`;
     case 'ledger':
       return `/properties/${id}/finance`;
+    case 'legal':
+      return `/properties/${id}/legal`;
     case 'lease':
       return `/properties/${await propertyOf(supabase, 'leases', id)}/rental/leases/${id}`;
     case 'unit':

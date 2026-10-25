@@ -10,10 +10,11 @@ export type InitialJs = { readonly sources: readonly string[]; readonly gzippedB
  * Every script the route's HTML names, gzipped at level 9 and summed, and those that carry the next-intl client
  * runtime. A production chunk can rename `IntlMessageFormat`, so use-intl's error code `INSUFFICIENT_PATH` marks the
  * runtime too. `request` carries the caller's cookies, so a signed-in page measures the page the member gets.
+ * A `noModule` script is left out: it holds Next's polyfills, about 39 KB, which no browser that runs modules loads.
  */
 export async function initialJs(request: APIRequestContext, path: string): Promise<InitialJs> {
   const html = await (await request.get(path)).text();
-  const sources = [...new Set(html.match(/(?<=<script src=")[^"]+/g))];
+  const sources = [...new Set([...html.matchAll(/<script src="([^"]+)"([^>]*)>/g)].filter((tag) => !/\bnoModule\b/i.test(tag[2] ?? '')).map((tag) => tag[1] ?? ''))];
   const withIntlRuntime: string[] = [];
   let gzippedBytes = 0;
   for (const source of sources) {

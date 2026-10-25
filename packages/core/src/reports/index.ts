@@ -17,3 +17,4 @@ export {
   type ReportTenancy,
   type ReportUnit,
 } from './snapshot';
+export { paymentBehavior, type DueInvoice, type InvoicePayment, type PaymentBehavior } from './payments';

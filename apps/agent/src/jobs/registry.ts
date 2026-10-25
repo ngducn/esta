@@ -116,7 +116,7 @@ export const JOBS = {
   ask: {
     kind: 'ask',
     builtInTools: [],
-    mcpTools: ['list_properties', 'ledger'],
+    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'create_proposal'],
     maxTurns: 15,
     timeoutMs: 2 * 60_000,
     modelRole: 'routine',

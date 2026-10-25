@@ -38,8 +38,47 @@ const CATALOG = {
   },
   ledger: {
     description:
-      'Return the income received and the expenses paid at one property in one month: {"property": a handle from list_properties, "year", "month": 1 to 12}. It answers one record with a handle, the period as period_date_display and the amounts as income_display, expenses_display and net_display.',
-    input: { property: z.string(), year: z.number().int(), month: z.number().int() },
+      'Return the income received and the expenses paid in one month or one year: {"property": a handle from list_properties, or none for the whole household, "year", "month": 1 to 12, or none for the whole year}. It answers the totals as one record (period_date_display, income_display, expenses_display, net_display), one record per expense category with spending, and for a year one record per month.',
+    input: { property: z.string().optional(), year: z.number().int(), month: z.number().int().optional() },
+  },
+  portfolio_overview: {
+    description:
+      "Return the household at a glance today: property and rental unit counts, units leased, occupancy, this month's billed and collected totals, deposits held, and the estimated value of the properties with the oldest valuation date.",
+    input: {},
+  },
+  get_property: {
+    description: 'Return one property: {"property": a handle from list_properties}. It answers its latest valuation, each certificate with its status and any mortgage (bank name, amount, date registered), and its owners with their shares.',
+    input: { property: z.string() },
+  },
+  property_metrics: {
+    description:
+      'Return a rental property\'s figures: {"property": a handle from list_properties, "year"}. It answers the monthly and annual rent in effect, the gross yield on the latest valuation, and one record per unit with whether it is leased and, when empty, for how many days and since when.',
+    input: { property: z.string(), year: z.number().int() },
+  },
+  list_leases: {
+    description:
+      'Return leases, the soonest end first: {"status": draft, active, ended or terminated, "ends_within_days": only leases ending from today to that many days ahead, "property": a handle from list_properties}, each optional. Each lease has its property, unit, tenant, status, rent, deposit held, start and end dates and the days left until it ends.',
+    input: { status: z.string().optional(), ends_within_days: z.number().int().optional(), property: z.string().optional() },
+  },
+  collections: {
+    description:
+      'Return the collections board for one month: {"year", "month": 1 to 12, "property": a handle from list_properties, optional}. Each bill due that month, and each earlier bill still owed (carried_over), has its unit, tenant, status (overdue, due, notDue or paid), days overdue, due date and amount; one record per status gives its count and total.',
+    input: { year: z.number().int(), month: z.number().int(), property: z.string().optional() },
+  },
+  tax_position: {
+    description:
+      'Return each owner\'s rental revenue for the tax year as the tax card shows it: {"year"}. Each owner has the revenue accrued so far and projected for the year, the threshold, what remains below it and the share of it reached, and the estimated VAT and personal income tax.',
+    input: { year: z.number().int() },
+  },
+  payment_behavior: {
+    description:
+      'Return how each tenant paid this year\'s bills due by today: {"year"}. Each tenant has the bills counted, how many were paid in full after their due date, the average days late, and the bills still overdue; the tenant who paid late most often comes first.',
+    input: { year: z.number().int() },
+  },
+  create_proposal: {
+    description:
+      'Suggest a change for a member to approve: {"type": create_task, draft_reminder, suggest_lease_renewal, suggest_rent_change or flag_data_issue, "params": the type\'s fields, "rationale": Markdown}. Use ids a tool returned in this run. It answers {"saved": true}, or names what to fix before you call it again.',
+    input: { type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string() },
   },
   add_research_item: {
     description:
@@ -83,6 +122,13 @@ export class ToolRejection extends Error {
     super(message);
     this.name = 'ToolRejection';
   }
+}
+
+/** The tool's input parsed by `schema`, or a rejection that names `usage` and each field to fix. */
+export function parseToolInput<S extends z.ZodType>(schema: S, raw: unknown, usage: string): z.output<S> {
+  const input = schema.safeParse(raw);
+  if (!input.success) throw new ToolRejection(`${usage}: ${input.error.issues.map((issue) => issue.path.join('.') || '(root)').join(', ')}`);
+  return input.data;
 }
 
 export type EstaTool = {

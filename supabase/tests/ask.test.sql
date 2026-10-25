@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(19);
+select plan(25);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select set_config('esta.actor', 'system:test', true);
@@ -50,6 +50,23 @@ select is(private.agent_job_timeout('ask'), interval '4 minutes', 'an ask job is
 select tests.act_as('member.b@test.esta.test');
 select tests.sees_household('public.conversations', :'a', false);
 select tests.sees_household('public.messages', :'a', false);
+
+select tests.act_as('member.a@test.esta.test');
+select tests.sees_household('public.conversations', :'a', true);
+select tests.sees_household('public.messages', :'a', true);
+select tests.act_as('viewer.a@test.esta.test');
+select tests.sees_household('public.messages', :'a', true);
+
+reset role;
+select tests.clear_request();
+delete from public.notification_preferences where member_id = (select id from public.household_members where user_id = tests.user_id('member.a@test.esta.test'));
+delete from public.household_members where user_id = tests.user_id('member.a@test.esta.test');
+select tests.act_as('member.a@test.esta.test');
+select tests.sees_household('public.conversations', :'a', false);
+select tests.sees_household('public.messages', :'a', false);
+select throws_ok(
+  format($$ select public.ask_question(%L, gen_random_uuid(), 'Câu hỏi', '2026-10-07 09:00+07') $$, :'a'),
+  '42501', 'ESTA_FORBIDDEN', 'a member removed from the household reads none of its conversations and asks nothing');
 
 select tests.act_as('admin.a@test.esta.test');
 select throws_ok($$ update public.messages set content_md = 'forged' $$, '42501', null, 'no member edits an answer, not even an admin');

@@ -21,6 +21,7 @@ export { agentItemSetStatus, INBOX_STATUSES, type AgentItemSaved } from './agent
 export { batchUndo, UNDO_FLOWS, UNDO_REASONS, type BatchUndone, type UndoBlocker, type UndoRefusal } from './batch-undo';
 export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDefault, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
 export { readClock, type ClockEnv } from './clock';
+export { readCollectionRows, type CollectionRow } from './collections';
 export { readCompleteness, type PropertyCompleteness } from './completeness';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';
@@ -36,7 +37,8 @@ export {
 export type { FileProblem, FileRefusal, LocalContext, LocalFile, LocalFiles, LocalPreviews } from './files';
 export { dbRefusal, idSchema, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
 export type { Db } from './db';
-export { readInvoices, type InvoiceScope, type InvoiceSummary } from './invoices';
+export { readInvoicePayments, readInvoices, type InvoiceScope, type InvoiceSummary } from './invoices';
+export { LEGAL_KINDS, legalKindSchema, legalTable, readLegalRows, readOwnership, type LegalKind, type LegalRow, type LegalValue } from './legal';
 export { readLedgerFacts, readLedgerStart, type LedgerFacts } from './ledger';
 export { invoiceIssue, invoiceVoid, type InvoiceChanged, type InvoiceRefusal } from './invoice-ops';
 export { leaseCreate, leaseEdit, type LeaseRefusal, type LeaseSaved } from './lease-ops';

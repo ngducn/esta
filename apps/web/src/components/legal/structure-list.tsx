@@ -1,6 +1,6 @@
 import { formatArea } from '@esta/core/format';
 import { getLocale, getTranslations } from 'next-intl/server';
-import type { LegalRow } from '@/server/properties/legal';
+import type { LegalRow } from '@esta/ops';
 import { LegalCard } from './legal-card';
 
 export async function StructureList({ propertyId, structures, canEdit }: { propertyId: string; structures: readonly LegalRow<'structures'>[]; canEdit: boolean }) {

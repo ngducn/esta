@@ -11,7 +11,7 @@ import { FormAlert } from '@/components/form-alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useAction } from '@/components/use-action';
 import { useHydrated } from '@/lib/use-hydrated';
-import type { LegalKind } from '@/server/properties/legal';
+import type { LegalKind } from '@esta/ops';
 
 export type LegalSubmit = () => Record<string, unknown> | null;
 
