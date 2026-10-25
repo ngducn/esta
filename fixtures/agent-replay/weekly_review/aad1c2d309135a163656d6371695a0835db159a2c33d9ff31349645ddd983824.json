@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "kind": "weekly_review",
+  "inputHash": "aad1c2d309135a163656d6371695a0835db159a2c33d9ff31349645ddd983824",
+  "input": {
+    "version": 1,
+    "kind": "weekly_review",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never type a digit, an amount or currency word, or a number word.\nFor every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.\nWrite every person's name or nickname and every place name through its _name or _label placeholder, such as {{f2.tenant_name}}, because names like chú Ba or Hai Bà Trưng hold number words.\nDo not calculate totals, differences or ratios yourself; call the tool that returns them.\nNever invent amounts, dates, names or sources. If information is missing, say so plainly.\nYou cannot change business records.\nWrite in Vietnamese. Use the household's terms: sổ, thửa đất, hợp đồng thuê, tiền cọc, kỳ thanh toán.\nTone: calm, polite, concise, like a careful family accountant. No exclamation marks, no emoji.\nToday is 2026-10-11 in Asia/Ho_Chi_Minh.\n\nTask: the weekly review, the one note the family reads on Sunday morning about the month so far and the month ahead.\n1. Read with the tools first: collections for this month, list_leases with {\"ends_within_days\": 30}, portfolio_overview, property_metrics for each rental property, ledger for this month, tax_position for this year, and recent_items for the notes and research items already stored. Each record has a handle (f1, f2, …) and text fields.\n2. Call create_item once with {\"title\": one line of plain text, \"body_md\": Markdown, \"related\": the handles of the records it covers}. The body has five short sections in this order, each a bold line and a few bullets: collections this month, the collected and billed amounts of the month_collected record and each bill overdue; the month ahead, the leases ending and the bills coming due; vacancy, each empty unit and since when; notable expenses this month; and the tax position this year. Write \"nothing to note\" in your own words for a section the tools hold nothing for.\n3. Link each record you name by its handle, as [{{f3.unit_label}}](f3). Use paragraphs, lists, tables, bold and links only, and keep the note under four hundred words.\n4. Then suggest at most 3 changes with create_proposal, only where a tool shows the reason: a reminder for an overdue bill, a renewal for a lease ending soon, or a rent change. A suggest_rent_change rests on market news: its citations are the source_url of a research item recent_items returned or a page WebFetch read in this run.\n5. You may check market rents with WebSearch and WebFetch; this run may make 6 searches and 4 fetches, and calls past that are refused. Never cite a page you did not read.\n6. If a tool answers with an error, fix exactly what it names and call it again.\nWhen the note is saved, reply with the single word: xong.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "recent_items",
+      "create_item",
+      "create_proposal"
+    ],
+    "maxTurns": 25
+  },
+  "label": "Hand-written for the full seed at 2026-10-11 08:00 (P5-08b); its rent change cites the Vành đai 3 item the 06:00 research scan of 2026-10-07 stores; the live recording waits for the P5-10 live run.",
+  "model": "hand-written",
+  "numTurns": 14,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__list_properties",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__collections",
+      "input": {
+        "year": 2026,
+        "month": 10
+      }
+    },
+    {
+      "name": "mcp__esta__list_leases",
+      "input": {
+        "ends_within_days": 30
+      }
+    },
+    {
+      "name": "mcp__esta__portfolio_overview",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__property_metrics",
+      "input": {
+        "property": "f3",
+        "year": 2026
+      }
+    },
+    {
+      "name": "mcp__esta__property_metrics",
+      "input": {
+        "property": "f2",
+        "year": 2026
+      }
+    },
+    {
+      "name": "mcp__esta__property_metrics",
+      "input": {
+        "property": "f5",
+        "year": 2026
+      }
+    },
+    {
+      "name": "mcp__esta__property_metrics",
+      "input": {
+        "property": "f6",
+        "year": 2026
+      }
+    },
+    {
+      "name": "mcp__esta__property_metrics",
+      "input": {
+        "property": "f7",
+        "year": 2026
+      }
+    },
+    {
+      "name": "mcp__esta__ledger",
+      "input": {
+        "year": 2026,
+        "month": 10
+      }
+    },
+    {
+      "name": "mcp__esta__tax_position",
+      "input": {
+        "year": 2026
+      }
+    },
+    {
+      "name": "mcp__esta__list_leases",
+      "input": {
+        "property": "f3",
+        "status": "active"
+      }
+    },
+    {
+      "name": "mcp__esta__recent_items",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "Tổng kết tuần: tháng {{f21.month_date_display}} đã thu {{f21.collected_display}} trên {{f21.billed_display}}",
+        "body_md": "**Thu tiền tháng này**\n\n- Đã thu {{f21.collected_display}} trên {{f21.billed_display}} của các kỳ đến hạn trong tháng {{f21.month_date_display}}.\n- [{{f8.unit_label}} {{f8.property_label}}](f8) quá hạn {{f8.days_overdue_display}} ngày, còn nợ {{f8.amount_display}}.\n\n**Tháng tới**\n\n- [Hợp đồng {{f22.property_label}}](f22) của {{f22.tenant_name}} hết hạn ngày {{f22.end_date_display}}, còn {{f22.days_until_end_display}} ngày.\n- {{f19.count_display}} kỳ thu ở {{f9.property_label}} đến hạn ngày {{f9.due_date_display}}, tổng {{f19.total_display}}.\n\n**Phòng trống**\n\n- {{f31.unit_label}} trống {{f31.empty_days_display}} ngày và {{f32.unit_label}} trống {{f32.empty_days_display}} ngày ở [{{f24.property_label}}](f24).\n- [{{f33.property_label}}](f33) trống từ ngày {{f33.empty_since_date_display}}, đã {{f34.empty_days_display}} ngày.\n\n**Chi phí đáng chú ý**\n\n- Tháng {{f41.period_date_display}} chưa có khoản chi nào được ghi.\n\n**Thuế năm nay**\n\n- [{{f42.owner_name}}](f42) có doanh thu {{f42.accrued_display}}, dự kiến cả năm {{f42.projected_display}}, còn {{f42.remaining_to_threshold_display}} là tới ngưỡng {{f42.threshold_display}}.\n- [{{f43.owner_name}}](f43) có doanh thu {{f43.accrued_display}}, dự kiến cả năm {{f43.projected_display}}, còn xa ngưỡng.",
+        "related": [
+          "f8",
+          "f22",
+          "f24",
+          "f33",
+          "f42",
+          "f43"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__create_proposal",
+      "input": {
+        "type": "draft_reminder",
+        "params": {
+          "title": "Nhắc {{f48.tenant_name}} đóng tiền thuê {{f48.unit_label}}",
+          "lease_id": "f48"
+        },
+        "rationale": "Kỳ ngày {{f8.due_date_display}} của {{f8.unit_label}} {{f8.property_label}} đã quá hạn {{f8.days_overdue_display}} ngày, còn nợ {{f8.amount_display}}."
+      }
+    },
+    {
+      "name": "mcp__esta__create_proposal",
+      "input": {
+        "type": "suggest_lease_renewal",
+        "params": {
+          "title": "Gia hạn hợp đồng {{f22.property_label}}",
+          "lease_id": "f22",
+          "increase_bps": 500,
+          "end_date": "2027-11-01"
+        },
+        "rationale": "Hợp đồng của {{f22.tenant_name}} hết hạn ngày {{f22.end_date_display}}, còn {{f22.days_until_end_display}} ngày. Kỳ ngày {{f15.due_date_display}} đã thu đủ {{f15.amount_display}}."
+      }
+    },
+    {
+      "name": "mcp__esta__create_proposal",
+      "input": {
+        "type": "suggest_rent_change",
+        "params": {
+          "title": "Tăng tiền thuê {{f44.unit_label}} {{f44.property_label}} từ kỳ sau",
+          "lease_id": "f44",
+          "effective_period_start": "2026-11-25",
+          "rent_vnd": 2700000
+        },
+        "rationale": "{{f44.unit_label}} đang thuê {{f44.rent_display}}, thấp hơn {{f48.unit_label}} cùng dãy ({{f48.rent_display}}). Tuyến đường lớn gần {{f3.property_label}} sắp khởi công, nên giá thuê quanh đây có thể tăng.",
+        "citations": [
+          "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong"
+        ]
+      }
+    }
+  ],
+  "reply": "xong"
+}

@@ -1,4 +1,4 @@
-import { estaUri } from '@esta/core/links';
+import { estaUri, parseEstaUri, type EstaLinkType } from '@esta/core/links';
 import { parseProposal, PROPOSAL_TYPES, isProposalType, type Proposal } from '@esta/core/proposals';
 import { normalizeUrl } from '@esta/core/research';
 import { createHash } from 'node:crypto';
@@ -32,7 +32,7 @@ function subjects({ params }: Proposal): string[] {
 /** What `public.proposal_refusal` answers, as the line the model reads to fix its call. */
 const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_PROPOSAL_PARAMS: 'params: do not match the type',
-  ESTA_PROPOSAL_SUBJECT: 'property_id, lease_id: not a record of this household, archived, or a lease of another property. Use ids a tool returned in this run.',
+  ESTA_PROPOSAL_SUBJECT: 'property_id, lease_id: not a record of this household, archived, or a lease of another property. Use the handles or ids a tool returned in this run.',
   ESTA_LEASE_NOT_ACTIVE: 'lease_id: the lease is not active',
   ESTA_REMINDER_NOTHING_OWED: 'lease_id: nothing is owed on this lease',
   ESTA_AMENDMENT_NOT_AFTER_AS_OF: 'effective_period_start: must be after today',
@@ -66,6 +66,19 @@ async function resolveCitations({ db, householdId, citing }: ProposalBinding, ur
   return { found, refused };
 }
 
+const SUBJECT_PARAMS: Readonly<Record<string, EstaLinkType>> = { property_id: 'property', lease_id: 'lease' };
+
+/** A subject param may name a record by its handle, as `"lease_id": "f12"`, which becomes the id its link holds. */
+function subjectIds(params: Readonly<Record<string, unknown>>, sheet: ProposalBinding['sheet']): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(params).map(([key, value]) => {
+      const link = typeof value === 'string' && Object.hasOwn(SUBJECT_PARAMS, key) ? sheet.get(value)?.link : undefined;
+      const route = typeof link === 'string' ? parseEstaUri(link) : null;
+      return [key, route?.ok === true && route.value.type === SUBJECT_PARAMS[key] ? route.value.id : value];
+    }),
+  );
+}
+
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
 
 /**
@@ -96,7 +109,7 @@ export function proposalWriter(binding: ProposalBinding) {
       JSON.stringify(raw, null, 2),
     );
     const body = filled.at(-1)?.text ?? '';
-    const parsed = parseProposal({ type, params: { ...params, ...Object.fromEntries(texts.map(({ key }, i) => [key, filled[i]?.text])) } });
+    const parsed = parseProposal({ type, params: { ...subjectIds(params, binding.sheet), ...Object.fromEntries(texts.map(({ key }, i) => [key, filled[i]?.text])) } });
     if (!parsed.ok) throw rejected(parsed.reason);
     const proposal = parsed.value;
 
