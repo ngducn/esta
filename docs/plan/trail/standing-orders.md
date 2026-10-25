@@ -282,3 +282,18 @@ Budget (agent interpretation: per 5-hour window, as every earlier cap was). Each
 ## Update 2026-10-24 22:05 +07
 
 Ryan's ruling, 2026-10-24, on how Trợ lý keeps invented numbers from Mẹ: "Placeholders". The model never types a number. It writes placeholders that name a field of this run's tool results (for example `{{f3.outstanding_display}}`, `{{f3.unit_label}}`), and Esta fills them from the tool data when it saves the note. Any digit, amount or currency word, or number word left in the model's own text (checked on the text as it renders, after entities decode) is a violation, as is a placeholder that names no field of this run. This replaces the free-text number parser of AGENT.md §6.3, which leaked through two rounds on #61 and two on #309; #309 closes unmerged. Other rulings today: Inter replaces Plus Jakarta Sans with a 600 ceiling (#295); Graphify removed ("yeah cut off Graphify"); usage stays below 40% per window.
+
+## Update 2026-10-25 09:15 +07
+
+Operator's words, 2026-10-25: "continue until 60% also, i already merged 319".
+
+- Budget cap is 60% of each 5-hour window (was 40%). Stop spawning at 48% and pause owners at 54% on `usage-pct.sh`. The other budget rules stay.
+- #319 is merged (6417cb63). The stack above it was brought onto main with merge commits whose trees equal a clean `rebase --onto origin/main e0fad32d`, because force-push is not allowed in this session. Squash merges drop the merge commits.
+
+## Update 2026-10-25 15:50 +07
+
+Operator's words, 2026-10-25: "merge them all for me please, then launch local for me to test".
+
+- The root lands the reviewed stack #322, #324, #330, #332, #334, #336 and #339, in order. Each one is a squash merge with `--match-head-commit` at a head whose `ci` is green and whose independent reviews are clean. After each merge, the next PR is brought onto main with a merge commit built from a clean rebase tree, retargeted to main, and its CI is rerun.
+- PRs still under review (#341, #342) are not part of this grant.
+- After the merges, the root starts the app locally for Ryan on his slot 6.
