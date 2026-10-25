@@ -4577,16 +4577,16 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [x] `apps/agent/test/jobs/askStream.test.ts` has cases for sentence buffering, a handle split across chunks, a violating sentence held back, the 300 ms cadence, a repair that replaces content, a resolved handle link and an unknown handle left as text.
 - [x] `apps/agent/test/jobs/ask.test.ts` has cases for a new conversation without a session, a repair that replaces the answer, a second violation setting `error` with the operator item, and crafted conversation ids that never leave `conversations/`.
 - [x] Golden tests in AGENT.md §7 for `ask` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
-- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-ask.spec.ts`.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [x] Run `pnpm check`, then `pnpm e2e e2e/assistant-ask.spec.ts`.
+- [x] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-ask.spec.ts`.
+- [x] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-ask.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Three lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay.
 
-- [ ] Lane 1. Regression lane against trunk. me.lane1 opens Hỏi at 390x844 light at trunk and head. Trunk has no Hỏi tab, so the lane gates head asking `Tháng này thu được bao nhiêu từ Dĩ An?`. Save `p5-07-regression-q1.png`. Pass when the answer amount equals the `di-an` Thu chi tab's October income and its link opens that ledger.
-- [ ] Lane 8. ryan.lane8 asks question 1 at 1440x900 dark and records time to first text. Save `p5-07-stream.png`. Pass when the first sentence appears within 10 s, the row ends `done`, and no animated dots or blinking caret render.
-- [ ] Lane 9. me.lane9 asks `Giá thị trường của Đất Bảo Lộc hiện nay là bao nhiêu?` at 390x844 light. Save `p5-07-missing-data.png`. Pass when the answer says the app has no current market price, gives no estimate, and passes the guard.
+- [x] Lane 1. Regression lane against trunk. me.lane1 opens Hỏi at 390x844 light at trunk and head. Trunk has no Hỏi tab, so the lane gates head asking `Tháng này thu được bao nhiêu từ Dĩ An?`. Save `p5-07-regression-q1.png`. Pass when the answer amount equals the `di-an` Thu chi tab's October income and its link opens that ledger.
+- [x] Lane 8. ryan.lane8 asks question 1 at 1440x900 dark and records time to first text. Save `p5-07-stream.png`. Pass when the first sentence appears within 10 s, the row ends `done`, and no animated dots or blinking caret render.
+- [x] Lane 9. me.lane9 asks `Giá thị trường của Đất Bảo Lộc hiện nay là bao nhiêu?` at 390x844 light. Save `p5-07-missing-data.png`. Pass when the answer says the app has no current market price, gives no estimate, and passes the guard.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
@@ -4597,8 +4597,8 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Review gate.** The operator reviews before merge.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-07/P5-07-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of asking question 1, the answer streaming in and the ledger link, saved as `~/.claude/orchestrate/esta/media/P5-07/P5-07-review.mp4`.
+- [x] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-07/P5-07-review-<slug>.png`.
+- [x] Record a 30 to 60 second video of asking question 1, the answer streaming in and the ledger link, saved as `~/.claude/orchestrate/esta/media/P5-07/P5-07-review.mp4`.
 - [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
 
 **Merge.**
