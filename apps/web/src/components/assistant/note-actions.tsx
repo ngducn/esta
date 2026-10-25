@@ -10,6 +10,7 @@ import { ReminderAction } from '@/components/collections/ReminderAction';
 import { FormAlert } from '@/components/form-alert';
 import { StatusShape } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { useNoticeToast } from '@/components/undo-toast';
 import { useAction } from '@/components/use-action';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { useUndoableAction } from '@/components/use-undoable-action';
@@ -39,17 +40,21 @@ export function NoteActions({ id, status, labels, retry }: { id: string; status:
   const hydrated = useHydrated();
   const router = useRouter();
   const { pending, error, perform } = useUndoableAction({ failed: labels.failed, restoreFailed: labels.restoreFailed });
+  const showNotice = useNoticeToast();
   const { pending: retrying, run } = useAction();
-  const [retried, setRetried] = useState<'queued' | 'failed' | null>(null);
-  const disabled = pending || retrying || retried === 'queued' || !hydrated;
+  const [retryFailed, setRetryFailed] = useState(false);
+  const disabled = pending || retrying || !hydrated;
   const markRead = () => perform(() => setNoteStatus({ id, status: 'read' }));
   const dismiss = () => perform(() => setNoteStatus({ id, status: 'dismissed' }), { message: labels.dismissed, restore: () => setNoteStatus({ id, status }) });
+  // The item leaves the inbox once the job is queued again, so the toast says so where the card was.
   const retryNow = () =>
     run(
       () => retryJob({ id }),
       (result) => {
-        setRetried(result.ok ? 'queued' : 'failed');
-        if (result.ok) router.refresh();
+        setRetryFailed(!result.ok);
+        if (!result.ok || retry === undefined) return;
+        showNotice(retry.queued);
+        router.refresh();
       },
     );
 
@@ -73,12 +78,7 @@ export function NoteActions({ id, status, labels, retry }: { id: string; status:
           {labels.dismiss}
         </button>
       </div>
-      {retried === 'queued' && retry !== undefined ? (
-        <p role="status" data-testid="note-retry-queued" className="text-body text-ink-2">
-          {retry.queued}
-        </p>
-      ) : null}
-      <FormAlert message={retried === 'failed' && retry !== undefined ? retry.failed : error} />
+      <FormAlert message={retryFailed && retry !== undefined ? retry.failed : error} />
     </div>
   );
 }
