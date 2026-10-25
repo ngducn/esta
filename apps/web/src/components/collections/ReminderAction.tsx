@@ -9,9 +9,9 @@ import type { ReminderLabels, ReminderTarget } from '@/server/reminders/board';
 const loadSheet = () => import('./ReminderSheet');
 const ReminderSheet = lazy(loadSheet);
 
-/** `Nhắc qua Zalo` on a board row: drafts the reminder for what the row still owes. */
-export function ReminderAction({ label, title, target, labels }: { label: string; title: string; target: ReminderTarget; labels: ReminderLabels }) {
-  const dialog = useDeferredDialog(loadSheet);
+/** `Nhắc qua Zalo` on a board row: drafts the reminder for what the row still owes. `initialOpen` opens it on arrival. */
+export function ReminderAction({ label, title, target, labels, initialOpen = false }: { label: string; title: string; target: ReminderTarget; labels: ReminderLabels; initialOpen?: boolean }) {
+  const dialog = useDeferredDialog(loadSheet, initialOpen);
   return (
     <>
       <button type="button" data-testid="row-action-remind" {...dialog.triggerProps} className={buttonVariants({ variant: 'outline' })}>

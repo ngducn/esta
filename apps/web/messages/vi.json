@@ -1119,7 +1119,12 @@
     "taskDoneToast": "Đã xong một việc.",
     "taskDue": "Hạn {date}",
     "taskNoDue": "Chưa có hạn",
-    "taskRestoreFailed": "Chưa đưa việc trở lại được. Tải lại trang rồi thử lại."
+    "taskRestoreFailed": "Chưa đưa việc trở lại được. Tải lại trang rồi thử lại.",
+    "confirmRentChange": "{direction, select, up {Tăng tiền thuê {place} lên {amount} từ {date}?} down {Giảm tiền thuê {place} xuống {amount} từ {date}?} other {Đổi tiền thuê {place} thành {amount} từ {date}?}}",
+    "confirmRenewal": "Gia hạn hợp đồng {place} đến {date}, tiền thuê {amount} mỗi tháng?",
+    "confirmCancel": "Thôi",
+    "openLease": "Xem hợp đồng",
+    "openReminder": "Mở lời nhắc"
   },
   "settings": {
     "display": "Hiển thị",

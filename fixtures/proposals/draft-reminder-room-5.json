@@ -1,0 +1,7 @@
+{
+  "params": {
+    "title": "Nhắc người thuê {{f1.place_label}} đóng tiền",
+    "lease_id": "seed:lease:{household}:di-an:5"
+  },
+  "rationale": "{{f1.tenant_name}} đã quá hạn {{f1.days_overdue_display}}. Esta soạn sẵn lời nhắc để gửi qua Zalo."
+}

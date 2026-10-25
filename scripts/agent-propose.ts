@@ -44,6 +44,11 @@ async function main(): Promise<number> {
   const fixture = resolveSeedKeys(JSON.parse(readFileSync(values.params, 'utf8')), values.household) as Record<string, unknown>;
   const db = serviceClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, 'propose');
   const householdId = seedId(`seed:household:${values.household}`);
+  const { data: household } = await db.from('households').select('id').eq('id', householdId).maybeSingle();
+  if (household === null) {
+    console.error(`No household has the seed key ${values.household}; lane keys read lane-1 to lane-10 (supabase/seed/README.md)`);
+    return 2;
+  }
   const clock = () => readClock(db, env);
   const now = await clock();
 

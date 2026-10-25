@@ -1383,6 +1383,7 @@ export type Database = {
       }
       lease_amendments: {
         Row: {
+          agent_item_id: string | null
           changes: Json
           created_at: string
           created_by: string | null
@@ -1394,6 +1395,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agent_item_id?: string | null
           changes: Json
           created_at?: string
           created_by?: string | null
@@ -1405,6 +1407,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agent_item_id?: string | null
           changes?: Json
           created_at?: string
           created_by?: string | null
@@ -1416,6 +1419,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lease_amendments_agent_item_fk"
+            columns: ["household_id", "agent_item_id"]
+            isOneToOne: false
+            referencedRelation: "agent_items"
+            referencedColumns: ["household_id", "id"]
+          },
           {
             foreignKeyName: "lease_amendments_household_id_fkey"
             columns: ["household_id"]
@@ -1441,6 +1451,7 @@ export type Database = {
       }
       leases: {
         Row: {
+          agent_item_id: string | null
           billing_cycle_months: number
           created_at: string
           created_by: string | null
@@ -1470,6 +1481,7 @@ export type Database = {
           utilities_mode: string
         }
         Insert: {
+          agent_item_id?: string | null
           billing_cycle_months?: number
           created_at?: string
           created_by?: string | null
@@ -1499,6 +1511,7 @@ export type Database = {
           utilities_mode?: string
         }
         Update: {
+          agent_item_id?: string | null
           billing_cycle_months?: number
           created_at?: string
           created_by?: string | null
@@ -1528,6 +1541,13 @@ export type Database = {
           utilities_mode?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "leases_agent_item_fk"
+            columns: ["household_id", "agent_item_id"]
+            isOneToOne: false
+            referencedRelation: "agent_items"
+            referencedColumns: ["household_id", "id"]
+          },
           {
             foreignKeyName: "leases_household_id_declaring_party_id_fkey"
             columns: ["household_id", "declaring_party_id"]
@@ -3286,10 +3306,7 @@ export type Database = {
         }
         Returns: string
       }
-      approve_proposal: {
-        Args: { p_item_id: string; p_params_valid: boolean }
-        Returns: string
-      }
+      approve_proposal: { Args: { p_item_id: string }; Returns: string }
       change_batch_history: {
         Args: { p_household_id: string; p_limit?: number }
         Returns: {
@@ -3503,6 +3520,10 @@ export type Database = {
         }[]
       }
       property_boundary: { Args: { p_property_id: string }; Returns: Json }
+      proposal_refusal: {
+        Args: { p_household_id: string; p_proposal: Json }
+        Returns: string
+      }
       record_deposit_entry: {
         Args: {
           p_amount_vnd: number

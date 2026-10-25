@@ -9,13 +9,22 @@ import { clockOn, HOUSEHOLD, labels, seedRecords, snapshot } from '../full-seed'
 
 const [PROPERTY = ''] = labels.properties.keys();
 const OTHER_HOUSEHOLD_PROPERTY = '00000000-0000-4000-8000-0000000000b1';
+const LEASE = '00000000-0000-4000-8000-0000000000c1';
+const ISSUED_PERIOD = '2026-10-25';
+
+/** `public.proposal_refusal` as tasks.test.sql and proposal_effects.test.sql prove it, for the two subjects these cases name. */
+function proposalRefusal({ p_proposal }: Record<string, unknown>): string | null {
+  const params = (p_proposal as { params: Record<string, unknown> }).params;
+  if (params.property_id === OTHER_HOUSEHOLD_PROPERTY) return 'ESTA_PROPOSAL_SUBJECT';
+  return params.effective_period_start === ISSUED_PERIOD ? 'ESTA_AMENDMENT_ALREADY_BILLED' : null;
+}
 
 /** A run that read watch_facts, as the weekly review and ask will before they propose (AGENT.md §4). */
 async function setup() {
   const tables: Record<string, Array<Record<string, unknown>>> = { agent_items: [], ...seedRecords() };
   const { sheet, cite } = runSheet();
   await watchFactsTool(async () => ({ snapshot, labels }), 'vi', cite).run();
-  const writer = proposalWriter({ db: fakeDb(tables), householdId: HOUSEHOLD, jobId: 'job-propose', locale: 'vi', sheet, clock: clockOn('2026-10-07T08:00:00+07:00') });
+  const writer = proposalWriter({ db: fakeDb(tables, [], {}, {}, { proposal_refusal: proposalRefusal }), householdId: HOUSEHOLD, jobId: 'job-propose', locale: 'vi', sheet, clock: clockOn('2026-10-07T08:00:00+07:00') });
   return { tables, writer };
 }
 
@@ -40,6 +49,18 @@ describe('create_proposal validation (AGENT.md §7)', () => {
     ]);
   });
 
+  it('stores a rent change with the lease as its subject', async () => {
+    const { tables, writer } = await setup();
+    await writer.write({ type: 'suggest_rent_change', params: { title: 'Tăng tiền thuê phòng', lease_id: LEASE, effective_period_start: '2026-11-25', rent_vnd: 3_800_000 }, rationale: 'Giá khu này tăng.' });
+    expect(tables.agent_items).toEqual([
+      expect.objectContaining({
+        title: 'Tăng tiền thuê phòng',
+        proposal: { type: 'suggest_rent_change', params: { title: 'Tăng tiền thuê phòng', lease_id: LEASE, effective_period_start: '2026-11-25', rent_vnd: 3_800_000 } },
+        related: { links: [`esta://lease/${LEASE}`] },
+      }),
+    ]);
+  });
+
   it('adds nothing when the same proposal comes again', async () => {
     const { tables, writer } = await setup();
     const proposal = task({ title: 'Gọi người thuê {{f1.place_label}}', property_id: PROPERTY });
@@ -53,7 +74,13 @@ describe('create_proposal validation (AGENT.md §7)', () => {
     ['a missing title', task({ due_on: '2026-10-07' }), 'params.title:'],
     ['an impossible due date', task({ title: 'Gọi khách', due_on: '2026-13-01' }), 'params.due_on:'],
     ['a field the type does not take', task({ title: 'Gọi khách', amount_vnd: 'nhiều' }), 'params:'],
-    ['a property of another household', task({ title: 'Gọi khách', property_id: OTHER_HOUSEHOLD_PROPERTY }), `esta://property/${OTHER_HOUSEHOLD_PROPERTY}: not a record of this household`],
+    ['a property of another household', task({ title: 'Gọi khách', property_id: OTHER_HOUSEHOLD_PROPERTY }), 'property_id, lease_id: not a record of this household'],
+    ['a due date before today', task({ title: 'Gọi khách', due_on: '2026-10-06' }), 'params.due_on: before today, 2026-10-07'],
+    [
+      'a rent change from a period already issued',
+      { type: 'suggest_rent_change', params: { title: 'Tăng tiền thuê phòng', lease_id: LEASE, effective_period_start: ISSUED_PERIOD, rent_vnd: 3_800_000 }, rationale: 'Giá khu này tăng.' },
+      'effective_period_start: that period is already billed or paid',
+    ],
     ['a filled title over the limit', task({ title: `${'Gọi khách '.repeat(20)}{{f1.place_label}}` }), 'params.title:'],
   ])('sends %s back to the model and stores nothing', async (_, input, message) => {
     const { tables, writer } = await setup();
