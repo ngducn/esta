@@ -22,7 +22,7 @@ export function resolveLinks(text: string, sheet: FactSheet): { readonly text: s
   return { text: resolved, refs: [...refs] };
 }
 
-/** A line holding only an ordered list's number, such as `1.`: cut there, it reads as a typed number until its item comes. */
+/** A line holding only an ordered list's number, such as `1.`. A cut at its `.` would read as a typed number until the item's text comes. */
 const LIST_MARKER = /^[ \t]*\d{1,9}$/;
 
 function lastSentenceEnd(template: string): number {

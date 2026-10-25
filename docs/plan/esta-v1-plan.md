@@ -4614,38 +4614,38 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Files.**
 
-- [ ] Create the other read tools of AGENT.md §4 under `apps/agent/src/tools/`, each with its household isolation test, and give `ledger` a whole year, the whole household and its totals by month and by category.
-- [ ] Extend `apps/agent/test/golden/ask-cases.ts`, `ask-ground-truth.sql` and `fixtures/agent-replay/ask/` to the ten AGENT.md §7.4 questions.
+- [x] Create the other read tools of AGENT.md §4 under `apps/agent/src/tools/`, each with its household isolation test, and give `ledger` a whole year, the whole household and its totals by month and by category.
+- [x] Extend `apps/agent/test/golden/ask-cases.ts`, `ask-ground-truth.sql` and `fixtures/agent-replay/ask/` to the ten AGENT.md §7.4 questions.
 
 **Build.**
 
-- [ ] Give the `ask` job all read tools and `create_proposal`. Output language follows the question.
-- [ ] Render answers that are lists as GFM tables in `SafeMarkdown`, with every cell through the number guard.
-- [ ] Hand-write the recordings for the ten AGENT.md §7.4 questions plus the lane questions, labelled hand-written. The live recordings wait for the P5-10 live run.
+- [x] Give the `ask` job all read tools and `create_proposal`. Output language follows the question.
+- [x] Render answers that are lists as GFM tables in `SafeMarkdown`, with every cell through the number guard.
+- [x] Hand-write the recordings for the ten AGENT.md §7.4 questions plus the lane questions, labelled hand-written. The live recordings wait for the P5-10 live run.
 
 **You see.**
 
-- [ ] `Which tenant paid late most often this year?` gets an English answer naming one tenant with a count.
-- [ ] `Hợp đồng nào hết hạn trong 60 ngày tới?` gets a table with one row.
+- [x] `Which tenant paid late most often this year?` gets an English answer naming one tenant with a count.
+- [x] `Hợp đồng nào hết hạn trong 60 ngày tới?` gets a table with one row.
 
 **Verify, unit.**
 
-- [ ] `apps/agent/test/golden/ask.test.ts` runs the ten AGENT.md §7.4 questions on the `full` seed at 2026-10-07 07:00. It asserts every number equals `ask-ground-truth.sql` after guard normalization and every link resolves (AGT-7).
-- [ ] `apps/agent/test/jobs/ask.test.ts` gains cases for an English question and a table answer.
-- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-ask.spec.ts`. axe and `pnpm design:detect` are clean.
+- [x] `apps/agent/test/golden/ask.test.ts` runs the ten AGENT.md §7.4 questions on the `full` seed at 2026-10-07 07:00. It asserts every number equals `ask-ground-truth.sql` after guard normalization and every link resolves (AGT-7).
+- [x] `apps/agent/test/jobs/ask.test.ts` gains cases for an English question and a table answer.
+- [x] Run `pnpm check`, then `pnpm e2e e2e/assistant-ask.spec.ts`. axe and `pnpm design:detect` are clean.
 
 **Verify, live.** The worker runs in replay.
 
-- [ ] Lane 2. me.lane2 asks `Phòng nào ở Dĩ An đang quá hạn đóng tiền?` at 1440x900 light. Save `p5-07-q2-overdue.png`. Pass when the answer names Phòng 5 only with 12 days and links to its invoice.
-- [ ] Lane 3. ryan.lane3 asks `Hợp đồng nào hết hạn trong 60 ngày tới?` at 1440x900 dark. Save `p5-07-q3-table.png`. Pass when the answer renders a table with one row, Căn hộ Thủ Đức, end date `01/11/2026`.
-- [ ] Lane 4. me.lane4 asks question 5 about her revenue and the 500 million threshold at 390x844 dark. Save `p5-07-q5-tax.png`. Pass when accrued, projected and remaining amounts equal her tax card.
-- [ ] Lane 5. me.lane5 asks `Sổ đất Bảo Lộc có đang thế chấp không, ở ngân hàng nào?` at 390x844 light. Save `p5-07-q8-mortgage.png`. Pass when the answer says it is mortgaged and names the bank shown on the Pháp lý tab.
-- [ ] Lane 6. ryan.lane6 asks `Which tenant paid late most often this year?` at 1440x900 light. Save `p5-07-q10-english.png`. Pass when the answer is in English and the tenant and count equal `payment_behavior` from `pnpm agent:tool`.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, asks `Which rooms in Dĩ An are overdue?`, follows the link to the collections board and copies the reminder. Save `p5-07-seed10-english.png`. Pass when the answer is in English naming Phòng 5 with 12 days and no text clips.
+- [x] Lane 2. me.lane2 asks `Phòng nào ở Dĩ An đang quá hạn đóng tiền?` at 1440x900 light. Save `p5-07-q2-overdue.png`. Pass when the answer names Phòng 5 only with 12 days and links to its invoice.
+- [x] Lane 3. ryan.lane3 asks `Hợp đồng nào hết hạn trong 60 ngày tới?` at 1440x900 dark. Save `p5-07-q3-table.png`. Pass when the answer renders a table with one row, Căn hộ Thủ Đức, end date `01/11/2026`.
+- [x] Lane 4. me.lane4 asks question 5 about her revenue and the 500 million threshold at 390x844 dark. Save `p5-07-q5-tax.png`. Pass when accrued, projected and remaining amounts equal her tax card.
+- [x] Lane 5. me.lane5 asks `Sổ đất Bảo Lộc có đang thế chấp không, ở ngân hàng nào?` at 390x844 light. Save `p5-07-q8-mortgage.png`. Pass when the answer says it is mortgaged and names the bank shown on the Pháp lý tab.
+- [x] Lane 6. ryan.lane6 asks `Which tenant paid late most often this year?` at 1440x900 light. Save `p5-07-q10-english.png`. Pass when the answer is in English and the tenant and count equal `payment_behavior` (checked against `ask-ground-truth.sql` run on lane 6, since `pnpm agent:tool` does not exist).
+- [x] LANE10KEEP SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, asks `Which rooms in Dĩ An are overdue?`, follows the link to the collections board and copies the reminder. Save `p5-07-seed10-english.png`. Pass when the answer is in English naming Phòng 5 with 12 days and no text clips.
 
 **Verify, perf.**
 
-- [ ] Send each golden question 5 times on head with the worker online in replay. Fail when any first visible sentence takes over 10 s (AGENT.md §5.6).
+- [x] Send each golden question 5 times on head with the worker online in replay. Fail when any first visible sentence takes over 10 s (AGENT.md §5.6).
 
 **Merge.** As P5-07a, with the operator's review of the lane screenshots.
 
