@@ -12,7 +12,7 @@ import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, readRecording } from '../../src/replay/store';
 import { replaySession } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
-import { ANSWER, answerRow, askRpcs, askTables, withDraftAndArchivedLeases } from '../ask-seed';
+import { ANSWER, answerRow, askRpcs, askTables, CONVERSATION, QUESTION, withDraftAndArchivedLeases } from '../ask-seed';
 import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
 import { askCase as findCase, askRecording, ASK_CASES, ASK_CONTEXT, caseEarlier, caseInput } from './ask-cases';
 import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
@@ -34,15 +34,24 @@ const links = (markdown: string) => [...markdown.matchAll(LINK)].map(([, link]) 
 /** The answer with each link target cut to its type, since record ids are the seed's, not the ground truth's. */
 const shown = (markdown: string) => markdown.replace(LINK, (_, link: string) => `](${link.replace(/\/[0-9a-f-]{36}$/, '/…')})`);
 
-async function ask(id: string, reads = replayedReads()) {
-  const askCase = ASK_CASES.find((candidate) => candidate.id === id);
-  if (askCase === undefined) throw new Error(`no case ${id}`);
+const EARLIER = { question: '00000000-0000-4000-8000-0000000c0a12', answer: '00000000-0000-4000-8000-0000000c0a13' };
+
+/** Runs the case, after the case it follows in the same session directory, as her conversation ran them. */
+async function ask(id: string, reads = replayedReads()): Promise<Asked> {
+  const askCase = findCase(id);
+  const before = askCase.follows === undefined ? null : await ask(askCase.follows.id, reads);
   const tables = askTables(askCase.question);
+  if (before !== null && askCase.follows !== undefined) {
+    const earlier = { household_id: HOUSEHOLD, conversation_id: CONVERSATION, status: 'done' };
+    tables.messages?.unshift({ ...earlier, id: EARLIER.question, role: 'user', content_md: findCase(askCase.follows.id).question }, { ...earlier, id: EARLIER.answer, role: 'assistant', content_md: before.answer.content_md, refs: before.answer.refs });
+  }
   const asOf = isoDate('2026-10-07');
   const prepared = askRequest({
     db: fakeDb(tables, [], {}, {}, askRpcs(tables)),
     householdId: HOUSEHOLD,
     jobId: `golden-${id}`,
+    conversationId: CONVERSATION,
+    questionId: QUESTION,
     answerId: ANSWER,
     locale: 'vi',
     asOf,
@@ -53,8 +62,20 @@ async function ask(id: string, reads = replayedReads()) {
     reads,
     clock: clockOn('2026-10-07T07:00:00+07:00'),
   });
+  const rebuilt = askCase.rebuiltFrom === undefined ? null : await prepared.rebuild?.();
+  if (rebuilt === undefined) throw new Error(`${id} has no session to rebuild`);
   const run = await replaySession(
-    { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }), ...(prepared.resume === undefined ? {} : { resume: prepared.resume }), ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }) },
+    {
+      spec: JOBS.ask,
+      prompt: rebuilt ?? prepared.prompt,
+      jobDir,
+      configDir: jobDir,
+      tools: prepared.tools,
+      canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }),
+      ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
+      ...(prepared.resume === undefined || rebuilt !== null ? {} : { resume: prepared.resume }),
+      ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
+    },
     DEFAULT_REPLAY_DIR,
   );
   const repair = await prepared.nextTurn?.();
@@ -64,10 +85,20 @@ async function ask(id: string, reads = replayedReads()) {
   return { answer, repair, result, run, conversation: tables.conversations?.[0], missing: links(answer.content_md).filter((link) => !present.has(link)) };
 }
 
+type Asked = {
+  readonly answer: ReturnType<typeof answerRow>;
+  readonly repair: string | null | undefined;
+  readonly result: { cited: Array<{ placeholder: string; value: string }> };
+  readonly run: Awaited<ReturnType<typeof replaySession>>;
+  readonly conversation: Record<string, unknown> | undefined;
+  readonly missing: string[];
+};
+
 const EXPECTED: Readonly<Record<string, () => string>> = {
   'q1-di-an-income': () => `Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in October 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
   'q1-deep': () => `Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in October 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
   'q1-follow-up-september': () => `Tháng 9/2026, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in September 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
+  'q1-follow-up-september-rebuilt': () => `Tháng 9/2026, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in September 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
   'q2-di-an-overdue': () =>
     `Ở Dãy trọ Dĩ An, chỉ có ${fact('q2', 'di-an units overdue')} đang quá hạn đóng tiền: quá hạn ${fact('q2', 'di-an days overdue')} ngày, còn nợ ${money('q2', 'di-an amount overdue')}.\n\nXem [hóa đơn của ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`,
   'q3-leases-ending': () =>

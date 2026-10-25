@@ -1,5 +1,7 @@
 import { query, type HookCallback, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { RunMode } from '../env';
 import type { JobSpec, ModelRole } from '../jobs/registry';
 import { InvalidJobError } from '../jobs/extract-document';
@@ -13,6 +15,16 @@ import { fromSdkResult, type SessionResult } from './result';
 export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
 
 export type BuiltInResult = ToolCall & { readonly result: unknown };
+
+/** The session a turn resumes is no longer on disk, as after a redeploy that emptied `ESTA_AGENT_HOME`. */
+export class SessionGoneError extends Error {
+  constructor(sessionId: string) {
+    super(`The session ${sessionId} this turn resumes is gone`);
+    this.name = 'SessionGoneError';
+  }
+}
+
+const SESSION_GONE = 'No conversation found with session ID';
 
 export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[] };
 
@@ -123,6 +135,8 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   }
   if (toolFailures.length > 0) throw toolFailures[0];
   if (result === undefined) throw new Error('The model session ended without a result');
+  const resumed = request.resume?.sessionId ?? null;
+  if (resumed !== null && result.subtype === 'error_during_execution' && result.errors.some((error) => error.startsWith(SESSION_GONE))) throw new SessionGoneError(resumed);
   return { result: fromSdkResult(result), model, toolCalls };
 }
 
@@ -130,15 +144,20 @@ const REPLAY_CHUNK = /.{1,12}/gsu;
 
 export const replayChunks = (reply: string): string[] => reply.match(REPLAY_CHUNK) ?? [];
 
+/** A replayed turn's stand-in for the SDK's session id, new each turn as a live one is, so a follow-up's resume shows in replay. */
+export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
+
+/** Where a replayed turn that keeps its transcript, as a streaming one does live, leaves its stand-in for the next turn to resume. */
+const replayTranscript = (configDir: string, sessionId: string) => join(configDir, 'replay-sessions', `${sessionId}.json`);
+
 /**
  * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the
  * policy denies is booked as a permission denial, as the SDK books a PreToolUse deny, and the replay goes on.
  */
-/** A replayed turn's stand-in for the SDK's session id, new each turn as a live one is, so a follow-up's resume shows in replay. */
-export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
-
 export async function replaySession(request: SessionRequest, replayDir: string): Promise<SessionRun> {
   const input = canonicalInput(request);
+  const resumed = request.resume?.sessionId ?? null;
+  if (resumed !== null && request.onText !== undefined && !existsSync(replayTranscript(request.configDir, resumed))) throw new SessionGoneError(resumed);
   const recording = readRecording(replayDir, input);
   console.log(`[agent] replay ${recordingPath(replayDir, input.kind, inputHash(input))}`);
   const policy = toolPolicy(request);
@@ -159,14 +178,19 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     else if (call.result !== undefined) observeBuiltIn(request, policy, { name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
   }
   const reply = request.canon.restore(recording.reply);
-  if (request.onText !== undefined) for (const chunk of replayChunks(reply)) await request.onText(chunk);
+  const sessionId = replaySessionId(inputHash(input));
+  if (request.onText !== undefined) {
+    for (const chunk of replayChunks(reply)) await request.onText(chunk);
+    mkdirSync(join(request.configDir, 'replay-sessions'), { recursive: true });
+    writeFileSync(replayTranscript(request.configDir, sessionId), `${JSON.stringify({ inputHash: inputHash(input) })}\n`);
+  }
   return {
     result: {
       isError: false,
       subtype: 'success',
       text: reply,
       numTurns: recording.numTurns,
-      sessionId: replaySessionId(inputHash(input)),
+      sessionId,
       costUsd: 0,
       usage: {},
       modelUsage: {},

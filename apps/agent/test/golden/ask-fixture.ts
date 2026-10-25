@@ -43,6 +43,8 @@ async function main() {
       db,
       householdId: household.id,
       jobId: 'ask-fixture',
+      conversationId: 'ask-fixture',
+      questionId: 'ask-fixture',
       answerId: 'ask-fixture',
       locale: 'vi',
       asOf,

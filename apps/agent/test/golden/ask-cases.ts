@@ -1,6 +1,6 @@
 import { isoDate } from '@esta/core/date';
 import type { EarlierTurn } from '../../src/jobs/ask';
-import { askFollowUpPrompt, askPrompt } from '../../src/prompts/ask';
+import { askFollowUpPrompt, askPrompt, type AskedTurn } from '../../src/prompts/ask';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../../src/replay/store';
@@ -14,6 +14,8 @@ export type AskCase = {
   readonly reply: string;
   /** A follow-up names the case it follows and the handle its turn starts at, one past the handles that case gave out. */
   readonly follows?: { readonly id: string; readonly firstHandle: number };
+  /** A follow-up whose saved session is gone, so it runs in a new session that holds these turns as she read them. */
+  readonly rebuiltFrom?: readonly AskedTurn[];
   /** An operator ticked Suy nghĩ kỹ hơn. */
   readonly deep?: true;
 };
@@ -39,6 +41,14 @@ export const ASK_CASES: readonly AskCase[] = [
     id: 'q1-follow-up-september',
     question: 'Còn tháng 9 thì sao?',
     follows: { id: 'q1-di-an-income', firstHandle: 9 },
+    toolCalls: [PROPERTIES, { name: mcpToolName('ledger'), input: { property: 'f11', year: 2026, month: 9 } }],
+    reply: 'Tháng {{f16.period_date_display}}, {{f11.property_label}} đã thu {{f16.income_display}} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của {{f11.property_label}}](f16).',
+  },
+  {
+    id: 'q1-follow-up-september-rebuilt',
+    question: 'Còn tháng 9 thì sao?',
+    follows: { id: 'q1-di-an-income', firstHandle: 9 },
+    rebuiltFrom: [{ question: 'Tháng này thu được bao nhiêu từ Dĩ An?', answer: 'Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu 1.000.000\u00a0₫ tiền thuê.\n\nXem từng khoản trong sổ thu chi của Dãy trọ Dĩ An.' }],
     toolCalls: [PROPERTIES, { name: mcpToolName('ledger'), input: { property: 'f11', year: 2026, month: 9 } }],
     reply: 'Tháng {{f16.period_date_display}}, {{f11.property_label}} đã thu {{f16.income_display}} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của {{f11.property_label}}](f16).',
   },
@@ -120,8 +130,9 @@ export const askCase = (id: string): AskCase => {
   return found;
 };
 
-export function casePrompt({ question, follows }: AskCase): string {
-  return follows === undefined ? askPrompt({ ...ASK_CONTEXT, question }) : askFollowUpPrompt({ today: ASK_CONTEXT.today, question, firstHandle: follows.firstHandle });
+export function casePrompt({ question, follows, rebuiltFrom }: AskCase): string {
+  if (rebuiltFrom !== undefined) return askPrompt({ ...ASK_CONTEXT, question, earlier: rebuiltFrom });
+  return follows === undefined ? askPrompt({ ...ASK_CONTEXT, question }) : askFollowUpPrompt({ today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question, firstHandle: follows.firstHandle });
 }
 
 /** The turn a follow-up resumes, as the conversation row holds it after the case it follows finished in replay. */
@@ -132,7 +143,7 @@ export function caseEarlier({ follows }: AskCase): EarlierTurn | null {
 }
 
 export function caseInput(item: AskCase) {
-  const earlier = caseEarlier(item);
+  const earlier = item.rebuiltFrom === undefined ? caseEarlier(item) : null;
   return canonicalInput({ spec: JOBS.ask, prompt: casePrompt(item), canon: canon(), ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash } }), ...(item.deep ? { modelRole: 'deep' as const } : {}) });
 }
 
@@ -143,7 +154,7 @@ export function askRecording(item: AskCase): Recording {
     kind: 'ask',
     inputHash: inputHash(input),
     input,
-    label: `Hand-written for ${item.id}${item.follows === undefined ? '' : `, resuming ${item.follows.id}`} on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.`,
+    label: `Hand-written for ${item.id}${item.follows === undefined ? '' : `, ${item.rebuiltFrom === undefined ? 'resuming' : 'rebuilding the lost session of'} ${item.follows.id}`} on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.`,
     model: item.deep ? 'hand-written-deep' : 'hand-written',
     numTurns: item.toolCalls.length + 1,
     toolCalls: item.toolCalls.map((call) => ({ ...call })),

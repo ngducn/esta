@@ -42,6 +42,8 @@ export type PreparedJob = {
   nextTurn?(): Promise<string | null>;
   /** The earlier turn this job continues, as a follow-up question does (AGENT.md §8). */
   readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
+  /** The prompt of a new session that holds what the session `resume` names held, for when that one is gone; null when nothing can. */
+  rebuild?(): Promise<string | null>;
   /** Another model than the kind's, as an operator's Suy nghĩ kỹ hơn asks. */
   readonly modelRole?: ModelRole;
 };

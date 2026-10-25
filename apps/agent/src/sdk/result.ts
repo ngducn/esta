@@ -27,7 +27,7 @@ export function fromSdkResult(message: SDKResultMessage): SessionResult {
   };
 }
 
-export type FailureKind = 'auth_error' | 'missing_recording' | 'invalid_job' | 'number_guard' | 'error';
+export type FailureKind = 'auth_error' | 'missing_recording' | 'invalid_job' | 'number_guard' | 'lost_session' | 'error';
 
 export type Failure = { readonly kind: FailureKind; readonly message: string };
 
