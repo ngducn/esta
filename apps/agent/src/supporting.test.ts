@@ -12,9 +12,9 @@ describe('beat', () => {
 
   it('upserts the worker row with the clock time, then deletes the rows of workers unseen for a day', async () => {
     const writes: Recorded[] = [];
-    await beat(fakeDb({}, writes), info, clock);
+    await beat(fakeDb({}, writes), info, 'usage_limited', clock);
     expect(writes).toEqual([
-      { table: 'worker_heartbeats', op: 'upsert', row: { ...info, last_seen_at: '2026-10-07T02:06:00.000Z' } },
+      { table: 'worker_heartbeats', op: 'upsert', row: { ...info, state: 'usage_limited', last_seen_at: '2026-10-07T02:06:00.000Z' } },
       { table: 'worker_heartbeats', op: 'delete', row: { last_seen_at: { lt: '2026-10-06T02:06:00.000Z' } } },
     ]);
   });

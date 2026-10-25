@@ -41,7 +41,7 @@ export type AskInput = {
   clock(): Promise<Clock>;
 };
 
-type AnswerUpdate = Pick<TablesUpdate<'messages'>, 'content_md' | 'refs'>;
+type AnswerUpdate = Pick<TablesUpdate<'messages'>, 'content_md' | 'refs' | 'deferred_until'>;
 
 async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 'householdId' | 'answerId'>, update: AnswerUpdate): Promise<void> {
   const { data, error } = await db.from('messages').update(update).eq('household_id', householdId).eq('id', answerId).eq('status', 'streaming').select('id');
@@ -120,7 +120,7 @@ async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   if (conversation.error) throw new Error(`Reading the conversation failed: ${conversation.error.message}`);
   const question = data.find((row) => row.id === question_id && row.role === 'user');
   if (question === undefined || !data.some((row) => row.id === answer_id && row.role === 'assistant')) throw new InvalidJobError(`ask ${job.id}: the question or its answer is not in conversation ${conversation_id}`);
-  await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [] });
+  await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [], deferred_until: null });
   const { sdk_session_id, sdk_turn_hash, sdk_handles } = conversation.data;
   const earlier = sdk_turn_hash === null ? null : { sessionId: sdk_session_id, turnHash: sdk_turn_hash, handles: sdk_handles };
   return { question: question.content_md, answerId: answer_id, earlier, deep };

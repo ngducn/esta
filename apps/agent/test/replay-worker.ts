@@ -1,5 +1,6 @@
 import type { Clock } from '@esta/core';
 import { join } from 'node:path';
+import type { WorkerState } from '../src/heartbeat';
 import type { PreparedJob } from '../src/jobs/registry';
 import { DEFAULT_REPLAY_DIR } from '../src/replay/store';
 import type { Worker } from '../src/runner';
@@ -14,7 +15,14 @@ type JobRow = Record<string, unknown>;
  * `claim_agent_job` and `claim_abandoned_agent_job` do: a queued row whose `run_after` has come, with the claim counted
  * in `attempts`, or a row running under the worker `stopped`, which counts as abandoned. Other functions go to `db`.
  */
-export function replayWorker(db: AgentDb, jobs: JobRow[], jobsDir: string, clock: () => Promise<Clock> = extractClock, replayDir = DEFAULT_REPLAY_DIR): Worker {
+export function replayWorker(
+  db: AgentDb,
+  jobs: JobRow[],
+  jobsDir: string,
+  clock: () => Promise<Clock> = extractClock,
+  replayDir = DEFAULT_REPLAY_DIR,
+  states: WorkerState[] = [],
+): Worker {
   const others = db.rpc.bind(db);
   const rpc = async (name: string, args: { worker_id: string; p_as_of: string }) => {
     if (name !== 'claim_agent_job' && name !== 'claim_abandoned_agent_job') return others(name as never, args as never);
@@ -25,7 +33,7 @@ export function replayWorker(db: AgentDb, jobs: JobRow[], jobsDir: string, clock
     return { data: row === undefined ? [] : [{ ...row }], error: null };
   };
   Object.assign(db, { rpc });
-  return { db, workerId: 'w2', mode: { agentMode: 'replay', authMode: 'none' }, jobsDir, conversationsDir: join(jobsDir, 'conversations'), configDir: jobsDir, replayDir, timezone: 'Asia/Ho_Chi_Minh', clock };
+  return { db, workerId: 'w2', mode: { agentMode: 'replay', authMode: 'none' }, jobsDir, conversationsDir: join(jobsDir, 'conversations'), configDir: jobsDir, replayDir, timezone: 'Asia/Ho_Chi_Minh', clock, setState: (state) => states.push(state) };
 }
 
 /** Calls a prepared job's tool by its short name, as the model would, answering the text the model reads. */

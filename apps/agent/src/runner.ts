@@ -1,9 +1,12 @@
 import type { Clock, Instant } from '@esta/core';
+import { retryAt } from '@esta/core/agent-limits';
 import type { Json } from '@esta/db';
 import { mkdirSync, realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import type { RunMode } from './env';
+import { writeFailureItems } from './failure-items';
+import type { WorkerState } from './heartbeat';
 import { InvalidJobError } from './jobs/extract-document';
 import { jobSpec, type AgentJob, type JobSpec } from './jobs/registry';
 import { canonicalizer, inputHash } from './replay/canonicalize';
@@ -26,9 +29,9 @@ export type Worker = {
   readonly replayDir: string;
   readonly timezone: string;
   clock(): Promise<Clock>;
+  /** Tells the heartbeat whether the last model session hit a usage limit. */
+  setState(state: WorkerState): void;
 };
-
-const BACKOFF_MINUTES = [1, 5, 25] as const;
 
 /** A retry cannot fix a missing recording, a rejected credential, a job whose rows do not line up (AGT-1) or a second guard violation (AGENT.md §6.3). */
 const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording', 'invalid_job', 'number_guard']);
@@ -37,9 +40,8 @@ export type NextStep = { readonly status: 'queued'; readonly runAfter: Instant }
 
 /** `attempts` already counts the attempt that just failed, because the claim increments it. */
 export function nextAttempt(job: Pick<AgentJob, 'attempts' | 'max_attempts'>, failure: Failure, asOf: Instant): NextStep {
-  if (PERMANENT.has(failure.kind) || job.attempts >= job.max_attempts) return { status: 'failed' };
-  const minutes = BACKOFF_MINUTES[Math.min(job.attempts, BACKOFF_MINUTES.length) - 1] ?? BACKOFF_MINUTES[0];
-  return { status: 'queued', runAfter: new Date(Date.parse(asOf) + minutes * 60_000).toISOString() as Instant };
+  const runAfter = PERMANENT.has(failure.kind) ? null : retryAt(job.attempts, job.max_attempts, asOf);
+  return runAfter === null ? { status: 'failed' } : { status: 'queued', runAfter };
 }
 
 function failureOf(error: unknown): Failure {
@@ -155,6 +157,7 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
     finished_at: finishedAt,
   });
   if (run.error) throw new Error(`Writing the run failed: ${run.error.message}`);
+  if (session !== null) worker.setState(!outcome.ok && outcome.failure.kind === 'usage_limit' ? 'usage_limited' : 'ok');
 
   if (outcome.ok) {
     await ownJob(worker, job, 'Finishing the job', { status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt });
@@ -163,7 +166,7 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
   const { failure } = outcome;
   const next = nextAttempt(job, failure, finishedAt);
   if (next.status === 'failed') {
-    await failJob(worker, job, failure.message);
+    await failJob(worker, job, failure);
     return outcome;
   }
   await ownJob(worker, job, 'Requeueing the job', { status: 'queued', run_after: next.runAfter, error: failure.message, locked_by: null, locked_at: null });
@@ -178,17 +181,19 @@ async function ownJob(worker: Worker, job: AgentJob, step: string, update: Parti
 }
 
 /**
- * Runs the kind's failure step before the job reads failed, and deletes the job's files, so a worker that stops in
- * between leaves a running job that `claim_abandoned_agent_job` hands to the next worker (AGENT.md §9). The failure
- * step is idempotent.
+ * Runs the kind's failure step and writes the failure items before the job reads failed, and deletes the job's files,
+ * so a worker that stops in between leaves a running job that `claim_abandoned_agent_job` hands to the next worker
+ * (AGENT.md §9). Both steps are idempotent.
  */
-async function failJob(worker: Worker, job: AgentJob, error: string): Promise<void> {
+async function failJob(worker: Worker, job: AgentJob, failure: Failure): Promise<void> {
   rmSync(join(worker.jobsDir, job.id), { recursive: true, force: true });
-  await jobSpec(job.kind)?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, error);
-  await ownJob(worker, job, 'Failing the job', { status: 'failed', error, finished_at: (await worker.clock()).now() });
+  const spec = jobSpec(job.kind);
+  await spec?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, failure.message);
+  await writeFailureItems({ db: worker.db, job, spec, clock: await worker.clock() }, failure);
+  await ownJob(worker, job, 'Failing the job', { status: 'failed', error: failure.message, finished_at: (await worker.clock()).now() });
 }
 
-const ABANDONED = 'The worker stopped during the last attempt';
+const ABANDONED: Failure = { kind: 'error', message: 'The worker stopped during the last attempt' };
 
 const WAIT_MINUTES = 5;
 const MAX_RESCHEDULES = 3;

@@ -25,6 +25,12 @@ function start(): { worker: Worker; stop: () => void } {
   const configDir = join(home, `config-${workerId}`);
   mkdirSync(configDir, { recursive: true });
   const clock = () => readClock(db, env);
+  const heartbeat = startHeartbeat(
+    db,
+    { worker_id: workerId, host_label: host, version: agentPackage.version, auth_mode: mode.authMode, agent_mode: mode.agentMode },
+    clock,
+    (error) => console.error(`[agent] heartbeat: ${error instanceof Error ? error.message : String(error)}`),
+  );
   const worker: Worker = {
     db,
     workerId,
@@ -35,13 +41,8 @@ function start(): { worker: Worker; stop: () => void } {
     replayDir: env.ESTA_REPLAY_DIR ?? DEFAULT_REPLAY_DIR,
     timezone: env.ESTA_TIMEZONE,
     clock,
+    setState: heartbeat.setState,
   };
-  const stopHeartbeat = startHeartbeat(
-    db,
-    { worker_id: workerId, host_label: host, version: agentPackage.version, auth_mode: mode.authMode, agent_mode: mode.agentMode },
-    clock,
-    (error) => console.error(`[agent] heartbeat: ${error instanceof Error ? error.message : String(error)}`),
-  );
   const stopScheduler =
     env.ESTA_AGENT_SCHEDULE === 'on'
       ? startScheduler(db, env.ESTA_TIMEZONE, clock, (error) => console.error(`[agent] scheduler: ${error instanceof Error ? error.message : String(error)}`))
@@ -50,7 +51,7 @@ function start(): { worker: Worker; stop: () => void } {
   return {
     worker,
     stop: () => {
-      stopHeartbeat();
+      heartbeat.stop();
       stopScheduler();
     },
   };
