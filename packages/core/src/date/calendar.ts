@@ -71,3 +71,11 @@ export function addMonths(date: IsoDate, months: number): IsoDate {
 export function weekday(date: IsoDate): number {
   return (((epochDay(date) + 4) % 7) + 7) % 7;
 }
+
+/** The ISO 8601 week that holds `date`, as `2026-W41`: weeks run Monday to Sunday and belong to the year of their Thursday. */
+export function isoWeek(date: IsoDate): string {
+  const thursday = epochDay(date) - ((weekday(date) + 6) % 7) + 3;
+  const { year } = dateParts(fromEpochDay(thursday));
+  const week = Math.floor((thursday - epochDay(fromParts(year, 1, 1))) / 7) + 1;
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}

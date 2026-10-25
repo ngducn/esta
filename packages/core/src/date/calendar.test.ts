@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, daysBetween, epochDay, firstOfMonth, fromEpochDay } from './calendar';
+import { addDays, addMonths, daysBetween, epochDay, firstOfMonth, fromEpochDay, isoWeek } from './calendar';
 import { isoDate } from './iso-date';
 
 const d = isoDate;
@@ -59,5 +59,19 @@ describe('firstOfMonth', () => {
   it('returns the first day of the same month', () => {
     expect(firstOfMonth(d('2026-07-15'))).toBe('2026-07-01');
     expect(firstOfMonth(d('2026-07-01'))).toBe('2026-07-01');
+  });
+});
+
+describe('isoWeek', () => {
+  it.each([
+    ['2026-10-05', '2026-W41'],
+    ['2026-10-11', '2026-W41'],
+    ['2026-10-12', '2026-W42'],
+    ['2026-01-01', '2026-W01'],
+    ['2027-01-01', '2026-W53'],
+    ['2024-12-30', '2025-W01'],
+    ['2021-01-03', '2020-W53'],
+  ])('puts %s in %s', (date, week) => {
+    expect(isoWeek(isoDate(date))).toBe(week);
   });
 });

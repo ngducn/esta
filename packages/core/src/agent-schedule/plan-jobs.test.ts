@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { parseInstant } from '../clock/resolve';
-import { planDailyJobs, type DailyJob } from './plan-daily-jobs';
+import { planScheduledJobs, type ScheduledJob } from './plan-jobs';
 
-const SCHEDULE: DailyJob[] = [
-  { kind: 'morning_brief', daily: '07:00' },
-  { kind: 'research_scan', daily: '06:00' },
-  { kind: 'portfolio_watch', daily: '06:40' },
+const SCHEDULE: ScheduledJob[] = [
+  { kind: 'morning_brief', at: '07:00' },
+  { kind: 'research_scan', at: '06:00' },
+  { kind: 'portfolio_watch', at: '06:40' },
 ];
+const WEEKLY: ScheduledJob = { kind: 'weekly_review', at: '08:00', weekday: 0 };
 const TZ = 'Asia/Ho_Chi_Minh';
 const plan = (now: string, existingKeys: readonly string[] = [], householdIds = ['h1']) =>
-  planDailyJobs(SCHEDULE, { householdIds, now: parseInstant(now), timezone: TZ, existingKeys: new Set(existingKeys) });
+  planScheduledJobs(SCHEDULE, { householdIds, now: parseInstant(now), timezone: TZ, existingKeys: new Set(existingKeys) });
 
-describe('planDailyJobs', () => {
+describe('planScheduledJobs', () => {
   it('queues nothing before the first time of the day', () => {
     expect(plan('2026-10-07T05:59:00+07:00')).toEqual([]);
   });
@@ -46,5 +47,20 @@ describe('planDailyJobs', () => {
   it('reads the business date, not the UTC date, just after local midnight', () => {
     expect(plan('2026-10-08T00:30:00+07:00')).toEqual([]);
     expect(plan('2026-10-07T23:59:00+07:00').map((job) => job.idempotencyKey)).toContain('portfolio_watch:h1:2026-10-07');
+  });
+
+  const weekly = (now: string, existingKeys: readonly string[] = []) =>
+    planScheduledJobs([WEEKLY], { householdIds: ['h1'], now: parseInstant(now), timezone: TZ, existingKeys: new Set(existingKeys) }).map((job) => job.idempotencyKey);
+
+  it('queues a weekly job on its day from its time, keyed by ISO week', () => {
+    expect(weekly('2026-10-11T07:59:00+07:00')).toEqual([]);
+    expect(weekly('2026-10-11T08:05:00+07:00')).toEqual(['weekly_review:h1:2026-W41']);
+  });
+
+  it('queues a weekly job on no other day, and once its week holds the key, not again that week', () => {
+    expect(weekly('2026-10-10T09:00:00+07:00'), 'Saturday').toEqual([]);
+    expect(weekly('2026-10-12T09:00:00+07:00'), 'Monday after a missed Sunday').toEqual([]);
+    expect(weekly('2026-10-11T23:00:00+07:00', ['weekly_review:h1:2026-W41'])).toEqual([]);
+    expect(weekly('2026-10-18T08:00:00+07:00', ['weekly_review:h1:2026-W41'])).toEqual(['weekly_review:h1:2026-W42']);
   });
 });

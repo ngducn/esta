@@ -1,7 +1,7 @@
 import { isoDate, parseInstant, type Clock } from '@esta/core';
 import { describe, expect, it } from 'vitest';
 import { beat } from './heartbeat';
-import { DAILY_JOBS, jobSpec, JOBS } from './jobs/registry';
+import { SCHEDULED_JOBS, jobSpec, JOBS } from './jobs/registry';
 import { fakeDb, type Recorded } from './test/fake-db';
 import { pingTools } from './jobs/ping';
 import { isEstaToolName } from './tools/server';
@@ -34,7 +34,7 @@ describe('job registry', () => {
   });
 
   it('defines portfolio_watch with watch_facts and create_item, 6 turns, 3 minutes, daily at 06:40', () => {
-    expect(JOBS.portfolio_watch).toMatchObject({ builtInTools: [], mcpTools: ['watch_facts', 'create_item'], maxTurns: 6, timeoutMs: 180_000, schedule: { daily: '06:40' } });
+    expect(JOBS.portfolio_watch).toMatchObject({ builtInTools: [], mcpTools: ['watch_facts', 'create_item'], maxTurns: 6, timeoutMs: 180_000, schedule: { at: '06:40' } });
   });
 
   it('defines morning_brief with watch_facts, recent_items and create_brief, 6 turns, 3 minutes, daily at 07:00 after its inputs', () => {
@@ -43,13 +43,13 @@ describe('job registry', () => {
       mcpTools: ['watch_facts', 'recent_items', 'create_brief'],
       maxTurns: 6,
       timeoutMs: 180_000,
-      schedule: { daily: '07:00' },
+      schedule: { at: '07:00' },
       waitsFor: ['research_scan', 'portfolio_watch'],
     });
-    expect(DAILY_JOBS).toEqual([
-      { kind: 'research_scan', daily: '06:00' },
-      { kind: 'portfolio_watch', daily: '06:40' },
-      { kind: 'morning_brief', daily: '07:00' },
+    expect(SCHEDULED_JOBS).toEqual([
+      { kind: 'research_scan', at: '06:00' },
+      { kind: 'portfolio_watch', at: '06:40' },
+      { kind: 'morning_brief', at: '07:00' },
     ]);
   });
 
@@ -59,7 +59,7 @@ describe('job registry', () => {
       mcpTools: ['research_topics', 'list_properties', 'recent_items', 'add_research_item'],
       maxTurns: 40,
       timeoutMs: 600_000,
-      schedule: { daily: '06:00' },
+      schedule: { at: '06:00' },
     });
   });
 
