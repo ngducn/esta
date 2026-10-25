@@ -4743,64 +4743,76 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
-## Email the morning brief and action items through SMTP (P5-09)
+Phase 5 re-cut, 2026-10-25. Ryan asked why Hỏi is not like a regular LLM chat, and said Trợ lý should be both proactive and open to anything Mẹ thinks to ask, the way he uses Claude. He approved the direction the same day ("yeah replan the rest around this decision today"). One Trợ lý thread replaces the Hộp thư and Hỏi tabs. Trợ lý's notes arrive in it as messages, Mẹ types back in the same place about anything, and Thị trường stays a browse tab. The number rule stays absolute, with three more fact sources, which are numbers she typed, figures quoted word for word from a page fetched in the conversation, and the result of the `calculate` tool (AGENT.md §6.4). P5-09 shrinks to an email that says Trợ lý left a new note and links to it. The P5-03c and P5-07a to P5-07c sections above stay as the record of what shipped. The 07a to 07c engine (streaming through the guard, handle links, session resume, the lost-session rebuild), the guard, the approvals and the P5-08a caps are reused, not rebuilt. `docs/plan/trail/slice-matrix.md` holds the matrix these sections come from. P5-08a and P5-08b come first, then P5-12, then P5-09 beside P5-13 to P5-15, then P5-16 and the exit, P5-10.
 
-**Depends on.** P5-08.
+## Talk with Trợ lý in one thread that holds its notes and her questions (P5-12)
+
+**Depends on.** P5-08a and P5-08b. It edits the Trợ lý page, the Hỏi form and the operator cards that both change.
 
 **Files.**
 
-- [ ] Create `packages/core/src/notify/recipients.ts`, `packages/core/src/email/briefEmail.ts`, `packages/core/src/email/actionEmail.ts` and their tests.
-- [ ] Create `apps/agent/src/notify/deliver.ts` and `apps/agent/src/notify/smtp.ts`.
-- [ ] Create `e2e/email-brief.spec.ts` and extend `supabase/seed/generator/` with `notification_preferences` defaults.
-- [ ] Edit `.env.example` and SPEC §8 for `ESTA_APP_URL`.
+- [ ] Create `supabase/migrations/20261007615000_thread.sql` with `public.ask_in_thread`, and `supabase/tests/thread.test.sql`.
+- [ ] Create `apps/web/src/server/agent/thread.ts` (`loadThread`) and its test, and `apps/web/src/components/assistant/thread.tsx`, `thread-composer.tsx` (from `ask-form.tsx`, which it replaces) and `pinned-items.tsx`.
+- [ ] Edit `apps/web/src/app/(app)/assistant/page.tsx` to render the thread, `apps/web/src/components/assistant/assistant-header.tsx` for the `Tin nhắn` and `Thị trường` tabs, `apps/web/src/app/(app)/assistant/diagnostics/page.tsx` to take the operator's connection check and watch cards, `apps/web/src/components/home/HomeBrief.tsx` and `apps/web/src/proxy.ts`.
+- [ ] Replace `apps/web/src/app/(app)/assistant/ask/page.tsx` and `apps/web/src/app/(app)/assistant/ask/[conversationId]/page.tsx` with redirects to the thread. Delete `ask-form.tsx` and the conversation list.
+- [ ] Edit `apps/agent/src/prompts/ask.ts` and add hand-written recordings under `fixtures/agent-replay/ask/`.
+- [ ] Create `e2e/assistant-thread.spec.ts`. Move the cases of `e2e/assistant-ask.spec.ts` and `e2e/assistant-inbox.spec.ts` into it and delete both files. Edit the Trợ lý selectors in every other `e2e/assistant-*.spec.ts`, `e2e/morning-brief.spec.ts` and `.claude/skills/verify/features/assistant.md`.
 
 **Build.**
 
-- [ ] Name the data shape. `recipientsFor(item, members, preferences, sentToday)` in `packages/core/src/notify/recipients.ts` returns `{ memberId, channel, status: 'queued' | 'skipped' }[]`. It honours kinds, severities and `daily_cap` per member, skips `operator` items for non-operators, and covers only `brief` items and `action` items (PLT-4).
-- [ ] Render emails as pure functions. `renderBriefEmail(brief, locale, appUrl)` returns `{ subject, html, text }` with subject `Ghi chú buổi sáng 07/10/2026`, the brief sections, NFC-normalized text, the same link allowlist as `AgentMarkdown`, and `esta://` links rewritten to `ESTA_APP_URL` paths. `renderActionEmail` does the same for one action item. Chrome follows the member locale. Body text stays in the household locale.
-- [ ] Deliver from the worker. After a job commits and on every scheduler tick, `deliverPending()` inserts `notifications` rows with `on conflict do nothing` on `(user_id, agent_item_id, channel)`, sends `queued` email rows through nodemailer to `SMTP_URL`, and sets `sent`, or `failed` with the error for a retry on the next tick.
-- [ ] Refuse to start delivery when `EMAIL_TRANSPORT` is not `smtp` outside production, so development mail only reaches Inbucket. The production sender is an operator item at the Phase 6 gate. This PR configures no real sender and sends nothing to real addresses.
-- [ ] Add `ESTA_APP_URL` to `.env.example`, the zod env schemas of web and agent, and the SPEC §8 table in this PR.
-- [ ] Seed `notification_preferences` for every lane member with email on for `brief` and `action` and `daily_cap` 10.
+- [ ] Run `/impeccable shape Trợ lý thread` and record the confirmed brief in the PR body before building. It holds DESIGN-BRIEF §5.5 as amended on 2026-10-25.
+- [ ] Name the data shape. `ThreadEntry` is `{ kind: 'note'; item }`, `{ kind: 'question'; message }` or `{ kind: 'answer'; message }`, ordered by time, then notes before messages at the same instant, then id. `Thread` is `{ entries, pinned, openTasks, before }`, where `before` is the cursor for older entries. A conversation is a segment of the thread that bounds one SDK session. She never sees it.
+- [ ] Write `loadThread(member, { before?, note? })` on the session client. It merges the notes RLS lets the member read (operator items only for operators, as Hộp thư does) with the messages of the conversations the member started, newest 40 entries. `?before=` loads `Xem tin cũ hơn`, and `?note={id}` loads the page of entries around that note and scrolls to it.
+- [ ] Write `public.ask_in_thread(p_household_id, p_question_id, p_question, p_deep, p_as_of)`. Under an advisory lock per member it picks the member's latest conversation when its last question was asked on the business day of `p_as_of` and it holds fewer than 20 questions, and a new conversation otherwise [app rule]. It then runs `ask_question` on that conversation, so the viewer rule, the operator-only deep model, the resend that asks once and `ESTA_ASK_BUSY` all hold unchanged. Revoke `ask_question` from `authenticated`, so no client picks a conversation another member started. The 20-question bound also caps how far one transcript grows (#340).
+- [ ] Render the thread on Trợ lý under the `Tin nhắn` tab, newest at the bottom. Trợ lý's notes are the existing note cards with their `Đã đọc`, `Ẩn`, `Đồng ý` and `Bỏ qua` actions. A hidden note collapses to one muted line with its title and `Hoàn tác`, so the thread keeps its order. Her messages sit on the right as plain tinted blocks. Answers are note cards with the streaming of P5-07a, the tables of P5-07b and a `Sao chép` text button that copies the answer's text. A capped answer shows the P5-08a sentence.
+- [ ] Keep a reply box at the bottom, above the tab bar on a phone. It has a text field that grows to five lines, a `Gửi` text button and, for operators only, `Suy nghĩ kỹ hơn`. While an answer streams the box reads `Trợ lý đang trả lời` and does not send. Offline, her message is saved and the offline banner says it will be answered when the worker returns.
+- [ ] Pin open work above the thread. `Cần xử lý` lists proposals not yet decided and `action` notes not hidden, most severe first, at most 3 plus a count, each linking to its note. The open tasks of P5-06a sit under `Việc cần làm` with the anchor `tasks`, so Home's link still lands. Today's brief is not pinned, which closes the stale pinned brief of #321.
+- [ ] Open the scope of `ask` in `apps/agent/src/prompts/ask.ts`. She may ask about her data, ask for writing (a Zalo message to a tenant, a short letter), ask for advice or an explanation, or ask about the world. Writing that holds an amount cites the tool field like any answer. When she needs a number that no fact source holds, Trợ lý says so plainly, never estimates, and until P5-14 says it cannot look things up on the web yet.
+- [ ] Hand-write the recordings for golden question 1 sent in the thread and for thread cases T1, T2 and T8 of AGENT.md §7.4, labelled hand-written until the P5-10 live run.
+- [ ] Redirect `/assistant/ask` and `/assistant/ask/{id}` to `/assistant`, keeping the Vietnamese not-found page for an id from another household. Point Home's brief at `/assistant?note={id}`. Move the operator's connection check and watch cards to `/assistant/diagnostics`.
 
 **You see.**
 
-- [ ] After the 2026-10-07 07:00 brief, Inbucket shows `Ghi chú buổi sáng 07/10/2026` in the me.lane2 mailbox with correct diacritics.
-- [ ] The same mailbox holds one email per `action` item (Phòng 5, Thủ Đức lease, Phòng 7 deposit).
-- [ ] Restarting the worker sends no second copy.
+- [ ] With the clock at 2026-10-07 07:05, me.lane2 opens Trợ lý and reads one thread. The brief, the watch notes and the proposals appear in time order, `Cần xử lý` pins the Phòng 5 note and the open proposals, and the reply box sits at the bottom.
+- [ ] She types `Tháng này thu được bao nhiêu từ Dĩ An?` and the answer streams below her message with the October income and a link to the `di-an` ledger.
+- [ ] She types `Viết tin nhắn Zalo nhắc khách phòng 5 ở Dĩ An đóng tiền.`, gets a polite draft that names the tenant and the amount owed, and `Sao chép` copies it.
+- [ ] Opening `/assistant/ask` lands on the thread.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/notify/recipients.test.ts` gains cases for kinds and severities filtering, the daily cap reached, an operator item to a non-operator, and a `watch` item not emailed.
-- [ ] `packages/core/src/email/briefEmail.test.ts` gains snapshot cases for the HTML and text parts, NFC normalization of `Hường`, an `esta://` link rewritten to `ESTA_APP_URL`, and a stripped `javascript:` link.
-- [ ] `apps/agent/test/notify/deliver.test.ts` runs against local Supabase and Inbucket. It covers a send, a rerun with no duplicate, an SMTP failure marked `failed` and retried, and a cap skip (PLT-4).
-- [ ] Golden tests in AGENT.md §7 for `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
-- [ ] Run `pnpm check`, `pnpm db:test`, then `pnpm e2e e2e/email-brief.spec.ts`.
+- [ ] `supabase/tests/thread.test.sql` covers a second question on the same business day joining the conversation, the next day starting a new one, the 21st question starting a new one, member A never joining member B's conversation, a viewer writing, `p_deep` refused for a non-operator, a resend asking once, `ESTA_ASK_BUSY`, another household's member refused, and `ask_question` refused to `authenticated`.
+- [ ] `apps/web/src/server/agent/thread.test.ts` covers the merge order with a note and a question at the same instant, the `before` cursor, the window around `?note=`, and operator items hidden from a member.
+- [ ] `apps/agent/test/golden/ask.test.ts` gains golden question 1 sent in the thread and thread cases T1, T2 and T8 on the `full` seed at 2026-10-07 07:00. T1's amount equals `ask-ground-truth.sql`, T2 and T8 hold no number, and every link resolves (AGT-7).
+- [ ] Golden tests in AGENT.md §7 for `ask` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [ ] Run `pnpm check`, `pnpm db:test`, then `pnpm e2e e2e/assistant-thread.spec.ts e2e/assistant-proposals.spec.ts e2e/morning-brief.spec.ts e2e/assistant-limits.spec.ts e2e/assistant-diagnostics.spec.ts`.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` and `/impeccable harden` on the thread for long Vietnamese messages, 130% text scale, an empty thread, loading, error and offline, and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-thread.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay with the clock at 2026-10-07 07:05.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay with the clock at 2026-10-07 07:05. Lanes that move the clock run on their own slot.
 
-- [ ] Lane 1. Regression lane against trunk. The lane signs me.lane1 in at trunk and head and opens her Inbucket mailbox at 1440x900 light. Trunk sends no brief email, so the lane gates head's brief email. Save `p5-09-regression-mailbox.png`. Pass when the sign-in code arrives on both sides and head adds `Ghi chú buổi sáng 07/10/2026`.
-- [ ] Lane 2. The lane opens the me.lane2 brief email HTML in Inbucket at 390x844 light. Save `p5-09-brief-html-mobile.png`. Pass when `Phòng 5`, `quá hạn 12 ngày` and `Căn hộ Thủ Đức` render with correct diacritics and the sections read `Cần làm`, `Theo dõi`, `Thị trường` in order.
-- [ ] Lane 3. The lane opens the plain text part of the me.lane3 brief at 1440x900 light. Save `p5-09-brief-text.png`. Pass when the text part holds the same section headings and amounts as the HTML part.
-- [ ] Lane 4. The lane opens the me.lane4 mailbox at 1440x900 light. Save `p5-09-action-emails.png`. Pass when exactly three action emails exist, for Phòng 5, the Thủ Đức lease and Phòng 7's deposit, and none for watch or info items.
-- [ ] Lane 5. The lane sets ryan.lane5 email preferences to `brief` only in Studio before the 07:00 run, then opens his mailbox at 390x844 light. Save `p5-09-preferences.png`. Pass when he has the brief email and no action emails.
-- [ ] Lane 6. The lane sets me.lane6 `daily_cap` to 2, then opens her mailbox and `notifications` in Studio at 1440x900 light. Save `p5-09-daily-cap.png`. Pass when 2 emails arrived and the remaining rows read `skipped`.
-- [ ] Lane 7. The lane restarts the worker twice and opens the me.lane7 mailbox at 1440x900 light. Save `p5-09-no-duplicates.png`. Pass when the brief email count stays 1.
-- [ ] Lane 8. me.lane8 taps the Phòng 5 link in her brief email at 390x844 dark. Save `p5-09-email-link.png`. Pass when the browser opens the app at the Phòng 5 invoice after sign-in.
-- [ ] Lane 9. On its own slot, the lane stops Inbucket before 07:00, starts it at 07:10, and opens `notifications` for lane9 in Studio, then the mailbox, at 390x844 light. Save `p5-09-smtp-retry.png`. Pass when rows read `failed` with an SMTP error first and the email arrives after Inbucket returns with rows reading `sent`.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 sets her language to English, text scale 130% and dark at 390x844, opens her brief email from Inbucket, follows its Phòng 5 link, and copies the reminder. Save `p5-09-seed10-english.png`. Pass when the email chrome is English, the body names Phòng 5 with 12 days, and the board shows `Overdue 12 days`.
+- [ ] Lane 1. Regression lane against trunk. me.lane1 at 390x844 light reads Hộp thư at trunk and the thread at head, then asks golden question 1 on Hỏi at trunk and in the thread at head. Save `p5-12-regression-thread.png`. Pass when the notes on both sides have the same titles and the answer amount on both sides equals the `di-an` Thu chi tab's October income.
+- [ ] Lane 2. SPEC §9.4 seed 9. me.lane2 at 390x844 light reads the brief in the thread and taps `Đồng ý` on a `create_task` proposal. Save `p5-12-approve-inline.png`. Pass when she finishes within 2 minutes, the card reads `Đã đồng ý`, the task shows under `Việc cần làm` and on Home, and `audit_log` names her as the actor.
+- [ ] Lane 3. me.lane3 at 390x844 dark sends thread case T1 and taps `Sao chép`. Save `p5-12-zalo-draft.png`. Pass when the draft names the Phòng 5 tenant and an amount equal to Phòng 5's outstanding on the collections board, the answer row is `done`, and the clipboard holds the answer's text.
+- [ ] Lane 4. ryan.lane4 at 1440x900 light sends thread case T2. Save `p5-12-advice.png`. Pass when the answer gives advice in Vietnamese with no digit, currency word or number word, and the row is `done`.
+- [ ] Lane 5. me.lane5 at 390x844 light hides the Phòng 5 note, taps `Hoàn tác`, then hides it again. Save `p5-12-pinned.png`. Pass when `Cần xử lý` loses the note each time it is hidden and regains it on undo, and the thread keeps it as one muted line.
+- [ ] Lane 6. On its own slot, me.lane6 at 390x844 light asks golden question 1, then `Còn tháng 9 thì sao?`, then moves the clock one day and asks question 1 again. Save `p5-12-segments.png`. Pass when the follow-up joins the first conversation with its session resumed in Studio, the next-day question starts a new conversation, and all three questions show in one thread in order.
+- [ ] Lane 7. ryan.lane7 at 1440x900 dark ticks `Suy nghĩ kỹ hơn` and asks question 1, then opens `/assistant/diagnostics`, and me.lane7 opens the thread. Save `p5-12-deep-operator.png`. Pass when the run's model in `agent_runs` is the deep model, the connection check and watch cards show on diagnostics, and Mẹ's reply box has no `Suy nghĩ kỹ hơn`.
+- [ ] Lane 8. me.lane8 at 390x844 light opens `/assistant/ask`, an `/assistant/ask/{id}` link saved from P5-07c, another household's conversation link, and Home's brief link. Save `p5-12-old-links.png`. Pass when the first two land on the thread, the third shows the Vietnamese not-found page, and the brief link scrolls the thread to the brief.
+- [ ] Lane 9. On its own slot, the lane stops the worker, me.lane9 at 390x844 dark sends question 1, then the lane restarts the worker. Save `p5-12-offline.png`. Pass when the offline banner shows, her message stays in the thread, the answer arrives after the restart, and a second send while it streams is refused with `Trợ lý đang trả lời`.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, asks `Which rooms in Dĩ An are overdue?` in the thread, follows the link to the collections board and copies the reminder. Save `p5-12-seed10-english.png`. Pass when the answer is in English naming Phòng 5 with 12 days, no text clips, and the tab bar never covers the reply box.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Time from the brief item commit to its arrival in Inbucket, and `renderBriefEmail` time (vitest bench).
-- [ ] Probe. Run 10 brief jobs for 10 lane households on head and read Inbucket arrival times, and run the render bench 1,000 times.
-- [ ] Baseline. Trunk sends no notifications, so record that and take head values as the first baseline. Compare `morning_brief` replay wall time across sides to show delivery adds nothing to the job.
-- [ ] Rule. Fail when any brief email arrives more than 60 s after commit, a render exceeds 20 ms, or `morning_brief` wall time grows more than 10% over trunk.
+- [ ] Metric. Lighthouse mobile LCP, TBT as the INP proxy, CLS and initial JS gzipped for `/assistant` on a production build with the `full` seed (Hộp thư at trunk, the thread at head). Time from send to the first visible sentence for golden question 1. `loadThread` server time for a member with 200 entries.
+- [ ] Probe. 5 interleaved Lighthouse runs per side, 5 sends of question 1 per side in replay (Hỏi at trunk, the thread at head), and 20 `loadThread` calls on head after inserting 200 entries.
+- [ ] Baseline. Record trunk's `/assistant` medians and trunk's send-to-first-sentence median first.
+- [ ] Rule. Fail when head's `/assistant` LCP exceeds trunk's median by more than 10% or breaks SPEC §7.2 (LCP 2.5 s, TBT 200 ms, CLS 0.05, 200 KB initial JS), when the first visible sentence takes over 10 s (AGENT.md §5.6) or over 1 s more than trunk's median, or when `loadThread` p95 exceeds 150 ms.
 
 **Review gate.** The operator reviews before merge.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-09/P5-09-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of the brief email in Inbucket at phone width, its text part and a link opening the app, saved as `~/.claude/orchestrate/esta/media/P5-09/P5-09-review.mp4`.
+- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-12/P5-12-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of Mẹ reading the morning's notes in the thread, approving one inline, asking question 1 and copying a Zalo draft at 390x844, saved as `~/.claude/orchestrate/esta/media/P5-12/P5-12-review.mp4`.
 - [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
 
 **Merge.**
@@ -4810,9 +4822,357 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
+## Email Mẹ a link when Trợ lý leaves a new note (P5-09)
+
+**Depends on.** P5-12, for the thread link `/assistant?note={id}`. It runs beside P5-13 to P5-15, which do not touch its files. Shrunk on 2026-10-25 from emailing the whole brief to a notice with a link (Ryan's direction).
+
+**Files.**
+
+- [ ] Create `supabase/migrations/20261007616000_notifications.sql` with `notifications`, RLS, the audit trigger, and `supabase/tests/notifications.test.sql`.
+- [ ] Create `packages/core/src/notify/recipients.ts`, `packages/core/src/email/notice-email.ts` and their tests.
+- [ ] Create `apps/agent/src/notify/deliver.ts` and `apps/agent/src/notify/smtp.ts`.
+- [ ] Create `e2e/email-notice.spec.ts` and extend `supabase/seed/generator/` with `notification_preferences` defaults.
+- [ ] Edit `.env.example` and SPEC §8 for `ESTA_APP_URL`.
+
+**Build.**
+
+- [ ] Name the data shape. `recipientsFor(item, members, preferences, sentToday)` in `packages/core/src/notify/recipients.ts` returns `{ memberId, channel, status: 'queued' | 'skipped' }[]`. It honours kinds, severities and `daily_cap` per member, skips `operator` items for non-operators, and covers only `brief` notes and `action` notes (PLT-4).
+- [ ] Render the notice as a pure function. `renderNoticeEmail(item, locale, appUrl)` returns `{ subject, html, text }`. The subject is `Trợ lý: Ghi chú buổi sáng 07/10/2026` for a brief and `Trợ lý: {note title}` for an action note. The body is one sentence saying Trợ lý left a new note, the note's title (text the number guard already passed) and a `Mở tin nhắn` button to `ESTA_APP_URL/assistant?note={id}`, which survives sign-in's return link. It holds none of the note's body. Text is NFC. Chrome follows the member locale, and the title stays in the household locale.
+- [ ] Deliver from the worker. After a job commits and on every scheduler tick, `deliverPending()` inserts `notifications` rows with `on conflict do nothing` on `(user_id, agent_item_id, channel)`, sends `queued` email rows through nodemailer to `SMTP_URL`, and sets `sent`, or `failed` with the error for a retry on the next tick.
+- [ ] Refuse to start delivery when `EMAIL_TRANSPORT` is not `smtp` outside production, so development mail only reaches Inbucket. The production sender is an operator item at the Phase 6 gate. This PR configures no real sender and sends nothing to real addresses.
+- [ ] Add `ESTA_APP_URL` to `.env.example`, the zod env schemas of web and agent, and the SPEC §8 table in this PR.
+- [ ] Seed `notification_preferences` for every lane member with email on for `brief` and `action` and `daily_cap` 10. The settings section that edits them is P6-01b's.
+
+**You see.**
+
+- [ ] After the 2026-10-07 07:00 brief, Inbucket shows `Trợ lý: Ghi chú buổi sáng 07/10/2026` in the me.lane2 mailbox with correct diacritics.
+- [ ] The same mailbox holds one notice per `action` note (Phòng 5, the Thủ Đức lease, Phòng 7's deposit).
+- [ ] Tapping `Mở tin nhắn` opens the thread at that note after sign-in.
+- [ ] Restarting the worker sends no second copy.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `packages/core/src/notify/recipients.test.ts` gains cases for kinds and severities filtering, the daily cap reached, an operator item to a non-operator, and a `watch` note not emailed.
+- [ ] `packages/core/src/email/notice-email.test.ts` gains snapshot cases for the HTML and text parts, NFC normalization of `Hường`, the link to `ESTA_APP_URL/assistant?note={id}`, an English member's chrome around a Vietnamese title, and a title holding `<script>` escaped.
+- [ ] `apps/agent/test/notify/deliver.test.ts` runs against local Supabase and Inbucket. It covers a send, a rerun with no duplicate, an SMTP failure marked `failed` and retried, and a cap skip (PLT-4).
+- [ ] `supabase/tests/notifications.test.sql` proves a member reads only their own rows and writes none.
+- [ ] Golden tests in AGENT.md §7 for `morning_brief` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [ ] Run `pnpm check`, `pnpm db:test`, then `pnpm e2e e2e/email-notice.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay with the clock at 2026-10-07 07:05.
+
+- [ ] Lane 1. Regression lane against trunk. The lane signs me.lane1 in at trunk and head and opens her Inbucket mailbox at 1440x900 light. Trunk sends no notice, so the lane gates head's brief notice. Save `p5-09-regression-mailbox.png`. Pass when the sign-in code arrives on both sides and head adds `Trợ lý: Ghi chú buổi sáng 07/10/2026`.
+- [ ] Lane 2. The lane opens the me.lane2 brief notice HTML in Inbucket at 390x844 light. Save `p5-09-notice-html-mobile.png`. Pass when the subject and title render with correct diacritics, the `Mở tin nhắn` button is at least 44 px tall, and the body holds no section of the brief.
+- [ ] Lane 3. The lane opens the plain text part of the me.lane3 brief notice at 1440x900 light. Save `p5-09-notice-text.png`. Pass when the text part holds the same title and the full `ESTA_APP_URL/assistant?note=` link.
+- [ ] Lane 4. The lane opens the me.lane4 mailbox at 1440x900 light. Save `p5-09-action-notices.png`. Pass when exactly three action notices exist, for Phòng 5, the Thủ Đức lease and Phòng 7's deposit, and none for watch or info notes.
+- [ ] Lane 5. The lane sets ryan.lane5 email preferences to `brief` only in Studio before the 07:00 run, then opens his mailbox at 390x844 light. Save `p5-09-preferences.png`. Pass when he has the brief notice and no action notices.
+- [ ] Lane 6. The lane sets me.lane6 `daily_cap` to 2, then opens her mailbox and `notifications` in Studio at 1440x900 light. Save `p5-09-daily-cap.png`. Pass when 2 emails arrived and the remaining rows read `skipped`.
+- [ ] Lane 7. The lane restarts the worker twice and opens the me.lane7 mailbox at 1440x900 light. Save `p5-09-no-duplicates.png`. Pass when the brief notice count stays 1.
+- [ ] Lane 8. Signed out, me.lane8 taps `Mở tin nhắn` in her Phòng 5 notice at 390x844 dark and signs in. Save `p5-09-notice-link.png`. Pass when the thread opens scrolled to the Phòng 5 note.
+- [ ] Lane 9. On its own slot, the lane stops Inbucket before 07:00, starts it at 07:10, and opens `notifications` for lane9 in Studio, then the mailbox, at 390x844 light. Save `p5-09-smtp-retry.png`. Pass when rows read `failed` with an SMTP error first and the email arrives after Inbucket returns with rows reading `sent`.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 sets her language to English, text scale 130% and dark at 390x844, opens her Phòng 5 notice, follows its link, and copies the reminder from the collections board. Save `p5-09-seed10-english.png`. Pass when the email chrome is English, the title stays Vietnamese, and the board shows `Overdue 12 days`.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. Time from the brief note's commit to its notice's arrival in Inbucket, and `renderNoticeEmail` time (vitest bench).
+- [ ] Probe. Run 10 brief jobs for 10 lane households on head and read Inbucket arrival times, and run the render bench 1,000 times.
+- [ ] Baseline. Trunk sends no notifications, so record that and take head values as the first baseline. Compare `morning_brief` replay wall time across sides to show delivery adds nothing to the job.
+- [ ] Rule. Fail when any notice arrives more than 60 s after commit, a render exceeds 20 ms, or `morning_brief` wall time grows more than 10% over trunk.
+
+**Review gate.** The operator reviews before merge.
+
+- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-09/P5-09-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of the notice in Inbucket at phone width and its link opening the thread at the note, saved as `~/.claude/orchestrate/esta/media/P5-09/P5-09-review.mp4`.
+- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+## Reply to a note, ask about a property, and tap a suggested reply (P5-13)
+
+**Depends on.** P5-12.
+
+**Files.**
+
+- [ ] Create `supabase/migrations/20261007617000_thread_topics.sql` with `messages.topic` and the `p_topic` argument of `ask_in_thread`, and extend `supabase/tests/thread.test.sql`.
+- [ ] Create `packages/core/src/assistant/suggestions.ts` and its test.
+- [ ] Edit `apps/agent/src/jobs/ask.ts` and `apps/agent/src/prompts/ask.ts`, and add hand-written recordings under `fixtures/agent-replay/ask/`.
+- [ ] Edit `apps/web/src/components/assistant/thread-composer.tsx`, `thread.tsx`, `assistant-note.tsx`, `apps/web/src/components/home/HomeBrief.tsx` and the property header in `apps/web/src/app/(app)/properties/[id]/layout.tsx`.
+- [ ] Extend `e2e/assistant-thread.spec.ts`.
+
+**Build.**
+
+- [ ] Name the data shape. `ThreadTopic` is `{ kind: 'item'; itemId }` or `{ kind: 'property'; propertyId }`, stored in `messages.topic` on her message.
+- [ ] `ask_in_thread` takes `p_topic`. An item must belong to the household and be visible to the caller, so an operator item is refused to a member. A property must be a live property of the household. A message with a topic always starts a new conversation, so the topic leads [app rule].
+- [ ] Load the topic before the first turn. For a note, the worker reads it and, through the existing read tools, the records its `related` names (an invoice, a lease, a property), so those records hold the first handles. The prompt gives the note's text as context and tells the model to cite the handles, never the note's figures. For a property, `get_property` and `property_metrics` for it come first.
+- [ ] Add `Trả lời` to every note card and to Home's brief card (`/assistant?reply={id}`). The reply box then shows `Trả lời: {note title}` with `Bỏ`, and her sent message shows the quoted title linking back to the note.
+- [ ] Add `Hỏi Trợ lý về tài sản này` to the property header. It opens `/assistant?about={propertyId}` with `Về: {nickname}` above the reply box.
+- [ ] Encode suggested replies as data. `SUGGESTIONS` in `packages/core/src/assistant/suggestions.ts` maps a note kind and watch rule id to message keys with record labels as parameters, for example W1 to `Viết tin nhắn nhắc {tenant}` and `{tenant} đã trễ mấy lần?`, W3 to `Có nên gia hạn hợp đồng {property} không?`, W4 to `Làm sao cho thuê {unit} nhanh hơn?`, the brief to `Hôm nay nên làm việc nào trước?` and the weekly note to `Tóm tắt tuần này giúp mẹ`. Up to 3 chips sit above the reply box, drawn from today's open notes, most severe first. A tap sends the text with that note as the topic.
+- [ ] Hand-write the recordings for thread cases T3 and T4 and for the three suggestion texts of the `full` seed's 2026-10-07 notes, labelled hand-written until the P5-10 live run.
+
+**You see.**
+
+- [ ] me.lane2 taps `Trả lời` on the Phòng 5 note, types `Khách này trễ mấy lần rồi?`, and the answer gives the count from `payment_behavior`.
+- [ ] On Đất Bảo Lộc she taps `Hỏi Trợ lý về tài sản này`, asks `Tài sản này đang thế chấp ở đâu?`, and the answer names the bank on its Pháp lý tab.
+- [ ] Above the reply box she sees `Viết tin nhắn nhắc` with the Phòng 5 tenant's name, and one tap sends it.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `supabase/tests/thread.test.sql` gains cases for an item topic, a property topic, another household's item refused, an operator item refused to a member, an archived property refused, and a topic starting a new conversation.
+- [ ] `packages/core/src/assistant/suggestions.test.ts` covers each mapped rule, the cap of 3, most severe first, a hidden note giving no chip, and every key present in `vi.json` and `en.json`.
+- [ ] `apps/agent/test/jobs/ask.test.ts` gains cases for a note topic loading its related records as the first handles and a property topic calling `get_property` first.
+- [ ] `apps/agent/test/golden/ask.test.ts` gains thread cases T3 and T4, whose numbers equal `ask-ground-truth.sql` and whose links resolve (AGT-7).
+- [ ] Golden tests in AGENT.md §7 for `ask` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [ ] Run `pnpm check`, `pnpm db:test`, then `pnpm e2e e2e/assistant-thread.spec.ts e2e/home.spec.ts`.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-thread.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay with the clock at 2026-10-07 07:05.
+
+- [ ] Lane 1. Regression lane against trunk. me.lane1 at 390x844 light asks golden question 1 in the thread at trunk and head, then taps `Trả lời` on the Phòng 5 note at head. Trunk has no reply, so the lane gates head's T3. Save `p5-13-regression-reply.png`. Pass when question 1's amount matches on both sides and T3's count equals `payment_behavior` for the Phòng 5 tenant.
+- [ ] Lane 2. me.lane2 at 390x844 light sends thread case T3 by reply. Save `p5-13-reply-note.png`. Pass when her message shows the quoted note title, tapping it scrolls to the note, and the answer's count equals `ask-ground-truth.sql`.
+- [ ] Lane 3. me.lane3 at 390x844 dark opens Đất Bảo Lộc and sends thread case T4. Save `p5-13-property-topic.png`. Pass when the reply box shows `Về: Đất Bảo Lộc` and the answer names the bank on its Pháp lý tab.
+- [ ] Lane 4. me.lane4 at 390x844 light taps the first suggested reply. Save `p5-13-suggestion.png`. Pass when the chip names the Phòng 5 tenant, one tap sends it with the note as the topic, and the draft's amount equals Phòng 5's outstanding on the collections board.
+- [ ] Lane 5. ryan.lane5 at 1440x900 light taps `Trả lời` on Home's brief card. Save `p5-13-home-reply.png`. Pass when the thread opens with `Trả lời` and the brief's title above the reply box.
+- [ ] Lane 6. me.lane6 at 390x844 light starts a reply, taps `Bỏ` and sends `Tháng này thu được bao nhiêu từ Dĩ An?`. Save `p5-13-clear-topic.png`. Pass when the message has no topic in Studio and joins the open conversation.
+- [ ] Lane 7. The lane posts `ask_in_thread` from me.lane7's session with an operator item id and with lane 8's property id, at 1440x900 dark in the browser console. Save `p5-13-topic-refused.png`. Pass when both calls are refused and no message is written.
+- [ ] Lane 8. me.lane8 at 390x844 light hides the Phòng 5 note, then reads the chips. Save `p5-13-chips-hidden.png`. Pass when no chip comes from the hidden note and at most 3 chips show.
+- [ ] Lane 9. ryan.lane9 at 1440x900 dark switches to English and reads the chips. Save `p5-13-chips-english.png`. Pass when the chips read in English with the tenant and property names as stored.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, replies to the Phòng 5 note with `Which rooms in Dĩ An are overdue?`, follows the link and copies the reminder. Save `p5-13-seed10-english.png`. Pass when the answer names Phòng 5 with 12 days, the chips wrap without clipping, and the reminder is copied.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. Lighthouse mobile LCP, TBT, CLS and initial JS gzipped for `/assistant`, and time from send to the first visible sentence for T3.
+- [ ] Probe. 5 interleaved Lighthouse runs per side, and 5 sends per side of question 1 (both sides) and of T3 (head) in replay.
+- [ ] Baseline. Record trunk's `/assistant` medians and question 1 send-to-first-sentence median first. Trunk has no reply, so T3 takes head values as its first baseline.
+- [ ] Rule. Fail when head's `/assistant` LCP or initial JS grows more than 10% over trunk, question 1's first sentence grows more than 1 s over trunk, or T3's first sentence takes over 10 s.
+
+**Review gate.** The operator reviews before merge.
+
+- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-13/P5-13-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of a reply to the Phòng 5 note, a question from the Bảo Lộc page and a suggested reply at 390x844, saved as `~/.claude/orchestrate/esta/media/P5-13/P5-13-review.mp4`.
+- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+## Look things up on the web and quote the page in the thread (P5-14)
+
+**Depends on.** P5-13.
+
+**Files.**
+
+- [ ] Create `supabase/migrations/20261007618000_thread_web.sql` with `messages.activity`, and extend `supabase/tests/thread.test.sql`.
+- [ ] Create `apps/agent/src/tools/web-quotes.ts` from the quote and source code of `apps/agent/src/jobs/research-scan.ts`, and edit `research-scan.ts` to use it.
+- [ ] Edit `apps/agent/src/jobs/ask.ts`, `apps/agent/src/jobs/registry.ts`, the `PreToolUse` hook under `apps/agent/src/sdk/` and `apps/agent/src/prompts/ask.ts`.
+- [ ] Add hand-written recordings under `fixtures/agent-replay/ask/` with the fetched page text they replay, and `fixtures/agent-replay-cases/ask-leak/`.
+- [ ] Edit `apps/web/src/components/assistant/answer-view.tsx` and `answer-stream.tsx` for source chips and the activity line, and extend `e2e/assistant-thread.spec.ts`.
+
+**Build.**
+
+- [ ] Name the data shape. A fetched page is a source record in the fact sheet with `source_name`, `published_display` when the page writes a date, and `quote_n_label` fields. An answer's `refs` gain `{ kind: 'source', n, url, source_name, published_on }`.
+- [ ] Give `ask` WebSearch and WebFetch with at most 4 searches and 4 fetches per turn [app rule], `maxTurns` 20 and a 3 minute timeout. A fetch must name a page this turn's WebSearch returned, and a page that redirects to another host is dropped, as AGENT.md §5.2 says for the scan.
+- [ ] Keep family data out of search words. The `PreToolUse` hook denies a WebSearch query that holds a digit other than a four-digit year, or any person's name, nickname or property label from this run's records, and answers the model with the reason [app rule]. Province and commune names pass.
+- [ ] Quote figures word for word. A figure from a page is copied into `quotes` with at least three words around it, matched against the text WebFetch returned for that page in this conversation, and cited as `{{f7.quote_1_label}}` (AGENT.md §6.4). Move this code out of `research-scan.ts` into `web-quotes.ts` and delete the copy, so the scan and the thread share one rule. The scan's golden test does not change.
+- [ ] Ask the prompt to cite a fetched page for any answer about law, tax or procedure, and to say plainly when it found no source.
+- [ ] Show sources and the wait honestly. The answer lists its sources as numbered `CitationChip`s that open the page. While a web tool runs before the first sentence, the worker sets `messages.activity` to `web` and the answer reads `Trợ lý đang tra cứu trên mạng`, a static line with no animation.
+- [ ] Hand-write the recordings for thread case T7 and for a leak case in which the model tries a search holding the Phòng 5 tenant's name, labelled hand-written until the P5-10 live run.
+
+**You see.**
+
+- [ ] me.lane2 asks `Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?` and reads a rate quoted from the fetched page with a numbered source chip that opens it.
+- [ ] While Trợ lý searches, the answer reads `Trợ lý đang tra cứu trên mạng`.
+- [ ] A search holding a tenant's name is refused, and the answer still arrives without it.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `apps/agent/test/tools/web-quotes.test.ts` covers a quote found word for word, a quote whose number sits inside a larger number (`50` in `150`), a quote of fewer than three words, a page fetched in an earlier turn of the conversation, and a page never fetched.
+- [ ] `apps/agent/src/sdk` hook tests cover a query with a tenant name, a property nickname, a phone number, an amount and `2026`, a province name passing, a fetch of a non-result URL, and a redirect to another host.
+- [ ] `apps/agent/test/golden/ask.test.ts` gains thread case T7, whose every number is a quote found in the recorded page text and whose source chip resolves, and the leak case, whose run shows the denied search and an answer holding no family name in any tool input (AGT-7).
+- [ ] The `research_scan` golden test passes unchanged after the move.
+- [ ] Golden tests in AGENT.md §7 for `ask` and `research_scan` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [ ] Run `pnpm check`, `pnpm db:test`, then `pnpm e2e e2e/assistant-thread.spec.ts e2e/assistant-market.spec.ts`.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-thread.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay with the clock at 2026-10-07 07:05.
+
+- [ ] Lane 1. Regression lane against trunk. me.lane1 at 390x844 light sends thread case T8 and golden question 1 at trunk and head, then T7 at head. Save `p5-14-regression-web.png`. Pass when question 1's amount matches on both sides, T8 at trunk says Trợ lý cannot look things up yet, and T7 at head quotes a rate with a source chip.
+- [ ] Lane 2. me.lane2 at 390x844 light sends T7 and taps the source chip. Save `p5-14-source-chip.png`. Pass when the chip shows the source name and date and opens the recorded page's URL, and the quoted rate appears word for word in the recorded page text.
+- [ ] Lane 3. me.lane3 at 390x844 dark sends T7 and watches the answer before its first sentence. Save `p5-14-activity-line.png`. Pass when the answer reads `Trợ lý đang tra cứu trên mạng` with no animated element, then the text replaces it.
+- [ ] Lane 4. On its own slot with `ESTA_REPLAY_DIR=fixtures/agent-replay-cases/ask-leak`, ryan.lane4 at 1440x900 light sends the leak case, then opens `/assistant/diagnostics`. Save `p5-14-leak-denied.png`. Pass when the run shows one denied WebSearch and no tool input of the run holds the tenant's name.
+- [ ] Lane 5. ryan.lane5 at 1440x900 dark asks `Thủ tục sang tên sổ đỏ cần những giấy tờ gì?`. Save `p5-14-procedure-cited.png`. Pass when the answer cites at least one source chip and holds no number outside a quote.
+- [ ] Lane 6. me.lane6 at 390x844 light asks T7, then `Còn lãi suất vay mua đất thì sao?`. Save `p5-14-web-follow-up.png`. Pass when the follow-up cites only pages fetched in this conversation and every number in it is a quote.
+- [ ] Lane 7. ryan.lane7 at 1440x900 light runs the `research_scan` replay from diagnostics and opens Thị trường. Save `p5-14-scan-unchanged.png`. Pass when Thị trường lists the same items, quotes and chips as trunk.
+- [ ] Lane 8. me.lane8 at 390x844 light sends T7 with the network throttled to Slow 4G. Save `p5-14-slow-network.png`. Pass when the activity line, then the answer and its chips, render without layout shift above the reply box.
+- [ ] Lane 9. On its own slot with the replay case `ask-web-over-cap` that makes 5 searches, me.lane9 at 390x844 dark sends T7. Save `p5-14-web-cap.png`. Pass when the fifth search is denied, the answer still arrives, and `agent_runs` counts 4 WebSearch calls.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, asks `What are home loan rates right now?`, then repeats seed 1. Save `p5-14-seed10-english.png`. Pass when the answer is in English with its source chip, nothing clips, and the board shows `Overdue 12 days`.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. Time from send to the first visible sentence for golden question 1 and for T7 in replay, `research_scan` replay wall time, and initial JS gzipped for `/assistant`.
+- [ ] Probe. 5 interleaved sends per side of question 1 and 5 replay runs per side of `research_scan`, then 5 sends of T7 on head.
+- [ ] Baseline. Record trunk's question 1 and `research_scan` medians first. Trunk has no web in the thread, so T7 takes head values as its first baseline, and P5-10's live run measures live web latency.
+- [ ] Rule. Fail when question 1's first sentence grows more than 1 s over trunk, `research_scan` grows more than 10%, T7's first sentence in replay takes over 10 s, or `/assistant` initial JS grows more than 5 KB gzipped.
+
+**Review gate.** The operator reviews before merge.
+
+- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-14/P5-14-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of T7 with the activity line, the quoted rate and its source chip opening the page at 390x844, saved as `~/.claude/orchestrate/esta/media/P5-14/P5-14-review.mp4`.
+- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+## Work out a what-if from Mẹ's own numbers and show the working (P5-15)
+
+**Depends on.** P5-14, so a quoted rate can feed a calculation.
+
+**Files.**
+
+- [ ] Create `packages/core/src/calc/` with the operation registry, its unit tests and its property tests.
+- [ ] Create `packages/core/src/guard/typed.ts` (`extractTypedNumbers`) and its test.
+- [ ] Create `apps/agent/src/tools/calculate.ts` and edit `apps/agent/src/tools/fact-sheet.ts`, `apps/agent/src/jobs/ask.ts` and `apps/agent/src/prompts/ask.ts`.
+- [ ] Add hand-written recordings under `fixtures/agent-replay/ask/`.
+- [ ] Edit `apps/web/src/components/assistant/answer-view.tsx` for the `Cách tính` lines, and extend `e2e/assistant-thread.spec.ts`.
+
+**Build.**
+
+- [ ] Name the data shape. `TypedValue` is `{ kind: 'vnd'; value: Vnd }`, `{ kind: 'bp'; value }`, `{ kind: 'count'; value; unit }`, `{ kind: 'months'; value }` or `{ kind: 'date'; value: IsoDate }`. A fact field that holds a number keeps its `TypedValue` beside its `_display` string in the fact sheet. `CalcOp` is a registry entry `{ id, operands: TypedValue['kind'][], result, run }`.
+- [ ] Read the numbers she typed. `extractTypedNumbers(text)` runs the `packages/core/src/parse` parsers over every message she wrote in this conversation: `parseVndInput` amounts (`4tr`, `2 tỷ`, `850k`), percents and `%/năm` rates as basis points, `dd/mm/yyyy` dates, and counts after a number with a unit word (`15 năm`, `8 phòng`). A unit word before a number is a label (`phòng 2`), not a fact [app rule]. Each number becomes a record with `value_display`, its `TypedValue` and `typed_text`, listed in the prompt by handle before the first turn.
+- [ ] Parse the number in each web quote the same way, so a quoted rate can be an operand.
+- [ ] Write the operations in `packages/core/src/calc` as pure functions over integer VND and basis points with no floats: `sum`, `difference`, `times_count`, `monthly_to_yearly`, `yearly_to_monthly`, `share_bp`, `apply_bp`, `change_bp`, `loan_payment` (the monthly payment of a loan from principal, annual rate and months) and `days_between`. Intermediate values are BigInt, and a result rounds half up to the đồng [app rule]. Each returns its value, `result_display` and `working_display`, such as `4.000.000 ₫ × 12 = 48.000.000 ₫`.
+- [ ] Write `calculate(op, operands)`. Operands name a fact field by handle, never a typed number. The tool refuses an operand whose kind does not fit the operation and says which one, so the model can fix the call. The result is a new record, so it can feed the next calculation and the model cites `{{f9.result_display}}`.
+- [ ] Show the working. The answer's `refs` list each cited result, and the answer shows its working under the text as `Cách tính: …`, written by Esta from `working_display`.
+- [ ] Hand-write the recordings for thread cases T5 and T6 and for a follow-up to T7 that applies the quoted rate to a loan she types, labelled hand-written until the P5-10 live run.
+
+**You see.**
+
+- [ ] me.lane2 asks `Nếu tăng tiền phòng 2 ở Dĩ An lên 4tr thì mỗi năm thu thêm bao nhiêu?` and reads the yearly gain with `Cách tính` showing the monthly difference times 12.
+- [ ] She asks `Vay 2 tỷ trong 15 năm, lãi 9%/năm thì mỗi tháng trả bao nhiêu?` and reads the monthly payment with its working.
+- [ ] A number she never typed and no tool or page holds is still refused by the guard.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] `packages/core/src/calc/*.test.ts` cover every operation with worked examples, an operand of the wrong kind, rounding half up at 0.5 đồng, and a result above `Number.MAX_SAFE_INTEGER` refused. Property tests with fast-check prove `difference` undoes `sum`, `monthly_to_yearly` then `yearly_to_monthly` returns the input for amounts divisible by 12, and `loan_payment` matches an exact rational reference within 1 đồng.
+- [ ] `packages/core/src/guard/typed.test.ts` covers `4tr`, `3,5tr`, `2 tỷ`, `9%/năm`, `07/10/2026`, `15 năm`, `phòng 2` read as a label, a phone number not read, and numbers in an earlier message of the conversation.
+- [ ] `apps/agent/test/tools/calculate.test.ts` covers an operand handle from a tool, from her typed numbers and from a web quote, a typed number in an operand refused, and a result feeding a second calculation.
+- [ ] `apps/agent/test/golden/ask.test.ts` gains thread cases T5 and T6. T5's result equals `ask-ground-truth.sql`, T6's equals the reference formula, and every working line matches its operands (AGT-7).
+- [ ] Golden tests in AGENT.md §7 for `ask` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-thread.spec.ts`.
+- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [ ] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
+- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-thread.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay with the clock at 2026-10-07 07:05.
+
+- [ ] Lane 1. Regression lane against trunk. me.lane1 at 390x844 light sends golden question 1 at trunk and head, then T5 at head. Trunk has no `calculate`, so the lane gates T5. Save `p5-15-regression-calc.png`. Pass when question 1's amount matches on both sides and T5's yearly gain equals (4,000,000 minus Phòng 2's monthly rent from SQL) times 12.
+- [ ] Lane 2. me.lane2 at 390x844 light sends T5 and reads the working. Save `p5-15-working.png`. Pass when `Cách tính` shows Phòng 2's rent, `4.000.000 ₫`, the difference and the yearly result, each equal to SQL and to her typed amount.
+- [ ] Lane 3. me.lane3 at 390x844 dark sends T6. Save `p5-15-loan.png`. Pass when the monthly payment equals the reference formula for 2,000,000,000 ₫, 900 bp and 180 months, rounded half up, and its working names all three inputs.
+- [ ] Lane 4. ryan.lane4 at 1440x900 light sends T7, then `Với lãi suất đó, vay 2 tỷ trong 15 năm mỗi tháng trả bao nhiêu?`. Save `p5-15-web-calc.png`. Pass when the working names the quoted rate with its source chip and the payment equals the reference formula at that rate.
+- [ ] Lane 5. me.lane5 at 390x844 light asks `Nếu cho thuê phòng 8 với giá 3tr5 thì mỗi năm được bao nhiêu?`. Save `p5-15-vacancy-what-if.png`. Pass when the answer gives 42.000.000 ₫ with working `3.500.000 ₫ × 12`.
+- [ ] Lane 6. me.lane6 at 390x844 light asks `Giá đất Bảo Lộc tăng bao nhiêu phần trăm so với lúc mua?` with no purchase price stored or typed. Save `p5-15-missing-input.png`. Pass when the answer says which number is missing, asks her to type it, and holds no number.
+- [ ] Lane 7. me.lane7 at 390x844 dark types the purchase price after lane 6's question, `Lúc mua là 1,2 tỷ`. Save `p5-15-typed-follow-up.png`. Pass when the answer's change in percent equals `change_bp` over the latest valuation and her typed amount, with its working.
+- [ ] Lane 8. ryan.lane8 at 1440x900 dark opens the T5 run's job result in Studio. Save `p5-15-audit.png`. Pass when the result keeps the template, the `calculate` calls with their operand handles, and the cited values.
+- [ ] Lane 9. ryan.lane9 at 1440x900 light switches to English and sends `If room 2 in Dĩ An goes up to 4tr, how much more a year?`. Save `p5-15-english.png`. Pass when the answer is in English, the amounts format in English, and the working matches lane 2's values.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, sends T6, then repeats seed 1. Save `p5-15-seed10-english.png`. Pass when the working wraps without clipping and the board shows `Overdue 12 days`.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. Time from send to the first visible sentence for golden question 1 and for T5 in replay, and `calculate` time per call (vitest bench).
+- [ ] Probe. 5 interleaved sends per side of question 1, 5 sends of T5 on head, and the bench over 10,000 calls of each operation.
+- [ ] Baseline. Record trunk's question 1 median first. Trunk has no `calculate`, so T5 and the bench take head values as their first baseline.
+- [ ] Rule. Fail when question 1's first sentence grows more than 1 s over trunk, T5's first sentence takes over 10 s, or any operation's p99 exceeds 1 ms.
+
+**Review gate.** The operator reviews before merge.
+
+- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-15/P5-15-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of T5 with its working and the T7 follow-up that uses the quoted rate at 390x844, saved as `~/.claude/orchestrate/esta/media/P5-15/P5-15-review.mp4`.
+- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+
+## Fix the pre-live lows before the live run (P5-16)
+
+**Depends on.** P5-15 and P5-09, so the fixes land on the final guard, thread and email code. This is the cleanup round CLAUDE.md "Execution priority" asks for, held until now because the live run is the first time these defects would cost real usage.
+
+**Files.**
+
+- [ ] Edit only the files each issue names. Split by issue group if the product code passes 800 lines.
+
+**Build.**
+
+- [ ] #313 and #314. Close the number guard's gaps (homoglyphs, glued and no-diacritic number words, `May`, `quận Một`, lowercase Roman numerals, the remaining `năm` phrases, dead fill checks), each with a guard test.
+- [ ] #318. The morning watch job's turn limit, its English recording and rerun duplicates.
+- [ ] #321. The failed watch not named in the brief and the tenant link fallback. P5-12 closed its stale pinned brief.
+- [ ] #329. News page dates, `www` links, and a failed scan shown as a quiet day.
+- [ ] #333. Rent change limits, unit-only wording and a reminder with nothing to open.
+- [ ] #338. The tax share precision, English amounts, current-year months and the smaller gaps, checked in the thread.
+- [ ] #340. A future date that locks a conversation. P5-12's 20-question segments bound transcript growth, so confirm the issue's growth case passes and close it.
+- [ ] #343. A paused line that is wrong or stays too long, and the smaller gaps.
+- [ ] #335 closed before the re-cut. Confirm nothing in it regressed in the thread.
+
+**You see.**
+
+- [ ] Every issue above is closed by a commit in this PR with the test that failed before it.
+
+**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Each issue gains a test that fails at trunk and passes at head, named in the PR body against its issue.
+- [ ] Golden tests in AGENT.md §7 for every job kind pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [ ] Run `pnpm check`, `pnpm db:test`, then `pnpm e2e e2e/assistant-thread.spec.ts e2e/assistant-market.spec.ts e2e/assistant-proposals.spec.ts e2e/assistant-limits.spec.ts e2e/morning-brief.spec.ts`.
+
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. Each lane runs its issue's reproduction from the issue body at trunk and head.
+
+- [ ] Lane 1. Regression lane against trunk. me.lane1 at 390x844 light reads the 2026-10-07 brief and asks golden question 1 in the thread at trunk and head. Save `p5-16-regression.png`. Pass when the brief's sections and the answer's amount are identical on both sides.
+- [ ] Lane 2. #313. The lane runs the issue's homoglyph and glued-word notes through `checkNote` in a vitest file at trunk and head and captures the terminal. Save `p5-16-guard-313.png`. Pass when trunk lets each through and head rejects each with its rule.
+- [ ] Lane 3. #314. The same for lowercase Roman numerals and the `năm` phrases. Save `p5-16-guard-314.png`. Pass when head rejects each and passes `năm nay` and `năm {{f5.tax_year_display}}`.
+- [ ] Lane 4. #318. On its own slot, ryan.lane4 reruns `portfolio_watch` twice at 1440x900 light. Save `p5-16-watch-318.png`. Pass when head keeps one copy of each note and the English recording replays.
+- [ ] Lane 5. #321. On its own slot with the watch run failed, me.lane5 reads the brief at 390x844 light. Save `p5-16-brief-321.png`. Pass when head's brief names the failed watch under `Còn thiếu` and every tenant link opens.
+- [ ] Lane 6. #329. me.lane6 opens Thị trường at 390x844 dark. Save `p5-16-news-329.png`. Pass when head shows each page's own date, opens `www` links, and names a failed scan instead of a quiet day.
+- [ ] Lane 7. #333. me.lane7 approves the issue's rent change and reminder cases at 390x844 light. Save `p5-16-proposals-333.png`. Pass when head refuses the out-of-limit change in words and the reminder opens its sheet.
+- [ ] Lane 8. #338. ryan.lane8 asks the issue's tax share and English amount questions at 1440x900 light. Save `p5-16-answers-338.png`. Pass when head's figures equal the tax card and English amounts format in English.
+- [ ] Lane 9. #340. On its own slot, me.lane9 asks with the clock set ahead, then back, at 390x844 light. Save `p5-16-future-date-340.png`. Pass when head's next question is answered and not refused as busy.
+- [ ] Lane 10. #343. On its own slot with the usage-limit replay, me.lane10 at 390x844 dark reads the status line, then runs a job that ends without a limit. Save `p5-16-paused-343.png`. Pass when head shows the paused line only while limited and clears it after the clean run.
+
+**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+
+- [ ] Metric. `checkNote` time on the AGENT.md §6.3 slowest note and on the golden answers, and `morning_brief` replay wall time.
+- [ ] Probe. The guard bench 1,000 times per side and 5 replay runs per side of `morning_brief`, interleaved.
+- [ ] Baseline. Record trunk's medians first.
+- [ ] Rule. Fail when the slowest note's `checkNote` exceeds 15 ms or grows more than 20% over trunk, or `morning_brief` grows more than 10%.
+
+**Review gate.** None. P5-16 is not review-gated.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] Bugbot triage done.
+- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
+- [ ] The root squash-merges it once every PR below it has merged.
+
 ## Pass the live run and north-star steps 7 and 9 (P5-10)
 
-**Depends on.** P5-09.
+**Depends on.** P5-16 and P5-09.
 
 **Files.**
 
@@ -4824,24 +5184,24 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Build.**
 
-- [ ] Add north-star steps 7 and 9 to `e2e/northstar.spec.ts` on the `northstar` seed in replay. After step 6 the test sets the clock to 2026-10-08 07:05 with `pnpm clock:set`, waits for the worker to backfill `research_scan`, `portfolio_watch` and `morning_brief` in schedule order, and asserts step 7. Then Ryan asks `Tháng này thu được bao nhiêu từ Dĩ An?` and the test asserts step 9 against SQL ground truth.
+- [ ] Add north-star steps 7 and 9 to `e2e/northstar.spec.ts` on the `northstar` seed in replay. After step 6 the test sets the clock to 2026-10-08 07:05 with `pnpm clock:set`, waits for the worker to backfill `research_scan`, `portfolio_watch` and `morning_brief` in schedule order, and asserts step 7 on Home and in the Trợ lý thread. Then Ryan types `Tháng này thu được bao nhiêu từ Dĩ An?` in the thread and the test asserts step 9 against SQL ground truth.
 - [ ] Record the northstar replay with `pnpm agent:record`. Placeholders map the records created in steps 2 to 6 back to the current run's ids.
-- [ ] Write `pnpm agent:live-run` in `scripts/live-run.ts`. It runs every job kind once in `live` mode on the `full` seed with the frozen clock (AGENT.md §7.6) and checks watch facts against §7.1, the brief against §7.3, the ten Ask questions against §7.4, research against §7.5 (every source URL returns 200 at check time) and extraction against §7.2. It writes outputs, `agent_runs` usage and cost to `docs/plan/trail/phase-5/`. It uses Ryan's subscription token from `apps/agent/.env.local` and refuses `ESTA_ENV=production`.
-- [ ] Run the live run once locally. Record the pass table, total `total_cost_usd` and any deviation in `docs/plan/trail/phase-5-live-run.md`, with no real family data.
+- [ ] Write `pnpm agent:live-run` in `scripts/live-run.ts`. It runs every job kind once in `live` mode on the `full` seed with the frozen clock (AGENT.md §7.6) and checks watch facts against §7.1, the brief against §7.3, the ten golden questions and the thread cases T1 to T8 against §7.4, research against §7.5 (every source URL returns 200 at check time) and extraction against §7.2. It writes outputs, `agent_runs` usage and cost to `docs/plan/trail/phase-5/`. It uses Ryan's subscription token from `apps/agent/.env.local` and refuses `ESTA_ENV=production`.
+- [ ] Run the live run once locally. Record the pass table, total `total_cost_usd`, the live first-sentence time of a web question and any deviation in `docs/plan/trail/phase-5-live-run.md`, with no real family data. Replace each hand-written recording with its live recording and review the diff.
 - [ ] Record in `docs/plan/STATUS.md` the Phase 5 results, slipped P2 items, and every `[verify]` item still labelled.
-- [ ] Assemble the Phase 5 gate package with the brief in the inbox, the brief email, one approval with its audit rows, an Ask answer with its ledger link, the operator diagnostics, and the live-run table.
+- [ ] Assemble the Phase 5 gate package with the morning's notes in the thread and on Home, the brief notice email, one inline approval with its audit rows, a thread answer with its ledger link, a web answer with its source chip, a calculation with its working, the operator diagnostics, and the live-run table.
 
 **You see.**
 
 - [ ] `pnpm e2e:northstar` passes steps 1 to 9 in replay. Step 7's brief lists the unpaid room `quá hạn 7 ngày`, the lease ending in 30 days and one market item with a source link. Step 9's answer shows the exact amount with a link to the Dĩ An ledger.
-- [ ] `docs/plan/trail/phase-5-live-run.md` shows watch facts equal to §7.1, the brief passing §7.3, 10 of 10 Ask questions equal to ground truth, research passing §7.5 and extraction meeting §7.2.
-- [ ] The 2026-10-07 brief email renders in Inbucket with correct Vietnamese, and an approved proposal's rows in `audit_log` show the approving user as actor.
+- [ ] `docs/plan/trail/phase-5-live-run.md` shows watch facts equal to §7.1, the brief passing §7.3, 10 of 10 golden questions and 8 of 8 thread cases passing §7.4, research passing §7.5 and extraction meeting §7.2.
+- [ ] The 2026-10-07 brief notice renders in Inbucket with correct Vietnamese, and an approved proposal's rows in `audit_log` show the approving user as actor.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Golden tests in AGENT.md §7 for every job kind pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`. The watch set is exact (AGT-3) and the ten Ask questions are exact (AGT-7).
+- [ ] Golden tests in AGENT.md §7 for every job kind pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`. The watch set is exact (AGT-3) and the ten golden questions are exact (AGT-7).
 - [ ] Run `pnpm e2e e2e/northstar.spec.ts` and `pnpm e2e:northstar` in replay, with steps 7 and 9 passing.
-- [ ] Run `pnpm e2e e2e/assistant-proposals.spec.ts` and `pnpm e2e e2e/email-brief.spec.ts` for approval audit (AGT-6) and the brief email (PLT-4).
+- [ ] Run `pnpm e2e e2e/assistant-proposals.spec.ts` and `pnpm e2e e2e/email-notice.spec.ts` for approval audit (AGT-6) and the brief notice (PLT-4).
 - [ ] Run `pnpm check` and `pnpm db:test`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
@@ -4850,27 +5210,27 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. North-star lanes run on their own slot on the `northstar` seed.
 
 - [ ] Lane 1. Regression lane against trunk. On the `northstar` seed, the lane runs north-star steps 1 to 6 as me.lane1 at 390x844 light at trunk and head. Trunk lacks steps 7 and 9, so the lane gates head's step 7 brief at 2026-10-08 07:05. Save `p5-10-regression-northstar.png`. Pass when steps 1 to 6 pass on both sides and head's brief lists the unpaid room `quá hạn 7 ngày`.
-- [ ] Lane 2. North-star step 7. me.lane2 opens the brief at 390x844 light after the clock moves to 2026-10-08 07:05. Save `p5-10-step7-brief.png`. Pass when the brief lists the unpaid room overdue 7 days, the lease ending 2026-11-07 in 30 days, and one `Thị trường` item whose chip opens its source.
-- [ ] Lane 3. North-star step 9. ryan.lane3 asks `Tháng này thu được bao nhiêu từ Dĩ An?` at 1440x900 light. Save `p5-10-step9-ask.png`. Pass when the amount equals the sum of October allocations for Dãy trọ Dĩ An in Studio and the link opens its ledger.
+- [ ] Lane 2. North-star step 7. me.lane2 opens the thread at 390x844 light after the clock moves to 2026-10-08 07:05. Save `p5-10-step7-brief.png`. Pass when the brief lists the unpaid room overdue 7 days, the lease ending 2026-11-07 in 30 days, and one `Thị trường` item whose chip opens its source.
+- [ ] Lane 3. North-star step 9. ryan.lane3 types `Tháng này thu được bao nhiêu từ Dĩ An?` in the thread at 1440x900 light. Save `p5-10-step9-ask.png`. Pass when the amount equals the sum of October allocations for Dãy trọ Dĩ An in Studio and the link opens its ledger.
 - [ ] Lane 4. ryan.lane4 opens the `/dev/core` watch section and runs `pnpm agent:tool watch_facts` on the `full` seed at 2026-10-07 at 1440x900 dark. Save `p5-10-golden-watch.png`. Pass when both list exactly the 8 golden facts and nothing else.
-- [ ] Lane 5. The lane opens `docs/plan/trail/phase-5-live-run.md` rendered in the browser at 1440x900 light. Save `p5-10-live-run-table.png`. Pass when the table shows 10 of 10 Ask questions equal, the watch set equal, the brief passing, research URLs at 200 and the extraction targets met.
-- [ ] Lane 6. The lane opens the me.lane6 brief email for 2026-10-07 in Inbucket at 390x844 light. Save `p5-10-brief-email.png`. Pass when the Vietnamese renders correctly and the sections match the in-app brief.
-- [ ] Lane 7. me.lane7 approves one proposal at 390x844 dark, then the lane opens `audit_log` in Studio. Save `p5-10-approval-audit.png`. Pass when every row written by the approval shows `actor_kind = 'user'` with her user id.
-- [ ] Lane 8. SPEC §9.4 seed 9. me.lane8 reads the morning brief and approves one proposal at 390x844 light. Save `p5-10-seed9-phone.png`. Pass when she completes both within 2 minutes, with no operator item or guard text visible to her.
+- [ ] Lane 5. The lane opens `docs/plan/trail/phase-5-live-run.md` rendered in the browser at 1440x900 light. Save `p5-10-live-run-table.png`. Pass when the table shows 10 of 10 golden questions equal, 8 of 8 thread cases passing, the watch set equal, the brief passing, research URLs at 200 and the extraction targets met.
+- [ ] Lane 6. The lane opens the me.lane6 brief notice for 2026-10-07 in Inbucket at 390x844 light and follows its link. Save `p5-10-brief-notice.png`. Pass when the Vietnamese renders correctly and the link opens the thread at that brief.
+- [ ] Lane 7. me.lane7 approves one proposal inline in the thread at 390x844 dark, then the lane opens `audit_log` in Studio. Save `p5-10-approval-audit.png`. Pass when every row written by the approval shows `actor_kind = 'user'` with her user id.
+- [ ] Lane 8. SPEC §9.4 seed 9. me.lane8 reads the morning brief in the thread, approves one proposal and asks one suggested reply at 390x844 light. Save `p5-10-seed9-phone.png`. Pass when she completes all three within 2 minutes, with no operator item or guard text visible to her.
 - [ ] Lane 9. ryan.lane9 opens diagnostics after the live run at 1440x900 dark. Save `p5-10-diagnostics-live.png`. Pass when every job kind shows one `live` run with `subscription` auth mode, and none exceeded its AGENT.md §3 timeout.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, reads the brief, asks `Which rooms in Dĩ An are overdue?`, follows the link and copies the reminder. Save `p5-10-seed10-english.png`. Pass when no text clips, the answer names Phòng 5 with 12 days, and the reminder is copied.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, reads the brief, types `Which rooms in Dĩ An are overdue?`, follows the link and copies the reminder. Save `p5-10-seed10-english.png`. Pass when no text clips, the answer names Phòng 5 with 12 days, and the reminder is copied.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Wall time of north-star steps 1 to 6 and of steps 7 to 9 in replay, live-run wall time per job kind, and live-run total cost.
+- [ ] Metric. Wall time of north-star steps 1 to 6 and of steps 7 to 9 in replay, live-run wall time per job kind, the live first-sentence time of golden question 1 and of T7, and live-run total cost.
 - [ ] Probe. Run `pnpm e2e:northstar` 5 times per side interleaved at trunk and head, timing each step group, and run the live run once.
 - [ ] Baseline. Trunk runs steps 1 to 6 only, so compare that group across sides and take steps 7 to 9 and the live run as the first baseline.
-- [ ] Rule. Fail when steps 1 to 6 grow more than 10% over trunk, steps 7 to 9 exceed 120 s in replay, or any live job exceeds its AGENT.md §3 timeout.
+- [ ] Rule. Fail when steps 1 to 6 grow more than 10% over trunk, steps 7 to 9 exceed 120 s in replay, any live job exceeds its AGENT.md §3 timeout, golden question 1's live first sentence takes over 10 s, or T7's takes over 45 s [app rule].
 
 **Review gate.** The operator reviews before merge.
 
 - [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-10/P5-10-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of north-star steps 7 and 9 on a phone viewport, the brief email in Inbucket, and one approval with its audit rows, saved as `~/.claude/orchestrate/esta/media/P5-10/P5-10-review.mp4`.
+- [ ] Record a 30 to 60 second video of north-star steps 7 and 9 in the thread on a phone viewport, the brief notice in Inbucket, and one inline approval with its audit rows, saved as `~/.claude/orchestrate/esta/media/P5-10/P5-10-review.mp4`.
 - [ ] Post the screenshots, the video and the live-run table in chat, stop at merge-ready, and wait for the operator's click on the Phase 5 batch.
 
 **Merge.**
@@ -5078,7 +5438,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] Add `household_settings.onboarding jsonb not null default '{}'` in `20261007000300_onboarding_setting.sql`, holding only `dismissed_at`. Existing RLS on `household_settings` covers it. Extend the seed generator so lane households write `{}`.
 - [ ] Render `FirstRunChecklist` at the top of Home for a household where `visible` is true, titled `Bắt đầu với Esta`, with one row per step and one action each. `Ẩn hướng dẫn` hides it with an undo toast.
 - [ ] Define `EMPTY_STATES` in `apps/web/src/app/empty-states.ts` as a registry keyed by surface (Home, Tài sản, each property tab, Thu tiền, Tài liệu, Trợ lý tabs, Báo cáo, lease detail, meter entry, statement import, settings sections). Each entry has one message key and exactly one primary action. Every list route renders the P0-12 `EmptyState` from this registry.
-- [ ] Write the copy in the DESIGN-BRIEF §3 voice, for example `Chưa có tài sản nào. Thêm tài sản đầu tiên bằng ảnh sổ hoặc nhập tay.` for Tài sản and `Trợ lý sẽ để lại ghi chú đầu tiên vào sáng mai lúc 07:00.` for the Hộp thư tab.
+- [ ] Write the copy in the DESIGN-BRIEF §3 voice, for example `Chưa có tài sản nào. Thêm tài sản đầu tiên bằng ảnh sổ hoặc nhập tay.` for Tài sản and `Trợ lý sẽ để lại ghi chú đầu tiên vào sáng mai lúc 07:00. Mẹ cũng có thể nhắn cho Trợ lý ngay bây giờ.` for the Trợ lý thread.
 - [ ] Give every empty surface a distinct error state that reads `Chưa tải được. Kiểm tra kết nối mạng rồi thử lại.` with a retry action, so an empty list and a failed load never look the same.
 
 **You see.**
@@ -5106,7 +5466,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] Lane 5. `new.lane5@demo.esta.test` at 390x844 light opens every list route in the new household. Save `p6-03-empty-sweep.png` as a contact sheet. Pass when each route shows one message and one primary button and no route shows a raw table header with zero rows.
 - [ ] Lane 6. `new.lane6@demo.esta.test` at 1440x900 light taps `Ẩn hướng dẫn`, taps undo, hides it again, and reloads. Save `p6-03-dismiss.png`. Pass when the checklist returns after undo, stays hidden after reload, and `household_settings.onboarding` has `dismissed_at`.
 - [ ] Lane 7. Mẹ in full-seed lane household 7 at 390x844 light opens Home. Save `p6-03-seeded-home.png`. Pass when Home shows no `Bắt đầu với Esta` and the collection figure renders as at trunk.
-- [ ] Lane 8. `new.lane8@demo.esta.test` at 1440x900 dark opens `Trợ lý` with the worker running. Save `p6-03-assistant-empty.png`. Pass when `Hộp thư` shows `Trợ lý sẽ để lại ghi chú đầu tiên vào sáng mai lúc 07:00.` and the status line shows the last heartbeat.
+- [ ] Lane 8. `new.lane8@demo.esta.test` at 1440x900 dark opens `Trợ lý` with the worker running. Save `p6-03-assistant-empty.png`. Pass when the thread shows `Trợ lý sẽ để lại ghi chú đầu tiên vào sáng mai lúc 07:00. Mẹ cũng có thể nhắn cho Trợ lý ngay bây giờ.` above a working reply box and the status line shows the last heartbeat.
 - [ ] Lane 9. `new.lane9@demo.esta.test` at 390x844 dark opens `Tài sản` with the network set offline in the browser. Save `p6-03-offline-empty.png`. Pass when the screen shows the error state with `Thử lại` and not the empty-state message.
 - [ ] Lane 10. SPEC §9.4 seed 10 adapted. `new.lane10@demo.esta.test` at 390x844 in English, text scale 130% and dark sees the checklist and three empty states, then Mẹ of lane household 10 repeats seed 1. Save `p6-03-seed10-english.png`. Pass when the English copy wraps without truncation and Collections shows Dĩ An Phòng 5 overdue 12 days.
 
@@ -5220,7 +5580,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 **You see.**
 
 - [ ] `curl -sI http://localhost:3000/` on a production build shows `content-security-policy` with a nonce and the five static headers.
-- [ ] Opening Tài sản map view, a signed document, and Trợ lý `Hỏi` logs zero CSP violations in the console.
+- [ ] Opening Tài sản map view, a signed document, and an answer streaming in the Trợ lý thread logs zero CSP violations in the console.
 - [ ] `scripts/perf/lighthouse.ts` prints medians for Home and Collections within SPEC §7.2.
 - [ ] The 10 MB upload at 10 Mbps shows progress and completes with a client thumbnail.
 
@@ -5240,7 +5600,7 @@ Ryan asked for this on 2026-10-24: "can we get a feature where we can setup the 
 - [ ] Lane 3. Mẹ in lane household 3 at 390x844 dark opens the Tài sản map view and drags a pin. Save `p6-05-map-worker.png`. Pass when the map renders through its blob worker, the pin saves, and zero CSP violations are logged.
 - [ ] Lane 4. Mẹ in lane household 4 at 390x844 light uploads the 10 MB fixture with the network throttled to 10 Mbps. Save `p6-05-upload-throttled.png`. Pass when the progress indicator advances, the client thumbnail shows, and the document appears in `Tài liệu`.
 - [ ] Lane 5. Ryan in lane household 5 at 1440x900 dark, after `scripts/perf/bulk-rows.ts`, scrolls the 1,000-row Tài sản list and types `demo 999` in search. Save `p6-05-1000-rows.png`. Pass when the matching row shows, scrolling stays responsive, and fewer than 100 rows are in the DOM.
-- [ ] Lane 6. Ryan in lane household 6 at 1440x900 dark asks `Tháng này thu được bao nhiêu từ Dĩ An?` in `Hỏi` with the worker in replay. Save `p6-05-ask-realtime.png`. Pass when the answer streams over the Realtime wss connection and zero CSP violations are logged.
+- [ ] Lane 6. Ryan in lane household 6 at 1440x900 dark types `Tháng này thu được bao nhiêu từ Dĩ An?` in the Trợ lý thread with the worker in replay. Save `p6-05-ask-stream.png`. Pass when the answer streams over the `/api/answers/{id}` server-sent events route (P5-07a) and zero CSP violations are logged.
 - [ ] Lane 7. Mẹ in lane household 7 at 390x844 light opens a Dĩ An invoice QR sheet and saves the receipt PNG and PDF. Save `p6-05-receipt-qr.png`. Pass when the QR and the receipt render and both downloads open.
 - [ ] Lane 8. Mẹ in lane household 8 at 390x844 light runs seed 4 and opens the Bảo Lộc certificate. Save `p6-05-signed-view.png`. Pass when the signed Storage image loads under `img-src` and zero CSP violations are logged.
 - [ ] Lane 9. Ryan in lane household 9 at 390x844 dark runs `scripts/perf/lighthouse.ts` on Collections and captures the report summary. Save `p6-05-lighthouse-collections.png`. Pass when the median LCP is at most 2.5 s, TBT at most 200 ms, and CLS at most 0.05.
@@ -5487,7 +5847,7 @@ pdf-lib with @pdf-lib/fontkit renders the A5 receipt PDF, and satori with @resvg
 - **SPEC §5.5 gives `documents.ocr_text` no writer.** P2-05 adds the column with the vault search, copies the optional `full_text` of an accepted utility bill extraction into it for non-sensitive documents, and records the writer in SPEC §5.5. P3-19 adds `full_text` to `lease_v1` and reuses the copy.
 - **AGENT.md §6.2 allows no Markdown tables, but DESIGN-BRIEF §5.5 wants tables in Ask answers.** P5-07b allows tables in Ask answers only and updates AGENT.md §6.2.
 - **AGENT.md §6.3 guards text before it is written, but §5.6 streams partial text.** P5-07a guards the text up to each sentence boundary before writing it and records the rule in AGENT.md §5.6.
-- **SPEC §8 lacks two variables the plan needs.** P5-09 adds `ESTA_APP_URL` for links in emails, and P6-02 adds `ESTA_EXPORT_PART_MB` because the Supabase free plan caps one object at 50 MB. Each PR updates SPEC §8 and `.env.example`.
+- **SPEC §8 lacks two variables the plan needs.** P5-09 adds `ESTA_APP_URL` for the thread link in its notice email, and P6-02 adds `ESTA_EXPORT_PART_MB` because the Supabase free plan caps one object at 50 MB. Each PR updates SPEC §8 and `.env.example`.
 - **SPEC PRP-5 does not say what the short-link resolver fetches at the end of the chain.** P1-01 follows redirects on the short hosts only, stops at a Google Maps target without fetching it, and rewords PRP-5.
 - **Preview deploys need somewhere to write demo data.** P6-07 proposes a second free Supabase project for preview, while SPEC D4 names one project. Ryan decides at P6-07, since cloud projects are his items.
 - **No Vercel platform skill is installed.** P6-07 installs one before its first `vercel` call, as poteto-mode requires for managed platforms.
@@ -5518,6 +5878,6 @@ Contradictions resolved in Phase 0, each in the spec file named, per SPEC §0. P
 
 - Read `CLAUDE.md`, `PRODUCT.md` and `docs/spec/SPEC.md` before any PR. Read `docs/spec/DOMAIN-VN.md` before PRs that touch certificates, addresses, money, tax, VietQR or names. Read `docs/spec/DESIGN-BRIEF.md` and `DESIGN.md` before UI PRs. Read `docs/spec/AGENT.md` before agent and extraction PRs.
 - Spike reports live on `spike/s1-agent-sdk`, `spike/s2-fonts`, `spike/s3-admin-units`, `spike/s4-vietqr` and `spike/s7-receipt`.
-- Run `skills/how/SKILL.md` before building P0-02, P0-03, P0-07, P0-15, P3-04 and P5-03b, because each sets a pattern many later PRs copy.
-- Run `skills/interrogate/SKILL.md` on P0-02 (RLS and audit), P0-15 (worker sandbox), P2-02 (storage access), P3-02, P3-03 and P3-04 (money core and invoicing), P4-01 (tax), P5-03a (number guard), P5-06 (approvals under the user's session) and P6-05 (CSP and headers) before shipping.
+- Run `skills/how/SKILL.md` before building P0-02, P0-03, P0-07, P0-15, P3-04, P5-03b and P5-12, because each sets a pattern many later PRs copy.
+- Run `skills/interrogate/SKILL.md` on P0-02 (RLS and audit), P0-15 (worker sandbox), P2-02 (storage access), P3-02, P3-03 and P3-04 (money core and invoicing), P4-01 (tax), P5-03a (number guard), P5-06 (approvals under the user's session), P5-12 (the thread's definer function), P5-14 (web search beside family data), P5-15 (money arithmetic in `calculate`) and P6-05 (CSP and headers) before shipping.
 - The root keeps its decision trail in `.audit/decisions.tsv` per `skills/show-me-your-work/SKILL.md`, and each owner keeps its own `decisions.tsv`. The Phase 5 live run records its outputs in `docs/plan/trail/`.
