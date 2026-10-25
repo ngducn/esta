@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { laneHousehold } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
+import { freshThread, sendInThread } from './helpers/thread';
 import { DESKTOP, open, PHONE, serviceGet, servicePatch, seriousAxeViolations, shot, toast } from './helpers/wizard';
 
 // One worker, one heartbeat table and one test clock per slot, so the spec runs in the `clock` project.
@@ -10,6 +11,7 @@ test.describe.configure({ mode: 'serial' });
 
 const CASES = join(import.meta.dirname, '..', 'fixtures', 'agent-replay-cases');
 const Q1 = 'Tháng này thu được bao nhiêu từ Dĩ An?';
+const SEPTEMBER = 'Còn tháng 9 thì sao?';
 const DEFERRED = 'Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.';
 const PAUSED = 'Trợ lý tạm dừng do hết hạn mức sử dụng. Việc mới sẽ chạy khi hạn mức mở lại.';
 const WATCH_FAILED = 'Trợ lý chưa xem được danh mục hôm nay';
@@ -53,19 +55,12 @@ const sameInstant = (stored: string, expected: string) => expect(Date.parse(stor
 async function runWatch(page: Page, lane: number): Promise<string> {
   await servicePatch(page, `agent_jobs?household_id=eq.${laneHousehold(lane)}&kind=eq.portfolio_watch&status=in.(queued,running)`, { status: 'cancelled' });
   const before = (await latestJob(page, lane, 'portfolio_watch'))?.id;
-  await page.goto('/assistant');
+  await page.goto('/assistant/diagnostics');
   await page.getByRole('button', { name: 'Chạy theo dõi' }).click();
   await expect.poll(async () => (await latestJob(page, lane, 'portfolio_watch'))?.id).not.toBe(before);
   const queued = await latestJob(page, lane, 'portfolio_watch');
   if (queued === undefined) throw new Error(`lane ${lane} queued no watch`);
   return queued.id;
-}
-
-async function ask(page: Page, question: string) {
-  await page.goto('/assistant/ask');
-  await page.getByRole('textbox', { name: 'Câu hỏi của bạn' }).fill(question);
-  await page.getByTestId('ask-send').click();
-  await expect(page).toHaveURL(/\/assistant\/ask\/[0-9a-f-]{36}$/);
 }
 
 test('with the ask cap two answers away, Mẹ’s third question today waits for tomorrow and says so in Esta’s words', async ({ page, request }) => {
@@ -78,16 +73,18 @@ test('with the ask cap two answers away, Mẹ’s third question today waits for
   await servicePatch(page, `household_settings?household_id=eq.${household}`, { agent: { ...agent, daily_caps: { ask: startedToday.length + 2 } } });
   try {
     await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
-    for (let answered = 0; answered < 2; answered += 1) {
-      await ask(page, Q1);
-      await expect(page.getByTestId('answer')).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
+    await freshThread(page, 'me', 3);
+    for (const question of [Q1, SEPTEMBER]) {
+      await sendInThread(page, question);
+      await expect(page.getByTestId('answer').last()).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
     }
-    await ask(page, Q1);
-    await expect(page.getByTestId('answer')).toHaveAttribute('data-status', 'deferred', { timeout: 30_000 });
-    await expect(page.getByTestId('answer-line')).toHaveText(DEFERRED);
+    await sendInThread(page, Q1);
+    await expect(page.getByTestId('answer').last()).toHaveAttribute('data-status', 'deferred', { timeout: 30_000 });
+    await expect(page.getByTestId('answer-line').last()).toHaveText(DEFERRED);
     await page.reload();
-    await expect(page.getByTestId('answer-line'), 'the deferred line holds on a fresh load').toHaveText(DEFERRED);
-    await expect(page.getByTestId('follow-up'), 'no follow-up box promises an answer today').toHaveCount(0);
+    await expect(page.getByTestId('answer-line').last(), 'the deferred line holds on a fresh load').toHaveText(DEFERRED);
+    await expect(page.getByTestId('composer'), 'the reply box promises no answer today').toHaveAttribute('data-state', 'deferred');
+    await expect(page.getByTestId('composer-send')).toBeDisabled();
     const deferred = await latestJob(page, 3, 'ask');
     expect(deferred?.status).toBe('queued');
     sameInstant(deferred?.run_after ?? '', MIDNIGHT);
@@ -164,6 +161,6 @@ test('a watch that fails four times leaves Ryan a Thử lại, and one tap runs 
   await expect
     .poll(async () => (await serviceGet<Job[]>(page, `agent_jobs?idempotency_key=eq.${retryKey}&select=status`)).map((job) => job.status), { timeout: 30_000 })
     .toEqual(['done']);
-  await page.reload();
+  await page.goto('/assistant/diagnostics');
   await expect(page.getByTestId('watch-status')).toHaveAttribute('data-status', 'done');
 });

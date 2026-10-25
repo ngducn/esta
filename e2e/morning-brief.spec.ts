@@ -28,7 +28,7 @@ test('before any brief that day, Home says Trợ lý has not written one yet', a
   await expect(page.getByTestId('home-brief-open')).toHaveAttribute('href', '/assistant');
 });
 
-test('at 07:05 Mẹ reads the 07:00 brief first in Hộp thư, opens Phòng 5 from it, and finds its summary on Home', async ({ page, request }) => {
+test('at 07:05 Mẹ reads the 07:00 brief in her thread, opens Phòng 5 from it, and finds its summary on Home', async ({ page, request }) => {
   await setClock(request, `${TODAY}T07:00:00+07:00`);
   worker = await startAgentWorker({ schedule: true });
   await expect
@@ -41,7 +41,7 @@ test('at 07:05 Mẹ reads the 07:00 brief first in Hộp thư, opens Phòng 5 fr
   await open(page, ME, 'light', PHONE);
   await page.goto('/assistant');
   await expect(page.getByTestId('worker-ran')).toHaveText('Trợ lý chạy lúc 07:00.');
-  await expect(page.getByTestId('inbox-item').first(), 'the brief leads the inbox').toHaveAttribute('data-kind', 'brief');
+  await expect(brief(page), 'the day’s one brief sits in her thread').toHaveCount(1);
   await expect(brief(page).getByRole('heading', { level: 3 })).toHaveText(SUMMARY);
   await expect(brief(page).locator('strong')).toHaveText(['Cần làm', 'Theo dõi', 'Thị trường']);
   const todo = brief(page).getByRole('list').first().getByRole('listitem');
@@ -67,7 +67,8 @@ test('at 07:05 Mẹ reads the 07:00 brief first in Hộp thư, opens Phòng 5 fr
   const [today, note] = [await page.getByRole('heading', { name: 'Cần làm hôm nay' }).boundingBox(), await home.boundingBox()];
   expect(note?.y ?? 0, 'the brief sits under Cần làm hôm nay').toBeGreaterThan(today?.y ?? Infinity);
   await home.getByTestId('home-brief-open').click();
-  await expect(page).toHaveURL(/\/assistant$/);
+  await expect(page).toHaveURL(/\/assistant\?note=[0-9a-f-]{36}$/);
+  await expect(brief(page), 'the link opens the thread at the brief').toBeInViewport();
 });
 
 test('with the worker stopped and the clock 15 minutes on, every page says Trợ lý is offline', async ({ page, request }) => {

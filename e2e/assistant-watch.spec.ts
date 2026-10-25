@@ -30,9 +30,10 @@ test('at 06:45 the morning watch has run for every household, and Ryan sees its 
     .toBe(households.length);
 
   await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
-  await page.goto('/assistant');
+  await page.goto('/assistant/diagnostics');
   await expect(page.getByTestId('watch-status')).toHaveAttribute('data-status', 'done');
   await expect(page.getByTestId('watch-notes')).toHaveText('4 ghi chú mới');
+  await page.goto('/assistant');
   await expect(watchNotes(page)).toHaveCount(4);
   const overdue = note(page, 'Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày');
   await expect(overdue).toContainText(vnd('2.800.000'));
@@ -45,8 +46,10 @@ test('at 06:45 the morning watch has run for every household, and Ryan sees its 
   await expect(watchNotes(page).locator('[data-testid="note-link"][data-ok="false"]')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
+  await page.goto('/assistant/diagnostics');
   await page.getByRole('button', { name: 'Chạy theo dõi' }).click();
   await expect(page.getByTestId('watch-notes'), 'a second run the same day adds nothing').toHaveText('Không có ghi chú mới', { timeout: 30_000 });
+  await page.goto('/assistant');
   await expect(watchNotes(page)).toHaveCount(4);
 });
 
@@ -55,10 +58,11 @@ test('a note that still types numbers after its repair turn fails the run and re
   worker = await startAgentWorker({ replayDir: GUARD_CASE });
 
   await open(page, 'ryan.lane3@demo.esta.test', 'dark', DESKTOP);
-  await page.goto('/assistant');
+  await page.goto('/assistant/diagnostics');
   await page.getByRole('button', { name: 'Chạy theo dõi' }).click();
   await expect(page.getByTestId('watch-status')).toHaveAttribute('data-status', 'failed', { timeout: 30_000 });
   await expect(page.getByTestId('watch-error')).toContainText('number_guard');
+  await page.goto('/assistant');
   const held = note(page, GUARD_TITLE);
   await expect(held).toHaveCount(1);
   await expect(held.getByTestId('note-operator')).toBeVisible();

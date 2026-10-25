@@ -37,7 +37,7 @@ async function openMenu(page: Page) {
 test('Ryan opens diagnostics from his menu and reads the replay worker, the last runs, the held note and 7-day usage by kind', async ({ page }) => {
   worker = await startAgentWorker();
   await open(page, RYAN, 'light', DESKTOP);
-  await page.goto('/assistant');
+  await page.goto('/assistant/diagnostics');
   const pings = await jobsEnded(page, 'ping', 'done');
   await page.getByRole('button', { name: 'Chạy kiểm tra' }).click();
   await expect.poll(() => jobsEnded(page, 'ping', 'done'), { timeout: 15_000 }).toBe(pings + 1);
@@ -49,6 +49,7 @@ test('Ryan opens diagnostics from his menu and reads the replay worker, the last
   await page.getByRole('button', { name: 'Chạy theo dõi' }).click();
   await expect.poll(() => jobsEnded(page, 'portfolio_watch', 'failed'), { timeout: 30_000 }).toBe(watches + 1);
 
+  await page.goto('/assistant');
   await openMenu(page);
   await page.getByRole('link', { name: 'Chẩn đoán Trợ lý' }).click();
   await expect(page).toHaveURL(/\/assistant\/diagnostics$/);

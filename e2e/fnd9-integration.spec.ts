@@ -118,7 +118,7 @@ test('rule 2: the keep-alive cron route reads the business date of each clock', 
 
 test('rule 3: a ping on each day runs in the same worker and lands on that business date', async ({ page, request }) => {
   test.setTimeout(60_000);
-  await open(page, 'ryan.lane3@demo.esta.test', '/assistant', { viewport: [390, 844], theme: 'dark' });
+  await open(page, 'ryan.lane3@demo.esta.test', '/assistant/diagnostics', { viewport: [390, 844], theme: 'dark' });
   const ping = async () => {
     // Reloading before the action answers shows the previous check's Xong, and the job then starts on the next clock.
     await Promise.all([
@@ -132,10 +132,8 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
   };
 
   const runTimes = async () => {
-    await page.goto('/assistant/diagnostics');
-    const times = await page.getByTestId('diagnostics-runs').getByTestId('report-row').locator('th').allTextContents();
-    await page.goto('/assistant');
-    return times;
+    await page.reload();
+    return page.getByTestId('diagnostics-runs').getByTestId('report-row').locator('th').allTextContents();
   };
 
   await ping();

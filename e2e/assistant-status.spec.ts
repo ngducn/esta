@@ -76,6 +76,7 @@ const pings = async (page: Page, status: 'done' | 'failed') => {
 };
 
 async function runCheck(page: Page, status: 'done' | 'failed' = 'done') {
+  await page.goto('/assistant/diagnostics');
   const before = await pings(page, status);
   await page.getByRole('button', { name: /^(Chạy kiểm tra|Run check)$/ }).click();
   await expect.poll(() => pings(page, status), { timeout: 10_000 }).toBe(before + 1);
@@ -86,7 +87,7 @@ test('rule 1: Mẹ sees the online line and no connection check', async ({ page 
   await openAssistant(page, 'me.lane1@demo.esta.test', { viewport: [390, 844], theme: 'light' });
   await expectStatusLine(page, ONLINE_0900);
   await expect(page.getByTestId('connection-check')).toHaveCount(0);
-  expect(await page.content()).not.toContain('Kiểm tra kết nối');
+  expect(await page.content()).not.toContain('Chạy kiểm tra');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -109,7 +110,7 @@ test('rule 3: a non-operator gets no diagnostics in the HTML and RLS refuses her
   await openAssistant(page, 'me.lane3@demo.esta.test', { viewport: [1440, 900], theme: 'light' });
   await expectStatusLine(page, ONLINE_0900);
   const html = await (await page.request.get('/assistant')).text();
-  for (const diagnostic of ['Kiểm tra kết nối', 'data-testid="connection-check"', '/assistant/diagnostics', 'Chẩn đoán', 'Xác thực', 'mcp__esta__']) {
+  for (const diagnostic of ['Chạy kiểm tra', 'data-testid="connection-check"', '/assistant/diagnostics', 'Chẩn đoán', 'Xác thực', 'mcp__esta__']) {
     expect(html, `the server HTML carries no ${diagnostic}`).not.toContain(diagnostic);
   }
 
@@ -137,7 +138,6 @@ test('rule 4: Ryan runs the check and the newest run is a replay household_info 
   await expect(page.getByTestId('ping-status')).toHaveText('Xong');
   await expect(page.getByTestId('ping-reply')).toContainText('Gia đình Demo 4');
   expect(await seriousAxeViolations(page)).toEqual([]);
-  await page.goto('/assistant/diagnostics');
   await expect(page.getByTestId('diagnostics-agent-mode')).toHaveText('replay');
   await expect(page.getByTestId('diagnostics-auth-mode')).toHaveText('none');
   const [newest] = (await readReportTable(page.getByTestId('diagnostics-runs'))).rows;
