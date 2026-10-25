@@ -35,7 +35,21 @@ describe('job registry', () => {
 
   it('defines portfolio_watch with watch_facts and create_item, 6 turns, 3 minutes, daily at 06:40', () => {
     expect(JOBS.portfolio_watch).toMatchObject({ builtInTools: [], mcpTools: ['watch_facts', 'create_item'], maxTurns: 6, timeoutMs: 180_000, schedule: { daily: '06:40' } });
-    expect(DAILY_JOBS).toEqual([{ kind: 'portfolio_watch', daily: '06:40' }]);
+  });
+
+  it('defines morning_brief with watch_facts, recent_items and create_brief, 6 turns, 3 minutes, daily at 07:00 after its inputs', () => {
+    expect(JOBS.morning_brief).toMatchObject({
+      builtInTools: [],
+      mcpTools: ['watch_facts', 'recent_items', 'create_brief'],
+      maxTurns: 6,
+      timeoutMs: 180_000,
+      schedule: { daily: '07:00' },
+      waitsFor: ['research_scan', 'portfolio_watch'],
+    });
+    expect(DAILY_JOBS).toEqual([
+      { kind: 'portfolio_watch', daily: '06:40' },
+      { kind: 'morning_brief', daily: '07:00' },
+    ]);
   });
 
   it('knows no other kind', () => {

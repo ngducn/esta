@@ -18,12 +18,18 @@ describe('scheduleDailyJobs', () => {
     ]);
   });
 
-  it('adds nothing on a later tick or a restart the same day, and only the new day after it', async () => {
+  it('adds the brief at its own time, nothing on a later tick or a restart the same day, and the new day in schedule order', async () => {
     const tables = { households: [{ id: 'h1' }], agent_jobs: [] as Record<string, unknown>[] };
     const db = fakeDb(tables);
     await scheduleDailyJobs(db, at('2026-10-07T06:45:00+07:00'), TZ);
-    expect(await scheduleDailyJobs(db, at('2026-10-07T09:00:00+07:00'), TZ)).toBe(0);
-    expect(await scheduleDailyJobs(db, at('2026-10-08T07:30:00+07:00'), TZ)).toBe(1);
-    expect(tables.agent_jobs.map((job) => job.idempotency_key)).toEqual(['portfolio_watch:h1:2026-10-07', 'portfolio_watch:h1:2026-10-08']);
+    expect(await scheduleDailyJobs(db, at('2026-10-07T09:00:00+07:00'), TZ)).toBe(1);
+    expect(await scheduleDailyJobs(db, at('2026-10-07T09:01:00+07:00'), TZ)).toBe(0);
+    expect(await scheduleDailyJobs(db, at('2026-10-08T07:30:00+07:00'), TZ)).toBe(2);
+    expect(tables.agent_jobs.map((job) => job.idempotency_key)).toEqual([
+      'portfolio_watch:h1:2026-10-07',
+      'morning_brief:h1:2026-10-07',
+      'portfolio_watch:h1:2026-10-08',
+      'morning_brief:h1:2026-10-08',
+    ]);
   });
 });

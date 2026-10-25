@@ -42,6 +42,7 @@ const sharedClock = [
   'tax-card.spec.ts',
   'reports.spec.ts',
   'assistant-inbox.spec.ts',
+  'morning-brief.spec.ts',
 ];
 
 export default defineConfig({

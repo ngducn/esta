@@ -1,6 +1,4 @@
-import { clockAt, parseInstant } from '@esta/core';
 import { isoDate } from '@esta/core/date';
-import { watchSnapshotSchema, type WatchLabels } from '@esta/core/watch';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -12,20 +10,11 @@ import { DEFAULT_REPLAY_DIR, writeRecording } from '../../src/replay/store';
 import { canonicalInput, replaySession } from '../../src/sdk/session';
 import { fakeDb, type Recorded } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
-import { mcpToolName, runTool } from '../../src/tools/server';
+import { mcpToolName } from '../../src/tools/server';
+import { CASES, clockOn, HOUSEHOLD, labels, snapshot } from '../full-seed';
+import { toolCaller } from '../replay-worker';
 
-const ROOT = join(import.meta.dirname, '../../../..');
-const snapshot = watchSnapshotSchema.parse(JSON.parse(readFileSync(join(ROOT, 'packages/core/src/watch/fixtures/full-2026-10-07.snapshot.json'), 'utf8')));
-const rawLabels = JSON.parse(readFileSync(join(import.meta.dirname, '../fixtures/full-2026-10-07.labels.json'), 'utf8')) as Record<keyof WatchLabels, Record<string, never>>;
-const labels: WatchLabels = {
-  properties: new Map(Object.entries(rawLabels.properties)),
-  units: new Map(Object.entries(rawLabels.units)),
-  parties: new Map(Object.entries(rawLabels.parties)),
-  documents: new Map(Object.entries(rawLabels.documents)),
-};
-const HOUSEHOLD = snapshot.householdId;
-const CASES = join(ROOT, 'fixtures/agent-replay-cases');
-const clock = () => Promise.resolve(clockAt({ kind: 'table', now: parseInstant('2026-10-07T06:45:00+07:00') }, 'Asia/Ho_Chi_Minh'));
+const clock = clockOn('2026-10-07T06:45:00+07:00');
 
 type Row = Record<string, unknown>;
 
@@ -33,12 +22,7 @@ function setup(tables: Record<string, Row[]> = { agent_items: [] }, jobId = 'job
   const writes: Recorded[] = [];
   const db = fakeDb(tables, writes);
   const prepared = portfolioWatchRequest({ db, householdId: HOUSEHOLD, jobId, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels }) });
-  const call = (name: string, input: Record<string, unknown> = {}) => {
-    const tool = prepared.tools.get(mcpToolName(name));
-    if (tool === undefined) throw new Error(`no ${name}`);
-    return runTool(tool, input);
-  };
-  return { tables, writes, prepared, call };
+  return { tables, writes, prepared, call: toolCaller(prepared) };
 }
 
 const items = (tables: Record<string, Row[]>) => tables.agent_items ?? [];

@@ -10,7 +10,7 @@ import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
-import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
+import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
 import { setClock } from './helpers/test-clock';
 
@@ -44,7 +44,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test.afterAll(async ({ request }) => {
-  await worker?.stop();
+  await stopAndForget(worker);
   await setClock(request, null);
 });
 

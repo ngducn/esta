@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
-import { startAgentWorker, type AgentWorker } from './helpers/agent-worker';
+import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, PHONE, START, fixture, open, recordForPr, serviceGet, servicePatch, seriousAxeViolations, shot, toast } from './helpers/wizard';
@@ -17,7 +17,7 @@ const newLeaseFrom = (documentId: string) => `/properties/${property}/rental/lea
 
 let worker: AgentWorker | undefined;
 test.beforeEach(({ request }) => setClock(request, START));
-test.afterAll(async ({ request }) => Promise.all([worker?.stop(), setClock(request, null)]));
+test.afterAll(async ({ request }) => Promise.all([stopAndForget(worker), setClock(request, null)]));
 
 type StoredLease = { id: string; status: string; start_date: string; end_date: string; rent_vnd: number; deposit_vnd: number; billing_cycle_months: number; tenant: { full_name: string; phone: string } };
 const leasesOn = (page: Page, unitId: string) =>

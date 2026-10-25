@@ -134,7 +134,9 @@
     "offline": "Chưa tải được. Kiểm tra kết nối mạng rồi thử lại.",
     "errorTitle": "Chưa tải được Tổng quan",
     "errorBody": "Kiểm tra kết nối mạng rồi thử lại. Số tiền đã ghi nhận vẫn an toàn.",
-    "retry": "Thử lại"
+    "retry": "Thử lại",
+    "briefNone": "Trợ lý chưa viết ghi chú hôm nay.",
+    "briefOpen": "Xem hộp thư"
   },
   "components": {
     "loading": "Đang tải",
@@ -1065,7 +1067,9 @@
     "diagnosticsDedupe": "Khóa chống trùng",
     "diagnosticsLinks": "Liên kết",
     "linkOk": "link ok",
-    "linkMissing": "không tìm thấy"
+    "linkMissing": "không tìm thấy",
+    "ranAt": "Trợ lý chạy lúc {time}.",
+    "briefLabel": "Ghi chú buổi sáng"
   },
   "settings": {
     "display": "Hiển thị",

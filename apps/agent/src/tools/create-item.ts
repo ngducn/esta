@@ -1,8 +1,9 @@
 import type { Clock } from '@esta/core';
-import { watchNoteSchema, type WatchNote } from '@esta/core/agent-schemas';
+import { watchNoteSchema } from '@esta/core/agent-schemas';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
-import { checkNote, repairMessage, type FactSheet, type FilledNote, type NoteViolation } from '@esta/core/guard';
+import { checkNote, repairMessage, type FactSheet, type FilledNote, type NoteFormat, type NoteViolation } from '@esta/core/guard';
+import type { TablesInsert } from '@esta/db';
 import { watchDedupeKey, type DescribedFact, type WatchSeverity } from '@esta/core/watch';
 import type { AgentDb } from '../supabase';
 import { ToolRejection } from './server';
@@ -32,6 +33,9 @@ export type WrittenNote = { readonly dedupe_key: string; readonly title: string;
 
 const SEVERITY_ORDER: readonly WatchSeverity[] = ['info', 'watch', 'action'];
 
+/** The highest severity among the facts an item tells. */
+export const severityOf = (facts: readonly DescribedFact[]): WatchSeverity => SEVERITY_ORDER[Math.max(0, ...facts.map(({ fact }) => SEVERITY_ORDER.indexOf(fact.severity)))] ?? 'info';
+
 const GUARD_ITEM = {
   vi: { title: 'Trợ lý đã giữ lại một ghi chú có số tự gõ', found: 'Chỗ bộ lọc số chặn:', draft: 'Bản nháp của Trợ lý:' },
   en: { title: 'The assistant held back a note with typed numbers', found: 'What the number guard rejected:', draft: "The assistant's draft:" },
@@ -43,7 +47,9 @@ function fenced(text: string): string {
   return `${fence}\n${text}\n${fence}`;
 }
 
-async function writeGuardItem(binding: NoteBinding, note: WatchNote, found: readonly NoteViolation[]): Promise<void> {
+type GuardBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'>;
+
+async function writeGuardItem(binding: GuardBinding, draft: string, found: readonly NoteViolation[]): Promise<void> {
   const words = GUARD_ITEM[binding.locale];
   const once = new Map(found.map((violation) => [`${violation.rule}\u0000${violation.text}`, violation]));
   const list = [...once.values()].map(({ rule, text }) => `- ${JSON.stringify(text)}: ${rule}`).join('\n');
@@ -54,7 +60,7 @@ async function writeGuardItem(binding: NoteBinding, note: WatchNote, found: read
       severity: 'info',
       audience: 'operator',
       title: words.title,
-      body_md: `${words.found}\n\n${list}\n\n${words.draft}\n\n${fenced(`${note.title}\n\n${note.body_md}`)}`,
+      body_md: `${words.found}\n\n${list}\n\n${words.draft}\n\n${fenced(draft)}`,
       dedupe_key: `number_guard:${binding.jobId}`,
       job_id: binding.jobId,
       created_at: (await binding.clock()).now(),
@@ -62,6 +68,39 @@ async function writeGuardItem(binding: NoteBinding, note: WatchNote, found: read
     { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true },
   );
   if (error) throw new Error(`Writing the number guard item failed: ${error.message}`);
+}
+
+export type ItemRow = Pick<TablesInsert<'agent_items'>, 'kind' | 'severity' | 'title' | 'body_md' | 'related' | 'dedupe_key'>;
+
+/**
+ * The number guard as every write tool runs it (AGENT.md §6.3). `fill` checks all of a call's texts against the run's
+ * sheet: the first call with a violation gets a repair turn, the next fails the job and leaves the operator note.
+ * `save` writes one item for the household under its dedupe key, so a rerun the same day adds nothing; it answers
+ * whether it added the row.
+ */
+export function guardedWriter(binding: GuardBinding, tool: string) {
+  let violations = 0;
+  return {
+    async fill(texts: ReadonlyArray<{ readonly template: string; readonly format: NoteFormat }>, draft: string): Promise<FilledNote[]> {
+      const checks = texts.map(({ template, format }) => checkNote(template, binding.sheet, format));
+      const found = checks.flatMap((check) => (check.ok ? [] : check.reason));
+      if (found.length > 0) {
+        violations += 1;
+        if (violations === 1) throw new ToolRejection(`${repairMessage(found)}\nFix these and call ${tool} again.`);
+        await writeGuardItem(binding, draft, found);
+        throw new NumberGuardError(`number_guard: ${tool} still held text the number guard rejects after its repair turn; the operator note has it`);
+      }
+      return checks.flatMap((check) => (check.ok ? [check.value] : []));
+    },
+    async save(item: ItemRow): Promise<boolean> {
+      const { data, error } = await binding.db
+        .from('agent_items')
+        .upsert({ ...item, household_id: binding.householdId, audience: 'all', job_id: binding.jobId, created_at: (await binding.clock()).now() }, { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true })
+        .select('id');
+      if (error) throw new Error(`${tool} failed: ${error.message}`);
+      return data.length > 0;
+    },
+  };
 }
 
 const handles = (list: readonly string[]) => list.join(', ');
@@ -74,7 +113,7 @@ const handles = (list: readonly string[]) => list.join(', ');
 export function watchNoteWriter(binding: NoteBinding) {
   const covered = new Set<string>();
   const written: WrittenNote[] = [];
-  let violations = 0;
+  const guard = guardedWriter(binding, 'create_item');
   let digest = false;
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true }> {
@@ -90,40 +129,25 @@ export function watchNoteWriter(binding: NoteBinding) {
     const action = facts.find(({ fact }) => fact.severity === 'action');
     if (action === undefined && digest) throw new ToolRejection('This run already wrote the grouped note. Put every watch and info fact in that one note.');
 
-    const title = checkNote(note.title, binding.sheet, 'plain');
-    const body = checkNote(note.body_md, binding.sheet);
-    if (!title.ok || !body.ok) {
-      const found = [...(title.ok ? [] : title.reason), ...(body.ok ? [] : body.reason)];
-      violations += 1;
-      if (violations === 1) throw new ToolRejection(`${repairMessage(found)}\nFix these and call create_item again.`);
-      await writeGuardItem(binding, note, found);
-      throw new NumberGuardError('number_guard: a note still held text the number guard rejects after its repair turn; the operator note has it');
-    }
-
+    const [title, body] = await guard.fill(
+      [
+        { template: note.title, format: 'plain' },
+        { template: note.body_md, format: 'markdown' },
+      ],
+      `${note.title}\n\n${note.body_md}`,
+    );
     const dedupeKey = action === undefined ? `watch_digest:${binding.asOf}` : watchDedupeKey(action.fact, binding.asOf);
-    const severity = SEVERITY_ORDER[Math.max(...facts.map(({ fact }) => SEVERITY_ORDER.indexOf(fact.severity)))] ?? 'info';
-    const { data, error } = await binding.db
-      .from('agent_items')
-      .upsert(
-        {
-          household_id: binding.householdId,
-          kind: 'alert',
-          severity,
-          audience: 'all',
-          title: title.value.text,
-          body_md: body.value.text,
-          related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links: facts.map(({ link }) => link) },
-          dedupe_key: dedupeKey,
-          job_id: binding.jobId,
-          created_at: (await binding.clock()).now(),
-        },
-        { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true },
-      )
-      .select('id');
-    if (error) throw new Error(`create_item failed: ${error.message}`);
+    const added = await guard.save({
+      kind: 'alert',
+      severity: severityOf(facts),
+      title: title?.text ?? '',
+      body_md: body?.text ?? '',
+      related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links: facts.map(({ link }) => link) },
+      dedupe_key: dedupeKey,
+    });
     for (const handle of related) covered.add(handle);
     if (action === undefined) digest = true;
-    written.push({ dedupe_key: dedupeKey, title: note.title, body_md: note.body_md, cited: [...title.value.cited, ...body.value.cited], added: data.length > 0 });
+    written.push({ dedupe_key: dedupeKey, title: note.title, body_md: note.body_md, cited: [...(title?.cited ?? []), ...(body?.cited ?? [])], added });
     return { saved: true };
   }
 

@@ -31,10 +31,22 @@ describe('SafeMarkdown', () => {
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
-  it('keeps an esta://property link as an in-app link', () => {
-    const link = renderMarkdown('[Nhà phố Q7](esta://property/7c9e6679-7425-40de-944b-e07fc1f90ae7)').querySelector('a');
-    expect(link?.getAttribute('href')).toBe('/properties/7c9e6679-7425-40de-944b-e07fc1f90ae7');
+  it.each(['property', 'invoice', 'lease', 'unit', 'document', 'party', 'meter', 'ledger'])('opens an esta://%s link inside the app', (type) => {
+    const link = renderMarkdown(`[Phòng 5](esta://${type}/7c9e6679-7425-40de-944b-e07fc1f90ae7)`).querySelector('a');
+    expect(link?.getAttribute('href')).toBe(`/open/${type}/7c9e6679-7425-40de-944b-e07fc1f90ae7`);
     expect(link?.getAttribute('target')).toBeNull();
+  });
+
+  it.each(['esta://tenant/7c9e6679-7425-40de-944b-e07fc1f90ae7', 'esta://invoice/../settings'])('keeps only the text of %s', (url) => {
+    const container = renderMarkdown(`[Phòng 5](${url})`);
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.textContent).toBe('Phòng 5');
+  });
+
+  it('shows a heading, a quote and code as plain text', () => {
+    const container = renderMarkdown('## Tiêu đề\n\n> trích\n\n`mã`');
+    expect(container.querySelector('h2, blockquote, code')).toBeNull();
+    expect(container.textContent).toContain('Tiêu đề');
   });
 
   it('drops an image so a reply cannot load a remote URL', () => {

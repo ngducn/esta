@@ -2,6 +2,7 @@ import type { Clock, Instant } from '@esta/core';
 import type { Json } from '@esta/db';
 import { mkdirSync, realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { z } from 'zod';
 import type { RunMode } from './env';
 import { InvalidJobError } from './jobs/extract-document';
 import { jobSpec, type AgentJob } from './jobs/registry';
@@ -56,7 +57,7 @@ async function householdName(db: AgentDb, householdId: string): Promise<string> 
 }
 
 /** The job's own directory, `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5). */
-async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome> {
+async function runSession(worker: Worker, job: AgentJob, waiting: readonly string[]): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
   const jobDir = join(worker.jobsDir, job.id);
@@ -65,7 +66,7 @@ async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome
   let session: SessionRun | null = null;
   try {
     const resolvedDir = realpathSync(jobDir);
-    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, timezone: worker.timezone, clock: () => worker.clock() });
+    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, timezone: worker.timezone, waiting, clock: () => worker.clock() });
     const bound = [...prepared.tools.keys()].toSorted().join(',');
     if (bound !== spec.mcpTools.map(mcpToolName).toSorted().join(',')) throw new Error(`${job.kind} bound the tools ${bound}, not its kind's`);
     const request = {
@@ -87,8 +88,8 @@ async function runSession(worker: Worker, job: AgentJob): Promise<SessionOutcome
   }
 }
 
-async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant): Promise<Outcome> {
-  const { outcome, session } = await runSession(worker, job);
+async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, waiting: readonly string[]): Promise<Outcome> {
+  const { outcome, session } = await runSession(worker, job, waiting);
   const finishedAt = (await worker.clock()).now();
   const { mode, db } = worker;
   const run = await db.from('agent_runs').insert({
@@ -141,6 +142,32 @@ async function failJob(worker: Worker, job: AgentJob, error: string): Promise<vo
 
 const ABANDONED = 'The worker stopped during the last attempt';
 
+const WAIT_MINUTES = 5;
+const MAX_RESCHEDULES = 3;
+const payloadSchema = z.record(z.string(), z.json());
+
+async function waitingInputs(worker: Worker, job: AgentJob, today: string): Promise<string[]> {
+  const kinds = jobSpec(job.kind)?.waitsFor ?? [];
+  if (kinds.length === 0) return [];
+  const { data, error } = await worker.db
+    .from('agent_jobs')
+    .select('kind')
+    .in('idempotency_key', kinds.map((kind) => `${kind}:${job.household_id}:${today}`))
+    .in('status', ['queued', 'running']);
+  if (error) throw new Error(`Reading the job's inputs failed: ${error.message}`);
+  return kinds.filter((kind) => data.some((row) => row.kind === kind));
+}
+
+async function rescheduleForInputs(worker: Worker, job: AgentJob, waiting: readonly string[], asOf: Instant): Promise<boolean> {
+  const payload = payloadSchema.parse(job.payload);
+  const reschedules = typeof payload.reschedules === 'number' ? payload.reschedules : 0;
+  if (waiting.length === 0 || reschedules >= MAX_RESCHEDULES) return false;
+  const runAfter = new Date(Date.parse(asOf) + WAIT_MINUTES * 60_000).toISOString();
+  await ownJob(worker, job, 'Rescheduling the job', { status: 'queued', run_after: runAfter, attempts: job.attempts - 1, payload: { ...payload, reschedules: reschedules + 1 }, locked_by: null, locked_at: null });
+  console.log(`[agent] ${job.kind} ${job.id}: waiting for ${waiting.join(', ')}, runs again at ${runAfter}`);
+  return true;
+}
+
 export async function pollOnce(worker: Worker): Promise<boolean> {
   const asOf = (await worker.clock()).now();
   const abandoned = await worker.db.rpc('claim_abandoned_agent_job', { worker_id: worker.workerId, p_as_of: asOf });
@@ -155,7 +182,9 @@ export async function pollOnce(worker: Worker): Promise<boolean> {
   if (error) throw new Error(`Claiming a job failed: ${error.message}`);
   const job = data[0];
   if (job === undefined) return false;
-  const outcome = await finishJob(worker, job, asOf);
+  const waiting = await waitingInputs(worker, job, (await worker.clock()).today());
+  if (await rescheduleForInputs(worker, job, waiting, asOf)) return true;
+  const outcome = await finishJob(worker, job, asOf, waiting);
   console.log(`[agent] ${job.kind} ${job.id} attempt ${job.attempts}: ${outcome.ok ? 'done' : outcome.failure.kind}`);
   return true;
 }

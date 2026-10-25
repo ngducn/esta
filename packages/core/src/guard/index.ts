@@ -3,7 +3,7 @@ import { DATE_FIELD, escapeMarkdown, fillValue, layoutChange, maskIndex, maskPla
 import { residue } from './residue';
 import { visibleText } from './visible-text';
 
-export { MAX_VALUE_LENGTH, visibleText };
+export { escapeMarkdown, MAX_VALUE_LENGTH, visibleText };
 
 /** Handle (`f1`) to the record a tool returned under it in this run. */
 export type FactSheet = ReadonlyMap<string, Readonly<Record<string, unknown>>>;

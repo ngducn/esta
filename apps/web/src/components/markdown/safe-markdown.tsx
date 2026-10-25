@@ -1,16 +1,14 @@
+import { parseEstaUri } from '@esta/core/links';
 import Link from 'next/link';
 import Markdown, { type Components, type UrlTransform } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
-const ESTA_ROUTES: Readonly<Record<string, string>> = { property: '/properties' };
-
-const ESTA_LINK = /^esta:\/\/([a-z_]+)\/([0-9A-Za-z-]+)$/;
-
 function estaPath(url: string): string | null {
-  const match = ESTA_LINK.exec(url);
-  const route = match?.[1] === undefined ? undefined : ESTA_ROUTES[match[1]];
-  return route === undefined || match?.[2] === undefined ? null : `${route}/${match[2]}`;
+  const route = parseEstaUri(url);
+  return route.ok ? `/open/${route.value.type}/${route.value.id}` : null;
 }
+
+const ALLOWED = ['p', 'ul', 'ol', 'li', 'strong', 'a', 'br'];
 
 /** Keeps only `https:` and resolvable `esta:` links; anything else loses its href and renders as text (SPEC §7.1). */
 const keepSafeUrl: UrlTransform = (url) => {
@@ -44,7 +42,7 @@ const components: Components = {
 export function SafeMarkdown({ children, className }: { children: string; className?: string }) {
   return (
     <div data-slot="safe-markdown" className={cn('flex flex-col gap-2 text-body break-words text-ink-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6', className)}>
-      <Markdown urlTransform={keepSafeUrl} components={components} disallowedElements={['img']} unwrapDisallowed>
+      <Markdown urlTransform={keepSafeUrl} components={components} allowedElements={ALLOWED} unwrapDisallowed>
         {children}
       </Markdown>
     </div>

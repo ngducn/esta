@@ -11,7 +11,7 @@ describe('sensitive documents reach the agent only through their own extraction 
   it('puts only the target file in the job directory', async () => {
     const jobDir = newJobDir();
     try {
-      await prepareExtractDocument({ db: twoHouseholds().db, job: extractJob({ document_id: DOCUMENT_A, extraction_id: EXTRACTION_A }), jobDir, timezone: 'Asia/Ho_Chi_Minh', clock });
+      await prepareExtractDocument({ db: twoHouseholds().db, job: extractJob({ document_id: DOCUMENT_A, extraction_id: EXTRACTION_A }), jobDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], clock });
       expect(readdirSync(jobDir)).toEqual(['document.pdf']);
     } finally {
       rmSync(jobDir, { recursive: true, force: true });

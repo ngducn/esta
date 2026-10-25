@@ -14,15 +14,14 @@ export function heartbeatReadBound(now: Instant): Instant {
   return new Date(Date.parse(now) + HEARTBEAT_SKEW_MS).toISOString() as Instant;
 }
 
-export type WorkerStatus =
-  | { readonly kind: 'never' }
-  | {
-      readonly kind: 'online' | 'offline';
-      /** The heartbeat's wall-clock time, `HH:mm` in the business timezone. */
-      readonly time: string;
-      /** The heartbeat's business date when it is earlier than today's, else null. */
-      readonly earlierDate: IsoDate | null;
-    };
+export type WallClockStamp = {
+  /** The wall-clock time, `HH:mm` in the business timezone. */
+  readonly time: string;
+  /** The business date when it is earlier than today's, else null. */
+  readonly earlierDate: IsoDate | null;
+};
+
+export type WorkerStatus = { readonly kind: 'never' } | ({ readonly kind: 'online' | 'offline' } & WallClockStamp);
 
 const timeFormatters = new Map<string, Intl.DateTimeFormat>();
 
@@ -35,12 +34,12 @@ export function wallTime(instant: Instant, timezone: string): string {
   return formatter.format(Date.parse(instant));
 }
 
+export function wallClockStamp(instant: Instant, now: Instant, timezone = 'Asia/Ho_Chi_Minh'): WallClockStamp {
+  const day = businessDate(instant, timezone);
+  return { time: wallTime(instant, timezone), earlierDate: day < businessDate(now, timezone) ? day : null };
+}
+
 export function workerStatus(lastSeenAt: Instant | null, now: Instant, timezone = 'Asia/Ho_Chi_Minh'): WorkerStatus {
   if (lastSeenAt === null) return { kind: 'never' };
-  const seenOn = businessDate(lastSeenAt, timezone);
-  return {
-    kind: Date.parse(now) - Date.parse(lastSeenAt) <= OFFLINE_AFTER_MS ? 'online' : 'offline',
-    time: wallTime(lastSeenAt, timezone),
-    earlierDate: seenOn < businessDate(now, timezone) ? seenOn : null,
-  };
+  return { kind: Date.parse(now) - Date.parse(lastSeenAt) <= OFFLINE_AFTER_MS ? 'online' : 'offline', ...wallClockStamp(lastSeenAt, now, timezone) };
 }

@@ -1,9 +1,20 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { join } from 'node:path';
+import { e2eServiceHeaders } from '../../scripts/e2e-service.ts';
+import { parseSlot } from '../../scripts/slot.ts';
+import { slotEnv } from '../../scripts/slot-env.ts';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const STARTED = /^\[agent\] worker \S+ started/m;
+const rest = `${slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT), { withKeys: false }).NEXT_PUBLIC_SUPABASE_URL}/rest/v1`;
+
+/** Stops the spec's worker and deletes every heartbeat, so the specs after it on the shared clock see no offline banner on every page. */
+export async function stopAndForget(worker: AgentWorker | undefined): Promise<void> {
+  await worker?.stop();
+  const response = await fetch(`${rest}/worker_heartbeats?worker_id=not.is.null`, { method: 'DELETE', headers: e2eServiceHeaders() });
+  if (!response.ok) throw new Error(`Deleting the worker heartbeats failed: ${await response.text()}`);
+}
 
 export type AgentWorker = { readonly pid: number; running(): boolean; stop(): Promise<void>; exited(): Promise<void>; log(): string };
 

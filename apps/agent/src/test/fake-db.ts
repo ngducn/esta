@@ -43,6 +43,9 @@ export function fakeDb(tables: Record<string, Row[]>, writes: Recorded[] = [], f
       order() {
         return builder;
       },
+      limit() {
+        return builder;
+      },
       in(column: string, values: readonly unknown[]) {
         filters.push((row) => values.includes(row[column]));
         return builder;
