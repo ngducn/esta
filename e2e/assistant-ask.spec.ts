@@ -8,7 +8,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { laneHousehold, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
-import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, serviceGet, seriousAxeViolations, shot } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, serviceGet, seriousAxeViolations, settled, shot } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -48,6 +48,7 @@ async function askAndTimeFirstSentence(page: Page, question: string): Promise<nu
   await expect(page.getByTestId('answer-line'), 'the waiting line gives way to the first sentence').toHaveCount(0, { timeout: 30_000 });
   const firstSentence = Date.now() - sent;
   await expect(answer(page)).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
+  await settled(page.getByTestId('follow-up').getByTestId('ask-send'));
   await pause(page);
   return firstSentence;
 }
@@ -79,6 +80,7 @@ async function askFollowUp(page: Page, question: string) {
   await expect(page.getByTestId('question').nth(1)).toContainText(question);
   await expect(answer(page).nth(1)).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
   await expect(box.getByRole('textbox', { name: 'Hỏi tiếp' })).toHaveValue('');
+  await settled(box.getByTestId('ask-send'));
   await pause(page);
 }
 
@@ -205,6 +207,7 @@ test('lane 10: Mẹ reads in English at 130% in dark, asks which rooms in Dĩ An
     await page.getByRole('textbox', { name: 'Your question' }).fill(OVERDUE_EN);
     await page.getByTestId('ask-send').click();
     await expect(answer(page)).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
+    await settled(page.getByTestId('follow-up').getByTestId('ask-send'));
     await expect(answer(page)).toContainText(/^In Dãy trọ Dĩ An, only Phòng 5 is overdue: 12 days late, with .+ still owed\./);
     await expect(page.getByTestId('question')).toContainText(/^You asked at \d{2}:\d{2}, \d{2}\/\d{2}\/\d{4}/);
     expect(await clippedText(page)).toEqual([]);
