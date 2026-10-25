@@ -2,12 +2,12 @@ import 'server-only';
 import { businessDate, parseInstant, type Instant, type IsoDate } from '@esta/core';
 import { addDays } from '@esta/core/date/calendar';
 import { parseProposal, type Proposal } from '@esta/core/proposals';
-import { isoDateSchema } from '@esta/core/schemas/legal';
 import { existingLinks } from '@esta/ops';
 import { z } from 'zod';
 import { env } from '@/server/env';
 import type { Member } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
+import { noteCitations, type NoteCitation } from './citations';
 import { retryHint, type RetryHint } from './retry-hint';
 
 const INBOX = ['new', 'read'] as const;
@@ -44,10 +44,6 @@ export type NoteDiagnostics = {
 
 const noteKind = z.enum(['brief', 'weekly', 'proposal', 'note']).catch('note');
 export type NoteKind = z.infer<typeof noteKind>;
-
-const citationsSchema = z.array(z.object({ url: z.url({ protocol: /^https$/ }), source_name: z.string(), published_at: isoDateSchema.nullable().catch(null) })).catch([]);
-
-export type NoteCitation = { readonly url: string; readonly sourceName: string; readonly publishedOn: IsoDate | null };
 
 const relatedLinks = z.object({ links: z.array(z.string()) });
 
@@ -95,7 +91,7 @@ export async function listInbox({ household, role, isOperator }: Pick<Member, 'h
       reviewHref: document.success ? `/documents/${document.data.document_id}/review` : null,
       kind: noteKind.parse(row.kind),
       proposal: row.kind === 'proposal' ? proposalView(row.proposal) : null,
-      citations: citationsSchema.parse(row.citations).map((source) => ({ url: source.url, sourceName: source.source_name, publishedOn: source.published_at })),
+      citations: noteCitations(row.citations),
       diagnostics: isOperator
         ? { kind: row.kind, severity: row.severity, audience, dedupeKey: row.dedupe_key, links: linksOf(row).map((href) => ({ href, ok: readable.has(href) })) }
         : null,

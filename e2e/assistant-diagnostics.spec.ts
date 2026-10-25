@@ -98,6 +98,7 @@ test('Mẹ’s menu has no diagnostics entry, its link shows a plain not-found p
   await shot(page, 'p5-08-diagnostics-hidden-menu-390x844-light');
 
   const response = await page.goto('/assistant/diagnostics');
+  expect(response?.status(), 'a non-operator gets a real 404').toBe(404);
   await expect(page.getByTestId('page-not-found')).toContainText('Không tìm thấy trang này');
   const html = (await response?.text()) ?? '';
   expect(html).toContain('noindex');
@@ -114,7 +115,7 @@ test('Mẹ’s menu has no diagnostics entry, its link shows a plain not-found p
 test('in English at 130% and dark, the diagnostics tables stack on a phone with no sideways scroll', async ({ page }) => {
   await open(page, RYAN, 'dark', PHONE);
   await inEnglishAt130(page, seedId(`seed:member:ryan-lane-${LANE}`), async () => {
-    await page.goto('/assistant/diagnostics');
+    expect((await page.goto('/assistant/diagnostics'))?.status(), 'the operator opens it').toBe(200);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Assistant diagnostics');
     const firstRun = page.getByTestId('diagnostics-runs').getByTestId('report-row').first();
     await expect(firstRun).toHaveCSS('display', 'block');
