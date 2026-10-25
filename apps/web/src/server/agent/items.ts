@@ -1,5 +1,6 @@
 import 'server-only';
 import { businessDate, parseInstant, type Instant, type IsoDate } from '@esta/core';
+import { addDays } from '@esta/core/date/calendar';
 import { parseProposal } from '@esta/core/proposals';
 import { existingLinks } from '@esta/ops';
 import { z } from 'zod';
@@ -59,7 +60,8 @@ export async function listInbox({ household, role, isOperator }: Pick<Member, 'h
     .from('agent_items')
     .select('id, title, body_md, status, audience, created_at, proposal, related, kind, severity, dedupe_key, decided_at')
     .eq('household_id', household.id)
-    .or(`status.in.(${INBOX.join(',')}),and(kind.eq.proposal,status.in.(${DECIDED.join(',')}))`)
+    // The day before `today` at UTC midnight bounds every zone's start of `today`, so old decisions never fill the page.
+    .or(`status.in.(${INBOX.join(',')}),and(kind.eq.proposal,status.in.(${DECIDED.join(',')}),decided_at.gte.${addDays(today, -1)}T00:00:00Z)`)
     .order('created_at', { ascending: false })
     .order('id')
     .limit(50);
