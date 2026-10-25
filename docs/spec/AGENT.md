@@ -1,16 +1,16 @@
 # Esta assistant (Trợ lý): agent spec
 
-The assistant watches the portfolio, reads documents, researches the market, and answers questions. It runs as a worker on a machine Ryan controls, using the Claude Agent SDK on Ryan's Claude subscription.
+The assistant watches the portfolio, reads documents, researches the market, and talks with each member in one Trợ lý thread, where its notes arrive and where she writes back about anything (Ryan's direction of 2026-10-25). It runs as a worker on a machine Ryan controls, using the Claude Agent SDK on Ryan's Claude subscription.
 
 Ryan's own Claude chats reach Esta through the connector, which docs/spec/CONNECTOR.md specifies (agreed 2026-10-19). This file governs the unattended assistant.
 
 ## 1. Principles
 
 1. **The agent proposes, people dispose.** The agent never writes business tables (properties, leases, invoices, payments, expenses, certificates, documents). It writes only agent-owned tables (§10) and `document_extractions`. Anything that changes business data is a proposal a person approves; the web app executes approvals under that person's session so RLS and the audit log attribute the change to them.
-2. **Numbers come from tools, not from the model.** Tools return the aggregates an answer needs (totals, counts, differences, ratios), so the model never does arithmetic. The model never types a number either: it writes a placeholder that names a tool field, and Esta fills it from the tool data (§6.3).
+2. **Numbers come from fact sources, not from the model.** A fact source is a tool's data, a number the member typed herself in the conversation, a figure quoted word for word from a web page fetched in the conversation, or the result of the `calculate` tool, which shows its working (§6.4). Tools return the aggregates an answer needs and `calculate` does any other arithmetic, so the model never does arithmetic. The model never types a number either: it writes a placeholder that names a fact field, and Esta fills it (§6.3). Every other number is blocked, including numbers the model knows from training (Ryan, 2026-10-25).
 3. **Deterministic first.** Rules that can be computed (overdue, expiring, vacancy, thresholds) are computed in `packages/core/watch` and SQL. The model ranks, groups and words them.
-4. **Cite everything external.** Research output carries source URLs, source names and publication dates. Summaries are in the agent's own words with at most one short quote per source.
-5. **Vietnamese by default.** Output language follows the household locale, or the language of the question in Ask.
+4. **Cite everything external.** Research output carries source URLs, source names and publication dates. Summaries are in the agent's own words with at most one short quote per source. A web figure in the thread is a word-for-word quote with its source chip.
+5. **Vietnamese by default.** Output language follows the household locale, or the language of her message in the thread.
 6. **Small blast radius.** Each job gets only the tools it needs, its own directory, isolated settings, and turn and time limits.
 
 ## 2. Runtime
@@ -66,7 +66,7 @@ S1 settled the SDK path, so the `claude -p --output-format stream-json` fallback
 As of October 2026, Anthropic's help center states that Claude Agent SDK usage in your own projects and `claude -p` draw from the subscription's usage limits (a planned separate SDK credit was paused on 15 June 2026). The SDK docs say third-party developers may not offer claude.ai login to their users. Esta is Ryan's own project run for his household, so subscription auth is the intended use. Consequences:
 
 1. Keep the worker under Ryan's account and for this household only. Do not add other families on this auth.
-2. If Mẹ uses Ask heavily, either she uses her own Claude plan or the worker switches to `api_key`.
+2. If Mẹ writes to the thread heavily, either she uses her own Claude plan or the worker switches to `api_key`. The daily `ask` cap (§9) bounds it meanwhile.
 
 Re-check the help center article before production deploy; record the date checked in `docs/plan/STATUS.md`.
 
@@ -80,7 +80,7 @@ Re-check the help center article before production deploy; record the date check
 | `portfolio_watch` | Daily 06:40 | routine | `watch_facts`, `create_item` | 6 | 3 min |
 | `morning_brief` | Daily 07:00 | routine | `watch_facts`, `recent_items`, `create_brief` | 6 | 3 min |
 | `weekly_review` | Sunday 08:00 | deep | All read tools, WebSearch, WebFetch, `create_item`, `create_proposal` | 25 | 10 min |
-| `ask` | Message in a conversation | routine (deep on request) | All read tools, `create_proposal` | 15 | 2 min a session; 4 min with the repair turn |
+| `ask` | Message in the Trợ lý thread | routine (deep on request) | All read tools, `create_proposal`, `calculate` (P5-15), WebSearch and WebFetch (P5-14) | 15; 20 with web | 2 min a session, 3 min with web; twice that with the repair turn |
 | `backup_export` | Daily 02:00 | none (no model) | n/a | n/a | 20 min |
 
 Idempotency keys: `{kind}:{household_id}:{local_date}` for daily jobs, `{kind}:{household_id}:{iso_week}` for weekly, `extract_document:{document_id}:{sha256}`, `ask:{message_id}`.
@@ -123,6 +123,12 @@ Write tools:
 | `create_proposal(type, params, rationale, related, dedupe_key)` | `agent_items` with kind `proposal` |
 
 Proposal types, each with a zod schema in `packages/core/proposals` and a handler in the web app: `create_task`, `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change`, `flag_data_issue`. Unknown types are rejected by the tool.
+
+Computation tool (P5-15):
+
+| Tool | Returns |
+| --- | --- |
+| `calculate(op, operands)` | One record with `result_display` and `working_display` for an operation of the `packages/core/src/calc` registry over fact fields named by handle (§6.4). It writes nothing |
 
 ## 5. Jobs in detail
 
@@ -178,7 +184,7 @@ The model receives the facts and writes one `agent_item` per action fact and one
 
 ### 5.4 morning_brief
 
-Composes today's watch facts and eligible research items into one `brief` item (P0, in-app); PLT-4 emails it (P1):
+Composes today's watch facts and eligible research items into one `brief` item (P0, in the thread and on Home); PLT-4 emails a notice with its title and a link to it (P5-09):
 
 - One-line summary.
 - "Cần làm" with up to 5 action items, each linked.
@@ -192,16 +198,20 @@ The model drafts the summary and the lines through `create_brief`; `renderBriefM
 
 Every Sunday 08:00 with the deep model: last week's collections against expected, the next 30 days, vacancy, notable expenses, tax position change, and up to 3 proposals. A proposal that cites market rents must cite sources fetched in this run or stored research items.
 
-### 5.6 ask
+### 5.6 ask, the Trợ lý thread
 
-1. The member sends a question on Hỏi. `public.ask_question` writes the conversation, her message, an empty assistant row with status `streaming` and the `ask` job, keyed `ask:{question_id}`, in one transaction. A viewer may ask. No member writes `conversations` or `messages` directly. A follow-up names the same conversation: a question id it already holds returns at once, so a resent tap asks once, and a question while the last answer still streams is refused as busy (`ESTA_ASK_BUSY`). Only an operator may tick Suy nghĩ kỹ hơn, which runs the job on `ESTA_MODEL_DEEP`; the function refuses `p_deep` for anyone else.
+Each member has one thread under Trợ lý's `Tin nhắn` tab (P5-12). It merges, by time with the newest at the bottom, the household's notes the member may read (`agent_items` with audience `all`, and `operator` for operators) with the conversations that member started. Conversations are the thread's segments. Each one bounds an SDK session, and she never sees the seams. Trợ lý's notes are the proactive half: the brief, alerts, proposals, the weekly review and, through the brief's `Thị trường` section, the news. Her messages are the open half.
+
+1. She types in the reply box. `public.ask_in_thread` takes an advisory lock for the member and picks the conversation the message joins: her latest one while its last question was asked on the same business day and it holds fewer than 20 questions, and a new one otherwise [app rule]. A message with a topic (`messages.topic`, P5-13), a reply to a note or a question from a property's `Hỏi Trợ lý về tài sản này`, always starts a new one, so the topic leads. It then runs `public.ask_question` on that conversation, which no client may call directly. `ask_question` writes the conversation, her message, an empty assistant row with status `streaming` and the `ask` job, keyed `ask:{question_id}`, in one transaction. A viewer may ask. No member writes `conversations` or `messages` directly. A follow-up names the same conversation: a question id it already holds returns at once, so a resent tap asks once, and a question while the last answer still streams is refused as busy (`ESTA_ASK_BUSY`). Only an operator may tick Suy nghĩ kỹ hơn, which runs the job on `ESTA_MODEL_DEEP`; the function refuses `p_deep` for anyone else.
 2. The worker runs the job in `conversations/{conversation_id}` under `ESTA_AGENT_HOME`, a directory it keeps, and refuses an id that is not a UUID or a directory that is a link. The SDK keeps its transcripts in that directory too (`CLAUDE_CONFIG_DIR` is its `sdk/` folder). `public.finish_answer` marks the answer done and stores the turn's session id, its replay input hash and the number of fact handles the session has handed out, in one transaction, so only a turn whose answer the family saw is resumed. A follow-up resumes that session as a fork, and its handles start after the last one, so a handle the model remembers from an earlier turn cannot name a new record; the prompt tells it to call the tools again for every figure. When the saved session is gone, as after a redeploy that emptied `ESTA_AGENT_HOME`, the same job starts a new session whose prompt holds Ask's full rules and the conversation's earlier questions with the answers she read (without their links), and `finish_answer` saves that session for the next follow-up. A conversation with no answered turn to rebuild from forgets its saved session, so its next question starts one of its own, and the follow-up fails at once (`lost_session`), with no retry.
-3. The assistant answers with the read tools of §4 and may suggest a change through `create_proposal`, which a member approves in Hộp thư; a viewer's question can leave a proposal, and `approve_proposal` still needs a member. It writes in the language of the question, Vietnamese when unsure. It links a record as `[text](f3)`, with the handle of a record a tool returned in this run. Before the guard fills any value, the worker turns that into the record's `esta://` link and lists it in `refs`, so a cited name that holds `](f2)` stays text and the 4,000-character limit counts the links. The 3,000-character template limit counts only what the model wrote. Every write of the row carries the `refs` of the text it shows, and the page keeps only those links live: a handle with no link, an `esta://` link the model typed itself and any other URL render as their text.
+3. The assistant answers with the read tools of §4 and may suggest a change through `create_proposal`, which a member approves on its note card in the thread; a viewer's question can leave a proposal, and `approve_proposal` still needs a member. It writes in the language of the question, Vietnamese when unsure. It links a record as `[text](f3)`, with the handle of a record a tool returned in this run. Before the guard fills any value, the worker turns that into the record's `esta://` link and lists it in `refs`, so a cited name that holds `](f2)` stays text and the 4,000-character limit counts the links. The 3,000-character template limit counts only what the model wrote. Every write of the row carries the `refs` of the text it shows, and the page keeps only those links live: a handle with no link, an `esta://` link the model typed itself and any other URL render as their text.
 4. Text streams through the number guard (§6.3) a sentence at a time (`apps/agent/src/jobs/askStream.ts`). The worker buffers model text to a sentence boundary outside an open link or placeholder, and never at the `.` of a line that holds only an ordered list's number, guards the whole prefix up to it, and writes the filled text that passed to the row at most every 300 ms. A violating sentence stops what the row shows. One repair turn writes the whole answer again from the start and replaces the row's content. A second violation sets the row to `error` with empty content and writes the operator item of §6.3.
 5. The page reads the row through a server-sent events route, `/api/answers/{id}`, that polls it every 250 ms through the member's session client, so RLS is the only boundary and no Supabase key reaches the browser. The route closes when the row reaches `done` or `error`, when the client leaves, and after 5 minutes.
-6. If the tools cannot answer, it says what is missing. It never estimates figures. A turn that ends after its tool calls without any text fails the job at once (`invalid_job`), with no retry.
+6. If no fact source can answer, it says what is missing and what it can do instead, such as look it up on the web or calculate from a number she types. It never estimates figures. A turn that ends after its tool calls without any text fails the job at once (`invalid_job`), with no retry.
+7. She may ask anything (P5-12). About her data, the read tools answer. For writing, such as a Zalo message to a tenant or a short letter, any amount or date in the draft is a cited field like any answer, and the page offers `Sao chép`. Advice and explanations carry no number unless a fact source holds it. Answers about law, tax or procedure cite a page fetched in the conversation (P5-14). With a topic, the worker loads the topic's records before the first turn: for a note, the records its `related` names, read through the read tools; for a property, `get_property` and `property_metrics`. Those records hold the first handles, and the note's own text is context the model may not quote figures from.
+8. Suggested replies are data, not model output. `SUGGESTIONS` in `packages/core/src/assistant/suggestions.ts` maps a note's kind and watch rule to message-file texts with record labels as parameters, and the page shows up to 3 from today's open notes above the reply box (P5-13). A tap sends one as her message with that note as the topic.
 
-Target: first visible text within 10 seconds when the worker is online.
+Target: first visible text within 10 seconds when the worker is online. A turn that searches the web shows `Trợ lý đang tra cứu trên mạng` (`messages.activity`) until its first sentence, which should come within 45 seconds [app rule].
 
 ## 6. Prompts and guards
 
@@ -220,13 +230,13 @@ Tone: calm, polite, concise, like a careful family accountant. No exclamation ma
 Today is {local_date} in Asia/Ho_Chi_Minh.
 ```
 
-Each job appends its own task section and output schema. The ask job replaces `Write in {locale}` with `Write in the language of the question, Vietnamese when unsure`, so an English question gets an English answer (§7.4 question 10).
+Each job appends its own task section and output schema. The ask job replaces `Write in {locale}` with `Write in the language of the question, Vietnamese when unsure`, so an English question gets an English answer (§7.4 question 10). Its task section opens the scope of §5.6 step 7, lists the fact records of §6.4 that exist before the first turn (her typed numbers, the topic's records), and replaces `You may only use the tools provided` with a line that still forbids any number outside a fact source.
 
 ### 6.2 Output schemas
 
 Every job's final output is JSON validated by zod schemas in `packages/core/agent-schemas`. Text fields are Markdown limited to paragraphs, lists, bold and links, and the web app sanitizes them (SPEC §7.1).
 
-An Ask answer may also hold a GFM table, for a list answer such as leases ending soon. `SafeMarkdown` renders tables only when it is given the answer's `refs`, with the table syntax alone (no autolinked URLs, strikethrough or footnotes), so a note in Hộp thư shows a table as its literal text. The number guard reads an answer with the same GFM table grammar (`checkNote` format `markdown-tables`), one row per line and its cells apart, so a `|` inside a link target splits the cell for the guard as it does on screen and a number after it is checked (`safe-markdown.test.tsx`).
+An Ask answer may also hold a GFM table, for a list answer such as leases ending soon. `SafeMarkdown` renders tables only when it is given the answer's `refs`, with the table syntax alone (no autolinked URLs, strikethrough or footnotes), so a note card in the thread shows a table as its literal text. The number guard reads an answer with the same GFM table grammar (`checkNote` format `markdown-tables`), one row per line and its cells apart, so a `|` inside a link target splits the cell for the guard as it does on screen and a number after it is checked (`safe-markdown.test.tsx`).
 
 ### 6.3 Number guard
 
@@ -255,6 +265,18 @@ Ryan ruled on 2026-10-24 ("Placeholders") that the model never types a number. T
 [app rule] Number words are checked with their diacritics only, apart from the amount words in the table (`trieu`, `tram`, `nghin`, …). Without diacritics `nam`, `sau`, `bay` and `tam` are also other common words (south, after, fly), so the guard lets them pass.
 
 [app rule] People and places are written through `_name` and `_label` placeholders, and the §6.1 prompt says so. The table cannot tell a nickname or a place name from a number (`chú Ba`, `cô Tư`, `Út Hai`, `đứng tên ba`, `Ba Đình`, `Hai Bà Trưng`), so such words stay rejected in the model's prose; written through a field they pass, because the guard never checks a value.
+
+### 6.4 Fact sources in the thread
+
+Ryan ruled on 2026-10-25 that the number rule stays absolute in the open thread, with three fact sources beside the tools. Each is a record in the run's fact sheet with a handle from the same `f1`, `f2`, … sequence, so §6.3 fills and checks them unchanged. A field that holds a number also keeps its typed value (`Vnd`, basis points, a count, months or an `IsoDate`) beside its `_display` string, which `calculate` reads.
+
+1. **Tool data**, as §4 and §6.3 say.
+2. **Numbers she typed.** Before the first turn, `extractTypedNumbers` in `packages/core/src/guard/typed.ts` reads every message she wrote in this conversation with the parsers of `packages/core/src/parse`: `parseVndInput` amounts (`4tr`, `3,5tr`, `2 tỷ`, `850k`), percents and yearly rates as basis points (`9%/năm`), `dd/mm/yyyy` dates, and counts where a number comes before a unit word (`15 năm`, `8 phòng`). A unit word before a number is a label (`phòng 2`), and a number no parser reads (a phone number) is not a fact [app rule]. Each number becomes a record with `value_display` formatted by `packages/core/src/format` (`4tr` shows `4.000.000 ₫`), its typed value and `typed_text`, and the prompt lists them by handle (P5-15).
+3. **Web quotes.** A figure from a page is quoted as §5.2 says for the scan. The model copies it into `quotes` with at least three words around it, the quote must appear word for word and at word and number boundaries in the text WebFetch returned for that page in this conversation, and the model cites it as `{{f7.quote_1_label}}`. `apps/agent/src/tools/web-quotes.ts` holds that rule for both jobs. The answer's `refs` list each page as a numbered source chip with its source name and, when the page writes one, its date. The number inside a quote is parsed as in 2, so `calculate` can use it (P5-14).
+4. **`calculate`.** Operands are fact fields named by handle and field, never numbers the model types. Operations come from the registry in `packages/core/src/calc`: `sum`, `difference`, `times_count`, `monthly_to_yearly`, `yearly_to_monthly`, `share_bp`, `apply_bp`, `change_bp`, `loan_payment` (principal, yearly rate and months) and `days_between`. They work in integer VND and basis points with BigInt intermediates and no floats, and round half up to the đồng [app rule]. An operand of the wrong kind is refused with the reason. The result is a new record with `result_display` and `working_display` (`4.000.000 ₫ × 12 = 48.000.000 ₫`) that a later call may use. The answer's `refs` list each cited result, and the page shows its working under the answer as `Cách tính: …`, which Esta writes and the model does not (P5-15).
+5. **Nothing else.** A number from the model's own knowledge, an estimate, or a figure from a page fetched in another conversation is a §6.3 violation like any typed number.
+
+Search words stay free of family data. The `PreToolUse` hook denies a WebSearch query that holds a digit other than a four-digit year, or any person's name, nickname or property label from this run's records, and tells the model why; province and commune names pass [app rule]. A fetch must name a page this turn's WebSearch returned, and a redirect to another host is dropped, as in §5.2. In the thread the caps are 4 searches and 4 fetches per turn [app rule] (P5-14).
 
 ## 7. Evaluation
 
@@ -300,13 +322,24 @@ Ten golden questions with SQL ground truth on the `full` seed. Pass when every n
 9. Lợi suất cho thuê gộp của Mặt bằng Quận 1 là bao nhiêu? (`property_metrics`)
 10. Which tenant paid late most often this year? Must answer in English. (`payment_behavior`)
 
+Thread cases (P5-12 to P5-15), on the same seed and clock, pass when every number is a fact source of §6.4 equal to its ground truth or its page text, every link and source chip resolves, and the case's own check holds:
+
+- T1. `Viết tin nhắn Zalo nhắc khách phòng 5 ở Dĩ An đóng tiền.` (`collections`): a polite draft naming the tenant and the amount owed on the collections board.
+- T2. `Có nên cho thuê theo năm thay vì theo tháng không?`: advice with no number.
+- T3. A reply to the Phòng 5 overdue note, `Khách này trễ mấy lần rồi?` (`payment_behavior`).
+- T4. From Đất Bảo Lộc's page, `Tài sản này đang thế chấp ở đâu?` (`get_property`): the bank on its Pháp lý tab.
+- T5. `Nếu tăng tiền phòng 2 ở Dĩ An lên 4tr thì mỗi năm thu thêm bao nhiêu?` (`list_leases`, a typed amount, `calculate`): the yearly gain with its working.
+- T6. `Vay 2 tỷ trong 15 năm, lãi 9%/năm thì mỗi tháng trả bao nhiêu?` (typed numbers, `calculate` `loan_payment`): equal to the formula within 1 đồng.
+- T7. `Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?` (WebSearch, WebFetch): a rate quoted word for word with its source chip. Replay holds the fetched page text.
+- T8. `Giá đất Bảo Lộc bây giờ khoảng bao nhiêu?` with no source found: says it has no figure and offers to look it up or calculate from her number, with no number.
+
 ### 7.5 Research (live only)
 
 At least one item or the explicit empty item; every source URL fetches with status 200 at check time; related property ids exist; summaries within the token limit; no duplicates of the last 30 days; Vietnamese.
 
 ### 7.6 Live run at the Phase 5 exit
 
-Run every job kind once in `live` mode locally on the `full` seed with the frozen clock, record the outputs in `docs/plan/trail/`, and check: watch facts equal §7.1 (deterministic), brief and Ask pass §7.3 and §7.4, research passes §7.5, extraction meets §7.2.
+Run every job kind once in `live` mode locally on the `full` seed with the frozen clock, record the outputs in `docs/plan/trail/`, and check: watch facts equal §7.1 (deterministic), the brief and the ten golden questions pass §7.3 and §7.4, the thread cases T1 to T8 pass §7.4, research passes §7.5 and every source chip's URL returns 200 at check time, extraction meets §7.2.
 
 ### 7.7 Ping
 
@@ -343,3 +376,5 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 - `notifications`: user_id, channel (`inapp | email | push`), agent_item_id, status, sent_at, error.
 
 `document_extractions` is defined in SPEC §5.5; the agent writes it through `save_extraction` only.
+
+Thread columns. `messages.topic` (P5-13) holds `{ kind: 'item' | 'property', id }` on her message, written only by `ask_in_thread`. `messages.activity` (P5-14) is `web` while a web tool runs before the first sentence. An answer's `refs` also hold source chips and `calculate` results (P5-14, P5-15). `notifications` rows name the note they announce, and P5-09's notice links to `/assistant?note={id}`.

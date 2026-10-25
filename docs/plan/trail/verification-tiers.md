@@ -74,7 +74,12 @@ Phase 1 closes with P1-03, which is rigorous because it is a phase exit. Phase 2
 | P5-06b | Confirm a reminder draft, a renewal, a rent change or a data issue | Rigorous | The assistant changes leases and money terms |
 | P5-07 | Ask the assistant questions | Standard | Read-only answers, guarded by P5-03 |
 | P5-08 | Weekly review, caps and diagnostics | Standard | Operator tooling |
-| P5-09 | Email the morning brief | Rigorous | Real email |
+| P5-12 | One Trợ lý thread for notes and her questions | Rigorous | Replaces two surfaces and adds a definer function that picks whose conversation a message joins |
+| P5-13 | Reply to a note, ask about a property, suggested replies | Standard | Topics are checked in SQL; answers guarded as before |
+| P5-14 | Web lookups with quoted figures in the thread | Rigorous | Web search runs beside family data |
+| P5-15 | Her own numbers and `calculate` | Rigorous | Money arithmetic |
+| P5-16 | Pre-live lows | Standard | Fixes with a test each |
+| P5-09 | Email a link to each new note | Rigorous | Real email |
 | P5-10 | Live run and north-star steps 7 and 9 | Rigorous | Whole flow |
 | P6-01 | Settings for household, members, bank accounts and the assistant | Rigorous | Roles and bank accounts |
 | P6-02 | Export all data and nightly backup | Rigorous | Data loss |

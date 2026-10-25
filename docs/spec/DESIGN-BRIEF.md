@@ -110,7 +110,18 @@ Each status color reaches 4.5:1 on its fill and on every ground, so one token dr
 
 ### 5.5 How the assistant looks
 
-The assistant is "Trợ lý", a quiet colleague who leaves notes. Its output is a note card: a small monogram ring in the accent, a time stamp, short sentences, every number linked to the record it came from, sources as small numbered citation chips that open the source. Proposals are compact blocks inside the note with two text buttons, "Đồng ý" and "Bỏ qua". No sparkle icons, no gradient orbs, no chat bubbles on the home screen, no typing animations. The Ask screen is a plain conversation page; answers render tables when the answer is a list. A small status line shows when the worker last ran ("Trợ lý chạy lúc 07:00") and turns into a clear offline notice when stale; it appears only when real worker data backs it. Diagnostics (auth mode, usage, failed guards) are visible only to operators.
+The assistant is "Trợ lý", a quiet colleague who leaves notes and answers when written to. Trợ lý is one thread per person, read like a messaging app with the newest at the bottom (Ryan's direction of 2026-10-25). Its notes arrive in the thread: the morning brief, alerts, proposals and the weekly review. Mẹ writes back in the same place, about her houses or anything else.
+
+- Each Trợ lý message is a note card: a small monogram ring in the accent, a time stamp, short sentences, every number linked to the record it came from or carrying its source. A web figure carries a small numbered citation chip that opens the page, and a calculated figure carries a `Cách tính` line with its working.
+- Her own messages sit on the right as plain tinted blocks with no tail and no avatar. A reply to a note shows the note's title above her text.
+- Proposals are compact blocks inside the note with two text buttons, "Đồng ý" and "Bỏ qua". A hidden note collapses to one muted line, so the thread keeps its order.
+- A reply box is always at the bottom, above the tab bar on a phone, with a text `Gửi` button. Up to three suggested replies drawn from today's notes sit above it as text chips.
+- Open urgent items stay pinned above the thread under `Cần xử lý`, so a new day's messages never bury them.
+- Answers render tables when the answer is a list, and an answer Mẹ may send on (a Zalo draft) has a `Sao chép` text button.
+- Streaming text appears a sentence at a time. Until the first sentence, one static line says what Trợ lý is doing: "Trợ lý đang trả lời", or "Trợ lý đang tra cứu trên mạng".
+- No sparkle icons, no gradient orbs, no typing animations (no bouncing dots, no blinking caret, no shimmer), no avatar other than the monogram, and no chat bubbles on the home screen. Home shows the morning brief as a note card with a `Trả lời` link into the thread.
+
+A small status line shows when the worker last ran ("Trợ lý chạy lúc 07:00") and turns into a clear offline notice when stale; it appears only when real worker data backs it. Diagnostics (auth mode, usage, failed guards) are visible only to operators.
 
 ## 6. Key screens
 
@@ -126,7 +137,7 @@ Run `/impeccable shape` for each before building it. Mobile layout first, then d
 8. **Lease detail.** Terms summary, period timeline with payment marks, deposit ledger, documents, Renew and Terminate actions.
 9. **Meter entry.** All rooms of a rooming house on one screen, previous reading shown beside the input, numeric keypad, anomaly warning inline.
 10. **Tài liệu (Documents).** Search bar first. Groups by property and category. Expiring soon section.
-11. **Trợ lý.** Tabs: Hộp thư (brief, alerts, proposals), Thị trường (research items with sources, filter by property), Hỏi (Ask).
+11. **Trợ lý.** Tabs: Tin nhắn, the thread (Trợ lý's notes and her conversation with it, pinned open items, open tasks and the reply box), and Thị trường (research items with sources, filter by property). Property detail offers "Hỏi Trợ lý về tài sản này", which opens the thread with that property as the topic.
 12. **Báo cáo (Reports).** Owner annual tax card, property P&L, rent roll, occupancy. Export buttons.
 13. **Cài đặt (Settings).** Household, members, receiving bank accounts, notifications, research topics, assistant status, language, text size, density, data export.
 
