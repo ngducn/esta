@@ -297,3 +297,12 @@ Operator's words, 2026-10-25: "merge them all for me please, then launch local f
 - The root lands the reviewed stack #322, #324, #330, #332, #334, #336 and #339, in order. Each one is a squash merge with `--match-head-commit` at a head whose `ci` is green and whose independent reviews are clean. After each merge, the next PR is brought onto main with a merge commit built from a clean rebase tree, retargeted to main, and its CI is rerun.
 - PRs still under review (#341, #342) are not part of this grant.
 - After the merges, the root starts the app locally for Ryan on his slot 6.
+
+## Update 2026-10-25 17:10 +07
+
+Operator's words, 2026-10-25: "why is the Hoi tab, not like LLMs regular chats?", "she type, also Tro ly should be a combination of both, like Grok Bot, or you, like think you can both be proactive, and she can be creative in asking you things", and "yeah replan the rest around this decision today, and work on it".
+
+- Trợ lý becomes one thread. Its notes (the brief, alerts with approvals, the weekly review and news) arrive as messages. Mẹ replies and asks anything in the same thread, and approval cards show inline. Thị trường stays a browse tab.
+- Numbers. The rule that the model never types a number stays. Three more fact sources are added: numbers Mẹ typed in the conversation, web numbers quoted verbatim from a page fetched in that conversation (shown with a source chip), and a calculate tool whose result is a fact with its working shown.
+- P5-09 shrinks to a "new message from Trợ lý" email that links into the thread.
+- The rest of Phase 5 is re-planned around the thread today. #341 and #342 stay as they are.
