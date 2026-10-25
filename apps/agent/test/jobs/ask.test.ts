@@ -86,7 +86,6 @@ const FOLLOW_UP_TOOLS = [
 const SEPTEMBER = '{{f11.property_label}} thu {{f16.income_display}} trong tháng {{f16.period_date_display}}.';
 const FOLLOW_UP_PROMPT = askFollowUpPrompt({ today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question: FOLLOW_UP, firstHandle: 9 });
 
-/** Question 1 asked and answered through the worker, in a conversation whose next question `ask` queues. */
 async function afterQuestion1() {
   const dir = tempDir('esta-ask-replay-');
   const [first = ''] = recordChain(dir, [{ prompt: askPrompt({ ...ASK_CONTEXT, question: QUESTION_TEXT }), reply: GOOD, toolCalls: TOOLS }]);

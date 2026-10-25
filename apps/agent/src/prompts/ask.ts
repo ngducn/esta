@@ -2,12 +2,10 @@ import { repairMessage, type NoteViolation } from '@esta/core/guard';
 import type { IsoDate } from '@esta/core/date';
 import { systemPrompt } from './system';
 
-/** A question the family member asked earlier in the conversation and the answer she read. */
 export type AskedTurn = { readonly question: string; readonly answer: string };
 
 const MARKDOWN_LINK = /\[([^\]]*)\]\([^)]*\)/g;
 
-/** A new session for a conversation whose saved session is gone carries the turns she read, without their record links. */
 function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   if (turns.length === 0) return [];
   return [

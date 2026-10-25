@@ -51,8 +51,7 @@ async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 
   if (data.length !== 1) throw new Error(`The answer ${answerId} is no longer streaming`);
 }
 
-/** The turns before this question that she read an answer to, oldest first, as the messages table holds them. */
-async function askedTurns({ db, householdId, conversationId, questionId }: AskInput): Promise<AskedTurn[]> {
+async function answeredTurnsBefore({ db, householdId, conversationId, questionId }: AskInput): Promise<AskedTurn[]> {
   const { data, error } = await db.from('messages').select('id, role, content_md, status').eq('household_id', householdId).eq('conversation_id', conversationId).order('created_at');
   if (error) throw new Error(`Reading the conversation so far failed: ${error.message}`);
   const before = data.slice(0, Math.max(0, data.findIndex((row) => row.id === questionId)));
@@ -62,12 +61,8 @@ async function askedTurns({ db, householdId, conversationId, questionId }: AskIn
   });
 }
 
-/**
- * The prompt that starts a new session holding the conversation so far, for a follow-up whose saved session is gone. With
- * no answered turn to hold, the conversation forgets its saved turn, so the next question starts a session of its own.
- */
-async function rebuildPrompt(input: AskInput, earlier: EarlierTurn): Promise<string | null> {
-  const turns = await askedTurns(input);
+async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn): Promise<string | null> {
+  const turns = await answeredTurnsBefore(input);
   if (turns.length > 0) return askPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, question: input.question, earlier: turns });
   const { error } = await input.db.from('conversations').update({ sdk_session_id: null, sdk_turn_hash: null }).eq('household_id', input.householdId).eq('id', input.conversationId).eq('sdk_turn_hash', earlier.turnHash);
   if (error) throw new Error(`Forgetting the lost session failed: ${error.message}`);
@@ -85,7 +80,7 @@ export function askRequest(input: AskInput): PreparedJob {
   let answer: Answer | null = null;
   return {
     prompt: earlier === null ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question }) : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
-    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildPrompt(input, earlier) }),
+    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools: new Map([
       estaTool('list_properties', properties.run),

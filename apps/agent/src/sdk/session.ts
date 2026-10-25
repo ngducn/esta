@@ -16,7 +16,6 @@ export type ToolCall = { readonly name: string; readonly input: Record<string, u
 
 export type BuiltInResult = ToolCall & { readonly result: unknown };
 
-/** The session a turn resumes is no longer on disk, as after a redeploy that emptied `ESTA_AGENT_HOME`. */
 export class SessionGoneError extends Error {
   constructor(sessionId: string) {
     super(`The session ${sessionId} this turn resumes is gone`);
@@ -41,6 +40,8 @@ export type SessionRequest = {
   readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
   readonly modelRole?: ModelRole;
 };
+
+const keepsTranscript = (request: SessionRequest) => request.onText !== undefined;
 
 export function canonicalInput({ spec, prompt, canon, resume, modelRole }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon' | 'resume' | 'modelRole'>): CanonicalInput {
   return {
@@ -104,7 +105,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
     preToolUse: pathPolicyHook(policy, (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
     postToolUse: observeHook(request, policy),
     abortController,
-    ...(request.onText === undefined ? {} : { streaming: { resume: request.resume?.sessionId ?? null } }),
+    ...(keepsTranscript(request) ? { streaming: { resume: request.resume?.sessionId ?? null } } : {}),
   });
   const toolCalls: ToolCall[] = [];
   let result: SDKResultMessage | undefined;
@@ -147,7 +148,6 @@ export const replayChunks = (reply: string): string[] => reply.match(REPLAY_CHUN
 /** A replayed turn's stand-in for the SDK's session id, new each turn as a live one is, so a follow-up's resume shows in replay. */
 export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
 
-/** Where a replayed turn that keeps its transcript, as a streaming one does live, leaves its stand-in for the next turn to resume. */
 const replayTranscript = (configDir: string, sessionId: string) => join(configDir, 'replay-sessions', `${sessionId}.json`);
 
 /**
@@ -157,7 +157,7 @@ const replayTranscript = (configDir: string, sessionId: string) => join(configDi
 export async function replaySession(request: SessionRequest, replayDir: string): Promise<SessionRun> {
   const input = canonicalInput(request);
   const resumed = request.resume?.sessionId ?? null;
-  if (resumed !== null && request.onText !== undefined && !existsSync(replayTranscript(request.configDir, resumed))) throw new SessionGoneError(resumed);
+  if (resumed !== null && keepsTranscript(request) && !existsSync(replayTranscript(request.configDir, resumed))) throw new SessionGoneError(resumed);
   const recording = readRecording(replayDir, input);
   console.log(`[agent] replay ${recordingPath(replayDir, input.kind, inputHash(input))}`);
   const policy = toolPolicy(request);
@@ -179,8 +179,8 @@ export async function replaySession(request: SessionRequest, replayDir: string):
   }
   const reply = request.canon.restore(recording.reply);
   const sessionId = replaySessionId(inputHash(input));
-  if (request.onText !== undefined) {
-    for (const chunk of replayChunks(reply)) await request.onText(chunk);
+  if (request.onText !== undefined) for (const chunk of replayChunks(reply)) await request.onText(chunk);
+  if (keepsTranscript(request)) {
     mkdirSync(join(request.configDir, 'replay-sessions'), { recursive: true });
     writeFileSync(replayTranscript(request.configDir, sessionId), `${JSON.stringify({ inputHash: inputHash(input) })}\n`);
   }

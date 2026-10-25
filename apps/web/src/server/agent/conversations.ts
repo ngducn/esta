@@ -38,7 +38,6 @@ const summarySchema = z
   .object({ id: z.uuid(), title: z.string(), last_asked_at: z.string() })
   .transform((row): ConversationSummary => ({ id: row.id, title: row.title, lastAskedAt: parseInstant(row.last_asked_at) }));
 
-/** The household's conversations, the one asked most recently first, and by id among those asked at the same instant, so a page reads the same order twice. */
 export async function listConversations(householdId: string, limit = 30): Promise<readonly ConversationSummary[]> {
   const db = await createSessionClient();
   const { data, error } = await db.from('conversations').select('id, title, last_asked_at').eq('household_id', householdId).order('last_asked_at', { ascending: false }).order('id', { ascending: false }).limit(limit);

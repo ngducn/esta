@@ -36,10 +36,9 @@ const shown = (markdown: string) => markdown.replace(LINK, (_, link: string) => 
 
 const EARLIER = { question: '00000000-0000-4000-8000-0000000c0a12', answer: '00000000-0000-4000-8000-0000000c0a13' };
 
-/** Runs the case, after the case it follows in the same session directory, as her conversation ran them. */
-async function ask(id: string, reads = replayedReads()): Promise<Asked> {
+async function askAfterItsChain(id: string, reads = replayedReads()): Promise<Asked> {
   const askCase = findCase(id);
-  const before = askCase.follows === undefined ? null : await ask(askCase.follows.id, reads);
+  const before = askCase.follows === undefined ? null : await askAfterItsChain(askCase.follows.id, reads);
   const tables = askTables(askCase.question);
   if (before !== null && askCase.follows !== undefined) {
     const earlier = { household_id: HOUSEHOLD, conversation_id: CONVERSATION, status: 'done' };
@@ -125,7 +124,7 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   });
 
   it.each(Object.keys(EXPECTED))('%s states the ground truth with every link resolving, guarded on the first turn', async (id) => {
-    const { answer, repair, missing } = await ask(id);
+    const { answer, repair, missing } = await askAfterItsChain(id);
     expect(repair).toBeNull();
     expect(answer.status).toBe('done');
     expect(shown(answer.content_md)).toBe(EXPECTED[id]?.());
@@ -135,17 +134,17 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
 
   it.each(['q4-deposits-held'])('%s still states the ground truth beside a draft lease and an archived property\'s lease', async (id) => {
     const recorded = JSON.parse(readFileSync(ASK_READS_FIXTURE, 'utf8')) as Record<string, unknown>;
-    const { answer } = await ask(id, replayedReads(withDraftAndArchivedLeases(recorded)));
+    const { answer } = await askAfterItsChain(id, replayedReads(withDraftAndArchivedLeases(recorded)));
     expect(shown(answer.content_md)).toBe(EXPECTED[id]?.());
   });
 
   it('cites question 1 income from the ledger tool, so the figure is the tool value and not typed', async () => {
-    const { result } = await ask('q1-di-an-income');
+    const { result } = await askAfterItsChain('q1-di-an-income');
     expect(result.cited.filter(({ placeholder }) => placeholder.endsWith('income_display}}')).map(({ value }) => value)).toEqual([money('q1', 'di-an income received in October 2026')]);
   });
 
   it('question 1 hands out eight handles, so its follow-up starts at f9 and resumes question 1\'s turn', async () => {
-    const first = await ask('q1-di-an-income');
+    const first = await askAfterItsChain('q1-di-an-income');
     expect(first.conversation).toMatchObject({ sdk_handles: 8, sdk_session_id: first.run.result.sessionId });
     const followUp = findCase('q1-follow-up-september');
     expect(followUp.follows?.firstHandle).toBe(9);
@@ -153,19 +152,19 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   });
 
   it('the follow-up cites September from the ledger, reading the property and month from the session it resumed', async () => {
-    const { result, run } = await ask('q1-follow-up-september');
+    const { result, run } = await askAfterItsChain('q1-follow-up-september');
     expect(run.toolCalls.map(({ name }) => name.replace(/^mcp__esta__/, ''))).toEqual(['list_properties', 'ledger']);
     expect(result.cited.filter(({ placeholder }) => placeholder.endsWith('income_display}}')).map(({ value }) => value)).toEqual([money('q1', 'di-an income received in September 2026')]);
   });
 
   it('an operator\'s deep ask replays its own recording, made with the deep model', async () => {
-    const { run } = await ask('q1-deep');
+    const { run } = await askAfterItsChain('q1-deep');
     expect(run.model).toBe('hand-written-deep');
     expect(caseInput(findCase('q1-deep')).modelRole).toBe('deep');
   });
 
   it('a question the tools cannot answer says the app has no such data and cites no figure', async () => {
-    const { answer, result } = await ask('missing-market-price');
+    const { answer, result } = await askAfterItsChain('missing-market-price');
     expect(answer.status).toBe('done');
     expect(answer.content_md).toContain('Ứng dụng chưa có giá thị trường hiện nay của Đất Bảo Lộc');
     expect(result.cited.map(({ placeholder }) => placeholder)).toEqual(['{{f1.property_label}}']);

@@ -25,6 +25,7 @@ declare
   v_answer_id uuid := gen_random_uuid();
   v_job_id uuid := gen_random_uuid();
   v_asked_at timestamptz := p_as_of;
+  v_new boolean;
 begin
   if not private.is_member(p_household_id, 'viewer') then
     raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
@@ -36,6 +37,18 @@ begin
     raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
   end if;
 
+  -- No conflict target, because a first send racing its resend can meet the (household_id, id) key instead of the id key.
+  insert into public.conversations (id, household_id, title, last_asked_at)
+  values (p_conversation_id, p_household_id, left(regexp_replace(v_question, '\s+', ' ', 'g'), 200), p_as_of)
+  on conflict do nothing;
+  v_new := found;
+  if not v_new then
+    perform 1 from public.conversations c where c.id = p_conversation_id and c.household_id = p_household_id for update;
+    if not found then
+      raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
+    end if;
+  end if;
+
   if exists (select 1 from public.messages m where m.id = p_question_id) then
     if exists (select 1 from public.messages m where m.id = p_question_id and m.household_id = p_household_id and m.conversation_id = p_conversation_id and m.role = 'user') then
       return p_conversation_id;
@@ -43,19 +56,7 @@ begin
     raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
   end if;
 
-  -- No conflict target, because a first send racing its resend can meet the (household_id, id) key instead of the id key.
-  insert into public.conversations (id, household_id, title, last_asked_at)
-  values (p_conversation_id, p_household_id, left(regexp_replace(v_question, '\s+', ' ', 'g'), 200), p_as_of)
-  on conflict do nothing;
-  if not found then
-    perform 1 from public.conversations c where c.id = p_conversation_id and c.household_id = p_household_id for update;
-    if not found then
-      raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
-    end if;
-    -- A resend of the same question that waited on this lock finds the question the first send committed.
-    if exists (select 1 from public.messages m where m.id = p_question_id and m.household_id = p_household_id and m.conversation_id = p_conversation_id and m.role = 'user') then
-      return p_conversation_id;
-    end if;
+  if not v_new then
     if exists (select 1 from public.messages m where m.household_id = p_household_id and m.conversation_id = p_conversation_id and m.status = 'streaming') then
       raise exception 'ESTA_ASK_BUSY' using errcode = '55000';
     end if;

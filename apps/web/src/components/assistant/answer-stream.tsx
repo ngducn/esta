@@ -9,10 +9,6 @@ import { AnswerView, type AnswerLabels, type ShownAnswer } from './answer-view';
 const fetchMarkdownChunk = () => import('@/components/markdown/safe-markdown');
 const SafeMarkdown = dynamic(() => fetchMarkdownChunk().then((markdown) => markdown.SafeMarkdown));
 
-/**
- * The answer page renders its follow-up box busy while any answer streams, and only the server reads when the stored
- * answer stopped. So an answer that settles refreshes the page, and that refresh is what opens the follow-up box.
- */
 export const reopensFollowUp = (event: AnswerEvent): boolean => event.status === 'done' || event.status === 'error';
 
 export function AnswerStream({ id, conversationId, initial, labels }: { id: string; conversationId: string; initial: AnswerState; labels: AnswerLabels }) {

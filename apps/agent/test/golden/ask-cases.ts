@@ -14,7 +14,6 @@ export type AskCase = {
   readonly reply: string;
   /** A follow-up names the case it follows and the handle its turn starts at, one past the handles that case gave out. */
   readonly follows?: { readonly id: string; readonly firstHandle: number };
-  /** A follow-up whose saved session is gone, so it runs in a new session that holds these turns as she read them. */
   readonly rebuiltFrom?: readonly AskedTurn[];
   /** An operator ticked Suy nghĩ kỹ hơn. */
   readonly deep?: true;

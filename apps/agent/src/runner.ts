@@ -30,10 +30,6 @@ export type Worker = {
 
 const BACKOFF_MINUTES = [1, 5, 25] as const;
 
-/**
- * A retry cannot fix a missing recording, a rejected credential, a job whose rows do not line up (AGT-1), a second guard
- * violation (AGENT.md §6.3) or a session that is gone with nothing to rebuild it from.
- */
 const PERMANENT: ReadonlySet<FailureKind> = new Set(['auth_error', 'missing_recording', 'invalid_job', 'number_guard', 'lost_session']);
 
 export type NextStep = { readonly status: 'queued'; readonly runAfter: Instant } | { readonly status: 'failed' };
@@ -90,8 +86,7 @@ function runModel(worker: Worker, request: SessionRequest): Promise<SessionRun> 
   return worker.mode.agentMode === 'live' ? liveSession(request, worker.mode) : replaySession(request, worker.replayDir);
 }
 
-/** Runs the job's first turn, and when the session it resumes is gone, a new session the job rebuilds in its place. */
-async function firstTurn(worker: Worker, job: AgentJob, prepared: PreparedJob, fresh: SessionRequest): Promise<{ readonly turn: SessionRequest; readonly session: SessionRun }> {
+async function firstTurnOrRebuilt(worker: Worker, job: AgentJob, prepared: PreparedJob, fresh: SessionRequest): Promise<{ readonly turn: SessionRequest; readonly session: SessionRun }> {
   const turn = prepared.resume === undefined ? fresh : { ...fresh, resume: prepared.resume };
   try {
     return { turn, session: await runModel(worker, turn) };
@@ -135,7 +130,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
       ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     };
-    const first = await firstTurn(worker, job, prepared, request);
+    const first = await firstTurnOrRebuilt(worker, job, prepared, request);
     let turn = first.turn;
     session = first.session;
     let outcome = judgeResult(session.result);
