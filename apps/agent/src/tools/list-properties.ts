@@ -3,6 +3,7 @@ import { PROPERTY_KINDS, type PropertyKind } from '@esta/core/properties';
 import { z } from 'zod';
 import type { AgentDb } from '../supabase';
 import type { CitedRecord, RunSheet } from './fact-sheet';
+import { ToolRejection } from './server';
 
 const addressSchema = z.object({ commune_code: z.string(), province_code: z.string() });
 const kindSchema = z.enum(PROPERTY_KINDS);
@@ -86,4 +87,13 @@ export function listPropertiesTool(db: AgentDb, householdId: string, cite: RunSh
       return { properties: listed };
     },
   };
+}
+
+export type PropertyHandles = ReadonlyMap<string, CitedRecord<PropertyRecord>>;
+
+/** The property a tool's `property` input names by its list_properties handle. */
+export function propertyByHandle(properties: PropertyHandles, handle: string): CitedRecord<PropertyRecord> {
+  const property = properties.get(handle);
+  if (property === undefined) throw new ToolRejection(`property: ${handle} is not a property list_properties returned in this run`);
+  return property;
 }

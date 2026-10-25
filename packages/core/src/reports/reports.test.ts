@@ -19,6 +19,7 @@ const lease = (unitLabel: string, values: Record<string, unknown> = {}, extra: P
   reportLease(typeof values.property_id === 'string' ? values.property_id : DI_AN, unitLabel, values, extra);
 
 const invoice = (leaseId: string, periodStart: string, totalVnd: number, allocatedVnd: number, status: ReportInvoice['status'] = 'issued'): ReportInvoice => ({
+  id: `${leaseId}:${periodStart}`,
   leaseId,
   status,
   periodStart: d(periodStart),

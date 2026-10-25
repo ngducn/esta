@@ -13,6 +13,7 @@ export type ReportProperty = { readonly id: string; readonly name: string };
 
 /** An invoice with its balance, as `invoice_balances` reads it. */
 export type ReportInvoice = BilledPeriod & {
+  readonly id: string;
   readonly leaseId: string;
   readonly dueDate: IsoDate;
   readonly totalVnd: Vnd;

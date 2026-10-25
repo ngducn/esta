@@ -1,6 +1,7 @@
 import { PAYMENT_STATUSES, type PaymentStatus } from '@esta/core/allocation';
 import type { IsoDate } from '@esta/core/date';
 import { vnd, type Vnd } from '@esta/core/money';
+import type { InvoicePayment } from '@esta/core/reports';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { z } from 'zod';
 import type { Db } from './db';
@@ -77,4 +78,17 @@ export async function readInvoices(db: Db, householdId: string, scope: InvoiceSc
     return scoped.order('period_start').order('id').range(from, to);
   });
   return z.array(invoiceRowSchema).parse(rows);
+}
+
+const paymentRowSchema = z
+  .object({ invoice_id: z.uuid(), received_on: isoDateSchema, amount_vnd: z.number().int().transform(vnd) })
+  .transform((row): InvoicePayment => ({ invoiceId: row.invoice_id, receivedOn: row.received_on, amountVnd: row.amount_vnd }));
+
+/** Every payment allocated to these invoices, from `allocation_facts`, with the day it was received. */
+export async function readInvoicePayments(db: Db, householdId: string, invoiceIds: readonly string[]): Promise<InvoicePayment[]> {
+  if (invoiceIds.length === 0) return [];
+  const rows = await readAll('invoice payments', (from, to) =>
+    db.from('allocation_facts').select('invoice_id, received_on, amount_vnd').eq('household_id', householdId).in('invoice_id', [...invoiceIds]).order('payment_id').order('invoice_id').range(from, to),
+  );
+  return z.array(paymentRowSchema).parse(rows);
 }

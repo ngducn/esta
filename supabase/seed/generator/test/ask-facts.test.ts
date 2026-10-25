@@ -9,6 +9,6 @@ const golden = join(root, 'apps/agent/test/golden');
 
 it('the Ask golden figures equal ask-ground-truth.sql on the full seed (AGENT.md §7.4)', () => {
   const sql = readFileSync(join(golden, 'ask-ground-truth.sql'), 'utf8');
-  const rows = query<{ question: string; figure: string; value: number }>(slotWorkdir(root, parseSlot(process.env.ESTA_SLOT)), sql);
+  const rows = query<{ question: string; figure: string; value: string }>(slotWorkdir(root, parseSlot(process.env.ESTA_SLOT)), sql);
   expect(rows).toEqual(JSON.parse(readFileSync(join(golden, 'ask-ground-truth.json'), 'utf8')));
 });

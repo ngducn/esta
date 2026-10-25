@@ -1,17 +1,17 @@
 import { repairMessage, type NoteViolation } from '@esta/core/guard';
 import { systemPrompt } from './system';
 
-export function askPrompt(context: Parameters<typeof systemPrompt>[0] & { readonly question: string }): string {
+export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'language'> & { readonly question: string }): string {
   return [
-    systemPrompt(context),
+    systemPrompt({ ...context, language: 'question' }),
     '',
     'Task: answer the family member\'s question below, as a short answer they read on a phone.',
-    '1. Call the tools you need before you write anything. list_properties gives each property a handle; pass that handle to ledger as property.',
-    '2. Then write the answer in Markdown: one to four short sentences, or a short list. Use paragraphs, lists, bold and links only.',
-    '3. Write every number, date, amount and name as the placeholder of the field that holds it, such as {{f2.income_display}}.',
+    '1. Call the tools you need before you write anything. list_properties gives each property a handle; pass that handle to the tools that take a property.',
+    '2. Then write the answer in Markdown: one to four short sentences, a short list, or a table when the answer lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
+    '3. Write every number, date, amount and name as the placeholder of the field that holds it, such as {{f2.income_display}}. A field without a _display, _label or _name ending, such as status or category, is a code for you to read: write it in your own words.',
     '4. Link the record the answer comes from by its handle, as [Sổ thu chi {{f1.property_label}}](f2). Link nothing else.',
     '5. If the tools hold no data for the question, say plainly that the app does not have that information yet. Never estimate.',
-    '6. If the question asks you to change something, say that you cannot change records.',
+    '6. If the question asks you to change something, say that you cannot change records yourself; when a change would help, suggest it with create_proposal and say a member can approve it in Hộp thư.',
     '',
     'Question:',
     context.question,
