@@ -136,7 +136,9 @@ export function clippedText(page: Page): Promise<ClippedText[]> {
       if (field.value !== '' || field.placeholder === '' || style.display === 'none' || style.visibility === 'hidden' || hidden(field) || measure === null) continue;
       measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
       const room = field.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
-      const px = measure.measureText(field.placeholder).width - room;
+      // A text area wraps its placeholder over the lines it shows.
+      const lines = field instanceof HTMLTextAreaElement ? Math.max(1, Math.floor((field.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom)) / Number.parseFloat(style.lineHeight))) : 1;
+      const px = measure.measureText(field.placeholder).width - room * lines;
       if (px > 1 && style.textOverflow !== 'ellipsis') found.push({ text: field.placeholder, in: name(field), by: 'its field', px: Math.round(px) });
     }
 
