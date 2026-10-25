@@ -36,6 +36,11 @@ const CATALOG = {
     description: "Return the household's properties. Each has a handle, its name as property_label, its kind, use mode and legal status, and its current ward and province as commune_name and province_name.",
     input: {},
   },
+  ledger: {
+    description:
+      'Return the income received and the expenses paid in one month or one year, of one property or, without property, of the whole household: {"property": a handle from list_properties, "year", "month": 1 to 12, left out for the whole year}. The total has a handle, the period as period_date_display and the amounts as income_display, expenses_display and net_display; a year also lists each month the same way.',
+    input: { property: z.string().optional(), year: z.number().int(), month: z.number().int().optional() },
+  },
   add_research_item: {
     description:
       'Save one news item from a page you fetched with WebFetch in this run: {"source_url", "source_name", "published_on": YYYY-MM-DD, "effective_on": YYYY-MM-DD or null, "kind", "relevance": 0 to 1, "title_vi", "summary_vi", "why_it_matters_vi", "topics": handles of research_topics, "properties": handles of list_properties, "quotes": up to 3 short phrases copied exactly from the fetched page}. Cite quote n in your texts as {{f0.quote_n_label}} and the publication date as {{f0.published_display}}. It answers {"saved": true}, {"saved": false, "dropped": <why>}, or names what to fix before you call it again.',

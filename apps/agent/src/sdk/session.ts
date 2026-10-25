@@ -24,10 +24,15 @@ export type SessionRequest = {
   readonly canon: Canonicalizer;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
+  /** Receives the model's text as it arrives, for a job that shows its answer while it runs (AGENT.md §5.6). */
+  onText?(delta: string): Promise<void>;
+  /** The turn this one continues in the same session: its SDK session id (none in replay) and its canonical input hash. */
+  readonly resume?: { readonly sessionId: string | null; readonly after: string };
 };
 
-export function canonicalInput({ spec, prompt, canon }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon'>): CanonicalInput {
+export function canonicalInput({ spec, prompt, canon, resume }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon' | 'resume'>): CanonicalInput {
   return {
+    ...(resume === undefined ? {} : { resumes: resume.after }),
     version: 1,
     kind: spec.kind,
     prompt: canon.canonical(prompt),
@@ -79,12 +84,22 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
     preToolUse: pathPolicyHook(policy, (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
     postToolUse: observeHook(request, policy),
     abortController,
+    ...(request.onText === undefined ? {} : { streaming: { resume: request.resume?.sessionId ?? null } }),
   });
   const toolCalls: ToolCall[] = [];
   let result: SDKResultMessage | undefined;
+  let streamed = false;
   try {
     for await (const message of query({ prompt: request.prompt, options })) {
-      if (message.type === 'assistant') {
+      if (message.type === 'stream_event' && request.onText !== undefined) {
+        const { event } = message;
+        // Text the model writes before and after a tool call arrives as separate blocks; a blank line keeps them paragraphs.
+        if (event.type === 'content_block_start' && event.content_block.type === 'text' && streamed) await request.onText('\n\n');
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          streamed = true;
+          await request.onText(event.delta.text);
+        }
+      } else if (message.type === 'assistant') {
         for (const block of message.message.content) {
           if (block.type === 'tool_use') toolCalls.push({ name: block.name, input: block.input as Record<string, unknown> });
         }
@@ -101,6 +116,14 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   if (toolFailures.length > 0) throw toolFailures[0];
   if (result === undefined) throw new Error('The model session ended without a result');
   return { result: fromSdkResult(result), model: mode.model, toolCalls };
+}
+
+const REPLAY_CHUNK = 12;
+
+/** The reply in short pieces, as a live stream delivers it, so a placeholder or a sentence often spans two pieces. */
+export function replayChunks(reply: string): string[] {
+  const characters = Array.from(reply);
+  return Array.from({ length: Math.ceil(characters.length / REPLAY_CHUNK) }, (_, index) => characters.slice(index * REPLAY_CHUNK, (index + 1) * REPLAY_CHUNK).join(''));
 }
 
 /**
@@ -128,11 +151,13 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     if (tool !== undefined) await runTool(tool, input);
     else if (call.result !== undefined) observeBuiltIn(request, policy, { name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
   }
+  const reply = request.canon.restore(recording.reply);
+  if (request.onText !== undefined) for (const chunk of replayChunks(reply)) await request.onText(chunk);
   return {
     result: {
       isError: false,
       subtype: 'success',
-      text: request.canon.restore(recording.reply),
+      text: reply,
       numTurns: recording.numTurns,
       sessionId: null,
       costUsd: 0,
