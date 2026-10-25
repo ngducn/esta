@@ -11,6 +11,7 @@ import { preparePing } from './ping';
 import { prepareMorningBrief } from './morning-brief';
 import { preparePortfolioWatch } from './portfolio-watch';
 import { prepareResearchScan } from './research-scan';
+import { prepareWeeklyReview } from './weekly-review';
 
 export type ModelRole = 'routine' | 'deep';
 
@@ -126,6 +127,17 @@ export const JOBS = {
     waitsFor: ['research_scan', 'portfolio_watch'],
     failedTitle: { vi: 'Trợ lý chưa viết được bản tin sáng nay', en: "The assistant could not write this morning's brief" },
     handler: { prepare: prepareMorningBrief },
+  },
+  weekly_review: {
+    kind: 'weekly_review',
+    builtInTools: ['WebSearch', 'WebFetch'],
+    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'recent_items', 'create_item', 'create_proposal'],
+    maxTurns: 25,
+    timeoutMs: 10 * 60_000,
+    modelRole: 'deep',
+    schedule: { at: '08:00', weekday: 0 },
+    failedTitle: { vi: 'Trợ lý chưa viết được bản tổng kết tuần này', en: "The assistant could not write this week's review" },
+    handler: { prepare: prepareWeeklyReview },
   },
   ask: {
     kind: 'ask',

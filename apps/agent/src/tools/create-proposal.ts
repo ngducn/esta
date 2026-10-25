@@ -1,13 +1,23 @@
 import { estaUri } from '@esta/core/links';
 import { parseProposal, PROPOSAL_TYPES, isProposalType, type Proposal } from '@esta/core/proposals';
+import { normalizeUrl } from '@esta/core/research';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { guardedWriter, type NoteBinding } from './create-item';
 import { ToolRejection } from './server';
 
-export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'>;
+/**
+ * A job that may cite sources (AGENT.md §5.5): each citation is a page WebFetch read in this run (`fetched`, by
+ * normalized URL) or one of the household's stored research items. `most` caps the proposals of one run.
+ */
+export type Citing = { readonly fetched: ReadonlySet<string>; readonly most: number };
 
-const inputSchema = z.object({ type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string() });
+export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'> & { readonly citing?: Citing };
+
+const inputSchema = z.object({ type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string(), citations: z.array(z.string()).max(5).optional() });
+
+/** What `agent_items.citations` stores of one source. */
+type Citation = { readonly url: string; readonly title: string | null; readonly source_name: string; readonly published_at: string | null };
 
 const rejected = (lines: readonly string[]) => new ToolRejection(`${lines.join('\n')}\nFix these and call create_proposal again.`);
 
@@ -36,6 +46,26 @@ const REFUSALS: Readonly<Record<string, string>> = {
 };
 
 /** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
+/** Each cited URL as the stored research item names it, or a page this run fetched; one line per URL that is neither. */
+async function resolveCitations({ db, householdId, citing }: ProposalBinding, urls: readonly string[]): Promise<{ readonly found: Citation[]; readonly refused: string[] }> {
+  if (urls.length === 0) return { found: [], refused: [] };
+  const byKey = new Map(urls.map((url) => [url, normalizeUrl(url)] as const).map(([url, key]) => [key.ok ? key.value : url, { url, key }]));
+  const normalized = [...byKey.values()];
+  const keys = normalized.flatMap(({ key }) => (key.ok ? [key.value] : []));
+  const { data, error } = await db.from('research_items').select('url_normalized, source_url, title_vi, source_name, published_on').eq('household_id', householdId).in('url_normalized', keys);
+  if (error) throw new Error(`Reading the cited research items failed: ${error.message}`);
+  const stored = new Map(data.map((row) => [row.url_normalized, row]));
+  const found: Citation[] = [];
+  const refused: string[] = [];
+  for (const { url, key } of normalized) {
+    const item = key.ok ? stored.get(key.value) : undefined;
+    if (item !== undefined) found.push({ url: item.source_url, title: item.title_vi, source_name: item.source_name, published_at: item.published_on });
+    else if (key.ok && citing?.fetched.has(key.value) === true) found.push({ url: key.value, title: null, source_name: new URL(key.value).hostname, published_at: null });
+    else refused.push(`citations: ${JSON.stringify(url)} is not a page WebFetch read in this run or a research item recent_items returned`);
+  }
+  return { found, refused };
+}
+
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
 
 /**
@@ -45,12 +75,17 @@ const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHas
  */
 export function proposalWriter(binding: ProposalBinding) {
   const guard = guardedWriter(binding, 'create_proposal');
+  const { citing } = binding;
+  const saved: string[] = [];
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true; added: boolean; dedupe_key: string }> {
     const input = inputSchema.safeParse(raw);
     if (!input.success) throw rejected(input.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`));
-    const { type, params, rationale } = input.data;
+    const { type, params, rationale, citations = [] } = input.data;
+    if (citing !== undefined && saved.length >= citing.most) throw new ToolRejection(`This run already made ${citing.most} proposals, the most it may make. Do not call create_proposal again.`);
     if (!isProposalType(type)) throw rejected([`type: ${JSON.stringify(type)} is not a proposal type; use one of ${Object.keys(PROPOSAL_TYPES).join(', ')}`]);
+    if (citing === undefined && citations.length > 0) throw rejected(['citations: this job cites no sources; leave citations out']);
+    if (citing !== undefined && type === 'suggest_rent_change' && citations.length === 0) throw rejected(['citations: a rent change cites the market news it rests on, as URLs of pages WebFetch read in this run or research items recent_items returned']);
 
     const texts = PROPOSAL_TYPES[type].texts.flatMap((key) => {
       const template = params[key];
@@ -67,15 +102,19 @@ export function proposalWriter(binding: ProposalBinding) {
 
     const today = (await binding.clock()).today();
     if (proposal.type === 'create_task' && proposal.params.due_on !== null && proposal.params.due_on < today) throw rejected([`params.due_on: before today, ${today}`]);
+
+    const sources = await resolveCitations(binding, citations);
+    if (sources.refused.length > 0) throw rejected(sources.refused);
     const { data: refusal, error } = await binding.db.rpc('proposal_refusal', { p_household_id: binding.householdId, p_proposal: proposal });
     if (error) throw new Error(`Checking the proposal failed: ${error.message}`);
     if (refusal !== null) throw rejected([REFUSALS[refusal] ?? refusal]);
 
     const links = subjects(proposal);
     const key = dedupeKey(proposal);
-    const added = await guard.save({ kind: 'proposal', severity: 'info', title: proposal.params.title, body_md: body, related: { links }, proposal, dedupe_key: key });
+    const added = await guard.save({ kind: 'proposal', severity: 'info', title: proposal.params.title, body_md: body, related: { links }, proposal, citations: sources.found, dedupe_key: key });
+    saved.push(key);
     return { saved: true, added, dedupe_key: key };
   }
 
-  return { write };
+  return { write, saved: saved as readonly string[] };
 }

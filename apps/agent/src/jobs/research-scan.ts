@@ -24,7 +24,18 @@ const EMPTY_NOTE: Readonly<Record<Locale, string>> = {
 /** AGENT.md §5.2 maximums, which `household_settings.agent` may lower; maxTurns 40 is sized for them. */
 const capsSchema = z.object({ research_searches: z.int().min(0).max(12).catch(12), research_fetches: z.int().min(0).max(8).catch(8) });
 
-const fetchedPage = z.object({ code: z.number(), result: z.string(), url: z.string().optional() });
+const fetchResult = z.object({ code: z.number(), result: z.string(), url: z.string().optional() });
+
+/** A WebFetch call that read its page: the page text, under its link as asked and as it ended after any redirect, normalized. */
+export function fetchedPage({ name, input, result }: BuiltInResult): { readonly urls: string[]; readonly text: string } | null {
+  const page = fetchResult.safeParse(result);
+  if (name !== 'WebFetch' || !page.success || page.data.code < 200 || page.data.code > 299) return null;
+  const urls = [input.url, page.data.url].flatMap((link) => {
+    const url = typeof link === 'string' ? normalizeUrl(link) : null;
+    return url?.ok === true ? [url.value] : [];
+  });
+  return { urls, text: page.data.result };
+}
 
 export type ScanRequestInput = Omit<ResearchBinding, 'sheet' | 'topics' | 'properties' | 'fetched'> & { readonly timezone: string; readonly caps: ScanCaps };
 
@@ -43,13 +54,9 @@ export function researchScanRequest(input: ScanRequestInput): PreparedJob {
       estaTool('add_research_item', items.write),
     ]),
     caps: { ...input.caps },
-    observe({ name, input: call, result }: BuiltInResult) {
-      const page = fetchedPage.safeParse(result);
-      if (name !== 'WebFetch' || !page.success || page.data.code < 200 || page.data.code > 299) return;
-      for (const link of [call.url, page.data.url]) {
-        const url = typeof link === 'string' ? normalizeUrl(link) : null;
-        if (url?.ok === true) fetched.set(url.value, page.data.result);
-      }
+    observe(call) {
+      const page = fetchedPage(call);
+      for (const url of page?.urls ?? []) fetched.set(url, page?.text ?? '');
     },
     async finish() {
       if (!topics.wasRead()) throw new Error('The model ended without reading research_topics');
