@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agentItemSetStatus } from './agent-item-ops';
+import { agentItemSetStatus, agentJobRetry } from './agent-item-ops';
 import { runOp } from './op';
 import { fakeDb, HOUSEHOLD, opContext as context, type Sent } from './test/fake-db';
 
@@ -62,5 +62,32 @@ describe('agentItemSetStatus', () => {
       return stored(reads === 1 ? 'new' : 'done')(request);
     });
     expect(await runOp(agentItemSetStatus, context(db), { id: ITEM, status: 'read' })).toEqual({ ok: false, reason: { kind: 'invalid', issues: [{ path: 'status', code: 'decided' }] } });
+  });
+});
+
+describe('agentJobRetry', () => {
+  const rpcs = (sent: readonly Sent[]) => sent.filter((request) => request.table.startsWith('rpc/'));
+
+  it.each(['new', 'read'])('sends Thử lại on a %s item to retry_agent_job', async (status) => {
+    const { db, sent } = fakeDb(stored(status));
+    expect(await runOp(agentJobRetry, context(db), { id: ITEM })).toEqual({ ok: true, value: { id: ITEM } });
+    expect(rpcs(sent)).toMatchObject([{ method: 'POST', table: 'rpc/retry_agent_job', body: { p_item_id: ITEM } }]);
+  });
+
+  it('calls nothing for an item already retried, so a second tap is a no-op', async () => {
+    const { db, sent } = fakeDb(stored('done'));
+    expect(await runOp(agentJobRetry, context(db), { id: ITEM })).toEqual({ ok: true, value: { id: ITEM } });
+    expect(rpcs(sent)).toEqual([]);
+  });
+
+  it('refuses a hidden item and one it cannot see', async () => {
+    expect(await runOp(agentJobRetry, context(fakeDb(stored('dismissed')).db), { id: ITEM })).toEqual({ ok: false, reason: { kind: 'conflict' } });
+    expect(await runOp(agentJobRetry, context(fakeDb().db), { id: ITEM })).toEqual({ ok: false, reason: { kind: 'not_found' } });
+  });
+
+  it("maps the function's refusals: not an admin, and a job that did not fail", async () => {
+    const failing = (error: { code: string; message: string }) => fakeDb(stored('new'), (request) => (request.table.startsWith('rpc/') ? error : null));
+    expect(await runOp(agentJobRetry, context(failing({ code: 'P0002', message: 'ESTA_RETRY_NOT_FOUND' }).db), { id: ITEM })).toEqual({ ok: false, reason: { kind: 'not_found' } });
+    expect(await runOp(agentJobRetry, context(failing({ code: '55000', message: 'ESTA_RETRY_NOT_FAILED' }).db), { id: ITEM })).toEqual({ ok: false, reason: { kind: 'conflict' } });
   });
 });

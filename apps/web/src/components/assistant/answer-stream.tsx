@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { answerEventSchema, type AnswerState } from './answer-state';
 
-export type AnswerLabels = Readonly<Record<'streaming' | 'error' | 'stalled', string>>;
+export type AnswerLabels = Readonly<Record<'streaming' | 'deferred' | 'error' | 'stalled', string>>;
 
 type Shown = AnswerState | { readonly content: string; readonly refs: readonly string[]; readonly status: 'stalled' };
 
@@ -24,7 +24,7 @@ export function AnswerStream({ id, conversationId, initial, labels }: { id: stri
       if (next.success && 'content' in next.data) setShown(next.data);
       else setShown((before) => ({ content: before.content, refs: before.refs, status: 'stalled' }));
       if (!next.success || next.data.status !== 'streaming') source.close();
-      if (next.success && (next.data.status === 'done' || next.data.status === 'error')) router.refresh();
+      if (next.success && (next.data.status === 'done' || next.data.status === 'error' || next.data.status === 'deferred')) router.refresh();
     };
     source.onerror = () => {
       if (source.readyState === EventSource.CLOSED) setShown((before) => ({ content: before.content, refs: before.refs, status: 'stalled' }));

@@ -1,25 +1,25 @@
 import 'server-only';
 import { parseInstant, type Instant } from '@esta/core';
-import { heartbeatReadBound } from '@esta/core/agent';
+import { heartbeatReadBound, type Heartbeat } from '@esta/core/agent';
 import type { Tables } from '@esta/db';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
 /**
  * The newest heartbeat of any worker as of the clock, allowing for a worker host a few seconds ahead;
- * members may read only `worker_id` and `last_seen_at`.
+ * members may read only `worker_id`, `last_seen_at` and `state`.
  */
-export async function getWorkerHeartbeat(asOf: Instant): Promise<Instant | null> {
+export async function getWorkerHeartbeat(asOf: Instant): Promise<Heartbeat | null> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('worker_heartbeats')
-    .select('last_seen_at')
+    .select('last_seen_at, state')
     .lte('last_seen_at', heartbeatReadBound(asOf))
     .order('last_seen_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(`Reading the worker heartbeat failed: ${error.message}`);
-  return data === null ? null : parseInstant(data.last_seen_at);
+  return data === null ? null : { lastSeenAt: parseInstant(data.last_seen_at), usageLimited: data.state === 'usage_limited' };
 }
 
 export type JobStatus = Tables<'agent_jobs'>['status'];

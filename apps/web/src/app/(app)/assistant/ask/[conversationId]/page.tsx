@@ -24,7 +24,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ c
   if (conversation === null) notFound();
   const clock = await getClock();
   const [status, t, assistant] = await Promise.all([assistantStatus(clock.now()), getTranslations('assistant.ask'), getTranslations('assistant')]);
-  const labels = { streaming: t('answering'), error: t('answerFailed'), stalled: t('stalled') };
+  const labels = { streaming: t('answering'), deferred: t('deferred'), error: t('answerFailed'), stalled: t('stalled') };
 
   const Turn = ({ message }: { message: ConversationMessage }) =>
     message.role === 'user' ? (
@@ -53,7 +53,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ c
       <section aria-label={t('followUpLabel')} data-testid="follow-up" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
         <AskForm
           conversationId={conversation.id}
-          busy={conversation.messages.some((message) => message.status === 'streaming')}
+          busy={conversation.messages.some((message) => message.status === 'streaming' || message.status === 'deferred')}
           maxLength={MAX_QUESTION_LENGTH}
           labels={askFormLabels(t, true)}
           thinkHarder={thinkHarderFor(member.isOperator, t)}

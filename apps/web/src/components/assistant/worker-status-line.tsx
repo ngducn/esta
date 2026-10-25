@@ -1,6 +1,6 @@
 import type { WallClockStamp, WorkerStatus } from '@esta/core/agent';
 import { formatDate } from '@esta/core/format';
-import { CircleCheck, CloudOff } from 'lucide-react';
+import { CircleCheck, CirclePause, CloudOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 /** `HH:mm`, with the date when it was an earlier day. */
@@ -8,7 +8,7 @@ export function stampLabel(stamp: WallClockStamp): string {
   return stamp.earlierDate === null ? stamp.time : `${stamp.time} ${formatDate(stamp.earlierDate, 'vi')}`;
 }
 
-/** Every member sees whether the worker is up; stale reads as a notice, never as a quiet gray line (DESIGN-BRIEF §5.5). */
+/** Every member sees whether the worker is up; stale or paused reads as a notice, never as a quiet gray line (DESIGN-BRIEF §5.5). */
 export function WorkerStatusLine({ status }: { status: WorkerStatus }) {
   const t = useTranslations('assistant');
   if (status.kind === 'online') {
@@ -25,9 +25,13 @@ export function WorkerStatusLine({ status }: { status: WorkerStatus }) {
       data-status={status.kind}
       className="flex items-start gap-3 rounded-md bg-due-fill px-4 py-3 text-body font-medium text-due"
     >
-      <CloudOff className="mt-0.5 size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
+      {status.kind === 'paused' ? (
+        <CirclePause className="mt-0.5 size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
+      ) : (
+        <CloudOff className="mt-0.5 size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
+      )}
       <span className="min-w-0 break-words">
-        {status.kind === 'never' ? t('statusNever') : t('statusOffline', { time: stampLabel(status) })}
+        {status.kind === 'never' ? t('statusNever') : status.kind === 'paused' ? t('statusPaused') : t('statusOffline', { time: stampLabel(status) })}
       </span>
     </p>
   );

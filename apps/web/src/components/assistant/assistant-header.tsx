@@ -25,7 +25,7 @@ export async function AssistantHeader({ householdId, now, status, active }: { ho
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-h2 break-words lg:text-h1">{nav('assistant')}</h1>
-      {status.kind === 'offline' ? null : <WorkerStatusLine status={status} />}
+      {status.kind === 'offline' || status.kind === 'paused' ? null : <WorkerStatusLine status={status} />}
       {brief === null ? null : (
         <p data-testid="worker-ran" className="text-small text-ink-muted figures">
           {t('ranAt', { time: stampLabel(wallClockStamp(brief.createdAt, now, env.ESTA_TIMEZONE)) })}

@@ -24,7 +24,7 @@ export async function readDocumentStatuses(id: unknown, by: unknown = 'property'
   if (!parsed.success || !column.success) return null;
   const supabase = await createSessionClient();
   const now = (await readRequestClock()).now();
-  const [rows, lastSeenAt] = await Promise.all([
+  const [rows, heartbeat] = await Promise.all([
     supabase.from('document_status').select('document_id, status').eq(SCOPE_COLUMNS[column.data], parsed.data),
     getWorkerHeartbeat(now),
   ]);
@@ -34,7 +34,7 @@ export async function readDocumentStatuses(id: unknown, by: unknown = 'property'
     const value = status.safeParse(row.status);
     if (row.document_id !== null && value.success) statuses[row.document_id] = value.data;
   }
-  const worker = workerStatus(lastSeenAt, now, env.ESTA_TIMEZONE);
+  const worker = workerStatus(heartbeat, now, env.ESTA_TIMEZONE);
   const offlineSince = worker.kind === 'offline' ? (worker.earlierDate === null ? worker.time : `${worker.time} ${formatDate(worker.earlierDate, 'vi')}`) : null;
-  return { statuses, workerOffline: worker.kind !== 'online', offlineSince };
+  return { statuses, workerOffline: worker.kind === 'offline' || worker.kind === 'never', offlineSince };
 }

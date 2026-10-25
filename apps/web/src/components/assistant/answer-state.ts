@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const answerStatusSchema = z.enum(['streaming', 'done', 'error']);
+/** `deferred` is a streaming row the daily ask cap moved to the next local midnight (`messages.deferred_until`). */
+export const answerStatusSchema = z.enum(['streaming', 'deferred', 'done', 'error']);
 export type AnswerStatus = z.infer<typeof answerStatusSchema>;
 
 /** An answer as its page shows it: the guarded text so far and the record links its run looked up (`messages.refs`). */
