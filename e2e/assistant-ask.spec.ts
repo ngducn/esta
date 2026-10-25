@@ -227,6 +227,21 @@ test('lane 10: Mẹ reads in English at 130% in dark, asks which rooms in Dĩ An
   });
 });
 
+test('offline, a send says it did not go; back online, the same send asks once', async ({ page }) => {
+  await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
+  await page.goto('/assistant/ask');
+  await page.getByRole('textbox', { name: 'Câu hỏi của bạn' }).fill(MARKET);
+  await page.context().setOffline(true);
+  await page.getByTestId('ask-send').click();
+  await expect(page.getByTestId('ask').getByRole('alert')).toHaveText('Chưa gửi được câu hỏi. Kiểm tra kết nối rồi thử lại.');
+  await page.context().setOffline(false);
+  await page.getByTestId('ask-send').click();
+  await expect(page).toHaveURL(/\/assistant\/ask\/[0-9a-f-]{36}$/);
+  await expect(answer(page)).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
+  const asked = await memberRest<unknown[]>(page, 'GET', `messages?role=eq.user&content_md=eq.${encodeURIComponent(MARKET)}&select=id`);
+  expect(asked, 'the question is stored once').toHaveLength(1);
+});
+
 test('Ryan reads the Dĩ An answer at desktop width, and another household’s member sees only a not-found screen at its link', async ({ page, browser }) => {
   await open(page, 'ryan.lane2@demo.esta.test', 'dark', DESKTOP);
   await askAndTimeFirstSentence(page, Q1);
