@@ -48,6 +48,7 @@ const sharedClock = [
   'tasks.spec.ts',
   'assistant-proposals.spec.ts',
   'proposal-confirm.spec.ts',
+  'assistant-limits.spec.ts',
 ];
 
 export default defineConfig({

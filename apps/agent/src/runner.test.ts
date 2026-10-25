@@ -139,6 +139,17 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(JSON.stringify(tables.agent_items)).not.toContain('sk-ant');
   });
 
+  it('keeps the Thử lại item of a run the number guard failed for operators, as its note is', async () => {
+    const { job, tables, worker } = watchWorker(join(CASES, 'guard-violation'), 0);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    await pollOnce(worker);
+    expect(job).toMatchObject({ status: 'failed', attempts: 1 });
+    expect(tables.agent_items.map(({ dedupe_key, audience }) => ({ dedupe_key, audience }))).toEqual([
+      { dedupe_key: `number_guard:${JOB_A}`, audience: 'operator' },
+      { dedupe_key: `job_failed:${JOB_A}`, audience: 'operator' },
+    ]);
+  });
+
   it('leaves one Thử lại item after the fourth attempt fails, and none before it', async () => {
     const third = watchWorker(join(CASES, 'always-fail'), 2);
     await pollOnce(third.worker);

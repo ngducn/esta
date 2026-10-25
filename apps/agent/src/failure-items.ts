@@ -35,7 +35,9 @@ export async function writeFailureItems({ db, job, spec, clock }: Binding, failu
   const locale = await householdLocale(db, job.household_id);
   const base = { household_id: job.household_id, severity: 'info', job_id: job.id, created_at: clock.now() } as const;
   if (retryable !== undefined) {
-    await upsertItem(db, { ...base, kind: 'alert', audience: 'all', title: retryable[locale], proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' }, dedupe_key: `job_failed:${job.id}` });
+    // A note the number guard held back is the operator's alone (AGENT.md §9), and so is its retry.
+    const audience = failure.kind === 'number_guard' ? 'operator' : 'all';
+    await upsertItem(db, { ...base, kind: 'alert', audience, title: retryable[locale], proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' }, dedupe_key: `job_failed:${job.id}` });
   }
   if (failure.kind === 'auth_error') {
     await upsertItem(db, { ...base, kind: 'system', severity: 'action', audience: 'operator', title: AUTH_ITEM[locale].title, body_md: AUTH_ITEM[locale].body, dedupe_key: `auth_error:${clock.today()}` });
