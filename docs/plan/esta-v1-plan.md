@@ -4511,19 +4511,20 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Files.**
 
-- [ ] Edit `packages/core/src/proposals/registry.ts`, `supabase/migrations/` (the effects in `approve_proposal`), the proposal card and `fixtures/proposals/`.
+- [x] Edit `packages/core/src/proposals/registry.ts`, the proposal card and `fixtures/proposals/`. Create `supabase/migrations/20261007609000_proposal_effects.sql` with `supabase/tests/proposal_effects.test.sql`, `apps/web/src/server/agent/proposal-details.ts` and `e2e/proposal-confirm.spec.ts`.
 
 **Build.**
 
-- [ ] Add `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change` and `flag_data_issue` to `PROPOSAL_TYPES`. `suggest_rent_change` params require `effective_period_start` to be a future period start with no issued invoice.
-- [ ] Write the effects. `flag_data_issue` inserts a `tasks` row with `source = 'agent_proposal'`. `draft_reminder` opens the P3-13 reminder sheet with the drafted text and writes nothing else, shaped so a later batch approve ("Gửi tất cả") can reuse it. `suggest_lease_renewal` creates a `draft` renewal lease linked by `renewal_of_lease_id`. `suggest_rent_change` inserts a `lease_amendments` row from the validated period start. Each write carries `agent_item_id` under a unique constraint. A handler whose subject changed since the proposal (a terminated lease, an issued period) marks the item `failed` and shows `Đề xuất này không còn áp dụng.`.
-- [ ] Types with `names_object` confirm in words first, written by Esta from validated params, for example `Tăng tiền thuê Phòng 2 lên 3.800.000 ₫ từ 25/11/2026?`.
+- [x] Decide in the database (#331). `approve_proposal(item)` takes no verdict from the caller. `private.proposal_refusal` checks each type's params (`private.proposal_params_ok`, the SQL twin of `PROPOSAL_TYPES`, with safe casts), that each subject is a live record of the household, that a lease belongs to the named property, and the state each effect needs. `create_proposal` asks it through `public.proposal_refusal` (service role only) before storing, and the approval asks it again under the item's lock, so a tampered or stale item reads `failed` instead of raising. `create_proposal` also refuses a `due_on` before today. Open tasks of an archived property no longer show, the task list orders by `id` last, and `pnpm agent:propose` names an unknown household key.
+- [x] Add `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change` and `flag_data_issue` to `PROPOSAL_TYPES`, each with a `title`. `suggest_rent_change` must start a future period that no issued invoice or paid-through date reaches; `public.proposal_refusal` checks it with `amend_lease`'s rules, so the model hears why.
+- [x] Write the effects. `flag_data_issue` inserts a `tasks` row with `source = 'agent_proposal'`. `draft_reminder` writes nothing; approving it opens the P3-13 reminder sheet with Esta's own `draftReminder` text for the lease's owed bill, never the model's, and takes only a lease id, so a later batch approve ("Gửi tất cả") can reuse it. `suggest_lease_renewal` creates a `draft` renewal lease linked by `renewal_of_lease_id` at `renew_lease`'s rent, and the draft's page links back to the old lease. `suggest_rent_change` calls `amend_lease` from the validated period start. Leases and amendments carry a unique `agent_item_id`, and a trigger refuses one a member writes. A subject changed since the proposal (a terminated lease, an issued period) marks the item `failed` and shows `Đề xuất này không còn áp dụng.`; an effect that refuses anyway rolls back to a savepoint and fails the item the same way.
+- [x] Types with `names_object` confirm in words first, written by Esta from validated params and the lease's records, for example `Tăng tiền thuê Phòng 2 lên 3.800.000 ₫ từ 25/11/2026?`. Such a proposal with no question Esta can write shows no `Đồng ý`. An approved rent change or renewal links to its lease.
 
 **Verify, unit.**
 
-- [ ] `packages/core/src/proposals/proposals.test.ts` gains a valid and an invalid params case per new type and a rent change dated on an issued period.
-- [ ] Approval tests cover each new effect, a stale subject marking `failed`, and a viewer rejected.
-- [ ] Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/assistant-proposals.spec.ts`; `pnpm design:detect` and axe clean.
+- [x] `packages/core/src/proposals/proposals.test.ts` gains a valid and an invalid params case per new type. A rent change dated on an issued period is a database refusal, so `supabase/tests/proposal_effects.test.sql` and `apps/agent/test/golden/proposal.test.ts` cover it.
+- [x] `supabase/tests/proposal_effects.test.sql` covers each new effect, `public.proposal_refusal`'s answers, a stale subject marking `failed`, a lease of another property, a viewer rejected, a second approval writing nothing, the audit actor and the member-written `agent_item_id` refusal.
+- [ ] Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/assistant-proposals.spec.ts e2e/proposal-confirm.spec.ts e2e/tasks.spec.ts`; `pnpm design:detect` and axe clean.
 
 **Verify, live.** Each lane seeds its proposal with `pnpm agent:propose` from `fixtures/proposals/`, with the clock at 2026-10-07 07:05.
 
