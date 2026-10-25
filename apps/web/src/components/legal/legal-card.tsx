@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { deleteLegalItem, restoreLegalItem } from '@/app/(app)/properties/[id]/legal/actions';
 import { ItemActions } from '@/components/item-actions';
-import type { LegalKind } from '@/server/properties/legal';
+import type { LegalKind } from '@esta/ops';
 import { itemActionLabels } from './item-labels';
 
 export async function LegalCard({

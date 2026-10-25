@@ -2,7 +2,8 @@ import { formatArea, formatDate } from '@esta/core/format';
 import { purposesMismatch, sumLandArea } from '@esta/core/properties/area';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { StatusShape } from '@/components/status-mark';
-import type { LandUseCode, LegalRow } from '@/server/properties/legal';
+import type { LegalRow } from '@esta/ops';
+import type { LandUseCode } from '@/server/properties/legal';
 import { LegalCard } from './legal-card';
 
 export async function ParcelTotal({ parcels }: { parcels: readonly LegalRow<'parcels'>[] }) {

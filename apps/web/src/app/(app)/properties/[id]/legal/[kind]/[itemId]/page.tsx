@@ -9,7 +9,8 @@ import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
-import { legalKindSchema, loadLandUseCodes, type LegalKind, loadLegalItem, loadParties, loadPropertyLegal } from '@/server/properties/legal';
+import { legalKindSchema, type LegalKind } from '@esta/ops';
+import { loadLandUseCodes, loadLegalItem, loadParties, loadPropertyLegal } from '@/server/properties/legal';
 
 const paramsSchema = z.object({ id: z.uuid(), kind: legalKindSchema, itemId: z.union([z.literal('new'), z.uuid()]) });
 

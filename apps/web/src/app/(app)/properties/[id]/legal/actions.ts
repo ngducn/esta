@@ -7,7 +7,7 @@ import { newPartiesSchema, type NewParty } from '@esta/core/schemas/party';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import type { TablesInsert } from '@esta/db';
-import { LEGAL_KINDS, legalKindSchema, legalTable, type LegalKind } from '@/server/properties/legal';
+import { LEGAL_KINDS, legalKindSchema, legalTable, type LegalKind } from '@esta/ops';
 import { createSessionClient } from '@/server/supabase/server';
 
 export type LegalWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'failed' };
