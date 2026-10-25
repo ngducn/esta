@@ -392,7 +392,8 @@
     "propertiesTab": "Tài sản",
     "collectionsTab": "Thu tiền",
     "documentsTab": "Tài liệu",
-    "assistantTab": "Trợ lý"
+    "assistantTab": "Trợ lý",
+    "diagnostics": "Chẩn đoán Trợ lý"
   },
   "shell": {
     "sections": "Các mục chính",
@@ -1030,17 +1031,7 @@
       "failed": "Lỗi",
       "cancelled": "Đã hủy"
     },
-    "recentRuns": "Lần chạy gần đây",
     "noRuns": "Chưa có lần chạy nào.",
-    "columns": {
-      "time": "Thời gian",
-      "authMode": "Xác thực",
-      "agentMode": "Chế độ",
-      "model": "Mô hình",
-      "turns": "Lượt",
-      "cost": "Chi phí ước tính",
-      "toolCalls": "Công cụ đã gọi"
-    },
     "unknown": "Không rõ",
     "noToolCalls": "Không gọi công cụ",
     "toolCall": "{name} × {count}",
@@ -1079,6 +1070,7 @@
     "linkMissing": "không tìm thấy",
     "ranAt": "Trợ lý chạy lúc {time}.",
     "briefLabel": "Ghi chú buổi sáng",
+    "weeklyLabel": "Tổng kết tuần",
     "tabs": "Các mục của Trợ lý",
     "tab": {
       "inbox": "Hộp thư",
@@ -1160,6 +1152,52 @@
       "notFoundTitle": "Không tìm thấy cuộc hỏi đáp này",
       "notFoundBody": "Đường dẫn có thể đã sai, hoặc cuộc hỏi đáp này không thuộc gia đình của bạn.",
       "notFoundAction": "Về trang Hỏi"
+    },
+    "sources": "Nguồn",
+    "citationLabel": "Nguồn {index}: {source}. Mở trong thẻ mới",
+    "diagnostics": {
+      "title": "Chẩn đoán Trợ lý",
+      "intro": "Chỉ người vận hành thấy trang này. Số liệu lấy từ các lần chạy của Trợ lý cho gia đình này.",
+      "back": "Về Trợ lý",
+      "worker": "Máy chạy Trợ lý",
+      "authMode": "Xác thực",
+      "agentMode": "Chế độ",
+      "noWorker": "Chưa có máy nào kết nối.",
+      "runs": "Lần chạy gần đây",
+      "runCount": "{count, plural, other {# lần chạy}}",
+      "runColumns": {
+        "time": "Thời gian",
+        "kind": "Loại việc",
+        "status": "Kết quả",
+        "turns": "Lượt",
+        "duration": "Thời lượng",
+        "model": "Mô hình",
+        "cost": "Chi phí ước tính",
+        "toolCalls": "Công cụ đã gọi"
+      },
+      "runStatus": {
+        "queued": "Đang chờ",
+        "running": "Đang chạy",
+        "done": "Xong",
+        "failed": "Lỗi",
+        "cancelled": "Đã hủy",
+        "retried": "Chạy lại sau đó"
+      },
+      "duration": "{minutes, plural, =0 {{seconds} giây} other {# phút {seconds} giây}}",
+      "usage": "Mức dùng 7 ngày theo loại việc",
+      "noUsage": "Chưa có lần chạy nào trong 7 ngày qua.",
+      "usageColumns": {
+        "kind": "Loại việc",
+        "runs": "Lần chạy",
+        "turns": "Lượt",
+        "inputTokens": "Token vào",
+        "outputTokens": "Token ra",
+        "cost": "Chi phí ước tính"
+      },
+      "total": "Tổng",
+      "held": "Ghi chú bộ lọc số giữ lại, 7 ngày",
+      "noHeld": "Bộ lọc số không giữ lại ghi chú nào trong 7 ngày qua.",
+      "heldNote": "{time} · {kind}"
     }
   },
   "settings": {

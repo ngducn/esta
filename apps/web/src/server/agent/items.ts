@@ -2,6 +2,7 @@ import 'server-only';
 import { businessDate, parseInstant, type Instant, type IsoDate } from '@esta/core';
 import { addDays } from '@esta/core/date/calendar';
 import { parseProposal, type Proposal } from '@esta/core/proposals';
+import { isoDateSchema } from '@esta/core/schemas/legal';
 import { existingLinks } from '@esta/ops';
 import { z } from 'zod';
 import { env } from '@/server/env';
@@ -26,8 +27,10 @@ export type InboxNote = {
   readonly createdAt: Instant;
   readonly retry: RetryHint | null;
   readonly reviewHref: string | null;
-  readonly isBrief: boolean;
+  readonly kind: NoteKind;
   readonly proposal: ProposalView | null;
+  /** The sources a proposal rests on (AGENT.md §5.5). */
+  readonly citations: readonly NoteCitation[];
   /** For operators only: what the worker wrote, and whether each `esta://` link names a record this member can read. */
   readonly diagnostics: NoteDiagnostics | null;
 };
@@ -39,6 +42,14 @@ export type NoteDiagnostics = {
   readonly dedupeKey: string;
   readonly links: ReadonlyArray<{ readonly href: string; readonly ok: boolean }>;
 };
+
+/** What the card names the note as: the morning brief, the Sunday review, a proposal, or any other note. */
+const noteKind = z.enum(['brief', 'weekly', 'proposal', 'note']).catch('note');
+export type NoteKind = z.infer<typeof noteKind>;
+
+const citationsSchema = z.array(z.object({ url: z.url({ protocol: /^https$/ }), source_name: z.string(), published_at: isoDateSchema.nullable().catch(null) })).catch([]);
+
+export type NoteCitation = { readonly url: string; readonly sourceName: string; readonly publishedOn: IsoDate | null };
 
 const relatedLinks = z.object({ links: z.array(z.string()) });
 
@@ -59,7 +70,7 @@ export async function listInbox({ household, role, isOperator }: Pick<Member, 'h
   const supabase = await createSessionClient();
   const { data: rows, error } = await supabase
     .from('agent_items')
-    .select('id, title, body_md, status, audience, created_at, proposal, related, kind, severity, dedupe_key, decided_at')
+    .select('id, title, body_md, status, audience, created_at, proposal, related, citations, kind, severity, dedupe_key, decided_at')
     .eq('household_id', household.id)
     // The day before `today` at UTC midnight bounds every zone's start of `today`, so old decisions never fill the page.
     .or(`status.in.(${INBOX.join(',')}),and(kind.eq.proposal,status.in.(${DECIDED.join(',')}),decided_at.gte.${addDays(today, -1)}T00:00:00Z)`)
@@ -84,8 +95,9 @@ export async function listInbox({ household, role, isOperator }: Pick<Member, 'h
       createdAt: parseInstant(row.created_at),
       retry: retryHint(row.proposal, role),
       reviewHref: document.success ? `/documents/${document.data.document_id}/review` : null,
-      isBrief: row.kind === 'brief',
+      kind: noteKind.parse(row.kind),
       proposal: row.kind === 'proposal' ? proposalView(row.proposal) : null,
+      citations: citationsSchema.parse(row.citations).map((source) => ({ url: source.url, sourceName: source.source_name, publishedOn: source.published_at })),
       diagnostics: isOperator
         ? { kind: row.kind, severity: row.severity, audience, dedupeKey: row.dedupe_key, links: linksOf(row).map((href) => ({ href, ok: readable.has(href) })) }
         : null,
