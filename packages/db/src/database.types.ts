@@ -651,7 +651,10 @@ export type Database = {
           created_by: string | null
           household_id: string
           id: string
+          last_asked_at: string
+          sdk_handles: number
           sdk_session_id: string | null
+          sdk_turn_hash: string | null
           title: string
           updated_at: string
         }
@@ -660,7 +663,10 @@ export type Database = {
           created_by?: string | null
           household_id: string
           id?: string
+          last_asked_at: string
+          sdk_handles?: number
           sdk_session_id?: string | null
+          sdk_turn_hash?: string | null
           title: string
           updated_at?: string
         }
@@ -669,7 +675,10 @@ export type Database = {
           created_by?: string | null
           household_id?: string
           id?: string
+          last_asked_at?: string
+          sdk_handles?: number
           sdk_session_id?: string | null
+          sdk_turn_hash?: string | null
           title?: string
           updated_at?: string
         }
@@ -3413,8 +3422,10 @@ export type Database = {
         Args: {
           p_as_of: string
           p_conversation_id: string
+          p_deep: boolean
           p_household_id: string
           p_question: string
+          p_question_id: string
         }
         Returns: string
       }
@@ -3557,6 +3568,18 @@ export type Database = {
         Returns: string
       }
       esta_unaccent: { Args: { p_text: string }; Returns: string }
+      finish_answer: {
+        Args: {
+          p_answer_id: string
+          p_content: string
+          p_handles: number
+          p_household_id: string
+          p_refs: Json
+          p_session_id: string
+          p_turn_hash: string
+        }
+        Returns: undefined
+      }
       invite_member: {
         Args: {
           p_email: string
