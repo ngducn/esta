@@ -186,7 +186,7 @@ export async function ThreadView({
     return <AssistantNote note={entry.note} time={time} actions={actionsFor(entry.note, canDecide, proposals, t)} />;
   };
   return (
-    <section aria-labelledby="thread-heading" data-testid="thread" className="flex max-w-3xl flex-col gap-4">
+    <section id="thread" aria-labelledby="thread-heading" data-testid="thread" className="flex max-w-3xl flex-col gap-4">
       <h2 id="thread-heading" className="sr-only">
         {t('thread')}
       </h2>

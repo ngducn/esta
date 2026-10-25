@@ -2,14 +2,36 @@
 
 import { useEffect } from 'react';
 
+const END_SLACK_PX = 48;
+
 /**
  * Opens the thread where she reads it: at the note a link names, or at the end of the page, where the reply box sits
- * above the phone's tab bar rather than under it. A new entry, such as her message and its answer, returns there.
+ * above the phone's tab bar rather than under it. While she is at the end, the page stays there as an answer grows and
+ * when a refresh hides the thread for a moment, which would otherwise leave her at the top.
  */
 export function ThreadScroll({ note, newest }: { note: string | null; newest: string | null }) {
   useEffect(() => {
-    if (note === null) window.scrollTo({ top: document.documentElement.scrollHeight });
-    else document.getElementById(note)?.scrollIntoView({ block: 'start' });
+    if (note !== null) {
+      document.getElementById(note)?.scrollIntoView({ block: 'start' });
+      return;
+    }
+    const thread = document.getElementById('thread');
+    const toEnd = () => window.scrollTo({ top: document.documentElement.scrollHeight });
+    let atEnd = true;
+    const onScroll = () => {
+      if (thread === null || thread.offsetHeight === 0) return;
+      atEnd = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - END_SLACK_PX;
+    };
+    const resized = new ResizeObserver(() => {
+      if (atEnd) toEnd();
+    });
+    toEnd();
+    resized.observe(document.body);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      resized.disconnect();
+      window.removeEventListener('scroll', onScroll);
+    };
   }, [note, newest]);
   return null;
 }
