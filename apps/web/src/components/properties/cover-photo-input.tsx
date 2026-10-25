@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { removeCoverPhoto, requestCoverPhotoUpload, setCoverPhoto } from '@/app/(app)/properties/actions';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { useAction } from '@/components/use-action';
 import { useHydrated } from '@/lib/use-hydrated';

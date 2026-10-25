@@ -5,7 +5,7 @@ import { vnd } from '@esta/core/money';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { GROUP_MARKS } from '@/components/collections/CollectionsBoard';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import type { CollectionRow } from '@esta/ops';

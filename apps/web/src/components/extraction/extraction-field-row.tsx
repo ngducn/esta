@@ -10,7 +10,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
 import { LandUseCodePicker } from '@/components/legal/land-use-code-picker';
 import { MoneyInput } from '@/components/money/money-input';
-import { StatusShape, statusMarks } from '@/components/status-mark';
+import { StatusShape, statusMarks } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';

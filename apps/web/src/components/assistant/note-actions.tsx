@@ -8,7 +8,7 @@ import { lazy, useState } from 'react';
 import { approveProposal, setNoteStatus } from '@/app/(app)/assistant/actions';
 import { ReminderAction } from '@/components/collections/ReminderAction';
 import { FormAlert } from '@/components/form-alert';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { useAction } from '@/components/use-action';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';

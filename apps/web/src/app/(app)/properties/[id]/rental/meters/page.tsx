@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/empty-state';
 import { MeterEntryList } from '@/components/meters/MeterEntryList';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
-import { StatusShape, statusMarks } from '@/components/status-mark';
+import { StatusShape, statusMarks } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import { getClock } from '@/server/clock';

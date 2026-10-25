@@ -9,7 +9,7 @@ import { Inbox } from '@/components/assistant/inbox';
 import { TaskList } from '@/components/assistant/task-list';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { sectionMetadata } from '@/components/shell/section-page';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
+import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button';
 import { ToastHost } from '@/components/undo-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

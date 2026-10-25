@@ -1,6 +1,6 @@
 import { formatDate, formatVnd } from '@esta/core/format';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { StatusShape, statusMarks } from '@/components/status-mark';
+import { StatusShape, statusMarks } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 import type { LegalRow } from '@esta/ops';
 import type { PartyOption } from '@/server/properties/legal';
