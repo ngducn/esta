@@ -27,6 +27,7 @@
     "./export": "./src/export/index.ts",
     "./format": "./src/format/index.ts",
     "./guard": "./src/guard/index.ts",
+    "./guard/fixtures/open-prose": "./src/guard/fixtures/open-prose.ts",
     "./lease": "./src/lease/index.ts",
     "./ledger": "./src/ledger/index.ts",
     "./links": "./src/links/esta-uri.ts",

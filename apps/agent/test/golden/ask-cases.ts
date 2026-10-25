@@ -152,6 +152,9 @@ export const ASK_CASES: readonly AskCase[] = [
   },
 ];
 
+/** The texts a repair prompt says the guard rejected, one `"<text>": <rule>` line each. */
+export const rejectedTexts = (repair: string) => repair.split('\n').flatMap((line) => /^"([^"]*)":/u.exec(line)?.[1] ?? []);
+
 export const ASK_CONTEXT = { locale: 'vi', today: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh' } as const;
 
 const canon = () => canonicalizer({ householdName: 'Gia đình Demo' });

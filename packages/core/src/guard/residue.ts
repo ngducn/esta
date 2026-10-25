@@ -28,16 +28,19 @@ type Token = { readonly word: string; readonly lower: string; readonly start: nu
 type Context = {
   readonly neighbors: readonly Token[];
   readonly spacedBefore: Token | undefined;
+  /** The word before `spacedBefore`, when only a space or a hyphen stands between them. */
+  readonly spacedBeforeThat: Token | undefined;
   readonly spacedAfter: Token | undefined;
   readonly isDate: (mask: string) => boolean;
 };
 
 const isNumberWord = (token: Token) => IS_MASK.test(token.word) || WORDS.get(token.lower)?.kind === 'number';
 
-function passes(row: WordRow, { neighbors, spacedBefore, spacedAfter, isDate }: Context): boolean {
+function passes(row: WordRow, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, isDate }: Context): boolean {
   if (row.bannedOnlyAfter !== undefined && !row.bannedOnlyAfter.includes(spacedBefore?.lower ?? '')) return true;
   if (row.bannedOnlyNearNumber === true && !neighbors.some(isNumberWord)) return true;
   if (spacedBefore !== undefined && row.passesAfter?.includes(spacedBefore.lower) === true) return true;
+  if (spacedBefore !== undefined && spacedBeforeThat !== undefined && row.passesAfterPhrase?.includes(`${spacedBeforeThat.lower} ${spacedBefore.lower}`) === true) return true;
   if (spacedAfter !== undefined && (row.passesBefore?.includes(spacedAfter.lower) === true || row.passesBeforeCapitalized?.includes(spacedAfter.word) === true)) return true;
   return row.passesNearDate === true && neighbors.some((token) => IS_MASK.test(token.word) && isDate(token.word));
 }
@@ -60,17 +63,19 @@ function wordViolations(shown: string, isDate: (mask: string) => boolean): NoteV
     start: match.index,
     end: match.index + match[0].length,
   }));
+  // A hyphen joins a compound as a space does (`double-check`), so a rule that reads the next word reads it there too.
   const spaced = (left: Token | undefined, right: Token | undefined) =>
-    left !== undefined && right !== undefined && /^\s*$/u.test(text.slice(left.end, right.start));
+    left !== undefined && right !== undefined && /^(?:\s*|-)$/u.test(text.slice(left.end, right.start));
   return tokens.flatMap((token, i): NoteViolation[] => {
     if (IS_MASK.test(token.word)) return [];
     if (NON_LATIN_LETTER.test(token.word)) return [{ rule: 'script', text: token.word }];
     const [left, right] = [tokens[i - 1], tokens[i + 1]];
     const spacedBefore = spaced(left, token) ? left : undefined;
+    const spacedBeforeThat = spacedBefore !== undefined && spaced(tokens[i - 2], left) ? tokens[i - 2] : undefined;
     const spacedAfter = spaced(token, right) ? right : undefined;
     const row = wordRow(token);
     const neighbors = [left, right].filter((neighbor) => neighbor !== undefined);
-    const banned = isRoman(token, spacedBefore) || (row !== undefined && !passes(row, { neighbors, spacedBefore, spacedAfter, isDate }));
+    const banned = isRoman(token, spacedBefore) || (row !== undefined && !passes(row, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, isDate }));
     return banned ? [{ rule: 'word', text: token.word }] : [];
   });
 }

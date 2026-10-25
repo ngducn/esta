@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import type { AskReads } from '../../src/tools/ask-reads';
 
 export const ASK_READS_FIXTURE = join(import.meta.dirname, 'ask-reads-full-2026-10-07.json');
+/** What the reads answered during the live open-prose guard probe (`pnpm agent:guard-probe`), for its replay set. */
+export const OPEN_PROSE_READS = join(import.meta.dirname, 'open-prose-reads-full-2026-10-07.json');
 
 export type RecordedReads = Record<string, unknown>;
 
