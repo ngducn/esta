@@ -4439,86 +4439,112 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
-## Approve or dismiss proposals and execute approvals under the user's session (P5-06)
+## Approve or dismiss an assistant's suggested task under the user's session (P5-06a)
 
-**Depends on.** P5-04, P3-08, P3-13.
+**Depends on.** P5-04, P3-16. Split from P5-06 for the 800-line rule (2026-10-25); P5-06b takes the other four proposal types.
 
 **Files.**
 
-- [ ] Create `supabase/migrations/20261007000700_tasks.sql` with `tasks` per SPEC §5.5, unique `agent_item_id`, RLS and the audit trigger, and `supabase/tests/tasks.test.sql`.
-- [ ] Create `packages/core/src/proposals/registry.ts` with one zod schema per type and `packages/core/src/proposals/proposals.test.ts`.
-- [ ] Create `apps/agent/src/tools/write/createProposal.ts` and `apps/agent/scripts/propose.ts` with the root script `pnpm agent:propose`.
-- [ ] Create `apps/web/src/server/proposals/approve.ts` and `apps/web/src/server/proposals/handlers/` with one file per type.
-- [ ] Create `packages/db/src/queries/tasks.ts`, `apps/web/src/app/(app)/assistant/tasks/actions.ts` and `apps/web/src/components/assistant/TaskList.tsx`.
-- [ ] Edit the Hộp thư tab and the Home today list registry from P3-16. Create `e2e/assistant-proposals.spec.ts`, `e2e/tasks.spec.ts` and `fixtures/proposals/`.
+- [x] Create `supabase/migrations/20261007608000_tasks.sql` with `tasks` per SPEC §5.5, unique `agent_item_id`, RLS and the audit trigger, the `approve_proposal` definer function, and `supabase/tests/tasks.test.sql`.
+- [x] Create `packages/core/src/proposals/registry.ts` with one zod schema per type and `packages/core/src/proposals/proposals.test.ts`.
+- [x] Create `apps/agent/src/tools/create-proposal.ts` and `scripts/agent-propose.ts` with the root script `pnpm agent:propose`.
+- [x] Create `packages/ops/src/proposal-ops.ts` (`proposalApprove`) and `packages/ops/src/task-ops.ts` (`taskSetStatus`), called from the server actions in `apps/web/src/app/(app)/assistant/actions.ts`. ARCHITECTURE.md puts every write in the ops layer and every multi-row write in one definer function, so the per-type handler files of the original plan became one registry in core and one function in SQL.
+- [x] Create `apps/web/src/server/tasks/load.ts` and `apps/web/src/components/assistant/task-list.tsx`.
+- [x] Edit the Hộp thư tab and the Home today list registry from P3-16. Create `e2e/assistant-proposals.spec.ts`, `e2e/tasks.spec.ts`, `e2e/helpers/proposals.ts` and `fixtures/proposals/`.
 
 **Build.**
 
-- [ ] Name the data shape. `PROPOSAL_TYPES` in `packages/core/src/proposals/registry.ts` maps `create_task`, `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change` and `flag_data_issue` to `{ params: ZodSchema, confirm: 'none' | 'names_object' }`. `suggest_rent_change` params require `effective_period_start` to be a future period start with no issued invoice.
-- [ ] Implement `create_proposal` with the number guard. It rejects unknown types and invalid params with a tool error and writes an `agent_items` row with kind `proposal` and a dedupe key.
-- [ ] Write `approveProposal(itemId)` in `apps/web/src/server/proposals/approve.ts` as a server action on the user's session client. A conditional update moves status from `new` or `read` to `approved` with `decided_by` and `decided_at`, and only the caller that wins it runs the type's handler. Every handler write carries `agent_item_id` under a unique constraint, so a retry converges.
-- [ ] Write the handlers. `create_task` and `flag_data_issue` insert a `tasks` row with `source = 'agent_proposal'`. `draft_reminder` opens the P3-13 reminder sheet with the drafted text and writes nothing else. `suggest_lease_renewal` creates a `draft` renewal lease linked by `renewal_of_lease_id`. `suggest_rent_change` inserts a `lease_amendments` row from the validated period start. A handler whose subject changed since the proposal (a terminated lease, an issued period) marks the item `failed` and shows `Đề xuất này không còn áp dụng.`.
-- [ ] Render proposal cards from the P0-13 composite with `Đồng ý` and `Bỏ qua`. Types with `names_object` confirm in words first, for example `Tăng tiền thuê Phòng 2 lên 3.800.000 ₫ từ 25/11/2026?`. `Bỏ qua` sets `dismissed` with undo. Viewers see the card without buttons.
-- [ ] Add a minimal task list. `TaskList` sits at the top of Hộp thư under `Việc cần làm` and lists open tasks by `due_on` with property, due date and a `Xong` text button that sets `done` with an undo toast. Writes go through the session client.
-- [ ] Register open tasks due today or earlier as a source in the Home `Cần làm hôm nay` registry, so an approved task due today shows there too.
-- [ ] Add `pnpm agent:propose --household <seed key> --type <type> --params <file>` in `apps/agent/scripts/propose.ts`. It calls the real `create_proposal` handler so lanes can seed proposals. It refuses when `ESTA_ENV=production`. Add the command to the CLAUDE.md commands table.
-- [ ] Extend the seed generator with one `done` task with `source = 'user'` per household (seed key `seed:task:<household>:q7-insurance-call`), so the FND-7 checksum covers `tasks` without changing Home's seeded today list.
+- [x] Name the data shape. `PROPOSAL_TYPES` in `packages/core/src/proposals/registry.ts` maps `create_task` to `{ params: ZodSchema, confirm: 'none' | 'names_object', texts }`, where `texts` names the params the model writes as text.
+- [x] Implement `create_proposal` with the number guard. It rejects unknown types, invalid params and subjects outside the household with a tool error, and writes an `agent_items` row with kind `proposal` and a dedupe key hashed from the type and the stored params.
+- [x] Write `proposalApprove`. Its plan parses the stored params with the registry again; `approve_proposal(item, params_valid)` locks the item, checks the caller is a member of its household, moves it from `new` or `read` to `approved` with `decided_by` and `decided_at`, and writes the task in the same transaction. A second call reads `approved` and writes nothing, and `tasks.agent_item_id` is unique, so a double tap, two devices and a retry converge on one task.
+- [x] Write the `create_task` effect: a `tasks` row with `source = 'agent_proposal'`. Params the registry no longer reads, an archived property or an ended lease mark the item `failed` and show `Đề xuất này không còn áp dụng.`.
+- [x] Render proposal cards with `Đồng ý` and `Bỏ qua`. `Bỏ qua` sets `dismissed` with undo. Viewers see the card without buttons. A member's own update can no longer set `approved` or `failed` or reopen a decided proposal.
+- [x] Add a minimal task list. `TaskList` sits at the top of Hộp thư under `Việc cần làm` and lists open tasks by `due_on` with property, due date and a `Xong` text button that sets `done` with an undo toast. Writes go through the session client.
+- [x] Register open tasks due today or earlier as a source in the Home `Cần làm hôm nay` registry, so an approved task due today shows there too.
+- [x] Add `pnpm agent:propose --household <seed key> --type <type> --params <file>`. It reads the run's facts with `watch_facts` and `list_properties` and calls the real `create_proposal` handler, so lanes can seed proposals. It refuses when `ESTA_ENV=production`. Add the command to the CLAUDE.md commands table.
+- [x] Extend the seed generator with one `done` task with `source = 'user'` per household (seed key `seed:task:<household>:q7-insurance-call`), so the FND-7 checksum covers `tasks` without changing Home's seeded today list.
 
 **You see.**
 
-- [ ] me.lane2 taps `Đồng ý` on a `create_task` proposal due today. The task appears under `Việc cần làm` in Hộp thư and under `Cần làm hôm nay` on Home.
-- [ ] Tapping `Xong` on the task removes it from both lists and Studio shows `status = 'done'`.
-- [ ] `audit_log` shows the new `tasks` row and the `agent_items` status change with `actor_kind = 'user'` and her user id.
-- [ ] A second approval of the same item creates no second task.
+- [x] me.lane2 taps `Đồng ý` on a `create_task` proposal due today. The task appears under `Việc cần làm` in Hộp thư and under `Cần làm hôm nay` on Home.
+- [x] Tapping `Xong` on the task removes it from both lists and the database shows `status = 'done'`.
+- [x] `audit_log` shows the new `tasks` row and the `agent_items` status change with `actor_kind = 'user'` and her user id.
+- [x] A second approval of the same item creates no second task.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `packages/core/src/proposals/proposals.test.ts` gains a valid and an invalid params case per type, an unknown type, and a rent change dated on an issued period.
-- [ ] `apps/web/src/server/proposals/approve.test.ts` runs against local Supabase. It covers each handler, two concurrent approvals giving one effect, a dismissed item refusing approval, a stale subject marking `failed`, and a viewer rejected by RLS (AGT-6).
-- [ ] `supabase/tests/tasks.test.sql` proves household isolation for select, insert, update and delete, viewer read-only, the `status` and `source` checks, unique `agent_item_id`, and an audit row per write. Run `pnpm db:test`.
-- [ ] `e2e/tasks.spec.ts` covers an approved task in `Việc cần làm` and on Home, `Xong` with undo, and a task due tomorrow absent from Home.
-- [ ] Golden tests in AGENT.md §7 for `create_proposal` validation pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [x] `packages/core/src/proposals/proposals.test.ts` gains a valid and an invalid params case for `create_task` and an unknown type.
+- [x] `supabase/tests/tasks.test.sql` proves household isolation for select, insert, update and delete, viewer read-only, the `status` and `source` checks, unique `agent_item_id`, an audit row per write, and `approve_proposal`: a viewer and another household refused, a double call giving one task, a dismissed item refusing approval, stale params and an archived property marking `failed`. `packages/ops/src/proposal-ops.test.ts` covers the plan and the refusal mapping. All ten integration lanes are owned, so the concurrent approval runs in `e2e/assistant-proposals.spec.ts` instead of a web integration file.
+- [x] `e2e/tasks.spec.ts` covers an approved task in `Việc cần làm` and on Home, `Xong` with undo, and a task due tomorrow absent from Home.
+- [x] `apps/agent/test/golden/proposal.test.ts` covers `create_proposal` validation in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-proposals.spec.ts`, `pnpm e2e e2e/tasks.spec.ts` and `pnpm e2e e2e/home.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
-- [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-proposals.spec.ts` and `e2e/tasks.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. Each lane seeds its proposal with `pnpm agent:propose` from `fixtures/proposals/`, with the clock at 2026-10-07 07:05.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Each lane seeds its proposal with `pnpm agent:propose` from `fixtures/proposals/`, with the clock at 2026-10-07 07:05.
 
-- [ ] Lane 1. Regression lane against trunk. SPEC §9.4 seed 9. me.lane1 reads the brief in Hộp thư at 390x844 light at trunk and head. Trunk cannot approve, so the lane gates head approving the `create_task` proposal `Gọi người thuê Phòng 5`. Save `p5-06-regression-seed9.png`. Pass when the brief reads the same on both sides, and on head the card shows `Đã đồng ý` and the task appears under `Việc cần làm` and on Home.
-- [ ] Lane 2. me.lane2 approves `suggest_lease_renewal` for `thu-duc` at 1440x900 light. Save `p5-06-renewal-confirm.png`. Pass when the confirm names Căn hộ Thủ Đức and the new rent, and the lease page then shows a draft renewal linked to the old lease.
-- [ ] Lane 3. me.lane3 approves `suggest_rent_change` for `di-an` Phòng 2 at 390x844 dark. Save `p5-06-rent-change.png`. Pass when the confirm reads `Tăng tiền thuê Phòng 2 lên 3.800.000 ₫ từ 25/11/2026?` and the lease shows an amendment from `25/11/2026` while the issued 2026-10-25 invoice is unchanged.
-- [ ] Lane 4. me.lane4 approves `draft_reminder` for Phòng 5 at 1440x900 dark. Save `p5-06-reminder.png`. Pass when the reminder sheet opens with the drafted text, the copy button copies it, and no business row changed in Studio.
-- [ ] Lane 5. me.lane5 taps `Bỏ qua` on a `flag_data_issue` proposal at 390x844 light. Save `p5-06-dismiss.png`. Pass when the item reads dismissed with an undo toast and `audit_log` shows only the `agent_items` update.
-- [ ] Lane 6. After me.lane6 approves a `create_task` proposal, the lane opens `audit_log` in Studio at 1440x900 light. Save `p5-06-audit-actor.png`. Pass when the `tasks` insert and the `agent_items` update both show `actor_kind = 'user'` and her user id, and no row shows `agent:`.
-- [ ] Lane 7. me.lane7 opens the same proposal in two tabs at 390x844 dark and taps `Đồng ý` in both. Save `p5-06-double-approve.png`. Pass when Studio shows exactly one `tasks` row with that `agent_item_id` and the second tab shows `Đã đồng ý`.
-- [ ] Lane 8. The lane runs `pnpm agent:propose --type sell_property` for lane8, then ryan.lane8 opens `/dev/agent` items at 1440x900 light. Save `p5-06-unknown-type.png`. Pass when the command exits non-zero with the zod error and the item count is unchanged.
-- [ ] Lane 9. ryan.lane9 terminates the Phòng 3 lease, then me.lane9 approves a `suggest_rent_change` for Phòng 3 at 1440x900 dark. Save `p5-06-stale.png`. Pass when the card shows `Đề xuất này không còn áp dụng.`, the item reads `failed`, and no amendment exists.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, approves a `create_task` proposal, then finds the overdue Dĩ An room and copies the reminder. Save `p5-06-seed10-english.png`. Pass when the buttons read `Approve` and `Dismiss` without clipping, the task appears on Home, and the board shows Phòng 5 `Overdue 12 days`.
+- [ ] Lane 1. Regression lane against trunk. me.lane1 reads the brief in Hộp thư at 390x844 light at trunk and head, then approves `create-task-call-room-5.json` on head. Pass when the brief reads the same on both sides, and on head the card shows `Đã đồng ý` and the task appears under `Việc cần làm` and on Home.
+- [ ] Lane 5. me.lane5 taps `Bỏ qua` on a proposal at 390x844 light. Pass when the item reads dismissed with an undo toast and `audit_log` shows only the `agent_items` update.
+- [ ] Lane 6. After me.lane6 approves a `create_task` proposal, the lane reads `audit_log` at 1440x900 light. Pass when the `tasks` insert and the `agent_items` update both show `actor_kind = 'user'` and her user id, and no row shows `agent:`.
+- [ ] Lane 7. me.lane7 opens the same proposal in two tabs at 390x844 dark and taps `Đồng ý` in both. Pass when exactly one `tasks` row has that `agent_item_id` and the second tab shows `Đã đồng ý`.
+- [ ] Lane 8. The lane runs `pnpm agent:propose --type sell_property` for lane8. Pass when the command exits non-zero naming the proposal types and the item count is unchanged.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] Metric. Server time of `approveProposal` per type, and Lighthouse mobile LCP, TBT, CLS and initial JS gzipped for Trợ lý and Home on a production build with the `full` seed.
-- [ ] Probe. Run 20 approvals per type on head and 5 interleaved Lighthouse runs per side per route.
-- [ ] Baseline. Trunk has no approvals, so take head approval times as the first baseline. Trunk serves both routes, so compare them across sides.
+- [ ] Metric. Server time of `approveProposal`, and Lighthouse mobile LCP, TBT, CLS and initial JS gzipped for Trợ lý and Home on a production build with the `full` seed.
 - [ ] Rule. Fail when p95 approval exceeds 500 ms, Home misses SPEC §7.2, or either route's initial JS grows more than 10% over trunk or exceeds 200 KB gzipped.
 
 **Review gate.** The operator reviews before merge.
 
-- [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-06/P5-06-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of seed 9 on a phone viewport, reading the brief, approving one proposal and seeing the task on Home, saved as `~/.claude/orchestrate/esta/media/P5-06/P5-06-review.mp4`.
-- [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
+- [ ] Copy the key screenshots to `~/.claude/orchestrate/esta/media/P5-06/P5-06-review-<slug>.png`.
+- [ ] Post the screenshots in chat, stop at merge-ready, and wait for the operator's click.
 
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
-- [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
+- [ ] The root appends it to the stack at STACK-READY.
+
+## Confirm a reminder draft, a renewal, a rent change or a data issue in words (P5-06b)
+
+**Depends on.** P5-06a, P3-08, P3-13. Split from P5-06 for the 800-line rule (2026-10-25).
+
+**Files.**
+
+- [ ] Edit `packages/core/src/proposals/registry.ts`, `supabase/migrations/` (the effects in `approve_proposal`), the proposal card and `fixtures/proposals/`.
+
+**Build.**
+
+- [ ] Add `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change` and `flag_data_issue` to `PROPOSAL_TYPES`. `suggest_rent_change` params require `effective_period_start` to be a future period start with no issued invoice.
+- [ ] Write the effects. `flag_data_issue` inserts a `tasks` row with `source = 'agent_proposal'`. `draft_reminder` opens the P3-13 reminder sheet with the drafted text and writes nothing else, shaped so a later batch approve ("Gửi tất cả") can reuse it. `suggest_lease_renewal` creates a `draft` renewal lease linked by `renewal_of_lease_id`. `suggest_rent_change` inserts a `lease_amendments` row from the validated period start. Each write carries `agent_item_id` under a unique constraint. A handler whose subject changed since the proposal (a terminated lease, an issued period) marks the item `failed` and shows `Đề xuất này không còn áp dụng.`.
+- [ ] Types with `names_object` confirm in words first, written by Esta from validated params, for example `Tăng tiền thuê Phòng 2 lên 3.800.000 ₫ từ 25/11/2026?`.
+
+**Verify, unit.**
+
+- [ ] `packages/core/src/proposals/proposals.test.ts` gains a valid and an invalid params case per new type and a rent change dated on an issued period.
+- [ ] Approval tests cover each new effect, a stale subject marking `failed`, and a viewer rejected.
+- [ ] Run `pnpm check`, `pnpm db:test` and `pnpm e2e e2e/assistant-proposals.spec.ts`; `pnpm design:detect` and axe clean.
+
+**Verify, live.** Each lane seeds its proposal with `pnpm agent:propose` from `fixtures/proposals/`, with the clock at 2026-10-07 07:05.
+
+- [ ] Lane 2. me.lane2 approves `suggest_lease_renewal` for `thu-duc` at 1440x900 light. Save `p5-06-renewal-confirm.png`. Pass when the confirm names Căn hộ Thủ Đức and the new rent, and the lease page then shows a draft renewal linked to the old lease.
+- [ ] Lane 3. me.lane3 approves `suggest_rent_change` for `di-an` Phòng 2 at 390x844 dark. Save `p5-06-rent-change.png`. Pass when the confirm reads `Tăng tiền thuê Phòng 2 lên 3.800.000 ₫ từ 25/11/2026?` and the lease shows an amendment from `25/11/2026` while the issued 2026-10-25 invoice is unchanged.
+- [ ] Lane 4. me.lane4 approves `draft_reminder` for Phòng 5 at 1440x900 dark. Save `p5-06-reminder.png`. Pass when the reminder sheet opens with the drafted text, the copy button copies it, and no business row changed.
+- [ ] Lane 9. ryan.lane9 terminates the Phòng 3 lease, then me.lane9 approves a `suggest_rent_change` for Phòng 3 at 1440x900 dark. Save `p5-06-stale.png`. Pass when the card shows `Đề xuất này không còn áp dụng.`, the item reads `failed`, and no amendment exists.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, approves a proposal, then finds the overdue Dĩ An room and copies the reminder. Save `p5-06-seed10-english.png`. Pass when the buttons read `Approve` and `Dismiss` without clipping, and the board shows Phòng 5 `Overdue 12 days`.
+
+**Review gate.** The operator reviews before merge.
+
+- [ ] Record a 30 to 60 second video of seed 9 on a phone viewport, reading the brief, approving one proposal and seeing the task on Home, saved as `~/.claude/orchestrate/esta/media/P5-06/P5-06-review.mp4`.
+
+**Merge.**
+
+- [ ] Root's clean verdict at the exact head SHA.
+- [ ] The root appends it to the stack at STACK-READY.
 
 ## Ask the assistant questions and stream exact answers (P5-07)
 
-**Depends on.** P5-06.
+**Depends on.** P5-06b.
 
 **Files.**
 

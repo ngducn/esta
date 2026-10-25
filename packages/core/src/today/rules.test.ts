@@ -45,6 +45,7 @@ const FULL_SEED: TodaySnapshot = {
     { documentId: 'thu-duc-lease', title: 'Hợp đồng thuê Căn hộ Thủ Đức', expiresOn: null },
   ],
   reviews: [],
+  tasks: [{ taskId: 'q7-insurance-call', title: 'Gọi bảo hiểm Nhà phố Q7', dueOn: null, propertyName: 'Nhà phố Q7' }],
 };
 
 /** Each item as Mẹ reads it: the rule, the place or title, and the date it is about. */
@@ -61,6 +62,8 @@ function read(items: readonly TodayItem[]) {
         return [item.rule, item.document.title, item.date, item.days];
       case 'extraction_waiting':
         return [item.rule, item.review.title, item.date];
+      case 'task_due':
+        return [item.rule, item.task.title, item.date];
     }
   });
 }
@@ -73,8 +76,9 @@ describe('TODAY_RULES', () => {
       ['overdue_invoice', 1, 'recordPayment'],
       ['lease_ending', 2, 'renew'],
       ['document_expiring', 3, 'openDocument'],
-      ['extraction_waiting', 4, 'review'],
-      ['due_today', 5, 'recordPayment'],
+      ['task_due', 4, 'openTask'],
+      ['extraction_waiting', 5, 'review'],
+      ['due_today', 6, 'recordPayment'],
     ]);
     expect(new Set(TODAY_RULES.map(({ priority }) => priority)).size).toBe(TODAY_RULES.length);
   });
@@ -109,13 +113,25 @@ describe('todayItems', () => {
     expect(read(on(renewed, '2026-10-07').items).map(([rule]) => rule)).toEqual(['overdue_invoice', 'document_expiring']);
   });
 
+  it('lists an open task due today or earlier after what expires, and leaves out one due later or undated', () => {
+    const task = (taskId: string, dueOn: string | null) => ({ taskId, title: `Việc ${taskId}`, dueOn: dueOn === null ? null : isoDate(dueOn), propertyName: null });
+    const tasks = [task('tomorrow', '2026-10-08'), task('today', '2026-10-07'), task('late', '2026-10-01'), task('undated', null)];
+    expect(read(on({ ...FULL_SEED, tasks }, '2026-10-07').items)).toEqual([
+      ['overdue_invoice', `Phòng 5, ${DI_AN}`, '2026-09-25', 12],
+      ['lease_ending', 'Căn hộ Thủ Đức', '2026-11-01', 25],
+      ['document_expiring', 'Bảo hiểm cháy nổ Nhà phố Q7', '2026-10-30', 23],
+      ['task_due', 'Việc late', '2026-10-01'],
+      ['task_due', 'Việc today', '2026-10-07'],
+    ]);
+  });
+
   it('an empty snapshot gives nothing to do', () => {
-    expect(on({ bills: [], leases: [], documents: [], reviews: [] }, '2026-10-07')).toEqual({ items: [], total: 0 });
+    expect(on({ bills: [], leases: [], documents: [], reviews: [], tasks: [] }, '2026-10-07')).toEqual({ items: [], total: 0 });
   });
 
   it('a lease counts from 30 days before its last day through that day, and only while it is active', () => {
     const ending = (endDate: string | null, overrides: Partial<TodayLease> = {}) =>
-      on({ bills: [], leases: [lease('Căn hộ Thủ Đức', WHOLE, endDate, overrides)], documents: [], reviews: [] }, '2026-10-07').total;
+      on({ bills: [], leases: [lease('Căn hộ Thủ Đức', WHOLE, endDate, overrides)], documents: [], reviews: [], tasks: [] }, '2026-10-07').total;
     expect(LEASE_ENDING_DAYS).toBe(30);
     expect(ending('2026-11-06')).toBe(1);
     expect(ending('2026-11-07')).toBe(0);
@@ -127,7 +143,7 @@ describe('todayItems', () => {
   });
 
   it('a document counts from 30 days out through its expiry day, and not once it has expired', () => {
-    const expiring = (expiresOn: IsoDate | null) => on({ bills: [], leases: [], documents: [{ documentId: 'd', title: 'Giấy phép', expiresOn }], reviews: [] }, '2026-10-07');
+    const expiring = (expiresOn: IsoDate | null) => on({ bills: [], leases: [], documents: [{ documentId: 'd', title: 'Giấy phép', expiresOn }], reviews: [], tasks: [] }, '2026-10-07');
     expect(read(expiring(isoDate('2026-10-07')).items)).toEqual([['document_expiring', 'Giấy phép', '2026-10-07', 0]]);
     expect(expiring(isoDate('2026-11-06')).total).toBe(1);
     expect(expiring(isoDate('2026-11-07')).total).toBe(0);
@@ -142,7 +158,7 @@ describe('todayItems', () => {
       bill(DI_AN, 'Phòng 4', '2026-10-07', 'unpaid'),
       bill(DI_AN, 'Phòng 6', '2026-10-08', 'unpaid'),
     ];
-    expect(read(on({ bills, leases: [], documents: [], reviews: [] }, '2026-10-07').items)).toEqual([
+    expect(read(on({ bills, leases: [], documents: [], reviews: [], tasks: [] }, '2026-10-07').items)).toEqual([
       ['overdue_invoice', `Phòng 2, ${DI_AN}`, '2026-10-01', 6],
       ['due_today', `Phòng 4, ${DI_AN}`, '2026-10-07'],
     ]);
@@ -169,7 +185,7 @@ describe('todayItems', () => {
       bill(DI_AN, 'Phòng 4', '2026-09-25', 'unpaid'),
       bill(DI_AN, 'Phòng 8', '2026-08-25', 'unpaid'),
     ];
-    expect(read(on({ bills, leases: [], documents: [], reviews: [] }, '2026-10-25').items).map(([, place]) => place)).toEqual([
+    expect(read(on({ bills, leases: [], documents: [], reviews: [], tasks: [] }, '2026-10-25').items).map(([, place]) => place)).toEqual([
       `Phòng 8, ${DI_AN}`,
       `Phòng 4, ${DI_AN}`,
       `Phòng 9, ${DI_AN}`,

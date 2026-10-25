@@ -6,6 +6,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AssistantHeader, assistantStatus } from '@/components/assistant/assistant-header';
 import { Inbox } from '@/components/assistant/inbox';
+import { TaskList } from '@/components/assistant/task-list';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
@@ -18,6 +19,7 @@ import { getConnectionCheck, type AgentRun, type PingCheck } from '@/server/assi
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
+import { loadOpenTasks } from '@/server/tasks/load';
 import { runConnectionCheck, runWatch } from './actions';
 import { RefreshWhilePending } from './connection-check';
 
@@ -210,12 +212,20 @@ async function OperatorTools({ householdId, failed, workerOnline }: { householdI
 export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ check?: string; watch?: string }> }) {
   const clock = await getClock();
   const member = await requireMember();
-  const [status, notes, toast, { check, watch }] = await Promise.all([assistantStatus(clock.now()), listInbox(member), getTranslations('components.toast'), searchParams]);
+  const [status, notes, tasks, toast, { check, watch }] = await Promise.all([
+    assistantStatus(clock.now()),
+    listInbox(member, clock.today()),
+    loadOpenTasks(member.household.id),
+    getTranslations('components.toast'),
+    searchParams,
+  ]);
+  const canDecide = member.role !== 'viewer';
   return (
     <div className="flex flex-col gap-6">
       <AssistantHeader householdId={member.household.id} now={clock.now()} status={status} active="inbox" />
       <ToastHost labels={{ region: toast('region'), undo: toast('undo') }}>
-        <Inbox notes={notes} today={clock.today()} timezone={env.ESTA_TIMEZONE} />
+        <TaskList tasks={tasks} today={clock.today()} canEdit={canDecide} />
+        <Inbox notes={notes} today={clock.today()} timezone={env.ESTA_TIMEZONE} canDecide={canDecide} />
       </ToastHost>
       {member.isOperator ? (
         <OperatorTools householdId={member.household.id} failed={{ check: check === 'failed', watch: watch === 'failed' }} workerOnline={status.kind === 'online'} />

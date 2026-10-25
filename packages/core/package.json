@@ -36,6 +36,7 @@
     "./parse/*": "./src/parse/*.ts",
     "./phone": "./src/phone/index.ts",
     "./properties": "./src/properties/index.ts",
+    "./proposals": "./src/proposals/registry.ts",
     "./properties/area": "./src/properties/area.ts",
     "./properties/form": "./src/properties/form.ts",
     "./properties/ownership": "./src/properties/ownership.ts",

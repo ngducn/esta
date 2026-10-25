@@ -70,7 +70,7 @@ async function writeGuardItem(binding: GuardBinding, draft: string, found: reado
   if (error) throw new Error(`Writing the number guard item failed: ${error.message}`);
 }
 
-export type ItemRow = Pick<TablesInsert<'agent_items'>, 'kind' | 'severity' | 'title' | 'body_md' | 'related' | 'dedupe_key'>;
+export type ItemRow = Pick<TablesInsert<'agent_items'>, 'kind' | 'severity' | 'title' | 'body_md' | 'related' | 'dedupe_key' | 'proposal'>;
 
 /**
  * The number guard as every write tool runs it (AGENT.md §6.3). `fill` checks all of a call's texts against the run's

@@ -43,6 +43,7 @@ const SNAPSHOT: HomeSnapshot = {
   ],
   documents: [{ documentId: '00000000-0000-4000-8000-0000000d0001', title: 'Bảo hiểm cháy nổ Nhà phố Q7', expiresOn: isoDate('2026-10-30') }],
   reviews: [{ documentId: '00000000-0000-4000-8000-0000000d0002', title: 'Sổ hồng Bảo Lộc' }],
+  tasks: [{ taskId: '00000000-0000-4000-8000-0000000e0001', title: 'Gọi người thuê Phòng 5', dueOn: isoDate('2026-10-06'), propertyName: 'Dãy trọ Dĩ An' }],
 };
 
 const PAYMENT: TodayPayment = { intl: { locale: 'vi', messages: {} }, openInvoices: new Map(), account: null };
@@ -61,7 +62,9 @@ describe('TodayList', () => {
     expect(itemNamed('Căn hộ Thủ Đức').getByRole('link', { name: 'Gia hạn' }).getAttribute('href')).toBe(`/properties/${SNAPSHOT.leases[0]?.propertyId}/rental/leases/${SNAPSHOT.leases[0]?.leaseId}?renew=1`);
     expect(itemNamed('Bảo hiểm cháy nổ Nhà phố Q7').getByRole('link', { name: 'Xem tài liệu' }).getAttribute('href')).toBe('/documents/00000000-0000-4000-8000-0000000d0001');
     expect(itemNamed('Sổ hồng Bảo Lộc').getByRole('link', { name: 'Xem lại' }).getAttribute('href')).toBe('/documents/00000000-0000-4000-8000-0000000d0002/review');
-    expect(screen.getAllByRole('listitem')).toHaveLength(4);
+    expect(itemNamed('Gọi người thuê Phòng 5').getByRole('link', { name: 'Xem việc cần làm' }).getAttribute('href')).toBe('/assistant#tasks');
+    expect(itemNamed('Gọi người thuê Phòng 5').getByText('Hạn 06/10/2026')).toBeTruthy();
+    expect(screen.getAllByRole('listitem')).toHaveLength(5);
   });
 
   it('names each action’s item, so four buttons and links read apart', () => {

@@ -112,6 +112,7 @@ Keys added by the generator:
 | Vendor party | `seed:party:vendor-<household>:<vendor>` | `seed:party:vendor-demo:tho-sua` |
 | Expense | `seed:expense:<household>:<property>:<yyyy-mm>:<n>`, `<n>` counting the property's expenses in that month | `seed:expense:lane-1:q7:2026-08:1` |
 | Valuation | `seed:valuation:<household>:<property>` | `seed:valuation:lane-3:bao-loc` |
+| Task | `seed:task:<household>:<slug>` | `seed:task:lane-3:q7-insurance-call` (one done task per household) |
 | Deposit entry | `seed:deposit-entry:<household>:<property>:<n>:<kind>` | `seed:deposit-entry:lane-7:di-an:7:received` |
 | Receiving bank account | `seed:bank-account:<household>` | `seed:bank-account:lane-2` |
 

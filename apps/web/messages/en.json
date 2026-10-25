@@ -136,7 +136,10 @@
     "errorBody": "Check the network connection and try again. Recorded payments are safe.",
     "retry": "Try again",
     "briefNone": "Trợ lý has not written today’s note yet.",
-    "briefOpen": "Open the inbox"
+    "briefOpen": "Open the inbox",
+    "taskToday": "Due today",
+    "taskLate": "Due {date}",
+    "openTasks": "Open tasks"
   },
   "components": {
     "loading": "Loading",
@@ -1098,7 +1101,25 @@
       "topics": "Topics followed",
       "topicsIntro": "The assistant looks for news on these topics. They come from the family's properties and update when the properties change.",
       "noTopics": "No topics yet. Add a property so the assistant knows where to look."
-    }
+    },
+    "proposalLabel": "Proposal",
+    "proposalDue": "Due {date}",
+    "approve": "Approve",
+    "approveLabel": "Approve: {title}",
+    "skip": "Dismiss",
+    "skipLabel": "Dismiss proposal: {title}",
+    "skipped": "Proposal dismissed.",
+    "approved": "Approved",
+    "notApplicable": "This proposal no longer applies.",
+    "approveFailed": "Could not do that yet. Try again in a few minutes.",
+    "tasks": "Tasks",
+    "tasksEmpty": "No tasks yet. When you approve a proposal from the assistant, its task shows here.",
+    "taskDone": "Done",
+    "taskDoneLabel": "Done: {title}",
+    "taskDoneToast": "Task done.",
+    "taskDue": "Due {date}",
+    "taskNoDue": "No due date",
+    "taskRestoreFailed": "Could not bring the task back. Reload the page and try again."
   },
   "settings": {
     "display": "Display",

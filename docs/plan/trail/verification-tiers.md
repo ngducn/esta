@@ -70,7 +70,8 @@ Phase 1 closes with P1-03, which is rigorous because it is a phase exit. Phase 2
 | P5-03 | Morning check and the Trợ lý inbox | Rigorous | First assistant prose with money figures |
 | P5-04 | Morning brief in the inbox and on Home | Standard | Prose guarded by P5-03 |
 | P5-05 | Market and legal news under Thị trường | Standard | Read-only research |
-| P5-06 | Approve or dismiss proposals and execute approvals | Rigorous | The assistant acts for the family |
+| P5-06a | Approve or dismiss an assistant's suggested task | Rigorous | The assistant acts for the family |
+| P5-06b | Confirm a reminder draft, a renewal, a rent change or a data issue | Rigorous | The assistant changes leases and money terms |
 | P5-07 | Ask the assistant questions | Standard | Read-only answers, guarded by P5-03 |
 | P5-08 | Weekly review, caps and diagnostics | Standard | Operator tooling |
 | P5-09 | Email the morning brief | Rigorous | Real email |

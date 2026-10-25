@@ -17,7 +17,7 @@ Locked decisions are in SPEC §3. Do not change them; raise a conflict instead.
 
 Phase 0 makes every command below real. Keep this list accurate as the repo evolves.
 
-`.nvmrc` and `devEngines.runtime` in `package.json` pin Node 24.22.0, and pnpm downloads that Node and runs every script on it, whatever `node` is on PATH (a Node before 24.21.0 loads Next twice under `next dev`, #292); `packageManager` pins pnpm. `ESTA_SLOT=k` (default 0) adds 100·k to every port so stacks run side by side; `pnpm dev`, `pnpm start`, `pnpm clock:set`, `pnpm cron:run`, `pnpm e2e` and every `db:*` command honor it. `PORT` overrides the web port.
+`.nvmrc` and `devEngines.runtime` in `package.json` pin Node 24.22.0, and pnpm downloads that Node and runs every script on it, whatever `node` is on PATH (a Node before 24.21.0 loads Next twice under `next dev`, #292); `packageManager` pins pnpm. `ESTA_SLOT=k` (default 0) adds 100·k to every port so stacks run side by side; `pnpm dev`, `pnpm start`, `pnpm clock:set`, `pnpm cron:run`, `pnpm agent:propose`, `pnpm e2e` and every `db:*` command honor it. `PORT` overrides the web port.
 
 | Command | Does |
 | --- | --- |
@@ -26,6 +26,7 @@ Phase 0 makes every command below real. Keep this list accurate as the repo evol
 | `pnpm dev:lan` | Same, reachable over HTTPS from a phone on the same network (SPEC D13) |
 | `pnpm agent:dev` | Agent worker against local Supabase |
 | `pnpm agent:record` | Run golden agent cases live and refresh replay recordings |
+| `pnpm agent:propose --household <seed key> --type <type> --params <file>` | Store an assistant proposal for a seeded household through the real `create_proposal` tool, from a fixture in `fixtures/proposals/` whose `seed:` keys (with `{household}`) become ids; refuses `ESTA_ENV=production` |
 | `pnpm cron:run` | Call the cron routes locally (invoices, lease status, keep-alive) |
 | `pnpm clock:set <iso>` | Set or advance the test clock to an ISO date-time with a required offset, such as `2026-10-07T09:00:00+07:00` (`pnpm clock:set off` clears it); writes only to a Supabase on 127.0.0.1 or localhost |
 | `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Local Supabase (Docker) for the slot |

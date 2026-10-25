@@ -2619,6 +2619,111 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          agent_item_id: string | null
+          assignee_member_id: string | null
+          created_at: string
+          created_by: string | null
+          due_on: string | null
+          household_id: string
+          id: string
+          lease_id: string | null
+          property_id: string | null
+          source: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agent_item_id?: string | null
+          assignee_member_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_on?: string | null
+          household_id: string
+          id?: string
+          lease_id?: string | null
+          property_id?: string | null
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agent_item_id?: string | null
+          assignee_member_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_on?: string | null
+          household_id?: string
+          id?: string
+          lease_id?: string | null
+          property_id?: string | null
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_household_id_agent_item_id_fkey"
+            columns: ["household_id", "agent_item_id"]
+            isOneToOne: false
+            referencedRelation: "agent_items"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "tasks_household_id_assignee_member_id_fkey"
+            columns: ["household_id", "assignee_member_id"]
+            isOneToOne: false
+            referencedRelation: "household_members"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "tasks_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_deposits"
+            referencedColumns: ["household_id", "lease_id"]
+          },
+          {
+            foreignKeyName: "tasks_household_id_lease_id_fkey"
+            columns: ["household_id", "lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "tasks_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "tasks_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "tasks_household_id_property_id_fkey"
+            columns: ["household_id", "property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       tax_rules: {
         Row: {
           effective_from: string
@@ -3179,6 +3284,10 @@ export type Database = {
           p_note?: string
           p_on_date: string
         }
+        Returns: string
+      }
+      approve_proposal: {
+        Args: { p_item_id: string; p_params_valid: boolean }
         Returns: string
       }
       change_batch_history: {

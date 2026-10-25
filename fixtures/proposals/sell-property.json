@@ -1,0 +1,4 @@
+{
+  "params": { "property_id": "seed:property:{household}:bao-loc" },
+  "rationale": "Giá đất ở {{f9.property_label}} đang tăng."
+}

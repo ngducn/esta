@@ -1,4 +1,5 @@
-import { getTranslations } from 'next-intl/server';
+import { formatDate } from '@esta/core/format';
+import { getLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
@@ -37,14 +38,15 @@ async function Diagnostics({ diagnostics }: { diagnostics: NoteDiagnostics }) {
 }
 
 export async function AssistantNote({ note, time, actions }: { note: InboxNote; time: string; actions?: ReactNode }) {
-  const [t, review] = await Promise.all([getTranslations('assistant'), getTranslations('extraction')]);
+  const [t, review, locale] = await Promise.all([getTranslations('assistant'), getTranslations('extraction'), getLocale()]);
   const unread = note.status === 'new';
   return (
-    <article data-testid="inbox-item" data-status={note.status} data-kind={note.isBrief ? 'brief' : undefined} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <article data-testid="inbox-item" data-status={note.status} data-kind={note.isBrief ? 'brief' : note.proposal === null ? undefined : 'proposal'} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <AssistantMonogram />
         <span className="text-small font-medium text-ink">{t('author')}</span>
         {note.isBrief ? <span className="text-small text-ink-2">{t('briefLabel')}</span> : null}
+        {note.proposal === null ? null : <span className="text-small text-ink-2">{t('proposalLabel')}</span>}
         <time dateTime={note.createdAt} className="text-small text-ink-muted figures">
           {time}
         </time>
@@ -62,6 +64,11 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
       </header>
       <h3 className={cn('text-lead break-words text-ink', unread ? 'font-semibold' : 'font-medium')}>{note.title}</h3>
       {note.bodyMd === null ? null : <SafeMarkdown className="max-w-prose">{note.bodyMd}</SafeMarkdown>}
+      {note.proposal?.dueOn == null ? null : (
+        <p data-testid="proposal-due" className="text-body text-ink-2 figures">
+          {t('proposalDue', { date: formatDate(note.proposal.dueOn, locale) })}
+        </p>
+      )}
       {note.retry === null ? null : <p className="text-body break-words text-ink-2">{t(note.retry === 'self' ? 'retrySelf' : 'retryAsk')}</p>}
       {note.reviewHref === null ? null : (
         <Link href={note.reviewHref} data-testid="item-review" className="w-fit text-body font-medium text-ink underline underline-offset-4 hover:decoration-2">

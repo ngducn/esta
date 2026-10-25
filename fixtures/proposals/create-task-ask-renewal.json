@@ -1,0 +1,8 @@
+{
+  "params": {
+    "title": "Hỏi {{f2.tenant_name}} có thuê tiếp {{f2.place_label}} không",
+    "due_on": "2026-10-08",
+    "property_id": "seed:property:{household}:thu-duc"
+  },
+  "rationale": "Hợp đồng kết thúc ngày {{f2.end_date_display}}, còn {{f2.days_until_end_display}}, và chưa có hợp đồng gia hạn."
+}
