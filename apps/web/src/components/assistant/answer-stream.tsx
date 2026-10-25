@@ -5,16 +5,15 @@ import { useEffect, useState } from 'react';
 import { isAnswerEvent, type AnswerState } from './answer-state';
 import { AnswerView, type AnswerLabels, type ShownAnswer } from './answer-view';
 
-const loadMarkdown = () => import('@/components/markdown/safe-markdown');
-const SafeMarkdown = dynamic(() => loadMarkdown().then((markdown) => markdown.SafeMarkdown));
+const fetchMarkdownChunk = () => import('@/components/markdown/safe-markdown');
+const SafeMarkdown = dynamic(() => fetchMarkdownChunk().then((markdown) => markdown.SafeMarkdown));
 
 export function AnswerStream({ id, conversationId, initial, labels }: { id: string; conversationId: string; initial: AnswerState; labels: AnswerLabels }) {
   const [shown, setShown] = useState<ShownAnswer>(initial);
 
   useEffect(() => {
     if (initial.status !== 'streaming') return;
-    // Fetch the Markdown chunk while the model is still thinking, so the first sentence does not wait for it.
-    void loadMarkdown();
+    void fetchMarkdownChunk();
     const source = new EventSource(`/api/answers/${id}?conversation=${conversationId}`);
     source.onmessage = ({ data }: MessageEvent<string>) => {
       const next: unknown = JSON.parse(data);

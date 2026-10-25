@@ -5,10 +5,6 @@ export type AnswerLabels = Readonly<Record<'streaming' | 'error' | 'stalled', st
 
 export type ShownAnswer = AnswerState | { readonly content: string; readonly refs: readonly string[]; readonly status: 'stalled' };
 
-/**
- * An answer's box: its text, rendered by `children`, and the line for one that is waiting, failed or stalled. The page renders
- * a settled answer here on the server, and `AnswerStream` renders a running one, so only a running answer ships Markdown JS.
- */
 export function AnswerView({ shown, labels, children }: { shown: ShownAnswer; labels: AnswerLabels; children: ReactNode }) {
   const line = shown.status === 'done' || (shown.status === 'streaming' && shown.content !== '') ? null : labels[shown.status];
   return (

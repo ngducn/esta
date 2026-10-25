@@ -1,4 +1,3 @@
-// A type guard, not zod: answer-stream.tsx checks each event in the browser, where even zod/mini adds 25 KB gzipped to the answer page.
 const ANSWER_STATUSES = ['streaming', 'done', 'error'] as const;
 const STOPPED = ['timeout', 'gone'] as const;
 
