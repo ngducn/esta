@@ -31,7 +31,7 @@ describe('SafeMarkdown', () => {
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
-  it.each(['property', 'invoice', 'lease', 'unit', 'document', 'party', 'meter', 'ledger'])('opens an esta://%s link inside the app', (type) => {
+  it.each(['property', 'invoice', 'lease', 'unit', 'document', 'party', 'meter', 'ledger', 'legal'])('opens an esta://%s link inside the app', (type) => {
     const link = renderMarkdown(`[Phòng 5](esta://${type}/7c9e6679-7425-40de-944b-e07fc1f90ae7)`).querySelector('a');
     expect(link?.getAttribute('href')).toBe(`/open/${type}/7c9e6679-7425-40de-944b-e07fc1f90ae7`);
     expect(link?.getAttribute('target')).toBeNull();

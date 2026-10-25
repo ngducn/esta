@@ -1,9 +1,10 @@
 /* The figures each AGENT.md §7.4 answer must state on the full seed at 2026-10-07, read straight from the tables, so a
-   tool that reads or counts wrong fails the golden. Tax revenue follows FIN-3: each period's year share and accrued part
+   tool that reads or counts wrong fails the golden. Like the screens, it counts live properties only and no draft lease,
+   and an empty unit is empty from the day after its last lease ended, as its `Trống từ` pill says. Tax revenue follows FIN-3: each period's year share and accrued part
    split by days with the largest remainder, ties to the earlier part, then the owners' shares (whole or halves on this
    seed, ordered by id). */
 with demo as (select id from public.households where name = 'Gia đình Demo'),
-prop as (select id, code, nickname from public.properties where household_id = (select id from demo)),
+prop as (select id, code, nickname from public.properties where household_id = (select id from demo) and deleted_at is null),
 overdue as (
   select u.label, '2026-10-07'::date - b.due_date as days, b.outstanding_vnd
   from public.invoice_balances b join public.leases l on l.id = b.lease_id join public.units u on u.id = l.unit_id
@@ -64,12 +65,12 @@ select question, figure, value from (
   union all select 'q3', 'leases ending within 60 days', (select string_agg(nickname, ', ' order by end_date) from ending)
   union all select 'q3', 'their end dates', (select string_agg(end_date::text, ', ' order by end_date) from ending)
   union all select 'q3', 'their days left', (select string_agg(days::text, ', ' order by end_date) from ending)
-  union all select 'q4', 'deposits held', (select sum(case kind when 'received' then amount_vnd else -amount_vnd end)::text from public.deposit_entries where household_id = (select id from demo))
+  union all select 'q4', 'deposits held', (select sum(case d.kind when 'received' then d.amount_vnd else -d.amount_vnd end)::text from public.deposit_entries d join public.leases l on l.id = d.lease_id join prop p on p.id = l.property_id where l.status <> 'draft')
   union all select 'q5', 'Nguyễn Thị Demo accrued 2026', (select accrued::text from me)
   union all select 'q5', 'Nguyễn Thị Demo projected 2026', (select projected::text from me)
   union all select 'q5', 'remaining to the 500 million threshold', (select (500000000 - projected - coalesce((select other_business_revenue_vnd from public.owner_tax_inputs i join public.parties t on t.id = i.party_id where i.household_id = (select id from demo) and t.full_name = 'Nguyễn Thị Demo' and i.year = 2026), 0))::text from me)
   union all select 'q6', 'bien-hoa days empty', (select ('2026-10-07'::date - max(l.end_date))::text from public.leases l where l.property_id = (select id from prop where code = 'BIENHOA'))
-  union all select 'q6', 'bien-hoa empty since', (select max(l.end_date)::text from public.leases l where l.property_id = (select id from prop where code = 'BIENHOA'))
+  union all select 'q6', 'bien-hoa empty since', (select (max(coalesce(l.terminated_on, l.end_date)) + 1)::text from public.leases l where l.property_id = (select id from prop where code = 'BIENHOA') and l.status in ('ended', 'terminated'))
   union all select 'q7', 'q7 repairs paid in 2026', (select sum(amount_vnd)::text from public.expenses where property_id = (select id from prop where code = 'Q7') and category = 'repair' and deleted_at is null and paid_on between '2026-01-01' and '2026-12-31')
   union all select 'q8', 'bao-loc mortgage bank', (select t.full_name from public.certificates c join public.parties t on t.id = (c.mortgage ->> 'bank_party_id')::uuid where c.property_id = (select id from prop where code = 'BAOLOC') and c.status = 'mortgaged')
   union all select 'q8', 'bao-loc mortgage amount', (select c.mortgage ->> 'amount_vnd' from public.certificates c where c.property_id = (select id from prop where code = 'BAOLOC') and c.status = 'mortgaged')

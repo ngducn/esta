@@ -37,5 +37,5 @@
       }
     }
   ],
-  "reply": "{{f2.property_label}} đã để trống {{f9.empty_days_display}} ngày, từ ngày {{f9.empty_since_date_display}}.\n\nXem [hồ sơ {{f2.property_label}}](f8)."
+  "reply": "{{f2.property_label}} đã để trống {{f9.empty_days_display}} ngày, từ ngày {{f8.empty_since_date_display}}.\n\nXem [hồ sơ {{f2.property_label}}](f8)."
 }

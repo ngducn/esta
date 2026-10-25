@@ -1,8 +1,8 @@
-import { addDays } from '@esta/core/date/calendar';
 import { formatBps, formatCount, formatDate, formatVnd } from '@esta/core/format';
 import { rentInEffect } from '@esta/core/lease';
 import { estaUri } from '@esta/core/links';
 import { vnd } from '@esta/core/money';
+import { propertyStatus } from '@esta/core/properties';
 import { vacantDays } from '@esta/core/reports';
 import { grossYieldBp, latestValuation } from '@esta/core/valuations';
 import { z } from 'zod';
@@ -39,7 +39,7 @@ export function getPropertyTool({ reads, locale, asOf, cite, properties }: ReadT
           mortgage_bank_name: mortgage === null ? null : (legal.partyNames[mortgage.bank_party_id] ?? null),
           mortgage_amount_display: mortgage === null ? null : formatVnd(mortgage.amount_vnd, locale),
           mortgage_registered_date_display: mortgage?.registered_on === undefined ? null : formatDate(mortgage.registered_on, locale),
-          link,
+          link: estaUri({ type: 'legal', id: property.id }),
         });
       }),
       owners: legal.owners.map((owner) =>
@@ -49,12 +49,15 @@ export function getPropertyTool({ reads, locale, asOf, cite, properties }: ReadT
   });
 }
 
-/** `property_metrics` (AGENT.md §4): a rental property's rent in effect, gross yield on its latest valuation, and each unit's days empty. */
+/**
+ * `property_metrics` (AGENT.md §4): a rental property's rent in effect, gross yield on its latest valuation, each
+ * unit's days empty, and the date of its `Trống từ` pill, read from the same row the property page reads.
+ */
 export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: ReadToolContext) {
   return sameAnswer(async (raw: Record<string, unknown>) => {
     const input = parseToolInput(metricsInput, raw, 'property_metrics takes {"property": a handle from list_properties, "year"}');
     const property = propertyByHandle(properties, input.property);
-    const report = await reads.report(input.year);
+    const [report, row] = await Promise.all([reads.report(input.year), reads.property(property.id)]);
     const monthly = rentInEffect(
       report.leases.filter((lease) => lease.property_id === property.id),
       report.schedule,
@@ -68,6 +71,8 @@ export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: R
       .filter((unit) => unit.propertyId === property.id)
       .map((unit) => ({ unit, empty: vacantDays(unit, report.tenancies.filter((lease) => lease.unitId === unit.id), asOf) }));
     const leased = units.filter(({ empty }) => empty === 'leased').length;
+    const pills = row === null ? [] : propertyStatus({ ...row, leasedUnitCount: leased, collection: null }, asOf);
+    const vacant = pills.find((pill) => pill.kind === 'vacant');
     return {
       property: cite({
         property_label: property.property_label,
@@ -78,6 +83,7 @@ export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: R
         valuation_date_display: valuation === undefined ? null : formatDate(valuation.asOf, locale),
         unit_count_display: formatCount(units.length, locale),
         leased_unit_count_display: formatCount(leased, locale),
+        empty_since_date_display: vacant === undefined ? null : formatDate(vacant.since, locale),
         link: estaUri({ type: 'property', id: property.id }),
       }),
       units: units.map(({ unit, empty }) =>
@@ -85,7 +91,6 @@ export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: R
           unit_label: unit.wholeUnit ? property.property_label : unit.label,
           leased: empty === 'leased',
           empty_days_display: typeof empty === 'number' ? formatCount(empty, locale) : null,
-          empty_since_date_display: typeof empty === 'number' ? formatDate(addDays(asOf, -empty), locale) : null,
           link: estaUri({ type: 'unit', id: unit.id }),
         }),
       ),

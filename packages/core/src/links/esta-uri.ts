@@ -1,6 +1,6 @@
 import type { Result } from '../result';
 
-/** The record each `esta://{type}/{id}` link names, by the table it lives in; a ledger link names its property. */
+/** The record each `esta://{type}/{id}` link names, by the table it lives in; a ledger or legal link names its property. */
 export const ESTA_LINK_TABLES = {
   property: 'properties',
   unit: 'units',
@@ -10,6 +10,7 @@ export const ESTA_LINK_TABLES = {
   party: 'parties',
   meter: 'meters',
   ledger: 'properties',
+  legal: 'properties',
 } as const;
 
 export type EstaLinkType = keyof typeof ESTA_LINK_TABLES;
