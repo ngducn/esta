@@ -1,42 +1,29 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberCall, memberRest } from './helpers/auth-api';
-import { closeApprovedTasks, seedTaskProposal } from './helpers/proposals';
+import { proposalCard, proposalLane, seedTaskProposal } from './helpers/proposals';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, servicePatch, seriousAxeViolations, toast } from './helpers/wizard';
-
-test.describe.configure({ mode: 'serial' });
 
 const LANE = 7;
 const ME = `me.lane${LANE}@demo.esta.test`;
 const VIEWER = `viewer.lane${LANE}@demo.esta.test`;
 
-const card = (page: Page, title: string) => page.getByTestId('inbox-item').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 const tasksOf = (page: Page, itemId: string) => serviceGet<{ id: string }[]>(page, `tasks?agent_item_id=eq.${itemId}&select=id`);
 const statusOf = async (page: Page, itemId: string) => (await serviceGet<{ status: string }[]>(page, `agent_items?id=eq.${itemId}&select=status`))[0]?.status;
 
-test.beforeEach(async ({ request }) => {
-  await setClock(request, '2026-10-07T07:05:00+07:00');
-});
-
-test.afterAll(async ({ browser, request }) => {
-  const page = await browser.newPage();
-  await closeApprovedTasks(page, LANE);
-  await page.close();
-  await setClock(request, null);
-});
+proposalLane(LANE);
 
 test('Bỏ qua sets a proposal aside with undo and writes nothing but the item', async ({ page }) => {
   const item = await seedTaskProposal(page, LANE, { title: 'Kiểm tra số đo điện Demo', dueOn: '2026-10-07' });
   await open(page, ME, 'light', PHONE);
   await page.goto('/assistant');
-  await card(page, item.title).getByRole('button', { name: `Bỏ qua đề xuất: ${item.title}` }).click();
-  await expect(card(page, item.title)).toHaveCount(0);
+  await proposalCard(page, item.title).getByRole('button', { name: `Bỏ qua đề xuất: ${item.title}` }).click();
+  await expect(proposalCard(page, item.title)).toHaveCount(0);
   await expect(toast(page)).toContainText('Đã bỏ qua đề xuất.');
   await toast(page).getByRole('button', { name: 'Hoàn tác' }).click();
-  await expect(card(page, item.title).getByTestId('proposal-approve'), 'Hoàn tác brings the buttons back').toBeVisible();
-  await card(page, item.title).getByTestId('proposal-skip').click();
+  await expect(proposalCard(page, item.title).getByTestId('proposal-approve'), 'Hoàn tác brings the buttons back').toBeVisible();
+  await proposalCard(page, item.title).getByTestId('proposal-skip').click();
   await expect.poll(() => statusOf(page, item.id)).toBe('dismissed');
   expect(await tasksOf(page, item.id)).toEqual([]);
   const audit = await serviceGet<{ table_name: string; actor_kind: string }[]>(page, `audit_log?row_id=eq.${item.id}&action=eq.update&select=table_name,actor_kind`);
@@ -51,14 +38,14 @@ test('two devices approving at once make one task, and a stale tab reads Đã đ
   const item = await seedTaskProposal(page, LANE, { title: 'Gọi thợ sửa mái Demo', dueOn: '2026-10-09' });
   await open(page, ME, 'dark', PHONE);
   await page.goto('/assistant');
-  await expect(card(page, item.title).getByTestId('proposal-approve')).toBeVisible();
+  await expect(proposalCard(page, item.title).getByTestId('proposal-approve')).toBeVisible();
 
   const approve = () => memberRest<string>(page, 'POST', 'rpc/approve_proposal', { p_item_id: item.id, p_params_valid: true });
   expect(await Promise.all([approve(), approve(), approve()])).toEqual(['approved', 'approved', 'approved']);
   expect(await tasksOf(page, item.id)).toHaveLength(1);
 
-  await card(page, item.title).getByRole('button', { name: `Đồng ý: ${item.title}` }).click();
-  await expect(card(page, item.title).getByTestId('proposal-decision')).toHaveText('Đã đồng ý');
+  await proposalCard(page, item.title).getByRole('button', { name: `Đồng ý: ${item.title}` }).click();
+  await expect(proposalCard(page, item.title).getByTestId('proposal-decision')).toHaveText('Đã đồng ý');
   expect(await tasksOf(page, item.id), 'the stale tab added nothing').toHaveLength(1);
   const [task] = await tasksOf(page, item.id);
   const actors = await serviceGet<{ table_name: string; actor_kind: string; actor_id: string }[]>(
@@ -77,12 +64,12 @@ test('params the registry no longer reads make the proposal fail and create no t
   await servicePatch(page, `agent_items?id=eq.${item.id}`, { proposal: { type: 'create_task', params: { title: item.title, due_on: 'tuần sau' } } });
   await open(page, ME, 'light', DESKTOP);
   await page.goto('/assistant');
-  await card(page, item.title).getByRole('button', { name: `Đồng ý: ${item.title}` }).click();
-  await expect(card(page, item.title).getByTestId('proposal-decision')).toHaveText('Đề xuất này không còn áp dụng.');
+  await proposalCard(page, item.title).getByRole('button', { name: `Đồng ý: ${item.title}` }).click();
+  await expect(proposalCard(page, item.title).getByTestId('proposal-decision')).toHaveText('Đề xuất này không còn áp dụng.');
   expect(await statusOf(page, item.id)).toBe('failed');
   expect(await tasksOf(page, item.id)).toEqual([]);
   await page.reload();
-  await expect(card(page, item.title).getByTestId('proposal-decision'), 'the card still says so after a reload').toHaveAttribute('data-decision', 'failed');
+  await expect(proposalCard(page, item.title).getByTestId('proposal-decision'), 'the card still says so after a reload').toHaveAttribute('data-decision', 'failed');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -94,8 +81,8 @@ test('a viewer reads a proposal without buttons and cannot approve it with a cra
   await page.context().clearCookies();
   await open(page, VIEWER, 'light', PHONE);
   await page.goto('/assistant');
-  await expect(card(page, item.title)).toBeVisible();
-  await expect(card(page, item.title).getByRole('button')).toHaveCount(0);
+  await expect(proposalCard(page, item.title)).toBeVisible();
+  await expect(proposalCard(page, item.title).getByRole('button')).toHaveCount(0);
   const crafted = await memberCall(page, 'POST', 'rpc/approve_proposal', { p_item_id: item.id, p_params_valid: true });
   expect(crafted.ok()).toBe(false);
   expect(await statusOf(page, item.id)).toBe('new');
