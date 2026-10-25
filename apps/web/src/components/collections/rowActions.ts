@@ -1,5 +1,5 @@
 import type { CollectionItem } from '@esta/core/collections';
-import type { CollectionRow } from '@/server/collections/load';
+import type { CollectionRow } from '@esta/ops';
 
 type ActionBase = {
   readonly id: string;

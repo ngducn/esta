@@ -12,7 +12,8 @@ import { StatusMark, StatusShape, type MarkStatus } from '@/components/status-ma
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import type { CollectionRow, PaymentInvoice } from '@/server/collections/load';
+import type { CollectionRow } from '@esta/ops';
+import type { PaymentInvoice } from '@/server/collections/load';
 import type { InvoiceQrView } from '@/server/invoices/qr';
 import type { ReminderLabels, ReminderTarget } from '@/server/reminders/board';
 import { ReminderAction } from './ReminderAction';

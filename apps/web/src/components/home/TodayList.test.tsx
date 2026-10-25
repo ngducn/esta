@@ -3,7 +3,7 @@ import { vnd } from '@esta/core/money';
 import { todayItems } from '@esta/core/today';
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import type { CollectionRow } from '@/server/collections/load';
+import type { CollectionRow } from '@esta/ops';
 import type { HomeSnapshot } from '@/server/home/load';
 import { renderInLocale } from '@/test/render';
 import { TodayList, type TodayPayment } from './TodayList';

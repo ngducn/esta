@@ -8,7 +8,7 @@ import { GROUP_MARKS } from '@/components/collections/CollectionsBoard';
 import { StatusShape } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
-import type { CollectionRow } from '@/server/collections/load';
+import type { CollectionRow } from '@esta/ops';
 
 /**
  * This month's collection: `Đã thu X / Y` in the compact form a summary uses, a thin rule for the share collected, and
