@@ -40,7 +40,6 @@ const pingResult = z.object({ reply: z.string() });
 const watchResult = z.object({ notes: z.array(z.object({ added: z.boolean() })) });
 const jobStatus = z.enum(jobStatuses);
 
-/** The operator's connection check and watch run. RLS returns no job to anyone else, and the page asks only for operators (PLT-1). */
 export async function getConnectionCheck(householdId: string): Promise<{ latest: PingCheck | null; watch: WatchCheck | null }> {
   const supabase = await createSessionClient();
   const latestOf = (kind: 'ping' | 'portfolio_watch') =>

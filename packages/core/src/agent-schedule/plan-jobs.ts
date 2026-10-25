@@ -12,12 +12,10 @@ export type ScheduledJob = { readonly kind: string; readonly at: string; readonl
 
 export type PlannedJob = { readonly kind: string; readonly householdId: string; readonly idempotencyKey: string; readonly runAfter: Instant };
 
-/** The key of one household's job for the period holding `today`: the business date, or the ISO week for a weekly job. */
 export function scheduleKey(job: ScheduledJob, householdId: string, today: IsoDate): string {
   return `${job.kind}:${householdId}:${job.weekday === undefined ? today : isoWeek(today)}`;
 }
 
-/** The instant the business timezone's wall clock reads `time` on `date`. */
 function zonedInstant(date: IsoDate, time: string, timezone: string): Instant {
   const guess = Date.parse(`${date}T${time}:00Z`);
   const asIso = new Date(guess).toISOString() as Instant;

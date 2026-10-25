@@ -75,7 +75,6 @@ const pings = async (page: Page, status: 'done' | 'failed') => {
   return ((await jobs.json()) as unknown[]).length;
 };
 
-/** Runs the check and waits until one more of the operator's own ping jobs ends with `status`. */
 async function runCheck(page: Page, status: 'done' | 'failed' = 'done') {
   const before = await pings(page, status);
   await page.getByRole('button', { name: /^(Chạy kiểm tra|Run check)$/ }).click();

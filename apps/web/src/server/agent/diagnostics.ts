@@ -26,11 +26,9 @@ export type DiagnosticRun = {
 export type HeldNote = { readonly id: string; readonly kind: string | null; readonly createdAt: Instant };
 
 export type Diagnostics = {
-  /** The newest worker's credential and mode as of the clock, from `public.worker_modes`, which answers only operators. */
   readonly worker: { readonly authMode: string; readonly agentMode: string } | null;
   readonly runs: readonly DiagnosticRun[];
-  /** The notes the number guard held back in the last 7 days (AGENT.md §6.3). */
-  readonly held: readonly HeldNote[];
+  readonly guardHeld: readonly HeldNote[];
   readonly usage: readonly KindUsage[];
 };
 
@@ -39,7 +37,6 @@ const jobKind = z.object({ kind: z.string() });
 const toolCalls = z.record(z.string(), z.number().int().nonnegative()).catch({});
 const tokens = z.object({ usage: z.object({ input_tokens: z.number().catch(0), output_tokens: z.number().catch(0) }) }).catch({ usage: { input_tokens: 0, output_tokens: 0 } });
 
-/** Operator diagnostics for one household. RLS returns no run or job to anyone else, and the page asks only for operators. */
 export async function loadDiagnostics(householdId: string, now: Instant): Promise<Diagnostics> {
   const supabase = await createSessionClient();
   const weekAgo = new Date(Date.parse(now) - 7 * DAY_MS).toISOString();
@@ -72,7 +69,7 @@ export async function loadDiagnostics(householdId: string, now: Instant): Promis
   return {
     worker: worker === undefined ? null : { authMode: worker.auth_mode, agentMode: worker.agent_mode },
     runs,
-    held: (held.data ?? []).map((row) => ({ id: row.id, kind: jobKind.safeParse(row.agent_jobs).data?.kind ?? null, createdAt: parseInstant(row.created_at) })),
+    guardHeld: (held.data ?? []).map((row) => ({ id: row.id, kind: jobKind.safeParse(row.agent_jobs).data?.kind ?? null, createdAt: parseInstant(row.created_at) })),
     usage: usageByKind(
       (week.data ?? []).map((row) => {
         const { usage } = tokens.parse(row.usage);

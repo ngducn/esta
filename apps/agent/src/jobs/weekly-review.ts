@@ -2,12 +2,11 @@ import type { Clock } from '@esta/core';
 import { MAX_WEEKLY_PROPOSALS, weeklyNoteSchema } from '@esta/core/agent-schemas';
 import { isoWeek } from '@esta/core/date/calendar';
 import type { IsoDate } from '@esta/core/date';
-import type { FilledNote } from '@esta/core/guard';
 import type { Locale } from '@esta/core/format';
 import { weeklyReviewPrompt, type ReviewCaps } from '../prompts/weekly-review';
 import type { AgentDb } from '../supabase';
 import { askReads, type AskReads } from '../tools/ask-reads';
-import { guardedWriter, type GuardBinding } from '../tools/create-item';
+import { guardedWriter, type GuardBinding, type WrittenNote } from '../tools/create-item';
 import { proposalWriter } from '../tools/create-proposal';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
@@ -18,7 +17,6 @@ import { resolveLinks } from './askStream';
 import type { JobContext, PreparedJob } from './registry';
 import { fetchedPage } from './research-scan';
 
-/** [app rule] A smaller web budget than the morning scan's, since the review mostly reads the household's own figures. */
 const CAPS: ReviewCaps = { WebSearch: 6, WebFetch: 4 };
 
 const UNRESOLVED_LINK = /\]\((f\d+)\)/g;
@@ -34,15 +32,10 @@ export type WeeklyRequestInput = {
   clock(): Promise<Clock>;
 };
 
-/** What the job result keeps of the note for audit: the model's templates and the values that filled them (AGENT.md §6.3). */
-export type WrittenReview = { readonly dedupe_key: string; readonly title: string; readonly body_md: string; readonly cited: Array<FilledNote['cited'][number]>; readonly links: string[]; readonly added: boolean };
+type WrittenReview = WrittenNote & { readonly links: string[] };
 
 const rejected = (lines: readonly string[]) => new ToolRejection(`${lines.join('\n')}\nFix these and call create_item again.`);
 
-/**
- * `create_item` for weekly_review: one note a week, under the ISO week's key, so a retry in the same week adds nothing.
- * The body's `](fN)` links become the records' own links before the number guard reads it as Markdown with tables.
- */
 function weeklyNoteWriter(binding: GuardBinding & { readonly week: string }) {
   const guard = guardedWriter(binding, 'create_item');
   let saved: WrittenReview | null = null;
@@ -73,13 +66,12 @@ function weeklyNoteWriter(binding: GuardBinding & { readonly week: string }) {
   return { write, saved: () => saved };
 }
 
-/** The weekly_review request, built here for the worker and the golden test alike, so a recording hashes the prompt the worker ships. */
 export function weeklyReviewRequest(input: WeeklyRequestInput): PreparedJob {
   const { db, householdId, locale, asOf, reads } = input;
   const { sheet, cite } = runSheet();
   const fetched = new Set<string>();
   const note = weeklyNoteWriter({ ...input, sheet, week: isoWeek(asOf) });
-  const proposals = proposalWriter({ ...input, sheet, citing: { fetched, most: MAX_WEEKLY_PROPOSALS } });
+  const proposals = proposalWriter({ ...input, sheet, citing: { fetched, maxProposals: MAX_WEEKLY_PROPOSALS } });
   return {
     prompt: weeklyReviewPrompt({ locale, today: asOf, timezone: input.timezone, caps: CAPS, proposals: MAX_WEEKLY_PROPOSALS }),
     tools: new Map([

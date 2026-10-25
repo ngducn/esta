@@ -12,13 +12,11 @@ import { loadDiagnostics, type DiagnosticRun } from '@/server/agent/diagnostics'
 import { getClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 
-/** The tab names the page only for an operator; anyone else reads the not-found page's title. */
 export async function generateMetadata() {
   const [member, t] = await Promise.all([requireMember(), getTranslations('assistant.diagnostics')]);
   return { title: t(member.isOperator ? 'title' : 'notFoundTitle') };
 }
 
-/** Operator-only: anyone else gets the not-found page, so the route says nothing of what it holds (PLT-1). */
 export default async function DiagnosticsPage() {
   const member = await requireMember();
   if (!member.isOperator) notFound();
@@ -102,11 +100,11 @@ export default async function DiagnosticsPage() {
         {diagnostics.usage.length === 0 ? <p className="text-ink-muted">{t('noUsage')}</p> : <ReportTable table={usage} caption={t('usage')} strong="cost" />}
       </OperatorCard>
       <OperatorCard id="diagnostics-held" icon={ShieldAlert} title={t('held')}>
-        {diagnostics.held.length === 0 ? (
+        {diagnostics.guardHeld.length === 0 ? (
           <p className="text-ink-muted">{t('noHeld')}</p>
         ) : (
           <ul className="flex flex-col gap-1 text-body">
-            {diagnostics.held.map((note) => (
+            {diagnostics.guardHeld.map((note) => (
               <li key={note.id} data-testid="diagnostics-held-note" className="figures">
                 {t('heldNote', { time: operatorTime(note.createdAt), kind: note.kind ?? assistant('unknown') })}
               </li>

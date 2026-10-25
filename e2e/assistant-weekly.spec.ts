@@ -4,7 +4,6 @@ import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/age
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, serviceUpsert, seriousAxeViolations, shot, vnd } from './helpers/wizard';
 
-// The scheduler queues on the slot's one clock, so the spec runs in the `clock` project.
 test.describe.configure({ mode: 'serial' });
 
 const DEMO = seedId('seed:household:demo');
@@ -19,11 +18,6 @@ test.afterAll(async ({ request }) => {
   await setClock(request, null);
 });
 
-/**
- * Only the full seed's own household has a weekly recording for Sunday 2026-10-11, and no household has one for that
- * day's daily jobs. Every other job the scheduler would queue that morning is queued as cancelled first, so the
- * worker runs the one weekly review and leaves every lane's inbox as the other specs expect it.
- */
 async function onlyTheSeedsWeeklyReview(page: Page) {
   const households = await serviceGet<{ id: string }[]>(page, 'households?select=id');
   const others = [
@@ -33,7 +27,6 @@ async function onlyTheSeedsWeeklyReview(page: Page) {
   await serviceUpsert(page, 'agent_jobs?on_conflict=idempotency_key', others.map((job) => ({ ...job, status: 'cancelled', run_after: `${SUNDAY}T00:00:00Z` })));
 }
 
-/** The Vành đai 3 item the 06:00 research scan of 2026-10-07 stores, which the weekly rent change cites. */
 async function storedRingRoadItem(page: Page) {
   await serviceUpsert(page, 'research_items?on_conflict=household_id,url_normalized', {
     household_id: DEMO,

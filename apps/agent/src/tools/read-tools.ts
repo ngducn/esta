@@ -8,7 +8,6 @@ import { getPropertyTool, propertyMetricsTool } from './property-facts';
 import { estaTool, type EstaTool } from './server';
 import { taxPositionTool } from './tax-position';
 
-/** The read tools of ask and weekly_review (AGENT.md §4), each bound to the household and citing into the run's sheet. */
 export function readTools(db: AgentDb, householdId: string, { reads, locale, asOf, cite }: Omit<ReadToolContext, 'properties'>): Array<readonly [string, EstaTool]> {
   const properties = listPropertiesTool(db, householdId, cite);
   const context: ReadToolContext = { reads, locale, asOf, cite, properties: properties.records };

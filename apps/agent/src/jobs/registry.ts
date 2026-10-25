@@ -60,7 +60,6 @@ export type JobSpec = {
   readonly maxTurns: number;
   readonly timeoutMs: number;
   readonly modelRole: ModelRole;
-  /** When the scheduler queues the kind for every household (AGENT.md §3). */
   readonly schedule?: Omit<ScheduledJob, 'kind'>;
   readonly workDir?: 'conversation';
   /** Daily kinds whose same-day job must finish first; the runner reschedules the job while one is queued or running (AGENT.md §3). */

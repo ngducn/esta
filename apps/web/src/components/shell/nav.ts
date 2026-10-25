@@ -17,7 +17,6 @@ export const primarySections = sections.filter((section) => section.placement ==
 
 export const accountSections = sections.filter((section) => section.placement === 'account');
 
-/** Only an operator's avatar menu lists these; the pages refuse everyone else on the server. */
 export const operatorSections = sections.filter((section) => section.placement === 'operator');
 
 export function isActive(pathname: string, href: string): boolean {

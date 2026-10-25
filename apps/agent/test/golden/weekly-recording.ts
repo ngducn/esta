@@ -10,7 +10,6 @@ import { clockOn, HOUSEHOLD } from '../full-seed';
 import { replayedReads } from './ask-reads';
 import { WEEKLY_AS_OF, weeklyRecording } from './weekly-fixture';
 
-/** Rewrites the hand-written weekly recording under the hash of today's prompt and tools, keeping its calls and reply. */
 const recording = weeklyRecording();
 const asOf = isoDate(WEEKLY_AS_OF.slice(0, 10));
 const prepared = weeklyReviewRequest({ db: fakeDb({}), householdId: HOUSEHOLD, jobId: 'weekly-recording', locale: 'vi', asOf, timezone: 'Asia/Ho_Chi_Minh', reads: replayedReads({}), clock: clockOn(WEEKLY_AS_OF) });

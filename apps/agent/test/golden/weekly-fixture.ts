@@ -15,7 +15,6 @@ import { recordingReads, type RecordedReads } from './ask-reads';
 export const WEEKLY_READS_FIXTURE = join(import.meta.dirname, 'weekly-reads-full-2026-10-11.json');
 export const WEEKLY_AS_OF = '2026-10-11T08:00:00+07:00';
 
-/** The one weekly_review recording, hand-written for the `full` seed at 2026-10-11 08:00. */
 export function weeklyRecording() {
   const dir = join(DEFAULT_REPLAY_DIR, 'weekly_review');
   const [file, ...more] = readdirSync(dir);
@@ -23,7 +22,6 @@ export function weeklyRecording() {
   return recordingSchema.parse(JSON.parse(readFileSync(join(dir, file), 'utf8')));
 }
 
-/** Writes what the ops reads answer for the weekly recording's read calls on the slot's `full` seed at 2026-10-11. */
 async function main() {
   const root = join(import.meta.dirname, '../../../..');
   const slot = parseSlot(process.env.ESTA_SLOT);

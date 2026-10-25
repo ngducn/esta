@@ -24,7 +24,6 @@ function weeklyTables(): Record<string, Row[]> {
   return tables;
 }
 
-/** A weekly run on `day` that has made the recording's reads, so the handles its writes name exist. */
 async function weeklyRun(tables: Record<string, Row[]>, day = '2026-10-11') {
   const prepared = weeklyReviewRequest({
     db: fakeDb(tables, [], {}, {}, { proposal_refusal: () => null }),

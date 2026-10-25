@@ -5,8 +5,9 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { env } from '@/server/env';
 
-/** An operator tool's time stamp, `07/10/2026 09:00` in the business timezone; operators read it in Vietnamese order. */
-export const operatorTime = (instant: Instant) => `${formatDate(businessDate(instant, env.ESTA_TIMEZONE), 'vi')} ${wallTime(instant, env.ESTA_TIMEZONE)}`;
+const OPERATOR_DATE_LOCALE = 'vi';
+
+export const operatorTime = (instant: Instant) => `${formatDate(businessDate(instant, env.ESTA_TIMEZONE), OPERATOR_DATE_LOCALE)} ${wallTime(instant, env.ESTA_TIMEZONE)}`;
 
 export function CardHeading({ id, icon: Icon, children }: { id: string; icon: LucideIcon; children: ReactNode }) {
   return (
@@ -19,7 +20,6 @@ export function CardHeading({ id, icon: Icon, children }: { id: string; icon: Lu
   );
 }
 
-/** One card of the operator tools: a heading with its icon, then what it shows. */
 export function OperatorCard({ id, icon, title, children }: { id: string; icon: LucideIcon; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={`${id}-heading`} data-testid={id} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">

@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { factHandleSchema, watchNoteSchema } from './portfolio-watch';
 
-/** AGENT.md §5.5: a weekly review proposes at most this many changes. */
 export const MAX_WEEKLY_PROPOSALS = 3;
 
 /**

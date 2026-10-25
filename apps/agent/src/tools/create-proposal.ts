@@ -6,17 +6,12 @@ import { z } from 'zod';
 import { guardedWriter, type NoteBinding } from './create-item';
 import { ToolRejection } from './server';
 
-/**
- * A job that may cite sources (AGENT.md §5.5): each citation is a page WebFetch read in this run (`fetched`, by
- * normalized URL) or one of the household's stored research items. `most` caps the proposals of one run.
- */
-export type Citing = { readonly fetched: ReadonlySet<string>; readonly most: number };
+export type Citing = { readonly fetched: ReadonlySet<string>; readonly maxProposals: number };
 
 export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'> & { readonly citing?: Citing };
 
 const inputSchema = z.object({ type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string(), citations: z.array(z.string()).max(5).optional() });
 
-/** What `agent_items.citations` stores of one source. */
 type Citation = { readonly url: string; readonly title: string | null; readonly source_name: string; readonly published_at: string | null };
 
 const rejected = (lines: readonly string[]) => new ToolRejection(`${lines.join('\n')}\nFix these and call create_proposal again.`);
@@ -45,7 +40,6 @@ const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_RENEWAL_END: 'end_date: must be after the lease ends',
 };
 
-/** Each cited URL as the stored research item names it, or a page this run fetched; one line per URL that is neither. */
 async function resolveCitations({ db, householdId, citing }: ProposalBinding, urls: readonly string[]): Promise<{ readonly found: Citation[]; readonly refused: string[] }> {
   if (urls.length === 0) return { found: [], refused: [] };
   const byKey = new Map(urls.map((url) => [url, normalizeUrl(url)] as const).map(([url, key]) => [key.ok ? key.value : url, { url, key }]));
@@ -67,7 +61,6 @@ async function resolveCitations({ db, householdId, citing }: ProposalBinding, ur
 
 const SUBJECT_PARAMS: Readonly<Record<string, EstaLinkType>> = { property_id: 'property', lease_id: 'lease' };
 
-/** A subject param may name a record by its handle, as `"lease_id": "f12"`, which becomes the id its link holds. */
 function subjectIds(params: Readonly<Record<string, unknown>>, sheet: ProposalBinding['sheet']): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(params).map(([key, value]) => {
@@ -95,7 +88,7 @@ export function proposalWriter(binding: ProposalBinding) {
     const input = inputSchema.safeParse(raw);
     if (!input.success) throw rejected(input.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`));
     const { type, params, rationale, citations = [] } = input.data;
-    if (citing !== undefined && saved.length >= citing.most) throw new ToolRejection(`This run already made ${citing.most} proposals, the most it may make. Do not call create_proposal again.`);
+    if (citing !== undefined && saved.length >= citing.maxProposals) throw new ToolRejection(`This run already made ${citing.maxProposals} proposals, the most it may make. Do not call create_proposal again.`);
     if (!isProposalType(type)) throw rejected([`type: ${JSON.stringify(type)} is not a proposal type; use one of ${Object.keys(PROPOSAL_TYPES).join(', ')}`]);
     if (citing === undefined && citations.length > 0) throw rejected(['citations: this job cites no sources; leave citations out']);
     if (citing !== undefined && type === 'suggest_rent_change' && citations.length === 0) throw rejected(['citations: a rent change cites the market news it rests on, as URLs of pages WebFetch read in this run or research items recent_items returned']);

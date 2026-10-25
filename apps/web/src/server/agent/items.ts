@@ -29,7 +29,6 @@ export type InboxNote = {
   readonly reviewHref: string | null;
   readonly kind: NoteKind;
   readonly proposal: ProposalView | null;
-  /** The sources a proposal rests on (AGENT.md §5.5). */
   readonly citations: readonly NoteCitation[];
   /** For operators only: what the worker wrote, and whether each `esta://` link names a record this member can read. */
   readonly diagnostics: NoteDiagnostics | null;
@@ -43,7 +42,6 @@ export type NoteDiagnostics = {
   readonly links: ReadonlyArray<{ readonly href: string; readonly ok: boolean }>;
 };
 
-/** What the card names the note as: the morning brief, the Sunday review, a proposal, or any other note. */
 const noteKind = z.enum(['brief', 'weekly', 'proposal', 'note']).catch('note');
 export type NoteKind = z.infer<typeof noteKind>;
 

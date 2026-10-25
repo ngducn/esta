@@ -1,4 +1,3 @@
-/** One agent run as the diagnostics page counts it (AGENT.md §9). */
 export type RunUsage = { readonly kind: string; readonly numTurns: number | null; readonly costUsd: number | null; readonly inputTokens: number; readonly outputTokens: number };
 
 export type UsageTotals = { readonly runs: number; readonly turns: number; readonly inputTokens: number; readonly outputTokens: number; readonly costUsd: number };
@@ -7,7 +6,6 @@ export type KindUsage = UsageTotals & { readonly kind: string };
 
 const totalsOf = (run: RunUsage): UsageTotals => ({ runs: 1, turns: run.numTurns ?? 0, inputTokens: run.inputTokens, outputTokens: run.outputTokens, costUsd: run.costUsd ?? 0 });
 
-/** The sum of some totals; the diagnostics page's total row. */
 export function sumUsage(rows: readonly UsageTotals[]): UsageTotals {
   return rows.reduce((sum, row) => ({ runs: sum.runs + row.runs, turns: sum.turns + row.turns, inputTokens: sum.inputTokens + row.inputTokens, outputTokens: sum.outputTokens + row.outputTokens, costUsd: sum.costUsd + row.costUsd }), {
     runs: 0,

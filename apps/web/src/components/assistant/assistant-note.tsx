@@ -10,7 +10,6 @@ import { AssistantMonogram } from './monogram';
 
 const KIND_LABEL = { brief: 'briefLabel', weekly: 'weeklyLabel', proposal: 'proposalLabel', note: null } as const satisfies Record<NoteKind, string | null>;
 
-/** The sources a proposal rests on, each a chip that opens the article (DESIGN-BRIEF §5.5). */
 async function Citations({ citations, locale }: { citations: InboxNote['citations']; locale: Awaited<ReturnType<typeof getLocale>> }) {
   const t = await getTranslations('assistant');
   const dated = (source: InboxNote['citations'][number]) => (source.publishedOn === null ? source.sourceName : t('market.source', { name: source.sourceName, date: formatDate(source.publishedOn, locale) }));

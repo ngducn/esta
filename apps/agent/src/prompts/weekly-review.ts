@@ -2,7 +2,6 @@ import { systemPrompt } from './system';
 
 export type ReviewCaps = { readonly WebSearch: number; readonly WebFetch: number };
 
-/** Carries the date, locale and caps but no id or name, so households seeded alike replay one recording (AGENT.md §8). */
 export function weeklyReviewPrompt(context: Parameters<typeof systemPrompt>[0] & { readonly caps: ReviewCaps; readonly proposals: number }): string {
   return [
     systemPrompt(context),

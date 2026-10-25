@@ -8,7 +8,6 @@ import { laneHousehold } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, serviceGet, seriousAxeViolations, shot } from './helpers/wizard';
 
-// The page reads the slot's one worker and clock, so the spec runs in the `clock` project.
 test.describe.configure({ mode: 'serial' });
 
 const LANE = 6;
