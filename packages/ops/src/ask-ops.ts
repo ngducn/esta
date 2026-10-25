@@ -9,11 +9,7 @@ type AskInput = z.output<typeof inputSchema>;
 
 export type Asked = { readonly id: string };
 
-/**
- * Hỏi (AGENT.md §5.6): a question in a new conversation whose id the caller mints, so a second tap lands on the same
- * conversation. `ask_question` writes the conversation, the question, the answer row and the ask job in one
- * transaction; a viewer may ask.
- */
+/** The caller mints the conversation id, so a second tap lands on the same conversation (AGENT.md §5.6). */
 export const askQuestion = defineOp<AskInput, AskInput, Asked>({
   creates: 'conversations',
   input: inputSchema,

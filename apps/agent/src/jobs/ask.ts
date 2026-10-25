@@ -38,12 +38,7 @@ async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 
   if (data.length !== 1) throw new Error(`The answer ${answerId} is no longer streaming`);
 }
 
-/**
- * The ask request (AGENT.md §5.6): the read tools fill the run's sheet, and the answer streams into its row through
- * the sentence guard. A violation gets one repair turn in the same session, which starts the answer over; a second
- * fails the job with the operator note. The worker and the golden test build it here, so a recording hashes the
- * prompt the worker ships.
- */
+/** AGENT.md §5.6. The worker and the golden test both build it here, so a recording hashes the prompt the worker ships. */
 export function askRequest(input: AskInput): PreparedJob {
   const { db, householdId, locale } = input;
   const { sheet, cite } = runSheet();
@@ -77,10 +72,8 @@ export function askRequest(input: AskInput): PreparedJob {
   };
 }
 
-type Turn = { readonly question: string; readonly answerId: string };
-
-/** The question and its answer row, which must be the conversation's; a retry starts the answer over. */
-async function readTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
+/** A retry starts the answer over. */
+async function readTurn(db: AgentDb, job: AgentJob): Promise<{ readonly question: string; readonly answerId: string }> {
   const payload = payloadSchema.safeParse(job.payload);
   if (!payload.success) throw new InvalidJobError(`ask ${job.id} has no conversation, question and answer`);
   const { conversation_id, question_id, answer_id } = payload.data;
@@ -97,7 +90,7 @@ export async function prepareAsk({ db, job, clock, timezone }: JobContext): Prom
   return askRequest({ db, householdId: job.household_id, jobId: job.id, answerId: turn.answerId, locale, asOf: now.today(), timezone, question: turn.question, clock });
 }
 
-/** The answer shows Mẹ a plain failure line instead of a half answer; the operator item and the job hold the cause (AGENT.md §9). */
+/** Mẹ sees a plain failure line, never half an answer; the operator item and the job hold the cause (AGENT.md §9). */
 export async function failAsk({ db, job }: Pick<JobContext, 'db' | 'job'>): Promise<void> {
   const payload = payloadSchema.pick({ answer_id: true }).safeParse(job.payload);
   if (!payload.success) return;

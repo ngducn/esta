@@ -24,9 +24,8 @@ export type SessionRequest = {
   readonly canon: Canonicalizer;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
-  /** Receives the model's text as it arrives, for a job that shows its answer while it runs (AGENT.md §5.6). */
   onText?(delta: string): Promise<void>;
-  /** The turn this one continues in the same session: its SDK session id (none in replay) and its canonical input hash. */
+  /** The turn this one continues: its SDK session id (none in replay) and its canonical input hash. */
   readonly resume?: { readonly sessionId: string | null; readonly after: string };
 };
 
@@ -118,13 +117,8 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   return { result: fromSdkResult(result), model: mode.model, toolCalls };
 }
 
-const REPLAY_CHUNK = 12;
-
-/** The reply in short pieces, as a live stream delivers it, so a placeholder or a sentence often spans two pieces. */
-export function replayChunks(reply: string): string[] {
-  const characters = Array.from(reply);
-  return Array.from({ length: Math.ceil(characters.length / REPLAY_CHUNK) }, (_, index) => characters.slice(index * REPLAY_CHUNK, (index + 1) * REPLAY_CHUNK).join(''));
-}
+/** Twelve code points at a time, as a live stream delivers text, so a placeholder or a sentence often spans two pieces. */
+export const replayChunks = (reply: string): string[] => reply.match(/.{1,12}/gsu) ?? [];
 
 /**
  * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the

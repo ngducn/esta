@@ -30,13 +30,12 @@ export type SdkOptionsInputs = {
   readonly preToolUse: HookCallback;
   readonly postToolUse: HookCallback;
   readonly abortController: AbortController;
-  /** Streams text deltas and keeps the transcript so a later turn can resume it; only a job that shows text while it runs. */
   readonly streaming?: { readonly resume: string | null };
 };
 
 /**
  * `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to
- * disk. A streaming job reads no page and no document, and keeps its transcript so its repair turn resumes the session.
+ * disk. A streaming job reads no page or document, so it keeps its transcript for the repair turn to resume.
  */
 export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, postToolUse, abortController, streaming }: SdkOptionsInputs): Options {
   return {

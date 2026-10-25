@@ -4543,56 +4543,50 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] The root appends it to the stack at STACK-READY.
 
-## Ask the assistant questions and stream exact answers (P5-07)
+## Ask the assistant one question and stream the exact answer (P5-07a)
 
-**Depends on.** P5-06b.
+**Depends on.** P5-06b. Split from P5-07 for the 800-line rule (2026-10-25). P5-07b adds the other read tools and the ten golden questions, and P5-07c adds follow-ups.
 
 **Files.**
 
-- [ ] Create `apps/agent/src/jobs/ask.ts`, `apps/agent/src/jobs/askStream.ts` and `fixtures/agent-replay/ask/`.
-- [ ] Create `apps/agent/test/golden/ask.test.ts` and `apps/agent/test/golden/ask-ground-truth.sql`.
-- [ ] Create `apps/web/src/app/(app)/assistant/ask/page.tsx`, `apps/web/src/app/(app)/assistant/ask/[conversationId]/page.tsx`, `apps/web/src/app/(app)/assistant/ask/actions.ts` and `apps/web/src/components/assistant/AnswerStream.tsx`.
-- [ ] Create `e2e/assistant-ask.spec.ts`.
+- [x] Create `supabase/migrations/20261007610000_ask.sql` with `conversations` and `messages`, RLS and the audit trigger, no member writes, the `ask_question` definer function and the `ask` reclaim timeout of 4 minutes, two for the answer and two for its repair turn, and `supabase/tests/ask.test.sql`.
+- [x] Create `apps/agent/src/jobs/ask.ts`, `apps/agent/src/jobs/askStream.ts`, `apps/agent/src/prompts/ask.ts`, `apps/agent/src/tools/ledger.ts` and `fixtures/agent-replay/ask/`.
+- [x] Create `apps/agent/test/golden/ask.test.ts`, `apps/agent/test/golden/ask-ground-truth.sql`, `apps/agent/test/golden/ask-cases.ts`, `apps/agent/test/jobs/ask.test.ts`, `apps/agent/test/jobs/askStream.test.ts` and `apps/agent/test/tools/ledger.test.ts` with the household isolation test of AGENT.md §4.
+- [x] Create `packages/ops/src/ask-ops.ts` (`askQuestion`), called from `apps/web/src/app/(app)/assistant/ask/actions.ts`.
+- [x] Create `apps/web/src/app/(app)/assistant/ask/page.tsx`, `apps/web/src/app/(app)/assistant/ask/[conversationId]/page.tsx`, `apps/web/src/app/api/answers/[answerId]/route.ts`, `apps/web/src/server/agent/conversations.ts`, `apps/web/src/components/assistant/answer-stream.tsx` and `apps/web/src/components/assistant/ask-form.tsx`.
+- [x] Create `e2e/assistant-ask.spec.ts`.
 
 **Build.**
 
-- [ ] Name the data shape. A conversation is `conversations` with `sdk_session_id`. A turn is a user `messages` row plus one assistant row whose `status` moves `streaming` to `done` or `error`, with `refs` holding the resolved `esta://` targets.
-- [ ] Write `sendQuestion(conversationId, text)` as a server action on the session client. It inserts the user message and enqueues `ask` with key `ask:{message_id}`.
-- [ ] Write the `ask` job with all read tools and `create_proposal`, `maxTurns` 15, a 2 minute timeout, the routine model, and the deep model when an operator ticks `Suy nghĩ kỹ hơn`. `cwd` is `conversations/{conversation_id}` under `ESTA_AGENT_HOME`. The job resumes `sdk_session_id` and stores the new one. Output language follows the question.
-- [ ] Stream in `apps/agent/src/jobs/askStream.ts`. The worker buffers model text to sentence boundaries, runs the number guard on each sentence against the tool results so far, and appends passing sentences to the assistant row at most every 300 ms. A violating sentence stops the stream, the repair turn replaces the row content, and a second violation sets `error` with the operator item from P5-03b.
-- [ ] Render the Hỏi tab as a plain conversation page, not chat bubbles. It subscribes to the assistant row through Realtime and renders `AgentMarkdown` with GFM tables enabled for answers that are lists. `esta://` links open in-app. Streaming text appears without a typing animation, and a static `Trợ lý đang trả lời` line shows until the first sentence.
-- [ ] Run `pnpm agent:record` for the ten AGENT.md §7.4 questions plus the lane follow-up and missing-data questions, and commit the recordings.
-- [ ] Run `/impeccable harden` on the Hỏi tab for long Vietnamese questions and answers, 130% text scale, empty, loading, error and offline states.
+- [x] Name the data shape. A conversation is `conversations` with `sdk_session_id`. A turn is a user `messages` row plus one assistant row whose `status` moves `streaming` to `done` or `error`, with `refs` holding the resolved `esta://` targets.
+- [x] Write `sendQuestion` as a server action on the session client. It runs `askQuestion`, whose `ask_question` function writes the conversation, the question, the empty answer row and the `ask` job keyed `ask:{question_id}` in one transaction. A viewer may ask.
+- [x] Write the `ask` job with `list_properties` and `ledger`, `maxTurns` 15, a 2 minute timeout and the routine model. `cwd` is `conversations/{conversation_id}` under `ESTA_AGENT_HOME`, kept between turns, and a crafted id cannot leave it. The SDK session persists for P5-07c.
+- [x] Stream in `apps/agent/src/jobs/askStream.ts`. The worker buffers model text to sentence boundaries, runs the number guard on the whole text up to each boundary against the tool results so far, and writes passing text to the assistant row at most every 300 ms. A violating sentence stops the stream, the repair turn replaces the row content, and a second violation sets `error` with the operator item from P5-03b.
+- [x] Render the Hỏi tab as a plain conversation page, not chat bubbles. The page reads the assistant row from `/api/answers/{id}`, a server-sent events route that polls it through the member's session client, instead of Realtime: the session cookie is httpOnly and the app runs no browser Supabase client (decisions.tsv, 2026-10-25). It renders `SafeMarkdown` with only `esta://` links live. The model links a record as `[text](f3)` and the worker resolves the handle, so a handle the run never returned renders as text. Streaming text appears without a typing animation, and a static `Trợ lý đang trả lời` line shows until the first sentence.
+- [x] Hand-write the recordings for question 1 and the missing-data question, labelled hand-written. The live recordings wait for the P5-10 live run.
 
 **You see.**
 
-- [ ] me.lane2 asks `Tháng này thu được bao nhiêu từ Dĩ An?` and the answer shows the October income amount with a link to the `di-an` ledger.
-- [ ] `Which tenant paid late most often this year?` gets an English answer naming one tenant with a count.
-- [ ] The first sentence appears within 10 seconds of send with the worker online.
+- [x] me.lane2 asks `Tháng này thu được bao nhiêu từ Dĩ An?` and the answer shows the October income amount with a link to the `di-an` ledger.
+- [x] me.lane9 asks `Giá thị trường của Đất Bảo Lộc hiện nay là bao nhiêu?` and the answer says the app has no current market price, with no number.
+- [x] The first sentence appears within 10 seconds of send with the worker online.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-- [ ] `apps/agent/test/golden/ask.test.ts` runs the ten AGENT.md §7.4 questions on the `full` seed at 2026-10-07 07:00. It asserts every number equals `ask-ground-truth.sql` after guard normalization and every link resolves (AGT-7).
-- [ ] `apps/agent/test/jobs/askStream.test.ts` gains cases for sentence buffering, a violating sentence held back, a repair that replaces content, and a second violation setting `error`.
-- [ ] `apps/agent/test/jobs/ask.test.ts` gains cases for resuming a session, a new conversation without a session, an English question, and a missing-data question that answers without any number outside tool results.
-- [ ] Golden tests in AGENT.md §7 for `ask` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
+- [x] `apps/agent/test/golden/ask.test.ts` runs question 1 and the missing-data question on the `full` seed at 2026-10-07 07:00. It asserts every number equals `ask-ground-truth.sql` after guard normalization and every link resolves (AGT-7).
+- [x] `apps/agent/test/jobs/askStream.test.ts` has cases for sentence buffering, a handle split across chunks, a violating sentence held back, the 300 ms cadence, a repair that replaces content, a resolved handle link and an unknown handle left as text.
+- [x] `apps/agent/test/jobs/ask.test.ts` has cases for a new conversation without a session, a repair that replaces the answer, a second violation setting `error` with the operator item, and crafted conversation ids that never leave `conversations/`.
+- [x] Golden tests in AGENT.md §7 for `ask` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
 - [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-ask.spec.ts`.
 - [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
 - [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-ask.spec.ts`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Three lanes on the configured `swarm workers` model at the PR head, per the boot recipe. The worker runs in replay.
 
-- [ ] Lane 1. Regression lane against trunk. me.lane1 opens Hỏi at 390x844 light at trunk and head. Trunk shows the placeholder, so the lane gates head asking `Tháng này thu được bao nhiêu từ Dĩ An?`. Save `p5-07-regression-q1.png`. Pass when the answer amount equals the `di-an` Thu chi tab's October income and its link opens that ledger.
-- [ ] Lane 2. me.lane2 asks `Phòng nào ở Dĩ An đang quá hạn đóng tiền?` at 1440x900 light. Save `p5-07-q2-overdue.png`. Pass when the answer names Phòng 5 only with 12 days and links to its invoice.
-- [ ] Lane 3. ryan.lane3 asks `Hợp đồng nào hết hạn trong 60 ngày tới?` at 1440x900 dark. Save `p5-07-q3-table.png`. Pass when the answer renders a table with one row, Căn hộ Thủ Đức, end date `01/11/2026`.
-- [ ] Lane 4. me.lane4 asks question 5 about her revenue and the 500 million threshold at 390x844 dark. Save `p5-07-q5-tax.png`. Pass when accrued, projected and remaining amounts equal her tax card.
-- [ ] Lane 5. me.lane5 asks `Sổ đất Bảo Lộc có đang thế chấp không, ở ngân hàng nào?` at 390x844 light. Save `p5-07-q8-mortgage.png`. Pass when the answer says it is mortgaged and names the bank shown on the Pháp lý tab.
-- [ ] Lane 6. ryan.lane6 asks `Which tenant paid late most often this year?` at 1440x900 light. Save `p5-07-q10-english.png`. Pass when the answer is in English and the tenant and count equal `payment_behavior` from `pnpm agent:tool`.
-- [ ] Lane 7. me.lane7 asks question 1, then `Còn tháng 9 thì sao?` at 390x844 dark. Save `p5-07-follow-up.png`. Pass when the second answer gives the September amount equal to the ledger and Studio shows the same conversation with an updated `sdk_session_id`.
-- [ ] Lane 8. ryan.lane8 sends question 2 at 1440x900 dark and records time to first text. Save `p5-07-stream.png`. Pass when the first sentence appears within 10 s, the row ends `done`, and no animated dots or blinking caret render.
+- [ ] Lane 1. Regression lane against trunk. me.lane1 opens Hỏi at 390x844 light at trunk and head. Trunk has no Hỏi tab, so the lane gates head asking `Tháng này thu được bao nhiêu từ Dĩ An?`. Save `p5-07-regression-q1.png`. Pass when the answer amount equals the `di-an` Thu chi tab's October income and its link opens that ledger.
+- [ ] Lane 8. ryan.lane8 asks question 1 at 1440x900 dark and records time to first text. Save `p5-07-stream.png`. Pass when the first sentence appears within 10 s, the row ends `done`, and no animated dots or blinking caret render.
 - [ ] Lane 9. me.lane9 asks `Giá thị trường của Đất Bảo Lộc hiện nay là bao nhiêu?` at 390x844 light. Save `p5-07-missing-data.png`. Pass when the answer says the app has no current market price, gives no estimate, and passes the guard.
-- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, asks `Which rooms in Dĩ An are overdue?`, follows the link to the collections board and copies the reminder. Save `p5-07-seed10-english.png`. Pass when the answer is in English naming Phòng 5 with 12 days and no text clips.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
@@ -4604,7 +4598,7 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 **Review gate.** The operator reviews before merge.
 
 - [ ] Copy the lane screenshots to `~/.claude/orchestrate/esta/media/P5-07/P5-07-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of asking question 1, the answer streaming in, a follow-up and the ledger link, saved as `~/.claude/orchestrate/esta/media/P5-07/P5-07-review.mp4`.
+- [ ] Record a 30 to 60 second video of asking question 1, the answer streaming in and the ledger link, saved as `~/.claude/orchestrate/esta/media/P5-07/P5-07-review.mp4`.
 - [ ] Post the screenshots and the video in chat, stop at merge-ready, and wait for the operator's click.
 
 **Merge.**
@@ -4614,9 +4608,71 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [ ] Base and verdict are current under the execution playbook and the patch-id rule in `playbooks/shipping.md`.
 - [ ] The root appends it to the stack at STACK-READY. The operator lands it bottom-up in the phase-end batch.
 
+## Answer the ten golden questions with tables and in English (P5-07b)
+
+**Depends on.** P5-07a.
+
+**Files.**
+
+- [ ] Create the other read tools of AGENT.md §4 under `apps/agent/src/tools/`, each with its household isolation test, and give `ledger` a whole year, the whole household and its totals by month and by category.
+- [ ] Extend `apps/agent/test/golden/ask-cases.ts`, `ask-ground-truth.sql` and `fixtures/agent-replay/ask/` to the ten AGENT.md §7.4 questions.
+
+**Build.**
+
+- [ ] Give the `ask` job all read tools and `create_proposal`. Output language follows the question.
+- [ ] Render answers that are lists as GFM tables in `SafeMarkdown`, with every cell through the number guard.
+- [ ] Hand-write the recordings for the ten AGENT.md §7.4 questions plus the lane questions, labelled hand-written. The live recordings wait for the P5-10 live run.
+
+**You see.**
+
+- [ ] `Which tenant paid late most often this year?` gets an English answer naming one tenant with a count.
+- [ ] `Hợp đồng nào hết hạn trong 60 ngày tới?` gets a table with one row.
+
+**Verify, unit.**
+
+- [ ] `apps/agent/test/golden/ask.test.ts` runs the ten AGENT.md §7.4 questions on the `full` seed at 2026-10-07 07:00. It asserts every number equals `ask-ground-truth.sql` after guard normalization and every link resolves (AGT-7).
+- [ ] `apps/agent/test/jobs/ask.test.ts` gains cases for an English question and a table answer.
+- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-ask.spec.ts`. axe and `pnpm design:detect` are clean.
+
+**Verify, live.** The worker runs in replay.
+
+- [ ] Lane 2. me.lane2 asks `Phòng nào ở Dĩ An đang quá hạn đóng tiền?` at 1440x900 light. Save `p5-07-q2-overdue.png`. Pass when the answer names Phòng 5 only with 12 days and links to its invoice.
+- [ ] Lane 3. ryan.lane3 asks `Hợp đồng nào hết hạn trong 60 ngày tới?` at 1440x900 dark. Save `p5-07-q3-table.png`. Pass when the answer renders a table with one row, Căn hộ Thủ Đức, end date `01/11/2026`.
+- [ ] Lane 4. me.lane4 asks question 5 about her revenue and the 500 million threshold at 390x844 dark. Save `p5-07-q5-tax.png`. Pass when accrued, projected and remaining amounts equal her tax card.
+- [ ] Lane 5. me.lane5 asks `Sổ đất Bảo Lộc có đang thế chấp không, ở ngân hàng nào?` at 390x844 light. Save `p5-07-q8-mortgage.png`. Pass when the answer says it is mortgaged and names the bank shown on the Pháp lý tab.
+- [ ] Lane 6. ryan.lane6 asks `Which tenant paid late most often this year?` at 1440x900 light. Save `p5-07-q10-english.png`. Pass when the answer is in English and the tenant and count equal `payment_behavior` from `pnpm agent:tool`.
+- [ ] Lane 10. SPEC §9.4 seed 10 adapted. me.lane10 switches to English, text scale 130% and dark at 390x844, asks `Which rooms in Dĩ An are overdue?`, follows the link to the collections board and copies the reminder. Save `p5-07-seed10-english.png`. Pass when the answer is in English naming Phòng 5 with 12 days and no text clips.
+
+**Verify, perf.**
+
+- [ ] Send each golden question 5 times on head with the worker online in replay. Fail when any first visible sentence takes over 10 s (AGENT.md §5.6).
+
+**Merge.** As P5-07a, with the operator's review of the lane screenshots.
+
+## Follow up on an answer and harden the Hỏi tab (P5-07c)
+
+**Depends on.** P5-07b.
+
+**Build.**
+
+- [ ] A follow-up question in a conversation resumes its `sdk_session_id` and stores the new one, and the job's canonical input names the turn it resumes (AGENT.md §8).
+- [ ] List the household's conversations on Hỏi, newest first.
+- [ ] Run the deep model when an operator ticks `Suy nghĩ kỹ hơn`.
+- [ ] Run `/impeccable harden` on the Hỏi tab for long Vietnamese questions and answers, 130% text scale, empty, loading, error and offline states. Add the answer's time, and a Vietnamese not-found screen with a 404 status for a conversation link from another household (P5-07a shows Next's default screen with none of its data).
+
+**Verify, unit.**
+
+- [ ] `apps/agent/test/jobs/ask.test.ts` gains cases for resuming a session and for a follow-up in replay.
+
+**Verify, live.** The worker runs in replay.
+
+- [ ] Lane 7. me.lane7 asks question 1, then `Còn tháng 9 thì sao?` at 390x844 dark. Save `p5-07-follow-up.png`. Pass when the second answer gives the September amount equal to the ledger and Studio shows the same conversation with an updated `sdk_session_id`.
+
+**Review gate.** Record a 30 to 60 second video of asking question 1, the answer streaming in, a follow-up and the ledger link, saved as `~/.claude/orchestrate/esta/media/P5-07/P5-07c-review.mp4`, and stop at merge-ready for the operator's click.
+
 ## Run the weekly review, enforce caps and show agent diagnostics to operators (P5-08)
 
-**Depends on.** P5-07.
+**Depends on.** P5-07c.
 
 **Files.**
 
@@ -5429,8 +5485,8 @@ pdf-lib with @pdf-lib/fontkit renders the A5 receipt PDF, and satori with @resvg
 - **SPEC §5.7 gives `audit_log` no household column.** P0-02 copies `household_id` from the audited row so members can read their own history under RLS, and updates SPEC §5.7. P1-06 depends on it.
 - **AGENT.md §10 gives `agent_jobs` no place for a job's output.** P0-15 adds `agent_jobs.result jsonb` and updates AGENT.md §10.
 - **SPEC §5.5 gives `documents.ocr_text` no writer.** P2-05 adds the column with the vault search, copies the optional `full_text` of an accepted utility bill extraction into it for non-sensitive documents, and records the writer in SPEC §5.5. P3-19 adds `full_text` to `lease_v1` and reuses the copy.
-- **AGENT.md §6.2 allows no Markdown tables, but DESIGN-BRIEF §5.5 wants tables in Ask answers.** P5-07 allows tables in Ask answers only and updates AGENT.md §6.2.
-- **AGENT.md §6.3 guards text before it is written, but §5.6 streams partial text.** P5-07 guards each sentence before appending it and records the rule in AGENT.md §5.6.
+- **AGENT.md §6.2 allows no Markdown tables, but DESIGN-BRIEF §5.5 wants tables in Ask answers.** P5-07b allows tables in Ask answers only and updates AGENT.md §6.2.
+- **AGENT.md §6.3 guards text before it is written, but §5.6 streams partial text.** P5-07a guards the text up to each sentence boundary before writing it and records the rule in AGENT.md §5.6.
 - **SPEC §8 lacks two variables the plan needs.** P5-09 adds `ESTA_APP_URL` for links in emails, and P6-02 adds `ESTA_EXPORT_PART_MB` because the Supabase free plan caps one object at 50 MB. Each PR updates SPEC §8 and `.env.example`.
 - **SPEC PRP-5 does not say what the short-link resolver fetches at the end of the chain.** P1-01 follows redirects on the short hosts only, stops at a Google Maps target without fetching it, and rewords PRP-5.
 - **Preview deploys need somewhere to write demo data.** P6-07 proposes a second free Supabase project for preview, while SPEC D4 names one project. Ryan decides at P6-07, since cloud projects are his items.

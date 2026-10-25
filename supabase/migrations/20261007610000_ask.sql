@@ -1,5 +1,4 @@
--- Hỏi (AGENT.md §5.6): a conversation holds the member's questions and the assistant's answers. Members read their
--- household's conversations; only ask_question and the worker's service client write them.
+-- AGENT.md §5.6, §10. Members read; only ask_question and the worker's service client write.
 create table public.conversations (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households (id) on delete cascade,
@@ -53,7 +52,8 @@ set search_path = ''
 as $$
   select case p_kind
     when 'ping' then interval '1 minute'
-    when 'ask' then interval '2 minutes'
+    -- two minutes for the answer and two for its repair turn, each its own session
+    when 'ask' then interval '4 minutes'
     when 'portfolio_watch' then interval '3 minutes'
     when 'morning_brief' then interval '3 minutes'
     when 'extract_document' then interval '5 minutes'
@@ -61,9 +61,7 @@ as $$
   end;
 $$;
 
--- One question in a new conversation, in one transaction: the conversation, the question, the answer row the worker
--- streams into, and the ask job keyed by the question (AGENT.md §3). A viewer may ask. Asking again with the same
--- conversation id adds nothing and answers that id. ESTA_ASK_INVALID refuses a blank or too long question.
+-- A viewer may ask. Asking again with the same conversation id adds nothing and answers that id.
 create function public.ask_question(p_household_id uuid, p_conversation_id uuid, p_question text, p_as_of timestamptz)
 returns uuid
 language plpgsql

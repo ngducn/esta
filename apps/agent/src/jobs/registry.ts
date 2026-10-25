@@ -38,9 +38,8 @@ export type PreparedJob = {
   finish(run: { readonly reply: string; readonly model: string }): Promise<Json>;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
-  /** The model's text as it arrives; the runner then streams the session (AGENT.md §5.6). */
   onText?(delta: string): Promise<void>;
-  /** Asked after each session that ended well: the prompt of one more turn in the same session, such as a repair, or null. */
+  /** The prompt of one more turn in the same session, such as a repair, or null. */
   nextTurn?(): Promise<string | null>;
 };
 
@@ -54,7 +53,7 @@ export type JobSpec = {
   readonly modelRole: ModelRole;
   /** A job the scheduler queues for every household once a day at `HH:mm` in the business timezone (AGENT.md §3). */
   readonly schedule?: { readonly daily: string };
-  /** Runs in `conversations/{payload.conversation_id}` under the agent home, kept between jobs so a session resumes there. */
+  /** Runs in `conversations/{payload.conversation_id}`, kept between jobs so a session resumes there. */
   readonly conversation?: true;
   /** Daily kinds whose same-day job must finish first; the runner reschedules the job while one is queued or running (AGENT.md §3). */
   readonly waitsFor?: readonly string[];

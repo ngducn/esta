@@ -38,8 +38,8 @@ const CATALOG = {
   },
   ledger: {
     description:
-      'Return the income received and the expenses paid in one month or one year, of one property or, without property, of the whole household: {"property": a handle from list_properties, "year", "month": 1 to 12, left out for the whole year}. It answers one record with a handle, the period as period_date_display and the amounts as income_display, expenses_display and net_display.',
-    input: { property: z.string().optional(), year: z.number().int(), month: z.number().int().optional() },
+      'Return the income received and the expenses paid at one property in one month: {"property": a handle from list_properties, "year", "month": 1 to 12}. It answers one record with a handle, the period as period_date_display and the amounts as income_display, expenses_display and net_display.',
+    input: { property: z.string(), year: z.number().int(), month: z.number().int() },
   },
   add_research_item: {
     description:

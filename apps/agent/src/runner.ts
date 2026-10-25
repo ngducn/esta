@@ -21,7 +21,6 @@ export type Worker = {
   readonly workerId: string;
   readonly mode: RunMode;
   readonly jobsDir: string;
-  /** Where each conversation keeps its session between questions (AGENT.md §2.2). */
   readonly conversationsDir: string;
   readonly configDir: string;
   readonly replayDir: string;
@@ -62,11 +61,7 @@ type Inputs = { readonly waiting: readonly string[]; readonly failed: readonly s
 
 const conversationPayload = z.object({ conversation_id: z.uuid() });
 
-/**
- * The job's directory: `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5), or for a conversation
- * kind `conversations/<conversation_id>`, kept so its session resumes there. The id parses as a UUID and the resolved
- * path must stay inside the conversations directory, so a crafted payload cannot point the session elsewhere.
- */
+/** `jobs/<job_id>` is emptied and deleted on every exit path (DOC-5); a conversation's directory is kept, and a crafted id cannot leave it. */
 function openWorkDir(worker: Worker, job: AgentJob, spec: JobSpec): { readonly dir: string; readonly kept: boolean } {
   if (spec.conversation === undefined) {
     const dir = join(worker.jobsDir, job.id);
@@ -86,7 +81,6 @@ function runModel(worker: Worker, request: SessionRequest): Promise<SessionRun> 
   return worker.mode.agentMode === 'live' ? liveSession(request, worker.mode) : replaySession(request, worker.replayDir);
 }
 
-/** Two turns of one session as one run: the later turn's result, with the turns, the cost and the tool calls of both. */
 function followedBy(first: SessionRun, next: SessionRun): SessionRun {
   return {
     result: { ...next.result, numTurns: first.result.numTurns + next.result.numTurns, costUsd: first.result.costUsd + next.result.costUsd },
@@ -119,12 +113,12 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
     let turn = request;
     session = await runModel(worker, turn);
     let outcome = judgeResult(session.result);
-    let prompt = outcome.ok ? ((await prepared.nextTurn?.()) ?? null) : null;
-    while (prompt !== null) {
+    while (outcome.ok) {
+      const prompt = (await prepared.nextTurn?.()) ?? null;
+      if (prompt === null) break;
       turn = { ...request, prompt, resume: { sessionId: session.result.sessionId, after: inputHash(canonicalInput(turn)) } };
       session = followedBy(session, await runModel(worker, turn));
       outcome = judgeResult(session.result);
-      prompt = outcome.ok ? ((await prepared.nextTurn?.()) ?? null) : null;
     }
     if (!outcome.ok) return { outcome, session };
     return { outcome: { ...outcome, result: await prepared.finish({ reply: outcome.reply, model: session.model }) }, session };

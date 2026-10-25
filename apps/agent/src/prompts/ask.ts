@@ -1,7 +1,7 @@
 import { repairMessage, type NoteViolation } from '@esta/core/guard';
 import { systemPrompt } from './system';
 
-/** The question is the only household-specific text, so households seeded alike replay one recording per question (AGENT.md §8). */
+/** The question is the only household-specific text, so lanes seeded alike replay one recording per question. */
 export function askPrompt(context: Parameters<typeof systemPrompt>[0] & { readonly question: string }): string {
   return [
     systemPrompt(context),

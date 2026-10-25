@@ -10,7 +10,7 @@ export async function generateMetadata() {
   return { title: t('title') };
 }
 
-/** Hỏi (DESIGN-BRIEF §5.5, §6.11): a plain page with one question box; the answer opens on its own page. */
+/** DESIGN-BRIEF §5.5, §6.11. */
 export default async function AskPage() {
   const clock = await getClock();
   const member = await requireMember();
@@ -27,15 +27,7 @@ export default async function AskPage() {
         </div>
         <AskForm
           maxLength={MAX_QUESTION_LENGTH}
-          labels={{
-            question: t('questionLabel'),
-            placeholder: t('placeholder'),
-            send: t('send'),
-            sending: t('sending'),
-            empty: t('emptyQuestion'),
-            long: t('longQuestion'),
-            failed: t('sendFailed'),
-          }}
+          labels={{ question: t('questionLabel'), placeholder: t('placeholder'), send: t('send'), sending: t('sending'), empty: t('emptyQuestion'), long: t('longQuestion'), failed: t('sendFailed') }}
         />
       </section>
     </div>

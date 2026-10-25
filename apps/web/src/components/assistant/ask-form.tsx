@@ -10,7 +10,7 @@ import { useAction } from '@/components/use-action';
 
 export type AskFormLabels = Readonly<Record<'question' | 'placeholder' | 'send' | 'sending' | 'empty' | 'long' | 'failed', string>>;
 
-/** One question to Trợ lý; the conversation id is minted per send, so a held-down button asks once. */
+/** The conversation id is minted per send, so a double tap asks once. */
 export function AskForm({ labels, maxLength }: { labels: AskFormLabels; maxLength: number }) {
   const id = useId();
   const router = useRouter();

@@ -1141,9 +1141,7 @@
       "answering": "Trợ lý is answering",
       "answerFailed": "Trợ lý could not answer this one. You can ask again.",
       "stalled": "Trợ lý has not finished yet. Reload the page to see the rest.",
-      "askAnother": "Ask another question",
-      "notFoundTitle": "This conversation was not found",
-      "notFoundBody": "It is not in your household, or the link is wrong."
+      "askAnother": "Ask another question"
     }
   },
   "settings": {

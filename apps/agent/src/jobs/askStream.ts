@@ -3,12 +3,11 @@ import type { Result } from '@esta/core/result';
 
 export const FLUSH_MS = 300;
 
-/** The model links a record by its handle, `[Sổ thu chi](f3)`; only a record of this run with a link becomes one. */
 const HANDLE_LINK = /\]\((f\d+)\)/g;
 
 export type Answer = FilledNote & { readonly refs: readonly string[] };
 
-/** Each handle link to a record this run returned becomes that record's `esta://` link; any other stays a bare word the page shows as text. */
+/** A handle the run never returned stays a bare word, which the page renders as text. */
 export function resolveLinks(text: string, sheet: FactSheet): { readonly text: string; readonly refs: string[] } {
   const refs = new Set<string>();
   const resolved = text.replace(HANDLE_LINK, (whole, handle: string) => {
@@ -45,21 +44,18 @@ function guarded(template: string, sheet: FactSheet): Result<Answer, NoteViolati
 }
 
 export type AnswerStream = {
-  /** Adds model text. Each time a sentence ends, the whole text so far is guarded, and only text that passes is shown. */
   push(delta: string): Promise<void>;
-  /** Guards the whole answer and writes it; after a violation the row keeps the last text that passed. */
+  /** After a violation the row keeps the last text that passed. */
   end(): Promise<Result<Answer, NoteViolation[]>>;
-  /** Starts the answer over for a repair turn; its first passing sentence replaces what the row shows. */
+  /** For a repair turn: its first passing sentence replaces what the row shows. */
   restart(): void;
-  /** What the model wrote, for the operator item and the job result. */
   readonly template: () => string;
 };
 
 /**
- * The guard on a streamed answer (AGENT.md §5.6, §6.3). Model text is buffered to a sentence boundary, and the whole
- * prefix up to it is filled and guarded against the records the tools returned so far, so no partial placeholder,
- * partial sentence or rejected word reaches the row. A violating sentence stops what is shown there, because every
- * longer prefix holds it too. Writes go out at most every `flushMs`, one at a time, latest text winning.
+ * AGENT.md §5.6. The whole prefix up to each sentence boundary is guarded, not the new sentence alone, so a placeholder
+ * split across chunks never reaches the row, and a violating sentence stops the stream because every longer prefix
+ * holds it too.
  */
 export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now }: { sheet: FactSheet; write(content: string): Promise<void>; flushMs?: number; now?: () => number }): AnswerStream {
   let template = '';

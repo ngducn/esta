@@ -80,7 +80,7 @@ Re-check the help center article before production deploy; record the date check
 | `portfolio_watch` | Daily 06:40 | routine | `watch_facts`, `create_item` | 6 | 3 min |
 | `morning_brief` | Daily 07:00 | routine | `watch_facts`, `recent_items`, `create_brief` | 6 | 3 min |
 | `weekly_review` | Sunday 08:00 | deep | All read tools, WebSearch, WebFetch, `create_item`, `create_proposal` | 25 | 10 min |
-| `ask` | Message in a conversation | routine (deep on request) | All read tools, `create_proposal` | 15 | 2 min |
+| `ask` | Message in a conversation | routine (deep on request) | All read tools, `create_proposal` | 15 | 2 min a session; 4 min with the repair turn |
 | `backup_export` | Daily 02:00 | none (no model) | n/a | n/a | 20 min |
 
 Idempotency keys: `{kind}:{household_id}:{local_date}` for daily jobs, `{kind}:{household_id}:{iso_week}` for weekly, `extract_document:{document_id}:{sha256}`, `ask:{message_id}`.
@@ -103,7 +103,7 @@ Read tools (no sensitive document content):
 | `list_leases(filter)` | Leases with status, rent, cycle, end date, days until end, tenant short name |
 | `get_lease(id)` | Lease with periods, invoices, allocations, deposit entries, held deposit |
 | `collections(month, property_id?)` | Same grouping as the collections board (SPEC LSE-10): invoices due in the month plus earlier unpaid ones marked `carried_over`, with derived status and days overdue, plus totals and counts per status |
-| `ledger(property_id?, from, to)` | Income (allocations by payment received date) and expense totals by month and by category, and the rows |
+| `ledger(property, year, month)` | For one property (a handle from `list_properties`) and one month: one record with the period and the income (allocations by payment received date), expense and net totals, and the property's Thu chi link. P5-07b adds a whole year, the whole household, and the totals by month and by category |
 | `tax_position(owner_party_id, year)` | Output of `packages/core/tax`: accrued-to-date and projected full-year attributed revenue, threshold, remaining to threshold, percent of threshold in bp, estimated owner-paid VAT and PIT, withheld leases, rule source |
 | `payment_behavior(year)` | Per tenant: invoices, invoices paid late (fully allocated after due_date), average days late |
 | `watch_facts(as_of)` | Output of every watch rule (§5.3) with stable ids and the numbers involved |
@@ -194,11 +194,12 @@ Every Sunday 08:00 with the deep model: last week's collections against expected
 
 ### 5.6 ask
 
-1. The web app inserts the user message and enqueues `ask`.
-2. The worker resumes the conversation's SDK session if one exists.
-3. The assistant answers with read tools only, may create a proposal, and links records with `esta://{type}/{id}` URIs that the web app renders as in-app links.
-4. Partial text streams into the `messages` row; the web app subscribes via Realtime.
-5. If the tools cannot answer, it says what is missing. It never estimates figures.
+1. The member sends a question on Hỏi. `public.ask_question` writes the conversation, her message, an empty assistant row with status `streaming` and the `ask` job, keyed `ask:{question_id}`, in one transaction. A viewer may ask. No member writes `conversations` or `messages` directly.
+2. The worker runs the job in `conversations/{conversation_id}` under `ESTA_AGENT_HOME`, a directory it keeps, and refuses an id that is not a UUID or a directory that is a link. It persists the SDK session; resuming it for a follow-up comes in P5-07c.
+3. The assistant answers with read tools only, may create a proposal (P5-07b), and links a record as `[text](f3)`, with the handle of a record a tool returned in this run. The worker turns that into the record's `esta://` link and stores it in `refs`. A handle with no link stays a bare word, and the page renders every link that is not `esta://` as its text.
+4. Text streams through the number guard (§6.3) a sentence at a time (`apps/agent/src/jobs/askStream.ts`). The worker buffers model text to a sentence boundary outside an open link or placeholder, guards the whole prefix up to it, and writes the filled text that passed to the row at most every 300 ms. A violating sentence stops what the row shows. One repair turn writes the whole answer again from the start and replaces the row's content. A second violation sets the row to `error` with empty content and writes the operator item of §6.3.
+5. The page reads the row through a server-sent events route, `/api/answers/{id}`, that polls it every 250 ms through the member's session client, so RLS is the only boundary and no Supabase key reaches the browser. The route closes when the row reaches `done` or `error`, when the client leaves, and after 5 minutes.
+6. If the tools cannot answer, it says what is missing. It never estimates figures.
 
 Target: first visible text within 10 seconds when the worker is online.
 
@@ -311,7 +312,7 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 
 ## 8. Replay mode
 
-`ESTA_AGENT_MODE=replay` replaces model calls with recordings stored in `{ESTA_REPLAY_DIR}/{job_kind}/{input_hash}.json`, where `ESTA_REPLAY_DIR` defaults to `fixtures/agent-replay`. The input hash is the SHA-256 of the canonical input: the prompt, the kind's tools and `maxTurns`, and a schema version. Before hashing, the input is canonicalized: the job's household name becomes `<household>`, UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps become `<time:n>`, taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Recorded model text holds number placeholders (§6.3), not values, so it fills from the current run's tool data. Tools, the `PreToolUse` policy, validation, the number guard and all writes run for real: the worker replays each recorded tool call through the job's own tools, and a built-in call's recorded `result` (the page WebFetch read) reaches the job as the `PostToolUse` hook hands it over live. A missing recording fails the job at once, with no retry, and its error names the 64-character hash and `pnpm agent:record`. Replay needs no credential and records auth mode `none` and cost 0. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
+`ESTA_AGENT_MODE=replay` replaces model calls with recordings stored in `{ESTA_REPLAY_DIR}/{job_kind}/{input_hash}.json`, where `ESTA_REPLAY_DIR` defaults to `fixtures/agent-replay`. The input hash is the SHA-256 of the canonical input: the prompt, the kind's tools and `maxTurns`, and a schema version. A turn that continues a session, such as `ask`'s repair turn, also names the hash of the turn it follows (`resumes`). Before hashing, the input is canonicalized: the job's household name becomes `<household>`, UUIDs become `<id:1>`, `<id:2>` in order of first appearance, memo codes become `<memo:n>`, and timestamps become `<time:n>`, taken from the test clock. Recorded outputs use the same placeholders, which are mapped back to the real values of the current run, so records created during a test (north-star step 2 onward) replay correctly. Recorded model text holds number placeholders (§6.3), not values, so it fills from the current run's tool data. Tools, the `PreToolUse` policy, validation, the number guard and all writes run for real: the worker replays each recorded tool call through the job's own tools, and a built-in call's recorded `result` (the page WebFetch read) reaches the job as the `PostToolUse` hook hands it over live. A missing recording fails the job at once, with no retry, and its error names the 64-character hash and `pnpm agent:record`. Replay needs no credential and records auth mode `none` and cost 0. `pnpm agent:record` runs the same cases in `live` mode and refreshes recordings; Ryan reviews recording diffs like code. CI and `pnpm e2e:northstar` always use replay.
 
 ## 9. Limits, failures and UX
 
@@ -334,8 +335,8 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 - `agent_items`: kind (`brief | alert | proposal | answer_note | research_scan_empty | system`), severity, audience (`all | operator`), title, body_md, related (jsonb of typed ids), citations (jsonb of url, title, source_name, published_at), proposal (jsonb type and params), status (`new | read | approved | dismissed | done | failed`), dedupe_key (unique per household), job_id, decided_by, decided_at.
 - `research_topics`: topic_key (unique per household), label, query_templates, province_codes, property_ids, source (`auto | user`), active.
 - `research_items`: url_normalized (unique per household), source_url, source_name, published_on, effective_on, title_vi, summary_vi, why_it_matters_vi, kind, relevance, related_property_ids, province_codes, job_id.
-- `conversations`: title, created_by, sdk_session_id.
-- `messages`: conversation_id, role, content_md, status (`streaming | done | error`), job_id, refs jsonb.
+- `conversations`: title (the first question), created_by, sdk_session_id. Members read their household's; only `ask_question` and the worker write.
+- `messages`: conversation_id, role, content_md, status (`streaming | done | error`), job_id, refs jsonb (the `esta://` links the answer resolved). A question is always `done` and non-blank. Members read; only `ask_question` and the worker write.
 - `worker_heartbeats`: worker_id (a UUID per worker process), host_label, version, auth_mode, agent_mode, last_seen_at. No household data and no audit trigger. Members read only `worker_id` and `last_seen_at`, so they never see the hostname; only the service role writes.
 - `notifications`: user_id, channel (`inapp | email | push`), agent_item_id, status, sent_at, error.
 

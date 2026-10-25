@@ -86,7 +86,8 @@ test('Ryan reads the Dĩ An answer at desktop width, and another household’s m
   const other = await browser.newPage();
   await open(other, 'me.lane9@demo.esta.test', 'light', PHONE);
   const response = await other.goto(conversation);
-  await expect(other.getByTestId('conversation-not-found'), 'RLS hides the conversation outside its household').toContainText('Không tìm thấy cuộc hỏi này');
+  await expect(other.getByRole('heading', { name: '404' }), 'RLS hides the conversation outside its household').toBeVisible();
+  await expect(other.getByTestId('conversation')).toHaveCount(0);
   const html = (await response?.text()) ?? '';
   expect(html, 'none of the question or the answer reaches the page').not.toContain(Q1);
   expect(html).not.toContain('tiền thuê');
