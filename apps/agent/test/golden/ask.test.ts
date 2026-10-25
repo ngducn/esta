@@ -57,6 +57,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
     timezone: ASK_CONTEXT.timezone,
     question: askCase.question,
     earlier: caseEarlier(askCase),
+    seed: askCase.seed ?? [],
     deep: askCase.deep === true,
     reads,
     clock: clockOn('2026-10-07T07:00:00+07:00'),
@@ -113,6 +114,9 @@ const EXPECTED: Readonly<Record<string, () => string>> = {
     `Lợi suất cho thuê gộp của Mặt bằng Quận 1 là ${formatBps(Number(fact('q9', 'q1 gross yield bp')), 'vi')}. Con số này tính trên tiền thuê hằng tháng ${formatVnd(vnd(2_500_000), 'vi')} và giá trị ước tính ${formatVnd(vnd(7_200_000_000), 'vi')} ngày 01/07/2026.\n\nXem [hồ sơ Mặt bằng Quận 1](esta://property/…).`,
   'q10-late-tenant-english': () =>
     `${fact('q10', 'tenant who paid late most often')} paid late most often this year: ${fact('q10', 'their bills paid late')} of ${fact('q10', 'their bills')} bills were paid in full after their due date, on average ${fact('q10', 'their average days late')} days late.\n\nSee [${fact('q10', 'tenant who paid late most often')}](esta://party/…).`,
+  't1-zalo-reminder': () =>
+    `Đây là tin nhắn bạn có thể gửi qua Zalo:\n\nChào ${fact('t1', 'di-an overdue tenant')}, tiền thuê ${fact('q2', 'di-an units overdue')} ở Dãy trọ Dĩ An đến hạn ngày ${day('t1', 'di-an overdue due date')} hiện còn ${money('q2', 'di-an amount overdue')}. Nhờ anh chị sắp xếp đóng giúp sớm. Nếu đã chuyển khoản rồi, anh chị báo lại để mình kiểm tra nhé. Cảm ơn anh chị.`,
+  'seeded-segment-august': () => `Tháng 8/2026, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in August 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
   'seed10-english-overdue': () =>
     `In Dãy trọ Dĩ An, only ${fact('q2', 'di-an units overdue')} is overdue: ${fact('q2', 'di-an days overdue')} days late, with ${money('q2', 'di-an amount overdue')} still owed.\n\nSee [the bill for ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`,
 };
@@ -161,6 +165,35 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     const { run } = await askAfterItsChain('q1-deep');
     expect(run.model).toBe('hand-written-deep');
     expect(caseInput(findCase('q1-deep')).modelRole).toBe('deep');
+  });
+
+  it('golden question 1 sent in the thread runs on the open prompt and states the ground truth', async () => {
+    expect(caseInput(findCase('q1-di-an-income')).prompt).toContain('They may ask anything.');
+    const { answer } = await askAfterItsChain('q1-di-an-income');
+    expect(shown(answer.content_md)).toBe(EXPECTED['q1-di-an-income']?.());
+  });
+
+  it.each(['t2-rent-by-year', 't8-bao-loc-land-price'])('thread case %s answers in words, with no number, guarded on the first turn', async (id) => {
+    const { answer, repair, result, missing } = await askAfterItsChain(id);
+    expect(repair).toBeNull();
+    expect(answer.status).toBe('done');
+    expect(answer.content_md).not.toMatch(/\p{N}|₫|%/u);
+    expect(result.cited.map(({ placeholder }) => placeholder).filter((placeholder) => !/_(label|name)\}\}$/.test(placeholder))).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  it('thread case T8 says the app has no land price and that Trợ lý cannot look it up on the web yet', async () => {
+    const { answer } = await askAfterItsChain('t8-bao-loc-land-price');
+    expect(answer.content_md).toContain('Ứng dụng chưa có giá đất hiện nay của Đất Bảo Lộc');
+    expect(answer.content_md).toContain('chưa tra cứu được trên mạng');
+  });
+
+  it('a new segment\'s first question starts from her previous segment\'s answers, without their links, and reads August from the ledger', async () => {
+    const prompt = caseInput(findCase('seeded-segment-august')).prompt;
+    expect(prompt).toContain('Earlier answer:\nTháng 9/2026, Dãy trọ Dĩ An đã thu');
+    expect(prompt).not.toContain('esta://');
+    const { result } = await askAfterItsChain('seeded-segment-august');
+    expect(result.cited.filter(({ placeholder }) => placeholder.endsWith('income_display}}')).map(({ value }) => value)).toEqual([money('q1', 'di-an income received in August 2026')]);
   });
 
   it('a question the tools cannot answer says the app has no such data and cites no figure', async () => {

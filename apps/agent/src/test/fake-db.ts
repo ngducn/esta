@@ -61,6 +61,10 @@ export function fakeDb(
         filters.push((row) => row[column] === value);
         return builder;
       },
+      neq(column: string, value: unknown) {
+        filters.push((row) => row[column] !== value);
+        return builder;
+      },
       order(column: string, options?: { ascending?: boolean }) {
         orders.push({ column, ascending: options?.ascending ?? true });
         return builder;

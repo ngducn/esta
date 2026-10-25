@@ -1,11 +1,11 @@
 {
   "version": 1,
   "kind": "ask",
-  "inputHash": "b7f15d2c4cccf3188ab30268a4b05e2ddb53b365c4295aeefd80c14d129eafd0",
+  "inputHash": "62581049763a20fc1461b7962e602e14547707f9c5b25109abb2a09579ead5a2",
   "input": {
     "version": 1,
     "kind": "ask",
-    "prompt": "Today is 2026-10-07 in Asia/Ho_Chi_Minh. The family member asks a follow-up to the conversation so far. Answer it with the rules of your first task.\nThe handles and placeholders of your earlier answers no longer hold. Call the tools again for every record and figure this answer writes; this turn's handles start at f9.\n\nQuestion:\nCòn tháng 9 thì sao?",
+    "prompt": "Today is 2026-10-07 in Asia/Ho_Chi_Minh. The family member writes again in the conversation so far. Reply with the rules of your first task.\nThe handles and placeholders of your earlier replies no longer hold. Call the tools again for every record and figure this reply writes; this turn's handles start at f9.\n\nMessage:\nCòn tháng 9 thì sao?",
     "builtInTools": [],
     "mcpTools": [
       "list_properties",
@@ -20,7 +20,7 @@
       "create_proposal"
     ],
     "maxTurns": 15,
-    "resumesInputHash": "bf32ed6ed0c7d283c5a560d327a6bbbe2499f0c213f8d2b4fc88f76597378be2"
+    "resumesInputHash": "3ffc0f64ac06b48746ad44238471e0973ccd40c00bfa3d333d127bd3f81ced15"
   },
   "label": "Hand-written for q1-follow-up-september, resuming q1-di-an-income on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.",
   "model": "hand-written",

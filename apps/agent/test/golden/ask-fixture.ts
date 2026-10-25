@@ -51,6 +51,7 @@ async function main() {
       timezone: 'Asia/Ho_Chi_Minh',
       question: askCase.question,
       earlier: caseEarlier(askCase),
+      seed: askCase.seed ?? [],
       deep: askCase.deep === true,
       reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf }), recorded),
       clock: clockOn('2026-10-07T07:00:00+07:00'),
