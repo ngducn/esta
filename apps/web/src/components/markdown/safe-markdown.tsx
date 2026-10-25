@@ -1,5 +1,6 @@
 import { parseEstaUri } from '@esta/core/links';
 import Link from 'next/link';
+import { CitationChip } from '@/components/assistant/citation-chip';
 import Markdown, { type Components, type UrlTransform } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
@@ -27,11 +28,7 @@ const components: Components = {
         </Link>
       );
     }
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="font-medium text-ink underline underline-offset-4">
-        {children}
-      </a>
-    );
+    return <CitationChip href={href}>{children}</CitationChip>;
   },
 };
 

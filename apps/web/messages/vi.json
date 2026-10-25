@@ -1069,7 +1069,36 @@
     "linkOk": "link ok",
     "linkMissing": "không tìm thấy",
     "ranAt": "Trợ lý chạy lúc {time}.",
-    "briefLabel": "Ghi chú buổi sáng"
+    "briefLabel": "Ghi chú buổi sáng",
+    "tabs": "Các mục của Trợ lý",
+    "tab": {
+      "inbox": "Hộp thư",
+      "market": "Thị trường"
+    },
+    "market": {
+      "title": "Thị trường",
+      "heading": "Tin thị trường",
+      "count": "{count, plural, =0 {Không có tin} other {# tin}}",
+      "filter": "Lọc theo tài sản",
+      "all": "Tất cả",
+      "empty": "Chưa có tin thị trường. Mỗi sáng lúc 06:00, Trợ lý tìm tin về quy hoạch, giá đất, hạ tầng và luật cho các khu vực của gia đình.",
+      "emptyFor": "Chưa có tin nào liên quan đến {property}.",
+      "why": "Liên quan:",
+      "source": "{name} · {date}",
+      "sourceLabel": "Nguồn {index}: {name}, ngày {date}. Mở trong thẻ mới",
+      "effectiveOn": "Hiệu lực từ {date}",
+      "kind": {
+        "infrastructure": "Hạ tầng",
+        "land_price": "Giá đất",
+        "legal_tax": "Luật và thuế",
+        "market_rent": "Giá thuê",
+        "planning": "Quy hoạch",
+        "other": "Tin khác"
+      },
+      "topics": "Chủ đề theo dõi",
+      "topicsIntro": "Trợ lý tìm tin theo các chủ đề này. Chủ đề lấy từ tài sản của gia đình và tự cập nhật khi tài sản thay đổi.",
+      "noTopics": "Chưa có chủ đề nào. Thêm tài sản để Trợ lý biết nên tìm tin ở đâu."
+    }
   },
   "settings": {
     "display": "Hiển thị",

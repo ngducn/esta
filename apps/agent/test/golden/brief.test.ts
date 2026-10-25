@@ -13,11 +13,12 @@ import { replaySession, type SessionRun } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
 import { mcpToolName } from '../../src/tools/server';
 import { clockOn, HOUSEHOLD, labels, seedRecords, snapshot } from '../full-seed';
+import { storedResearch } from '../research-seed';
 
 const jobDir = mkdtempSync(join(tmpdir(), 'esta-brief-golden-'));
 afterAll(() => rmSync(jobDir, { recursive: true, force: true }));
 
-const tables: Record<string, Array<Record<string, unknown>>> = { agent_items: [], ...seedRecords() };
+const tables: Record<string, Array<Record<string, unknown>>> = { agent_items: [], ...seedRecords(), research_items: storedResearch(HOUSEHOLD) };
 const db = fakeDb(tables);
 const prepared = morningBriefRequest({
   db,
@@ -28,6 +29,7 @@ const prepared = morningBriefRequest({
   timezone: 'Asia/Ho_Chi_Minh',
   clock: clockOn('2026-10-07T07:00:00+07:00'),
   waiting: [],
+  failed: [],
   read: async () => ({ snapshot, labels }),
 });
 
@@ -72,12 +74,13 @@ describe('morning_brief in replay on the full seed at 2026-10-07 07:00 (AGENT.md
       .reduce<Array<{ section: string; lines: string[] }>>((sections, [first = '', ...rest]) => {
         const heading = /^\*\*(.+)\*\*$/.exec(first)?.[1];
         if (heading !== undefined) return [...sections, { section: heading, lines: [] }];
-        sections.at(-1)?.lines.push(...[first, ...rest].map((line) => /^- \[.*\]\(esta:\/\/([a-z]+)\//.exec(line)?.[1] ?? line));
+        sections.at(-1)?.lines.push(...[first, ...rest].map((line) => /^- \[.*\]\(esta:\/\/([a-z]+)\//.exec(line)?.[1] ?? (/ \[[^\]]+\]\(<https:\/\/[^>]+>\)$/.test(line) ? 'source' : line)));
         return sections;
       }, []);
     expect(outline).toEqual([
       { section: 'Cần làm', lines: ['invoice', 'lease', 'lease'] },
       { section: 'Theo dõi', lines: ['unit', 'unit', 'document', 'party', 'property'] },
+      { section: 'Thị trường', lines: ['source', 'source', 'source'] },
     ]);
     expect(result.brief.left_out).toEqual([]);
   });

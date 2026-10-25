@@ -57,3 +57,24 @@ export function scanRequest(db: AgentDb, overrides: Partial<Parameters<typeof re
     ...overrides,
   });
 }
+
+/** Research items as the 06:00 scan stores them: three of relevance 0.6 or more today, one below it, and one from yesterday. */
+export function storedResearch(householdId: string): Row[] {
+  const item = (title_vi: string, relevance: number, created_at: string, path: string): Row => ({
+    household_id: householdId,
+    title_vi,
+    source_name: 'Tin tức Demo',
+    source_url: `https://tintuc.example.vn/${path}`,
+    url_normalized: `https://tintuc.example.vn/${path}`,
+    published_on: '2026-10-05',
+    relevance,
+    created_at,
+  });
+  return [
+    item('TP. Đồng Nai điều chỉnh bảng giá đất, áp dụng từ 01/01/2027', 0.65, '2026-10-06T23:00:00.000Z', 'bang-gia-dat'),
+    item('Sắp khởi công Vành đai 3 đoạn qua Phường Dĩ An', 0.9, '2026-10-06T23:00:00.000Z', 'vanh-dai-3'),
+    item('Giá thuê đất nông nghiệp ở Tây Ninh đi ngang', 0.4, '2026-10-06T23:00:00.000Z', 'dat-nong-nghiep'),
+    item('Hướng dẫn mới về khai thuế cho thuê nhà có hiệu lực từ 15/11/2026', 0.7, '2026-10-06T23:00:00.000Z', 'khai-thue'),
+    item('Tin của hôm qua', 0.95, '2026-10-05T23:00:00.000Z', 'hom-qua'),
+  ];
+}

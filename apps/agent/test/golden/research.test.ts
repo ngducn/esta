@@ -37,7 +37,7 @@ describe('research_scan in replay on the full seed at 2026-10-07 06:00 (AGENT.md
   it('keeps the four new items, each filled from tool data with no placeholder left', () => {
     expect(items().map((item) => item.title_vi)).toEqual([
       'Sắp khởi công Vành đai 3 đoạn qua Phường Dĩ An',
-      'TP. Đồng Nai điều chỉnh bảng giá đất từ 01/01/2027',
+      'TP. Đồng Nai điều chỉnh bảng giá đất, áp dụng từ 01/01/2027',
       'Hướng dẫn mới về khai thuế cho thuê nhà có hiệu lực từ 15/11/2026',
       'Giá thuê đất nông nghiệp ở Tây Ninh đi ngang',
     ]);

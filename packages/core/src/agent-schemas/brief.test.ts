@@ -13,6 +13,8 @@ const brief = (patch: Partial<BriefV1> = {}): BriefV1 => ({
   ...patch,
 });
 
+const market = (patch: Partial<BriefV1['market'][number]['source']> = {}) => ({ text: 'Sắp khởi công Vành đai 3 qua Phường Dĩ An', source: { name: 'Tin tức Demo', date: '05/10/2026', url: 'https://tintuc.example.vn/vanh-dai-3', ...patch } });
+
 describe('renderBriefMarkdown', () => {
   it('writes each section with lines under its bold heading, in BRIEF_SECTIONS order, skipping empty ones', () => {
     const markdown = renderBriefMarkdown(brief({ missing_inputs: ['Chưa có tin thị trường hôm nay.'] }));
@@ -26,8 +28,14 @@ describe('renderBriefMarkdown', () => {
   });
 
   it('keeps the order data-driven: the headings follow BRIEF_SECTIONS', () => {
-    const headings = [...renderBriefMarkdown(brief({ market: [{ text: 'Tin', link: link(3) }], missing_inputs: ['Thiếu'] })).matchAll(/^\*\*(.+)\*\*$/gm)].map(([, heading]) => heading);
+    const headings = [...renderBriefMarkdown(brief({ market: [market()], missing_inputs: ['Thiếu'] })).matchAll(/^\*\*(.+)\*\*$/gm)].map(([, heading]) => heading);
     expect(headings).toEqual(BRIEF_SECTIONS.map(({ heading }) => heading.vi));
+  });
+
+  it('ends each market line with its source chip, a link to the article that names the source and its date', () => {
+    const markdown = renderBriefMarkdown(brief({ todo: [], watch: [], market: [market({ name: 'Báo [Demo]' })] }));
+    expect(markdown).toBe('**Thị trường**\n\n- Sắp khởi công Vành đai 3 qua Phường Dĩ An [Báo \\[Demo\\] · 05/10/2026](<https://tintuc.example.vn/vanh-dai-3>)');
+    expect(visibleText(markdown)).toBe('Thị trường\nSắp khởi công Vành đai 3 qua Phường Dĩ An Báo [Demo] · 05/10/2026');
   });
 
   it('shows Markdown punctuation in a line as written, so a value cannot open a link or bold text', () => {
@@ -55,10 +63,17 @@ describe('briefV1Schema', () => {
     expect(briefV1Schema.safeParse(brief({ todo: [{ text: 'Phòng 5', link: 'https://example.com' }] })).success).toBe(false);
   });
 
-  it('holds at most five lines to do and five to watch', () => {
+  it('counts the source chips toward the 300 words, and holds a market source to an https link', () => {
+    expect(briefTokens(brief({ todo: [], watch: [], market: [market()] }))).toBe(briefTokens(brief({ todo: [], watch: [] })) + 2 + 10 + 5);
+    expect(briefV1Schema.safeParse(brief({ market: [market({ url: 'http://tintuc.example.vn/a' })] })).success).toBe(false);
+    expect(briefV1Schema.safeParse(brief({ market: [market({ url: 'https://a.vn/x> [y](z' })] })).success).toBe(false);
+  });
+
+  it('holds at most five lines to do, five to watch and three of market news', () => {
     const six = Array.from({ length: 6 }, () => ({ text: 'a', link: link(1) }));
     expect(briefV1Schema.safeParse(brief({ todo: six })).success).toBe(false);
     expect(briefV1Schema.safeParse(brief({ watch: six })).success).toBe(false);
+    expect(briefV1Schema.safeParse(brief({ market: [market(), market(), market(), market()] })).success).toBe(false);
   });
 });
 

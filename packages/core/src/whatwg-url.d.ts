@@ -10,6 +10,8 @@ declare class URL {
   readonly hostname: string;
   readonly pathname: string;
   readonly port: string;
+  readonly username: string;
+  readonly password: string;
   readonly search: string;
   readonly searchParams: URLSearchParams;
 }

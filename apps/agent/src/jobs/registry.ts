@@ -23,6 +23,8 @@ export type JobContext = {
   readonly timezone: string;
   /** The kinds in the spec's `waitsFor` still queued or running today when the job stopped waiting for them. */
   readonly waiting: readonly string[];
+  /** The kinds in the spec's `waitsFor` that failed today with no attempt left. */
+  readonly failed: readonly string[];
   /** The worker's clock, read when a row's time is written, so a frozen test clock dates it (FND-9). */
   clock(): Promise<Clock>;
 };

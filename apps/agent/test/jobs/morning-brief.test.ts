@@ -10,6 +10,7 @@ import { fakeDb } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { clockOn, HOUSEHOLD, labels, seedRecords, snapshot } from '../full-seed';
 import { replayWorker, toolCaller } from '../replay-worker';
+import { storedResearch } from '../research-seed';
 
 type Row = Record<string, unknown>;
 
@@ -27,7 +28,7 @@ const tablesWith = (agentJobs: Row[] = []): Record<string, Row[]> => ({
 });
 
 function request(tables: Record<string, Row[]>, waiting: readonly string[] = [], clock = clockOn(`${TODAY}T07:00:00+07:00`)) {
-  return morningBriefRequest({ db: fakeDb(tables), householdId: HOUSEHOLD, jobId: 'job-brief', locale: 'vi', asOf: isoDate(TODAY), timezone: 'Asia/Ho_Chi_Minh', clock, waiting, read: async () => ({ snapshot, labels }) });
+  return morningBriefRequest({ db: fakeDb(tables), householdId: HOUSEHOLD, jobId: 'job-brief', locale: 'vi', asOf: isoDate(TODAY), timezone: 'Asia/Ho_Chi_Minh', clock, waiting, failed: [], read: async () => ({ snapshot, labels }) });
 }
 
 const daily = (kind: string, patch: Row = {}): Row => ({
@@ -49,8 +50,8 @@ function stack(inputs: Row[]) {
   const brief = daily('morning_brief');
   const tables = tablesWith([brief, ...inputs]);
   const worker = replayWorker(fakeDb(tables), tables.agent_jobs ?? [], jobsDir, clock);
-  vi.spyOn(JOBS.morning_brief.handler, 'prepare').mockImplementation(async ({ db, job, waiting }) =>
-    morningBriefRequest({ db, householdId: HOUSEHOLD, jobId: job.id, locale: 'vi', asOf: isoDate(TODAY), timezone: 'Asia/Ho_Chi_Minh', clock, waiting, read: async () => ({ snapshot, labels }) }),
+  vi.spyOn(JOBS.morning_brief.handler, 'prepare').mockImplementation(async ({ db, job, waiting, failed }) =>
+    morningBriefRequest({ db, householdId: HOUSEHOLD, jobId: job.id, locale: 'vi', asOf: isoDate(TODAY), timezone: 'Asia/Ho_Chi_Minh', clock, waiting, failed, read: async () => ({ snapshot, labels }) }),
   );
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
   return { brief, tables, worker, at: (time: string) => (now = `${TODAY}T${time}:00+07:00`) };
@@ -90,6 +91,13 @@ describe('morning_brief waits for its inputs (AGENT.md §3)', () => {
     expect(await pollOnce(worker)).toBe(true);
     expect(brief).toMatchObject({ status: 'done', result: expect.objectContaining({ missing_inputs: ['research_scan'] }) });
     expect(body(tables)).toMatch(/\*\*Còn thiếu\*\*\n\n- Tin thị trường hôm nay chưa có\.$/);
+  });
+
+  it('names a research_scan that failed for good, and runs at once', async () => {
+    const { brief, tables, worker } = stack([daily('research_scan', { status: 'failed' }), daily('portfolio_watch', { status: 'done' })]);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(brief).toMatchObject({ status: 'done', payload: {}, result: expect.objectContaining({ missing_inputs: ['research_scan'] }) });
+    expect(body(tables)).toMatch(/\*\*Còn thiếu\*\*\n\n- Hôm nay Trợ lý không tìm được tin thị trường\.$/);
   });
 
   it('runs at once when the day’s portfolio_watch is done', async () => {
@@ -157,6 +165,21 @@ describe('create_brief', () => {
     await call('watch_facts');
     await expect(call('create_brief', draft())).rejects.toThrow(/links to records the household does not have: esta:\/\/invoice\//);
     expect(tables.agent_items).toEqual([]);
+  });
+
+  it('adds today’s three most relevant research items of 0.6 or more under Thị trường, each with its source chip', async () => {
+    const tables = tablesWith();
+    tables.research_items = storedResearch(HOUSEHOLD);
+    const { call } = tools(tables);
+    await call('watch_facts');
+    expect((await call('create_brief', draft())).isError).toBe(false);
+    expect(body(tables).split('**Thị trường**\n\n')[1]).toBe(
+      [
+        '- Sắp khởi công Vành đai 3 đoạn qua Phường Dĩ An [Tin tức Demo · 05/10/2026](<https://tintuc.example.vn/vanh-dai-3>)',
+        '- Hướng dẫn mới về khai thuế cho thuê nhà có hiệu lực từ 15/11/2026 [Tin tức Demo · 05/10/2026](<https://tintuc.example.vn/khai-thue>)',
+        '- TP. Đồng Nai điều chỉnh bảng giá đất, áp dụng từ 01/01/2027 [Tin tức Demo · 05/10/2026](<https://tintuc.example.vn/bang-gia-dat>)',
+      ].join('\n'),
+    );
   });
 
   it('answers the same facts under the same handles when watch_facts is called twice', async () => {

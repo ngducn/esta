@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeUrl } from './normalize-url';
+import { fetchKey, normalizeUrl } from './normalize-url';
 
 const normal = (raw: string) => {
   const result = normalizeUrl(raw);
@@ -32,5 +32,17 @@ describe('normalizeUrl (AGENT.md §5.2)', () => {
     expect(normalizeUrl('ftp://example.vn/a')).toEqual({ ok: false, reason: 'not_https' });
     expect(normalizeUrl('javascript:alert(1)')).toEqual({ ok: false, reason: 'not_url' });
     expect(normalizeUrl('example.vn/a')).toEqual({ ok: false, reason: 'not_url' });
+  });
+});
+
+describe('fetchKey (#323)', () => {
+  it('folds host case, www, port 443, a trailing slash and the fragment, and keeps every query parameter', () => {
+    expect(fetchKey('https://WWW.Tin.example.vn:443/a/?utm_source=zalo#top')).toEqual({ ok: true, value: 'https://tin.example.vn/a?utm_source=zalo' });
+    expect(fetchKey('https://tin.example.vn/a?ref=x')).not.toEqual(fetchKey('https://tin.example.vn/a'));
+  });
+
+  it('refuses a link with userinfo, or one that is not https', () => {
+    expect(fetchKey('https://leak:x@tin.example.vn/a')).toEqual({ ok: false, reason: 'userinfo' });
+    expect(fetchKey('http://tin.example.vn/a')).toEqual({ ok: false, reason: 'not_https' });
   });
 });

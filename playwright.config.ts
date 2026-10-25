@@ -43,6 +43,7 @@ const sharedClock = [
   'reports.spec.ts',
   'assistant-inbox.spec.ts',
   'morning-brief.spec.ts',
+  'assistant-market.spec.ts',
 ];
 
 export default defineConfig({

@@ -23,6 +23,6 @@ export function isAgentSchemaName(name: string): name is AgentSchemaName {
   return Object.hasOwn(AGENT_SCHEMAS, name);
 }
 export { factHandleSchema, watchNoteSchema, type WatchNote } from './portfolio-watch';
-export { BRIEF_SECTIONS, briefDraftSchema, briefTokens, briefV1Schema, MAX_BRIEF_TOKENS, renderBriefMarkdown, type BriefDraft, type BriefLine, type BriefV1 } from './brief';
+export { BRIEF_SECTIONS, briefDraftSchema, briefTokens, briefV1Schema, MAX_BRIEF_TOKENS, MAX_MARKET_LINES, renderBriefMarkdown, type BriefDraft, type BriefLine, type BriefV1, type MarketLine } from './brief';
 export { MAX_QUOTES, MAX_SUMMARY_TOKENS, RESEARCH_KINDS, researchItemDraftSchema, type ResearchItemDraft, type ResearchKind } from './research';
 export { wordCount } from './text';

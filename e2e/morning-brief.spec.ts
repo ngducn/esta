@@ -43,14 +43,17 @@ test('at 07:05 Mẹ reads the 07:00 brief first in Hộp thư, opens Phòng 5 fr
   await expect(page.getByTestId('worker-ran')).toHaveText('Trợ lý chạy lúc 07:00.');
   await expect(page.getByTestId('inbox-item').first(), 'the brief leads the inbox').toHaveAttribute('data-kind', 'brief');
   await expect(brief(page).getByRole('heading', { level: 3 })).toHaveText(SUMMARY);
-  await expect(brief(page).locator('strong')).toHaveText(['Cần làm', 'Theo dõi']);
+  await expect(brief(page).locator('strong')).toHaveText(['Cần làm', 'Theo dõi', 'Thị trường']);
   const todo = brief(page).getByRole('list').first().getByRole('listitem');
   await expect(todo).toHaveText([
     `Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày, còn nợ ${vnd('2.800.000')}`,
     'Hợp đồng Căn hộ Thủ Đức hết hạn ngày 01/11/2026, còn 25 ngày',
     `Phòng 7 Dãy trọ Dĩ An chưa hoàn tiền cọc ${vnd('2.800.000')}, hợp đồng kết thúc ngày 15/09/2026`,
   ]);
-  await expect(brief(page)).not.toContainText('Thị trường');
+  const market = brief(page).getByRole('list').nth(2).getByRole('listitem');
+  await expect(market, 'the three most relevant items of the 06:00 scan, each with its source').toHaveCount(3);
+  await expect(market.first()).toContainText('Sắp khởi công Vành đai 3 đoạn qua Phường Dĩ An');
+  await expect(market.getByTestId('citation-chip')).toHaveText(['Tin tức Demo · 05/10/2026', 'Pháp luật Demo · 20/09/2026', 'Báo Demo · 06/10/2026']);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await todo.first().getByRole('link').click();

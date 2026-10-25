@@ -1,4 +1,4 @@
-import { briefDraftSchema, briefV1Schema, renderBriefMarkdown, type BriefDraft, type BriefLine } from '@esta/core/agent-schemas';
+import { briefDraftSchema, briefV1Schema, renderBriefMarkdown, type BriefDraft, type BriefLine, type MarketLine } from '@esta/core/agent-schemas';
 import type { FilledNote } from '@esta/core/guard';
 import type { DescribedFact } from '@esta/core/watch';
 import { existingLinks } from '@esta/ops';
@@ -8,6 +8,8 @@ import { ToolRejection } from './server';
 export type BriefBinding = NoteBinding & {
   /** One line per input the brief waited for and went without, in the household's language (AGENT.md §3). */
   readonly missingInputs: readonly string[];
+  /** Today's research items for the Thị trường section, which Esta writes from the stored items, not the model (AGENT.md §5.4). */
+  market(): Promise<readonly MarketLine[]>;
 };
 
 /** What the job result keeps of the brief for audit: the model's draft and the values that filled it (AGENT.md §6.3). */
@@ -58,7 +60,7 @@ export function briefWriter(binding: BriefBinding) {
       summary: title,
       todo: filled.slice(0, draft.todo.length),
       watch: filled.slice(draft.todo.length),
-      market: [],
+      market: await binding.market(),
       missing_inputs: binding.missingInputs,
     });
     if (!brief.success) throw rejected(brief.error.issues.map((issue) => `${issue.path.join('.') || 'brief'}: ${issue.message}. Shorten the brief.`));
