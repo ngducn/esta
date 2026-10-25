@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 
 /** The one error line beside the control that caused it, with the overdue diamond so it never relies on color. */

@@ -41,7 +41,7 @@ describe('ping golden test, replay mode (AGENT.md §7)', () => {
     expect(outcome.ok && outcome.reply).toContain(`"${name}"`);
     expect(outcome.ok && outcome.reply).not.toContain('<household>');
     expect(run.toolCalls.map((call) => call.name)).toEqual(['mcp__esta__household_info']);
-    expect(run.result).toMatchObject({ costUsd: 0, sessionId: null, numTurns: 2 });
+    expect(run.result).toMatchObject({ costUsd: 0, sessionId: expect.stringMatching(/^replay-[0-9a-f]{16}$/), numTurns: 2 });
   });
 
   it('fails with MissingRecordingError when the replay directory is empty', async () => {

@@ -4655,18 +4655,18 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **Build.**
 
-- [ ] A follow-up question in a conversation resumes its `sdk_session_id` and stores the new one, and the job's canonical input names the turn it resumes (AGENT.md §8).
-- [ ] List the household's conversations on Hỏi, newest first.
-- [ ] Run the deep model when an operator ticks `Suy nghĩ kỹ hơn`.
-- [ ] Run `/impeccable harden` on the Hỏi tab for long Vietnamese questions and answers, 130% text scale, empty, loading, error and offline states. Add the answer's time, and a Vietnamese not-found screen with a 404 status for a conversation link from another household (P5-07a shows Next's default screen with none of its data).
+- [x] A follow-up question in a conversation resumes its `sdk_session_id` and stores the new one, and the job's canonical input names the turn it resumes (AGENT.md §8).
+- [x] List the household's conversations on Hỏi, newest first.
+- [x] Run the deep model when an operator ticks `Suy nghĩ kỹ hơn`.
+- [x] Run `/impeccable harden` on the Hỏi tab for long Vietnamese questions and answers, 130% text scale, empty, loading, error and offline states. Add the answer's time, and a Vietnamese not-found screen with a 404 status for a conversation link from another household (P5-07a shows Next's default screen with none of its data).
 
 **Verify, unit.**
 
-- [ ] `apps/agent/test/jobs/ask.test.ts` gains cases for resuming a session and for a follow-up in replay.
+- [x] `apps/agent/test/jobs/ask.test.ts` gains cases for resuming a session and for a follow-up in replay.
 
 **Verify, live.** The worker runs in replay.
 
-- [ ] Lane 7. me.lane7 asks question 1, then `Còn tháng 9 thì sao?` at 390x844 dark. Save `p5-07-follow-up.png`. Pass when the second answer gives the September amount equal to the ledger and Studio shows the same conversation with an updated `sdk_session_id`.
+- [x] Lane 7. me.lane7 asks question 1, then `Còn tháng 9 thì sao?` at 390x844 dark. Save `p5-07-follow-up.png`. Pass when the second answer gives the September amount equal to the ledger and Studio shows the same conversation with an updated `sdk_session_id`.
 
 **Review gate.** Record a 30 to 60 second video of asking question 1, the answer streaming in, a follow-up and the ledger link, saved as `~/.claude/orchestrate/esta/media/P5-07/P5-07c-review.mp4`, and stop at merge-ready for the operator's click.
 

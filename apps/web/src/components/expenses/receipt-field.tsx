@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useId, useState } from 'react';
 import { useDocumentUpload, type Upload } from '@/components/documents/use-document-upload';
 import { FieldMessage } from '@/components/field-message';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ACCEPT } from '@/lib/upload/prepare';
 import { useObjectUrl } from '@/lib/use-object-url';

@@ -1137,11 +1137,22 @@
       "emptyQuestion": "Write a question before you send it.",
       "longQuestion": "The question is too long. Write a shorter one.",
       "sendFailed": "The question was not sent. Check the connection and try again.",
-      "asked": "You asked",
       "answering": "Trợ lý is answering",
       "answerFailed": "Trợ lý could not answer this one. You can ask again.",
       "stalled": "Trợ lý has not finished yet. Reload the page to see the rest.",
-      "askAnother": "Ask another question"
+      "askAnother": "Ask another question",
+      "askedAt": "You asked at {time}, {date}",
+      "followUpLabel": "Ask a follow-up",
+      "followUpPlaceholder": "For example: What about September?",
+      "busy": "Trợ lý is still answering the last question. Ask again once it has answered.",
+      "thinkHarder": "Think harder",
+      "thinkHarderHint": "Uses the stronger model, which answers more slowly. Only the operator sees this choice.",
+      "earlier": "Earlier questions",
+      "earlierEmpty": "No questions yet. The questions you send show here so you can read them again.",
+      "lastAsked": "Last asked at {time}, {date}",
+      "notFoundTitle": "This conversation was not found",
+      "notFoundBody": "The link may be wrong, or this conversation does not belong to your household.",
+      "notFoundAction": "Back to Ask"
     }
   },
   "settings": {

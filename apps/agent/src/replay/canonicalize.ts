@@ -51,6 +51,8 @@ export type CanonicalInput = {
   readonly mcpTools: string[];
   readonly maxTurns: number;
   readonly resumesInputHash?: string;
+  /** Set only when the job runs another model than its kind's, as an operator's deep ask does. */
+  readonly modelRole?: 'routine' | 'deep';
 };
 
 export function inputHash(input: CanonicalInput): string {

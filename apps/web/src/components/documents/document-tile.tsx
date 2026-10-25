@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { ExtractionStatus } from '@/server/documents/extraction-status';
 import type { VaultTile } from '@/server/documents/list';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-mark';
+import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
 

@@ -9,7 +9,7 @@ import { serviceClient } from '../../src/supabase';
 import { askReads } from '../../src/tools/ask-reads';
 import { runTool } from '../../src/tools/server';
 import { clockOn } from '../full-seed';
-import { ASK_CASES } from './ask-cases';
+import { ASK_CASES, caseEarlier } from './ask-cases';
 import { ASK_READS_FIXTURE, recordingReads, type RecordedReads } from './ask-reads';
 
 export const ASK_FIXTURE = join(import.meta.dirname, 'ask-full-2026-10-07.json');
@@ -43,11 +43,15 @@ async function main() {
       db,
       householdId: household.id,
       jobId: 'ask-fixture',
+      conversationId: 'ask-fixture',
+      questionId: 'ask-fixture',
       answerId: 'ask-fixture',
       locale: 'vi',
       asOf,
       timezone: 'Asia/Ho_Chi_Minh',
       question: askCase.question,
+      earlier: caseEarlier(askCase),
+      deep: askCase.deep === true,
       reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf }), recorded),
       clock: clockOn('2026-10-07T07:00:00+07:00'),
     });

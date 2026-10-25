@@ -33,20 +33,32 @@ function rewriteSigned(request: NextRequest): NextResponse {
   return NextResponse.rewrite(new URL(`${pathname}${search}`, env.NEXT_PUBLIC_SUPABASE_URL), { request: { headers } });
 }
 
-const PROPERTY_PATH = /^\/properties\/([^/]+)(?:\/|$)/;
-const STATIC_PROPERTY_ROUTES = new Set(['new', 'archived']);
+type RecordPage = {
+  readonly path: RegExp;
+  readonly routes: ReadonlySet<string>;
+  find(supabase: SupabaseClient<Database>, id: string): PromiseLike<{ readonly data: unknown; readonly error: unknown }>;
+};
+
+const RECORD_PAGES: readonly RecordPage[] = [
+  { path: /^\/properties\/([^/]+)(?:\/|$)/, routes: new Set(['new', 'archived']), find: (supabase, id) => supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle() },
+  { path: /^\/assistant\/ask\/([^/]+)$/, routes: new Set(), find: (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle() },
+];
 
 /**
  * Every page under (app) streams below a loading boundary, so a page's notFound() arrives after the 200 is sent.
- * A document request for a property this member cannot read gets its 404 here instead; the page still renders the
+ * A document request for a record this member cannot read gets its 404 here instead; the page still renders the
  * not-found screen. Client navigations (the rsc header) skip the query, because their status is never shown.
  */
-async function isMissingProperty(request: NextRequest, supabase: SupabaseClient<Database>): Promise<boolean> {
-  const id = PROPERTY_PATH.exec(request.nextUrl.pathname)?.[1];
-  if (id === undefined || STATIC_PROPERTY_ROUTES.has(id) || request.headers.has('rsc')) return false;
-  if (!z.uuid().safeParse(id).success) return true;
-  const { data, error } = await supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle();
-  return error === null && data === null;
+async function isMissingRecord(request: NextRequest, supabase: SupabaseClient<Database>): Promise<boolean> {
+  if (request.headers.has('rsc')) return false;
+  for (const page of RECORD_PAGES) {
+    const id = page.path.exec(request.nextUrl.pathname)?.[1];
+    if (id === undefined || page.routes.has(id)) continue;
+    if (!z.uuid().safeParse(id).success) return true;
+    const { data, error } = await page.find(supabase, id);
+    return error === null && data === null;
+  }
+  return false;
 }
 
 export async function proxy(request: NextRequest) {
@@ -68,7 +80,7 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   if (data === null && !isPublicPath(pathname)) return redirectKeepingCookies(request, response, '/sign-in');
   if (data !== null && isAuthPage(pathname)) return redirectKeepingCookies(request, response, '/');
-  if (data !== null && (await isMissingProperty(request, supabase))) return new NextResponse(null, { status: 404, headers: response.headers });
+  if (data !== null && (await isMissingRecord(request, supabase))) return new NextResponse(null, { status: 404, headers: response.headers });
   return response;
 }
 

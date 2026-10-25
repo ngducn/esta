@@ -3,6 +3,7 @@ import { gfmTableFromMarkdown } from 'mdast-util-gfm-table';
 import { gfmTable } from 'micromark-extension-gfm-table';
 import Link from 'next/link';
 import { CitationChip } from '@/components/assistant/citation-chip';
+import type { ReactNode } from 'react';
 import Markdown, { type Components, type Options, type UrlTransform } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +37,9 @@ const keepListed =
   (url) =>
     refs.includes(url) && estaPath(url) !== null ? url : null;
 
+const NUMBER_THEN_WORD = /(\d) (?=\p{L})/gu;
+const glueUnits = (node: ReactNode): ReactNode => (typeof node === 'string' ? node.replace(NUMBER_THEN_WORD, '$1\u00a0') : Array.isArray(node) ? node.map(glueUnits) : node);
+
 const components: Components = {
   a: ({ href, children }) => {
     if (typeof href !== 'string' || href === '') return <span>{children}</span>;
@@ -55,7 +59,7 @@ const components: Components = {
     </div>
   ),
   th: ({ children }) => <th className="border-b border-rule px-2 py-2 align-bottom font-medium text-ink">{children}</th>,
-  td: ({ children }) => <td className="border-b border-rule px-2 py-2 align-top text-ink-2 figures">{children}</td>,
+  td: ({ children }) => <td className="border-b border-rule px-2 py-2 align-top text-ink-2 figures">{glueUnits(children)}</td>,
 };
 
 /**

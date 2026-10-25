@@ -59,6 +59,7 @@ yield as (
 select question, figure, value from (
   select 'q1' as question, 'di-an income received in October 2026' as figure,
     (select coalesce(sum(a.amount_vnd), 0) from public.allocation_facts a where a.property_id = (select id from prop where code = 'DIAN') and a.received_on between '2026-10-01' and '2026-10-31')::text as value
+  union all select 'q1', 'di-an income received in September 2026', (select coalesce(sum(a.amount_vnd), 0) from public.allocation_facts a where a.property_id = (select id from prop where code = 'DIAN') and a.received_on between '2026-09-01' and '2026-09-30')::text
   union all select 'q2', 'di-an units overdue', (select string_agg(label, ', ' order by label) from overdue)
   union all select 'q2', 'di-an days overdue', (select string_agg(days::text, ', ' order by label) from overdue)
   union all select 'q2', 'di-an amount overdue', (select sum(outstanding_vnd)::text from overdue)

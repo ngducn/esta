@@ -41,7 +41,7 @@ select is_empty(
      where member_id not in (select id from public.household_members where user_id = (select auth.uid())) returning 1 $$,
   'notification_preferences: delete touches no row of another member');
 
-select isnt(public.ask_question(:'a', '00000000-0000-4000-8000-00000000c0a9', 'Tháng này thu được bao nhiêu?', '2026-10-07 09:00+07'), null,
+select isnt(public.ask_question(:'a', '00000000-0000-4000-8000-00000000c0a9', '00000000-0000-4000-8000-00000000c0b9', 'Tháng này thu được bao nhiêu?', false, '2026-10-07 09:00+07'), null,
   'FND-2: a viewer asks on the Hỏi tab, through ask_question only');
 select throws_ok(
   format($$ insert into public.messages (household_id, conversation_id, role, status, content_md) values (%L, '00000000-0000-4000-8000-00000000c0a9', 'user', 'done', 'Câu khác') $$, :'a'),

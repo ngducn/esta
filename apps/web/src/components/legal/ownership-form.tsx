@@ -12,7 +12,7 @@ import { saveOwnershipShares } from '@/app/(app)/properties/[id]/legal/actions';
 import { DateInput } from '@/components/date-input';
 import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAction } from '@/components/use-action';

@@ -8,7 +8,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
-import { StatusShape } from '@/components/status-mark';
+import { StatusShape } from '@/components/status-shape';
 import type { LandUseCode } from '@/server/properties/legal';
 import { LegalFormShell } from './legal-form-shell';
 import { PurposeRows, purposeDraft, readPurposes, type PurposeDraft, type PurposeInvalid } from './purpose-rows';

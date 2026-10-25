@@ -63,6 +63,11 @@ describe('SafeMarkdown', () => {
     expect([...container.querySelectorAll('a')].map((link) => link.getAttribute('href'))).toEqual(['/open/ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7']);
   });
 
+  it('in a table cell, a number keeps its unit on its line, and the text reads the same', () => {
+    const cells = [...answer('| Còn lại | Phòng |\n| --- | --- |\n| 25 ngày | Phòng 5 |').querySelectorAll('td')].map((cell) => cell.textContent);
+    expect(cells).toEqual(['25\u00a0ngày', 'Phòng 5']);
+  });
+
   it('outside an answer, a table stays its literal text', () => {
     const container = renderMarkdown('| Tài sản | Đã thu |\n| --- | --- |\n| Dĩ An | Có |');
     expect(container.querySelector('table')).toBeNull();
