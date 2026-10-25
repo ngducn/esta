@@ -17,7 +17,6 @@ const keepSafeUrl: UrlTransform = (url) => {
   return estaPath(url) === null ? null : url;
 };
 
-/** An answer links only records of the app: an `https:` link renders as its text too (AGENT.md §5.6). */
 const keepInAppUrl: UrlTransform = (url) => (estaPath(url) === null ? null : url);
 
 const components: Components = {
@@ -37,8 +36,7 @@ const components: Components = {
 
 /**
  * Model output as Markdown limited to text structure. Raw HTML renders as its literal text because no raw HTML
- * plugin runs, and images are dropped so a reply cannot load a remote URL. `links="in-app"` keeps only links to the
- * app's own records.
+ * plugin runs, and images are dropped so a reply cannot load a remote URL.
  */
 export function SafeMarkdown({ children, className, links = 'sources' }: { children: string; className?: string; links?: 'sources' | 'in-app' }) {
   return (

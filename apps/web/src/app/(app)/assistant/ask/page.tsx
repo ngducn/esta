@@ -10,7 +10,6 @@ export async function generateMetadata() {
   return { title: t('title') };
 }
 
-/** DESIGN-BRIEF §5.5, §6.11. */
 export default async function AskPage() {
   const clock = await getClock();
   const member = await requireMember();

@@ -12,9 +12,8 @@ import { ToolRejection } from './server';
 
 const inputSchema = z.strictObject({ property: z.string(), year: z.number().int().min(2000).max(2100), month: z.number().int().min(1).max(12) });
 
-/** AGENT.md §4, for one property and one month; P5-07b adds the year, the household and the totals by category. The same call answers the same handle. */
 export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, properties: ReadonlyMap<string, CitedRecord<PropertyRecord>>, cite: RunSheet['cite']) {
-  const answered = new Map<string, unknown>();
+  const byCall = new Map<string, unknown>();
   return async (raw: Record<string, unknown>) => {
     const input = inputSchema.safeParse(raw);
     if (!input.success) throw new ToolRejection(`ledger takes {"property": a handle from list_properties, "year", "month": 1 to 12}: ${input.error.issues.map((issue) => issue.path.join('.') || '(root)').join(', ')}`);
@@ -22,7 +21,7 @@ export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, pro
     const property = properties.get(handle);
     if (property === undefined) throw new ToolRejection(`property: ${handle} is not a property list_properties returned in this run`);
     const key = JSON.stringify([handle, year, month]);
-    const earlier = answered.get(key);
+    const earlier = byCall.get(key);
     if (earlier !== undefined) return earlier;
 
     const from = isoDate(`${formatYear(year)}-${String(month).padStart(2, '0')}-01`);
@@ -36,7 +35,7 @@ export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, pro
       net_display: formatVnd(totals.noiVnd, locale),
       link: estaUri({ type: 'ledger', id: property.id }),
     });
-    answered.set(key, record);
+    byCall.set(key, record);
     return record;
   };
 }

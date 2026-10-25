@@ -7,7 +7,6 @@ const HANDLE_LINK = /\]\((f\d+)\)/g;
 
 export type Answer = FilledNote & { readonly refs: readonly string[] };
 
-/** A handle the run never returned stays a bare word, which the page renders as text. */
 export function resolveLinks(text: string, sheet: FactSheet): { readonly text: string; readonly refs: string[] } {
   const refs = new Set<string>();
   const resolved = text.replace(HANDLE_LINK, (whole, handle: string) => {
@@ -19,8 +18,7 @@ export function resolveLinks(text: string, sheet: FactSheet): { readonly text: s
   return { text: resolved, refs: [...refs] };
 }
 
-/** Where the text may be cut: after a sentence's end mark or a line break, outside an open link text or placeholder. */
-function lastBoundary(template: string): number {
+function lastSentenceEnd(template: string): number {
   let cut = 0;
   let brackets = 0;
   let braces = 0;
@@ -45,21 +43,15 @@ function guarded(template: string, sheet: FactSheet): Result<Answer, NoteViolati
 
 export type AnswerStream = {
   push(delta: string): Promise<void>;
-  /** After a violation the row keeps the last text that passed. */
   end(): Promise<Result<Answer, NoteViolation[]>>;
-  /** For a repair turn: its first passing sentence replaces what the row shows. */
   restart(): void;
   readonly template: () => string;
 };
 
-/**
- * AGENT.md §5.6. The whole prefix up to each sentence boundary is guarded, not the new sentence alone, so a placeholder
- * split across chunks never reaches the row, and a violating sentence stops the stream because every longer prefix
- * holds it too.
- */
 export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now }: { sheet: FactSheet; write(content: string): Promise<void>; flushMs?: number; now?: () => number }): AnswerStream {
   let template = '';
   let checkedTo = 0;
+  let violated = false;
   let accepted = '';
   let written: string | null = null;
   let lastWrite = Number.NEGATIVE_INFINITY;
@@ -89,11 +81,15 @@ export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now 
   return {
     async push(delta) {
       template += delta;
-      const cut = lastBoundary(template);
+      if (violated) return;
+      const cut = lastSentenceEnd(template);
       if (cut <= checkedTo) return;
       checkedTo = cut;
       const prefix = guarded(template.slice(0, cut).trimEnd(), sheet);
-      if (!prefix.ok) return;
+      if (!prefix.ok) {
+        violated = true;
+        return;
+      }
       accepted = prefix.value.text;
       schedule();
       if (failure !== null) throw failure;
@@ -108,6 +104,7 @@ export function answerStream({ sheet, write, flushMs = FLUSH_MS, now = Date.now 
     restart() {
       template = '';
       checkedTo = 0;
+      violated = false;
     },
     template: () => template,
   };

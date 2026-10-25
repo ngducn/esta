@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { formatVnd } from '../packages/core/src/format/index.ts';
+import { vnd } from '../packages/core/src/money/vnd.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { memberRest } from './helpers/auth-api';
 import { laneProperty } from './helpers/seed';
@@ -26,11 +27,11 @@ test.afterAll(async ({ request }) => {
 
 const answer = (page: Page) => page.getByTestId('answer');
 
-/** Sends the question from Trợ lý > Hỏi and returns the milliseconds from the tap to the first visible sentence. */
-async function ask(page: Page, question: string): Promise<number> {
+async function askAndTimeFirstSentence(page: Page, question: string): Promise<number> {
   await page.goto('/assistant');
   await page.getByRole('navigation', { name: 'Các mục của Trợ lý' }).getByRole('link', { name: 'Hỏi' }).click();
   await expect(page).toHaveURL(/\/assistant\/ask$/);
+  await pause(page);
   await page.getByRole('textbox', { name: 'Câu hỏi của bạn' }).fill(question);
   await pause(page);
   const sent = Date.now();
@@ -40,6 +41,7 @@ async function ask(page: Page, question: string): Promise<number> {
   await expect(page.getByTestId('answer-line'), 'the waiting line gives way to the first sentence').toHaveCount(0, { timeout: 30_000 });
   const firstSentence = Date.now() - sent;
   await expect(answer(page)).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
+  await pause(page);
   return firstSentence;
 }
 
@@ -50,13 +52,13 @@ async function octoberIncome(page: Page, lane: number) {
 
 test('Mẹ asks how much Dĩ An brought in this month: the answer streams in with the ledger amount and a link to its Thu chi tab', async ({ page }) => {
   await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
-  const firstSentence = await ask(page, Q1);
+  const firstSentence = await askAndTimeFirstSentence(page, Q1);
   test.info().annotations.push({ type: 'first sentence ms', description: String(firstSentence) });
   expect(firstSentence, 'the first sentence shows within 10 s of send (AGENT.md §5.6)').toBeLessThan(10_000);
 
   const income = await octoberIncome(page, 2);
   expect(income, 'the seed received rent at Dĩ An in October').toBeGreaterThan(0);
-  await expect(answer(page)).toContainText(`Dãy trọ Dĩ An đã thu ${formatVnd(income, 'vi')} tiền thuê.`);
+  await expect(answer(page)).toContainText(`Dãy trọ Dĩ An đã thu ${formatVnd(vnd(income), 'vi')} tiền thuê.`);
   await expect(answer(page).locator('[class*="animate-"]'), 'no typing animation').toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await noSidewaysScroll(page);
@@ -65,11 +67,12 @@ test('Mẹ asks how much Dĩ An brought in this month: the answer streams in wit
   await pause(page);
   await answer(page).getByRole('link', { name: 'sổ thu chi của Dãy trọ Dĩ An' }).click();
   await expect(page).toHaveURL(new RegExp(`/properties/${laneProperty(2, 'di-an')}/finance`));
+  await pause(page);
 });
 
 test('on her phone in dark, Mẹ asks for a market price the app does not hold, and the answer says so without a number', async ({ page }) => {
   await open(page, 'me.lane9@demo.esta.test', 'dark', PHONE);
-  await ask(page, MARKET);
+  await askAndTimeFirstSentence(page, MARKET);
   await expect(answer(page)).toContainText('Ứng dụng chưa có giá thị trường hiện nay của Đất Bảo Lộc, nên Trợ lý không ước tính con số nào.');
   await expect(answer(page), 'no amount or digit').not.toContainText(/\d/);
   await expect(answer(page).getByRole('link'), 'no record was cited, so nothing links').toHaveCount(0);
@@ -79,7 +82,7 @@ test('on her phone in dark, Mẹ asks for a market price the app does not hold, 
 
 test('Ryan reads the Dĩ An answer at desktop width, and another household’s member sees only a not-found screen at its link', async ({ page, browser }) => {
   await open(page, 'ryan.lane2@demo.esta.test', 'dark', DESKTOP);
-  await ask(page, Q1);
+  await askAndTimeFirstSentence(page, Q1);
   await shot(page, 'p5-07-q1-1440x900-dark');
   const conversation = page.url();
 

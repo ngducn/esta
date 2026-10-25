@@ -33,11 +33,9 @@ export type SdkOptionsInputs = {
   readonly streaming?: { readonly resume: string | null };
 };
 
-/**
- * `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to
- * disk. A streaming job reads no page or document, so it keeps its transcript for the repair turn to resume.
- */
+/** `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to disk. */
 export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, postToolUse, abortController, streaming }: SdkOptionsInputs): Options {
+  if (streaming !== undefined && spec.builtInTools.length > 0) throw new Error(`${spec.kind} keeps its transcript, so it may not read pages or files with built-in tools`);
   return {
     model,
     cwd: jobDir,

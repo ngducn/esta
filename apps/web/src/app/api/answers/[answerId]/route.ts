@@ -5,7 +5,6 @@ import { getCurrentMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 
 const POLL_MS = 250;
-/** The ask job's four minutes and a queue wait; then the page keeps what it has and stops listening. */
 const LISTEN_MS = 5 * 60_000;
 
 const params = z.object({ answerId: z.uuid(), conversation: z.uuid() });
@@ -13,7 +12,6 @@ const headers = { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Con
 
 const event = (state: AnswerState | { readonly status: 'timeout' | 'gone' }) => new TextEncoder().encode(`data: ${JSON.stringify(state)}\n\n`);
 
-/** Read through the member's session client, so RLS is the one boundary and the page holds no database token (AGENT.md §5.6). */
 export async function GET(request: NextRequest, context: { params: Promise<{ answerId: string }> }) {
   const parsed = params.safeParse({ ...(await context.params), conversation: request.nextUrl.searchParams.get('conversation') });
   const member = await getCurrentMember();

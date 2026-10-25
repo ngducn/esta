@@ -9,7 +9,6 @@ type AskInput = z.output<typeof inputSchema>;
 
 export type Asked = { readonly id: string };
 
-/** The caller mints the conversation id, so a second tap lands on the same conversation (AGENT.md §5.6). */
 export const askQuestion = defineOp<AskInput, AskInput, Asked>({
   creates: 'conversations',
   input: inputSchema,

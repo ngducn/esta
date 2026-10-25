@@ -39,7 +39,6 @@ export type PreparedJob = {
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
   onText?(delta: string): Promise<void>;
-  /** The prompt of one more turn in the same session, such as a repair, or null. */
   nextTurn?(): Promise<string | null>;
 };
 
@@ -53,8 +52,7 @@ export type JobSpec = {
   readonly modelRole: ModelRole;
   /** A job the scheduler queues for every household once a day at `HH:mm` in the business timezone (AGENT.md §3). */
   readonly schedule?: { readonly daily: string };
-  /** Runs in `conversations/{payload.conversation_id}`, kept between jobs so a session resumes there. */
-  readonly conversation?: true;
+  readonly workDir?: 'conversation';
   /** Daily kinds whose same-day job must finish first; the runner reschedules the job while one is queued or running (AGENT.md §3). */
   readonly waitsFor?: readonly string[];
   readonly handler: {
@@ -122,7 +120,7 @@ export const JOBS = {
     maxTurns: 15,
     timeoutMs: 2 * 60_000,
     modelRole: 'routine',
-    conversation: true,
+    workDir: 'conversation',
     handler: { prepare: prepareAsk, onFailed: failAsk },
   },
 } as const satisfies Record<string, JobSpec>;

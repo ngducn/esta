@@ -15,7 +15,6 @@ export const ASK_JOB = '00000000-0000-4000-8000-0000000c0a04';
 
 const fixture = JSON.parse(readFileSync(join(import.meta.dirname, 'golden/ask-full-2026-10-07.json'), 'utf8')) as Record<string, Row[]>;
 
-/** The full seed's rows the Ask tools read, one question queued as ask_question leaves it, and the answer row it streams into. */
 export function askTables(question: string, payload: Row = { conversation_id: CONVERSATION, question_id: QUESTION, answer_id: ANSWER }): Record<string, Row[]> {
   return {
     ...structuredClone(fixture),
@@ -30,7 +29,6 @@ export function askTables(question: string, payload: Row = { conversation_id: CO
   };
 }
 
-/** A replay worker on those tables at 2026-10-07 07:00, recording every write. */
 export function askWorker(tables: Record<string, Row[]>, jobsDir: string, replayDir = DEFAULT_REPLAY_DIR) {
   const writes: Recorded[] = [];
   const worker = replayWorker(fakeDb(tables, writes), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T07:00:00+07:00'), replayDir);

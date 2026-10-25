@@ -17,7 +17,7 @@ const recordingSchema = z.object({
     builtInTools: z.array(z.string()),
     mcpTools: z.array(z.string()),
     maxTurns: z.number().int(),
-    resumes: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+    resumesInputHash: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   }),
   /** What the recording is of, such as a fixture id, for the person reviewing recording diffs. */
   label: z.string().optional(),

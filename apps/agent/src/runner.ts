@@ -61,20 +61,22 @@ type Inputs = { readonly waiting: readonly string[]; readonly failed: readonly s
 
 const conversationPayload = z.object({ conversation_id: z.uuid() });
 
-/** `jobs/<job_id>` is emptied and deleted on every exit path (DOC-5); a conversation's directory is kept, and a crafted id cannot leave it. */
-function openWorkDir(worker: Worker, job: AgentJob, spec: JobSpec): { readonly dir: string; readonly kept: boolean } {
-  if (spec.conversation === undefined) {
+type WorkDir = { readonly dir: string; close(): void };
+
+function openWorkDir(worker: Worker, job: AgentJob, spec: JobSpec): WorkDir {
+  if (spec.workDir === undefined) {
     const dir = join(worker.jobsDir, job.id);
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
-    return { dir: realpathSync(dir), kept: false };
+    const resolved = realpathSync(dir);
+    return { dir: resolved, close: () => rmSync(resolved, { recursive: true, force: true }) };
   }
   const payload = conversationPayload.safeParse(job.payload);
   if (!payload.success) throw new InvalidJobError(`${job.kind} ${job.id} names no conversation`);
   mkdirSync(join(worker.conversationsDir, payload.data.conversation_id), { recursive: true });
   const dir = join(realpathSync(worker.conversationsDir), payload.data.conversation_id);
   if (realpathSync(dir) !== dir) throw new InvalidJobError(`${job.kind} ${job.id}: the conversation directory is a link`);
-  return { dir, kept: true };
+  return { dir, close: () => undefined };
 }
 
 function runModel(worker: Worker, request: SessionRequest): Promise<SessionRun> {
@@ -93,7 +95,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
   let session: SessionRun | null = null;
-  let work: { readonly dir: string; readonly kept: boolean } | null = null;
+  let work: WorkDir | null = null;
   try {
     work = openWorkDir(worker, job, spec);
     const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: work.dir, timezone: worker.timezone, waiting, failed, clock: () => worker.clock() });
@@ -116,7 +118,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
     while (outcome.ok) {
       const prompt = (await prepared.nextTurn?.()) ?? null;
       if (prompt === null) break;
-      turn = { ...request, prompt, resume: { sessionId: session.result.sessionId, after: inputHash(canonicalInput(turn)) } };
+      turn = { ...request, prompt, resume: { sessionId: session.result.sessionId, afterInputHash: inputHash(canonicalInput(turn)) } };
       session = followedBy(session, await runModel(worker, turn));
       outcome = judgeResult(session.result);
     }
@@ -125,7 +127,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
   } catch (error) {
     return { outcome: { ok: false, failure: failureOf(error) }, session };
   } finally {
-    if (work?.kept === false) rmSync(work.dir, { recursive: true, force: true });
+    work?.close();
   }
 }
 

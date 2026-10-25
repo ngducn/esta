@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { z } from 'zod';
+import { idSchema } from '@esta/ops';
 import { AnswerStream } from '@/components/assistant/answer-stream';
 import { AssistantHeader, assistantStatus } from '@/components/assistant/assistant-header';
 import { AssistantMonogram } from '@/components/assistant/monogram';
@@ -12,9 +12,6 @@ import { requireMember } from '@/server/member';
 
 export { generateMetadata } from '../page';
 
-const idSchema = z.uuid();
-
-/** A plain conversation page, not chat bubbles (DESIGN-BRIEF §5.5). */
 export default async function ConversationPage({ params }: { params: Promise<{ conversationId: string }> }) {
   const { conversationId } = await params;
   if (!idSchema.safeParse(conversationId).success) notFound();

@@ -8,7 +8,6 @@ export type AnswerLabels = Readonly<Record<'streaming' | 'error' | 'stalled', st
 
 type Shown = AnswerState | { readonly content: string; readonly status: 'stalled' };
 
-/** No typing animation; a static line stands until the first sentence (DESIGN-BRIEF §5.5). */
 export function AnswerStream({ id, conversationId, initial, labels }: { id: string; conversationId: string; initial: AnswerState; labels: AnswerLabels }) {
   const [shown, setShown] = useState<Shown>(initial);
   const streaming = shown.status === 'streaming';

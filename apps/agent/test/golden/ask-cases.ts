@@ -1,6 +1,3 @@
-// The hand-written Ask recordings (AGENT.md §8), as data: each case is the question, the tool calls and the reply a
-// model would make. They stay hand-written until the P5-10 live run records them. After a change to the ask prompt or
-// its tools, rewrite them with `pnpm --filter agent exec tsx test/golden/ask-cases.ts`; ask.test.ts fails while one is stale.
 import { isoDate } from '@esta/core/date';
 import { askPrompt } from '../../src/prompts/ask';
 import { JOBS } from '../../src/jobs/registry';
@@ -18,7 +15,6 @@ export type AskCase = {
 
 const PROPERTIES = { name: mcpToolName('list_properties'), input: {} };
 
-/** On the full seed, list_properties hands out f1 to f7 in code order: BAOLOC, BIENHOA, DIAN, LONGAN, Q1, Q7, THUDUC. */
 export const ASK_CASES: readonly AskCase[] = [
   {
     id: 'q1-di-an-income',

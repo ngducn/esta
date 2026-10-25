@@ -31,14 +31,12 @@ export type AskInput = {
 
 type AnswerUpdate = Pick<TablesUpdate<'messages'>, 'content_md' | 'status' | 'refs'>;
 
-/** Writes the answer row only while it streams, so a finished or failed answer never changes again. */
 async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 'householdId' | 'answerId'>, update: AnswerUpdate): Promise<void> {
   const { data, error } = await db.from('messages').update(update).eq('household_id', householdId).eq('id', answerId).eq('status', 'streaming').select('id');
   if (error) throw new Error(`Writing the answer failed: ${error.message}`);
   if (data.length !== 1) throw new Error(`The answer ${answerId} is no longer streaming`);
 }
 
-/** AGENT.md §5.6. The worker and the golden test both build it here, so a recording hashes the prompt the worker ships. */
 export function askRequest(input: AskInput): PreparedJob {
   const { db, householdId, locale } = input;
   const { sheet, cite } = runSheet();
@@ -72,8 +70,7 @@ export function askRequest(input: AskInput): PreparedJob {
   };
 }
 
-/** A retry starts the answer over. */
-async function readTurn(db: AgentDb, job: AgentJob): Promise<{ readonly question: string; readonly answerId: string }> {
+async function startTurn(db: AgentDb, job: AgentJob): Promise<{ readonly question: string; readonly answerId: string }> {
   const payload = payloadSchema.safeParse(job.payload);
   if (!payload.success) throw new InvalidJobError(`ask ${job.id} has no conversation, question and answer`);
   const { conversation_id, question_id, answer_id } = payload.data;
@@ -86,11 +83,10 @@ async function readTurn(db: AgentDb, job: AgentJob): Promise<{ readonly question
 }
 
 export async function prepareAsk({ db, job, clock, timezone }: JobContext): Promise<PreparedJob> {
-  const [turn, locale, now] = await Promise.all([readTurn(db, job), householdLocale(db, job.household_id), clock()]);
+  const [turn, locale, now] = await Promise.all([startTurn(db, job), householdLocale(db, job.household_id), clock()]);
   return askRequest({ db, householdId: job.household_id, jobId: job.id, answerId: turn.answerId, locale, asOf: now.today(), timezone, question: turn.question, clock });
 }
 
-/** Mẹ sees a plain failure line, never half an answer; the operator item and the job hold the cause (AGENT.md §9). */
 export async function failAsk({ db, job }: Pick<JobContext, 'db' | 'job'>): Promise<void> {
   const payload = payloadSchema.pick({ answer_id: true }).safeParse(job.payload);
   if (!payload.success) return;

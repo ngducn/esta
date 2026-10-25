@@ -11,7 +11,6 @@ const seen: Options[] = [];
 
 const event = (payload: Record<string, unknown>) => ({ type: 'stream_event', event: payload, parent_tool_use_id: null, uuid: 'u', session_id: 's1' });
 
-/** A model that writes a sentence, calls a tool in a second block, then writes another, as streamed events. */
 async function* streamingModel({ options }: { options: Options }) {
   seen.push(options);
   yield event({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
@@ -23,10 +22,7 @@ async function* streamingModel({ options }: { options: Options }) {
   yield { type: 'result', subtype: 'success', is_error: false, result: 'Hết.', num_turns: 2, session_id: 's2', total_cost_usd: 0, usage: {}, modelUsage: {}, permission_denials: [] };
 }
 
-vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@anthropic-ai/claude-agent-sdk')>()),
-  query: (input: { options: Options }) => streamingModel(input),
-}));
+vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({ ...(await importOriginal<object>()), query: streamingModel }));
 
 const jobDir = realpathSync(mkdtempSync(join(tmpdir(), 'esta-stream-')));
 afterAll(() => rmSync(jobDir, { recursive: true, force: true }));
@@ -43,7 +39,7 @@ describe('a streaming session (AGENT.md §5.6)', () => {
         tools: new Map(),
         canon: canonicalizer({ householdName: 'Gia đình Demo' }),
         onText: async (delta) => void texts.push(delta),
-        resume: { sessionId: 's1', after: 'a'.repeat(64) },
+        resume: { sessionId: 's1', afterInputHash: 'a'.repeat(64) },
       },
       { agentMode: 'live', authMode: 'api_key', model: 'routine-model', credential: { name: 'ANTHROPIC_API_KEY', value: 'test-key' } },
     );

@@ -32,14 +32,13 @@ const tempDir = (prefix: string) => {
   return dir;
 };
 
-/** Hand-written turns for one question: the answer, then each repair turn resuming the turn before it. */
 function recordTurns(replies: readonly string[]): string {
   const dir = tempDir('esta-ask-replay-');
   const canon = canonicalizer({ householdName: 'Gia đình Demo' });
   let prompt = askPrompt({ ...ASK_CONTEXT, question: QUESTION_TEXT });
   let after: string | undefined;
   for (const [index, reply] of replies.entries()) {
-    const input = canonicalInput({ spec: JOBS.ask, prompt, canon, ...(after === undefined ? {} : { resume: { sessionId: null, after } }) });
+    const input = canonicalInput({ spec: JOBS.ask, prompt, canon, ...(after === undefined ? {} : { resume: { sessionId: null, afterInputHash: after } }) });
     const toolCalls = index === 0 ? TOOLS : [];
     writeRecording(dir, { version: 1, kind: 'ask', inputHash: inputHash(input), input, model: 'test', numTurns: toolCalls.length + 1, toolCalls, reply });
     after = inputHash(input);

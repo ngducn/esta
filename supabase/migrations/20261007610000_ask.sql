@@ -1,4 +1,3 @@
--- AGENT.md §5.6, §10. Members read; only ask_question and the worker's service client write.
 create table public.conversations (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households (id) on delete cascade,
@@ -61,7 +60,6 @@ as $$
   end;
 $$;
 
--- A viewer may ask. Asking again with the same conversation id adds nothing and answers that id.
 create function public.ask_question(p_household_id uuid, p_conversation_id uuid, p_question text, p_as_of timestamptz)
 returns uuid
 language plpgsql

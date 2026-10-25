@@ -1,5 +1,3 @@
-// The rows the Ask tools read for `Gia đình Demo` on the `full` seed, written to ask-full-2026-10-07.json for the replay
-// golden test. Rewrite it after a seed change: `ESTA_SLOT=<n> node apps/agent/test/golden/ask-fixture.ts`.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { query } from '../../../../scripts/db-checksum.ts';

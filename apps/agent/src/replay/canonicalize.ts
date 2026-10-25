@@ -50,8 +50,7 @@ export type CanonicalInput = {
   readonly builtInTools: string[];
   readonly mcpTools: string[];
   readonly maxTurns: number;
-  /** The input hash of the turn this one resumes, such as the answer a repair turn rewrites. */
-  readonly resumes?: string;
+  readonly resumesInputHash?: string;
 };
 
 export function inputHash(input: CanonicalInput): string {

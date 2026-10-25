@@ -25,13 +25,12 @@ export type SessionRequest = {
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
   onText?(delta: string): Promise<void>;
-  /** The turn this one continues: its SDK session id (none in replay) and its canonical input hash. */
-  readonly resume?: { readonly sessionId: string | null; readonly after: string };
+  readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
 };
 
 export function canonicalInput({ spec, prompt, canon, resume }: Pick<SessionRequest, 'spec' | 'prompt' | 'canon' | 'resume'>): CanonicalInput {
   return {
-    ...(resume === undefined ? {} : { resumes: resume.after }),
+    ...(resume === undefined ? {} : { resumesInputHash: resume.afterInputHash }),
     version: 1,
     kind: spec.kind,
     prompt: canon.canonical(prompt),
@@ -117,8 +116,9 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   return { result: fromSdkResult(result), model: mode.model, toolCalls };
 }
 
-/** Twelve code points at a time, as a live stream delivers text, so a placeholder or a sentence often spans two pieces. */
-export const replayChunks = (reply: string): string[] => reply.match(/.{1,12}/gsu) ?? [];
+const REPLAY_CHUNK = /.{1,12}/gsu;
+
+export const replayChunks = (reply: string): string[] => reply.match(REPLAY_CHUNK) ?? [];
 
 /**
  * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the
