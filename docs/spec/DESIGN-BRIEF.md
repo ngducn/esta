@@ -116,7 +116,7 @@ The assistant is "Trợ lý", a quiet colleague who leaves notes and answers whe
 - Her own messages sit on the right as plain tinted blocks with no tail and no avatar. A reply to a note shows the note's title above her text.
 - Proposals are compact blocks inside the note with two text buttons, "Đồng ý" and "Bỏ qua". A hidden note collapses to one muted line, so the thread keeps its order.
 - A reply box is always at the bottom, above the tab bar on a phone, with a text `Gửi` button. Up to three suggested replies drawn from today's notes sit above it as text chips.
-- Open urgent items stay pinned above the thread under `Cần xử lý`, so a new day's messages never bury them.
+- Open urgent items stay pinned above the thread under `Cần xử lý`, so a new day's messages never bury them. The pinned area folds to one line with its count, and on a phone it never takes more than a third of the screen, even at 130% text.
 - Answers render tables when the answer is a list, and an answer Mẹ may send on (a Zalo draft) has a `Sao chép` text button.
 - Streaming text appears a sentence at a time. Until the first sentence, one static line says what Trợ lý is doing: "Trợ lý đang trả lời", or "Trợ lý đang tra cứu trên mạng".
 - No sparkle icons, no gradient orbs, no typing animations (no bouncing dots, no blinking caret, no shimmer), no avatar other than the monogram, and no chat bubbles on the home screen. Home shows the morning brief as a note card with a `Trả lời` link into the thread.

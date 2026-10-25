@@ -89,7 +89,7 @@ Priority: P0 must ship in v1. P1 should ship in v1. P2 is designed for but may s
 | Documents (DOC) | Upload, camera capture, categories, vault, signed access, sensitive handling, search | Extraction review, expiry tracking, multi-page scan to PDF | Share link with expiry |
 | Leasing and rent (LSE) | Tenants, leases, amendments, schedules, invoices, payments, allocation, deposits, collections board | VietQR, receipts, statement import and matching, meters and utilities, reminders | Bank webhook integration |
 | Money (FIN) | Expenses, property ledger | Tax position, reports, exports, valuations | Lunar calendar display |
-| Agent (AGT) | Worker, job queue, document extraction, portfolio watch, morning brief in-app, inbox | Research scan, weekly review, proposals with approval, Ask chat | Editable research topics |
+| Agent (AGT) | Worker, job queue, document extraction, portfolio watch, morning brief in-app, the Trợ lý thread for notes | Research scan, weekly review, proposals with approval, open questions in the Trợ lý thread | Editable research topics |
 | Platform (PLT) | Settings, data export | Email notifications (brief and action items), nightly backup | Web push, Telegram |
 
 ### 4.1 Non-goals for v1
@@ -233,7 +233,7 @@ Full behavior in AGENT.md. Acceptance summary:
 - AGT-1 Worker runs jobs from `agent_jobs` with idempotent effects and retries; heartbeat shown in the app; jobs queue while offline. Check: kill the worker mid-job, restart, and the job's effects exist exactly once.
 - AGT-2 Document extraction meets the accuracy target and writes only agent-owned tables.
 - AGT-3 Portfolio watch produces exactly the golden fact set in AGENT.md §7 for the full seed at 2026-10-07.
-- AGT-4 Morning brief in Vietnamese in the in-app inbox at 07:00 Asia/Ho_Chi_Minh (P0); email delivery via PLT-4 (P1). Every number passes the guard.
+- AGT-4 Morning brief in Vietnamese in the Trợ lý thread at 07:00 Asia/Ho_Chi_Minh (P0); an email notice with a link to it via PLT-4 (P1). Every number passes the guard.
 - AGT-5 Research scan (P1) produces items with resolvable citations tied to specific properties or provinces, or the explicit empty item.
 - AGT-6 Proposals (P1) require approval; approval executes under the approving user's session; audit shows the user as actor.
 - AGT-7 Ask (P1) answers the 10 golden questions in AGENT.md §7 with numbers equal to SQL ground truth: in `replay` mode in CI, and once in `live` mode locally at the Phase 5 exit.
@@ -244,7 +244,7 @@ Full behavior in AGENT.md. Acceptance summary:
 - PLT-1 Settings: household, members and invites, receiving bank accounts, notification preferences, research topics (read-only list in v1), agent status and last runs (operators), language, text scale, density.
 - PLT-2 Data export: one action produces a ZIP with every table as JSON and CSV plus all files, delivered as a signed link. Check: re-import into an empty local database reproduces row counts.
 - PLT-3 Nightly backup job (P1) writes the same export to `ESTA_BACKUP_DIR` on the worker machine and keeps 30 days.
-- PLT-4 Email notifications (P1) for the morning brief and every `action` item, honoring notification preferences and daily caps. Dev transport is SMTP to Inbucket. Check: the brief email for 2026-10-07 arrives in Inbucket and renders Vietnamese correctly.
+- PLT-4 Email notifications (P1) for the morning brief and every `action` item: a notice with a generic subject, the note's title and a link that opens the Trợ lý thread at that note, honoring notification preferences and daily caps. Dev transport is SMTP to Inbucket. Check: the brief notice for 2026-10-07 arrives in Inbucket, renders Vietnamese correctly, and its link opens the thread at the brief.
 
 ## 7. Cross-cutting requirements
 
@@ -382,7 +382,7 @@ Each phase ends with an exit predicate on its phase-final PR. Review gates are w
 | 2 Documents | DOC-1 to DOC-7, extraction job and review UI, PRP-7; spike S5 first | Extraction accuracy target met on synthetic fixtures; north-star steps 1 and 2 pass | Yes |
 | 3 Rent | LSE-1 to LSE-11, Vercel Cron routes | Property tests green; FND-8 passes on its five screens; north-star steps 3 to 6 pass; VietQR scanned by two bank apps at the gate; Mom test passes (§10.1) | Yes, plus Mom test |
 | 4 Money | FIN-1 to FIN-5; seed generator complete | Tax worked examples exact; report invariants hold; full-seed checksum stable (FND-7); north-star step 8 passes | Yes |
-| 5 Agent | AGT-1 to AGT-8, PLT-4 | Golden watch set exact; Ask golden questions exact in replay and in one local live run; brief email renders in Inbucket; approval audit correct; north-star steps 7 and 9 pass | Yes |
+| 5 Agent | AGT-1 to AGT-8, PLT-4 | Golden watch set exact; Ask golden questions exact in replay and in one local live run; brief notice email renders in Inbucket; approval audit correct; north-star steps 7 and 9 pass | Yes |
 | 6 Polish and ship | `/impeccable` critique, harden, onboard and polish on every surface; empty states; PLT-1 to PLT-3; budgets; deploy runbook (`docs/plan/DEPLOY.md`) | Full north-star passes on a local production build against local Supabase; budgets met; zero detector findings; deploy runbook dry-run complete; Mom test repeated on the final build | Yes. Cloud setup, Google OAuth, production email, preview and production deploy happen with Ryan at this gate |
 
 ### 10.1 Mom test (human gate after Phase 3, repeated in Phase 6)
