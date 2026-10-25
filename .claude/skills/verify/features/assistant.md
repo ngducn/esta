@@ -1,6 +1,6 @@
 # Trợ lý status and connection check
 
-`/assistant` shows every member one line under the `Trợ lý` title that says whether the worker is online, from the newest row in `worker_heartbeats`. Operators (Ryan) also see `Kiểm tra kết nối`, whose `Chạy kiểm tra` button queues one `ping` job, and `Lần chạy gần đây`, the last 10 rows of `agent_runs`. Mẹ's page carries neither section, in the UI or in the HTML.
+`/assistant` shows every member one line under the `Trợ lý` title that says whether the worker is online, from the newest row in `worker_heartbeats`. Operators (Ryan) also see `Kiểm tra kết nối`, whose `Chạy kiểm tra` button queues one `ping` job. The last 20 rows of `agent_runs` (`Lần chạy gần đây`), the worker's modes, held notes and 7-day usage live on `/assistant/diagnostics`, which the account menu links for operators only. Mẹ's `/assistant` carries none of it, and `/assistant/diagnostics` shows her the not-found page.
 
 ## Sub-features
 
@@ -19,7 +19,7 @@ $S/launch.sh                         # a fresh reset seeds no heartbeat, so the 
 $S/worker.sh start replay            # replay worker on this slot; pid in /tmp/esta-verify/slot-<n>/worker.pid
 $S/sign-in.sh ryan.lane4@demo.esta.test
 $S/b.sh goto http://localhost:<web port>/assistant
-$S/b.sh text                         # status line, Kiểm tra kết nối, Lần chạy gần đây
+$S/b.sh text                         # status line, Kiểm tra kết nối
 $S/b.sh click 'role=button[name="Chạy kiểm tra"]'
 $S/b.sh wait '[data-testid="ping-status"][data-status="done"]'
 docker exec supabase_db_esta-$ESTA_SLOT psql -U postgres -tAc "select status, attempts, result->>'reply' from agent_jobs order by created_at desc limit 1"
@@ -35,5 +35,5 @@ pnpm clock:set 2026-10-07T09:06:00+07:00   # six minutes later the line reads ng
 
 - The heartbeat time comes from the test clock, so a fresh `launch.sh` reads `09:00`. Moving the clock does not write a heartbeat; restart the worker to write one at the new time.
 - One worker per slot. `worker.sh start` refuses a second, and `cleanup.sh` stops it.
-- The seed gives every household one finished replay ping and its run, so `Lần chạy gần đây` is never empty on a fresh reset.
+- The seed gives every household one finished replay ping and its run, so `Lần chạy gần đây` on `/assistant/diagnostics` is never empty on a fresh reset.
 - `pnpm e2e e2e/assistant-status.spec.ts` starts and stops its own replay worker; stop yours with `worker.sh stop` first, or the offline rule never sees the line go stale.

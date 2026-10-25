@@ -6,6 +6,7 @@ import { parseSlot, slotPorts } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
+import { readReportTable } from './helpers/report-table';
 import { accessToken } from './helpers/session';
 
 // FND-9: one test clock, one web server and one worker per slot, moved a day without restarting either.
@@ -131,14 +132,21 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
     }).toPass({ timeout: 15_000 });
   };
 
+  const runTimes = async () => {
+    await page.goto('/assistant/diagnostics');
+    const times = (await readReportTable(page.getByTestId('diagnostics-runs'))).rows.map(({ cells }) => cells['#0']);
+    await page.goto('/assistant');
+    return times;
+  };
+
   await ping();
-  await expect(page.getByTestId('run-row').first().locator('td').first()).toHaveText(/^0[78]\/10\/2026 09:00$/);
+  expect((await runTimes())[0]).toMatch(/^0[78]\/10\/2026 09:00$/);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await setClock(request, OCT_8);
   await page.reload();
   await ping();
-  const times = await page.getByTestId('run-row').locator('td:first-child').allTextContents();
+  const times = await runTimes();
   expect(times[0], 'the newest run started on the advanced clock').toBe('08/10/2026 09:00');
   expect(times, 'the run before it started on the first clock').toContain('07/10/2026 09:00');
   expect(await seriousAxeViolations(page)).toEqual([]);
