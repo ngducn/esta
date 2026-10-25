@@ -3833,6 +3833,13 @@ export type Database = {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
       }
+      worker_modes: {
+        Args: { p_household_id: string; p_seen_by: string }
+        Returns: {
+          agent_mode: string
+          auth_mode: string
+        }[]
+      }
     }
     Enums: {
       admin_merge_kind: "whole" | "partial"
