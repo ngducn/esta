@@ -3,6 +3,7 @@ import { formatVnd } from '../packages/core/src/format/index.ts';
 import { vnd } from '../packages/core/src/money/vnd.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { memberRest } from './helpers/auth-api';
+import { initialJs, INITIAL_JS_BUDGET_BYTES } from './helpers/bundle';
 import { laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, shot } from './helpers/wizard';
@@ -16,6 +17,7 @@ const LEASES_ENDING = 'Hợp đồng nào hết hạn trong 60 ngày tới?';
 const LATE_TENANT = 'Which tenant paid late most often this year?';
 
 let worker: AgentWorker | undefined;
+let tableAnswer: string | undefined;
 
 test.beforeAll(async ({ request }) => {
   await setClock(request, '2026-10-07T07:00:00+07:00');
@@ -92,10 +94,22 @@ test('Mẹ asks which leases end in the next sixty days, and the answer is a tab
   expect(await seriousAxeViolations(page)).toEqual([]);
   await noSidewaysScroll(page);
   await shot(page, 'p5-07-q3-table-390x844-light');
+  tableAnswer = new URL(page.url()).pathname;
 
+  await page.reload();
+  await expect(table.getByRole('row'), 'reopened, the finished answer renders the same table').toHaveCount(2);
   await pause(page);
   await table.getByRole('link').click();
   await expect(page).toHaveURL(/\/properties\/[0-9a-f-]{36}\/rental\/leases\/[0-9a-f-]{36}$/);
+});
+
+test('reopened, the table answer’s page ships no next-intl client runtime and stays under the initial JS budget', async ({ page }) => {
+  test.skip(!process.env.CI && process.env.ESTA_E2E_SERVER !== 'build', 'the budget is for a production build; a dev server ships unminified chunks');
+  if (tableAnswer === undefined) throw new Error('the table answer test runs first and records its page');
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  const measured = await initialJs(page.request, tableAnswer);
+  expect(measured.withIntlRuntime).toEqual([]);
+  expect(measured.gzippedBytes).toBeLessThan(INITIAL_JS_BUDGET_BYTES);
 });
 
 test('Ryan asks in English who paid late most often this year, and the answer comes back in English', async ({ page }) => {
