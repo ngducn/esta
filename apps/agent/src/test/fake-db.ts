@@ -73,6 +73,18 @@ export function fakeDb(
         filters.push((row) => at(row[column]) >= at(value));
         return builder;
       },
+      lte(column: string, value: number | string) {
+        const at = (v: unknown) => (typeof v === 'string' && typeof value === 'string' ? Date.parse(v) : Number(v));
+        filters.push((row) => at(row[column]) <= at(value));
+        return builder;
+      },
+      match(values: Row) {
+        filters.push((row) => Object.entries(values).every(([column, value]) => row[column] === value));
+        return builder;
+      },
+      range() {
+        return builder;
+      },
       is(column: string, value: unknown) {
         filters.push((row) => (row[column] ?? null) === value);
         return builder;

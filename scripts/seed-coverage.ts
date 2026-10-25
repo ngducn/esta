@@ -22,6 +22,8 @@ export const SEED_EXEMPT: Readonly<Record<string, string>> = {
   research_items:
     'runtime: research_scan writes them at 06:00 from its replay recording; seeded items would hold the recorded links, so the replayed scan would drop every one as a duplicate and write the empty note instead',
   test_clock: 'runtime: set by pnpm clock:set and the tests (FND-9)',
+  conversations: 'runtime: a member asks on Hỏi; a seeded conversation would sit on Hỏi with no job that answered it, and the ask specs start from none',
+  messages: 'runtime: the questions and answers of conversations, as conversations',
   change_batches: "runtime: the connector's history of plans Claude applied, with their undo",
   statement_imports:
     'a seeded import would remember its column mapping and claim the fixture transfers, so the LSE-8 specs would not start from a first import; SPEC §9.3 lists the bank statements as fixture files',

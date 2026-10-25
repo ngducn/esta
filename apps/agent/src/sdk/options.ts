@@ -30,10 +30,12 @@ export type SdkOptionsInputs = {
   readonly preToolUse: HookCallback;
   readonly postToolUse: HookCallback;
   readonly abortController: AbortController;
+  readonly streaming?: { readonly resume: string | null };
 };
 
 /** `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to disk. */
-export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, postToolUse, abortController }: SdkOptionsInputs): Options {
+export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, postToolUse, abortController, streaming }: SdkOptionsInputs): Options {
+  if (streaming !== undefined && spec.builtInTools.length > 0) throw new Error(`${spec.kind} keeps its transcript, so it may not read pages or files with built-in tools`);
   return {
     model,
     cwd: jobDir,
@@ -47,6 +49,7 @@ export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, 
     permissionMode: 'default',
     maxTurns: spec.maxTurns,
     abortController,
-    persistSession: false,
+    persistSession: streaming !== undefined,
+    ...(streaming === undefined ? {} : { includePartialMessages: true, ...(streaming.resume === null ? {} : { resume: streaming.resume }) }),
   };
 }

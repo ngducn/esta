@@ -50,6 +50,7 @@ export type CanonicalInput = {
   readonly builtInTools: string[];
   readonly mcpTools: string[];
   readonly maxTurns: number;
+  readonly resumesInputHash?: string;
 };
 
 export function inputHash(input: CanonicalInput): string {

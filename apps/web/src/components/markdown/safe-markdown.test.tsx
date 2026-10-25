@@ -43,6 +43,17 @@ describe('SafeMarkdown', () => {
     expect(container.textContent).toBe('Phòng 5');
   });
 
+  it.each(['https://baochinhphu.vn/tin', 'f99', 'f3'])('in an answer, keeps only the text of a link to %s, so an unresolved handle never links', (url) => {
+    const container = render(<SafeMarkdown links="in-app">{`[sổ thu chi](${url})`}</SafeMarkdown>).container;
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.textContent).toBe('sổ thu chi');
+  });
+
+  it('in an answer, opens an esta:// link inside the app', () => {
+    const link = render(<SafeMarkdown links="in-app">{'[sổ thu chi](esta://ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7)'}</SafeMarkdown>).container.querySelector('a');
+    expect(link?.getAttribute('href')).toBe('/open/ledger/7c9e6679-7425-40de-944b-e07fc1f90ae7');
+  });
+
   it('shows a heading, a quote and code as plain text', () => {
     const container = renderMarkdown('## Tiêu đề\n\n> trích\n\n`mã`');
     expect(container.querySelector('h2, blockquote, code')).toBeNull();

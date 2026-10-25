@@ -30,6 +30,7 @@ function start(): { worker: Worker; stop: () => void } {
     workerId,
     mode,
     jobsDir: join(home, 'jobs'),
+    conversationsDir: join(home, 'conversations'),
     configDir,
     replayDir: env.ESTA_REPLAY_DIR ?? DEFAULT_REPLAY_DIR,
     timezone: env.ESTA_TIMEZONE,

@@ -1,0 +1,1016 @@
+{
+  "properties": [
+    {
+      "code": "BAOLOC",
+      "current_address": {
+        "commune_code": "24823",
+        "house_no": "907 Demo",
+        "line": "907 Demo Đường Trần Phú",
+        "province_code": "68",
+        "street": "Đường Trần Phú"
+      },
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "62d33252-02ba-5610-bd9a-12474774014c",
+      "kind": "residential_land",
+      "legal_status": "certified",
+      "nickname": "Đất Bảo Lộc",
+      "use_mode": "held"
+    },
+    {
+      "code": "BIENHOA",
+      "current_address": {
+        "commune_code": "26188",
+        "house_no": "C95 Demo",
+        "line": "C95 Demo Đường số 7",
+        "province_code": "75",
+        "street": "Đường số 7"
+      },
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "76617818-0470-5207-bb06-e64633a3e8de",
+      "kind": "warehouse",
+      "legal_status": "certified",
+      "nickname": "Kho Biên Hòa",
+      "use_mode": "rental"
+    },
+    {
+      "code": "DIAN",
+      "current_address": {
+        "commune_code": "25942",
+        "house_no": "903/9 Demo",
+        "line": "903/9 Demo Đường Nguyễn An Ninh",
+        "province_code": "79",
+        "street": "Đường Nguyễn An Ninh"
+      },
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "kind": "rooming_house",
+      "legal_status": "certified",
+      "nickname": "Dãy trọ Dĩ An",
+      "use_mode": "rental"
+    },
+    {
+      "code": "LONGAN",
+      "current_address": {
+        "commune_code": "27694",
+        "line": "Đường Châu Thị Kim",
+        "province_code": "80",
+        "street": "Đường Châu Thị Kim"
+      },
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "aac9372d-5c96-53b5-86df-b9db8d17f226",
+      "kind": "agricultural_land",
+      "legal_status": "paper_only",
+      "nickname": "Đất vườn Long An",
+      "use_mode": "held"
+    },
+    {
+      "code": "Q1",
+      "current_address": {
+        "commune_code": "26740",
+        "house_no": "904 Demo",
+        "line": "904 Demo Đường Lê Thánh Tôn",
+        "province_code": "79",
+        "street": "Đường Lê Thánh Tôn"
+      },
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "ce067ac1-653c-5d9c-ac37-b6e379156593",
+      "kind": "commercial_space",
+      "legal_status": "certified",
+      "nickname": "Mặt bằng Quận 1",
+      "use_mode": "rental"
+    },
+    {
+      "code": "Q7",
+      "current_address": {
+        "commune_code": "27475",
+        "house_no": "901 Demo",
+        "line": "901 Demo Đường số 15",
+        "province_code": "79",
+        "street": "Đường số 15"
+      },
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "kind": "townhouse",
+      "legal_status": "certified",
+      "nickname": "Nhà phố Q7",
+      "use_mode": "rental"
+    },
+    {
+      "code": "THUDUC",
+      "current_address": {
+        "commune_code": "26824",
+        "house_no": "902 Demo",
+        "line": "902 Demo Đường Võ Văn Ngân",
+        "province_code": "79",
+        "street": "Đường Võ Văn Ngân"
+      },
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "kind": "apartment",
+      "legal_status": "certified",
+      "nickname": "Căn hộ Thủ Đức",
+      "use_mode": "rental"
+    }
+  ],
+  "admin_units": [
+    {
+      "code": "24823",
+      "name": "Phường 1 Bảo Lộc"
+    },
+    {
+      "code": "25942",
+      "name": "Phường Dĩ An"
+    },
+    {
+      "code": "26188",
+      "name": "Phường Tân Triều"
+    },
+    {
+      "code": "26740",
+      "name": "Phường Sài Gòn"
+    },
+    {
+      "code": "26824",
+      "name": "Phường Thủ Đức"
+    },
+    {
+      "code": "27475",
+      "name": "Phường Tân Hưng"
+    },
+    {
+      "code": "27694",
+      "name": "Phường Long An"
+    },
+    {
+      "code": "68",
+      "name": "Tỉnh Lâm Đồng"
+    },
+    {
+      "code": "75",
+      "name": "Thành phố Đồng Nai"
+    },
+    {
+      "code": "79",
+      "name": "Thành phố Hồ Chí Minh"
+    },
+    {
+      "code": "80",
+      "name": "Tỉnh Tây Ninh"
+    }
+  ],
+  "allocation_facts": [
+    {
+      "amount_vnd": 45000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "35edba8f-bc8c-5605-849a-b72f6c31f315",
+      "payment_id": "00c6169a-850b-5d3a-9413-909cd6f464f1",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "received_on": "2026-09-29"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "a6fef672-9d3b-52db-b85c-d783c72f856f",
+      "payment_id": "01716014-7bfa-570d-81a9-19edeba1a8fc",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-25"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "808a1f9b-5c15-5129-9f22-3be383d15a77",
+      "payment_id": "02ec0518-4bf6-5c71-ac27-76d830bf308c",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-01"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "e3237f75-3fa3-5125-8103-48f9fed7f9ba",
+      "payment_id": "06ced5a4-3d89-56ad-b801-314a34f0acc5",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-23"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "96caf211-f63f-5255-a966-4331f5460f2f",
+      "payment_id": "0970d0ba-896d-5d32-a57d-7257de9fe398",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-04-24"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "cc8dee5b-30a2-592d-9c78-137d7a2c644a",
+      "payment_id": "0b1b4407-cfd5-5bbb-be6a-cf7b3082cada",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-27"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "4a62e3b0-8bf6-5767-a3de-c83a64977cd3",
+      "payment_id": "0e06b6d5-5f4f-5d7b-a099-40b9c8ed0ae2",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-26"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "4a62e3b0-8bf6-5767-a3de-c83a64977cd3",
+      "payment_id": "113c445c-26dd-5b8b-9cfd-05d40a2906e2",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-23"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "79c27de6-b808-550b-b29c-9a4e75158b6b",
+      "payment_id": "11466e11-2de7-533f-8ba6-2969454416bd",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-01"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "020bb39e-dab7-5dfc-a63d-b69cd9207fd1",
+      "payment_id": "122cf657-27f2-5492-a45a-87f2e2bd2e3c",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-01-31"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "00e2d236-d22d-5e9a-84ea-737ef64a9c61",
+      "payment_id": "129a665a-00c3-5f50-9e3e-e005c29d0e3a",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-08-30"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "4fce85e2-fa95-51e3-a8fb-cb75b9ad7f29",
+      "payment_id": "133d06a6-5242-5d21-9bcf-3fbb2d085c6d",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-02"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "7d339cdb-677b-5462-85c4-7afc611e97aa",
+      "payment_id": "1667b512-ceb7-516d-82ba-43770142e2e4",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-01"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "9b91320c-bafc-5333-b0f4-85dcc0cd052f",
+      "payment_id": "16888e2e-6fdb-516e-bc3f-d406a352b1d6",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-08"
+    },
+    {
+      "amount_vnd": 11347826,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "77a49b89-4d43-5c2d-8d26-f8b8b8697099",
+      "payment_id": "16b31fdc-3925-5208-997a-bdbc1ad0850b",
+      "property_id": "76617818-0470-5207-bb06-e64633a3e8de",
+      "received_on": "2026-07-01"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "0b349c80-3fbc-5647-abcf-6e8f55435908",
+      "payment_id": "1dbe9534-884f-5be0-9c80-6c69ec0f9f56",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-30"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "2a1b4b3c-dc2d-5f38-bf51-6acc7bbe865d",
+      "payment_id": "1e0ac969-7e04-5953-a596-f9b779c1f3a9",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-24"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "9b91320c-bafc-5333-b0f4-85dcc0cd052f",
+      "payment_id": "20c07042-7e1e-5fa0-bd93-66a4ba2f88a3",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-01"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "f0dbb116-cfb0-53c2-bcd4-dd4938e074fc",
+      "payment_id": "25001bf9-2bb6-5ac4-810a-757b98e78569",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-01"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "bbd2bca9-b6f0-5200-9bf7-451b2e21634d",
+      "payment_id": "25995efd-4ac7-5c6a-8e97-b2b86f54e1bd",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-27"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "7d1a7da3-cf4f-5322-a819-9da0d5f15f96",
+      "payment_id": "2c10267b-848b-53ac-85d0-2e17474c3471",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-02-23"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "a9da43a5-8a52-5dbd-bc88-e15ceaf1bb6a",
+      "payment_id": "2f5f1d48-b260-57d0-8113-32123c750289",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-08-31"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "f477d1c4-38de-5b23-8eec-1d11a9c55a29",
+      "payment_id": "369dc1cc-0b47-5964-805b-6de9e7904af7",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-02-06"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "3a98165b-bc96-53fb-a843-e612d875f6f7",
+      "payment_id": "3cfca04e-e595-54b8-8dc8-7d26ee0d0b8b",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-02-23"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "d9833fbd-bf95-5ddf-8f14-b524c49f47d5",
+      "payment_id": "44bdb5e9-2128-5829-9f3f-fa3d8213fd39",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-23"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "80aaa7f3-2290-5a72-9bfb-1ecb8cb558b3",
+      "payment_id": "4847b076-db70-5219-9e22-bc0d52a04ca1",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-23"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "2ba5e5dd-ba68-5292-a4ee-2843e26b8cd2",
+      "payment_id": "4d84761b-73d4-5659-9918-5397283bbc8c",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-28"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "a2bc5456-6a64-5b9a-86eb-a2efedee3c66",
+      "payment_id": "4fcbc708-d892-5d5a-9639-b757b20592db",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-09-07"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "d4337f5d-5dcf-5887-a434-05d456d4d136",
+      "payment_id": "4fd40900-0d67-5961-92b1-2813fda9e867",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-26"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "19e9824f-199f-5ea2-a3f9-62ff912f1ae7",
+      "payment_id": "5925d3f0-a22b-5aa1-96b1-4859ec9e92b1",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-24"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "110f1cfb-47da-5b3c-bf10-019b7a58a093",
+      "payment_id": "5a0a7f57-97f7-5ab4-be4f-58ae9e674c74",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-27"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "beb9776a-58b7-5bd5-bbed-3fd5453dc91c",
+      "payment_id": "5a69dc1f-971c-58bc-8a08-27f17f9c22e7",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-08-16"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "586137cc-0fbd-52c1-a469-fc8ed6bee5f3",
+      "payment_id": "5cc9ff1e-740a-5aad-a49f-78399b5542b1",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-31"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "ecafc4c0-717d-5264-98f3-2bdd18e869f8",
+      "payment_id": "5e1de44f-5829-5de5-9938-e8cc0f3c9117",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-07-03"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "0c121248-422b-5072-a0a2-8a414ced2863",
+      "payment_id": "62610601-3df0-51e1-930a-1993026318ed",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-06"
+    },
+    {
+      "amount_vnd": 45000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "897177ea-93b7-5d47-90d8-7fee0bc0e1cf",
+      "payment_id": "62bd77a5-2753-5c61-ba69-e605c74ac36f",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "received_on": "2026-03-27"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "2258c69d-1079-52bd-95f5-c8e8b7fb3567",
+      "payment_id": "68400384-dc3c-514e-abe0-6561013a2520",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-06-03"
+    },
+    {
+      "amount_vnd": 45000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "7e5bd7fe-c7b7-5436-a90f-c1be35e10113",
+      "payment_id": "713c859d-0292-5cf9-8f45-20c753dfbb6b",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "received_on": "2026-06-25"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "89c92aca-ed33-546d-991b-83285ca54ce8",
+      "payment_id": "7923f843-5c50-5ac7-9b40-afa5a9191661",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-28"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "d9833fbd-bf95-5ddf-8f14-b524c49f47d5",
+      "payment_id": "7b484661-0b39-5634-a45f-366481575983",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-29"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "2041b80e-cbe8-5aae-ae48-72014dacd0f6",
+      "payment_id": "7b5a6d34-45b4-5f16-8848-902b06a899c1",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-26"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "2656fa03-aab5-5b23-b333-252cb956dd97",
+      "payment_id": "7b943e69-3f32-517c-a623-cacbdd67328c",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-24"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "0c121248-422b-5072-a0a2-8a414ced2863",
+      "payment_id": "7e117dd8-4fef-5801-92be-bdc966676d9d",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-02-25"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "98a7c7fb-2f88-570e-aff4-14aa89031cc5",
+      "payment_id": "803e1a39-40bd-5785-b02b-b297ce2cffb9",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-01-15"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "52bdd6ec-7615-5a9c-8f95-eaa1525a6e82",
+      "payment_id": "84b5757e-ca83-54b1-9622-512d7d53b89d",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-02-25"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "11bec999-30e5-5443-af62-20fd30dab967",
+      "payment_id": "8722c378-3424-5be7-99f5-65ae976e5f8c",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-03-05"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "6bb68a89-c76d-58ef-b979-591affcce263",
+      "payment_id": "88f52433-f4a3-553a-8523-2e9337da433d",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-04-15"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "cb041d24-fb6e-56a2-ae32-2ab1bfd7a1c8",
+      "payment_id": "8a71aae2-012c-5067-ab2c-37b20f4923a6",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-08-05"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "598037d7-3020-535b-adb5-aaca897a39e6",
+      "payment_id": "8c52512d-ce2b-5094-898d-25936cb8e233",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-28"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "091380e6-e1df-5d73-be50-d5fb675028a9",
+      "payment_id": "8f5375cf-053f-5c34-bfce-2080b17afa44",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-27"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "c53c3412-5583-5e5c-81c7-e580544c73ef",
+      "payment_id": "9281b9e1-190f-5b3f-a1af-acb4c2dea859",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-05-04"
+    },
+    {
+      "amount_vnd": 30000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "75761cd2-8053-56ec-81eb-9bf689395431",
+      "payment_id": "93bbeff5-0d4c-570b-97b2-ad26748e20f5",
+      "property_id": "ce067ac1-653c-5d9c-ac37-b6e379156593",
+      "received_on": "2026-02-24"
+    },
+    {
+      "amount_vnd": 45000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "4305bff8-2f9c-50ff-934d-20f4d5a135dd",
+      "payment_id": "98c88778-d6fb-5c5e-ba06-b56fc9ad108b",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+      "received_on": "2026-01-02"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "9960554b-b351-5661-8e01-2897e2460948",
+      "payment_id": "9f754f7b-7a68-56a1-b2bd-62f02e8e46cd",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-01-31"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "20a7f9a0-481c-5e33-b316-caab3a85831c",
+      "payment_id": "a1d87b22-cad0-5131-836c-e6861461e69d",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-30"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "d40f1cb5-73cc-5c69-b016-a3aa603f8ef0",
+      "payment_id": "a22916b5-4e03-5311-8e4a-3338686a44fd",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-22"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "4cb0b4cc-8c9e-5dc6-b599-3450dccab710",
+      "payment_id": "ab29eb93-b7e6-535a-96c1-e83e583479d4",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-07-14"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "b77569d3-ce7f-5fee-8bd6-d0ecdcaf8ad2",
+      "payment_id": "b427821c-f747-5bdd-bf73-cb28e5c391c0",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-20"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "70c364ed-3a8c-5298-9f3e-24b91f319ddc",
+      "payment_id": "b461ccb1-bffb-545c-aedb-7641db3d0c19",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-01"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "3033c40a-45a3-5e76-8aed-5bfcc9285454",
+      "payment_id": "b4ec52a7-56f9-52b1-9d67-1d99f31ea944",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-01-05"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "879b4250-5dc0-5fec-81ab-0f64f14576d9",
+      "payment_id": "b700f8ec-023d-5f05-b058-d7abd5bbcdd8",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-30"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "7c5ad18c-513a-56e8-ad35-c46c38658174",
+      "payment_id": "b9f4473c-63bf-5fa3-9973-42c5d72639ae",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-02-28"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "21eecb2e-616e-58bd-b52f-e02a087aa1f8",
+      "payment_id": "be89031b-f8de-52d3-8d06-584c589a6c38",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-01-29"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "5188dfe6-635f-5c60-bd81-f68875425a88",
+      "payment_id": "bfcd6c57-3e43-5160-a12c-0ba4162a1828",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-01-04"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "96caf211-f63f-5255-a966-4331f5460f2f",
+      "payment_id": "c03ab87a-e01b-528b-b67e-1a4eb660deae",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-04-30"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "772057ac-7a97-5f41-b97a-77a6b7f41bc2",
+      "payment_id": "c0d858aa-a0d4-54f3-aa65-f2003916ab4d",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-29"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "8a99a83d-6b41-5a46-a95f-464ad5bad389",
+      "payment_id": "c17603a0-bbd6-50eb-88f7-f6e2eeca4c4a",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-01-27"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "f36376eb-c1d6-5718-aff5-c5bfdc259f80",
+      "payment_id": "c265f1e5-e657-59b1-bc23-4be9fad6e13e",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-10-03"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "f0750ca0-b813-5524-a003-e715eecb0483",
+      "payment_id": "c34e7a23-231b-5cec-a2e4-e9621c2b3d37",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-01"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "4fb8ee4e-7e24-57f8-9ef9-80cb37bc03a3",
+      "payment_id": "c5df8212-f4c5-50c3-b4a8-671e72d65445",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-25"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "32b94b34-e720-5421-9be0-573bc4f06897",
+      "payment_id": "c95a6b50-df1f-50a7-a3c4-0a782596a77a",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-22"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "05acc5d1-b257-5365-9975-49f43895a179",
+      "payment_id": "cf7ac88e-bea5-5fad-8189-1563cb14d339",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-27"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "598037d7-3020-535b-adb5-aaca897a39e6",
+      "payment_id": "d4eed102-c6ca-582d-bcaa-5d31cd94a890",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-04-06"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "fec2e71d-2ea1-5f9e-b617-0bfb74a106f9",
+      "payment_id": "d96adc6a-7ae8-5f06-91de-0e86c339d5c2",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-10-04"
+    },
+    {
+      "amount_vnd": 1500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "fec2e71d-2ea1-5f9e-b617-0bfb74a106f9",
+      "payment_id": "d9df2cce-3607-545a-bf0e-b2ea60877c8b",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-29"
+    },
+    {
+      "amount_vnd": 9000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "a3a423d6-f169-51d8-a49d-2fa3f802eb71",
+      "payment_id": "dbdca79a-d925-5c03-8e07-e921846cdbd7",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+      "received_on": "2026-03-31"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "8a99a83d-6b41-5a46-a95f-464ad5bad389",
+      "payment_id": "de0a1121-2525-587f-96ef-cad030cee166",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-02-01"
+    },
+    {
+      "amount_vnd": 36000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "2b3bd154-e029-578d-a181-52f536eda9cb",
+      "payment_id": "dfb1eeb8-ca38-590e-a15e-7f0596823e9f",
+      "property_id": "76617818-0470-5207-bb06-e64633a3e8de",
+      "received_on": "2026-03-26"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "b522493c-c891-5591-ada9-3824a3071e2a",
+      "payment_id": "e20d24b3-326f-5b9c-a7f0-faf9ba30285c",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-09-26"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "83d70af7-c8da-50e7-9913-a6eb1c227e7f",
+      "payment_id": "e64b446d-ccdc-56bd-9d42-ec4d3a9575fa",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-03-28"
+    },
+    {
+      "amount_vnd": 1000000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "772057ac-7a97-5f41-b97a-77a6b7f41bc2",
+      "payment_id": "ecf1ea5c-2330-51b1-acea-8ec98edb4a51",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-06-01"
+    },
+    {
+      "amount_vnd": 2800000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "46bc687f-35f2-5a62-9d68-919a5c98936b",
+      "payment_id": "f60921be-6edc-57b5-9fb6-a186c87e2436",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-08-26"
+    },
+    {
+      "amount_vnd": 2500000,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "invoice_id": "cc118346-18d3-5abe-826b-fe2faf0ff988",
+      "payment_id": "fa17b5d8-a7c8-5e18-960d-87b5f3221055",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+      "received_on": "2026-05-01"
+    }
+  ],
+  "expenses": [
+    {
+      "amount_vnd": 450000,
+      "category": "land_tax",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "0051cd9f-3cce-5fde-9c4a-5be973187d53",
+      "paid_on": "2026-04-15",
+      "property_id": "62d33252-02ba-5610-bd9a-12474774014c"
+    },
+    {
+      "amount_vnd": 800000,
+      "category": "maintenance",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "0366ffcc-efec-5e58-bedf-8bdd56590bfd",
+      "paid_on": "2026-09-11",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "101e40f0-49ef-5b9e-bfba-b825dfa38ad6",
+      "paid_on": "2026-06-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 15000000,
+      "category": "broker_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "1558d403-9aff-5af7-ad27-b3663f8a1132",
+      "paid_on": "2026-02-25",
+      "property_id": "ce067ac1-653c-5d9c-ac37-b6e379156593"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "1f92ab16-6b68-5e2f-b2da-98f666db5310",
+      "paid_on": "2026-07-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "31ffc9e1-9016-57dd-91ab-ad4e67ab1f75",
+      "paid_on": "2026-04-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 950000,
+      "category": "repair",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "53b6f088-7880-5a87-9acf-8e5c24f99588",
+      "paid_on": "2026-05-14",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "638fa58a-01ae-5ae3-8f65-69d7664f030e",
+      "paid_on": "2026-01-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "7534c807-7ed4-525e-852b-a2b9fa0be26b",
+      "paid_on": "2026-03-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "7644e4e2-fa0c-59cb-ad4c-fe3a7a5d55d8",
+      "paid_on": "2026-09-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "maintenance",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "aae9905f-d72f-58b4-aa1c-6268cb450556",
+      "paid_on": "2026-03-08",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4"
+    },
+    {
+      "amount_vnd": 1100000,
+      "category": "legal",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "b3e6f28f-5ab7-584a-92c0-52fd269461a8",
+      "paid_on": "2026-02-27",
+      "property_id": "ce067ac1-653c-5d9c-ac37-b6e379156593"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "b5c64248-342b-5136-85a7-4ec32655a302",
+      "paid_on": "2026-02-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 2000000,
+      "category": "maintenance",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "c119b4ae-15cb-57bf-86eb-2cf7ed01db08",
+      "paid_on": "2026-08-03",
+      "property_id": "76617818-0470-5207-bb06-e64633a3e8de"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "de040f4b-1b9e-5a7c-981c-bbfb8530069a",
+      "paid_on": "2026-05-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 650000,
+      "category": "repair",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "de5e1363-9fb8-5527-9e2e-a112ace71a7c",
+      "paid_on": "2026-01-09",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c"
+    },
+    {
+      "amount_vnd": 4500000,
+      "category": "repair",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "ec70409b-6523-5c74-b64c-24de4972429c",
+      "paid_on": "2026-08-22",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4"
+    },
+    {
+      "amount_vnd": 1200000,
+      "category": "management_fee",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "fa04be07-3526-5665-8af8-16d1bffaacd7",
+      "paid_on": "2026-08-05",
+      "property_id": "e0a3916c-3943-52b9-9368-00ecf0505a90"
+    },
+    {
+      "amount_vnd": 1500000,
+      "category": "repair",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "fb44773c-55c9-59f9-abf5-5e2d159f35b8",
+      "paid_on": "2026-06-17",
+      "property_id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c"
+    },
+    {
+      "amount_vnd": 3200000,
+      "category": "repair",
+      "deleted_at": null,
+      "household_id": "0943e55d-b0a6-5aef-839d-07c8693c520e",
+      "id": "fbae5a68-2df3-583e-b7bf-f44610b44f9d",
+      "paid_on": "2026-02-20",
+      "property_id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4"
+    }
+  ]
+}

@@ -645,6 +645,44 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          sdk_session_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          sdk_session_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          sdk_session_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deposit_entries: {
         Row: {
           amount_vnd: number
@@ -1588,6 +1626,70 @@ export type Database = {
             columns: ["household_id", "tenant_party_id"]
             isOneToOne: false
             referencedRelation: "parties"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content_md: string
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          household_id: string
+          id: string
+          job_id: string | null
+          refs: Json
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          content_md?: string
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          id?: string
+          job_id?: string | null
+          refs?: Json
+          role: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          content_md?: string
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          id?: string
+          job_id?: string | null
+          refs?: Json
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_household_id_conversation_id_fkey"
+            columns: ["household_id", "conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "messages_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_household_id_job_id_fkey"
+            columns: ["household_id", "job_id"]
+            isOneToOne: false
+            referencedRelation: "agent_jobs"
             referencedColumns: ["household_id", "id"]
           },
         ]
@@ -3307,6 +3409,15 @@ export type Database = {
         Returns: string
       }
       approve_proposal: { Args: { p_item_id: string }; Returns: string }
+      ask_question: {
+        Args: {
+          p_as_of: string
+          p_conversation_id: string
+          p_household_id: string
+          p_question: string
+        }
+        Returns: string
+      }
       change_batch_history: {
         Args: { p_household_id: string; p_limit?: number }
         Returns: {

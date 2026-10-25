@@ -1076,7 +1076,8 @@
     "tabs": "Assistant sections",
     "tab": {
       "inbox": "Inbox",
-      "market": "Market"
+      "market": "Market",
+      "ask": "Ask"
     },
     "market": {
       "title": "Market",
@@ -1124,7 +1125,24 @@
     "confirmRenewal": "Renew the lease for {place} until {date} at {amount} a month?",
     "confirmCancel": "Cancel",
     "openLease": "Open the lease",
-    "openReminder": "Open the reminder"
+    "openReminder": "Open the reminder",
+    "ask": {
+      "title": "Ask Trợ lý",
+      "heading": "Ask Trợ lý",
+      "intro": "Trợ lý answers from the data in the app. Every figure comes from your records, never an estimate.",
+      "questionLabel": "Your question",
+      "placeholder": "For example: How much came in from Dĩ An this month?",
+      "send": "Ask",
+      "sending": "Sending",
+      "emptyQuestion": "Write a question before you send it.",
+      "longQuestion": "The question is too long. Write a shorter one.",
+      "sendFailed": "The question was not sent. Check the connection and try again.",
+      "asked": "You asked",
+      "answering": "Trợ lý is answering",
+      "answerFailed": "Trợ lý could not answer this one. You can ask again.",
+      "stalled": "Trợ lý has not finished yet. Reload the page to see the rest.",
+      "askAnother": "Ask another question"
+    }
   },
   "settings": {
     "display": "Display",

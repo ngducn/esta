@@ -49,4 +49,10 @@ describe('buildSdkOptions', () => {
     expect(options.hooks?.PostToolUse).toHaveLength(1);
     expect(Object.keys(options.mcpServers ?? {})).toEqual(['esta']);
   });
+
+  it('never keeps the transcript of a job that reads pages', () => {
+    const inputs = { jobDir: '/agent/jobs/x', model: 'm', env: {}, server: estaServer(new Map(), () => undefined), preToolUse: async () => ({}), postToolUse: async () => ({}), abortController: new AbortController() };
+    expect(buildSdkOptions({ ...inputs, spec: JOBS.ask, streaming: { resume: null } })).toMatchObject({ persistSession: true, includePartialMessages: true });
+    expect(() => buildSdkOptions({ ...inputs, spec: JOBS.research_scan, streaming: { resume: null } })).toThrow('may not read pages');
+  });
 });

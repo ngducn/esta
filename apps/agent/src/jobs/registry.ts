@@ -4,6 +4,7 @@ import type { Json, Tables } from '@esta/db';
 import type { AgentDb } from '../supabase';
 import type { BuiltInResult } from '../sdk/session';
 import type { EstaToolName, EstaTools } from '../tools/server';
+import { failAsk, prepareAsk } from './ask';
 import { failExtractDocument, prepareExtractDocument } from './extract-document';
 import { preparePing } from './ping';
 import { prepareMorningBrief } from './morning-brief';
@@ -37,6 +38,8 @@ export type PreparedJob = {
   finish(run: { readonly reply: string; readonly model: string }): Promise<Json>;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
+  onText?(delta: string): Promise<void>;
+  nextTurn?(): Promise<string | null>;
 };
 
 export type JobSpec = {
@@ -49,6 +52,7 @@ export type JobSpec = {
   readonly modelRole: ModelRole;
   /** A job the scheduler queues for every household once a day at `HH:mm` in the business timezone (AGENT.md §3). */
   readonly schedule?: { readonly daily: string };
+  readonly workDir?: 'conversation';
   /** Daily kinds whose same-day job must finish first; the runner reschedules the job while one is queued or running (AGENT.md §3). */
   readonly waitsFor?: readonly string[];
   readonly handler: {
@@ -108,6 +112,16 @@ export const JOBS = {
     schedule: { daily: '07:00' },
     waitsFor: ['research_scan', 'portfolio_watch'],
     handler: { prepare: prepareMorningBrief },
+  },
+  ask: {
+    kind: 'ask',
+    builtInTools: [],
+    mcpTools: ['list_properties', 'ledger'],
+    maxTurns: 15,
+    timeoutMs: 2 * 60_000,
+    modelRole: 'routine',
+    workDir: 'conversation',
+    handler: { prepare: prepareAsk, onFailed: failAsk },
   },
 } as const satisfies Record<string, JobSpec>;
 

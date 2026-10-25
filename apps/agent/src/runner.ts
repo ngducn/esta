@@ -5,11 +5,11 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import type { RunMode } from './env';
 import { InvalidJobError } from './jobs/extract-document';
-import { jobSpec, type AgentJob } from './jobs/registry';
-import { canonicalizer } from './replay/canonicalize';
+import { jobSpec, type AgentJob, type JobSpec } from './jobs/registry';
+import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
-import { liveSession, replaySession, type SessionRun } from './sdk/session';
+import { canonicalInput, liveSession, replaySession, type SessionRequest, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
 import { NumberGuardError } from './tools/create-item';
 import { mcpToolName } from './tools/server';
@@ -21,6 +21,7 @@ export type Worker = {
   readonly workerId: string;
   readonly mode: RunMode;
   readonly jobsDir: string;
+  readonly conversationsDir: string;
   readonly configDir: string;
   readonly replayDir: string;
   readonly timezone: string;
@@ -58,37 +59,75 @@ async function householdName(db: AgentDb, householdId: string): Promise<string> 
 
 type Inputs = { readonly waiting: readonly string[]; readonly failed: readonly string[] };
 
-/** The job's own directory, `jobs/<job_id>`, emptied first and deleted on every exit path (DOC-5). */
+const conversationPayload = z.object({ conversation_id: z.uuid() });
+
+type WorkDir = { readonly dir: string; close(): void };
+
+function openWorkDir(worker: Worker, job: AgentJob, spec: JobSpec): WorkDir {
+  if (spec.workDir === undefined) {
+    const dir = join(worker.jobsDir, job.id);
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir, { recursive: true });
+    const resolved = realpathSync(dir);
+    return { dir: resolved, close: () => rmSync(resolved, { recursive: true, force: true }) };
+  }
+  const payload = conversationPayload.safeParse(job.payload);
+  if (!payload.success) throw new InvalidJobError(`${job.kind} ${job.id} names no conversation`);
+  mkdirSync(join(worker.conversationsDir, payload.data.conversation_id), { recursive: true });
+  const dir = join(realpathSync(worker.conversationsDir), payload.data.conversation_id);
+  if (realpathSync(dir) !== dir) throw new InvalidJobError(`${job.kind} ${job.id}: the conversation directory is a link`);
+  return { dir, close: () => undefined };
+}
+
+function runModel(worker: Worker, request: SessionRequest): Promise<SessionRun> {
+  return worker.mode.agentMode === 'live' ? liveSession(request, worker.mode) : replaySession(request, worker.replayDir);
+}
+
+function followedBy(first: SessionRun, next: SessionRun): SessionRun {
+  return {
+    result: { ...next.result, numTurns: first.result.numTurns + next.result.numTurns, costUsd: first.result.costUsd + next.result.costUsd },
+    model: next.model,
+    toolCalls: [...first.toolCalls, ...next.toolCalls],
+  };
+}
+
 async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: Inputs): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
-  const jobDir = join(worker.jobsDir, job.id);
-  rmSync(jobDir, { recursive: true, force: true });
-  mkdirSync(jobDir, { recursive: true });
   let session: SessionRun | null = null;
+  let work: WorkDir | null = null;
   try {
-    const resolvedDir = realpathSync(jobDir);
-    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: resolvedDir, timezone: worker.timezone, waiting, failed, clock: () => worker.clock() });
+    work = openWorkDir(worker, job, spec);
+    const prepared = await spec.handler.prepare({ db: worker.db, job, jobDir: work.dir, timezone: worker.timezone, waiting, failed, clock: () => worker.clock() });
     const bound = [...prepared.tools.keys()].toSorted().join(',');
     if (bound !== spec.mcpTools.map(mcpToolName).toSorted().join(',')) throw new Error(`${job.kind} bound the tools ${bound}, not its kind's`);
-    const request = {
+    const request: SessionRequest = {
       spec,
       prompt: prepared.prompt,
-      jobDir: resolvedDir,
+      jobDir: work.dir,
       configDir: worker.configDir,
       tools: prepared.tools,
-      canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: resolvedDir }),
+      canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: work.dir }),
       ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
       ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
+      ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
     };
-    session = worker.mode.agentMode === 'live' ? await liveSession(request, worker.mode) : await replaySession(request, worker.replayDir);
-    const outcome = judgeResult(session.result);
+    let turn = request;
+    session = await runModel(worker, turn);
+    let outcome = judgeResult(session.result);
+    while (outcome.ok) {
+      const prompt = (await prepared.nextTurn?.()) ?? null;
+      if (prompt === null) break;
+      turn = { ...request, prompt, resume: { sessionId: session.result.sessionId, afterInputHash: inputHash(canonicalInput(turn)) } };
+      session = followedBy(session, await runModel(worker, turn));
+      outcome = judgeResult(session.result);
+    }
     if (!outcome.ok) return { outcome, session };
     return { outcome: { ...outcome, result: await prepared.finish({ reply: outcome.reply, model: session.model }) }, session };
   } catch (error) {
     return { outcome: { ok: false, failure: failureOf(error) }, session };
   } finally {
-    rmSync(jobDir, { recursive: true, force: true });
+    work?.close();
   }
 }
 

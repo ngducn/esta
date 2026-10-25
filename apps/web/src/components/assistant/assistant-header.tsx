@@ -10,6 +10,7 @@ import { stampLabel, WorkerStatusLine } from './worker-status-line';
 const TABS = [
   { id: 'inbox', href: '/assistant' },
   { id: 'market', href: '/assistant/market' },
+  { id: 'ask', href: '/assistant/ask' },
 ] as const;
 
 export type AssistantTab = (typeof TABS)[number]['id'];
@@ -19,7 +20,6 @@ export async function assistantStatus(now: Instant): Promise<WorkerStatus> {
   return workerStatus(await getWorkerHeartbeat(now), now, env.ESTA_TIMEZONE);
 }
 
-/** Trợ lý's title, its worker status, when it last wrote the brief, and the tabs Hộp thư and Thị trường (DESIGN-BRIEF §6.11). */
 export async function AssistantHeader({ householdId, now, status, active }: { householdId: string; now: Instant; status: WorkerStatus; active: AssistantTab }) {
   const [nav, t, brief] = await Promise.all([getTranslations('nav'), getTranslations('assistant'), latestBrief(householdId, now)]);
   return (

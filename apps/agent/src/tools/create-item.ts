@@ -47,9 +47,9 @@ function fenced(text: string): string {
   return `${fence}\n${text}\n${fence}`;
 }
 
-type GuardBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'>;
+export type GuardBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'>;
 
-async function writeGuardItem(binding: GuardBinding, draft: string, found: readonly NoteViolation[]): Promise<void> {
+export async function writeGuardItem(binding: GuardBinding, draft: string, found: readonly NoteViolation[]): Promise<void> {
   const words = GUARD_ITEM[binding.locale];
   const once = new Map(found.map((violation) => [`${violation.rule}\u0000${violation.text}`, violation]));
   const list = [...once.values()].map(({ rule, text }) => `- ${JSON.stringify(text)}: ${rule}`).join('\n');

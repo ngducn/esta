@@ -121,7 +121,7 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('lane 11: a section shows only the controls that work, so Trợ lý offers its two tabs, each note its own buttons and links, and nothing else', async ({ page }) => {
+test('lane 11: a section shows only the controls that work, so Trợ lý offers its three tabs, each note its own buttons and links, and nothing else', async ({ page }) => {
   onlyOn('mobile');
   await signIn(page, 'me.lane1@demo.esta.test');
   await page.goto('/assistant');
@@ -129,8 +129,8 @@ test('lane 11: a section shows only the controls that work, so Trợ lý offers 
   const main = page.getByRole('main');
   await expect(main.getByTestId('inbox-item').first()).toBeVisible();
   const tabs = main.getByRole('navigation', { name: 'Các mục của Trợ lý' }).getByRole('link');
-  await expect(tabs).toHaveText(['Hộp thư', 'Thị trường']);
-  await expect(main.getByRole('link')).toHaveCount((await main.getByTestId('inbox-item').getByRole('link').count()) + 2);
+  await expect(tabs).toHaveText(['Hộp thư', 'Thị trường', 'Hỏi']);
+  await expect(main.getByRole('link')).toHaveCount((await main.getByTestId('inbox-item').getByRole('link').count()) + 3);
   await expect(main.getByRole('button')).toHaveCount(await main.getByTestId('inbox-item').getByRole('button').count());
 });
 
