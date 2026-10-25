@@ -289,3 +289,11 @@ Operator's words, 2026-10-25: "continue until 60% also, i already merged 319".
 
 - Budget cap is 60% of each 5-hour window (was 40%). Stop spawning at 48% and pause owners at 54% on `usage-pct.sh`. The other budget rules stay.
 - #319 is merged (6417cb63). The stack above it was brought onto main with merge commits whose trees equal a clean `rebase --onto origin/main e0fad32d`, because force-push is not allowed in this session. Squash merges drop the merge commits.
+
+## Update 2026-10-25 15:50 +07
+
+Operator's words, 2026-10-25: "merge them all for me please, then launch local for me to test".
+
+- The root lands the reviewed stack #322, #324, #330, #332, #334, #336 and #339, in order. Each one is a squash merge with `--match-head-commit` at a head whose `ci` is green and whose independent reviews are clean. After each merge, the next PR is brought onto main with a merge commit built from a clean rebase tree, retargeted to main, and its CI is rerun.
+- PRs still under review (#341, #342) are not part of this grant.
+- After the merges, the root starts the app locally for Ryan on his slot 6.
