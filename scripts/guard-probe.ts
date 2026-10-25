@@ -18,6 +18,7 @@ import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION } from '../apps/agen
 import { clockOn, HOUSEHOLD } from '../apps/agent/test/full-seed.ts';
 import { ASK_CONTEXT, rejectedTexts } from '../apps/agent/test/golden/ask-cases.ts';
 import { OPEN_PROSE_READS, recordingReads, type RecordedReads } from '../apps/agent/test/golden/ask-reads.ts';
+import { runPool } from './pool.ts';
 import { parseSlot } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 
@@ -68,7 +69,7 @@ async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<ty
   const request: SessionRequest = { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir, tools: prepared.tools, canon, onText };
   const passes: Array<'passed' | 'rejected'> = [];
   let rejectedBy: string[] = [];
-  let model = '';
+  let model: string;
   try {
     let turn = request;
     for (;;) {
@@ -114,21 +115,13 @@ async function main() {
   const recorded: RecordedReads = existsSync(OPEN_PROSE_READS) ? (JSON.parse(readFileSync(OPEN_PROSE_READS, 'utf8')) as RecordedReads) : {};
   const reads = recordingReads(askReads(db, HOUSEHOLD, { locale: 'vi', asOf: ASK_CONTEXT.today }), recorded);
   const only = values.only?.split(',');
-  const queue = OPEN_PROSE.filter((item) => only === undefined || only.includes(item.id));
   const rows: ProbeRow[] = [];
-  const failures: string[] = [];
-  const worker = async () => {
-    for (let item = queue.shift(); item !== undefined; item = queue.shift()) {
-      try {
-        const row = await probe(item, mode, reads);
-        rows.push(row);
-        console.log(JSON.stringify(row));
-      } catch (error) {
-        failures.push(error instanceof Error ? error.message : String(error));
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Number(values.concurrency) }, worker));
+  const prompts = OPEN_PROSE.filter((item) => only === undefined || only.includes(item.id));
+  const failures = await runPool(prompts, Number(values.concurrency), async (item) => {
+    const row = await probe(item, mode, reads);
+    rows.push(row);
+    console.log(JSON.stringify(row));
+  });
   writeFileSync(OPEN_PROSE_READS, `${JSON.stringify(recorded, null, 2)}\n`);
   const count = (pick: (row: ProbeRow) => boolean) => rows.filter(pick).length;
   const summary = { prompts: rows.length, firstPassRejected: count((row) => row.firstPass === 'rejected'), repairRejected: count((row) => row.repair === 'rejected'), error: count((row) => row.status === 'error') };

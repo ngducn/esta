@@ -160,7 +160,7 @@ export function fakeDb(
     from: (bucket: string) => ({
       download: async (path: string) => {
         const bytes = files[`${bucket}/${path}`];
-        return bytes === undefined ? { data: null, error: { message: `${path} not found` } } : { data: new Blob([bytes]), error: null };
+        return bytes === undefined ? { data: null, error: { message: `${path} not found` } } : { data: new Blob([new Uint8Array(bytes)]), error: null };
       },
     }),
   };

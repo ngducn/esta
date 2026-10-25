@@ -1,9 +1,7 @@
 import { isoDate } from '@esta/core/date';
 import { OPEN_PROSE } from '@esta/core/guard/fixtures/open-prose';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
 import { askRequest } from '../../src/jobs/ask';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
@@ -12,6 +10,7 @@ import { canonicalInput, replaySession, type SessionRequest } from '../../src/sd
 import { fakeDb } from '../../src/test/fake-db';
 import { ANSWER, answerRow, askRpcs, askTables, CONVERSATION, QUESTION } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
+import { tempJobDir } from '../job-dir';
 import { ASK_CASES, ASK_CONTEXT, rejectedTexts } from './ask-cases';
 import { OPEN_PROSE_READS, replayedReads, type RecordedReads } from './ask-reads';
 
@@ -31,16 +30,11 @@ const TRUE_REJECTS: Readonly<Record<string, readonly string[]>> = {
 };
 
 const reads = replayedReads(JSON.parse(readFileSync(OPEN_PROSE_READS, 'utf8')) as RecordedReads);
-const dirs: string[] = [];
-afterAll(() => {
-  for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
-});
+const jobDir = tempJobDir('esta-probe-replay-');
 
 async function replayProbe(question: string, id: string) {
   const tables = askTables(question);
   const prepared = askRequest({ db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, jobId: `probe-${id}`, conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: ASK_CONTEXT.timezone, question, earlier: null, seed: [], deep: false, reads, clock: clockOn('2026-10-07T07:00:00+07:00') });
-  const jobDir = mkdtempSync(join(tmpdir(), 'esta-probe-replay-'));
-  dirs.push(jobDir);
   const request: SessionRequest = { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }) };
   let turn = request;
   let firstRejected: string[] | null = null;

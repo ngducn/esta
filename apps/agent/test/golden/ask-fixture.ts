@@ -39,6 +39,7 @@ async function main() {
   const asOf = isoDate('2026-10-07');
   const recorded: RecordedReads = {};
   for (const askCase of ASK_CASES) {
+    const today = askCase.today ?? asOf;
     const prepared = askRequest({
       db,
       householdId: household.id,
@@ -47,14 +48,14 @@ async function main() {
       questionId: 'ask-fixture',
       answerId: 'ask-fixture',
       locale: 'vi',
-      asOf,
+      asOf: today,
       timezone: 'Asia/Ho_Chi_Minh',
       question: askCase.question,
       earlier: caseEarlier(askCase),
       seed: askCase.seed ?? [],
       deep: askCase.deep === true,
-      reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf }), recorded),
-      clock: clockOn('2026-10-07T07:00:00+07:00'),
+      reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf: today }), recorded),
+      clock: clockOn(`${today}T07:00:00+07:00`),
     });
     for (const call of askCase.toolCalls) {
       const tool = prepared.tools.get(call.name);

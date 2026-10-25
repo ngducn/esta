@@ -2,10 +2,9 @@ import { isoDate } from '@esta/core/date';
 import { formatBps, formatDate, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { existingLinks } from '@esta/ops';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { askRequest } from '../../src/jobs/ask';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
@@ -14,6 +13,7 @@ import { replaySession } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
 import { ANSWER, answerRow, askRpcs, askTables, CONVERSATION, QUESTION, withDraftAndArchivedLeases } from '../ask-seed';
 import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
+import { tempJobDir } from '../job-dir';
 import { askCase as findCase, askRecording, ASK_CASES, ASK_CONTEXT, caseEarlier, caseInput } from './ask-cases';
 import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
 
@@ -26,8 +26,7 @@ const fact = (question: string, figure: string) => {
 const money = (question: string, figure: string) => formatVnd(vnd(Number(fact(question, figure))), 'vi');
 const day = (question: string, figure: string) => formatDate(isoDate(fact(question, figure)), 'vi');
 
-const jobDir = mkdtempSync(join(tmpdir(), 'esta-ask-golden-'));
-afterAll(() => rmSync(jobDir, { recursive: true, force: true }));
+const jobDir = tempJobDir('esta-ask-golden-');
 
 const LINK = /\]\((esta:\/\/[^)]+)\)/g;
 const links = (markdown: string) => [...markdown.matchAll(LINK)].map(([, link]) => link ?? '');
@@ -44,7 +43,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
     const earlier = { household_id: HOUSEHOLD, conversation_id: CONVERSATION, status: 'done' };
     tables.messages?.unshift({ ...earlier, id: EARLIER.question, role: 'user', content_md: findCase(askCase.follows.id).question }, { ...earlier, id: EARLIER.answer, role: 'assistant', content_md: before.answer.content_md, refs: before.answer.refs });
   }
-  const asOf = isoDate('2026-10-07');
+  const asOf = askCase.today ?? isoDate('2026-10-07');
   const prepared = askRequest({
     db: fakeDb(tables, [], {}, {}, askRpcs(tables)),
     householdId: HOUSEHOLD,
@@ -60,7 +59,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
     seed: askCase.seed ?? [],
     deep: askCase.deep === true,
     reads,
-    clock: clockOn('2026-10-07T07:00:00+07:00'),
+    clock: clockOn(`${asOf}T07:00:00+07:00`),
   });
   const rebuilt = askCase.rebuiltFrom === undefined ? null : await prepared.rebuild?.();
   if (rebuilt === undefined) throw new Error(`${id} has no session to rebuild`);

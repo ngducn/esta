@@ -20,7 +20,7 @@ Trợ lý's thread opens Hỏi to advice, letters and Zalo messages, where ordin
 - Before, the false rejects were `hai bên` in seven answers and `bên thứ ba` in one. The row in `error` linked a record as `({{f3.handle}})`, and the repair turn wrote it again.
 - After, the one false reject was `đồng hành`. `words.ts` now passes it, so the replay passes that answer on its first pass.
 - The 7 true rejects are numbers the model typed: a room number from the message, a district written `Q7`, and counts such as `cả hai` or `hai loại`. Each repair passed.
-- `words.ts` gained `ba mẹ`, `hai bên`, `bên thứ ba`, `đồng hành`, `chín chắn`, `second opinion` and `double-check`. Each has a case in `guard.test.ts` that still rejects a real number word next to it. The guard also reads a single hyphen as a space now, so `mùng-một`, `tháng-một` and `quý-I` stay rejected.
+- `words.ts` gained `ba mẹ`, `hai bên`, `bên thứ ba`, `đồng hành`, `chín chắn`, `second opinion` and `double-check`. Each has a case in `packages/core/src/guard/open-prose.test.ts` that still rejects a real number word next to it. The guard also reads a single hyphen as a space now, so `mùng-một`, `tháng-một` and `quý-I` stay rejected.
 - A link written as `({{f8}})` or `({{f3.handle}})` now resolves to that record's link, as `(f8)` does, so its braces never reach the answer.
 
 ## Findings left open

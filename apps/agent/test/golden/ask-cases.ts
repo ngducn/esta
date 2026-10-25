@@ -1,4 +1,4 @@
-import { isoDate } from '@esta/core/date';
+import { isoDate, type IsoDate } from '@esta/core/date';
 import type { EarlierTurn } from '../../src/jobs/ask';
 import { askFollowUpPrompt, askPrompt, type AskedTurn } from '../../src/prompts/ask';
 import { JOBS } from '../../src/jobs/registry';
@@ -19,6 +19,8 @@ export type AskCase = {
   readonly seed?: readonly AskedTurn[];
   /** An operator ticked Suy nghĩ kỹ hơn. */
   readonly deep?: true;
+  /** The business day it is asked on, when not 2026-10-07: a new segment starts on the next day. */
+  readonly today?: IsoDate;
 };
 
 const PROPERTIES = { name: mcpToolName('list_properties'), input: {} };
@@ -143,6 +145,7 @@ export const ASK_CASES: readonly AskCase[] = [
   {
     id: 'seeded-segment-august',
     question: 'Còn tháng 8 thì sao?',
+    today: isoDate('2026-10-08'),
     seed: [
       { question: 'Tháng này thu được bao nhiêu từ Dĩ An?', answer: 'Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu 1.000.000\u00a0₫ tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c?year=2026&month=10).' },
       { question: 'Còn tháng 9 thì sao?', answer: 'Tháng 9/2026, Dãy trọ Dĩ An đã thu 19.300.000\u00a0₫ tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c?year=2026&month=9).' },
@@ -165,9 +168,9 @@ export const askCase = (id: string): AskCase => {
   return found;
 };
 
-export function casePrompt({ question, follows, rebuiltFrom, seed }: AskCase): string {
+export function casePrompt({ question, follows, rebuiltFrom, seed, today = ASK_CONTEXT.today }: AskCase): string {
   const earlier = rebuiltFrom ?? seed;
-  if (earlier !== undefined) return askPrompt({ ...ASK_CONTEXT, question, earlier });
+  if (earlier !== undefined) return askPrompt({ ...ASK_CONTEXT, today, question, earlier });
   return follows === undefined ? askPrompt({ ...ASK_CONTEXT, question }) : askFollowUpPrompt({ today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question, firstHandle: follows.firstHandle });
 }
 
@@ -190,7 +193,7 @@ export function askRecording(item: AskCase): Recording {
     kind: 'ask',
     inputHash: inputHash(input),
     input,
-    label: `Hand-written for ${item.id}${item.follows === undefined ? '' : `, ${item.rebuiltFrom === undefined ? 'resuming' : 'rebuilding the lost session of'} ${item.follows.id}`}${item.seed === undefined ? '' : ', as the first question of a new segment of the thread'} on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.`,
+    label: `Hand-written for ${item.id}${item.follows === undefined ? '' : `, ${item.rebuiltFrom === undefined ? 'resuming' : 'rebuilding the lost session of'} ${item.follows.id}`}${item.seed === undefined ? '' : ', as the first question of a new segment of the thread'} on the full seed at ${item.today ?? ASK_CONTEXT.today} 07:00; the live recording waits for the P5-10 live run.`,
     model: item.deep ? 'hand-written-deep' : 'hand-written',
     numTurns: item.toolCalls.length + 1,
     toolCalls: item.toolCalls.map((call) => ({ ...call })),
