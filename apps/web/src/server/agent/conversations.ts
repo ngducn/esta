@@ -29,6 +29,20 @@ export async function loadConversation(householdId: string, id: string): Promise
   return { id: conversation.data.id, title: conversation.data.title, messages: z.array(messageSchema).parse(messages.data) };
 }
 
+export type ConversationSummary = { readonly id: string; readonly title: string; readonly lastAskedAt: Instant };
+
+const summarySchema = z
+  .object({ id: z.uuid(), title: z.string(), last_asked_at: z.string() })
+  .transform((row): ConversationSummary => ({ id: row.id, title: row.title, lastAskedAt: parseInstant(row.last_asked_at) }));
+
+/** The household's conversations, the one asked most recently first. */
+export async function listConversations(householdId: string, limit = 30): Promise<readonly ConversationSummary[]> {
+  const db = await createSessionClient();
+  const { data, error } = await db.from('conversations').select('id, title, last_asked_at').eq('household_id', householdId).order('last_asked_at', { ascending: false }).limit(limit);
+  if (error) throw new Error(`Reading the conversations failed: ${error.message}`);
+  return z.array(summarySchema).parse(data);
+}
+
 export async function readAnswer(db: Db, householdId: string, conversationId: string, answerId: string): Promise<AnswerState | null> {
   const { data, error } = await db
     .from('messages')
