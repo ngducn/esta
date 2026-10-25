@@ -4696,8 +4696,8 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 
 **You see.**
 
-- [ ] With the clock at 2026-10-11 08:05, Hộp thư shows one weekly review note and up to 3 proposals.
-- [ ] Ryan's diagnostics page lists the last runs and a 7-day usage table by kind. Mẹ's avatar menu has no diagnostics link.
+- [x] With the clock at 2026-10-11 08:05, Hộp thư shows one weekly review note and up to 3 proposals.
+- [x] Ryan's diagnostics page lists the last runs and a 7-day usage table by kind. Mẹ's avatar menu has no diagnostics link.
 - [x] `pnpm e2e e2e/agent-crash.spec.ts` passes with items and runs counted once.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
@@ -4707,10 +4707,10 @@ Phase 5. The detailed sections for this phase are re-cut at phase start from `do
 - [x] `apps/agent/src/runner.test.ts` gains cases for a usage-limit result rescheduled, an auth `is_error` failing with an operator item, and the failed-job item after 3 attempts.
 - [x] `e2e/agent-crash.spec.ts` proves effects exactly once after a mid-job kill (AGT-1).
 - [x] Golden tests in AGENT.md §7 for `weekly_review` pass in replay mode with `ESTA_AGENT_MODE=replay pnpm --filter agent test`.
-- [ ] Run `pnpm check`, then `pnpm e2e e2e/assistant-diagnostics.spec.ts`.
-- [ ] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
+- [x] Run `pnpm check`, then `pnpm e2e e2e/assistant-diagnostics.spec.ts`.
+- [x] Run `pnpm design:detect` with zero findings, or record each accepted exception with `npx impeccable ignores add-value <rule> <value> --reason "<reason>"` and cite it in the PR body.
 - [x] Run `/impeccable critique` on the touched surfaces and fix every high-severity point.
-- [ ] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-diagnostics.spec.ts`.
+- [x] axe reports zero serious or critical issues on the touched routes in `e2e/assistant-diagnostics.spec.ts`.
 
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on the configured `swarm workers` model at the PR head, per the boot recipe. Lanes that move the clock run on their own slot.
 
