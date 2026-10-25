@@ -77,6 +77,10 @@ test("a reminder opens Esta's own draft for the overdue room and writes nothing"
   await expect(sheet).toBeVisible();
   await expect(sheet.getByTestId('reminder-text')).toContainText(`Tiền thuê Phòng 5, Dãy trọ Dĩ An kỳ 25/09/2026 – 24/10/2026 còn ${vnd('2.800.000')} chưa thanh toán, đã quá hạn 12 ngày`);
   expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await sheet.getByTestId('reminder-copy').click();
+  await expect(sheet.getByTestId('reminder-copy-status')).toHaveText('Đã sao chép. Mở Zalo rồi dán vào ô tin nhắn.');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(await sheet.getByTestId('reminder-text').textContent());
   await sheet.getByRole('button', { name: 'Đóng' }).click();
   await expect(proposalCard(page, item.title).getByRole('button', { name: 'Mở lời nhắc' }), 'the card keeps the reminder for later').toBeVisible();
   expect(await written(page, item.id)).toBe(0);
