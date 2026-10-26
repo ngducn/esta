@@ -123,7 +123,7 @@ language sql
 security definer
 set search_path = ''
 as $$
-  select public.ask_question(p_household_id, p_conversation_id, p_question_id, p_question, p_deep, p_as_of);
+  select public.ask_question(p_household_id, p_conversation_id, p_question_id, p_question, p_deep, p_as_of, null, null);
 $$;
 
 grant execute on all functions in schema tests to authenticated, service_role;
