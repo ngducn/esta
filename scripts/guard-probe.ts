@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -17,7 +17,7 @@ import { askReads } from '../apps/agent/src/tools/ask-reads.ts';
 import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION } from '../apps/agent/test/ask-seed.ts';
 import { clockOn, HOUSEHOLD } from '../apps/agent/test/full-seed.ts';
 import { ASK_CONTEXT, rejectedTexts } from '../apps/agent/test/golden/ask-cases.ts';
-import { OPEN_PROSE_READS, recordingReads, type RecordedReads } from '../apps/agent/test/golden/ask-reads.ts';
+import { ASK_READS_FIXTURE, recordedReads, recordingReads } from '../apps/agent/test/golden/ask-reads.ts';
 import { runPool } from './pool.ts';
 import { parseSlot } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
@@ -112,7 +112,7 @@ async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<ty
 async function main() {
   const { mode, env } = liveMode();
   const db = serviceClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, 'guard-probe');
-  const recorded: RecordedReads = existsSync(OPEN_PROSE_READS) ? (JSON.parse(readFileSync(OPEN_PROSE_READS, 'utf8')) as RecordedReads) : {};
+  const recorded = recordedReads();
   const reads = recordingReads(askReads(db, HOUSEHOLD, { locale: 'vi', asOf: ASK_CONTEXT.today }), recorded);
   const only = values.only?.split(',');
   const rows: ProbeRow[] = [];
@@ -122,7 +122,7 @@ async function main() {
     rows.push(row);
     console.log(JSON.stringify(row));
   });
-  writeFileSync(OPEN_PROSE_READS, `${JSON.stringify(recorded, null, 2)}\n`);
+  writeFileSync(ASK_READS_FIXTURE, `${JSON.stringify(recorded, null, 2)}\n`);
   const count = (pick: (row: ProbeRow) => boolean) => rows.filter(pick).length;
   const summary = { prompts: rows.length, firstPassRejected: count((row) => row.firstPass === 'rejected'), repairRejected: count((row) => row.repair === 'rejected'), error: count((row) => row.status === 'error') };
   console.log(JSON.stringify(summary));

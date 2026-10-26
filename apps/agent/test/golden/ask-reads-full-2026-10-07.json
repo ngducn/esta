@@ -7241,5 +7241,72 @@
       "receivedOn": "2026-05-01",
       "amountVnd": 2500000
     }
-  ]
+  ],
+  "property[\"93cc970b-f9c2-52f5-bc34-1f1edb76742c\"]": {
+    "id": "93cc970b-f9c2-52f5-bc34-1f1edb76742c",
+    "nickname": "Dãy trọ Dĩ An",
+    "code": "DIAN",
+    "kind": "rooming_house",
+    "useMode": "rental",
+    "legalStatus": "certified",
+    "coverPhotoPath": "0943e55d-b0a6-5aef-839d-07c8693c520e/93cc970b-f9c2-52f5-bc34-1f1edb76742c/day-tro.avif",
+    "addressLine": "903/9 Demo Đường Nguyễn An Ninh",
+    "communeName": "Phường Dĩ An",
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "certificateAddressText": "Số 903/9 Demo, đường Nguyễn An Ninh, Khu phố Nhị Đồng 2, Phường Dĩ An, Thành phố Dĩ An, Tỉnh Bình Dương",
+    "legacyProvinceNames": [
+      "Tỉnh Bình Dương"
+    ],
+    "searchText": "day tro di an dian 903/9 demo duong nguyen an ninh phuong di an thanh pho ho chi minh so 903/9 demo duong nguyen an ninh khu pho nhi dong 2 phuong di an thanh pho di an tinh binh duong phuong an binh thanh pho di an tinh binh duong phuong di an thanh pho di an tinh binh duong phuong tan dong hiep thanh pho di an tinh binh duong",
+    "location": {
+      "lat": 10.9068,
+      "lng": 106.769
+    },
+    "hasBoundary": false,
+    "ownerPartyIds": [
+      "5107e10c-018b-5f2d-ad73-f0ad36ca7467"
+    ],
+    "vacantSince": "2026-08-01",
+    "unitCount": 8,
+    "kindDetails": {
+      "room_count": 8
+    }
+  },
+  "property[\"e0a3916c-3943-52b9-9368-00ecf0505a90\"]": {
+    "id": "e0a3916c-3943-52b9-9368-00ecf0505a90",
+    "nickname": "Căn hộ Thủ Đức",
+    "code": "THUDUC",
+    "kind": "apartment",
+    "useMode": "rental",
+    "legalStatus": "certified",
+    "coverPhotoPath": "0943e55d-b0a6-5aef-839d-07c8693c520e/e0a3916c-3943-52b9-9368-00ecf0505a90/can-ho.avif",
+    "addressLine": "902 Demo Đường Võ Văn Ngân",
+    "communeName": "Phường Thủ Đức",
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "certificateAddressText": "Căn hộ A-12.05, Chung cư Demo Bình Thọ, số 902 Demo, đường Võ Văn Ngân, Phường Bình Thọ, Thành phố Thủ Đức, Thành phố Hồ Chí Minh",
+    "legacyProvinceNames": [
+      "Thành phố Hồ Chí Minh"
+    ],
+    "searchText": "can ho thu duc thuduc 902 demo duong vo van ngan phuong thu duc thanh pho ho chi minh can ho a-12.05 chung cu demo binh tho so 902 demo duong vo van ngan phuong binh tho thanh pho thu duc thanh pho ho chi minh phuong binh tho thanh pho thu duc thanh pho ho chi minh phuong linh chieu thanh pho thu duc thanh pho ho chi minh phuong linh dong thanh pho thu duc thanh pho ho chi minh phuong linh tay thanh pho thu duc thanh pho ho chi minh phuong truong tho thanh pho thu duc thanh pho ho chi minh",
+    "location": {
+      "lat": 10.8497,
+      "lng": 106.7717
+    },
+    "hasBoundary": false,
+    "ownerPartyIds": [
+      "5107e10c-018b-5f2d-ad73-f0ad36ca7467",
+      "d825b7a8-43f6-5ab6-bfdf-114cdd8be7f7"
+    ],
+    "vacantSince": null,
+    "unitCount": 1,
+    "kindDetails": {
+      "block": "A",
+      "floor": 12,
+      "unit_no": "A-12.05",
+      "building_name": "Chung cư Demo Bình Thọ",
+      "management_fee_vnd": 1200000
+    }
+  }
 }

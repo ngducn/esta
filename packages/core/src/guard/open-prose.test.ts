@@ -21,8 +21,6 @@ describe('the guard on open advice and writing (AGENT.md §5.6 step 7)', () => {
 
 describe('the compounds the open-prose probe added (P5-12)', () => {
   it.each([
-    ['ba mẹ', 'Ba mẹ muốn để lại nhà cho các con.', ['Ba phòng còn trống.', 'Còn nợ ba triệu.', 'Ba mẹ thuê ba phòng.', 'Sổ đứng tên ba, mẹ ký thay.']],
-    ['hai bên', 'Hai bên ký hợp đồng, rồi hai bên cùng kiểm tra phòng.', ['Còn hai phòng trống.', 'Còn nợ hai triệu.', 'Hai bên trả hai triệu.', 'Đã thuê hai, bên kia còn trống.']],
     ['bên thứ ba', 'Bảo hiểm trách nhiệm với bên thứ ba.', ['Hẹn trả vào thứ ba.', 'Thứ ba bên thuê trả.', 'Bên thứ ba trả ba triệu.', 'Có ba bên thuê.']],
     ['đồng hành', 'Rất mong tiếp tục được đồng hành lâu dài.', ['Còn nợ hai triệu đồng.', 'Đồng hành lâu dài, còn thiếu trăm đồng.', 'Đồng hành cùng chị, còn nợ ba triệu.', 'Đồng hành, đồng.']],
     ['chín chắn', 'Đây là quyết định lớn, nên cân nhắc chín chắn.', ['Còn nợ chín triệu.', 'Có chín phòng.', 'Cân nhắc chín chắn vì còn chín tháng.']],
@@ -31,6 +29,14 @@ describe('the compounds the open-prose probe added (P5-12)', () => {
   ])('%s passes, and a real number beside it is still rejected', (_compound, passing, rejected) => {
     expect(rules(passing)).toEqual([]);
     for (const note of rejected) expect(rules(note), note).toContain('word');
+  });
+
+  // `hai bên` (both parties) and `ba mẹ` (parents) are written the same as a count of tenants or a family of three, so
+  // they are rejected like any count and the repair turn rewrites them.
+  it('rejects hai and ba before bên or mẹ, where they can count people', () => {
+    for (const note of ['Có hai bên thuê.', 'Ba mẹ con chị Hoa thuê phòng.', 'Còn hai bên phòng.', 'Ba mẹ ba mẹ.', 'Hai bên ký hợp đồng.', 'Ba mẹ muốn để lại nhà cho các con.']) {
+      expect(rules(note), note).toContain('word');
+    }
   });
 
   it('reads a hyphen as the space it stands for, so a date word joined by one is still rejected', () => {

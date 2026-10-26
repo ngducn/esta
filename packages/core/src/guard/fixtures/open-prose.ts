@@ -131,7 +131,7 @@ export const OPEN_PROSE: readonly OpenProsePrompt[] = [
     kind: 'advice',
     question: 'Ba mẹ muốn để lại nhà cho các con thì nên làm gì?',
     template:
-      'Ba mẹ có thể lập di chúc có công chứng, hoặc làm hợp đồng tặng cho khi còn sống. Di chúc giữ quyền quyết định đến cuối cùng, còn tặng cho thì sang tên ngay. Gia đình nên bàn kỹ với nhau và hỏi tư vấn của văn phòng công chứng để chọn cách phù hợp.',
+      'Bố mẹ có thể lập di chúc có công chứng, hoặc làm hợp đồng tặng cho khi còn sống. Di chúc giữ quyền quyết định đến cuối cùng, còn tặng cho thì sang tên ngay. Gia đình nên bàn kỹ với nhau và hỏi tư vấn của văn phòng công chứng để chọn cách phù hợp.',
   },
   {
     id: 'vi-zalo-thanks',
