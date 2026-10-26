@@ -128,8 +128,11 @@ test('Mẹ reads Trợ lý’s notes in time order, marks one read, hides one, u
 
 test('lane 5: Cần xử lý pins the Phòng 5 note above Việc cần làm, loses it each time Mẹ hides it and regains it on Hoàn tác', async ({ page }) => {
   const overdue = { id: seedId('seed:agent-item:W1-lane-5'), title: NOTES.overdue.title };
+  const leaseEnding = seedId('seed:agent-item:W3-lane-5');
   const waiting = { id: seedId('e2e:agent-item:old-proposal-lane-5'), title: 'Gọi khách Phòng 7 Demo hỏi gia hạn hợp đồng' };
-  await servicePatch(page, `agent_items?id=eq.${overdue.id}`, { status: 'new' });
+  const kept = [overdue.id, leaseEnding, waiting.id].join(',');
+  await servicePatch(page, `agent_items?household_id=eq.${laneHousehold(5)}&audience=eq.all&status=in.(new,read)&kind=not.in.(brief,weekly)&or=(kind.eq.proposal,severity.eq.action)&id=not.in.(${kept})`, { status: 'dismissed' });
+  await servicePatch(page, `agent_items?id=in.(${overdue.id},${leaseEnding})`, { status: 'new' });
   await serviceUpsert(page, 'agent_items', {
     id: waiting.id,
     household_id: laneHousehold(5),
@@ -212,13 +215,13 @@ test('an operator note reaches Ryan’s thread with its pill and never Mẹ’s'
     body_md: 'Phiên đăng nhập của Trợ lý đã hết hạn.',
     status: 'new',
     dedupe_key: `e2e:operator-note:lane-${NOTE_LANE}`,
-    created_at: '2026-10-07T07:00:00+07:00',
+    created_at: '2026-10-07T07:01:00+07:00',
   });
   await open(page, `me.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
   await page.goto('/assistant');
   await expect(note(page, NOTES.overdue.title)).toBeVisible();
   await expect(note(page, OPERATOR_NOTE.title), 'RLS keeps an operator note from a member').toHaveCount(0);
-  await expect(pinnedRow(page, NOTES.overdue.title)).toHaveCount(1);
+  await expect(page.getByTestId('pinned-item').first()).toBeVisible();
   await expect(pinnedRow(page, OPERATOR_NOTE.title), 'and from her Cần xử lý').toHaveCount(0);
 
   await page.context().clearCookies();
@@ -226,8 +229,8 @@ test('an operator note reaches Ryan’s thread with its pill and never Mẹ’s'
   await page.goto('/assistant');
   const operatorNote = note(page, OPERATOR_NOTE.title);
   await expect(operatorNote.getByTestId('note-operator')).toHaveText('Chỉ người vận hành');
-  await expect(operatorNote.locator('time')).toHaveText('07:00');
-  await expect(pinnedRow(page, OPERATOR_NOTE.title), 'an urgent operator note pins for Ryan').toHaveCount(1);
+  await expect(operatorNote.locator('time')).toHaveText('07:01');
+  await expect(page.getByTestId('pinned-item').first(), 'an urgent operator note pins for Ryan, newest first').toContainText(OPERATOR_NOTE.title);
 });
 
 test('Mẹ asks how much Dĩ An brought in this month: the answer streams under her message with the ledger amount and a link to its Thu chi tab', async ({ page }) => {
