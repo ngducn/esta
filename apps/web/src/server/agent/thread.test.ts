@@ -23,7 +23,11 @@ function matches(row: Row, filter: string): boolean {
   );
 }
 
-/** A PostgREST builder over `stored`, as RLS has already narrowed it to what the member reads. */
+/**
+ * A PostgREST builder over `stored`, as RLS has already narrowed it to what the member reads. These tests prove what
+ * loadThread does with the rows she reads; pgTAP proves which rows those are: no operator item
+ * (supabase/tests/agent_items.test.sql) and only her own messages and their history (thread.test.sql, thread_rules.test.sql).
+ */
 function from(table: 'agent_items' | 'messages') {
   let rows = [...stored[table]];
   let ascending = false;
@@ -90,7 +94,7 @@ describe('loadThread', () => {
     expect(parseCursor(thread.before ?? '')?.id).toBe(uuid(11));
   });
 
-  it('opens the newest page for a note it cannot read and ignores a cursor it did not write', async () => {
+  it('opens the newest page for a note RLS hides from her, such as an operator item, and ignores a cursor it did not write', async () => {
     stored.agent_items = [note(1, at(1))];
     stored.messages = [message(10, 'user', at(2))];
     expect(ids(await loadThread(member, { note: uuid(77) }))).toEqual([uuid(1), uuid(10)]);
