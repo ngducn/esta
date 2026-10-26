@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { AssistantHeader, assistantStatus } from '@/components/assistant/assistant-header';
+import { PinnedItems } from '@/components/assistant/pinned-items';
 import { TaskList } from '@/components/assistant/task-list';
 import { ThreadView } from '@/components/assistant/thread';
 import { sectionMetadata } from '@/components/shell/section-page';
@@ -34,6 +35,7 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
     <div className="flex flex-col gap-6">
       <AssistantHeader householdId={member.household.id} now={clock.now()} status={status} active="thread" />
       <ToastHost labels={{ region: toast('region'), undo: toast('undo') }}>
+        <PinnedItems pinned={thread.pinned} loaded={new Set(notes.map(({ id }) => id))} />
         <TaskList tasks={tasks} today={clock.today()} canEdit={canDecide} />
         <ThreadView
           thread={thread}
