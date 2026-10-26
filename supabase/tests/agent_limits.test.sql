@@ -27,10 +27,14 @@ update public.household_settings set agent = '{"daily_caps": {"ask": 0}}' where 
 select is(private.agent_daily_cap(:'b', 'ask'), 0, 'zero stops the kind for the household');
 update public.household_settings set agent = '{}' where household_id = :'b';
 
--- Three questions in household a, which allows two asks a day.
+-- Three questions in household a, which allows two asks a day, each from its own member, since a member waits for her
+-- answer before she asks again.
 select tests.act_as('viewer.a@test.esta.test');
-select tests.ask_question(:'a', ('00000000-0000-4000-8000-00000000ca0' || n)::uuid, ('00000000-0000-4000-8000-00000000cb0' || n)::uuid, 'Câu hỏi ' || n, false, '2026-10-07 09:00+07')
-from generate_series(1, 3) n;
+select tests.ask_question(:'a', '00000000-0000-4000-8000-00000000ca01', '00000000-0000-4000-8000-00000000cb01', 'Câu hỏi 1', false, '2026-10-07 09:00+07');
+select tests.act_as('member.a@test.esta.test');
+select tests.ask_question(:'a', '00000000-0000-4000-8000-00000000ca02', '00000000-0000-4000-8000-00000000cb02', 'Câu hỏi 2', false, '2026-10-07 09:00+07');
+select tests.act_as('admin.a@test.esta.test');
+select tests.ask_question(:'a', '00000000-0000-4000-8000-00000000ca03', '00000000-0000-4000-8000-00000000cb03', 'Câu hỏi 3', false, '2026-10-07 09:00+07');
 select tests.act_as('viewer.b@test.esta.test');
 select tests.ask_question(:'b', '00000000-0000-4000-8000-0000000cc001', '00000000-0000-4000-8000-0000000cd001', 'Câu hỏi b', false, '2026-10-07 09:00+07');
 
