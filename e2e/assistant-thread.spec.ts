@@ -48,6 +48,14 @@ test.afterAll(async ({ request }) => {
 const answer = (page: Page) => page.getByTestId('answer').last();
 const note = (page: Page, title: string) => page.getByTestId('inbox-item').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 const statusOf = async (page: Page, id: string) => (await serviceGet<{ status: string }[]>(page, `agent_items?id=eq.${id}&select=status`))[0]?.status;
+const pinnedRow = (page: Page, title: string) => page.getByTestId('pinned-item').filter({ has: page.getByTestId('pinned-title').getByText(title, { exact: true }) });
+
+/** How much of the screen `Cần xử lý` takes, and whether its list is open. */
+async function pinnedArea(page: Page) {
+  const band = page.getByTestId('pinned');
+  const [box, open, viewport] = [await band.boundingBox(), await band.locator('details').evaluate((details: HTMLDetailsElement) => details.open), page.viewportSize()];
+  return { share: (box?.height ?? 0) / (viewport?.height ?? 1), open };
+}
 
 /** Sends `message` as the first of a fresh thread and times the first visible sentence of its answer. */
 async function sendAndTimeFirstSentence(page: Page, message: string, label?: string): Promise<number> {
@@ -118,12 +126,87 @@ test('Mẹ reads Trợ lý’s notes in time order, marks one read, hides one, u
   await expect(line).toHaveCount(0);
 });
 
+test('lane 5: Cần xử lý pins the Phòng 5 note above Việc cần làm, loses it each time Mẹ hides it and regains it on Hoàn tác', async ({ page }) => {
+  const overdue = { id: seedId('seed:agent-item:W1-lane-5'), title: NOTES.overdue.title };
+  const waiting = { id: seedId('e2e:agent-item:old-proposal-lane-5'), title: 'Gọi khách Phòng 7 Demo hỏi gia hạn hợp đồng' };
+  await servicePatch(page, `agent_items?id=eq.${overdue.id}`, { status: 'new' });
+  await serviceUpsert(page, 'agent_items', {
+    id: waiting.id,
+    household_id: laneHousehold(5),
+    kind: 'proposal',
+    severity: 'info',
+    audience: 'all',
+    title: waiting.title,
+    body_md: 'Trợ lý đề xuất việc này.',
+    proposal: { type: 'create_task', params: { title: waiting.title, due_on: '2026-10-08', property_id: null, lease_id: null } },
+    status: 'new',
+    dedupe_key: 'e2e:old-proposal:lane-5',
+    created_at: '2026-10-05T08:00:00+07:00',
+  });
+  await open(page, 'me.lane5@demo.esta.test', 'light', PHONE);
+  await page.goto('/assistant');
+
+  const pinned = page.getByTestId('pinned');
+  await expect(pinned.getByRole('heading', { name: /^Cần xử lý/ })).toBeVisible();
+  await expect(pinnedRow(page, overdue.title), 'an action note is the most severe, so it comes first').toHaveCount(1);
+  await expect(page.getByTestId('pinned-item').first()).toContainText(overdue.title);
+  await expect(page.locator('[data-testid="pinned"] ~ [data-testid="tasks"] ~ [data-testid="thread"]'), 'Việc cần làm sits under Cần xử lý, above the thread').toHaveCount(1);
+  await expect(page.getByTestId('composer'), 'the thread still opens at its end').toBeInViewport();
+  await expect(pinned, 'pinned above the newest messages').toBeInViewport();
+  expect(await pinnedArea(page), 'three rows fit in a third of the screen, so it stays open').toMatchObject({ open: true });
+  expect((await pinnedArea(page)).share).toBeLessThanOrEqual(1 / 3);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.reload();
+  await expect(pinned.locator('details'), 'on a phone turned sideways the rows do not fit, so it folds itself').not.toHaveAttribute('open');
+  expect((await pinnedArea(page)).share).toBeLessThanOrEqual(1 / 3);
+  await expect(pinned.getByTestId('pinned-count')).toHaveText('3 việc');
+  await pinned.locator('summary').click();
+  expect(await pinnedArea(page), 'opened by a tap, it still takes at most a third').toMatchObject({ open: true });
+  expect((await pinnedArea(page)).share).toBeLessThanOrEqual(1 / 3);
+  await page.setViewportSize(PHONE);
+  await page.reload();
+
+  await expect(page.getByTestId('pinned-item').getByTestId('pinned-title'), 'the action note before the proposal').toHaveText([overdue.title, NOTES.leaseEnding.title, waiting.title]);
+  const card = note(page, overdue.title);
+  await pinnedRow(page, overdue.title).getByRole('link').click();
+  await expect(card).toBeInViewport();
+
+  await pinned.locator('summary').click();
+  await expect(pinned.getByTestId('pinned-item').first(), 'the heading folds the list').toBeHidden();
+  await expect(pinned.getByTestId('pinned-count')).toBeVisible();
+  await pinned.locator('summary').click();
+  await expect(pinnedRow(page, overdue.title)).toBeVisible();
+
+  const hide = () => card.getByRole('button', { name: `Ẩn ghi chú: ${overdue.title}` }).click();
+  await hide();
+  await expect(pinnedRow(page, overdue.title), 'a hidden note leaves Cần xử lý').toHaveCount(0);
+  await toast(page).getByRole('button', { name: 'Hoàn tác' }).click();
+  await expect(pinnedRow(page, overdue.title), 'Hoàn tác pins it again').toHaveCount(1);
+  await expect(card).toHaveAttribute('data-status', 'new');
+  await hide();
+  await expect(pinnedRow(page, overdue.title)).toHaveCount(0);
+  await expect.poll(() => statusOf(page, overdue.id)).toBe('dismissed');
+  await page.reload();
+  await expect(page.getByTestId('note-settled').filter({ hasText: overdue.title }), 'the thread keeps it as one muted line').toContainText(`Đã ẩn: ${overdue.title}`);
+  await expect(pinnedRow(page, overdue.title)).toHaveCount(0);
+
+  await pinnedRow(page, waiting.title).getByRole('link').click();
+  const proposal = note(page, waiting.title);
+  await expect(proposal).toBeInViewport();
+  const [band, landed] = [await pinned.boundingBox(), await proposal.boundingBox()];
+  expect(landed?.y ?? 0, 'an older note lands just below the pinned area, not under it').toBeGreaterThanOrEqual((band?.y ?? 0) + (band?.height ?? 0));
+  await proposal.getByRole('button', { name: `Bỏ qua đề xuất: ${waiting.title}` }).click();
+  await expect(pinnedRow(page, waiting.title), 'a skipped proposal leaves Cần xử lý').toHaveCount(0);
+});
+
 test('an operator note reaches Ryan’s thread with its pill and never Mẹ’s', async ({ page }) => {
   await serviceUpsert(page, 'agent_items', {
     id: OPERATOR_NOTE.id,
     household_id: laneHousehold(NOTE_LANE),
     kind: 'system',
-    severity: 'info',
+    severity: 'action',
     audience: 'operator',
     title: OPERATOR_NOTE.title,
     body_md: 'Phiên đăng nhập của Trợ lý đã hết hạn.',
@@ -135,6 +218,8 @@ test('an operator note reaches Ryan’s thread with its pill and never Mẹ’s'
   await page.goto('/assistant');
   await expect(note(page, NOTES.overdue.title)).toBeVisible();
   await expect(note(page, OPERATOR_NOTE.title), 'RLS keeps an operator note from a member').toHaveCount(0);
+  await expect(pinnedRow(page, NOTES.overdue.title)).toHaveCount(1);
+  await expect(pinnedRow(page, OPERATOR_NOTE.title), 'and from her Cần xử lý').toHaveCount(0);
 
   await page.context().clearCookies();
   await open(page, `ryan.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
@@ -142,6 +227,7 @@ test('an operator note reaches Ryan’s thread with its pill and never Mẹ’s'
   const operatorNote = note(page, OPERATOR_NOTE.title);
   await expect(operatorNote.getByTestId('note-operator')).toHaveText('Chỉ người vận hành');
   await expect(operatorNote.locator('time')).toHaveText('07:00');
+  await expect(pinnedRow(page, OPERATOR_NOTE.title), 'an urgent operator note pins for Ryan').toHaveCount(1);
 });
 
 test('Mẹ asks how much Dĩ An brought in this month: the answer streams under her message with the ledger amount and a link to its Thu chi tab', async ({ page }) => {
@@ -211,11 +297,30 @@ test('Ryan asks in English who paid late most often this year, and the answer co
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('thread case T1: Mẹ asks for a Zalo reminder to Phòng 5, and the draft names the tenant and what the board says is owed', async ({ page }) => {
+test('thread case T1: Mẹ asks for a Zalo reminder to Phòng 5, the draft names the tenant and what the board says is owed, and Sao chép copies it', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
   await freshThread(page, 'me', 3);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await sendAndTimeFirstSentence(page, ZALO);
-  await expect(answer(page)).toContainText(`Chào Hoàng Văn Em Demo, tiền thuê Phòng 5 ở Dãy trọ Dĩ An đến hạn ngày 25/09/2026 hiện còn ${vnd('2.800.000')}.`);
+  const draft = `Chào Hoàng Văn Em Demo, tiền thuê Phòng 5 ở Dãy trọ Dĩ An đến hạn ngày 25/09/2026 hiện còn ${vnd('2.800.000')}.`;
+  await expect(answer(page)).toContainText(draft);
+
+  const copy = page.getByTestId('answer-copy').last();
+  await expect(copy).toHaveText('Sao chép');
+  await copy.click();
+  await expect(toast(page)).toContainText('Đã sao chép câu trả lời.');
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const shown = await answer(page).innerText();
+  expect(copied.replace(/\s+/g, ' ').trim(), 'the clipboard holds the text she reads').toBe(shown.replace(/\s+/g, ' ').trim());
+  expect(copied).toContain(draft);
+  expect(copied, 'no placeholder, link target or Markdown').not.toMatch(/\{\{|\]\(|esta:|\*\*/);
+
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = () => Promise.reject(new DOMException('denied', 'NotAllowedError'));
+  });
+  await copy.click();
+  await expect(toast(page)).toContainText('Chưa sao chép được.');
+  expect(await page.evaluate(() => window.getSelection()?.toString() ?? ''), 'the answer is left selected for a long press').toContain(draft);
   await page.goto('/collections');
   await expect(boardRow(page, 'overdue', 'Phòng 5, Dãy trọ Dĩ An'), 'the draft owes what the board shows').toContainText(vnd('2.800.000'));
   await page.goto('/assistant');
@@ -295,6 +400,9 @@ test('lane 10: Mẹ reads in English at 130% in dark, asks which rooms in Dĩ An
     await expect.poll(coveredBy, { message: 'the tab bar never covers the reply box' }).toBeLessThanOrEqual(0);
     expect(await seriousAxeViolations(page)).toEqual([]);
     await shot(page, 'p5-12-seed10-english');
+
+    const area = await pinnedArea(page);
+    expect(area.share <= 1 / 3 || !area.open, `Cần xử lý takes at most a third of the screen or folds: ${JSON.stringify(area)}`).toBe(true);
 
     await answer(page).getByRole('link', { name: 'the bill for Phòng 5' }).click();
     await expect(page).toHaveURL(/\/collections\/invoices\/[0-9a-f-]{36}$/);

@@ -1126,7 +1126,6 @@
     "taskRestoreFailed": "Could not bring the task back. Reload the page and try again.",
     "pinned": "Needs attention",
     "pinnedCount": "{count, plural, one {# item} other {# items}}",
-    "pinnedMore": "{count, plural, one {# more item} other {# more items}} in the messages below.",
     "pinnedProposal": "Proposal",
     "copyAnswer": "Copy",
     "copyAnswerLabel": "Copy the answer from {time}",

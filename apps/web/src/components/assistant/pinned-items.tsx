@@ -11,7 +11,6 @@ import { PinnedFold } from './pinned-fold';
 export async function PinnedItems({ pinned, loaded }: { pinned: Pinned; loaded: ReadonlySet<string> }) {
   if (pinned.count === 0) return null;
   const t = await getTranslations('assistant');
-  const more = pinned.count - pinned.shown.length;
   return (
     <PinnedFold
       summary={
@@ -26,24 +25,21 @@ export async function PinnedItems({ pinned, loaded }: { pinned: Pinned; loaded: 
         </summary>
       }
     >
-      <div className="flex flex-col border-t border-rule px-5 sm:px-6">
-        <ol className="flex flex-col divide-y divide-rule">
-          {pinned.shown.map((note) => (
-            <li key={note.id} data-testid="pinned-item">
-              <Link href={loaded.has(note.id) ? `#note-${note.id}` : `/assistant?note=${note.id}`} className="flex min-h-touch items-center gap-3 py-3 text-ink">
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  {note.proposal ? <span className="text-small text-ink-muted">{t('pinnedProposal')}</span> : null}
-                  <span data-testid="pinned-title" className="line-clamp-2 text-body font-medium break-words underline-offset-4 hover:underline">
-                    {note.title}
-                  </span>
+      <ol className="flex flex-col divide-y divide-rule border-t border-rule px-5 sm:px-6">
+        {pinned.shown.map((note) => (
+          <li key={note.id} data-testid="pinned-item">
+            <Link href={loaded.has(note.id) ? `#note-${note.id}` : `/assistant?note=${note.id}`} className="flex min-h-touch items-center gap-3 py-1 text-body text-ink">
+              <span className="min-w-0 flex-1 truncate">
+                {note.proposal ? <span className="text-ink-muted">{t('pinnedProposal')} </span> : null}
+                <span data-testid="pinned-title" className="font-medium underline-offset-4 hover:underline">
+                  {note.title}
                 </span>
-                <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
-              </Link>
-            </li>
-          ))}
-        </ol>
-        {more > 0 ? <p className="border-t border-rule py-3 text-small text-ink-2">{t('pinnedMore', { count: more })}</p> : null}
-      </div>
+              </span>
+              <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
+            </Link>
+          </li>
+        ))}
+      </ol>
     </PinnedFold>
   );
 }

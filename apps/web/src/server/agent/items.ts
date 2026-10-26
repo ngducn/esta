@@ -115,8 +115,8 @@ export async function listPinned(householdId: string): Promise<Pinned> {
     .or('kind.eq.proposal,severity.eq.action');
   if (error) throw new Error(`Reading Trợ lý's open notes failed: ${error.message}`);
   const open = data
-    .map((row) => ({ row, rank: SEVERITY_RANK[severity.parse(row.severity)], stamp: canonicalStamp(row.created_at) }))
-    .toSorted((a, b) => a.rank - b.rank || (a.stamp === b.stamp ? 0 : a.stamp < b.stamp ? 1 : -1));
+    .map((row) => ({ row, rank: SEVERITY_RANK[severity.parse(row.severity)], key: `${canonicalStamp(row.created_at)} ${row.id}` }))
+    .toSorted((a, b) => a.rank - b.rank || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
   return { shown: open.slice(0, PINNED_SHOWN).map(({ row }) => ({ id: row.id, title: row.title, proposal: row.kind === 'proposal' })), count: open.length };
 }
 

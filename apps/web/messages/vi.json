@@ -1126,7 +1126,6 @@
     "taskRestoreFailed": "Chưa đưa việc trở lại được. Tải lại trang rồi thử lại.",
     "pinned": "Cần xử lý",
     "pinnedCount": "{count, plural, other {# việc}}",
-    "pinnedMore": "{count, plural, other {Còn # việc nữa trong tin nhắn bên dưới.}}",
     "pinnedProposal": "Đề xuất",
     "copyAnswer": "Sao chép",
     "copyAnswerLabel": "Sao chép câu trả lời lúc {time}",
