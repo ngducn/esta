@@ -21,10 +21,8 @@ export async function sendInThread(page: Page, message: string, { label = 'Viế
   await expect(page.getByTestId('question').last()).toContainText(message);
 }
 
-/** A row of `Cần xử lý` by its note's title. */
 export const pinnedRow = (page: Page, title: string) => page.getByTestId('pinned-item').filter({ has: page.getByTestId('pinned-title').getByText(title, { exact: true }) });
 
-/** How much of the screen `Cần xử lý` takes, and whether its list is open. */
 export async function pinnedArea(page: Page) {
   const band = page.getByTestId('pinned');
   const [box, open, viewport] = [await band.boundingBox(), await band.locator('details').evaluate((details: HTMLDetailsElement) => details.open), page.viewportSize()];

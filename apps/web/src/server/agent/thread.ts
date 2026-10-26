@@ -11,8 +11,7 @@ export type ThreadEntry =
 
 /**
  * A page of the thread, oldest first. `before` is the `?before=` cursor of the page older than it, and `newer` says the
- * thread holds entries after it, so the page shows a link to the newest instead of the reply box. `pinned` is the open
- * work above it, whatever page is shown.
+ * thread holds entries after it, so the page shows a link to the newest instead of the reply box.
  */
 export type Thread = { readonly entries: readonly ThreadEntry[]; readonly before: string | null; readonly newer: boolean; readonly pinned: Pinned };
 

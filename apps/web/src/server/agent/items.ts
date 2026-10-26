@@ -89,21 +89,19 @@ export async function listNotes({ household, role, isOperator }: Pick<Member, 'h
   });
 }
 
-/** A note pinned above the thread under `Cần xử lý` (P5-12b): a proposal not yet decided, or an action note not hidden. */
 export type PinnedNote = { readonly id: string; readonly title: string; readonly proposal: boolean };
 
-/** The first `PINNED_SHOWN` pinned notes, most severe first, and how many there are in all. */
 export type Pinned = { readonly shown: readonly PinnedNote[]; readonly count: number };
 
-export const PINNED_SHOWN = 3;
+const PINNED_SHOWN = 3;
 
 const SEVERITY_RANK: Record<WatchSeverity, number> = { action: 0, watch: 1, info: 2 };
 const severity = z.enum(['info', 'watch', 'action']);
+const NEVER_PINNED_KINDS = '(brief,weekly)';
 
-/**
- * The open work RLS lets this member read: proposals still waiting and `action` notes still open, most severe first,
- * then newest. The brief and the weekly review are never pinned, so yesterday's brief cannot stay on top (#321).
- */
+type PinnedCandidate = { readonly rank: number; readonly key: string };
+const mostSevereThenNewest = (a: PinnedCandidate, b: PinnedCandidate) => a.rank - b.rank || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0);
+
 export async function listPinned(householdId: string): Promise<Pinned> {
   const supabase = await createSessionClient();
   const { data, error } = await supabase
@@ -111,12 +109,12 @@ export async function listPinned(householdId: string): Promise<Pinned> {
     .select('id, title, kind, severity, created_at')
     .eq('household_id', householdId)
     .in('status', INBOX)
-    .not('kind', 'in', '(brief,weekly)')
+    .not('kind', 'in', NEVER_PINNED_KINDS)
     .or('kind.eq.proposal,severity.eq.action');
   if (error) throw new Error(`Reading Trợ lý's open notes failed: ${error.message}`);
   const open = data
     .map((row) => ({ row, rank: SEVERITY_RANK[severity.parse(row.severity)], key: `${canonicalStamp(row.created_at)} ${row.id}` }))
-    .toSorted((a, b) => a.rank - b.rank || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
+    .toSorted(mostSevereThenNewest);
   return { shown: open.slice(0, PINNED_SHOWN).map(({ row }) => ({ id: row.id, title: row.title, proposal: row.kind === 'proposal' })), count: open.length };
 }
 

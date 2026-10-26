@@ -8,15 +8,12 @@ import { useHydrated } from '@/lib/use-hydrated';
 
 export type CopyAnswerLabels = { readonly copy: string; readonly copyLabel: string; readonly copied: string; readonly failed: string };
 
-/**
- * `Sao chép` under a finished answer copies the text it shows, so Mẹ can paste a draft into Zalo. Where the browser
- * refuses the clipboard, the answer is left selected so a long press copies it.
- */
 export function CopyAnswer({ text, labels }: { text: string; labels: CopyAnswerLabels }) {
   const hydrated = useHydrated();
   const notice = useNoticeToast();
   const button = useRef<HTMLButtonElement>(null);
   const copy = () =>
+    // Off HTTPS `navigator.clipboard` is undefined, so the call goes inside the chain to fail as a refusal does.
     Promise.resolve()
       .then(() => navigator.clipboard.writeText(text))
       .then(

@@ -5,7 +5,6 @@ const HOUSEHOLD = '0943e55d-b0a6-5aef-839d-07c8693c520e';
 type Row = Record<string, unknown> & { id: string; created_at: string };
 const stored = vi.hoisted(() => ({ agent_items: [] as Row[], messages: [] as Row[] }));
 
-/** The filter grammar `windowFilter` and the pinned list write: `<field>.<op>.<value>` terms, some inside `and(...)`. */
 function matches(row: Row, filter: string): boolean {
   const test = (field: string, op: string, value: string) => {
     const left = field === 'created_at' ? canonicalStamp(row.created_at) : String(row[field]);

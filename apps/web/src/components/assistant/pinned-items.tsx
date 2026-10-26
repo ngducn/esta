@@ -4,10 +4,6 @@ import { getTranslations } from 'next-intl/server';
 import type { Pinned } from '@/server/agent/items';
 import { PinnedFold } from './pinned-fold';
 
-/**
- * `Cần xử lý` above the thread: the open work Trợ lý left, so a new day's messages never bury it. Each row opens its
- * note, in place when this page holds it and through `?note=` when it is further back.
- */
 export async function PinnedItems({ pinned, loaded }: { pinned: Pinned; loaded: ReadonlySet<string> }) {
   if (pinned.count === 0) return null;
   const t = await getTranslations('assistant');

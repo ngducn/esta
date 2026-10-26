@@ -2,11 +2,6 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 
-/**
- * The fold of `Cần xử lý`. It stays at the top of the screen, at most a third of its height, and folds itself when its
- * list would not fit until she opens or folds it herself. Anchors scroll below it, so a note it links to is not hidden
- * under it.
- */
 export function PinnedFold({ summary, children }: { summary: ReactNode; children: ReactNode }) {
   const band = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
@@ -16,23 +11,29 @@ export function PinnedFold({ summary, children }: { summary: ReactNode; children
     const [area, section, details] = [band.current, panel.current, fold.current];
     if (area === null || section === null || details === null) return;
     const root = document.documentElement;
-    let chosen = false;
-    const fit = () => {
+    let toggledByHer = false;
+    const landAnchorsBelowBand = () => {
       root.style.scrollPaddingTop = `${area.offsetHeight}px`;
-      if (!chosen && details.open && section.scrollHeight > section.clientHeight) details.open = false;
     };
-    const choose = () => {
-      chosen = true;
+    const foldWhenOverflowing = () => {
+      if (!toggledByHer && details.open && section.scrollHeight > section.clientHeight) details.open = false;
+    };
+    const fit = () => {
+      landAnchorsBelowBand();
+      foldWhenOverflowing();
+    };
+    const markToggled = () => {
+      toggledByHer = true;
     };
     const summaryElement = details.querySelector('summary');
-    summaryElement?.addEventListener('click', choose);
+    summaryElement?.addEventListener('click', markToggled);
     const resized = new ResizeObserver(fit);
     resized.observe(section);
     for (const child of details.children) resized.observe(child);
     fit();
     return () => {
       resized.disconnect();
-      summaryElement?.removeEventListener('click', choose);
+      summaryElement?.removeEventListener('click', markToggled);
       root.style.removeProperty('scroll-padding-top');
     };
   }, []);

@@ -5,16 +5,16 @@ import { useEffect, useRef } from 'react';
 const END_SLACK_PX = 48;
 
 /**
- * Opens the thread where she reads it: at the note a link names, at the anchor she arrived with (Home's `#tasks`), or
- * at the end of the page, where the reply box sits above the phone's tab bar rather than under it. While she is at the
- * end, the page stays there as an answer grows and when a refresh hides the thread for a moment, which would otherwise
- * leave her at the top.
+ * Opens the thread where she reads it: at the note a link names, or at the end of the page, where the reply box sits
+ * above the phone's tab bar rather than under it. While she is at the end, the page stays there as an answer grows and
+ * when a refresh hides the thread for a moment, which would otherwise leave her at the top.
  */
 export function ThreadScroll({ note, newest }: { note: string | null; newest: string | null }) {
   const arrival = useRef<{ readonly newest: string | null; readonly anchor: string } | null>(null);
   useEffect(() => {
     arrival.current ??= { newest, anchor: window.location.hash.slice(1) };
-    const anchor = note ?? (arrival.current.newest === newest ? arrival.current.anchor : '');
+    const hashUntilThreadGrows = arrival.current.newest === newest ? arrival.current.anchor : '';
+    const anchor = note ?? hashUntilThreadGrows;
     const target = anchor === '' ? null : document.getElementById(anchor);
     if (target !== null) {
       target.scrollIntoView({ block: 'start' });
