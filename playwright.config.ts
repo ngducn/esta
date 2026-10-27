@@ -44,6 +44,7 @@ const sharedClock = [
   'tax-card.spec.ts',
   'reports.spec.ts',
   'assistant-thread.spec.ts',
+  'assistant-pinned.spec.ts',
   'morning-brief.spec.ts',
   'assistant-market.spec.ts',
   'tasks.spec.ts',

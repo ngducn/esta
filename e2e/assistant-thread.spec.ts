@@ -9,7 +9,7 @@ import { initialJs, INITIAL_JS_BUDGET_BYTES } from './helpers/bundle';
 import { laneHousehold, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
-import { freshThread, sendInThread } from './helpers/thread';
+import { freshThread, pinnedArea, pinnedRow, sendInThread } from './helpers/thread';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, serviceGet, servicePatch, serviceUpsert, seriousAxeViolations, settled, shot, toast, vnd } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
@@ -48,7 +48,6 @@ test.afterAll(async ({ request }) => {
 const answer = (page: Page) => page.getByTestId('answer').last();
 const note = (page: Page, title: string) => page.getByTestId('inbox-item').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 const statusOf = async (page: Page, id: string) => (await serviceGet<{ status: string }[]>(page, `agent_items?id=eq.${id}&select=status`))[0]?.status;
-
 /** Sends `message` as the first of a fresh thread and times the first visible sentence of its answer. */
 async function sendAndTimeFirstSentence(page: Page, message: string, label?: string): Promise<number> {
   await page.goto('/assistant');
@@ -123,25 +122,28 @@ test('an operator note reaches Ryan’s thread with its pill and never Mẹ’s'
     id: OPERATOR_NOTE.id,
     household_id: laneHousehold(NOTE_LANE),
     kind: 'system',
-    severity: 'info',
+    severity: 'action',
     audience: 'operator',
     title: OPERATOR_NOTE.title,
     body_md: 'Phiên đăng nhập của Trợ lý đã hết hạn.',
     status: 'new',
     dedupe_key: `e2e:operator-note:lane-${NOTE_LANE}`,
-    created_at: '2026-10-07T07:00:00+07:00',
+    created_at: '2026-10-07T07:01:00+07:00',
   });
   await open(page, `me.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
   await page.goto('/assistant');
   await expect(note(page, NOTES.overdue.title)).toBeVisible();
   await expect(note(page, OPERATOR_NOTE.title), 'RLS keeps an operator note from a member').toHaveCount(0);
+  await expect(page.getByTestId('pinned-item').first()).toBeVisible();
+  await expect(pinnedRow(page, OPERATOR_NOTE.title), 'and from her Cần xử lý').toHaveCount(0);
 
   await page.context().clearCookies();
   await open(page, `ryan.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
   await page.goto('/assistant');
   const operatorNote = note(page, OPERATOR_NOTE.title);
   await expect(operatorNote.getByTestId('note-operator')).toHaveText('Chỉ người vận hành');
-  await expect(operatorNote.locator('time')).toHaveText('07:00');
+  await expect(operatorNote.locator('time')).toHaveText('07:01');
+  await expect(page.getByTestId('pinned-item').first(), 'an urgent operator note pins for Ryan, newest first').toContainText(OPERATOR_NOTE.title);
 });
 
 test('Mẹ asks how much Dĩ An brought in this month: the answer streams under her message with the ledger amount and a link to its Thu chi tab', async ({ page }) => {
@@ -211,11 +213,30 @@ test('Ryan asks in English who paid late most often this year, and the answer co
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('thread case T1: Mẹ asks for a Zalo reminder to Phòng 5, and the draft names the tenant and what the board says is owed', async ({ page }) => {
+test('thread case T1: Mẹ asks for a Zalo reminder to Phòng 5, the draft names the tenant and what the board says is owed, and Sao chép copies it', async ({ page }) => {
   await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
   await freshThread(page, 'me', 3);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await sendAndTimeFirstSentence(page, ZALO);
-  await expect(answer(page)).toContainText(`Chào Hoàng Văn Em Demo, tiền thuê Phòng 5 ở Dãy trọ Dĩ An đến hạn ngày 25/09/2026 hiện còn ${vnd('2.800.000')}.`);
+  const draft = `Chào Hoàng Văn Em Demo, tiền thuê Phòng 5 ở Dãy trọ Dĩ An đến hạn ngày 25/09/2026 hiện còn ${vnd('2.800.000')}.`;
+  await expect(answer(page)).toContainText(draft);
+
+  const copy = page.getByTestId('answer-copy').last();
+  await expect(copy).toHaveText('Sao chép');
+  await copy.click();
+  await expect(toast(page)).toContainText('Đã sao chép câu trả lời.');
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const shown = await answer(page).innerText();
+  expect(copied.replace(/\s+/g, ' ').trim(), 'the clipboard holds the text she reads').toBe(shown.replace(/\s+/g, ' ').trim());
+  expect(copied).toContain(draft);
+  expect(copied, 'no placeholder, link target or Markdown').not.toMatch(/\{\{|\]\(|esta:|\*\*/);
+
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = () => Promise.reject(new DOMException('denied', 'NotAllowedError'));
+  });
+  await copy.click();
+  await expect(toast(page)).toContainText('Chưa sao chép được.');
+  expect(await page.evaluate(() => window.getSelection()?.toString() ?? ''), 'the answer is left selected for a long press').toContain(draft);
   await page.goto('/collections');
   await expect(boardRow(page, 'overdue', 'Phòng 5, Dãy trọ Dĩ An'), 'the draft owes what the board shows').toContainText(vnd('2.800.000'));
   await page.goto('/assistant');
@@ -295,6 +316,9 @@ test('lane 10: Mẹ reads in English at 130% in dark, asks which rooms in Dĩ An
     await expect.poll(coveredBy, { message: 'the tab bar never covers the reply box' }).toBeLessThanOrEqual(0);
     expect(await seriousAxeViolations(page)).toEqual([]);
     await shot(page, 'p5-12-seed10-english');
+
+    const area = await pinnedArea(page);
+    expect(area.share <= 1 / 3 || !area.open, `Cần xử lý takes at most a third of the screen or folds: ${JSON.stringify(area)}`).toBe(true);
 
     await answer(page).getByRole('link', { name: 'the bill for Phòng 5' }).click();
     await expect(page).toHaveURL(/\/collections\/invoices\/[0-9a-f-]{36}$/);

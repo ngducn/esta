@@ -1,6 +1,7 @@
 import { businessDate, type Instant, type IsoDate } from '@esta/core';
 import { wallTime } from '@esta/core/agent';
 import { formatDayMonth } from '@esta/core/format';
+import { visibleText } from '@esta/core/guard';
 import { PROPOSAL_TYPES } from '@esta/core/proposals';
 import { MAX_QUESTION_LENGTH } from '@esta/ops';
 import { getTranslations } from 'next-intl/server';
@@ -15,6 +16,7 @@ import type { ReminderLabels } from '@/server/reminders/board';
 import { AnswerStream } from './answer-stream';
 import { AnswerView } from './answer-view';
 import { AssistantNote } from './assistant-note';
+import { CopyAnswer } from './copy-answer';
 import { AssistantMonogram } from './monogram';
 import { NoteActions, ProposalActions, ProposalDecision, RestoreNote, type ProposalExtras } from './note-actions';
 import { ThreadComposer, type ComposerState } from './thread-composer';
@@ -146,6 +148,12 @@ function Answer({ message, time, t, ask }: { message: ConversationMessage; time:
           </SafeMarkdown>
         </AnswerView>
       )}
+      {message.status === 'done' ? (
+        <CopyAnswer
+          text={visibleText(message.content, { tables: true })}
+          labels={{ copy: t('copyAnswer'), copyLabel: t('copyAnswerLabel', { time }), copied: t('answerCopied'), failed: t('copyFailed') }}
+        />
+      ) : null}
     </article>
   );
 }
@@ -202,7 +210,7 @@ export async function ThreadView({
       ) : (
         <ol className="flex flex-col gap-4">
           {thread.entries.map((entry) => (
-            <li key={entry.cursor.id} id={entry.kind === 'note' ? `note-${entry.note.id}` : undefined} data-testid="thread-entry" data-kind={entry.kind} className="scroll-mt-24">
+            <li key={entry.cursor.id} id={entry.kind === 'note' ? `note-${entry.note.id}` : undefined} data-testid="thread-entry" data-kind={entry.kind} className="scroll-mt-4">
               {render(entry)}
             </li>
           ))}

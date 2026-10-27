@@ -1,5 +1,6 @@
 import 'server-only';
 import { parseInstant, type Instant, type IsoDate } from '@esta/core';
+import type { WatchSeverity } from '@esta/core/watch';
 import { parseProposal, type Proposal } from '@esta/core/proposals';
 import { existingLinks, idSchema } from '@esta/ops';
 import { z } from 'zod';
@@ -86,6 +87,35 @@ export async function listNotes({ household, role, isOperator }: Pick<Member, 'h
         : null,
     };
   });
+}
+
+export type PinnedNote = { readonly id: string; readonly title: string; readonly proposal: boolean };
+
+export type Pinned = { readonly shown: readonly PinnedNote[]; readonly count: number };
+
+const PINNED_SHOWN = 3;
+
+const SEVERITY_RANK: Record<WatchSeverity, number> = { action: 0, watch: 1, info: 2 };
+const severity = z.enum(['info', 'watch', 'action']);
+const NEVER_PINNED_KINDS = '(brief,weekly)';
+
+type PinnedCandidate = { readonly rank: number; readonly key: string };
+const mostSevereThenNewest = (a: PinnedCandidate, b: PinnedCandidate) => a.rank - b.rank || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0);
+
+export async function listPinned(householdId: string): Promise<Pinned> {
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase
+    .from('agent_items')
+    .select('id, title, kind, severity, created_at')
+    .eq('household_id', householdId)
+    .in('status', INBOX)
+    .not('kind', 'in', NEVER_PINNED_KINDS)
+    .or('kind.eq.proposal,severity.eq.action');
+  if (error) throw new Error(`Reading Trợ lý's open notes failed: ${error.message}`);
+  const open = data
+    .map((row) => ({ row, rank: SEVERITY_RANK[severity.parse(row.severity)], key: `${canonicalStamp(row.created_at)} ${row.id}` }))
+    .toSorted(mostSevereThenNewest);
+  return { shown: open.slice(0, PINNED_SHOWN).map(({ row }) => ({ id: row.id, title: row.title, proposal: row.kind === 'proposal' })), count: open.length };
 }
 
 /** Where a note this member may read sits in the thread, or null. */

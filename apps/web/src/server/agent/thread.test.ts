@@ -5,10 +5,9 @@ const HOUSEHOLD = '0943e55d-b0a6-5aef-839d-07c8693c520e';
 type Row = Record<string, unknown> & { id: string; created_at: string };
 const stored = vi.hoisted(() => ({ agent_items: [] as Row[], messages: [] as Row[] }));
 
-/** The one filter grammar `windowFilter` writes: `created_at.<op>."<stamp>"` and `and(created_at.eq."<stamp>",id.<op>.<id>)`. */
 function matches(row: Row, filter: string): boolean {
   const test = (field: string, op: string, value: string) => {
-    const left = field === 'created_at' ? canonicalStamp(row.created_at) : row.id;
+    const left = field === 'created_at' ? canonicalStamp(row.created_at) : String(row[field]);
     return { eq: left === value, lt: left < value, lte: left <= value, gt: left > value, gte: left >= value }[op] ?? false;
   };
   const terms = filter.match(/and\([^)]*\)|[^,]+/g) ?? [];
@@ -34,6 +33,8 @@ function from(table: 'agent_items' | 'messages') {
   const builder = {
     select: () => builder,
     eq: (field: string, value: unknown) => ((rows = rows.filter((row) => field === 'household_id' || row[field] === value)), builder),
+    in: (field: string, values: readonly unknown[]) => ((rows = rows.filter((row) => values.includes(row[field]))), builder),
+    not: (field: string, op: 'in', list: string) => ((rows = rows.filter((row) => !list.slice(1, -1).split(',').includes(String(row[field])))), builder),
     or: (filter: string) => ((rows = rows.filter((row) => matches(row, filter))), builder),
     order: (_field: string, options: { ascending: boolean }) => ((ascending = options.ascending), builder),
     limit: (count: number) => {
@@ -54,7 +55,7 @@ const { loadThread, THREAD_PAGE } = await import('./thread');
 
 const member = { household: { id: HOUSEHOLD, name: 'Gia đình Demo' }, role: 'member', isOperator: false } as const;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
-const note = (n: number, createdAt: string): Row => ({ id: uuid(n), title: `Ghi chú ${n}`, body_md: null, status: 'new', audience: 'all', created_at: createdAt, proposal: null, related: null, citations: null, kind: 'note', severity: 'info', dedupe_key: `note:${n}` });
+const note = (n: number, createdAt: string, fields: Partial<Row> = {}): Row => ({ id: uuid(n), title: `Ghi chú ${n}`, body_md: null, status: 'new', audience: 'all', created_at: createdAt, proposal: null, related: null, citations: null, kind: 'note', severity: 'info', dedupe_key: `note:${n}`, ...fields });
 const message = (n: number, role: 'user' | 'assistant', createdAt: string): Row => ({ id: uuid(n), conversation_id: uuid(9999), role, content_md: `Tin ${n}`, status: 'done', refs: [], deferred_until: null, created_at: createdAt });
 const at = (minute: number, fraction = '') => `2026-10-07T00:${String(minute).padStart(2, '0')}:00${fraction}+00:00`;
 const ids = (thread: Awaited<ReturnType<typeof loadThread>>) => thread.entries.map((entry) => (entry.kind === 'note' ? entry.note.id : entry.message.id));
@@ -99,6 +100,45 @@ describe('loadThread', () => {
     stored.messages = [message(10, 'user', at(2))];
     expect(ids(await loadThread(member, { note: uuid(77) }))).toEqual([uuid(1), uuid(10)]);
     expect(ids(await loadThread(member, { note: 'abc', before: '2026-10-07T00:01:00Z_0_x' }))).toEqual([uuid(1), uuid(10)]);
+  });
+});
+
+describe('loadThread pinned', () => {
+  const action = { severity: 'action' } as const;
+  const proposal = { kind: 'proposal', proposal: { type: 'create_task', params: {} } } as const;
+
+  it('pins open action notes before waiting proposals, newest first, shows three and counts them all', async () => {
+    stored.messages = [];
+    stored.agent_items = [
+      note(1, at(1), action),
+      note(2, at(2), { ...action, status: 'read' }),
+      note(3, at(9), proposal),
+      note(4, at(3), proposal),
+      note(5, at(8)),
+    ];
+    const { pinned } = await loadThread(member);
+    expect(pinned.shown).toEqual([
+      { id: uuid(2), title: 'Ghi chú 2', proposal: false },
+      { id: uuid(1), title: 'Ghi chú 1', proposal: false },
+      { id: uuid(3), title: 'Ghi chú 3', proposal: true },
+    ]);
+    expect(pinned.count, 'the older proposal is counted, the info note is not').toBe(4);
+  });
+
+  it('never pins a brief, a weekly review, a hidden note or a decided proposal, on any page of the thread', async () => {
+    stored.messages = [];
+    stored.agent_items = [
+      note(1, at(1), { ...action, kind: 'brief' }),
+      note(2, at(2), { ...action, kind: 'weekly' }),
+      note(3, at(3), { ...action, status: 'dismissed' }),
+      note(4, at(4), { ...action, status: 'done' }),
+      note(5, at(5), { ...proposal, status: 'approved' }),
+      note(6, at(6), { ...proposal, status: 'dismissed' }),
+      note(7, at(7), action),
+    ];
+    for (const options of [{}, { note: uuid(1) }, { before: `${canonicalStamp(at(2))}_0_${uuid(2)}` }]) {
+      expect((await loadThread(member, options)).pinned).toEqual({ shown: [{ id: uuid(7), title: 'Ghi chú 7', proposal: false }], count: 1 });
+    }
   });
 });
 

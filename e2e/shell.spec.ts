@@ -121,7 +121,7 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('lane 11: a section shows only the controls that work, so Trợ lý offers its two tabs, each thread entry its own buttons and links, the send button, and nothing else', async ({ page }) => {
+test('lane 11: a section shows only the controls that work, so Trợ lý offers its two tabs, its pinned rows and their fold, each thread entry its own buttons and links, the send button, and nothing else', async ({ page }) => {
   onlyOn('mobile');
   await signIn(page, 'me.lane1@demo.esta.test');
   await page.goto('/assistant');
@@ -132,7 +132,11 @@ test('lane 11: a section shows only the controls that work, so Trợ lý offers 
   await expect(tabs).toHaveText(['Tin nhắn', 'Thị trường']);
   const entries = main.getByTestId('thread-entry');
   const older = await main.getByTestId('thread-older').count();
-  await expect(main.getByRole('link')).toHaveCount((await entries.getByRole('link').count()) + older + 2);
+  const pinned = main.getByTestId('pinned-item');
+  await expect(pinned.first(), 'the seeded overdue note is pinned').toBeVisible();
+  await expect(pinned.getByRole('link'), 'each pinned row is one link to its note').toHaveCount(await pinned.count());
+  await expect(main.getByTestId('pinned').locator('summary'), 'and the fold is the heading').toHaveCount(1);
+  await expect(main.getByRole('link')).toHaveCount((await entries.getByRole('link').count()) + (await pinned.count()) + older + 2);
   await expect(main.getByRole('button')).toHaveCount((await entries.getByRole('button').count()) + 1);
   await expect(main.getByTestId('composer-send')).toHaveCount(1);
 });

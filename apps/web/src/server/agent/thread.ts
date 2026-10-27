@@ -1,7 +1,7 @@
 import 'server-only';
 import type { Member } from '@/server/member';
 import { listMessages, type ConversationMessage } from './conversations';
-import { listNotes, noteCursor, type InboxNote } from './items';
+import { listNotes, listPinned, noteCursor, type InboxNote, type Pinned } from './items';
 import { compareCursors, formatCursor, parseCursor, type Cursor, type Window } from './thread-cursor';
 
 /** One entry of the member's thread with Trợ lý: a note it left, a message she sent, or its answer (AGENT.md §5.6). */
@@ -13,7 +13,7 @@ export type ThreadEntry =
  * A page of the thread, oldest first. `before` is the `?before=` cursor of the page older than it, and `newer` says the
  * thread holds entries after it, so the page shows a link to the newest instead of the reply box.
  */
-export type Thread = { readonly entries: readonly ThreadEntry[]; readonly before: string | null; readonly newer: boolean };
+export type Thread = { readonly entries: readonly ThreadEntry[]; readonly before: string | null; readonly newer: boolean; readonly pinned: Pinned };
 
 export const THREAD_PAGE = 40;
 
@@ -42,6 +42,11 @@ const beforeOf = (older: { entries: readonly ThreadEntry[]; more: boolean }) => 
  * page last. `before` pages back from a `?before=` cursor; `note` opens the page around that note.
  */
 export async function loadThread(member: ThreadMember, { before, note }: { readonly before?: string; readonly note?: string } = {}): Promise<Thread> {
+  const [page, pinned] = await Promise.all([loadPage(member, before, note), listPinned(member.household.id)]);
+  return { ...page, pinned };
+}
+
+async function loadPage(member: ThreadMember, before: string | undefined, note: string | undefined): Promise<Omit<Thread, 'pinned'>> {
   const around = note === undefined ? null : await noteCursor(member.household.id, note);
   if (around !== null) {
     const half = THREAD_PAGE / 2;

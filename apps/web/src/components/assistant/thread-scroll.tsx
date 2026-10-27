@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 const END_SLACK_PX = 48;
 
@@ -10,9 +10,14 @@ const END_SLACK_PX = 48;
  * when a refresh hides the thread for a moment, which would otherwise leave her at the top.
  */
 export function ThreadScroll({ note, newest }: { note: string | null; newest: string | null }) {
+  const arrival = useRef<{ readonly newest: string | null; readonly anchor: string } | null>(null);
   useEffect(() => {
-    if (note !== null) {
-      document.getElementById(note)?.scrollIntoView({ block: 'start' });
+    arrival.current ??= { newest, anchor: window.location.hash.slice(1) };
+    const hashUntilThreadGrows = arrival.current.newest === newest ? arrival.current.anchor : '';
+    const anchor = note ?? hashUntilThreadGrows;
+    const target = anchor === '' ? null : document.getElementById(anchor);
+    if (target !== null) {
+      target.scrollIntoView({ block: 'start' });
       return;
     }
     const thread = document.getElementById('thread');
