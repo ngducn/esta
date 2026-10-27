@@ -151,6 +151,24 @@ Phase 4 was already mostly vertical. Tax core moves directly before the tax card
 
 P5-01 built every remaining agent table and every read tool before any job used them. It is gone. Research tables arrive with the research scan, conversations and messages and the read tools with Ask, and `notifications` with email. The number guard splits out of P5-03 as its own pure PR, because it has its own correctness bar and several jobs depend on it. P5-03 becomes the first visible slice of the phase. It brings the daily scheduler (moved from P0-15), `portfolio_watch`, and the Hộp thư tab that shows its items. Two pure PRs still precede it; both are consumed by P5-03 directly.
 
+### Phase 5 re-cut, 2026-10-25 (one Trợ lý thread)
+
+Ryan asked why Hỏi was not like a regular LLM chat and wanted Trợ lý to be both proactive and open to anything Mẹ asks. He approved one thread on 2026-10-25. The rows below cut the rest of Phase 5 after P5-08a and P5-08b.
+
+Looking across the rows, five capabilities are shared. The thread read model (`loadThread`, `ask_in_thread`) is built by P5-12 and deepened by P5-13's topics. The fact sheet and guard of P5-03a gain the typed numbers, web quotes and `calculate` results of P5-14 and P5-15 without a second guard. An answer's `refs` carry `esta://` links since P5-07a, and P5-14 and P5-15 add source chips and working lines to them. The `ask` prompt and recordings change in every row, so each of P5-12 to P5-15 re-keys the `ask` recordings with `pnpm --filter agent golden:ask`. The thread link `/assistant?note={id}` is built by P5-12 and used by Home, P5-13 and P5-09's email.
+
+| Seq | PR | Slice | Schema | Core | Components | Screens | Jobs and integrations | Proof |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 15 | P5-12 | Mẹ reads the morning's notes in one thread and types back about anything | `ask_in_thread` (segments) | | Thread, reply box, pinned items, `Sao chép` | Trợ lý `Tin nhắn` tab, old routes redirected | `ask` with an open prompt | `e2e/assistant-thread.spec.ts`, thread golden T1, T2, T8 |
+| 16 | P5-09 | Mẹ gets an email with a link when Trợ lý leaves a note | `notifications` | Recipients, notice render | | Thread at `?note=` | SMTP to Inbucket | Inbucket render |
+| 17 | P5-13 | Mẹ replies to a note or asks about a property | `messages.topic` | `SUGGESTIONS` | Topic chip, suggestion chips | Note cards, Home brief, property header | Topic records as first handles | Thread golden T3, T4 |
+| 18 | P5-14 | Mẹ asks about the world and reads a quoted figure with its source | `messages.activity` | | Source chips on answers | Thread | WebSearch, WebFetch and `quote_page` in `ask` scoped to the turn, search-word rule, shared `web-quotes` and `OFFICIAL_SOURCES`, the legal source check | Thread golden T7, hook tests |
+| 19 | P5-15 | Mẹ asks a what-if with her own numbers and sees the working | | `calc` registry, `extractTypedNumbers` | `Cách tính` lines | Thread | `calculate` | Property tests, thread golden T5, T6 |
+| 20 | P5-16 | The live run meets no known defect | | Guard fixes | | | Watch, brief, scan, limits fixes | One test per issue |
+| 21 | P5-10 | The brief and the thread pass live once | | | | | Live run of every job | North-star steps 7 and 9 |
+
+P5-12 is the thinnest row that crosses the most columns end to end, so it goes first and gives Mẹ the thread at once. It reuses the 07a to 07c engine, so it carries only the read model, one definer function and the screen. P5-09 needs only P5-12's link and touches none of P5-13 to P5-15's files, so it runs beside them. P5-13 comes before the web because it is small and is the most common daily use, a question about a note she just read. P5-14 comes before P5-15 because it carries the riskiest new column, web search beside family data, and because P5-15 lets a quoted rate feed a calculation. P5-16 batches the pre-live lows on the final code, and P5-10 stays the exit.
+
 ## Phase 6. Polish and ship
 
 | Seq | PR | Slice | Schema | Core | Components | Screens | Jobs and integrations | Proof |
