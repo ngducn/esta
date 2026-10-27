@@ -31,6 +31,7 @@ test('Mẹ approves a task due today: it shows under Việc cần làm and on Ho
   await expect(onHome(page, tomorrow.title), 'a task due tomorrow waits for its day').toHaveCount(0);
   await onHome(page, today.title).getByRole('link', { name: 'Xem việc cần làm' }).click();
   await expect(page).toHaveURL(/\/assistant#tasks$/);
+  await expect(page.getByRole('heading', { name: 'Việc cần làm' }), 'Home’s link lands on the list, not at the end of the thread').toBeInViewport();
 
   await task(page, today.title).getByRole('button', { name: `Xong: ${today.title}` }).click();
   await expect(task(page, today.title)).toHaveCount(0);

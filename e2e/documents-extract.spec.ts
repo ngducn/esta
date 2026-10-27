@@ -273,7 +273,7 @@ test('rule 7: a blank page fails after every attempt, the tile reads Không đ�
   );
   expect(items).toEqual([{ severity: 'info', proposal: expect.objectContaining({ type: 'retry_job', min_role: 'admin' }) }]);
   await page.goto('/assistant');
-  const item = page.getByTestId('inbox-item').filter({ hasText: 'Trợ lý không đọc được Trang trống lane 7.' });
+  const item = page.getByTestId('inbox-item').filter({ hasText: 'Trợ lý không đọc được Trang trống lane 7.' }).last();
   await expect(item.getByText('Bạn có thể nhập tay.', { exact: true })).toBeVisible();
   await expect(item).not.toContainText('thử lại');
 });
@@ -305,7 +305,7 @@ test('rule 9: in English at 130% and dark, the pill and the list read in English
   await expect(pill(page, documentId)).toHaveText('Ready for review', { timeout: 10_000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.goto('/assistant');
-  await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Messages with Trợ lý' })).toBeVisible();
   await expect(page.getByTestId('inbox-item').filter({ hasText: 'Đã đọc xong Sổ hồng Bảo Lộc. Mời bạn kiểm tra lại.' }).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   } finally {

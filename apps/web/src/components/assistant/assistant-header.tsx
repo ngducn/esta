@@ -8,9 +8,8 @@ import { env } from '@/server/env';
 import { stampLabel, WorkerStatusLine } from './worker-status-line';
 
 const TABS = [
-  { id: 'inbox', href: '/assistant' },
+  { id: 'thread', href: '/assistant' },
   { id: 'market', href: '/assistant/market' },
-  { id: 'ask', href: '/assistant/ask' },
 ] as const;
 
 export type AssistantTab = (typeof TABS)[number]['id'];
@@ -25,7 +24,7 @@ export async function AssistantHeader({ householdId, now, status, active }: { ho
   return (
     <div className="flex flex-col gap-3">
       <h1 className="text-h2 break-words lg:text-h1">{nav('assistant')}</h1>
-      {status.kind === 'offline' ? null : <WorkerStatusLine status={status} />}
+      {status.kind === 'offline' || status.kind === 'paused' ? null : <WorkerStatusLine status={status} />}
       {brief === null ? null : (
         <p data-testid="worker-ran" className="text-small text-ink-muted figures">
           {t('ranAt', { time: stampLabel(wallClockStamp(brief.createdAt, now, env.ESTA_TIMEZONE)) })}

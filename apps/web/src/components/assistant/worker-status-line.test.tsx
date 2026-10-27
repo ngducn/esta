@@ -5,8 +5,8 @@ import { renderInLocale } from '@/test/render';
 import { WorkerStatusLine } from './worker-status-line';
 
 const now = parseInstant('2026-10-07T09:06:00+07:00');
-const line = (lastSeenAt: string | null, locale: 'vi' | 'en' = 'vi') =>
-  renderInLocale(<WorkerStatusLine status={workerStatus(lastSeenAt === null ? null : parseInstant(lastSeenAt), now)} />, locale)
+const line = (lastSeenAt: string | null, locale: 'vi' | 'en' = 'vi', usageLimited = false) =>
+  renderInLocale(<WorkerStatusLine status={workerStatus(lastSeenAt === null ? null : { lastSeenAt: parseInstant(lastSeenAt), usageLimited }, now)} />, locale)
     .getByTestId('worker-status').textContent;
 
 describe('WorkerStatusLine', () => {
@@ -24,6 +24,10 @@ describe('WorkerStatusLine', () => {
 
   it('reads never connected with no heartbeat', () => {
     expect(line(null)).toBe('Trợ lý chưa kết nối. Việc mới sẽ chạy khi máy hoạt động lại.');
+  });
+
+  it('reads paused while the worker beats after a usage limit', () => {
+    expect(line('2026-10-07T09:06:00+07:00', 'vi', true)).toBe('Trợ lý tạm dừng do hết hạn mức sử dụng. Việc mới sẽ chạy khi hạn mức mở lại.');
   });
 
   it('reads online in English', () => {

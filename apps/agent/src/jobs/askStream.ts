@@ -3,7 +3,8 @@ import type { Result } from '@esta/core/result';
 
 export const FLUSH_MS = 300;
 
-const HANDLE_LINK = /\]\((f\d+)\)/g;
+// The live probe saw the handle written as a placeholder too, `]({{f8}})` or `]({{f3.handle}})` (P5-12).
+const HANDLE_LINK = /\]\((?:(f\d+)|\{\{(f\d+)(?:\.handle)?\}\})\)/g;
 
 export type Answer = FilledNote & { readonly refs: readonly string[] };
 
@@ -13,8 +14,8 @@ export type Answer = FilledNote & { readonly refs: readonly string[] };
  */
 export function resolveLinks(text: string, sheet: FactSheet): { readonly text: string; readonly refs: string[] } {
   const refs = new Set<string>();
-  const resolved = text.replace(HANDLE_LINK, (whole, handle: string) => {
-    const link = sheet.get(handle)?.link;
+  const resolved = text.replace(HANDLE_LINK, (whole, bare: string | undefined, braced: string | undefined) => {
+    const link = sheet.get(bare ?? braced ?? '')?.link;
     if (typeof link !== 'string') return whole;
     refs.add(link);
     return `](${link})`;

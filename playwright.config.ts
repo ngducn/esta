@@ -13,6 +13,8 @@ if (!servers.some((name) => name === server)) throw new Error(`ESTA_E2E_SERVER m
 const sharedClock = [
   'clock.spec.ts',
   'assistant-status.spec.ts',
+  'assistant-diagnostics.spec.ts',
+  'assistant-weekly.spec.ts',
   'assistant-watch.spec.ts',
   'fnd9-integration.spec.ts',
   'fnd8.spec.ts',
@@ -41,13 +43,15 @@ const sharedClock = [
   'lease-from-contract.spec.ts',
   'tax-card.spec.ts',
   'reports.spec.ts',
-  'assistant-inbox.spec.ts',
+  'assistant-thread.spec.ts',
+  'assistant-pinned.spec.ts',
   'morning-brief.spec.ts',
   'assistant-market.spec.ts',
-  'assistant-ask.spec.ts',
   'tasks.spec.ts',
   'assistant-proposals.spec.ts',
   'proposal-confirm.spec.ts',
+  'assistant-limits.spec.ts',
+  'agent-crash.spec.ts',
 ];
 
 export default defineConfig({

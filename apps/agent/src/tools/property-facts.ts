@@ -14,6 +14,8 @@ import { parseToolInput } from './server';
 const getInput = z.strictObject({ property: z.string() });
 const metricsInput = z.strictObject({ property: z.string(), year: z.number().int().min(2000).max(2100) });
 
+const byUnitLabel = (a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label, 'vi', { numeric: true });
+
 /** `get_property` (AGENT.md §4): a property's certificates with any mortgage, its owners and its latest valuation. */
 export function getPropertyTool({ reads, locale, asOf, cite, properties }: ReadToolContext) {
   return sameAnswer(async (raw: Record<string, unknown>) => {
@@ -69,6 +71,7 @@ export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: R
     );
     const units = report.units
       .filter((unit) => unit.propertyId === property.id)
+      .toSorted(byUnitLabel)
       .map((unit) => ({ unit, empty: vacantDays(unit, report.tenancies.filter((lease) => lease.unitId === unit.id), asOf) }));
     const leased = units.filter(({ empty }) => empty === 'leased').length;
     const pills = row === null ? [] : propertyStatus({ ...row, leasedUnitCount: leased, collection: null }, asOf);

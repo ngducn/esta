@@ -1,13 +1,21 @@
-import { estaUri } from '@esta/core/links';
+import { estaUri, parseEstaUri, type EstaLinkType } from '@esta/core/links';
 import { parseProposal, PROPOSAL_TYPES, isProposalType, type Proposal } from '@esta/core/proposals';
+import { normalizeUrl } from '@esta/core/research';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { guardedWriter, type NoteBinding } from './create-item';
-import { ToolRejection } from './server';
+import { oneAtATime, ToolRejection } from './server';
 
-export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'>;
+export type Citing = { readonly fetched: ReadonlySet<string> };
 
-const inputSchema = z.object({ type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string() });
+/** At most `max` proposals, `earlier` of them already stored by an earlier attempt or retry of the same week's run. */
+export type ProposalCap = { readonly max: number; readonly earlier: number };
+
+export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'> & { readonly citing?: Citing; readonly cap?: ProposalCap };
+
+const inputSchema = z.object({ type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string(), citations: z.array(z.string()).max(5).optional() });
+
+type Citation = { readonly url: string; readonly title: string | null; readonly source_name: string; readonly published_at: string | null };
 
 const rejected = (lines: readonly string[]) => new ToolRejection(`${lines.join('\n')}\nFix these and call create_proposal again.`);
 
@@ -22,7 +30,7 @@ function subjects({ params }: Proposal): string[] {
 /** What `public.proposal_refusal` answers, as the line the model reads to fix its call. */
 const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_PROPOSAL_PARAMS: 'params: do not match the type',
-  ESTA_PROPOSAL_SUBJECT: 'property_id, lease_id: not a record of this household, archived, or a lease of another property. Use ids a tool returned in this run.',
+  ESTA_PROPOSAL_SUBJECT: 'property_id, lease_id: not a record of this household, archived, or a lease of another property. Use the handles or ids a tool returned in this run.',
   ESTA_LEASE_NOT_ACTIVE: 'lease_id: the lease is not active',
   ESTA_REMINDER_NOTHING_OWED: 'lease_id: nothing is owed on this lease',
   ESTA_AMENDMENT_NOT_AFTER_AS_OF: 'effective_period_start: must be after today',
@@ -35,6 +43,37 @@ const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_RENEWAL_END: 'end_date: must be after the lease ends',
 };
 
+async function resolveCitations({ db, householdId, citing }: ProposalBinding, urls: readonly string[]): Promise<{ readonly found: Citation[]; readonly refused: string[] }> {
+  if (urls.length === 0) return { found: [], refused: [] };
+  const byKey = new Map(urls.map((url) => [url, normalizeUrl(url)] as const).map(([url, key]) => [key.ok ? key.value : url, { url, key }]));
+  const normalized = [...byKey.values()];
+  const keys = normalized.flatMap(({ key }) => (key.ok ? [key.value] : []));
+  const { data, error } = await db.from('research_items').select('url_normalized, source_url, title_vi, source_name, published_on').eq('household_id', householdId).in('url_normalized', keys);
+  if (error) throw new Error(`Reading the cited research items failed: ${error.message}`);
+  const stored = new Map(data.map((row) => [row.url_normalized, row]));
+  const found: Citation[] = [];
+  const refused: string[] = [];
+  for (const { url, key } of normalized) {
+    const item = key.ok ? stored.get(key.value) : undefined;
+    if (item !== undefined) found.push({ url: item.source_url, title: item.title_vi, source_name: item.source_name, published_at: item.published_on });
+    else if (key.ok && citing?.fetched.has(key.value) === true) found.push({ url: key.value, title: null, source_name: new URL(key.value).hostname, published_at: null });
+    else refused.push(`citations: ${JSON.stringify(url)} is not a page WebFetch read in this run or a research item recent_items returned`);
+  }
+  return { found, refused };
+}
+
+const SUBJECT_PARAMS: Readonly<Record<string, EstaLinkType>> = { property_id: 'property', lease_id: 'lease' };
+
+function subjectIds(params: Readonly<Record<string, unknown>>, sheet: ProposalBinding['sheet']): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(params).map(([key, value]) => {
+      const link = typeof value === 'string' && Object.hasOwn(SUBJECT_PARAMS, key) ? sheet.get(value)?.link : undefined;
+      const route = typeof link === 'string' ? parseEstaUri(link) : null;
+      return [key, route?.ok === true && route.value.type === SUBJECT_PARAMS[key] ? route.value.id : value];
+    }),
+  );
+}
+
 /** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
 
@@ -45,12 +84,18 @@ const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHas
  */
 export function proposalWriter(binding: ProposalBinding) {
   const guard = guardedWriter(binding, 'create_proposal');
+  const { citing, cap } = binding;
+  const saved: string[] = [];
+  let stored = cap?.earlier ?? 0;
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true; added: boolean; dedupe_key: string }> {
     const input = inputSchema.safeParse(raw);
     if (!input.success) throw rejected(input.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`));
-    const { type, params, rationale } = input.data;
+    const { type, params, rationale, citations = [] } = input.data;
+    if (cap !== undefined && stored >= cap.max) throw new ToolRejection(`This week's review already made ${cap.max} proposals, the most it may make. Do not call create_proposal again.`);
     if (!isProposalType(type)) throw rejected([`type: ${JSON.stringify(type)} is not a proposal type; use one of ${Object.keys(PROPOSAL_TYPES).join(', ')}`]);
+    if (citing === undefined && citations.length > 0) throw rejected(['citations: this job cites no sources; leave citations out']);
+    if (citing !== undefined && type === 'suggest_rent_change' && citations.length === 0) throw rejected(['citations: a rent change cites the market news it rests on, as URLs of pages WebFetch read in this run or research items recent_items returned']);
 
     const texts = PROPOSAL_TYPES[type].texts.flatMap((key) => {
       const template = params[key];
@@ -61,21 +106,27 @@ export function proposalWriter(binding: ProposalBinding) {
       JSON.stringify(raw, null, 2),
     );
     const body = filled.at(-1)?.text ?? '';
-    const parsed = parseProposal({ type, params: { ...params, ...Object.fromEntries(texts.map(({ key }, i) => [key, filled[i]?.text])) } });
+    const parsed = parseProposal({ type, params: { ...subjectIds(params, binding.sheet), ...Object.fromEntries(texts.map(({ key }, i) => [key, filled[i]?.text])) } });
     if (!parsed.ok) throw rejected(parsed.reason);
     const proposal = parsed.value;
 
     const today = (await binding.clock()).today();
     if (proposal.type === 'create_task' && proposal.params.due_on !== null && proposal.params.due_on < today) throw rejected([`params.due_on: before today, ${today}`]);
+
+    const sources = await resolveCitations(binding, citations);
+    if (sources.refused.length > 0) throw rejected(sources.refused);
     const { data: refusal, error } = await binding.db.rpc('proposal_refusal', { p_household_id: binding.householdId, p_proposal: proposal });
     if (error) throw new Error(`Checking the proposal failed: ${error.message}`);
     if (refusal !== null) throw rejected([REFUSALS[refusal] ?? refusal]);
 
     const links = subjects(proposal);
     const key = dedupeKey(proposal);
-    const added = await guard.save({ kind: 'proposal', severity: 'info', title: proposal.params.title, body_md: body, related: { links }, proposal, dedupe_key: key });
+    const added = await guard.save({ kind: 'proposal', severity: 'info', title: proposal.params.title, body_md: body, related: { links }, proposal, citations: sources.found, dedupe_key: key });
+    // A proposal an earlier attempt or an earlier week stored adds no row, so it takes no slot.
+    if (added) stored += 1;
+    saved.push(key);
     return { saved: true, added, dedupe_key: key };
   }
 
-  return { write };
+  return { write: oneAtATime(write), saved: saved as readonly string[] };
 }

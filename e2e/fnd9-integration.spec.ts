@@ -118,7 +118,7 @@ test('rule 2: the keep-alive cron route reads the business date of each clock', 
 
 test('rule 3: a ping on each day runs in the same worker and lands on that business date', async ({ page, request }) => {
   test.setTimeout(60_000);
-  await open(page, 'ryan.lane3@demo.esta.test', '/assistant', { viewport: [390, 844], theme: 'dark' });
+  await open(page, 'ryan.lane3@demo.esta.test', '/assistant/diagnostics', { viewport: [390, 844], theme: 'dark' });
   const ping = async () => {
     // Reloading before the action answers shows the previous check's Xong, and the job then starts on the next clock.
     await Promise.all([
@@ -131,14 +131,19 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
     }).toPass({ timeout: 15_000 });
   };
 
+  const runTimes = async () => {
+    await page.reload();
+    return page.getByTestId('diagnostics-runs').getByTestId('report-row').locator('th').allTextContents();
+  };
+
   await ping();
-  await expect(page.getByTestId('run-row').first().locator('td').first()).toHaveText(/^0[78]\/10\/2026 09:00$/);
+  expect((await runTimes())[0]).toMatch(/^0[78]\/10\/2026 09:00$/);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await setClock(request, OCT_8);
   await page.reload();
   await ping();
-  const times = await page.getByTestId('run-row').locator('td:first-child').allTextContents();
+  const times = await runTimes();
   expect(times[0], 'the newest run started on the advanced clock').toBe('08/10/2026 09:00');
   expect(times, 'the run before it started on the first clock').toContain('07/10/2026 09:00');
   expect(await seriousAxeViolations(page)).toEqual([]);

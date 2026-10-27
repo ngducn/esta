@@ -121,7 +121,7 @@ test('lane 3: tapping each tab opens its section and moves aria-current, in dark
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('lane 11: a section shows only the controls that work, so Trợ lý offers its three tabs, each note its own buttons and links, and nothing else', async ({ page }) => {
+test('lane 11: a section shows only the controls that work, so Trợ lý offers its two tabs, its pinned rows and their fold, each thread entry its own buttons and links, the send button, and nothing else', async ({ page }) => {
   onlyOn('mobile');
   await signIn(page, 'me.lane1@demo.esta.test');
   await page.goto('/assistant');
@@ -129,9 +129,16 @@ test('lane 11: a section shows only the controls that work, so Trợ lý offers 
   const main = page.getByRole('main');
   await expect(main.getByTestId('inbox-item').first()).toBeVisible();
   const tabs = main.getByRole('navigation', { name: 'Các mục của Trợ lý' }).getByRole('link');
-  await expect(tabs).toHaveText(['Hộp thư', 'Thị trường', 'Hỏi']);
-  await expect(main.getByRole('link')).toHaveCount((await main.getByTestId('inbox-item').getByRole('link').count()) + 3);
-  await expect(main.getByRole('button')).toHaveCount(await main.getByTestId('inbox-item').getByRole('button').count());
+  await expect(tabs).toHaveText(['Tin nhắn', 'Thị trường']);
+  const entries = main.getByTestId('thread-entry');
+  const older = await main.getByTestId('thread-older').count();
+  const pinned = main.getByTestId('pinned-item');
+  await expect(pinned.first(), 'the seeded overdue note is pinned').toBeVisible();
+  await expect(pinned.getByRole('link'), 'each pinned row is one link to its note').toHaveCount(await pinned.count());
+  await expect(main.getByTestId('pinned').locator('summary'), 'and the fold is the heading').toHaveCount(1);
+  await expect(main.getByRole('link')).toHaveCount((await entries.getByRole('link').count()) + (await pinned.count()) + older + 2);
+  await expect(main.getByRole('button')).toHaveCount((await entries.getByRole('button').count()) + 1);
+  await expect(main.getByTestId('composer-send')).toHaveCount(1);
 });
 
 test('lane 2: at 1440 px the sidebar is 240 px, content at most 1200 px, and no tab bar renders', async ({ page }) => {

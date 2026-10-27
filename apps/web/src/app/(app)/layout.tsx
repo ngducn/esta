@@ -5,7 +5,7 @@ import { formatDateLong } from '@esta/core/format';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { BrandMark } from '@/components/brand-mark';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
-import { accountSections, primarySections, type NavItem } from '@/components/shell/nav';
+import { accountSections, operatorSections, primarySections, type NavItem } from '@/components/shell/nav';
 import { PrefetchTabs } from '@/components/shell/prefetch-tabs';
 import { Sidebar } from '@/components/shell/sidebar';
 import { TabBar } from '@/components/shell/tab-bar';
@@ -21,7 +21,7 @@ function monogram(displayName: string | null): string | null {
 }
 
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const [member, clock, lastSeenAt, locale, nav, shell, language, onboarding, app] = await Promise.all([
+  const [member, clock, heartbeat, locale, nav, shell, language, onboarding, app] = await Promise.all([
     requireMember(),
     getClock(),
     getClock().then((current) => getWorkerHeartbeat(current.now())),
@@ -33,12 +33,13 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     getTranslations('app'),
   ]);
 
-  const worker = workerStatus(lastSeenAt, clock.now(), env.ESTA_TIMEZONE);
+  const worker = workerStatus(heartbeat, clock.now(), env.ESTA_TIMEZONE);
   const toItem = ({ key, href }: { key: NavItem['key']; href: string }): NavItem => ({ key, href, label: nav(key) });
   const items = primarySections.map(toItem);
   // A phone's five tabs share 390 px, and the English section names need 490 at 130% text, so the tabs take short ones (FND-8).
   const tabs = primarySections.map(({ key, href }): NavItem => ({ key, href, label: nav(`${key}Tab`) }));
   const more = accountSections.map(toItem);
+  const menu = member.isOperator ? [...more, ...operatorSections.map(toItem)] : more;
   const name = member.displayName ?? shell('account');
   const initial = monogram(member.displayName);
   const role = onboarding(`roles.${member.role}`);
@@ -68,7 +69,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           </div>
         </header>
         <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
-          {worker.kind === 'offline' ? (
+          {worker.kind === 'offline' || worker.kind === 'paused' ? (
             <div className="mb-5">
               <WorkerStatusLine status={worker} />
             </div>
@@ -82,7 +83,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         name={name}
         household={member.household.name}
         role={role}
-        links={more}
+        links={menu}
         switchLanguage={{ locale: locale === 'vi' ? 'en' : 'vi', label: language('switchTo') }}
         signOut={shell('signOut')}
       />

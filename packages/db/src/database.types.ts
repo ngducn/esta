@@ -1645,6 +1645,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: string | null
+          deferred_until: string | null
           household_id: string
           id: string
           job_id: string | null
@@ -1658,6 +1659,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           created_by?: string | null
+          deferred_until?: string | null
           household_id: string
           id?: string
           job_id?: string | null
@@ -1671,6 +1673,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           created_by?: string | null
+          deferred_until?: string | null
           household_id?: string
           id?: string
           job_id?: string | null
@@ -3129,6 +3132,7 @@ export type Database = {
           auth_mode: string
           host_label: string
           last_seen_at: string
+          state: string
           version: string
           worker_id: string
         }
@@ -3137,6 +3141,7 @@ export type Database = {
           auth_mode: string
           host_label: string
           last_seen_at: string
+          state?: string
           version: string
           worker_id: string
         }
@@ -3145,6 +3150,7 @@ export type Database = {
           auth_mode?: string
           host_label?: string
           last_seen_at?: string
+          state?: string
           version?: string
           worker_id?: string
         }
@@ -3418,6 +3424,15 @@ export type Database = {
         Returns: string
       }
       approve_proposal: { Args: { p_item_id: string }; Returns: string }
+      ask_in_thread: {
+        Args: {
+          p_deep?: boolean
+          p_household_id: string
+          p_question: string
+          p_question_id: string
+        }
+        Returns: string
+      }
       ask_question: {
         Args: {
           p_as_of: string
@@ -3699,6 +3714,7 @@ export type Database = {
         Args: { p_household_id: string; p_since: string; p_title: string }
         Returns: number
       }
+      retry_agent_job: { Args: { p_item_id: string }; Returns: undefined }
       run_invoicing: {
         Args: { p_as_of: string; p_household_id: string; p_issued_at: string }
         Returns: {
@@ -3825,6 +3841,13 @@ export type Database = {
       void_invoice: {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
+      }
+      worker_modes: {
+        Args: { p_household_id: string; p_seen_by: string }
+        Returns: {
+          agent_mode: string
+          auth_mode: string
+        }[]
       }
     }
     Enums: {

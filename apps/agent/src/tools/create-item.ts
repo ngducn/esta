@@ -70,7 +70,10 @@ export async function writeGuardItem(binding: GuardBinding, draft: string, found
   if (error) throw new Error(`Writing the number guard item failed: ${error.message}`);
 }
 
-export type ItemRow = Pick<TablesInsert<'agent_items'>, 'kind' | 'severity' | 'title' | 'body_md' | 'related' | 'dedupe_key' | 'proposal'>;
+export type ItemRow = Pick<TablesInsert<'agent_items'>, 'kind' | 'severity' | 'title' | 'body_md' | 'related' | 'dedupe_key' | 'proposal' | 'citations'>;
+
+/** A text the model wrote; `linked` is the same text with its record links swapped in, which the guard reads and fills (§5.6). */
+export type GuardedText = { readonly template: string; readonly format: NoteFormat; readonly linked?: string };
 
 /**
  * The number guard as every write tool runs it (AGENT.md §6.3). `fill` checks all of a call's texts against the run's
@@ -81,8 +84,8 @@ export type ItemRow = Pick<TablesInsert<'agent_items'>, 'kind' | 'severity' | 't
 export function guardedWriter(binding: GuardBinding, tool: string) {
   let violations = 0;
   return {
-    async fill(texts: ReadonlyArray<{ readonly template: string; readonly format: NoteFormat }>, draft: string): Promise<FilledNote[]> {
-      const checks = texts.map(({ template, format }) => checkNote(template, binding.sheet, format));
+    async fill(texts: readonly GuardedText[], draft: string): Promise<FilledNote[]> {
+      const checks = texts.map(({ template, format, linked }) => checkNote(template, binding.sheet, format, linked));
       const found = checks.flatMap((check) => (check.ok ? [] : check.reason));
       if (found.length > 0) {
         violations += 1;
@@ -145,6 +148,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links: facts.map(({ link }) => link) },
       dedupe_key: dedupeKey,
     });
+    console.log(`[agent] create_item ok ${dedupeKey}`);
     for (const handle of related) covered.add(handle);
     if (action === undefined) digest = true;
     written.push({ dedupe_key: dedupeKey, title: note.title, body_md: note.body_md, cited: [...(title?.cited ?? []), ...(body?.cited ?? [])], added });

@@ -1,7 +1,7 @@
 'use server';
 
 import type { Result } from '@esta/core/result';
-import { agentItemSetStatus, proposalApprove, runOp, taskSetStatus, type ProposalDecided } from '@esta/ops';
+import { agentItemSetStatus, agentJobRetry, askQuestion, proposalApprove, runOp, taskSetStatus, type Asked, type ProposalDecided } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getClock } from '@/server/clock';
@@ -14,8 +14,8 @@ async function queueJob(kind: 'ping' | 'portfolio_watch', failedParam: string): 
   const [member, user, clock, supabase] = await Promise.all([requireMember(), getSessionUser(), getClock(), createSessionClient()]);
   if (!member.isOperator || user === null) redirect('/assistant');
   const { error } = await supabase.from('agent_jobs').insert({ household_id: member.household.id, kind, run_after: clock.now(), requested_by: user.id });
-  if (error) redirect(`/assistant?${failedParam}=failed`);
-  revalidatePath('/assistant');
+  if (error) redirect(`/assistant/diagnostics?${failedParam}=failed`);
+  revalidatePath('/assistant/diagnostics');
 }
 
 export async function runConnectionCheck(): Promise<void> {
@@ -49,4 +49,19 @@ export async function setTaskStatus(raw: unknown): Promise<Result<undefined, { r
   revalidatePath('/assistant');
   revalidatePath('/');
   return { ok: true, value: undefined };
+}
+
+/** Thử lại on a failed job's item: an admin queues the job again, once however often it is tapped (AGENT.md §9). */
+export async function retryJob(raw: unknown): Promise<Result<undefined, { readonly kind: 'failed' }>> {
+  const queued = await runOp(agentJobRetry, await webOpContext(), raw);
+  if (!queued.ok) return { ok: false, reason: { kind: 'failed' } };
+  revalidatePath('/assistant');
+  return { ok: true, value: undefined };
+}
+
+/** One message in the member's thread; `ask_in_thread` picks its conversation and its time (P5-12). */
+export async function sendQuestion(raw: unknown): Promise<Result<Asked, 'invalid' | 'busy' | 'failed'>> {
+  const asked = await runOp(askQuestion, await webOpContext(), raw);
+  if (!asked.ok) return { ok: false, reason: asked.reason.kind === 'invalid' || asked.reason.kind === 'busy' ? asked.reason.kind : 'failed' };
+  return asked;
 }

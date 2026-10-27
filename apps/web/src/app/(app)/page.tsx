@@ -38,6 +38,7 @@ async function Home() {
     getThemePreference(),
     latestBrief(member.household.id, clock.now()),
   ]);
+  const todaysBrief = brief !== null && businessDate(brief.createdAt, env.ESTA_TIMEZONE) === asOf ? brief : null;
   const payment = home.payment === null || paymentIntl === null ? null : { ...home.payment, intl: paymentIntl };
 
   return (
@@ -50,7 +51,8 @@ async function Home() {
             <TodayList today={home.today} asOf={asOf} payment={payment} />
           </ToastHost>
           <HomeBrief
-            summary={brief !== null && businessDate(brief.createdAt, env.ESTA_TIMEZONE) === asOf ? brief.title : null}
+            summary={todaysBrief?.title ?? null}
+            briefId={todaysBrief?.id ?? null}
             lastRun={brief === null ? null : wallClockStamp(brief.createdAt, clock.now(), env.ESTA_TIMEZONE)}
           />
         </div>

@@ -3,6 +3,8 @@ export type WordKind = 'amount' | 'currency' | 'number' | 'date';
 export type WordRow = {
   readonly kind: WordKind;
   readonly passesAfter?: readonly string[];
+  /** Two words before it, as `bên thứ` before `ba` (a third party), where the one word before alone is a date (`thứ ba`). */
+  readonly passesAfterPhrase?: readonly string[];
   readonly passesBefore?: readonly string[];
   readonly passesBeforeCapitalized?: readonly string[];
   readonly passesNearDate?: true;
@@ -21,7 +23,7 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   đồng: {
     kind: 'currency',
     passesAfter: ['hợp', 'cộng', 'hội', 'bất', 'tương', 'cánh'],
-    passesBefore: ['hồ', 'ý', 'thời', 'bộ', 'nghĩa', 'đều', 'nghiệp', 'sở', 'thừa', 'thuận', 'tình', 'chủ', 'thuê', 'bằng', 'phục', 'nai', 'tháp', 'xoài', 'hới'],
+    passesBefore: ['hồ', 'ý', 'thời', 'bộ', 'nghĩa', 'đều', 'nghiệp', 'sở', 'thừa', 'thuận', 'tình', 'chủ', 'thuê', 'bằng', 'phục', 'nai', 'tháp', 'xoài', 'hới', 'hành'],
   },
   đô: { kind: 'currency', passesAfter: ['thủ'], passesBefore: ['thị'] },
   xu: { kind: 'currency', passesBefore: ['hướng', 'thế'] },
@@ -38,6 +40,10 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   nhất: { kind: 'number', bannedOnlyAfter: ['thứ'] },
   nhật: { kind: 'date', bannedOnlyAfter: ['chủ'] },
   linh: { kind: 'number', passesBefore: ['hoạt', 'kiện', 'tinh'] },
+  ba: { kind: 'number', passesAfterPhrase: ['bên thứ'] },
+  chín: { kind: 'number', passesBefore: ['chắn'] },
+  second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
+  double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
   lẻ: { kind: 'number', passesAfter: ['bán'] },
   đôi: { kind: 'number', passesBefore: ['khi', 'chút'] },
 };
@@ -50,10 +56,10 @@ export const WORDS: ReadonlyMap<string, WordRow> = new Map([
   ...letters('amount', 'k m b'),
   ...plain('currency', 'dong dongs đ vnd vnđ usd eur dollar dollars euro euros cent cents percent percentage pct bp bps pp'),
   ...letters('currency', 'd'),
-  ...plain('number', 'hai ba bốn lăm nhăm sáu bảy bẩy tám chín mười mươi hăm rưỡi rưởi nửa tá nhì'),
+  ...plain('number', 'hai bốn lăm nhăm sáu bảy bẩy tám mười mươi hăm rưỡi rưởi nửa tá nhì'),
   ...plain('number', 'zero nought nil two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'),
-  ...plain('number', 'twenty thirty forty fifty sixty seventy eighty ninety dozen dozens half halves quarter quarters twice thrice double triple twofold threefold'),
-  ...plain('number', 'second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth'),
+  ...plain('number', 'twenty thirty forty fifty sixty seventy eighty ninety dozen dozens half halves quarter quarters twice thrice triple twofold threefold'),
+  ...plain('number', 'third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth'),
   ...plain('number', 'eighteenth nineteenth twentieth thirtieth hundredth'),
   ...plain('date', `${MONTHS} monday tuesday wednesday thursday friday saturday sunday fortnight giêng chạp rằm`),
   ...Object.entries(EXCEPTIONS),

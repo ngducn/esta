@@ -10,25 +10,31 @@ function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   if (turns.length === 0) return [];
   return [
     '',
-    'The question below follows up this conversation, oldest turn first. Its answers are what the family member read: do not copy a figure, name or link from them. Call the tools again for every record and figure this answer writes.',
+    'The message below follows up this conversation, oldest turn first. Its answers are what the family member read: do not copy a figure, name or link from them. Call the tools again for every record and figure this reply writes.',
     ...turns.flatMap(({ question, answer }) => ['', 'Earlier question:', question, 'Earlier answer:', answer.replace(MARKDOWN_LINK, '$1')]),
   ];
 }
 
-export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'language'> & { readonly question: string; readonly earlier?: readonly AskedTurn[] }): string {
+export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly earlier?: readonly AskedTurn[] }): string {
   return [
-    systemPrompt({ ...context, language: 'question' }),
+    systemPrompt({ ...context, language: 'question', scope: 'open' }),
     '',
-    'Task: answer the family member\'s question below, as a short answer they read on a phone.',
-    '1. Call the tools you need before you write anything. list_properties gives each property a handle; pass that handle to the tools that take a property.',
-    '2. Then write the answer in Markdown: one to four short sentences, a short list, or a table when the answer lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
-    '3. Write every number, date, amount and name as the placeholder of the field that holds it, such as {{f2.income_display}}. A field without a _display, _label or _name ending, such as status or category, is a code for you to read: write it in your own words.',
-    '4. Link the record the answer comes from by its handle, as [Sổ thu chi {{f1.property_label}}](f2). Link nothing else.',
-    '5. If the tools hold no data for the question, say plainly that the app does not have that information yet. Never estimate.',
-    '6. If the question asks you to change something, say that you cannot change records yourself; when a change would help, suggest it with create_proposal and say a member can approve it in Hộp thư.',
+    'Task: reply to the family member\'s message below, as a short reply they read on a phone. They may ask anything.',
+    '- About their properties, tenants, money or papers: call the tools you need before you write anything. list_properties gives each property a handle; pass that handle to the tools that take a property.',
+    '- For writing, such as a Zalo message to a tenant or a short letter: write the draft ready to send, in a polite tone. Every name, amount and date in it is a placeholder of a tool field, like any answer, so call the tools first.',
+    '- For advice or an explanation, such as renting by the year or how a procedure works: answer in plain words. Use no number unless a tool field holds it.',
+    '- When they need a figure that no tool returns, such as a market price or a rate: say plainly that the app has no such figure and that you cannot look things up on the web yet. Never estimate.',
+    '',
+    'Rules for the reply:',
+    '1. Write Markdown: one to four short sentences, a short list, or a table when the reply lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
+    '2. Write every number, date, amount and name as the placeholder of the field that holds it, such as {{f2.income_display}}. A field without a _display, _label or _name ending, such as status or category, is a code for you to read: write it in your own words. This holds for a name or a numbered label the message itself holds, such as phòng 5: find its record with the tools and write its placeholder.',
+    '3. Link the record the reply comes from by its handle, as [Sổ thu chi {{f1.property_label}}](f2). The link target is the bare handle in parentheses, never a placeholder or an address, and the link text is never a bare handle. Link nothing else.',
+    '4. Number words count things even in advice and letters, and the app rejects them: never write hai, ba, bốn, năm, mười or two, three for a count, and write a period as theo năm, mỗi năm, hằng năm or theo tháng, never năm alone. Write each, both or cả … lẫn … instead of a count, such as mỗi cách or bên thuê và bên cho thuê.',
+    '5. If the question asks you to change something, say that you cannot change records yourself; when a change would help, suggest it with create_proposal and say a member can approve it on its card in this conversation.',
+    '6. Reply in the language the message is written in, whatever the language of these rules: an English message gets an English reply.',
     ...conversationSoFar(context.earlier ?? []),
     '',
-    'Question:',
+    'Message:',
     context.question,
   ].join('\n');
 }
@@ -36,10 +42,10 @@ export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'lan
 /** A follow-up continues the session of the conversation's last answer, so its rules and context already hold. */
 export function askFollowUpPrompt({ today, timezone, question, firstHandle }: { readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly firstHandle: number }): string {
   return [
-    `Today is ${today} in ${timezone}. The family member asks a follow-up to the conversation so far. Answer it with the rules of your first task.`,
-    `The handles and placeholders of your earlier answers no longer hold. Call the tools again for every record and figure this answer writes; this turn's handles start at f${firstHandle}.`,
+    `Today is ${today} in ${timezone}. The family member writes again in the conversation so far. Reply with the rules of your first task.`,
+    `The handles and placeholders of your earlier replies no longer hold. Call the tools again for every record and figure this reply writes; this turn's handles start at f${firstHandle}.`,
     '',
-    'Question:',
+    'Message:',
     question,
   ].join('\n');
 }

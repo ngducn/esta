@@ -2,9 +2,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AskReads } from '../../src/tools/ask-reads';
 
+/**
+ * What the reads answered on the `full` seed, for the hand-written ask cases (`golden:ask-fixture`) and the live
+ * open-prose guard probe (`pnpm agent:guard-probe`) alike. Each writer adds its answers to the ones already here.
+ */
 export const ASK_READS_FIXTURE = join(import.meta.dirname, 'ask-reads-full-2026-10-07.json');
 
 export type RecordedReads = Record<string, unknown>;
+
+export const recordedReads = (): RecordedReads => JSON.parse(readFileSync(ASK_READS_FIXTURE, 'utf8')) as RecordedReads;
 
 const key = (read: keyof AskReads, args: readonly unknown[]) => `${read}${JSON.stringify(args)}`;
 
@@ -28,7 +34,7 @@ export function recordingReads(reads: AskReads, recorded: RecordedReads): AskRea
 }
 
 /** Reads answered from a recording; a read it does not hold fails, so a changed tool shows up as a missing answer. */
-export function replayedReads(recorded: RecordedReads = JSON.parse(readFileSync(ASK_READS_FIXTURE, 'utf8')) as RecordedReads): AskReads {
+export function replayedReads(recorded: RecordedReads = recordedReads()): AskReads {
   const answer =
     <A extends unknown[], T>(read: keyof AskReads) =>
     async (...args: A): Promise<T> => {

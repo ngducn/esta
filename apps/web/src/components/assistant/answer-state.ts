@@ -1,4 +1,5 @@
-const ANSWER_STATUSES = ['streaming', 'done', 'error'] as const;
+/** `deferred` is a streaming row the daily ask cap moved to the next local midnight (`messages.deferred_until`). */
+const ANSWER_STATUSES = ['streaming', 'deferred', 'done', 'error'] as const;
 const STOPPED = ['timeout', 'gone'] as const;
 
 export type AnswerStatus = (typeof ANSWER_STATUSES)[number];

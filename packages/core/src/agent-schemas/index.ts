@@ -26,3 +26,4 @@ export { factHandleSchema, watchNoteSchema, type WatchNote } from './portfolio-w
 export { BRIEF_SECTIONS, briefDraftSchema, briefTokens, briefV1Schema, MAX_BRIEF_TOKENS, MAX_MARKET_LINES, renderBriefMarkdown, type BriefDraft, type BriefLine, type BriefV1, type MarketLine } from './brief';
 export { MAX_QUOTES, MAX_SUMMARY_TOKENS, RESEARCH_KINDS, researchItemDraftSchema, type ResearchItemDraft, type ResearchKind } from './research';
 export { wordCount } from './text';
+export { MAX_WEEKLY_PROPOSALS, weeklyNoteSchema, type WeeklyNote } from './weekly-review';

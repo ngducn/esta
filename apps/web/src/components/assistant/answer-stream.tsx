@@ -27,7 +27,7 @@ export function AnswerStream({ id, conversationId, initial, labels }: { id: stri
       if (isAnswerEvent(next) && 'content' in next) setShown(next);
       else stall();
       if (!isAnswerEvent(next) || next.status !== 'streaming') source.close();
-      if (isAnswerEvent(next) && reopensFollowUp(next)) router.refresh();
+      if (isAnswerEvent(next) && (reopensFollowUp(next) || next.status === 'deferred')) router.refresh();
     };
     source.onerror = () => {
       if (source.readyState === EventSource.CLOSED) stall();

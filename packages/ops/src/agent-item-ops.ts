@@ -40,3 +40,32 @@ export const agentItemSetStatus = defineOp<StatusInput, StatusInput, AgentItemSa
     return refuse({ kind: stillOpen ? 'forbidden' : 'conflict' });
   },
 });
+
+const retryInput = z.strictObject({ id: idSchema });
+type RetryInput = z.output<typeof retryInput>;
+
+const RETRY_SENTINELS = {
+  ESTA_RETRY_NOT_FOUND: { kind: 'not_found' },
+  ESTA_RETRY_NOT_FAILED: { kind: 'conflict' },
+} as const;
+
+/**
+ * Thử lại on a failed job's item (AGENT.md §9). `retry_agent_job` checks in SQL that the member is an admin, queues the
+ * job again keyed `{key}:retry:{n}` and marks the item done, so a second tap queues nothing.
+ */
+export const agentJobRetry = defineOp<RetryInput, RetryInput, AgentItemSaved>({
+  creates: null,
+  input: retryInput,
+  async plan(ctx, input) {
+    const current = await storedStatus(ctx, input.id);
+    if (current === null) return refuse({ kind: 'not_found' });
+    if (current === 'done') return unchanged({ id: input.id });
+    if (current !== 'new' && current !== 'read') return refuse({ kind: 'conflict' });
+    return change(input);
+  },
+  async apply(ctx, { id }) {
+    const { error } = await ctx.db.rpc('retry_agent_job', { p_item_id: id });
+    if (error) return refuse(dbRefusal(error, RETRY_SENTINELS));
+    return { ok: true, value: { id } };
+  },
+});

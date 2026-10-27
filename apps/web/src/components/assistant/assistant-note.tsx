@@ -4,8 +4,30 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { cn } from '@/lib/utils';
-import type { InboxNote, NoteDiagnostics } from '@/server/agent/items';
+import type { InboxNote, NoteDiagnostics, NoteKind } from '@/server/agent/items';
+import { CitationChip } from './citation-chip';
 import { AssistantMonogram } from './monogram';
+
+const KIND_LABEL = { brief: 'briefLabel', weekly: 'weeklyLabel', proposal: 'proposalLabel', note: null } as const satisfies Record<NoteKind, string | null>;
+
+async function Citations({ citations, locale }: { citations: InboxNote['citations']; locale: Awaited<ReturnType<typeof getLocale>> }) {
+  const t = await getTranslations('assistant');
+  const dated = (source: InboxNote['citations'][number]) => (source.publishedOn === null ? source.sourceName : t('market.source', { name: source.sourceName, date: formatDate(source.publishedOn, locale) }));
+  return (
+    <div className="flex flex-col gap-2 border-t border-rule pt-3">
+      <p className="text-small font-medium text-ink-2">{t('sources')}</p>
+      <ul className="flex flex-wrap gap-2">
+        {citations.map((source, index) => (
+          <li key={source.url} className="max-w-full">
+            <CitationChip href={source.url} index={index + 1} label={t('citationLabel', { index: index + 1, source: dated(source) })}>
+              {dated(source)}
+            </CitationChip>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 /** Operator-only: what the worker wrote beside the note, and whether each of its links names a readable record. */
 async function Diagnostics({ diagnostics }: { diagnostics: NoteDiagnostics }) {
@@ -40,13 +62,13 @@ async function Diagnostics({ diagnostics }: { diagnostics: NoteDiagnostics }) {
 export async function AssistantNote({ note, time, actions }: { note: InboxNote; time: string; actions?: ReactNode }) {
   const [t, review, locale] = await Promise.all([getTranslations('assistant'), getTranslations('extraction'), getLocale()]);
   const unread = note.status === 'new';
+  const label = KIND_LABEL[note.kind];
   return (
-    <article data-testid="inbox-item" data-status={note.status} data-kind={note.isBrief ? 'brief' : note.proposal === null ? undefined : 'proposal'} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <article data-testid="inbox-item" data-status={note.status} data-kind={note.kind === 'note' ? undefined : note.kind} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <AssistantMonogram />
         <span className="text-small font-medium text-ink">{t('author')}</span>
-        {note.isBrief ? <span className="text-small text-ink-2">{t('briefLabel')}</span> : null}
-        {note.proposal === null ? null : <span className="text-small text-ink-2">{t('proposalLabel')}</span>}
+        {label === null ? null : <span className="text-small text-ink-2">{t(label)}</span>}
         <time dateTime={note.createdAt} className="text-small text-ink-muted figures">
           {time}
         </time>
@@ -69,12 +91,15 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
           {t('proposalDue', { date: formatDate(note.proposal.dueOn, locale) })}
         </p>
       )}
-      {note.retry === null ? null : <p className="text-body break-words text-ink-2">{t(note.retry === 'self' ? 'retrySelf' : 'retryAsk')}</p>}
+      {note.retry === null || (note.retry === 'self' && note.reviewHref === null) ? null : (
+        <p className="text-body break-words text-ink-2">{t(note.retry === 'self' ? 'retrySelf' : note.reviewHref === null ? 'retryAskJob' : 'retryAsk')}</p>
+      )}
       {note.reviewHref === null ? null : (
         <Link href={note.reviewHref} data-testid="item-review" className="w-fit text-body font-medium text-ink underline underline-offset-4 hover:decoration-2">
           {note.retry === null ? review('reviewLink') : review('manualLink')}
         </Link>
       )}
+      {note.citations.length === 0 ? null : <Citations citations={note.citations} locale={locale} />}
       {note.diagnostics === null ? null : <Diagnostics diagnostics={note.diagnostics} />}
       {actions}
     </article>

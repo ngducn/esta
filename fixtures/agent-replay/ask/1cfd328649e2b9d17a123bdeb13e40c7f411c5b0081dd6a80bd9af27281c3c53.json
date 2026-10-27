@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "1cfd328649e2b9d17a123bdeb13e40c7f411c5b0081dd6a80bd9af27281c3c53",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "\"Hai\": Do not write an amount, unit, number word, Roman numeral, or month or weekday name. Cite the tool field that holds it as {{fN.field}}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
+    "builtInTools": [],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal"
+    ],
+    "maxTurns": 15,
+    "resumesInputHash": "3e71f10758101ac3370f964b36e75d0c8b6297489fa607eee530011fe8d09cbc"
+  },
+  "label": "Hand-written repair turn for guard probe vi-zalo-thanks (P5-12 fix round 1): the live first pass with \"Hai bên thuê chưa từng trả trễ\", which the guard now rejects, rewritten as \"Các bên thuê chưa từng trả trễ\".",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 1,
+  "toolCalls": [],
+  "reply": "Các bên thuê chưa từng trả trễ trong năm nay là {{f10.tenant_name}} và {{f11.tenant_name}}. Tôi soạn tin gửi {{f10.tenant_name}}:\n\n> Kính gửi {{f10.tenant_name}},\n>\n> Bên cho thuê xin chân thành cảm ơn quý bên đã thanh toán đầy đủ và đúng hạn các kỳ thanh toán vừa qua. Sự đúng hẹn của quý bên giúp chúng tôi rất nhiều trong việc quản lý. Rất mong tiếp tục được đồng hành lâu dài.\n>\n> Trân trọng.\n\nNếu muốn gửi cho {{f11.tenant_name}}, bạn chỉ cần thay tên người nhận. Bạn cũng có thể cho tôi biết khách cụ thể để tôi chỉnh lại tin nhắn."
+}

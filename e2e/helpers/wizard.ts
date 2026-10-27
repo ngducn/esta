@@ -86,7 +86,12 @@ export async function servicePatch(page: Page, path: string, data: unknown) {
   expect(response.ok(), await response.text()).toBe(true);
 }
 
-export async function serviceUpsert(page: Page, table: string, row: Record<string, unknown>) {
+export async function serviceDelete(page: Page, path: string) {
+  const response = await page.request.delete(`${rest}/${path}`, { headers: service });
+  expect(response.ok(), await response.text()).toBe(true);
+}
+
+export async function serviceUpsert(page: Page, table: string, row: Record<string, unknown> | readonly Record<string, unknown>[]) {
   const response = await page.request.post(`${rest}/${table}`, {
     headers: { ...service, 'content-type': 'application/json', prefer: 'resolution=merge-duplicates' },
     data: row,

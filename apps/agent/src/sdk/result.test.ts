@@ -11,6 +11,7 @@ const session = (overrides: Partial<SessionResult>): SessionResult => ({
   usage: {},
   modelUsage: {},
   permissionDenials: [],
+  cause: null,
   ...overrides,
 });
 
@@ -30,6 +31,22 @@ describe('judgeResult', () => {
 
   it('records a missing login as auth_error', () => {
     expect(judgeResult(session({ isError: true, text: 'Not logged in · Please run /login' }))).toMatchObject({ failure: { kind: 'auth_error' } });
+  });
+
+  it('records the SDK rate_limit cause as usage_limit, whatever the text says', () => {
+    expect(judgeResult(session({ isError: true, cause: 'rate_limit', text: 'API Error' }))).toMatchObject({ failure: { kind: 'usage_limit', message: 'API Error' } });
+  });
+
+  it.each(['Claude AI usage limit reached|1760000000', "You've hit your limit · resets 3pm"])('records %j with no cause as usage_limit', (text) => {
+    expect(judgeResult(session({ isError: true, text }))).toMatchObject({ failure: { kind: 'usage_limit' } });
+  });
+
+  it('trusts a cause the SDK gave over limit words in the text', () => {
+    expect(judgeResult(session({ isError: true, cause: 'overloaded', text: 'Overloaded, not a usage limit' }))).toMatchObject({ failure: { kind: 'error' } });
+  });
+
+  it('records the SDK authentication_failed cause as auth_error', () => {
+    expect(judgeResult(session({ isError: true, cause: 'authentication_failed', text: 'Invalid credentials' }))).toMatchObject({ failure: { kind: 'auth_error' } });
   });
 
   it('fails an error subtype with no text by naming the subtype', () => {

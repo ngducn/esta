@@ -9,7 +9,7 @@ type Filter = (row: Row) => boolean;
 export type FakeRpcs = Record<string, (args: Record<string, unknown>) => unknown>;
 
 /**
- * An in-memory stand-in for the service client: filters, ordering, single reads, updates that mutate the rows in place, upserts
+ * An in-memory stand-in for the service client: filters (`like` with `\` escapes), ordering, single reads, updates that mutate the rows in place, upserts
  * that honour `onConflict` with `ignoreDuplicates`, and Storage downloads from `files`. A write to a table named in
  * `refuse` answers that table's error message and changes nothing, as RLS or a lost connection would. `rpcs` answers
  * database functions by name.
@@ -61,6 +61,10 @@ export function fakeDb(
         filters.push((row) => row[column] === value);
         return builder;
       },
+      neq(column: string, value: unknown) {
+        filters.push((row) => row[column] !== value);
+        return builder;
+      },
       order(column: string, options?: { ascending?: boolean }) {
         orders.push({ column, ascending: options?.ascending ?? true });
         return builder;
@@ -89,6 +93,15 @@ export function fakeDb(
       },
       range(from: number, to: number) {
         window = { from, to };
+        return builder;
+      },
+      like(column: string, pattern: string) {
+        const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+        const source = pattern.replace(/\\(.)|%|_|[^\\%_]+/g, (token: string, escaped: string | undefined) =>
+          escaped !== undefined ? literal(escaped) : token === '%' ? '.*' : token === '_' ? '.' : literal(token),
+        );
+        const like = new RegExp(`^${source}$`, 's');
+        filters.push((row) => typeof row[column] === 'string' && like.test(row[column]));
         return builder;
       },
       is(column: string, value: unknown) {
@@ -147,7 +160,7 @@ export function fakeDb(
     from: (bucket: string) => ({
       download: async (path: string) => {
         const bytes = files[`${bucket}/${path}`];
-        return bytes === undefined ? { data: null, error: { message: `${path} not found` } } : { data: new Blob([bytes]), error: null };
+        return bytes === undefined ? { data: null, error: { message: `${path} not found` } } : { data: new Blob([new Uint8Array(bytes)]), error: null };
       },
     }),
   };
