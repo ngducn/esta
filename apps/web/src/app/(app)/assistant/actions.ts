@@ -1,7 +1,7 @@
 'use server';
 
 import type { Result } from '@esta/core/result';
-import { agentItemSetStatus, proposalApprove, runOp, taskSetStatus, type ProposalDecided } from '@esta/ops';
+import { agentItemSetStatus, agentJobRetry, proposalApprove, runOp, taskSetStatus, type ProposalDecided } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getClock } from '@/server/clock';
@@ -48,5 +48,13 @@ export async function setTaskStatus(raw: unknown): Promise<Result<undefined, { r
   if (!saved.ok) return { ok: false, reason: { kind: 'failed' } };
   revalidatePath('/assistant');
   revalidatePath('/');
+  return { ok: true, value: undefined };
+}
+
+/** Thử lại on a failed job's item: an admin queues the job again, once however often it is tapped (AGENT.md §9). */
+export async function retryJob(raw: unknown): Promise<Result<undefined, { readonly kind: 'failed' }>> {
+  const queued = await runOp(agentJobRetry, await webOpContext(), raw);
+  if (!queued.ok) return { ok: false, reason: { kind: 'failed' } };
+  revalidatePath('/assistant');
   return { ok: true, value: undefined };
 }

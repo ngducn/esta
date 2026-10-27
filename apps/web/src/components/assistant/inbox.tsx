@@ -53,6 +53,9 @@ function actionsFor(note: InboxNote, canDecide: boolean, context: ProposalContex
           failed: t('noteFailed'),
           restoreFailed: t('restoreFailed'),
         }}
+        {...(note.retry === 'self'
+          ? { retry: { retry: t('retryJob'), retryLabel: t('retryJobLabel', { title: note.title }), queued: t('retryQueued'), failed: t('retryFailed') } }
+          : {})}
       />
     );
   }

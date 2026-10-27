@@ -1,6 +1,7 @@
 import type { Clock } from '@esta/core';
 import type { DailyJob } from '@esta/core/agent-schedule';
 import type { Json, Tables } from '@esta/db';
+import type { Locale } from '@esta/core/format';
 import type { AgentDb } from '../supabase';
 import type { BuiltInResult } from '../sdk/session';
 import type { EstaToolName, EstaTools } from '../tools/server';
@@ -63,6 +64,8 @@ export type JobSpec = {
   readonly workDir?: 'conversation';
   /** Daily kinds whose same-day job must finish first; the runner reschedules the job while one is queued or running (AGENT.md §3). */
   readonly waitsFor?: readonly string[];
+  /** The title of the item with Thử lại that admins get once the job has no attempt left (AGENT.md §9). */
+  readonly failedTitle?: Readonly<Record<Locale, string>>;
   readonly handler: {
     prepare(context: JobContext): Promise<PreparedJob>;
     /** Runs once the job has no attempt left, so the household sees the failure (AGENT.md §9). */
@@ -98,6 +101,7 @@ export const JOBS = {
     timeoutMs: 10 * 60_000,
     modelRole: 'routine',
     schedule: { daily: '06:00' },
+    failedTitle: { vi: 'Trợ lý chưa đọc được tin thị trường hôm nay', en: "The assistant could not read today's market news" },
     handler: { prepare: prepareResearchScan },
   },
   portfolio_watch: {
@@ -108,6 +112,7 @@ export const JOBS = {
     timeoutMs: 3 * 60_000,
     modelRole: 'routine',
     schedule: { daily: '06:40' },
+    failedTitle: { vi: 'Trợ lý chưa xem được danh mục hôm nay', en: 'The assistant could not check the portfolio today' },
     handler: { prepare: preparePortfolioWatch },
   },
   morning_brief: {
@@ -119,6 +124,7 @@ export const JOBS = {
     modelRole: 'routine',
     schedule: { daily: '07:00' },
     waitsFor: ['research_scan', 'portfolio_watch'],
+    failedTitle: { vi: 'Trợ lý chưa viết được bản tin sáng nay', en: "The assistant could not write this morning's brief" },
     handler: { prepare: prepareMorningBrief },
   },
   ask: {

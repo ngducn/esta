@@ -26,7 +26,9 @@ export default async function ConversationPage({ params }: { params: Promise<{ c
   if (conversation === null) notFound();
   const clock = await getClock();
   const [status, t, assistant] = await Promise.all([assistantStatus(clock.now()), getTranslations('assistant.ask'), getTranslations('assistant')]);
-  const labels = { streaming: t('answering'), error: t('answerFailed'), stalled: t('stalled') };
+  const labels = { streaming: t('answering'), deferred: t('deferred'), error: t('answerFailed'), stalled: t('stalled') };
+  // A question over the day's cap waits for tomorrow, so the box would promise a follow-up that cannot come today.
+  const deferred = conversation.messages.some((message) => message.status === 'deferred');
 
   const Turn = ({ message }: { message: ConversationMessage }) =>
     message.role === 'user' ? (
@@ -60,15 +62,17 @@ export default async function ConversationPage({ params }: { params: Promise<{ c
           <Turn key={message.id} message={message} />
         ))}
       </section>
-      <section aria-label={t('followUpLabel')} data-testid="follow-up" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-        <AskForm
-          conversationId={conversation.id}
-          busy={conversation.messages.some((message) => message.status === 'streaming')}
-          maxLength={MAX_QUESTION_LENGTH}
-          labels={askFormLabels(t, true)}
-          thinkHarder={thinkHarderFor(member.isOperator, t)}
-        />
-      </section>
+      {deferred ? null : (
+        <section aria-label={t('followUpLabel')} data-testid="follow-up" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+          <AskForm
+            conversationId={conversation.id}
+            busy={conversation.messages.some((message) => message.status === 'streaming')}
+            maxLength={MAX_QUESTION_LENGTH}
+            labels={askFormLabels(t, true)}
+            thinkHarder={thinkHarderFor(member.isOperator, t)}
+          />
+        </section>
+      )}
       <Link href="/assistant/ask" data-testid="ask-another" className="inline-flex min-h-touch w-fit items-center gap-2 text-body font-medium text-ink underline underline-offset-4 hover:decoration-2">
         <ArrowLeft aria-hidden="true" className="size-5" />
         {t('askAnother')}

@@ -1,10 +1,16 @@
 import { parseInstant } from '@esta/core';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { isoDate } from '@esta/core/date';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DOCUMENT_A, EXTRACTION_A, extractJob, JOB_A, NOW, twoHouseholds } from '../test/extract-job';
+import { A, DOCUMENT_A, EXTRACTION_A, extractJob, JOB_A, NOW, twoHouseholds } from '../test/extract-job';
+import { CASES, labels, snapshot } from '../test/full-seed';
 import { replayWorker } from '../test/replay-worker';
+import type { WorkerState } from './heartbeat';
+import { JOBS } from './jobs/registry';
+import { portfolioWatchRequest } from './jobs/portfolio-watch';
+import { recordingSchema, writeRecording } from './replay/store';
 import { nextAttempt, pollOnce } from './runner';
 
 const asOf = parseInstant('2026-10-07T09:00:00+07:00');
@@ -21,6 +27,10 @@ describe('nextAttempt', () => {
 
   it('fails the job after the fourth attempt', () => {
     expect(nextAttempt({ attempts: 4, max_attempts: 4 }, error, asOf)).toEqual({ status: 'failed' });
+  });
+
+  it('retries a usage limit on the same backoff', () => {
+    expect(nextAttempt({ attempts: 1, max_attempts: 4 }, { kind: 'usage_limit', message: 'limit' }, asOf)).toEqual({ status: 'queued', runAfter: '2026-10-07T02:01:00.000Z' });
   });
 
   it.each(['missing_recording', 'auth_error'] as const)('fails a %s at once, because a retry cannot fix it', (kind) => {
@@ -87,5 +97,69 @@ describe('pollOnce', () => {
     await expect(pollOnce(worker)).rejects.toThrow(`job ${JOB_A} is no longer locked by this worker`);
     expect(log.mock.calls.flat().join('\n')).not.toMatch(/: done$/m);
     expect(job).toMatchObject({ status: 'running', locked_by: 'w3' });
+  });
+});
+
+describe('pollOnce for a portfolio_watch whose session ends as an error', () => {
+  const jobsDir = mkdtempSync(join(tmpdir(), 'esta-runner-watch-'));
+  const recordings = mkdtempSync(join(tmpdir(), 'esta-runner-auth-'));
+  afterEach(() => vi.restoreAllMocks());
+
+  function watchWorker(replayDir: string, attempts: number) {
+    const { db, tables } = twoHouseholds();
+    const job = { id: JOB_A, household_id: A, kind: 'portfolio_watch', payload: {}, status: 'queued', attempts, max_attempts: 4, idempotency_key: `portfolio_watch:${A}:2026-10-07` };
+    Object.assign(tables, { agent_jobs: [job], agent_runs: [] });
+    vi.spyOn(JOBS.portfolio_watch.handler, 'prepare').mockImplementation(async ({ db: jobDb, job: claimed }) =>
+      portfolioWatchRequest({ db: jobDb, householdId: claimed.household_id, jobId: claimed.id, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock: async () => ({ source: 'table', now: () => NOW, today: () => isoDate('2026-10-07') }), read: async () => ({ snapshot, labels }) }),
+    );
+    const states: WorkerState[] = [];
+    return { job, tables, states, worker: replayWorker(db, [job], jobsDir, undefined, replayDir, states) };
+  }
+
+  it('requeues a usage limit a minute later and tells the heartbeat Trợ lý is paused', async () => {
+    const { job, tables, states, worker } = watchWorker(join(CASES, 'usage-limit'), 0);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(job).toMatchObject({ status: 'queued', attempts: 1, run_after: '2026-10-07T02:01:00.000Z', locked_by: null });
+    expect(states).toEqual(['usage_limited']);
+    expect(tables.agent_items).toEqual([]);
+  });
+
+  it('fails a rejected login at once, with the Thử lại item for admins and one note for operators that names no error text', async () => {
+    const [file = ''] = readdirSync(join(CASES, 'usage-limit', 'portfolio_watch'));
+    const usage = recordingSchema.parse(JSON.parse(readFileSync(join(CASES, 'usage-limit', 'portfolio_watch', file), 'utf8')));
+    writeRecording(recordings, { ...usage, cause: 'authentication_failed', reply: 'Failed to authenticate. API Error: 401 sk-ant-oat01-secret' });
+    const { job, tables, states, worker } = watchWorker(recordings, 0);
+    await pollOnce(worker);
+    expect(job).toMatchObject({ status: 'failed', attempts: 1 });
+    expect(states).toEqual(['ok']);
+    expect(tables.agent_items).toEqual([
+      expect.objectContaining({ kind: 'alert', audience: 'all', title: 'Trợ lý chưa xem được danh mục hôm nay', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' }, dedupe_key: `job_failed:${JOB_A}` }),
+      expect.objectContaining({ kind: 'system', severity: 'action', audience: 'operator', title: 'Trợ lý không đăng nhập được vào Claude', dedupe_key: 'auth_error:2026-10-07' }),
+    ]);
+    expect(JSON.stringify(tables.agent_items)).not.toContain('sk-ant');
+  });
+
+  it('keeps the Thử lại item of a run the number guard failed for operators, as its note is', async () => {
+    const { job, tables, worker } = watchWorker(join(CASES, 'guard-violation'), 0);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    await pollOnce(worker);
+    expect(job).toMatchObject({ status: 'failed', attempts: 1 });
+    expect(tables.agent_items.map(({ dedupe_key, audience }) => ({ dedupe_key, audience }))).toEqual([
+      { dedupe_key: `number_guard:${JOB_A}`, audience: 'operator' },
+      { dedupe_key: `job_failed:${JOB_A}`, audience: 'operator' },
+    ]);
+  });
+
+  it('leaves one Thử lại item after the fourth attempt fails, and none before it', async () => {
+    const third = watchWorker(join(CASES, 'always-fail'), 2);
+    await pollOnce(third.worker);
+    expect(third.job).toMatchObject({ status: 'queued', attempts: 3, run_after: '2026-10-07T02:25:00.000Z' });
+    expect(third.tables.agent_items).toEqual([]);
+
+    const last = watchWorker(join(CASES, 'always-fail'), 3);
+    await pollOnce(last.worker);
+    expect(last.job).toMatchObject({ status: 'failed', attempts: 4, error: 'API Error: 529 Overloaded' });
+    expect(last.tables.agent_items).toEqual([expect.objectContaining({ severity: 'info', audience: 'all', dedupe_key: `job_failed:${JOB_A}`, job_id: JOB_A, created_at: NOW })]);
+    expect(last.states).toEqual(['ok']);
   });
 });

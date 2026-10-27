@@ -145,6 +145,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links: facts.map(({ link }) => link) },
       dedupe_key: dedupeKey,
     });
+    console.log(`[agent] create_item ok ${dedupeKey}`);
     for (const handle of related) covered.add(handle);
     if (action === undefined) digest = true;
     written.push({ dedupe_key: dedupeKey, title: note.title, body_md: note.body_md, cited: [...(title?.cited ?? []), ...(body?.cited ?? [])], added });

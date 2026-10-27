@@ -1,7 +1,7 @@
 import type { ReactNode, Ref } from 'react';
 import type { AnswerState } from './answer-state';
 
-export type AnswerLabels = Readonly<Record<'streaming' | 'error' | 'stalled', string>>;
+export type AnswerLabels = Readonly<Record<'streaming' | 'deferred' | 'error' | 'stalled', string>>;
 
 export type ShownAnswer = AnswerState | { readonly content: string; readonly refs: readonly string[]; readonly status: 'stalled' };
 

@@ -21,7 +21,11 @@ export type WallClockStamp = {
   readonly earlierDate: IsoDate | null;
 };
 
-export type WorkerStatus = { readonly kind: 'never' } | ({ readonly kind: 'online' | 'offline' } & WallClockStamp);
+/** `paused` is a worker that beats on time but whose last model session hit Claude's usage limit (AGENT.md §9). */
+export type WorkerStatus = { readonly kind: 'never' } | ({ readonly kind: 'online' | 'paused' | 'offline' } & WallClockStamp);
+
+/** The newest heartbeat row a member may read. */
+export type Heartbeat = { readonly lastSeenAt: Instant; readonly usageLimited: boolean };
 
 const timeFormatters = new Map<string, Intl.DateTimeFormat>();
 
@@ -39,7 +43,9 @@ export function wallClockStamp(instant: Instant, now: Instant, timezone = 'Asia/
   return { time: wallTime(instant, timezone), earlierDate: day < businessDate(now, timezone) ? day : null };
 }
 
-export function workerStatus(lastSeenAt: Instant | null, now: Instant, timezone = 'Asia/Ho_Chi_Minh'): WorkerStatus {
-  if (lastSeenAt === null) return { kind: 'never' };
-  return { kind: Date.parse(now) - Date.parse(lastSeenAt) <= OFFLINE_AFTER_MS ? 'online' : 'offline', ...wallClockStamp(lastSeenAt, now, timezone) };
+export function workerStatus(heartbeat: Heartbeat | null, now: Instant, timezone = 'Asia/Ho_Chi_Minh'): WorkerStatus {
+  if (heartbeat === null) return { kind: 'never' };
+  const { lastSeenAt, usageLimited } = heartbeat;
+  const fresh = Date.parse(now) - Date.parse(lastSeenAt) <= OFFLINE_AFTER_MS;
+  return { kind: !fresh ? 'offline' : usageLimited ? 'paused' : 'online', ...wallClockStamp(lastSeenAt, now, timezone) };
 }

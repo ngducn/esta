@@ -5,9 +5,9 @@ import type { Db } from '@esta/ops';
 import { isAnswerState, type AnswerState } from '@/components/assistant/answer-state';
 import { createSessionClient } from '@/server/supabase/server';
 
-const answerRow = { content_md: z.string(), status: z.unknown(), refs: z.unknown() };
-function toAnswer({ content_md, status, refs }: { content_md: string; status: unknown; refs: unknown }): AnswerState {
-  const answer = { content: content_md, status, refs };
+const answerRow = { content_md: z.string(), status: z.unknown(), refs: z.unknown(), deferred_until: z.string().nullable() };
+function toAnswer({ content_md, status, refs, deferred_until }: { content_md: string; status: unknown; refs: unknown; deferred_until: string | null }): AnswerState {
+  const answer = { content: content_md, status: status === 'streaming' && deferred_until !== null ? 'deferred' : status, refs };
   if (!isAnswerState(answer)) throw new Error(`An answer row has status ${JSON.stringify(status)} or refs that are not a list of links`);
   return answer;
 }
@@ -24,7 +24,7 @@ export async function loadConversation(householdId: string, id: string): Promise
   const db = await createSessionClient();
   const [conversation, messages] = await Promise.all([
     db.from('conversations').select('id, title').eq('household_id', householdId).eq('id', id).maybeSingle(),
-    db.from('messages').select('id, role, content_md, status, refs, created_at').eq('household_id', householdId).eq('conversation_id', id).order('created_at'),
+    db.from('messages').select('id, role, content_md, status, refs, deferred_until, created_at').eq('household_id', householdId).eq('conversation_id', id).order('created_at'),
   ]);
   if (conversation.error) throw new Error(`Reading the conversation failed: ${conversation.error.message}`);
   if (messages.error) throw new Error(`Reading the messages failed: ${messages.error.message}`);
@@ -48,7 +48,7 @@ export async function listConversations(householdId: string, limit = 30): Promis
 export async function readAnswer(db: Db, householdId: string, conversationId: string, answerId: string): Promise<AnswerState | null> {
   const { data, error } = await db
     .from('messages')
-    .select('content_md, status, refs')
+    .select('content_md, status, refs, deferred_until')
     .eq('household_id', householdId)
     .eq('conversation_id', conversationId)
     .eq('id', answerId)

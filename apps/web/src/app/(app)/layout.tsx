@@ -21,7 +21,7 @@ function monogram(displayName: string | null): string | null {
 }
 
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const [member, clock, lastSeenAt, locale, nav, shell, language, onboarding, app] = await Promise.all([
+  const [member, clock, heartbeat, locale, nav, shell, language, onboarding, app] = await Promise.all([
     requireMember(),
     getClock(),
     getClock().then((current) => getWorkerHeartbeat(current.now())),
@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     getTranslations('app'),
   ]);
 
-  const worker = workerStatus(lastSeenAt, clock.now(), env.ESTA_TIMEZONE);
+  const worker = workerStatus(heartbeat, clock.now(), env.ESTA_TIMEZONE);
   const toItem = ({ key, href }: { key: NavItem['key']; href: string }): NavItem => ({ key, href, label: nav(key) });
   const items = primarySections.map(toItem);
   // A phone's five tabs share 390 px, and the English section names need 490 at 130% text, so the tabs take short ones (FND-8).
@@ -68,7 +68,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           </div>
         </header>
         <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
-          {worker.kind === 'offline' ? (
+          {worker.kind === 'offline' || worker.kind === 'paused' ? (
             <div className="mb-5">
               <WorkerStatusLine status={worker} />
             </div>

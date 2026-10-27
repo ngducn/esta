@@ -6,7 +6,7 @@ import { inputHash, type CanonicalInput } from './canonicalize';
 
 export const DEFAULT_REPLAY_DIR = join(import.meta.dirname, '..', '..', '..', '..', 'fixtures', 'agent-replay');
 
-const recordingSchema = z.object({
+export const recordingSchema = z.object({
   version: z.literal(1),
   kind: z.string(),
   inputHash: z.string().regex(/^[0-9a-f]{64}$/),
@@ -28,6 +28,9 @@ const recordingSchema = z.object({
   wallMs: z.number().int().nonnegative().optional(),
   toolCalls: z.array(z.object({ name: z.string(), input: z.record(z.string(), z.unknown()), result: z.unknown().optional() })),
   reply: z.string(),
+  /** A session the SDK ended as an error, as a usage limit or a rejected login does; `reply` is then its error text. */
+  isError: z.boolean().optional(),
+  cause: z.string().optional(),
 });
 
 export type Recording = z.infer<typeof recordingSchema>;

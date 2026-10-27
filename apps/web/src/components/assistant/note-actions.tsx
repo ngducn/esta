@@ -1,15 +1,16 @@
 'use client';
 
 import type { ProposalDecided } from '@esta/ops';
-import { Check, EyeOff, FileText, X } from 'lucide-react';
+import { Check, EyeOff, FileText, RotateCw, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lazy, useState } from 'react';
-import { approveProposal, setNoteStatus } from '@/app/(app)/assistant/actions';
+import { approveProposal, retryJob, setNoteStatus } from '@/app/(app)/assistant/actions';
 import { ReminderAction } from '@/components/collections/ReminderAction';
 import { FormAlert } from '@/components/form-alert';
 import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { useNoticeToast } from '@/components/undo-toast';
 import { useAction } from '@/components/use-action';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { useUndoableAction } from '@/components/use-undoable-action';
@@ -30,18 +31,42 @@ export type NoteActionLabels = {
   readonly restoreFailed: string;
 };
 
+/** Thử lại for an admin on a failed job's item. */
+export type RetryLabels = { readonly retry: string; readonly retryLabel: string; readonly queued: string; readonly failed: string };
+
 const button = buttonVariants({ variant: 'outline' });
 
-export function NoteActions({ id, status, labels }: { id: string; status: InboxStatus; labels: NoteActionLabels }) {
+export function NoteActions({ id, status, labels, retry }: { id: string; status: InboxStatus; labels: NoteActionLabels; retry?: RetryLabels }) {
   const hydrated = useHydrated();
+  const router = useRouter();
   const { pending, error, perform } = useUndoableAction({ failed: labels.failed, restoreFailed: labels.restoreFailed });
-  const disabled = pending || !hydrated;
+  const showNotice = useNoticeToast();
+  const { pending: retrying, run } = useAction();
+  const [retryFailed, setRetryFailed] = useState(false);
+  const disabled = pending || retrying || !hydrated;
   const markRead = () => perform(() => setNoteStatus({ id, status: 'read' }));
   const dismiss = () => perform(() => setNoteStatus({ id, status: 'dismissed' }), { message: labels.dismissed, restore: () => setNoteStatus({ id, status }) });
+  // The item leaves the inbox once the job is queued again, so the toast says so where the card was.
+  const retryNow = () =>
+    run(
+      () => retryJob({ id }),
+      (result) => {
+        setRetryFailed(!result.ok);
+        if (!result.ok || retry === undefined) return;
+        showNotice(retry.queued);
+        router.refresh();
+      },
+    );
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
+        {retry === undefined ? null : (
+          <button type="button" onClick={retryNow} disabled={disabled} aria-label={retry.retryLabel} data-testid="note-retry" className={buttonVariants({ variant: 'primary' })}>
+            <RotateCw aria-hidden="true" />
+            {retry.retry}
+          </button>
+        )}
         {status === 'new' ? (
           <button type="button" onClick={markRead} disabled={disabled} aria-label={labels.markReadLabel} data-testid="note-read" className={button}>
             <Check aria-hidden="true" />
@@ -53,7 +78,7 @@ export function NoteActions({ id, status, labels }: { id: string; status: InboxS
           {labels.dismiss}
         </button>
       </div>
-      <FormAlert message={error} />
+      <FormAlert message={retryFailed && retry !== undefined ? retry.failed : error} />
     </div>
   );
 }

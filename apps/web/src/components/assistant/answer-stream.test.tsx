@@ -21,7 +21,7 @@ class FakeSource {
   }
 }
 
-const labels: AnswerLabels = { streaming: 'Đang trả lời', error: 'Chưa trả lời được', stalled: 'Đứt kết nối' };
+const labels: AnswerLabels = { streaming: 'Đang trả lời', deferred: 'Trả lời vào ngày mai', error: 'Chưa trả lời được', stalled: 'Đứt kết nối' };
 const ID = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c02';
 const CONVERSATION = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c01';
 

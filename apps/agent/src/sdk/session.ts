@@ -109,6 +109,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   });
   const toolCalls: ToolCall[] = [];
   let result: SDKResultMessage | undefined;
+  let cause: string | null = null;
   let streamed = false;
   try {
     for await (const message of query({ prompt: request.prompt, options })) {
@@ -120,7 +121,10 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
           streamed = true;
           await request.onText(event.delta.text);
         }
+      } else if (message.type === 'rate_limit_event') {
+        if (message.rate_limit_info.status === 'rejected') cause = 'rate_limit';
       } else if (message.type === 'assistant') {
+        cause = message.error ?? cause;
         for (const block of message.message.content) {
           if (block.type === 'tool_use') toolCalls.push({ name: block.name, input: block.input as Record<string, unknown> });
         }
@@ -138,7 +142,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   if (result === undefined) throw new Error('The model session ended without a result');
   const resumed = request.resume?.sessionId ?? null;
   if (resumed !== null && result.subtype === 'error_during_execution' && result.errors.some((error) => error.startsWith(SESSION_GONE))) throw new SessionGoneError(resumed);
-  return { result: fromSdkResult(result), model, toolCalls };
+  return { result: fromSdkResult(result, cause), model, toolCalls };
 }
 
 const REPLAY_CHUNK = /.{1,12}/gsu;
@@ -186,7 +190,8 @@ export async function replaySession(request: SessionRequest, replayDir: string):
   }
   return {
     result: {
-      isError: false,
+      isError: recording.isError ?? false,
+      cause: recording.cause ?? null,
       subtype: 'success',
       text: reply,
       numTurns: recording.numTurns,
