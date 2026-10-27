@@ -476,7 +476,8 @@
     "notFoundTitle": "Không tìm thấy tài sản này",
     "notFoundBody": "Tài sản có thể đã được lưu trữ, hoặc không thuộc gia đình này.",
     "notFoundAction": "Về danh sách tài sản",
-    "edit": "Sửa thông tin"
+    "edit": "Sửa thông tin",
+    "askAssistant": "Hỏi Trợ lý về tài sản này"
   },
   "completeness": {
     "title": "Mức đầy đủ",
@@ -1154,7 +1155,11 @@
       "thinkHarderHint": "Dùng mô hình mạnh hơn, trả lời chậm hơn. Chỉ người vận hành thấy lựa chọn này.",
       "notFoundTitle": "Không tìm thấy cuộc hỏi đáp này",
       "notFoundBody": "Đường dẫn có thể đã sai, hoặc cuộc hỏi đáp này không thuộc gia đình của bạn.",
-      "notFoundAction": "Về Trợ lý"
+      "notFoundAction": "Về Trợ lý",
+      "replyTo": "Trả lời: {title}",
+      "about": "Về: {property}",
+      "clearTopic": "Bỏ",
+      "clearTopicLabel": "Bỏ chủ đề {topic}"
     },
     "sources": "Nguồn",
     "citationLabel": "Nguồn {index}: {source}. Mở trong thẻ mới",
@@ -1203,6 +1208,17 @@
       "held": "Ghi chú bộ lọc số giữ lại, 7 ngày",
       "noHeld": "Bộ lọc số không giữ lại ghi chú nào trong 7 ngày qua.",
       "heldNote": "{time} · {kind}"
+    },
+    "reply": "Trả lời",
+    "replyLabel": "Trả lời ghi chú: {title}",
+    "suggestionsLabel": "Gợi ý trả lời",
+    "suggestions": {
+      "remindTenant": "Viết tin nhắn nhắc {tenant}",
+      "tenantLateCount": "{tenant} đã trễ mấy lần?",
+      "renewLease": "Có nên gia hạn hợp đồng {property} không?",
+      "rentFaster": "Làm sao cho thuê {unit} nhanh hơn?",
+      "briefFirst": "Hôm nay nên làm việc nào trước?",
+      "weeklySummary": "Tóm tắt tuần này giúp mẹ"
     }
   },
   "settings": {

@@ -7308,5 +7308,37 @@
       "building_name": "Chung cư Demo Bình Thọ",
       "management_fee_vnd": 1200000
     }
+  },
+  "property[\"62d33252-02ba-5610-bd9a-12474774014c\"]": {
+    "id": "62d33252-02ba-5610-bd9a-12474774014c",
+    "nickname": "Đất Bảo Lộc",
+    "code": "BAOLOC",
+    "kind": "residential_land",
+    "useMode": "held",
+    "legalStatus": "certified",
+    "coverPhotoPath": "0943e55d-b0a6-5aef-839d-07c8693c520e/62d33252-02ba-5610-bd9a-12474774014c/dat.avif",
+    "addressLine": "907 Demo Đường Trần Phú",
+    "communeName": "Phường 1 Bảo Lộc",
+    "provinceCode": "68",
+    "provinceName": "Tỉnh Lâm Đồng",
+    "certificateAddressText": "Số 907 Demo, đường Trần Phú, Phường 1, Thành phố Bảo Lộc, Tỉnh Lâm Đồng",
+    "legacyProvinceNames": [
+      "Tỉnh Lâm Đồng"
+    ],
+    "searchText": "dat bao loc baoloc 907 demo duong tran phu phuong 1 bao loc tinh lam dong so 907 demo duong tran phu phuong 1 thanh pho bao loc tinh lam dong phuong 1 thanh pho bao loc tinh lam dong phuong loc phat thanh pho bao loc tinh lam dong xa loc thanh thanh pho bao loc tinh lam dong",
+    "location": {
+      "lat": 11.547,
+      "lng": 107.808
+    },
+    "hasBoundary": false,
+    "ownerPartyIds": [
+      "5107e10c-018b-5f2d-ad73-f0ad36ca7467"
+    ],
+    "vacantSince": null,
+    "unitCount": 1,
+    "kindDetails": {
+      "frontage_m": 8,
+      "road_width_m": 6
+    }
   }
 }

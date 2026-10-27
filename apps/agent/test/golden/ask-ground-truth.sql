@@ -52,6 +52,9 @@ paid as (
 lateness as (
   select full_name, count(*) as bills, count(*) filter (where paid_on > due_date) as late, avg(paid_on - due_date) filter (where paid_on > due_date) as days
   from paid group by full_name order by late desc, count(*) filter (where paid_on > due_date)::numeric / count(*) desc, days desc nulls last limit 1),
+overdue_tenant as (
+  select count(*) as bills, count(*) filter (where paid_on > due_date) as late, avg(paid_on - due_date) filter (where paid_on > due_date) as days
+  from paid where full_name = (select tenant from overdue)),
 yield as (
   select round(s.monthly_rent_vnd * 12 * 10000.0 / (select v.value_vnd from public.valuations v where v.property_id = l.property_id and v.as_of <= '2026-10-07' order by v.as_of desc limit 1)) as bp
   from public.leases l cross join lateral private.lease_periods(l, '2026-10-07') s
@@ -83,5 +86,8 @@ select question, figure, value from (
   union all select 'q10', 'their bills paid late', (select late::text from lateness)
   union all select 'q10', 'their bills', (select bills::text from lateness)
   union all select 'q10', 'their average days late', (select round(days)::text from lateness)
+  union all select 't3', 'di-an overdue tenant bills paid late', (select late::text from overdue_tenant)
+  union all select 't3', 'their bills', (select bills::text from overdue_tenant)
+  union all select 't3', 'their average days late', (select round(days)::text from overdue_tenant)
 ) truth
 order by question, figure;

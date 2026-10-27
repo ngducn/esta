@@ -1,6 +1,6 @@
 import 'server-only';
 import { parseInstant, type Instant, type IsoDate } from '@esta/core';
-import type { WatchSeverity } from '@esta/core/watch';
+import { mostSevereFirst, WATCH_SEVERITIES, type WatchSeverity } from '@esta/core/watch';
 import { parseProposal, type Proposal } from '@esta/core/proposals';
 import { existingLinks, idSchema } from '@esta/ops';
 import { z } from 'zod';
@@ -95,12 +95,11 @@ export type Pinned = { readonly shown: readonly PinnedNote[]; readonly count: nu
 
 const PINNED_SHOWN = 3;
 
-const SEVERITY_RANK: Record<WatchSeverity, number> = { action: 0, watch: 1, info: 2 };
-const severity = z.enum(['info', 'watch', 'action']);
+const severity = z.enum(WATCH_SEVERITIES);
 const NEVER_PINNED_KINDS = '(brief,weekly)';
 
-type PinnedCandidate = { readonly rank: number; readonly key: string };
-const mostSevereThenNewest = (a: PinnedCandidate, b: PinnedCandidate) => a.rank - b.rank || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0);
+type PinnedCandidate = { readonly severity: WatchSeverity; readonly key: string };
+const mostSevereThenNewest = (a: PinnedCandidate, b: PinnedCandidate) => mostSevereFirst(a.severity, b.severity) || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0);
 
 export async function listPinned(householdId: string): Promise<Pinned> {
   const supabase = await createSessionClient();
@@ -113,7 +112,7 @@ export async function listPinned(householdId: string): Promise<Pinned> {
     .or('kind.eq.proposal,severity.eq.action');
   if (error) throw new Error(`Reading Trợ lý's open notes failed: ${error.message}`);
   const open = data
-    .map((row) => ({ row, rank: SEVERITY_RANK[severity.parse(row.severity)], key: `${canonicalStamp(row.created_at)} ${row.id}` }))
+    .map((row) => ({ row, severity: severity.parse(row.severity), key: `${canonicalStamp(row.created_at)} ${row.id}` }))
     .toSorted(mostSevereThenNewest);
   return { shown: open.slice(0, PINNED_SHOWN).map(({ row }) => ({ id: row.id, title: row.title, proposal: row.kind === 'proposal' })), count: open.length };
 }

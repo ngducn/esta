@@ -16,6 +16,21 @@ describe('askQuestion', () => {
     ]);
   });
 
+  it.each([
+    [{ kind: 'item', itemId: CONVERSATION }, { kind: 'item', id: CONVERSATION }],
+    [{ kind: 'property', propertyId: CONVERSATION }, { kind: 'property', id: CONVERSATION }],
+  ])('sends the topic %j as ask_in_thread reads it', async (topic, sentTopic) => {
+    const { db, sent } = fakeDb((request) => (request.table === 'rpc/ask_in_thread' ? [CONVERSATION] : []));
+    expect((await runOp(askQuestion, context(db), { questionId: QUESTION, question: 'Khách này trễ mấy lần rồi?', topic })).ok).toBe(true);
+    expect(writes(sent).map(({ body }) => body)).toEqual([{ p_household_id: HOUSEHOLD, p_question_id: QUESTION, p_question: 'Khách này trễ mấy lần rồi?', p_deep: false, p_topic: sentTopic }]);
+  });
+
+  it.each([{ kind: 'lease', itemId: CONVERSATION }, { kind: 'item', itemId: 'Phòng 5' }, { kind: 'item', propertyId: CONVERSATION }])('refuses the topic %j before it reaches the database', async (topic) => {
+    const { db, sent } = fakeDb();
+    expect(await runOp(askQuestion, context(db), { questionId: QUESTION, question: 'Câu hỏi', topic })).toMatchObject({ ok: false, reason: { kind: 'invalid' } });
+    expect(sent).toEqual([]);
+  });
+
   it('refuses a conversation id, so no caller picks the segment', async () => {
     const { db, sent } = fakeDb();
     expect(await runOp(askQuestion, context(db), { id: CONVERSATION, questionId: QUESTION, question: 'Câu hỏi' })).toMatchObject({ ok: false, reason: { kind: 'invalid' } });

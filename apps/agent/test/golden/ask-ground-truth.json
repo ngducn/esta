@@ -123,5 +123,20 @@
     "figure": "di-an overdue tenant",
     "question": "t1",
     "value": "Hoàng Văn Em Demo"
+  },
+  {
+    "figure": "di-an overdue tenant bills paid late",
+    "question": "t3",
+    "value": "5"
+  },
+  {
+    "figure": "their average days late",
+    "question": "t3",
+    "value": "4"
+  },
+  {
+    "figure": "their bills",
+    "question": "t3",
+    "value": "8"
   }
 ]

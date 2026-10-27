@@ -5,16 +5,15 @@ import { existingLinks } from '@esta/ops';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { askRequest } from '../../src/jobs/ask';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, readRecording } from '../../src/replay/store';
 import { replaySession } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
-import { ANSWER, answerRow, askRpcs, askTables, CONVERSATION, QUESTION, withDraftAndArchivedLeases } from '../ask-seed';
-import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
+import { answerRow, askRpcs, askTables, CONVERSATION, withDraftAndArchivedLeases } from '../ask-seed';
+import { HOUSEHOLD, seedRecords } from '../full-seed';
 import { tempJobDir } from '../job-dir';
-import { askCase as findCase, askRecording, ASK_CASES, ASK_CONTEXT, caseEarlier, caseInput } from './ask-cases';
+import { askCase as findCase, askRecording, ASK_CASES, caseInput, caseRequest } from './ask-cases';
 import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
 
 const truth = JSON.parse(readFileSync(join(import.meta.dirname, 'ask-ground-truth.json'), 'utf8')) as Array<{ question: string; figure: string; value: string }>;
@@ -43,24 +42,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
     const earlier = { household_id: HOUSEHOLD, conversation_id: CONVERSATION, status: 'done' };
     tables.messages?.unshift({ ...earlier, id: EARLIER.question, role: 'user', content_md: findCase(askCase.follows.id).question }, { ...earlier, id: EARLIER.answer, role: 'assistant', content_md: before.answer.content_md, refs: before.answer.refs });
   }
-  const asOf = askCase.today ?? isoDate('2026-10-07');
-  const prepared = askRequest({
-    db: fakeDb(tables, [], {}, {}, askRpcs(tables)),
-    householdId: HOUSEHOLD,
-    jobId: `golden-${id}`,
-    conversationId: CONVERSATION,
-    questionId: QUESTION,
-    answerId: ANSWER,
-    locale: 'vi',
-    asOf,
-    timezone: ASK_CONTEXT.timezone,
-    question: askCase.question,
-    earlier: caseEarlier(askCase),
-    seed: askCase.seed ?? [],
-    deep: askCase.deep === true,
-    reads,
-    clock: clockOn(`${asOf}T07:00:00+07:00`),
-  });
+  const prepared = await caseRequest(askCase, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads });
   const rebuilt = askCase.rebuiltFrom === undefined ? null : await prepared.rebuild?.();
   if (rebuilt === undefined) throw new Error(`${id} has no session to rebuild`);
   const run = await replaySession(
@@ -115,15 +97,19 @@ const EXPECTED: Readonly<Record<string, () => string>> = {
     `${fact('q10', 'tenant who paid late most often')} paid late most often this year: ${fact('q10', 'their bills paid late')} of ${fact('q10', 'their bills')} bills were paid in full after their due date, on average ${fact('q10', 'their average days late')} days late.\n\nSee [${fact('q10', 'tenant who paid late most often')}](esta://party/…).`,
   't1-zalo-reminder': () =>
     `Đây là tin nhắn bạn có thể gửi qua Zalo:\n\nChào ${fact('t1', 'di-an overdue tenant')}, tiền thuê ${fact('q2', 'di-an units overdue')} ở Dãy trọ Dĩ An đến hạn ngày ${day('t1', 'di-an overdue due date')} hiện còn ${money('q2', 'di-an amount overdue')}. Nhờ anh chị sắp xếp đóng giúp sớm. Nếu đã chuyển khoản rồi, anh chị báo lại để mình kiểm tra nhé. Cảm ơn anh chị.`,
+  't3-reply-late-count': () =>
+    `Trong các hóa đơn năm nay đã đến hạn, ${fact('t1', 'di-an overdue tenant')} đã trả trễ ${fact('t3', 'di-an overdue tenant bills paid late')} trên ${fact('t3', 'their bills')} hóa đơn, trung bình trễ ${fact('t3', 'their average days late')} ngày.\n\n[Hóa đơn ${fact('q2', 'di-an units overdue')}](esta://invoice/…) đến hạn ngày ${day('t1', 'di-an overdue due date')} vẫn còn nợ ${money('q2', 'di-an amount overdue')}. Xem [lịch sử trả tiền của ${fact('t1', 'di-an overdue tenant')}](esta://party/…).`,
+  't4-property-mortgage': () =>
+    `Sổ của Đất Bảo Lộc đang thế chấp tại ${fact('q8', 'bao-loc mortgage bank')}, khoản vay ${money('q8', 'bao-loc mortgage amount')}, đăng ký ngày 12/03/2024.\n\nXem [pháp lý của Đất Bảo Lộc](esta://legal/…).`,
   'seeded-segment-august': () => `Tháng 8/2026, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in August 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
   'seed10-english-overdue': () =>
     `In Dãy trọ Dĩ An, only ${fact('q2', 'di-an units overdue')} is overdue: ${fact('q2', 'di-an days overdue')} days late, with ${money('q2', 'di-an amount overdue')} still owed.\n\nSee [the bill for ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`,
 };
 
 describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AGT-7)', () => {
-  it.each(ASK_CASES)('$id has its committed hand-written recording', (askCase) => {
-    const { input, ...recording } = askRecording(askCase);
-    expect(readRecording(DEFAULT_REPLAY_DIR, caseInput(askCase))).toEqual({ input, ...recording });
+  it.each(ASK_CASES)('$id has its committed hand-written recording', async (askCase) => {
+    const { input, ...recording } = await askRecording(askCase);
+    expect(readRecording(DEFAULT_REPLAY_DIR, await caseInput(askCase))).toEqual({ input, ...recording });
   });
 
   it.each(Object.keys(EXPECTED))('%s states the ground truth with every link resolving, guarded on the first turn', async (id) => {
@@ -151,7 +137,7 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     expect(first.conversation).toMatchObject({ sdk_handles: 8, sdk_session_id: first.run.result.sessionId });
     const followUp = findCase('q1-follow-up-september');
     expect(followUp.follows?.firstHandle).toBe(9);
-    expect(caseInput(followUp).resumesInputHash).toBe(askRecording(findCase('q1-di-an-income')).inputHash);
+    expect((await caseInput(followUp)).resumesInputHash).toBe((await askRecording(findCase('q1-di-an-income'))).inputHash);
   });
 
   it('the follow-up cites September from the ledger, reading the property and month from the session it resumed', async () => {
@@ -163,11 +149,11 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   it('an operator\'s deep ask replays its own recording, made with the deep model', async () => {
     const { run } = await askAfterItsChain('q1-deep');
     expect(run.model).toBe('hand-written-deep');
-    expect(caseInput(findCase('q1-deep')).modelRole).toBe('deep');
+    expect((await caseInput(findCase('q1-deep'))).modelRole).toBe('deep');
   });
 
   it('golden question 1 sent in the thread runs on the open prompt and states the ground truth', async () => {
-    expect(caseInput(findCase('q1-di-an-income')).prompt).toContain('They may ask anything.');
+    expect((await caseInput(findCase('q1-di-an-income'))).prompt).toContain('They may ask anything.');
     const { answer } = await askAfterItsChain('q1-di-an-income');
     expect(shown(answer.content_md)).toBe(EXPECTED['q1-di-an-income']?.());
   });
@@ -188,11 +174,29 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   });
 
   it('a new segment\'s first question starts from her previous segment\'s answers, without their links, and reads August from the ledger', async () => {
-    const prompt = caseInput(findCase('seeded-segment-august')).prompt;
+    const prompt = (await caseInput(findCase('seeded-segment-august'))).prompt;
     expect(prompt).toContain('Earlier answer:\nTháng 9/2026, Dãy trọ Dĩ An đã thu');
     expect(prompt).not.toContain('esta://');
     const { result } = await askAfterItsChain('seeded-segment-august');
     expect(result.cited.filter(({ placeholder }) => placeholder.endsWith('income_display}}')).map(({ value }) => value)).toEqual([money('q1', 'di-an income received in August 2026')]);
+  });
+
+  it('a reply to the Phòng 5 note starts from the note\'s records, then counts the late bills with payment_behavior', async () => {
+    const prompt = (await caseInput(findCase('t3-reply-late-count'))).prompt;
+    expect(prompt).toContain('Note title: Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày');
+    expect(prompt).toContain('collections {"year":2026,"month":10,"property":"f3"} answered {"bills":[{"handle":"f8"');
+    const { run, result } = await askAfterItsChain('t3-reply-late-count');
+    expect(run.toolCalls.map(({ name }) => name.replace(/^mcp__esta__/, ''))).toEqual(['payment_behavior']);
+    expect(result.cited.filter(({ placeholder }) => placeholder.startsWith('{{f8.')).map(({ value }) => value)).toContain(money('q2', 'di-an amount overdue'));
+  });
+
+  it('a question from Đất Bảo Lộc\'s page answers from get_property, which the worker called first, with no tool call of its own', async () => {
+    const prompt = (await caseInput(findCase('t4-property-mortgage'))).prompt;
+    expect(prompt).toContain('The message asks about the property f1 of list_properties.');
+    expect(prompt.indexOf('get_property {"property":"f1"}')).toBeLessThan(prompt.indexOf('property_metrics {"property":"f1","year":2026}'));
+    const { run, result } = await askAfterItsChain('t4-property-mortgage');
+    expect(run.toolCalls).toEqual([]);
+    expect(result.cited.find(({ placeholder }) => placeholder === '{{f9.mortgage_bank_name}}')?.value).toBe(fact('q8', 'bao-loc mortgage bank'));
   });
 
   it('a question the tools cannot answer says the app has no such data and cites no figure', async () => {

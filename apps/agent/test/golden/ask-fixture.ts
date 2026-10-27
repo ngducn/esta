@@ -4,12 +4,10 @@ import { join } from 'node:path';
 import { query } from '../../../../scripts/db-checksum.ts';
 import { slotEnv } from '../../../../scripts/slot-env.ts';
 import { parseSlot, slotWorkdir } from '../../../../scripts/slot.ts';
-import { askRequest } from '../../src/jobs/ask';
 import { serviceClient } from '../../src/supabase';
 import { askReads } from '../../src/tools/ask-reads';
 import { runTool } from '../../src/tools/server';
-import { clockOn } from '../full-seed';
-import { ASK_CASES, caseEarlier } from './ask-cases';
+import { ASK_CASES, caseRequest } from './ask-cases';
 import { ASK_READS_FIXTURE, recordedReads, recordingReads } from './ask-reads';
 
 export const ASK_FIXTURE = join(import.meta.dirname, 'ask-full-2026-10-07.json');
@@ -39,24 +37,7 @@ async function main() {
   const asOf = isoDate('2026-10-07');
   const recorded = recordedReads();
   for (const askCase of ASK_CASES) {
-    const today = askCase.today ?? asOf;
-    const prepared = askRequest({
-      db,
-      householdId: household.id,
-      jobId: 'ask-fixture',
-      conversationId: 'ask-fixture',
-      questionId: 'ask-fixture',
-      answerId: 'ask-fixture',
-      locale: 'vi',
-      asOf: today,
-      timezone: 'Asia/Ho_Chi_Minh',
-      question: askCase.question,
-      earlier: caseEarlier(askCase),
-      seed: askCase.seed ?? [],
-      deep: askCase.deep === true,
-      reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf: today }), recorded),
-      clock: clockOn(`${today}T07:00:00+07:00`),
-    });
+    const prepared = await caseRequest(askCase, { db, householdId: household.id, reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf: askCase.today ?? asOf }), recorded) });
     for (const call of askCase.toolCalls) {
       const tool = prepared.tools.get(call.name);
       if (tool === undefined) throw new Error(`${askCase.id} calls ${call.name}, which ask does not offer`);

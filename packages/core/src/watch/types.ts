@@ -57,7 +57,12 @@ export const watchSnapshotSchema = z.object({
 
 export type WatchSnapshot = z.output<typeof watchSnapshotSchema>;
 
-export type WatchSeverity = 'info' | 'watch' | 'action';
+/** Least severe first. */
+export const WATCH_SEVERITIES = ['info', 'watch', 'action'] as const;
+
+export type WatchSeverity = (typeof WATCH_SEVERITIES)[number];
+
+export const mostSevereFirst = (a: WatchSeverity, b: WatchSeverity): number => WATCH_SEVERITIES.indexOf(b) - WATCH_SEVERITIES.indexOf(a);
 
 export type WatchRuleId = 'W1' | 'W2' | 'W3' | 'W4' | 'W5' | 'W6' | 'W7' | 'W8' | 'W9' | 'W10' | 'W11';
 

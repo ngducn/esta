@@ -12,6 +12,8 @@ import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
 import { readTools } from '../tools/read-tools';
 import { estaTool } from '../tools/server';
+import { loadTopic, type AskTopic } from '../tools/topic-reads';
+import { noteRelated } from '@esta/core/assistant';
 import { answerStream, type Answer } from './askStream';
 import { InvalidJobError } from './extract-document';
 import type { AgentJob, JobContext, PreparedJob } from './registry';
@@ -37,6 +39,8 @@ export type AskInput = {
   /** The previous segment's last answered turns, which a turn with no session to resume starts from. */
   readonly seed: readonly AskedTurn[];
   readonly deep: boolean;
+  /** The note or property her message is about; only the first message of a conversation has one. */
+  readonly topic: AskTopic | null;
   clock(): Promise<Clock>;
 };
 
@@ -79,21 +83,26 @@ async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn): Pr
   return null;
 }
 
-export function askRequest(input: AskInput): PreparedJob {
+export async function askRequest(input: AskInput): Promise<PreparedJob> {
   const { db, householdId, locale, reads, asOf, earlier } = input;
   const firstHandle = (earlier?.handles ?? 0) + 1;
   const { sheet, cite } = runSheet(firstHandle);
   const stream = answerStream({ sheet, write: ({ content, refs }) => writeAnswer(input, { content_md: content, refs: [...refs] }) });
   let repaired = false;
   let answer: Answer | null = null;
+  const tools = new Map([
+    ...readTools(db, householdId, { reads, locale, asOf, cite }),
+    estaTool('create_proposal', proposalWriter({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }).write),
+  ]);
+  const topic = earlier === null && input.topic !== null ? await loadTopic(tools, input.topic, { reads, asOf }) : null;
   return {
-    prompt: earlier === null ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, earlier: input.seed }) : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
+    prompt:
+      earlier === null
+        ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, earlier: input.seed, topic })
+        : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
     ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
-    tools: new Map([
-      ...readTools(db, householdId, { reads, locale, asOf, cite }),
-      estaTool('create_proposal', proposalWriter({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }).write),
-    ]),
+    tools,
     onText: stream.push,
     async nextTurn() {
       const ended = await stream.end();
@@ -126,14 +135,31 @@ export function askRequest(input: AskInput): PreparedJob {
   };
 }
 
-type Turn = Pick<AskInput, 'conversationId' | 'questionId' | 'question' | 'answerId' | 'earlier' | 'seed' | 'deep'>;
+type Turn = Pick<AskInput, 'conversationId' | 'questionId' | 'question' | 'answerId' | 'earlier' | 'seed' | 'deep' | 'topic'>;
+
+/**
+ * Her message's topic. `ask_in_thread` checked she may open it; the worker reads as the service role, so it checks
+ * again that an operator note reaches only an operator's question.
+ */
+async function readTopic(db: AgentDb, job: AgentJob, question: { topic_item_id: string | null; topic_property_id: string | null }, asker: string | null): Promise<AskTopic | null> {
+  if (question.topic_property_id !== null) return { kind: 'property', propertyId: question.topic_property_id };
+  if (question.topic_item_id === null) return null;
+  const [item, operator] = await Promise.all([
+    db.from('agent_items').select('title, body_md, related, audience').eq('household_id', job.household_id).eq('id', question.topic_item_id).single(),
+    db.from('household_members').select('is_operator').eq('household_id', job.household_id).eq('user_id', asker ?? '').maybeSingle(),
+  ]);
+  if (item.error) throw new Error(`Reading the note she replies to failed: ${item.error.message}`);
+  if (operator.error) throw new Error(`Reading who asked failed: ${operator.error.message}`);
+  if (item.data.audience !== 'all' && operator.data?.is_operator !== true) throw new InvalidJobError(`ask ${job.id}: the note it replies to is for operators only`);
+  return { kind: 'note', title: item.data.title, body: item.data.body_md, links: noteRelated(item.data.related).links };
+}
 
 async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   const payload = payloadSchema.safeParse(job.payload);
   if (!payload.success) throw new InvalidJobError(`ask ${job.id} has no conversation, question and answer`);
   const { conversation_id, question_id, answer_id, deep } = payload.data;
   const [{ data, error }, conversation] = await Promise.all([
-    db.from('messages').select('id, role, content_md').eq('household_id', job.household_id).eq('conversation_id', conversation_id).in('id', [question_id, answer_id]),
+    db.from('messages').select('id, role, content_md, topic_item_id, topic_property_id').eq('household_id', job.household_id).eq('conversation_id', conversation_id).in('id', [question_id, answer_id]),
     db.from('conversations').select('sdk_session_id, sdk_turn_hash, sdk_handles, created_by').eq('household_id', job.household_id).eq('id', conversation_id).single(),
   ]);
   if (error) throw new Error(`Reading the question failed: ${error.message}`);
@@ -143,15 +169,16 @@ async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [], deferred_until: null });
   const { sdk_session_id, sdk_turn_hash, sdk_handles, created_by } = conversation.data;
   const earlier = sdk_turn_hash === null ? null : { sessionId: sdk_session_id, turnHash: sdk_turn_hash, handles: sdk_handles };
-  const seed = earlier === null ? await previousSegmentTurns(db, job.household_id, conversation_id, created_by ?? null) : [];
+  const topic = await readTopic(db, job, question, created_by ?? null);
+  const seed = earlier === null && topic === null ? await previousSegmentTurns(db, job.household_id, conversation_id, created_by ?? null) : [];
 
-  return { conversationId: conversation_id, questionId: question_id, question: question.content_md, answerId: answer_id, earlier, seed, deep };
+  return { conversationId: conversation_id, questionId: question_id, question: question.content_md, answerId: answer_id, earlier, seed, deep, topic };
 }
 
 export async function prepareAsk({ db, job, clock, timezone }: JobContext): Promise<PreparedJob> {
   const [turn, locale, now] = await Promise.all([startTurn(db, job), householdLocale(db, job.household_id), clock()]);
   const asOf = now.today();
-  return askRequest({ db, householdId: job.household_id, jobId: job.id, conversationId: turn.conversationId, questionId: turn.questionId, answerId: turn.answerId, locale, asOf, timezone, question: turn.question, earlier: turn.earlier, seed: turn.seed, deep: turn.deep, reads: askReads(db, job.household_id, { locale, asOf }), clock });
+  return askRequest({ ...turn, db, householdId: job.household_id, jobId: job.id, locale, asOf, timezone, reads: askReads(db, job.household_id, { locale, asOf }), clock });
 }
 
 export async function failAsk({ db, job }: Pick<JobContext, 'db' | 'job'>): Promise<void> {

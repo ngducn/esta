@@ -55,7 +55,7 @@ async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<ty
   const tables = askTables(item.question);
   const db = fakeDb(tables, [], {}, {}, askRpcs(tables));
   const asOf = isoDate('2026-10-07');
-  const prepared = askRequest({ db, householdId: HOUSEHOLD, jobId: `guard-probe-${item.id}`, conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale: 'vi', asOf, timezone: ASK_CONTEXT.timezone, question: item.question, earlier: null, seed: [], deep: false, reads, clock: clockOn('2026-10-07T07:00:00+07:00') });
+  const prepared = await askRequest({ db, householdId: HOUSEHOLD, jobId: `guard-probe-${item.id}`, conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale: 'vi', asOf, timezone: ASK_CONTEXT.timezone, question: item.question, earlier: null, seed: [], deep: false, topic: null, reads, clock: clockOn('2026-10-07T07:00:00+07:00') });
   const jobDir = realpathSync(mkdtempSync(join(tmpdir(), 'esta-probe-job-')));
   const configDir = realpathSync(mkdtempSync(join(tmpdir(), 'esta-probe-config-')));
   const canon = canonicalizer({ householdName: 'Gia đình Demo', jobDir });

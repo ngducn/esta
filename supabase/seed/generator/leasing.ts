@@ -124,6 +124,9 @@ export const AMENDMENT_SEEDS: readonly AmendmentSeed[] = [
 const leaseKey = (household: HouseholdSeed, seed: { readonly property: PropertySeedKey; readonly unit: number }) => `${household.key}:${seed.property}:${seed.unit}`;
 const leaseId = (household: HouseholdSeed, seed: { readonly property: PropertySeedKey; readonly unit: number }) => seedId(`seed:lease:${leaseKey(household, seed)}`);
 export const seedLeaseId = leaseId;
+/** The id `pg_temp.seed_invoice` gives the invoice of a seeded lease's period. */
+export const seedInvoiceId = (household: HouseholdSeed, seed: { readonly property: PropertySeedKey; readonly unit: number }, periodStart: string) =>
+  seedId(`seed:invoice:${leaseKey(household, seed)}:${periodStart}`);
 const tenantId = (household: HouseholdSeed, seed: LeaseSeed) => seedId(`seed:party:tenant-${leaseKey(household, seed)}`);
 
 const leasesIn = ({ properties }: Pick<SeedContext, 'properties'>) => {
@@ -225,7 +228,7 @@ const HISTORY_FROM = '2025-10-01';
 export const SPEC_TODAY = '2026-10-07';
 
 /** SPEC §9.3: the one issued invoice due before SPEC_TODAY that nobody paid. */
-export const UNPAID = { property: 'di-an', unit: 5, dueDate: '2026-09-25' } as const;
+export const UNPAID = { property: 'di-an', unit: 5, periodStart: '2026-09-25', dueDate: '2026-09-25' } as const;
 
 /** SPEC §9.3: this tenant pays every month in two partial transfers that sum to the full amount. */
 const TWO_TRANSFERS = { property: 'di-an', unit: 2 } as const;

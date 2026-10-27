@@ -99,7 +99,7 @@ async function afterQuestion1() {
     asked += 1;
     const ids = { question: `00000000-0000-4000-8000-0000000c0b${asked}2`, answer: `00000000-0000-4000-8000-0000000c0b${asked}3`, job: `00000000-0000-4000-8000-0000000c0b${asked}4` };
     tables.messages?.push(
-      { id: ids.question, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'user', content_md: question, status: 'done' },
+      { id: ids.question, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'user', content_md: question, status: 'done', topic_item_id: null, topic_property_id: null },
       { id: ids.answer, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'assistant', content_md: '', status: 'streaming', refs: [] },
     );
     tables.agent_jobs?.push({ id: ids.job, household_id: HOUSEHOLD_ID, kind: 'ask', status: 'queued', attempts: 0, max_attempts: 4, run_after: '2026-10-07T00:00:00.000Z', payload: { conversation_id: CONVERSATION, question_id: ids.question, answer_id: ids.answer, deep: false } });
