@@ -306,3 +306,7 @@ Operator's words, 2026-10-25: "why is the Hoi tab, not like LLMs regular chats?"
 - Numbers. The rule that the model never types a number stays. Three more fact sources are added: numbers Mẹ typed in the conversation, web numbers quoted verbatim from a page fetched in that conversation (shown with a source chip), and a calculate tool whose result is a fact with its working shown.
 - P5-09 shrinks to a "new message from Trợ lý" email that links into the thread.
 - The rest of Phase 5 is re-planned around the thread today. #341 and #342 stay as they are.
+
+## Update 2026-10-27 (Ryan: merge the reviewed stack, then stop)
+
+Ryan: "merge them all for me please, also report progress and overall feeling of the app for now, then stop, my weekly limit is running out lol". The grant covers #341, #342, #344, #347 and #350, each at its reviewed head with green `ci` at the exact landed head, restacked with merge commits and a patch-id check, never force-pushed. After landing, the run stops: the P5-13 owner (#352) pushes its work in progress and stops, and no new agents start until Ryan resumes the run.
