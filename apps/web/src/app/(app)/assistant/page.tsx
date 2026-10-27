@@ -6,7 +6,9 @@ import { ThreadView } from '@/components/assistant/thread';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { ToastHost } from '@/components/undo-toast';
 import { loadProposalDetails } from '@/server/agent/proposal-details';
+import { loadSuggestions } from '@/server/agent/suggestions';
 import { loadThread } from '@/server/agent/thread';
+import { loadTopicChoice } from '@/server/agent/topic';
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
@@ -21,11 +23,16 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
   const [clock, member, params] = await Promise.all([getClock(), requireMember(), searchParams]);
   const note = single(params.note);
   const before = single(params.before);
-  const [status, thread, tasks, toast] = await Promise.all([
+  const reply = single(params.reply);
+  const about = single(params.about);
+  const places = await getTranslations('collections');
+  const [status, thread, tasks, toast, topic, suggestions] = await Promise.all([
     assistantStatus(clock.now()),
     loadThread(member, { ...(note === undefined ? {} : { note }), ...(before === undefined ? {} : { before }) }),
     loadOpenTasks(member.household.id),
     getTranslations('components.toast'),
+    loadTopicChoice(member.household.id, { ...(reply === undefined ? {} : { reply }), ...(about === undefined ? {} : { about }) }),
+    loadSuggestions(member.household.id, (unit, property) => places('place', { unit, property })),
   ]);
   const canDecide = member.role !== 'viewer';
   const notes = thread.entries.flatMap((entry) => (entry.kind === 'note' ? [entry.note] : []));
@@ -45,6 +52,8 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
           canDecide={canDecide}
           isOperator={member.isOperator}
           proposals={{ details, reminderLabels }}
+          topic={topic}
+          suggestions={suggestions}
         />
       </ToastHost>
     </div>

@@ -1,8 +1,10 @@
 import { formatDate } from '@esta/core/format';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { Reply } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import type { InboxNote, NoteDiagnostics, NoteKind } from '@/server/agent/items';
 import { CitationChip } from './citation-chip';
@@ -102,6 +104,10 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
       {note.citations.length === 0 ? null : <Citations citations={note.citations} locale={locale} />}
       {note.diagnostics === null ? null : <Diagnostics diagnostics={note.diagnostics} />}
       {actions}
+      <Link href={`/assistant?reply=${note.id}`} aria-label={t('replyLabel', { title: note.title })} data-testid="note-reply" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
+        <Reply aria-hidden="true" />
+        {t('reply')}
+      </Link>
     </article>
   );
 }

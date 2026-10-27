@@ -88,6 +88,7 @@ export function SkeletonPropertyHeader() {
           <Block className="h-7 w-48" />
           <Block className="h-5 w-full max-w-md" />
           <Block className="h-5 w-4/5 max-w-sm" />
+          <Block className="h-touch w-full sm:w-64" />
         </div>
       </div>
       <Block className="h-touch w-56" />

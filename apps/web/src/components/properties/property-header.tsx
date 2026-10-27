@@ -1,5 +1,5 @@
 import type { LegalStatus, PropertyKind, UseMode } from '@esta/core/properties';
-import { Pencil } from 'lucide-react';
+import { NotebookPen, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { AddressBlock } from '@/components/address-block';
 import { CompletenessRingView } from '@/components/completeness-ring';
@@ -24,6 +24,8 @@ export type PropertyHeaderData = {
   statuses: readonly StatusPillData[];
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
+  /** `Hỏi Trợ lý về tài sản này`, opening the thread with this property as the topic. */
+  ask: { href: string; label: string };
   /** The score, already translated: `title` is the word `Mức đầy đủ`, `score` such as `29%`. */
   completeness: { title: string; percent: number; score: string };
 };
@@ -75,6 +77,10 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
         <div data-testid="property-addresses">
           <AddressBlock current={property.currentAddress} legal={property.certificateAddress} />
         </div>
+        <Link href={property.ask.href} data-testid="ask-about-property" className={buttonVariants({ variant: 'outline', className: 'w-full sm:w-fit' })}>
+          <NotebookPen aria-hidden="true" />
+          {property.ask.label}
+        </Link>
       </div>
     </header>
   );

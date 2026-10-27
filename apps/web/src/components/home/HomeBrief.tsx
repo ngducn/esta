@@ -1,5 +1,6 @@
 import type { WallClockStamp } from '@esta/core/agent';
 import { getTranslations } from 'next-intl/server';
+import { Reply } from 'lucide-react';
 import Link from 'next/link';
 import { AssistantMonogram } from '@/components/assistant/monogram';
 import { stampLabel } from '@/components/assistant/worker-status-line';
@@ -25,9 +26,17 @@ export async function HomeBrief({ summary, briefId, lastRun }: { summary: string
       <p data-testid={summary === null ? 'home-brief-empty' : 'home-brief-summary'} className={cn('text-body text-pretty break-words', summary === null ? 'text-ink-2' : 'text-ink')}>
         {summary ?? t('briefNone')}
       </p>
-      <Link href={briefId === null ? '/assistant' : `/assistant?note=${briefId}`} data-testid="home-brief-open" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
-        {t('briefOpen')}
-      </Link>
+      <div className="flex flex-wrap gap-x-6">
+        <Link href={briefId === null ? '/assistant' : `/assistant?note=${briefId}`} data-testid="home-brief-open" className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
+          {t('briefOpen')}
+        </Link>
+        {briefId === null ? null : (
+          <Link href={`/assistant?reply=${briefId}`} data-testid="home-brief-reply" className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
+            <Reply aria-hidden="true" />
+            {assistant('reply')}
+          </Link>
+        )}
+      </div>
     </section>
   );
 }

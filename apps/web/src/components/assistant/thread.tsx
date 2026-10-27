@@ -11,6 +11,8 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import type { ConversationMessage } from '@/server/agent/conversations';
 import { isOpen, type InboxNote } from '@/server/agent/items';
 import type { ProposalDetails } from '@/server/agent/proposal-details';
+import type { TopicChoice } from '@/server/agent/topic';
+import type { Suggestion } from '@esta/core/assistant';
 import type { Thread, ThreadEntry } from '@/server/agent/thread';
 import type { ReminderLabels } from '@/server/reminders/board';
 import { AnswerStream } from './answer-stream';
@@ -117,12 +119,25 @@ function SettledNote({ note, time, canRestore, t }: { note: InboxNote; time: str
 
 type AskTranslate = Awaited<ReturnType<typeof getTranslations<'assistant.ask'>>>;
 
-function Question({ message, time, t }: { message: ConversationMessage; time: string; t: Translate }) {
+const topicLine = (topic: { readonly kind: 'item' | 'property'; readonly name: string }, ask: AskTranslate) =>
+  topic.kind === 'item' ? ask('replyTo', { title: topic.name }) : ask('about', { property: topic.name });
+
+function Question({ message, time, t, ask }: { message: ConversationMessage; time: string; t: Translate; ask: AskTranslate }) {
+  const topic = message.topic;
   return (
     <div data-testid="question" className="ml-10 flex flex-col items-end gap-1 sm:ml-24">
       <p className="text-small text-ink-muted figures">
         <time dateTime={message.createdAt}>{t('sentAt', { time })}</time>
       </p>
+      {topic === null ? null : topic.href === null ? (
+        <p data-testid="question-topic" className="max-w-prose text-small break-words text-ink-2">
+          {topicLine(topic, ask)}
+        </p>
+      ) : (
+        <Link href={topic.href} data-testid="question-topic" className="max-w-prose text-small font-medium break-words text-ink-2 underline underline-offset-4 hover:text-ink">
+          {topicLine(topic, ask)}
+        </Link>
+      )}
       <p className="max-w-prose rounded-lg bg-accent-tint px-4 py-3 text-body break-words whitespace-pre-line text-ink">{message.content}</p>
     </div>
   );
@@ -173,6 +188,8 @@ export async function ThreadView({
   canDecide,
   isOperator,
   proposals,
+  topic,
+  suggestions,
 }: {
   thread: Thread;
   note: string | null;
@@ -181,13 +198,15 @@ export async function ThreadView({
   canDecide: boolean;
   isOperator: boolean;
   proposals: ProposalContext;
+  topic: TopicChoice | null;
+  suggestions: readonly Suggestion[];
 }) {
   const [t, ask] = await Promise.all([getTranslations('assistant'), getTranslations('assistant.ask')]);
   const opened = note !== null && thread.entries.some((entry) => entry.kind === 'note' && entry.note.id === note);
   const render = (entry: ThreadEntry) => {
     if (entry.kind !== 'note') {
       const time = entryTime(entry.message.createdAt, today, timezone);
-      return entry.kind === 'question' ? <Question message={entry.message} time={time} t={t} /> : <Answer message={entry.message} time={time} t={t} ask={ask} />;
+      return entry.kind === 'question' ? <Question message={entry.message} time={time} t={t} ask={ask} /> : <Answer message={entry.message} time={time} t={t} ask={ask} />;
     }
     const time = entryTime(entry.note.createdAt, today, timezone);
     if (entry.note.status === 'dismissed' || entry.note.status === 'done') return <SettledNote note={entry.note} time={time} canRestore={canDecide} t={t} />;
@@ -225,6 +244,20 @@ export async function ThreadView({
           maxLength={MAX_QUESTION_LENGTH}
           state={composerState(thread.entries)}
           thinkHarder={isOperator ? { label: ask('thinkHarder'), hint: ask('thinkHarderHint') } : null}
+          suggestions={{
+            label: t('suggestionsLabel'),
+            items: suggestions.map(({ noteId, key, params }) => ({ text: t(`suggestions.${key}`, params), topic: { kind: 'item', itemId: noteId } })),
+          }}
+          topic={
+            topic === null
+              ? null
+              : {
+                  topic: topic.topic,
+                  label: topicLine({ kind: topic.topic.kind, name: topic.name }, ask),
+                  clear: ask('clearTopic'),
+                  clearLabel: ask('clearTopicLabel', { topic: topic.name }),
+                }
+          }
           labels={{
             message: ask('message'),
             placeholder: ask('placeholder'),
