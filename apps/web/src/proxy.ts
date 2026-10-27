@@ -1,4 +1,5 @@
 import type { Database } from '@esta/db';
+import { readMembership } from '@esta/ops';
 import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
@@ -33,30 +34,40 @@ function rewriteSigned(request: NextRequest): NextResponse {
   return NextResponse.rewrite(new URL(`${pathname}${search}`, env.NEXT_PUBLIC_SUPABASE_URL), { request: { headers } });
 }
 
-type RecordPage = {
-  readonly path: RegExp;
-  readonly routes: ReadonlySet<string>;
-  find(supabase: SupabaseClient<Database>, id: string): PromiseLike<{ readonly data: unknown; readonly error: unknown }>;
-};
+type Session = { readonly supabase: SupabaseClient<Database>; readonly userId: string };
 
-const RECORD_PAGES: readonly RecordPage[] = [
-  { path: /^\/properties\/([^/]+)(?:\/|$)/, routes: new Set(['new', 'archived']), find: (supabase, id) => supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle() },
-  { path: /^\/assistant\/ask\/([^/]+)$/, routes: new Set(), find: (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle() },
+/** A page whose `notFound()` this member may get, and whether they get it for the path's first capture. */
+type GuardedPage = { readonly path: RegExp; hidden(session: Session, capture: string | undefined): Promise<boolean> };
+
+function recordPage(path: RegExp, routes: readonly string[], find: (supabase: SupabaseClient<Database>, id: string) => PromiseLike<{ readonly data: unknown; readonly error: unknown }>): GuardedPage {
+  return {
+    path,
+    async hidden({ supabase }, id) {
+      if (id === undefined || routes.includes(id)) return false;
+      if (!z.uuid().safeParse(id).success) return true;
+      const { data, error } = await find(supabase, id);
+      return error === null && data === null;
+    },
+  };
+}
+
+const GUARDED_PAGES: readonly GuardedPage[] = [
+  recordPage(/^\/properties\/([^/]+)(?:\/|$)/, ['new', 'archived'], (supabase, id) => supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle()),
+  recordPage(/^\/assistant\/ask\/([^/]+)$/, [], (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle()),
+  { path: /^\/assistant\/diagnostics\/?$/, hidden: async ({ supabase, userId }) => (await readMembership(supabase, userId))?.is_operator !== true },
 ];
 
 /**
  * Every page under (app) streams below a loading boundary, so a page's notFound() arrives after the 200 is sent.
- * A document request for a record this member cannot read gets its 404 here instead; the page still renders the
- * not-found screen. Client navigations (the rsc header) skip the query, because their status is never shown.
+ * A document request for a record this member cannot read, or an operator page they cannot open, gets its 404 here
+ * instead; the page still renders the not-found screen. Client navigations (the rsc header) skip the query, because
+ * their status is never shown.
  */
-async function isMissingRecord(request: NextRequest, supabase: SupabaseClient<Database>): Promise<boolean> {
+async function isHiddenPage(request: NextRequest, session: Session): Promise<boolean> {
   if (request.headers.has('rsc')) return false;
-  for (const page of RECORD_PAGES) {
-    const id = page.path.exec(request.nextUrl.pathname)?.[1];
-    if (id === undefined || page.routes.has(id)) continue;
-    if (!z.uuid().safeParse(id).success) return true;
-    const { data, error } = await page.find(supabase, id);
-    return error === null && data === null;
+  for (const page of GUARDED_PAGES) {
+    const match = page.path.exec(request.nextUrl.pathname);
+    if (match !== null) return page.hidden(session, match[1]);
   }
   return false;
 }
@@ -80,7 +91,7 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   if (data === null && !isPublicPath(pathname)) return redirectKeepingCookies(request, response, '/sign-in');
   if (data !== null && isAuthPage(pathname)) return redirectKeepingCookies(request, response, '/');
-  if (data !== null && (await isMissingRecord(request, supabase))) return new NextResponse(null, { status: 404, headers: response.headers });
+  if (data !== null && (await isHiddenPage(request, { supabase, userId: data.claims.sub }))) return new NextResponse(null, { status: 404, headers: response.headers });
   return response;
 }
 

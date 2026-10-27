@@ -25,7 +25,7 @@ const CATALOG = {
   },
   recent_items: {
     description:
-      'Return the notes already left for the household today, each with a handle, a kind, a severity and its title as title_label, and the research items stored recently, each with its title as title_label and its source.',
+      'Return the notes already left for the household today, each with a handle, a kind, a severity and its title as title_label, and the research items stored recently, each with its title as title_label and its source, source_url included.',
     input: {},
   },
   research_topics: {
@@ -77,8 +77,8 @@ const CATALOG = {
   },
   create_proposal: {
     description:
-      'Suggest a change for a member to approve: {"type": create_task, draft_reminder, suggest_lease_renewal, suggest_rent_change or flag_data_issue, "params": the type\'s fields, "rationale": Markdown}. Use ids a tool returned in this run. It answers {"saved": true}, or names what to fix before you call it again.',
-    input: { type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string() },
+      'Suggest a change for a member to approve: {"type": create_task, draft_reminder, suggest_lease_renewal, suggest_rent_change or flag_data_issue, "params": the type\'s fields, "rationale": Markdown, "citations": the URLs of the sources it rests on, only when your task asks for them}. Name a property_id or lease_id by the handle of the record a tool returned in this run. It answers {"saved": true}, or names what to fix before you call it again.',
+    input: { type: z.string(), params: z.record(z.string(), z.unknown()), rationale: z.string(), citations: z.array(z.string()).optional() },
   },
   add_research_item: {
     description:
@@ -122,6 +122,16 @@ export class ToolRejection extends Error {
     super(message);
     this.name = 'ToolRejection';
   }
+}
+
+/** Runs a tool's calls one after another, so a write that checks what its run saved sees every earlier call settled. */
+export function oneAtATime<R>(run: (input: Record<string, unknown>) => Promise<R>): (input: Record<string, unknown>) => Promise<R> {
+  let last: Promise<unknown> = Promise.resolve();
+  return (input) => {
+    const next = last.then(() => run(input));
+    last = next.catch(() => undefined);
+    return next;
+  };
 }
 
 /** The tool's input parsed by `schema`, or a rejection that names `usage` and each field to fix. */

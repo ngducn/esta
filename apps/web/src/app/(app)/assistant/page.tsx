@@ -1,22 +1,19 @@
-import { businessDate, type Instant } from '@esta/core';
-import { wallTime } from '@esta/core/agent';
-import { formatDate } from '@esta/core/format';
-import { Eye, History, Play, PlugZap, type LucideIcon } from 'lucide-react';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { Eye, Play, PlugZap, type LucideIcon } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AssistantHeader, assistantStatus } from '@/components/assistant/assistant-header';
 import { Inbox } from '@/components/assistant/inbox';
+import { CardHeading, operatorTime } from '@/components/assistant/operator-card';
 import { TaskList } from '@/components/assistant/task-list';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button';
 import { ToastHost } from '@/components/undo-toast';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { listInbox } from '@/server/agent/items';
 import { loadProposalDetails } from '@/server/agent/proposal-details';
-import { getConnectionCheck, type AgentRun, type PingCheck } from '@/server/assistant';
+import { getConnectionCheck, type PingCheck } from '@/server/assistant';
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
@@ -28,19 +25,6 @@ import { RefreshWhilePending } from './connection-check';
 export const generateMetadata = () => sectionMetadata('assistant');
 
 const jobMarks: Record<PingCheck['status'], MarkStatus> = { queued: 'due', running: 'due', done: 'paid', failed: 'overdue', cancelled: 'ended' };
-
-const dateTime = (instant: Instant) => `${formatDate(businessDate(instant, env.ESTA_TIMEZONE), 'vi')} ${wallTime(instant, env.ESTA_TIMEZONE)}`;
-
-function CardHeading({ id, icon: Icon, children }: { id: string; icon: LucideIcon; children: ReactNode }) {
-  return (
-    <h2 id={id} className="flex items-center gap-3 text-lead font-semibold text-ink">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
-        <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
-      </span>
-      <span className="min-w-0 break-words">{children}</span>
-    </h2>
-  );
-}
 
 type JobView = Pick<PingCheck, 'status' | 'error' | 'requestedAt'>;
 
@@ -59,7 +43,7 @@ async function LatestJob({ job, testId, empty, children }: { job: JobView | null
           <StatusShape status={mark} className="size-4" />
           <span>{t(`jobStatus.${job.status}`)}</span>
         </span>
-        <span className="text-small text-ink-muted">{t('latestCheck', { time: dateTime(job.requestedAt) })}</span>
+        <span className="text-small text-ink-muted">{t('latestCheck', { time: operatorTime(job.requestedAt) })}</span>
       </div>
       {children}
       {job.error !== null && job.status !== 'done' ? (
@@ -110,58 +94,11 @@ function JobCard({ id, icon, title, intro, action, runLabel, pending, failedText
   );
 }
 
-async function RecentRuns({ runs }: { runs: readonly AgentRun[] }) {
-  const [t, locale] = await Promise.all([getTranslations('assistant'), getLocale()]);
-  if (runs.length === 0) return <p className="text-ink-muted">{t('noRuns')}</p>;
-  const usd = new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 });
-  const columns = ['time', 'authMode', 'agentMode', 'model', 'turns', 'cost', 'toolCalls'] as const;
-  return (
-    <div role="region" aria-labelledby="runs-heading" tabIndex={0} className="-mx-5 -mb-5 overflow-x-auto sm:-mx-6 sm:-mb-6 [&_tr:last-child_td]:border-b-0">
-      <Table data-testid="runs-table">
-        <TableHeader>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHead key={column} scope="col" className={cn(['turns', 'cost'].includes(column) && 'text-end')}>
-                {t(`columns.${column}`)}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {runs.map((run) => (
-            <TableRow key={run.id} data-testid="run-row">
-              <TableCell className="whitespace-nowrap figures">{dateTime(run.startedAt)}</TableCell>
-              <TableCell>{run.authMode}</TableCell>
-              <TableCell>{run.agentMode}</TableCell>
-              <TableCell className="whitespace-nowrap">{run.model ?? t('unknown')}</TableCell>
-              <TableCell className="text-end figures">{run.numTurns ?? t('unknown')}</TableCell>
-              <TableCell className="text-end whitespace-nowrap figures">{run.costUsd === null ? t('unknown') : usd.format(run.costUsd)}</TableCell>
-              <TableCell>
-                {Object.keys(run.toolCalls).length === 0 ? (
-                  <span className="text-ink-muted">{t('noToolCalls')}</span>
-                ) : (
-                  <ul className="flex flex-col">
-                    {Object.entries(run.toolCalls).map(([name, count]) => (
-                      <li key={name} className="whitespace-nowrap">
-                        {t('toolCall', { name, count })}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
 const isPending = (job: JobView | null) => job?.status === 'queued' || job?.status === 'running';
 
 /** Operator-only: the server never renders this for anyone else, so Mẹ's HTML carries no diagnostics (PLT-1). */
 async function OperatorTools({ householdId, failed, workerOnline }: { householdId: string; failed: { check: boolean; watch: boolean }; workerOnline: boolean }) {
-  const [t, { latest, watch, runs }] = await Promise.all([getTranslations('assistant'), getConnectionCheck(householdId)]);
+  const [t, { latest, watch }] = await Promise.all([getTranslations('assistant'), getConnectionCheck(householdId)]);
   return (
     <>
       <JobCard
@@ -201,12 +138,6 @@ async function OperatorTools({ householdId, failed, workerOnline }: { householdI
         </LatestJob>
       </JobCard>
       <RefreshWhilePending pending={(isPending(latest) || isPending(watch)) && workerOnline} />
-      <section aria-labelledby="runs-heading" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-        <CardHeading id="runs-heading" icon={History}>
-          {t('recentRuns')}
-        </CardHeading>
-        <RecentRuns runs={runs} />
-      </section>
     </>
   );
 }

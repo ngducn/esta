@@ -5,7 +5,7 @@ import { formatDateLong } from '@esta/core/format';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { BrandMark } from '@/components/brand-mark';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
-import { accountSections, primarySections, type NavItem } from '@/components/shell/nav';
+import { accountSections, operatorSections, primarySections, type NavItem } from '@/components/shell/nav';
 import { PrefetchTabs } from '@/components/shell/prefetch-tabs';
 import { Sidebar } from '@/components/shell/sidebar';
 import { TabBar } from '@/components/shell/tab-bar';
@@ -39,6 +39,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   // A phone's five tabs share 390 px, and the English section names need 490 at 130% text, so the tabs take short ones (FND-8).
   const tabs = primarySections.map(({ key, href }): NavItem => ({ key, href, label: nav(`${key}Tab`) }));
   const more = accountSections.map(toItem);
+  const menu = member.isOperator ? [...more, ...operatorSections.map(toItem)] : more;
   const name = member.displayName ?? shell('account');
   const initial = monogram(member.displayName);
   const role = onboarding(`roles.${member.role}`);
@@ -82,7 +83,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         name={name}
         household={member.household.name}
         role={role}
-        links={more}
+        links={menu}
         switchLanguage={{ locale: locale === 'vi' ? 'en' : 'vi', label: language('switchTo') }}
         signOut={shell('signOut')}
       />

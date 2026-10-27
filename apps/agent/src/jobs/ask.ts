@@ -6,17 +6,12 @@ import { z } from 'zod';
 import { askFollowUpPrompt, askPrompt, askRepairPrompt, type AskedTurn } from '../prompts/ask';
 import type { AgentDb } from '../supabase';
 import { askReads, type AskReads } from '../tools/ask-reads';
-import { collectionsTool, portfolioOverviewTool } from '../tools/collections';
 import { NumberGuardError, writeGuardItem } from '../tools/create-item';
 import { proposalWriter } from '../tools/create-proposal';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
-import { ledgerTool } from '../tools/ledger';
-import { listLeasesTool, paymentBehaviorTool } from '../tools/leases';
-import { listPropertiesTool } from '../tools/list-properties';
-import { getPropertyTool, propertyMetricsTool } from '../tools/property-facts';
+import { readTools } from '../tools/read-tools';
 import { estaTool } from '../tools/server';
-import { taxPositionTool } from '../tools/tax-position';
 import { answerStream, type Answer } from './askStream';
 import { InvalidJobError } from './extract-document';
 import type { AgentJob, JobContext, PreparedJob } from './registry';
@@ -73,8 +68,6 @@ export function askRequest(input: AskInput): PreparedJob {
   const { db, householdId, locale, reads, asOf, earlier } = input;
   const firstHandle = (earlier?.handles ?? 0) + 1;
   const { sheet, cite } = runSheet(firstHandle);
-  const properties = listPropertiesTool(db, householdId, cite);
-  const context = { reads, locale, asOf, cite, properties: properties.records };
   const stream = answerStream({ sheet, write: ({ content, refs }) => writeAnswer(input, { content_md: content, refs: [...refs] }) });
   let repaired = false;
   let answer: Answer | null = null;
@@ -83,15 +76,7 @@ export function askRequest(input: AskInput): PreparedJob {
     ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools: new Map([
-      estaTool('list_properties', properties.run),
-      estaTool('portfolio_overview', portfolioOverviewTool(context)),
-      estaTool('get_property', getPropertyTool(context)),
-      estaTool('property_metrics', propertyMetricsTool(context)),
-      estaTool('list_leases', listLeasesTool(context)),
-      estaTool('collections', collectionsTool(context)),
-      estaTool('ledger', ledgerTool(db, householdId, locale, properties.records, cite)),
-      estaTool('tax_position', taxPositionTool(context)),
-      estaTool('payment_behavior', paymentBehaviorTool(context)),
+      ...readTools(db, householdId, { reads, locale, asOf, cite }),
       estaTool('create_proposal', proposalWriter({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }).write),
     ]),
     onText: stream.push,

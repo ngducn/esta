@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, daysBetween, epochDay, firstOfMonth, fromEpochDay } from './calendar';
+import { addDays, addMonths, daysBetween, epochDay, firstOfMonth, fromEpochDay, isoWeek, isoWeekSunday, weekday } from './calendar';
 import { isoDate } from './iso-date';
 
 const d = isoDate;
@@ -59,5 +59,41 @@ describe('firstOfMonth', () => {
   it('returns the first day of the same month', () => {
     expect(firstOfMonth(d('2026-07-15'))).toBe('2026-07-01');
     expect(firstOfMonth(d('2026-07-01'))).toBe('2026-07-01');
+  });
+});
+
+describe('isoWeek', () => {
+  it.each([
+    ['2026-10-05', '2026-W41'],
+    ['2026-10-11', '2026-W41'],
+    ['2026-10-12', '2026-W42'],
+    ['2026-01-01', '2026-W01'],
+    ['2027-01-01', '2026-W53'],
+    ['2024-12-30', '2025-W01'],
+    ['2021-01-03', '2020-W53'],
+  ])('puts %s in %s', (date, week) => {
+    expect(isoWeek(isoDate(date))).toBe(week);
+  });
+});
+
+describe('isoWeekSunday', () => {
+  it.each([
+    ['2026-W41', '2026-10-11'],
+    ['2026-W42', '2026-10-18'],
+    ['2026-W53', '2027-01-03'],
+    ['2025-W01', '2025-01-05'],
+    ['2020-W53', '2021-01-03'],
+  ])('ends %s on %s', (week, sunday) => {
+    expect(isoWeekSunday(week)).toBe(sunday);
+  });
+
+  it('is the Sunday of the week that holds any date', () => {
+    fc.assert(
+      fc.property(anyDate, (date) => {
+        const sunday = isoWeekSunday(isoWeek(date));
+        return weekday(sunday) === 0 && isoWeek(sunday) === isoWeek(date) && daysBetween(date, sunday) >= 0 && daysBetween(date, sunday) <= 6;
+      }),
+      params,
+    );
   });
 });

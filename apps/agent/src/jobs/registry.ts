@@ -1,5 +1,5 @@
 import type { Clock } from '@esta/core';
-import type { DailyJob } from '@esta/core/agent-schedule';
+import type { ScheduledJob } from '@esta/core/agent-schedule';
 import type { Json, Tables } from '@esta/db';
 import type { Locale } from '@esta/core/format';
 import type { AgentDb } from '../supabase';
@@ -11,6 +11,7 @@ import { preparePing } from './ping';
 import { prepareMorningBrief } from './morning-brief';
 import { preparePortfolioWatch } from './portfolio-watch';
 import { prepareResearchScan } from './research-scan';
+import { prepareWeeklyReview } from './weekly-review';
 
 export type ModelRole = 'routine' | 'deep';
 
@@ -59,8 +60,7 @@ export type JobSpec = {
   readonly maxTurns: number;
   readonly timeoutMs: number;
   readonly modelRole: ModelRole;
-  /** A job the scheduler queues for every household once a day at `HH:mm` in the business timezone (AGENT.md §3). */
-  readonly schedule?: { readonly daily: string };
+  readonly schedule?: Omit<ScheduledJob, 'kind'>;
   readonly workDir?: 'conversation';
   /** Daily kinds whose same-day job must finish first; the runner reschedules the job while one is queued or running (AGENT.md §3). */
   readonly waitsFor?: readonly string[];
@@ -100,7 +100,7 @@ export const JOBS = {
     maxTurns: 40,
     timeoutMs: 10 * 60_000,
     modelRole: 'routine',
-    schedule: { daily: '06:00' },
+    schedule: { at: '06:00' },
     failedTitle: { vi: 'Trợ lý chưa đọc được tin thị trường hôm nay', en: "The assistant could not read today's market news" },
     handler: { prepare: prepareResearchScan },
   },
@@ -111,7 +111,7 @@ export const JOBS = {
     maxTurns: 6,
     timeoutMs: 3 * 60_000,
     modelRole: 'routine',
-    schedule: { daily: '06:40' },
+    schedule: { at: '06:40' },
     failedTitle: { vi: 'Trợ lý chưa xem được danh mục hôm nay', en: 'The assistant could not check the portfolio today' },
     handler: { prepare: preparePortfolioWatch },
   },
@@ -122,10 +122,21 @@ export const JOBS = {
     maxTurns: 6,
     timeoutMs: 3 * 60_000,
     modelRole: 'routine',
-    schedule: { daily: '07:00' },
+    schedule: { at: '07:00' },
     waitsFor: ['research_scan', 'portfolio_watch'],
     failedTitle: { vi: 'Trợ lý chưa viết được bản tin sáng nay', en: "The assistant could not write this morning's brief" },
     handler: { prepare: prepareMorningBrief },
+  },
+  weekly_review: {
+    kind: 'weekly_review',
+    builtInTools: ['WebSearch', 'WebFetch'],
+    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'recent_items', 'create_item', 'create_proposal'],
+    maxTurns: 25,
+    timeoutMs: 10 * 60_000,
+    modelRole: 'deep',
+    schedule: { at: '08:00', weekday: 0 },
+    failedTitle: { vi: 'Trợ lý chưa viết được bản tổng kết tuần này', en: "The assistant could not write this week's review" },
+    handler: { prepare: prepareWeeklyReview },
   },
   ask: {
     kind: 'ask',
@@ -139,8 +150,7 @@ export const JOBS = {
   },
 } as const satisfies Record<string, JobSpec>;
 
-/** The daily jobs, in the shape `planDailyJobs` reads. */
-export const DAILY_JOBS: readonly DailyJob[] = Object.values(JOBS as Record<string, JobSpec>).flatMap((spec) => (spec.schedule === undefined ? [] : [{ kind: spec.kind, daily: spec.schedule.daily }]));
+export const SCHEDULED_JOBS: readonly ScheduledJob[] = Object.values(JOBS as Record<string, JobSpec>).flatMap((spec) => (spec.schedule === undefined ? [] : [{ kind: spec.kind, ...spec.schedule }]));
 
 export function jobSpec(kind: string): JobSpec | undefined {
   return Object.hasOwn(JOBS, kind) ? JOBS[kind as keyof typeof JOBS] : undefined;

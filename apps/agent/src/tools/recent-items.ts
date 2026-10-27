@@ -8,7 +8,7 @@ const KINDS = ['alert', 'research_scan_empty'];
 
 export type ResearchWindow = { readonly days: number; readonly minRelevance: number; readonly limit: number };
 
-export type ResearchRecord = { readonly title_label: string; readonly source_name: string; readonly published_display: string };
+export type ResearchRecord = { readonly title_label: string; readonly source_name: string; readonly source_url: string; readonly published_display: string };
 
 type Binding = { readonly db: AgentDb; readonly householdId: string; readonly asOf: IsoDate; readonly timezone: string; readonly locale: Locale; clock(): Promise<Clock> };
 
@@ -34,14 +34,14 @@ async function todaysNotes({ db, householdId, asOf, timezone }: Binding, cite: R
 async function recentResearch({ db, householdId, locale, clock }: Binding, window: ResearchWindow, cite: RunSheet['cite']) {
   const { data, error } = await db
     .from('research_items')
-    .select('title_vi, source_name, published_on')
+    .select('title_vi, source_name, source_url, published_on')
     .eq('household_id', householdId)
     .gte('created_at', await daysAgo(clock, window.days))
     .gte('relevance', window.minRelevance)
     .order('created_at', { ascending: false })
     .limit(window.limit);
   if (error) throw new Error(`recent_items failed: ${error.message}`);
-  return data.map((row): CitedRecord<ResearchRecord> => cite({ title_label: row.title_vi, source_name: row.source_name, published_display: formatDate(row.published_on as IsoDate, locale) }));
+  return data.map((row): CitedRecord<ResearchRecord> => cite({ title_label: row.title_vi, source_name: row.source_name, source_url: row.source_url, published_display: formatDate(row.published_on as IsoDate, locale) }));
 }
 
 /**

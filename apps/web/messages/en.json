@@ -392,7 +392,8 @@
     "propertiesTab": "Assets",
     "collectionsTab": "Rent",
     "documentsTab": "Docs",
-    "assistantTab": "Assistant"
+    "assistantTab": "Assistant",
+    "diagnostics": "Assistant diagnostics"
   },
   "shell": {
     "sections": "Main sections",
@@ -1030,17 +1031,7 @@
       "failed": "Error",
       "cancelled": "Cancelled"
     },
-    "recentRuns": "Recent runs",
     "noRuns": "No runs yet.",
-    "columns": {
-      "time": "Time",
-      "authMode": "Auth",
-      "agentMode": "Mode",
-      "model": "Model",
-      "turns": "Turns",
-      "cost": "Estimated cost",
-      "toolCalls": "Tools called"
-    },
     "unknown": "Unknown",
     "noToolCalls": "No tool calls",
     "toolCall": "{name} × {count}",
@@ -1079,6 +1070,7 @@
     "linkMissing": "not found",
     "ranAt": "Assistant ran at {time}.",
     "briefLabel": "Morning brief",
+    "weeklyLabel": "Weekly review",
     "tabs": "Assistant sections",
     "tab": {
       "inbox": "Inbox",
@@ -1160,6 +1152,54 @@
       "notFoundTitle": "This conversation was not found",
       "notFoundBody": "The link may be wrong, or this conversation does not belong to your household.",
       "notFoundAction": "Back to Ask"
+    },
+    "sources": "Sources",
+    "citationLabel": "Source {index}: {source}. Opens in a new tab",
+    "diagnostics": {
+      "title": "Assistant diagnostics",
+      "intro": "Only operators see this page. Its figures come from the assistant's runs for this household.",
+      "back": "Back to the assistant",
+      "notFoundTitle": "Page not found",
+      "notFoundBody": "The link may be wrong, or this page no longer exists.",
+      "worker": "Worker",
+      "authMode": "Auth",
+      "agentMode": "Mode",
+      "noWorker": "No worker has connected yet.",
+      "runs": "Recent runs",
+      "runCount": "{count, plural, one {# run} other {# runs}}",
+      "runColumns": {
+        "time": "Time",
+        "kind": "Job kind",
+        "status": "Outcome",
+        "turns": "Turns",
+        "duration": "Duration",
+        "model": "Model",
+        "cost": "Estimated cost",
+        "toolCalls": "Tools called"
+      },
+      "runStatus": {
+        "queued": "Waiting",
+        "running": "Running",
+        "done": "Done",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "retried": "Retried"
+      },
+      "duration": "{minutes, plural, =0 {{seconds} s} one {# min {seconds} s} other {# min {seconds} s}}",
+      "usage": "Usage over 7 days by job kind",
+      "noUsage": "No runs in the last 7 days.",
+      "usageColumns": {
+        "kind": "Job kind",
+        "runs": "Runs",
+        "turns": "Turns",
+        "inputTokens": "Input tokens",
+        "outputTokens": "Output tokens",
+        "cost": "Estimated cost"
+      },
+      "total": "Total",
+      "held": "Notes the number guard held back, 7 days",
+      "noHeld": "The number guard held back no note in the last 7 days.",
+      "heldNote": "{time} · {kind}"
     }
   },
   "settings": {

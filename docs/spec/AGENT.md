@@ -52,7 +52,7 @@ S1 settled the SDK path, so the `claude -p --output-format stream-json` fallback
 
 - `ESTA_AUTH_MODE=subscription` (default): run `claude setup-token` once and put the token in `apps/agent/.env.local` as `CLAUDE_CODE_OAUTH_TOKEN`.
 - `ESTA_AUTH_MODE=api_key`: uses `ANTHROPIC_API_KEY`.
-- In `live` mode the worker refuses to start if `ESTA_ENV` or the variable for the chosen mode is missing, passes only that credential to the SDK, and writes the mode to its heartbeat. Settings shows it to operators.
+- In `live` mode the worker refuses to start if `ESTA_ENV` or the variable for the chosen mode is missing, passes only that credential to the SDK, and writes the mode to its heartbeat. The operator diagnostics page (`/assistant/diagnostics`) shows it through `public.worker_modes`, which answers operators only.
 - In `replay` mode (§8) no credential is needed or read, so CI starts the worker without secrets.
 
 ### 2.4 Where it runs
@@ -190,7 +190,7 @@ The model drafts the summary and the lines through `create_brief`; `renderBriefM
 
 ### 5.5 weekly_review
 
-Every Sunday 08:00 with the deep model: last week's collections against expected, the next 30 days, vacancy, notable expenses, tax position change, and up to 3 proposals. A proposal that cites market rents must cite sources fetched in this run or stored research items.
+Every Sunday 08:00 with the deep model, keyed by ISO week, so a second run in the same week adds nothing and a missed Sunday is not backfilled. The run reads its week from the job's key, through any `:retry:{n}`, and its figures stand at that week's Sunday, so a `Thử lại` after midnight writes the week it retries and the next Sunday keeps its own. It writes one note, `agent_items` kind `weekly` with `dedupe_key` `weekly_review:{iso_week}`, in five sections: this month's collections against expected so far (the month-to-date `month_collected` figure, which the collections board shows), the next 30 days, vacancy, notable expenses, and the tax position as it stands (no earlier snapshot exists to diff against). It makes at most 3 proposals a week; `create_proposal` refuses a fourth, counting what earlier attempts and retries of the same week stored, and takes the calls of one run one at a time so parallel calls cannot pass the cap together. A `suggest_rent_change` must cite at least one URL, and every cited URL must be a page `WebFetch` read in this run or a stored `research_items` row, matched by normalized URL; anything else is refused. Proposals name a property or lease by fact handle, so one recording replays for every seeded household. Web calls are capped at 6 `WebSearch` and 4 `WebFetch` per run [app rule].
 
 ### 5.6 ask
 
@@ -319,7 +319,7 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 ## 9. Limits, failures and UX
 
 - Per-household daily caps per kind (defaults in `private.agent_daily_caps`: extract 30, ask 60, research 2, weekly 1; `household_settings.agent.daily_caps` overrides a kind with a whole number from 0 to 1000). `claim_agent_job` enforces them where jobs are claimed: under an advisory lock per household and kind it counts the kind's jobs started on the business day, and moves a job over its cap to the next local midnight. An `ask` over its cap sets its answer row's `deferred_until`, and the Hỏi page says "Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai." from the message files.
-- `agent_runs` records usage and the SDK's cost estimate; operators see the last 7 days by kind in Settings.
+- `agent_runs` records usage and the SDK's cost estimate. Operators see the worker's auth and agent mode, the last 20 runs with status, turns and duration, the notes the number guard held back, and usage and cost by kind for 7 days on `/assistant/diagnostics`, linked from the account menu; anyone else gets the not-found page.
 - A run that fails because of a usage limit (the SDK's `rate_limit` cause, or its limit text) is rescheduled with the usual backoff, and the worker beats `state = usage_limited`, so every member's status line reads "Trợ lý tạm dừng do hết hạn mức sử dụng" until a session ends without one. [verify] the subscription's limit text in the P5-10 live run.
 
 | Situation | Behavior |

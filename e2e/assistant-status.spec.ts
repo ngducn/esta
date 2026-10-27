@@ -8,6 +8,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
+import { readReportTable } from './helpers/report-table';
 import { accessToken } from './helpers/session';
 
 // The worker, the heartbeat table and the test clock are one per slot, so the rules run in order in the `clock` project.
@@ -69,12 +70,16 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 
 const asUser = (token: string) => ({ apikey: anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
 
-const runRows = (page: Page) => page.getByTestId('run-row');
+const pings = async (page: Page, status: 'done' | 'failed') => {
+  const jobs = await page.request.get(`${rest}/agent_jobs?select=id&kind=eq.ping&status=eq.${status}`, { headers: asUser(await accessToken(page)) });
+  return ((await jobs.json()) as unknown[]).length;
+};
 
-async function runCheck(page: Page) {
-  const before = await runRows(page).count();
+async function runCheck(page: Page, status: 'done' | 'failed' = 'done') {
+  const before = await pings(page, status);
   await page.getByRole('button', { name: /^(Chạy kiểm tra|Run check)$/ }).click();
-  return before;
+  await expect.poll(() => pings(page, status), { timeout: 10_000 }).toBe(before + 1);
+  await page.reload();
 }
 
 test('rule 1: Mẹ sees the online line and no connection check', async ({ page }) => {
@@ -104,7 +109,7 @@ test('rule 3: a non-operator gets no diagnostics in the HTML and RLS refuses her
   await openAssistant(page, 'me.lane3@demo.esta.test', { viewport: [1440, 900], theme: 'light' });
   await expectStatusLine(page, ONLINE_0900);
   const html = await (await page.request.get('/assistant')).text();
-  for (const diagnostic of ['Kiểm tra kết nối', 'data-testid="connection-check"', 'data-testid="runs-table"', 'Lần chạy gần đây', 'Xác thực', 'mcp__esta__']) {
+  for (const diagnostic of ['Kiểm tra kết nối', 'data-testid="connection-check"', '/assistant/diagnostics', 'Chẩn đoán', 'Xác thực', 'mcp__esta__']) {
     expect(html, `the server HTML carries no ${diagnostic}`).not.toContain(diagnostic);
   }
 
@@ -128,20 +133,24 @@ test('rule 3: a non-operator gets no diagnostics in the HTML and RLS refuses her
 
 test('rule 4: Ryan runs the check and the newest run is a replay household_info call', async ({ page }) => {
   await openAssistant(page, 'ryan.lane4@demo.esta.test', { viewport: [1440, 900], theme: 'dark' });
-  const before = await runCheck(page);
-  await expect(runRows(page)).toHaveCount(Math.min(before + 1, 10), { timeout: 10_000 });
+  await runCheck(page);
   await expect(page.getByTestId('ping-status')).toHaveText('Xong');
   await expect(page.getByTestId('ping-reply')).toContainText('Gia đình Demo 4');
-  await expect(runRows(page).first().locator('td')).toHaveText([
-    '07/10/2026 09:00',
-    'none',
-    'replay',
-    recording.model,
-    String(recording.numTurns),
-    /^0,00\sUS\$$/,
-    'mcp__esta__household_info × 1',
-  ]);
   expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.goto('/assistant/diagnostics');
+  await expect(page.getByTestId('diagnostics-agent-mode')).toHaveText('replay');
+  await expect(page.getByTestId('diagnostics-auth-mode')).toHaveText('none');
+  const [newest] = (await readReportTable(page.getByTestId('diagnostics-runs'))).rows;
+  expect(newest?.cells).toMatchObject({
+    '#0': '07/10/2026 09:00',
+    kind: 'ping',
+    status: 'Xong',
+    turns: String(recording.numTurns),
+    model: recording.model,
+    toolCalls: 'household_info × 1',
+  });
+  expect(newest?.cells.duration).toMatch(/^\d+ giây$/);
+  expect(newest?.cells.cost).toMatch(/^0,00\sUS\$$/);
 });
 
 test('rule 5: a missing recording fails the ping once, with its hash and the record command', async ({ page }) => {
@@ -149,8 +158,8 @@ test('rule 5: a missing recording fails the ping once, with its hash and the rec
   try {
     await restartWorker(emptyDir);
     await openAssistant(page, 'ryan.lane5@demo.esta.test', { viewport: [390, 844], theme: 'light' });
-    await runCheck(page);
-    await expect(page.getByTestId('ping-status')).toHaveText('Lỗi', { timeout: 10_000 });
+    await runCheck(page, 'failed');
+    await expect(page.getByTestId('ping-status')).toHaveText('Lỗi');
     await expect(page.getByTestId('ping-error')).toHaveText(/input [0-9a-f]{64} .*pnpm agent:record/);
 
     const token = await accessToken(page);
@@ -171,8 +180,7 @@ test('rule 6: in English at 130% and dark the check still fits a phone', async (
   await expect(page.getByRole('status')).toHaveText(/^(Đã lưu cài đặt hiển thị\.|Display settings saved\.)$/);
   await page.goto('/assistant');
   await expectStatusLine(page, 'Assistant is online. Updated at 09:00.');
-  const before = await runCheck(page);
-  await expect(runRows(page)).toHaveCount(Math.min(before + 1, 10), { timeout: 10_000 });
+  await runCheck(page);
   await expect(page.getByTestId('ping-reply')).toContainText('Gia đình Demo 10');
   const fits = await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
   expect(fits, 'no horizontal page scroll at 390 px').toBe(true);
