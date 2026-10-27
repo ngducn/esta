@@ -235,6 +235,52 @@ describe('the ask job (AGENT.md §5.6)', () => {
     expect(fresh.conversation).toMatchObject({ sdk_turn_hash: fresh.hashes[0] });
   });
 
+  it('a new segment of the thread starts from the last three answered turns of her previous one, without their links', async () => {
+    const member = '00000000-0000-4000-8000-0000000c0e01';
+    const previous = '00000000-0000-4000-8000-0000000c0e02';
+    const tables = askTables(FOLLOW_UP);
+    Object.assign(tables.conversations?.[0] ?? {}, { created_by: member, last_asked_at: '2026-10-07T17:05:00.000Z' });
+    const turn = (n: number, answer: string) => [
+      { id: `00000000-0000-4000-8000-0000000c0e${n}1`, household_id: HOUSEHOLD_ID, conversation_id: previous, role: 'user', content_md: `Câu hỏi ${n}`, status: 'done', created_at: `2026-10-07T16:5${n}:00.000Z` },
+      { id: `00000000-0000-4000-8000-0000000c0e${n}2`, household_id: HOUSEHOLD_ID, conversation_id: previous, role: 'assistant', content_md: answer, status: 'done', created_at: `2026-10-07T16:5${n}:00.001Z` },
+    ];
+    tables.conversations?.push(
+      { id: previous, household_id: HOUSEHOLD_ID, created_by: member, last_asked_at: '2026-10-07T16:54:00.000Z', sdk_session_id: 'replay-x', sdk_turn_hash: 'a'.repeat(64), sdk_handles: 8 },
+      { id: '00000000-0000-4000-8000-0000000c0e03', household_id: HOUSEHOLD_ID, created_by: '00000000-0000-4000-8000-0000000c0e04', last_asked_at: '2026-10-07T16:59:00.000Z', sdk_session_id: null, sdk_turn_hash: null, sdk_handles: 0 },
+    );
+    tables.messages?.unshift(
+      ...turn(1, 'Câu trả lời một.'),
+      ...turn(2, 'Dãy trọ Dĩ An đã thu 1.000.000\u00a0₫. Xem [sổ thu chi](esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c?year=2026).'),
+      ...turn(3, ''),
+      ...turn(4, 'Câu trả lời bốn.'),
+      ...turn(5, 'Câu trả lời năm.'),
+    );
+    const seed = [
+      { question: 'Câu hỏi 2', answer: 'Dãy trọ Dĩ An đã thu 1.000.000\u00a0₫. Xem [sổ thu chi](esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c?year=2026).' },
+      { question: 'Câu hỏi 4', answer: 'Câu trả lời bốn.' },
+      { question: 'Câu hỏi 5', answer: 'Câu trả lời năm.' },
+    ];
+    const prompt = askPrompt({ ...ASK_CONTEXT, question: FOLLOW_UP, earlier: seed });
+    expect(prompt).toContain('Earlier question:\nCâu hỏi 2\nEarlier answer:\nDãy trọ Dĩ An đã thu 1.000.000\u00a0₫. Xem sổ thu chi.');
+    expect(prompt).not.toContain('Câu hỏi 1');
+    expect(prompt).not.toContain('esta://');
+    const dir = tempDir('esta-ask-replay-');
+    recordChain(dir, [{ prompt, reply: '{{f3.property_label}} thu {{f8.income_display}} trong tháng {{f8.period_date_display}}.', toolCalls: [{ name: mcpToolName('list_properties'), input: {} }, { name: mcpToolName('ledger'), input: { property: 'f3', year: 2026, month: 9 } }] }]);
+    const { worker } = askWorker(tables, tempDir('esta-ask-jobs-'), dir);
+    await pollOnce(worker);
+    expect(tables.agent_jobs?.[0]).toMatchObject({ status: 'done', error: null });
+    expect(answerRow(tables)).toMatchObject({ status: 'done', content_md: expect.stringMatching(/ trong tháng 9\/2026\.$/) });
+  });
+
+  it('her first conversation has no earlier segment, so it starts with the plain prompt', async () => {
+    const tables = askTables(QUESTION_TEXT);
+    Object.assign(tables.conversations?.[0] ?? {}, { created_by: '00000000-0000-4000-8000-0000000c0e01', last_asked_at: '2026-10-07T00:00:00.000Z' });
+    tables.conversations?.push({ id: '00000000-0000-4000-8000-0000000c0e03', household_id: HOUSEHOLD_ID, created_by: '00000000-0000-4000-8000-0000000c0e04', last_asked_at: '2026-10-06T00:00:00.000Z', sdk_session_id: null, sdk_turn_hash: null, sdk_handles: 0 });
+    const { worker } = askWorker(tables, tempDir('esta-ask-jobs-'), recordTurns([GOOD]));
+    await pollOnce(worker);
+    expect(tables.agent_jobs?.[0]).toMatchObject({ status: 'done', error: null });
+  });
+
   it.each(['../../escape', `${CONVERSATION}/../..`, 'not-a-uuid'])('refuses the conversation id %j and makes no directory for it', async (conversationId) => {
     const { tables, jobsDir, job } = await run([GOOD], { conversation_id: conversationId, question_id: QUESTION, answer_id: ANSWER });
     expect(job.status).toBe('failed');

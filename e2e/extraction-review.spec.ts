@@ -400,7 +400,7 @@ test('main flow: Mẹ opens the waiting review from the Trợ lý item, fixes th
   await expect(page).toHaveURL(`/properties/${propertyId(7, 'long-an')}/legal`, { timeout: 15_000 });
   await expect(page.getByText(/Thửa số 56\b/).first()).toBeVisible();
   await page.goto('/assistant');
-  await expect(page.locator(`[data-testid="inbox-item"]:has(a[href="/documents/${documentId}/review"])`), 'the item leaves the new list once reviewed').toHaveCount(0);
+  await expect(page.locator(`[data-testid="inbox-item"]:has(a[href="/documents/${documentId}/review"])`), 'once reviewed the note folds to one muted line with no review link').toHaveCount(0);
 });
 
 test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ page, request }) => {

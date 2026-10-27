@@ -6,8 +6,8 @@
 with demo as (select id from public.households where name = 'Gia đình Demo'),
 prop as (select id, code, nickname from public.properties where household_id = (select id from demo) and deleted_at is null),
 overdue as (
-  select u.label, '2026-10-07'::date - b.due_date as days, b.outstanding_vnd
-  from public.invoice_balances b join public.leases l on l.id = b.lease_id join public.units u on u.id = l.unit_id
+  select u.label, '2026-10-07'::date - b.due_date as days, b.outstanding_vnd, t.full_name as tenant, b.due_date
+  from public.invoice_balances b join public.leases l on l.id = b.lease_id join public.units u on u.id = l.unit_id join public.parties t on t.id = l.tenant_party_id
   where b.household_id = (select id from demo) and l.property_id = (select id from prop where code = 'DIAN')
     and b.status = 'issued' and b.outstanding_vnd > 0 and b.due_date < '2026-10-07'),
 ending as (
@@ -59,10 +59,13 @@ yield as (
 select question, figure, value from (
   select 'q1' as question, 'di-an income received in October 2026' as figure,
     (select coalesce(sum(a.amount_vnd), 0) from public.allocation_facts a where a.property_id = (select id from prop where code = 'DIAN') and a.received_on between '2026-10-01' and '2026-10-31')::text as value
+  union all select 'q1', 'di-an income received in August 2026', (select coalesce(sum(a.amount_vnd), 0) from public.allocation_facts a where a.property_id = (select id from prop where code = 'DIAN') and a.received_on between '2026-08-01' and '2026-08-31')::text
   union all select 'q1', 'di-an income received in September 2026', (select coalesce(sum(a.amount_vnd), 0) from public.allocation_facts a where a.property_id = (select id from prop where code = 'DIAN') and a.received_on between '2026-09-01' and '2026-09-30')::text
   union all select 'q2', 'di-an units overdue', (select string_agg(label, ', ' order by label) from overdue)
   union all select 'q2', 'di-an days overdue', (select string_agg(days::text, ', ' order by label) from overdue)
   union all select 'q2', 'di-an amount overdue', (select sum(outstanding_vnd)::text from overdue)
+  union all select 't1', 'di-an overdue tenant', (select string_agg(tenant, ', ' order by label) from overdue)
+  union all select 't1', 'di-an overdue due date', (select string_agg(due_date::text, ', ' order by label) from overdue)
   union all select 'q3', 'leases ending within 60 days', (select string_agg(nickname, ', ' order by end_date) from ending)
   union all select 'q3', 'their end dates', (select string_agg(end_date::text, ', ' order by end_date) from ending)
   union all select 'q3', 'their days left', (select string_agg(days::text, ', ' order by end_date) from ending)

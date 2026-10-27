@@ -7,7 +7,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 
 /** Today's brief as one line under the day's list, signed by Trợ lý with when it last ran; a note, never a chat bubble (DESIGN-BRIEF §5.5). */
-export async function HomeBrief({ summary, lastRun }: { summary: string | null; lastRun: WallClockStamp | null }) {
+export async function HomeBrief({ summary, briefId, lastRun }: { summary: string | null; briefId: string | null; lastRun: WallClockStamp | null }) {
   const [t, assistant] = await Promise.all([getTranslations('home'), getTranslations('assistant')]);
   return (
     <section aria-labelledby="home-brief-title" data-testid="home-brief" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
@@ -25,7 +25,7 @@ export async function HomeBrief({ summary, lastRun }: { summary: string | null; 
       <p data-testid={summary === null ? 'home-brief-empty' : 'home-brief-summary'} className={cn('text-body text-pretty break-words', summary === null ? 'text-ink-2' : 'text-ink')}>
         {summary ?? t('briefNone')}
       </p>
-      <Link href="/assistant" data-testid="home-brief-open" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
+      <Link href={briefId === null ? '/assistant' : `/assistant?note=${briefId}`} data-testid="home-brief-open" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
         {t('briefOpen')}
       </Link>
     </section>

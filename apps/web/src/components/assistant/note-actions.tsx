@@ -1,7 +1,7 @@
 'use client';
 
 import type { ProposalDecided } from '@esta/ops';
-import { Check, EyeOff, FileText, RotateCw, X } from 'lucide-react';
+import { Check, EyeOff, FileText, RotateCw, Undo2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lazy, useState } from 'react';
@@ -83,6 +83,31 @@ export function NoteActions({ id, status, labels, retry }: { id: string; status:
   );
 }
 
+/** `Hoàn tác` on a hidden note's line in the thread: the note opens again where it was. */
+export function RestoreNote({ id, labels }: { id: string; labels: { readonly undo: string; readonly undoLabel: string; readonly failed: string } }) {
+  const hydrated = useHydrated();
+  const router = useRouter();
+  const { pending, run } = useAction();
+  const [failed, setFailed] = useState(false);
+  const restore = () =>
+    run(
+      () => setNoteStatus({ id, status: 'read' }),
+      (result) => {
+        setFailed(!result.ok);
+        if (result.ok) router.refresh();
+      },
+    );
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button type="button" onClick={restore} disabled={pending || !hydrated} aria-label={labels.undoLabel} data-testid="note-restore" className={buttonVariants({ variant: 'quiet' })}>
+        <Undo2 aria-hidden="true" />
+        {labels.undo}
+      </button>
+      <FormAlert message={failed ? labels.failed : null} />
+    </div>
+  );
+}
+
 export type ProposalActionLabels = {
   readonly approve: string;
   readonly approveLabel: string;
@@ -148,7 +173,7 @@ const isDecided = (status: NoteStatus): status is ProposalDecided['status'] => s
  * A second tap or a stale tab reads what was decided. The card stays this one component once decided, so the refresh
  * after an approval keeps the reminder sheet it opened.
  */
-export function ProposalActions({ id, status, labels, extras }: { id: string; status: NoteStatus; labels: ProposalActionLabels; extras: ProposalExtras }) {
+export function ProposalActions({ id, status, labels, extras }: { id: string; status: InboxStatus | ProposalDecided['status']; labels: ProposalActionLabels; extras: ProposalExtras }) {
   const hydrated = useHydrated();
   const router = useRouter();
   const confirm = useDeferredDialog(loadConfirm);

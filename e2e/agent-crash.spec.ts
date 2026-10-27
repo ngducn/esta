@@ -33,7 +33,7 @@ test('a worker killed after the watch’s first note re-runs the job once, and e
   worker = await startAgentWorker({ crashOn: /\[agent\] create_item ok /m });
 
   await open(page, `ryan.lane${LANE}@demo.esta.test`, 'dark', DESKTOP);
-  await page.goto('/assistant');
+  await page.goto('/assistant/diagnostics');
   await page.getByRole('button', { name: 'Chạy theo dõi' }).click();
   await worker.exited();
   expect(worker.running(), 'the worker died mid-job').toBe(false);
@@ -57,6 +57,7 @@ test('a worker killed after the watch’s first note re-runs the job once, and e
 
   await page.reload();
   await expect(page.getByTestId('watch-status')).toHaveAttribute('data-status', 'done');
+  await page.goto('/assistant');
   const notes = page.getByTestId('inbox-item').filter({ has: page.getByTestId('note-dedupe').getByText(/^watch(_digest)?:.*2026-10-07$/) });
   await expect(notes).toHaveCount(4);
   expect(await seriousAxeViolations(page)).toEqual([]);

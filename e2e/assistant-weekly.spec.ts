@@ -55,7 +55,7 @@ test('on Sunday at 08:05 Hộp thư holds one weekly review with the board’s m
     .poll(async () => (await serviceGet<{ status: string }[]>(page, `agent_jobs?idempotency_key=eq.${WEEKLY_KEY}&select=status`)).map(({ status }) => status), { timeout: 90_000 })
     .toEqual(['done']);
   const [job] = await serviceGet<{ id: string }[]>(page, `agent_jobs?idempotency_key=eq.${WEEKLY_KEY}&select=id`);
-  const made = await serviceGet<{ kind: string; title: string }[]>(page, `agent_items?job_id=eq.${job?.id}&select=kind,title&order=created_at`);
+  const made = await serviceGet<{ kind: string; title: string }[]>(page, `agent_items?job_id=eq.${job?.id}&select=kind,title&order=created_at,kind.desc`);
   expect(made.map(({ kind }) => kind)).toEqual(['weekly', 'proposal', 'proposal', 'proposal']);
   await setClock(request, `${SUNDAY}T08:05:00+07:00`);
 

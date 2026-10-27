@@ -8,9 +8,8 @@ import { env } from '@/server/env';
 import { stampLabel, WorkerStatusLine } from './worker-status-line';
 
 const TABS = [
-  { id: 'inbox', href: '/assistant' },
+  { id: 'thread', href: '/assistant' },
   { id: 'market', href: '/assistant/market' },
-  { id: 'ask', href: '/assistant/ask' },
 ] as const;
 
 export type AssistantTab = (typeof TABS)[number]['id'];

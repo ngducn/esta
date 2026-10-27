@@ -34,6 +34,8 @@ export type AskInput = {
   readonly question: string;
   readonly reads: AskReads;
   readonly earlier: EarlierTurn | null;
+  /** The previous segment's last answered turns, which a turn with no session to resume starts from. */
+  readonly seed: readonly AskedTurn[];
   readonly deep: boolean;
   clock(): Promise<Clock>;
 };
@@ -46,18 +48,31 @@ async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 
   if (data.length !== 1) throw new Error(`The answer ${answerId} is no longer streaming`);
 }
 
-async function answeredTurnsBefore({ db, householdId, conversationId, questionId }: AskInput): Promise<AskedTurn[]> {
+/** Her questions in the conversation with the answers she read, oldest first, up to `before` when it names one. */
+async function answeredTurns(db: AgentDb, householdId: string, conversationId: string, before?: string): Promise<AskedTurn[]> {
   const { data, error } = await db.from('messages').select('id, role, content_md, status').eq('household_id', householdId).eq('conversation_id', conversationId).order('created_at');
   if (error) throw new Error(`Reading the conversation so far failed: ${error.message}`);
-  const before = data.slice(0, Math.max(0, data.findIndex((row) => row.id === questionId)));
-  return before.flatMap((row, index) => {
-    const next = before[index + 1];
+  const end = before === undefined ? data.length : data.findIndex((row) => row.id === before);
+  const rows = data.slice(0, Math.max(0, end));
+  return rows.flatMap((row, index) => {
+    const next = rows[index + 1];
     return row.role === 'user' && next?.role === 'assistant' && next.status === 'done' && next.content_md !== '' ? [{ question: row.content_md, answer: next.content_md }] : [];
   });
 }
 
+/** A new segment of her thread starts with the last turns of her previous one, so a follow-up just after midnight still knows what it follows. */
+const SEED_TURNS = 3;
+
+async function previousSegmentTurns(db: AgentDb, householdId: string, conversationId: string, creator: string | null): Promise<AskedTurn[]> {
+  if (creator === null) return [];
+  const { data, error } = await db.from('conversations').select('id').eq('household_id', householdId).eq('created_by', creator).neq('id', conversationId).order('last_asked_at', { ascending: false }).limit(1);
+  if (error) throw new Error(`Reading the previous conversation failed: ${error.message}`);
+  const previous = data[0];
+  return previous === undefined ? [] : (await answeredTurns(db, householdId, previous.id)).slice(-SEED_TURNS);
+}
+
 async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn): Promise<string | null> {
-  const turns = await answeredTurnsBefore(input);
+  const turns = await answeredTurns(input.db, input.householdId, input.conversationId, input.questionId);
   if (turns.length > 0) return askPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, question: input.question, earlier: turns });
   const { error } = await input.db.from('conversations').update({ sdk_session_id: null, sdk_turn_hash: null }).eq('household_id', input.householdId).eq('id', input.conversationId).eq('sdk_turn_hash', earlier.turnHash);
   if (error) throw new Error(`Forgetting the lost session failed: ${error.message}`);
@@ -72,7 +87,7 @@ export function askRequest(input: AskInput): PreparedJob {
   let repaired = false;
   let answer: Answer | null = null;
   return {
-    prompt: earlier === null ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question }) : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
+    prompt: earlier === null ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, earlier: input.seed }) : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
     ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools: new Map([
@@ -111,7 +126,7 @@ export function askRequest(input: AskInput): PreparedJob {
   };
 }
 
-type Turn = { readonly conversationId: string; readonly questionId: string; readonly question: string; readonly answerId: string; readonly earlier: EarlierTurn | null; readonly deep: boolean };
+type Turn = Pick<AskInput, 'conversationId' | 'questionId' | 'question' | 'answerId' | 'earlier' | 'seed' | 'deep'>;
 
 async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   const payload = payloadSchema.safeParse(job.payload);
@@ -119,22 +134,24 @@ async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   const { conversation_id, question_id, answer_id, deep } = payload.data;
   const [{ data, error }, conversation] = await Promise.all([
     db.from('messages').select('id, role, content_md').eq('household_id', job.household_id).eq('conversation_id', conversation_id).in('id', [question_id, answer_id]),
-    db.from('conversations').select('sdk_session_id, sdk_turn_hash, sdk_handles').eq('household_id', job.household_id).eq('id', conversation_id).single(),
+    db.from('conversations').select('sdk_session_id, sdk_turn_hash, sdk_handles, created_by').eq('household_id', job.household_id).eq('id', conversation_id).single(),
   ]);
   if (error) throw new Error(`Reading the question failed: ${error.message}`);
   if (conversation.error) throw new Error(`Reading the conversation failed: ${conversation.error.message}`);
   const question = data.find((row) => row.id === question_id && row.role === 'user');
   if (question === undefined || !data.some((row) => row.id === answer_id && row.role === 'assistant')) throw new InvalidJobError(`ask ${job.id}: the question or its answer is not in conversation ${conversation_id}`);
   await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [], deferred_until: null });
-  const { sdk_session_id, sdk_turn_hash, sdk_handles } = conversation.data;
+  const { sdk_session_id, sdk_turn_hash, sdk_handles, created_by } = conversation.data;
   const earlier = sdk_turn_hash === null ? null : { sessionId: sdk_session_id, turnHash: sdk_turn_hash, handles: sdk_handles };
-  return { conversationId: conversation_id, questionId: question_id, question: question.content_md, answerId: answer_id, earlier, deep };
+  const seed = earlier === null ? await previousSegmentTurns(db, job.household_id, conversation_id, created_by ?? null) : [];
+
+  return { conversationId: conversation_id, questionId: question_id, question: question.content_md, answerId: answer_id, earlier, seed, deep };
 }
 
 export async function prepareAsk({ db, job, clock, timezone }: JobContext): Promise<PreparedJob> {
   const [turn, locale, now] = await Promise.all([startTurn(db, job), householdLocale(db, job.household_id), clock()]);
   const asOf = now.today();
-  return askRequest({ db, householdId: job.household_id, jobId: job.id, conversationId: turn.conversationId, questionId: turn.questionId, answerId: turn.answerId, locale, asOf, timezone, question: turn.question, earlier: turn.earlier, deep: turn.deep, reads: askReads(db, job.household_id, { locale, asOf }), clock });
+  return askRequest({ db, householdId: job.household_id, jobId: job.id, conversationId: turn.conversationId, questionId: turn.questionId, answerId: turn.answerId, locale, asOf, timezone, question: turn.question, earlier: turn.earlier, seed: turn.seed, deep: turn.deep, reads: askReads(db, job.household_id, { locale, asOf }), clock });
 }
 
 export async function failAsk({ db, job }: Pick<JobContext, 'db' | 'job'>): Promise<void> {

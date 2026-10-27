@@ -153,6 +153,10 @@ describe('handle links in an answer', () => {
     expect(resolveLinks('Xem [sổ thu chi](f2).', sheet)).toEqual({ text: `Xem [sổ thu chi](${LEDGER}).`, refs: [LEDGER] });
   });
 
+  it('turn a handle written as a placeholder into the same link, so its braces never reach the answer', () => {
+    expect(resolveLinks('Xem [sổ]({{f2}}) và [thu]({{f2.handle}}).', sheet)).toEqual({ text: `Xem [sổ](${LEDGER}) và [thu](${LEDGER}).`, refs: [LEDGER] });
+  });
+
   it('leave a handle this run never returned, or a record without a link, as a bare word', () => {
     expect(resolveLinks('Xem [sổ](f99) và [tài sản](f1).', sheet)).toEqual({ text: 'Xem [sổ](f99) và [tài sản](f1).', refs: [] });
   });

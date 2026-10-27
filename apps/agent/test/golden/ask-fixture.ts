@@ -10,7 +10,7 @@ import { askReads } from '../../src/tools/ask-reads';
 import { runTool } from '../../src/tools/server';
 import { clockOn } from '../full-seed';
 import { ASK_CASES, caseEarlier } from './ask-cases';
-import { ASK_READS_FIXTURE, recordingReads, type RecordedReads } from './ask-reads';
+import { ASK_READS_FIXTURE, recordedReads, recordingReads } from './ask-reads';
 
 export const ASK_FIXTURE = join(import.meta.dirname, 'ask-full-2026-10-07.json');
 
@@ -37,8 +37,9 @@ async function main() {
   const [household] = query<{ id: string }>(workdir, `select id::text from public.households where name = 'Gia đình Demo'`);
   if (household === undefined) throw new Error('The slot holds no Gia đình Demo; run pnpm db:reset');
   const asOf = isoDate('2026-10-07');
-  const recorded: RecordedReads = {};
+  const recorded = recordedReads();
   for (const askCase of ASK_CASES) {
+    const today = askCase.today ?? asOf;
     const prepared = askRequest({
       db,
       householdId: household.id,
@@ -47,13 +48,14 @@ async function main() {
       questionId: 'ask-fixture',
       answerId: 'ask-fixture',
       locale: 'vi',
-      asOf,
+      asOf: today,
       timezone: 'Asia/Ho_Chi_Minh',
       question: askCase.question,
       earlier: caseEarlier(askCase),
+      seed: askCase.seed ?? [],
       deep: askCase.deep === true,
-      reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf }), recorded),
-      clock: clockOn('2026-10-07T07:00:00+07:00'),
+      reads: recordingReads(askReads(db, household.id, { locale: 'vi', asOf: today }), recorded),
+      clock: clockOn(`${today}T07:00:00+07:00`),
     });
     for (const call of askCase.toolCalls) {
       const tool = prepared.tools.get(call.name);

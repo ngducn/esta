@@ -115,4 +115,15 @@ begin
 end;
 $$;
 
+-- ask_question is the inner step of ask_in_thread, which picks the conversation and the date. A test that needs its own
+-- conversation id or date calls it as the member, the way ask_in_thread does.
+create function tests.ask_question(p_household_id uuid, p_conversation_id uuid, p_question_id uuid, p_question text, p_deep boolean, p_as_of timestamptz)
+returns uuid
+language sql
+security definer
+set search_path = ''
+as $$
+  select public.ask_question(p_household_id, p_conversation_id, p_question_id, p_question, p_deep, p_as_of);
+$$;
+
 grant execute on all functions in schema tests to authenticated, service_role;

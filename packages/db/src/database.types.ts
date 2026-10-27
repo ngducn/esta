@@ -3424,6 +3424,15 @@ export type Database = {
         Returns: string
       }
       approve_proposal: { Args: { p_item_id: string }; Returns: string }
+      ask_in_thread: {
+        Args: {
+          p_deep?: boolean
+          p_household_id: string
+          p_question: string
+          p_question_id: string
+        }
+        Returns: string
+      }
       ask_question: {
         Args: {
           p_as_of: string

@@ -13,6 +13,7 @@ import { canonicalInput, liveSession } from '../apps/agent/src/sdk/session.ts';
 import { serviceClient } from '../apps/agent/src/supabase.ts';
 import { CRAFTED, extractionFixtures, type CraftedId, type ExtractionFixture } from '../fixtures/certificates/generator/uploads.tsx';
 import { seedId } from '../supabase/seed/generator/ids.ts';
+import { runPool } from './pool.ts';
 import { parseSlot } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 
@@ -137,18 +138,9 @@ async function recordExtractions(): Promise<void> {
     const existing = JSON.parse(readFileSync(join(DEFAULT_REPLAY_DIR, 'extract_document', name), 'utf8')) as Recording;
     if (existing.label !== undefined) recordings.set(existing.label, existing);
   }
-  const queue = [...fixtures];
-  const failures: string[] = [];
-  const worker = async () => {
-    for (let fixture = queue.shift(); fixture !== undefined; fixture = queue.shift()) {
-      try {
-        recordings.set(fixture.id, await recordFixture(fixture, mode));
-      } catch (error) {
-        failures.push(error instanceof Error ? error.message : String(error));
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Number(values.concurrency) }, worker));
+  const failures = await runPool(fixtures, Number(values.concurrency), async (fixture) => {
+    recordings.set(fixture.id, await recordFixture(fixture, mode));
+  });
   for (const id of Object.keys(CRAFTED) as CraftedId[]) recordings.set(`crafted ${id}`, await craft(id, recordings));
   const written = new Set<string>();
   for (const recording of recordings.values()) written.add(`${writeRecording(DEFAULT_REPLAY_DIR, recording).split('/').at(-1)}`);

@@ -6,7 +6,7 @@ export default async function ConversationNotFound() {
   const t = await getTranslations('assistant.ask');
   return (
     <div data-testid="conversation-not-found" className="max-w-3xl">
-      <EmptyState icon={SearchX} title={t('notFoundTitle')} body={t('notFoundBody')} action={{ label: t('notFoundAction'), href: '/assistant/ask' }} />
+      <EmptyState icon={SearchX} title={t('notFoundTitle')} body={t('notFoundBody')} action={{ label: t('notFoundAction'), href: '/assistant' }} />
     </div>
   );
 }

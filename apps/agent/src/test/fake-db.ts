@@ -61,6 +61,10 @@ export function fakeDb(
         filters.push((row) => row[column] === value);
         return builder;
       },
+      neq(column: string, value: unknown) {
+        filters.push((row) => row[column] !== value);
+        return builder;
+      },
       order(column: string, options?: { ascending?: boolean }) {
         orders.push({ column, ascending: options?.ascending ?? true });
         return builder;
@@ -156,7 +160,7 @@ export function fakeDb(
     from: (bucket: string) => ({
       download: async (path: string) => {
         const bytes = files[`${bucket}/${path}`];
-        return bytes === undefined ? { data: null, error: { message: `${path} not found` } } : { data: new Blob([bytes]), error: null };
+        return bytes === undefined ? { data: null, error: { message: `${path} not found` } } : { data: new Blob([new Uint8Array(bytes)]), error: null };
       },
     }),
   };

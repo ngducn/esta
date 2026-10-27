@@ -1,4 +1,4 @@
-import { isoDate } from '@esta/core/date';
+import { isoDate, type IsoDate } from '@esta/core/date';
 import type { EarlierTurn } from '../../src/jobs/ask';
 import { askFollowUpPrompt, askPrompt, type AskedTurn } from '../../src/prompts/ask';
 import { JOBS } from '../../src/jobs/registry';
@@ -15,8 +15,12 @@ export type AskCase = {
   /** A follow-up names the case it follows and the handle its turn starts at, one past the handles that case gave out. */
   readonly follows?: { readonly id: string; readonly firstHandle: number };
   readonly rebuiltFrom?: readonly AskedTurn[];
+  /** The first question of a new segment of the thread, which starts from the last answered turns of her previous segment. */
+  readonly seed?: readonly AskedTurn[];
   /** An operator ticked Suy nghĩ kỹ hơn. */
   readonly deep?: true;
+  /** The business day it is asked on, when not 2026-10-07: a new segment starts on the next day. */
+  readonly today?: IsoDate;
 };
 
 const PROPERTIES = { name: mcpToolName('list_properties'), input: {} };
@@ -117,7 +121,42 @@ export const ASK_CASES: readonly AskCase[] = [
     toolCalls: [PROPERTIES, call('collections', { year: 2026, month: 10, property: 'f3' })],
     reply: 'In {{f3.property_label}}, only {{f8.unit_label}} is overdue: {{f8.days_overdue_display}} days late, with {{f8.amount_display}} still owed.\n\nSee [the bill for {{f8.unit_label}}](f8).',
   },
+  {
+    id: 't1-zalo-reminder',
+    question: 'Viết tin nhắn Zalo nhắc khách phòng 5 ở Dĩ An đóng tiền.',
+    toolCalls: [PROPERTIES, call('collections', { year: 2026, month: 10, property: 'f3' })],
+    reply:
+      'Đây là tin nhắn bạn có thể gửi qua Zalo:\n\nChào {{f8.tenant_name}}, tiền thuê {{f8.unit_label}} ở {{f3.property_label}} đến hạn ngày {{f8.due_date_display}} hiện còn {{f8.amount_display}}. Nhờ anh chị sắp xếp đóng giúp sớm. Nếu đã chuyển khoản rồi, anh chị báo lại để mình kiểm tra nhé. Cảm ơn anh chị.',
+  },
+  {
+    id: 't2-rent-by-year',
+    question: 'Có nên cho thuê theo năm thay vì theo tháng không?',
+    toolCalls: [],
+    reply:
+      'Cho thuê theo năm giúp nguồn thu ổn định hơn và đỡ phải tìm khách mới, nhưng khó điều chỉnh giá giữa chừng, và nếu khách ngừng trả thì thiệt hại lớn hơn. Cho thuê theo tháng linh hoạt hơn, đổi lại dễ trống phòng và phải thu tiền thường xuyên.\n\nVới khách đã ở lâu và trả đúng hạn, hợp đồng theo năm có điều khoản điều chỉnh giá khi gia hạn thường là lựa chọn an toàn. Nếu muốn, Trợ lý có thể xem lịch sử trả tiền của từng khách để bạn cân nhắc.',
+  },
+  {
+    id: 't8-bao-loc-land-price',
+    question: 'Giá đất Bảo Lộc bây giờ khoảng bao nhiêu?',
+    toolCalls: [PROPERTIES],
+    reply:
+      'Ứng dụng chưa có giá đất hiện nay của {{f1.property_label}}, và Trợ lý chưa tra cứu được trên mạng, nên không ước tính con số nào.\n\nNếu bạn có giá từ người môi giới hoặc tin rao gần đây, hãy gửi cho Trợ lý để cùng xem tiếp.',
+  },
+  {
+    id: 'seeded-segment-august',
+    question: 'Còn tháng 8 thì sao?',
+    today: isoDate('2026-10-08'),
+    seed: [
+      { question: 'Tháng này thu được bao nhiêu từ Dĩ An?', answer: 'Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu 1.000.000\u00a0₫ tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c?year=2026&month=10).' },
+      { question: 'Còn tháng 9 thì sao?', answer: 'Tháng 9/2026, Dãy trọ Dĩ An đã thu 19.300.000\u00a0₫ tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c?year=2026&month=9).' },
+    ],
+    toolCalls: [PROPERTIES, { name: mcpToolName('ledger'), input: { property: 'f3', year: 2026, month: 8 } }],
+    reply: 'Tháng {{f8.period_date_display}}, {{f3.property_label}} đã thu {{f8.income_display}} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của {{f3.property_label}}](f8).',
+  },
 ];
+
+/** The texts a repair prompt says the guard rejected, one `"<text>": <rule>` line each. */
+export const rejectedTexts = (repair: string) => repair.split('\n').flatMap((line) => /^"([^"]*)":/u.exec(line)?.[1] ?? []);
 
 export const ASK_CONTEXT = { locale: 'vi', today: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh' } as const;
 
@@ -129,8 +168,9 @@ export const askCase = (id: string): AskCase => {
   return found;
 };
 
-export function casePrompt({ question, follows, rebuiltFrom }: AskCase): string {
-  if (rebuiltFrom !== undefined) return askPrompt({ ...ASK_CONTEXT, question, earlier: rebuiltFrom });
+export function casePrompt({ question, follows, rebuiltFrom, seed, today = ASK_CONTEXT.today }: AskCase): string {
+  const earlier = rebuiltFrom ?? seed;
+  if (earlier !== undefined) return askPrompt({ ...ASK_CONTEXT, today, question, earlier });
   return follows === undefined ? askPrompt({ ...ASK_CONTEXT, question }) : askFollowUpPrompt({ today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question, firstHandle: follows.firstHandle });
 }
 
@@ -153,7 +193,7 @@ export function askRecording(item: AskCase): Recording {
     kind: 'ask',
     inputHash: inputHash(input),
     input,
-    label: `Hand-written for ${item.id}${item.follows === undefined ? '' : `, ${item.rebuiltFrom === undefined ? 'resuming' : 'rebuilding the lost session of'} ${item.follows.id}`} on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.`,
+    label: `Hand-written for ${item.id}${item.follows === undefined ? '' : `, ${item.rebuiltFrom === undefined ? 'resuming' : 'rebuilding the lost session of'} ${item.follows.id}`}${item.seed === undefined ? '' : ', as the first question of a new segment of the thread'} on the full seed at ${item.today ?? ASK_CONTEXT.today} 07:00; the live recording waits for the P5-10 live run.`,
     model: item.deep ? 'hand-written-deep' : 'hand-written',
     numTurns: item.toolCalls.length + 1,
     toolCalls: item.toolCalls.map((call) => ({ ...call })),
