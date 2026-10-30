@@ -80,6 +80,19 @@ describe('pnpm quality', () => {
     expect(text).toMatch(/(apps\/web\/src\/server\/owed\.ts|packages\/core\/src\/owed\.ts):\d+ {2}lines \d+-\d+ repeat (packages\/core\/src\/owed\.ts|apps\/web\/src\/server\/owed\.ts)/);
   });
 
+  it('fails a copied fixture and leaves a small recording\'s copy alone', () => {
+    const rows = (count: number) =>
+      `${JSON.stringify(Array.from({ length: count }, (_, index) => ({ invoiceId: `inv-${index}`, unitLabel: `Phòng ${index}`, totalVnd: 2_800_000 + index, status: 'unpaid' })), null, 2)}\n`;
+    write('fixtures/agent-replay/ask/small.json', rows(20));
+    write('apps/agent/test/golden/small-copy.json', rows(20));
+    expect(check().lines.filter((line) => line.startsWith('FAIL copied-fixtures'))).toEqual([]);
+    write('apps/agent/test/golden/ask-reads.json', rows(120));
+    write('apps/agent/test/golden/weekly-reads.json', rows(120));
+    const text = check().lines.join('\n');
+    expect(text).toMatch(/FAIL copied-fixtures rose from 0 to \d{3,}\./);
+    expect(text).toMatch(/apps\/agent\/test\/golden\/(ask|weekly)-reads\.json:\d+ {2}lines \d+-\d+ repeat apps\/agent\/test\/golden\/(ask|weekly)-reads\.json/);
+  });
+
   it('keeps a copied block one clone when a line is added inside it', () => {
     write('packages/core/src/owed.ts', `${BLOCK('owed')}${BLOCK('due')}`);
     write('apps/web/src/server/owed.ts', `${BLOCK('owed')}${BLOCK('due')}`);
