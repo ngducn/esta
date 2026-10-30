@@ -1,7 +1,7 @@
 import { query, type HookCallback, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
 import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
-import { isAbsolute, join, relative } from 'node:path';
+import { isAbsolute, join, relative, sep } from 'node:path';
 import type { RunMode } from '../env';
 import type { JobSpec, ModelRole } from '../jobs/registry';
 import { InvalidJobError } from '../jobs/extract-document';
@@ -165,7 +165,7 @@ const kindOf = (path: string) => {
 /** Whether `path` really lies below `root`, whatever symlink its route crosses. */
 function inside(root: string, path: string): boolean {
   const route = relative(root, realpathSync(path));
-  return route !== '' && !route.startsWith('..') && !isAbsolute(route);
+  return route !== '' && route.split(sep)[0] !== '..' && !isAbsolute(route);
 }
 
 /** The names in a real folder below `root`; a symlink, a file or a folder that leads out reads as empty. */
