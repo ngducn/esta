@@ -17,6 +17,7 @@
     "./extraction/acceptance": "./src/extraction/acceptance.ts",
     "./extraction/confidence": "./src/extraction/confidence.ts",
     "./extraction/fields": "./src/extraction/fields.ts",
+    "./extraction/review-changes": "./src/extraction/review-changes.ts",
     "./auth": "./src/auth/index.ts",
     "./collections": "./src/collections/index.ts",
     "./completeness": "./src/completeness/index.ts",

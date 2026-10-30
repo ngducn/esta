@@ -17,13 +17,14 @@ import { cn } from '@/lib/utils';
 import type { FieldView } from '@/server/extraction/field-views';
 import type { LandUseCode } from '@/server/properties/legal';
 
-export type RowError = 'invalid' | 'out_of_range' | 'missing' | 'national_id';
+export type RowError = 'invalid' | 'out_of_range' | 'missing' | 'national_id' | 'mismatch';
 
 const ROW_ERRORS = {
   invalid: 'invalidField',
   out_of_range: 'outOfRangeField',
   missing: 'missingField',
   national_id: 'nationalIdField',
+  mismatch: 'mismatchField',
 } as const satisfies Record<RowError, string>;
 
 type Editor = 'select' | 'code' | 'date' | 'money' | { readonly inputMode: 'text' | 'decimal' | 'numeric'; readonly maxLength?: number };

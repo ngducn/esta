@@ -29,6 +29,11 @@ export function compareVietnameseNames(a: string, b: string): number {
   );
 }
 
+/** NFC, one space, lower case: `Nguyễn  Thị Demo` and `NGUYỄN THỊ DEMO` are one name. */
+export function normalizeName(name: string): string {
+  return name.normalize('NFC').replace(/\s+/gu, ' ').trim().toLocaleLowerCase('vi');
+}
+
 /** SPEC D11: a pasted or typed ID number keeps only its last four digits, so the full number is never held. */
 export function idLast4(text: string): string {
   return text.replace(/[^0-9]/g, '').slice(-4);

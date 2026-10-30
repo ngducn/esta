@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { leaseV1Schema } from '../agent-schemas/lease_v1';
 import { addDays, addMonths } from '../date/calendar';
-import { normalizeName } from '../extraction/acceptance';
+import { normalizeName } from '../names';
 import { vnd } from '../money/vnd';
 import { firstPhone } from '../phone';
 import type { LeaseDraft } from '../schemas/lease';

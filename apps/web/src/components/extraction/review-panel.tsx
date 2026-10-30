@@ -20,6 +20,7 @@ import type { LandUseCode } from '@/server/properties/legal';
 import { DocumentPager } from './document-pager';
 import type { FieldView } from '@/server/extraction/field-views';
 import { ExtractionFieldRow, rowArea, type RowError } from './extraction-field-row';
+import { ReviewChange } from './review-change';
 
 export type ReviewMode = 'waiting' | 'review' | 'manual' | 'accepted' | 'rejected' | 'none';
 
@@ -67,6 +68,7 @@ export function ReviewPanel({
   propertyId,
   leaseId = null,
   properties,
+  certificateAddresses,
   savedHref,
 }: {
   documentId: string;
@@ -88,6 +90,8 @@ export function ReviewPanel({
   /** The lease a scanned contract already belongs to. */
   leaseId?: string | null;
   properties: readonly { readonly id: string; readonly nickname: string }[];
+  /** The certificate address each property the save may write to holds now, for what Lưu replaces (#356). */
+  certificateAddresses: Readonly<Record<string, string | null>>;
   /** Where a save goes instead of the property's tab: the wizard's own review step, which then confirms the address. */
   savedHref?: string;
 }) {
@@ -101,6 +105,8 @@ export function ReviewPanel({
   const [editing, setEditing] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<ReviewSave | { ok: false; reason: 'reject_failed' } | null>(null);
   const [chosenProperty, setChosenProperty] = useState('');
+  // Mẹ said Vẫn lưu to a certificate that looks like another property's; a retry keeps it until she changes a field.
+  const [confirmed, setConfirmed] = useState(false);
   const { pending: saving, run } = useAction();
   const pager = useRef<HTMLDivElement>(null);
 
@@ -129,15 +135,21 @@ export function ReviewPanel({
 
   const decide = (path: string, decision: FieldDecision | undefined) => {
     setOutcome(null);
+    setConfirmed(false);
     setDecisions((current) => {
       const { [path]: _previous, ...rest } = current;
       return decision === undefined ? rest : { ...rest, [path]: decision };
     });
   };
 
+  const confirming = outcome?.ok === false && outcome.reason === 'mismatch';
+  const target = propertyId ?? (chosenProperty === '' ? null : chosenProperty);
+
   const save = () => {
     if (extractionId === null) return;
-    run(() => saveExtractionReview(extractionId, decisions, propertyId === null && chosenProperty !== '' ? chosenProperty : null), (result) => {
+    const confirm = confirmed || confirming;
+    setConfirmed(confirm);
+    run(() => saveExtractionReview(extractionId, decisions, propertyId === null ? target : null, confirm), (result) => {
       setOutcome(result);
       if (!result.ok) return;
       if (savedHref === undefined) router.push(nextStep(schemaName, result.propertyId, documentId).href);
@@ -165,11 +177,13 @@ export function ReviewPanel({
             ? t('saveNationalId')
             : outcome.reason === 'missing'
               ? t('saveMissing')
-              : outcome.reason === 'no_property'
-                ? t('saveNoProperty')
-                : outcome.reason === 'reject_failed'
-                  ? t('rejectFailed')
-                  : t('saveFailed');
+              : outcome.reason === 'mismatch'
+                ? t('saveMismatch')
+                : outcome.reason === 'no_property'
+                  ? t('saveNoProperty')
+                  : outcome.reason === 'reject_failed'
+                    ? t('rejectFailed')
+                    : t('saveFailed');
 
   const notice =
     mode === 'waiting' ? (
@@ -282,7 +296,11 @@ export function ReviewPanel({
                     <select
                       data-testid="review-property"
                       value={chosenProperty}
-                      onChange={(event) => setChosenProperty(event.target.value)}
+                      onChange={(event) => {
+                        setChosenProperty(event.target.value);
+                        setConfirmed(false);
+                        setOutcome(null);
+                      }}
                       className="min-h-touch rounded-md border border-field bg-surface px-3 text-body text-ink"
                     >
                       <option value="">{t('propertyPlaceholder')}</option>
@@ -297,11 +315,19 @@ export function ReviewPanel({
                 <p data-testid="review-progress" className="text-body text-ink-2 figures">
                   {t('progress', { done: decided, total: fields.length })}
                 </p>
+                <ReviewChange fields={fields} decisions={decisions} before={target === null ? null : (certificateAddresses[target] ?? null)} />
                 <FormAlert message={saveMessage} data-testid="review-error" />
                 <div className="flex flex-wrap gap-3">
-                  <Button type="button" data-testid="review-submit" disabled={saving || extractionId === null} onClick={save}>
+                  <Button
+                    type="button"
+                    variant={confirming ? 'outline' : undefined}
+                    data-testid="review-submit"
+                    data-state={confirming ? 'confirm' : 'save'}
+                    disabled={saving || extractionId === null}
+                    onClick={save}
+                  >
                     <Save aria-hidden="true" />
-                    {saving ? t('saving') : t('save')}
+                    {saving ? t('saving') : confirming ? t('saveAnyway') : t('save')}
                   </Button>
                   {mode === 'review' ? (
                     <ConfirmDialog

@@ -1,9 +1,11 @@
 import type { z } from 'zod';
+import { normalizeName } from '../names';
 import { UNIDENTIFIED } from '../schemas/identity';
 import { certificateSchema, newParcelSchema, type parcelSchema, structureSchema } from '../schemas/legal';
 import { utilityAccountSchema } from '../schemas/units';
 import { INPUT_KINDS, readInput, reviewFields, withinLeafBounds, type ReviewField } from './fields';
 import type { SchemaName } from './required-fields';
+import { savedAddress } from './review-changes';
 import { uuidV5 } from './uuid-v5';
 
 /** What Mẹ did with one field: `Đúng` keeps the value read, `Sửa` replaces it with what she typed or picked. */
@@ -73,11 +75,6 @@ export const rowId = (extractionId: string, path: string) => uuidV5(`extraction:
 
 /** The manual entry for a failed read is named by that read, so a retried save inserts it once. */
 export const manualEntryId = (failedExtractionId: string) => uuidV5(`manual:${failedExtractionId}`);
-
-/** NFC, one space, lower case: `Nguyễn  Thị Demo` and `NGUYỄN THỊ DEMO` are one name. */
-export function normalizeName(name: string): string {
-  return name.normalize('NFC').replace(/\s+/gu, ' ').trim().toLocaleLowerCase('vi');
-}
 
 type Decided = {
   readonly fields: readonly ReviewField[];
@@ -237,10 +234,8 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
     collected.invalid.push(...issuePaths('', certificate.error));
   }
 
-  let address: string | null = null;
   for (let i = 0; i < itemCount(fields, (n) => `parcels[${n}]`); i += 1) {
     const parcel = itemOf(values, `parcels[${i}].`);
-    address ??= text(parcel.read('address_text'));
     const purposes = [];
     for (let j = 0; j < itemCount(fields, (n) => `parcels[${i}].purposes[${n}]`); j += 1) {
       const purpose = itemOf(values, `${parcel.prefix}purposes[${j}].`);
@@ -289,8 +284,9 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
     else collected.invalid.push(...issuePaths(structure.prefix, row.error));
   }
 
+  const address = savedAddress(decided.acceptedFields);
   if (address !== null) {
-    collected.steps.push({ table: 'properties', row: { id: extraction.propertyId, household_id: extraction.householdId, certificate_address_text: address } });
+    collected.steps.push({ table: 'properties', row: { id: extraction.propertyId, household_id: extraction.householdId, certificate_address_text: address.value } });
   }
   return finish(collected, decided);
 }
