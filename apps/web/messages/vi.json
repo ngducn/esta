@@ -477,7 +477,8 @@
     "notFoundBody": "Tài sản có thể đã được lưu trữ, hoặc không thuộc gia đình này.",
     "notFoundAction": "Về danh sách tài sản",
     "edit": "Sửa thông tin",
-    "askAssistant": "Hỏi Trợ lý về tài sản này"
+    "askAssistant": "Hỏi Trợ lý về tài sản này",
+    "askAssistantShort": "Hỏi Trợ lý"
   },
   "completeness": {
     "title": "Mức đầy đủ",

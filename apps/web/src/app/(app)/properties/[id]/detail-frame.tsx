@@ -69,7 +69,7 @@ export async function PropertyDetailFrame({
           photoUrl: property.coverPhotoPath === null ? null : (photos.get(property.coverPhotoPath) ?? null),
           statuses: statusPills(property.statuses, statusWords(tp), locale),
           edit: member.role === 'viewer' ? null : { href: `/properties/${property.id}/edit`, label: t('edit') },
-          ask: { href: `/assistant?about=${property.id}`, label: t('askAssistant') },
+          ask: { href: `/assistant?about=${property.id}`, label: t('askAssistantShort'), name: t('askAssistant') },
           completeness: {
             title: tc('title'),
             percent: score.percent,

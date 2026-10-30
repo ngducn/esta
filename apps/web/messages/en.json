@@ -477,7 +477,8 @@
     "notFoundBody": "It may have been archived, or it belongs to another household.",
     "notFoundAction": "Back to properties",
     "edit": "Edit details",
-    "askAssistant": "Ask Trợ lý about this property"
+    "askAssistant": "Ask Trợ lý about this property",
+    "askAssistantShort": "Ask Trợ lý"
   },
   "completeness": {
     "title": "Completeness",

@@ -24,8 +24,8 @@ export type PropertyHeaderData = {
   statuses: readonly StatusPillData[];
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
-  /** `Hỏi Trợ lý về tài sản này`, opening the thread with this property as the topic. */
-  ask: { href: string; label: string };
+  /** `label` is what she reads, `name` what a screen reader says, which also names the property. */
+  ask: { href: string; label: string; name: string };
   /** The score, already translated: `title` is the word `Mức đầy đủ`, `score` such as `29%`. */
   completeness: { title: string; percent: number; score: string };
 };
@@ -56,12 +56,18 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
       <div className="flex min-w-0 flex-col gap-4 p-5 lg:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="min-w-0 text-h2 break-words text-balance text-ink lg:text-h1">{property.nickname}</h1>
-          {property.edit === null ? null : (
-            <Link href={property.edit.href} data-testid="edit-property" className={buttonVariants({ variant: 'outline' })}>
-              <Pencil aria-hidden="true" />
-              {property.edit.label}
+          <div className="flex flex-wrap gap-2">
+            {property.edit === null ? null : (
+              <Link href={property.edit.href} data-testid="edit-property" className={buttonVariants({ variant: 'outline' })}>
+                <Pencil aria-hidden="true" />
+                {property.edit.label}
+              </Link>
+            )}
+            <Link href={property.ask.href} aria-label={property.ask.name} data-testid="ask-about-property" className={buttonVariants({ variant: 'outline' })}>
+              <NotebookPen aria-hidden="true" />
+              {property.ask.label}
             </Link>
-          )}
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <UsePill useMode={property.useMode} label={property.useLabel} />
@@ -77,10 +83,6 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
         <div data-testid="property-addresses">
           <AddressBlock current={property.currentAddress} legal={property.certificateAddress} />
         </div>
-        <Link href={property.ask.href} data-testid="ask-about-property" className={buttonVariants({ variant: 'outline', className: 'w-full sm:w-fit' })}>
-          <NotebookPen aria-hidden="true" />
-          {property.ask.label}
-        </Link>
       </div>
     </header>
   );
