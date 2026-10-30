@@ -145,6 +145,16 @@ function Question({ message, time, t, ask }: { message: ConversationMessage; tim
 
 function Answer({ message, time, t, ask }: { message: ConversationMessage; time: string; t: Translate; ask: AskTranslate }) {
   const labels = { streaming: ask('answering'), deferred: ask('deferred'), error: ask('answerFailed'), stalled: ask('stalled') };
+  const shownAnswer =
+    message.status === 'streaming' ? (
+      <AnswerStream id={message.id} conversationId={message.conversationId} initial={{ content: message.content, status: message.status, refs: message.refs }} labels={labels} />
+    ) : (
+      <AnswerView shown={message} labels={labels}>
+        <SafeMarkdown refs={message.refs} className="max-w-prose">
+          {message.content}
+        </SafeMarkdown>
+      </AnswerView>
+    );
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -154,21 +164,16 @@ function Answer({ message, time, t, ask }: { message: ConversationMessage; time:
           {time}
         </time>
       </header>
-      {message.status === 'streaming' ? (
-        <AnswerStream id={message.id} conversationId={message.conversationId} initial={{ content: message.content, status: message.status, refs: message.refs }} labels={labels} />
-      ) : (
-        <AnswerView shown={message} labels={labels}>
-          <SafeMarkdown refs={message.refs} className="max-w-prose">
-            {message.content}
-          </SafeMarkdown>
-        </AnswerView>
-      )}
       {message.status === 'done' ? (
         <CopyAnswer
-          text={visibleText(message.content, { tables: true })}
+          text={visibleText(message.content, { tables: true, paragraphs: true })}
           labels={{ copy: t('copyAnswer'), copyLabel: t('copyAnswerLabel', { time }), copied: t('answerCopied'), failed: t('copyFailed') }}
-        />
-      ) : null}
+        >
+          {shownAnswer}
+        </CopyAnswer>
+      ) : (
+        shownAnswer
+      )}
     </article>
   );
 }

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "5fc30c32e34c072cd95cd97cc244c2e4fd9511253318970acf314fcaac0bdbe2",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "\"hai\": Do not write an amount, unit, number word, Roman numeral, or month or weekday name. Cite the tool field that holds it as {{fN.field}}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
+    "builtInTools": [],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal"
+    ],
+    "maxTurns": 15,
+    "resumesInputHash": "518fb9a6172943397320c5d46881b709d8994d1875817f1dd0b6a0bfde06aceb"
+  },
+  "label": "Hand-written repair turn for guard probe vi-transfer-procedure (P5-12 fix round 1): the live first pass with \"giấy tờ tùy thân của cả hai bên\", which the guard now rejects, rewritten as \"giấy tờ tùy thân của bên chuyển và bên nhận\". Re-keyed for #354's advice rule; its reply predates the rule.",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 1,
+  "toolCalls": [],
+  "reply": "Đây là các bước chung, tôi trả lời bằng lời vì không cần số liệu từ ứng dụng:\n\n- **Chuẩn bị hồ sơ:** hợp đồng chuyển nhượng, tặng cho hoặc văn bản thừa kế, đã công chứng hoặc chứng thực. Kèm theo là bản gốc sổ, giấy tờ tùy thân của bên chuyển và bên nhận và giấy tờ về quan hệ hôn nhân hoặc hộ khẩu nếu có.\n- **Kê khai nghĩa vụ tài chính:** nộp tờ khai thuế thu nhập cá nhân và lệ phí trước bạ tại cơ quan thuế. Sau đó nộp các khoản này theo thông báo.\n- **Nộp hồ sơ đăng ký biến động:** nộp tại Văn phòng đăng ký đất đai hoặc bộ phận một cửa của địa phương nơi có thửa đất.\n- **Cơ quan xử lý:** cơ quan kiểm tra hồ sơ, cập nhật thông tin và cấp sổ mới đứng tên người nhận.\n- **Nhận kết quả:** mang biên nhận đến nhận sổ theo hẹn.\n\nNếu thửa đất đang thế chấp ngân hàng, bạn cần xử lý việc giải chấp hoặc thỏa thuận với ngân hàng trước. Mức thuế, phí và thời hạn cụ thể thì ứng dụng không có, và tôi chưa thể tra cứu trên web. Bạn nên hỏi Văn phòng đăng ký đất đai nơi có thửa đất.\n\nNếu muốn, tôi có thể kiểm tra sổ của từng bất động sản trong ứng dụng, xem có khoản thế chấp nào không."
+}

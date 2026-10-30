@@ -1135,6 +1135,7 @@
     "copyFailed": "Chưa sao chép được. Câu trả lời đã được chọn, hãy nhấn giữ để sao chép.",
     "confirmRentChange": "{direction, select, up {Tăng tiền thuê {place} lên {amount} từ {date}?} down {Giảm tiền thuê {place} xuống {amount} từ {date}?} other {Đổi tiền thuê {place} thành {amount} từ {date}?}}",
     "confirmRenewal": "Gia hạn hợp đồng {place} đến {date}, tiền thuê {amount} mỗi tháng?",
+    "place": "{unit}, {property}",
     "confirmCancel": "Thôi",
     "openLease": "Xem hợp đồng",
     "openReminder": "Mở lời nhắc",
@@ -1164,6 +1165,9 @@
     },
     "sources": "Nguồn",
     "citationLabel": "Nguồn {index}: {source}. Mở trong thẻ mới",
+    "linkNotFoundTitle": "Không tìm thấy hồ sơ này",
+    "linkNotFoundBody": "Đường dẫn có thể đã cũ, hoặc hồ sơ này không thuộc gia đình của bạn.",
+    "linkNotFoundAction": "Về Trợ lý",
     "diagnostics": {
       "title": "Chẩn đoán Trợ lý",
       "intro": "Chỉ người vận hành thấy trang này. Số liệu lấy từ các lần chạy của Trợ lý cho gia đình này.",

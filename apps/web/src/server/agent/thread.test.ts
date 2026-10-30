@@ -55,7 +55,7 @@ const { loadThread, THREAD_PAGE } = await import('./thread');
 
 const member = { household: { id: HOUSEHOLD, name: 'Gia đình Demo' }, role: 'member', isOperator: false } as const;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
-const note = (n: number, createdAt: string, fields: Partial<Row> = {}): Row => ({ id: uuid(n), title: `Ghi chú ${n}`, body_md: null, status: 'new', audience: 'all', created_at: createdAt, proposal: null, related: null, citations: null, kind: 'note', severity: 'info', dedupe_key: `note:${n}`, ...fields });
+const note = (n: number, createdAt: string, fields: Partial<Row> = {}): Row => ({ id: uuid(n), title: `Ghi chú ${n}`, body_md: null, status: 'new', audience: 'all', created_at: createdAt, proposal: null, related: null, citations: null, kind: 'alert', severity: 'info', dedupe_key: `note:${n}`, ...fields });
 const message = (n: number, role: 'user' | 'assistant', createdAt: string, fields: Partial<Row> = {}): Row => ({ id: uuid(n), conversation_id: uuid(9999), role, content_md: `Tin ${n}`, status: 'done', refs: [], deferred_until: null, created_at: createdAt, topic_item_id: null, topic_property_id: null, topic_note: null, topic_property: null, ...fields });
 const at = (minute: number, fraction = '') => `2026-10-07T00:${String(minute).padStart(2, '0')}:00${fraction}+00:00`;
 const ids = (thread: Awaited<ReturnType<typeof loadThread>>) => thread.entries.map((entry) => (entry.kind === 'note' ? entry.note.id : entry.message.id));
@@ -156,6 +156,18 @@ describe('loadThread pinned', () => {
     for (const options of [{}, { note: uuid(1) }, { before: `${canonicalStamp(at(2))}_0_${uuid(2)}` }]) {
       expect((await loadThread(member, options)).pinned).toEqual({ shown: [{ id: uuid(7), title: 'Ghi chú 7', proposal: false }], count: 1 });
     }
+  });
+
+  it('pins only a watch note, an operator notice or a proposal, so a kind added later never pins by accident (#351)', async () => {
+    stored.messages = [];
+    stored.agent_items = [
+      note(1, at(1), { ...action, kind: 'answer_note' }),
+      note(2, at(2), { ...action, kind: 'research_scan_empty' }),
+      note(3, at(3), { ...action, kind: 'later_kind' }),
+      note(4, at(4), { ...action, kind: 'system' }),
+      note(5, at(5), action),
+    ];
+    expect((await loadThread(member)).pinned.shown.map(({ id }) => id)).toEqual([uuid(5), uuid(4)]);
   });
 });
 

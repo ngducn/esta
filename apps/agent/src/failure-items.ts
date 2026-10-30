@@ -1,4 +1,6 @@
-import type { Clock } from '@esta/core';
+import { businessDate, parseInstant, type Clock } from '@esta/core';
+import { scheduledPeriod } from '@esta/core/agent-schedule';
+import { failedJobKey } from '@esta/core/assistant';
 import type { Locale } from '@esta/core/format';
 import type { TablesInsert } from '@esta/db';
 import type { AgentJob, JobSpec } from './jobs/registry';
@@ -17,7 +19,7 @@ const AUTH_ITEM = {
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
-type Binding = { readonly db: AgentDb; readonly job: AgentJob; readonly spec: JobSpec | undefined; readonly clock: Clock };
+type Binding = { readonly db: AgentDb; readonly job: AgentJob; readonly spec: JobSpec | undefined; readonly clock: Clock; readonly timezone: string };
 
 async function upsertItem(db: AgentDb, item: TablesInsert<'agent_items'>): Promise<void> {
   const { error } = await db.from('agent_items').upsert(item, { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true });
@@ -29,7 +31,7 @@ async function upsertItem(db: AgentDb, item: TablesInsert<'agent_items'>): Promi
  * rejected login leaves operators one note a day that says so. Neither shows the error text, which only operators read
  * on the job. Both are keyed, so a worker that dies after writing them and fails the job again adds nothing.
  */
-export async function writeFailureItems({ db, job, spec, clock }: Binding, failure: Failure): Promise<void> {
+export async function writeFailureItems({ db, job, spec, clock, timezone }: Binding, failure: Failure): Promise<void> {
   const retryable = spec?.failedTitle;
   if (retryable === undefined && failure.kind !== 'auth_error') return;
   const locale = await householdLocale(db, job.household_id);
@@ -37,7 +39,7 @@ export async function writeFailureItems({ db, job, spec, clock }: Binding, failu
   if (retryable !== undefined) {
     // A note the number guard held back is the operator's alone (AGENT.md §9), and so is its retry.
     const audience = failure.kind === 'number_guard' ? 'operator' : 'all';
-    await upsertItem(db, { ...base, kind: 'alert', audience, title: retryable[locale], proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' }, dedupe_key: `job_failed:${job.id}` });
+    await upsertItem(db, { ...base, kind: 'alert', audience, title: retryable[locale], proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' }, dedupe_key: failedJobKey(job.kind, scheduledPeriod(job.idempotency_key) ?? businessDate(parseInstant(job.created_at), timezone), job.id) });
   }
   if (failure.kind === 'auth_error') {
     await upsertItem(db, { ...base, kind: 'system', severity: 'action', audience: 'operator', title: AUTH_ITEM[locale].title, body_md: AUTH_ITEM[locale].body, dedupe_key: `auth_error:${clock.today()}` });

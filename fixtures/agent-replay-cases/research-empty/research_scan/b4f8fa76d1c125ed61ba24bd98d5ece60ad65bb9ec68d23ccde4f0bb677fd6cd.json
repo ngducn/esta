@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "kind": "research_scan",
+  "inputHash": "b4f8fa76d1c125ed61ba24bd98d5ece60ad65bb9ec68d23ccde4f0bb677fd6cd",
+  "input": {
+    "version": 1,
+    "kind": "research_scan",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never type a digit, an amount or currency word, or a number word.\nFor every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.\nWrite every person's name or nickname and every place name through its _name or _label placeholder, such as {{f2.tenant_name}}, because names like chú Ba or Hai Bà Trưng hold number words.\nDo not calculate totals, differences or ratios yourself; call the tool that returns them.\nNever invent amounts, dates, names or sources. If information is missing, say so plainly.\nYou cannot change business records.\nWrite in Vietnamese. Use the household's terms: sổ, thửa đất, hợp đồng thuê, tiền cọc, kỳ thanh toán.\nTone: calm, polite, concise, like a careful family accountant. No exclamation marks, no emoji.\nToday is 2026-10-07 in Asia/Ho_Chi_Minh.\n\nTask: the morning market scan. Find news that matters to the family's properties: land price tables, planning and zoning, infrastructure such as ring roads, metro lines, expressways, airports and bridges, the rental market for the kinds of property held, and the national rules on land, rental tax and mortgage rates.\n1. Call research_topics, list_properties and recent_items once each. recent_items lists the research items already stored; never add those again.\n2. Search with WebSearch using the topics' query_templates, Vietnamese first and English where useful. This run may make 12 searches and 8 fetches; calls past that are refused.\n3. Prefer official sources (*.gov.vn, chinhphu.vn, baochinhphu.vn, provincial portals, thuvienphapluat.vn, luatvietnam.vn) and established press. Never use forums or listing sites. Fetch single articles with WebFetch; do not crawl. In its prompt, ask for the article's own date line, the one by its headline or byline that says when it was posted and never the site header's date or clock, copied exactly as printed on one line that starts \"Publication date:\", and for every figure, road and law number copied word for word from the article.\n4. For each fetched article that is new and material, call add_research_item once. title_vi, summary_vi and why_it_matters_vi are your own words in plain text on one line: summary_vi at most sixty words, why_it_matters_vi naming the properties or provinces it touches through their _label or _name placeholders. topics and properties are the handles the item concerns.\n5. The number rule holds for those three texts and for source_name, the outlet as plain text; when its name holds a digit, write {{f0.host_label}}. A figure, a road or a law number from the article, such as the name of a ring road, goes into quotes copied exactly from the page WebFetch returned, with the words around it, at least three words, and the text cites it as {{f0.quote_1_label}}; the publication date is {{f0.published_display}}. published_on is the date on that Publication date line, effective_on a date the page shows, and with relevance they are data fields, not text.\n6. If add_research_item answers dropped, move on. If it names an error, fix exactly that and call it again for that item.\n7. Never pad: if nothing is new and material, add nothing. Esta writes the note that says so.\nWhen you are done, reply with the single word: xong.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "research_topics",
+      "list_properties",
+      "recent_items",
+      "add_research_item"
+    ],
+    "maxTurns": 40
+  },
+  "label": "Hand-written case: a scan that finds nothing new, so Esta writes the empty note (P5-05 lane 4). WebFetch answers put the article's date line on a labelled line, as the scan asks since P5-16c.",
+  "model": "hand-written",
+  "numTurns": 6,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__research_topics",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__list_properties",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__recent_items",
+      "input": {}
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "quy hoạch TP. Hồ Chí Minh"
+      },
+      "result": {
+        "query": "quy hoạch TP. Hồ Chí Minh",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Tin cũ về quy hoạch (Demo)",
+                "url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu",
+        "prompt": "Chép nguyên văn dòng ngày đăng của bài, dòng cạnh tiêu đề hoặc tên tác giả chứ không phải ngày ở đầu trang, trên một dòng bắt đầu bằng \"Publication date:\"; tóm tắt nội dung chính và chép nguyên văn mọi con số, tên đường và số hiệu văn bản trong bài."
+      },
+      "result": {
+        "bytes": 113,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Publication date: 15/08/2026\nBài Demo. Tuyến metro Bình Dương vẫn đang ở giai đoạn nghiên cứu.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu"
+      }
+    }
+  ],
+  "reply": "xong"
+}

@@ -1135,6 +1135,7 @@
     "copyFailed": "Could not copy. The answer is selected, so press and hold to copy it.",
     "confirmRentChange": "{direction, select, up {Raise the rent for {place} to {amount} from {date}?} down {Lower the rent for {place} to {amount} from {date}?} other {Set the rent for {place} to {amount} from {date}?}}",
     "confirmRenewal": "Renew the lease for {place} until {date} at {amount} a month?",
+    "place": "{unit}, {property}",
     "confirmCancel": "Cancel",
     "openLease": "Open the lease",
     "openReminder": "Open the reminder",
@@ -1164,6 +1165,9 @@
     },
     "sources": "Sources",
     "citationLabel": "Source {index}: {source}. Opens in a new tab",
+    "linkNotFoundTitle": "This record was not found",
+    "linkNotFoundBody": "The link may be out of date, or the record does not belong to your family.",
+    "linkNotFoundAction": "Back to the assistant",
     "diagnostics": {
       "title": "Assistant diagnostics",
       "intro": "Only operators see this page. Its figures come from the assistant's runs for this household.",
