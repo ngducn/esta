@@ -108,7 +108,7 @@ export const JOBS = {
     kind: 'portfolio_watch',
     builtInTools: [],
     mcpTools: ['watch_facts', 'create_item'],
-    maxTurns: 6,
+    maxTurns: 8,
     timeoutMs: 3 * 60_000,
     modelRole: 'routine',
     schedule: { at: '06:40' },

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "kind": "portfolio_watch",
+  "inputHash": "51d4bb77c8d172870ef7e447b86b8b135c60ab00c8f31f2b5de1b3cb45fe53c0",
+  "input": {
+    "version": 1,
+    "kind": "portfolio_watch",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never type a digit, an amount or currency word, or a number word.\nFor every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.\nWrite every person's name or nickname and every place name through its _name or _label placeholder, such as {{f2.tenant_name}}, because names like chú Ba or Hai Bà Trưng hold number words.\nDo not calculate totals, differences or ratios yourself; call the tool that returns them.\nNever invent amounts, dates, names or sources. If information is missing, say so plainly.\nYou cannot change business records.\nWrite in English. Use the household's terms: sổ, thửa đất, hợp đồng thuê, tiền cọc, kỳ thanh toán.\nTone: calm, polite, concise, like a careful family accountant. No exclamation marks, no emoji.\nToday is 2026-10-07 in Asia/Ho_Chi_Minh.\n\nTask: the morning watch.\n1. Call watch_facts once. Each fact has a handle (f1, f2, …), a rule_id, a severity and text fields.\n2. For each fact whose severity is action, call create_item once: a short title, a body of one or two sentences that says what happened and what to do, and related set to that fact's handle.\n3. Then call create_item once for all watch and info facts together: a title, a body with one list item per fact (you may merge facts about the same place), and related set to all their handles.\n4. A title is one line of plain text. A body is Markdown with paragraphs, lists and bold only, no links.\n5. If create_item answers with an error, fix exactly what it names and call create_item again for that note.\n6. If watch_facts returns no facts, write no note.\nWhen every note is saved, reply with the single word: xong.",
+    "builtInTools": [],
+    "mcpTools": [
+      "watch_facts",
+      "create_item"
+    ],
+    "maxTurns": 8
+  },
+  "label": "Hand-written in English for the full seed at 2026-10-07 06:40 (P5-16a); the live recording waits for the P5-10 live run.",
+  "model": "hand-written",
+  "numTurns": 6,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__watch_facts",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "{{f1.place_label}} is {{f1.days_overdue_display}} overdue",
+        "body_md": "{{f1.tenant_name}}'s bill was due on {{f1.due_date_display}} and is {{f1.days_overdue_display}} overdue, with {{f1.outstanding_display}} still owed. Remind the tenant to pay.",
+        "related": [
+          "f1"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "The lease for {{f2.place_label}} ends soon",
+        "body_md": "The lease with {{f2.tenant_name}} ends on {{f2.end_date_display}}, in {{f2.days_until_end_display}}, and has no renewal yet. Ask the tenant whether they want to stay.",
+        "related": [
+          "f2"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "Deposit not returned for {{f6.place_label}}",
+        "body_md": "The lease with {{f6.tenant_name}} ended on {{f6.end_date_display}}, now {{f6.days_since_end_display}} ago, but the deposit of {{f6.deposit_held_display}} is still held. Settle the lease and return the deposit.",
+        "related": [
+          "f6"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "Things to watch today",
+        "body_md": "- {{f3.place_label}} has been empty for {{f3.days_vacant_display}}, since {{f3.vacant_since_display}}.\n- {{f4.place_label}} has been empty for {{f4.days_vacant_display}}, since {{f4.vacant_since_display}}.\n- {{f5.document_label}} expires on {{f5.expires_on_display}}, in {{f5.days_until_expiry_display}}.\n- {{f7.owner_name}}'s projected rental income for {{f7.year_display}} is {{f7.projected_compact}}, or {{f7.progress_display}} of the {{f7.threshold_compact}} threshold.\n- The file for {{f8.place_label}} is {{f8.completeness_display}} complete; add the missing papers.",
+        "related": [
+          "f3",
+          "f4",
+          "f5",
+          "f7",
+          "f8"
+        ]
+      }
+    }
+  ],
+  "reply": "xong"
+}

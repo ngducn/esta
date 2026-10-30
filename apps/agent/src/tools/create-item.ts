@@ -109,7 +109,7 @@ const handles = (list: readonly string[]) => list.join(', ');
 
 /**
  * `create_item` for portfolio_watch. The model names the facts a note covers; the tool sets the note's severity from
- * them and its dedupe key from its first action fact, or the day's digest key, so a rerun on the same day adds nothing
+ * them and its dedupe key from its one action fact, or the day's digest key, so a rerun on the same day adds nothing
  * (AGENT.md §5.3). The title (plain text) and the body (Markdown) pass the number guard before anything is written.
  */
 export function watchNoteWriter(binding: NoteBinding) {
@@ -129,6 +129,8 @@ export function watchNoteWriter(binding: NoteBinding) {
     if (again.length > 0) throw new ToolRejection(`${handles(again)}: already in a note of this run. Relate each fact to one note.`);
     const facts = related.flatMap((handle) => binding.facts.get(handle) ?? []);
     const action = facts.find(({ fact }) => fact.severity === 'action');
+    // An action note is keyed by its one fact, so a rerun that groups the facts another way finds the note it wrote.
+    if (action !== undefined && related.length > 1) throw new ToolRejection(`${handles(related)}: a note about an action fact relates that fact alone. Write one note for each action fact, and put the watch and info facts in the grouped note.`);
     if (action === undefined && digest) throw new ToolRejection('This run already wrote the grouped note. Put every watch and info fact in that one note.');
 
     const [title, body] = await guard.fill(

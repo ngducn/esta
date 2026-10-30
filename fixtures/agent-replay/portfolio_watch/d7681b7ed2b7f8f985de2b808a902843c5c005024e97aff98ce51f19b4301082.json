@@ -1,7 +1,7 @@
 {
   "version": 1,
   "kind": "portfolio_watch",
-  "inputHash": "cfbe97d166b9dd3cc20bd3775e9908b46a4d5cc4d9c221ad506ad5cf187717f3",
+  "inputHash": "d7681b7ed2b7f8f985de2b808a902843c5c005024e97aff98ce51f19b4301082",
   "input": {
     "version": 1,
     "kind": "portfolio_watch",
@@ -11,11 +11,11 @@
       "watch_facts",
       "create_item"
     ],
-    "maxTurns": 6
+    "maxTurns": 8
   },
-  "label": "Hand-written guard case (P5-03b): the W1 note types its numbers, then types them as words after the repair turn, so the run fails with number_guard.",
+  "label": "Hand-written for the full seed at 2026-10-07 06:40 (P5-03b); the live recording waits for the P5-10 live run.",
   "model": "hand-written",
-  "numTurns": 3,
+  "numTurns": 6,
   "toolCalls": [
     {
       "name": "mcp__esta__watch_facts",
@@ -24,8 +24,8 @@
     {
       "name": "mcp__esta__create_item",
       "input": {
-        "title": "{{f1.place_label}} quá hạn 12 ngày",
-        "body_md": "Hóa đơn của {{f1.tenant_name}} còn nợ 2.800.000 đồng.",
+        "title": "{{f1.place_label}} quá hạn {{f1.days_overdue_display}}",
+        "body_md": "Hóa đơn của {{f1.tenant_name}} đến hạn ngày {{f1.due_date_display}} đã quá hạn {{f1.days_overdue_display}}, còn nợ {{f1.outstanding_display}}. Nên nhắc khách đóng tiền.",
         "related": [
           "f1"
         ]
@@ -34,10 +34,34 @@
     {
       "name": "mcp__esta__create_item",
       "input": {
-        "title": "{{f1.place_label}} quá hạn mười hai ngày",
-        "body_md": "Hóa đơn của {{f1.tenant_name}} còn nợ hai triệu tám trăm nghìn.",
+        "title": "Hợp đồng {{f2.place_label}} sắp hết hạn",
+        "body_md": "Hợp đồng với {{f2.tenant_name}} kết thúc ngày {{f2.end_date_display}}, còn {{f2.days_until_end_display}}, và chưa có hợp đồng gia hạn. Nên hỏi khách có muốn thuê tiếp không.",
         "related": [
-          "f1"
+          "f2"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "Chưa hoàn tiền cọc {{f6.place_label}}",
+        "body_md": "Hợp đồng với {{f6.tenant_name}} đã kết thúc ngày {{f6.end_date_display}}, cách đây {{f6.days_since_end_display}}, nhưng tiền cọc {{f6.deposit_held_display}} vẫn đang giữ. Nên quyết toán và hoàn cọc cho khách.",
+        "related": [
+          "f6"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "Các việc cần để ý hôm nay",
+        "body_md": "- {{f3.place_label}} để trống {{f3.days_vacant_display}}, từ ngày {{f3.vacant_since_display}}.\n- {{f4.place_label}} để trống {{f4.days_vacant_display}}, từ ngày {{f4.vacant_since_display}}.\n- {{f5.document_label}} hết hạn ngày {{f5.expires_on_display}}, còn {{f5.days_until_expiry_display}}.\n- Doanh thu cho thuê dự kiến năm {{f7.year_display}} của {{f7.owner_name}} là {{f7.projected_compact}}, bằng {{f7.progress_display}} ngưỡng {{f7.threshold_compact}}.\n- Hồ sơ {{f8.place_label}} mới đầy đủ {{f8.completeness_display}}, nên bổ sung giấy tờ.",
+        "related": [
+          "f3",
+          "f4",
+          "f5",
+          "f7",
+          "f8"
         ]
       }
     }

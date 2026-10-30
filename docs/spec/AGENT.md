@@ -77,7 +77,7 @@ Re-check the help center article before production deploy; record the date check
 | `ping` | Manual (Phase 0) | routine | `household_info` | 3 | 1 min |
 | `extract_document` | Upload in an extractable category | routine | Read (job dir only), `save_extraction` | 8 | 5 min |
 | `research_scan` | Daily 06:00 and manual | routine | WebSearch, WebFetch, `research_topics`, `recent_items`, `list_properties`, `add_research_item` | 40 | 10 min |
-| `portfolio_watch` | Daily 06:40 | routine | `watch_facts`, `create_item` | 6 | 3 min |
+| `portfolio_watch` | Daily 06:40 | routine | `watch_facts`, `create_item` | 8 | 3 min |
 | `morning_brief` | Daily 07:00 | routine | `watch_facts`, `recent_items`, `create_brief` | 6 | 3 min |
 | `weekly_review` | Sunday 08:00 | deep | All read tools, WebSearch, WebFetch, `create_item`, `create_proposal` | 25 | 10 min |
 | `ask` | Message in the Trợ lý thread | routine (deep on request) | All read tools, `create_proposal`, `calculate` (P5-15), WebSearch and WebFetch (P5-14) | 15; 20 with web | 2 min a session, 3 min with web; twice that with the repair turn |
@@ -181,7 +181,7 @@ Rules live in `packages/core/watch` as a registry of pure functions over a snaps
 
 [app rule] W2 counts an invoice due today, so it covers today and the next 3 days. W3 counts a lease terminated on a future date as active until that date. W6 reads a renewal chain as one deposit: a renewed lease passes its held balance to its renewal (`renew_lease` writes no entries for the new lease), so W6 fires once the last lease of the chain has ended more than 14 days ago. W9 orders a tenant's invoices by due date, then period start, then id, and counts every invoice, so two short invoices of one month make the pair.
 
-The model receives the facts and writes one `agent_item` per action fact and one grouped item for watch and info facts. It may merge related facts but may not add facts.
+The model receives the facts and writes one `agent_item` per action fact, relating that fact alone, and one grouped item for watch and info facts. It may merge related watch and info facts in the grouped item but may not add facts. An action item takes its dedupe key from its one fact, so a rerun the same day finds the item it wrote however the model orders its calls. [app rule] `maxTurns` is 8: a day with three action facts takes six turns, which leaves one for the number guard's repair turn and one for a refused call.
 
 ### 5.4 morning_brief
 
