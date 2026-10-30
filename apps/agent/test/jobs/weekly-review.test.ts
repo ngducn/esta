@@ -1,12 +1,15 @@
 import { isoDate } from '@esta/core/date';
-import { describe, expect, it } from 'vitest';
-import { reviewedWeek, weekProposals, weeklyReviewRequest } from '../../src/jobs/weekly-review';
+import { describe, expect, it, vi } from 'vitest';
+import { JOBS } from '../../src/jobs/registry';
+import { reviewedWeek } from '../../src/jobs/weekly-review';
 import { fakeDb } from '../../src/test/fake-db';
 import { askTables } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
-import { readsOn, recordedReads, replayedReads } from '../golden/ask-reads';
-import { WEEKLY_AS_OF, weeklyRecording } from '../golden/weekly-fixture';
+import { weeklyRecording } from '../golden/weekly-fixture';
 import { toolCaller } from '../replay-worker';
+
+// The job reads the seed's figures from the shared recording instead of a database; everything else is the worker's wiring.
+vi.mock('../../src/tools/ask-reads', async (original) => (await import('../golden/ask-reads')).askReadsOn(original, isoDate('2026-10-11')));
 
 type Row = Record<string, unknown>;
 
@@ -25,22 +28,12 @@ function weeklyTables(): Record<string, Row[]> {
 
 const W41 = `weekly_review:${HOUSEHOLD}:2026-W41`;
 
-/** One attempt of a weekly job queued under `key`, run on `day`, as the worker prepares it. */
+/** One attempt of a weekly job queued under `key`, run on `day`, prepared through the registry as the worker does. */
 async function weeklyRun(tables: Record<string, Row[]>, { day = '2026-10-11', key = W41, jobId = `job:${key}` }: { day?: string; key?: string; jobId?: string } = {}) {
   const job = { id: jobId, household_id: HOUSEHOLD, kind: 'weekly_review', idempotency_key: key };
   if (!(tables.agent_jobs ?? []).some((row) => row.id === jobId)) (tables.agent_jobs ??= []).push(job);
   const db = fakeDb(tables, [], {}, {}, { proposal_refusal: () => null });
-  const prepared = weeklyReviewRequest({
-    db,
-    householdId: HOUSEHOLD,
-    jobId,
-    locale: 'vi',
-    ...reviewedWeek(job, isoDate(day)),
-    earlierProposals: await weekProposals(db, job),
-    timezone: 'Asia/Ho_Chi_Minh',
-    reads: replayedReads(readsOn(recordedReads(), isoDate(WEEKLY_AS_OF.slice(0, 10)))),
-    clock: clockOn(`${day}T08:00:00+07:00`),
-  });
+  const prepared = await JOBS.weekly_review.handler.prepare({ db, job: job as never, jobDir: '', timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: clockOn(`${day}T08:00:00+07:00`) });
   const call = toolCaller(prepared);
   for (const { name, input } of reads) await call(name, input);
   return { prepared, call };
@@ -80,6 +73,16 @@ describe('weekly_review proposals (AGENT.md §5.5)', () => {
     expect((await retry.call('create_proposal', task('Kiểm tra'))).isError).toBe(false);
     expect((await retry.call('create_proposal', task('Gọi'))).text).toContain('already made 3 proposals');
     expect(proposals(tables).filter((row) => row.job_id !== `job:weekly_review:${HOUSEHOLD}:2026-W40`)).toHaveLength(3);
+  });
+
+  it('lists only the proposals it stored, so a duplicate takes no slot and stays out of the result', async () => {
+    const tables = weeklyTables();
+    const { prepared, call } = await weeklyRun(tables);
+    for (const input of [reminder, reminder, renewal, rentChange]) expect((await call('create_proposal', input)).isError).toBe(false);
+    expect((await call('create_item', note)).isError).toBe(false);
+    const { proposals: listed } = (await prepared.finish({ reply: 'xong', model: 'm' })) as { proposals: string[] };
+    expect(listed).toEqual(proposals(tables).map((row) => row.dedupe_key));
+    expect(listed).toHaveLength(3);
   });
 
   it('refuses a rent change with no citation, or one citing a page neither fetched in this run nor stored', async () => {

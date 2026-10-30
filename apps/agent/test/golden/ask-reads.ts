@@ -51,3 +51,6 @@ export function replayedReads(recorded: RecordedReads = recordedReads()): AskRea
     };
   return { report: answer('report'), collections: answer('collections'), leases: answer('leases'), property: answer('property'), legal: answer('legal'), payments: answer('payments') };
 }
+
+/** The ask reads module for `vi.mock`: the real one, with `askReads` answering from the recording as a run on `asOf` reads it. */
+export const askReadsOn = async (original: () => Promise<object>, asOf: IsoDate) => ({ ...(await original()), askReads: () => replayedReads(readsOn(recordedReads(), asOf)) });
