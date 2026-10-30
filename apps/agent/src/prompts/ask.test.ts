@@ -23,8 +23,22 @@ describe('the language of the reply (#348)', () => {
     'Viết tin nhắn Zalo nhắc Phòng 5 đóng tiền',
     'Có nên gia hạn hợp đồng Căn hộ Thủ Đức không?',
     'Phòng 5',
+    'Gửi bill phòng 5',
+    'Phòng 2 overdue',
+    'phong be it tien',
   ])('leaves %j to the Vietnamese default, so a Vietnamese prompt does not change', (question) => {
     expect(askPrompt({ ...CONTEXT, question })).not.toContain(ENGLISH);
     expect(askFollowUpPrompt({ ...CONTEXT, question, firstHandle: 9 })).not.toContain(ENGLISH);
+  });
+
+  it('says English for a message that gives no sign of either language only in a household that reads English', () => {
+    const question = 'ok';
+    expect(askPrompt({ ...CONTEXT, locale: 'en', question })).toContain(ENGLISH);
+    expect(askFollowUpPrompt({ ...CONTEXT, locale: 'en', question, firstHandle: 9 })).toContain(ENGLISH);
+    expect(askPrompt({ ...CONTEXT, locale: 'vi', question })).not.toContain(ENGLISH);
+  });
+
+  it('keeps Vietnamese for a marked message even in a household that reads English', () => {
+    expect(askPrompt({ ...CONTEXT, locale: 'en', question: 'Gửi bill phòng 5' })).not.toContain(ENGLISH);
   });
 });
