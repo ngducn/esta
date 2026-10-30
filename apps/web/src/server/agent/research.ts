@@ -39,6 +39,7 @@ export async function loadMarket(householdId: string, now: Instant, timezone: st
   const supabase = await createSessionClient();
   const latest = (kind: 'alert' | 'research_scan_empty') =>
     supabase.from('agent_items').select('title, created_at').eq('household_id', householdId).eq('kind', kind).lte('created_at', now).order('created_at', { ascending: false }).limit(1);
+  const today = businessDate(now, timezone);
   const [items, properties, topics, failed, empty] = await Promise.all([
     supabase
       .from('research_items')
@@ -50,12 +51,11 @@ export async function loadMarket(householdId: string, now: Instant, timezone: st
       .limit(100),
     supabase.from('properties').select('id, nickname, current_address').eq('household_id', householdId).is('deleted_at', null).order('code'),
     supabase.from('research_topics').select('topic_key, label').eq('household_id', householdId).eq('active', true).order('label'),
-    latest('alert').like('dedupe_key', failedJobKey('research_scan', '%')).in('status', OPEN_NOTE_STATUSES).maybeSingle(),
+    latest('alert').like('dedupe_key', failedJobKey('research_scan', today, '%')).in('status', OPEN_NOTE_STATUSES).maybeSingle(),
     latest('research_scan_empty').maybeSingle(),
   ]);
   for (const { error } of [items, properties, topics, failed, empty]) if (error) throw new Error(`Reading the market news failed: ${error.message}`);
-  const today = businessDate(now, timezone);
-  const ofToday = (row: { title: string; created_at: string } | null, failed: boolean) => (row !== null && businessDate(parseInstant(row.created_at), timezone) === today ? { failed, title: row.title } : null);
+  const quietToday = empty.data !== null && businessDate(parseInstant(empty.data.created_at), timezone) === today ? { failed: false, title: empty.data.title } : null;
   return {
     items: (items.data ?? []).flatMap((row) => {
       const publishedOn = date(row.published_on);
@@ -81,6 +81,6 @@ export async function loadMarket(householdId: string, now: Instant, timezone: st
     topics: (topics.data ?? [])
       .toSorted((a, b) => TOPIC_ORDER.findIndex((prefix) => a.topic_key.startsWith(prefix)) - TOPIC_ORDER.findIndex((prefix) => b.topic_key.startsWith(prefix)))
       .map((row) => row.label),
-    scanToday: ofToday(failed.data, true) ?? ofToday(empty.data, false),
+    scanToday: failed.data !== null ? { failed: true, title: failed.data.title } : quietToday,
   };
 }

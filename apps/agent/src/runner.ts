@@ -217,7 +217,7 @@ async function failJob(worker: Worker, job: AgentJob, failure: Failure): Promise
   rmSync(join(worker.jobsDir, job.id), { recursive: true, force: true });
   const spec = jobSpec(job.kind);
   await spec?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, failure.message);
-  await writeFailureItems({ db: worker.db, job, spec, clock: await worker.clock() }, failure);
+  await writeFailureItems({ db: worker.db, job, spec, clock: await worker.clock(), timezone: worker.timezone }, failure);
   await ownJob(worker, job, 'Failing the job', { status: 'failed', error: failure.message, finished_at: (await worker.clock()).now() });
 }
 

@@ -360,7 +360,7 @@ The `ping` job (Phase 0) proves the worker, the tool layer and auth end to end. 
 | Situation | Behavior |
 | --- | --- |
 | Worker offline (heartbeat older than 5 min) | Banner: "Trợ lý ngoại tuyến từ 21:30. Việc mới sẽ chạy khi máy hoạt động lại." Jobs stay queued |
-| Job failed after retries | `info` item with Thử lại for admins (operators only when the number guard held the note back), keyed `job_failed:{kind}:{job_id}`, so Thị trường names a failed news scan of the day instead of a quiet day; `retry_agent_job` queues one job per tap number, keyed `{original key or kind:job id}:retry:{n}` |
+| Job failed after retries | `info` item with Thử lại for admins (operators only when the number guard held the note back), keyed `job_failed:{kind}:{period}:{job_id}`, where the period is the day or week its schedule key names (else the day the job was queued), so Thị trường names a failed news scan of the day instead of a quiet day, and a scan for yesterday that fails for good after midnight is not today's; `retry_agent_job` queues one job per tap number, keyed `{original key or kind:job id}:retry:{n}` |
 | Login refused (`auth_error`) | One operator `system` item a day saying the worker cannot sign in to Claude; no error text |
 | Extraction failed | The review screen offers manual entry beside the image |
 | Number guard failure | Job fails; operator-only item with the text; nothing shown to Mẹ |
