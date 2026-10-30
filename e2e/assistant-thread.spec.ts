@@ -448,6 +448,7 @@ test('thread case T4: in dark, Mẹ taps Hỏi Trợ lý về tài sản này on
   await open(page, `me.lane${TOPIC_LANE}@demo.esta.test`, 'dark', PHONE);
   await freshThread(page, 'me', TOPIC_LANE);
   await page.goto(`/properties/${property}`);
+  await shot(page, 'p5-13-property-header-390x844-dark');
   await page.getByRole('link', { name: 'Hỏi Trợ lý về tài sản này' }).click();
   await expect(page).toHaveURL(new RegExp(`/assistant\\?about=${property}$`));
   await expect(page.getByTestId('composer-topic')).toContainText('Về: Đất Bảo Lộc');
@@ -460,6 +461,8 @@ test('thread case T4: in dark, Mẹ taps Hỏi Trợ lý về tài sản này on
   await expect(page.getByTestId('question').last().getByTestId('question-topic')).toHaveText('Về: Đất Bảo Lộc');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-13-property-topic-390x844-dark');
+  await page.setViewportSize(DESKTOP);
+  await shot(page, 'p5-13-property-topic-1440x900-dark');
 
   await answer(page).getByRole('link', { name: 'pháp lý của Đất Bảo Lộc' }).click();
   await expect(page).toHaveURL(new RegExp(`/properties/${property}/legal`));
@@ -475,6 +478,9 @@ test('Mẹ sees three suggested replies from her open notes, and one tap sends e
   await expect(chips, 'the most severe notes first, newest first, at most three').toHaveText(CHIPS);
   expect(await seriousAxeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page), 'no sideways scroll').toBe(true);
+  await page.setViewportSize(DESKTOP);
+  await shot(page, 'p5-13-chips-1440x900-light');
+  await page.setViewportSize(PHONE);
 
   await chips.first().click();
   await expect(page.getByTestId('question').last()).toContainText(CHIPS[0] ?? '');
