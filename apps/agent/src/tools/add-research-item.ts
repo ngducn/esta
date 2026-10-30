@@ -3,12 +3,15 @@ import { MAX_SUMMARY_TOKENS, researchItemDraftSchema, wordCount, type ResearchIt
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, type Locale } from '@esta/core/format';
 import type { FactSheet, FilledNote } from '@esta/core/guard';
-import { datesInText } from '@esta/core/parse/page-dates';
+import { datesInText, publishedDates } from '@esta/core/parse/page-dates';
 import { keepRule, MIN_QUOTE_WORDS, normalizeUrl, quoteOnPage, type DropReason } from '@esta/core/research';
 import type { AgentDb } from '../supabase';
 import { guardedWriter } from './create-item';
 import { daysAgo } from './recent-items';
 import { ToolRejection } from './server';
+
+/** A page WebFetch read in this run: its text, and the link it ended on, which `research_items.source_url` stores. */
+export type FetchedPage = { readonly text: string; readonly link: string };
 
 export type ResearchBinding = {
   readonly db: AgentDb;
@@ -20,7 +23,7 @@ export type ResearchBinding = {
   readonly sheet: FactSheet;
   readonly topics: ReadonlyMap<string, { readonly province_codes: readonly string[] }>;
   readonly properties: ReadonlyMap<string, { readonly id: string }>;
-  readonly fetched: ReadonlyMap<string, string>;
+  readonly fetched: ReadonlyMap<string, FetchedPage>;
   clock(): Promise<Clock>;
 };
 
@@ -90,8 +93,8 @@ export function researchItemWriter(binding: ResearchBinding) {
     if (!url.ok) throw new ToolRejection(`source_url: ${url.reason === 'not_https' ? 'cite an https page' : 'not a link'}.`);
     const page = binding.fetched.get(url.value);
     if (page === undefined) return drop(draft.source_url, 'not_fetched');
-    const onPage = datesInText(page);
-    if (!onPage.has(draft.published_on)) return drop(draft.source_url, 'date_unconfirmed');
+    if (!publishedDates(page.text).has(draft.published_on)) return drop(draft.source_url, 'date_unconfirmed');
+    const onPage = datesInText(page.text);
     const effectiveOn = draft.effective_on !== null && onPage.has(draft.effective_on) ? draft.effective_on : null;
     const keep = keepRule({ publishedOn: draft.published_on, effectiveOn }, { today: binding.asOf, lastSuccessOn: binding.lastSuccessOn });
     if (!keep.ok) return drop(draft.source_url, keep.reason);
@@ -104,7 +107,7 @@ export function researchItemWriter(binding: ResearchBinding) {
     const { sheet, guard } = guardFor(url.value);
     sheet.clear();
     for (const [handle, record] of binding.sheet) sheet.set(handle, record);
-    sheet.set('f0', sourceRecord(draft, new URL(url.value), page, binding.locale));
+    sheet.set('f0', sourceRecord(draft, new URL(url.value), page.text, binding.locale));
     const [source, title, summary, why] = await guard.fill(
       [draft.source_name, draft.title_vi, draft.summary_vi, draft.why_it_matters_vi].map((template) => ({ template, format: 'plain' as const })),
       JSON.stringify(draft, null, 2),
@@ -125,7 +128,7 @@ export function researchItemWriter(binding: ResearchBinding) {
         {
           household_id: binding.householdId,
           url_normalized: url.value,
-          source_url: url.value,
+          source_url: page.link,
           source_name: sourceName,
           published_on: draft.published_on,
           effective_on: effectiveOn,

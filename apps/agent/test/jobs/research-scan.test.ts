@@ -208,11 +208,12 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
     expect(items()).toEqual([]);
   });
 
-  it('stores the normalized link of the page it fetched, not the link the model typed', async () => {
-    const typed = 'https://www.tintuc.example.vn/vanh-dai-3/?utm_source=zalo#top';
-    const { call, items } = await scan({ pages: { [typed]: PAGE_TEXT } });
-    expect(await call('add_research_item', item({ source_url: typed }))).toEqual({ text: '{"saved":true}', isError: false });
-    expect(items()).toMatchObject([{ source_url: PAGE, url_normalized: PAGE }]);
+  it('stores the link a redirect ended on, not the link the model asked for or typed', async () => {
+    const { prepared, call, items } = await scan({ pages: {} });
+    const landed = 'https://www.tintuc.example.vn/vanh-dai-3/';
+    prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: `${landed}?utm_source=zalo`, bytes: 1, durationMs: 1 } });
+    expect(await call('add_research_item', item({ source_url: `${PAGE}?utm_source=zalo#top` }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items()).toMatchObject([{ source_url: landed, url_normalized: PAGE }]);
   });
 });
 
