@@ -12,15 +12,20 @@ async function propertyOf(db: Db, table: 'leases' | 'units' | 'meters', id: stri
   return data?.property_id ?? null;
 }
 
-/** A tenant's latest lease, else an owner's tax card; null for anyone else, such as a bank, or a person of another household. */
+/**
+ * A tenant's lease in force, the active one that started first, so neither a newer draft nor a renewal that has not
+ * started wins; else her newest lease; else an owner's tax card. Null for anyone else, such as a bank, or a person of
+ * another household.
+ */
 async function personScreen(db: Db, id: string): Promise<string | null> {
-  const [lease, share] = await Promise.all([
-    db.from('leases').select('id, property_id').eq('tenant_party_id', id).order('start_date', { ascending: false }).limit(1).maybeSingle(),
+  const [leases, share] = await Promise.all([
+    db.from('leases').select('id, property_id, status').eq('tenant_party_id', id).order('start_date', { ascending: false }).order('id'),
     db.from('ownership_shares').select('id').eq('party_id', id).limit(1).maybeSingle(),
   ]);
-  if (lease.error) throw failed(lease.error);
+  if (leases.error) throw failed(leases.error);
   if (share.error) throw failed(share.error);
-  if (lease.data !== null) return `/properties/${lease.data.property_id}/rental/leases/${lease.data.id}`;
+  const lease = leases.data.findLast((row) => row.status === 'active') ?? leases.data[0];
+  if (lease !== undefined) return `/properties/${lease.property_id}/rental/leases/${lease.id}`;
   return share.data === null ? null : '/reports/tax';
 }
 
