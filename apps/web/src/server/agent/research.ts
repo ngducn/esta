@@ -1,6 +1,7 @@
 import 'server-only';
 import { businessDate, isIsoDate, parseInstant, type Instant, type IsoDate } from '@esta/core';
 import { RESEARCH_KINDS, type ResearchKind } from '@esta/core/agent-schemas';
+import { failedJobKey, OPEN_NOTE_STATUSES } from '@esta/core/assistant';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
@@ -24,8 +25,8 @@ export type Market = {
   readonly items: readonly MarketItem[];
   readonly properties: readonly MarketProperty[];
   readonly topics: readonly string[];
-  /** Today's note that the scan kept nothing, when it wrote one. */
-  readonly emptyToday: string | null;
+  /** Today's line about the news scan: its open Thử lại item when it failed, else its note that it kept nothing (#329). */
+  readonly scanToday: { readonly failed: boolean; readonly title: string } | null;
 };
 
 const kind = z.enum(RESEARCH_KINDS);
@@ -36,7 +37,9 @@ const TOPIC_ORDER = ['province:', 'commune:', 'national:'];
 /** The Thị trường tab: the household's research items newest first, its properties for the filter, and its active topics (DESIGN-BRIEF §6.11). */
 export async function loadMarket(householdId: string, now: Instant, timezone: string): Promise<Market> {
   const supabase = await createSessionClient();
-  const [items, properties, topics, empty] = await Promise.all([
+  const latest = (kind: 'alert' | 'research_scan_empty') =>
+    supabase.from('agent_items').select('title, created_at').eq('household_id', householdId).eq('kind', kind).lte('created_at', now).order('created_at', { ascending: false }).limit(1);
+  const [items, properties, topics, failed, empty] = await Promise.all([
     supabase
       .from('research_items')
       .select('id, title_vi, summary_vi, why_it_matters_vi, kind, published_on, effective_on, source_name, source_url, related_property_ids, province_codes')
@@ -47,10 +50,12 @@ export async function loadMarket(householdId: string, now: Instant, timezone: st
       .limit(100),
     supabase.from('properties').select('id, nickname, current_address').eq('household_id', householdId).is('deleted_at', null).order('code'),
     supabase.from('research_topics').select('topic_key, label').eq('household_id', householdId).eq('active', true).order('label'),
-    supabase.from('agent_items').select('title, created_at').eq('household_id', householdId).eq('kind', 'research_scan_empty').lte('created_at', now).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    latest('alert').like('dedupe_key', failedJobKey('research_scan', '%')).in('status', OPEN_NOTE_STATUSES).maybeSingle(),
+    latest('research_scan_empty').maybeSingle(),
   ]);
-  for (const { error } of [items, properties, topics, empty]) if (error) throw new Error(`Reading the market news failed: ${error.message}`);
+  for (const { error } of [items, properties, topics, failed, empty]) if (error) throw new Error(`Reading the market news failed: ${error.message}`);
   const today = businessDate(now, timezone);
+  const ofToday = (row: { title: string; created_at: string } | null, failed: boolean) => (row !== null && businessDate(parseInstant(row.created_at), timezone) === today ? { failed, title: row.title } : null);
   return {
     items: (items.data ?? []).flatMap((row) => {
       const publishedOn = date(row.published_on);
@@ -76,6 +81,6 @@ export async function loadMarket(householdId: string, now: Instant, timezone: st
     topics: (topics.data ?? [])
       .toSorted((a, b) => TOPIC_ORDER.findIndex((prefix) => a.topic_key.startsWith(prefix)) - TOPIC_ORDER.findIndex((prefix) => b.topic_key.startsWith(prefix)))
       .map((row) => row.label),
-    emptyToday: empty.data !== null && businessDate(parseInstant(empty.data.created_at), timezone) === today ? empty.data.title : null,
+    scanToday: ofToday(failed.data, true) ?? ofToday(empty.data, false),
   };
 }

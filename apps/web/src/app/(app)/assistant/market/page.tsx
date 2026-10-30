@@ -66,9 +66,9 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
               </ul>
             </nav>
           )}
-          {market.emptyToday === null ? null : (
-            <p data-testid="market-empty-today" className={card}>
-              {market.emptyToday}
+          {market.scanToday === null ? null : (
+            <p data-testid={market.scanToday.failed ? 'market-scan-failed' : 'market-empty-today'} className={card}>
+              {market.scanToday.title}
             </p>
           )}
           {shown.length > 0 ? (
@@ -79,7 +79,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                 </li>
               ))}
             </ul>
-          ) : selected === null && market.emptyToday !== null ? null : (
+          ) : selected === null && market.scanToday !== null ? null : (
             <p data-testid="market-empty" className={card}>
               {selected === null ? t('empty') : t('emptyFor', { property: selected.nickname })}
             </p>
