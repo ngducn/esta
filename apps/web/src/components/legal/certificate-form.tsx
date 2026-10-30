@@ -1,11 +1,13 @@
 'use client';
 
 import type { IsoDate } from '@esta/core/date';
-import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, type Certificate } from '@esta/core/schemas/legal';
+import { UNIDENTIFIED } from '@esta/core/schemas/identity';
+import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, newCertificateSchema, type Certificate } from '@esta/core/schemas/legal';
 import { usedNewParties } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { DateInput } from '@/components/date-input';
+import { FormAlert } from '@/components/form-alert';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
@@ -41,6 +43,7 @@ export function CertificateForm({
   const [annotations, setAnnotations] = useState<readonly AnnotationDraft[]>(() => (initial?.annotations ?? []).map((annotation, index) => annotationDraft(index, annotation)));
   const [nextKey, setNextKey] = useState(annotations.length);
   const [invalid, setInvalid] = useState<MortgageInvalid | null>(null);
+  const [unidentified, setUnidentified] = useState(false);
 
   const activeMortgage = status === 'mortgaged' || showMortgage ? mortgage : mortgageDraft(null);
 
@@ -51,7 +54,7 @@ export function CertificateForm({
       return null;
     }
     setInvalid(null);
-    return {
+    const input = {
       form,
       serial_no: serialNo,
       book_entry_no: bookEntryNo,
@@ -62,6 +65,10 @@ export function CertificateForm({
       mortgage: read.value,
       annotations: readAnnotations(annotations),
     };
+    const checked = itemId === null ? newCertificateSchema.safeParse(input) : null;
+    const blank = checked !== null && !checked.success && checked.error.issues.some((issue) => issue.message === UNIDENTIFIED);
+    setUnidentified(blank);
+    return blank ? null : input;
   };
 
   return (
@@ -73,6 +80,7 @@ export function CertificateForm({
       newParties={() => usedNewParties(pending, [...holders, activeMortgage.bankId])}
     >
       <Group title={t('groupCertificate')}>
+        <FormAlert message={unidentified ? t('certificateUnidentified') : null} data-testid="certificate-unidentified" />
         <FormSelect
           label={t('formLabel')}
           testId="certificate-form-select"

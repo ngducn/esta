@@ -1,5 +1,6 @@
 import type { z } from 'zod';
-import { certificateSchema, newParcelSchema, PARCEL_UNIDENTIFIED, type parcelSchema, structureSchema } from '../schemas/legal';
+import { UNIDENTIFIED } from '../schemas/identity';
+import { certificateSchema, newParcelSchema, type parcelSchema, structureSchema } from '../schemas/legal';
 import { utilityAccountSchema } from '../schemas/units';
 import { INPUT_KINDS, readInput, reviewFields, withinLeafBounds, type ReviewField } from './fields';
 import type { SchemaName } from './required-fields';
@@ -263,7 +264,7 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
       origin_text: text(parcel.read('origin_text')),
     });
     if (row.success) collected.steps.push({ table: 'parcels', row: { id: id(`parcels[${i}]`), ...scope, ...row.data } });
-    else if (row.error.issues.some((issue) => issue.message === PARCEL_UNIDENTIFIED)) collected.missing.push(`${parcel.prefix}parcel_no`);
+    else if (row.error.issues.some((issue) => issue.message === UNIDENTIFIED)) collected.missing.push(`${parcel.prefix}parcel_no`);
     else collected.invalid.push(...issuePaths(parcel.prefix, row.error));
   }
 
