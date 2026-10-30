@@ -3,7 +3,9 @@
 import { reduceNationalIds } from '@esta/core/agent-schemas';
 import { manualEntryId, PLANNERS, readValues, type Decisions, type PlanStep } from '@esta/core/extraction/acceptance';
 import { isSchemaName } from '@esta/core/extraction/fields';
+import { certificateMismatches, savedAddress, soleProvince, type Saved } from '@esta/core/extraction/review-changes';
 import type { Json, TablesInsert } from '@esta/db';
+import { suggestCurrentUnits } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
@@ -11,7 +13,7 @@ import { createSessionClient } from '@/server/supabase/server';
 
 export type ReviewSave =
   | { readonly ok: true; readonly propertyId: string }
-  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing' | 'national_id'; readonly paths: readonly string[] }
+  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing' | 'national_id' | 'mismatch'; readonly paths: readonly string[] }
   | { readonly ok: false; readonly reason: 'no_property' | 'not_reviewable' | 'forbidden' | 'failed' };
 
 const uuid = z.uuid();
@@ -67,16 +69,32 @@ async function reviewTarget(supabase: Session, householdId: string, extractionId
   return null;
 }
 
-type ReviewedDocument = { readonly propertyId: string; readonly sensitive: boolean };
+type ReviewedDocument = { readonly propertyId: string; readonly sensitive: boolean; readonly unfiled: boolean };
 
 async function reviewedDocument(supabase: Session, target: Target, chosen: string | null): Promise<ReviewedDocument | null> {
   const { data } = await supabase.from('documents').select('property_id, sensitivity').eq('household_id', target.householdId).eq('id', target.documentId).maybeSingle();
   if (data === null) return null;
   const sensitive = data.sensitivity !== 'normal';
-  if (data.property_id !== null) return { propertyId: data.property_id, sensitive };
-  if (chosen === null) return null;
-  const { error } = await supabase.from('documents').update({ property_id: chosen }).eq('household_id', target.householdId).eq('id', target.documentId);
-  return error ? null : { propertyId: chosen, sensitive };
+  if (data.property_id !== null) return { propertyId: data.property_id, sensitive, unfiled: false };
+  return chosen === null ? null : { propertyId: chosen, sensitive, unfiled: true };
+}
+
+const currentProvinceSchema = z.object({ province_code: z.string() });
+
+async function mismatchedPaths(supabase: Session, householdId: string, propertyId: string, saved: Saved): Promise<readonly string[] | null> {
+  const [property, shares] = await Promise.all([
+    supabase.from('properties').select('current_address').eq('household_id', householdId).eq('id', propertyId).maybeSingle(),
+    supabase.from('ownership_shares').select('parties(full_name, id_last4)').eq('household_id', householdId).eq('property_id', propertyId),
+  ]);
+  if (property.error || shares.error) return null;
+  const address = savedAddress(saved);
+  const units = address === null ? [] : await suggestCurrentUnits(supabase, address.value);
+  const current = currentProvinceSchema.safeParse(property.data?.current_address);
+  const facts = {
+    provinceCode: current.success ? current.data.province_code : null,
+    owners: shares.data.map(({ parties }) => ({ fullName: parties.full_name, idLast4: parties.id_last4 })),
+  };
+  return certificateMismatches(saved, facts, soleProvince(units.map((unit) => unit.provinceCode))).flatMap((mismatch) => mismatch.paths);
 }
 
 const readTextSchema = z.object({ full_text: z.string() });
@@ -100,12 +118,13 @@ async function closeItems(supabase: Session, householdId: string, keys: readonly
 /**
  * Accepts the reviewed fields of an extraction (DOC-6): builds the plan, has the database judge every value it keeps as
  * read by the extraction CHECK's rule and stops before any write when one holds a full ID (a typed value is kept as
- * typed, SPEC D11), upserts each step on the member's session, copies a normal document's read text into
- * `documents.ocr_text` for search (DOC-3), then marks the extraction accepted with `accepted_fields`. A failed read is
- * saved as a manual entry, inserted accepted with no model before its rows so the certificate can name it. Every step
- * is keyed by the extraction, so a retry after a partial failure converges on the same rows.
+ * typed, SPEC D11), stops a certificate that looks like another property's until Mẹ confirms it (#356), files a
+ * document saved with a chosen property on it, upserts each step on the member's session, copies a normal document's
+ * read text into `documents.ocr_text` for search (DOC-3), then marks the extraction accepted with `accepted_fields`.
+ * A failed read is saved as a manual entry, inserted accepted with no model before its rows so the certificate can name
+ * it. Every step is keyed by the extraction, so a retry after a partial failure converges on the same rows.
  */
-export async function saveExtractionReview(extractionId: unknown, decisions: unknown, propertyId: unknown = null): Promise<ReviewSave> {
+export async function saveExtractionReview(extractionId: unknown, decisions: unknown, propertyId: unknown = null, confirmed: unknown = false): Promise<ReviewSave> {
   const id = uuid.safeParse(extractionId);
   const parsed = decisionsSchema.safeParse(decisions);
   const chosen = propertyId === null ? { success: true as const, data: null } : uuid.safeParse(propertyId);
@@ -139,6 +158,15 @@ export async function saveExtractionReview(extractionId: unknown, decisions: unk
   const fieldsHeld = held.filter((index) => index < values.length);
   const ocrText = readText !== null && !held.includes(values.length) ? readText : null;
   if (fieldsHeld.length > 0) return { ok: false, reason: 'national_id', paths: fieldsHeld.flatMap((index) => values[index]?.path ?? []) };
+  if (target.schemaName === 'certificate_v1' && confirmed !== true) {
+    const mismatched = await mismatchedPaths(supabase, target.householdId, property, planned.plan.acceptedFields);
+    if (mismatched === null) return { ok: false, reason: 'failed' };
+    if (mismatched.length > 0) return { ok: false, reason: 'mismatch', paths: mismatched };
+  }
+  if (document.unfiled) {
+    const { error } = await supabase.from('documents').update({ property_id: property }).eq('household_id', target.householdId).eq('id', target.documentId);
+    if (error) return { ok: false, reason: 'no_property' };
+  }
   const acceptedFields = asJson(planned.plan.acceptedFields);
 
   if (target.manualOf !== null) {

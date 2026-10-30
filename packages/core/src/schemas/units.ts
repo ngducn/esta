@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { IsoDate } from '../date/iso-date';
 import { MAX_AMOUNT_VND, type Vnd } from '../money/vnd';
+import { identifies, UNIDENTIFIED } from './identity';
 import { areaSchema, isoDateSchema, optionalText, text } from './legal';
 import { vndSchema } from './property';
 
@@ -41,6 +42,8 @@ export const utilityAccountSchema = z.strictObject({
   note: optionalText(1000),
 });
 export type UtilityAccountValue = z.output<typeof utilityAccountSchema>;
+
+export const newUtilityAccountSchema = utilityAccountSchema.refine(identifies('utilityAccount'), { error: UNIDENTIFIED });
 export type UtilityAccount = UtilityAccountValue & { readonly id: string };
 
 /** A batch of new rooms: the labels `nextRoomLabels` computed when the sheet opened, and one list rent for all. */

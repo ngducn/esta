@@ -143,6 +143,12 @@ function lowConfidence(result: unknown): number {
   return reviewFields('certificate_v1', result).filter((field) => needsCheck(field)).length;
 }
 
+async function saveAnyway(page: Page) {
+  await page.getByTestId('review-submit').click();
+  await expect(page.getByTestId('review-submit')).toHaveAttribute('data-state', 'confirm', { timeout: 15_000 });
+  await page.getByTestId('review-submit').click();
+}
+
 async function expectMarks(page: Page, result: unknown) {
   const marks = page.getByTestId('needs-check');
   await expect(marks).toHaveCount(lowConfidence(result));
@@ -152,10 +158,10 @@ async function expectMarks(page: Page, result: unknown) {
   }
 }
 
-test('rule 1: Mẹ opens Chờ xem lại on the Long An certificate, sees every low-confidence field marked, accepts all and Pháp lý shows the serial and parcel', async ({ page }) => {
+test('rule 1: Mẹ opens Chờ xem lại on the Dĩ An certificate, sees every low-confidence field marked and the address it replaces, accepts all and Pháp lý shows the serial and parcel', async ({ page }) => {
   await startWorker();
   await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
-  const documentId = await uploadAndRead(page, 1, 'long-an', 'gcn_2024-photo', 'Sổ hồng Long An');
+  const documentId = await uploadAndRead(page, 1, 'di-an', 'northstar-di-an', 'Sổ hồng Dĩ An');
   await pill(page, documentId).getByTestId('review-link').click();
   await expect(page).toHaveURL(`/documents/${documentId}/review`);
   const [extraction] = await extractions(page, documentId);
@@ -168,12 +174,47 @@ test('rule 1: Mẹ opens Chờ xem lại on the Long An certificate, sees every 
   await shot(page, 'p2-07-rule1-review-390x844-light');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
+  await expect(page.getByTestId('review-change')).toHaveCount(0);
   await acceptEvery(page);
+  await expect(page.getByTestId('change-before')).toHaveText('Số 903/9 Demo, đường Nguyễn An Ninh, Khu phố Nhị Đồng 2, Phường Dĩ An, Thành phố Dĩ An, Tỉnh Bình Dương');
+  await expect(page.getByTestId('change-after')).toHaveText('phường Dĩ An, thành phố Dĩ An, tỉnh Bình Dương');
   await page.getByTestId('review-submit').click();
-  await expect(page).toHaveURL(`/properties/${propertyId(1, 'long-an')}/legal`, { timeout: 15_000 });
-  const truth = fixture('gcn_2024-photo').truth as { serial_no: { value: string }; parcels: { parcel_no: { value: string } }[] };
+  await expect(page).toHaveURL(`/properties/${propertyId(1, 'di-an')}/legal`, { timeout: 15_000 });
+  const truth = fixture('northstar-di-an').truth as { serial_no: { value: string }; parcels: { parcel_no: { value: string } }[] };
   await expect(page.getByText(truth.serial_no.value).first()).toBeVisible();
   for (const parcel of truth.parcels) await expect(page.getByText(new RegExp(`Thửa số ${parcel.parcel_no.value}\\b`)).first()).toBeVisible();
+  expect((await extractions(page, documentId))[0]?.status).toBe('accepted');
+});
+
+test('rule 1b: the Thủ Đức certificate filed on Đất vườn Long An stops at Lưu on the rows that do not match, writes nothing, and saves on Vẫn lưu (#356)', async ({ page }) => {
+  await startWorker();
+  await open(page, 'me.lane1@demo.esta.test', 'light', PHONE);
+  const before = 'Thửa đất số 906 Demo, tờ bản đồ số 96, Phường 2, Thành phố Tân An, Tỉnh Long An';
+  const documentId = await uploadAndRead(page, 1, 'long-an', 'gcn_2024-photo', 'Sổ hồng Long An');
+  await page.goto(`/documents/${documentId}/review`);
+  await acceptEvery(page);
+  await expect(page.getByTestId('change-before')).toHaveText(before);
+  await expect(page.getByTestId('change-after')).toHaveText('phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh');
+  await page.getByTestId('review-submit').click();
+
+  await expect(page.getByTestId('review-error')).toHaveText(
+    'Giấy này có thể là của bất động sản khác: tỉnh hoặc người đứng tên không khớp. Xem lại các dòng được đánh dấu. Nếu đúng là giấy của bất động sản này, bấm Vẫn lưu.',
+  );
+  for (const path of ['parcels[0].address_text', 'holders[0].full_name', 'holders[1].full_name']) {
+    await expect(row(page, path).getByTestId('field-error'), path).toHaveText('Không khớp với bất động sản này.');
+  }
+  await expect(page.getByTestId('review-submit')).toHaveAttribute('data-state', 'confirm');
+  await expect(page.getByTestId('review-submit')).toHaveText('Vẫn lưu');
+  await expect(page).toHaveURL(`/documents/${documentId}/review`);
+  const [waiting] = await extractions(page, documentId);
+  expect(waiting?.status, 'nothing is accepted before Vẫn lưu').toBe('needs_review');
+  expect(await serviceGet(page, `certificates?extraction_id=eq.${waiting?.id}&select=id`)).toEqual([]);
+  expect(await serviceGet(page, `properties?id=eq.${propertyId(1, 'long-an')}&select=certificate_address_text`)).toEqual([{ certificate_address_text: before }]);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+
+  await page.getByTestId('review-submit').click();
+  await expect(page).toHaveURL(`/properties/${propertyId(1, 'long-an')}/legal`, { timeout: 15_000 });
+  await expect(page.getByText('AA 01234567').first()).toBeVisible();
   expect((await extractions(page, documentId))[0]?.status).toBe('accepted');
 });
 
@@ -194,6 +235,8 @@ test('rule 2: an edited area of 125,5 saves as 125.5, a CCCD typed into the issu
   await expect(row(page, 'parcels[0].area_m2').getByTestId('field-value')).toHaveText('125,5 m²');
   await expect(page.getByTestId('area-mismatch')).toBeVisible();
 
+  await page.getByTestId('review-submit').click();
+  await expect(page.getByTestId('review-submit')).toHaveAttribute('data-state', 'confirm');
   let cut = false;
   await page.route(`**/documents/${documentId}/review`, async (route) => {
     if (route.request().method() !== 'POST' || cut) return route.continue();
@@ -347,7 +390,7 @@ test('rule 7: in English at 130% and dark, labels read in English, values keep t
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await shot(page, 'p2-07-rule7-review-en-130-390x844-dark');
     await acceptEvery(page);
-    await page.getByTestId('review-submit').click();
+    await saveAnyway(page);
     await expect(page).toHaveURL(`/properties/${propertyId(10, 'long-an')}/legal`, { timeout: 15_000 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   } finally {
@@ -396,7 +439,7 @@ test('main flow: Mẹ opens the waiting review from the Trợ lý item, fixes th
   await editField(page, path, read.replace(/\s*m²$/u, ''));
   await expect(marked).toHaveAttribute('data-decision', 'edited');
   await acceptEvery(page);
-  await page.getByTestId('review-submit').click();
+  await saveAnyway(page);
   await expect(page).toHaveURL(`/properties/${propertyId(7, 'long-an')}/legal`, { timeout: 15_000 });
   await expect(page.getByText(/Thửa số 56\b/).first()).toBeVisible();
   await page.goto('/assistant');
@@ -453,6 +496,12 @@ test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ p
     await code.scrollIntoViewIfNeeded();
     await shot(page, `p2-07-unknown-code-${combo.name}`);
     await acceptEvery(page);
+    await page.getByTestId('review-change').scrollIntoViewIfNeeded();
+    await shot(page, `p5-356-review-change-${combo.name}`);
+    await page.getByTestId('review-submit').click();
+    await expect(page.getByTestId('review-submit')).toHaveAttribute('data-state', 'confirm');
+    await page.getByTestId('review-save').scrollIntoViewIfNeeded();
+    await shot(page, `p5-356-review-mismatch-${combo.name}`);
     await page.route(`**/documents/${review}/review`, (route) => (route.request().method() === 'POST' ? route.abort('connectionreset') : route.continue()));
     await page.getByTestId('review-submit').click();
     await expect(page.getByTestId('review-error')).toBeVisible();
@@ -475,7 +524,7 @@ test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ p
 
   await page.goto(`/documents/${review}/review`);
   await acceptEvery(page);
-  await page.getByTestId('review-submit').click();
+  await saveAnyway(page);
   await expect(page).toHaveURL(`/properties/${propertyId(8, 'long-an')}/legal`, { timeout: 15_000 });
   for (const combo of combos) {
     await page.setViewportSize(combo.viewport);

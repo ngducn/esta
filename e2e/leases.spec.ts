@@ -273,6 +273,17 @@ test('rule 5: a draft without rent is refused at activation in Vietnamese and st
   expect(await rest(page, 'GET', `leases?id=eq.${leaseId}&select=status,rent_vnd`)).toEqual([{ status: 'draft', rent_vnd: null }]);
 });
 
+test('tapping Lưu nháp with only the room and its list rent says what is missing and saves no draft (#356)', async ({ page }) => {
+  await open(page, 'me.lane6@demo.esta.test', 'light', PHONE);
+  await page.goto(newLeasePath(6, 'di-an', unitId(6, 'di-an', 8)));
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: 'Tiền thuê mỗi tháng' })).toHaveValue('3.000.000');
+  await page.getByTestId('save-lease').click();
+  await expect(page.getByTestId('form-error')).toHaveText('Hợp đồng này chưa có gì để nhận ra. Chọn người thuê hoặc điền ngày bắt đầu rồi lưu nháp.');
+  await expect(page).toHaveURL(/\/leases\/new\?unit=/);
+  expect(await rest(page, 'GET', `leases?unit_id=eq.${unitId(6, 'di-an', 8)}&select=id`)).toEqual([]);
+});
+
 test('rule 6: a draft on Phòng 7 reopens, takes 4tr rent and a 2-month deposit, and issues no invoice', async ({ page }) => {
   await open(page, 'me.lane6@demo.esta.test', 'light', PHONE);
   await page.goto(newLeasePath(6, 'di-an', unitId(6, 'di-an', 7)));

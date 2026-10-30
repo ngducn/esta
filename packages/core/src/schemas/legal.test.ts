@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CERTIFICATE_FORMS, PARCEL_UNIDENTIFIED, certificateSchema, newParcelSchema, parcelSchema, purposeSchema } from './legal';
+import { isoDate } from '../date/iso-date';
+import { UNIDENTIFIED } from './identity';
+import { CERTIFICATE_FORMS, certificateSchema, newParcelSchema, parcelSchema, purposeSchema, shownStatus } from './legal';
 
 const bank = '5f2b7c1e-0b7a-5c39-9d0e-2a4b6c8d0e1f';
 const holder = '0c1d2e3f-4a5b-5c6d-8e7f-8091a2b3c4d5';
@@ -105,7 +107,7 @@ describe('newParcelSchema', () => {
   ])('refuses a new parcel with %s to identify it', (_, input) => {
     const result = newParcelSchema.safeParse(input);
     expect(result.success).toBe(false);
-    expect(result.error?.issues.map((issue) => issue.message)).toEqual([PARCEL_UNIDENTIFIED]);
+    expect(result.error?.issues.map((issue) => issue.message)).toEqual([UNIDENTIFIED]);
   });
 
   it.each([
@@ -115,5 +117,16 @@ describe('newParcelSchema', () => {
     ['a note on a paper-only parcel', { ...parcel, origin_text: 'Giấy tay mua năm 2003' }],
   ])('accepts a new parcel with only %s', (_, input) => {
     expect(newParcelSchema.safeParse(input).success).toBe(true);
+  });
+});
+
+describe('shownStatus', () => {
+  it('claims Còn hiệu lực only for a certificate with an issue date, since a new form opens as valid (#356)', () => {
+    expect(shownStatus({ status: 'valid', issued_on: isoDate('2015-03-02') })).toBe('valid');
+    expect(shownStatus({ status: 'valid', issued_on: null })).toBe('undated');
+  });
+
+  it('shows a status Mẹ chose as she chose it', () => {
+    for (const status of ['mortgaged', 'replaced', 'lost'] as const) expect(shownStatus({ status, issued_on: null })).toBe(status);
   });
 });

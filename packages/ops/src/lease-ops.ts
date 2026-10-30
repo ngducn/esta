@@ -1,12 +1,12 @@
 import type { LeaseStatus } from '@esta/core/lease';
 import type { Result } from '@esta/core/result';
-import { leaseDraftSchema, type LeaseDraft } from '@esta/core/schemas/lease';
+import { leaseDraftSchema, newLeaseDraftSchema, type LeaseDraft } from '@esta/core/schemas/lease';
 import { z } from 'zod';
 import { changedColumns, dbRefusal, idSchema, invalid, optionalIdSchema, type Changed, type CommonRefusal } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 import { LEASE_DRAFT_KEYS, viewRows, type ViewRows } from './view';
 
-const createInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), lease: leaseDraftSchema, document_id: optionalIdSchema.default(null) });
+const createInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), lease: newLeaseDraftSchema, document_id: optionalIdSchema.default(null) });
 const editInputSchema = z.strictObject({ id: idSchema, property_id: idSchema.optional(), set: z.partialRecord(z.enum(LEASE_DRAFT_KEYS), z.unknown()) });
 
 /** The draft with the columns the database would default spelled out, so a later item reads the row the insert writes. */

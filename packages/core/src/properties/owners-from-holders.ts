@@ -1,4 +1,5 @@
-import { normalizeName, type ExistingParty } from '../extraction/acceptance';
+import type { ExistingParty } from '../extraction/acceptance';
+import { normalizeName } from '../names';
 import type { OwnershipShare } from '../schemas/ownership';
 import { FULL_SHARE_BP } from './ownership';
 

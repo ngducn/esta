@@ -2,7 +2,7 @@
 
 import type { IsoDate } from '@esta/core/date';
 import { formatMonthWithin } from '@esta/core/format';
-import { consumption, isAnomalous, usualConsumption } from '@esta/core/meters';
+import { consumption, unusualUse } from '@esta/core/meters';
 import { parseReadingInput } from '@esta/core/parse/measure';
 import { Droplet, Zap } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -33,6 +33,7 @@ export function MeterRow({
   roomId,
   value,
   check,
+  otherRooms,
   canEdit,
   onChange,
   onEnter,
@@ -42,6 +43,7 @@ export function MeterRow({
   roomId: string;
   value: string;
   check: ReadingCheck;
+  otherRooms: readonly number[];
   canEdit: boolean;
   onChange: (text: string) => void;
   onEnter: (event: KeyboardEvent<HTMLInputElement>) => void;
@@ -50,8 +52,7 @@ export function MeterRow({
   const locale = useLocale();
   const id = `meter-${meter.id}`;
   const Icon = meter.kind === 'electricity' ? Zap : Droplet;
-  const usual = usualConsumption(meter.history);
-  const warn = check.kind === 'ok' && check.used !== null && isAnomalous(meter.history, check.used);
+  const unusual = check.kind === 'ok' && check.used !== null ? unusualUse(meter.history, otherRooms, check.used) : null;
   return (
     <div data-testid="meter-row" data-kind={meter.kind} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5">
       <label id={`${id}-label`} htmlFor={id} className="col-span-2 flex items-center gap-2 text-body font-medium text-ink lg:sr-only">
@@ -84,11 +85,11 @@ export function MeterRow({
               <StatusShape status="overdue" className="mt-0.5 size-4" />
               <span className="min-w-0 text-overdue">{check.message}</span>
             </>
-          ) : warn && usual !== null ? (
+          ) : unusual !== null ? (
             <>
               <StatusShape status="due" className="mt-0.5 size-4" />
               <span data-testid="meter-anomaly" className="min-w-0 font-medium text-due">
-                {t('anomaly', { usual, kind: meter.kind })}
+                {t('anomaly', { usual: unusual.usual, kind: meter.kind, basis: unusual.basis })}
               </span>
             </>
           ) : check.kind === 'ok' ? (

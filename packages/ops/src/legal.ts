@@ -1,4 +1,4 @@
-import { certificateSchema, newParcelSchema, parcelSchema, structureSchema } from '@esta/core/schemas/legal';
+import { certificateSchema, newCertificateSchema, newParcelSchema, parcelSchema, structureSchema } from '@esta/core/schemas/legal';
 import { ownershipShareSchema, type OwnershipShare } from '@esta/core/schemas/ownership';
 import { z } from 'zod';
 import type { Db } from './db';
@@ -17,7 +17,7 @@ export const LEGAL_KINDS = {
   },
   certificates: {
     schema: certificateSchema,
-    createSchema: certificateSchema,
+    createSchema: newCertificateSchema,
     columns: 'id, form, serial_no, book_entry_no, issued_on, issued_by, holder_party_ids, status, mortgage, annotations',
   },
 } as const;

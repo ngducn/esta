@@ -2,7 +2,7 @@
 
 import { moveUnit, sortByRoomNumber, type SortChange } from '@esta/core/properties';
 import type { Result } from '@esta/core/result';
-import { addRoomsSchema, unitSchema, utilityAccountSchema, type Unit } from '@esta/core/schemas/units';
+import { addRoomsSchema, newUtilityAccountSchema, unitSchema, utilityAccountSchema, type Unit } from '@esta/core/schemas/units';
 import { runOp, unitCreate, type CommonRefusal, type UnitRefusal } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
@@ -173,7 +173,7 @@ export async function restoreUnit(raw: unknown): Promise<RentalWrite> {
 export async function saveAccount(propertyId: unknown, accountId: unknown, raw: unknown): Promise<RentalWrite> {
   const target = await scope(propertyId);
   const item = accountId === null ? { success: true as const, data: null } : uuid.safeParse(accountId);
-  const value = utilityAccountSchema.safeParse(raw);
+  const value = (item.success && item.data === null ? newUtilityAccountSchema : utilityAccountSchema).safeParse(raw);
   if (target === null || !item.success || !value.success) return { ok: false, reason: 'invalid' };
   const { supabase, match } = target;
   const { data, error } =

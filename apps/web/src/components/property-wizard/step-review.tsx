@@ -52,6 +52,7 @@ export async function StepReview({ propertyId, documentId, selfHref, backHref }:
       landUseCodes={await loadLandUseCodes()}
       propertyId={propertyId}
       properties={review.properties}
+      certificateAddresses={review.certificateAddresses}
       savedHref={selfHref}
     />
   );

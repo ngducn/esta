@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isIsoDate, type IsoDate } from '../date/iso-date';
+import { identifies, UNIDENTIFIED } from './identity';
 import { vndSchema } from './property';
 
 /** DOMAIN-VN §2, in era order. */
@@ -59,16 +60,7 @@ export const parcelSchema = z.strictObject({
   origin_text: optionalText(500),
 });
 
-export const PARCEL_UNIDENTIFIED = 'parcel_unidentified';
-
-/**
- * [app rule] A new parcel needs a number, a map sheet, an area or an origin note. Existing parcels are never refused on
- * read, edit or restore, because the seeded paper-only parcel of Đất vườn Long An has none of them (DOMAIN-VN §2).
- */
-export const newParcelSchema = parcelSchema.refine(
-  (parcel) => parcel.parcel_no !== null || parcel.map_sheet_no !== null || parcel.area_m2 !== null || parcel.origin_text !== null,
-  { error: PARCEL_UNIDENTIFIED },
-);
+export const newParcelSchema = parcelSchema.refine(identifies('parcel'), { error: UNIDENTIFIED });
 export type Parcel = z.output<typeof parcelSchema>;
 
 export const structureSchema = z.strictObject({
@@ -131,3 +123,13 @@ export const certificateSchema = z.discriminatedUnion('status', [
   }),
 ]);
 export type Certificate = z.output<typeof certificateSchema>;
+
+export const newCertificateSchema = certificateSchema.refine(identifies('certificate'), { error: UNIDENTIFIED });
+
+/**
+ * [app rule] What the certificate card claims (#356): `Còn hiệu lực` needs an issue date behind it; every other status
+ * shows as stored.
+ */
+export function shownStatus(certificate: Pick<Certificate, 'status' | 'issued_on'>): CertificateStatus | 'undated' {
+  return certificate.status === 'valid' && certificate.issued_on === null ? 'undated' : certificate.status;
+}
