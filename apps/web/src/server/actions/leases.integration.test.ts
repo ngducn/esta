@@ -14,6 +14,7 @@ const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 
 const { activateLease, amendLease, createTenant, previewActivation, renewLease, saveLease, terminateLease } = await import('./leases');
 const { listProperties } = await import('@/server/properties/list');
+const { openLinkTarget } = await import('@/server/agent/open-link');
 
 const draft = (unitId: string, tenantId: string, rent: number | null) => ({
   unit_id: unitId,
@@ -326,5 +327,27 @@ describe('the property list on the Clock date after lease changes', () => {
     expect(await listed(lease.propertyId, '2026-10-07')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
     expect(await listed(lease.propertyId, '2026-10-31')).toEqual({ monthlyRentVnd: 3_000_000, leasedUnitCount: 1 });
     expect(await listed(lease.propertyId, '2026-11-01')).toEqual({ monthlyRentVnd: null, leasedUnitCount: 0 });
+  });
+});
+
+describe('a Trợ lý link to a tenant (#321)', () => {
+  it('opens the lease in force, not a newer draft or a renewal that has not started', async () => {
+    const tenant = await createTenant({ full_name: 'Đỗ Thị Liên Kết Demo', phone: '0903 555 111' });
+    if (!tenant.ok) throw new Error(tenant.reason);
+    const inForce = await activeLease({ tenant_party_id: tenant.tenant.id, end_date: '2026-12-31' }, '30/09/2026');
+    const elsewhere = await createProperty();
+    const newer = await saveLease(elsewhere.propertyId, null, { ...draft(elsewhere.unitId, tenant.tenant.id, 3_200_000), start_date: '2027-03-01' });
+    expect(newer.ok).toBe(true);
+    const opens = () => openLinkTarget(client, `party/${tenant.tenant.id}`);
+    const path = `/properties/${inForce.propertyId}/rental/leases/${inForce.id}`;
+    expect(await opens(), 'a newer draft').toBe(path);
+    expect((await renewLease(inForce.id, { increaseBps: 500, endDate: '2027-12-31', paidThrough: '' })).ok).toBe(true);
+    const { data } = await client.from('leases').select('status, start_date').eq('tenant_party_id', tenant.tenant.id).order('start_date');
+    expect(data).toEqual([
+      { status: 'active', start_date: '2026-08-01' },
+      { status: 'active', start_date: '2027-01-01' },
+      { status: 'draft', start_date: '2027-03-01' },
+    ]);
+    expect(await opens(), 'a renewal that starts 01/01/2027').toBe(path);
   });
 });

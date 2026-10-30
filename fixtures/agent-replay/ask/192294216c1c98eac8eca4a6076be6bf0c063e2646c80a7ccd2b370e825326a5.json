@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "192294216c1c98eac8eca4a6076be6bf0c063e2646c80a7ccd2b370e825326a5",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "\"hai\": Do not write an amount, unit, number word, Roman numeral, or month or weekday name. Cite the tool field that holds it as {{fN.field}}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
+    "builtInTools": [],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal"
+    ],
+    "maxTurns": 15,
+    "resumesInputHash": "99d0f116e3f2873ea6a20cc0e42296e25b6fcbe29435b2b3385a73893dd3a63e"
+  },
+  "label": "Live guard probe vi-red-pink-book, repair turn on the full seed at 2026-10-07 07:00 (P5-12). Re-keyed for #354's advice rule; its reply predates the rule.",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 1,
+  "wallMs": 6384,
+  "toolCalls": [],
+  "reply": "Đây là giải thích chung, không cần số liệu từ ứng dụng.\n\n- **Sổ đỏ** là cách gọi quen thuộc của giấy chứng nhận quyền sử dụng đất, thường dùng cho đất ở, đất nông nghiệp hoặc các loại đất khác. Giấy này có bìa đỏ và chủ yếu ghi về thửa đất.\n- **Sổ hồng** là cách gọi quen thuộc của giấy chứng nhận quyền sở hữu nhà ở và quyền sử dụng đất ở, có bìa hồng. Giấy này thường gặp với nhà ở và căn hộ chung cư, ghi cả nhà lẫn đất.\n\nTheo quy định hiện hành, các loại giấy này đã được thống nhất về cùng mẫu giấy chứng nhận. Sổ cấp trước đó vẫn có giá trị pháp lý và không bắt buộc phải đổi.\n\nNếu muốn, tôi có thể kiểm tra tình trạng sổ của từng bất động sản trong ứng dụng."
+}

@@ -101,6 +101,13 @@ describe('morning_brief waits for its inputs (AGENT.md §3)', () => {
     expect(body(tables)).toMatch(/\*\*Còn thiếu\*\*\n\n- Hôm nay Trợ lý không tìm được tin thị trường\.$/);
   });
 
+  it('names a portfolio_watch that failed for good, and runs at once (#321)', async () => {
+    const { brief, tables, worker } = stack([daily('portfolio_watch', { status: 'failed' }), daily('research_scan', { status: 'done' })]);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(brief).toMatchObject({ status: 'done', payload: {}, result: expect.objectContaining({ missing_inputs: ['portfolio_watch'] }) });
+    expect(body(tables)).toMatch(/\*\*Còn thiếu\*\*\n\n- Ghi chú theo dõi sáng nay không chạy được\.$/);
+  });
+
   it('runs at once when the day’s portfolio_watch is done', async () => {
     const { brief, worker } = stack([daily('portfolio_watch', { status: 'done' })]);
     expect(await pollOnce(worker)).toBe(true);

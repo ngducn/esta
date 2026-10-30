@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "3c171b64e64ea0d9aead0faee923a49e19a86f081a2311554dceda20979c7039",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "\"hai\": Do not write an amount, unit, number word, Roman numeral, or month or weekday name. Cite the tool field that holds it as {{fN.field}}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
+    "builtInTools": [],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal"
+    ],
+    "maxTurns": 15,
+    "resumesInputHash": "87e20e215d5796ad1f2094e2467d7fe8d354af18f1aeeae0321e0a57fa7f08c0"
+  },
+  "label": "Live guard probe vi-rent-tax, repair turn on the full seed at 2026-10-07 07:00 (P5-12). Re-keyed for #354's advice rule; its reply predates the rule.",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 1,
+  "wallMs": 7663,
+  "toolCalls": [],
+  "reply": "Việc khai thuế phụ thuộc vào doanh thu cho thuê của từng chủ sở hữu theo năm, so với ngưỡng doanh thu. Số liệu ứng dụng đang theo dõi ({{f1.tax_year_display}}):\n\n- **[Thuế {{f1.owner_name}}](f1)**: doanh thu đã ghi nhận là {{f1.accrued_display}}, dự kiến theo năm là {{f1.projected_display}}, so với ngưỡng {{f1.threshold_display}} (đạt {{f1.threshold_share_display}}). Còn cách ngưỡng {{f1.remaining_to_threshold_display}}. Thuế GTGT ước tính là {{f1.vat_estimate_display}}, thuế TNCN ước tính là {{f1.pit_estimate_display}}.\n- **[Thuế {{f2.owner_name}}](f2)**: doanh thu đã ghi nhận là {{f2.accrued_display}}, dự kiến theo năm là {{f2.projected_display}}, so với ngưỡng {{f2.threshold_display}} (đạt {{f2.threshold_share_display}}). Còn cách ngưỡng {{f2.remaining_to_threshold_display}}. Thuế GTGT ước tính là {{f2.vat_estimate_display}}, thuế TNCN ước tính là {{f2.pit_estimate_display}}.\n\nHiện các chủ sở hữu đều chưa vượt ngưỡng. Căn cứ quy định ứng dụng dùng: {{f1.rule_source_label}}.\n\nỨng dụng không có thông tin về mẫu tờ khai, thời hạn nộp hay thủ tục cụ thể, và tôi chưa thể tra cứu trên web. Bạn nên hỏi cơ quan thuế địa phương để xác nhận. Với {{f1.owner_name}}, nên theo dõi sát doanh thu của các kỳ thanh toán còn lại."
+}

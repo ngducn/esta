@@ -15,7 +15,7 @@ import { createSessionClient } from '@/server/supabase/server';
 
 /** What a proposal card shows beyond the stored text, all written by Esta from the validated params and the records. */
 export type ProposalDetails = {
-  /** The question a `names_object` type asks before it runs, such as `Tăng tiền thuê Phòng 2 lên 3.800.000 ₫ từ 25/11/2026?` */
+  /** The question a `names_object` type asks before it runs, such as `Tăng tiền thuê Phòng 2, Dãy trọ Dĩ An lên 3.800.000 ₫ từ 25/11/2026?` */
   readonly confirm: string | null;
   /** The bill's reminder that a `draft_reminder` opens, drafted in the browser by P3-13's sheet. */
   readonly reminder: ReminderTarget | null;
@@ -75,7 +75,8 @@ export async function loadProposalDetails(householdId: string, notes: readonly I
     proposals.map(({ note, proposal }) => {
       const lease = byId.get(proposal.params.lease_id);
       const unit = lease === undefined ? undefined : names.units.get(lease.unit_id);
-      const place = lease === undefined ? null : unit === undefined || unit.whole ? (names.properties.get(lease.property_id) ?? null) : unit.label;
+      const property = lease === undefined ? undefined : names.properties.get(lease.property_id);
+      const place = property === undefined ? null : unit === undefined || unit.whole ? property : t('place', { unit: unit.label, property });
       const decided = note.status === 'approved';
       const details: ProposalDetails = { confirm: null, reminder: reminders.get(proposal.params.lease_id) ?? null, leaseHref: null };
       if (lease === undefined || place === null) return [note.id, details] as const;

@@ -1,12 +1,12 @@
 import { businessDate, parseInstant } from '@esta/core';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
-import { normalizeUrl } from '@esta/core/research';
+import { normalizeUrl, sourceLink } from '@esta/core/research';
 import { z } from 'zod';
 import { researchScanPrompt, type ScanCaps } from '../prompts/research-scan';
 import type { BuiltInResult } from '../sdk/session';
 import type { AgentDb } from '../supabase';
-import { researchItemWriter, type ResearchBinding } from '../tools/add-research-item';
+import { researchItemWriter, type FetchedPage, type ResearchBinding } from '../tools/add-research-item';
 import { guardedWriter } from '../tools/create-item';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
@@ -26,15 +26,20 @@ const capsSchema = z.object({ research_searches: z.int().min(0).max(12).catch(12
 
 const fetchResult = z.object({ code: z.number(), result: z.string(), url: z.string().optional() });
 
-/** A WebFetch call that read its page: the page text, under its link as asked and as it ended after any redirect, normalized. */
-export function fetchedPage({ name, input, result }: BuiltInResult): { readonly urls: string[]; readonly text: string } | null {
+/**
+ * A WebFetch call that read its page: the page text, under its link as asked and as it ended after any redirect,
+ * normalized, and the link it ended on as `research_items.source_url` stores it.
+ */
+export function fetchedPage({ name, input, result }: BuiltInResult): (FetchedPage & { readonly urls: readonly string[] }) | null {
   const page = fetchResult.safeParse(result);
   if (name !== 'WebFetch' || !page.success || page.data.code < 200 || page.data.code > 299) return null;
-  const urls = [input.url, page.data.url].flatMap((link) => {
-    const url = typeof link === 'string' ? normalizeUrl(link) : null;
-    return url?.ok === true ? [url.value] : [];
+  const links = [page.data.url, input.url].flatMap((link) => (typeof link === 'string' ? [link] : []));
+  const urls = links.flatMap((link) => {
+    const url = normalizeUrl(link);
+    return url.ok ? [url.value] : [];
   });
-  return { urls, text: page.data.result };
+  const read = links.map(sourceLink).find((link) => link.ok);
+  return read?.ok === true ? { urls, text: page.data.result, link: read.value } : null;
 }
 
 export type ScanRequestInput = Omit<ResearchBinding, 'sheet' | 'topics' | 'properties' | 'fetched'> & { readonly timezone: string; readonly caps: ScanCaps };
@@ -43,7 +48,7 @@ export function researchScanRequest(input: ScanRequestInput): PreparedJob {
   const { sheet, cite } = runSheet();
   const topics = researchTopicsTool(input.db, input.householdId, cite);
   const properties = listPropertiesTool(input.db, input.householdId, cite);
-  const fetched = new Map<string, string>();
+  const fetched = new Map<string, FetchedPage>();
   const items = researchItemWriter({ ...input, sheet, topics: topics.records, properties: properties.records, fetched });
   return {
     prompt: researchScanPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, caps: input.caps }),
@@ -56,7 +61,7 @@ export function researchScanRequest(input: ScanRequestInput): PreparedJob {
     caps: { ...input.caps },
     observe(call) {
       const page = fetchedPage(call);
-      for (const url of page?.urls ?? []) fetched.set(url, page?.text ?? '');
+      if (page !== null) for (const url of page.urls) fetched.set(url, { text: page.text, link: page.link });
     },
     async finish() {
       if (!topics.wasRead()) throw new Error('The model ended without reading research_topics');

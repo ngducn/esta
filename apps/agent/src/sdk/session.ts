@@ -124,7 +124,8 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
       } else if (message.type === 'rate_limit_event') {
         if (message.rate_limit_info.status === 'rejected') cause = 'rate_limit';
       } else if (message.type === 'assistant') {
-        cause = message.error ?? cause;
+        // A turn without an error means the model went on, so an earlier rate limit no longer explains how the session ends.
+        cause = message.error ?? null;
         for (const block of message.message.content) {
           if (block.type === 'tool_use') toolCalls.push({ name: block.name, input: block.input as Record<string, unknown> });
         }

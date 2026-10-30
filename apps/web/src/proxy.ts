@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { openLinkTarget } from '@/server/agent/open-link';
 import { parseEnv } from '@/server/env-schema';
 import { isAuthPage, isPublicPath } from '@/server/public-paths';
 import { sessionCookie } from '@/server/supabase/session';
@@ -58,6 +59,7 @@ const GUARDED_PAGES: readonly GuardedPage[] = [
   recordPage(/^\/properties\/([^/]+)(?:\/|$)/, ['new', 'archived'], (supabase, id) => supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle()),
   recordPage(/^\/assistant\/ask\/([^/]+)$/, [], (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle()),
   { path: /^\/assistant\/diagnostics\/?$/, hidden: async ({ supabase, userId }) => (await readMembership(supabase, userId))?.is_operator !== true },
+  { path: /^\/open\/([^/]+\/[^/]+)$/, hidden: async ({ supabase }, link = '') => openLinkTarget(supabase, link).then((target) => target === null, () => false) },
 ];
 
 /**

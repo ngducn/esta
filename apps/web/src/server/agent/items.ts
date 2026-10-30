@@ -93,7 +93,8 @@ export type Pinned = { readonly shown: readonly PinnedNote[]; readonly count: nu
 const PINNED_SHOWN = 3;
 
 const severity = z.enum(WATCH_SEVERITIES);
-const NEVER_PINNED_KINDS = '(brief,weekly)';
+/** The kinds that can ask Mẹ or Ryan to act: a watch note, an operator notice and a proposal. A brief, a weekly review, an answer note or an empty scan never pins. */
+const PINNED_KINDS = ['alert', 'system', 'proposal'];
 
 export async function listPinned(householdId: string): Promise<Pinned> {
   const supabase = await createSessionClient();
@@ -102,7 +103,7 @@ export async function listPinned(householdId: string): Promise<Pinned> {
     .select('id, title, kind, severity, created_at')
     .eq('household_id', householdId)
     .in('status', OPEN_NOTE_STATUSES)
-    .not('kind', 'in', NEVER_PINNED_KINDS)
+    .in('kind', PINNED_KINDS)
     .or('kind.eq.proposal,severity.eq.action');
   if (error) throw new Error(`Reading Trợ lý's open notes failed: ${error.message}`);
   const open = data.map((row) => ({ row, id: row.id, severity: severity.parse(row.severity), stamp: canonicalStamp(row.created_at) })).toSorted(byPriority);

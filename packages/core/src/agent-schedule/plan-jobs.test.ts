@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseInstant } from '../clock/resolve';
-import { firstRunKey, planScheduledJobs, scheduledWeek, type ScheduledJob } from './plan-jobs';
+import { firstRunKey, planScheduledJobs, scheduledPeriod, scheduledWeek, type ScheduledJob } from './plan-jobs';
 
 const SCHEDULE: ScheduledJob[] = [
   { kind: 'morning_brief', at: '07:00' },
@@ -76,5 +76,14 @@ describe('scheduledWeek', () => {
     expect(scheduledWeek(null)).toBeNull();
     expect(scheduledWeek('weekly_review:0b6f-job-id:retry:1')).toBeNull();
     expect(scheduledWeek('morning_brief:h1:2026-10-11')).toBeNull();
+  });
+});
+
+describe('scheduledPeriod', () => {
+  it('reads the day or week the scheduler keyed a job by, through any Thử lại, and nothing from another key', () => {
+    expect(scheduledPeriod('research_scan:h1:2026-10-07:retry:1')).toBe('2026-10-07');
+    expect(scheduledPeriod('weekly_review:h1:2026-W42')).toBe('2026-W42');
+    expect(scheduledPeriod('research_scan:0b6f-job-id:retry:1')).toBeNull();
+    expect(scheduledPeriod(null)).toBeNull();
   });
 });

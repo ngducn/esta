@@ -99,6 +99,31 @@ describe('add_research_item', () => {
     expect(await prepared.finish({ reply: 'xong', model: 'm' })).toMatchObject({ empty: true, dropped: [{ source_url: PAGE, reason: 'not_fetched' }] });
   });
 
+  it("confirms the date from the answer's labelled date line, not from a quoted time or the site header's today (#329)", async () => {
+    // WebFetch's result is the fetch model's answer to the scan's prompt, so the page here is such an answer.
+    const answer = [
+      '**Publication date:** 05/10/2026',
+      '',
+      '**Figures, roads and law numbers (verbatim):**',
+      '- "Vành đai 3 đoạn qua Dĩ An"',
+      '- "khởi công lúc 8h00 ngày 06/10/2026"',
+      '- "Thứ Tư, 07/10/2026 14:35 | Tin tức Demo"',
+    ].join('\n');
+    const { call, items } = await scan({ pages: { [PAGE]: answer } });
+    for (const published_on of ['2026-10-06', '2026-10-07']) {
+      expect(JSON.parse((await call('add_research_item', item({ published_on }))).text), published_on).toMatchObject({ saved: false, dropped: 'date_unconfirmed' });
+    }
+    expect(await call('add_research_item', item())).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items().map(({ published_on }) => published_on)).toEqual(['2026-10-05']);
+  });
+
+  it('stores the link as the page was read, with its www. and trailing slash, and without tracking (#329)', async () => {
+    const link = 'https://www.tintuc.example.vn/vanh-dai-3/';
+    const { call, items } = await scan({ pages: { [link]: PAGE_TEXT } });
+    await call('add_research_item', item({ source_url: `${link}?utm_source=zalo#top` }));
+    expect(items()).toMatchObject([{ url_normalized: PAGE, source_url: link }]);
+  });
+
   it('drops a link stored before, under another spelling, and a title above 0.6 similar', async () => {
     const first = await scan();
     await first.call('add_research_item', item());
@@ -193,11 +218,12 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
     expect(items()).toEqual([]);
   });
 
-  it('stores the normalized link of the page it fetched, not the link the model typed', async () => {
-    const typed = 'https://www.tintuc.example.vn/vanh-dai-3/?utm_source=zalo#top';
-    const { call, items } = await scan({ pages: { [typed]: PAGE_TEXT } });
-    expect(await call('add_research_item', item({ source_url: typed }))).toEqual({ text: '{"saved":true}', isError: false });
-    expect(items()).toMatchObject([{ source_url: PAGE, url_normalized: PAGE }]);
+  it('stores the link a redirect ended on, not the link the model asked for or typed', async () => {
+    const { prepared, call, items } = await scan({ pages: {} });
+    const landed = 'https://www.tintuc.example.vn/vanh-dai-3/';
+    prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: `${landed}?utm_source=zalo`, bytes: 1, durationMs: 1 } });
+    expect(await call('add_research_item', item({ source_url: `${PAGE}?utm_source=zalo#top` }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items()).toMatchObject([{ source_url: landed, url_normalized: PAGE }]);
   });
 });
 

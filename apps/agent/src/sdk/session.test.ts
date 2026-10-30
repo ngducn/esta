@@ -9,6 +9,7 @@ import { JOBS } from '../jobs/registry';
 import { canonicalizer, inputHash } from '../replay/canonicalize';
 import { writeRecording } from '../replay/store';
 import { estaTool, mcpToolName, ToolRejection } from '../tools/server';
+import { judgeResult } from './result';
 import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest } from './session';
 
 const answersToModel: { isError: boolean; text: string }[] = [];
@@ -111,6 +112,31 @@ describe('a turn that resumes a session', () => {
 
   it('in replay, says the session is gone when its config dir does not hold it, before it looks for a recording', async () => {
     await expect(replaySession({ ...resuming(), configDir: join(jobDir, 'moved-away') }, jobDir)).rejects.toBeInstanceOf(SessionGoneError);
+  });
+});
+
+describe('the cause of a failed live session (#343)', () => {
+  const OUT_OF_TURNS = { type: 'result', subtype: 'error_max_turns', is_error: true, errors: [], num_turns: 8, session_id: 's1', total_cost_usd: 0, usage: {}, modelUsage: {}, permission_denials: [] };
+  const reply = { type: 'assistant', message: { content: [{ type: 'text', text: 'Đang xem.' }] } };
+
+  it('forgets a rate limit the model recovered from, so running out of turns later is no usage limit', async () => {
+    model = async function* () {
+      yield { type: 'rate_limit_event', rate_limit_info: { status: 'rejected' } };
+      yield reply;
+      yield OUT_OF_TURNS;
+    };
+    const run = await liveSession(requestSaving(() => Promise.resolve()), live);
+    expect(judgeResult(run.result)).toMatchObject({ ok: false, failure: { kind: 'error' } });
+  });
+
+  it('still reads a rate limit the session ends on as a usage limit', async () => {
+    model = async function* () {
+      yield reply;
+      yield { type: 'rate_limit_event', rate_limit_info: { status: 'rejected' } };
+      yield OUT_OF_TURNS;
+    };
+    const run = await liveSession(requestSaving(() => Promise.resolve()), live);
+    expect(judgeResult(run.result)).toMatchObject({ ok: false, failure: { kind: 'usage_limit' } });
   });
 });
 

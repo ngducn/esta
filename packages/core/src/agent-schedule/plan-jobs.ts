@@ -2,7 +2,7 @@ import { wallTime } from '../agent/worker-status';
 import type { Instant } from '../clock/clock';
 import { businessDate } from '../clock/resolve';
 import { isoWeek, weekday } from '../date/calendar';
-import type { IsoDate } from '../date/iso-date';
+import { isIsoDate, type IsoDate } from '../date/iso-date';
 
 /**
  * A kind the scheduler queues for every household at `at`, `HH:mm` in the business timezone: every day, or with
@@ -19,10 +19,18 @@ export function scheduleKey(job: ScheduledJob, householdId: string, today: IsoDa
 /** The key of the run a job repeats: Thử lại keys its new job `{key}:retry:{n}` (`public.retry_agent_job`). */
 export const firstRunKey = (key: string): string => key.replace(/:retry:\d+$/, '');
 
+const ISO_WEEK = /^\d{4}-W\d{2}$/;
+
+/** The day or ISO week `scheduleKey` named, through any retries; null for a key the scheduler did not write. */
+export function scheduledPeriod(key: string | null): string | null {
+  const period = key === null ? undefined : firstRunKey(key).split(':').at(-1);
+  return period !== undefined && (isIsoDate(period) || ISO_WEEK.test(period)) ? period : null;
+}
+
 /** The ISO week `scheduleKey` named for a weekly job, through any retries; null for a key the scheduler did not write. */
 export function scheduledWeek(key: string | null): string | null {
-  const week = key === null ? undefined : firstRunKey(key).split(':').at(-1);
-  return week !== undefined && /^\d{4}-W\d{2}$/.test(week) ? week : null;
+  const period = scheduledPeriod(key);
+  return period !== null && ISO_WEEK.test(period) ? period : null;
 }
 
 function zonedInstant(date: IsoDate, time: string, timezone: string): Instant {

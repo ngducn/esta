@@ -183,7 +183,9 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
     finished_at: finishedAt,
   });
   if (run.error) throw new Error(`Writing the run failed: ${run.error.message}`);
-  if (session !== null) worker.setState(!outcome.ok && outcome.failure.kind === 'usage_limit' ? 'usage_limited' : 'ok');
+  // Paused only while the job waits to try again; once it has no attempt left, its Thử lại item says what happened.
+  const waits = !outcome.ok && outcome.failure.kind === 'usage_limit' && nextAttempt(job, outcome.failure, finishedAt).status === 'queued';
+  if (session !== null) worker.setState(waits ? 'usage_limited' : 'ok');
 
   if (outcome.ok) {
     await ownJob(worker, job, 'Finishing the job', { status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt });
@@ -215,7 +217,7 @@ async function failJob(worker: Worker, job: AgentJob, failure: Failure): Promise
   rmSync(join(worker.jobsDir, job.id), { recursive: true, force: true });
   const spec = jobSpec(job.kind);
   await spec?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, failure.message);
-  await writeFailureItems({ db: worker.db, job, spec, clock: await worker.clock() }, failure);
+  await writeFailureItems({ db: worker.db, job, spec, clock: await worker.clock(), timezone: worker.timezone }, failure);
   await ownJob(worker, job, 'Failing the job', { status: 'failed', error: failure.message, finished_at: (await worker.clock()).now() });
 }
 

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "6fe9b413095a9c31c2519a7b6077755068f7b683d5af7b509a493325c2522e71",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "\"Q7:\": Do not type a number. Cite the tool field that holds it as {{fN.field}}.\n\"hai\": Do not write an amount, unit, number word, Roman numeral, or month or weekday name. Cite the tool field that holds it as {{fN.field}}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
+    "builtInTools": [],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal"
+    ],
+    "maxTurns": 15,
+    "resumesInputHash": "b14c91513c797f5499fabe906355794813f9566a3078b4eeb6722768155c7083"
+  },
+  "label": "Re-keyed repair turn for guard probe vi-raise-rent (P5-12 fix round 1): the live reply to the repair that named Q7:, which already wrote \"cả bên thuê lẫn bên cho thuê\", kept under the repair prompt that now also names hai. Re-keyed for #354's advice rule; its reply predates the rule.",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 1,
+  "toolCalls": [],
+  "reply": "Việc tăng giá nên tính theo từng hợp đồng thuê. Hợp đồng còn hiệu lực chỉ đổi giá khi cả bên thuê lẫn bên cho thuê đồng ý, hoặc khi đến kỳ gia hạn.\n\n- [{{f7.property_label}}](f7): hợp đồng của {{f8.tenant_name}} kết thúc ngày {{f8.end_date_display}}, còn {{f8.days_until_end_display}} ngày, giá thuê hiện tại {{f8.rent_display}}. Đây là lúc hợp lý nhất để cân nhắc tăng giá khi gia hạn. Bên thuê này thường trả trễ trung bình {{f18.average_days_late_display}} ngày và hiện không có khoản quá hạn.\n- [{{f3.property_label}}](f3): các hợp đồng thuê đều đến {{f9.end_date_display}}. Tôi không khuyên đổi giá giữa kỳ hợp đồng.\n- [{{f6.property_label}}](f6): hợp đồng của {{f15.tenant_name}} đến {{f15.end_date_display}}, giá thuê hiện tại {{f15.rent_display}}.\n\nApp không có số liệu giá thị trường hay mức tăng phù hợp, và tôi chưa thể tra cứu trên web. Vì vậy tôi không đưa ra mức tăng cụ thể. Bạn nên so với giá của các phòng tương tự trong khu vực.\n\nNếu muốn, tôi có thể soạn đề xuất đổi giá thuê hoặc gia hạn cho {{f7.property_label}}. Bạn cho tôi biết mức giá mong muốn. Tôi không tự thay đổi được dữ liệu, nên thành viên trong gia đình sẽ duyệt trên thẻ đề xuất ngay trong cuộc trò chuyện này."
+}
