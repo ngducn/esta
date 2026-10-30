@@ -1,7 +1,8 @@
 -- Two checks a proposal now passes before Mẹ sees it (#333). [app rule] A rent change keeps the new monthly rent
 -- between half and double the one it replaces, the bounds of a renewal's increase, so a slip such as 1.000 ₫ never
--- reaches her. A reminder needs a bill that this month's Thu tiền board holds, so the approved card has one to open: a
--- bill issued early and due next month is not yet owed there.
+-- reaches her; from a lease's first period it replaces the lease's own rent. A reminder needs a bill still owed on this
+-- month's Thu tiền board, asked of the board itself, so the approved card has one to open: a bill issued early and due
+-- next month is not on it yet.
 create or replace function private.proposal_refusal(p_household_id uuid, p_proposal jsonb, p_as_of date)
 returns text
 language plpgsql
@@ -44,9 +45,7 @@ begin
         return 'ESTA_LEASE_NOT_ACTIVE';
       end if;
       if not exists (
-        select 1 from public.invoice_balances b
-        where b.lease_id = v_lease.id and b.status = 'issued' and b.outstanding_vnd > 0
-          and b.due_date < (date_trunc('month', p_as_of) + interval '1 month')::date
+        select 1 from public.collection_candidates(p_as_of) c where c.lease_id = v_lease.id and c.outstanding_vnd > 0
       ) then
         return 'ESTA_REMINDER_NOTHING_OWED';
       end if;
@@ -71,6 +70,7 @@ begin
       end if;
       select s.monthly_rent_vnd into v_rent from private.lease_periods(v_lease, v_start) s
       where s.period_start < v_start order by s.period_start desc limit 1;
+      v_rent := coalesce(v_rent, v_lease.rent_vnd);
       if (p ->> 'rent_vnd')::bigint * 2 < v_rent or (p ->> 'rent_vnd')::bigint > v_rent * 2 then
         return 'ESTA_RENT_CHANGE_RANGE';
       end if;
