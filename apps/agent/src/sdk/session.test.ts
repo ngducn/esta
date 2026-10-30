@@ -1,7 +1,7 @@
 import type { McpSdkServerConfigWithInstance, Options } from '@anthropic-ai/claude-agent-sdk';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -154,5 +154,66 @@ describe('pruneTranscripts (#340)', () => {
     pruneTranscripts(configDir, 'replay-fedcba9876543210');
     expect(readdirSync(project)).toEqual(['memory']);
     rmSync(configDir, { recursive: true, force: true });
+  });
+});
+
+describe('pruneTranscripts stays inside the conversation it prunes (#340)', () => {
+  const KEEP = 'b7e0c1d2-0000-4000-8000-000000000002';
+  const OLD = 'b7e0c1d2-0000-4000-8000-000000000001';
+  const OTHER = 'b7e0c1d2-0000-4000-8000-000000000003';
+  const scratch: string[] = [];
+  const folder = (prefix: string) => {
+    const dir = mkdtempSync(join(tmpdir(), prefix));
+    scratch.push(dir);
+    return dir;
+  };
+  afterAll(() => {
+    for (const dir of scratch) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('reads a file where a project folder belongs as nothing to prune, and still prunes the real projects', () => {
+    const configDir = folder('esta-prune-stray-');
+    const project = join(configDir, 'projects', '-tmp-esta-agent-conversations-c1');
+    mkdirSync(project, { recursive: true });
+    writeFileSync(join(configDir, 'projects', 'stray.json'), '{}');
+    for (const id of [OLD, KEEP]) writeFileSync(join(project, `${id}.jsonl`), '{}\n');
+    expect(() => pruneTranscripts(configDir, KEEP)).not.toThrow();
+    expect(readdirSync(project)).toEqual([`${KEEP}.jsonl`]);
+    expect(existsSync(join(configDir, 'projects', 'stray.json'))).toBe(true);
+  });
+
+  it('follows no symlink, so nothing outside the conversation is deleted', () => {
+    const configDir = folder('esta-prune-links-');
+    const outside = folder('esta-prune-outside-');
+    const outsideProject = join(outside, 'project');
+    const outsideReplays = join(outside, 'replays');
+    const outsideSession = join(outside, `${OTHER}`);
+    for (const dir of [outsideProject, outsideReplays, outsideSession]) mkdirSync(dir, { recursive: true });
+    const kept = [join(outsideProject, `${OLD}.jsonl`), join(outsideReplays, 'replay-0123456789abcdef.json'), join(outsideSession, 'tool-result.txt'), join(outside, `${OLD}.jsonl`)];
+    for (const file of kept) writeFileSync(file, '{}\n');
+
+    const projects = join(configDir, 'projects');
+    const real = join(projects, '-tmp-esta-agent-conversations-c1');
+    mkdirSync(real, { recursive: true });
+    writeFileSync(join(real, `${OLD}.jsonl`), '{}\n');
+    symlinkSync(outsideProject, join(projects, 'linked-project'));
+    symlinkSync(join(outside, `${OLD}.jsonl`), join(real, 'b7e0c1d2-0000-4000-8000-000000000004.jsonl'));
+    symlinkSync(outsideSession, join(real, OTHER));
+    symlinkSync(outsideReplays, join(configDir, 'replay-sessions'));
+
+    pruneTranscripts(configDir, KEEP);
+
+    expect(kept.filter((file) => !existsSync(file))).toEqual([]);
+    expect(existsSync(join(real, `${OLD}.jsonl`)), 'the conversation\'s own old transcript is still pruned').toBe(false);
+  });
+
+  it('prunes a configDir whose path crosses a symlink, as the temp dir of a Mac does', () => {
+    const parent = folder('esta-prune-parent-');
+    const real = join(parent, 'real');
+    mkdirSync(join(real, 'config', 'replay-sessions'), { recursive: true });
+    writeFileSync(join(real, 'config', 'replay-sessions', 'replay-0123456789abcdef.json'), '{}\n');
+    symlinkSync(real, join(parent, 'alias'));
+    pruneTranscripts(join(parent, 'alias', 'config'), KEEP);
+    expect(readdirSync(join(real, 'config', 'replay-sessions'))).toEqual([]);
   });
 });

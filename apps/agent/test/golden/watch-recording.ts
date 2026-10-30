@@ -55,37 +55,49 @@ const NOTES: Record<Locale, { readonly label: string; readonly notes: readonly N
   },
 };
 
+/** The model name of a recording this script wrote, which tells it from one `pnpm agent:record` made live. */
+export const HAND_WRITTEN = 'hand-written';
+
+const isHandWritten = (file: string): boolean => {
+  try {
+    return recordingSchema.parse(JSON.parse(readFileSync(file, 'utf8'))).model === HAND_WRITTEN;
+  } catch {
+    return false;
+  }
+};
+
 /**
- * Rewrites each locale's recording under the hash of the prompt the worker sends today, removes the ones it replaces,
- * and moves each failure case recording of the same prompt (`fixtures/agent-replay-cases`) to the new hash.
+ * Rewrites each locale's recording under the hash of the prompt the worker sends today, removes the hand-written ones
+ * it replaces and leaves every other file in the folder alone, and moves each failure case recording of the same
+ * prompt (`fixtures/agent-replay-cases`) to the new hash.
  */
-function main() {
-  const dir = join(DEFAULT_REPLAY_DIR, 'portfolio_watch');
-  const stale = new Set(readdirSync(dir).map((file) => join(dir, file)));
+export function rewriteWatchRecordings({ replay, cases }: { readonly replay: string; readonly cases: string }) {
+  const dir = join(replay, 'portfolio_watch');
+  const stale = new Set(readdirSync(dir).map((file) => join(dir, file)).filter(isHandWritten));
   const inputs: CanonicalInput[] = [];
   for (const [locale, { label, notes }] of Object.entries(NOTES) as Array<[Locale, (typeof NOTES)[Locale]]>) {
     const prepared = portfolioWatchRequest({ db: fakeDb({}), householdId: HOUSEHOLD, jobId: 'watch-recording', locale, asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock: clockOn('2026-10-07T06:40:00+07:00'), read: async () => ({ snapshot, labels }) });
     const input = canonicalInput({ spec: JOBS.portfolio_watch, prompt: prepared.prompt, canon: canonicalizer({ householdName: 'Gia đình Demo' }) });
     const toolCalls = [{ name: mcpToolName('watch_facts'), input: {} }, ...notes.map((note) => ({ name: mcpToolName('create_item'), input: { ...note, related: [...note.related] } }))];
-    const written = writeRecording(DEFAULT_REPLAY_DIR, { version: 1, kind: 'portfolio_watch', inputHash: inputHash(input), input, label, model: 'hand-written', numTurns: toolCalls.length + 1, toolCalls, reply: 'xong' });
+    const written = writeRecording(replay, { version: 1, kind: 'portfolio_watch', inputHash: inputHash(input), input, label, model: HAND_WRITTEN, numTurns: toolCalls.length + 1, toolCalls, reply: 'xong' });
     stale.delete(written);
     inputs.push(input);
     console.log(written);
   }
   for (const file of stale) rmSync(file);
 
-  for (const name of readdirSync(CASES)) {
-    const caseDir = join(CASES, name, 'portfolio_watch');
+  for (const name of readdirSync(cases)) {
+    const caseDir = join(cases, name, 'portfolio_watch');
     if (!existsSync(caseDir)) continue;
     for (const file of readdirSync(caseDir).map((entry) => join(caseDir, entry))) {
       const recording = recordingSchema.parse(JSON.parse(readFileSync(file, 'utf8')));
       const input = inputs.find((candidate) => candidate.prompt === recording.input.prompt);
       if (input === undefined) continue;
-      const written = writeRecording(join(CASES, name), { ...recording, inputHash: inputHash(input), input });
+      const written = writeRecording(join(cases, name), { ...recording, inputHash: inputHash(input), input });
       if (written !== file) rmSync(file);
       console.log(written);
     }
   }
 }
 
-if (import.meta.main) main();
+if (import.meta.main) rewriteWatchRecordings({ replay: DEFAULT_REPLAY_DIR, cases: CASES });

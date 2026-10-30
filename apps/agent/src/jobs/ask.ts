@@ -98,7 +98,7 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
     prompt:
       earlier === null
         ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, earlier: input.seed, topic })
-        : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
+        : askFollowUpPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
     ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools,

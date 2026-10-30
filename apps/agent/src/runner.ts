@@ -111,6 +111,15 @@ function followedBy(first: SessionRun, next: SessionRun): SessionRun {
   };
 }
 
+/** The answer is saved by now, so a folder that cannot be tidied warns and never fails or requeues the job (#340). */
+function tidyTranscripts(job: AgentJob, configDir: string, keep: string): void {
+  try {
+    pruneTranscripts(configDir, keep);
+  } catch (error) {
+    console.warn(`[agent] ${job.kind} ${job.id}: the answer is saved, but removing the conversation's old transcripts failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: Inputs): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
@@ -146,7 +155,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
     }
     if (!outcome.ok) return { outcome, session };
     const result = await prepared.finish({ reply: outcome.reply, model: session.model, sessionId: session.result.sessionId, turnHash: inputHash(canonicalInput(turn)) });
-    if (spec.workDir === 'conversation' && session.result.sessionId !== null) pruneTranscripts(work.configDir, session.result.sessionId);
+    if (spec.workDir === 'conversation' && session.result.sessionId !== null) tidyTranscripts(job, work.configDir, session.result.sessionId);
     return { outcome: { ...outcome, result }, session };
   } catch (error) {
     return { outcome: { ok: false, failure: failureOf(error) }, session };

@@ -1,7 +1,8 @@
 import { repairMessage, type NoteViolation } from '@esta/core/guard';
 import type { IsoDate } from '@esta/core/date';
+import type { Locale } from '@esta/core/format';
 import type { LoadedTopic } from '../tools/topic-reads';
-import { writtenInEnglish } from './language';
+import { replyLanguage } from './language';
 import { systemPrompt } from './system';
 
 export type AskedTurn = { readonly question: string; readonly answer: string };
@@ -9,10 +10,11 @@ export type AskedTurn = { readonly question: string; readonly answer: string };
 const MARKDOWN_LINK = /\[([^\]]*)\]\([^)]*\)/g;
 
 /**
- * The model answered some English questions in Vietnamese, the default when it is unsure (#348), so an English message
- * says so where the model reads it last. A Vietnamese message keeps the default and its prompt does not change.
+ * The model answered some English questions in Vietnamese, the default when it is unsure (#348), so a message that is
+ * clearly English, or that the household reads in English and gives no sign of Vietnamese, says so where the model
+ * reads it last. Any other message keeps the default and its prompt does not change.
  */
-const replyLanguage = (question: string): string[] => (writtenInEnglish(question) ? ['The message is written in English, so write the whole reply in English.'] : []);
+const replyLanguageLine = (question: string, locale: Locale): string[] => (replyLanguage(question, locale) === 'en' ? ['The message is written in English, so write the whole reply in English.'] : []);
 
 function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   if (turns.length === 0) return [];
@@ -63,19 +65,19 @@ export function askPrompt(
     ...conversationSoFar(context.earlier ?? []),
     ...topicSection(context.topic),
     '',
-    ...replyLanguage(context.question),
+    ...replyLanguageLine(context.question, context.locale),
     'Message:',
     context.question,
   ].join('\n');
 }
 
 /** A follow-up continues the session of the conversation's last answer, so its rules and context already hold. */
-export function askFollowUpPrompt({ today, timezone, question, firstHandle }: { readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly firstHandle: number }): string {
+export function askFollowUpPrompt({ locale, today, timezone, question, firstHandle }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly firstHandle: number }): string {
   return [
     `Today is ${today} in ${timezone}. The family member writes again in the conversation so far. Reply with the rules of your first task.`,
     `The handles and placeholders of your earlier replies no longer hold. Call the tools again for every record and figure this reply writes; this turn's handles start at f${firstHandle}.`,
     '',
-    ...replyLanguage(question),
+    ...replyLanguageLine(question, locale),
     'Message:',
     question,
   ].join('\n');
