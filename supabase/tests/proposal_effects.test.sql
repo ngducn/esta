@@ -1,14 +1,15 @@
 begin;
 \ir _harness.psql
 
-select plan(36);
+select plan(48);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
 
 -- Dĩ An's Phòng 2, 3 and 5 by calendar month at 2.500.000 ₫, and Căn hộ Thủ Đức whole at 9.000.000 ₫ to 31/10/2026,
 -- collected to its end, on the database clock's 2026-10-07. Phòng 2 is issued through November, so a rent change from
--- 01/11 is billed and one from 01/12 applies.
+-- 01/11 is billed and one from 01/12 applies. Phòng 2's renewal starts 01/07/2027. Phòng 5 goes to 4.000.000 ₫ from
+-- 01/12 by an amendment. Phòng 7 is paid through December and its January bill went out early.
 select set_config('esta.actor', 'system:test', true);
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
   ('00000000-0000-4000-8000-0000000000a1', :'a', 'Dãy trọ Dĩ An', 'DIAN', 'rooming_house', 'rental'),
@@ -17,7 +18,8 @@ insert into public.units (id, household_id, property_id, label, kind) values
   ('00000000-0000-4000-8000-000000000a12', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 2', 'room'),
   ('00000000-0000-4000-8000-000000000a13', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 3', 'room'),
   ('00000000-0000-4000-8000-000000000a15', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 5', 'room'),
-  ('00000000-0000-4000-8000-000000000a16', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 6', 'room');
+  ('00000000-0000-4000-8000-000000000a16', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 6', 'room'),
+  ('00000000-0000-4000-8000-000000000a17', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 7', 'room');
 select id as whole_unit from public.units where property_id = '00000000-0000-4000-8000-0000000000a2' and kind = 'whole' \gset
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0a1', :'a', 'individual', 'Trần Thị Bình Demo', array['tenant']);
@@ -33,8 +35,19 @@ insert into public.leases (
    '00000000-0000-4000-8000-00000000a0a1', '2026-01-01', '2027-06-30', 2500000, 1, 'calendar_month', '2026-09-30', 2500000, 'active'),
   ('00000000-0000-4000-8000-00000000e061', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a16',
    '00000000-0000-4000-8000-00000000a0a1', '2026-01-01', '2027-06-30', 2500000, 1, 'calendar_month', '2026-10-31', 2500000, 'active'),
+  ('00000000-0000-4000-8000-00000000e071', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a17',
+   '00000000-0000-4000-8000-00000000a0a1', '2026-01-01', '2027-06-30', 2500000, 1, 'calendar_month', '2026-12-31', 2500000, 'active'),
   ('00000000-0000-4000-8000-00000000e211', :'a', '00000000-0000-4000-8000-0000000000a2', :'whole_unit',
    '00000000-0000-4000-8000-00000000a0a1', '2025-11-01', '2026-10-31', 9000000, 1, 'calendar_month', '2026-10-31', 9000000, 'active');
+insert into public.leases (
+  id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
+  deposit_vnd, status, renewal_of_lease_id
+) values
+  ('00000000-0000-4000-8000-00000000e022', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a12',
+   '00000000-0000-4000-8000-00000000a0a1', '2027-07-01', '2028-06-30', 2500000, 1, 'calendar_month', 2500000, 'active',
+   '00000000-0000-4000-8000-00000000e021');
+insert into public.lease_amendments (household_id, lease_id, effective_period_start, changes)
+values (:'a', '00000000-0000-4000-8000-00000000e051', '2026-12-01', '{"rent_vnd": 4000000}');
 
 insert into private.local_stack default values on conflict do nothing;
 insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
@@ -43,6 +56,9 @@ select private.issue_invoices(l.id, '2026-10-07', now()) from public.leases l wh
 -- Phòng 2's November bill went out early, as Dĩ An's meter entry issues it in SPEC §9.3.
 select private.issue_invoice(i.id, '2026-10-07', now()) from public.invoices i
 where i.lease_id in ('00000000-0000-4000-8000-00000000e021', '00000000-0000-4000-8000-00000000e061') and i.period_start = '2026-11-01' and i.status = 'draft';
+select private.issue_invoices('00000000-0000-4000-8000-00000000e071', '2026-12-07', now());
+select private.issue_invoice(i.id, '2026-12-07', now()) from public.invoices i
+where i.lease_id = '00000000-0000-4000-8000-00000000e071' and i.period_start = '2027-01-01' and i.status = 'draft';
 
 -- The worker's proposals, through create_proposal's service role.
 select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
@@ -89,7 +105,21 @@ from (values
   (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
      'effective_period_start', '2026-12-01', 'rent_vnd', 5000001)), 'ESTA_RENT_CHANGE_RANGE', 'more than double the rent it replaces is refused'),
   (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
-     'effective_period_start', '2026-12-01', 'rent_vnd', 1250000)), null, 'half the rent it replaces still applies')
+     'effective_period_start', '2026-12-01', 'rent_vnd', 1250000)), null, 'half the rent it replaces still applies'),
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
+     'effective_period_start', '2026-12-01', 'rent_vnd', 1249999)), 'ESTA_RENT_CHANGE_RANGE', 'one đồng under half is refused'),
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
+     'effective_period_start', '2026-12-01', 'rent_vnd', 5000000)), null, 'double the rent it replaces still applies'),
+  -- No period of Phòng 2's renewal starts before 01/07/2027, so a change from its first period replaces the lease's own rent.
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e022',
+     'effective_period_start', '2027-07-01', 'rent_vnd', 1000)), 'ESTA_RENT_CHANGE_RANGE', 'a slip on a renewal that has not started is refused too'),
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e022',
+     'effective_period_start', '2027-07-01', 'rent_vnd', 3000000)), null, 'a fair change from the renewal''s first period applies'),
+  -- Phòng 5's rent in force from 01/12 is the amendment's 4.000.000 ₫, not the lease's 2.500.000 ₫.
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e051',
+     'effective_period_start', '2027-01-01', 'rent_vnd', 7000000)), null, 'the bounds follow the amended rent up'),
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e051',
+     'effective_period_start', '2027-01-01', 'rent_vnd', 1900000)), 'ESTA_RENT_CHANGE_RANGE', 'and down')
 ) as checks (proposal, refusal, note);
 -- #333: Phòng 6 owes only November's bill, issued early and due next month, which this month's Thu tiền board leaves
 -- out, so a reminder would have nothing to open.
@@ -100,6 +130,18 @@ select is(public.proposal_refusal(:'b', (select proposal from public.agent_items
 select tests.clear_request();
 reset role;
 select is(has_function_privilege('authenticated', 'public.proposal_refusal(uuid, jsonb)', 'execute'), false, 'only the worker asks it directly');
+
+-- #333 at the month's edges, by the business day in Asia/Ho_Chi_Minh: a bill joins the board on the first of the month
+-- it is due in and stays while it is owed.
+select is(private.proposal_refusal(:'a', jsonb_build_object('type', 'draft_reminder', 'params', jsonb_build_object('title', 'x', 'lease_id', lease_id)),
+  private.business_date(at)), refusal, note)
+from (values
+  ('00000000-0000-4000-8000-00000000e061', timestamptz '2026-10-31 23:59+07', 'ESTA_REMINDER_NOTHING_OWED', 'at 23:59 on 31/10 Phòng 6''s November bill is not owed yet'),
+  ('00000000-0000-4000-8000-00000000e061', timestamptz '2026-11-01 00:01+07', null, 'at 00:01 on 01/11 it is'),
+  ('00000000-0000-4000-8000-00000000e061', timestamptz '2026-12-01 00:01+07', null, 'in December it is still owed from November'),
+  ('00000000-0000-4000-8000-00000000e071', timestamptz '2026-12-31 23:59+07', 'ESTA_REMINDER_NOTHING_OWED', 'at 23:59 on 31/12 Phòng 7''s January bill is not owed yet'),
+  ('00000000-0000-4000-8000-00000000e071', timestamptz '2027-01-01 00:01+07', null, 'at 00:01 on 01/01/2027 it is')
+) as edges (lease_id, at, refusal, note);
 
 -- Phòng 3 is terminated after its proposal was made.
 select set_config('esta.actor', 'system:test', true);
@@ -177,6 +219,21 @@ select lives_ok(format($$
   values (%L, '00000000-0000-4000-8000-0000000000a2', %L, '2026-11-01', 9600000, '00000000-0000-4000-8000-00000000e211', '00000000-0000-4000-8000-000000002a10') $$,
   :'a', :'whole_unit'),
   'once Mẹ deletes the draft, a new assistant renewal can be written');
+
+-- #333: a reminder asks the Thu tiền board itself, so a bill the board leaves out is nothing to remind about. Here the
+-- board leaves out Phòng 5, whose October bill is owed and whose reminder was approved above.
+alter function public.collection_candidates(date) rename to collection_candidates_kept;
+create function public.collection_candidates(p_month date)
+returns table (lease_id uuid, outstanding_vnd bigint)
+language sql
+stable
+set search_path = ''
+as $$
+  select c.lease_id, c.outstanding_vnd from public.collection_candidates_kept(p_month) c
+  where c.lease_id <> '00000000-0000-4000-8000-00000000e051';
+$$;
+select is(private.proposal_refusal(:'a', (select proposal from public.agent_items where id = '00000000-0000-4000-8000-0000000002a6'), '2026-10-07'),
+  'ESTA_REMINDER_NOTHING_OWED', 'a bill the board leaves out is nothing to remind about');
 
 select * from finish();
 rollback;
