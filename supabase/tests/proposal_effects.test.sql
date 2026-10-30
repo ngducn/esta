@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(32);
+select plan(36);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -16,7 +16,8 @@ insert into public.properties (id, household_id, nickname, code, kind, use_mode)
 insert into public.units (id, household_id, property_id, label, kind) values
   ('00000000-0000-4000-8000-000000000a12', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 2', 'room'),
   ('00000000-0000-4000-8000-000000000a13', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 3', 'room'),
-  ('00000000-0000-4000-8000-000000000a15', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 5', 'room');
+  ('00000000-0000-4000-8000-000000000a15', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 5', 'room'),
+  ('00000000-0000-4000-8000-000000000a16', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 6', 'room');
 select id as whole_unit from public.units where property_id = '00000000-0000-4000-8000-0000000000a2' and kind = 'whole' \gset
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0a1', :'a', 'individual', 'Trần Thị Bình Demo', array['tenant']);
@@ -30,6 +31,8 @@ insert into public.leases (
    '00000000-0000-4000-8000-00000000a0a1', '2026-01-01', '2027-06-30', 2500000, 1, 'calendar_month', '2026-09-30', 2500000, 'active'),
   ('00000000-0000-4000-8000-00000000e051', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a15',
    '00000000-0000-4000-8000-00000000a0a1', '2026-01-01', '2027-06-30', 2500000, 1, 'calendar_month', '2026-09-30', 2500000, 'active'),
+  ('00000000-0000-4000-8000-00000000e061', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a16',
+   '00000000-0000-4000-8000-00000000a0a1', '2026-01-01', '2027-06-30', 2500000, 1, 'calendar_month', '2026-10-31', 2500000, 'active'),
   ('00000000-0000-4000-8000-00000000e211', :'a', '00000000-0000-4000-8000-0000000000a2', :'whole_unit',
    '00000000-0000-4000-8000-00000000a0a1', '2025-11-01', '2026-10-31', 9000000, 1, 'calendar_month', '2026-10-31', 9000000, 'active');
 
@@ -39,7 +42,7 @@ insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:0
 select private.issue_invoices(l.id, '2026-10-07', now()) from public.leases l where l.household_id = :'a' and l.status = 'active';
 -- Phòng 2's November bill went out early, as Dĩ An's meter entry issues it in SPEC §9.3.
 select private.issue_invoice(i.id, '2026-10-07', now()) from public.invoices i
-where i.lease_id = '00000000-0000-4000-8000-00000000e021' and i.period_start = '2026-11-01' and i.status = 'draft';
+where i.lease_id in ('00000000-0000-4000-8000-00000000e021', '00000000-0000-4000-8000-00000000e061') and i.period_start = '2026-11-01' and i.status = 'draft';
 
 -- The worker's proposals, through create_proposal's service role.
 select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
@@ -79,8 +82,19 @@ from (values
   (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
      'effective_period_start', '2026-12-01', 'rent_vnd', '3800000')), 'ESTA_PROPOSAL_PARAMS', 'a rent typed as text is out of shape'),
   (jsonb_build_object('type', 'suggest_lease_renewal', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e211',
-     'increase_bps', 500, 'end_date', '2026-10-30')), 'ESTA_RENEWAL_END', 'a renewal ending before the lease does is refused')
+     'increase_bps', 500, 'end_date', '2026-10-30')), 'ESTA_RENEWAL_END', 'a renewal ending before the lease does is refused'),
+  -- #333: a new rent stays between half and double the 2.500.000 ₫ it replaces, as a renewal's increase does.
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
+     'effective_period_start', '2026-12-01', 'rent_vnd', 1000)), 'ESTA_RENT_CHANGE_RANGE', 'a rent of 1.000 ₫ is a slip, not a change'),
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
+     'effective_period_start', '2026-12-01', 'rent_vnd', 5000001)), 'ESTA_RENT_CHANGE_RANGE', 'more than double the rent it replaces is refused'),
+  (jsonb_build_object('type', 'suggest_rent_change', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e021',
+     'effective_period_start', '2026-12-01', 'rent_vnd', 1250000)), null, 'half the rent it replaces still applies')
 ) as checks (proposal, refusal, note);
+-- #333: Phòng 6 owes only November's bill, issued early and due next month, which this month's Thu tiền board leaves
+-- out, so a reminder would have nothing to open.
+select is(public.proposal_refusal(:'a', jsonb_build_object('type', 'draft_reminder', 'params', jsonb_build_object('title', 'x', 'lease_id', '00000000-0000-4000-8000-00000000e061'))),
+  'ESTA_REMINDER_NOTHING_OWED', 'a bill due next month is nothing to remind about this month');
 select is(public.proposal_refusal(:'b', (select proposal from public.agent_items where id = '00000000-0000-4000-8000-0000000002a2')),
   'ESTA_PROPOSAL_SUBJECT', 'the same lease asked for another household is not its record');
 select tests.clear_request();

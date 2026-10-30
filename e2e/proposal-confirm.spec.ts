@@ -32,7 +32,7 @@ test("a rent change asks in Esta's words, Thôi changes nothing, and Đồng ý 
   await page.goto('/assistant');
 
   await approve(page, item.title).click();
-  await expect(question(page)).toHaveAccessibleName(`Tăng tiền thuê ${lease.label} lên ${vnd('3.200.000')} từ 01/12/2026?`);
+  await expect(question(page), 'names the property too, as two properties can each have its Phòng 2 (#333)').toHaveAccessibleName(`Tăng tiền thuê ${lease.label}, Dãy trọ Dĩ An lên ${vnd('3.200.000')} từ 01/12/2026?`);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await question(page).getByRole('button', { name: 'Thôi' }).click();
   await expect(question(page)).toHaveCount(0);
