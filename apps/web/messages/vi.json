@@ -1164,6 +1164,9 @@
     },
     "sources": "Nguồn",
     "citationLabel": "Nguồn {index}: {source}. Mở trong thẻ mới",
+    "linkNotFoundTitle": "Không tìm thấy hồ sơ này",
+    "linkNotFoundBody": "Đường dẫn có thể đã cũ, hoặc hồ sơ này không thuộc gia đình của bạn.",
+    "linkNotFoundAction": "Về Trợ lý",
     "diagnostics": {
       "title": "Chẩn đoán Trợ lý",
       "intro": "Chỉ người vận hành thấy trang này. Số liệu lấy từ các lần chạy của Trợ lý cho gia đình này.",

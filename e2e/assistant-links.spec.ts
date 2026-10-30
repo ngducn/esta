@@ -16,5 +16,6 @@ test('a Trợ lý link to a person opens the tenant’s lease or the owner’s t
 
   for (const key of [`bank-lane-${LANE}`, `me-lane-${LANE + 1}`, `tenant-lane-${LANE + 1}:di-an:7`]) {
     expect((await page.goto(personLink(key)))?.status(), `${key} has no lease or share this household reads`).toBe(404);
+    await expect(page.getByTestId('link-not-found')).toContainText('Không tìm thấy hồ sơ này');
   }
 });
