@@ -65,7 +65,7 @@ test('a renewal names the new rent and leaves a draft that links back to the lea
   const item = await seedProposal(page, LEASE_LANE, 'suggest_lease_renewal', { title: 'Gia hạn phòng Demo', lease_id: lease.id, increase_bps: 500, end_date: '2027-12-31' });
   await page.goto('/assistant');
   await approve(page, item.title).click();
-  await expect(question(page)).toHaveAccessibleName(`Gia hạn hợp đồng ${lease.label} đến 31/12/2027, tiền thuê ${vnd('3.200.000')} mỗi tháng?`);
+  await expect(question(page)).toHaveAccessibleName(`Gia hạn hợp đồng ${lease.label}, Dãy trọ Dĩ An đến 31/12/2027, tiền thuê ${vnd('3.200.000')} mỗi tháng?`);
   await question(page).getByRole('button', { name: 'Đồng ý' }).click();
   await proposalCard(page, item.title).getByTestId('proposal-lease').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Hợp đồng nháp ${lease.label}`);

@@ -1135,6 +1135,7 @@
     "copyFailed": "Could not copy. The answer is selected, so press and hold to copy it.",
     "confirmRentChange": "{direction, select, up {Raise the rent for {place} to {amount} from {date}?} down {Lower the rent for {place} to {amount} from {date}?} other {Set the rent for {place} to {amount} from {date}?}}",
     "confirmRenewal": "Renew the lease for {place} until {date} at {amount} a month?",
+    "place": "{unit}, {property}",
     "confirmCancel": "Cancel",
     "openLease": "Open the lease",
     "openReminder": "Open the reminder",

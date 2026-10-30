@@ -122,7 +122,7 @@ Write tools:
 | `create_brief(summary, todo, watch)` | One `brief` item a day in `agent_items`: each line is plain text naming the facts it tells, and the tool links it to the first fact's record and renders the sections (§5.4). It fills and checks every text through the same number guard writer as `create_item` |
 | `create_proposal(type, params, rationale, related, dedupe_key)` | `agent_items` with kind `proposal` |
 
-Proposal types, each with a zod schema in `packages/core/proposals` and a handler in the web app: `create_task`, `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change`, `flag_data_issue`. Unknown types are rejected by the tool.
+Proposal types, each with a zod schema in `packages/core/proposals` and a handler in the web app: `create_task`, `draft_reminder`, `suggest_lease_renewal`, `suggest_rent_change`, `flag_data_issue`. Unknown types are rejected by the tool. `private.proposal_refusal` also refuses a rent change whose new monthly rent is under half or over double the one it replaces, the bounds of a renewal's increase [app rule], and a reminder with no bill due this month or overdue, so the approved card always has one on the Thu tiền board to open (#333).
 
 Thread fact tools, in `ask` only:
 
