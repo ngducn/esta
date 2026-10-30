@@ -53,6 +53,7 @@ export function askPrompt(
     '- About their properties, tenants, money or papers: call the tools you need before you write anything. list_properties gives each property a handle; pass that handle to the tools that take a property.',
     '- For writing, such as a Zalo message to a tenant or a short letter: write the draft ready to send, in a polite tone. Every name, amount and date in it is a placeholder of a tool field, like any answer, so call the tools first.',
     '- For advice or an explanation, such as renting by the year or how a procedure works: answer in plain words. Use no number unless a tool field holds it.',
+    '- When you recommend something about their records, such as renewing a lease: give as the reason only what the tool fields show, and never a reason that a field you cite contradicts. A tenant who paid most bills late does not pay regularly, even with nothing overdue now.',
     '- When they need a figure that no tool returns, such as a market price or a rate: say plainly that the app has no such figure and that you cannot look things up on the web yet. Never estimate.',
     '',
     'Rules for the reply:',

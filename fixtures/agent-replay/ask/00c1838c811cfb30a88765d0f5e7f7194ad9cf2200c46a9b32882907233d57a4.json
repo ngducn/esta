@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "00c1838c811cfb30a88765d0f5e7f7194ad9cf2200c46a9b32882907233d57a4",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "\"2\": Do not type a number. Cite the tool field that holds it as {{fN.field}}.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
+    "builtInTools": [],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal"
+    ],
+    "maxTurns": 15,
+    "resumesInputHash": "334b632da4cea91fdba16a9345133335b7782eaa5aaeafb81ec3324defd90065"
+  },
+  "label": "Live guard probe vi-zalo-welcome, repair turn on the full seed at 2026-10-07 07:00 (P5-12). Re-keyed for #354's advice rule; its reply predates the rule.",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 1,
+  "wallMs": 5848,
+  "toolCalls": [],
+  "reply": "{{f3.unit_label}} thuộc {{f3.property_label}}, hiện do {{f3.tenant_name}} thuê theo hợp đồng thuê bắt đầu từ {{f3.start_date_display}}. Bạn xem lại xem có đúng người cần gửi không, rồi dùng tin nhắn dưới đây:\n\n> Chào {{f3.tenant_name}}, gia đình xin chào mừng bạn đã dọn vào {{f3.unit_label}} tại {{f3.property_label}}. Tiền thuê là {{f3.rent_display}} theo tháng, tiền cọc đã nhận là {{f3.deposit_held_display}}. Hợp đồng thuê có hiệu lực đến {{f3.end_date_display}}. Nếu cần hỗ trợ gì về phòng, bạn cứ nhắn cho gia đình nhé. Chúc bạn sống thoải mái và thuận lợi.\n\nXem hợp đồng thuê: [Hợp đồng thuê {{f3.unit_label}}, {{f3.property_label}}](f3)"
+}
