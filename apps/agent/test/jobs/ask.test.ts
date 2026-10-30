@@ -76,10 +76,10 @@ const FOLLOW_UP_TOOLS = [
   { name: mcpToolName('ledger'), input: { property: 'f11', year: 2026, month: 9 } },
 ];
 const SEPTEMBER = '{{f11.property_label}} thu {{f16.income_display}} trong tháng {{f16.period_date_display}}.';
-const FOLLOW_UP_PROMPT = askFollowUpPrompt({ locale: ASK_CONTEXT.locale, today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question: FOLLOW_UP, firstHandle: 9 });
+const FOLLOW_UP_PROMPT = askFollowUpPrompt({ ...ASK_CONTEXT, question: FOLLOW_UP, firstHandle: 9 });
 const AUGUST = 'Còn tháng 8?';
 const AUGUST_TURN = {
-  prompt: askFollowUpPrompt({ locale: ASK_CONTEXT.locale, today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question: AUGUST, firstHandle: 18 }),
+  prompt: askFollowUpPrompt({ ...ASK_CONTEXT, question: AUGUST, firstHandle: 18 }),
   reply: '{{f20.property_label}} thu {{f25.income_display}} trong tháng {{f25.period_date_display}}.',
   toolCalls: [{ name: mcpToolName('list_properties'), input: {} }, { name: mcpToolName('ledger'), input: { property: 'f20', year: 2026, month: 8 } }],
 };

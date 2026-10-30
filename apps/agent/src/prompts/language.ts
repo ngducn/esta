@@ -1,4 +1,5 @@
 import type { Locale } from '@esta/core/format';
+import { foldVietnamese } from '@esta/core/search';
 
 /**
  * When a message is English (#348). Mẹ writes Vietnamese with English words mixed in and often types without marks,
@@ -32,12 +33,38 @@ const VIETNAMESE = wordSet(
 const VIETNAMESE_MARK = /[\u0300-\u0303\u0306\u0309\u031b\u0323]|đ/u;
 const hasMark = (word: string): boolean => VIETNAMESE_MARK.test(word.normalize('NFD'));
 
+const TOKEN = /[\p{L}\p{N}]+/gu;
+const tokensOf = (text: string): string[] => text.normalize('NFC').toLowerCase().match(TOKEN) ?? [];
+
+/**
+ * The tokens of a message without the household's own labels. A name such as "Căn hộ Thủ Đức" or "Phòng 5" is neither
+ * language, but each of its marked words would count as Vietnamese. A label matches whole tokens, whatever the case
+ * and the marks, and the longest label takes its tokens first.
+ */
+function withoutLabels(tokens: readonly string[], labels: readonly string[]): string[] {
+  const folded = tokens.map(foldVietnamese);
+  const names = labels
+    .map((label) => tokensOf(label).map(foldVietnamese))
+    .filter((name) => name.length > 0)
+    .toSorted((a, b) => b.length - a.length);
+  const taken = new Set<number>();
+  for (const name of names) {
+    for (let at = 0; at + name.length <= folded.length; at++) {
+      if (!name.every((token, offset) => folded[at + offset] === token && !taken.has(at + offset))) continue;
+      for (let offset = 0; offset < name.length; offset++) taken.add(at + offset);
+      at += name.length - 1;
+    }
+  }
+  return tokens.filter((_, index) => !taken.has(index));
+}
+
 /**
  * The language to reply in: English when the message is clearly English, Vietnamese when it holds a Vietnamese word
- * (marked or not), and otherwise `fallback`, the language the household reads.
+ * (marked or not), and otherwise `fallback`, the language the household reads. `labels` are the household's own
+ * property nicknames, unit labels, party names and place names, which count as neither language.
  */
-export function replyLanguage(message: string, fallback: Locale): Locale {
-  const words = message.normalize('NFC').toLowerCase().match(/\p{L}+/gu) ?? [];
+export function replyLanguage(message: string, fallback: Locale, labels: readonly string[] = []): Locale {
+  const words = withoutLabels(tokensOf(message), labels).flatMap((token) => token.match(/\p{L}+/gu) ?? []);
   const english = words.filter((word) => ENGLISH.has(word)).length;
   const vietnamese = words.filter((word) => hasMark(word) || VIETNAMESE.has(word)).length;
   if (english >= RULE.minEnglishWords && english >= RULE.englishPerVietnameseWord * vietnamese) return 'en';

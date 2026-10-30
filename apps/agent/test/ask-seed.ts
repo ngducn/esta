@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fakeDb, type FakeRpcs, type Recorded } from '../src/test/fake-db';
-import { HOUSEHOLD } from './full-seed';
+import { HOUSEHOLD, labels } from './full-seed';
 import { replayWorker } from './replay-worker';
 import { clockOn } from './full-seed';
 import { DEFAULT_REPLAY_DIR } from '../src/replay/store';
@@ -53,6 +53,13 @@ export function askWorker(tables: Record<string, Row[]>, jobsDir: string, replay
 }
 
 export const answerRow = (tables: Record<string, Row[]>) => tables.messages?.find((row) => row.id === ANSWER) as { content_md: string; status: string; refs: string[] };
+
+/** The ask tables plus the seeded household's unit labels and party names, which the ask fixture does not hold. */
+export function withSeedNames(tables: Record<string, Row[]>): Record<string, Row[]> {
+  tables.units = [...labels.units].map(([id, { label, whole }]) => ({ id, household_id: HOUSEHOLD, label, kind: whole ? 'whole' : 'room' }));
+  tables.parties = [...labels.parties].map(([id, full_name]) => ({ id, household_id: HOUSEHOLD, full_name }));
+  return tables;
+}
 
 export const ARCHIVED_PROPERTY = '00000000-0000-4000-8000-0000000a7c01';
 const DI_AN = '93cc970b-f9c2-52f5-bc34-1f1edb76742c';

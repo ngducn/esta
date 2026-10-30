@@ -103,18 +103,25 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
   });
 }
 
-/** The names the watch facts are told by: every property, unit, party and document of the household. */
-export async function readWatchLabels(db: Db, householdId: string): Promise<WatchLabels> {
-  const [properties, units, parties, documents] = await Promise.all([
+/** The names of the household's properties, units and parties, by id. */
+export async function readNameLabels(db: Db, householdId: string): Promise<Pick<WatchLabels, 'properties' | 'units' | 'parties'>> {
+  const [properties, units, parties] = await Promise.all([
     readAll('property names', (from, to) => db.from('properties').select('id, nickname').eq('household_id', householdId).order('id').range(from, to)),
     readAll('unit labels', (from, to) => db.from('units').select('id, label, kind').eq('household_id', householdId).order('id').range(from, to)),
     readAll('party names', (from, to) => db.from('parties').select('id, full_name').eq('household_id', householdId).order('id').range(from, to)),
-    readAll('document titles', (from, to) => db.from('documents').select('id, title').eq('household_id', householdId).order('id').range(from, to)),
   ]);
   return {
     properties: new Map(properties.map((property) => [property.id, property.nickname])),
     units: new Map(units.map((unit) => [unit.id, { label: unit.label, whole: unit.kind === 'whole' }])),
     parties: new Map(parties.map((party) => [party.id, party.full_name])),
-    documents: new Map(documents.map((document) => [document.id, document.title])),
   };
+}
+
+/** The names the watch facts are told by: every property, unit, party and document of the household. */
+export async function readWatchLabels(db: Db, householdId: string): Promise<WatchLabels> {
+  const [names, documents] = await Promise.all([
+    readNameLabels(db, householdId),
+    readAll('document titles', (from, to) => db.from('documents').select('id, title').eq('household_id', householdId).order('id').range(from, to)),
+  ]);
+  return { ...names, documents: new Map(documents.map((document) => [document.id, document.title])) };
 }
