@@ -11,8 +11,10 @@ overdue as (
   where b.household_id = (select id from demo) and l.property_id = (select id from prop where code = 'DIAN')
     and b.status = 'issued' and b.outstanding_vnd > 0 and b.due_date < '2026-10-07'),
 ending as (
-  select p.nickname, l.end_date, l.end_date - '2026-10-07'::date as days
-  from public.leases l join prop p on p.id = l.property_id
+  select l.id, p.nickname, l.end_date, l.end_date - '2026-10-07'::date as days, t.full_name as tenant,
+    (select s.rent_vnd from private.lease_periods(l, '2026-10-07') s where '2026-10-07' between s.period_start and s.period_end) as rent,
+    (select sum(case d.kind when 'received' then d.amount_vnd else -d.amount_vnd end) from public.deposit_entries d where d.lease_id = l.id) as deposit
+  from public.leases l join prop p on p.id = l.property_id join public.parties t on t.id = l.tenant_party_id
   where l.status = 'active' and l.end_date between '2026-10-07' and '2026-12-06'),
 leases_ as (select l.* from public.leases l where l.household_id = (select id from demo) and l.status <> 'draft' and l.start_date <= '2026-12-31'),
 periods as (select l.id as lease_id, l.status, s.period_start as ps, s.period_end as pe, s.rent_vnd as a from leases_ l cross join lateral private.lease_periods(l, '2026-12-31') s),
@@ -55,6 +57,9 @@ lateness as (
 overdue_tenant as (
   select count(*) as bills, count(*) filter (where paid_on > due_date) as late, avg(paid_on - due_date) filter (where paid_on > due_date) as days
   from paid where full_name = (select tenant from overdue)),
+ending_tenant as (
+  select count(*) as bills, count(*) filter (where paid_on > due_date) as late, avg(paid_on - due_date) filter (where paid_on > due_date) as days
+  from paid where full_name = (select tenant from ending)),
 yield as (
   select round(s.monthly_rent_vnd * 12 * 10000.0 / (select v.value_vnd from public.valuations v where v.property_id = l.property_id and v.as_of <= '2026-10-07' order by v.as_of desc limit 1)) as bp
   from public.leases l cross join lateral private.lease_periods(l, '2026-10-07') s
@@ -89,5 +94,11 @@ select question, figure, value from (
   union all select 't3', 'di-an overdue tenant bills paid late', (select late::text from overdue_tenant)
   union all select 't3', 'their bills', (select bills::text from overdue_tenant)
   union all select 't3', 'their average days late', (select round(days)::text from overdue_tenant)
+  union all select 'chips', 'ending lease tenant', (select string_agg(tenant, ', ' order by end_date) from ending)
+  union all select 'chips', 'ending lease monthly rent', (select string_agg(rent::text, ', ' order by end_date) from ending)
+  union all select 'chips', 'ending lease deposit held', (select string_agg(deposit::text, ', ' order by end_date) from ending)
+  union all select 'chips', 'ending lease tenant bills paid late', (select late::text from ending_tenant)
+  union all select 'chips', 'their bills', (select bills::text from ending_tenant)
+  union all select 'chips', 'their average days late', (select round(days)::text from ending_tenant)
 ) truth
 order by question, figure;

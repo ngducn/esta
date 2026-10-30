@@ -37,6 +37,20 @@ export type AskCase = {
 const PROPERTIES = { name: mcpToolName('list_properties'), input: {} };
 const call = (name: string, input: Record<string, unknown> = {}) => ({ name: mcpToolName(name), input });
 
+/** The seed's W1 and W3 notes as the worker reads them; their texts are the ones the suggested replies hold. */
+const OVERDUE_NOTE: AskTopic = {
+  kind: 'note',
+  title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày',
+  body: `Hóa đơn của Hoàng Văn Em Demo đến hạn ngày 25/09/2026 vẫn chưa thanh toán. Còn nợ ${formatVnd(vnd(2_800_000), 'vi')}.`,
+  links: ['esta://invoice/7701f9ca-8056-5db5-a157-d131407b52cd'],
+};
+const LEASE_ENDING_NOTE: AskTopic = {
+  kind: 'note',
+  title: 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 26 ngày',
+  body: 'Hợp đồng với Phạm Thị Lan Demo kết thúc ngày 01/11/2026 và chưa có hợp đồng gia hạn.',
+  links: ['esta://lease/19f7abd4-f81a-5135-bcb7-c2ba5cedce43'],
+};
+
 export const ASK_CASES: readonly AskCase[] = [
   {
     id: 'q1-di-an-income',
@@ -156,12 +170,7 @@ export const ASK_CASES: readonly AskCase[] = [
   {
     id: 't3-reply-late-count',
     question: 'Khách này trễ mấy lần rồi?',
-    topic: {
-      kind: 'note',
-      title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày',
-      body: `Hóa đơn của Hoàng Văn Em Demo đến hạn ngày 25/09/2026 vẫn chưa thanh toán. Còn nợ ${formatVnd(vnd(2_800_000), 'vi')}.`,
-      links: ['esta://invoice/7701f9ca-8056-5db5-a157-d131407b52cd'],
-    },
+    topic: OVERDUE_NOTE,
     toolCalls: [call('payment_behavior', { year: 2026 })],
     reply:
       'Trong các hóa đơn năm nay đã đến hạn, {{f25.tenant_name}} đã trả trễ {{f25.paid_late_count_display}} trên {{f25.invoice_count_display}} hóa đơn, trung bình trễ {{f25.average_days_late_display}} ngày.\n\n[Hóa đơn {{f8.unit_label}}](f8) đến hạn ngày {{f8.due_date_display}} vẫn còn nợ {{f8.amount_display}}. Xem [lịch sử trả tiền của {{f25.tenant_name}}](f25).',
@@ -172,6 +181,30 @@ export const ASK_CASES: readonly AskCase[] = [
     topic: { kind: 'property', propertyId: '62d33252-02ba-5610-bd9a-12474774014c' },
     toolCalls: [],
     reply: 'Sổ của {{f1.property_label}} đang thế chấp tại {{f9.mortgage_bank_name}}, khoản vay {{f9.mortgage_amount_display}}, đăng ký ngày {{f9.mortgage_registered_date_display}}.\n\nXem [pháp lý của {{f1.property_label}}](f9).',
+  },
+  {
+    id: 'chip-remind-tenant',
+    question: 'Viết tin nhắn nhắc Hoàng Văn Em Demo',
+    topic: OVERDUE_NOTE,
+    toolCalls: [],
+    reply:
+      'Đây là tin nhắn nhắc {{f8.tenant_name}} mà bạn có thể gửi:\n\nChào {{f8.tenant_name}}, tiền thuê {{f8.unit_label}} ở {{f8.property_label}} đến hạn ngày {{f8.due_date_display}} đã quá hạn {{f8.days_overdue_display}} ngày, hiện còn {{f8.amount_display}}. Nhờ anh chị sắp xếp đóng giúp sớm. Nếu đã chuyển khoản rồi, anh chị báo lại để mình kiểm tra nhé. Cảm ơn anh chị.',
+  },
+  {
+    id: 'chip-late-count',
+    question: 'Hoàng Văn Em Demo đã trễ mấy lần?',
+    topic: OVERDUE_NOTE,
+    toolCalls: [call('payment_behavior', { year: 2026 })],
+    reply:
+      'Năm nay {{f25.tenant_name}} đã trả trễ {{f25.paid_late_count_display}} trên {{f25.invoice_count_display}} hóa đơn đã đến hạn, trung bình trễ {{f25.average_days_late_display}} ngày.\n\n[Hóa đơn {{f8.unit_label}}](f8) đến hạn ngày {{f8.due_date_display}} vẫn còn nợ {{f8.amount_display}}. Xem [lịch sử trả tiền của {{f25.tenant_name}}](f25).',
+  },
+  {
+    id: 'chip-renew-lease',
+    question: 'Có nên gia hạn hợp đồng Căn hộ Thủ Đức không?',
+    topic: LEASE_ENDING_NOTE,
+    toolCalls: [call('payment_behavior', { year: 2026 })],
+    reply:
+      'Hợp đồng {{f8.property_label}} với {{f8.tenant_name}} hết hạn ngày {{f8.end_date_display}}, còn {{f8.days_until_end_display}} ngày. Tiền thuê hiện là {{f8.rent_display}} mỗi tháng, tiền cọc đang giữ {{f8.deposit_held_display}}.\n\nNăm nay {{f10.tenant_name}} đã trả trễ {{f10.paid_late_count_display}} trên {{f10.invoice_count_display}} hóa đơn, trung bình trễ {{f10.average_days_late_display}} ngày. Khách trả đủ nhưng hay trễ, nên nếu gia hạn, bạn có thể ghi rõ hạn đóng tiền và khoản phạt trả trễ trong hợp đồng mới. Gia hạn hay không là do bạn quyết định.\n\nXem [hợp đồng {{f8.property_label}}](f8) và [lịch sử trả tiền của {{f10.tenant_name}}](f10).',
   },
   {
     id: 'seeded-segment-august',

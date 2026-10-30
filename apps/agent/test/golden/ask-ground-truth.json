@@ -1,5 +1,35 @@
 [
   {
+    "figure": "ending lease deposit held",
+    "question": "chips",
+    "value": "18000000"
+  },
+  {
+    "figure": "ending lease monthly rent",
+    "question": "chips",
+    "value": "9000000"
+  },
+  {
+    "figure": "ending lease tenant",
+    "question": "chips",
+    "value": "Phạm Thị Lan Demo"
+  },
+  {
+    "figure": "ending lease tenant bills paid late",
+    "question": "chips",
+    "value": "9"
+  },
+  {
+    "figure": "their average days late",
+    "question": "chips",
+    "value": "3"
+  },
+  {
+    "figure": "their bills",
+    "question": "chips",
+    "value": "10"
+  },
+  {
     "figure": "di-an income received in August 2026",
     "question": "q1",
     "value": "10900000"
