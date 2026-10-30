@@ -99,10 +99,20 @@ describe('add_research_item', () => {
     expect(await prepared.finish({ reply: 'xong', model: 'm' })).toMatchObject({ empty: true, dropped: [{ source_url: PAGE, reason: 'not_fetched' }] });
   });
 
-  it("confirms the date from the article's own date line, not from the site header's today (#329)", async () => {
-    const page = ['Thứ Tư, 07/10/2026 | Tin tức Demo', 'Thứ Hai, 05/10/2026, 08:30 (GMT+7)', PAGE_TEXT].join('\n');
-    const { call, items } = await scan({ pages: { [PAGE]: page } });
-    expect(JSON.parse((await call('add_research_item', item({ published_on: '2026-10-07' }))).text)).toMatchObject({ saved: false, dropped: 'date_unconfirmed' });
+  it("confirms the date from the answer's labelled date line, not from a quoted time or the site header's today (#329)", async () => {
+    // WebFetch's result is the fetch model's answer to the scan's prompt, so the page here is such an answer.
+    const answer = [
+      '**Publication date:** 05/10/2026',
+      '',
+      '**Figures, roads and law numbers (verbatim):**',
+      '- "Vành đai 3 đoạn qua Dĩ An"',
+      '- "khởi công lúc 8h00 ngày 06/10/2026"',
+      '- "Thứ Tư, 07/10/2026 14:35 | Tin tức Demo"',
+    ].join('\n');
+    const { call, items } = await scan({ pages: { [PAGE]: answer } });
+    for (const published_on of ['2026-10-06', '2026-10-07']) {
+      expect(JSON.parse((await call('add_research_item', item({ published_on }))).text), published_on).toMatchObject({ saved: false, dropped: 'date_unconfirmed' });
+    }
     expect(await call('add_research_item', item())).toEqual({ text: '{"saved":true}', isError: false });
     expect(items().map(({ published_on }) => published_on)).toEqual(['2026-10-05']);
   });
