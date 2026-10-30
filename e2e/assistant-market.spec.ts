@@ -3,7 +3,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { setClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
-import { DESKTOP, noSidewaysScroll, open, PHONE, serviceGet, servicePatch, seriousAxeViolations } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, serviceDelete, serviceGet, servicePatch, serviceUpsert, seriousAxeViolations } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -93,5 +93,25 @@ test('in English at 130% text, Thị trường reads in English, keeps dates as 
     expect(await clippedText(page)).toEqual([]);
   } finally {
     await servicePatch(page, member, { locale: 'vi', text_scale: 100 });
+  }
+});
+
+test('on a day the scan failed, Thị trường says so instead of looking like a quiet day (#329)', async ({ page }) => {
+  await open(page, ME, 'light', PHONE);
+  const household_id = seedId(`seed:household:lane-${LANE}`);
+  const job = seedId(`seed:e2e:market-failed-scan:lane-${LANE}`);
+  const title = 'Trợ lý chưa đọc được tin thị trường hôm nay';
+  await serviceUpsert(page, 'agent_jobs', { id: job, household_id, kind: 'research_scan', status: 'failed', attempts: 4, run_after: '2026-10-06T23:00:00Z', finished_at: '2026-10-06T23:30:00Z' });
+  await serviceUpsert(page, 'agent_items', { household_id, kind: 'alert', severity: 'info', title, proposal: { type: 'retry_job', params: { job_id: job }, min_role: 'admin' }, dedupe_key: `job_failed:research_scan:${job}`, job_id: job, created_at: '2026-10-06T23:30:00Z' });
+  try {
+    await page.goto('/assistant/market');
+    await expect(page.getByTestId('market-scan-failed')).toHaveText(title);
+    await servicePatch(page, `agent_items?dedupe_key=eq.job_failed:research_scan:${job}`, { status: 'done' });
+    await page.reload();
+    await expect(items(page).first()).toBeVisible();
+    await expect(page.getByTestId('market-scan-failed'), 'a retried scan no longer reads as failed').toHaveCount(0);
+  } finally {
+    await serviceDelete(page, `agent_items?dedupe_key=eq.job_failed:research_scan:${job}`);
+    await serviceDelete(page, `agent_jobs?id=eq.${job}`);
   }
 });

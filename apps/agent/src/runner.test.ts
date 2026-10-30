@@ -141,7 +141,7 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(job).toMatchObject({ status: 'failed', attempts: 1 });
     expect(states).toEqual(['ok']);
     expect(tables.agent_items).toEqual([
-      expect.objectContaining({ kind: 'alert', audience: 'all', title: 'Trợ lý chưa xem được danh mục hôm nay', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' }, dedupe_key: `job_failed:${JOB_A}` }),
+      expect.objectContaining({ kind: 'alert', audience: 'all', title: 'Trợ lý chưa xem được danh mục hôm nay', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' }, dedupe_key: `job_failed:portfolio_watch:${JOB_A}` }),
       expect.objectContaining({ kind: 'system', severity: 'action', audience: 'operator', title: 'Trợ lý không đăng nhập được vào Claude', dedupe_key: 'auth_error:2026-10-07' }),
     ]);
     expect(JSON.stringify(tables.agent_items)).not.toContain('sk-ant');
@@ -154,11 +154,11 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(job).toMatchObject({ status: 'failed', attempts: 1 });
     expect(tables.agent_items.map(({ dedupe_key, audience }) => ({ dedupe_key, audience }))).toEqual([
       { dedupe_key: `number_guard:${JOB_A}`, audience: 'operator' },
-      { dedupe_key: `job_failed:${JOB_A}`, audience: 'operator' },
+      { dedupe_key: `job_failed:portfolio_watch:${JOB_A}`, audience: 'operator' },
     ]);
   });
 
-  it('leaves one Thử lại item after the fourth attempt fails, and none before it', async () => {
+  it("leaves one Thử lại item after the fourth attempt fails, keyed by the job's kind so Thị trường can name a failed scan (#329), and none before it", async () => {
     const third = watchWorker(join(CASES, 'always-fail'), 2);
     await pollOnce(third.worker);
     expect(third.job).toMatchObject({ status: 'queued', attempts: 3, run_after: '2026-10-07T02:25:00.000Z' });
@@ -167,7 +167,7 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     const last = watchWorker(join(CASES, 'always-fail'), 3);
     await pollOnce(last.worker);
     expect(last.job).toMatchObject({ status: 'failed', attempts: 4, error: 'API Error: 529 Overloaded' });
-    expect(last.tables.agent_items).toEqual([expect.objectContaining({ severity: 'info', audience: 'all', dedupe_key: `job_failed:${JOB_A}`, job_id: JOB_A, created_at: NOW })]);
+    expect(last.tables.agent_items).toEqual([expect.objectContaining({ severity: 'info', audience: 'all', dedupe_key: `job_failed:portfolio_watch:${JOB_A}`, job_id: JOB_A, created_at: NOW })]);
     expect(last.states).toEqual(['ok']);
   });
 });
