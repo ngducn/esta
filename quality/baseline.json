@@ -114,6 +114,10 @@
         "scripts/seed-documents.ts": 9
       }
     },
+    "copied-fixtures": {
+      "value": 0,
+      "files": {}
+    },
     "files-over-1000-lines": {
       "value": 0,
       "files": {}

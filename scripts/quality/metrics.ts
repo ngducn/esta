@@ -33,7 +33,7 @@ export type Metric = {
   readonly cap?: number;
   readonly measure: (input: MeasureInput) => Occurrence[];
 };
-export type MeasureInput = { readonly corpus: Corpus; readonly clones: readonly Clone[] };
+export type MeasureInput = { readonly corpus: Corpus; readonly clones: readonly Clone[]; readonly fixtureClones: readonly Clone[] };
 
 const NOT_PRODUCT = new RegExp(`${TEST_FILE.source}|${DEV_ROUTES.source}`);
 const PRODUCT_CODE: Scope = { include: /^(apps\/[^/]+\/src|packages\/[^/]+\/src)\//, exclude: NOT_PRODUCT };
@@ -79,6 +79,13 @@ export const METRICS: readonly Metric[] = [
     home: EXTRACT,
     section: 'duplicated-code',
     measure: ({ clones }) => cloneOccurrences(clones, (clone) => clone.lines),
+  },
+  {
+    id: 'copied-fixtures',
+    message: 'Lines of a fixture or recording that repeat another one, in blocks of at least 1,000 tokens.',
+    home: { use: 'Extend the existing fixture or recording, as every writer of the ask reads adds its answers to one file (apps/agent/test/golden/ask-reads.ts).' },
+    section: 'duplicated-code',
+    measure: ({ fixtureClones }) => cloneOccurrences(fixtureClones, (clone) => clone.lines),
   },
   {
     id: 'files-over-1000-lines',

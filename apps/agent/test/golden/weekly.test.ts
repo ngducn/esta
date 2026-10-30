@@ -3,7 +3,7 @@ import { formatVnd } from '@esta/core/format';
 import { visibleText } from '@esta/core/guard';
 import { vnd } from '@esta/core/money';
 import { existingLinks } from '@esta/ops';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -15,8 +15,8 @@ import { replaySession, type SessionRun } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
 import { askTables } from '../ask-seed';
 import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
-import { replayedReads, type RecordedReads } from './ask-reads';
-import { WEEKLY_AS_OF, WEEKLY_READS_FIXTURE } from './weekly-fixture';
+import { readsOn, recordedReads, replayedReads } from './ask-reads';
+import { WEEKLY_AS_OF } from './weekly-fixture';
 
 type Row = Record<string, unknown>;
 
@@ -37,7 +37,7 @@ const prepared = weeklyReviewRequest({
   ...reviewedWeek({ idempotency_key: null }, isoDate(WEEKLY_AS_OF.slice(0, 10))),
   earlierProposals: 0,
   timezone: 'Asia/Ho_Chi_Minh',
-  reads: replayedReads(JSON.parse(readFileSync(WEEKLY_READS_FIXTURE, 'utf8')) as RecordedReads),
+  reads: replayedReads(readsOn(recordedReads(), isoDate(WEEKLY_AS_OF.slice(0, 10)))),
   clock: clockOn(WEEKLY_AS_OF),
 });
 

@@ -98,27 +98,35 @@ const cloneReportSchema = z.object({
 });
 export type Clone = { readonly first: { file: string; start: number; end: number }; readonly second: { file: string; start: number; end: number }; readonly lines: number };
 
+/** Where jscpd looks, in which formats, and the smallest block it counts. */
+export type CloneScan = { readonly roots: readonly string[]; readonly format: string; readonly minTokens: number; readonly ignore: string };
+
 /** The token minimum is jscpd's default, which registers the review's duplicates (the two upload flows, the legal and rental item actions, the e2e helpers). */
-const CLONE_MIN_TOKENS = 50;
+export const CODE_SCAN: CloneScan = { roots: SOURCE_ROOTS, format: 'typescript,tsx,javascript,jsx', minTokens: 50, ignore: NOT_SOURCE_GLOBS };
+/**
+ * Recordings and golden fixtures. A copied reads fixture runs to thousands of lines, while a certificate's truth file or
+ * a short recording stays under 1,000 tokens, so photos of one certificate may share their truth.
+ */
+export const FIXTURE_SCAN: CloneScan = { roots: ['fixtures', 'apps/agent/test/golden'], format: 'json', minTokens: 1000, ignore: '' };
 /** An edit of up to five lines inside a copied block keeps it one clone, so the edit does not count as a new copy. */
 const CLONE_MAX_GAP_LINES = 5;
 
 const JSCPD = join(import.meta.dirname, '..', '..', 'node_modules', '.bin', 'jscpd');
 
-export function findClones(root: string): Clone[] {
-  const roots = SOURCE_ROOTS.filter((path) => existsSync(join(root, path)));
+export function findClones(root: string, scan: CloneScan): Clone[] {
+  const roots = scan.roots.filter((path) => existsSync(join(root, path)));
   if (roots.length === 0) return [];
   const out = mkdtempSync(join(tmpdir(), 'esta-quality-'));
   try {
     const run = spawnSync(
       JSCPD,
       [
-        '--min-tokens', String(CLONE_MIN_TOKENS),
+        '--min-tokens', String(scan.minTokens),
         '--mode', 'weak',
         '--max-gap-lines', String(CLONE_MAX_GAP_LINES),
         '--absolute',
-        '--format', 'typescript,tsx,javascript,jsx',
-        '--ignore', NOT_SOURCE_GLOBS,
+        '--format', scan.format,
+        ...(scan.ignore === '' ? [] : ['--ignore', scan.ignore]),
         '--reporters', 'json',
         '--output', out,
         '--silent',

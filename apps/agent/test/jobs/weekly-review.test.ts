@@ -1,12 +1,11 @@
 import { isoDate } from '@esta/core/date';
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { reviewedWeek, weekProposals, weeklyReviewRequest } from '../../src/jobs/weekly-review';
 import { fakeDb } from '../../src/test/fake-db';
 import { askTables } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
-import { replayedReads, type RecordedReads } from '../golden/ask-reads';
-import { weeklyRecording, WEEKLY_READS_FIXTURE } from '../golden/weekly-fixture';
+import { readsOn, recordedReads, replayedReads } from '../golden/ask-reads';
+import { WEEKLY_AS_OF, weeklyRecording } from '../golden/weekly-fixture';
 import { toolCaller } from '../replay-worker';
 
 type Row = Record<string, unknown>;
@@ -39,7 +38,7 @@ async function weeklyRun(tables: Record<string, Row[]>, { day = '2026-10-11', ke
     ...reviewedWeek(job, isoDate(day)),
     earlierProposals: await weekProposals(db, job),
     timezone: 'Asia/Ho_Chi_Minh',
-    reads: replayedReads(JSON.parse(readFileSync(WEEKLY_READS_FIXTURE, 'utf8')) as RecordedReads),
+    reads: replayedReads(readsOn(recordedReads(), isoDate(WEEKLY_AS_OF.slice(0, 10)))),
     clock: clockOn(`${day}T08:00:00+07:00`),
   });
   const call = toolCaller(prepared);
