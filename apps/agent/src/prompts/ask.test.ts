@@ -42,3 +42,11 @@ describe('the language of the reply (#348)', () => {
     expect(askPrompt({ ...CONTEXT, locale: 'en', question: 'Gửi bill phòng 5' })).not.toContain(ENGLISH);
   });
 });
+
+describe('the reason a recommendation gives (#354)', () => {
+  it.each(['Có nên gia hạn hợp đồng Căn hộ Thủ Đức không?', 'Should I renew the lease on Căn hộ Thủ Đức?'])('tells the model to give a reason for %j that the fields it cites agree with', (question) => {
+    const prompt = askPrompt({ ...CONTEXT, question });
+    expect(prompt).toContain('never a reason that a field you cite contradicts');
+    expect(prompt).toContain('A tenant who paid most bills late does not pay regularly');
+  });
+});
