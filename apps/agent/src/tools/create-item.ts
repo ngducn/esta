@@ -1,5 +1,6 @@
 import type { Clock } from '@esta/core';
 import { watchNoteSchema } from '@esta/core/agent-schemas';
+import { noteRelatedOf } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import { checkNote, repairMessage, type FactSheet, type FilledNote, type NoteFormat, type NoteViolation } from '@esta/core/guard';
@@ -143,7 +144,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       severity: severityOf(facts),
       title: title?.text ?? '',
       body_md: body?.text ?? '',
-      related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links: facts.map(({ link }) => link) },
+      related: noteRelatedOf(facts.map(({ fact, link }) => ({ ...fact, link }))),
       dedupe_key: dedupeKey,
     });
     console.log(`[agent] create_item ok ${dedupeKey}`);

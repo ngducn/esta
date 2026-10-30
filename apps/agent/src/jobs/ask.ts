@@ -39,7 +39,6 @@ export type AskInput = {
   /** The previous segment's last answered turns, which a turn with no session to resume starts from. */
   readonly seed: readonly AskedTurn[];
   readonly deep: boolean;
-  /** The note or property her message is about; only the first message of a conversation has one. */
   readonly topic: AskTopic | null;
   clock(): Promise<Clock>;
 };
@@ -137,11 +136,7 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
 
 type Turn = Pick<AskInput, 'conversationId' | 'questionId' | 'question' | 'answerId' | 'earlier' | 'seed' | 'deep' | 'topic'>;
 
-/**
- * Her message's topic. `ask_in_thread` checked she may open it; the worker reads as the service role, so it checks
- * again that an operator note reaches only an operator's question.
- */
-async function readTopic(db: AgentDb, job: AgentJob, question: { topic_item_id: string | null; topic_property_id: string | null }, asker: string | null): Promise<AskTopic | null> {
+async function visibleTopic(db: AgentDb, job: AgentJob, question: { topic_item_id: string | null; topic_property_id: string | null }, asker: string | null): Promise<AskTopic | null> {
   if (question.topic_property_id !== null) return { kind: 'property', propertyId: question.topic_property_id };
   if (question.topic_item_id === null) return null;
   const [item, operator] = await Promise.all([
@@ -169,7 +164,7 @@ async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [], deferred_until: null });
   const { sdk_session_id, sdk_turn_hash, sdk_handles, created_by } = conversation.data;
   const earlier = sdk_turn_hash === null ? null : { sessionId: sdk_session_id, turnHash: sdk_turn_hash, handles: sdk_handles };
-  const topic = await readTopic(db, job, question, created_by ?? null);
+  const topic = await visibleTopic(db, job, question, created_by ?? null);
   const seed = earlier === null && topic === null ? await previousSegmentTurns(db, job.household_id, conversation_id, created_by ?? null) : [];
 
   return { conversationId: conversation_id, questionId: question_id, question: question.content_md, answerId: answer_id, earlier, seed, deep, topic };

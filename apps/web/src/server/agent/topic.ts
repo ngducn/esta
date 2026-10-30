@@ -1,17 +1,12 @@
 import 'server-only';
 import type { ThreadTopic } from '@esta/core/assistant';
-import { z } from 'zod';
+import { idSchema } from '@esta/ops';
 import { createSessionClient } from '@/server/supabase/server';
 
-/** What her next message is about, with the record's own name: a note's title or a property's nickname. */
 export type TopicChoice = { readonly topic: ThreadTopic; readonly name: string };
 
-/**
- * The topic `?reply=` or `?about=` names, read through RLS: a note she may not read, an archived property or another
- * household's record gives none, so the box sends no topic `ask_in_thread` would refuse.
- */
 export async function loadTopicChoice(householdId: string, { reply, about }: { readonly reply?: string; readonly about?: string }): Promise<TopicChoice | null> {
-  const id = z.uuid().safeParse(reply ?? about);
+  const id = idSchema.safeParse(reply ?? about);
   if (!id.success) return null;
   const db = await createSessionClient();
   if (reply !== undefined) {

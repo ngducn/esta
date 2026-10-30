@@ -16,10 +16,6 @@ function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   ];
 }
 
-/**
- * The records her topic names, read before the first turn (AGENT.md §5.6 step 7). A note's own text is context only: its
- * figures were filled from another run's handles, so the reply cites this run's records instead.
- */
 function topicSection(topic: LoadedTopic | null | undefined): string[] {
   if (topic == null) return [];
   const intro =
@@ -29,7 +25,7 @@ function topicSection(topic: LoadedTopic | null | undefined): string[] {
           `Note title: ${topic.title}`,
           ...(topic.body === null ? [] : ['Note text:', topic.body]),
         ]
-      : [`The message asks about the property ${topic.property} of list_properties.`];
+      : [`The message asks about the property ${topic.propertyHandle} of list_properties.`];
   return [
     '',
     ...intro,

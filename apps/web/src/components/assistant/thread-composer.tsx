@@ -15,16 +15,14 @@ export type ComposerLabels = Readonly<Record<'message' | 'placeholder' | 'send' 
 /** `busy` while an answer streams, `deferred` once the day's cap holds the last one until tomorrow: neither sends. */
 export type ComposerState = 'ready' | 'busy' | 'deferred';
 
-/** The note or property the next message is about, from `?reply=` or `?about=`; `Bỏ` drops it. */
 export type ComposerTopic = { readonly topic: ThreadTopic; readonly label: string; readonly clear: string; readonly clearLabel: string };
 
-/** A suggested reply: one tap sends its text with its note as the topic. */
 export type ComposerSuggestion = { readonly text: string; readonly topic: ThreadTopic };
 
 /**
  * The reply box at the end of the thread. The database picks the conversation (`ask_in_thread`), so the box sends only
  * the text and an id: a retry of the same text keeps its id and never asks twice. Only an operator's page passes
- * `thinkHarder`. A topic lives in the URL, so sending or `Bỏ` returns to `/assistant` without it.
+ * `thinkHarder`.
  */
 export function ThreadComposer({
   labels,
@@ -54,6 +52,7 @@ export function ThreadComposer({
     if (topicKey !== null) box.current?.focus();
   }, [topicKey]);
   const disabled = pending || state !== 'ready';
+  const dropTopic = () => router.replace('/assistant', { scroll: false });
 
   const send = (text: string, about: ThreadTopic | null) => {
     if (draft.current?.message !== text) draft.current = { message: text, questionId: crypto.randomUUID() };
@@ -70,7 +69,7 @@ export function ThreadComposer({
         setMessage('');
         setDeep(false);
         if (topic === null) router.refresh();
-        else router.replace('/assistant', { scroll: false });
+        else dropTopic();
       },
     );
   };
@@ -101,7 +100,7 @@ export function ThreadComposer({
       {topic === null ? null : (
         <div data-testid="composer-topic" className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-surface-2 py-1 pl-3">
           <p className="min-w-0 text-small font-medium break-words text-ink-2">{topic.label}</p>
-          <button type="button" onClick={() => router.replace('/assistant', { scroll: false })} disabled={pending} aria-label={topic.clearLabel} data-testid="composer-topic-clear" className={buttonVariants({ variant: 'quiet', className: 'shrink-0' })}>
+          <button type="button" onClick={dropTopic} disabled={pending} aria-label={topic.clearLabel} data-testid="composer-topic-clear" className={buttonVariants({ variant: 'quiet', className: 'shrink-0' })}>
             <X aria-hidden="true" />
             {topic.clear}
           </button>

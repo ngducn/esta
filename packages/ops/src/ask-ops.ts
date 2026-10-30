@@ -13,7 +13,6 @@ const inputSchema = z.strictObject({
 });
 type AskInput = z.output<typeof inputSchema>;
 
-/** `ask_in_thread` checks that she may open the note or property the topic names. */
 const topicPayload = (topic: ThreadTopic) => (topic.kind === 'item' ? { kind: 'item', id: topic.itemId } : { kind: 'property', id: topic.propertyId });
 
 /** The conversation, the thread's segment, that the message joined. */
@@ -24,7 +23,7 @@ export type AskBusy = { readonly kind: 'busy' };
 
 /**
  * Sends one message in the member's Trợ lý thread. `ask_in_thread` picks the segment by the database's clock, and the
- * question id keys the message, so a second tap adds nothing. A message with a topic starts its own segment (P5-13).
+ * question id keys the message, so a second tap adds nothing.
  */
 export const askQuestion = defineOp<AskInput, AskInput, Asked, AskBusy>({
   creates: 'conversations',

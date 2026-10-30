@@ -16,7 +16,6 @@ export const SUGGESTION_PARAMS = {
 
 export type SuggestionKey = keyof typeof SUGGESTION_PARAMS;
 
-/** What she may reply to a note, by its kind or by the watch rule of the fact it tells (AGENT.md §5.6 step 8). */
 export const SUGGESTIONS = {
   brief: ['briefFirst'],
   weekly: ['weeklySummary'],
@@ -28,7 +27,6 @@ export const SUGGESTIONS = {
 type Source = keyof typeof SUGGESTIONS;
 const isSource = (key: string): key is Source => Object.hasOwn(SUGGESTIONS, key);
 
-/** A note's suggested replies and the watch subject whose labels they name: its first fact whose rule suggests any. */
 export function noteSuggestion(kind: string, related: NoteRelated): { readonly keys: readonly SuggestionKey[]; readonly subjectKey: string | null } {
   if (kind === 'brief' || kind === 'weekly') return { keys: SUGGESTIONS[kind], subjectKey: null };
   const fact = kind === 'alert' ? related.facts.find(({ rule_id }) => isSource(rule_id)) : undefined;
@@ -52,10 +50,6 @@ export const MAX_SUGGESTIONS = 3;
 
 const OPEN = new Set(['new', 'read']);
 
-/**
- * Up to three replies from her open notes, the most severe note first, then the newest. A reply whose label the
- * records do not hold, or that repeats one already offered, is left out.
- */
 export function suggestReplies(notes: readonly SuggestionNote[]): Suggestion[] {
   const offered = new Set<string>();
   return notes

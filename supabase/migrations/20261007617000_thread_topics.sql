@@ -1,5 +1,3 @@
--- Her message can be about one note Trợ lý left or one property of the household (P5-13, AGENT.md §5.6 step 1). Two
--- columns with foreign keys rather than one jsonb, so the database itself keeps a topic inside the household.
 alter table public.messages
   add column topic_item_id uuid,
   add column topic_property_id uuid,
@@ -11,7 +9,6 @@ alter table public.messages
 drop function public.ask_in_thread(uuid, uuid, text, boolean);
 drop function public.ask_question(uuid, uuid, uuid, text, boolean, timestamptz);
 
--- As 20261007615100_thread_privacy.sql, and her message keeps the topic ask_in_thread checked.
 create function public.ask_question(
   p_household_id uuid, p_conversation_id uuid, p_question_id uuid, p_question text, p_deep boolean, p_as_of timestamptz, p_topic_item_id uuid, p_topic_property_id uuid
 )
@@ -83,9 +80,7 @@ end;
 $$;
 revoke all on function public.ask_question(uuid, uuid, uuid, text, boolean, timestamptz, uuid, uuid) from public, anon, authenticated;
 
--- The topic is `{"kind": "item" | "property", "id": uuid}`. A note must be one the caller reads (an operator note
--- only for an operator) and a property one of the household's live properties, so a topic never names a record she
--- cannot open. A message with a topic starts a new segment, so the topic leads its conversation [app rule].
+-- The topic is `{"kind": "item" | "property", "id": uuid}`.
 create function public.ask_in_thread(p_household_id uuid, p_question_id uuid, p_question text, p_deep boolean default false, p_topic jsonb default null)
 returns uuid
 language plpgsql
@@ -140,7 +135,6 @@ begin
     where c.household_id = p_household_id and c.created_by = v_user
     order by c.last_asked_at desc, c.id desc
     limit 1;
-    -- [app rule] A segment holds one business day and at most 20 questions, which also caps how long its transcript grows.
     if v_conversation is not null and (
       private.business_date(v_last_asked) <> private.business_date(v_now)
       or (select count(*) from public.messages m where m.household_id = p_household_id and m.conversation_id = v_conversation and m.role = 'user') >= 20

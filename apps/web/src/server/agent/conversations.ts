@@ -13,7 +13,6 @@ function toAnswer({ content_md, status, refs, deferred_until }: { content_md: st
   return answer;
 }
 
-/** The note or property her message is about, by its own name; `href` is `null` for a property archived since. */
 export type MessageTopic = { readonly kind: 'item' | 'property'; readonly name: string; readonly href: string | null };
 
 export type ConversationMessage = AnswerState & {

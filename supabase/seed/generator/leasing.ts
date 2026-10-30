@@ -124,9 +124,9 @@ export const AMENDMENT_SEEDS: readonly AmendmentSeed[] = [
 const leaseKey = (household: HouseholdSeed, seed: { readonly property: PropertySeedKey; readonly unit: number }) => `${household.key}:${seed.property}:${seed.unit}`;
 const leaseId = (household: HouseholdSeed, seed: { readonly property: PropertySeedKey; readonly unit: number }) => seedId(`seed:lease:${leaseKey(household, seed)}`);
 export const seedLeaseId = leaseId;
-/** The id `pg_temp.seed_invoice` gives the invoice of a seeded lease's period. */
+const INVOICE_KEY = 'seed:invoice:';
 export const seedInvoiceId = (household: HouseholdSeed, seed: { readonly property: PropertySeedKey; readonly unit: number }, periodStart: string) =>
-  seedId(`seed:invoice:${leaseKey(household, seed)}:${periodStart}`);
+  seedId(`${INVOICE_KEY}${leaseKey(household, seed)}:${periodStart}`);
 const tenantId = (household: HouseholdSeed, seed: LeaseSeed) => seedId(`seed:party:tenant-${leaseKey(household, seed)}`);
 
 const leasesIn = ({ properties }: Pick<SeedContext, 'properties'>) => {
@@ -259,7 +259,7 @@ declare
   v_lease record;
 begin
   select k.key, k.property, k.unit into v_lease from pg_temp.seed_lease k where k.lease_id = new.lease_id;
-  new.id := extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'seed:invoice:' || v_lease.key || ':' || new.period_start);
+  new.id := extensions.uuid_generate_v5(extensions.uuid_ns_url(), '${INVOICE_KEY}' || v_lease.key || ':' || new.period_start);
   select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', floor(pg_temp.seed_draw('invoice-memo:' || v_lease.property || ':' || v_lease.unit || ':' || new.period_start, i) * 31)::integer + 1, 1), '' order by i)
   into new.memo_code from generate_series(1, 8) i;
   return new;

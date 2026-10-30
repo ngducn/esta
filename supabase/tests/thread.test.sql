@@ -114,7 +114,6 @@ select is(
   (select count(*)::int from public.agent_jobs where kind = 'ask' and household_id = :'a'), 7,
   'one job per question asked, none for the resends');
 
--- Topics (P5-13): a reply to a note or a question about a property.
 update public.messages set content_md = 'Đã trả lời.', status = 'done' where household_id = :'a' and role = 'assistant' and status = 'streaming';
 select conversation_id as seg4 from public.messages where id = '00000000-0000-4000-8000-0000000f0007' \gset
 insert into public.agent_items (id, household_id, kind, severity, audience, title, dedupe_key) values

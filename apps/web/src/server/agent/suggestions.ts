@@ -12,7 +12,6 @@ const unitSchema = z.object({ label: z.string(), kind: z.string(), property: z.o
 const leaseSchema = z.object({ tenant: z.object({ full_name: z.string() }).nullable(), unit: unitSchema });
 const noteSchema = z.object({ id: z.uuid(), kind: z.string(), severity: z.enum(WATCH_SEVERITIES), status: z.string(), created_at: z.string(), related: z.unknown() });
 
-/** `{unit}, {property}` in the reader's language, as the collections board writes a place. */
 type Place = (unit: string, property: string) => string;
 
 const unitLabels = (unit: z.output<typeof unitSchema>, place: Place): SuggestionLabels => ({
@@ -27,11 +26,6 @@ async function rows<T>(read: PromiseLike<{ data: unknown; error: { message: stri
   return z.array(schema).parse(data);
 }
 
-/**
- * Up to three replies from the open notes RLS lets her read, of any day as Cần xử lý reads them [app rule]: the seeded
- * and the watch's notes date from the morning before. The names they hold come from the records each note's watch
- * fact names, read through RLS, never from the note's text (AGENT.md §5.6 step 8).
- */
 export async function loadSuggestions(householdId: string, place: Place): Promise<Suggestion[]> {
   const db = await createSessionClient();
   const fetched = await rows(
