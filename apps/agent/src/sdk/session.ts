@@ -1,6 +1,6 @@
 import { query, type HookCallback, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { RunMode } from '../env';
 import type { JobSpec, ModelRole } from '../jobs/registry';
@@ -153,6 +153,26 @@ export const replayChunks = (reply: string): string[] => reply.match(REPLAY_CHUN
 export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
 
 const replayTranscript = (configDir: string, sessionId: string) => join(configDir, 'replay-sessions', `${sessionId}.json`);
+
+/** A session's entry in a config dir: a live transcript (`<uuid>.jsonl`) or its folder, or a replayed stand-in. */
+const SESSION_ENTRY = /^(?<id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|replay-[0-9a-f]{16})(?:\.jsonl?)?$/;
+
+const entries = (dir: string) => (existsSync(dir) ? readdirSync(dir) : []);
+
+/**
+ * Removes every session but `keep` from a config dir. Each resumed turn forks the whole transcript into a new session,
+ * so a conversation keeps only the one its next question resumes (#340). The SDK writes live transcripts under
+ * `projects/<cwd>/`; replay writes its stand-ins under `replay-sessions/`.
+ */
+export function pruneTranscripts(configDir: string, keep: string): void {
+  const projects = join(configDir, 'projects');
+  for (const dir of [join(configDir, 'replay-sessions'), ...entries(projects).map((project) => join(projects, project))]) {
+    for (const entry of entries(dir)) {
+      const id = SESSION_ENTRY.exec(entry)?.groups?.id;
+      if (id !== undefined && id !== keep) rmSync(join(dir, entry), { recursive: true, force: true });
+    }
+  }
+}
 
 /**
  * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the

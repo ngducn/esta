@@ -12,7 +12,7 @@ import { jobSpec, type AgentJob, type JobSpec, type PreparedJob } from './jobs/r
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
-import { canonicalInput, liveSession, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
+import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
 import { NumberGuardError } from './tools/create-item';
 import { mcpToolName } from './tools/server';
@@ -145,7 +145,9 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       outcome = judgeResult(session.result);
     }
     if (!outcome.ok) return { outcome, session };
-    return { outcome: { ...outcome, result: await prepared.finish({ reply: outcome.reply, model: session.model, sessionId: session.result.sessionId, turnHash: inputHash(canonicalInput(turn)) }) }, session };
+    const result = await prepared.finish({ reply: outcome.reply, model: session.model, sessionId: session.result.sessionId, turnHash: inputHash(canonicalInput(turn)) });
+    if (spec.workDir === 'conversation' && session.result.sessionId !== null) pruneTranscripts(work.configDir, session.result.sessionId);
+    return { outcome: { ...outcome, result }, session };
   } catch (error) {
     return { outcome: { ok: false, failure: failureOf(error) }, session };
   } finally {
