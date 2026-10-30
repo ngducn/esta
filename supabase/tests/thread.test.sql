@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(48);
+select plan(51);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select set_config('esta.actor', 'system:test', true);
@@ -201,6 +201,19 @@ reset role;
 select is(
   (select count(*)::int from public.messages where id = '00000000-0000-4000-8000-0000000f0302'), 0,
   'and writes no message');
+
+select tests.act_as('admin.a@test.esta.test');
+select isnt_empty(
+  $$ select 1 from public.audit_log a join public.messages m on m.id = a.row_id where a.table_name = 'messages' and m.topic_item_id = '00000000-0000-4000-8000-0000000f0a02' $$,
+  'the operator reads his reply to an operator note and its audit row');
+select tests.act_as('member.a@test.esta.test');
+select is_empty(
+  $$ select 1 from public.messages where topic_item_id = '00000000-0000-4000-8000-0000000f0a02' $$,
+  'a member never reads the message that replies to an operator note');
+select is_empty(
+  $$ select 1 from public.audit_log where table_name = 'messages' and row_id = '00000000-0000-4000-8000-0000000f0301' $$,
+  'nor its audit row, which names the note');
+reset role;
 
 select * from finish();
 rollback;
