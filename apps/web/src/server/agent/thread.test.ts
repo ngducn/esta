@@ -56,7 +56,7 @@ const { loadThread, THREAD_PAGE } = await import('./thread');
 const member = { household: { id: HOUSEHOLD, name: 'Gia đình Demo' }, role: 'member', isOperator: false } as const;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const note = (n: number, createdAt: string, fields: Partial<Row> = {}): Row => ({ id: uuid(n), title: `Ghi chú ${n}`, body_md: null, status: 'new', audience: 'all', created_at: createdAt, proposal: null, related: null, citations: null, kind: 'note', severity: 'info', dedupe_key: `note:${n}`, ...fields });
-const message = (n: number, role: 'user' | 'assistant', createdAt: string): Row => ({ id: uuid(n), conversation_id: uuid(9999), role, content_md: `Tin ${n}`, status: 'done', refs: [], deferred_until: null, created_at: createdAt });
+const message = (n: number, role: 'user' | 'assistant', createdAt: string, fields: Partial<Row> = {}): Row => ({ id: uuid(n), conversation_id: uuid(9999), role, content_md: `Tin ${n}`, status: 'done', refs: [], deferred_until: null, created_at: createdAt, topic_item_id: null, topic_property_id: null, topic_note: null, topic_property: null, ...fields });
 const at = (minute: number, fraction = '') => `2026-10-07T00:${String(minute).padStart(2, '0')}:00${fraction}+00:00`;
 const ids = (thread: Awaited<ReturnType<typeof loadThread>>) => thread.entries.map((entry) => (entry.kind === 'note' ? entry.note.id : entry.message.id));
 
@@ -100,6 +100,23 @@ describe('loadThread', () => {
     stored.messages = [message(10, 'user', at(2))];
     expect(ids(await loadThread(member, { note: uuid(77) }))).toEqual([uuid(1), uuid(10)]);
     expect(ids(await loadThread(member, { note: 'abc', before: '2026-10-07T00:01:00Z_0_x' }))).toEqual([uuid(1), uuid(10)]);
+  });
+
+  it('names a topic by the note title or the property nickname, and links a property only while it is live', async () => {
+    stored.agent_items = [];
+    stored.messages = [
+      message(10, 'user', at(1), { topic_item_id: uuid(1), topic_note: { title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày' } }),
+      message(11, 'user', at(2), { topic_property_id: uuid(2), topic_property: { nickname: 'Đất Bảo Lộc', deleted_at: null } }),
+      message(12, 'user', at(3), { topic_property_id: uuid(3), topic_property: { nickname: 'Kho Biên Hòa', deleted_at: '2026-10-06T00:00:00+00:00' } }),
+      message(13, 'user', at(4), { topic_item_id: uuid(4) }),
+    ];
+    const { entries } = await loadThread(member);
+    expect(entries.map((entry) => (entry.kind === 'note' ? null : entry.message.topic))).toEqual([
+      { kind: 'item', name: 'Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày', href: `/assistant?note=${uuid(1)}` },
+      { kind: 'property', name: 'Đất Bảo Lộc', href: `/properties/${uuid(2)}` },
+      { kind: 'property', name: 'Kho Biên Hòa', href: null },
+      null,
+    ]);
   });
 });
 
