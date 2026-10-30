@@ -43,7 +43,6 @@ export const utilityAccountSchema = z.strictObject({
 });
 export type UtilityAccountValue = z.output<typeof utilityAccountSchema>;
 
-/** A new account needs a provider, a customer code or a holder (`IDENTIFYING_FIELDS`). */
 export const newUtilityAccountSchema = utilityAccountSchema.refine(identifies('utilityAccount'), { error: UNIDENTIFIED });
 export type UtilityAccount = UtilityAccountValue & { readonly id: string };
 

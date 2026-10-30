@@ -143,7 +143,6 @@ function lowConfidence(result: unknown): number {
   return reviewFields('certificate_v1', result).filter((field) => needsCheck(field)).length;
 }
 
-/** Lưu on another property's certificate stops once on the rows that do not match, and Vẫn lưu saves it (#356). */
 async function saveAnyway(page: Page) {
   await page.getByTestId('review-submit').click();
   await expect(page.getByTestId('review-submit')).toHaveAttribute('data-state', 'confirm', { timeout: 15_000 });

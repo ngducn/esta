@@ -105,8 +105,7 @@ export function ReviewPanel({
   const [editing, setEditing] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<ReviewSave | { ok: false; reason: 'reject_failed' } | null>(null);
   const [chosenProperty, setChosenProperty] = useState('');
-  // Mẹ said Vẫn lưu to a certificate that looks like another property's; a retry keeps it until she changes a field.
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmedMismatch, setConfirmedMismatch] = useState(false);
   const { pending: saving, run } = useAction();
   const pager = useRef<HTMLDivElement>(null);
 
@@ -135,20 +134,20 @@ export function ReviewPanel({
 
   const decide = (path: string, decision: FieldDecision | undefined) => {
     setOutcome(null);
-    setConfirmed(false);
+    setConfirmedMismatch(false);
     setDecisions((current) => {
       const { [path]: _previous, ...rest } = current;
       return decision === undefined ? rest : { ...rest, [path]: decision };
     });
   };
 
-  const confirming = outcome?.ok === false && outcome.reason === 'mismatch';
+  const mismatchShown = outcome?.ok === false && outcome.reason === 'mismatch';
   const target = propertyId ?? (chosenProperty === '' ? null : chosenProperty);
 
   const save = () => {
     if (extractionId === null) return;
-    const confirm = confirmed || confirming;
-    setConfirmed(confirm);
+    const confirm = confirmedMismatch || mismatchShown;
+    setConfirmedMismatch(confirm);
     run(() => saveExtractionReview(extractionId, decisions, propertyId === null ? target : null, confirm), (result) => {
       setOutcome(result);
       if (!result.ok) return;
@@ -298,7 +297,7 @@ export function ReviewPanel({
                       value={chosenProperty}
                       onChange={(event) => {
                         setChosenProperty(event.target.value);
-                        setConfirmed(false);
+                        setConfirmedMismatch(false);
                         setOutcome(null);
                       }}
                       className="min-h-touch rounded-md border border-field bg-surface px-3 text-body text-ink"
@@ -320,14 +319,14 @@ export function ReviewPanel({
                 <div className="flex flex-wrap gap-3">
                   <Button
                     type="button"
-                    variant={confirming ? 'outline' : undefined}
+                    variant={mismatchShown ? 'outline' : undefined}
                     data-testid="review-submit"
-                    data-state={confirming ? 'confirm' : 'save'}
+                    data-state={mismatchShown ? 'confirm' : 'save'}
                     disabled={saving || extractionId === null}
                     onClick={save}
                   >
                     <Save aria-hidden="true" />
-                    {saving ? t('saving') : confirming ? t('saveAnyway') : t('save')}
+                    {saving ? t('saving') : mismatchShown ? t('saveAnyway') : t('save')}
                   </Button>
                   {mode === 'review' ? (
                     <ConfirmDialog

@@ -1,9 +1,7 @@
 /**
- * [app rule] The fields that tell one record from another (#356). A new record needs at least one of its kind's, so a
- * form saved blank, or with only what it opened with, is refused: a certificate's form and status, an account's kind
- * and room, and a lease's room and list rent do not count. Existing rows are never refused on read, edit or restore,
- * because the seeded paper-only parcel of Đất vườn Long An has none of the parcel's (DOMAIN-VN §2). Records read from a
- * document are identified by that document, so extraction acceptance does not apply this rule.
+ * [app rule] The fields that tell one record from another (#356): a new record needs at least one of its kind's.
+ * Only new records are checked, because the seeded paper-only parcel of Đất vườn Long An has none of the parcel's
+ * (DOMAIN-VN §2).
  */
 export const IDENTIFYING_FIELDS = {
   parcel: ['parcel_no', 'map_sheet_no', 'area_m2', 'origin_text'],

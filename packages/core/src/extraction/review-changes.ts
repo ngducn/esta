@@ -14,10 +14,7 @@ export function savedAddress(saved: Saved): { readonly path: string; readonly va
 
 export type Replaced = { readonly path: string; readonly before: string; readonly after: string };
 
-/**
- * #356: the one value a certificate save writes over, the property's certificate address, when it holds another one.
- * Parties are reused and never rewritten, and the certificate, parcels and structures are new rows keyed by the read.
- */
+/** #356: the one value a certificate save writes over, the property's certificate address, when it holds another one. */
 export function replacedAddress(saved: Saved, before: string | null): Replaced | null {
   const after = savedAddress(saved);
   if (after === null || before === null || before.trim() === '' || normalizeName(before) === normalizeName(after.value)) return null;
@@ -43,7 +40,6 @@ function savedHolders(saved: Saved): (Person & { readonly path: string })[] {
   });
 }
 
-/** One person when the names match and the ID digits, where both are known, agree. */
 const samePerson = (a: Person, b: Person) => normalizeName(a.fullName) === normalizeName(b.fullName) && (a.idLast4 === null || b.idLast4 === null || a.idLast4 === b.idLast4);
 
 /**
@@ -76,7 +72,6 @@ export function certificateMismatches(saved: Saved, property: PropertyFacts, add
   });
 }
 
-/** The province an address lies in, only when every current unit it maps to is in that one province. */
 export function soleProvince(codes: readonly string[]): string | null {
   const [first] = codes;
   return first !== undefined && codes.every((code) => code === first) ? first : null;

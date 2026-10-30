@@ -33,8 +33,7 @@ const memberUser = seedId(`seed:user:ryan-lane-${LANE}`);
 const documents: string[] = [];
 const acceptAllOf = (result: unknown) => Object.fromEntries(reviewFields('certificate_v1', result).map((field) => [field.path, { kind: 'accepted' }]));
 const acceptAll = acceptAllOf(truthFile.certificate);
-// Đất Bảo Lộc lies in Lâm Đồng and is owned by Nguyễn Thị Demo, so these saves are confirmed as Mẹ confirms another property's certificate (#356).
-const save = (extractionId: string, decisions: unknown) => saveExtractionReview(extractionId, decisions, null, true);
+const saveConfirmed = (extractionId: string, decisions: unknown) => saveExtractionReview(extractionId, decisions, null, true);
 
 const FIXTURES = join(import.meta.dirname, '../../../../../fixtures/certificates');
 const truths = readdirSync(FIXTURES, { withFileTypes: true })
@@ -177,9 +176,9 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     asMember();
     const { extractionId } = await waitingExtraction();
     const parties = await count(`parties?household_id=eq.${household}&select=id`);
-    expect(await save(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
     const once = await written(extractionId);
-    expect(await save(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
     expect(await written(extractionId)).toEqual(once);
     expect(once).toEqual({ certificates: 1, parcels: truthFile.certificate.parcels.length, structures: truthFile.certificate.structures.length, parties: parties + 2 });
     const [extraction] = await rest<{ status: string; reviewed_by: string; accepted_fields: Record<string, unknown> }[]>(
@@ -193,12 +192,12 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     asMember();
     const { extractionId } = await waitingExtraction();
     session.client = cutOnce(member, 'parcels');
-    expect(await save(extractionId, acceptAll)).toEqual({ ok: false, reason: 'failed' });
+    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'failed' });
     expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 0 });
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
 
     session.client = member;
-    expect(await save(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
     expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 1, structures: 1 });
     expect(await rest(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=area_m2,parcel_no`)).toEqual([{ area_m2: 82.7, parcel_no: '56' }]);
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'accepted' }]);
@@ -207,7 +206,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   test('the history names the member as the actor of every row the save wrote, never the assistant', async () => {
     asMember();
     const { extractionId } = await waitingExtraction();
-    expect(await save(extractionId, acceptAll)).toMatchObject({ ok: true });
+    expect(await saveConfirmed(extractionId, acceptAll)).toMatchObject({ ok: true });
     // The holders already exist from the first test, so this save reuses their parties and writes none.
     const rows = [rowId(extractionId, 'certificate'), rowId(extractionId, 'parcels[0]'), rowId(extractionId, 'structures[0]')];
     const audit = await rest<{ actor_kind: string; actor_id: string }[]>(`audit_log?row_id=in.(${rows.join(',')})&select=actor_kind,actor_id`);
@@ -219,8 +218,8 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     asMember();
     const { documentId, extractionId } = await waitingExtraction('failed');
     const decisions = { form: { kind: 'edited', value: 'paper_only' }, 'parcels[0].parcel_no': { kind: 'edited', value: '12' }, 'parcels[0].area_m2': { kind: 'edited', value: '300,5' } };
-    expect(await save(extractionId, decisions)).toEqual({ ok: true, propertyId });
-    expect(await save(extractionId, decisions)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, decisions)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, decisions)).toEqual({ ok: true, propertyId });
     const manual = manualEntryId(extractionId);
     expect(await rest(`document_extractions?document_id=eq.${documentId}&select=id,status,model&order=status`)).toEqual([
       { id: manual, status: 'accepted', model: null },
@@ -234,7 +233,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(truths).toHaveLength(16);
     for (const { id, certificate } of truths) {
       const { extractionId } = await waitingExtraction('needs_review', certificate);
-      expect(await save(extractionId, acceptAllOf(certificate)), id).toEqual({ ok: true, propertyId });
+      expect(await saveConfirmed(extractionId, acceptAllOf(certificate)), id).toEqual({ ok: true, propertyId });
     }
   }, 60_000);
 
@@ -255,7 +254,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
       { extractionId: read.extractionId, decisions: acceptAll, issuedBy: certificate.issued_by.value, originText: origin[2] },
     ];
     for (const { extractionId, decisions: decided, issuedBy, originText } of saves) {
-      expect(await save(extractionId, decided)).toEqual({ ok: true, propertyId });
+      expect(await saveConfirmed(extractionId, decided)).toEqual({ ok: true, propertyId });
       const rows = [rowId(extractionId, 'certificate'), rowId(extractionId, 'parcels[0]')];
       expect(await rest(`certificates?id=eq.${rows[0]}&select=issued_by`)).toEqual([{ issued_by: issuedBy }]);
       expect(await rest(`parcels?id=eq.${rows[1]}&select=origin_text`)).toEqual([{ origin_text: originText }]);
@@ -276,7 +275,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     ];
     for (const { path, value } of cases) {
       const { extractionId } = await waitingExtraction();
-      expect(await save(extractionId, { ...acceptAll, [path]: { kind: 'edited', value } }), value).toEqual({ ok: false, reason: 'out_of_range', paths: [path] });
+      expect(await saveConfirmed(extractionId, { ...acceptAll, [path]: { kind: 'edited', value } }), value).toEqual({ ok: false, reason: 'out_of_range', paths: [path] });
       expect(await written(extractionId), value).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
       expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`), value).toEqual([{ status: 'needs_review' }]);
     }
@@ -286,7 +285,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     asMember();
     for (const [typed, term] of [['Từ tháng 10/1993 đến tháng 10/2043', '2043-10-31'], ['Từ 15/10/1993 đến 15/10/2043', '2043-10-15']] as const) {
       const { extractionId } = await waitingExtraction();
-      expect(await save(extractionId, { ...acceptAll, 'parcels[0].purposes[0].term': { kind: 'edited', value: typed } }), typed).toEqual({ ok: true, propertyId });
+      expect(await saveConfirmed(extractionId, { ...acceptAll, 'parcels[0].purposes[0].term': { kind: 'edited', value: typed } }), typed).toEqual({ ok: true, propertyId });
       const [parcel] = await rest<{ purposes: { term: string }[] }[]>(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=purposes`);
       expect(parcel?.purposes.map((purpose) => purpose.term), typed).toEqual([term]);
     }
@@ -303,7 +302,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     for (const { name, path, text } of cases) {
       const { extractionId } = await waitingExtraction();
       const typed = text.normalize('NFC').replace(/\s+/gu, ' ').trim();
-      expect(await save(extractionId, { ...acceptAll, [path]: { kind: 'edited', value: text } }), name).toEqual({ ok: true, propertyId });
+      expect(await saveConfirmed(extractionId, { ...acceptAll, [path]: { kind: 'edited', value: text } }), name).toEqual({ ok: true, propertyId });
       const [review] = await rest<{ status: string; accepted_fields: Record<string, unknown> }[]>(`document_extractions?id=eq.${extractionId}&select=status,accepted_fields`);
       expect(review?.status, name).toBe('accepted');
       expect(review?.accepted_fields[path], name).toEqual({ decision: 'edited', value: typed });
@@ -315,21 +314,21 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   test('accepting a normal utility bill copies its printed text into ocr_text for search (DOC-3)', async () => {
     asMember();
     const { documentId, extractionId } = await waitingBill('normal');
-    expect(await save(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
     expect(await ocrText(documentId)).toBe(BILL_TEXT);
   });
 
   test('the same bill marked sensitive keeps ocr_text null', async () => {
     asMember();
     const { documentId, extractionId } = await waitingBill('sensitive');
-    expect(await save(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
     expect(await ocrText(documentId)).toBeNull();
   });
 
   test('accepting a certificate leaves ocr_text null', async () => {
     asMember();
     const { documentId, extractionId } = await waitingExtraction();
-    expect(await save(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
+    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
     expect(await ocrText(documentId)).toBeNull();
   });
 
@@ -358,10 +357,10 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     const { extractionId } = await waitingExtraction();
     session.client = member;
     session.member = { role: 'viewer', household: { id: household } };
-    expect(await save(extractionId, acceptAll)).toEqual({ ok: false, reason: 'forbidden' });
+    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'forbidden' });
     session.client = outsider;
     session.member = { role: 'admin', household: { id: household } };
-    expect(await save(extractionId, acceptAll)).toEqual({ ok: false, reason: 'not_reviewable' });
+    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'not_reviewable' });
     expect(await written(extractionId)).toMatchObject({ certificates: 0, parcels: 0 });
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
   });

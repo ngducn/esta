@@ -11,7 +11,6 @@ const refusal = (result: { success: boolean; error?: { issues: readonly { messag
   result.success ? null : result.error?.issues.map((issue) => issue.message);
 
 describe('a new certificate needs a serial, a book entry, an issue date or a holder (#356)', () => {
-  // What `Thêm giấy chứng nhận` sends when Mẹ taps Lưu without typing: the form and status it opens with.
   const blank = { form: 'gcn_2009_2024', serial_no: '', book_entry_no: '', issued_on: null, issued_by: '', holder_party_ids: [], status: 'valid', mortgage: null, annotations: [] };
 
   it('refuses the blank form, and an issuer or a note alone', () => {
@@ -48,7 +47,6 @@ describe('a new utility account needs a provider, a customer code or a holder (#
 });
 
 describe('a new lease draft needs a tenant or a start date (#356)', () => {
-  // The room and the list rent and deposit the form opens with for Phòng 8.
   const blank = {
     unit_id: unit,
     tenant_party_id: null,

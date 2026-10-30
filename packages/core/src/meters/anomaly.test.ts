@@ -40,8 +40,9 @@ describe('the 3× six-month median warning (LSE-4)', () => {
 });
 
 describe('the other rooms this month, for a meter with no history (#356)', () => {
-  // The tour's October: Phòng 1 to 4 used 6 to 9 m³, and Phòng 5 to 8 had electricity readings typed into water.
-  const water: Readonly<Record<number, number>> = { 1: 6, 2: 7, 3: 8, 4: 9, 5: 2081, 6: 5299, 7: 3705, 8: 787 };
+  const inLine = [6, 7, 8, 9];
+  const electricityTypedAsWater = [2081, 5299, 3705, 787];
+  const water: Readonly<Record<number, number>> = Object.fromEntries([...inLine, ...electricityTypedAsWater].map((used, index) => [index + 1, used]));
   const others = (room: number) => Object.entries(water).flatMap(([key, used]) => (Number(key) === room ? [] : [used]));
 
   it('warns on each typing slip against the median of the other seven rooms', () => {

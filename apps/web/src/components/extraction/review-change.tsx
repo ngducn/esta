@@ -6,7 +6,6 @@ import { Replace } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { FieldView } from '@/server/extraction/field-views';
 
-/** What a decided row saves: Mẹ's edit, else the value read; null when it saves nothing. */
 function savedValue(field: FieldView, decision: FieldDecision | undefined): string | null {
   if (decision === undefined) return null;
   const value = decision.kind === 'edited' ? decision.value.trim() : field.editValue;

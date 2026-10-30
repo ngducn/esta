@@ -23,8 +23,7 @@ function saved(decisions: Decisions = acceptAll) {
 const HCMC = '79';
 const LONG_AN = '80';
 const read = 'phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh';
-// The gcn_2024 truth's holders, as the household already has them.
-const holders: PropertyFacts = { provinceCode: HCMC, owners: [{ fullName: 'Đặng Quốc Demo', idLast4: '1776' }] };
+const matchingProperty: PropertyFacts = { provinceCode: HCMC, owners: [{ fullName: 'Đặng Quốc Demo', idLast4: '1776' }] };
 
 describe('what saving a certificate review writes over (#356)', () => {
   it('takes the first parcel address the review decided, as the save writes it', () => {
@@ -51,12 +50,12 @@ describe('what saving a certificate review writes over (#356)', () => {
 
 describe('the signs a certificate is another property’s (#356)', () => {
   it('finds none when the province and a holder match the property', () => {
-    expect(certificateMismatches(saved(), holders, HCMC)).toEqual([]);
+    expect(certificateMismatches(saved(), matchingProperty, HCMC)).toEqual([]);
     expect(certificateMismatches(saved(), { provinceCode: HCMC, owners: [{ fullName: 'ĐẶNG QUỐC  demo', idLast4: null }] }, HCMC)).toEqual([]);
   });
 
   it('marks the address when it lies in another province than the property', () => {
-    expect(certificateMismatches(saved(), { ...holders, provinceCode: LONG_AN }, HCMC)).toEqual([{ kind: 'province', paths: ['parcels[0].address_text'] }]);
+    expect(certificateMismatches(saved(), { ...matchingProperty, provinceCode: LONG_AN }, HCMC)).toEqual([{ kind: 'province', paths: ['parcels[0].address_text'] }]);
   });
 
   it('marks every holder when none of them owns the property', () => {
@@ -78,7 +77,7 @@ describe('the signs a certificate is another property’s (#356)', () => {
 
   it('judges nothing it has nothing to compare with: a new property, an address no province reads from, a review with no holder', () => {
     expect(certificateMismatches(saved(), { provinceCode: null, owners: [] }, HCMC)).toEqual([]);
-    expect(certificateMismatches(saved(), { ...holders, provinceCode: LONG_AN }, null)).toEqual([]);
+    expect(certificateMismatches(saved(), { ...matchingProperty, provinceCode: LONG_AN }, null)).toEqual([]);
     const withoutHolders = Object.fromEntries(Object.entries(acceptAll).filter(([path]) => !path.startsWith('holders[')));
     expect(certificateMismatches(saved(withoutHolders), { provinceCode: HCMC, owners: [{ fullName: 'Trần Minh Demo', idLast4: null }] }, HCMC)).toEqual([]);
   });

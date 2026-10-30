@@ -49,7 +49,7 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
   );
   const meters = rooms.flatMap((room) => room.meters);
   const checks = new Map(meters.map((meter) => [meter.id, check(meter, values[meter.id] ?? '')]));
-  const roomsUse = (unitId: string, kind: MeterView['kind']) =>
+  const otherRoomsUse = (unitId: string, kind: MeterView['kind']) =>
     rooms.flatMap((other) =>
       other.unitId === unitId
         ? []
@@ -134,7 +134,7 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
                     roomId={`room-${room.unitId}`}
                     value={values[meter.id] ?? ''}
                     check={checks.get(meter.id) ?? { kind: 'empty' }}
-                    rooms={roomsUse(room.unitId, kind)}
+                    otherRooms={otherRoomsUse(room.unitId, kind)}
                     canEdit={canEdit}
                     onChange={(text) => setValues((current) => ({ ...current, [meter.id]: text }))}
                     onEnter={nextOnEnter}

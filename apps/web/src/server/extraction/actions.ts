@@ -69,7 +69,6 @@ async function reviewTarget(supabase: Session, householdId: string, extractionId
   return null;
 }
 
-/** `unfiled`: the document has no property yet and is filed on the chosen one once the save passes every check. */
 type ReviewedDocument = { readonly propertyId: string; readonly sensitive: boolean; readonly unfiled: boolean };
 
 async function reviewedDocument(supabase: Session, target: Target, chosen: string | null): Promise<ReviewedDocument | null> {
@@ -82,7 +81,6 @@ async function reviewedDocument(supabase: Session, target: Target, chosen: strin
 
 const currentProvinceSchema = z.object({ province_code: z.string() });
 
-/** #356: the review rows that say a certificate is another property's, judged against the property's province and owners today. */
 async function mismatchedPaths(supabase: Session, householdId: string, propertyId: string, saved: Saved): Promise<readonly string[] | null> {
   const [property, shares] = await Promise.all([
     supabase.from('properties').select('current_address').eq('household_id', householdId).eq('id', propertyId).maybeSingle(),
@@ -120,11 +118,11 @@ async function closeItems(supabase: Session, householdId: string, keys: readonly
 /**
  * Accepts the reviewed fields of an extraction (DOC-6): builds the plan, has the database judge every value it keeps as
  * read by the extraction CHECK's rule and stops before any write when one holds a full ID (a typed value is kept as
- * typed, SPEC D11), stops a certificate that looks like another property's until Mẹ confirms it (#356), files a document
- * saved with a chosen property on it, upserts each step on the member's session, copies a normal document's read text into
- * `documents.ocr_text` for search (DOC-3), then marks the extraction accepted with `accepted_fields`. A failed read is
- * saved as a manual entry, inserted accepted with no model before its rows so the certificate can name it. Every step
- * is keyed by the extraction, so a retry after a partial failure converges on the same rows.
+ * typed, SPEC D11), stops a certificate that looks like another property's until Mẹ confirms it (#356), files a
+ * document saved with a chosen property on it, upserts each step on the member's session, copies a normal document's
+ * read text into `documents.ocr_text` for search (DOC-3), then marks the extraction accepted with `accepted_fields`.
+ * A failed read is saved as a manual entry, inserted accepted with no model before its rows so the certificate can name
+ * it. Every step is keyed by the extraction, so a retry after a partial failure converges on the same rows.
  */
 export async function saveExtractionReview(extractionId: unknown, decisions: unknown, propertyId: unknown = null, confirmed: unknown = false): Promise<ReviewSave> {
   const id = uuid.safeParse(extractionId);

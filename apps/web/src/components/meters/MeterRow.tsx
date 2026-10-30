@@ -26,17 +26,14 @@ export function useReadingCheck(): (meter: MeterView, text: string) => ReadingCh
   };
 }
 
-/**
- * One meter of a room: the previous reading beside a numeric input, and below it the month's use, a refusal or the 3×
- * warning. `rooms` is what the property's other meters of this kind use this month, for a meter with no history yet.
- */
+/** One meter of a room: the previous reading beside a numeric input, and below it the month's use, a refusal or the 3× warning. */
 export function MeterRow({
   meter,
   month,
   roomId,
   value,
   check,
-  rooms,
+  otherRooms,
   canEdit,
   onChange,
   onEnter,
@@ -46,7 +43,7 @@ export function MeterRow({
   roomId: string;
   value: string;
   check: ReadingCheck;
-  rooms: readonly number[];
+  otherRooms: readonly number[];
   canEdit: boolean;
   onChange: (text: string) => void;
   onEnter: (event: KeyboardEvent<HTMLInputElement>) => void;
@@ -55,7 +52,7 @@ export function MeterRow({
   const locale = useLocale();
   const id = `meter-${meter.id}`;
   const Icon = meter.kind === 'electricity' ? Zap : Droplet;
-  const unusual = check.kind === 'ok' && check.used !== null ? unusualUse(meter.history, rooms, check.used) : null;
+  const unusual = check.kind === 'ok' && check.used !== null ? unusualUse(meter.history, otherRooms, check.used) : null;
   return (
     <div data-testid="meter-row" data-kind={meter.kind} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5">
       <label id={`${id}-label`} htmlFor={id} className="col-span-2 flex items-center gap-2 text-body font-medium text-ink lg:sr-only">

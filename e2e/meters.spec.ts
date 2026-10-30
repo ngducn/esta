@@ -232,8 +232,9 @@ test('rule 8: before any meter has history, water typed far above the other room
   await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
   await page.goto(`${metersPath(8)}?month=2026-10`);
   await expect(page.getByTestId('meter-month')).toHaveText('Tháng 10/2026');
-  // The tour's October: Phòng 1 to 4 use 6 to 9 m³, and Phòng 5 to 8 got their electricity readings typed into water.
-  const used = [6, 7, 8, 9, 2081, 5299, 3705, 787];
+  const inLine = [6, 7, 8, 9];
+  const electricityTypedAsWater = [2081, 5299, 3705, 787];
+  const used = [...inLine, ...electricityTypedAsWater];
   for (const [index, amount] of used.entries()) await reading(page, index + 1, 'water').getByRole('textbox').fill(String((SEPTEMBER.water[index] ?? 0) + amount));
   for (const n of [1, 2, 3, 4]) await expect(reading(page, n, 'water').getByTestId('meter-anomaly'), `Phòng ${n}`).toHaveCount(0);
   for (const n of [5, 6, 7, 8]) await expect(reading(page, n, 'water').getByTestId('meter-anomaly'), `Phòng ${n}`).toHaveText('Cao gấp 3 lần các phòng khác (9 m³ tháng này)');

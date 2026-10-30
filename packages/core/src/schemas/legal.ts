@@ -60,7 +60,6 @@ export const parcelSchema = z.strictObject({
   origin_text: optionalText(500),
 });
 
-/** A new parcel needs a number, a map sheet, an area or an origin note (`IDENTIFYING_FIELDS`). */
 export const newParcelSchema = parcelSchema.refine(identifies('parcel'), { error: UNIDENTIFIED });
 export type Parcel = z.output<typeof parcelSchema>;
 
@@ -125,12 +124,11 @@ export const certificateSchema = z.discriminatedUnion('status', [
 ]);
 export type Certificate = z.output<typeof certificateSchema>;
 
-/** A new certificate needs a serial, a book entry, an issue date or a holder (`IDENTIFYING_FIELDS`). */
 export const newCertificateSchema = certificateSchema.refine(identifies('certificate'), { error: UNIDENTIFIED });
 
 /**
- * What the certificate card claims. A new form opens as `valid`, so `Còn hiệu lực` needs an issue date behind it; a
- * status Mẹ chose otherwise shows as chosen (#356).
+ * [app rule] What the certificate card claims (#356): `Còn hiệu lực` needs an issue date behind it; every other status
+ * shows as stored.
  */
 export function shownStatus(certificate: Pick<Certificate, 'status' | 'issued_on'>): CertificateStatus | 'undated' {
   return certificate.status === 'valid' && certificate.issued_on === null ? 'undated' : certificate.status;
