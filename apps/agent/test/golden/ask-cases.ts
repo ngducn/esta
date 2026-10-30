@@ -1,6 +1,6 @@
+import { parseInstant } from '@esta/core';
+import { noteRelated } from '@esta/core/assistant';
 import { isoDate, type IsoDate } from '@esta/core/date';
-import { formatVnd } from '@esta/core/format';
-import { vnd } from '@esta/core/money';
 import { askRequest, type EarlierTurn } from '../../src/jobs/ask';
 import { askPrompt, type AskedTurn } from '../../src/prompts/ask';
 import { JOBS, type PreparedJob } from '../../src/jobs/registry';
@@ -14,6 +14,9 @@ import type { AskTopic } from '../../src/tools/topic-reads';
 import { fakeDb } from '../../src/test/fake-db';
 import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
+import { agentItems } from '../../../../supabase/seed/generator/agent.ts';
+import { householdSeeds } from '../../../../supabase/seed/generator/households.ts';
+import { PROPERTY_SEEDS } from '../../../../supabase/seed/generator/properties.ts';
 import { replayedReads } from './ask-reads';
 
 export type AskCase = {
@@ -30,26 +33,24 @@ export type AskCase = {
   readonly deep?: true;
   /** The business day it is asked on, when not 2026-10-07: a new segment starts on the next day. */
   readonly today?: IsoDate;
-  /** The note it replies to or the property it asks about, as the worker reads it from the `full` seed (P5-13). */
   readonly topic?: AskTopic;
 };
 
 const PROPERTIES = { name: mcpToolName('list_properties'), input: {} };
 const call = (name: string, input: Record<string, unknown> = {}) => ({ name: mcpToolName(name), input });
 
-/** The seed's W1 and W3 notes as the worker reads them; their texts are the ones the suggested replies hold. */
-const OVERDUE_NOTE: AskTopic = {
-  kind: 'note',
-  title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày',
-  body: `Hóa đơn của Hoàng Văn Em Demo đến hạn ngày 25/09/2026 vẫn chưa thanh toán. Còn nợ ${formatVnd(vnd(2_800_000), 'vi')}.`,
-  links: ['esta://invoice/7701f9ca-8056-5db5-a157-d131407b52cd'],
-};
-const LEASE_ENDING_NOTE: AskTopic = {
-  kind: 'note',
-  title: 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 26 ngày',
-  body: 'Hợp đồng với Phạm Thị Lan Demo kết thúc ngày 01/11/2026 và chưa có hợp đồng gia hạn.',
-  links: ['esta://lease/19f7abd4-f81a-5135-bcb7-c2ba5cedce43'],
-};
+const [DEMO] = householdSeeds(0);
+if (DEMO === undefined) throw new Error('no demo household seed');
+const seededNotes = agentItems.rows({ household: DEMO, properties: PROPERTY_SEEDS, asOf: parseInstant('2026-10-07T07:00:00+07:00'), today: isoDate('2026-10-07') });
+
+function seededNote(rule: 'W1' | 'W3'): AskTopic {
+  const row = seededNotes.find(({ dedupe_key }) => String(dedupe_key).startsWith(`seed:watch:${rule}:`));
+  if (row === undefined) throw new Error(`the seed has no ${rule} note`);
+  return { kind: 'note', title: String(row.title), body: String(row.body_md), links: noteRelated(row.related).links };
+}
+
+const OVERDUE_NOTE = seededNote('W1');
+const LEASE_ENDING_NOTE = seededNote('W3');
 
 export const ASK_CASES: readonly AskCase[] = [
   {
@@ -241,7 +242,6 @@ export const askCase = (id: string): AskCase => {
 
 type CaseBinding = { readonly db: AgentDb; readonly householdId: string; readonly reads: AskReads };
 
-/** The job the worker prepares for a case, so its prompt is the one the worker writes, the topic's records included. */
 export async function caseRequest(item: AskCase, { db, householdId, reads }: CaseBinding): Promise<PreparedJob> {
   const asOf = item.today ?? ASK_CONTEXT.today;
   return askRequest({
@@ -264,7 +264,6 @@ export async function caseRequest(item: AskCase, { db, householdId, reads }: Cas
   });
 }
 
-/** The prompt the worker writes for a case; a rebuilt session's is the one `rebuild` writes from her earlier turns. */
 export async function casePrompt(item: AskCase): Promise<string> {
   if (item.rebuiltFrom !== undefined) return askPrompt({ ...ASK_CONTEXT, question: item.question, earlier: item.rebuiltFrom });
   const tables = askTables(item.question);

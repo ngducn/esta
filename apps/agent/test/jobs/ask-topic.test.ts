@@ -1,8 +1,5 @@
 import { checkNote } from '@esta/core/guard';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { askRepairPrompt } from '../../src/prompts/ask';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
@@ -15,29 +12,20 @@ import { answerRow, askRpcs, askTables, askWorker, QUESTION } from '../ask-seed'
 import { HOUSEHOLD } from '../full-seed';
 import { askCase, caseRequest } from '../golden/ask-cases';
 import { replayedReads } from '../golden/ask-reads';
+import { tempDirs } from '../job-dir';
 
-const dirs: string[] = [];
-afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
-});
-const tempDir = (prefix: string) => {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
-  dirs.push(dir);
-  return dir;
-};
+const tempDir = tempDirs();
 
 const ASKER = '00000000-0000-4000-8000-0000000c0f01';
 const NOTE = '00000000-0000-4000-8000-0000000c0f02';
 const NOTE_BODY = 'Hóa đơn của Hoàng Văn Em Demo vẫn chưa thanh toán. Còn nợ 2.800.000 ₫.';
 const REPLY = 'Khách này trễ mấy lần rồi?';
 
-/** The prompt the worker writes for `topic` on the ask tables, through the same job a golden case prepares. */
 async function promptFor(topic: AskTopic, question = REPLY) {
   const tables = askTables(question);
   return (await caseRequest({ id: 'topic', question, toolCalls: [], reply: '', topic }, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() })).prompt;
 }
 
-/** The ask tables with her message replying to a note, asked by a member who is not an operator and who has an earlier segment. */
 function replyTables(audience: 'all' | 'operator') {
   const tables = askTables(REPLY);
   const earlier = '00000000-0000-4000-8000-0000000c0f03';

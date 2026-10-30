@@ -1,8 +1,7 @@
 import { checkNote } from '@esta/core/guard';
-import { existsSync, mkdtempSync, renameSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { askFollowUpPrompt, askPrompt, askRepairPrompt } from '../../src/prompts/ask';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
@@ -13,6 +12,7 @@ import { mcpToolName } from '../../src/tools/server';
 import { ANSWER, answerRow, askTables, askWorker, ASK_JOB, CONVERSATION, QUESTION } from '../ask-seed';
 import { HOUSEHOLD as HOUSEHOLD_ID } from '../full-seed';
 import { ASK_CONTEXT } from '../golden/ask-cases';
+import { tempDirs } from '../job-dir';
 
 const QUESTION_TEXT = 'Tháng này thu được bao nhiêu từ Dĩ An?';
 const TOOLS = [
@@ -23,15 +23,7 @@ const GOOD = '{{f3.property_label}} đã thu {{f8.income_display}}. Xem [sổ th
 const BAD = 'Đã thu tiền thuê. Tháng trước thu khoảng hai triệu.';
 const BAD_RESIDUE = 'Tháng trước thu khoảng hai triệu.';
 
-const dirs: string[] = [];
-afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
-});
-const tempDir = (prefix: string) => {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
-  dirs.push(dir);
-  return dir;
-};
+const tempDir = tempDirs();
 
 function recordTurns(replies: readonly string[]): string {
   const dir = tempDir('esta-ask-replay-');
