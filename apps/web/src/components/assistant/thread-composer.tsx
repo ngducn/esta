@@ -3,7 +3,7 @@
 import type { ThreadTopic } from '@esta/core/assistant';
 import { Send, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { sendQuestion } from '@/app/(app)/assistant/actions';
 import { FormAlert } from '@/components/form-alert';
 import { buttonVariants } from '@/components/ui/button';
@@ -48,6 +48,11 @@ export function ThreadComposer({
   const [deep, setDeep] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const draft = useRef<{ readonly message: string; readonly questionId: string } | null>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
+  const topicKey = topic === null ? null : JSON.stringify(topic.topic);
+  useEffect(() => {
+    if (topicKey !== null) box.current?.focus();
+  }, [topicKey]);
   const disabled = pending || state !== 'ready';
 
   const send = (text: string, about: ThreadTopic | null) => {
@@ -104,7 +109,7 @@ export function ThreadComposer({
       )}
       <textarea
         id={id}
-        autoFocus={topic !== null}
+        ref={box}
         data-testid="composer-message"
         value={message}
         rows={2}

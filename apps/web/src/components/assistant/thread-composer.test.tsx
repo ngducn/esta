@@ -92,6 +92,13 @@ describe('the reply box', () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
+  it('a topic chosen while the box is on screen focuses it, as Trả lời on a note in the thread does', () => {
+    const { rerender } = render(<ThreadComposer labels={labels} maxLength={2000} state="ready" />);
+    expect(document.activeElement).not.toBe(field());
+    rerender(<ThreadComposer labels={labels} maxLength={2000} state="ready" topic={{ topic: NOTE_TOPIC, label: 'Trả lời: Phòng 5', clear: 'Bỏ', clearLabel: 'Bỏ chủ đề Phòng 5' }} />);
+    expect(document.activeElement).toBe(field());
+  });
+
   it('Bỏ drops the topic by leaving the URL that named it, without sending', () => {
     render(<ThreadComposer labels={labels} maxLength={2000} state="ready" topic={{ topic: NOTE_TOPIC, label: 'Trả lời: Phòng 5', clear: 'Bỏ', clearLabel: 'Bỏ chủ đề Phòng 5' }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Bỏ chủ đề Phòng 5' }));
