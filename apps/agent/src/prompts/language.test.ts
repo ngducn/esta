@@ -1,5 +1,6 @@
 import { OPEN_PROSE } from '@esta/core/guard/fixtures/open-prose';
 import { describe, expect, it } from 'vitest';
+import { ENGLISH_NAMING_RECORDS, SEED_LABELS, VIETNAMESE_NAMING_RECORDS } from '../../test/reply-language-cases';
 import { replyLanguage } from './language';
 
 /**
@@ -59,6 +60,8 @@ const ENGLISH_MESSAGES = [
   'Is it better to sell the land or to keep renting the house?',
 ] as const;
 
+const isMarked = (message: string) => /[\p{M}đ]/u.test(message.normalize('NFD'));
+
 describe('the language of the reply (#348)', () => {
   it('has at least 20 Vietnamese and 8 English cases, and the five English probes among them', () => {
     expect(VIETNAMESE_MESSAGES.length).toBeGreaterThanOrEqual(20);
@@ -66,16 +69,62 @@ describe('the language of the reply (#348)', () => {
     expect(OPEN_PROSE.filter(({ id }) => id.startsWith('en-'))).toHaveLength(5);
   });
 
+  it('has at least 8 English and 5 Vietnamese questions that name seeded records', () => {
+    expect(ENGLISH_NAMING_RECORDS.length).toBeGreaterThanOrEqual(8);
+    expect(VIETNAMESE_NAMING_RECORDS.length).toBeGreaterThanOrEqual(5);
+  });
+
   it.each(VIETNAMESE_MESSAGES)('answers %j in Vietnamese in a household that reads Vietnamese', (message) => {
     expect(replyLanguage(message, 'vi')).toBe('vi');
   });
 
-  it.each(VIETNAMESE_MESSAGES.filter((message) => /[\p{M}đ]/u.test(message.normalize('NFD'))))('answers the marked %j in Vietnamese even in a household that reads English', (message) => {
+  it.each(VIETNAMESE_MESSAGES.filter(isMarked))('answers the marked %j in Vietnamese even in a household that reads English', (message) => {
     expect(replyLanguage(message, 'en')).toBe('vi');
   });
 
   it.each(ENGLISH_MESSAGES)('answers %j in English', (message) => {
     expect(replyLanguage(message, 'vi')).toBe('en');
+  });
+
+  it.each(ENGLISH_NAMING_RECORDS)('answers %j in English, a household that reads either language, because the records it names are neither language', (message) => {
+    expect(replyLanguage(message, 'vi', SEED_LABELS)).toBe('en');
+    expect(replyLanguage(message, 'en', SEED_LABELS)).toBe('en');
+  });
+
+  it.each(VIETNAMESE_NAMING_RECORDS)('answers %j in Vietnamese in a household that reads Vietnamese, the names stripped', (message) => {
+    expect(replyLanguage(message, 'vi', SEED_LABELS)).toBe('vi');
+  });
+
+  it.each(VIETNAMESE_NAMING_RECORDS.filter(isMarked))('answers the marked %j in Vietnamese even in a household that reads English, the names stripped', (message) => {
+    expect(replyLanguage(message, 'en', SEED_LABELS)).toBe('vi');
+  });
+
+  it('keeps every Vietnamese message of the table above Vietnamese when the household has its labels', () => {
+    for (const message of VIETNAMESE_MESSAGES) expect(replyLanguage(message, 'vi', SEED_LABELS), message).toBe('vi');
+  });
+
+  it('matches a label without regard to case or marks, and in the decomposed form', () => {
+    const question = 'Should I renew the lease on Căn hộ Thủ Đức?';
+    expect(replyLanguage(question.toUpperCase(), 'vi', SEED_LABELS)).toBe('en');
+    expect(replyLanguage('should i renew the lease on can ho thu duc?', 'vi', SEED_LABELS)).toBe('en');
+    expect(replyLanguage(question.normalize('NFD'), 'vi', SEED_LABELS)).toBe('en');
+  });
+
+  it('strips the longest label first, so the shorter label inside it leaves nothing behind', () => {
+    const question = 'Should I renew the lease on Căn hộ Thủ Đức?';
+    expect(replyLanguage(question, 'vi', ['Thủ Đức', 'Căn hộ Thủ Đức'])).toBe('en');
+    expect(replyLanguage(question, 'vi', ['Căn hộ Thủ Đức', 'Thủ Đức'])).toBe('en');
+    expect(replyLanguage(question, 'vi', ['Thủ Đức'])).toBe('vi');
+  });
+
+  it('strips a label by whole words, so Phòng 5 does not take the front of Phòng 55', () => {
+    expect(replyLanguage('Should I renew Phòng 55 Phòng 56 Phòng 57 lease?', 'vi', ['Phòng 5'])).toBe('vi');
+    expect(replyLanguage('Should I renew Phòng 5 Phòng 5 Phòng 5 lease?', 'vi', ['Phòng 5'])).toBe('en');
+  });
+
+  it('counts the words a label does not take: a Vietnamese word beside a name still makes the message Vietnamese', () => {
+    expect(replyLanguage('Should I renew the lease on Căn hộ Thủ Đức, mẹ?', 'vi', SEED_LABELS)).toBe('en');
+    expect(replyLanguage('Should I renew the lease on Căn hộ Thủ Đức, mẹ hỏi giúp?', 'vi', SEED_LABELS)).toBe('vi');
   });
 
   it('leaves a message that is neither clearly English nor Vietnamese to the language the household reads', () => {

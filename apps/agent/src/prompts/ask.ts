@@ -12,9 +12,11 @@ const MARKDOWN_LINK = /\[([^\]]*)\]\([^)]*\)/g;
 /**
  * The model answered some English questions in Vietnamese, the default when it is unsure (#348), so a message that is
  * clearly English, or that the household reads in English and gives no sign of Vietnamese, says so where the model
- * reads it last. Any other message keeps the default and its prompt does not change.
+ * reads it last. Any other message keeps the default and its prompt does not change. `labels` are the household's own
+ * names, which a message may hold without being written in their language.
  */
-const replyLanguageLine = (question: string, locale: Locale): string[] => (replyLanguage(question, locale) === 'en' ? ['The message is written in English, so write the whole reply in English.'] : []);
+const replyLanguageLine = (question: string, locale: Locale, labels: readonly string[]): string[] =>
+  replyLanguage(question, locale, labels) === 'en' ? ['The message is written in English, so write the whole reply in English.'] : [];
 
 function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   if (turns.length === 0) return [];
@@ -44,7 +46,7 @@ function topicSection(topic: LoadedTopic | null | undefined): string[] {
 }
 
 export function askPrompt(
-  context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly earlier?: readonly AskedTurn[]; readonly topic?: LoadedTopic | null },
+  context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly labels: readonly string[]; readonly earlier?: readonly AskedTurn[]; readonly topic?: LoadedTopic | null },
 ): string {
   return [
     systemPrompt({ ...context, language: 'question', scope: 'open' }),
@@ -65,19 +67,19 @@ export function askPrompt(
     ...conversationSoFar(context.earlier ?? []),
     ...topicSection(context.topic),
     '',
-    ...replyLanguageLine(context.question, context.locale),
+    ...replyLanguageLine(context.question, context.locale, context.labels),
     'Message:',
     context.question,
   ].join('\n');
 }
 
 /** A follow-up continues the session of the conversation's last answer, so its rules and context already hold. */
-export function askFollowUpPrompt({ locale, today, timezone, question, firstHandle }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly firstHandle: number }): string {
+export function askFollowUpPrompt({ locale, today, timezone, question, labels, firstHandle }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly labels: readonly string[]; readonly firstHandle: number }): string {
   return [
     `Today is ${today} in ${timezone}. The family member writes again in the conversation so far. Reply with the rules of your first task.`,
     `The handles and placeholders of your earlier replies no longer hold. Call the tools again for every record and figure this reply writes; this turn's handles start at f${firstHandle}.`,
     '',
-    ...replyLanguageLine(question, locale),
+    ...replyLanguageLine(question, locale, labels),
     'Message:',
     question,
   ].join('\n');

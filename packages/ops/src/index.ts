@@ -60,4 +60,4 @@ export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
 export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
 export { readLivePropertyIds, readValuations } from './valuations';
 export { existingLinks } from './links';
-export { readWatchLabels, readWatchSnapshot } from './watch';
+export { readNameLabels, readWatchLabels, readWatchSnapshot } from './watch';
