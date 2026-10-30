@@ -20,7 +20,9 @@ To add a smell, add one entry to `METRICS` with a finder in `scripts/quality/sme
 
 `pnpm quality` runs jscpd 5 over the source files and counts every block of 50 or more tokens that appears twice (`clones`) and the lines inside those blocks (`duplicated-lines`). An edit of up to five lines inside a copied block keeps it one clone. The token threshold is jscpd's default. It registers the duplicates the 2026-10-19 review measured: the two upload flows, the legal and rental item actions, and the e2e setup copied between specs.
 
-**Home.** Extract the shared part once, in the home the matching section below names, and call it from both places. A test that needs the same setup as another test imports a shared helper.
+A second jscpd pass reads the JSON under `fixtures/` and `apps/agent/test/golden/` (`copied-fixtures`). It counts the lines of each block of 1,000 or more tokens that also appears in another fixture or recording, so a copied reads fixture counts and a short recording or a certificate's truth file does not. A block repeated inside one recording is its data, not a copy.
+
+**Home.** Extract the shared part once, in the home the matching section below names, and call it from both places. A test that needs the same setup as another test imports a shared helper. A fixture writer adds its answers to the existing fixture, as every writer of the ask reads does (`apps/agent/test/golden/ask-reads.ts`).
 
 ## File size
 

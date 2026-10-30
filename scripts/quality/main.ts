@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { findClones, readCorpus } from './measure.ts';
+import { CODE_SCAN, findClones, FIXTURE_SCAN, readCorpus } from './measure.ts';
 import { METRICS } from './metrics.ts';
 import { baselineSchema, judge, passes, rebase, report, serialize, type Baseline, type Reading } from './ratchet.ts';
 
@@ -32,7 +32,9 @@ function readMain(root: string): Baseline | undefined {
 }
 
 export function measure(root: string): Reading[] {
-  const input = { corpus: readCorpus(root), clones: findClones(root) };
+  // A recording repeats its own records; only a block that also sits in a second fixture is a copy.
+  const fixtureClones = findClones(root, FIXTURE_SCAN).filter((clone) => clone.first.file !== clone.second.file);
+  const input = { corpus: readCorpus(root), clones: findClones(root, CODE_SCAN), fixtureClones };
   return METRICS.map((metric) => ({ metric, occurrences: metric.measure(input) }));
 }
 

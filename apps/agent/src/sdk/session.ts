@@ -1,7 +1,7 @@
 import { query, type HookCallback, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { Json } from '@esta/db';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { isAbsolute, join, relative, sep } from 'node:path';
 import type { RunMode } from '../env';
 import type { JobSpec, ModelRole } from '../jobs/registry';
 import { InvalidJobError } from '../jobs/extract-document';
@@ -153,6 +153,50 @@ export const replayChunks = (reply: string): string[] => reply.match(REPLAY_CHUN
 export const replaySessionId = (hash: string) => `replay-${hash.slice(0, 16)}`;
 
 const replayTranscript = (configDir: string, sessionId: string) => join(configDir, 'replay-sessions', `${sessionId}.json`);
+
+/** A session's entry in a config dir: a live transcript (`<uuid>.jsonl`) or its folder, or a replayed stand-in. */
+const SESSION_ENTRY = /^(?<id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|replay-[0-9a-f]{16})(?:\.jsonl?)?$/;
+
+const kindOf = (path: string) => {
+  const stat = lstatSync(path, { throwIfNoEntry: false });
+  return stat?.isFile() ? 'file' : stat?.isDirectory() ? 'folder' : 'other';
+};
+
+/** Whether `path` really lies below `root`, whatever symlink its route crosses. */
+function inside(root: string, path: string): boolean {
+  const route = relative(root, realpathSync(path));
+  return route !== '' && route.split(sep)[0] !== '..' && !isAbsolute(route);
+}
+
+/** The names in a real folder below `root`; a symlink, a file or a folder that leads out reads as empty. */
+const names = (root: string, dir: string) => (kindOf(dir) === 'folder' && inside(root, dir) ? readdirSync(dir) : []);
+
+/** Deletes the regular files below `path`, and the folders they leave empty. A symlink and what it points to stay. */
+function removeFiles(root: string, path: string): void {
+  const kind = kindOf(path);
+  if (kind === 'file' && inside(root, path)) unlinkSync(path);
+  if (kind !== 'folder') return;
+  for (const name of names(root, path)) removeFiles(root, join(path, name));
+  if (names(root, path).length === 0) rmdirSync(path);
+}
+
+/**
+ * Removes every session but `keep` from a config dir. Each resumed turn forks the whole transcript into a new session,
+ * so a conversation keeps only the one its next question resumes (#340). The SDK writes live transcripts under
+ * `projects/<cwd>/`; replay writes its stand-ins under `replay-sessions/`. It touches only regular files that lie in
+ * the config dir and follows no symlink.
+ */
+export function pruneTranscripts(configDir: string, keep: string): void {
+  if (kindOf(configDir) !== 'folder') return;
+  const root = realpathSync(configDir);
+  const projects = join(root, 'projects');
+  for (const holder of [join(root, 'replay-sessions'), ...names(root, projects).map((project) => join(projects, project))]) {
+    for (const name of names(root, holder)) {
+      const id = SESSION_ENTRY.exec(name)?.groups?.id;
+      if (id !== undefined && id !== keep) removeFiles(root, join(holder, name));
+    }
+  }
+}
 
 /**
  * Replays the recorded model turns while the tools, the policy and every write run for real (AGENT.md §8). A call the

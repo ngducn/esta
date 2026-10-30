@@ -12,7 +12,7 @@ import { jobSpec, type AgentJob, type JobSpec, type PreparedJob } from './jobs/r
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
-import { canonicalInput, liveSession, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
+import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
 import { NumberGuardError } from './tools/create-item';
 import { mcpToolName } from './tools/server';
@@ -111,6 +111,15 @@ function followedBy(first: SessionRun, next: SessionRun): SessionRun {
   };
 }
 
+/** The answer is saved by now, so a folder that cannot be tidied warns and never fails or requeues the job (#340). */
+function tidyTranscripts(job: AgentJob, configDir: string, keep: string): void {
+  try {
+    pruneTranscripts(configDir, keep);
+  } catch (error) {
+    console.warn(`[agent] ${job.kind} ${job.id}: the answer is saved, but removing the conversation's old transcripts failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: Inputs): Promise<SessionOutcome> {
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
@@ -145,7 +154,9 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       outcome = judgeResult(session.result);
     }
     if (!outcome.ok) return { outcome, session };
-    return { outcome: { ...outcome, result: await prepared.finish({ reply: outcome.reply, model: session.model, sessionId: session.result.sessionId, turnHash: inputHash(canonicalInput(turn)) }) }, session };
+    const result = await prepared.finish({ reply: outcome.reply, model: session.model, sessionId: session.result.sessionId, turnHash: inputHash(canonicalInput(turn)) });
+    if (spec.workDir === 'conversation' && session.result.sessionId !== null) tidyTranscripts(job, work.configDir, session.result.sessionId);
+    return { outcome: { ...outcome, result }, session };
   } catch (error) {
     return { outcome: { ok: false, failure: failureOf(error) }, session };
   } finally {

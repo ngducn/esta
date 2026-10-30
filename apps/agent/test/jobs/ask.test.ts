@@ -1,7 +1,7 @@
 import { checkNote } from '@esta/core/guard';
-import { existsSync, renameSync, rmSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { askFollowUpPrompt, askPrompt, askRepairPrompt } from '../../src/prompts/ask';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
@@ -76,7 +76,13 @@ const FOLLOW_UP_TOOLS = [
   { name: mcpToolName('ledger'), input: { property: 'f11', year: 2026, month: 9 } },
 ];
 const SEPTEMBER = '{{f11.property_label}} thu {{f16.income_display}} trong tháng {{f16.period_date_display}}.';
-const FOLLOW_UP_PROMPT = askFollowUpPrompt({ today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question: FOLLOW_UP, firstHandle: 9 });
+const FOLLOW_UP_PROMPT = askFollowUpPrompt({ ...ASK_CONTEXT, question: FOLLOW_UP, firstHandle: 9 });
+const AUGUST = 'Còn tháng 8?';
+const AUGUST_TURN = {
+  prompt: askFollowUpPrompt({ ...ASK_CONTEXT, question: AUGUST, firstHandle: 18 }),
+  reply: '{{f20.property_label}} thu {{f25.income_display}} trong tháng {{f25.period_date_display}}.',
+  toolCalls: [{ name: mcpToolName('list_properties'), input: {} }, { name: mcpToolName('ledger'), input: { property: 'f20', year: 2026, month: 8 } }],
+};
 
 async function afterQuestion1() {
   const dir = tempDir('esta-ask-replay-');
@@ -180,6 +186,49 @@ describe('the ask job (AGENT.md §5.6)', () => {
     expect(answer.content_md).toBe('Dãy trọ Dĩ An thu 19.300.000\u00a0₫ trong tháng 9/2026.');
   });
 
+  it('keeps only the session the next question resumes in the conversation folder, so transcripts stop piling up (#340)', async () => {
+    const { first, ask, sessionDir } = await afterQuestion1();
+    const sessions = () => readdirSync(join(sessionDir, 'replay-sessions'));
+    expect(sessions()).toEqual([`replay-${first.slice(0, 16)}.json`]);
+    const stale = 'Đã thu {{f8.income_display}}.';
+    const repaired = await ask(FOLLOW_UP, [
+      { prompt: FOLLOW_UP_PROMPT, reply: stale, toolCalls: FOLLOW_UP_TOOLS },
+      { prompt: askRepairPrompt(violations(stale)), reply: SEPTEMBER },
+    ], first);
+    expect(repaired.job).toMatchObject({ status: 'done', error: null });
+    expect(sessions()).toEqual([`${String(repaired.conversation.sdk_session_id)}.json`]);
+
+    const third = await ask(AUGUST, [AUGUST_TURN], repaired.conversation.sdk_turn_hash as string);
+    expect(third.job, 'the fourth turn still resumes the pruned folder').toMatchObject({ status: 'done', error: null, attempts: 1 });
+    expect(sessions()).toEqual([`${String(third.conversation.sdk_session_id)}.json`]);
+  });
+
+  it('a stray file among the conversation\'s project folders does not fail the answer it follows (#340)', async () => {
+    const { first, ask, sessionDir } = await afterQuestion1();
+    mkdirSync(join(sessionDir, 'projects'), { recursive: true });
+    writeFileSync(join(sessionDir, 'projects', 'stray.json'), '{}');
+    const followed = await ask(FOLLOW_UP, [{ prompt: FOLLOW_UP_PROMPT, reply: SEPTEMBER, toolCalls: FOLLOW_UP_TOOLS }], first);
+    expect(followed.job).toMatchObject({ status: 'done', error: null, attempts: 1 });
+    expect(followed.answer).toMatchObject({ status: 'done', content_md: 'Dãy trọ Dĩ An thu 19.300.000\u00a0₫ trong tháng 9/2026.' });
+  });
+
+  it.skipIf(process.getuid?.() === 0)('a prune that fails after the answer is saved logs a warning and leaves the job done (#340)', async () => {
+    const { first, ask, sessionDir } = await afterQuestion1();
+    const unreadable = join(sessionDir, 'projects', '-tmp-conversation');
+    mkdirSync(unreadable, { recursive: true });
+    chmodSync(unreadable, 0o000);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const followed = await ask(FOLLOW_UP, [{ prompt: FOLLOW_UP_PROMPT, reply: SEPTEMBER, toolCalls: FOLLOW_UP_TOOLS }], first);
+      expect(followed.job).toMatchObject({ status: 'done', error: null, attempts: 1 });
+      expect(followed.answer.status).toBe('done');
+      expect(warn.mock.calls.flat().join('\n')).toMatch(/old transcripts.*EACCES/s);
+    } finally {
+      warn.mockRestore();
+      chmodSync(unreadable, 0o700);
+    }
+  });
+
   it('a follow-up that fails leaves the conversation on question 1\'s turn, so the next question resumes what the family saw', async () => {
     const { first, conversation, answer } = await followUp([
       { prompt: FOLLOW_UP_PROMPT, reply: BAD, toolCalls: FOLLOW_UP_TOOLS },
@@ -202,10 +251,7 @@ describe('the ask job (AGENT.md §5.6)', () => {
     expect(followed.conversation).toMatchObject({ sdk_turn_hash: followed.hashes[0], sdk_session_id: `replay-${followed.hashes[0]?.slice(0, 16)}`, sdk_handles: 17 });
     expect(followed.hashes[0]).not.toBe(first);
 
-    const next = 'Còn tháng 8?';
-    const august = [{ name: mcpToolName('list_properties'), input: {} }, { name: mcpToolName('ledger'), input: { property: 'f20', year: 2026, month: 8 } }];
-    const reply = '{{f20.property_label}} thu {{f25.income_display}} trong tháng {{f25.period_date_display}}.';
-    const third = await ask(next, [{ prompt: askFollowUpPrompt({ today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question: next, firstHandle: 18 }), reply, toolCalls: august }], followed.hashes[0]);
+    const third = await ask(AUGUST, [AUGUST_TURN], followed.hashes[0]);
     expect(third.job).toMatchObject({ status: 'done', error: null, attempts: 1 });
     expect(third.answer.content_md).toMatch(/^Dãy trọ Dĩ An thu .+ trong tháng 8\/2026\.$/);
     expect(third.conversation).toMatchObject({ sdk_turn_hash: third.hashes[0] });

@@ -10,9 +10,8 @@ import { serviceClient } from '../../src/supabase';
 import { askReads } from '../../src/tools/ask-reads';
 import { runTool } from '../../src/tools/server';
 import { clockOn } from '../full-seed';
-import { recordingReads, type RecordedReads } from './ask-reads';
+import { ASK_READS_FIXTURE, recordedReads, readsOn, recordingReads, type RecordedReads } from './ask-reads';
 
-export const WEEKLY_READS_FIXTURE = join(import.meta.dirname, 'weekly-reads-full-2026-10-11.json');
 export const WEEKLY_AS_OF = '2026-10-11T08:00:00+07:00';
 
 export function weeklyRecording() {
@@ -39,8 +38,14 @@ async function main() {
     const { text, isError } = await runTool(tool, call.input);
     if (isError) throw new Error(`${call.name} refused ${JSON.stringify(call.input)}: ${text}`);
   }
-  writeFileSync(WEEKLY_READS_FIXTURE, `${JSON.stringify(recorded, null, 2)}\n`);
-  console.log(`Wrote ${WEEKLY_READS_FIXTURE}`);
+  const shared = recordedReads();
+  const sharedOnSunday = readsOn(shared, asOf);
+  for (const [name, answer] of Object.entries(recorded)) {
+    if (!Object.hasOwn(shared, name)) shared[name] = answer;
+    else if (JSON.stringify(sharedOnSunday[name]) !== JSON.stringify(answer)) throw new Error(`The weekly review reads ${name} differently from ${ASK_READS_FIXTURE}; record both from one seed`);
+  }
+  writeFileSync(ASK_READS_FIXTURE, `${JSON.stringify(shared, null, 2)}\n`);
+  console.log(`Wrote ${ASK_READS_FIXTURE}`);
 }
 
 if (import.meta.main) await main();

@@ -1,3 +1,4 @@
+import type { IsoDate } from '@esta/core/date';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AskReads } from '../../src/tools/ask-reads';
@@ -11,6 +12,12 @@ export const ASK_READS_FIXTURE = join(import.meta.dirname, 'ask-reads-full-2026-
 export type RecordedReads = Record<string, unknown>;
 
 export const recordedReads = (): RecordedReads => JSON.parse(readFileSync(ASK_READS_FIXTURE, 'utf8')) as RecordedReads;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** The answers as a run on `asOf` reads them: the seed's figures are the same that week, so only an answer's own date moves. */
+export const readsOn = (recorded: RecordedReads, asOf: IsoDate): RecordedReads =>
+  Object.fromEntries(Object.entries(recorded).map(([name, answer]) => [name, isRecord(answer) && 'asOf' in answer ? { ...answer, asOf } : answer]));
 
 const key = (read: keyof AskReads, args: readonly unknown[]) => `${read}${JSON.stringify(args)}`;
 
@@ -44,3 +51,6 @@ export function replayedReads(recorded: RecordedReads = recordedReads()): AskRea
     };
   return { report: answer('report'), collections: answer('collections'), leases: answer('leases'), property: answer('property'), legal: answer('legal'), payments: answer('payments') };
 }
+
+/** The ask reads module for `vi.mock`: the real one, with `askReads` answering from the recording as a run on `asOf` reads it. */
+export const askReadsOn = async (original: () => Promise<object>, asOf: IsoDate) => ({ ...(await original()), askReads: () => replayedReads(readsOn(recordedReads(), asOf)) });

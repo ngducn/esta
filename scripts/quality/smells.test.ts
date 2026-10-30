@@ -194,7 +194,7 @@ const CASES: readonly Case[] = [
 const measure = (metric: string, files: readonly SourceFile[]) => {
   const found = METRICS.find(({ id }) => id === metric);
   if (found === undefined) throw new Error(`no metric ${metric}`);
-  return found.measure({ corpus: { files }, clones: [] }).reduce((sum, occurrence) => sum + occurrence.weight, 0);
+  return found.measure({ corpus: { files }, clones: [], fixtureClones: [] }).reduce((sum, occurrence) => sum + occurrence.weight, 0);
 };
 
 describe('each smell', () => {

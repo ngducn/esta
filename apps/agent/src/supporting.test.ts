@@ -33,8 +33,8 @@ describe('job registry', () => {
     expect(JOBS.extract_document).toMatchObject({ builtInTools: ['Read'], mcpTools: ['save_extraction'], maxTurns: 8, timeoutMs: 300_000, modelRole: 'routine' });
   });
 
-  it('defines portfolio_watch with watch_facts and create_item, 6 turns, 3 minutes, daily at 06:40', () => {
-    expect(JOBS.portfolio_watch).toMatchObject({ builtInTools: [], mcpTools: ['watch_facts', 'create_item'], maxTurns: 6, timeoutMs: 180_000, schedule: { at: '06:40' } });
+  it('defines portfolio_watch with watch_facts and create_item, 8 turns, 3 minutes, daily at 06:40', () => {
+    expect(JOBS.portfolio_watch).toMatchObject({ builtInTools: [], mcpTools: ['watch_facts', 'create_item'], maxTurns: 8, timeoutMs: 180_000, schedule: { at: '06:40' } });
   });
 
   it('defines morning_brief with watch_facts, recent_items and create_brief, 6 turns, 3 minutes, daily at 07:00 after its inputs', () => {

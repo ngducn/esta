@@ -11,6 +11,7 @@ import { NumberGuardError, writeGuardItem } from '../tools/create-item';
 import { proposalWriter } from '../tools/create-proposal';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
+import { householdLabels } from '../tools/household-labels';
 import { readTools } from '../tools/read-tools';
 import { estaTool } from '../tools/server';
 import { loadTopic, type AskTopic } from '../tools/topic-reads';
@@ -74,9 +75,9 @@ async function previousSegmentTurns(db: AgentDb, householdId: string, conversati
   return previous === undefined ? [] : (await answeredTurns(db, householdId, previous.id)).slice(-SEED_TURNS);
 }
 
-async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn): Promise<string | null> {
+async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn, labels: readonly string[]): Promise<string | null> {
   const turns = await answeredTurns(input.db, input.householdId, input.conversationId, input.questionId);
-  if (turns.length > 0) return askPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, question: input.question, earlier: turns });
+  if (turns.length > 0) return askPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, question: input.question, labels, earlier: turns });
   const { error } = await input.db.from('conversations').update({ sdk_session_id: null, sdk_turn_hash: null }).eq('household_id', input.householdId).eq('id', input.conversationId).eq('sdk_turn_hash', earlier.turnHash);
   if (error) throw new Error(`Forgetting the lost session failed: ${error.message}`);
   return null;
@@ -94,12 +95,13 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
     estaTool('create_proposal', proposalWriter({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }).write),
   ]);
   const topic = earlier === null && input.topic !== null ? await loadTopic(tools, input.topic, { reads, asOf }) : null;
+  const labels = await householdLabels(db, householdId);
   return {
     prompt:
       earlier === null
-        ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, earlier: input.seed, topic })
-        : askFollowUpPrompt({ today: asOf, timezone: input.timezone, question: input.question, firstHandle }),
-    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier) }),
+        ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, labels, earlier: input.seed, topic })
+        : askFollowUpPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, labels, firstHandle }),
+    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier, labels) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools,
     onText: stream.push,

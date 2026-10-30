@@ -122,9 +122,11 @@ export function proposalWriter(binding: ProposalBinding) {
     const links = subjects(proposal);
     const key = dedupeKey(proposal);
     const added = await guard.save({ kind: 'proposal', severity: 'info', title: proposal.params.title, body_md: body, related: { links }, proposal, citations: sources.found, dedupe_key: key });
-    // A proposal an earlier attempt or an earlier week stored adds no row, so it takes no slot.
-    if (added) stored += 1;
-    saved.push(key);
+    // A proposal an earlier attempt or an earlier week stored adds no row, so it takes no slot and is not this run's.
+    if (added) {
+      stored += 1;
+      saved.push(key);
+    }
     return { saved: true, added, dedupe_key: key };
   }
 

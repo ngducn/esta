@@ -1,7 +1,7 @@
 {
   "version": 1,
   "kind": "portfolio_watch",
-  "inputHash": "cfbe97d166b9dd3cc20bd3775e9908b46a4d5cc4d9c221ad506ad5cf187717f3",
+  "inputHash": "d7681b7ed2b7f8f985de2b808a902843c5c005024e97aff98ce51f19b4301082",
   "input": {
     "version": 1,
     "kind": "portfolio_watch",
@@ -11,13 +11,13 @@
       "watch_facts",
       "create_item"
     ],
-    "maxTurns": 6
+    "maxTurns": 8
   },
-  "label": "Hand-written failing result (P5-08a): every attempt ends as an overloaded error, so the job fails after its last attempt.",
+  "label": "Hand-written usage-limit result (P5-08a): the SDK ends the session as an error with the rate_limit cause; the live text waits for the P5-10 live run.",
   "model": "hand-written",
   "numTurns": 1,
   "toolCalls": [],
-  "reply": "API Error: 529 Overloaded",
+  "reply": "You've hit your limit · resets 3pm (Asia/Saigon)",
   "isError": true,
-  "cause": "overloaded"
+  "cause": "rate_limit"
 }

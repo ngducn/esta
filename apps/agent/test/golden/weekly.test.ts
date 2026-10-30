@@ -3,20 +3,20 @@ import { formatVnd } from '@esta/core/format';
 import { visibleText } from '@esta/core/guard';
 import { vnd } from '@esta/core/money';
 import { existingLinks } from '@esta/ops';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { JOBS } from '../../src/jobs/registry';
-import { reviewedWeek, weeklyReviewRequest } from '../../src/jobs/weekly-review';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { JOBS, type PreparedJob } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { replaySession, type SessionRun } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
 import { askTables } from '../ask-seed';
 import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
-import { replayedReads, type RecordedReads } from './ask-reads';
-import { WEEKLY_AS_OF, WEEKLY_READS_FIXTURE } from './weekly-fixture';
+import { WEEKLY_AS_OF } from './weekly-fixture';
+
+vi.mock('../../src/tools/ask-reads', async (original) => (await import('./ask-reads')).askReadsOn(original, isoDate('2026-10-11')));
 
 type Row = Record<string, unknown>;
 
@@ -29,25 +29,19 @@ const tables = askTables('');
 tables.research_items = [
   { household_id: HOUSEHOLD, url_normalized: RING_ROAD, source_url: RING_ROAD, title_vi: 'Sắp khởi công Vành đai 3 đoạn qua Phường Dĩ An', source_name: 'Tin tức Demo', published_on: '2026-10-05', relevance: 0.9, created_at: '2026-10-06T23:00:00.000Z' },
 ];
-const prepared = weeklyReviewRequest({
-  db: fakeDb(tables, [], {}, {}, { proposal_refusal: () => null }),
-  householdId: HOUSEHOLD,
-  jobId: 'job-weekly',
-  locale: 'vi',
-  ...reviewedWeek({ idempotency_key: null }, isoDate(WEEKLY_AS_OF.slice(0, 10))),
-  earlierProposals: 0,
-  timezone: 'Asia/Ho_Chi_Minh',
-  reads: replayedReads(JSON.parse(readFileSync(WEEKLY_READS_FIXTURE, 'utf8')) as RecordedReads),
-  clock: clockOn(WEEKLY_AS_OF),
-});
+const job = { id: 'job-weekly', household_id: HOUSEHOLD, kind: 'weekly_review', idempotency_key: `weekly_review:${HOUSEHOLD}:2026-W41` };
+tables.agent_jobs = [job];
+const db = fakeDb(tables, [], {}, {}, { proposal_refusal: () => null });
 
 const items = (kind: string) => (tables.agent_items ?? []).filter((row) => row.kind === kind) as Array<Row & { title: string; body_md: string; dedupe_key: string; citations: Row[]; proposal: { type: string } }>;
 const money = (amount: number) => formatVnd(vnd(amount), 'vi');
 const LINK = /\]\((esta:\/\/[^)]+)\)/g;
 
+let prepared: PreparedJob;
 let run: SessionRun;
 let result: { iso_week: string; proposals: string[] };
 beforeAll(async () => {
+  prepared = await JOBS.weekly_review.handler.prepare({ db, job: job as never, jobDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: clockOn(WEEKLY_AS_OF) });
   run = await replaySession({ spec: JOBS.weekly_review, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), caps: prepared.caps ?? {} }, DEFAULT_REPLAY_DIR);
   result = (await prepared.finish({ reply: run.result.text, model: run.model })) as typeof result;
 });

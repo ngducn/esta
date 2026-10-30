@@ -29,7 +29,6 @@ const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
   'vi-transfer-procedure': ['hai'],
   'vi-repair-first': ['hai'],
   'vi-raise-rent': ['Q7:', 'hai'],
-  'en-rent-by-year': ['hai'],
 };
 
 const reads = replayedReads();

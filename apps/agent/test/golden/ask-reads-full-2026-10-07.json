@@ -7340,5 +7340,34 @@
       "frontage_m": 8,
       "road_width_m": 6
     }
+  },
+  "property[\"07eb773b-2bc6-5a14-8745-f0f8af8028f4\"]": {
+    "id": "07eb773b-2bc6-5a14-8745-f0f8af8028f4",
+    "nickname": "Nhà phố Q7",
+    "code": "Q7",
+    "kind": "townhouse",
+    "useMode": "rental",
+    "legalStatus": "certified",
+    "coverPhotoPath": "0943e55d-b0a6-5aef-839d-07c8693c520e/07eb773b-2bc6-5a14-8745-f0f8af8028f4/nha-pho.avif",
+    "addressLine": "901 Demo Đường số 15",
+    "communeName": "Phường Tân Hưng",
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "certificateAddressText": "Số 901 Demo, đường số 15, Khu phố 1, Phường Tân Phong, Quận 7, Thành phố Hồ Chí Minh",
+    "legacyProvinceNames": [
+      "Thành phố Hồ Chí Minh"
+    ],
+    "searchText": "nha pho q7 q7 901 demo duong so 15 phuong tan hung thanh pho ho chi minh so 901 demo duong so 15 khu pho 1 phuong tan phong quan 7 thanh pho ho chi minh phuong tan hung quan 7 thanh pho ho chi minh phuong tan kieng quan 7 thanh pho ho chi minh phuong tan phong quan 7 thanh pho ho chi minh phuong tan quy quan 7 thanh pho ho chi minh",
+    "location": {
+      "lat": 10.7295,
+      "lng": 106.7058
+    },
+    "hasBoundary": false,
+    "ownerPartyIds": [
+      "5107e10c-018b-5f2d-ad73-f0ad36ca7467"
+    ],
+    "vacantSince": null,
+    "unitCount": 1,
+    "kindDetails": {}
   }
 }

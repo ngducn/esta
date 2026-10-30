@@ -77,7 +77,7 @@ Re-check the help center article before production deploy; record the date check
 | `ping` | Manual (Phase 0) | routine | `household_info` | 3 | 1 min |
 | `extract_document` | Upload in an extractable category | routine | Read (job dir only), `save_extraction` | 8 | 5 min |
 | `research_scan` | Daily 06:00 and manual | routine | WebSearch, WebFetch, `research_topics`, `recent_items`, `list_properties`, `add_research_item` | 40 | 10 min |
-| `portfolio_watch` | Daily 06:40 | routine | `watch_facts`, `create_item` | 6 | 3 min |
+| `portfolio_watch` | Daily 06:40 | routine | `watch_facts`, `create_item` | 8 | 3 min |
 | `morning_brief` | Daily 07:00 | routine | `watch_facts`, `recent_items`, `create_brief` | 6 | 3 min |
 | `weekly_review` | Sunday 08:00 | deep | All read tools, WebSearch, WebFetch, `create_item`, `create_proposal` | 25 | 10 min |
 | `ask` | Message in the Trợ lý thread | routine (deep on request) | All read tools, `create_proposal`, `calculate` (P5-15), WebSearch and WebFetch (P5-14) | 15; 20 with web | 2 min a session, 3 min with web; twice that with the repair turn |
@@ -181,7 +181,7 @@ Rules live in `packages/core/watch` as a registry of pure functions over a snaps
 
 [app rule] W2 counts an invoice due today, so it covers today and the next 3 days. W3 counts a lease terminated on a future date as active until that date. W6 reads a renewal chain as one deposit: a renewed lease passes its held balance to its renewal (`renew_lease` writes no entries for the new lease), so W6 fires once the last lease of the chain has ended more than 14 days ago. W9 orders a tenant's invoices by due date, then period start, then id, and counts every invoice, so two short invoices of one month make the pair.
 
-The model receives the facts and writes one `agent_item` per action fact and one grouped item for watch and info facts. It may merge related facts but may not add facts.
+The model receives the facts and writes one `agent_item` per action fact, relating that fact alone, and one grouped item for watch and info facts. It may merge related watch and info facts in the grouped item but may not add facts. An action item takes its dedupe key from its one fact, so a rerun the same day finds the item it wrote however the model orders its calls. [app rule] `maxTurns` is 8: a day with three action facts takes six turns, which leaves one for the number guard's repair turn and one for a refused call.
 
 ### 5.4 morning_brief
 
@@ -232,7 +232,7 @@ Tone: calm, polite, concise, like a careful family accountant. No exclamation ma
 Today is {local_date} in Asia/Ho_Chi_Minh.
 ```
 
-Each job appends its own task section and output schema. The ask job replaces `Write in {locale}` with `Write in the language of the question, Vietnamese when unsure`, so an English question gets an English answer (§7.4 question 10). Its task section opens the scope of §5.6 step 7, lists the fact records of §6.4 that exist before the first turn (her typed numbers, the topic's records), and replaces `You may only use the tools provided` with a line that still forbids any number outside a fact source.
+Each job appends its own task section and output schema. The ask job replaces `Write in {locale}` with `Write in the language of the question, Vietnamese when unsure`, so an English question gets an English answer (§7.4 question 10). Esta adds one line to the prompt only when the message is clearly English, with at least three English words and twice as many as Vietnamese ones (any mark makes a word Vietnamese), or when it holds no Vietnamese word and the household reads English. Before it counts, Esta removes the household's own labels from the message: property nicknames, unit labels, party names and the place names of the property addresses (a place also without its type word, such as `Thủ Đức`), matched whole-word without regard to case or marks, the longest first, because a name is neither language. Mẹ's code-mixed and unmarked Vietnamese keeps the Vietnamese default (`apps/agent/src/prompts/language.ts`, `apps/agent/src/tools/household-labels.ts`, #348). Its task section opens the scope of §5.6 step 7, lists the fact records of §6.4 that exist before the first turn (her typed numbers, the topic's records), and replaces `You may only use the tools provided` with a line that still forbids any number outside a fact source.
 
 ### 6.2 Output schemas
 
