@@ -1,12 +1,13 @@
 import { isoDate } from '@esta/core/date';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import type { Locale } from '@esta/core/format';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { portfolioWatchRequest } from '../../src/jobs/portfolio-watch';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
-import { DEFAULT_REPLAY_DIR, writeRecording } from '../../src/replay/store';
+import { DEFAULT_REPLAY_DIR, recordingSchema, writeRecording } from '../../src/replay/store';
 import { canonicalInput, replaySession } from '../../src/sdk/session';
 import { fakeDb, type Recorded } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
@@ -18,10 +19,10 @@ const clock = clockOn('2026-10-07T06:45:00+07:00');
 
 type Row = Record<string, unknown>;
 
-function setup(tables: Record<string, Row[]> = { agent_items: [] }, jobId = 'job-1') {
+function setup(tables: Record<string, Row[]> = { agent_items: [] }, jobId = 'job-1', locale: Locale = 'vi') {
   const writes: Recorded[] = [];
   const db = fakeDb(tables, writes);
-  const prepared = portfolioWatchRequest({ db, householdId: HOUSEHOLD, jobId, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels }) });
+  const prepared = portfolioWatchRequest({ db, householdId: HOUSEHOLD, jobId, locale, asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels }) });
   return { tables, writes, prepared, call: toolCaller(prepared) };
 }
 
@@ -99,6 +100,40 @@ describe('portfolio_watch in replay on the full seed at 2026-10-07 (AGENT.md §7
     await replay(prepared, dir);
     expect(items(tables).map((item) => item.title)).toEqual(['Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày']);
     await expect(prepared.finish({ reply: 'xong', model: 'test' })).rejects.toThrow(/f2 \(W3\), f6 \(W6\)/);
+  });
+});
+
+describe('portfolio_watch before the live run (#318)', () => {
+  it('leaves room under the turn limit for the repair turn the guard allows and one refused note', () => {
+    const dir = join(DEFAULT_REPLAY_DIR, 'portfolio_watch');
+    const recordings = readdirSync(dir).map((file) => recordingSchema.parse(JSON.parse(readFileSync(join(dir, file), 'utf8'))));
+    expect(recordings.length).toBeGreaterThan(0);
+    for (const recording of recordings) expect(recording.numTurns + 2, recording.label).toBeLessThanOrEqual(JOBS.portfolio_watch.maxTurns);
+  });
+
+  it('replays an English household from its own recording and writes its notes in English', async () => {
+    const { tables, prepared } = setup({ agent_items: [] }, 'job-1', 'en');
+    const run = await replay(prepared);
+    await prepared.finish({ reply: run.result.text, model: run.model });
+    const written = items(tables);
+    expect(written.map((item) => item.severity)).toEqual(['action', 'action', 'action', 'watch']);
+    expect(written[0]?.title).toMatch(/overdue/);
+    expect(written.map((item) => `${String(item.title)} ${String(item.body_md)}`).join(' ')).not.toMatch(/quá hạn|hợp đồng|để trống|tiền cọc/i);
+  });
+
+  it('tells each action fact in one note, so a rerun that groups them another way adds no copy', async () => {
+    const tables: Record<string, Row[]> = { agent_items: [] };
+    for (const [jobId, groups] of [['job-1', [['f1', 'f2'], ['f6']]], ['job-2', [['f2', 'f1'], ['f6']]]] as const) {
+      const { call } = setup(tables, jobId);
+      await call('watch_facts');
+      for (const group of groups) {
+        const told = { title: 'Việc cần làm', body_md: group.map((handle) => `{{${handle}.place_label}}`).join(', '), related: [...group] };
+        if ((await call('create_item', told)).isError) for (const handle of group) await call('create_item', { ...told, body_md: `{{${handle}.place_label}}`, related: [handle] });
+      }
+    }
+    const tellings = items(tables).flatMap((item) => (item.related as { facts: Array<{ subject_key: string }> }).facts.map((fact) => fact.subject_key));
+    expect(tellings).toHaveLength(3);
+    expect(new Set(tellings).size).toBe(3);
   });
 });
 
