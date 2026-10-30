@@ -1,7 +1,7 @@
 import type { McpSdkServerConfigWithInstance, Options } from '@anthropic-ai/claude-agent-sdk';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,7 +9,7 @@ import { JOBS } from '../jobs/registry';
 import { canonicalizer, inputHash } from '../replay/canonicalize';
 import { writeRecording } from '../replay/store';
 import { estaTool, mcpToolName, ToolRejection } from '../tools/server';
-import { canonicalInput, liveSession, replaySession, SessionGoneError, type SessionRequest } from './session';
+import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest } from './session';
 
 const answersToModel: { isError: boolean; text: string }[] = [];
 
@@ -111,5 +111,22 @@ describe('a turn that resumes a session', () => {
 
   it('in replay, says the session is gone when its config dir does not hold it, before it looks for a recording', async () => {
     await expect(replaySession({ ...resuming(), configDir: join(jobDir, 'moved-away') }, jobDir)).rejects.toBeInstanceOf(SessionGoneError);
+  });
+});
+
+describe('pruneTranscripts (#340)', () => {
+  it("keeps the one session a conversation resumes, live or replayed, and leaves what is not a session's", () => {
+    const configDir = mkdtempSync(join(tmpdir(), 'esta-prune-'));
+    const project = join(configDir, 'projects', '-tmp-esta-agent-conversations-c1');
+    const KEEP = 'b7e0c1d2-0000-4000-8000-000000000002';
+    const OLD = 'b7e0c1d2-0000-4000-8000-000000000001';
+    for (const dir of [join(project, OLD), join(project, KEEP), join(project, 'memory'), join(configDir, 'replay-sessions')]) mkdirSync(dir, { recursive: true });
+    for (const file of [join(project, `${OLD}.jsonl`), join(project, `${KEEP}.jsonl`), join(configDir, 'replay-sessions', 'replay-0123456789abcdef.json'), join(configDir, 'replay-sessions', 'replay-fedcba9876543210.json')]) writeFileSync(file, '{}\n');
+    pruneTranscripts(configDir, KEEP);
+    expect(readdirSync(project).toSorted()).toEqual([KEEP, `${KEEP}.jsonl`, 'memory']);
+    expect(readdirSync(join(configDir, 'replay-sessions'))).toEqual([]);
+    pruneTranscripts(configDir, 'replay-fedcba9876543210');
+    expect(readdirSync(project)).toEqual(['memory']);
+    rmSync(configDir, { recursive: true, force: true });
   });
 });
