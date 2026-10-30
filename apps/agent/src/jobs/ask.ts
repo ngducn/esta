@@ -1,4 +1,5 @@
 import type { Clock } from '@esta/core';
+import { noteRelated } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import type { Json, TablesUpdate } from '@esta/db';
@@ -13,7 +14,6 @@ import { householdLocale } from '../tools/household-info';
 import { readTools } from '../tools/read-tools';
 import { estaTool } from '../tools/server';
 import { loadTopic, type AskTopic } from '../tools/topic-reads';
-import { noteRelated } from '@esta/core/assistant';
 import { answerStream, type Answer } from './askStream';
 import { InvalidJobError } from './extract-document';
 import type { AgentJob, JobContext, PreparedJob } from './registry';

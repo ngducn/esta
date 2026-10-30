@@ -1,6 +1,6 @@
 import type { WallClockStamp } from '@esta/core/agent';
-import { getTranslations } from 'next-intl/server';
 import { Reply } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { AssistantMonogram } from '@/components/assistant/monogram';
 import { stampLabel } from '@/components/assistant/worker-status-line';

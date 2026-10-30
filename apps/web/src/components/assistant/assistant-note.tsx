@@ -1,6 +1,6 @@
 import { formatDate } from '@esta/core/format';
-import { getLocale, getTranslations } from 'next-intl/server';
 import { Reply } from 'lucide-react';
+import { getLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';

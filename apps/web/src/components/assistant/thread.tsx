@@ -1,5 +1,6 @@
 import { businessDate, type Instant, type IsoDate } from '@esta/core';
 import { wallTime } from '@esta/core/agent';
+import type { Suggestion } from '@esta/core/assistant';
 import { formatDayMonth } from '@esta/core/format';
 import { visibleText } from '@esta/core/guard';
 import { PROPOSAL_TYPES } from '@esta/core/proposals';
@@ -11,9 +12,8 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import type { ConversationMessage } from '@/server/agent/conversations';
 import { isOpen, type InboxNote } from '@/server/agent/items';
 import type { ProposalDetails } from '@/server/agent/proposal-details';
-import type { TopicChoice } from '@/server/agent/topic';
-import type { Suggestion } from '@esta/core/assistant';
 import type { Thread, ThreadEntry } from '@/server/agent/thread';
+import type { TopicChoice } from '@/server/agent/topic';
 import type { ReminderLabels } from '@/server/reminders/board';
 import { AnswerStream } from './answer-stream';
 import { AnswerView } from './answer-view';
