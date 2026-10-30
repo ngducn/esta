@@ -165,7 +165,7 @@ function Answer({ message, time, t, ask }: { message: ConversationMessage; time:
       )}
       {message.status === 'done' ? (
         <CopyAnswer
-          text={visibleText(message.content, { tables: true })}
+          text={visibleText(message.content, { tables: true, paragraphs: true })}
           labels={{ copy: t('copyAnswer'), copyLabel: t('copyAnswerLabel', { time }), copied: t('answerCopied'), failed: t('copyFailed') }}
         />
       ) : null}

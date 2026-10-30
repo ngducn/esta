@@ -47,17 +47,11 @@ function pieces(node: Nodes): Piece[] {
   }
 }
 
-/**
- * What `SafeMarkdown` shows for `markdown`, one block per line, raw (no normalization, invisible characters kept):
- * text, code, raw HTML as its literal text, links as their text, and an ordered list's numbers when it does not
- * start at 1. It also keeps what another renderer may show (image alt text, link and image titles, definition
- * titles, a code fence's info string) and never a URL, which may hold record ids. With `tables`, it reads GFM tables
- * as an answer renders them, one row per line, so a `|` inside a link target splits the cell there too.
- */
-export function visibleText(markdown: string, { tables = false }: { readonly tables?: boolean } = {}): string {
+/** The text of `node`, one block per line. */
+function lines(node: Nodes): string {
   const out: string[] = [];
   // An explicit stack, because a model can nest quotes and lists deeper than the call stack goes.
-  const pending: Piece[] = [tables ? fromMarkdown(markdown, { extensions: [gfmTable()], mdastExtensions: [gfmTableFromMarkdown()] }) : fromMarkdown(markdown)];
+  const pending: Piece[] = [node];
   for (let piece = pending.pop(); piece !== undefined; piece = pending.pop()) {
     if (typeof piece === 'string') out.push(piece);
     else pending.push(...(BLOCKS.has(piece.type) ? [BREAK, ...pieces(piece), BREAK] : pieces(piece)).reverse());
@@ -67,4 +61,21 @@ export function visibleText(markdown: string, { tables = false }: { readonly tab
     .split(BREAK)
     .filter((block) => block.trim() !== '')
     .join('\n');
+}
+
+/**
+ * What `SafeMarkdown` shows for `markdown`, one block per line, raw (no normalization, invisible characters kept):
+ * text, code, raw HTML as its literal text, links as their text, and an ordered list's numbers when it does not
+ * start at 1. It also keeps what another renderer may show (image alt text, link and image titles, definition
+ * titles, a code fence's info string) and never a URL, which may hold record ids. With `tables`, it reads GFM tables
+ * as an answer renders them, one row per line, so a `|` inside a link target splits the cell there too. With
+ * `paragraphs`, a blank line parts the top-level blocks, as a copied message keeps them apart when it is pasted.
+ */
+export function visibleText(markdown: string, { tables = false, paragraphs = false }: { readonly tables?: boolean; readonly paragraphs?: boolean } = {}): string {
+  const root = tables ? fromMarkdown(markdown, { extensions: [gfmTable()], mdastExtensions: [gfmTableFromMarkdown()] }) : fromMarkdown(markdown);
+  if (!paragraphs) return lines(root);
+  return root.children
+    .map(lines)
+    .filter((block) => block !== '')
+    .join('\n\n');
 }
