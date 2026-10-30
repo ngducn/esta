@@ -31,7 +31,7 @@ Any one of these makes a PR rigorous:
 | Independent review | One Sonnet review lane, no Supabase stack | One Sonnet live lane that drives the change in a browser | A Sonnet live lane, an Opus adversarial audit lane, a regression lane that runs the same flow on `main`, and a second-opinion audit from a different model on the riskiest part (money math, a policy, a migration) |
 | Perf | None | Lighthouse when the plan's perf box names the route | Lighthouse plus the plan's query and bench budgets, each on a quiet machine through `bin/heavy.sh` |
 | Fix rounds | One | One | Up to two, the playbook ceiling |
-| Merge | Root merges on a clean verdict | Root merges on a clean verdict | Root merges on a clean verdict. Ryan gets a short plain-language summary with the video link. Items on his interrogate list still wait for his click |
+| Merge | Root merges on a clean verdict | Root merges on a clean verdict | Root merges on a clean verdict and posts Ryan a short plain-language summary with the video link on the PR. Since 2026-10-30 nothing waits for his click (standing orders) |
 
 The video is a Playwright recording (`video: 'on'`) of the PR's main flow at 390x844. It is converted to a GIF when `ffmpeg` is available so it plays inline on GitHub, and it is published with `bin/pr-media.sh`.
 
@@ -74,7 +74,13 @@ Phase 1 closes with P1-03, which is rigorous because it is a phase exit. Phase 2
 | P5-06b | Confirm a reminder draft, a renewal, a rent change or a data issue | Rigorous | The assistant changes leases and money terms |
 | P5-07 | Ask the assistant questions | Standard | Read-only answers, guarded by P5-03 |
 | P5-08 | Weekly review, caps and diagnostics | Standard | Operator tooling |
-| P5-09 | Email the morning brief | Rigorous | Real email |
+| P5-12 | One Trợ lý thread for notes and her questions | Rigorous | Replaces two surfaces and adds a definer function that picks whose conversation a message joins |
+| P5-12b | Pinned items and `Sao chép`, only if P5-12 passes 800 lines | Standard | A screen over P5-12's data |
+| P5-13 | Reply to a note, ask about a property, suggested replies | Standard | Topics are checked in SQL; answers guarded as before |
+| P5-14 | Web lookups with quoted figures in the thread | Rigorous | Web search runs beside family data |
+| P5-15 | Her own numbers and `calculate` | Rigorous | Money arithmetic |
+| P5-16 | Pre-live lows | Rigorous | It edits `checkNote`, the number guard every assistant figure passes (#313, #314) |
+| P5-09 | Email a link to each new note | Rigorous | Real email |
 | P5-10 | Live run and north-star steps 7 and 9 | Rigorous | Whole flow |
 | P6-01 | Settings for household, members, bank accounts and the assistant | Rigorous | Roles and bank accounts |
 | P6-02 | Export all data and nightly backup | Rigorous | Data loss |

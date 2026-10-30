@@ -297,3 +297,38 @@ Operator's words, 2026-10-25: "merge them all for me please, then launch local f
 - The root lands the reviewed stack #322, #324, #330, #332, #334, #336 and #339, in order. Each one is a squash merge with `--match-head-commit` at a head whose `ci` is green and whose independent reviews are clean. After each merge, the next PR is brought onto main with a merge commit built from a clean rebase tree, retargeted to main, and its CI is rerun.
 - PRs still under review (#341, #342) are not part of this grant.
 - After the merges, the root starts the app locally for Ryan on his slot 6.
+
+## Update 2026-10-25 17:10 +07
+
+Operator's words, 2026-10-25: "why is the Hoi tab, not like LLMs regular chats?", "she type, also Tro ly should be a combination of both, like Grok Bot, or you, like think you can both be proactive, and she can be creative in asking you things", and "yeah replan the rest around this decision today, and work on it".
+
+- Trợ lý becomes one thread. Its notes (the brief, alerts with approvals, the weekly review and news) arrive as messages. Mẹ replies and asks anything in the same thread, and approval cards show inline. Thị trường stays a browse tab.
+- Numbers. The rule that the model never types a number stays. Three more fact sources are added: numbers Mẹ typed in the conversation, web numbers quoted verbatim from a page fetched in that conversation (shown with a source chip), and a calculate tool whose result is a fact with its working shown.
+- P5-09 shrinks to a "new message from Trợ lý" email that links into the thread.
+- The rest of Phase 5 is re-planned around the thread today. #341 and #342 stay as they are.
+
+## Update 2026-10-27 (Ryan: merge the reviewed stack, then stop)
+
+Ryan: "merge them all for me please, also report progress and overall feeling of the app for now, then stop, my weekly limit is running out lol". The grant covers #341, #342, #344, #347 and #350, each at its reviewed head with green `ci` at the exact landed head, restacked with merge commits and a patch-id check, never force-pushed. After landing, the run stops: the P5-13 owner (#352) pushes its work in progress and stops, and no new agents start until Ryan resumes the run.
+
+## Update 2026-10-30 (retro; Ryan: "i allow you to merge yourself")
+
+Ryan asked for a retro of the run so far and then for the run to change where it could do better. These rules override any older brief or plan box.
+
+1. **The root merges.** The root merges a PR as soon as it has a clean independent verdict at its head and a green `ci` at the exact head. It restacks with merge commits and a patch-id check and never force-pushes. Nothing waits for Ryan's click: this replaces the plan sections' "wait for the operator's click". For a rigorous PR the root posts the plain-words summary and the video on the PR, then merges. Land bottom-up as each PR is ready, so no more than two reviewed PRs wait above main. `.claude/settings.local.json` allows `Bash(gh pr merge:*)`: call `gh pr merge` directly, not inside `timeout` or a script. CLAUDE.md's "Stop and ask Ryan" list is unchanged.
+2. **Prototype first.** Before building a new core surface or reshaping one that Mẹ uses daily, show Ryan a clickable prototype, or a live demo of what exists, and get his reaction. Then cut the slices. Why: Hỏi shipped as its own tab in three PRs, and two days later Ryan redirected it to one thread.
+3. **Real use early.**
+   - Every assistant slice runs a small live check before code-ready, beside its replay goldens: a handful of its own prompts through the real model on its slot, under spike rules and never in CI. Why: the guard probe found 8 wrong rejects in 27 answers that a week of replays had hidden.
+   - After P5-13 lands, and before more assistant features, Mẹ uses the thread for a short session on Ryan's phone over `pnpm dev:lan`. The root prepares the build and a one-page script of things to try. Ryan runs the session, and what she trips on becomes the next slices.
+4. **Repeat findings become checks.** The defect classes reviewers kept finding are now in owner-brief.md under "Known defect classes". Owners check them before code-ready, and reviewers attack them first. #353 adds the first two as CI checks in the next cleanup round.
+5. **Order when the run resumes:**
+   1. finish P5-13;
+   2. Mẹ's session;
+   3. one cleanup round, P5-16 widened to the lows Mẹ can see, with #353 first;
+   4. P5-09, P5-14 and P5-15;
+   5. P5-10, the live run;
+   6. Phase 6.
+6. **Model per role.**
+   - Opus: rigorous owners, adversarial audits and hard design.
+   - Sonnet: standard and lean owners, second opinions, scoped fix readers, live lanes and docs.
+   - Why: an Opus owner costs about 10 points an hour, and the weekly limit stopped the run on 2026-10-27.

@@ -1,73 +1,56 @@
 # Resume notes for the Esta v1 run
 
-Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read:
-- `docs/plan/trail/standing-orders.md` (newest updates first; 2026-10-24 22:05 is the latest);
-- `verification-tiers.md`, `owner-brief.md` and `lane-brief.md`;
+Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full, **only when Ryan says to resume**. Read the 2026-10-30 retro rules in standing-orders.md first (standing order 2026-10-27: his weekly limit ran low, so the run stopped). Read:
+- `docs/plan/trail/standing-orders.md` (newest first: 2026-10-27 merge-and-stop, 2026-10-25 17:10 thread direction);
+- `verification-tiers.md`, `owner-brief.md`, `lane-brief.md`;
 - the tail of `decisions.tsv`;
-- `ARCHITECTURE.md`, `docs/spec/AGENT.md` (§6.3 is the placeholder guard) and `docs/plan/STATUS.md`.
+- `ARCHITECTURE.md`, `docs/spec/AGENT.md` (§5.6 thread, §6.3 guard, §6.4 fact sources) and `docs/plan/STATUS.md`.
 
-Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claude/orchestrate/esta/todo-1023.md`. Review-gate media is under `~/.claude/orchestrate/esta/media/<PR code>/`.
+Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claude/orchestrate/esta/todo-1023.md`. Media is in `~/.claude/orchestrate/esta/media/<PR code>/`.
 
-## Where the run is (written 2026-10-25 03:25 +07)
+## Where the run is (written 2026-10-27 +07)
 
-**Phase 5 (the assistant) is under way.** Main is 4272e926 plus this handoff. Five Phase 5 PRs have merged: the watch rules, the number guard, Hộp thư and the morning watch job. Usage is 20.6% of the window ending 05:00 +07 (22:00Z).
+**Ryan granted the merge of #341, #342, #344, #347 and #350 on 2026-10-27, and all five are on main** (#341 53131220, #342 fdd30f69, #347 554639c1, #350 f051352b, #344 b4bcf271). The root landed them with `land3.sh` (scratchpad):
+- each PR's own diff goes onto main with a patch-id check, then a merge commit, green `ci` at that head, and a squash merge;
+- #344 goes last, with one hand resolution in AGENT.md's table rows: keep #341's `deferred_until` and `state`, and #347's own-conversation reads.
 
-**Merged since the last handoff (2026-10-24 and 25):**
-
-| PR | What it does |
-| --- | --- |
-| #295 | Inter font, weights 400/500/600 (ceiling 600) |
-| #294 | Receiving bank accounts and a sample QR |
-| #299 | The shared action hook (#193) |
-| #300 | Node pin 24.22.0; closes #292 and #127 |
-| #302 | Lows batch 1 |
-| #305 | CI runs the web integration tests in the db job |
-| #306 | Watch rules W1 to W11 (P5-02) |
-| #311 | Placeholder number guard (P5-03a) |
-| #312 | Hộp thư: read, dismiss with undo, operator-only notes (P5-03c) |
-| #315 | The 06:40 morning watch job and the "Theo dõi buổi sáng" card (P5-03b) |
-
-**Ryan's words since then:**
-- "on QR can we get a feature where we can setup the account QR?" (done, #294); "make it a bit cleaner with Geist font or something" (done as Inter, #295); "40% this time, be concise".
-- "yeah cut off Graphify" (removed).
-- "ok continue please, what is progress now, when until i see some UI ?"
-- Number guard: chose "Placeholders (Recommended)". The model writes `{{fN.field}}` and Esta fills every number.
-- After the feature brainstorm: "skip questions and propose a list of features you think can be wow here". The root proposed three for Phase 5: 1 rent that collects itself (match bank SMS or a screenshot by the ESTA memo), 2 tenant reminders on autopilot (one-tap "Gửi tất cả" through Zalo), and the brief reframe (lead with what Trợ lý already handled, then one or two yes/no questions). **No answer yet.**
+**What these bring to main:**
+- #341 spending caps: daily caps per job kind, the paused line, Thử lại (P5-08a).
+- #342: the Sunday weekly review and the operator diagnostics page (P5-08b).
+- #344: the plan re-cut around one Trợ lý thread (P5-12 to P5-16, P5-09 shrunk).
+- #347: one Trợ lý thread replacing Hộp thư and Hỏi (P5-12). It also adds a creator-only privacy migration, the busy rule across segments, and the open prompt with the guard probe.
+- #350: the pinned Cần xử lý list and Sao chép (P5-12b).
 
 ## Open items
 
-- **#319 morning brief (P5-04), head e0fad32d, merge-ready.** It has the operator review gate, so Ryan merges it. Opus BLOCK on bold at 700 was fixed in the one fix-forward, and the root read the fix diff. Sonnet CLEAN. Perf PASS on all four rules. 12 lanes and a 36 s video are in `media/P5-04/` and were sent to Ryan. Its lows are in #321 and #320. Next: wait for Ryan's click. If he wants the reframe, it is a reorder of `BRIEF_SECTIONS` before merge.
-- **#322 market and legal news scan (P5-05), owner running (Opus, slot 2, `briefs/p5-05.md`).** It is stacked on #319's branch `esta/p5-04-morning-brief`. After #319 squash-merges, the owner rebases with `git rebase --onto origin/main e0fad32d` and retargets the base to main. Next: on code-ready, check the tier, then run the reviews (Opus audit live on slot 3 plus a Sonnet second opinion when rigorous).
-- **Pre-live lows, to fix before the first live run (P5-10):** #318 (watch job turn limit, en recording, rerun duplicates), #321 (brief), #314 (guard false positives), #313.
-- **After P5-05:** P5-06 (proposals, depends on P5-04), then P5-07 to P5-10, then Phase 6.
+- **P5-13, reply to a note, ask about a property, suggestion chips (#352, branch esta/p5-13-topics).**
+  - Paused by Ryan's order at b816eb8d, 688 of 800 product lines, all features built (chips not cut). Its notes are in `/tmp/owner-p5-13/RESUME-13.md`.
+  - Done: the migration and pgTAP for `p_topic`, the topic preload, T3/T4 goldens, the SUGGESTIONS registry.
+  - Left: chip recordings, the e2e extension, heavy checks, screenshots and the PR body; then the rigorous reviews.
+  - Next: a fresh Opus owner on slot 2 from `briefs/p5-13.md` plus RESUME-13.md. Restack onto main first, since its base #350 has landed.
+- **After P5-13 (standing order 2026-10-30):** Mẹ's session on Ryan's phone (the root prepares the build and a one-page script), then one cleanup round (P5-16 widened to the lows Mẹ can see, #353 first), then P5-09 (notice email), P5-14 (web quotes, `quote_page`) and P5-15 (typed numbers, `calculate`), then P5-10 (live run), then Phase 6.
 
-## Waiting for Ryan
+## Waiting for Ryan (defaults apply)
 
-1. Merge #319 (review gate).
-2. The brainstorm items 1, 2 and the reframe: add them to the Phase 5 plan as new slices?
-3. Earlier: the bank and number lock default (#294), #139 advance payment, #308 (W9 same-month rule), `ESTA_SLOT=6 pnpm db:reset` for his slot 6 Home ZodError (his stack is missing migrations 601000 to 601200; the root has not reset it), and Phase 3's two-bank-app VietQR scan and the Mom test.
-4. Older questions: STATUS.md "Waiting for Ryan".
+1. Thread per person (default) or one shared family thread.
+2. One email per brief and per urgent note, per PLT-4 (default). The planner recommends one combined email a morning instead.
+3. D9 wording stays (the thread counts as the in-app inbox).
+4. #351: should a newer note about the same thing replace the older one in Cần xử lý? Recommended: yes.
+5. Merges: settled on 2026-10-30. Ryan lets the root merge itself, and `.claude/settings.local.json` allows `gh pr merge`.
 
 ## Rules added this session
 
-- **Placeholders** (standing order 2026-10-24 22:05). The model never types a number. Every write tool (`create_item`, `create_brief`) goes through `guardedWriter` with the run's FactSheet. Recordings are hand-written and labelled as such until P5-10.
-- **Typography.** Inter, weight ceiling 600. `b, strong` are 600 in the base CSS, and a test enforces both (`globals-css.test.ts`).
-- **Stacking.** A PR behind an operator review gate does not block the next PR. Stack on its branch and rebase after the squash merge.
-- **Graphify removed.** Do not re-add unprompted.
-
-## How CI runs now
-
-Actions runs on every PR push; check it with `timeout 30 gh pr checks <n>`. The db job also runs `pnpm --filter web test:integration`. Rerun failed jobs once on a 502 or `toomanyrequests` (#310). The local fallback is `tools/ci-local.sh`.
+- No force-push. Restack with commit-tree merge commits plus a patch-id check. When a 3-way merge conflicts on adjacent edits, apply the PR's own diff (`git diff prev head | git apply --cached` on a temp index) instead.
+- The number rule beats a false reject: compounds such as `hai bên` and `ba mẹ` stay number words, and Trợ lý rewords.
+- Each member reads only her own conversations and their audit rows. The operator does not either.
 
 ## Budget
 
-Stay below 40% of Ryan's /usage per 5-hour window: stop spawning at 28% and pause owners at 34% on `usage-pct.sh`. Never spawn in the first 20 minutes of a window. An Opus owner costs about 10 points an hour. A rigorous review pair (Opus plus Sonnet) costs about 5.
+The cap is 60% per 5-hour window: stop spawning at 48% and pause owners at 54%. Ryan's **weekly** limit is the binding constraint now. Resume only on his word.
 
 ## Gotchas
 
-- Every e2e spec that starts the agent worker must end with `stopAndForget` (`e2e/helpers/agent-worker.ts`). A stale heartbeat puts the offline banner on later specs.
-- On the dev server, the upload specs sometimes see two "Đã lưu" toasts (#115, #316). They pass on the production build that CI uses (`ESTA_E2E_SERVER=build`).
-- Slot 6 is Ryan's. Slot 4 is never used. Owners use slot 2 and reviewers slot 3.
-- After a Mac restart, Docker Desktop does not start on its own (`open -a Docker`).
-- Integration test files read their lane from the registry in `apps/web/src/test`. A new file must be registered.
-- `gh` calls can hang. Wrap them in `timeout`. Use `<<'EOF'` for heredocs that contain backticks.
+- zsh reads `$var:r` in a refspec as a modifier. Use `${var}:` or literal SHAs.
+- A PR with a merge conflict gets no `pull_request` CI run. When "no checks" appears, look at `mergeStateStatus`.
+- Owners in git-excluded worktrees keep their `decisions.tsv` rows locally. The root merges those rows into main.
+- Slot 6 is Ryan's, slot 5 holds his test app, and slot 4 is never used.
