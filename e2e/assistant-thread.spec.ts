@@ -527,11 +527,11 @@ test('Mẹ starts a reply, taps Bỏ, and her follow-up joins the open conversat
   await expect(page.getByTestId('question').last().getByTestId('question-topic')).toHaveCount(0);
 });
 
-test('the database refuses a topic she cannot open: another household’s note or property, an operator note, a forged kind', async ({ page }) => {
+test('the database refuses a topic she cannot open (another household’s note or property, an operator note, a forged kind) and a second topic while one streams', async ({ page }) => {
   await open(page, `me.lane${TOPIC_LANE}@demo.esta.test`, 'light', DESKTOP);
   await freshThread(page, 'me', TOPIC_LANE);
-  const ask = (topic: unknown) =>
-    memberCall(page, 'POST', 'rpc/ask_in_thread', { p_household_id: laneHousehold(TOPIC_LANE), p_question_id: crypto.randomUUID(), p_question: LATE_COUNT, p_topic: topic });
+  const ask = (topic: unknown, question = LATE_COUNT) =>
+    memberCall(page, 'POST', 'rpc/ask_in_thread', { p_household_id: laneHousehold(TOPIC_LANE), p_question_id: crypto.randomUUID(), p_question: question, p_topic: topic });
   const forbidden = { code: '42501', message: 'ESTA_FORBIDDEN' };
   const invalid = { code: '22023', message: 'ESTA_ASK_INVALID' };
   for (const [topic, refusal] of [
@@ -546,4 +546,10 @@ test('the database refuses a topic she cannot open: another household’s note o
     expect(await refused.json()).toMatchObject(refusal);
   }
   expect(await memberRest<unknown[]>(page, 'GET', 'messages?select=id'), 'no message was written').toEqual([]);
+
+  const both = await Promise.all([ask({ kind: 'item', id: NOTES.overdue.id }), ask({ kind: 'property', id: laneProperty(TOPIC_LANE, 'bao-loc') }, MORTGAGE)]);
+  expect(both.filter((response) => response.ok()), 'two topics sent at once: one asks, though each starts its own segment').toHaveLength(1);
+  expect(await both.find((response) => !response.ok())?.json()).toMatchObject({ code: '55000', message: 'ESTA_ASK_BUSY' });
+  expect(await memberRest<unknown[]>(page, 'GET', 'messages?role=eq.user&select=id')).toHaveLength(1);
+  await expect.poll(async () => (await memberRest<{ status: string }[]>(page, 'GET', 'messages?role=eq.assistant&select=status'))[0]?.status, { timeout: 30_000 }).toBe('done');
 });

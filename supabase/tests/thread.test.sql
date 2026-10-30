@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(46);
+select plan(48);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select set_config('esta.actor', 'system:test', true);
@@ -194,6 +194,13 @@ select tests.act_as('admin.a@test.esta.test');
 select isnt(
   public.ask_in_thread(:'a', '00000000-0000-4000-8000-0000000f0301', 'Đăng nhập lại thế nào?', false, '{"kind": "item", "id": "00000000-0000-4000-8000-0000000f0a02"}'),
   null, 'an operator replies to an operator note');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0302', 'Câu hỏi', false, '{"kind": "property", "id": "00000000-0000-4000-8000-0000000f0a11"}') $$, :'a'),
+  '55000', 'ESTA_ASK_BUSY', 'a topic waits while his last answer streams, though it would start a new segment');
+reset role;
+select is(
+  (select count(*)::int from public.messages where id = '00000000-0000-4000-8000-0000000f0302'), 0,
+  'and writes no message');
 
 select * from finish();
 rollback;
