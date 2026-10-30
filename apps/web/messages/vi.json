@@ -2016,7 +2016,7 @@
     "readOn": "Nhập ngày {date}",
     "notNumber": "Nhập số trên đồng hồ, không có phần lẻ.",
     "belowPrevious": "Thấp hơn chỉ số tháng trước ({reading, number}). Kiểm tra lại.",
-    "anomaly": "Cao gấp 3 lần mức thường ({usual, number} {kind, select, electricity {kWh} water {m³} other {đơn vị}} mỗi tháng)",
+    "anomaly": "{basis, select, rooms {Cao gấp 3 lần các phòng khác ({usual, number} {kind, select, electricity {kWh} water {m³} other {đơn vị}} tháng này)} other {Cao gấp 3 lần mức thường ({usual, number} {kind, select, electricity {kWh} water {m³} other {đơn vị}} mỗi tháng)}}",
     "save": "Lưu chỉ số",
     "saving": "Đang lưu…",
     "saved": "Đã lưu chỉ số tháng {month}. {issued, plural, =0 {Chưa có hóa đơn nào phát hành.} other {Đã phát hành # hóa đơn.}}",

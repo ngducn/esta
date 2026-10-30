@@ -2016,7 +2016,7 @@
     "readOn": "Entered {date}",
     "notNumber": "Enter the number on the meter, with no decimals.",
     "belowPrevious": "Lower than last month's reading ({reading, number}). Check it again.",
-    "anomaly": "Over 3 times the usual ({usual, number} {kind, select, electricity {kWh} water {m³} other {units}} a month)",
+    "anomaly": "{basis, select, rooms {Over 3 times the other rooms ({usual, number} {kind, select, electricity {kWh} water {m³} other {units}} this month)} other {Over 3 times the usual ({usual, number} {kind, select, electricity {kWh} water {m³} other {units}} a month)}}",
     "save": "Save readings",
     "saving": "Saving…",
     "saved": "Saved the readings for {month}. {issued, plural, =0 {No bill issued yet.} one {# bill issued.} other {# bills issued.}}",
