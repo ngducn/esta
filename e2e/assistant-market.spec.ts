@@ -98,12 +98,15 @@ test('in English at 130% text, Thị trường reads in English, keeps dates as 
 
 const SCAN_FAILED = 'Trợ lý chưa đọc được tin thị trường hôm nay';
 
-/** A news scan for `day` that failed for good at `failedAt`, with the Thử lại item the worker leaves (AGENT.md §9). */
+/**
+ * A Thử lại run of the news scan for `day` that failed for good at `failedAt`, with the Thử lại item the worker leaves
+ * (AGENT.md §9). It is a retry, as the scheduler's own run of the day already holds the day's key.
+ */
 async function failedScan(page: Page, name: string, day: string, failedAt: string) {
   const household_id = seedId(`seed:household:lane-${LANE}`);
   const job = seedId(`seed:e2e:${name}:lane-${LANE}`);
   const key = `job_failed:research_scan:${day}:${job}`;
-  await serviceUpsert(page, 'agent_jobs', { id: job, household_id, kind: 'research_scan', idempotency_key: `research_scan:${household_id}:${day}`, status: 'failed', attempts: 4, run_after: failedAt, finished_at: failedAt });
+  await serviceUpsert(page, 'agent_jobs', { id: job, household_id, kind: 'research_scan', idempotency_key: `research_scan:${household_id}:${day}:retry:1`, status: 'failed', attempts: 4, run_after: failedAt, finished_at: failedAt });
   await serviceUpsert(page, 'agent_items', { household_id, kind: 'alert', severity: 'info', title: SCAN_FAILED, proposal: { type: 'retry_job', params: { job_id: job }, min_role: 'admin' }, dedupe_key: key, job_id: job, created_at: failedAt });
   return {
     item: `agent_items?dedupe_key=eq.${key}`,
