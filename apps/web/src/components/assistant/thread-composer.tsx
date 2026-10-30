@@ -45,7 +45,7 @@ export function ThreadComposer({
   const [message, setMessage] = useState('');
   const [deep, setDeep] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const draft = useRef<{ readonly message: string; readonly questionId: string } | null>(null);
+  const ids = useRef(new Map<string, string>());
   const box = useRef<HTMLTextAreaElement>(null);
   const topicKey = topic === null ? null : JSON.stringify(topic.topic);
   useEffect(() => {
@@ -54,19 +54,19 @@ export function ThreadComposer({
   const disabled = pending || state !== 'ready';
   const dropTopic = () => router.replace('/assistant', { scroll: false });
 
-  const send = (text: string, about: ThreadTopic | null) => {
-    if (draft.current?.message !== text) draft.current = { message: text, questionId: crypto.randomUUID() };
-    const sent = draft.current;
+  const send = (text: string, about: ThreadTopic | null, fromBox: boolean) => {
+    const questionId = ids.current.get(text) ?? crypto.randomUUID();
+    ids.current.set(text, questionId);
     setError(null);
     run(
-      () => sendQuestion({ questionId: sent.questionId, question: text, deep, topic: about }),
+      () => sendQuestion({ questionId, question: text, deep, topic: about }),
       (result) => {
         if (!result.ok) {
           setError(result.reason === 'invalid' ? labels.long : result.reason === 'busy' ? labels.busy : labels.failed);
           return;
         }
-        draft.current = null;
-        setMessage('');
+        ids.current.delete(text);
+        if (fromBox) setMessage('');
         setDeep(false);
         if (topic === null) router.refresh();
         else dropTopic();
@@ -77,7 +77,7 @@ export function ThreadComposer({
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (message.trim() === '') setError(labels.empty);
-    else send(message, topic?.topic ?? null);
+    else send(message, topic?.topic ?? null, true);
   };
 
   const hint = error === null && state !== 'ready' ? labels[state] : null;
@@ -90,7 +90,7 @@ export function ThreadComposer({
         <ul aria-label={suggestions.label} data-testid="composer-suggestions" className="flex flex-wrap gap-2">
           {suggestions.items.map((item) => (
             <li key={item.text} className="max-w-full">
-              <button type="button" onClick={() => send(item.text, item.topic)} disabled={disabled} data-testid="composer-suggestion" className={buttonVariants({ variant: 'outline', className: 'h-auto max-w-full text-left whitespace-normal' })}>
+              <button type="button" onClick={() => send(item.text, item.topic, false)} disabled={disabled} data-testid="composer-suggestion" className={buttonVariants({ variant: 'outline', className: 'h-auto max-w-full text-left whitespace-normal' })}>
                 {item.text}
               </button>
             </li>

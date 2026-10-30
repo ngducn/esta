@@ -116,4 +116,32 @@ describe('the reply box', () => {
     rerender(<ThreadComposer labels={labels} maxLength={2000} state="ready" suggestions={suggestions} topic={{ topic: NOTE_TOPIC, label: 'Trả lời: Phòng 5', clear: 'Bỏ', clearLabel: 'Bỏ chủ đề Phòng 5' }} />);
     expect(screen.queryByTestId('composer-suggestions')).toBeNull();
   });
+
+  it('a tap on a suggested reply leaves what she typed in the box, and the box still sends it', async () => {
+    sendQuestion.mockResolvedValue({ ok: true, value: { id: CONVERSATION } });
+    const suggestions = { label: 'Gợi ý trả lời', items: [{ text: 'Viết tin nhắn nhắc Hoàng Văn Em Demo', topic: NOTE_TOPIC }] };
+    render(<ThreadComposer labels={labels} maxLength={2000} state="ready" suggestions={suggestions} />);
+    fireEvent.change(field(), { target: { value: 'Mẹ đang viết dở câu này' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Viết tin nhắn nhắc Hoàng Văn Em Demo' }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(field().value).toBe('Mẹ đang viết dở câu này');
+    await write('Mẹ đang viết dở câu này');
+    expect(sent().map((raw) => raw.question)).toEqual(['Viết tin nhắn nhắc Hoàng Văn Em Demo', 'Mẹ đang viết dở câu này']);
+    expect(field().value).toBe('');
+  });
+
+  it('a message that failed keeps its id through a suggested reply, so the lost reply still asks once', async () => {
+    sendQuestion.mockResolvedValueOnce({ ok: false, reason: 'failed' }).mockResolvedValue({ ok: true, value: { id: CONVERSATION } });
+    const suggestions = { label: 'Gợi ý trả lời', items: [{ text: 'Viết tin nhắn nhắc Hoàng Văn Em Demo', topic: NOTE_TOPIC }] };
+    render(<ThreadComposer labels={labels} maxLength={2000} state="ready" suggestions={suggestions} />);
+    await write('Còn tháng 9 thì sao?');
+    fireEvent.click(screen.getByRole('button', { name: 'Viết tin nhắn nhắc Hoàng Văn Em Demo' }));
+    await waitFor(() => expect(sendQuestion.mock.calls.length).toBe(2));
+    await waitFor(() => expect(send().disabled).toBe(false));
+    fireEvent.click(send());
+    await waitFor(() => expect(sendQuestion.mock.calls.length).toBe(3));
+    const [first, chip, retry] = sent();
+    expect(retry?.questionId).toBe(first?.questionId);
+    expect(chip?.questionId).not.toBe(first?.questionId);
+  });
 });

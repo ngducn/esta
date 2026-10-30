@@ -19,6 +19,7 @@ const Q1 = 'Tháng này thu được bao nhiêu từ Dĩ An?';
 const SEPTEMBER = 'Còn tháng 9 thì sao?';
 const LATE_COUNT = 'Khách này trễ mấy lần rồi?';
 const MORTGAGE = 'Tài sản này đang thế chấp ở đâu?';
+const DRAFT = 'Mẹ đang viết dở câu này';
 const CHIPS = ['Viết tin nhắn nhắc Hoàng Văn Em Demo', 'Hoàng Văn Em Demo đã trễ mấy lần?', 'Có nên gia hạn hợp đồng Căn hộ Thủ Đức không?'];
 
 type AskedTopic = { readonly conversation_id: string; readonly topic_item_id: string | null; readonly topic_property_id: string | null };
@@ -132,8 +133,11 @@ test('Mẹ sees three suggested replies from her open notes, and one tap sends e
     expect(await latestTopic(page)).toMatchObject({ topic_item_id: NOTES.overdue.id });
     await shot(page, 'p5-13-suggestion-390x844-light');
 
+    const box = page.getByTestId('composer-message');
+    await box.fill(DRAFT);
     await chips.nth(1).click();
     await answered(page);
+    await expect(box, 'a tap on a suggested reply leaves what she was typing').toHaveValue(DRAFT);
     await expect(answer(page)).toContainText('Năm nay Hoàng Văn Em Demo đã trả trễ 5 trên 8 hóa đơn đã đến hạn, trung bình trễ 4 ngày.');
 
     await chips.nth(2).click();
