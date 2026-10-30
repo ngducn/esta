@@ -99,6 +99,21 @@ describe('add_research_item', () => {
     expect(await prepared.finish({ reply: 'xong', model: 'm' })).toMatchObject({ empty: true, dropped: [{ source_url: PAGE, reason: 'not_fetched' }] });
   });
 
+  it("confirms the date from the article's own date line, not from the site header's today (#329)", async () => {
+    const page = ['Thứ Tư, 07/10/2026 | Tin tức Demo', 'Thứ Hai, 05/10/2026, 08:30 (GMT+7)', PAGE_TEXT].join('\n');
+    const { call, items } = await scan({ pages: { [PAGE]: page } });
+    expect(JSON.parse((await call('add_research_item', item({ published_on: '2026-10-07' }))).text)).toMatchObject({ saved: false, dropped: 'date_unconfirmed' });
+    expect(await call('add_research_item', item())).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items().map(({ published_on }) => published_on)).toEqual(['2026-10-05']);
+  });
+
+  it('stores the link as the page was read, with its www. and trailing slash, and without tracking (#329)', async () => {
+    const link = 'https://www.tintuc.example.vn/vanh-dai-3/';
+    const { call, items } = await scan({ pages: { [link]: PAGE_TEXT } });
+    await call('add_research_item', item({ source_url: `${link}?utm_source=zalo#top` }));
+    expect(items()).toMatchObject([{ url_normalized: PAGE, source_url: link }]);
+  });
+
   it('drops a link stored before, under another spelling, and a title above 0.6 similar', async () => {
     const first = await scan();
     await first.call('add_research_item', item());
