@@ -207,6 +207,13 @@ export const ASK_CASES: readonly AskCase[] = [
       'Hợp đồng {{f8.property_label}} với {{f8.tenant_name}} hết hạn ngày {{f8.end_date_display}}, còn {{f8.days_until_end_display}} ngày. Tiền thuê hiện là {{f8.rent_display}} mỗi tháng, tiền cọc đang giữ {{f8.deposit_held_display}}.\n\nNăm nay {{f10.tenant_name}} đã trả trễ {{f10.paid_late_count_display}} trên {{f10.invoice_count_display}} hóa đơn, trung bình trễ {{f10.average_days_late_display}} ngày. Khách trả đủ nhưng hay trễ, nên nếu gia hạn, bạn có thể ghi rõ hạn đóng tiền và khoản phạt trả trễ trong hợp đồng mới. Gia hạn hay không là do bạn quyết định.\n\nXem [hợp đồng {{f8.property_label}}](f8) và [lịch sử trả tiền của {{f10.tenant_name}}](f10).',
   },
   {
+    id: 'seed10-reply-english',
+    question: 'Which rooms in Dĩ An are overdue?',
+    topic: OVERDUE_NOTE,
+    toolCalls: [],
+    reply: 'In {{f3.property_label}}, only {{f8.unit_label}} is overdue: {{f8.days_overdue_display}} days late, with {{f8.amount_display}} still owed.\n\nSee [the bill for {{f8.unit_label}}](f8).',
+  },
+  {
     id: 'seeded-segment-august',
     question: 'Còn tháng 8 thì sao?',
     today: isoDate('2026-10-08'),

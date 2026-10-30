@@ -75,6 +75,9 @@ type Asked = {
   readonly missing: string[];
 };
 
+const overdueInEnglish = () =>
+  `In Dãy trọ Dĩ An, only ${fact('q2', 'di-an units overdue')} is overdue: ${fact('q2', 'di-an days overdue')} days late, with ${money('q2', 'di-an amount overdue')} still owed.\n\nSee [the bill for ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`;
+
 const EXPECTED: Readonly<Record<string, () => string>> = {
   'q1-di-an-income': () => `Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in October 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
   'q1-deep': () => `Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in October 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
@@ -108,8 +111,8 @@ const EXPECTED: Readonly<Record<string, () => string>> = {
   'chip-renew-lease': () =>
     `Hợp đồng ${fact('q3', 'leases ending within 60 days')} với ${fact('chips', 'ending lease tenant')} hết hạn ngày ${day('q3', 'their end dates')}, còn ${fact('q3', 'their days left')} ngày. Tiền thuê hiện là ${money('chips', 'ending lease monthly rent')} mỗi tháng, tiền cọc đang giữ ${money('chips', 'ending lease deposit held')}.\n\nNăm nay ${fact('chips', 'ending lease tenant')} đã trả trễ ${fact('chips', 'ending lease tenant bills paid late')} trên ${fact('chips', 'their bills')} hóa đơn, trung bình trễ ${fact('chips', 'their average days late')} ngày. Khách trả đủ nhưng hay trễ, nên nếu gia hạn, bạn có thể ghi rõ hạn đóng tiền và khoản phạt trả trễ trong hợp đồng mới. Gia hạn hay không là do bạn quyết định.\n\nXem [hợp đồng ${fact('q3', 'leases ending within 60 days')}](esta://lease/…) và [lịch sử trả tiền của ${fact('chips', 'ending lease tenant')}](esta://party/…).`,
   'seeded-segment-august': () => `Tháng 8/2026, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in August 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
-  'seed10-english-overdue': () =>
-    `In Dãy trọ Dĩ An, only ${fact('q2', 'di-an units overdue')} is overdue: ${fact('q2', 'di-an days overdue')} days late, with ${money('q2', 'di-an amount overdue')} still owed.\n\nSee [the bill for ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`,
+  'seed10-english-overdue': overdueInEnglish,
+  'seed10-reply-english': overdueInEnglish,
 };
 
 describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AGT-7)', () => {
