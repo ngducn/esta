@@ -24,7 +24,7 @@ export function askTables(question: string, payload: Row = { conversation_id: CO
     agent_jobs: [{ id: ASK_JOB, household_id: HOUSEHOLD, kind: 'ask', status: 'queued', attempts: 0, max_attempts: 4, run_after: '2026-10-07T00:00:00.000Z', payload }],
     conversations: [{ id: CONVERSATION, household_id: HOUSEHOLD, sdk_session_id: null, sdk_turn_hash: null, sdk_handles: 0 }],
     messages: [
-      { id: QUESTION, household_id: HOUSEHOLD, conversation_id: CONVERSATION, role: 'user', content_md: question, status: 'done' },
+      { id: QUESTION, household_id: HOUSEHOLD, conversation_id: CONVERSATION, role: 'user', content_md: question, status: 'done', topic_item_id: null, topic_property_id: null },
       { id: ANSWER, household_id: HOUSEHOLD, conversation_id: CONVERSATION, role: 'assistant', content_md: '', status: 'streaming', refs: [] },
     ],
   };

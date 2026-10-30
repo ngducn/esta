@@ -69,6 +69,11 @@ test('at 07:05 Mẹ reads the 07:00 brief in her thread, opens Phòng 5 from it,
   await home.getByTestId('home-brief-open').click();
   await expect(page).toHaveURL(/\/assistant\?note=[0-9a-f-]{36}$/);
   await expect(brief(page), 'the link opens the thread at the brief').toBeInViewport();
+
+  await page.goto('/');
+  await home.getByTestId('home-brief-reply').click();
+  await expect(page).toHaveURL(/\/assistant\?reply=[0-9a-f-]{36}$/);
+  await expect(page.getByTestId('composer-topic'), 'Trả lời on Home’s brief quotes it above the reply box').toContainText(`Trả lời: ${SUMMARY}`);
 });
 
 test('with the worker stopped and the clock 15 minutes on, every page says Trợ lý is offline', async ({ page, request }) => {

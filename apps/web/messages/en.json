@@ -476,7 +476,9 @@
     "notFoundTitle": "Property not found",
     "notFoundBody": "It may have been archived, or it belongs to another household.",
     "notFoundAction": "Back to properties",
-    "edit": "Edit details"
+    "edit": "Edit details",
+    "askAssistant": "Ask Trợ lý about this property",
+    "askAssistantShort": "Ask Trợ lý"
   },
   "completeness": {
     "title": "Completeness",
@@ -1154,7 +1156,11 @@
       "thinkHarderHint": "Uses the stronger model, which answers more slowly. Only the operator sees this choice.",
       "notFoundTitle": "This conversation was not found",
       "notFoundBody": "The link may be wrong, or this conversation does not belong to your household.",
-      "notFoundAction": "Back to Trợ lý"
+      "notFoundAction": "Back to Trợ lý",
+      "replyTo": "Replying to: {title}",
+      "about": "About: {property}",
+      "clearTopic": "Remove",
+      "clearTopicLabel": "Remove the topic {topic}"
     },
     "sources": "Sources",
     "citationLabel": "Source {index}: {source}. Opens in a new tab",
@@ -1203,6 +1209,17 @@
       "held": "Notes the number guard held back, 7 days",
       "noHeld": "The number guard held back no note in the last 7 days.",
       "heldNote": "{time} · {kind}"
+    },
+    "reply": "Reply",
+    "replyLabel": "Reply to the note: {title}",
+    "suggestionsLabel": "Suggested replies",
+    "suggestions": {
+      "remindTenant": "Write a reminder to {tenant}",
+      "tenantLateCount": "How many times has {tenant} paid late?",
+      "renewLease": "Should I renew the lease at {property}?",
+      "rentFaster": "How can I let {unit} faster?",
+      "briefFirst": "What should I do first today?",
+      "weeklySummary": "Sum up this week for me"
     }
   },
   "settings": {

@@ -4,12 +4,14 @@ import { ThreadComposer, type ComposerLabels } from './thread-composer';
 
 const sendQuestion = vi.fn();
 const refresh = vi.fn();
+const replace = vi.fn();
 
 vi.mock('@/app/(app)/assistant/actions', () => ({ sendQuestion: (raw: unknown) => sendQuestion(raw) }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, replace }) }));
 
 const labels: ComposerLabels = { message: 'Viết cho Trợ lý', placeholder: 'Ví dụ', send: 'Gửi', sending: 'Đang gửi', empty: 'Trống', long: 'Dài', failed: 'Chưa gửi được', busy: 'Trợ lý đang trả lời', deferred: 'Ngày mai' };
 const CONVERSATION = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c01';
+const NOTE_TOPIC = { kind: 'item', itemId: '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c02' } as const;
 
 const send = () => screen.getByTestId('composer-send') as HTMLButtonElement;
 const field = () => screen.getByTestId('composer-message') as HTMLTextAreaElement;
@@ -27,6 +29,7 @@ describe('the reply box', () => {
   beforeEach(() => {
     sendQuestion.mockReset();
     refresh.mockReset();
+    replace.mockReset();
   });
 
   it('resends a failed message with the same id and no conversation, so a lost reply never asks twice', async () => {
@@ -37,8 +40,8 @@ describe('the reply box', () => {
     await write('Còn tháng 9 thì sao?');
     const [first, retry] = sent();
     expect(retry).toEqual(first);
-    expect(Object.keys(first ?? {}).toSorted()).toEqual(['deep', 'question', 'questionId']);
-    expect(first).toMatchObject({ question: 'Còn tháng 9 thì sao?', deep: false });
+    expect(Object.keys(first ?? {}).toSorted()).toEqual(['deep', 'question', 'questionId', 'topic']);
+    expect(first).toMatchObject({ question: 'Còn tháng 9 thì sao?', deep: false, topic: null });
     expect(refresh).toHaveBeenCalledOnce();
     expect(field().value).toBe('');
   });
@@ -77,5 +80,68 @@ describe('the reply box', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Suy nghĩ kỹ hơn' }));
     await write('Câu hỏi khó');
     expect(sent()[0]?.deep).toBe(true);
+  });
+
+  it('sends a reply with its note as the topic, then leaves the URL that named it', async () => {
+    sendQuestion.mockResolvedValue({ ok: true, value: { id: CONVERSATION } });
+    render(<ThreadComposer labels={labels} maxLength={2000} state="ready" topic={{ topic: NOTE_TOPIC, label: 'Trả lời: Phòng 5', clear: 'Bỏ', clearLabel: 'Bỏ chủ đề Phòng 5' }} />);
+    expect(screen.getByTestId('composer-topic').textContent).toContain('Trả lời: Phòng 5');
+    await write('Khách này trễ mấy lần rồi?');
+    expect(sent()[0]?.topic).toEqual(NOTE_TOPIC);
+    expect(replace).toHaveBeenCalledWith('/assistant', { scroll: false });
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('a topic chosen while the box is on screen focuses it, as Trả lời on a note in the thread does', () => {
+    const { rerender } = render(<ThreadComposer labels={labels} maxLength={2000} state="ready" />);
+    expect(document.activeElement).not.toBe(field());
+    rerender(<ThreadComposer labels={labels} maxLength={2000} state="ready" topic={{ topic: NOTE_TOPIC, label: 'Trả lời: Phòng 5', clear: 'Bỏ', clearLabel: 'Bỏ chủ đề Phòng 5' }} />);
+    expect(document.activeElement).toBe(field());
+  });
+
+  it('Bỏ drops the topic by leaving the URL that named it, without sending', () => {
+    render(<ThreadComposer labels={labels} maxLength={2000} state="ready" topic={{ topic: NOTE_TOPIC, label: 'Trả lời: Phòng 5', clear: 'Bỏ', clearLabel: 'Bỏ chủ đề Phòng 5' }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ chủ đề Phòng 5' }));
+    expect(replace).toHaveBeenCalledWith('/assistant', { scroll: false });
+    expect(sendQuestion).not.toHaveBeenCalled();
+  });
+
+  it('one tap on a suggested reply sends its text with its note as the topic, and the chips give way to a topic', async () => {
+    sendQuestion.mockResolvedValue({ ok: true, value: { id: CONVERSATION } });
+    const suggestions = { label: 'Gợi ý trả lời', items: [{ text: 'Viết tin nhắn nhắc Hoàng Văn Em Demo', topic: NOTE_TOPIC }] };
+    const { rerender } = render(<ThreadComposer labels={labels} maxLength={2000} state="ready" suggestions={suggestions} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Viết tin nhắn nhắc Hoàng Văn Em Demo' }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(sent()).toEqual([expect.objectContaining({ question: 'Viết tin nhắn nhắc Hoàng Văn Em Demo', topic: NOTE_TOPIC })]);
+    rerender(<ThreadComposer labels={labels} maxLength={2000} state="ready" suggestions={suggestions} topic={{ topic: NOTE_TOPIC, label: 'Trả lời: Phòng 5', clear: 'Bỏ', clearLabel: 'Bỏ chủ đề Phòng 5' }} />);
+    expect(screen.queryByTestId('composer-suggestions')).toBeNull();
+  });
+
+  it('a tap on a suggested reply leaves what she typed in the box, and the box still sends it', async () => {
+    sendQuestion.mockResolvedValue({ ok: true, value: { id: CONVERSATION } });
+    const suggestions = { label: 'Gợi ý trả lời', items: [{ text: 'Viết tin nhắn nhắc Hoàng Văn Em Demo', topic: NOTE_TOPIC }] };
+    render(<ThreadComposer labels={labels} maxLength={2000} state="ready" suggestions={suggestions} />);
+    fireEvent.change(field(), { target: { value: 'Mẹ đang viết dở câu này' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Viết tin nhắn nhắc Hoàng Văn Em Demo' }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(field().value).toBe('Mẹ đang viết dở câu này');
+    await write('Mẹ đang viết dở câu này');
+    expect(sent().map((raw) => raw.question)).toEqual(['Viết tin nhắn nhắc Hoàng Văn Em Demo', 'Mẹ đang viết dở câu này']);
+    expect(field().value).toBe('');
+  });
+
+  it('a message that failed keeps its id through a suggested reply, so the lost reply still asks once', async () => {
+    sendQuestion.mockResolvedValueOnce({ ok: false, reason: 'failed' }).mockResolvedValue({ ok: true, value: { id: CONVERSATION } });
+    const suggestions = { label: 'Gợi ý trả lời', items: [{ text: 'Viết tin nhắn nhắc Hoàng Văn Em Demo', topic: NOTE_TOPIC }] };
+    render(<ThreadComposer labels={labels} maxLength={2000} state="ready" suggestions={suggestions} />);
+    await write('Còn tháng 9 thì sao?');
+    fireEvent.click(screen.getByRole('button', { name: 'Viết tin nhắn nhắc Hoàng Văn Em Demo' }));
+    await waitFor(() => expect(sendQuestion.mock.calls.length).toBe(2));
+    await waitFor(() => expect(send().disabled).toBe(false));
+    fireEvent.click(send());
+    await waitFor(() => expect(sendQuestion.mock.calls.length).toBe(3));
+    const [first, chip, retry] = sent();
+    expect(retry?.questionId).toBe(first?.questionId);
+    expect(chip?.questionId).not.toBe(first?.questionId);
   });
 });

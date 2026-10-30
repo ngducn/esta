@@ -1,5 +1,6 @@
 import { repairMessage, type NoteViolation } from '@esta/core/guard';
 import type { IsoDate } from '@esta/core/date';
+import type { LoadedTopic } from '../tools/topic-reads';
 import { systemPrompt } from './system';
 
 export type AskedTurn = { readonly question: string; readonly answer: string };
@@ -15,7 +16,27 @@ function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   ];
 }
 
-export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly earlier?: readonly AskedTurn[] }): string {
+function topicSection(topic: LoadedTopic | null | undefined): string[] {
+  if (topic == null) return [];
+  const intro =
+    topic.kind === 'note'
+      ? [
+          'The message replies to this note Trợ lý left earlier. Read it as context only: never copy a figure, date or name from its text, and write each from a record below or from a tool.',
+          `Note title: ${topic.title}`,
+          ...(topic.body === null ? [] : ['Note text:', topic.body]),
+        ]
+      : [`The message asks about the property ${topic.propertyHandle} of list_properties.`];
+  return [
+    '',
+    ...intro,
+    'Esta called these tools for it before your turn. Their records hold your first handles; cite them like any tool answer and call more tools for anything else:',
+    ...topic.calls.map(({ name, input, answer }) => `${name} ${JSON.stringify(input)} answered ${answer}`),
+  ];
+}
+
+export function askPrompt(
+  context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly earlier?: readonly AskedTurn[]; readonly topic?: LoadedTopic | null },
+): string {
   return [
     systemPrompt({ ...context, language: 'question', scope: 'open' }),
     '',
@@ -33,6 +54,7 @@ export function askPrompt(context: Omit<Parameters<typeof systemPrompt>[0], 'lan
     '5. If the question asks you to change something, say that you cannot change records yourself; when a change would help, suggest it with create_proposal and say a member can approve it on its card in this conversation.',
     '6. Reply in the language the message is written in, whatever the language of these rules: an English message gets an English reply.',
     ...conversationSoFar(context.earlier ?? []),
+    ...topicSection(context.topic),
     '',
     'Message:',
     context.question,

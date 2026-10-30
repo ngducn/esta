@@ -2,15 +2,15 @@ import { expect, test, type Page } from '@playwright/test';
 import { formatVnd } from '../packages/core/src/format/index.ts';
 import { vnd as money } from '../packages/core/src/money/vnd.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
-import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
+import { workerAt } from './helpers/agent-worker';
 import { inEnglishAt130, memberCall, memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { initialJs, INITIAL_JS_BUDGET_BYTES } from './helpers/bundle';
 import { laneHousehold, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
-import { freshThread, pinnedArea, pinnedRow, sendInThread } from './helpers/thread';
-import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, serviceGet, servicePatch, serviceUpsert, seriousAxeViolations, settled, shot, toast, vnd } from './helpers/wizard';
+import { addOperatorNote, answer, freshThread, incomeIn, laneNotes, laneOperatorNote, latestConversation, noteCard, pinnedArea, pinnedRow, sendInThread } from './helpers/thread';
+import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, serviceGet, servicePatch, seriousAxeViolations, settled, shot, toast, vnd } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -26,27 +26,11 @@ const ZALO = 'Viết tin nhắn Zalo nhắc khách phòng 5 ở Dĩ An đóng ti
 const BY_YEAR = 'Có nên cho thuê theo năm thay vì theo tháng không?';
 
 const NOTE_LANE = 9;
-const NOTES = {
-  overdue: { id: seedId(`seed:agent-item:W1-lane-${NOTE_LANE}`), title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 11 ngày' },
-  leaseEnding: { id: seedId(`seed:agent-item:W3-lane-${NOTE_LANE}`), title: 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 26 ngày' },
-  watch: { id: seedId(`seed:agent-item:watch-lane-${NOTE_LANE}`), title: 'Ba việc cần để ý' },
-};
-const OPERATOR_NOTE = { id: seedId(`e2e:agent-item:operator-lane-${NOTE_LANE}`), title: 'Trợ lý cần Ryan đăng nhập lại Demo' };
+const NOTES = laneNotes(NOTE_LANE);
+const OPERATOR_NOTE = laneOperatorNote(NOTE_LANE);
 
-let worker: AgentWorker | undefined;
+workerAt('2026-10-07T07:00:00+07:00');
 
-test.beforeAll(async ({ request }) => {
-  await setClock(request, '2026-10-07T07:00:00+07:00');
-  worker = await startAgentWorker();
-});
-
-test.afterAll(async ({ request }) => {
-  await stopAndForget(worker);
-  await setClock(request, null);
-});
-
-const answer = (page: Page) => page.getByTestId('answer').last();
-const note = (page: Page, title: string) => page.getByTestId('inbox-item').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 const statusOf = async (page: Page, id: string) => (await serviceGet<{ status: string }[]>(page, `agent_items?id=eq.${id}&select=status`))[0]?.status;
 /** Sends `message` as the first of a fresh thread and times the first visible sentence of its answer. */
 async function sendAndTimeFirstSentence(page: Page, message: string, label?: string): Promise<number> {
@@ -62,22 +46,6 @@ async function sendAndTimeFirstSentence(page: Page, message: string, label?: str
   return firstSentence;
 }
 
-async function incomeIn(page: Page, lane: number, month: '08' | '09' | '10') {
-  const last = month === '09' ? '30' : '31';
-  const rows = await memberRest<{ amount_vnd: number }[]>(page, 'GET', `allocation_facts?property_id=eq.${laneProperty(lane, 'di-an')}&received_on=gte.2026-${month}-01&received_on=lte.2026-${month}-${last}&select=amount_vnd`);
-  return rows.reduce((total, row) => total + row.amount_vnd, 0);
-}
-
-type StoredConversation = { readonly id: string; readonly sdk_session_id: string | null };
-
-/** The conversation that holds her latest message, as she reads it under RLS. */
-async function latestConversation(page: Page): Promise<StoredConversation> {
-  const [message] = await memberRest<{ conversation_id: string }[]>(page, 'GET', 'messages?role=eq.user&select=conversation_id&order=created_at.desc&limit=1');
-  const [row] = await memberRest<StoredConversation[]>(page, 'GET', `conversations?id=eq.${message?.conversation_id ?? ''}&select=id,sdk_session_id`);
-  expect(row, 'she reads the conversation she started').toBeDefined();
-  return row as StoredConversation;
-}
-
 test('Mẹ reads Trợ lý’s notes in time order, marks one read, hides one, undoes it and finds it again as one muted line', async ({ page }) => {
   await servicePatch(page, `agent_items?id=in.(${Object.values(NOTES).map(({ id }) => id).join(',')})`, { status: 'new' });
   await open(page, `me.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
@@ -88,7 +56,7 @@ test('Mẹ reads Trợ lý’s notes in time order, marks one read, hides one, u
   await expect(page.getByTestId('thread-entry').last(), 'the reply box follows the newest entry').toBeInViewport();
   await expect(page.getByTestId('composer')).toBeInViewport();
 
-  const overdue = note(page, NOTES.overdue.title);
+  const overdue = noteCard(page, NOTES.overdue.title);
   await expect(overdue).toContainText('Hoàng Văn Em Demo');
   await expect(overdue).toContainText(vnd('2.800.000'));
   await expect(overdue.locator('time')).toHaveText('06/10 06:45');
@@ -97,7 +65,7 @@ test('Mẹ reads Trợ lý’s notes in time order, marks one read, hides one, u
   expect(await statusOf(page, NOTES.overdue.id)).toBe('read');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
-  const watch = note(page, NOTES.watch.title);
+  const watch = noteCard(page, NOTES.watch.title);
   await watch.getByRole('button', { name: `Ẩn ghi chú: ${NOTES.watch.title}` }).click();
   await expect(watch).toHaveCount(0);
   await expect(toast(page)).toContainText('Đã ẩn ghi chú.');
@@ -118,29 +86,18 @@ test('Mẹ reads Trợ lý’s notes in time order, marks one read, hides one, u
 });
 
 test('an operator note reaches Ryan’s thread with its pill and never Mẹ’s', async ({ page }) => {
-  await serviceUpsert(page, 'agent_items', {
-    id: OPERATOR_NOTE.id,
-    household_id: laneHousehold(NOTE_LANE),
-    kind: 'system',
-    severity: 'action',
-    audience: 'operator',
-    title: OPERATOR_NOTE.title,
-    body_md: 'Phiên đăng nhập của Trợ lý đã hết hạn.',
-    status: 'new',
-    dedupe_key: `e2e:operator-note:lane-${NOTE_LANE}`,
-    created_at: '2026-10-07T07:01:00+07:00',
-  });
+  await addOperatorNote(page, NOTE_LANE);
   await open(page, `me.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
   await page.goto('/assistant');
-  await expect(note(page, NOTES.overdue.title)).toBeVisible();
-  await expect(note(page, OPERATOR_NOTE.title), 'RLS keeps an operator note from a member').toHaveCount(0);
+  await expect(noteCard(page, NOTES.overdue.title)).toBeVisible();
+  await expect(noteCard(page, OPERATOR_NOTE.title), 'RLS keeps an operator note from a member').toHaveCount(0);
   await expect(page.getByTestId('pinned-item').first()).toBeVisible();
   await expect(pinnedRow(page, OPERATOR_NOTE.title), 'and from her Cần xử lý').toHaveCount(0);
 
   await page.context().clearCookies();
   await open(page, `ryan.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
   await page.goto('/assistant');
-  const operatorNote = note(page, OPERATOR_NOTE.title);
+  const operatorNote = noteCard(page, OPERATOR_NOTE.title);
   await expect(operatorNote.getByTestId('note-operator')).toHaveText('Chỉ người vận hành');
   await expect(operatorNote.locator('time')).toHaveText('07:01');
   await expect(page.getByTestId('pinned-item').first(), 'an urgent operator note pins for Ryan, newest first').toContainText(OPERATOR_NOTE.title);
@@ -220,6 +177,7 @@ test('thread case T1: Mẹ asks for a Zalo reminder to Phòng 5, the draft names
   await sendAndTimeFirstSentence(page, ZALO);
   const draft = `Chào Hoàng Văn Em Demo, tiền thuê Phòng 5 ở Dãy trọ Dĩ An đến hạn ngày 25/09/2026 hiện còn ${vnd('2.800.000')}.`;
   await expect(answer(page)).toContainText(draft);
+  await expect(answer(page), 'the overdue days come from the bill, not the note title’s 11').not.toContainText('11 ngày');
 
   const copy = page.getByTestId('answer-copy').last();
   await expect(copy).toHaveText('Sao chép');

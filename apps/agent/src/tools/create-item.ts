@@ -1,10 +1,11 @@
 import type { Clock } from '@esta/core';
 import { watchNoteSchema } from '@esta/core/agent-schemas';
+import { noteRelatedOf } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import { checkNote, repairMessage, type FactSheet, type FilledNote, type NoteFormat, type NoteViolation } from '@esta/core/guard';
 import type { TablesInsert } from '@esta/db';
-import { watchDedupeKey, type DescribedFact, type WatchSeverity } from '@esta/core/watch';
+import { WATCH_SEVERITIES, watchDedupeKey, type DescribedFact, type WatchSeverity } from '@esta/core/watch';
 import type { AgentDb } from '../supabase';
 import { ToolRejection } from './server';
 
@@ -31,10 +32,8 @@ export type NoteBinding = {
 /** What the job result keeps of each note for audit: the model's templates and the values that filled them (AGENT.md §6.3). */
 export type WrittenNote = { readonly dedupe_key: string; readonly title: string; readonly body_md: string; readonly cited: Array<FilledNote['cited'][number]>; readonly added: boolean };
 
-const SEVERITY_ORDER: readonly WatchSeverity[] = ['info', 'watch', 'action'];
-
 /** The highest severity among the facts an item tells. */
-export const severityOf = (facts: readonly DescribedFact[]): WatchSeverity => SEVERITY_ORDER[Math.max(0, ...facts.map(({ fact }) => SEVERITY_ORDER.indexOf(fact.severity)))] ?? 'info';
+export const severityOf = (facts: readonly DescribedFact[]): WatchSeverity => WATCH_SEVERITIES[Math.max(0, ...facts.map(({ fact }) => WATCH_SEVERITIES.indexOf(fact.severity)))] ?? 'info';
 
 const GUARD_ITEM = {
   vi: { title: 'Trợ lý đã giữ lại một ghi chú có số tự gõ', found: 'Chỗ bộ lọc số chặn:', draft: 'Bản nháp của Trợ lý:' },
@@ -145,7 +144,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       severity: severityOf(facts),
       title: title?.text ?? '',
       body_md: body?.text ?? '',
-      related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links: facts.map(({ link }) => link) },
+      related: noteRelatedOf(facts.map(({ fact }) => fact), facts.map(({ link }) => link)),
       dedupe_key: dedupeKey,
     });
     console.log(`[agent] create_item ok ${dedupeKey}`);

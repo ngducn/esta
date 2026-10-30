@@ -1,6 +1,7 @@
 import 'server-only';
 import { parseInstant, type Instant, type IsoDate } from '@esta/core';
-import type { WatchSeverity } from '@esta/core/watch';
+import { byPriority, noteRelated, OPEN_NOTE_STATUSES } from '@esta/core/assistant';
+import { WATCH_SEVERITIES } from '@esta/core/watch';
 import { parseProposal, type Proposal } from '@esta/core/proposals';
 import { existingLinks, idSchema } from '@esta/ops';
 import { z } from 'zod';
@@ -10,9 +11,7 @@ import { noteCitations, type NoteCitation } from './citations';
 import { canonicalStamp, inWindow, type Cursor, type Window } from './thread-cursor';
 import { retryHint, type RetryHint } from './retry-hint';
 
-const INBOX = ['new', 'read'] as const;
-export type InboxStatus = (typeof INBOX)[number];
-const STATUSES = [...INBOX, 'approved', 'failed', 'dismissed', 'done'] as const;
+const STATUSES = [...OPEN_NOTE_STATUSES, 'approved', 'failed', 'dismissed', 'done'] as const;
 export type NoteStatus = (typeof STATUSES)[number];
 
 /** A proposal as the registry reads its stored params, null when they no longer parse. */
@@ -46,8 +45,6 @@ export type NoteDiagnostics = {
 const noteKind = z.enum(['brief', 'weekly', 'proposal', 'note']).catch('note');
 export type NoteKind = z.infer<typeof noteKind>;
 
-const relatedLinks = z.object({ links: z.array(z.string()) });
-
 const fields = z.object({ status: z.enum(STATUSES), audience: z.enum(['all', 'operator']) });
 const related = z.object({ document_id: z.uuid(), extraction_id: z.uuid() });
 
@@ -64,7 +61,7 @@ export async function listNotes({ household, role, isOperator }: Pick<Member, 'h
   const supabase = await createSessionClient();
   const { data, error } = await inWindow(supabase.from('agent_items').select(NOTE_FIELDS).eq('household_id', household.id), 0, window);
   if (error) throw new Error(`Reading Trợ lý's notes failed: ${error.message}`);
-  const linksOf = (row: (typeof data)[number]) => relatedLinks.safeParse(row.related).data?.links ?? [];
+  const linksOf = (row: (typeof data)[number]) => noteRelated(row.related).links;
   const readable = isOperator ? await existingLinks(supabase, household.id, data.flatMap(linksOf)) : new Set<string>();
   return data.map((row) => {
     const { status, audience } = fields.parse(row);
@@ -95,12 +92,8 @@ export type Pinned = { readonly shown: readonly PinnedNote[]; readonly count: nu
 
 const PINNED_SHOWN = 3;
 
-const SEVERITY_RANK: Record<WatchSeverity, number> = { action: 0, watch: 1, info: 2 };
-const severity = z.enum(['info', 'watch', 'action']);
+const severity = z.enum(WATCH_SEVERITIES);
 const NEVER_PINNED_KINDS = '(brief,weekly)';
-
-type PinnedCandidate = { readonly rank: number; readonly key: string };
-const mostSevereThenNewest = (a: PinnedCandidate, b: PinnedCandidate) => a.rank - b.rank || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0);
 
 export async function listPinned(householdId: string): Promise<Pinned> {
   const supabase = await createSessionClient();
@@ -108,13 +101,11 @@ export async function listPinned(householdId: string): Promise<Pinned> {
     .from('agent_items')
     .select('id, title, kind, severity, created_at')
     .eq('household_id', householdId)
-    .in('status', INBOX)
+    .in('status', OPEN_NOTE_STATUSES)
     .not('kind', 'in', NEVER_PINNED_KINDS)
     .or('kind.eq.proposal,severity.eq.action');
   if (error) throw new Error(`Reading Trợ lý's open notes failed: ${error.message}`);
-  const open = data
-    .map((row) => ({ row, rank: SEVERITY_RANK[severity.parse(row.severity)], key: `${canonicalStamp(row.created_at)} ${row.id}` }))
-    .toSorted(mostSevereThenNewest);
+  const open = data.map((row) => ({ row, id: row.id, severity: severity.parse(row.severity), stamp: canonicalStamp(row.created_at) })).toSorted(byPriority);
   return { shown: open.slice(0, PINNED_SHOWN).map(({ row }) => ({ id: row.id, title: row.title, proposal: row.kind === 'proposal' })), count: open.length };
 }
 
@@ -144,5 +135,3 @@ export async function latestBrief(householdId: string, asOf: Instant): Promise<L
   if (error) throw new Error(`Reading the morning brief failed: ${error.message}`);
   return data === null ? null : { id: data.id, title: data.title, createdAt: parseInstant(data.created_at) };
 }
-
-export const isOpen = (status: NoteStatus): status is InboxStatus => status === 'new' || status === 'read';

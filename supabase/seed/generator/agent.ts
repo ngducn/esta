@@ -3,13 +3,14 @@ import { addDays, daysBetween } from '../../../packages/core/src/date/calendar.t
 import { isoDate, type IsoDate } from '../../../packages/core/src/date/iso-date.ts';
 import { formatDate, formatVnd } from '../../../packages/core/src/format/index.ts';
 import { vnd } from '../../../packages/core/src/money/vnd.ts';
+import { noteRelatedOf, type NoteFact } from '../../../packages/core/src/assistant/topic.ts';
 import { publicTable, type HouseholdSeed, type SeedRow } from './context.ts';
 import { DOCUMENT_SEEDS, documentId } from './documents.ts';
 import { householdId, userId } from './households.ts';
 import { seedId } from './ids.ts';
-import { LEASE_SEEDS, seedLeaseId, SPEC_TODAY, UNPAID } from './leasing.ts';
+import { LEASE_SEEDS, seedInvoiceId, seedLeaseId, SPEC_TODAY, UNPAID } from './leasing.ts';
 import { PROPERTY_SEEDS, type PropertySeedKey } from './properties.ts';
-import { propertyId, unitId, UNIT_SEEDS } from './units.ts';
+import { unitId, UNIT_SEEDS } from './units.ts';
 
 const pingJobId = (household: HouseholdSeed) => seedId(`seed:agent-job:ping-${household.key}`);
 
@@ -47,7 +48,7 @@ export const agentRuns = publicTable('agent_runs', ({ household, asOf }) => [
   },
 ]);
 
-type Watch = { readonly rule: string; readonly subject: string; readonly line: string; readonly related: Json };
+type Watch = NoteFact & { readonly link: string; readonly line: string };
 
 function leaseOf(property: PropertySeedKey, unit = 1) {
   const seed = LEASE_SEEDS.find((lease) => lease.property === property && lease.unit === unit);
@@ -71,18 +72,18 @@ function watchFacts(household: HouseholdSeed, has: (key: PropertySeedKey) => boo
   if (has('q7') && insurance !== undefined && insurance.expiresOn !== null) {
     const id = documentId(household, insurance.key);
     const line = `${insurance.title} hết hạn ngày ${date(insurance.expiresOn)}, còn ${daysBetween(today, isoDate(insurance.expiresOn))} ngày.`;
-    facts.push({ rule: 'W5', subject: `document:${id}`, line, related: { property_id: propertyId(household, 'q7'), document_id: id } });
+    facts.push({ ruleId: 'W5', subjectKey: `document:${id}`, link: `esta://document/${id}`, line });
   }
   if (has('bien-hoa')) {
     const ended = leaseOf('bien-hoa').terms.endDate;
     const unit = unitOf(household, 'bien-hoa', 1);
     const line = `${nickname('bien-hoa')} để trống ${daysBetween(ended, today)} ngày, từ ${date(ended)}.`;
-    facts.push({ rule: 'W4', subject: `unit:${unit.id}`, line, related: { property_id: propertyId(household, 'bien-hoa'), unit_id: unit.id } });
+    facts.push({ ruleId: 'W4', subjectKey: `unit:${unit.id}`, link: `esta://unit/${unit.id}`, line });
   }
   const room = unitOf(household, 'di-an', 8);
   if (has('di-an') && room.availableFrom !== null) {
     const line = `${room.label} ${nickname('di-an')} để trống ${daysBetween(isoDate(room.availableFrom), today)} ngày, từ ${date(room.availableFrom)}, chưa cho thuê lần nào.`;
-    facts.push({ rule: 'W4', subject: `unit:${room.id}`, line, related: { property_id: propertyId(household, 'di-an'), unit_id: room.id } });
+    facts.push({ ruleId: 'W4', subjectKey: `unit:${room.id}`, link: `esta://unit/${room.id}`, line });
   }
   return facts;
 }
@@ -113,21 +114,22 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
     const lease = leaseOf(UNPAID.property, UNPAID.unit);
     const unit = unitOf(household, UNPAID.property, UNPAID.unit);
     const owed = formatVnd(vnd(lease.terms.rentVnd), 'vi');
+    const invoice = seedInvoiceId(household, UNPAID, UNPAID.periodStart);
     const title = `${unit.label} ${nickname(UNPAID.property)} quá hạn ${daysBetween(isoDate(UNPAID.dueDate), runDay)} ngày`;
     const body = `Hóa đơn của ${lease.tenant.fullName} đến hạn ngày ${date(UNPAID.dueDate)} vẫn chưa thanh toán. Còn nợ ${owed}.`;
-    notes.push(note('W1', 30, 'action', `W1:lease:${seedLeaseId(household, lease)}:${UNPAID.dueDate}`, title, body, { property_id: propertyId(household, UNPAID.property), unit_id: unit.id, lease_id: seedLeaseId(household, lease) }));
+    notes.push(note('W1', 30, 'action', `W1:lease:${seedLeaseId(household, lease)}:${UNPAID.dueDate}`, title, body, noteRelatedOf([{ ruleId: 'W1', subjectKey: `invoice:${invoice}` }], [`esta://invoice/${invoice}`])));
   }
   if (has('thu-duc')) {
     const lease = leaseOf('thu-duc');
     const id = seedLeaseId(household, lease);
     const title = `Hợp đồng ${nickname('thu-duc')} hết hạn sau ${daysBetween(runDay, lease.terms.endDate)} ngày`;
     const body = `Hợp đồng với ${lease.tenant.fullName} kết thúc ngày ${date(lease.terms.endDate)} và chưa có hợp đồng gia hạn.`;
-    notes.push(note('W3', 20, 'action', `W3:lease:${id}`, title, body, { property_id: propertyId(household, 'thu-duc'), lease_id: id }));
+    notes.push(note('W3', 20, 'action', `W3:lease:${id}`, title, body, noteRelatedOf([{ ruleId: 'W3', subjectKey: `lease:${id}` }], [`esta://lease/${id}`])));
   }
   const facts = watchFacts(household, has, runDay);
   if (facts.length > 0) {
     const title = `${COUNT_WORDS[facts.length - 1] ?? facts.length} việc cần để ý`;
-    notes.push(note('watch', 10, 'watch', `group:${runDay}`, title, facts.map((fact) => `- ${fact.line}`).join('\n'), { facts: facts.map((fact) => fact.related) }));
+    notes.push(note('watch', 10, 'watch', `group:${runDay}`, title, facts.map((fact) => `- ${fact.line}`).join('\n'), noteRelatedOf(facts, facts.map(({ link }) => link))));
   }
   return notes;
 });

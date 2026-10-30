@@ -1,11 +1,19 @@
+import { threadTopicSchema, type ThreadTopic } from '@esta/core/assistant';
 import { z } from 'zod';
 import { dbRefusal, idSchema } from './kit';
 import { change, defineOp, refuse, unchanged } from './op';
 
 export const MAX_QUESTION_LENGTH = 2000;
 
-const inputSchema = z.strictObject({ questionId: idSchema, question: z.string().trim().min(1).max(MAX_QUESTION_LENGTH), deep: z.boolean().default(false) });
+const inputSchema = z.strictObject({
+  questionId: idSchema,
+  question: z.string().trim().min(1).max(MAX_QUESTION_LENGTH),
+  deep: z.boolean().default(false),
+  topic: threadTopicSchema.nullable().default(null),
+});
 type AskInput = z.output<typeof inputSchema>;
+
+const topicPayload = (topic: ThreadTopic) => (topic.kind === 'item' ? { kind: 'item', id: topic.itemId } : { kind: 'property', id: topic.propertyId });
 
 /** The conversation, the thread's segment, that the message joined. */
 export type Asked = { readonly id: string };
@@ -25,8 +33,14 @@ export const askQuestion = defineOp<AskInput, AskInput, Asked, AskBusy>({
     if (error) throw new Error(`Reading the question failed: ${error.message}`);
     return data === null ? change(input) : unchanged({ id: data.conversation_id });
   },
-  async apply(ctx, { questionId, question, deep }) {
-    const { data, error } = await ctx.db.rpc('ask_in_thread', { p_household_id: ctx.householdId, p_question_id: questionId, p_question: question, p_deep: deep });
+  async apply(ctx, { questionId, question, deep, topic }) {
+    const { data, error } = await ctx.db.rpc('ask_in_thread', {
+      p_household_id: ctx.householdId,
+      p_question_id: questionId,
+      p_question: question,
+      p_deep: deep,
+      ...(topic === null ? {} : { p_topic: topicPayload(topic) }),
+    });
     if (error) return refuse(dbRefusal<AskBusy>(error, { ESTA_ASK_BUSY: { kind: 'busy' } }));
     return { ok: true, value: { id: data } };
   },

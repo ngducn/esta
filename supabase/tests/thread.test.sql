@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(29);
+select plan(51);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select set_config('esta.actor', 'system:test', true);
@@ -70,7 +70,7 @@ select throws_ok(
 select throws_ok(
   format($$ insert into public.messages (household_id, conversation_id, role, content_md, status) values (%L, %L, 'user', 'x', 'done') $$, :'a', :'seg1'),
   '42501', null, 'but writes no message itself');
-select ok(not has_function_privilege('authenticated', 'public.ask_question(uuid, uuid, uuid, text, boolean, timestamptz)', 'execute'),
+select ok(not has_function_privilege('authenticated', 'public.ask_question(uuid, uuid, uuid, text, boolean, timestamptz, uuid, uuid)', 'execute'),
   'no client calls ask_question, so none picks a conversation or a date');
 
 select tests.act_as('member.b@test.esta.test');
@@ -113,6 +113,106 @@ reset role;
 select is(
   (select count(*)::int from public.agent_jobs where kind = 'ask' and household_id = :'a'), 7,
   'one job per question asked, none for the resends');
+
+update public.messages set content_md = 'Đã trả lời.', status = 'done' where household_id = :'a' and role = 'assistant' and status = 'streaming';
+select conversation_id as seg4 from public.messages where id = '00000000-0000-4000-8000-0000000f0007' \gset
+insert into public.agent_items (id, household_id, kind, severity, audience, title, dedupe_key) values
+  ('00000000-0000-4000-8000-0000000f0a01', :'a', 'alert', 'action', 'all', 'Phòng 5 quá hạn', 'topic:a:all'),
+  ('00000000-0000-4000-8000-0000000f0a02', :'a', 'system', 'info', 'operator', 'Ryan đăng nhập lại', 'topic:a:operator'),
+  ('00000000-0000-4000-8000-0000000f0b01', :'b', 'alert', 'action', 'all', 'Nhà khác quá hạn', 'topic:b:all');
+insert into public.properties (id, household_id, nickname, code, kind, use_mode, deleted_at) values
+  ('00000000-0000-4000-8000-0000000f0a11', :'a', 'Đất Bảo Lộc', 'BL', 'agricultural_land', 'held', null),
+  ('00000000-0000-4000-8000-0000000f0a12', :'a', 'Nhà cũ', 'CU', 'townhouse', 'rental', '2026-09-01T00:00:00+07:00'),
+  ('00000000-0000-4000-8000-0000000f0b11', :'b', 'Nhà khác', 'NK', 'townhouse', 'rental', null);
+
+select tests.act_as('member.a@test.esta.test');
+select isnt(
+  public.ask_in_thread(:'a', '00000000-0000-4000-8000-0000000f0101', 'Khách này trễ mấy lần rồi?', false, '{"kind": "item", "id": "00000000-0000-4000-8000-0000000f0a01"}'),
+  :'seg4'::uuid, 'a reply to a note starts a new segment on the same business day, so the topic leads');
+select results_eq(
+  $$ select topic_item_id, topic_property_id from public.messages where id = '00000000-0000-4000-8000-0000000f0101' $$,
+  $$ values ('00000000-0000-4000-8000-0000000f0a01'::uuid, null::uuid) $$,
+  'her message keeps the note it replies to');
+select conversation_id as seg_reply from public.messages where id = '00000000-0000-4000-8000-0000000f0101' \gset
+select is(
+  public.ask_in_thread(:'a', '00000000-0000-4000-8000-0000000f0101', 'Khách này trễ mấy lần rồi?', false, '{"kind": "item", "id": "00000000-0000-4000-8000-0000000f0a01"}'),
+  :'seg_reply'::uuid, 'a resent reply returns its segment');
+reset role;
+update public.messages set content_md = 'Đã trả lời.', status = 'done' where household_id = :'a' and role = 'assistant' and status = 'streaming';
+select tests.act_as('member.a@test.esta.test');
+select is(
+  public.ask_in_thread(:'a', '00000000-0000-4000-8000-0000000f0102', 'Còn năm ngoái thì sao?'),
+  :'seg_reply'::uuid, 'her next message without a topic joins the conversation the reply started');
+select is(
+  (select count(*)::int from public.messages where id = '00000000-0000-4000-8000-0000000f0102' and topic_item_id is null and topic_property_id is null), 1,
+  'and has no topic');
+reset role;
+update public.messages set content_md = 'Đã trả lời.', status = 'done' where household_id = :'a' and role = 'assistant' and status = 'streaming';
+select tests.act_as('member.a@test.esta.test');
+select isnt(
+  public.ask_in_thread(:'a', '00000000-0000-4000-8000-0000000f0103', 'Tài sản này đang thế chấp ở đâu?', false, '{"kind": "property", "id": "00000000-0000-4000-8000-0000000f0a11"}'),
+  :'seg_reply'::uuid, 'a question about a property starts its own segment');
+select results_eq(
+  $$ select topic_item_id, topic_property_id from public.messages where id = '00000000-0000-4000-8000-0000000f0103' $$,
+  $$ values (null::uuid, '00000000-0000-4000-8000-0000000f0a11'::uuid) $$,
+  'and keeps the property it is about');
+reset role;
+update public.messages set content_md = 'Đã trả lời.', status = 'done' where household_id = :'a' and role = 'assistant' and status = 'streaming';
+
+select tests.act_as('member.a@test.esta.test');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0201', 'Câu hỏi', false, '{"kind": "item", "id": "00000000-0000-4000-8000-0000000f0b01"}') $$, :'a'),
+  '42501', 'ESTA_FORBIDDEN', 'a reply to another household''s note is refused');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0202', 'Câu hỏi', false, '{"kind": "item", "id": "00000000-0000-4000-8000-0000000f0a02"}') $$, :'a'),
+  '42501', 'ESTA_FORBIDDEN', 'a reply to an operator note is refused to a member, who cannot read it');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0203', 'Câu hỏi', false, '{"kind": "property", "id": "00000000-0000-4000-8000-0000000f0a12"}') $$, :'a'),
+  '42501', 'ESTA_FORBIDDEN', 'a question about an archived property is refused');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0204', 'Câu hỏi', false, '{"kind": "property", "id": "00000000-0000-4000-8000-0000000f0b11"}') $$, :'a'),
+  '42501', 'ESTA_FORBIDDEN', 'a question about another household''s property is refused');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0205', 'Câu hỏi', false, '{"kind": "lease", "id": "00000000-0000-4000-8000-0000000f0a01"}') $$, :'a'),
+  '22023', 'ESTA_ASK_INVALID', 'a forged kind is refused');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0206', 'Câu hỏi', false, '{"kind": "item", "id": "00000000-0000-4000-8000-0000000f0a01", "audience": "all"}') $$, :'a'),
+  '22023', 'ESTA_ASK_INVALID', 'a topic with any other field is refused');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0207', 'Câu hỏi', false, '{"kind": "item", "id": "Phòng 5"}') $$, :'a'),
+  '22023', 'ESTA_ASK_INVALID', 'a topic whose id is not a uuid is refused');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0208', 'Câu hỏi', false, '"item"') $$, :'a'),
+  '22023', 'ESTA_ASK_INVALID', 'a topic that is not an object is refused');
+reset role;
+select is(
+  (select count(*)::int from public.messages where id::text like '00000000-0000-4000-8000-0000000f02%'), 0,
+  'no refused topic writes a message');
+
+select tests.act_as('admin.a@test.esta.test');
+select isnt(
+  public.ask_in_thread(:'a', '00000000-0000-4000-8000-0000000f0301', 'Đăng nhập lại thế nào?', false, '{"kind": "item", "id": "00000000-0000-4000-8000-0000000f0a02"}'),
+  null, 'an operator replies to an operator note');
+select throws_ok(
+  format($$ select public.ask_in_thread(%L, '00000000-0000-4000-8000-0000000f0302', 'Câu hỏi', false, '{"kind": "property", "id": "00000000-0000-4000-8000-0000000f0a11"}') $$, :'a'),
+  '55000', 'ESTA_ASK_BUSY', 'a topic waits while his last answer streams, though it would start a new segment');
+reset role;
+select is(
+  (select count(*)::int from public.messages where id = '00000000-0000-4000-8000-0000000f0302'), 0,
+  'and writes no message');
+
+select tests.act_as('admin.a@test.esta.test');
+select isnt_empty(
+  $$ select 1 from public.audit_log a join public.messages m on m.id = a.row_id where a.table_name = 'messages' and m.topic_item_id = '00000000-0000-4000-8000-0000000f0a02' $$,
+  'the operator reads his reply to an operator note and its audit row');
+select tests.act_as('member.a@test.esta.test');
+select is_empty(
+  $$ select 1 from public.messages where topic_item_id = '00000000-0000-4000-8000-0000000f0a02' $$,
+  'a member never reads the message that replies to an operator note');
+select is_empty(
+  $$ select 1 from public.audit_log where table_name = 'messages' and row_id = '00000000-0000-4000-8000-0000000f0301' $$,
+  'nor its audit row, which names the note');
+reset role;
 
 select * from finish();
 rollback;

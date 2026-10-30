@@ -1,8 +1,9 @@
 'use client';
 
-import { Send } from 'lucide-react';
+import type { ThreadTopic } from '@esta/core/assistant';
+import { Send, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { sendQuestion } from '@/app/(app)/assistant/actions';
 import { FormAlert } from '@/components/form-alert';
 import { buttonVariants } from '@/components/ui/button';
@@ -14,43 +15,69 @@ export type ComposerLabels = Readonly<Record<'message' | 'placeholder' | 'send' 
 /** `busy` while an answer streams, `deferred` once the day's cap holds the last one until tomorrow: neither sends. */
 export type ComposerState = 'ready' | 'busy' | 'deferred';
 
+export type ComposerTopic = { readonly topic: ThreadTopic; readonly label: string; readonly clear: string; readonly clearLabel: string };
+
+export type ComposerSuggestion = { readonly text: string; readonly topic: ThreadTopic };
+
 /**
  * The reply box at the end of the thread. The database picks the conversation (`ask_in_thread`), so the box sends only
  * the text and an id: a retry of the same text keeps its id and never asks twice. Only an operator's page passes
  * `thinkHarder`.
  */
-export function ThreadComposer({ labels, maxLength, state, thinkHarder = null }: { labels: ComposerLabels; maxLength: number; state: ComposerState; thinkHarder?: { readonly label: string; readonly hint: string } | null }) {
+export function ThreadComposer({
+  labels,
+  maxLength,
+  state,
+  thinkHarder = null,
+  topic = null,
+  suggestions = null,
+}: {
+  labels: ComposerLabels;
+  maxLength: number;
+  state: ComposerState;
+  thinkHarder?: { readonly label: string; readonly hint: string } | null;
+  topic?: ComposerTopic | null;
+  suggestions?: { readonly label: string; readonly items: readonly ComposerSuggestion[] } | null;
+}) {
   const id = useId();
   const router = useRouter();
   const { pending, run } = useAction();
   const [message, setMessage] = useState('');
   const [deep, setDeep] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const draft = useRef<{ readonly message: string; readonly questionId: string } | null>(null);
+  const ids = useRef(new Map<string, string>());
+  const box = useRef<HTMLTextAreaElement>(null);
+  const topicKey = topic === null ? null : JSON.stringify(topic.topic);
+  useEffect(() => {
+    if (topicKey !== null) box.current?.focus();
+  }, [topicKey]);
   const disabled = pending || state !== 'ready';
+  const dropTopic = () => router.replace('/assistant', { scroll: false });
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (message.trim() === '') {
-      setError(labels.empty);
-      return;
-    }
-    if (draft.current?.message !== message) draft.current = { message, questionId: crypto.randomUUID() };
-    const sent = draft.current;
+  const send = (text: string, about: ThreadTopic | null, fromBox: boolean) => {
+    const questionId = ids.current.get(text) ?? crypto.randomUUID();
+    ids.current.set(text, questionId);
     setError(null);
     run(
-      () => sendQuestion({ questionId: sent.questionId, question: message, deep }),
+      () => sendQuestion({ questionId, question: text, deep, topic: about }),
       (result) => {
         if (!result.ok) {
           setError(result.reason === 'invalid' ? labels.long : result.reason === 'busy' ? labels.busy : labels.failed);
           return;
         }
-        draft.current = null;
-        setMessage('');
+        ids.current.delete(text);
+        if (fromBox) setMessage('');
         setDeep(false);
-        router.refresh();
+        if (topic === null) router.refresh();
+        else dropTopic();
       },
     );
+  };
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (message.trim() === '') setError(labels.empty);
+    else send(message, topic?.topic ?? null, true);
   };
 
   const hint = error === null && state !== 'ready' ? labels[state] : null;
@@ -59,8 +86,29 @@ export function ThreadComposer({ labels, maxLength, state, thinkHarder = null }:
       <label htmlFor={id} className="text-body font-medium text-ink">
         {labels.message}
       </label>
+      {suggestions === null || suggestions.items.length === 0 || topic !== null ? null : (
+        <ul aria-label={suggestions.label} data-testid="composer-suggestions" className="flex flex-wrap gap-2">
+          {suggestions.items.map((item) => (
+            <li key={item.text} className="max-w-full">
+              <button type="button" onClick={() => send(item.text, item.topic, false)} disabled={disabled} data-testid="composer-suggestion" className={buttonVariants({ variant: 'outline', className: 'h-auto max-w-full text-left whitespace-normal' })}>
+                {item.text}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {topic === null ? null : (
+        <div data-testid="composer-topic" className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-surface-2 py-1 pl-3">
+          <p className="min-w-0 text-small font-medium break-words text-ink-2">{topic.label}</p>
+          <button type="button" onClick={dropTopic} disabled={pending} aria-label={topic.clearLabel} data-testid="composer-topic-clear" className={buttonVariants({ variant: 'quiet', className: 'shrink-0' })}>
+            <X aria-hidden="true" />
+            {topic.clear}
+          </button>
+        </div>
+      )}
       <textarea
         id={id}
+        ref={box}
         data-testid="composer-message"
         value={message}
         rows={2}

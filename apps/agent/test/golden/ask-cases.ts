@@ -1,11 +1,23 @@
+import { parseInstant } from '@esta/core';
+import { noteRelated } from '@esta/core/assistant';
 import { isoDate, type IsoDate } from '@esta/core/date';
-import type { EarlierTurn } from '../../src/jobs/ask';
-import { askFollowUpPrompt, askPrompt, type AskedTurn } from '../../src/prompts/ask';
-import { JOBS } from '../../src/jobs/registry';
+import { askRequest, type EarlierTurn } from '../../src/jobs/ask';
+import { askPrompt, type AskedTurn } from '../../src/prompts/ask';
+import { JOBS, type PreparedJob } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../../src/replay/store';
 import { canonicalInput, replaySessionId } from '../../src/sdk/session';
+import type { AgentDb } from '../../src/supabase';
+import type { AskReads } from '../../src/tools/ask-reads';
 import { mcpToolName } from '../../src/tools/server';
+import type { AskTopic } from '../../src/tools/topic-reads';
+import { fakeDb } from '../../src/test/fake-db';
+import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION } from '../ask-seed';
+import { clockOn, HOUSEHOLD } from '../full-seed';
+import { agentItems } from '../../../../supabase/seed/generator/agent.ts';
+import { householdSeeds } from '../../../../supabase/seed/generator/households.ts';
+import { PROPERTY_SEEDS } from '../../../../supabase/seed/generator/properties.ts';
+import { replayedReads } from './ask-reads';
 
 export type AskCase = {
   readonly id: string;
@@ -21,10 +33,24 @@ export type AskCase = {
   readonly deep?: true;
   /** The business day it is asked on, when not 2026-10-07: a new segment starts on the next day. */
   readonly today?: IsoDate;
+  readonly topic?: AskTopic;
 };
 
 const PROPERTIES = { name: mcpToolName('list_properties'), input: {} };
 const call = (name: string, input: Record<string, unknown> = {}) => ({ name: mcpToolName(name), input });
+
+const [DEMO] = householdSeeds(0);
+if (DEMO === undefined) throw new Error('no demo household seed');
+const seededNotes = agentItems.rows({ household: DEMO, properties: PROPERTY_SEEDS, asOf: parseInstant('2026-10-07T07:00:00+07:00'), today: isoDate('2026-10-07') });
+
+function seededNote(rule: 'W1' | 'W3'): AskTopic {
+  const row = seededNotes.find(({ dedupe_key }) => String(dedupe_key).startsWith(`seed:watch:${rule}:`));
+  if (row === undefined) throw new Error(`the seed has no ${rule} note`);
+  return { kind: 'note', title: String(row.title), body: String(row.body_md), links: noteRelated(row.related).links };
+}
+
+const OVERDUE_NOTE = seededNote('W1');
+const LEASE_ENDING_NOTE = seededNote('W3');
 
 export const ASK_CASES: readonly AskCase[] = [
   {
@@ -143,6 +169,52 @@ export const ASK_CASES: readonly AskCase[] = [
       'Ứng dụng chưa có giá đất hiện nay của {{f1.property_label}}, và Trợ lý chưa tra cứu được trên mạng, nên không ước tính con số nào.\n\nNếu bạn có giá từ người môi giới hoặc tin rao gần đây, hãy gửi cho Trợ lý để cùng xem tiếp.',
   },
   {
+    id: 't3-reply-late-count',
+    question: 'Khách này trễ mấy lần rồi?',
+    topic: OVERDUE_NOTE,
+    toolCalls: [call('payment_behavior', { year: 2026 })],
+    reply:
+      'Trong các hóa đơn năm nay đã đến hạn, {{f25.tenant_name}} đã trả trễ {{f25.paid_late_count_display}} trên {{f25.invoice_count_display}} hóa đơn, trung bình trễ {{f25.average_days_late_display}} ngày.\n\n[Hóa đơn {{f8.unit_label}}](f8) đến hạn ngày {{f8.due_date_display}} vẫn còn nợ {{f8.amount_display}}. Xem [lịch sử trả tiền của {{f25.tenant_name}}](f25).',
+  },
+  {
+    id: 't4-property-mortgage',
+    question: 'Tài sản này đang thế chấp ở đâu?',
+    topic: { kind: 'property', propertyId: '62d33252-02ba-5610-bd9a-12474774014c' },
+    toolCalls: [],
+    reply: 'Sổ của {{f1.property_label}} đang thế chấp tại {{f9.mortgage_bank_name}}, khoản vay {{f9.mortgage_amount_display}}, đăng ký ngày {{f9.mortgage_registered_date_display}}.\n\nXem [pháp lý của {{f1.property_label}}](f9).',
+  },
+  {
+    id: 'chip-remind-tenant',
+    question: 'Viết tin nhắn nhắc Hoàng Văn Em Demo',
+    topic: OVERDUE_NOTE,
+    toolCalls: [],
+    reply:
+      'Đây là tin nhắn nhắc {{f8.tenant_name}} mà bạn có thể gửi:\n\nChào {{f8.tenant_name}}, tiền thuê {{f8.unit_label}} ở {{f8.property_label}} đến hạn ngày {{f8.due_date_display}} đã quá hạn {{f8.days_overdue_display}} ngày, hiện còn {{f8.amount_display}}. Nhờ anh chị sắp xếp đóng giúp sớm. Nếu đã chuyển khoản rồi, anh chị báo lại để mình kiểm tra nhé. Cảm ơn anh chị.',
+  },
+  {
+    id: 'chip-late-count',
+    question: 'Hoàng Văn Em Demo đã trễ mấy lần?',
+    topic: OVERDUE_NOTE,
+    toolCalls: [call('payment_behavior', { year: 2026 })],
+    reply:
+      'Năm nay {{f25.tenant_name}} đã trả trễ {{f25.paid_late_count_display}} trên {{f25.invoice_count_display}} hóa đơn đã đến hạn, trung bình trễ {{f25.average_days_late_display}} ngày.\n\n[Hóa đơn {{f8.unit_label}}](f8) đến hạn ngày {{f8.due_date_display}} vẫn còn nợ {{f8.amount_display}}. Xem [lịch sử trả tiền của {{f25.tenant_name}}](f25).',
+  },
+  {
+    id: 'chip-renew-lease',
+    question: 'Có nên gia hạn hợp đồng Căn hộ Thủ Đức không?',
+    topic: LEASE_ENDING_NOTE,
+    toolCalls: [call('payment_behavior', { year: 2026 })],
+    reply:
+      'Hợp đồng {{f8.property_label}} với {{f8.tenant_name}} hết hạn ngày {{f8.end_date_display}}, còn {{f8.days_until_end_display}} ngày. Tiền thuê hiện là {{f8.rent_display}} mỗi tháng, tiền cọc đang giữ {{f8.deposit_held_display}}.\n\nNăm nay {{f10.tenant_name}} đã trả trễ {{f10.paid_late_count_display}} trên {{f10.invoice_count_display}} hóa đơn, trung bình trễ {{f10.average_days_late_display}} ngày. Khách trả đủ nhưng hay trễ, nên nếu gia hạn, bạn có thể ghi rõ hạn đóng tiền và khoản phạt trả trễ trong hợp đồng mới. Gia hạn hay không là do bạn quyết định.\n\nXem [hợp đồng {{f8.property_label}}](f8) và [lịch sử trả tiền của {{f10.tenant_name}}](f10).',
+  },
+  {
+    id: 'seed10-reply-english',
+    question: 'Which rooms in Dĩ An are overdue?',
+    topic: OVERDUE_NOTE,
+    toolCalls: [],
+    reply: 'In {{f3.property_label}}, only {{f8.unit_label}} is overdue: {{f8.days_overdue_display}} days late, with {{f8.amount_display}} still owed.\n\nSee [the bill for {{f8.unit_label}}](f8).',
+  },
+  {
     id: 'seeded-segment-august',
     question: 'Còn tháng 8 thì sao?',
     today: isoDate('2026-10-08'),
@@ -168,26 +240,50 @@ export const askCase = (id: string): AskCase => {
   return found;
 };
 
-export function casePrompt({ question, follows, rebuiltFrom, seed, today = ASK_CONTEXT.today }: AskCase): string {
-  const earlier = rebuiltFrom ?? seed;
-  if (earlier !== undefined) return askPrompt({ ...ASK_CONTEXT, today, question, earlier });
-  return follows === undefined ? askPrompt({ ...ASK_CONTEXT, question }) : askFollowUpPrompt({ today: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question, firstHandle: follows.firstHandle });
+type CaseBinding = { readonly db: AgentDb; readonly householdId: string; readonly reads: AskReads };
+
+export async function caseRequest(item: AskCase, { db, householdId, reads }: CaseBinding): Promise<PreparedJob> {
+  const asOf = item.today ?? ASK_CONTEXT.today;
+  return askRequest({
+    db,
+    householdId,
+    jobId: `golden-${item.id}`,
+    conversationId: CONVERSATION,
+    questionId: QUESTION,
+    answerId: ANSWER,
+    locale: ASK_CONTEXT.locale,
+    asOf,
+    timezone: ASK_CONTEXT.timezone,
+    question: item.question,
+    earlier: await caseEarlier(item),
+    seed: item.seed ?? [],
+    deep: item.deep === true,
+    topic: item.topic ?? null,
+    reads,
+    clock: clockOn(`${asOf}T07:00:00+07:00`),
+  });
+}
+
+export async function casePrompt(item: AskCase): Promise<string> {
+  if (item.rebuiltFrom !== undefined) return askPrompt({ ...ASK_CONTEXT, question: item.question, earlier: item.rebuiltFrom });
+  const tables = askTables(item.question);
+  return (await caseRequest(item, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() })).prompt;
 }
 
 /** The turn a follow-up resumes, as the conversation row holds it after the case it follows finished in replay. */
-export function caseEarlier({ follows }: AskCase): EarlierTurn | null {
+export async function caseEarlier({ follows }: AskCase): Promise<EarlierTurn | null> {
   if (follows === undefined) return null;
-  const turnHash = inputHash(caseInput(askCase(follows.id)));
+  const turnHash = inputHash(await caseInput(askCase(follows.id)));
   return { sessionId: replaySessionId(turnHash), turnHash, handles: follows.firstHandle - 1 };
 }
 
-export function caseInput(item: AskCase) {
-  const earlier = item.rebuiltFrom === undefined ? caseEarlier(item) : null;
-  return canonicalInput({ spec: JOBS.ask, prompt: casePrompt(item), canon: canon(), ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash } }), ...(item.deep ? { modelRole: 'deep' as const } : {}) });
+export async function caseInput(item: AskCase) {
+  const earlier = item.rebuiltFrom === undefined ? await caseEarlier(item) : null;
+  return canonicalInput({ spec: JOBS.ask, prompt: await casePrompt(item), canon: canon(), ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash } }), ...(item.deep ? { modelRole: 'deep' as const } : {}) });
 }
 
-export function askRecording(item: AskCase): Recording {
-  const input = caseInput(item);
+export async function askRecording(item: AskCase): Promise<Recording> {
+  const input = await caseInput(item);
   return {
     version: 1,
     kind: 'ask',
@@ -202,5 +298,5 @@ export function askRecording(item: AskCase): Recording {
 }
 
 if (import.meta.main) {
-  for (const item of ASK_CASES) console.log(writeRecording(DEFAULT_REPLAY_DIR, askRecording(item)));
+  for (const item of ASK_CASES) console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRecording(item)));
 }

@@ -1652,6 +1652,8 @@ export type Database = {
           refs: Json
           role: string
           status: string
+          topic_item_id: string | null
+          topic_property_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1666,6 +1668,8 @@ export type Database = {
           refs?: Json
           role: string
           status: string
+          topic_item_id?: string | null
+          topic_property_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1680,6 +1684,8 @@ export type Database = {
           refs?: Json
           role?: string
           status?: string
+          topic_item_id?: string | null
+          topic_property_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1702,6 +1708,34 @@ export type Database = {
             columns: ["household_id", "job_id"]
             isOneToOne: false
             referencedRelation: "agent_jobs"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "messages_topic_item_fkey"
+            columns: ["household_id", "topic_item_id"]
+            isOneToOne: false
+            referencedRelation: "agent_items"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "messages_topic_property_fkey"
+            columns: ["household_id", "topic_property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "messages_topic_property_fkey"
+            columns: ["household_id", "topic_property_id"]
+            isOneToOne: false
+            referencedRelation: "property_completeness_facts"
+            referencedColumns: ["household_id", "property_id"]
+          },
+          {
+            foreignKeyName: "messages_topic_property_fkey"
+            columns: ["household_id", "topic_property_id"]
+            isOneToOne: false
+            referencedRelation: "property_list_rows"
             referencedColumns: ["household_id", "id"]
           },
         ]
@@ -3430,6 +3464,7 @@ export type Database = {
           p_household_id: string
           p_question: string
           p_question_id: string
+          p_topic?: Json
         }
         Returns: string
       }
@@ -3441,6 +3476,8 @@ export type Database = {
           p_household_id: string
           p_question: string
           p_question_id: string
+          p_topic_item_id: string
+          p_topic_property_id: string
         }
         Returns: string
       }

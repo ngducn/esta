@@ -1,8 +1,7 @@
 import { checkNote } from '@esta/core/guard';
-import { existsSync, mkdtempSync, renameSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { askFollowUpPrompt, askPrompt, askRepairPrompt } from '../../src/prompts/ask';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
@@ -13,6 +12,7 @@ import { mcpToolName } from '../../src/tools/server';
 import { ANSWER, answerRow, askTables, askWorker, ASK_JOB, CONVERSATION, QUESTION } from '../ask-seed';
 import { HOUSEHOLD as HOUSEHOLD_ID } from '../full-seed';
 import { ASK_CONTEXT } from '../golden/ask-cases';
+import { tempDirs } from '../job-dir';
 
 const QUESTION_TEXT = 'Tháng này thu được bao nhiêu từ Dĩ An?';
 const TOOLS = [
@@ -23,15 +23,7 @@ const GOOD = '{{f3.property_label}} đã thu {{f8.income_display}}. Xem [sổ th
 const BAD = 'Đã thu tiền thuê. Tháng trước thu khoảng hai triệu.';
 const BAD_RESIDUE = 'Tháng trước thu khoảng hai triệu.';
 
-const dirs: string[] = [];
-afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
-});
-const tempDir = (prefix: string) => {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
-  dirs.push(dir);
-  return dir;
-};
+const tempDir = tempDirs();
 
 function recordTurns(replies: readonly string[]): string {
   const dir = tempDir('esta-ask-replay-');
@@ -99,7 +91,7 @@ async function afterQuestion1() {
     asked += 1;
     const ids = { question: `00000000-0000-4000-8000-0000000c0b${asked}2`, answer: `00000000-0000-4000-8000-0000000c0b${asked}3`, job: `00000000-0000-4000-8000-0000000c0b${asked}4` };
     tables.messages?.push(
-      { id: ids.question, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'user', content_md: question, status: 'done' },
+      { id: ids.question, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'user', content_md: question, status: 'done', topic_item_id: null, topic_property_id: null },
       { id: ids.answer, household_id: HOUSEHOLD_ID, conversation_id: CONVERSATION, role: 'assistant', content_md: '', status: 'streaming', refs: [] },
     );
     tables.agent_jobs?.push({ id: ids.job, household_id: HOUSEHOLD_ID, kind: 'ask', status: 'queued', attempts: 0, max_attempts: 4, run_after: '2026-10-07T00:00:00.000Z', payload: { conversation_id: CONVERSATION, question_id: ids.question, answer_id: ids.answer, deep: false } });

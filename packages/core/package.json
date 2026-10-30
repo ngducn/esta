@@ -6,6 +6,7 @@
     ".": "./src/index.ts",
     "./activity": "./src/activity/describe.ts",
     "./allocation": "./src/allocation/index.ts",
+    "./assistant": "./src/assistant/index.ts",
     "./address": "./src/address/format-current.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./agent-usage": "./src/agent/usage.ts",
