@@ -7,7 +7,7 @@ import { memberCall, memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { laneHousehold, laneProperty } from './helpers/seed';
 import { answer, freshThread, incomeIn, laneNotes, laneOperatorNote, latestConversation, noteCard, sendInThread } from './helpers/thread';
-import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, servicePatch, seriousAxeViolations, settled, shot, vnd } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, serviceGet, servicePatch, seriousAxeViolations, settled, shot, vnd } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -34,6 +34,20 @@ async function answered(page: Page) {
 }
 
 workerAt('2026-10-07T07:00:00+07:00');
+
+/**
+ * A scheduled watch that an earlier spec in the shard queued writes newer notes on the lane, which would lead the
+ * suggestions with text the replay recordings do not hold, so the suggestions start from the seed's notes alone.
+ */
+async function onlySeedNotesOpen(page: Page): Promise<() => Promise<void>> {
+  const household = laneHousehold(TOPIC_LANE);
+  await servicePatch(page, `agent_jobs?household_id=eq.${household}&kind=neq.ask&status=in.(queued,running)`, { status: 'cancelled' });
+  const others = await serviceGet<{ id: string; status: string }[]>(page, `agent_items?household_id=eq.${household}&status=in.(new,read)&dedupe_key=not.like.seed:*&select=id,status`);
+  await Promise.all(others.map(({ id }) => servicePatch(page, `agent_items?id=eq.${id}`, { status: 'dismissed' })));
+  return async () => {
+    await Promise.all(others.map(({ id, status }) => servicePatch(page, `agent_items?id=eq.${id}`, { status })));
+  };
+}
 
 test('thread case T3: Mẹ taps Trả lời on the Phòng 5 note, asks how often the tenant paid late, and the count comes from the payment records', async ({ page }) => {
   await servicePatch(page, `agent_items?id=eq.${NOTES.overdue.id}`, { status: 'new' });
@@ -71,8 +85,10 @@ test('thread case T4: in dark, Mẹ taps Hỏi Trợ lý về tài sản này on
   await open(page, `me.lane${TOPIC_LANE}@demo.esta.test`, 'dark', PHONE);
   await freshThread(page, 'me', TOPIC_LANE);
   await page.goto(`/properties/${property}`);
+  const ask = page.getByTestId('property-header').getByRole('link', { name: 'Hỏi Trợ lý về tài sản này' });
+  await expect(ask, 'it reads Hỏi Trợ lý beside Sửa thông tin').toHaveText('Hỏi Trợ lý');
   await shot(page, 'p5-13-property-header-390x844-dark');
-  await page.getByRole('link', { name: 'Hỏi Trợ lý về tài sản này' }).click();
+  await ask.click();
   await expect(page).toHaveURL(new RegExp(`/assistant\\?about=${property}$`));
   await expect(page.getByTestId('composer-topic')).toContainText('Về: Đất Bảo Lộc');
 
@@ -94,46 +110,48 @@ test('thread case T4: in dark, Mẹ taps Hỏi Trợ lý về tài sản này on
 
 test('Mẹ sees three suggested replies from her open notes, and one tap sends each with its note as the topic', async ({ page }) => {
   await servicePatch(page, `agent_items?id=in.(${NOTES.overdue.id},${NOTES.leaseEnding.id})`, { status: 'new' });
-  await open(page, `me.lane${TOPIC_LANE}@demo.esta.test`, 'light', PHONE);
-  await freshThread(page, 'me', TOPIC_LANE);
-  await page.goto('/assistant');
-  const chips = page.getByTestId('composer-suggestion');
-  await expect(chips, 'the most severe notes first, newest first, at most three').toHaveText(CHIPS);
-  expect(await seriousAxeViolations(page)).toEqual([]);
-  expect(await noSidewaysScroll(page), 'no sideways scroll').toBe(true);
-  await page.setViewportSize(DESKTOP);
-  await shot(page, 'p5-13-chips-1440x900-light');
-  await page.setViewportSize(PHONE);
-
-  await chips.first().click();
-  await expect(page.getByTestId('question').last()).toContainText(CHIPS[0] ?? '');
-  await answered(page);
-  const draft = `Chào Hoàng Văn Em Demo, tiền thuê Phòng 5 ở Dãy trọ Dĩ An đến hạn ngày 25/09/2026 đã quá hạn 12 ngày, hiện còn ${vnd('2.800.000')}.`;
-  await expect(answer(page)).toContainText(draft);
-  await expect(page.getByTestId('question').last().getByTestId('question-topic')).toHaveText(`Trả lời: ${NOTES.overdue.title}`);
-  expect(await latestTopic(page)).toMatchObject({ topic_item_id: NOTES.overdue.id });
-  await shot(page, 'p5-13-suggestion-390x844-light');
-
-  await chips.nth(1).click();
-  await answered(page);
-  await expect(answer(page)).toContainText('Năm nay Hoàng Văn Em Demo đã trả trễ 5 trên 8 hóa đơn đã đến hạn, trung bình trễ 4 ngày.');
-
-  await chips.nth(2).click();
-  await answered(page);
-  await expect(answer(page)).toContainText(`Hợp đồng Căn hộ Thủ Đức với Phạm Thị Lan Demo hết hạn ngày 01/11/2026, còn 25 ngày. Tiền thuê hiện là ${vnd('9.000.000')} mỗi tháng`);
-  expect(await latestTopic(page)).toMatchObject({ topic_item_id: NOTES.leaseEnding.id });
-  const asked = await memberRest<{ conversation_id: string }[]>(page, 'GET', 'messages?role=eq.user&select=conversation_id');
-  expect(new Set(asked.map(({ conversation_id }) => conversation_id)).size, 'each topic leads its own conversation').toBe(3);
-
-  await page.goto('/collections');
-  await expect(boardRow(page, 'overdue', 'Phòng 5, Dãy trọ Dĩ An'), 'the draft owes what the board shows').toContainText(vnd('2.800.000'));
-
-  await servicePatch(page, `agent_items?id=eq.${NOTES.overdue.id}`, { status: 'dismissed' });
+  const restore = await onlySeedNotesOpen(page);
   try {
+    await open(page, `me.lane${TOPIC_LANE}@demo.esta.test`, 'light', PHONE);
+    await freshThread(page, 'me', TOPIC_LANE);
+    await page.goto('/assistant');
+    const chips = page.getByTestId('composer-suggestion');
+    await expect(chips, 'the most severe notes first, newest first, at most three').toHaveText(CHIPS);
+    expect(await seriousAxeViolations(page)).toEqual([]);
+    expect(await noSidewaysScroll(page), 'no sideways scroll').toBe(true);
+    await page.setViewportSize(DESKTOP);
+    await shot(page, 'p5-13-chips-1440x900-light');
+    await page.setViewportSize(PHONE);
+
+    await chips.first().click();
+    await expect(page.getByTestId('question').last()).toContainText(CHIPS[0] ?? '');
+    await answered(page);
+    const draft = `Chào Hoàng Văn Em Demo, tiền thuê Phòng 5 ở Dãy trọ Dĩ An đến hạn ngày 25/09/2026 đã quá hạn 12 ngày, hiện còn ${vnd('2.800.000')}.`;
+    await expect(answer(page)).toContainText(draft);
+    await expect(page.getByTestId('question').last().getByTestId('question-topic')).toHaveText(`Trả lời: ${NOTES.overdue.title}`);
+    expect(await latestTopic(page)).toMatchObject({ topic_item_id: NOTES.overdue.id });
+    await shot(page, 'p5-13-suggestion-390x844-light');
+
+    await chips.nth(1).click();
+    await answered(page);
+    await expect(answer(page)).toContainText('Năm nay Hoàng Văn Em Demo đã trả trễ 5 trên 8 hóa đơn đã đến hạn, trung bình trễ 4 ngày.');
+
+    await chips.nth(2).click();
+    await answered(page);
+    await expect(answer(page)).toContainText(`Hợp đồng Căn hộ Thủ Đức với Phạm Thị Lan Demo hết hạn ngày 01/11/2026, còn 25 ngày. Tiền thuê hiện là ${vnd('9.000.000')} mỗi tháng`);
+    expect(await latestTopic(page)).toMatchObject({ topic_item_id: NOTES.leaseEnding.id });
+    const asked = await memberRest<{ conversation_id: string }[]>(page, 'GET', 'messages?role=eq.user&select=conversation_id');
+    expect(new Set(asked.map(({ conversation_id }) => conversation_id)).size, 'each topic leads its own conversation').toBe(3);
+
+    await page.goto('/collections');
+    await expect(boardRow(page, 'overdue', 'Phòng 5, Dãy trọ Dĩ An'), 'the draft owes what the board shows').toContainText(vnd('2.800.000'));
+
+    await servicePatch(page, `agent_items?id=eq.${NOTES.overdue.id}`, { status: 'dismissed' });
     await page.goto('/assistant');
     await expect(chips, 'a hidden note offers no reply').toHaveText([CHIPS[2] ?? '', 'Làm sao cho thuê Kho Biên Hòa nhanh hơn?']);
   } finally {
     await servicePatch(page, `agent_items?id=eq.${NOTES.overdue.id}`, { status: 'new' });
+    await restore();
   }
 });
 
