@@ -124,6 +124,14 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(tables.agent_items).toEqual([]);
   });
 
+  it('clears the paused line when the last attempt ends on a usage limit, because nothing waits on it any more (#343)', async () => {
+    const { job, tables, states, worker } = watchWorker(join(CASES, 'usage-limit'), 3);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(job).toMatchObject({ status: 'failed', attempts: 4 });
+    expect(states).toEqual(['ok']);
+    expect(tables.agent_items).toEqual([expect.objectContaining({ kind: 'alert', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' } })]);
+  });
+
   it('fails a rejected login at once, with the Thử lại item for admins and one note for operators that names no error text', async () => {
     const [file = ''] = readdirSync(join(CASES, 'usage-limit', 'portfolio_watch'));
     const usage = recordingSchema.parse(JSON.parse(readFileSync(join(CASES, 'usage-limit', 'portfolio_watch', file), 'utf8')));
