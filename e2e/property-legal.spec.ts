@@ -218,10 +218,11 @@ test('rule 6: in English at 130% and dark, Pháp lý reads in English and does n
   }
 });
 
-test('Đất vườn Long An shows a paper-only certificate and one parcel with no number and no area', async ({ page }) => {
+test('Đất vườn Long An shows a paper-only certificate with no issue date as such, not as still valid, and one parcel with no number and no area', async ({ page }) => {
   await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
   await page.goto(legalPath(6, 'long-an'));
   await expect(page.getByTestId('legal-certificates').getByRole('heading', { level: 3 })).toHaveText('Giấy tay, chưa có sổ');
+  await expect(page.getByTestId('certificate-status')).toHaveText('Chưa ghi ngày cấp');
   await expect(parcels(page)).toHaveCount(1);
   await expect(parcels(page).getByRole('heading', { level: 3 })).toHaveText('Thửa chưa có số');
   await expect(parcels(page).getByTestId('parcel-area')).toHaveText('Chưa có diện tích');
@@ -241,6 +242,20 @@ test('tapping Lưu on an empty parcel form says what is missing and adds no row'
   await page.goto(legalPath(6, 'long-an'));
   await expect(parcels(page)).toHaveCount(1);
   await expect(parcels(page).getByRole('heading', { level: 3 })).toHaveText('Thửa chưa có số');
+});
+
+test('tapping Lưu on an empty certificate form says what is missing and adds no certificate (#356)', async ({ page }) => {
+  await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
+  await page.goto(`${legalPath(6, 'long-an')}/certificates/new`);
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await page.getByTestId('save-legal-item').click();
+  await expect(page.getByTestId('certificate-unidentified')).toHaveText(
+    'Giấy chứng nhận này chưa có gì để nhận ra. Điền số phát hành, số vào sổ cấp giấy hoặc ngày cấp, hoặc chọn người đứng tên.',
+  );
+  await expect(page).toHaveURL(/\/certificates\/new$/);
+
+  await page.goto(legalPath(6, 'long-an'));
+  await expect(page.getByTestId('legal-certificates').getByRole('heading', { level: 3 })).toHaveText('Giấy tay, chưa có sổ');
 });
 
 test('on a slow phone the parcel form takes no typing until it hydrates, then keeps what Mẹ types', async ({ page }) => {
