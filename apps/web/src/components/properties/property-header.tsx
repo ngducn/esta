@@ -24,7 +24,7 @@ export type PropertyHeaderData = {
   statuses: readonly StatusPillData[];
   /** `null` for a viewer, who cannot edit. */
   edit: { href: string; label: string } | null;
-  /** `label` is what she reads, `name` what a screen reader says, which also names the property. */
+  /** `label` is what she reads (`Hỏi Trợ lý`), `name` what a screen reader says (`Hỏi Trợ lý về tài sản này`). Neither names the property; the heading above does. */
   ask: { href: string; label: string; name: string };
   /** The score, already translated: `title` is the word `Mức đầy đủ`, `score` such as `29%`. */
   completeness: { title: string; percent: number; score: string };
