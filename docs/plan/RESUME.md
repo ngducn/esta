@@ -1,6 +1,6 @@
 # Resume notes for the Esta v1 run
 
-Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full, **only when Ryan says to resume** (standing order 2026-10-27: his weekly limit ran low, so the run stopped). Read:
+Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full, **only when Ryan says to resume**. Read the 2026-10-30 retro rules in standing-orders.md first (standing order 2026-10-27: his weekly limit ran low, so the run stopped). Read:
 - `docs/plan/trail/standing-orders.md` (newest first: 2026-10-27 merge-and-stop, 2026-10-25 17:10 thread direction);
 - `verification-tiers.md`, `owner-brief.md`, `lane-brief.md`;
 - the tail of `decisions.tsv`;
@@ -28,7 +28,7 @@ Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claud
   - Done: the migration and pgTAP for `p_topic`, the topic preload, T3/T4 goldens, the SUGGESTIONS registry.
   - Left: chip recordings, the e2e extension, heavy checks, screenshots and the PR body; then the rigorous reviews.
   - Next: a fresh Opus owner on slot 2 from `briefs/p5-13.md` plus RESUME-13.md. Restack onto main first, since its base #350 has landed.
-- **After P5-13:** P5-09 (notice email) beside P5-14 (web quotes, `quote_page`) and P5-15 (typed numbers, `calculate`). Then P5-16 (pre-live lows, rigorous: #313 #314 #318 #321 #329 #333 #338 #340 #343 #345 #346 #348 #349 #351), then P5-10 (live run), then Phase 6.
+- **After P5-13 (standing order 2026-10-30):** Mẹ's session on Ryan's phone (the root prepares the build and a one-page script), then one cleanup round (P5-16 widened to the lows Mẹ can see, #353 first), then P5-09 (notice email), P5-14 (web quotes, `quote_page`) and P5-15 (typed numbers, `calculate`), then P5-10 (live run), then Phase 6.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -36,7 +36,7 @@ Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claud
 2. One email per brief and per urgent note, per PLT-4 (default). The planner recommends one combined email a morning instead.
 3. D9 wording stays (the thread counts as the in-app inbox).
 4. #351: should a newer note about the same thing replace the older one in Cần xử lý? Recommended: yes.
-5. Merges: the classifier denies the root's `gh pr merge` without a grant. Ryan can add a permission rule or grant each batch.
+5. Merges: settled on 2026-10-30. Ryan lets the root merge itself, and `.claude/settings.local.json` allows `gh pr merge`.
 
 ## Rules added this session
 

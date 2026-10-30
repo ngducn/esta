@@ -39,4 +39,11 @@ You own one PR of Esta v1 from build to merge-ready (see the 2026-10-15 update i
 - Money is integer VND. No `new Date()` in domain code. No `any`. Every user-facing string goes through next-intl. Design tokens only.
 - Keep comments to a non-obvious why. No phase-narrating comments.
 - If the plan section is wrong or impossible as written, do the smallest correct thing, record why in decisions.tsv and in the PR body under Tradeoffs, and tell the root.
+- Known defect classes (2026-10-30). Reviewers found each of these more than once in Phase 5, always after the build. Check every one that your diff touches before you report code-ready, and say in the PR body how you checked it:
+  1. **A private row with a public copy.** Any table or row that some members must not read (creator-only, operator-only) also hides its `audit_log` rows, and anything else that copies its content, from those members. Prove it in pgTAP as the reader who must not see it.
+  2. **Count, then write.** A cap, a limit or a "one at a time" rule that counts rows and then inserts must hold under two calls at once and under a retry. Use one definer function under an advisory lock, or serialize the writers, and test two parallel calls.
+  3. **Clock edges.** Test any logic keyed by a day, a week or a month at 23:59 and 00:01 +07, on Sunday to Monday, for a retry that runs after midnight, and on a frozen test clock. Keys come from the job or the row, never from "today" at run time.
+  4. **Hidden pages.** A page a member may not see answers a real 404, with the same body as a missing page, never a 200 that says "not found".
+  5. **The number guard.** Any change to `packages/core/src/guard/words.ts` comes with a test that a real number word next to the new compound is still rejected. When a word can be a real count, the number rule wins and the prompt rewords.
+  6. **Copied fixtures.** Extend an existing fixture or recording file rather than copying it, and keep generated JSON out of a new file when a shared one exists.
 - Size (2026-10-19): keep a PR to one user outcome and its product code (everything except tests, migrations' pgTAP, generated types, seed and message files) under about 800 added lines. When the product code will pass that, stop and propose a split by user outcome to the root before building further. Tests have no cap.

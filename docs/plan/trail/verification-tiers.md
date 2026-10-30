@@ -31,7 +31,7 @@ Any one of these makes a PR rigorous:
 | Independent review | One Sonnet review lane, no Supabase stack | One Sonnet live lane that drives the change in a browser | A Sonnet live lane, an Opus adversarial audit lane, a regression lane that runs the same flow on `main`, and a second-opinion audit from a different model on the riskiest part (money math, a policy, a migration) |
 | Perf | None | Lighthouse when the plan's perf box names the route | Lighthouse plus the plan's query and bench budgets, each on a quiet machine through `bin/heavy.sh` |
 | Fix rounds | One | One | Up to two, the playbook ceiling |
-| Merge | Root merges on a clean verdict | Root merges on a clean verdict | Root merges on a clean verdict. Ryan gets a short plain-language summary with the video link. Items on his interrogate list still wait for his click |
+| Merge | Root merges on a clean verdict | Root merges on a clean verdict | Root merges on a clean verdict and posts Ryan a short plain-language summary with the video link on the PR. Since 2026-10-30 nothing waits for his click (standing orders) |
 
 The video is a Playwright recording (`video: 'on'`) of the PR's main flow at 390x844. It is converted to a GIF when `ffmpeg` is available so it plays inline on GitHub, and it is published with `bin/pr-media.sh`.
 
