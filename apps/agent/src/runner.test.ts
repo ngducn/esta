@@ -1,11 +1,11 @@
-import { parseInstant } from '@esta/core';
+import { parseInstant, type Clock } from '@esta/core';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { isoDate } from '@esta/core/date';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { A, DOCUMENT_A, EXTRACTION_A, extractJob, JOB_A, NOW, twoHouseholds } from '../test/extract-job';
-import { CASES, labels, snapshot } from '../test/full-seed';
+import { CASES, clockOn, labels, snapshot } from '../test/full-seed';
 import { replayWorker } from '../test/replay-worker';
 import type { WorkerState } from './heartbeat';
 import { JOBS } from './jobs/registry';
@@ -105,7 +105,7 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
   const recordings = mkdtempSync(join(tmpdir(), 'esta-runner-auth-'));
   afterEach(() => vi.restoreAllMocks());
 
-  function watchWorker(replayDir: string, attempts: number) {
+  function watchWorker(replayDir: string, attempts: number, clock?: () => Promise<Clock>) {
     const { db, tables } = twoHouseholds();
     const job = { id: JOB_A, household_id: A, kind: 'portfolio_watch', payload: {}, status: 'queued', attempts, max_attempts: 4, idempotency_key: `portfolio_watch:${A}:2026-10-07` };
     Object.assign(tables, { agent_jobs: [job], agent_runs: [] });
@@ -113,7 +113,7 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
       portfolioWatchRequest({ db: jobDb, householdId: claimed.household_id, jobId: claimed.id, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock: async () => ({ source: 'table', now: () => NOW, today: () => isoDate('2026-10-07') }), read: async () => ({ snapshot, labels }) }),
     );
     const states: WorkerState[] = [];
-    return { job, tables, states, worker: replayWorker(db, [job], jobsDir, undefined, replayDir, states) };
+    return { job, tables, states, worker: replayWorker(db, [job], jobsDir, clock, replayDir, states) };
   }
 
   it('requeues a usage limit a minute later and tells the heartbeat Trợ lý is paused', async () => {
@@ -141,7 +141,7 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(job).toMatchObject({ status: 'failed', attempts: 1 });
     expect(states).toEqual(['ok']);
     expect(tables.agent_items).toEqual([
-      expect.objectContaining({ kind: 'alert', audience: 'all', title: 'Trợ lý chưa xem được danh mục hôm nay', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' }, dedupe_key: `job_failed:portfolio_watch:${JOB_A}` }),
+      expect.objectContaining({ kind: 'alert', audience: 'all', title: 'Trợ lý chưa xem được danh mục hôm nay', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' }, dedupe_key: `job_failed:portfolio_watch:2026-10-07:${JOB_A}` }),
       expect.objectContaining({ kind: 'system', severity: 'action', audience: 'operator', title: 'Trợ lý không đăng nhập được vào Claude', dedupe_key: 'auth_error:2026-10-07' }),
     ]);
     expect(JSON.stringify(tables.agent_items)).not.toContain('sk-ant');
@@ -154,11 +154,11 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(job).toMatchObject({ status: 'failed', attempts: 1 });
     expect(tables.agent_items.map(({ dedupe_key, audience }) => ({ dedupe_key, audience }))).toEqual([
       { dedupe_key: `number_guard:${JOB_A}`, audience: 'operator' },
-      { dedupe_key: `job_failed:portfolio_watch:${JOB_A}`, audience: 'operator' },
+      { dedupe_key: `job_failed:portfolio_watch:2026-10-07:${JOB_A}`, audience: 'operator' },
     ]);
   });
 
-  it("leaves one Thử lại item after the fourth attempt fails, keyed by the job's kind so Thị trường can name a failed scan (#329), and none before it", async () => {
+  it("leaves one Thử lại item after the fourth attempt fails, keyed by the job's kind and its own day so Thị trường can name a failed scan (#329), and none before it", async () => {
     const third = watchWorker(join(CASES, 'always-fail'), 2);
     await pollOnce(third.worker);
     expect(third.job).toMatchObject({ status: 'queued', attempts: 3, run_after: '2026-10-07T02:25:00.000Z' });
@@ -167,7 +167,14 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     const last = watchWorker(join(CASES, 'always-fail'), 3);
     await pollOnce(last.worker);
     expect(last.job).toMatchObject({ status: 'failed', attempts: 4, error: 'API Error: 529 Overloaded' });
-    expect(last.tables.agent_items).toEqual([expect.objectContaining({ severity: 'info', audience: 'all', dedupe_key: `job_failed:portfolio_watch:${JOB_A}`, job_id: JOB_A, created_at: NOW })]);
+    expect(last.tables.agent_items).toEqual([expect.objectContaining({ severity: 'info', audience: 'all', dedupe_key: `job_failed:portfolio_watch:2026-10-07:${JOB_A}`, job_id: JOB_A, created_at: NOW })]);
     expect(last.states).toEqual(['ok']);
+  });
+
+  it("keys the Thử lại item by the job's own day, so a watch for 07/10 that fails for good at 00:05 on 08/10 is not 08/10's failure (#329)", async () => {
+    const late = watchWorker(join(CASES, 'always-fail'), 3, clockOn('2026-10-08T00:05:00+07:00'));
+    await pollOnce(late.worker);
+    expect(late.job).toMatchObject({ status: 'failed', attempts: 4 });
+    expect(late.tables.agent_items).toEqual([expect.objectContaining({ dedupe_key: `job_failed:portfolio_watch:2026-10-07:${JOB_A}`, created_at: '2026-10-07T17:05:00.000Z' })]);
   });
 });

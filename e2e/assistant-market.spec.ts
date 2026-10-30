@@ -96,22 +96,47 @@ test('in English at 130% text, Thị trường reads in English, keeps dates as 
   }
 });
 
+const SCAN_FAILED = 'Trợ lý chưa đọc được tin thị trường hôm nay';
+
+/** A news scan for `day` that failed for good at `failedAt`, with the Thử lại item the worker leaves (AGENT.md §9). */
+async function failedScan(page: Page, name: string, day: string, failedAt: string) {
+  const household_id = seedId(`seed:household:lane-${LANE}`);
+  const job = seedId(`seed:e2e:${name}:lane-${LANE}`);
+  const key = `job_failed:research_scan:${day}:${job}`;
+  await serviceUpsert(page, 'agent_jobs', { id: job, household_id, kind: 'research_scan', idempotency_key: `research_scan:${household_id}:${day}`, status: 'failed', attempts: 4, run_after: failedAt, finished_at: failedAt });
+  await serviceUpsert(page, 'agent_items', { household_id, kind: 'alert', severity: 'info', title: SCAN_FAILED, proposal: { type: 'retry_job', params: { job_id: job }, min_role: 'admin' }, dedupe_key: key, job_id: job, created_at: failedAt });
+  return {
+    item: `agent_items?dedupe_key=eq.${key}`,
+    remove: async () => {
+      await serviceDelete(page, `agent_items?dedupe_key=eq.${key}`);
+      await serviceDelete(page, `agent_jobs?id=eq.${job}`);
+    },
+  };
+}
+
 test('on a day the scan failed, Thị trường says so instead of looking like a quiet day (#329)', async ({ page }) => {
   await open(page, ME, 'light', PHONE);
-  const household_id = seedId(`seed:household:lane-${LANE}`);
-  const job = seedId(`seed:e2e:market-failed-scan:lane-${LANE}`);
-  const title = 'Trợ lý chưa đọc được tin thị trường hôm nay';
-  await serviceUpsert(page, 'agent_jobs', { id: job, household_id, kind: 'research_scan', status: 'failed', attempts: 4, run_after: '2026-10-06T23:00:00Z', finished_at: '2026-10-06T23:30:00Z' });
-  await serviceUpsert(page, 'agent_items', { household_id, kind: 'alert', severity: 'info', title, proposal: { type: 'retry_job', params: { job_id: job }, min_role: 'admin' }, dedupe_key: `job_failed:research_scan:${job}`, job_id: job, created_at: '2026-10-06T23:30:00Z' });
+  const scan = await failedScan(page, 'market-failed-scan', '2026-10-07', '2026-10-06T23:30:00Z');
   try {
     await page.goto('/assistant/market');
-    await expect(page.getByTestId('market-scan-failed')).toHaveText(title);
-    await servicePatch(page, `agent_items?dedupe_key=eq.job_failed:research_scan:${job}`, { status: 'done' });
+    await expect(page.getByTestId('market-scan-failed')).toHaveText(SCAN_FAILED);
+    await servicePatch(page, scan.item, { status: 'done' });
     await page.reload();
     await expect(items(page).first()).toBeVisible();
     await expect(page.getByTestId('market-scan-failed'), 'a retried scan no longer reads as failed').toHaveCount(0);
   } finally {
-    await serviceDelete(page, `agent_items?dedupe_key=eq.job_failed:research_scan:${job}`);
-    await serviceDelete(page, `agent_jobs?id=eq.${job}`);
+    await scan.remove();
+  }
+});
+
+test("yesterday's scan that failed for good after midnight is not today's failure (#329)", async ({ page }) => {
+  await open(page, ME, 'light', PHONE);
+  const scan = await failedScan(page, 'market-failed-scan-late', '2026-10-06', '2026-10-06T17:05:00Z');
+  try {
+    await page.goto('/assistant/market');
+    await expect(items(page).first()).toBeVisible();
+    await expect(page.getByTestId('market-scan-failed'), 'the scan for 06/10 failed at 00:05 on 07/10').toHaveCount(0);
+  } finally {
+    await scan.remove();
   }
 });
