@@ -1,3 +1,4 @@
+import { noteRelatedOf } from '@esta/core/assistant';
 import { briefDraftSchema, briefV1Schema, renderBriefMarkdown, type BriefDraft, type BriefLine, type MarketLine } from '@esta/core/agent-schemas';
 import type { FilledNote } from '@esta/core/guard';
 import type { DescribedFact } from '@esta/core/watch';
@@ -78,7 +79,7 @@ export function briefWriter(binding: BriefBinding) {
       severity: severityOf(facts),
       title,
       body_md: renderBriefMarkdown(brief.data),
-      related: { facts: facts.map(({ fact }) => ({ rule_id: fact.ruleId, subject_key: fact.subjectKey })), links },
+      related: noteRelatedOf(facts.map(({ fact }) => fact), links),
       dedupe_key: dedupeKey,
     });
     const leftOut = [...binding.facts].filter(([handle]) => !told.has(handle)).map(([handle, { fact }]) => `${handle} (${fact.ruleId})`);

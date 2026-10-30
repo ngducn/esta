@@ -1,3 +1,4 @@
+import { noteRelated } from '@esta/core/assistant';
 import { isoDate } from '@esta/core/date';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -130,6 +131,9 @@ describe('create_brief', () => {
     expect(tables.agent_items).toEqual([]);
     expect((await call('create_brief', draft())).isError).toBe(false);
     expect(tables.agent_items?.[0]).toMatchObject({ kind: 'brief', severity: 'action', audience: 'all', title: 'Sáng nay có việc cần làm.' });
+    const related = noteRelated(tables.agent_items?.[0]?.related);
+    expect(related.facts.map(({ rule_id }) => rule_id), 'every fact a line tells').toEqual(['W1', 'W3', 'W6', 'W4', 'W4', 'W5', 'W7']);
+    expect(related.links, 'one record per line, the first fact’s').toHaveLength(6);
     expect((await call('create_brief', draft())).text).toMatch(/^This run already saved the brief/);
   });
 

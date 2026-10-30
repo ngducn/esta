@@ -14,11 +14,12 @@ export const noteRelatedSchema = z.object({
 
 export type NoteRelated = z.output<typeof noteRelatedSchema>;
 
-export type RelatedFact = { readonly ruleId: string; readonly subjectKey: string; readonly link: string };
+export type NoteFact = { readonly ruleId: string; readonly subjectKey: string };
 
-export const noteRelatedOf = (facts: readonly RelatedFact[]): NoteRelated => ({
+/** What a note stores as `related`: the facts it tells and the records it links to. */
+export const noteRelatedOf = (facts: readonly NoteFact[], links: readonly string[]): NoteRelated => ({
   facts: facts.map(({ ruleId, subjectKey }) => ({ rule_id: ruleId, subject_key: subjectKey })),
-  links: facts.map(({ link }) => link),
+  links: [...links],
 });
 
 export const noteRelated = (raw: unknown): NoteRelated => noteRelatedSchema.safeParse(raw).data ?? { facts: [], links: [] };

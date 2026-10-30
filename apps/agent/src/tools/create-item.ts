@@ -144,7 +144,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       severity: severityOf(facts),
       title: title?.text ?? '',
       body_md: body?.text ?? '',
-      related: noteRelatedOf(facts.map(({ fact, link }) => ({ ...fact, link }))),
+      related: noteRelatedOf(facts.map(({ fact }) => fact), facts.map(({ link }) => link)),
       dedupe_key: dedupeKey,
     });
     console.log(`[agent] create_item ok ${dedupeKey}`);

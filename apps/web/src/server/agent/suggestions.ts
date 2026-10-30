@@ -1,5 +1,5 @@
 import 'server-only';
-import { noteRelated, noteSuggestion, suggestReplies, type Suggestion, type SuggestionLabels } from '@esta/core/assistant';
+import { noteRelated, noteSuggestion, OPEN_NOTE_STATUSES, suggestionCandidates, suggestReplies, type Suggestion, type SuggestionLabels } from '@esta/core/assistant';
 import { WATCH_SEVERITIES } from '@esta/core/watch';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
@@ -29,13 +29,20 @@ async function rows<T>(read: PromiseLike<{ data: unknown; error: { message: stri
 export async function loadSuggestions(householdId: string, place: Place): Promise<Suggestion[]> {
   const db = await createSessionClient();
   const fetched = await rows(
-    db.from('agent_items').select('id, kind, severity, status, created_at, related').eq('household_id', householdId).in('status', ['new', 'read']),
+    db
+      .from('agent_items')
+      .select('id, kind, severity, status, created_at, related')
+      .eq('household_id', householdId)
+      .in('status', OPEN_NOTE_STATUSES)
+      // Newest first, so a read PostgREST cuts at its row cap drops the oldest notes.
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false }),
     noteSchema,
   );
-  const notes = fetched.map((row) => {
-    const related = noteRelated(row.related);
-    return { ...row, related, subject: noteSuggestion(row.kind, related).subjectKey?.split(':') ?? [] };
-  });
+  const notes = suggestionCandidates(fetched.map((row) => ({ ...row, stamp: canonicalStamp(row.created_at), related: noteRelated(row.related) }))).map((note) => ({
+    ...note,
+    subject: noteSuggestion(note.kind, note.related).subjectKey?.split(':') ?? [],
+  }));
   const ids = (type: string) => notes.flatMap(({ subject: [kind, id] }) => (kind === type && id !== undefined ? [id] : []));
   const [invoices, leases, units] = await Promise.all([
     rows(db.from('invoices').select(`id, lease:leases!invoices_household_id_lease_id_fkey(${LEASE})`).in('id', ids('invoice')), z.object({ id: z.uuid(), lease: leaseSchema })),
@@ -47,5 +54,5 @@ export async function loadSuggestions(householdId: string, place: Place): Promis
     ...leases.map((lease) => [`lease:${lease.id}`, leaseLabels(lease, place)] as const),
     ...units.map((unit) => [`unit:${unit.id}`, unitLabels(unit, place)] as const),
   ]);
-  return suggestReplies(notes.map((note) => ({ ...note, stamp: canonicalStamp(note.created_at), labels: labels.get(note.subject.join(':')) ?? {} })));
+  return suggestReplies(notes.map((note) => ({ ...note, labels: labels.get(note.subject.join(':')) ?? {} })));
 }

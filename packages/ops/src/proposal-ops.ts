@@ -1,3 +1,4 @@
+import { isOpenNote } from '@esta/core/assistant';
 import { z } from 'zod';
 import { dbRefusal, idSchema } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
@@ -32,7 +33,7 @@ export const proposalApprove = defineOp<ApproveInput, { readonly id: string }, P
     if (item === null) return refuse({ kind: 'not_found' });
     const decided = decidedSchema.safeParse(item.status);
     if (decided.success) return unchanged({ id, status: decided.data });
-    if (item.status !== 'new' && item.status !== 'read') return refuse({ kind: 'dismissed' });
+    if (!isOpenNote(item.status)) return refuse({ kind: 'dismissed' });
     return change({ id });
   },
   async apply(ctx, { id }) {

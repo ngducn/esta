@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MAX_SUGGESTIONS, noteSuggestion, SUGGESTION_PARAMS, SUGGESTIONS, suggestReplies, type SuggestionNote } from './suggestions';
+import { MAX_SUGGESTIONS, noteSuggestion, SUGGESTION_PARAMS, SUGGESTION_WINDOW, SUGGESTIONS, suggestionCandidates, suggestReplies, type SuggestionNote } from './suggestions';
 import { noteRelated } from './topic';
 
 const watchNote = (id: string, ruleId: string, fields: Partial<SuggestionNote> = {}): SuggestionNote => ({
@@ -49,6 +49,29 @@ describe('suggested replies (AGENT.md §5.6 step 8)', () => {
     ];
     expect(suggestReplies(notes)).toHaveLength(MAX_SUGGESTIONS);
     expect(texts(notes).map(([id, key]) => `${id} ${key}`)).toEqual(['newer remindTenant', 'newer tenantLateCount', 'older renewLease']);
+  });
+
+  it('offers the same replies whatever order the notes were read in, when two share severity and instant', () => {
+    const first = watchNote('0001', 'W3');
+    const second = watchNote('0002', 'W4');
+    const expected = [['0002', 'rentFaster', { unit: 'Phòng 8 Dãy trọ Dĩ An' }], ['0001', 'renewLease', { property: 'Căn hộ Thủ Đức' }]];
+    expect(texts([first, second])).toEqual(expected);
+    expect(texts([second, first])).toEqual(expected);
+  });
+
+  it('reads the labels of the first notes that can offer a reply, past the third when earlier ones repeat or lack a label', () => {
+    const notes = Array.from({ length: SUGGESTION_WINDOW + 4 }, (_, i) => watchNote(`w${String(i).padStart(2, '0')}`, 'W1', { stamp: `2026-10-07T06:45:${String(59 - i).padStart(2, '0')}+07:00` }));
+    const settled = watchNote('settled', 'W1', { status: 'dismissed', stamp: '2026-10-07T23:00:00+07:00' });
+    const silent = watchNote('silent', 'W5', { stamp: '2026-10-07T22:00:00+07:00' });
+    const chosen = suggestionCandidates([silent, ...notes.toReversed(), settled]);
+    expect(chosen.map(({ id }) => id)).toEqual(notes.slice(0, SUGGESTION_WINDOW).map(({ id }) => id));
+    expect(SUGGESTION_WINDOW).toBeGreaterThan(MAX_SUGGESTIONS);
+  });
+
+  it('still fills the third reply from a later note when a tenant’s late invoices each wrote a note', () => {
+    const tenantLate = ['a', 'b', 'c'].map((id, i) => watchNote(id, 'W1', { stamp: `2026-10-07T06:45:${30 - i}+07:00` }));
+    const renewal = watchNote('d', 'W3', { stamp: '2026-10-07T06:45:10+07:00' });
+    expect(texts(suggestionCandidates([...tenantLate, renewal])).map(([id, key]) => `${id} ${key}`)).toEqual(['a remindTenant', 'a tenantLateCount', 'd renewLease']);
   });
 
   it('a hidden or settled note gives no reply', () => {

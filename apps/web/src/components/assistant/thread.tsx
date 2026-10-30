@@ -1,6 +1,6 @@
 import { businessDate, type Instant, type IsoDate } from '@esta/core';
 import { wallTime } from '@esta/core/agent';
-import type { Suggestion } from '@esta/core/assistant';
+import { isOpenNote, type Suggestion } from '@esta/core/assistant';
 import { formatDayMonth } from '@esta/core/format';
 import { visibleText } from '@esta/core/guard';
 import { PROPOSAL_TYPES } from '@esta/core/proposals';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { buttonVariants } from '@/components/ui/button-variants';
 import type { ConversationMessage } from '@/server/agent/conversations';
-import { isOpen, type InboxNote } from '@/server/agent/items';
+import type { InboxNote } from '@/server/agent/items';
 import type { ProposalDetails } from '@/server/agent/proposal-details';
 import type { Thread, ThreadEntry } from '@/server/agent/thread';
 import type { TopicChoice } from '@/server/agent/topic';
@@ -54,7 +54,7 @@ function extrasFor(note: InboxNote, { details, reminderLabels }: ProposalContext
 function actionsFor(note: InboxNote, canDecide: boolean, context: ProposalContext, t: Translate) {
   const decided = { approved: t('approved'), notApplicable: t('notApplicable') };
   if (note.proposal === null) {
-    if (!isOpen(note.status)) return null;
+    if (!isOpenNote(note.status)) return null;
     return (
       <NoteActions
         id={note.id}
@@ -77,7 +77,7 @@ function actionsFor(note: InboxNote, canDecide: boolean, context: ProposalContex
   const status = note.status;
   const settled = status === 'approved' || status === 'failed';
   if (!canDecide) return settled ? <ProposalDecision decision={status} labels={decided} extras={extrasFor(note, context, t)} /> : null;
-  if (!settled && !isOpen(status)) return null;
+  if (!settled && !isOpenNote(status)) return null;
   return (
     <ProposalActions
       id={note.id}

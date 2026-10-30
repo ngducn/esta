@@ -1,5 +1,6 @@
 'use client';
 
+import type { OpenNoteStatus } from '@esta/core/assistant';
 import type { ProposalDecided } from '@esta/ops';
 import { Check, EyeOff, FileText, RotateCw, Undo2, X } from 'lucide-react';
 import Link from 'next/link';
@@ -15,7 +16,7 @@ import { useAction } from '@/components/use-action';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { useUndoableAction } from '@/components/use-undoable-action';
 import { useHydrated } from '@/lib/use-hydrated';
-import type { InboxStatus, NoteStatus } from '@/server/agent/items';
+import type { NoteStatus } from '@/server/agent/items';
 import type { ReminderLabels, ReminderTarget } from '@/server/reminders/board';
 
 const loadConfirm = () => import('@/components/confirm-dialog-popup');
@@ -36,7 +37,7 @@ export type RetryLabels = { readonly retry: string; readonly retryLabel: string;
 
 const button = buttonVariants({ variant: 'outline' });
 
-export function NoteActions({ id, status, labels, retry }: { id: string; status: InboxStatus; labels: NoteActionLabels; retry?: RetryLabels }) {
+export function NoteActions({ id, status, labels, retry }: { id: string; status: OpenNoteStatus; labels: NoteActionLabels; retry?: RetryLabels }) {
   const hydrated = useHydrated();
   const router = useRouter();
   const { pending, error, perform } = useUndoableAction({ failed: labels.failed, restoreFailed: labels.restoreFailed });
@@ -173,7 +174,7 @@ const isDecided = (status: NoteStatus): status is ProposalDecided['status'] => s
  * A second tap or a stale tab reads what was decided. The card stays this one component once decided, so the refresh
  * after an approval keeps the reminder sheet it opened.
  */
-export function ProposalActions({ id, status, labels, extras }: { id: string; status: InboxStatus | ProposalDecided['status']; labels: ProposalActionLabels; extras: ProposalExtras }) {
+export function ProposalActions({ id, status, labels, extras }: { id: string; status: OpenNoteStatus | ProposalDecided['status']; labels: ProposalActionLabels; extras: ProposalExtras }) {
   const hydrated = useHydrated();
   const router = useRouter();
   const confirm = useDeferredDialog(loadConfirm);
@@ -194,7 +195,7 @@ export function ProposalActions({ id, status, labels, extras }: { id: string; st
       },
     );
   };
-  const skip = (from: InboxStatus) => perform(() => setNoteStatus({ id, status: 'dismissed' }), { message: labels.skipped, restore: () => setNoteStatus({ id, status: from }) });
+  const skip = (from: OpenNoteStatus) => perform(() => setNoteStatus({ id, status: 'dismissed' }), { message: labels.skipped, restore: () => setNoteStatus({ id, status: from }) });
 
   if (decision !== null) return <ProposalDecision decision={decision} labels={labels} extras={extras} openReminder />;
   if (isDecided(status)) return <ProposalDecision decision={status} labels={labels} extras={extras} />;

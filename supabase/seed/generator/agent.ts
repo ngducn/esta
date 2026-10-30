@@ -3,7 +3,7 @@ import { addDays, daysBetween } from '../../../packages/core/src/date/calendar.t
 import { isoDate, type IsoDate } from '../../../packages/core/src/date/iso-date.ts';
 import { formatDate, formatVnd } from '../../../packages/core/src/format/index.ts';
 import { vnd } from '../../../packages/core/src/money/vnd.ts';
-import { noteRelatedOf, type RelatedFact } from '../../../packages/core/src/assistant/topic.ts';
+import { noteRelatedOf, type NoteFact } from '../../../packages/core/src/assistant/topic.ts';
 import { publicTable, type HouseholdSeed, type SeedRow } from './context.ts';
 import { DOCUMENT_SEEDS, documentId } from './documents.ts';
 import { householdId, userId } from './households.ts';
@@ -48,7 +48,7 @@ export const agentRuns = publicTable('agent_runs', ({ household, asOf }) => [
   },
 ]);
 
-type Watch = RelatedFact & { readonly line: string };
+type Watch = NoteFact & { readonly link: string; readonly line: string };
 
 function leaseOf(property: PropertySeedKey, unit = 1) {
   const seed = LEASE_SEEDS.find((lease) => lease.property === property && lease.unit === unit);
@@ -117,19 +117,19 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
     const invoice = seedInvoiceId(household, UNPAID, UNPAID.periodStart);
     const title = `${unit.label} ${nickname(UNPAID.property)} quá hạn ${daysBetween(isoDate(UNPAID.dueDate), runDay)} ngày`;
     const body = `Hóa đơn của ${lease.tenant.fullName} đến hạn ngày ${date(UNPAID.dueDate)} vẫn chưa thanh toán. Còn nợ ${owed}.`;
-    notes.push(note('W1', 30, 'action', `W1:lease:${seedLeaseId(household, lease)}:${UNPAID.dueDate}`, title, body, noteRelatedOf([{ ruleId: 'W1', subjectKey: `invoice:${invoice}`, link: `esta://invoice/${invoice}` }])));
+    notes.push(note('W1', 30, 'action', `W1:lease:${seedLeaseId(household, lease)}:${UNPAID.dueDate}`, title, body, noteRelatedOf([{ ruleId: 'W1', subjectKey: `invoice:${invoice}` }], [`esta://invoice/${invoice}`])));
   }
   if (has('thu-duc')) {
     const lease = leaseOf('thu-duc');
     const id = seedLeaseId(household, lease);
     const title = `Hợp đồng ${nickname('thu-duc')} hết hạn sau ${daysBetween(runDay, lease.terms.endDate)} ngày`;
     const body = `Hợp đồng với ${lease.tenant.fullName} kết thúc ngày ${date(lease.terms.endDate)} và chưa có hợp đồng gia hạn.`;
-    notes.push(note('W3', 20, 'action', `W3:lease:${id}`, title, body, noteRelatedOf([{ ruleId: 'W3', subjectKey: `lease:${id}`, link: `esta://lease/${id}` }])));
+    notes.push(note('W3', 20, 'action', `W3:lease:${id}`, title, body, noteRelatedOf([{ ruleId: 'W3', subjectKey: `lease:${id}` }], [`esta://lease/${id}`])));
   }
   const facts = watchFacts(household, has, runDay);
   if (facts.length > 0) {
     const title = `${COUNT_WORDS[facts.length - 1] ?? facts.length} việc cần để ý`;
-    notes.push(note('watch', 10, 'watch', `group:${runDay}`, title, facts.map((fact) => `- ${fact.line}`).join('\n'), noteRelatedOf(facts)));
+    notes.push(note('watch', 10, 'watch', `group:${runDay}`, title, facts.map((fact) => `- ${fact.line}`).join('\n'), noteRelatedOf(facts, facts.map(({ link }) => link))));
   }
   return notes;
 });

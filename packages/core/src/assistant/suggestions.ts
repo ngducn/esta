@@ -1,4 +1,5 @@
-import { mostSevereFirst, type WatchRuleId, type WatchSeverity } from '../watch/types';
+import type { WatchRuleId, WatchSeverity } from '../watch/types';
+import { byPriority, isOpenNote } from './open-notes';
 import type { NoteRelated } from './topic';
 
 /** The names a suggested reply holds, read from the records the note names and never from what the model wrote. */
@@ -48,13 +49,24 @@ export type Suggestion = { readonly noteId: string; readonly key: SuggestionKey;
 
 export const MAX_SUGGESTIONS = 3;
 
-const OPEN = new Set(['new', 'read']);
+/**
+ * How many ranked notes get their labels read. A note's reply can lack a label or repeat the reply of an earlier note
+ * (a tenant with two late invoices has two notes), so the replies can run past the first three notes.
+ */
+export const SUGGESTION_WINDOW = 3 * MAX_SUGGESTIONS;
+
+type RankedSuggestionNote = Pick<SuggestionNote, 'id' | 'kind' | 'severity' | 'status' | 'stamp' | 'related'>;
+
+/** The open notes that can offer a reply, in the order their replies lead. */
+const ranked = <N extends RankedSuggestionNote>(notes: readonly N[]): N[] =>
+  notes.filter((note) => isOpenNote(note.status) && noteSuggestion(note.kind, note.related).keys.length > 0).toSorted(byPriority);
+
+/** The notes whose labels are worth reading: the first {@link SUGGESTION_WINDOW} notes that can offer a reply. */
+export const suggestionCandidates = <N extends RankedSuggestionNote>(notes: readonly N[]): N[] => ranked(notes).slice(0, SUGGESTION_WINDOW);
 
 export function suggestReplies(notes: readonly SuggestionNote[]): Suggestion[] {
   const offered = new Set<string>();
-  return notes
-    .filter((note) => OPEN.has(note.status))
-    .toSorted((a, b) => mostSevereFirst(a.severity, b.severity) || (a.stamp < b.stamp ? 1 : a.stamp > b.stamp ? -1 : 0))
+  return ranked(notes)
     .flatMap((note) =>
       noteSuggestion(note.kind, note.related).keys.flatMap((key) => {
         const names = SUGGESTION_PARAMS[key];
