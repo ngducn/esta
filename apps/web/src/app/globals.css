@@ -61,5 +61,4 @@
 @utility num {
   font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: 'tnum';
-  white-space: nowrap;
 }

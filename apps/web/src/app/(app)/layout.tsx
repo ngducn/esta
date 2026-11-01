@@ -55,7 +55,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         footer={<AccountTrigger initial={initial} label={name} detail={role} accessibleName={shell('accountOf', { name })} className="w-full" />}
       />
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 px-4 pt-3 lg:px-8 lg:pt-6">
+        <header className="flex items-center justify-between gap-4 px-4 pt-3 lg:px-stack lg:pt-6">
           <p data-testid="date-line" className="text-body-sm font-medium text-text-muted">
             {formatDateLong(clock.today(), locale)}
           </p>
@@ -63,7 +63,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             <AccountTrigger initial={initial} label={shell('account')} accessibleName={shell('account')} compact />
           </div>
         </header>
-        <main className="w-full max-w-dashboard flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
+        <main className="w-full max-w-dashboard flex-1 px-4 pt-3 pb-10 lg:px-stack lg:pt-4">
           {worker.kind === 'offline' || worker.kind === 'paused' ? (
             <div className="mb-5">
               <WorkerStatusLine status={worker} />

@@ -223,14 +223,14 @@ test('rule 7: the Dĩ An card and header show the open square with Trống từ 
   const cardMark = diAn.locator('[data-status="vacant"]');
   await expect(cardMark).toHaveText('Trống từ 01/08');
   await expect(cardMark.locator('svg[data-shape="vacant"]')).toBeVisible();
-  await expect(cardMark).toHaveClass(/\btext-vacant\b/);
+  await expect(cardMark).toHaveClass(/\btext-neutral-text\b/);
   await expect(cards.filter({ hasText: 'Trống' })).toHaveCount(2);
 
   await diAn.getByRole('link', { name: 'Dãy trọ Dĩ An' }).click();
   const headerMark = page.getByTestId('property-header').locator('[data-status="vacant"]');
   await expect(headerMark).toHaveText('Trống từ 01/08');
   await expect(headerMark.locator('svg[data-shape="vacant"]')).toBeVisible();
-  await expect(headerMark).toHaveClass(/\bbg-vacant-fill\b/);
+  await expect(headerMark).toHaveClass(/\bbg-neutral-bg\b/);
 });
 
 test('deleting Phòng 8 and tapping Hoàn tác brings it back with its available date', async ({ page }) => {
