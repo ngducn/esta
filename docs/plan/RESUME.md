@@ -20,12 +20,13 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Open items (updated 2026-11-02 00:40 +07)
 
-- **Merged today:** #368 (d2016c5a), every screen on the 2026-11 design system; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
-- **#374, RD-1b the shell, head 3b4847cb.** Sonnet lane CLEAN (`/tmp/review-374/lane/report.md`). Running: Sonnet fix-round owner, slot 3, `briefs/rd-1b-ff1.md`: /deslop, /no-comments, merge origin/main (with #376), ci green.
-  - Next: a scoped Sonnet reader of the fix round, then merge on CLEAN plus green ci.
-- **#375, RD-6 sign-in and onboarding on the brand layer.** Sonnet owner, slot 2, `briefs/rd-6.md`, worktree `/tmp/owner-rd-6/wt`. Told: the quality gate failed (e2e-axe-in-spec 27 to 28) and to merge main for #376.
-  - Next: its report, then review at verify:tier (likely rigorous: Opus audit plus Sonnet lane), then merge.
-- **Then:** RD-2 once #374 merges (it builds on PageHeader), RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
+- **#374 merged** as 2bbf8891: the new shell (tab bar, rail, sidebar, account menu, page header).
+- **RD-2, Tài sản as a workbench.** Running: Sonnet owner, slot 3, `briefs/rd-2.md`, worktree `/tmp/owner-rd-2/wt`, branch esta/rd-2-properties-workbench. Next: its review at verify:tier, then merge.
+- **#375, RD-6 sign-in and onboarding on the brand layer, head 3466ec25, ci green, rigorous.** Running: Opus audit `briefs/pr375-audit.md` (`/tmp/review-375/audit.md`) and Sonnet lane slot 14 `briefs/pr375-lane.md` (`/tmp/review-375/lane/`). The owner skipped /deslop and /no-comments; the fix round runs them.
+  - Ryan decision in the PR body: /sign-in LCP rose about 150 ms (2047 vs 1897 ms) with Inter Display. Default: accept it (still under 2.5 s), unless the audit finds a cheap font-loading fix.
+  - Next: one Sonnet fix round with the audit's blocking findings and the cleanup, a scoped reader, then merge.
+- **Then:** RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire set** at 23:30 on 2026-11-01: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`). Clear it with `rm` after a quiet stretch with no overlap failures, and record that in decisions.tsv.
 
 ## Waiting for Ryan (defaults apply)
@@ -47,6 +48,9 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - Each member reads only her own conversations and their audit rows. The operator does not either.
 
 ## Budget
+
+Week at 17% at 00:57 on 2026-11-02 (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
+
 
 No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 23:25 on 2026-11-01 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.
 

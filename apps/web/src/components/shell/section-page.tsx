@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { PageHeader } from '@/components/page-header';
 import { EmptyState, type EmptyStateAction } from '@/components/empty-state';
 import type { SectionKey } from './nav';
 import { sectionIcons } from './section-icons';
@@ -16,7 +17,7 @@ export async function SectionPage({ section, action }: { section: LaterSection; 
   const [nav, sections] = await Promise.all([getTranslations('nav'), getTranslations('sections')]);
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-title-2 break-words lg:text-title-1">{nav(section)}</h1>
+      <PageHeader title={nav(section)} />
       <EmptyState icon={sectionIcons[section]} title={sections('soonTitle')} body={sections(section)} {...(action === undefined ? {} : { action })} className="max-w-3xl" />
     </div>
   );

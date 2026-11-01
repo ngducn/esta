@@ -1,6 +1,7 @@
 import { wallClockStamp, workerStatus, type WorkerStatus } from '@esta/core/agent';
 import type { Instant } from '@esta/core';
 import { getTranslations } from 'next-intl/server';
+import { PageHeader } from '@/components/page-header';
 import { SectionTabs } from '@/components/shell/section-tabs';
 import { latestBrief } from '@/server/agent/items';
 import { getWorkerHeartbeat } from '@/server/assistant';
@@ -23,13 +24,19 @@ export async function AssistantHeader({ householdId, now, status, active }: { ho
   const [nav, t, brief] = await Promise.all([getTranslations('nav'), getTranslations('assistant'), latestBrief(householdId, now)]);
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-title-2 break-words lg:text-title-1">{nav('assistant')}</h1>
-      {status.kind === 'offline' || status.kind === 'paused' ? null : <WorkerStatusLine status={status} />}
-      {brief === null ? null : (
-        <p data-testid="worker-ran" className="text-body-sm text-text-muted num">
-          {t('ranAt', { time: stampLabel(wallClockStamp(brief.createdAt, now, env.ESTA_TIMEZONE)) })}
-        </p>
-      )}
+      <PageHeader
+        title={nav('assistant')}
+        meta={
+          <>
+            {status.kind === 'offline' || status.kind === 'paused' ? null : <WorkerStatusLine status={status} />}
+            {brief === null ? null : (
+              <p data-testid="worker-ran" className="num">
+                {t('ranAt', { time: stampLabel(wallClockStamp(brief.createdAt, now, env.ESTA_TIMEZONE)) })}
+              </p>
+            )}
+          </>
+        }
+      />
       <SectionTabs label={t('tabs')} tabs={TABS.map((tab) => ({ href: tab.href, label: t(`tab.${tab.id}`), current: tab.id === active }))} />
     </div>
   );

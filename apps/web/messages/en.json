@@ -413,7 +413,8 @@
     "account": "Account",
     "accountOf": "Account: {name}",
     "signOut": "Sign out",
-    "more": "More"
+    "more": "More",
+    "close": "Close"
   },
   "sections": {
     "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",

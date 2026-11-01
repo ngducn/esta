@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/page-header';
 import { getTranslations } from 'next-intl/server';
 import { DocumentVault } from '@/components/documents/document-vault';
 import { sectionMetadata } from '@/components/shell/section-page';
@@ -13,12 +14,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-title-2 break-words lg:text-title-1">{nav('documents')}</h1>
-        <p data-testid="document-count" className="text-body-sm text-text-muted">
-          {t('groupCount', { count: vault.tiles.length })}
-        </p>
-      </header>
+      <PageHeader title={nav('documents')} meta={<p data-testid="document-count">{t('groupCount', { count: vault.tiles.length })}</p>} />
       <DocumentVault scope={{ kind: 'household', householdId: member.household.id }} canEdit={member.role !== 'viewer'} {...vault} />
     </div>
   );

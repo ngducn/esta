@@ -13,8 +13,12 @@ lang() { "$B" js 'document.documentElement.lang'; }
 if [[ "$(lang)" != "$locale" ]]; then
   if [[ "$(current_path)" != /sign-in && "$(current_path)" != /onboarding ]]; then
     "$B" click 'role=button[name=/^(Tài khoản|Account)/]' >/dev/null
+    name=English
+    [[ "$locale" == vi ]] && name="Tiếng Việt"
+    "$B" click "role=radio[name=\"$name\"]" >/dev/null
+  else
+    "$B" click "button[lang=\"$locale\"]" >/dev/null
   fi
-  "$B" click "button[lang=\"$locale\"]" >/dev/null
   for _ in $(seq 1 25); do
     [[ "$(lang)" == "$locale" ]] && break
     sleep 0.2

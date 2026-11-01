@@ -413,7 +413,8 @@
     "account": "Tài khoản",
     "accountOf": "Tài khoản: {name}",
     "signOut": "Đăng xuất",
-    "more": "Khác"
+    "more": "Khác",
+    "close": "Đóng"
   },
   "sections": {
     "documents": "Tài liệu sẽ cất sổ đỏ, hợp đồng và CCCD ở một chỗ, tìm được ngay bằng một ô tìm kiếm.",

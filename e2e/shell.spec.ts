@@ -2,24 +2,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { signIn } from './helpers/inbucket';
+import { newHousehold, onlyOn, openAccountMenu, sections, tabBar, uniqueEmail } from './helpers/shell';
 import { clippedText } from './helpers/text-scale';
-
-/** `en` is the English name on the phone's tab bar, short enough to stay whole at 130% text (FND-8). */
-const sections = [
-  { vi: 'Tổng quan', en: 'Home', path: '/' },
-  { vi: 'Tài sản', en: 'Assets', path: '/properties' },
-  { vi: 'Thu tiền', en: 'Rent', path: '/collections' },
-  { vi: 'Tài liệu', en: 'Docs', path: '/documents' },
-  { vi: 'Trợ lý', en: 'Assistant', path: '/assistant' },
-] as const;
-
-function onlyOn(project: 'mobile' | 'desktop') {
-  test.skip(test.info().project.name !== project, `runs at the ${project} viewport`);
-}
-
-function uniqueEmail(prefix: string): string {
-  return `${prefix}.${randomUUID().slice(0, 8)}@demo.esta.test`;
-}
 
 async function analyzeSerious(page: Page): Promise<string[]> {
   const { violations } = await new AxeBuilder({ page }).analyze();
@@ -41,24 +25,6 @@ async function seriousAxeViolations(page: Page): Promise<string[]> {
 
 async function setTheme(page: Page, baseURL: string | undefined, theme: 'light' | 'dark') {
   await page.context().addCookies([{ name: 'esta_theme', value: theme, url: baseURL ?? '' }]);
-}
-
-async function newHousehold(page: Page, household = `Gia đình Vỏ Demo ${randomUUID().slice(0, 4)}`): Promise<string> {
-  const email = uniqueEmail('shell');
-  await signIn(page, email);
-  await page.getByLabel('Tên gia đình').fill(household);
-  await page.getByLabel('Tên của bạn').fill('Nguyễn Thị Demo');
-  await page.getByRole('button', { name: 'Tạo gia đình' }).click();
-  await page.getByRole('link', { name: 'Xong' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(household);
-  return email;
-}
-
-const tabBar = (page: Page) => page.getByRole('navigation', { name: /^(Các mục chính|Main sections)$/ });
-
-async function openAccountMenu(page: Page) {
-  await page.getByRole('button', { name: /^(Tài khoản|Account)/ }).click();
-  await expect(page.locator('#account-menu'), 'the menu has finished sliding in').toHaveCSS('opacity', '1');
 }
 
 async function signOutThroughMenu(page: Page) {
@@ -180,24 +146,6 @@ test('lane 8: the sidebar works with Tab and Enter alone, with a visible focus r
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tài liệu');
 });
 
-test('lane 4: the account menu lists reports, settings, language and sign-out, and Báo cáo opens /reports', async ({ page }) => {
-  onlyOn('mobile');
-  await newHousehold(page);
-  await openAccountMenu(page);
-  const menu = page.locator('#account-menu');
-  for (const name of ['Báo cáo', 'Cài đặt']) await expect(menu.getByRole('link', { name })).toBeVisible();
-  for (const name of ['English', 'Đăng xuất']) await expect(menu.getByRole('button', { name })).toBeVisible();
-  expect(await seriousAxeViolations(page)).toEqual([]);
-  await menu.getByRole('link', { name: 'Báo cáo' }).click();
-  await expect(page).toHaveURL(/\/reports$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Báo cáo');
-  await expect(menu, 'the menu closes once its link has opened the page').toBeHidden();
-
-  await openAccountMenu(page);
-  await page.keyboard.press('Escape');
-  await expect(menu).toBeHidden();
-});
-
 test('lane 5: 130% grows text on every section without overflow and survives sign-out', async ({ page }) => {
   onlyOn('mobile');
   const email = await newHousehold(page, `Gia đình Nguyễn Thị Thanh Hương Ở Phường Dĩ An Demo ${randomUUID().slice(0, 4)}`);
@@ -223,15 +171,15 @@ test('lane 5: 130% grows text on every section without overflow and survives sig
   await expect(page.getByRole('radio', { name: /^130%/ })).toBeChecked();
 });
 
-test('lane 6 and #28: compact density tightens spacing and keeps every text at 14 px or more', async ({ page, baseURL }) => {
+test('lane 6 and #28: compact density keeps the 32 px gutter and keeps every text at 14 px or more', async ({ page, baseURL }) => {
   onlyOn('desktop');
   await setTheme(page, baseURL, 'dark');
   await newHousehold(page);
   const mainPadding = () => page.getByRole('main').evaluate((main) => getComputedStyle(main).paddingLeft);
-  expect(await mainPadding()).toBe('24px');
+  expect(await mainPadding(), 'the page gutter is 32 px from 840 px').toBe('32px');
   await saveDisplaySettings(page, { density: 'Gọn' });
   await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
-  expect(await mainPadding()).toBe('16px');
+  expect(await mainPadding(), 'density does not change the gutter').toBe('32px');
   const smallText = await page.evaluate(() =>
     [...document.querySelectorAll('body *')]
       .filter((element) => [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()))
@@ -300,19 +248,6 @@ test('lane 10: English, 130% and dark on Collections keep every tab label inside
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('lane 12: the account menu closes once a language switch has landed', async ({ page }) => {
-  await newHousehold(page);
-  await openAccountMenu(page);
-  const menu = page.locator('#account-menu');
-  await menu.getByRole('button', { name: 'English' }).click();
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(menu, 'the menu does not stay open over the page it just translated').toBeHidden();
-  await openAccountMenu(page);
-  await menu.getByRole('button', { name: 'Tiếng Việt' }).click();
-  await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
-  await expect(menu).toBeHidden();
-});
-
 test('lane 13: at 390 px and 100% every tab label sits on one line, on the current tab too', async ({ page }) => {
   onlyOn('mobile');
   await signIn(page, 'me.lane1@demo.esta.test');
@@ -343,7 +278,7 @@ const tabLabelEdges = (page: Page) =>
       }),
     );
 
-test('lane 14: at 390 px and 130% every Vietnamese tab label sits on one line at least 4 px from the screen edge', async ({ page }) => {
+test('lane 14: at 390 px and 130% a label that wraps keeps its words whole on at most two lines, and every tab label sits at least 4 px from the screen edge', async ({ page }) => {
   onlyOn('mobile');
   await newHousehold(page);
   await saveDisplaySettings(page, { textScale: '130%' });
@@ -352,8 +287,8 @@ test('lane 14: at 390 px and 130% every Vietnamese tab label sits on one line at
     await expect(tabBar(page).locator('[aria-current="page"]')).toHaveText(section.vi);
     expect(await rootFontSize(page)).toBe('20.8px');
     expect(
-      (await tabLabelLineCounts(page)).filter((label) => label.lines !== 1),
-      `${section.vi} is current and a label wraps`,
+      (await tabLabelLineCounts(page)).filter((label) => label.lines > 2),
+      `${section.vi} is current and a label needs more than two lines`,
     ).toEqual([]);
     const edges = await tabLabelEdges(page);
     expect(edges[0]?.left, 'Tổng quan clears the left edge').toBeGreaterThanOrEqual(4);
