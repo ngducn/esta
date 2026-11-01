@@ -23,7 +23,8 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - **#368 merged** as d2016c5a: every screen on the 2026-11 design system (tokens, codemod, density, wordmark, primitives). Lows in #372 and #373 (axe catches hydration-fading buttons on a cold server).
 - **RD-1b, the shell, branch esta/rd-1b-shell pushed at bcaa334f, no PR yet.** Running: Sonnet finisher, slot 3, `briefs/rd-1b-finish.md`, told after the merge to merge origin/main and open its PR against main. Remaining: the assistant-thread question, dark and 130% shots, northstar, Lighthouse, /deslop, /no-comments, PR, ci.
   - Next: its review round at the tier `pnpm verify:tier` gives (Sonnet lane; an Opus audit only if rigorous), then merge on CLEAN plus green ci.
-- **Then:** RD-2 and RD-6 side by side, RD-3 (include the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **RD-6, sign-in and onboarding on the brand layer.** Running: Sonnet owner, slot 2, `briefs/rd-6.md`, worktree `/tmp/owner-rd-6/wt`, branch esta/rd-6-brand-layer. Next: review at its verify:tier (likely rigorous: Opus audit plus Sonnet lane), then merge.
+- **Then:** RD-2 once RD-1b merges (it builds on PageHeader), RD-3 (include the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire set** at 23:30: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`) after a properties-list test failed beside another run. Clear it with `rm` once a quiet stretch shows no overlap failures, and say so in decisions.tsv.
 
 ## Waiting for Ryan (defaults apply)
