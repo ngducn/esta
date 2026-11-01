@@ -9,11 +9,6 @@ export type Figure = {
 
 const columns = { 2: '@min-[52rem]:grid-cols-2', 3: '@min-[52rem]:grid-cols-3', 4: '@min-[52rem]:grid-cols-4' } as const;
 
-/**
- * The two to four figures a working screen is about, in one hairline surface. The strip is a container: it folds from
- * its own width, so the same markup fits a narrow column and a wide one. Each cell draws its top and left hairline and
- * the surface clips the outer ones, so any count of cells folds cleanly.
- */
 export function SummaryStrip({ label, figures, unknownLabel }: { label: string; figures: readonly Figure[]; unknownLabel: string }) {
   const count = Math.min(4, Math.max(2, figures.length)) as keyof typeof columns;
   return (

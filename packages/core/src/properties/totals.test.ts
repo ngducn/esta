@@ -10,12 +10,21 @@ describe('propertyTotals', () => {
       row({ statusKeys: ['attention'], leasedUnitCount: 6, unitCount: 8, monthlyRentVnd: vnd(15_600_000) }),
       row({ statusKeys: ['vacant'], leasedUnitCount: 1, unitCount: 1, monthlyRentVnd: vnd(9_000_000) }),
       row({}),
-    ]);
+    ], true);
     expect(totals).toEqual({ attention: 1, leasedUnits: 7, units: 10, rentVnd: 24_600_000 });
   });
 
+  it('counts attention and vacant apart', () => {
+    const totals = propertyTotals([row({ statusKeys: ['attention'] }), row({ statusKeys: ['vacant'] }), row({ statusKeys: ['vacant'] }), row({ statusKeys: ['attention', 'vacant'] })], true);
+    expect(totals.attention).toBe(2);
+  });
+
+  it('leaves attention unknown, not zero, when the bills could not be read', () => {
+    expect(propertyTotals([row({}), row({})], false).attention).toBeNull();
+  });
+
   it('keeps rent unknown, not zero, when no lease is in effect', () => {
-    expect(propertyTotals([row({}), row({})]).rentVnd).toBeNull();
-    expect(propertyTotals([]).rentVnd).toBeNull();
+    expect(propertyTotals([row({}), row({})], true).rentVnd).toBeNull();
+    expect(propertyTotals([], true).rentVnd).toBeNull();
   });
 });

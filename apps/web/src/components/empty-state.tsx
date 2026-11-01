@@ -21,7 +21,6 @@ export function EmptyState({
   action?: EmptyStateAction;
   icon?: LucideIcon;
   media?: ReactNode;
-  /** `good` is for a filter that came back empty because nothing needs doing. */
   tone?: 'good';
   className?: string;
 }) {

@@ -292,3 +292,18 @@ test('a tab or search with no result names itself and offers Xóa bộ lọc', a
   await page.getByRole('link', { name: 'Xóa bộ lọc' }).click();
   await expect(nicknames(page)).toHaveCount(7);
 });
+
+test('the summary strip describes the whole household whatever the tab, chip or search', async ({ page }) => {
+  onlyOn('mobile');
+  await open(page, 'me.lane1@demo.esta.test', 'light');
+  const strip = page.getByRole('region', { name: 'Tóm tắt tài sản' });
+  await expect(strip).toContainText('8/14');
+  await expect(strip).toContainText(/\d\.\d{3}\.\d{3}/);
+  await expect(strip).toContainText('1 tài sản');
+  const household = await strip.innerText();
+  for (const url of ['/properties?q=zzzqq', '/properties?status=attention&kind=warehouse', '/properties?status=attention', '/properties?q=bao+loc']) {
+    await page.goto(url);
+    await expect(strip, url).toBeVisible();
+    expect(await strip.innerText(), url).toBe(household);
+  }
+});

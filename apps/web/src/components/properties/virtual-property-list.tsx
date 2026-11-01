@@ -4,11 +4,9 @@ import { useWindowVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import { useLayoutEffect, useRef, useState } from 'react';
 import { PropertyCard, photoPriority, propertyGrid, type PropertyCardData } from './property-card';
 
-/** The grid's `minmax(19rem, 1fr)` column and its Thoáng gap, in rem; the tighter Gọn gap only ever fits one more column, which then shows as a short row. */
 const MIN_COLUMN_REM = 19;
 const GAP_REM = 1.5;
 
-/** Columns the grid draws in a container this wide, as `repeat(auto-fill, minmax(19rem, 1fr))` counts them. */
 export function columnsFor(widthPx: number, remPx: number): number {
   return Math.max(1, Math.floor((widthPx / remPx + GAP_REM) / (MIN_COLUMN_REM + GAP_REM)));
 }

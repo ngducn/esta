@@ -7,7 +7,6 @@ import {
   currentAddressText,
   parsePropertyFilters,
   propertyFiltersQuery,
-  propertyTotals,
   shortProvinceName,
   type PropertyFilterKey,
   type PropertyListRow,
@@ -117,7 +116,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const statusTab = (key: string, status: (typeof PROPERTY_STATUS_FILTERS)[number] | null) => ({
     key,
     label: status === null ? t('all') : t('statusOption', { status }),
-    count: status === null ? list.tallies.status.all : (list.tallies.status.values.get(status) ?? 0),
+    count: status === null ? list.tallies.status.all : status === 'attention' && list.totals.attention === null ? null : (list.tallies.status.values.get(status) ?? 0),
     href: `/properties${propertyFiltersQuery({ ...filters, status })}`,
     current: filters.status === status,
   });
@@ -126,7 +125,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const cards = list.rows.map(toCard);
   const filtered = filters.q !== '' || PROPERTY_FILTER_KEYS.some((key) => filters[key] !== null);
   const count = filtered ? t('countFiltered', { shown: list.rows.length, count: list.householdCount }) : t('count', { count: list.householdCount });
-  const totals = propertyTotals(list.rows);
+  const { totals } = list;
   const onlyAttention = filters.q === '' && PROPERTY_FILTER_KEYS.every((key) => (key === 'status' ? filters[key] === 'attention' : filters[key] === null));
   const clearAction = { label: t('clearFilters'), href: '/properties' };
 
@@ -167,8 +166,8 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
             figures={[
               {
                 label: t('figureAttention'),
-                value: t('figureAttentionValue', { count: totals.attention }),
-                sub: totals.attention === 0 ? t('figureAttentionNone') : t('figureAttentionSub'),
+                value: totals.attention === null ? null : t('figureAttentionValue', { count: totals.attention }),
+                sub: totals.attention === null ? t('figureAttentionUnknown') : totals.attention === 0 ? t('figureAttentionNone') : t('figureAttentionSub'),
               },
               {
                 label: t('figureLeased'),

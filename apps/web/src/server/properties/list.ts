@@ -7,12 +7,14 @@ import {
   type FilteredProperties,
   type PropertyFilters,
   type PropertyListRow,
+  type PropertyTotals,
+  propertyTotals,
   type PropertyStatusMark,
   type PropertyViewRow,
 } from '@esta/core/properties';
 import type { IsoDate } from '@esta/core/date';
 import { rentInEffect } from '@esta/core/lease';
-import { searchProperties, type Db } from '@esta/ops';
+import { searchProperties, type Db, type PropertyRow } from '@esta/ops';
 import { createSessionClient } from '@/server/supabase/server';
 import { loadCollectionStates } from '@/server/collections/load';
 import { loadHoldingLeases, type HoldingLeases } from '@/server/leases/load';
@@ -31,6 +33,7 @@ export function leaseFacts(propertyId: string, holding: HoldingLeases, asOf: Iso
 
 export type PropertyList = FilteredProperties & {
   householdCount: number;
+  totals: PropertyTotals;
   provinceNames: ReadonlyMap<string, string>;
   ownerNames: ReadonlyMap<string, string>;
   /** Each shown row's `propertyStatus` marks on the Clock's date; a row with none is absent. */
@@ -52,22 +55,23 @@ function summary(score: PropertyCompleteness | undefined): PropertyListRow['comp
 export async function listProperties(householdId: string, filters: PropertyFilters, asOf: IsoDate): Promise<PropertyList> {
   const supabase = await createSessionClient();
   const tokens = searchTokens(filters.q);
-  const [viewRows, count, ownerNames, scores, holding, collections] = await Promise.all([
+  const [viewRows, everyRow, ownerNames, scores, holding, collections] = await Promise.all([
     searchProperties(supabase, householdId, tokens),
-    tokens.length === 0 ? null : supabase.from('property_list_rows').select('id', { count: 'exact', head: true }).eq('household_id', householdId),
+    tokens.length === 0 ? null : searchProperties(supabase, householdId, []),
     readOwnerNames(supabase, householdId),
     loadCompleteness(householdId),
     loadHoldingLeases(householdId, asOf),
     loadCollectionStates(householdId, asOf),
   ]);
-  if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
   const marksById = new Map<string, readonly PropertyStatusMark[]>();
-  const matches = viewRows.map((row): PropertyListRow => {
-    const facts = { ...row, ...leaseFacts(row.id, holding, asOf) };
-    const marks = propertyStatus({ ...facts, collection: collections.get(row.id) ?? null }, asOf);
+  const toListRow = (row: PropertyRow): PropertyListRow => {
+    const facts = { ...row, ...leaseFacts(row.id, holding, asOf), collection: collections?.get(row.id) ?? null };
+    const marks = propertyStatus(facts, asOf);
     marksById.set(row.id, marks);
-    return { ...facts, completeness: summary(scores.get(row.id)), statusKeys: statusFilterValues(marks) };
-  });
+    return { ...row, ...facts, completeness: summary(scores.get(row.id)), statusKeys: statusFilterValues(facts, marks) };
+  };
+  const matches = viewRows.map(toListRow);
+  const household = everyRow === null ? matches : everyRow.map(toListRow);
   const filtered = applyPropertyFilters(matches, filters);
   return {
     ...filtered,
@@ -77,7 +81,8 @@ export async function listProperties(householdId: string, filters: PropertyFilte
         return marks.length === 0 ? [] : [[row.id, marks] as const];
       }),
     ),
-    householdCount: count?.count ?? matches.length,
+    householdCount: household.length,
+    totals: propertyTotals(household, collections !== null),
     ownerNames,
     provinceNames: new Map(
       matches.flatMap((row) => (row.provinceCode === null || row.provinceName === null ? [] : [[row.provinceCode, row.provinceName] as const])),

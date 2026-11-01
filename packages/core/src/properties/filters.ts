@@ -38,7 +38,6 @@ export type PropertyViewRow = {
   unitCount: number;
 };
 
-/** A list row: the view row with its completeness score, the number of failing checks and the status tabs it belongs to. */
 export type PropertyListRow = PropertyViewRow & {
   completeness: { percent: number; missing: number };
   statusKeys: readonly PropertyStatusFilter[];

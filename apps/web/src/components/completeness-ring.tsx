@@ -8,11 +8,6 @@ export function CompletenessRing({ percent, missing }: { percent: number; missin
 
 const clamp = (percent: number) => Math.min(100, Math.max(0, Math.round(percent)));
 
-/**
- * `percent` is the weighted completeness score. On a card the count of missing items is the part people act on, so it
- * is the `label` and the percent is `srLabel`. Labels come translated, so a card renders it on either side of the client
- * boundary. A partial record is a to-do, not a problem, so its arc stays neutral; only a full one turns green.
- */
 export function CompletenessRingView({ percent, label, srLabel }: { percent: number; label: string; srLabel?: string }) {
   const filled = clamp(percent);
   const full = filled === 100;
