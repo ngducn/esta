@@ -20,7 +20,7 @@ export function FilterTabs({ label, tabs }: { label: string; tabs: readonly Filt
             tab.current ? 'bg-segment-selected text-text shadow-xs ring-1 ring-border' : 'text-text-secondary hover:text-text',
           )}
         >
-          {tab.label}
+          {tab.label}{' '}
           <span className={cn('num', tab.current ? 'text-text-secondary' : 'text-text-muted')}>{tab.count}</span>
         </Link>
       ))}

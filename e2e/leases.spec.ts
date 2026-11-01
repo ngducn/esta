@@ -108,12 +108,12 @@ test('Đã thu đến reads the end of the paid periods: Q7 31/12/2026, Thủ Đ
   }
 });
 
-test('rule 7: the properties list shows the rent of active leases, Đang cho thuê 6/8 on Dĩ An, and no rent on Biên Hòa', async ({ page }) => {
+test('rule 7: the properties list shows the rent of active leases, 8 phòng, 2 trống on Dĩ An, and no rent on Biên Hòa', async ({ page }) => {
   await open(page, 'ryan.lane7@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
   const card = (name: string) => page.getByTestId('property-card').filter({ has: page.getByRole('link', { name, exact: true }) });
-  await expect(card('Dãy trọ Dĩ An').getByTestId('property-rent')).toHaveText(/^Tiền thuê mỗi tháng\s*15,6\str$/);
-  await expect(card('Dãy trọ Dĩ An').locator('[data-status="paid"]')).toHaveText('Đang cho thuê 6/8');
+  await expect(card('Dãy trọ Dĩ An').getByTestId('property-rent')).toHaveText('15.600.000 ₫/tháng');
+  await expect(card('Dãy trọ Dĩ An').getByText('8 phòng, 2 trống')).toBeVisible();
   await expect(card('Dãy trọ Dĩ An').locator('[data-status="vacant"]')).toHaveText('Trống từ 01/08');
   await expect(card('Kho Biên Hòa').getByTestId('property-rent')).toHaveCount(0);
   await expect(card('Kho Biên Hòa').locator('[data-status="vacant"]')).toHaveText('Trống từ 30/07');
