@@ -48,8 +48,15 @@ export default async function ForgotPasswordPage() {
     backToSignIn: t('backToSignIn'),
   };
   return (
-    <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
-      <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
+    <AuthFrame
+      brand={app('name')}
+      photoAlt={app('heroAlt')}
+      caption={app('heroCaption')}
+      eyebrow={t('eyebrow')}
+      title={t('title')}
+      titleEnd={t('titleEnd')}
+      aside={<LanguageSwitch />}
+    >
       <ResetForm copy={copy} />
     </AuthFrame>
   );

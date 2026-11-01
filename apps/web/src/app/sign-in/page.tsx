@@ -31,11 +31,15 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   };
   const google = env.ESTA_GOOGLE_AUTH === 'on';
   return (
-    <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
-        <p className="text-text-muted">{app('tagline')}</p>
-      </div>
+    <AuthFrame
+      brand={app('name')}
+      photoAlt={app('heroAlt')}
+      caption={app('heroCaption')}
+      eyebrow={app('tagline')}
+      title={t('title')}
+      titleEnd={t('titleEnd')}
+      aside={<LanguageSwitch />}
+    >
       {google && error === 'google' && (
         <p role="alert" className="font-medium text-danger-text">
           {t('googleFailed')}

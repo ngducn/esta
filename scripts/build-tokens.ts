@@ -82,6 +82,7 @@ function renderTokensCss(): string {
     '--font-serif: initial;',
     '--font-mono: initial;',
     '--font-sans: var(--font-inter);',
+    '--font-display: var(--font-inter-display, var(--font-inter));',
     '--radius-*: initial;',
     ...Object.entries(radius).map(([name, px]) => `--radius-${name}: ${px === radius.full ? 'calc(infinity * 1px)' : `${px}px`};`),
   ];

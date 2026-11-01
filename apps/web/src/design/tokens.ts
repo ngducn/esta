@@ -183,6 +183,13 @@ export const typefaces = {
     opticalSize: true,
     requiredFeatures: ['tnum'],
   },
+  display: {
+    family: 'Inter Display',
+    file: 'InterDisplay-Variable.woff2',
+    weights: [300, 500],
+    opticalSize: false,
+    requiredFeatures: [],
+  },
 } as const satisfies Record<
   string,
   { family: string; file: string; weights: readonly number[]; opticalSize: boolean; requiredFeatures: readonly string[] }

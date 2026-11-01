@@ -2,7 +2,8 @@
   "app": {
     "name": "Esta",
     "tagline": "The family's property ledger",
-    "heroAlt": "Hanoi rooftops looking towards the Long Bien bridge"
+    "heroAlt": "Hanoi rooftops looking towards the Long Bien bridge",
+    "heroCaption": "Keep the home\nfor the whole family."
   },
   "language": {
     "label": "Language",
@@ -45,7 +46,9 @@
     "useCode": "Sign in with a code sent by email",
     "usePassword": "Sign in with a password",
     "noAccount": "No account yet?",
-    "createAccount": "Create an account"
+    "createAccount": "Create an account",
+    "titleEnd": "to Esta.",
+    "codeTitleEnd": "sent by email."
   },
   "signUp": {
     "title": "Create an account",
@@ -59,7 +62,9 @@
     "confirming": "Confirming…",
     "failed": "The account was not created. Try again.",
     "haveAccount": "Already have an account?",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "eyebrow": "New account",
+    "titleEnd": "for the whole family."
   },
   "resetPassword": {
     "title": "Reset your password",
@@ -72,7 +77,9 @@
     "doneTitle": "Password changed",
     "doneBody": "From now on, sign in with your new password. You are signed in on this device.",
     "continue": "Open Esta",
-    "backToSignIn": "Back to sign in"
+    "backToSignIn": "Back to sign in",
+    "eyebrow": "Forgot password",
+    "titleEnd": "by email."
   },
   "onboarding": {
     "title": "Create your household",
@@ -109,7 +116,10 @@
     "inviteFailed": "The invite was not saved. Check your connection and try again.",
     "done": "Done",
     "invitedElsewhere": "If someone invited you to a household, sign out and sign in with the exact email they invited.",
-    "signedInEmail": "You are using {email}."
+    "signedInEmail": "You are using {email}.",
+    "eyebrow": "First step",
+    "titleEnd": "to begin.",
+    "inviteTitleEnd": "to Esta."
   },
   "home": {
     "role": "Access: {role}",

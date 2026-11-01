@@ -21,6 +21,8 @@ build() {
 
 mkdir -p "$out"
 build inter 'Inter%5Bopsz,wght%5D.ttf' 'wght=400:600' "$text_features,tnum" Inter-Variable
+# Inter Display is Inter's opsz axis pinned at its top (32), kept as its own file so only the sign-in routes load it.
+build inter 'Inter%5Bopsz,wght%5D.ttf' 'wght=300:500 opsz=32' "$text_features" InterDisplay-Variable
 curl -fsSL "$base/inter/OFL.txt" > "$out/LICENSE-OFL.txt"
 (cd "$out" && shasum -a 256 ./*.woff2)
 

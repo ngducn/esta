@@ -314,6 +314,7 @@
   --font-serif: initial;
   --font-mono: initial;
   --font-sans: var(--font-inter);
+  --font-display: var(--font-inter-display, var(--font-inter));
   --radius-*: initial;
   --radius-xs: 4px;
   --radius-sm: 6px;

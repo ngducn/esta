@@ -1,0 +1,49 @@
+/* The design system's brand layer (docs/design/redesign-2026-11/components/bundle.css, es-mk-*), for the pages before the app only. */
+.es-mk-rule {
+  position: relative;
+  flex: 1 1 2em;
+  min-width: 0.75em;
+  margin-bottom: 0.3em;
+  border-top: 1px solid var(--text);
+}
+.es-mk-rule::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 38%;
+  border-top: 3px solid var(--text);
+}
+.es-mk-line--end .es-mk-rule::after {
+  left: auto;
+  right: 0;
+}
+.es-mk-frame {
+  margin: 0 7px 7px 0;
+  border: 1px solid var(--text);
+  box-shadow:
+    6px 6px 0 -1px var(--frame-ground, var(--bg)),
+    6px 6px 0 0 var(--text);
+}
+.es-mk-lines {
+  background: repeating-linear-gradient(90deg, transparent 0 7px, currentColor 7px 8px);
+  mask-image: linear-gradient(90deg, transparent, #000);
+}
+.es-mk-photo {
+  color: #fff;
+}
+.es-mk-photo::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 60%;
+  background: linear-gradient(0deg, rgb(15 18 23 / 0.72), transparent);
+}
+.es-mk-photo::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 25%;
+  z-index: 1;
+  background: linear-gradient(180deg, rgb(15 18 23 / 0.6), transparent);
+}
