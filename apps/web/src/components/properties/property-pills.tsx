@@ -1,6 +1,6 @@
 import type { LegalStatus, UseMode } from '@esta/core/properties';
 import { Briefcase, CirclePause, Hammer, House, KeyRound, Users, type LucideIcon } from 'lucide-react';
-import { StatusShape, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
+import { StatusShape, neutralPill, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 
 const useIcons = {
@@ -25,7 +25,7 @@ const legalMarks = {
 export function UsePill({ useMode, label }: { useMode: UseMode; label: string }) {
   const Icon = useIcons[useMode];
   return (
-    <span data-use={useMode} className={cn(statusBadge, 'border-border-strong text-text-secondary')}>
+    <span data-use={useMode} className={cn(statusBadge, neutralPill)}>
       <Icon className="shrink-0" aria-hidden="true" />
       {label}
     </span>

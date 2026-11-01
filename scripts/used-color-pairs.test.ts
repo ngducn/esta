@@ -64,6 +64,11 @@ describe('findRetiredNames', () => {
     ]);
   });
 
+  it('names a retired custom property a stylesheet defines, which the print sheet once did', () => {
+    const source = `[data-print='invoice'] {\n    --ground: var(--qr-paper);\n    --ink-muted: var(--qr-ink);\n    --surface: var(--qr-paper);\n    --text: var(--qr-ink);\n  }`;
+    expect(findRetiredNames([{ path: 'print.css', source }])).toEqual(['print.css: --ground', 'print.css: --ink-muted']);
+  });
+
   it('accepts the role names, including the ones that grew out of a retired word', () => {
     const source = `'text-text border-border-field bg-surface text-accent-text bg-accent text-danger-text gap-field-gap outline-focus-ring num shadow-xs text-body-sm'`;
     expect(findRetiredNames([{ path: 'x.tsx', source }])).toEqual([]);
