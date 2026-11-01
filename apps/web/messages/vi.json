@@ -159,9 +159,10 @@
       "reasons": {
         "invalid": "Viết số tiền như 3.500.000, 3tr5 hoặc 850k.",
         "fractional": "Tiền đồng không có số lẻ. Bỏ phần lẻ rồi nhập lại.",
-        "too_large": "Số này lớn hơn mức Esta ghi được.",
+        "too_large": "Esta ghi được tối đa 1.000 tỷ đồng.",
         "ambiguous_separators": "Dùng dấu chấm để tách hàng nghìn, ví dụ 1.500.000.",
-        "ambiguous_shorthand": "Viết 3tr5 hoặc 3,5tr, không dùng cả hai cách cùng lúc."
+        "ambiguous_shorthand": "Viết 3tr5 hoặc 3,5tr, không dùng cả hai cách cùng lúc.",
+        "not_positive": "Nhập số tiền lớn hơn 0."
       }
     },
     "date": {

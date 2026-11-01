@@ -159,9 +159,10 @@
       "reasons": {
         "invalid": "Write the amount like 3.500.000, 3tr5 or 850k.",
         "fractional": "Đồng have no fractions. Drop the decimal part and try again.",
-        "too_large": "This is more than Esta can record.",
+        "too_large": "Esta records at most 1,000 billion dong.",
         "ambiguous_separators": "Use dots to group thousands, for example 1.500.000.",
-        "ambiguous_shorthand": "Write 3tr5 or 3,5tr, not both at once."
+        "ambiguous_shorthand": "Write 3tr5 or 3,5tr, not both at once.",
+        "not_positive": "Enter an amount above 0."
       }
     },
     "date": {
