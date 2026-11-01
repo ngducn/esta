@@ -18,14 +18,15 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (updated 2026-11-01 23:55 +07)
+## Open items (updated 2026-11-02 00:40 +07)
 
-- **#368 merged** as d2016c5a: every screen on the 2026-11 design system (tokens, codemod, density, wordmark, primitives). Lows in #372 and #373 (axe catches hydration-fading buttons on a cold server).
-- **RD-1b, the shell, branch esta/rd-1b-shell pushed at bcaa334f, no PR yet.** Running: Sonnet finisher, slot 3, `briefs/rd-1b-finish.md`, told after the merge to merge origin/main and open its PR against main. Remaining: the assistant-thread question, dark and 130% shots, northstar, Lighthouse, /deslop, /no-comments, PR, ci.
-  - Next: its review round at the tier `pnpm verify:tier` gives (Sonnet lane; an Opus audit only if rigorous), then merge on CLEAN plus green ci.
-- **RD-6, sign-in and onboarding on the brand layer.** Running: Sonnet owner, slot 2, `briefs/rd-6.md`, worktree `/tmp/owner-rd-6/wt`, branch esta/rd-6-brand-layer. Next: review at its verify:tier (likely rigorous: Opus audit plus Sonnet lane), then merge.
-- **Then:** RD-2 once RD-1b merges (it builds on PageHeader), RD-3 (include the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
-- **Tripwire set** at 23:30: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`) after a properties-list test failed beside another run. Clear it with `rm` once a quiet stretch shows no overlap failures, and say so in decisions.tsv.
+- **Merged today:** #368 (d2016c5a), every screen on the 2026-11 design system; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
+- **#374, RD-1b the shell, head 3b4847cb.** Sonnet lane CLEAN (`/tmp/review-374/lane/report.md`). Running: Sonnet fix-round owner, slot 3, `briefs/rd-1b-ff1.md`: /deslop, /no-comments, merge origin/main (with #376), ci green.
+  - Next: a scoped Sonnet reader of the fix round, then merge on CLEAN plus green ci.
+- **#375, RD-6 sign-in and onboarding on the brand layer.** Sonnet owner, slot 2, `briefs/rd-6.md`, worktree `/tmp/owner-rd-6/wt`. Told: the quality gate failed (e2e-axe-in-spec 27 to 28) and to merge main for #376.
+  - Next: its report, then review at verify:tier (likely rigorous: Opus audit plus Sonnet lane), then merge.
+- **Then:** RD-2 once #374 merges (it builds on PageHeader), RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **Tripwire set** at 23:30 on 2026-11-01: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`). Clear it with `rm` after a quiet stretch with no overlap failures, and record that in decisions.tsv.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -55,4 +56,5 @@ No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, 
 - A PR with a merge conflict gets no `pull_request` CI run. When "no checks" appears, look at `mergeStateStatus`.
 - Owners in git-excluded worktrees keep their `decisions.tsv` rows locally. The root merges those rows into main.
 - Slot 6 is Ryan's and slot 4 is never used. Ryan had his slot 5 test app and slot 6 stack stopped on 2026-11-01 (data kept in docker volumes).
+- e2e runs on ESTA_FROZEN_NOW=2026-11-01T10:00+07:00 (playwright.config.ts) unless the shell sets it. A local dev server started before #376 keeps the real date until restarted.
 - Artifact brand SVGs are uploads: read them one at a time with `path` set to the asset id; `paths` refuses ids.
