@@ -124,7 +124,7 @@ export const certificateSchema = z.discriminatedUnion('status', [
 ]);
 export type Certificate = z.output<typeof certificateSchema>;
 
-export const newCertificateSchema = certificateSchema.refine(identifies('certificate'), { error: UNIDENTIFIED });
+export const identifiedCertificateSchema = certificateSchema.refine(identifies('certificate'), { error: UNIDENTIFIED });
 
 /**
  * [app rule] What the certificate card claims (#356): `Còn hiệu lực` needs an issue date behind it; every other status

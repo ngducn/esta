@@ -2,7 +2,7 @@
 
 import type { IsoDate } from '@esta/core/date';
 import { UNIDENTIFIED } from '@esta/core/schemas/identity';
-import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, newCertificateSchema, type Certificate } from '@esta/core/schemas/legal';
+import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, identifiedCertificateSchema, type Certificate } from '@esta/core/schemas/legal';
 import { usedNewParties } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -65,8 +65,8 @@ export function CertificateForm({
       mortgage: read.value,
       annotations: readAnnotations(annotations),
     };
-    const checked = itemId === null ? newCertificateSchema.safeParse(input) : null;
-    const blank = checked !== null && !checked.success && checked.error.issues.some((issue) => issue.message === UNIDENTIFIED);
+    const checked = identifiedCertificateSchema.safeParse(input);
+    const blank = !checked.success && checked.error.issues.some((issue) => issue.message === UNIDENTIFIED);
     setUnidentified(blank);
     return blank ? null : input;
   };

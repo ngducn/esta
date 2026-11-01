@@ -1,23 +1,26 @@
-import { certificateSchema, newCertificateSchema, newParcelSchema, parcelSchema, structureSchema } from '@esta/core/schemas/legal';
+import { certificateSchema, identifiedCertificateSchema, newParcelSchema, parcelSchema, structureSchema } from '@esta/core/schemas/legal';
 import { ownershipShareSchema, type OwnershipShare } from '@esta/core/schemas/ownership';
 import { z } from 'zod';
 import type { Db } from './db';
 
-/** One entry per legal table: the columns a read selects, the schema that parses a row, an edit and a restore, and the one a create adds. */
+/** One entry per legal table: the columns a read selects, the schema that parses a stored row and a restore, and the ones a create and an edit save through. */
 export const LEGAL_KINDS = {
   parcels: {
     schema: parcelSchema,
     createSchema: newParcelSchema,
+    editSchema: parcelSchema,
     columns: 'id, certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes, origin_text',
   },
   structures: {
     schema: structureSchema,
     createSchema: structureSchema,
+    editSchema: structureSchema,
     columns: 'id, certificate_id, kind, footprint_m2, floor_area_m2, floors, structure_text, completed_year, ownership_term',
   },
   certificates: {
     schema: certificateSchema,
-    createSchema: newCertificateSchema,
+    createSchema: identifiedCertificateSchema,
+    editSchema: identifiedCertificateSchema,
     columns: 'id, form, serial_no, book_entry_no, issued_on, issued_by, holder_party_ids, status, mortgage, annotations',
   },
 } as const;

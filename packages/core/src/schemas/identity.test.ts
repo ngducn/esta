@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { UNIDENTIFIED } from './identity';
 import { newLeaseDraftSchema } from './lease';
-import { newCertificateSchema } from './legal';
-import { newUtilityAccountSchema } from './units';
+import { identifiedCertificateSchema } from './legal';
+import { identifiedUtilityAccountSchema } from './units';
 
 const unit = '7a1c2e3f-4a5b-5c6d-8e7f-8091a2b3c4d5';
 const tenant = '0c1d2e3f-4a5b-5c6d-8e7f-8091a2b3c4d5';
@@ -10,13 +10,13 @@ const tenant = '0c1d2e3f-4a5b-5c6d-8e7f-8091a2b3c4d5';
 const refusal = (result: { success: boolean; error?: { issues: readonly { message: string }[] } }) =>
   result.success ? null : result.error?.issues.map((issue) => issue.message);
 
-describe('a new certificate needs a serial, a book entry, an issue date or a holder (#356)', () => {
+describe('a certificate needs a serial, a book entry, an issue date or a holder (#356)', () => {
   const blank = { form: 'gcn_2009_2024', serial_no: '', book_entry_no: '', issued_on: null, issued_by: '', holder_party_ids: [], status: 'valid', mortgage: null, annotations: [] };
 
   it('refuses the blank form, and an issuer or a note alone', () => {
-    expect(refusal(newCertificateSchema.safeParse(blank))).toEqual([UNIDENTIFIED]);
-    expect(refusal(newCertificateSchema.safeParse({ ...blank, serial_no: '   ', issued_by: 'Sở Tài nguyên và Môi trường tỉnh Bình Dương' }))).toEqual([UNIDENTIFIED]);
-    expect(refusal(newCertificateSchema.safeParse({ ...blank, annotations: [{ text: 'Chuyển nhượng' }] }))).toEqual([UNIDENTIFIED]);
+    expect(refusal(identifiedCertificateSchema.safeParse(blank))).toEqual([UNIDENTIFIED]);
+    expect(refusal(identifiedCertificateSchema.safeParse({ ...blank, serial_no: '   ', issued_by: 'Sở Tài nguyên và Môi trường tỉnh Bình Dương' }))).toEqual([UNIDENTIFIED]);
+    expect(refusal(identifiedCertificateSchema.safeParse({ ...blank, annotations: [{ text: 'Chuyển nhượng' }] }))).toEqual([UNIDENTIFIED]);
   });
 
   it.each([
@@ -25,16 +25,16 @@ describe('a new certificate needs a serial, a book entry, an issue date or a hol
     ['an issue date', { issued_on: '2015-03-02' }],
     ['a holder', { holder_party_ids: [tenant] }],
   ])('accepts one with only %s', (_, fields) => {
-    expect(newCertificateSchema.safeParse({ ...blank, ...fields }).success).toBe(true);
+    expect(identifiedCertificateSchema.safeParse({ ...blank, ...fields }).success).toBe(true);
   });
 });
 
-describe('a new utility account needs a provider, a customer code or a holder (#356)', () => {
+describe('a utility account needs a provider, a customer code or a holder (#356)', () => {
   const blank = { kind: 'electricity', provider: '', customer_code: '', holder_name: '', unit_id: null, note: '' };
 
   it('refuses the blank form, and a room or a note alone', () => {
-    expect(refusal(newUtilityAccountSchema.safeParse(blank))).toEqual([UNIDENTIFIED]);
-    expect(refusal(newUtilityAccountSchema.safeParse({ ...blank, unit_id: unit, note: 'Công tơ tầng trệt' }))).toEqual([UNIDENTIFIED]);
+    expect(refusal(identifiedUtilityAccountSchema.safeParse(blank))).toEqual([UNIDENTIFIED]);
+    expect(refusal(identifiedUtilityAccountSchema.safeParse({ ...blank, unit_id: unit, note: 'Công tơ tầng trệt' }))).toEqual([UNIDENTIFIED]);
   });
 
   it.each([
@@ -42,7 +42,7 @@ describe('a new utility account needs a provider, a customer code or a holder (#
     ['a customer code', { customer_code: 'PK0905000005' }],
     ['a holder', { holder_name: 'Nguyễn Thị Demo' }],
   ])('accepts one with only %s', (_, fields) => {
-    expect(newUtilityAccountSchema.safeParse({ ...blank, ...fields }).success).toBe(true);
+    expect(identifiedUtilityAccountSchema.safeParse({ ...blank, ...fields }).success).toBe(true);
   });
 });
 

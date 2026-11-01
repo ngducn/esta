@@ -176,6 +176,8 @@ export function ReviewPanel({
             ? t('saveNationalId')
             : outcome.reason === 'missing'
               ? t('saveMissing')
+              : outcome.reason === 'unidentified'
+                ? t('saveUnidentified', { schema: schemaName })
               : outcome.reason === 'mismatch'
                 ? t('saveMismatch')
                 : outcome.reason === 'no_property'

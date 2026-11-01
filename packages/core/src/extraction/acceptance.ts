@@ -1,8 +1,8 @@
 import type { z } from 'zod';
 import { normalizeName } from '../names';
 import { UNIDENTIFIED } from '../schemas/identity';
-import { certificateSchema, newParcelSchema, type parcelSchema, structureSchema } from '../schemas/legal';
-import { utilityAccountSchema } from '../schemas/units';
+import { identifiedCertificateSchema, newParcelSchema, type certificateSchema, type parcelSchema, structureSchema } from '../schemas/legal';
+import { identifiedUtilityAccountSchema, type utilityAccountSchema } from '../schemas/units';
 import { INPUT_KINDS, readInput, reviewFields, withinLeafBounds, type ReviewField } from './fields';
 import type { SchemaName } from './required-fields';
 import { savedAddress } from './review-changes';
@@ -62,11 +62,12 @@ export type AcceptancePlan = { readonly steps: readonly PlanStep[]; readonly acc
 
 /**
  * `invalid`: a decided value does not read as its kind. `out_of_range`: a number lies outside the bounds its leaf schema
- * keeps. `missing`: a row has values but not the field it needs.
+ * keeps. `missing`: a row has values but not the field it needs. `unidentified`: the record has none of the fields that
+ * tell it apart (`IDENTIFYING_FIELDS`), and `paths` are the rows that would.
  */
 export type PlanResult =
   | { readonly ok: true; readonly plan: AcceptancePlan }
-  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing'; readonly paths: readonly string[] };
+  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing' | 'unidentified'; readonly paths: readonly string[] };
 
 type Value = string | number | boolean;
 
@@ -135,14 +136,26 @@ function issuePaths(prefix: string, error: z.ZodError): string[] {
   );
 }
 
-type Collected = { steps: PlanStep[]; missing: string[]; invalid: string[] };
+type Collected = { steps: PlanStep[]; missing: string[]; invalid: string[]; unidentified: string[] };
 
 function finish(collected: Collected, decided: Decided): PlanResult {
   if (collected.invalid.length > 0) return { ok: false, reason: 'invalid', paths: collected.invalid };
   if (decided.outOfRange.length > 0) return { ok: false, reason: 'out_of_range', paths: decided.outOfRange };
   if (collected.missing.length > 0) return { ok: false, reason: 'missing', paths: collected.missing };
+  if (collected.unidentified.length > 0) return { ok: false, reason: 'unidentified', paths: collected.unidentified };
   return { ok: true, plan: { steps: collected.steps, acceptedFields: decided.acceptedFields } };
 }
+
+/** The review rows that fill a record's `IDENTIFYING_FIELDS`; a holder's name becomes the certificate's holder. */
+const IDENTIFYING_ROWS: Readonly<Record<'certificate_v1' | 'utility_bill_v1', readonly string[]>> = {
+  certificate_v1: ['serial_no', 'book_entry_no', 'issued_on', 'holders[].full_name'],
+  utility_bill_v1: ['provider', 'customer_code', 'holder_name'],
+};
+
+const identifyingRows = (schemaName: keyof typeof IDENTIFYING_ROWS, fields: readonly ReviewField[]) =>
+  fields.filter((field) => IDENTIFYING_ROWS[schemaName].includes(field.descriptor.path)).map((field) => field.path);
+
+const unidentified = (error: z.ZodError) => error.issues.some((issue) => issue.message === UNIDENTIFIED);
 
 export type ReadValue = { readonly path: string; readonly value: string | number };
 
@@ -164,7 +177,7 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
   const { values, fields } = decided;
   const scope = { household_id: extraction.householdId, property_id: extraction.propertyId };
   const id = (path: string) => rowId(extraction.id, path);
-  const collected: Collected = { steps: [], missing: [], invalid: [...decided.invalid] };
+  const collected: Collected = { steps: [], missing: [], invalid: [...decided.invalid], unidentified: [] };
   const root = itemOf(values, '');
   if (root.read('form') === null) collected.missing.push('form');
 
@@ -201,7 +214,7 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
     annotations.push({ text: annotationText, ...(date === null ? {} : { date }), ...(kind === null ? {} : { kind }) });
   }
   const form = root.read('form');
-  const certificate = certificateSchema.safeParse({
+  const certificate = identifiedCertificateSchema.safeParse({
     form,
     serial_no: text(root.read('serial_no')),
     book_entry_no: text(root.read('book_entry_no')),
@@ -230,6 +243,8 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
         extraction_id: extraction.id,
       },
     });
+  } else if (form !== null && unidentified(certificate.error)) {
+    collected.unidentified.push(...identifyingRows('certificate_v1', fields));
   } else if (form !== null) {
     collected.invalid.push(...issuePaths('', certificate.error));
   }
@@ -259,7 +274,7 @@ export function planCertificateAcceptance(extraction: AcceptanceExtraction, deci
       origin_text: text(parcel.read('origin_text')),
     });
     if (row.success) collected.steps.push({ table: 'parcels', row: { id: id(`parcels[${i}]`), ...scope, ...row.data } });
-    else if (row.error.issues.some((issue) => issue.message === UNIDENTIFIED)) collected.missing.push(`${parcel.prefix}parcel_no`);
+    else if (unidentified(row.error)) collected.missing.push(`${parcel.prefix}parcel_no`);
     else collected.invalid.push(...issuePaths(parcel.prefix, row.error));
   }
 
@@ -300,8 +315,8 @@ const normalizeCode = (code: string) => code.replace(/\s+/gu, '').toUpperCase();
 export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, decisions: Decisions, { accounts }: Pick<PlanContext, 'accounts'>): PlanResult {
   const decided = decide('utility_bill_v1', extraction.result, decisions);
   const root = itemOf(decided.values, '');
-  const collected: Collected = { steps: [], missing: [], invalid: [...decided.invalid] };
-  const account = utilityAccountSchema.safeParse({
+  const collected: Collected = { steps: [], missing: [], invalid: [...decided.invalid], unidentified: [] };
+  const account = identifiedUtilityAccountSchema.safeParse({
     unit_id: null,
     kind: root.read('kind'),
     provider: text(root.read('provider')),
@@ -326,7 +341,8 @@ export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, deci
       table: 'utility_accounts',
       row: { id: rowId(extraction.id, 'utility_account'), household_id: extraction.householdId, property_id: extraction.propertyId, ...account.data },
     });
-  } else collected.invalid.push(...issuePaths('', account.error));
+  } else if (unidentified(account.error)) collected.unidentified.push(...identifyingRows('utility_bill_v1', decided.fields));
+  else collected.invalid.push(...issuePaths('', account.error));
   return finish(collected, decided);
 }
 
@@ -335,7 +351,7 @@ export function planUtilityBillAcceptance(extraction: AcceptanceExtraction, deci
  * lease is saved only when Mẹ confirms it there.
  */
 export function planLeaseAcceptance(extraction: AcceptanceExtraction, decisions: Decisions): PlanResult {
-  return finish({ steps: [], missing: [], invalid: [] }, decide('lease_v1', extraction.result, decisions));
+  return finish({ steps: [], missing: [], invalid: [], unidentified: [] }, decide('lease_v1', extraction.result, decisions));
 }
 
 export const PLANNERS = {

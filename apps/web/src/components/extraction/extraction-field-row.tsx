@@ -17,12 +17,13 @@ import { cn } from '@/lib/utils';
 import type { FieldView } from '@/server/extraction/field-views';
 import type { LandUseCode } from '@/server/properties/legal';
 
-export type RowError = 'invalid' | 'out_of_range' | 'missing' | 'national_id' | 'mismatch';
+export type RowError = 'invalid' | 'out_of_range' | 'missing' | 'unidentified' | 'national_id' | 'mismatch';
 
 const ROW_ERRORS = {
   invalid: 'invalidField',
   out_of_range: 'outOfRangeField',
   missing: 'missingField',
+  unidentified: 'unidentifiedField',
   national_id: 'nationalIdField',
   mismatch: 'mismatchField',
 } as const satisfies Record<RowError, string>;

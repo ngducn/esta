@@ -1,7 +1,7 @@
 /**
- * [app rule] The fields that tell one record from another (#356): a new record needs at least one of its kind's.
- * Only new records are checked, because the seeded paper-only parcel of Đất vườn Long An has none of the parcel's
- * (DOMAIN-VN §2).
+ * [app rule] The fields that tell one record from another (#356): a record needs at least one of its kind's to be
+ * saved. A parcel and a lease draft are checked only when new: the seeded paper-only parcel of Đất vườn Long An has
+ * none of the parcel's (DOMAIN-VN §2), and a draft is edited a field at a time.
  */
 export const IDENTIFYING_FIELDS = {
   parcel: ['parcel_no', 'map_sheet_no', 'area_m2', 'origin_text'],

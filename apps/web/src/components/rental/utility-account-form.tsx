@@ -1,7 +1,7 @@
 'use client';
 
 import { UNIDENTIFIED } from '@esta/core/schemas/identity';
-import { UTILITY_KINDS, newUtilityAccountSchema, type UtilityAccount, type UtilityKind } from '@esta/core/schemas/units';
+import { UTILITY_KINDS, identifiedUtilityAccountSchema, type UtilityAccount, type UtilityKind } from '@esta/core/schemas/units';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -55,8 +55,8 @@ export function UtilityAccountForm({
       unit_id: values.unitId === '' ? null : values.unitId,
       note: values.note,
     };
-    const checked = accountId === null ? newUtilityAccountSchema.safeParse(value) : null;
-    if (checked !== null && !checked.success && checked.error.issues.some((issue) => issue.message === UNIDENTIFIED)) {
+    const checked = identifiedUtilityAccountSchema.safeParse(value);
+    if (!checked.success && checked.error.issues.some((issue) => issue.message === UNIDENTIFIED)) {
       setError('unidentified');
       return;
     }

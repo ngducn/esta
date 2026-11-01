@@ -13,7 +13,7 @@ import { createSessionClient } from '@/server/supabase/server';
 
 export type ReviewSave =
   | { readonly ok: true; readonly propertyId: string }
-  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing' | 'national_id' | 'mismatch'; readonly paths: readonly string[] }
+  | { readonly ok: false; readonly reason: 'invalid' | 'out_of_range' | 'missing' | 'unidentified' | 'national_id' | 'mismatch'; readonly paths: readonly string[] }
   | { readonly ok: false; readonly reason: 'no_property' | 'not_reviewable' | 'forbidden' | 'failed' };
 
 const uuid = z.uuid();
