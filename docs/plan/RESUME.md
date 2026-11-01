@@ -23,9 +23,9 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
 - **#374 merged** as 2bbf8891: the new shell (tab bar, rail, sidebar, account menu, page header).
 - **RD-2, Tài sản as a workbench.** Running: Sonnet owner, slot 3, `briefs/rd-2.md`, worktree `/tmp/owner-rd-2/wt`, branch esta/rd-2-properties-workbench. Next: its review at verify:tier, then merge.
-- **#375, RD-6 sign-in and onboarding on the brand layer, head 3466ec25, ci green, rigorous.** Running: Opus audit `briefs/pr375-audit.md` (`/tmp/review-375/audit.md`) and Sonnet lane slot 14 `briefs/pr375-lane.md` (`/tmp/review-375/lane/`). The owner skipped /deslop and /no-comments; the fix round runs them.
-  - Ryan decision in the PR body: /sign-in LCP rose about 150 ms (2047 vs 1897 ms) with Inter Display. Default: accept it (still under 2.5 s), unless the audit finds a cheap font-loading fix.
-  - Next: one Sonnet fix round with the audit's blocking findings and the cleanup, a scoped reader, then merge.
+- **#375, RD-6 sign-in and onboarding on the brand layer, head 3466ec25, rigorous.** Sonnet lane CLEAN; Opus audit ISSUES: B1 the eyebrow's `text-xs` has no theme token, so it renders 16/16 instead of 12/16. Running: Sonnet fix round, slot 2, `briefs/rd-6-ff1.md` (B1 with a red test, brand type and colour tokens, /deslop, /no-comments, merge main, Lighthouse 5 runs per side). Lows #378, #379, #380.
+  - Ryan decisions: accept the ~150 ms LCP on /sign-in (default; the audit calls it mostly lab noise) or set the headline in Inter; the logo shows twice on desktop (default: keep, #379).
+  - Next: a scoped Sonnet reader of the fix round against B1, then merge on CLEAN plus green ci.
 - **Then:** RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire set** at 23:30 on 2026-11-01: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`). Clear it with `rm` after a quiet stretch with no overlap failures, and record that in decisions.tsv.
 
