@@ -4,19 +4,26 @@ import { cn } from '@/lib/utils';
 export const markStatuses = ['paid', 'due', 'upcoming', 'overdue', 'vacant', 'draft', 'ended'] as const;
 export type MarkStatus = (typeof markStatuses)[number];
 
+const outlinePill = 'border-border-strong';
+
+const mark = (icon: LucideIcon, color: string, pill: string) => ({ icon, color, pill: `${pill} ${color}` });
+
 /**
  * Status reads as icon, then word, then color, and each status owns a distinct silhouette so it reads in grayscale.
  * `pill` is the badge's tone; in dark a hairline in the tone's border keeps the pill's edge on a tinted ground.
  */
 export const statusMarks = {
-  paid: { icon: CircleCheck, color: 'text-success-text', pill: 'bg-success-bg text-success-text dark:border-success-border' },
-  due: { icon: Clock, color: 'text-warning-text', pill: 'bg-warning-bg text-warning-text dark:border-warning-border' },
-  upcoming: { icon: Calendar, color: 'text-text-secondary', pill: 'border-border-strong text-text-secondary' },
-  overdue: { icon: TriangleAlert, color: 'text-danger-text', pill: 'bg-danger-bg text-danger-text dark:border-danger-border' },
-  vacant: { icon: CircleDashed, color: 'text-neutral-text', pill: 'bg-neutral-bg text-neutral-text' },
-  draft: { icon: PencilLine, color: 'text-info-text', pill: 'bg-info-bg text-info-text dark:border-info-border' },
-  ended: { icon: Archive, color: 'text-text-secondary', pill: 'border-border-strong text-text-secondary' },
+  paid: mark(CircleCheck, 'text-success-text', 'bg-success-bg dark:border-success-border'),
+  due: mark(Clock, 'text-warning-text', 'bg-warning-bg dark:border-warning-border'),
+  upcoming: mark(Calendar, 'text-text-secondary', outlinePill),
+  overdue: mark(TriangleAlert, 'text-danger-text', 'bg-danger-bg dark:border-danger-border'),
+  vacant: mark(CircleDashed, 'text-neutral-text', 'bg-neutral-bg'),
+  draft: mark(PencilLine, 'text-info-text', 'bg-info-bg dark:border-info-border'),
+  ended: mark(Archive, 'text-text-secondary', outlinePill),
 } as const satisfies Record<MarkStatus, { icon: LucideIcon; color: string; pill: string }>;
+
+/** The outline badge for a fact that is not a status, such as how a property is used. */
+export const neutralPill = `${outlinePill} text-text-secondary`;
 
 /** The badge around a status icon and its word; a 14px icon keeps a 2px stroke so it holds its weight. */
 export const statusBadge =

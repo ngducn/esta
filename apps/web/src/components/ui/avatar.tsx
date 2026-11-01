@@ -9,7 +9,7 @@ export function givenInitial(displayName: string | null): string | null {
 
 const sizes = { sm: 'size-7', md: 'size-9', lg: 'size-11' } as const;
 
-/** Everyone gets the neutral fill so colour never ranks people; only Trợ lý is ringed, and its caller passes `TL` as the initial. `aria-hidden` unless `label` names the person. */
+/** Everyone gets the neutral fill so colour never ranks people; only Trợ lý is ringed, and its caller passes `TL` as the initial. */
 export function Avatar({ initial, assistant = false, size = 'md', label, className }: { initial: string | null; assistant?: boolean; size?: keyof typeof sizes; label?: string; className?: string }) {
   return (
     <span

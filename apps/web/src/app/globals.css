@@ -57,7 +57,7 @@
   }
 }
 
-/* A money or count figure: tabular lining digits that never break across lines. */
+/* A money or count figure: tabular lining digits. Wrapping is left to the caller, as `MoneyDisplay` and the amount cells set nowrap. */
 @utility num {
   font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: 'tnum';

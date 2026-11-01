@@ -81,7 +81,6 @@ export const overlays = {
   scrim: { light: 'rgba(15, 23, 42, 0.44)', dark: 'rgba(0, 0, 0, 0.6)' },
 } as const satisfies Record<string, Record<Theme, string>>;
 
-/** Each tone has `-text`, `-bg`, `-border`, `-solid` and `on-` colors. */
 export const tones = ['success', 'warning', 'danger', 'info', 'neutral'] as const;
 
 export type Tone = (typeof tones)[number];
@@ -140,7 +139,6 @@ export type TextScale = (typeof textScales)[number];
 
 export const breakpoints = { sm: 600, md: 840, lg: 1080, xl: 1440 } as const;
 
-/** Shell sizes and the maximum content width of each page type. */
 export const layout = {
   sidebar: 256,
   rail: 72,
