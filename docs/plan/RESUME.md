@@ -18,17 +18,14 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (updated 2026-11-02 00:40 +07)
+## Open items (updated 2026-11-02 03:10 +07)
 
-- **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #375 (a19892e9), the brand layer; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
-- **#374 merged** as 2bbf8891: the new shell (tab bar, rail, sidebar, account menu, page header).
-- **#383 merged** as 32991ea4: the accessibility check judges resting colours; all specs use the shared helper (closes #373). Watch shell and auth-password for title-flicker failures (they lost a poll-until-pass).
-- **#381, RD-2 Tài sản as a workbench, rigorous.** Lane and Opus audit ISSUES: B1 the summary strip totals the filtered rows, B2 a failed collections read shows a false zero, B3 Cần chú ý takes overdue only from rental use. Root merged main at b2ce2f99 (baseline only fell). Fix round 1 done at e05e5641 (reader confirmed B1, B3 by mutation); fix round 2 (last) running with the same owner: the Cần chú ý tab still shows the all-clear when the bills read fails. Lows #382.
-  - Ryan decisions (defaults apply): "Cần chú ý" = rent overdue or due today on any property (the audit's option a; b = Tổng quan's list, c = the design's set with expiring contracts and overdue tax); the filter chip rows stay open on desktop.
-  - Next: a scoped reader of the fix round (Opus or Sonnet against B1-B3), then merge. RD-3 starts after this merges, because it reuses SummaryStrip and FilterTabs.
-- **#375 merged** as a19892e9: sign-in, sign-up, forgot password and onboarding on the brand layer. Ryan decisions with defaults: keep Inter Display despite ~150 ms LCP on /sign-in; logo twice on desktop (#379).
-- **Then:** RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
-- **Tripwire set** at 23:30 on 2026-11-01: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`). Clear it with `rm` after a quiet stretch with no overlap failures, and record that in decisions.tsv.
+- **Merged since 2026-11-01:** #368 (d2016c5a) design foundation; #376 (496542e4) e2e clock pinned to 2026-11-01T10:00+07:00; #374 (2bbf8891) the shell; #375 (a19892e9) sign-in and onboarding brand layer; #383 (32991ea4) axe judges resting colours, one shared helper (closes #373); #381 (9a898a45) Tài sản workbench. Lows open: #372, #377, #378, #379, #380, #382.
+- **No agent is running.** Slots 2, 3 and 14 may hold stopped or idle stacks; run slot-free.sh before reuse.
+- **Next: RD-3, Thu tiền board and recording a payment** (plan row: data table with phone list, totals, bulk bar; money input with `=` and words; sheet footer states; signed, unknown, zero). It reuses SummaryStrip, FilterTabs and EmptyState from #381 (apps/web/src/components). Money input and payment recording make it rigorous: name the tier before spawning (standing orders rule 6: an Opus owner for rigorous work, or a Sonnet owner with an Opus audit as RD-1 and RD-2 had; RD-2 on Sonnet needed two fix rounds). Include #377 (Thu tiền cramped at 960) and the desktop badge wrapping. Write briefs/rd-3.md from briefs/rd-2.md.
+- **Then:** RD-4 (Tổng quan and the Trợ lý thread), RD-5 (property tabs, documents, reports, Cài đặt, wizard). Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **Tripwire set** since 23:30 on 2026-11-01: heavy.sh runs everything one at a time. Clear with `rm /tmp/ci-local/one-at-a-time` after a quiet stretch, and record it.
+- **Watch:** shell and auth-password specs lost a poll-until-pass in #383; a random failure there means a title-flicker wait, not a retry loop.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -37,7 +34,8 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 3. D9 wording stays (the thread counts as the in-app inbox).
 4. #351: should a newer note about the same thing replace the older one in Cần xử lý? Kept as built for now.
 5. P5-13 chips come from open notes of any day, an [app rule].
-6. The redesign defaults in `docs/plan/redesign-2026-11.md`: Esta blue, role-name codemod, Thoáng/Gọn, wordmark, icon-and-word status, the new shell. Ryan can overrule any in a sentence.
+6. Redesign questions with defaults: keep Inter Display on /sign-in despite ~150 ms LCP; logo twice on desktop sign-in (#379); "Cần chú ý" = rent overdue or due today on any property (alternatives: Tổng quan's list, or the design set with expiring contracts and overdue tax); Tài sản chip rows stay open on desktop (or fold behind "Bộ lọc").
+7. The redesign defaults in `docs/plan/redesign-2026-11.md`: Esta blue, role-name codemod, Thoáng/Gọn, wordmark, icon-and-word status, the new shell. Ryan can overrule any in a sentence.
 
 ## Rules added this session
 
@@ -52,7 +50,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Budget
 
-Week at 18% at 01:40 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
+Week at 18% at 03:10 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
 
 
 No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 23:25 on 2026-11-01 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.
