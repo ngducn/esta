@@ -1,6 +1,6 @@
 import { formatDate, formatVnd } from '@esta/core/format';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 import type { LegalRow } from '@esta/ops';
 import type { PartyOption } from '@/server/properties/legal';
@@ -41,7 +41,7 @@ export async function CertificateCard({
       <p
         data-testid="certificate-status"
         data-status={certificate.status}
-        className={cn('inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[mark].pill)}
+        className={cn(statusBadge, 'w-fit', statusMarks[mark].pill)}
       >
         <StatusShape status={mark} className="size-4" />
         {t('status', { status: certificate.status })}

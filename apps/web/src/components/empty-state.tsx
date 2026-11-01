@@ -26,13 +26,9 @@ export function EmptyState({
   return (
     <section data-slot="empty-state" className={cn('overflow-hidden rounded-lg border border-border bg-surface shadow-xs', className)}>
       {media}
-      <div className="flex flex-col items-start gap-3 p-5 sm:p-6">
-        <h2 className="flex items-center gap-3 text-headline font-semibold text-text">
-          {Icon ? (
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-accent-text">
-              <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
-            </span>
-          ) : null}
+      <div className="flex flex-col items-start gap-2 p-card-pad">
+        <h2 className="flex items-start gap-2 text-headline text-text">
+          {Icon ? <Icon className="mt-0.5 size-icon-md shrink-0 text-text-secondary" strokeWidth={1.75} aria-hidden="true" /> : null}
           <span className="min-w-0 break-words">{title}</span>
         </h2>
         <p className="max-w-prose text-body text-pretty text-text-secondary">{body}</p>

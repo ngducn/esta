@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderInLocale } from '@/test/render';
 import { StatusMark, type StatusMarkProps } from './status-mark';
-import { markStatuses, statusMarks } from './status-shape';
+import { markStatuses } from './status-shape';
 
 const words = {
   paid: 'Đã thu',
@@ -17,16 +17,20 @@ const propsFor = (status: (typeof markStatuses)[number]): StatusMarkProps =>
   status === 'overdue' ? { status, days: 12 } : { status };
 
 describe('StatusMark', () => {
-  it.each(markStatuses)('renders %s as a shape and a word', (status) => {
+  const iconOf = (status: (typeof markStatuses)[number]) => {
     const { container } = renderInLocale(<StatusMark {...propsFor(status)} />);
-    const svg = container.querySelector(`svg[data-shape="${status}"]`);
-    expect(svg?.querySelector('path')?.getAttribute('d')).toBe(statusMarks[status].shape.d);
+    return { container, svg: container.querySelector(`svg[data-shape="${status}"]`) };
+  };
+
+  it.each(markStatuses)('renders %s as a hidden icon and a word', (status) => {
+    const { container, svg } = iconOf(status);
     expect(svg?.getAttribute('aria-hidden')).toBe('true');
     expect(container.textContent).toBe(words[status]);
   });
 
-  it('gives every status its own shape', () => {
-    const shapes = markStatuses.map((status) => JSON.stringify(statusMarks[status].shape));
-    expect(new Set(shapes).size).toBe(markStatuses.length);
+  it('gives every status its own icon, so status reads in grayscale', () => {
+    const drawings = markStatuses.map((status) => iconOf(status).svg?.innerHTML);
+    expect(drawings.every(Boolean)).toBe(true);
+    expect(new Set(drawings).size).toBe(markStatuses.length);
   });
 });

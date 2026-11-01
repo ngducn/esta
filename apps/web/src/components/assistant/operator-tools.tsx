@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { runConnectionCheck, runWatch } from '@/app/(app)/assistant/actions';
 import { RefreshWhilePending } from '@/app/(app)/assistant/connection-check';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getConnectionCheck, type PingCheck } from '@/server/assistant';
@@ -24,7 +24,7 @@ async function LatestJob({ job, testId, empty, children }: { job: JobView | null
         <span
           data-testid={`${testId}-status`}
           data-status={job.status}
-          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[mark].pill)}
+          className={cn(statusBadge, statusMarks[mark].pill)}
         >
           <StatusShape status={mark} className="size-4" />
           <span>{t(`jobStatus.${job.status}`)}</span>

@@ -22,14 +22,14 @@ function TableHead({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       data-slot="table-head"
-      className={cn('border-b border-border bg-bg-subtle px-4 py-3 text-start align-bottom text-body-sm font-medium whitespace-nowrap text-text-muted', className)}
+      className={cn('h-11 border-b border-border bg-bg-subtle px-cell-x text-start align-middle text-label whitespace-nowrap text-text-secondary', className)}
       {...props}
     />
   );
 }
 
 function TableCell({ className, ...props }: ComponentProps<'td'>) {
-  return <td data-slot="table-cell" className={cn('border-b border-border px-4 py-3.5 align-middle', className)} {...props} />;
+  return <td data-slot="table-cell" className={cn('h-row-h border-b border-border px-cell-x py-1.5 align-middle', className)} {...props} />;
 }
 
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow };

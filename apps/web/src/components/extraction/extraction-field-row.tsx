@@ -10,7 +10,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
 import { LandUseCodePicker } from '@/components/legal/land-use-code-picker';
 import { MoneyInput } from '@/components/money/money-input';
-import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -125,13 +125,13 @@ export function ExtractionFieldRow({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {field.marked && decision === undefined ? (
-            <span data-testid="needs-check" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks.due.pill)}>
+            <span data-testid="needs-check" className={cn(statusBadge, statusMarks.due.pill)}>
               <StatusShape status="due" className="size-4" />
               <span>{t('needsCheck')}</span>
             </span>
           ) : null}
           {decision === undefined ? null : (
-            <span data-testid="decided" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks.paid.pill)}>
+            <span data-testid="decided" className={cn(statusBadge, statusMarks.paid.pill)}>
               <StatusShape status="paid" className="size-4" />
               <span>{t('decision', { decision: decision.kind })}</span>
             </span>

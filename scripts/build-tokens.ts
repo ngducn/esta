@@ -17,6 +17,7 @@ import {
   radius,
   shadows,
   sizes,
+  strokeStrongPx,
   spacing,
   textScales,
   typeStyles,
@@ -49,6 +50,7 @@ function renderTokensCss(): string {
     ...Object.entries(motion.duration).map(([name, ms]) => `--duration-${name}: ${ms}ms;`),
     `--focus-width: ${focusRing.widthPx}px;`,
     `--focus-offset: ${focusRing.offsetPx}px;`,
+    `--stroke-strong: ${strokeStrongPx}px;`,
     ...densityVars('comfortable'),
   ];
   const inlineTheme = [

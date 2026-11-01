@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/empty-state';
 import { MeterEntryList } from '@/components/meters/MeterEntryList';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
-import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import { getClock } from '@/server/clock';
@@ -72,7 +72,7 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
             {month < latest ? monthLink(1) : null}
           </nav>
           {rooms.length === 0 ? null : (
-            <p data-testid="meter-remaining" data-status={status} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[status].pill)}>
+            <p data-testid="meter-remaining" data-status={status} className={cn(statusBadge, statusMarks[status].pill)}>
               <StatusShape status={status} className="size-4" />
               {remaining === 0 ? t('complete', { count: rooms.length }) : t('remaining', { count: remaining })}
             </p>

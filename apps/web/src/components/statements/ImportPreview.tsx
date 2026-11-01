@@ -8,7 +8,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAction } from '@/components/use-action';
@@ -99,7 +99,7 @@ function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, disabl
         </div>
         <p className="text-body break-words text-text">{line.description}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span data-testid="statement-status" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[mark].pill)}>
+          <span data-testid="statement-status" className={cn(statusBadge, statusMarks[mark].pill)}>
             <StatusShape status={mark} className="size-4" />
             {t('status', { status: line.status })}
           </span>

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { ExtractionStatus } from '@/server/documents/extraction-status';
 import type { VaultTile } from '@/server/documents/list';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
 
@@ -55,13 +55,13 @@ export function ExtractionPill({
         <Link
           href={`/documents/${documentId}/review`}
           data-testid="review-link"
-          className={cn('inline-flex min-h-touch items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
+          className={cn(statusBadge, 'min-h-touch underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
         >
           <StatusShape status={pill.mark} className="size-4" />
           <span>{t(pill.label)}</span>
         </Link>
       ) : (
-        <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[pill.mark].pill)}>
+        <span className={cn(statusBadge, statusMarks[pill.mark].pill)}>
           <StatusShape status={pill.mark} className="size-4" />
           <span>{t(pill.label)}</span>
         </span>

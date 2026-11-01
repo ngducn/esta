@@ -53,8 +53,6 @@
     ::after {
       transition-duration: 0s !important;
       animation-duration: 0s !important;
-      translate: none !important;
-      scale: none !important;
     }
   }
 }

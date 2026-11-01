@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 function Block({ className }: { className: string }) {
-  return <span aria-hidden="true" className={cn('block animate-pulse rounded-md bg-border', className)} />;
+  return <span aria-hidden="true" className={cn('block rounded-md bg-skeleton', className)} />;
 }
 
 /** One status region per loading area, so a screen reader hears "Đang tải" once rather than per block. */
@@ -21,7 +21,7 @@ export function SkeletonPage() {
   return (
     <Loading className="flex flex-col gap-6">
       <Block className="h-9 w-56 max-w-full" />
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
         <Block className="h-7 w-64 max-w-full" />
         <Block className="h-5 w-full max-w-prose" />
         <Block className="mt-2 h-touch w-44" />
@@ -166,7 +166,7 @@ export function SkeletonTable({ rows = 4 }: { rows?: number }) {
 
 export function SkeletonEmptyState() {
   return (
-    <Loading className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+    <Loading className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
       <Block className="h-7 w-64 max-w-full" />
       <Block className="h-5 w-full max-w-prose" />
       <Block className="mt-2 h-touch w-44" />
@@ -217,7 +217,7 @@ export function SkeletonHome() {
     <Loading testId="skeleton-home" className="flex flex-col gap-6">
       <Block className="h-9 w-56 max-w-full" />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
           <Block className="h-7 w-48" />
           {Array.from({ length: 3 }, (_, index) => (
             <div key={index} className="flex items-center gap-3 py-2">
@@ -229,7 +229,7 @@ export function SkeletonHome() {
             </div>
           ))}
         </div>
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
           <Block className="h-7 w-36" />
           <Block className="h-12 w-64 max-w-full" />
           <Block className="h-2 w-full" />
@@ -256,7 +256,7 @@ export function SkeletonLease() {
         <Block className="h-touch w-36" />
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
           <Block className="h-7 w-40" />
           {Array.from({ length: 5 }, (_, index) => (
             <Block key={index} className="h-6 w-full max-w-sm" />

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lazy, useState, type DragEvent, type ReactNode } from 'react';
-import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
@@ -50,7 +50,7 @@ function ExpiringSoon({ items }: { items: readonly ExpiringItem[] }) {
                 </Link>
                 {item.propertyName === null ? null : <span className="text-body-sm break-words text-text-muted">{item.propertyName}</span>}
               </div>
-              <span data-testid="expiring-days" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks.due.pill)}>
+              <span data-testid="expiring-days" className={cn(statusBadge, statusMarks.due.pill)}>
                 <StatusShape status="due" className="size-4" />
                 {item.text}
               </span>

@@ -6,7 +6,7 @@ import type { Amendment, SchedulePeriod } from '@esta/core/schedule';
 import { useLocale, useTranslations } from 'next-intl';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { IntentLink } from '@/components/shell/intent-link';
-import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { StatusMark } from '@/components/status-mark';
 import { cn } from '@/lib/utils';
 import type { InvoiceSummary } from '@/server/leases/load';
@@ -34,7 +34,7 @@ function Mark({ mark }: { mark: PeriodMark }) {
       const shape = mark.kind === 'prepaid' ? 'paid' : mark.kind === 'partial' ? 'due' : mark.kind === 'void' ? 'ended' : 'upcoming';
       const word = { prepaid: t('markPrepaid'), partial: t('markPartial'), void: t('markVoid'), unbilled: t('markUnbilled') }[mark.kind];
       return (
-        <span data-status={mark.kind} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 align-top text-body-sm font-medium', statusMarks[shape].pill)}>
+        <span data-status={mark.kind} className={cn(statusBadge, statusMarks[shape].pill)}>
           <StatusShape status={shape} className="size-4" />
           <span>{word}</span>
         </span>

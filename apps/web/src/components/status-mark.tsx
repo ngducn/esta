@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { StatusShape, statusMarks, type MarkStatus } from './status-shape';
+import { StatusShape, statusBadge, statusMarks, type MarkStatus } from './status-shape';
 
 export type StatusMarkProps = { status: 'overdue'; days: number } | { status: Exclude<MarkStatus, 'overdue'> };
 
@@ -10,9 +10,9 @@ export function StatusMark(props: StatusMarkProps) {
   return (
     <span
       data-status={props.status}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 align-top text-body-sm font-medium', statusMarks[props.status].pill)}
+      className={cn(statusBadge, statusMarks[props.status].pill)}
     >
-      <StatusShape status={props.status} className="size-4" />
+      <StatusShape status={props.status} />
       <span>{word}</span>
     </span>
   );

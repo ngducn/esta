@@ -174,6 +174,9 @@ export const motion = {
 
 export const focusRing = { widthPx: 2, offsetPx: 2 } as const;
 
+/** The checkbox and radio edge; every other border is a 1px hairline. */
+export const strokeStrongPx = 1.5;
+
 export const typefaces = {
   sans: {
     family: 'Inter',
