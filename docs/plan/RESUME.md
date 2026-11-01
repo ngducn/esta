@@ -18,7 +18,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (updated 2026-11-02 00:20 +07)
+## Open items (updated 2026-11-01 23:25 +07)
 
 - **#365 merged** as 72a1fa7d on 2026-11-01. Lows in #370; the portfolio-watch e2e failing locally on main is #371.
 - **#368, RD-1 redesign foundation, head a78c8c86 on origin (CONFLICTING with main).** Sonnet lane CLEAN at a78c8c86. Opus audit ISSUES (`/tmp/review-368/audit.md`): B1 the dark-theme bill prints near-white (print.css overrides retired names), B2 the retired-name check skips .css files and definitions, B3 the codemod source is missing from the PR body. Lows filed as #372.
@@ -48,7 +48,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Budget
 
-No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 00:20 on 2026-11-02 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.
+No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 23:25 on 2026-11-01 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.
 
 ## Gotchas
 
