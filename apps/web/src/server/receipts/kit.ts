@@ -2,7 +2,7 @@ import 'server-only';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ReceiptModel } from '@esta/core/receipt';
-import { oklchHex, oklchToSrgb255, type Rgb } from '@/design/contrast';
+import { hexToRgb, type Rgb } from '@/design/contrast';
 import { colors, type ColorToken } from '@/design/tokens';
 
 /** The receipt's own words, always Vietnamese (messages `receipt`), resolved on the server. The title is the model's. */
@@ -32,9 +32,9 @@ export const A5_PT = { width: 419.528, height: 595.276 } as const;
 export const PNG_PX = { width: 1080, height: 1527 } as const;
 
 /** Paper is white in either theme, so the receipt reads the light tokens. */
-export const receiptColor = (token: ColorToken): Rgb => oklchToSrgb255(colors[token].light);
+export const receiptColor = (token: ColorToken): Rgb => hexToRgb(colors[token].light);
 
-export const receiptHex = (token: ColorToken) => oklchHex(colors[token].light);
+export const receiptHex = (token: ColorToken) => colors[token].light;
 
 export type ReceiptFont = { readonly weight: 400 | 600; readonly data: Buffer };
 

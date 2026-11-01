@@ -4,8 +4,7 @@ import { vnd } from '@esta/core/money';
 import { contrastRatio } from '@/design/contrast';
 import { glyphTestString } from '@/design/glyph-test-string';
 import { colorPairs, minimumRatio, type ColorPair } from '@/design/text-pairs';
-import { colors, statuses, typefaces, type Theme } from '@/design/tokens';
-import { StatusShape } from './status-shape';
+import { colors, tones, typefaces, type Theme } from '@/design/tokens';
 
 export const metadata: Metadata = {
   title: 'Glyphs and tokens',
@@ -132,22 +131,19 @@ export default function DevGlyphsPage() {
           Status
         </h2>
         <ul className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
-          {statuses.map((status) => (
-            <li key={status} className="flex items-start justify-between gap-4" data-status={status}>
-              <span className="flex items-center gap-2">
-                <StatusShape status={status} />
-                <span className="font-medium" style={{ color: `var(--${status})` }}>
-                  {status}
-                </span>
+          {tones.map((tone) => (
+            <li key={tone} className="flex items-start justify-between gap-4" data-status={tone}>
+              <span className="font-medium" style={{ color: `var(--${tone}-text)` }}>
+                {tone}
               </span>
               <div className="flex gap-6">
                 <div data-kind="text" className="flex flex-col items-end gap-1">
                   <p className="text-meta text-ink-muted">word on ground</p>
-                  <Ratios pair={{ foreground: status, background: 'ground' }} minimum={minimumRatio.text} />
+                  <Ratios pair={{ foreground: `${tone}-text`, background: 'bg' }} minimum={minimumRatio.text} />
                 </div>
                 <div data-kind="text" className="flex flex-col items-end gap-1">
                   <p className="text-meta text-ink-muted">word on fill</p>
-                  <Ratios pair={{ foreground: status, background: `${status}-fill` }} minimum={minimumRatio.text} />
+                  <Ratios pair={{ foreground: `${tone}-text`, background: `${tone}-bg` }} minimum={minimumRatio.text} />
                 </div>
               </div>
             </li>
