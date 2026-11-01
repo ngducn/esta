@@ -77,14 +77,14 @@ export function MoneyInput({ label, defaultText = '', onValueChange, onTextChang
       {large ? (
         <div
           className={cn(
-            'mt-1 flex min-h-control-lg items-center gap-2 rounded-md border border-border-field bg-surface px-4 transition-colors duration-(--duration-fast) ease-standard hover:border-text-muted',
+            'group mt-1 flex min-h-control-lg items-center gap-2 rounded-md border border-border-field bg-surface px-4 transition-colors duration-(--duration-fast) ease-standard hover:border-text-muted',
             'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring',
             error !== null && 'border-danger-text hover:border-danger-text',
-            disabled && 'border-border bg-fill-disabled hover:border-border',
+            'has-[:disabled]:border-border has-[:disabled]:bg-fill-disabled has-[:disabled]:hover:border-border',
           )}
         >
           {input}
-          <span aria-hidden="true" className={cn('text-title-3 font-medium', disabled ? 'text-text-disabled' : 'text-text-secondary')}>
+          <span aria-hidden="true" className="text-title-3 font-medium text-text-secondary group-has-[:disabled]:text-text-disabled">
             ₫
           </span>
         </div>
