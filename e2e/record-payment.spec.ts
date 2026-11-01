@@ -270,6 +270,34 @@ test('an amount or a date that does not read is refused in words, and nothing is
   expect(await allocationsOf(page, invoiceId(8, 4, '2026-10-25'))).toEqual([]);
 });
 
+test('on a phone the sheet says the amount in words as Mẹ types, and refuses 0 and more than 1.000 tỷ before anything is saved', async ({ page }) => {
+  await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
+  await page.goto('/collections');
+  await row(group(page, 'notDue'), 'Phòng 4, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
+  const amount = sheet(page).getByRole('textbox', { name: 'Số tiền nhận' });
+  await expect(sheet(page).getByTestId('money-words')).toHaveText('Hai triệu năm trăm nghìn đồng');
+  await amount.fill('3tr5');
+  await expect(sheet(page).getByTestId('money-preview')).toHaveText(vnd('3.500.000'));
+  await expect(sheet(page).getByTestId('money-words')).toHaveText('Ba triệu năm trăm nghìn đồng');
+  await expect(amount).toHaveAccessibleDescription(/Ba triệu năm trăm nghìn đồng/);
+  await amount.fill('0');
+  await amount.blur();
+  await expect(amount).toHaveAttribute('aria-invalid', 'true');
+  await expect(sheet(page).getByTestId('money-words')).toHaveCount(0);
+  await sheet(page).getByRole('radio', { name: 'Tiền mặt' }).click();
+  await sheet(page).getByTestId('payment-save').click();
+  await expect(sheet(page).getByTestId('payment-error')).toHaveText('Số tiền chưa đúng. Nhập số tiền lớn hơn 0.');
+  await amount.fill('1.000.000.000.001');
+  await sheet(page).getByTestId('payment-save').click();
+  await expect(sheet(page).getByTestId('payment-error')).toHaveText('Số tiền chưa đúng. Số này lớn hơn mức Esta ghi được.');
+  await expect(sheet(page).getByTestId('money-preview')).toHaveCount(0);
+  await expect(sheet(page).getByRole('button', { name: 'Hủy' })).toBeHidden();
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await sheet(page).getByRole('button', { name: 'Đóng' }).click();
+  await expect(sheet(page)).toBeHidden();
+  expect(await allocationsOf(page, invoiceId(8, 4, '2026-10-25'))).toEqual([]);
+});
+
 test('offline, the sheet says so and Lưu records nothing until the network is back', async ({ page }) => {
   await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
   await page.goto('/collections');
@@ -279,6 +307,7 @@ test('offline, the sheet says so and Lưu records nothing until the network is b
   await expect(sheet(page).getByTestId('payment-offline')).toHaveText('Đang mất mạng. Khoản thu chỉ lưu được khi có mạng lại.');
   await sheet(page).getByTestId('payment-save').click();
   await expect(sheet(page).getByTestId('payment-error')).toHaveText('Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.');
+  await expect(sheet(page).getByTestId('payment-save')).toHaveText('Thử lại');
   await page.context().setOffline(false);
   await sheet(page).getByTestId('payment-save').click();
   await expect(toast(page)).toContainText(`Đã ghi nhận ${vnd('2.500.000')} từ Phòng 4.`);

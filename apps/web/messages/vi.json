@@ -1778,7 +1778,7 @@
     "date": "Ngày nhận",
     "dateToday": "Hôm nay, {date}",
     "changeDate": "Đổi ngày",
-    "save": "Lưu",
+    "save": "Lưu khoản thu",
     "saving": "Đang lưu",
     "cancel": "Hủy",
     "saved": "Đã ghi nhận {amount} từ {place}.",
@@ -1797,7 +1797,10 @@
       "nothingOwed": "{place} không còn khoản nào phải thu nên khoản này chưa lưu. Xem số mới trên bảng.",
       "failed": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại."
     },
-    "transferTo": "Vào tài khoản {bank} · {accountNo}"
+    "transferTo": "Vào tài khoản {bank} · {accountNo}",
+    "close": "Đóng",
+    "retry": "Thử lại",
+    "change": "Đổi"
   },
   "expenses": {
     "add": "Thêm chi phí",

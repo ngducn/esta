@@ -1778,7 +1778,7 @@
     "date": "Received on",
     "dateToday": "Today, {date}",
     "changeDate": "Change date",
-    "save": "Save",
+    "save": "Save payment",
     "saving": "Saving",
     "cancel": "Cancel",
     "saved": "Recorded {amount} from {place}.",
@@ -1797,7 +1797,10 @@
       "nothingOwed": "{place} owes nothing now, so this payment was not saved. See the new amounts on the board.",
       "failed": "Not saved yet. Check the connection and try again."
     },
-    "transferTo": "Into {bank} · {accountNo}"
+    "transferTo": "Into {bank} · {accountNo}",
+    "close": "Close",
+    "retry": "Try again",
+    "change": "Change"
   },
   "expenses": {
     "add": "Add expense",
