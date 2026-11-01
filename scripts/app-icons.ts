@@ -1,41 +1,24 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { oklchHex } from '../apps/web/src/design/contrast.ts';
-import { brandHousePath } from '../apps/web/src/design/brand.ts';
-import { colors, radius } from '../apps/web/src/design/tokens.ts';
-
 const web = fileURLToPath(new URL('../apps/web/', import.meta.url));
+const source = readFileSync(fileURLToPath(new URL('../docs/design/redesign-2026-11/brand/esta-app-icon.svg', import.meta.url)), 'utf8');
 
 /** sharp comes with next, so the script borrows next's copy instead of adding a dependency. */
 type Sharp = (input: Buffer) => { resize: (size: number) => { png: () => { toBuffer: () => Promise<Buffer> } } };
 const fromNext = createRequire(createRequire(join(web, 'package.json')).resolve('next/package.json'));
 const sharp = fromNext('sharp') as Sharp;
 
-const accent = oklchHex(colors.accent.light);
-const glyph = oklchHex(colors['on-accent'].light);
+const tile = '<rect width="64" height="64" rx="14"';
+const glyphStart = '<g transform=';
+if (!source.includes(tile) || !source.includes(glyphStart)) throw new Error('esta-app-icon.svg changed shape');
 
-/** The mock's 36 px mark: a 10 px radius and a 20 px house. `bleed` fills the square for masks and iOS. */
-function markSvg({ bleed, houseShare }: { bleed: boolean; houseShare: number }): string {
-  const size = 512;
-  const corner = bleed ? 0 : (size * radius.sm) / 36;
-  const house = size * houseShare;
-  const offset = (size - house) / 2;
-  const scale = house / 24;
-  return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">`,
-    `<rect width="${size}" height="${size}" rx="${corner}" fill="${accent}"/>`,
-    `<path transform="translate(${offset} ${offset}) scale(${scale})" d="${brandHousePath}" fill="none" stroke="${glyph}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
-    '</svg>',
-    '',
-  ].join('\n');
-}
-
-const rounded = markSvg({ bleed: false, houseShare: 20 / 36 });
-const square = markSvg({ bleed: true, houseShare: 20 / 36 });
-// A maskable icon keeps its content inside the central 80% circle, so the house shrinks to fit.
-const maskable = markSvg({ bleed: true, houseShare: 0.42 });
+const rounded = source;
+// iOS and masks round the corners themselves, so the tile fills the square.
+const square = source.replace(tile, '<rect width="64" height="64"');
+// A maskable icon keeps its content inside the central 80% circle, so the E shrinks to fit.
+const maskable = square.replace(glyphStart, '<g transform="translate(32 32) scale(0.7) translate(-32 -32)"><g transform=').replace('</svg>', '</g></svg>');
 
 async function png(svg: string, size: number, path: string): Promise<void> {
   mkdirSync(dirname(path), { recursive: true });

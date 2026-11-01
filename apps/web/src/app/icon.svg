@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="142.22222222222223" fill="#b83a25"/>
-<path transform="translate(113.77777777777777 113.77777777777777) scale(11.851851851851853)" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="#fefbfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><title>Esta</title><rect width="64" height="64" rx="14" fill="#1b5bda"></rect><g transform="translate(17.1 44.8) scale(0.01718)"><path d="M136 0V-1490H1138V-1295H358V-856H1080V-663H358V-195H1138V0Z" fill="#ffffff"></path><rect x="1240" y="-1490" width="358" height="358" fill="#ffffff"></rect></g></svg>
