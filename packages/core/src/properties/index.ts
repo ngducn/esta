@@ -42,3 +42,4 @@ export {
 } from './status';
 export { compareRoomLabels, compareUnits, moveUnit, nextRoomLabels, sortByRoomNumber, type SortChange } from './units';
 export { propertyTotals, type PropertyTotals } from './totals';
+export { emptyListKind, type EmptyListKind } from './empty';

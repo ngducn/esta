@@ -5,6 +5,7 @@ import {
   PROPERTY_STATUS_FILTERS,
   byUrgency,
   currentAddressText,
+  emptyListKind,
   parsePropertyFilters,
   propertyFiltersQuery,
   shortProvinceName,
@@ -126,7 +127,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const filtered = filters.q !== '' || PROPERTY_FILTER_KEYS.some((key) => filters[key] !== null);
   const count = filtered ? t('countFiltered', { shown: list.rows.length, count: list.householdCount }) : t('count', { count: list.householdCount });
   const { totals } = list;
-  const onlyAttention = filters.q === '' && PROPERTY_FILTER_KEYS.every((key) => (key === 'status' ? filters[key] === 'attention' : filters[key] === null));
+  const emptyKind = emptyListKind(filters, totals.attention);
   const clearAction = { label: t('clearFilters'), href: '/properties' };
 
   return (
@@ -197,7 +198,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
             <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
           </div>
           {list.rows.length === 0 ? (
-            filters.q !== '' ? (
+            emptyKind === 'search' ? (
               <EmptyState
                 icon={SearchX}
                 title={t('noMatch', { query: filters.q })}
@@ -205,7 +206,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
                 className="max-w-3xl"
                 action={clearAction}
               />
-            ) : onlyAttention ? (
+            ) : emptyKind === 'allClear' ? (
               <EmptyState
                 icon={CircleCheck}
                 tone="good"
