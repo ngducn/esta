@@ -5,7 +5,6 @@ function Block({ className }: { className: string }) {
   return <span aria-hidden="true" className={`block rounded-md bg-skeleton ${className}`} />;
 }
 
-/** The Tài sản workbench as it lands: head, strip, bar and photo-led cards in the grid the list draws, so nothing shifts. */
 export function SkeletonProperties({ count = 3 }: { count?: number }) {
   const t = useTranslations('components');
   return (

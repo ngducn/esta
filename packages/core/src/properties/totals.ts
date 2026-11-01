@@ -10,7 +10,6 @@ export type PropertyTotals = {
   rentVnd: Vnd | null;
 };
 
-/** The figures above the property list, from the rows the list shows. */
 export function propertyTotals(rows: readonly Pick<PropertyListRow, 'statusKeys' | 'leasedUnitCount' | 'unitCount' | 'monthlyRentVnd'>[]): PropertyTotals {
   const rents = rows.flatMap((row) => (row.monthlyRentVnd === null ? [] : [row.monthlyRentVnd]));
   return {

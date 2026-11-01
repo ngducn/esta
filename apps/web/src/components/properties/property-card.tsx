@@ -9,7 +9,6 @@ import { CoverPhoto, type CoverPhotoPriority } from './cover-photo';
 import { StatusPill } from './property-pills';
 import type { StatusPillData } from './status-pills';
 
-/** Columns of at least 19rem, one card per row on a phone. */
 export const propertyGrid = 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,19rem),1fr))] gap-stack';
 
 /** Everything a card shows, already translated and signed on the server, so the card renders the same on either side. */
@@ -21,14 +20,10 @@ export type PropertyCardData = {
   address: string;
   certificateLine: string | null;
   photoUrl: string | null;
-  /** Where a member who may edit adds the missing photo, `null` for a viewer. */
   addPhoto: { href: string; label: string } | null;
-  /** The monthly rent of the active leases in full, with its `/tháng`; `null` when none is active. */
   rent: { amount: string; per: string } | null;
   noContract: string;
-  /** The `propertyStatus` badges, most urgent first; the card shows two. */
   statuses: readonly StatusPillData[];
-  /** Rooms and how many stand free, `null` for a property that is one unit. */
   rooms: string | null;
   completeness: { percent: number; label: string; srLabel: string };
 };

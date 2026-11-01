@@ -3,11 +3,8 @@ import { cn } from '@/lib/utils';
 
 export type Figure = {
   label: string;
-  /** A formatted amount or count; `null` is a figure not known yet, shown as a dash with its `sub` saying what to add. */
   value: ReactNode | null;
   sub?: string;
-  /** The exact amount when `value` is compact, or the full name of a figure that is cut short. */
-  title?: string;
 };
 
 const columns = { 2: '@min-[52rem]:grid-cols-2', 3: '@min-[52rem]:grid-cols-3', 4: '@min-[52rem]:grid-cols-4' } as const;
@@ -31,7 +28,7 @@ export function SummaryStrip({ label, figures, unknownLabel }: { label: string; 
                   —
                 </span>
               ) : (
-                <span title={figure.title} className="num text-figure-md text-text">
+                <span className="num text-figure-md text-text">
                   {figure.value}
                 </span>
               )}
