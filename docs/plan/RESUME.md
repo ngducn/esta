@@ -20,12 +20,11 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Open items (updated 2026-11-01 23:20 +07)
 
-- **#365, data trust A, head 2de309c8.** Fix round 1 done by the Opus owner: all five items with mutation-checked tests; item 5 was real (18 of 11,507 addresses got a false "another province" stop). ci passed in full at eaf36727; 2de309c8 adds one scroll line to a spec and its ci was pending. Lows filed: #369 (refusal pushes Lưu under the tab bar, a redesign fix), skipped specs added to #122.
-  - Running: scoped Sonnet reader, brief `briefs/pr365-ff1-reader.md`, report `/tmp/review-365/ff1-reader.md`.
-  - Next: on CLEAN and green ci at 2de309c8, `gh pr merge 365 --squash --match-head-commit 2de309c8` and a plain-words summary.
+- **#365 merged** as 72a1fa7d on 2026-11-01. Lows in #370; the portfolio-watch e2e failing locally on main is #371.
 - **#368, RD-1 redesign foundation, head a78c8c86.** Opus owner then Sonnet owner (handover `/tmp/owner-rd-1/handover.md`). Done: record, docs, tokens, codemod with retired-name check, density, wordmark and icons, primitives. The shell split out to RD-1b. Not run by the owner: /deslop, /no-comments, Lighthouse. verify:tier says rigorous (the codemod touched sign-in and onboarding files).
   - Running: Opus audit (`briefs/pr368-audit.md`, `/tmp/review-368/audit.md`) and Sonnet live lane on slot 14 (`briefs/pr368-lane.md`, `/tmp/review-368/lane/`).
-  - Next: one fix-forward by a fresh Sonnet owner if they find blocking issues, then merge on clean verdicts and green ci.
+  - Sonnet lane CLEAN at a78c8c86 (ci green). It now conflicts with main after #365: Sonnet fix-forward owner, slot 2, `briefs/rd-1-ff1.md`, merges main and re-runs the codemod (job 1), then fixes the Opus audit's blocking findings and runs /deslop and /no-comments (job 2, sent by the root).
+  - Next: merge on the audit's clean verdict (or after job 2) and green ci.
 - **RD-1b, the shell, branch esta/rd-1b-shell stacked on RD-1.** Sonnet owner, slot 3, brief `briefs/rd-1b.md`, worktree `/tmp/owner-rd-1b/wt`. Rail, sidebar, tab bar, account menu with Mật độ, page header. Next: its review round after RD-1 merges; retarget to main then.
 - **After RD-1 and RD-1b:** RD-2 and RD-6 side by side, then RD-3, RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 
