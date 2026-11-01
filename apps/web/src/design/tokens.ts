@@ -72,6 +72,9 @@ export const colors = {
   // Ramp steps bundle.css draws directly for the danger button's hover and press.
   'red-700': { light: '#a82522', dark: '#a82522' },
   'red-800': { light: '#861e1b', dark: '#861e1b' },
+  // The reversed logo and caption on a photo, the same in both themes (brand/esta-logo-reversed.svg).
+  'photo-ink': { light: '#ffffff', dark: '#ffffff' },
+  'photo-seal': { light: '#689cfe', dark: '#689cfe' },
 } as const satisfies Record<string, Record<Theme, Hex>>;
 
 export type ColorToken = keyof typeof colors;
@@ -79,6 +82,8 @@ export type ColorToken = keyof typeof colors;
 /** Translucent layers carry no text of their own, so the contrast check leaves them out. */
 export const overlays = {
   scrim: { light: 'rgba(15, 23, 42, 0.44)', dark: 'rgba(0, 0, 0, 0.6)' },
+  'photo-shade': { light: 'rgba(15, 18, 23, 0.72)', dark: 'rgba(15, 18, 23, 0.72)' },
+  'photo-shade-soft': { light: 'rgba(15, 18, 23, 0.6)', dark: 'rgba(15, 18, 23, 0.6)' },
 } as const satisfies Record<string, Record<Theme, string>>;
 
 export const tones = ['success', 'warning', 'danger', 'info', 'neutral'] as const;
@@ -109,7 +114,18 @@ export const typeStyles = {
   'figure-lg': { px: 32, linePx: 42, weight: 600, trackingEm: -0.02 },
   'figure-md': { px: 24, linePx: 32, weight: 600, trackingEm: -0.012 },
   amount: { px: 16, linePx: 24, weight: 500 },
+  'brand-eyebrow': { px: 12, linePx: 16, weight: 500, trackingEm: 0.18 },
 } as const satisfies Record<string, TypeStyle>;
+
+/** The brand layer's Light display headlines (bundle.css `es-mk-*`), set in Inter Display on the pages before the app. */
+export const brandMinimumLeading = 1.2;
+
+export type BrandHeadline = { minPx: number; maxPx: number; vw: number; leading: number; weight: 300; trackingEm: number };
+
+export const brandHeadlines = {
+  'brand-title': { minPx: 32, maxPx: 48, vw: 4, leading: 1.22, weight: 300, trackingEm: -0.03 },
+  'brand-caption': { minPx: 40, maxPx: 40, vw: 0, leading: 1.2, weight: 300, trackingEm: -0.02 },
+} as const satisfies Record<string, BrandHeadline>;
 
 /** The weights the variable font ships; Tailwind offers no other `font-*` weight. Nothing is heavier than semibold (Ryan, 2026-10-24). */
 export const fontWeight = { normal: 400, medium: 500, semibold: 600 } as const;
@@ -182,6 +198,13 @@ export const typefaces = {
     weights: Object.values(fontWeight),
     opticalSize: true,
     requiredFeatures: ['tnum'],
+  },
+  display: {
+    family: 'Inter Display',
+    file: 'InterDisplay-Variable.woff2',
+    weights: [300, 500],
+    opticalSize: false,
+    requiredFeatures: [],
   },
 } as const satisfies Record<
   string,

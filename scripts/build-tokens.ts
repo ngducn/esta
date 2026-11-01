@@ -20,6 +20,7 @@ import {
   strokeStrongPx,
   spacing,
   textScales,
+  brandHeadlines,
   typeStyles,
   type Theme,
 } from '../apps/web/src/design/tokens.ts';
@@ -64,6 +65,12 @@ function renderTokensCss(): string {
       ...(style.weight === fontWeight.normal ? [] : [`--text-${name}--font-weight: ${style.weight};`]),
       ...('trackingEm' in style ? [`--text-${name}--letter-spacing: ${style.trackingEm}em;`] : []),
     ]),
+    ...Object.entries(brandHeadlines).flatMap(([name, style]) => [
+      `--text-${name}: ${style.vw === 0 ? rem(style.maxPx) : `clamp(${rem(style.minPx)}, ${style.vw}vw, ${rem(style.maxPx)})`};`,
+      `--text-${name}--line-height: ${style.leading};`,
+      `--text-${name}--font-weight: ${style.weight};`,
+      `--text-${name}--letter-spacing: ${style.trackingEm}em;`,
+    ]),
     '--leading-*: initial;',
     ...Object.entries(leading).map(([name, value]) => `--leading-${name}: ${value};`),
     '--breakpoint-*: initial;',
@@ -82,6 +89,7 @@ function renderTokensCss(): string {
     '--font-serif: initial;',
     '--font-mono: initial;',
     '--font-sans: var(--font-inter);',
+    '--font-display: var(--font-inter-display, var(--font-inter));',
     '--radius-*: initial;',
     ...Object.entries(radius).map(([name, px]) => `--radius-${name}: ${px === radius.full ? 'calc(infinity * 1px)' : `${px}px`};`),
   ];

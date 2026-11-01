@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 118,
+      "value": 117,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -9,7 +9,6 @@
         "apps/web/src/app/dev/core/sections.ts": 1,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 1,
         "apps/web/src/app/forgot-password/actions.ts": 2,
-        "apps/web/src/app/forgot-password/page.tsx": 1,
         "apps/web/src/app/forgot-password/reset-form.tsx": 2,
         "apps/web/src/app/sign-in/actions.ts": 1,
         "apps/web/src/app/sign-in/password-form.tsx": 1,
@@ -58,7 +57,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1226,
+      "value": 1220,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -66,7 +65,6 @@
         "apps/web/src/app/dev/core/sections.ts": 9,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 13,
         "apps/web/src/app/forgot-password/actions.ts": 29,
-        "apps/web/src/app/forgot-password/page.tsx": 6,
         "apps/web/src/app/forgot-password/reset-form.tsx": 28,
         "apps/web/src/app/sign-in/actions.ts": 13,
         "apps/web/src/app/sign-in/password-form.tsx": 18,
