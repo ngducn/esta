@@ -217,7 +217,12 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   test('a failed read saved by hand inserts one accepted extraction with no model, and its parcel', async () => {
     asMember();
     const { documentId, extractionId } = await waitingExtraction('failed');
-    const decisions = { form: { kind: 'edited', value: 'paper_only' }, 'parcels[0].parcel_no': { kind: 'edited', value: '12' }, 'parcels[0].area_m2': { kind: 'edited', value: '300,5' } };
+    const decisions = {
+      form: { kind: 'edited', value: 'paper_only' },
+      serial_no: { kind: 'edited', value: 'AB 123456' },
+      'parcels[0].parcel_no': { kind: 'edited', value: '12' },
+      'parcels[0].area_m2': { kind: 'edited', value: '300,5' },
+    };
     expect(await saveConfirmed(extractionId, decisions)).toEqual({ ok: true, propertyId });
     expect(await saveConfirmed(extractionId, decisions)).toEqual({ ok: true, propertyId });
     const manual = manualEntryId(extractionId);
@@ -226,6 +231,39 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
       { id: extractionId, status: 'failed', model: null },
     ]);
     expect(await rest(`parcels?id=eq.${rowId(manual, 'parcels[0]')}&select=parcel_no,area_m2`)).toEqual([{ parcel_no: '12', area_m2: 300.5 }]);
+  });
+
+  test('a failed read on Đất Bảo Lộc entered by hand with only the form is refused, naming what to fill, and writes nothing (#356)', async () => {
+    asMember();
+    const { documentId, extractionId } = await waitingExtraction('failed');
+    expect(await saveConfirmed(extractionId, { form: { kind: 'edited', value: 'gcn_2009_2024' } })).toEqual({
+      ok: false,
+      reason: 'unidentified',
+      paths: ['serial_no', 'book_entry_no', 'issued_on', 'holders[0].full_name'],
+    });
+    expect(await count(`certificates?document_id=eq.${documentId}&select=id`)).toBe(0);
+    expect(await rest(`document_extractions?document_id=eq.${documentId}&select=id`)).toEqual([{ id: extractionId }]);
+  });
+
+  test('a failed read entered by hand with a holder who owns none of Đất Bảo Lộc stops before the manual entry is written (#356)', async () => {
+    asMember();
+    const { documentId, extractionId } = await waitingExtraction('failed');
+    const decisions = { form: { kind: 'edited', value: 'paper_only' }, 'holders[0].full_name': { kind: 'edited', value: 'Trần Văn Demo' } };
+    expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: false, reason: 'mismatch', paths: ['holders[0].full_name'] });
+    expect(await rest(`document_extractions?document_id=eq.${documentId}&select=id`)).toEqual([{ id: extractionId }]);
+    expect(await count(`certificates?document_id=eq.${documentId}&select=id`)).toBe(0);
+    expect(await saveConfirmed(extractionId, decisions)).toEqual({ ok: true, propertyId });
+  });
+
+  test('Mẹ written with other ID digits and the old title is the owner of Đất Bảo Lộc, so the save asks nothing (#356)', async () => {
+    asMember();
+    const { extractionId } = await waitingExtraction('failed');
+    const decisions = {
+      form: { kind: 'edited', value: 'so_do_pre2009' },
+      'holders[0].full_name': { kind: 'edited', value: 'Bà NGUYEN THI DEMO' },
+      'holders[0].id_last4': { kind: 'edited', value: '4567' },
+    };
+    expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: true, propertyId });
   });
 
   test('each of the 16 certificate truths saves with every field accepted as read', async () => {

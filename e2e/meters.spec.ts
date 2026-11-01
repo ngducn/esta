@@ -228,16 +228,18 @@ test('rule 7: a viewer reads the month with no input to change and no Lưu', asy
   await page.screenshot({ path: test.info().outputPath('meters-viewer-390-light.png') });
 });
 
-test('rule 8: before any meter has history, water typed far above the other rooms warns on its row and still saves (#356)', async ({ page }) => {
+test('rule 8: before any meter has history, water typed far above the other rooms warns on its row against their water alone and still saves (#356)', async ({ page }) => {
   await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
   await page.goto(`${metersPath(8)}?month=2026-10`);
   await expect(page.getByTestId('meter-month')).toHaveText('Tháng 10/2026');
   const inLine = [6, 7, 8, 9];
   const electricityTypedAsWater = [2081, 5299, 3705, 787];
   const used = [...inLine, ...electricityTypedAsWater];
+  for (const n of [1, 2, 3, 4, 5, 6, 7, 8]) await reading(page, n, 'electricity').getByRole('textbox').fill(String(october(n).electricity));
   for (const [index, amount] of used.entries()) await reading(page, index + 1, 'water').getByRole('textbox').fill(String((SEPTEMBER.water[index] ?? 0) + amount));
   for (const n of [1, 2, 3, 4]) await expect(reading(page, n, 'water').getByTestId('meter-anomaly'), `Phòng ${n}`).toHaveCount(0);
   for (const n of [5, 6, 7, 8]) await expect(reading(page, n, 'water').getByTestId('meter-anomaly'), `Phòng ${n}`).toHaveText('Cao gấp 3 lần các phòng khác (9 m³ tháng này)');
+  await expect(page.locator('[data-kind="electricity"]').getByTestId('meter-anomaly')).toHaveCount(0);
   await holdForRecording(page);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.screenshot({ path: test.info().outputPath('meters-rooms-anomaly-390-light.png'), fullPage: true });

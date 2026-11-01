@@ -4,7 +4,7 @@ const PROPERTY = '00000000-0000-4000-8000-0000000000a1';
 const ROOM_1 = '00000000-0000-4000-8000-000000000a01';
 const ROOM_2 = '00000000-0000-4000-8000-000000000a02';
 
-const db = vi.hoisted(() => ({ units: [] as { id: string; label: string; sort_order: number }[], saved: [] as unknown[][], updates: 0 }));
+const db = vi.hoisted(() => ({ units: [] as { id: string; label: string; sort_order: number }[], saved: [] as unknown[][], updates: 0, inserts: 0 }));
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
@@ -18,17 +18,26 @@ vi.mock('@/server/properties/rental', () => ({
 vi.mock('@/server/supabase/server', () => ({
   createSessionClient: async () => ({
     from: () => ({
+      insert: () => {
+        db.inserts += 1;
+        const builder = { select: () => builder, single: () => Promise.resolve({ data: { id: '00000000-0000-4000-8000-000000000ac1' }, error: null }) };
+        return builder;
+      },
       update: () => {
         db.updates += 1;
         const rows = db.saved.shift() ?? [];
-        const builder = { match: () => builder, eq: () => builder, select: () => Promise.resolve({ data: rows, error: null }) };
+        const builder = {
+          match: () => builder,
+          eq: () => builder,
+          select: () => Object.assign(Promise.resolve({ data: rows, error: null }), { maybeSingle: () => Promise.resolve({ data: rows[0] ?? null, error: null }) }),
+        };
         return builder;
       },
     }),
   }),
 }));
 
-const { moveUnitAction, sortUnitsByRoomNumber } = await import('./actions');
+const { moveUnitAction, saveAccount, sortUnitsByRoomNumber } = await import('./actions');
 
 function twoRooms() {
   db.units = [
@@ -68,5 +77,23 @@ describe('room moves', () => {
   test('a property with no rooms in reach is refused', async () => {
     db.units = [];
     expect(await sortUnitsByRoomNumber(PROPERTY)).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('utility accounts (#356)', () => {
+  const blank = { kind: 'water', unit_id: null, provider: null, customer_code: null, holder_name: null, note: 'Đồng hồ tầng trệt' };
+
+  test('a new account and an edit with no provider, customer code or holder name are refused before any write', async () => {
+    db.inserts = 0;
+    db.updates = 0;
+    expect(await saveAccount(PROPERTY, null, blank)).toEqual({ ok: false, reason: 'invalid' });
+    expect(await saveAccount(PROPERTY, '00000000-0000-4000-8000-000000000ac1', blank)).toEqual({ ok: false, reason: 'invalid' });
+    expect({ inserts: db.inserts, updates: db.updates }).toEqual({ inserts: 0, updates: 0 });
+  });
+
+  test('a new account with a customer code is saved', async () => {
+    db.inserts = 0;
+    expect(await saveAccount(PROPERTY, null, { ...blank, customer_code: 'PE0901000001' })).toEqual({ ok: true, id: '00000000-0000-4000-8000-000000000ac1' });
+    expect(db.inserts).toBe(1);
   });
 });
