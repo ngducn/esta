@@ -39,18 +39,18 @@ export type BoardRowContext = {
 };
 
 /**
- * Under 48rem of its own width the board is a list: place and what is still owed, the due date and what was paid, the
- * status, then the actions. Up to 64rem it is a table at its full width that scrolls sideways; wider, a name truncates
+ * Under 48rem of its own width the board is a list: place and what is still owed, the due date, what was paid when
+ * anything was, the status, then the actions. Up to 64rem it is a table at its full width that scrolls sideways; wider, a name truncates
  * to make room, and an amount, a date or a badge never wraps.
  */
 const list = '@max-[48rem]:h-auto @max-[48rem]:min-h-0 @max-[48rem]:border-0 @max-[48rem]:p-0';
 const cell = {
   place: 'w-full max-w-0 @max-[64rem]:w-auto @max-[64rem]:max-w-none @max-[48rem]:col-start-1 @max-[48rem]:row-start-1 @max-[48rem]:max-w-none',
   owed: 'text-end whitespace-nowrap @max-[48rem]:col-start-2 @max-[48rem]:row-start-1 @max-[48rem]:self-start',
-  due: 'whitespace-nowrap text-text-secondary @max-[48rem]:col-start-1 @max-[48rem]:row-start-2 @max-[48rem]:text-body-sm',
-  paid: 'text-end whitespace-nowrap @max-[48rem]:col-start-2 @max-[48rem]:row-start-2 @max-[48rem]:text-body-sm @max-[48rem]:text-text-secondary',
-  status: 'whitespace-nowrap @max-[48rem]:col-span-2 @max-[48rem]:col-start-1 @max-[48rem]:row-start-3 @max-[48rem]:whitespace-normal',
-  actions: 'w-px text-end @max-[48rem]:w-auto @max-[48rem]:col-span-2 @max-[48rem]:col-start-1 @max-[48rem]:row-start-4 @max-[48rem]:pt-1 @max-[48rem]:text-start',
+  due: 'whitespace-nowrap text-text-secondary @max-[48rem]:col-span-2 @max-[48rem]:text-body-sm @max-[48rem]:whitespace-normal',
+  paid: 'text-end whitespace-nowrap @max-[48rem]:col-span-2 @max-[48rem]:text-start @max-[48rem]:text-body-sm @max-[48rem]:text-text-secondary',
+  status: 'whitespace-nowrap @max-[48rem]:col-span-2 @max-[48rem]:whitespace-normal',
+  actions: 'w-px text-end @max-[48rem]:w-auto @max-[48rem]:col-span-2 @max-[48rem]:pt-1 @max-[48rem]:text-start',
 } as const;
 const inlineLabel = 'hidden @max-[48rem]:inline';
 
@@ -193,7 +193,7 @@ function CollectionsRow({ item, context }: { item: CollectionItem<CollectionRow>
       <TableCell data-testid="row-owed" className={cn(list, cell.owed)}>
         <MoneyDisplay amount={row.outstandingVnd} className="font-medium" />
       </TableCell>
-      <TableCell data-testid="row-paid" className={cn(list, cell.paid)}>
+      <TableCell data-testid="row-paid" className={cn(list, cell.paid, row.allocatedVnd === 0 && '@max-[48rem]:hidden')}>
         <span className={inlineLabel}>{t('paidPrefix')} </span>
         <MoneyDisplay amount={row.allocatedVnd} />
       </TableCell>
