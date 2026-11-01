@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/page-header';
 import {
   PROPERTY_FILTER_KEYS,
   PROPERTY_SORT_KEYS,
@@ -110,26 +111,28 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-title-2 break-words lg:text-title-1">{nav('properties')}</h1>
-          <p data-testid="property-count" className="text-body-sm text-text-muted">
-            {count}
-          </p>
-          <HeldDepositTotal householdId={member.household.id} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {list.householdCount === 0 ? null : (
-            <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
-          )}
-          {addAction === undefined ? null : (
-            <Link href={addAction.href} data-testid="add-property" className={buttonVariants({ variant: 'primary' })}>
-              <Plus aria-hidden="true" />
-              {addAction.label}
-            </Link>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        title={nav('properties')}
+        meta={
+          <>
+            <p data-testid="property-count">{count}</p>
+            <HeldDepositTotal householdId={member.household.id} />
+          </>
+        }
+        actions={
+          <>
+            {list.householdCount === 0 ? null : (
+              <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
+            )}
+            {addAction === undefined ? null : (
+              <Link href={addAction.href} data-testid="add-property" className={buttonVariants({ variant: 'primary' })}>
+                <Plus aria-hidden="true" />
+                {addAction.label}
+              </Link>
+            )}
+          </>
+        }
+      />
       {archivedId === null || archived === null ? null : <ArchivedPropertyToast id={archivedId} nickname={archived} />}
 
       {list.householdCount === 0 ? (
