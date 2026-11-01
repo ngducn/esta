@@ -18,15 +18,13 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (updated 2026-11-01 23:25 +07)
+## Open items (updated 2026-11-01 23:55 +07)
 
-- **#365 merged** as 72a1fa7d on 2026-11-01. Lows in #370; the portfolio-watch e2e failing locally on main is #371.
-- **#368, RD-1 redesign foundation, head a78c8c86 on origin (CONFLICTING with main).** Sonnet lane CLEAN at a78c8c86. Opus audit ISSUES (`/tmp/review-368/audit.md`): B1 the dark-theme bill prints near-white (print.css overrides retired names), B2 the retired-name check skips .css files and definitions, B3 the codemod source is missing from the PR body. Lows filed as #372.
-  - Running: Sonnet fix-forward owner, slot 2, `briefs/rd-1-ff1.md`. Job 1 (merge main, rerun the codemod on #365's files, narrowed specs) is merged locally at ab6e7155 and testing; job 2 (B1-B3, /deslop, /no-comments, a "Fix round 1" section) was sent by message.
-  - Next: a scoped Sonnet reader of the fix round against B1-B3, then merge on CLEAN plus green ci with `--match-head-commit`.
-- **RD-1b, the shell, branch esta/rd-1b-shell pushed at bcaa334f (on a78c8c86), no PR yet.** The first owner built rail, sidebar, tab bar, account menu and PageHeader, and passed e2e:prod 11/11. Running: Sonnet finisher, slot 3, `briefs/rd-1b-finish.md`: merge RD-1's new head when it moves, close the assistant-thread question, dark and 130% shots, northstar, Lighthouse, /deslop, /no-comments, PR with base esta/rd-1-design-foundation.
-  - Next: its review round (standard tier unless verify:tier says more) after #368 merges; retarget the PR to main then.
-- **After RD-1 and RD-1b:** RD-2 and RD-6 side by side, then RD-3 (include the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **#368 merged** as d2016c5a: every screen on the 2026-11 design system (tokens, codemod, density, wordmark, primitives). Lows in #372 and #373 (axe catches hydration-fading buttons on a cold server).
+- **RD-1b, the shell, branch esta/rd-1b-shell pushed at bcaa334f, no PR yet.** Running: Sonnet finisher, slot 3, `briefs/rd-1b-finish.md`, told after the merge to merge origin/main and open its PR against main. Remaining: the assistant-thread question, dark and 130% shots, northstar, Lighthouse, /deslop, /no-comments, PR, ci.
+  - Next: its review round at the tier `pnpm verify:tier` gives (Sonnet lane; an Opus audit only if rigorous), then merge on CLEAN plus green ci.
+- **Then:** RD-2 and RD-6 side by side, RD-3 (include the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **Tripwire set** at 23:30: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`) after a properties-list test failed beside another run. Clear it with `rm` once a quiet stretch shows no overlap failures, and say so in decisions.tsv.
 
 ## Waiting for Ryan (defaults apply)
 
