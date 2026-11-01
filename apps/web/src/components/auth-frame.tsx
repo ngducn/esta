@@ -9,17 +9,12 @@ import hero from '@/photos/sign-in-hero.webp';
 
 type AuthFrameProps = { eyebrow: string; title: string; titleEnd: string; children: ReactNode };
 
-/**
- * The pages before the app, in the design system's brand layer: the form in a double frame under a split headline,
- * and from `lg` (64rem) a photo with fine lines and the reversed logo. The photo is the largest paint on a desktop, so
- * from there it loads at once and at high priority. A phone never requests it, so the headline stays the LCP element.
- * Inter Display loads here and nowhere in the app.
- */
+/** Inter Display loads here and nowhere in the app. The photo loads at once from `lg` up; a phone never requests it. */
 export async function AuthFrame({ eyebrow, title, titleEnd, children }: AuthFrameProps) {
   const app = await getTranslations('app');
   return (
     <div className={`${interDisplay.variable} min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]`}>
-      <main className="mx-auto flex w-full max-w-md flex-col gap-8 lg:max-w-lg px-4 py-6 sm:py-10 lg:justify-center">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-8 px-4 py-6 sm:py-10 lg:max-w-lg lg:justify-center">
         <header className="flex items-center justify-between gap-4">
           <BrandMark name={app('name')} />
           <LanguageSwitch />
@@ -35,7 +30,7 @@ export async function AuthFrame({ eyebrow, title, titleEnd, children }: AuthFram
           <Photo src={hero} alt={app('heroAlt')} sizes="50vw" eagerFrom="64rem" className="object-cover" />
           <PhotoLines />
           <ReversedLogo className="absolute top-8 left-8 z-10 h-7" />
-          <p className="absolute bottom-8 left-8 z-10 max-w-[16ch] font-display text-[2.5rem] leading-[1.2] font-[300] tracking-[-0.02em] whitespace-pre-line">
+          <p className="absolute bottom-8 left-8 z-10 max-w-[16ch] font-display text-brand-caption whitespace-pre-line">
             {app('heroCaption')}
           </p>
         </div>

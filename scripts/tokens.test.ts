@@ -1,11 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { leading, minimumLeading, typeStyles, typefaces } from '../apps/web/src/design/tokens.ts';
+import { brandHeadlines, brandMinimumLeading, leading, minimumLeading, typeStyles, typefaces } from '../apps/web/src/design/tokens.ts';
 
 describe('leading', () => {
   it(`keeps every line height at ${minimumLeading} or more`, () => {
     expect(Object.entries(leading).filter(([, value]) => value < minimumLeading)).toEqual([]);
     expect(Object.entries(typeStyles).filter(([, style]) => style.linePx / style.px < minimumLeading)).toEqual([]);
+  });
+
+  it(`keeps every brand headline at ${brandMinimumLeading} or more`, () => {
+    expect(Object.entries(brandHeadlines).filter(([, style]) => style.leading < brandMinimumLeading)).toEqual([]);
   });
 
   it('sets every type style on a whole number of 2 px steps, as the design system does', () => {

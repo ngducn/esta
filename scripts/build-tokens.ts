@@ -20,6 +20,7 @@ import {
   strokeStrongPx,
   spacing,
   textScales,
+  brandHeadlines,
   typeStyles,
   type Theme,
 } from '../apps/web/src/design/tokens.ts';
@@ -63,6 +64,12 @@ function renderTokensCss(): string {
       // Body weight stays inherited, so a 400 style never thins a heading or a semibold parent.
       ...(style.weight === fontWeight.normal ? [] : [`--text-${name}--font-weight: ${style.weight};`]),
       ...('trackingEm' in style ? [`--text-${name}--letter-spacing: ${style.trackingEm}em;`] : []),
+    ]),
+    ...Object.entries(brandHeadlines).flatMap(([name, style]) => [
+      `--text-${name}: ${style.vw === 0 ? rem(style.maxPx) : `clamp(${rem(style.minPx)}, ${style.vw}vw, ${rem(style.maxPx)})`};`,
+      `--text-${name}--line-height: ${style.leading};`,
+      `--text-${name}--font-weight: ${style.weight};`,
+      `--text-${name}--letter-spacing: ${style.trackingEm}em;`,
     ]),
     '--leading-*: initial;',
     ...Object.entries(leading).map(([name, value]) => `--leading-${name}: ${value};`),

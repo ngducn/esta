@@ -25,3 +25,14 @@ for (const theme of ['light', 'dark'] as const) {
     });
   }
 }
+
+test('the sign-in eyebrow is 12px on 16px leading, the design size', async ({ page }) => {
+  await page.goto('/sign-in');
+  const eyebrow = page.locator('main p.uppercase').first();
+  await expect(eyebrow).toBeVisible();
+  const metrics = await eyebrow.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { fontSize: style.fontSize, lineHeight: style.lineHeight };
+  });
+  expect(metrics).toEqual({ fontSize: '12px', lineHeight: '16px' });
+});
