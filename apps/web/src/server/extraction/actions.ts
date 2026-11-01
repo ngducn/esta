@@ -5,7 +5,7 @@ import { manualEntryId, PLANNERS, readValues, type Decisions, type PlanStep } fr
 import { isSchemaName } from '@esta/core/extraction/fields';
 import { certificateMismatches, savedAddress, soleProvince, type Saved } from '@esta/core/extraction/review-changes';
 import type { Json, TablesInsert } from '@esta/db';
-import { suggestCurrentUnits } from '@esta/ops';
+import { currentProvinces } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireMember } from '@/server/member';
@@ -88,14 +88,14 @@ async function mismatchedPaths(supabase: Session, householdId: string, propertyI
   ]);
   if (property.error || shares.error) return null;
   const address = savedAddress(saved);
-  const units = address === null ? [] : await suggestCurrentUnits(supabase, address.value).catch(() => null);
-  if (units === null) return null;
+  const provinces = address === null ? [] : await currentProvinces(supabase, address.value).catch(() => null);
+  if (provinces === null) return null;
   const current = currentProvinceSchema.safeParse(property.data?.current_address);
   const facts = {
     provinceCode: current.success ? current.data.province_code : null,
     owners: shares.data.map(({ parties }) => ({ fullName: parties.full_name })),
   };
-  return certificateMismatches(saved, facts, soleProvince(units.map((unit) => unit.provinceCode))).flatMap((mismatch) => mismatch.paths);
+  return certificateMismatches(saved, facts, soleProvince(provinces)).flatMap((mismatch) => mismatch.paths);
 }
 
 const readTextSchema = z.object({ full_text: z.string() });

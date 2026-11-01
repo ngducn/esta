@@ -144,7 +144,7 @@ function cutOnce(client: SupabaseClient, table: string): SupabaseClient {
 const addressLookupFails = (client: SupabaseClient) =>
   new Proxy(client, {
     get: (target, property, receiver) =>
-      property !== 'rpc' ? Reflect.get(target, property, receiver) : (name: string, args: never) => (name === 'suggest_current_unit' ? { limit: async () => ({ data: null, error: { message: 'connection cut' } }) } : target.rpc(name, args)),
+      property !== 'rpc' ? Reflect.get(target, property, receiver) : (name: string, args: never) => (name === 'suggest_current_unit' ? { select: async () => ({ data: null, error: { message: 'connection cut' } }) } : target.rpc(name, args)),
   });
 
 describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
