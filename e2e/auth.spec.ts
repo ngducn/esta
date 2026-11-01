@@ -308,10 +308,9 @@ test('a language chosen on sign-in carries into the member and the English chrom
   await page.getByRole('button', { name: 'Account' }).click();
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Tiếng Việt' }).click();
+  await page.getByRole('radio', { name: 'Tiếng Việt' }).check();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
-  await page.getByRole('button', { name: 'Tài khoản' }).click();
-  await expect(page.getByRole('button', { name: 'Đăng xuất' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Đăng xuất' }), 'the menu stays open in the new language').toBeVisible();
   await page.context().clearCookies({ name: 'NEXT_LOCALE' });
   await page.reload();
   await page.getByRole('button', { name: 'Tài khoản' }).click();
