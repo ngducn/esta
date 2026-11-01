@@ -7,7 +7,6 @@ import { usedNewParties } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { DateInput } from '@/components/date-input';
-import { FormAlert } from '@/components/form-alert';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
@@ -48,6 +47,7 @@ export function CertificateForm({
   const activeMortgage = status === 'mortgaged' || showMortgage ? mortgage : mortgageDraft(null);
 
   const submit = () => {
+    setUnidentified(false);
     const read = readMortgage(status, activeMortgage);
     if (!read.ok) {
       setInvalid(read.invalid);
@@ -77,10 +77,10 @@ export function CertificateForm({
       kind="certificates"
       itemId={itemId}
       read={submit}
+      refusal={unidentified ? t('certificateUnidentified') : null}
       newParties={() => usedNewParties(pending, [...holders, activeMortgage.bankId])}
     >
       <Group title={t('groupCertificate')}>
-        <FormAlert message={unidentified ? t('certificateUnidentified') : null} data-testid="certificate-unidentified" />
         <FormSelect
           label={t('formLabel')}
           testId="certificate-form-select"

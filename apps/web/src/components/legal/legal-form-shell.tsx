@@ -24,6 +24,7 @@ export function LegalFormShell({
   kind,
   itemId,
   read,
+  refusal = null,
   newParties,
   children,
 }: {
@@ -31,6 +32,8 @@ export function LegalFormShell({
   kind: LegalKind;
   itemId: string | null;
   read: LegalSubmit;
+  /** What the form needs filled when `read` refused it, said beside Lưu in place of the general error. */
+  refusal?: string | null;
   /** The quick-added parties the read input names, created in the same request as the save. */
   newParties?: () => readonly NewParty[];
   children: ReactNode;
@@ -73,7 +76,7 @@ export function LegalFormShell({
         )}
         {children}
         <div className="flex flex-col gap-3">
-          <FormAlert message={error === null ? null : error === 'invalid' ? t('errorInvalid') : t('errorNetwork')} data-testid="form-error" />
+          <FormAlert message={error === null ? null : error === 'invalid' ? (refusal ?? t('errorInvalid')) : t('errorNetwork')} data-testid="form-error" />
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" disabled={pending} data-testid="save-legal-item">
               {pending ? t('saving') : t('save')}

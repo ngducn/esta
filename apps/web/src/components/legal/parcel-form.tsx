@@ -7,7 +7,6 @@ import { UNIDENTIFIED } from '@esta/core/schemas/identity';
 import { USE_FORMS, newParcelSchema, type Parcel } from '@esta/core/schemas/legal';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { FormAlert } from '@/components/form-alert';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { StatusShape } from '@/components/status-shape';
@@ -77,9 +76,8 @@ export function ParcelForm({
   };
 
   return (
-    <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit}>
+    <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit} refusal={invalid === 'identity' ? t('parcelUnidentified') : null}>
       <Group title={t('groupParcel')}>
-        <FormAlert message={invalid === 'identity' ? t('parcelUnidentified') : null} data-testid="parcel-unidentified" />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label={t('parcelNo')} inputId="parcel-no" value={parcelNo} maxLength={20} error={null} onChange={setParcelNo} />
           <TextField label={t('mapSheetNo')} inputId="map-sheet-no" value={mapSheetNo} maxLength={20} error={null} onChange={setMapSheetNo} />
