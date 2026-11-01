@@ -1,5 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const PAGES = ['/sign-in', '/sign-in/code', '/sign-up', '/forgot-password'] as const;
 
@@ -21,8 +21,7 @@ for (const theme of ['light', 'dark'] as const) {
       expect(face.weight).toBe('300');
       expect(face.family).toMatch(/interDisplay/i);
       expect(face.loaded, 'the headline face is downloaded, not a fallback').toContain(face.family.replaceAll('"', ''));
-      const { violations } = await new AxeBuilder({ page }).analyze();
-      expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+      expect(await seriousAxeViolations(page)).toEqual([]);
     });
   }
 }
