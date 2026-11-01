@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
-import { propertyStatus, type PropertyStatusFacts } from './status';
+import { byUrgency, propertyStatus, statusFilterValues, type PropertyStatusFacts, type PropertyStatusMark } from './status';
 
 const asOf = isoDate('2026-10-07');
 const rental = (facts: Partial<PropertyStatusFacts>): PropertyStatusFacts => ({ useMode: 'rental', vacantSince: null, leasedUnitCount: 0, unitCount: 1, collection: null, ...facts });
@@ -53,5 +53,18 @@ describe('propertyStatus', () => {
     [{ group: 'notDue' }, []],
   ] as const)('maps a %o month to %o', (collection, marks) => {
     expect(propertyStatus(rental({ collection }), asOf)).toEqual(marks);
+  });
+});
+
+describe('statusFilterValues', () => {
+  it('puts a payment owed under attention and a free unit under vacant', () => {
+    expect(statusFilterValues([{ kind: 'overdue', days: 3 }, { kind: 'vacant', since: isoDate('2026-08-01') }])).toEqual(['attention', 'vacant']);
+    expect(statusFilterValues([{ kind: 'due' }])).toEqual(['attention']);
+    expect(statusFilterValues([{ kind: 'paid', month: isoDate('2026-10-01') }, { kind: 'leased', leased: 2, total: 2 }])).toEqual([]);
+  });
+
+  it('orders overdue before due before vacant before paid', () => {
+    const marks: PropertyStatusMark[] = [{ kind: 'leased', leased: 1, total: 2 }, { kind: 'vacant', since: isoDate('2026-08-01') }, { kind: 'due' }, { kind: 'overdue', days: 1 }];
+    expect(marks.toSorted(byUrgency).map((mark) => mark.kind)).toEqual(['overdue', 'due', 'vacant', 'leased']);
   });
 });

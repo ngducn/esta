@@ -30,5 +30,15 @@ export {
 } from './filters';
 export { PROPERTY_CODE_MAX_LENGTH, suggestPropertyCode } from './code';
 export { KIND_FIELDS, kindDetailsText, readKindDetails, vndInputText, type KindField, type KindFieldInput, type KindFieldTexts } from './form-fields';
-export { PROPERTY_STATUS_RULES, propertyStatus, type PropertyStatusFacts, type PropertyStatusMark } from './status';
+export {
+  PROPERTY_STATUS_FILTERS,
+  PROPERTY_STATUS_RULES,
+  byUrgency,
+  propertyStatus,
+  statusFilterValues,
+  type PropertyStatusFacts,
+  type PropertyStatusFilter,
+  type PropertyStatusMark,
+} from './status';
 export { compareRoomLabels, compareUnits, moveUnit, nextRoomLabels, sortByRoomNumber, type SortChange } from './units';
+export { propertyTotals, type PropertyTotals } from './totals';

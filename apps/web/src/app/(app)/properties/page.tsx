@@ -2,22 +2,28 @@ import { PageHeader } from '@/components/page-header';
 import {
   PROPERTY_FILTER_KEYS,
   PROPERTY_SORT_KEYS,
+  PROPERTY_STATUS_FILTERS,
+  byUrgency,
   currentAddressText,
   parsePropertyFilters,
   propertyFiltersQuery,
+  propertyTotals,
   shortProvinceName,
   type PropertyFilterKey,
   type PropertyListRow,
   type SearchParamsRecord,
 } from '@esta/core/properties';
 import { compareVietnameseNames } from '@esta/core/names';
-import { Archive, Plus } from 'lucide-react';
+import { Archive, CircleCheck, Plus, SearchX } from 'lucide-react';
 import Link from 'next/link';
-import { formatVndCompact } from '@esta/core/format';
+import { formatVnd } from '@esta/core/format';
 import { statusPills, statusWords } from '@/components/properties/status-pills';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
+import { FilterTabs } from '@/components/filter-tabs';
+import { MoneyDisplay } from '@/components/money/money-display';
+import { SummaryStrip } from '@/components/summary-strip';
 import { HeldDepositTotal } from '@/components/leases/HeldDepositTotal';
 import { ArchivedNoticeLoader } from '@/components/properties/archived-notice-loader';
 import { FilterChips, filterChips, hasChoice, type FilterChip, type FilterGroup } from '@/components/properties/filter-chips';
@@ -64,30 +70,31 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
   const toCard = (row: PropertyListRow): PropertyCardData => {
     const address = currentAddressText(row) ?? '';
     const certificate = row.certificateAddressText;
+    const marks = [...(list.statuses.get(row.id) ?? [])].sort(byUrgency);
     return {
       id: row.id,
       nickname: row.nickname,
       kind: row.kind,
       kindLabel: t('kind', { kind: row.kind }),
-      useMode: row.useMode,
-      useLabel: t('use', { use: row.useMode }),
-      legalStatus: row.legalStatus,
-      legalLabel: t('legal', { legal: row.legalStatus }),
       address: address === '' ? t('noAddress') : address,
       certificateLine:
         certificate === null || comparable(certificate) === comparable(address) ? null : t('certificateAddress', { address: certificate }),
       photoUrl: row.coverPhotoPath === null ? null : (photos.get(row.coverPhotoPath) ?? null),
-      rent: row.monthlyRentVnd === null ? null : { label: t('leaseRent'), amount: formatVndCompact(row.monthlyRentVnd, locale) },
-      statuses: statusPills(list.statuses.get(row.id) ?? [], statusWords(t), locale),
+      addPhoto: canEdit ? { href: `/properties/${row.id}/edit`, label: t('addPhoto') } : null,
+      rent: row.monthlyRentVnd === null ? null : { amount: formatVnd(row.monthlyRentVnd, locale), per: t('perMonth') },
+      noContract: t('noContract'),
+      statuses: statusPills(marks, statusWords(t), locale),
+      rooms: row.unitCount > 1 ? t('rooms', { total: row.unitCount, free: Math.max(0, row.unitCount - row.leasedUnitCount) }) : null,
       completeness: {
         percent: row.completeness.percent,
-        label: tc('missing', { count: row.completeness.missing }),
+        label: row.completeness.percent === 0 ? tc('empty') : tc('missing', { count: row.completeness.missing }),
         srLabel: tc('percent', { percent: row.completeness.percent }),
       },
     };
   };
 
-  const valueLabel: Record<PropertyFilterKey, (value: string) => string> = {
+  const chipKeys = PROPERTY_FILTER_KEYS.filter((key): key is Exclude<PropertyFilterKey, 'status'> => key !== 'status');
+  const valueLabel: Record<(typeof chipKeys)[number], (value: string) => string> = {
     province: (value) => {
       const current = list.provinceNames.get(value);
       if (current !== undefined) return shortProvinceName(current);
@@ -99,18 +106,32 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
     owner: (value) => list.ownerNames.get(value) ?? t('unknownOwner'),
   };
   const byName = (a: FilterChip, b: FilterChip) => compareVietnameseNames(a.label, b.label);
-  const groups: FilterGroup[] = PROPERTY_FILTER_KEYS.map((key) => ({
+  const groups: FilterGroup[] = chipKeys
+    .map((key) => ({
+      key,
+      label: t('group', { group: key }),
+      chips: filterChips(key, list.tallies[key], filters[key], valueLabel[key], t('all'), key === 'owner' ? byName : undefined),
+    }))
+    .filter((group) => hasChoice(group, filters[group.key]));
+
+  const statusTab = (key: string, status: (typeof PROPERTY_STATUS_FILTERS)[number] | null) => ({
     key,
-    label: t('group', { group: key }),
-    chips: filterChips(key, list.tallies[key], filters[key], valueLabel[key], t('all'), key === 'owner' ? byName : undefined),
-  })).filter((group) => hasChoice(group, filters[group.key]));
+    label: status === null ? t('all') : t('statusOption', { status }),
+    count: status === null ? list.tallies.status.all : (list.tallies.status.values.get(status) ?? 0),
+    href: `/properties${propertyFiltersQuery({ ...filters, status })}`,
+    current: filters.status === status,
+  });
+  const statusTabs = [statusTab('all', null), ...PROPERTY_STATUS_FILTERS.map((status) => statusTab(status, status))];
 
   const cards = list.rows.map(toCard);
   const filtered = filters.q !== '' || PROPERTY_FILTER_KEYS.some((key) => filters[key] !== null);
   const count = filtered ? t('countFiltered', { shown: list.rows.length, count: list.householdCount }) : t('count', { count: list.householdCount });
+  const totals = propertyTotals(list.rows);
+  const onlyAttention = filters.q === '' && PROPERTY_FILTER_KEYS.every((key) => (key === 'status' ? filters[key] === 'attention' : filters[key] === null));
+  const clearAction = { label: t('clearFilters'), href: '/properties' };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-stack">
       <PageHeader
         title={nav('properties')}
         meta={
@@ -120,17 +141,12 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           </>
         }
         actions={
-          <>
-            {list.householdCount === 0 ? null : (
-              <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
-            )}
-            {addAction === undefined ? null : (
-              <Link href={addAction.href} data-testid="add-property" className={buttonVariants({ variant: 'primary' })}>
-                <Plus aria-hidden="true" />
-                {addAction.label}
-              </Link>
-            )}
-          </>
+          addAction === undefined ? undefined : (
+            <Link href={addAction.href} data-testid="add-property" className={buttonVariants({ variant: 'primary' })}>
+              <Plus aria-hidden="true" />
+              {addAction.label}
+            </Link>
+          )
         }
       />
       {archivedId === null || archived === null ? null : <ArchivedPropertyToast id={archivedId} nickname={archived} />}
@@ -145,7 +161,29 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
         />
       ) : (
         <>
+          <SummaryStrip
+            label={t('stripLabel')}
+            unknownLabel={t('unknownFigure')}
+            figures={[
+              {
+                label: t('figureAttention'),
+                value: t('figureAttentionValue', { count: totals.attention }),
+                sub: totals.attention === 0 ? t('figureAttentionNone') : t('figureAttentionSub'),
+              },
+              {
+                label: t('figureLeased'),
+                value: totals.units === 0 ? null : t('figureLeasedValue', { leased: totals.leasedUnits, total: totals.units }),
+                sub: t('figureLeasedSub'),
+              },
+              {
+                label: t('figureRent'),
+                value: totals.rentVnd === null ? null : <MoneyDisplay amount={totals.rentVnd} className="text-start" />,
+                sub: totals.rentVnd === null ? t('figureRentNone') : t('figureRentSub'),
+              },
+            ]}
+          />
           <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+            <FilterTabs label={t('statusLabel')} tabs={statusTabs} />
             <PropertySearch label={t('searchLabel')} placeholder={t('searchPlaceholder')} />
             <FilterChips
               groups={groups}
@@ -157,14 +195,28 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
               value={filters.sort}
               options={PROPERTY_SORT_KEYS.map((sort) => ({ value: sort, label: t('sortOption', { sort }) }))}
             />
+            <ViewToggle filters={filters} label={t('view')} optionLabel={(view) => t('viewOption', { view })} />
           </div>
           {list.rows.length === 0 ? (
-            <section className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs">
-              <p className="text-body text-text">{filters.q === '' ? t('noMatchFilters') : t('noMatch', { query: filters.q })}</p>
-              <Link href="/properties" className={buttonVariants({ variant: 'secondary' })}>
-                {t('clearFilters')}
-              </Link>
-            </section>
+            filters.q !== '' ? (
+              <EmptyState
+                icon={SearchX}
+                title={t('noMatch', { query: filters.q })}
+                body={t('noMatchBody')}
+                className="max-w-3xl"
+                action={clearAction}
+              />
+            ) : onlyAttention ? (
+              <EmptyState
+                icon={CircleCheck}
+                tone="good"
+                title={t('noAttention')}
+                className="max-w-3xl"
+                action={{ label: t('showAll'), href: '/properties' }}
+              />
+            ) : (
+              <EmptyState icon={SearchX} title={t('noMatchFilters')} className="max-w-3xl" action={clearAction} />
+            )
           ) : filters.view === 'map' ? (
             <MapView
               cards={cards}
@@ -185,7 +237,6 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
     </div>
   );
 }
-
 
 async function ArchivedPropertyToast({ id, nickname }: { id: string; nickname: string }) {
   const intl = await propertyIslandIntl();

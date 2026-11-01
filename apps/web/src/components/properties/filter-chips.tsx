@@ -1,4 +1,4 @@
-import { PROPERTY_FILTER_KEYS, propertyFiltersQuery, type FilterTally, type PropertyFilterKey, type PropertyFilters } from '@esta/core/properties';
+import { propertyFiltersQuery, type FilterTally, type PropertyFilterKey, type PropertyFilters } from '@esta/core/properties';
 import { SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
@@ -40,7 +40,7 @@ export function FilterChips({
   filters: PropertyFilters;
   labels: { open: string; title: string; done: string };
 }) {
-  const active = PROPERTY_FILTER_KEYS.filter((key) => filters[key] !== null).length;
+  const active = groups.filter((group) => filters[group.key] !== null).length;
   return (
     <>
       <button type="button" popoverTarget={SHEET_ID} className={buttonVariants({ variant: 'secondary', className: 'lg:hidden' })}>

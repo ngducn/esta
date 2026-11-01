@@ -24,6 +24,24 @@ export type PropertyStatusMark =
   | { readonly kind: 'leased'; readonly leased: number; readonly total: number }
   | { readonly kind: 'vacant'; readonly since: IsoDate };
 
+/** The two tabs above the property list: a payment is overdue or due, or a unit stands free. */
+export const PROPERTY_STATUS_FILTERS = ['attention', 'vacant'] as const;
+export type PropertyStatusFilter = (typeof PROPERTY_STATUS_FILTERS)[number];
+
+export function statusFilterValues(marks: readonly PropertyStatusMark[]): readonly PropertyStatusFilter[] {
+  return [
+    ...(marks.some((mark) => mark.kind === 'overdue' || mark.kind === 'due') ? (['attention'] as const) : []),
+    ...(marks.some((mark) => mark.kind === 'vacant') ? (['vacant'] as const) : []),
+  ];
+}
+
+/** Most urgent first, so a card with room for two badges shows the two that matter. */
+const URGENCY: Record<PropertyStatusMark['kind'], number> = { overdue: 0, due: 1, vacant: 2, paid: 3, leased: 4 };
+
+export function byUrgency(a: PropertyStatusMark, b: PropertyStatusMark): number {
+  return URGENCY[a.kind] - URGENCY[b.kind];
+}
+
 type StatusRule = (facts: PropertyStatusFacts, asOf: IsoDate) => readonly PropertyStatusMark[];
 
 /** Every use mode but `rental` shows no mark, because the card already shows its use mode pill. */

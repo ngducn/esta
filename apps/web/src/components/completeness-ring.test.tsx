@@ -7,13 +7,13 @@ const arcClass = (container: HTMLElement) => container.querySelector('circle[str
 describe('CompletenessRing', () => {
   it('draws a complete ring in the paid color, which the accent would read as overdue', () => {
     const { container } = renderInLocale(<CompletenessRing percent={100} missing={0} />);
-    expect(arcClass(container)).toBe('stroke-success-text');
-    expect(container.textContent).toContain('Đủ thông tin');
+    expect(arcClass(container)).toContain('stroke-success-text');
+    expect(container.textContent).toContain('Đủ hồ sơ');
   });
 
-  it('draws progress in the accent', () => {
+  it('draws progress in a neutral arc, since a missing paper is a to-do and not a problem', () => {
     const { container } = renderInLocale(<CompletenessRing percent={70} missing={3} />);
-    expect(arcClass(container)).toBe('stroke-accent');
+    expect(arcClass(container)).toContain('stroke-text-secondary');
   });
 
   it('draws no arc at zero', () => {

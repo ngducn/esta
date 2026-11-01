@@ -13,13 +13,16 @@ export function EmptyState({
   action,
   icon: Icon,
   media,
+  tone,
   className,
 }: {
   title: string;
-  body: string;
+  body?: string;
   action?: EmptyStateAction;
   icon?: LucideIcon;
   media?: ReactNode;
+  /** `good` is for a filter that came back empty because nothing needs doing. */
+  tone?: 'good';
   className?: string;
 }) {
   const ActionIcon = action?.icon;
@@ -28,10 +31,10 @@ export function EmptyState({
       {media}
       <div className="flex flex-col items-start gap-2 p-card-pad">
         <h2 className="flex items-start gap-2 text-headline text-text">
-          {Icon ? <Icon className="mt-0.5 size-icon-md shrink-0 text-text-secondary" strokeWidth={1.75} aria-hidden="true" /> : null}
+          {Icon ? <Icon className={cn('mt-0.5 size-icon-md shrink-0', tone === 'good' ? 'text-success-text' : 'text-text-secondary')} strokeWidth={1.75} aria-hidden="true" /> : null}
           <span className="min-w-0 break-words">{title}</span>
         </h2>
-        <p className="max-w-prose text-body text-pretty text-text-secondary">{body}</p>
+        {body === undefined ? null : <p className="max-w-prose text-body text-pretty text-text-secondary">{body}</p>}
         {action ? (
           <Link href={action.href} className={buttonVariants({ variant: 'primary', className: 'mt-2' })}>
             {ActionIcon ? <ActionIcon aria-hidden="true" /> : null}

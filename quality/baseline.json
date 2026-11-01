@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 118,
+      "value": 116,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -14,7 +14,6 @@
         "apps/web/src/app/sign-in/actions.ts": 1,
         "apps/web/src/app/sign-in/password-form.tsx": 1,
         "apps/web/src/components/date-input.tsx": 1,
-        "apps/web/src/components/documents/virtual-vault-rows.tsx": 2,
         "apps/web/src/components/expenses/expense-sheet.tsx": 2,
         "apps/web/src/components/legal/annotation-list.tsx": 1,
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
@@ -58,7 +57,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1226,
+      "value": 1204,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -71,7 +70,6 @@
         "apps/web/src/app/sign-in/actions.ts": 13,
         "apps/web/src/app/sign-in/password-form.tsx": 18,
         "apps/web/src/components/date-input.tsx": 11,
-        "apps/web/src/components/documents/virtual-vault-rows.tsx": 22,
         "apps/web/src/components/expenses/expense-sheet.tsx": 18,
         "apps/web/src/components/legal/annotation-list.tsx": 6,
         "apps/web/src/components/legal/legal-form-shell.tsx": 12,

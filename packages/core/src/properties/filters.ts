@@ -4,6 +4,7 @@ import type { Vnd } from '../money/vnd';
 import { shortProvinceName } from '../address/format-current';
 import { foldVietnamese } from '../search/fold';
 
+import { PROPERTY_STATUS_FILTERS, type PropertyStatusFilter } from './status';
 import { LEGAL_STATUSES, PROPERTY_KINDS, USE_MODES, type LegalStatus, type PropertyKind, type UseMode } from './kinds';
 
 export { shortProvinceName };
@@ -37,8 +38,11 @@ export type PropertyViewRow = {
   unitCount: number;
 };
 
-/** A list row: the view row with its completeness score and the number of failing checks. */
-export type PropertyListRow = PropertyViewRow & { completeness: { percent: number; missing: number } };
+/** A list row: the view row with its completeness score, the number of failing checks and the status tabs it belongs to. */
+export type PropertyListRow = PropertyViewRow & {
+  completeness: { percent: number; missing: number };
+  statusKeys: readonly PropertyStatusFilter[];
+};
 
 /** The two-tier address in daily use, as one line: house and street, commune, short province; `null` with none of them. */
 export function currentAddressText(row: Pick<PropertyViewRow, 'addressLine' | 'communeName' | 'provinceName'>): string | null {
@@ -77,6 +81,7 @@ export const PROPERTY_FILTERS = {
   use: { schema: z.enum(USE_MODES), values: (row) => [row.useMode] },
   legal: { schema: z.enum(LEGAL_STATUSES), values: (row) => [row.legalStatus] },
   owner: { schema: z.uuid().transform((id) => id.toLowerCase()), values: (row) => row.ownerPartyIds },
+  status: { schema: z.enum(PROPERTY_STATUS_FILTERS), values: (row) => row.statusKeys },
 } as const satisfies Record<string, FilterDefinition>;
 
 export type PropertyFilterKey = keyof typeof PROPERTY_FILTERS;

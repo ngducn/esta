@@ -2,6 +2,7 @@ import 'server-only';
 import {
   applyPropertyFilters,
   propertyStatus,
+  statusFilterValues,
   searchTokens,
   type FilteredProperties,
   type PropertyFilters,
@@ -60,13 +61,19 @@ export async function listProperties(householdId: string, filters: PropertyFilte
     loadCollectionStates(householdId, asOf),
   ]);
   if (count?.error) throw new Error(`Counting properties failed: ${count.error.message}`);
-  const matches = viewRows.map((row): PropertyListRow => ({ ...row, ...leaseFacts(row.id, holding, asOf), completeness: summary(scores.get(row.id)) }));
+  const marksById = new Map<string, readonly PropertyStatusMark[]>();
+  const matches = viewRows.map((row): PropertyListRow => {
+    const facts = { ...row, ...leaseFacts(row.id, holding, asOf) };
+    const marks = propertyStatus({ ...facts, collection: collections.get(row.id) ?? null }, asOf);
+    marksById.set(row.id, marks);
+    return { ...facts, completeness: summary(scores.get(row.id)), statusKeys: statusFilterValues(marks) };
+  });
   const filtered = applyPropertyFilters(matches, filters);
   return {
     ...filtered,
     statuses: new Map(
       filtered.rows.flatMap((row) => {
-        const marks = propertyStatus({ ...row, collection: collections.get(row.id) ?? null }, asOf);
+        const marks = marksById.get(row.id) ?? [];
         return marks.length === 0 ? [] : [[row.id, marks] as const];
       }),
     ),

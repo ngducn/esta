@@ -30,28 +30,6 @@ export function SkeletonPage() {
   );
 }
 
-/** Photo-led cards in the grid the property list draws, so the list lands without a shift. */
-export function SkeletonCards({ count = 3 }: { count?: number }) {
-  return (
-    <Loading className="flex flex-col gap-5">
-      <Block className="h-9 w-40 max-w-full" />
-      <Block className="h-touch w-full lg:max-w-sm" />
-      <div className="grid gap-4 md:grid-cols-2 lg:gap-5 xl:grid-cols-3">
-        {Array.from({ length: count }, (_, index) => (
-          <div key={index} className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
-            <Block className="aspect-[16/10] w-full rounded-none" />
-            <div className="flex flex-col gap-2.5 p-4">
-              <Block className="h-7 w-40" />
-              <Block className="h-6 w-56 max-w-full" />
-              <Block className="h-5 w-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </Loading>
-  );
-}
-
 /** The vault as it lands: the title, the search bar, the expiring card and a row of 4:3 document tiles. */
 export function SkeletonVault() {
   return (

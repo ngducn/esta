@@ -35,6 +35,7 @@ function row(nickname: string, fields: Partial<PropertyListRow> = {}): PropertyL
     leasedUnitCount: 0,
     unitCount: 1,
     completeness: { percent: 100, missing: 0 },
+    statusKeys: [],
     ...fields,
   };
 }
@@ -72,14 +73,14 @@ const baoLoc = row('Đất Bảo Lộc', {
 });
 const lane = [q7, thuDuc, diAn, q1, bienHoa, longAn, baoLoc];
 
-const none = { q: '', sort: 'name', view: 'list', province: null, kind: null, use: null, legal: null, owner: null } as const;
+const none = { q: '', sort: 'name', view: 'list', province: null, kind: null, use: null, legal: null, owner: null, status: null } as const;
 const names = (rows: readonly PropertyListRow[]) => rows.map((r) => r.nickname);
 
 describe('parsePropertyFilters', () => {
   it('reads every param', () => {
     expect(
-      parsePropertyFilters({ q: '  di   an ', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', owner: ME, sort: 'name', view: 'map' }),
-    ).toEqual({ q: 'di an', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', owner: ME, sort: 'name', view: 'map' });
+      parsePropertyFilters({ q: '  di   an ', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', owner: ME, status: 'attention', sort: 'name', view: 'map' }),
+    ).toEqual({ q: 'di an', province: '79', kind: 'rooming_house', use: 'rental', legal: 'certified', owner: ME, status: 'attention', sort: 'name', view: 'map' });
   });
 
   it('reads a former province by name', () => {
@@ -121,6 +122,29 @@ describe('parsePropertyFilters', () => {
   it('keeps the map view through a filter change', () => {
     const filters = parsePropertyFilters({ view: 'map', kind: 'warehouse', locate: 'any' });
     expect(propertyFiltersQuery({ ...filters, kind: null })).toBe('?view=map');
+  });
+});
+
+describe('the status tabs', () => {
+  const late = row('Late', { statusKeys: ['attention'] });
+  const free = row('Free', { statusKeys: ['vacant'] });
+  const both = row('Both', { statusKeys: ['attention', 'vacant'] });
+  const fine = row('Fine');
+  const rows = [late, free, both, fine];
+
+  it('keeps the rows on one tab and tallies each tab over the rows the other filters keep', () => {
+    const result = applyPropertyFilters(rows, { ...none, status: 'attention' });
+    expect(names(result.rows)).toEqual(['Both', 'Late']);
+    expect(result.tallies.status.all).toBe(4);
+    expect([...result.tallies.status.values]).toEqual([
+      ['attention', 2],
+      ['vacant', 2],
+    ]);
+  });
+
+  it('refuses a tab it does not know and keeps the status in the query', () => {
+    expect(parsePropertyFilters({ status: 'late' }).status).toBeNull();
+    expect(propertyFiltersQuery({ ...none, status: 'vacant' })).toBe('?status=vacant');
   });
 });
 
