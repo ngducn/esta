@@ -40,7 +40,7 @@ export default async function UtilityAccountPage({ params }: { params: Params })
   return (
     <div className="flex flex-col gap-5">
       <BackLink href={`/properties/${id}/rental`} label={property.nickname} />
-      <h1 className="text-h2 break-words text-balance lg:text-h1">{editing === null ? t('newAccountTitle') : t('editAccountTitle')}</h1>
+      <h1 className="text-title-2 break-words text-balance lg:text-title-1">{editing === null ? t('newAccountTitle') : t('editAccountTitle')}</h1>
       <PropertyIntl locale={locale} messages={{ propertyRental: messages.propertyRental }}>
         <UtilityAccountForm
           propertyId={id}

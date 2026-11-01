@@ -52,7 +52,7 @@ export function FormSheet({ surface = 'sheet', open, onOpenChange, finalFocus, t
   const actions = (
     <FormActions>
       {leading}
-      <Close render={<Button type="button" variant="outline" disabled={pending} />}>{labels.cancel}</Close>
+      <Close render={<Button type="button" variant="secondary" disabled={pending} />}>{labels.cancel}</Close>
       {onSubmit === null ? null : (
         <Button type="submit" data-testid={submitTestId} disabled={pending || submitDisabled}>
           {pending ? labels.pending : labels.submit}

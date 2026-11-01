@@ -23,7 +23,7 @@ export function ConfirmDialog({ title, description, triggerLabel, confirmLabel, 
   const dialog = useDeferredDialog(loadPopup);
   return (
     <>
-      <Button variant="outline" {...dialog.triggerProps}>
+      <Button variant="secondary" {...dialog.triggerProps}>
         {triggerLabel}
       </Button>
       <DeferredPopup

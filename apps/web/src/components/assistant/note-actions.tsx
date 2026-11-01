@@ -35,7 +35,7 @@ export type NoteActionLabels = {
 /** Thử lại for an admin on a failed job's item. */
 export type RetryLabels = { readonly retry: string; readonly retryLabel: string; readonly queued: string; readonly failed: string };
 
-const button = buttonVariants({ variant: 'outline' });
+const button = buttonVariants({ variant: 'secondary' });
 
 export function NoteActions({ id, status, labels, retry }: { id: string; status: OpenNoteStatus; labels: NoteActionLabels; retry?: RetryLabels }) {
   const hydrated = useHydrated();
@@ -100,7 +100,7 @@ export function RestoreNote({ id, labels }: { id: string; labels: { readonly und
     );
   return (
     <div className="flex flex-col items-end gap-1">
-      <button type="button" onClick={restore} disabled={pending || !hydrated} aria-label={labels.undoLabel} data-testid="note-restore" className={buttonVariants({ variant: 'quiet' })}>
+      <button type="button" onClick={restore} disabled={pending || !hydrated} aria-label={labels.undoLabel} data-testid="note-restore" className={buttonVariants({ variant: 'ghost' })}>
         <Undo2 aria-hidden="true" />
         {labels.undo}
       </button>
@@ -148,7 +148,7 @@ export function ProposalDecision({
   const approved = decision === 'approved';
   return (
     <div className="flex flex-col gap-3">
-      <p role="status" data-testid="proposal-decision" data-decision={decision} className="flex items-center gap-2 text-body font-medium text-ink">
+      <p role="status" data-testid="proposal-decision" data-decision={decision} className="flex items-center gap-2 text-body font-medium text-text">
         <StatusShape status={approved ? 'paid' : 'ended'} className="size-4" />
         {approved ? labels.approved : labels.notApplicable}
       </p>

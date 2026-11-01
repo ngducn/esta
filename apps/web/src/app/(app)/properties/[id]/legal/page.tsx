@@ -38,13 +38,13 @@ function Section({
     <section aria-labelledby={id} data-testid={id} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 id={id} className="text-h3 text-ink">
+          <h2 id={id} className="text-title-3 text-text">
             {title}
           </h2>
           {aside}
         </div>
         {action === null ? null : (
-          <Link href={action.href} className={buttonVariants({ variant: 'outline' })}>
+          <Link href={action.href} className={buttonVariants({ variant: 'secondary' })}>
             <Plus aria-hidden="true" />
             {action.label}
           </Link>
@@ -113,7 +113,7 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
             title={owners('title')}
             aside={
               shares.length === 0 ? null : (
-                <p data-testid="ownership-total" className="figures text-body font-medium text-ink">
+                <p data-testid="ownership-total" className="num text-body font-medium text-text">
                   {owners('total', { total: formatShareBp(ownershipStatus(shares).totalBp, locale) })}
                 </p>
               )

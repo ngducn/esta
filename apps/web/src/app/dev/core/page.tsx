@@ -50,7 +50,7 @@ export default async function DevCorePage({ searchParams }: { searchParams: Prom
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 p-4">
       <header className="flex flex-col gap-1">
-        <h1 className="text-h2 font-semibold">Core playground</h1>
+        <h1 className="text-title-2 font-semibold">Core playground</h1>
         <p data-testid="core-summary">
           {rows.length} checks, {mismatches} {mismatches === 1 ? 'mismatch' : 'mismatches'}
         </p>
@@ -66,10 +66,10 @@ export default async function DevCorePage({ searchParams }: { searchParams: Prom
 
       {checked.map((section) => (
         <section key={section.id} aria-labelledby={`${section.id}-heading`} data-section={section.id}>
-          <h2 id={`${section.id}-heading`} className="mb-2 text-lead font-semibold">
+          <h2 id={`${section.id}-heading`} className="mb-2 text-headline font-semibold">
             {section.title}
           </h2>
-          <table className="w-full text-left text-small max-sm:block">
+          <table className="w-full text-left text-body-sm max-sm:block">
             <thead className="max-sm:sr-only">
               <tr className="border-b">
                 {COLUMNS.map((column) => (
@@ -95,7 +95,7 @@ export default async function DevCorePage({ searchParams }: { searchParams: Prom
                         key={column.label}
                         className={`py-1 pr-4 wrap-anywhere ${value === '' ? 'max-sm:hidden' : 'max-sm:contents'} ${column.className?.(row) ?? ''}`}
                       >
-                        <span aria-hidden="true" className="font-sans font-normal text-meta sm:hidden">
+                        <span aria-hidden="true" className="font-sans font-normal text-caption sm:hidden">
                           {column.label}
                         </span>
                         <span data-cell={column.cell}>{value}</span>

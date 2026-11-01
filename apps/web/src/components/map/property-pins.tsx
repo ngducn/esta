@@ -12,13 +12,13 @@ import { groupPins, worldPixels } from './pin-groups';
 export type MapPin = { readonly id: string; readonly nickname: string; readonly lat: number; readonly lng: number };
 
 const pinButton =
-  'group flex size-touch items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'group flex size-touch items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring';
 /** The pin's touch target; two pins closer than this on screen become one group a tap zooms into. */
 const TOUCH_PX = 44;
 const GROUP_MAX_ZOOM = 17;
 
 const pinHead =
-  'flex items-center justify-center rounded-full border-2 border-surface shadow-sheet transition-transform duration-(--duration-fast) ease-standard [&_svg]:size-5';
+  'flex items-center justify-center rounded-full border-2 border-surface shadow-lg transition-transform duration-(--duration-fast) ease-standard [&_svg]:size-5';
 
 /** One marker per key on a node React portals the pin into; positions and dragging follow the props without a remount. */
 function useMarkers(map: MapLibre, wanted: readonly { key: string; point: GeoPoint; draggable: boolean }[], onDragEnd: (point: GeoPoint) => void) {
@@ -118,7 +118,7 @@ export function PropertyPins({
     if (key === 'preview') {
       return createPortal(
         <span data-testid="preview-pin" role="img" aria-label={t('previewPin', { nickname: edit?.nickname ?? '' })} className={pinButton}>
-          <span className={`${pinHead} size-9 border-dashed border-accent bg-surface text-accent`}>
+          <span className={`${pinHead} size-9 border-dashed border-accent bg-surface text-accent-text`}>
             <MapPin aria-hidden="true" strokeWidth={2.25} />
           </span>
         </span>,
@@ -147,7 +147,7 @@ export function PropertyPins({
           }}
           className={inert ? `${pinButton} pointer-events-none opacity-60` : pinButton}
         >
-          <span className={`${pinHead} figures size-9 bg-accent text-body font-medium text-on-accent group-hover:scale-110`}>{group.pins.length}</span>
+          <span className={`${pinHead} num size-9 bg-accent text-body font-medium text-on-accent group-hover:scale-110`}>{group.pins.length}</span>
         </button>,
         element,
         key,
@@ -169,7 +169,7 @@ export function PropertyPins({
         }}
         className={inert ? `${pinButton} pointer-events-none opacity-60` : pinButton}
       >
-        <span className={selected ? `${pinHead} size-9 scale-115 bg-ink text-surface` : `${pinHead} size-9 bg-accent text-on-accent group-hover:scale-110`}>
+        <span className={selected ? `${pinHead} size-9 scale-115 bg-surface-inverse text-text-inverse` : `${pinHead} size-9 bg-accent text-on-accent group-hover:scale-110`}>
           <MapPin aria-hidden="true" strokeWidth={2.25} />
         </span>
       </button>,

@@ -54,8 +54,8 @@ export function MeterRow({
   const warn = check.kind === 'ok' && check.used !== null && isAnomalous(meter.history, check.used);
   return (
     <div data-testid="meter-row" data-kind={meter.kind} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5">
-      <label id={`${id}-label`} htmlFor={id} className="col-span-2 flex items-center gap-2 text-body font-medium text-ink lg:sr-only">
-        <Icon aria-hidden="true" className="size-5 text-ink-muted" strokeWidth={1.75} />
+      <label id={`${id}-label`} htmlFor={id} className="col-span-2 flex items-center gap-2 text-body font-medium text-text lg:sr-only">
+        <Icon aria-hidden="true" className="size-5 text-text-muted" strokeWidth={1.75} />
         {t('kind', { kind: meter.kind })}
       </label>
       <Input
@@ -72,27 +72,27 @@ export function MeterRow({
         aria-describedby={`${id}-previous ${id}-message`}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={onEnter}
-        className={cn('figures w-32 text-right text-lead', canEdit ? null : 'border-rule bg-surface-2')}
+        className={cn('num w-32 text-right text-headline', canEdit ? null : 'border-border bg-bg-subtle')}
       />
-      <div className="min-w-0 text-small">
-        <p id={`${id}-previous`} data-testid="meter-previous" className="figures text-ink-muted">
+      <div className="min-w-0 text-body-sm">
+        <p id={`${id}-previous`} data-testid="meter-previous" className="num text-text-muted">
           {meter.previous === null ? t('firstReading') : t('previous', { month: formatMonthWithin(meter.previous.month, month, locale), reading: meter.previous.reading })}
         </p>
         <p id={`${id}-message`} data-testid="meter-message" aria-live="polite" className="flex min-h-6 items-start gap-1.5">
           {check.kind === 'error' ? (
             <>
               <StatusShape status="overdue" className="mt-0.5 size-4" />
-              <span className="min-w-0 text-overdue">{check.message}</span>
+              <span className="min-w-0 text-danger-text">{check.message}</span>
             </>
           ) : warn && usual !== null ? (
             <>
               <StatusShape status="due" className="mt-0.5 size-4" />
-              <span data-testid="meter-anomaly" className="min-w-0 font-medium text-due">
+              <span data-testid="meter-anomaly" className="min-w-0 font-medium text-warning-text">
                 {t('anomaly', { usual, kind: meter.kind })}
               </span>
             </>
           ) : check.kind === 'ok' ? (
-            <span className="figures text-ink-2">{check.used === null ? null : t('used', { used: check.used, kind: meter.kind })}</span>
+            <span className="num text-text-secondary">{check.used === null ? null : t('used', { used: check.used, kind: meter.kind })}</span>
           ) : null}
         </p>
       </div>

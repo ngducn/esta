@@ -18,28 +18,28 @@ export type OverviewFactsData = {
   legalLabel: string;
 };
 
-const row = 'grid gap-1 border-t border-rule py-3 first:border-t-0 first:pt-0 last:pb-0 sm:grid-cols-[12rem_minmax(0,1fr)] sm:items-center sm:gap-4';
-const term = 'text-small text-ink-muted';
+const row = 'grid gap-1 border-t border-border py-3 first:border-t-0 first:pt-0 last:pb-0 sm:grid-cols-[12rem_minmax(0,1fr)] sm:items-center sm:gap-4';
+const term = 'text-body-sm text-text-muted';
 
 export function OverviewFacts({ facts }: { facts: OverviewFactsData }) {
   const KindIcon = kindIcons[facts.kind];
   return (
-    <section aria-labelledby="overview-facts" className="rounded-lg border border-rule bg-surface p-5 shadow-card lg:p-6">
-      <h2 id="overview-facts" className="mb-4 text-h3 text-ink">
+    <section aria-labelledby="overview-facts" className="rounded-lg border border-border bg-surface p-5 shadow-xs lg:p-6">
+      <h2 id="overview-facts" className="mb-4 text-title-3 text-text">
         {facts.title}
       </h2>
       <dl data-testid="overview-facts">
         <div className={row}>
           <dt className={term}>{facts.kindTerm}</dt>
-          <dd className="flex items-center gap-2 text-body font-medium text-ink">
-            <KindIcon className="size-5 shrink-0 text-ink-muted" strokeWidth={1.9} aria-hidden="true" />
+          <dd className="flex items-center gap-2 text-body font-medium text-text">
+            <KindIcon className="size-5 shrink-0 text-text-muted" strokeWidth={1.9} aria-hidden="true" />
             {facts.kindLabel}
           </dd>
         </div>
         {facts.details.map((detail) => (
           <div key={detail.key} data-detail={detail.key} className={row}>
             <dt className={term}>{detail.label}</dt>
-            <dd className="figures text-body break-words text-ink">{detail.value}</dd>
+            <dd className="num text-body break-words text-text">{detail.value}</dd>
           </div>
         ))}
         <div className={row}>

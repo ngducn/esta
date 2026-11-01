@@ -20,7 +20,7 @@ export type QrState =
 
 function Card({ children, className, testId }: { children: ReactNode; className?: string; testId: string }) {
   return (
-    <section data-testid={testId} className={cn('rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6 print:border-0 print:p-0 print:shadow-none', className)}>
+    <section data-testid={testId} className={cn('rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6 print:border-0 print:p-0 print:shadow-none', className)}>
       {children}
     </section>
   );
@@ -29,9 +29,9 @@ function Card({ children, className, testId }: { children: ReactNode; className?
 function Total({ label, amount, strong = false, testId }: { label: string; amount: InvoiceDetail['totalVnd']; strong?: boolean; testId: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
-      <dt className={strong ? 'text-lead font-semibold text-ink' : 'text-body text-ink-2'}>{label}</dt>
+      <dt className={strong ? 'text-headline font-semibold text-text' : 'text-body text-text-secondary'}>{label}</dt>
       <dd data-testid={testId}>
-        <MoneyDisplay amount={amount} className={strong ? 'text-h3 font-semibold text-ink' : 'text-body font-semibold text-ink'} />
+        <MoneyDisplay amount={amount} className={strong ? 'text-title-3 font-semibold text-text' : 'text-body font-semibold text-text'} />
       </dd>
     </div>
   );
@@ -65,18 +65,18 @@ export async function InvoiceView({
   return (
     <div data-print="invoice" className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <h1 data-testid="invoice-place" className="text-h2 break-words text-balance lg:text-h1 print:text-h3">
+        <h1 data-testid="invoice-place" className="text-title-2 break-words text-balance lg:text-title-1 print:text-title-3">
           {place}
         </h1>
-        <p className="text-body text-ink-2">
-          <span data-testid="invoice-number" className="figures font-medium text-ink">
+        <p className="text-body text-text-secondary">
+          <span data-testid="invoice-number" className="num font-medium text-text">
             {invoice.number}
           </span>
           {invoice.tenantName === null ? null : <span>{` · ${invoice.tenantName}`}</span>}
         </p>
         <div data-testid="invoice-status" data-status={invoice.status} className="flex flex-wrap items-center gap-2 print:hidden">
           {state === null ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-surface-2 px-3 py-1 text-small font-medium text-ink-muted">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-bg-subtle px-3 py-1 text-body-sm font-medium text-text-muted">
               <StatusShape status={invoice.status === 'draft' ? 'draft' : 'ended'} className="size-4" />
               {t('status', { status: invoice.status })}
             </span>
@@ -85,7 +85,7 @@ export async function InvoiceView({
           ) : (
             <StatusMark status={GROUP_MARKS[state.group]} />
           )}
-          {invoice.paymentStatus === 'partial' && invoice.status === 'issued' ? <span className="text-small font-medium text-ink-2">{t('partial')}</span> : null}
+          {invoice.paymentStatus === 'partial' && invoice.status === 'issued' ? <span className="text-body-sm font-medium text-text-secondary">{t('partial')}</span> : null}
         </div>
       </div>
 
@@ -93,28 +93,28 @@ export async function InvoiceView({
         <Card testId="invoice-bill" className="flex flex-col gap-4">
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 print:grid-cols-2">
             <div>
-              <dt className="text-small text-ink-muted">{t('period')}</dt>
-              <dd data-testid="invoice-period" className="figures text-body font-medium text-ink">
+              <dt className="text-body-sm text-text-muted">{t('period')}</dt>
+              <dd data-testid="invoice-period" className="num text-body font-medium text-text">
                 {t('periodValue', { start: formatDate(invoice.periodStart, locale), end: formatDate(invoice.periodEnd, locale) })}
               </dd>
             </div>
             <div>
-              <dt className="text-small text-ink-muted">{t('due')}</dt>
-              <dd data-testid="invoice-due" className="figures text-body font-medium text-ink">
+              <dt className="text-body-sm text-text-muted">{t('due')}</dt>
+              <dd data-testid="invoice-due" className="num text-body font-medium text-text">
                 {formatDate(invoice.dueDate, locale)}
               </dd>
             </div>
           </dl>
           <div>
-            <h2 className="pb-1 text-lead font-semibold text-ink">{t('lines')}</h2>
+            <h2 className="pb-1 text-headline font-semibold text-text">{t('lines')}</h2>
             <ul data-testid="invoice-lines" className="flex flex-col">
               {invoice.lines.map((line, index) => (
-                <li key={index} data-testid="invoice-line" data-kind={line.kind} className="flex items-baseline justify-between gap-4 border-b border-rule py-2.5">
-                  <span className="min-w-0 text-body break-words text-ink">
+                <li key={index} data-testid="invoice-line" data-kind={line.kind} className="flex items-baseline justify-between gap-4 border-b border-border py-2.5">
+                  <span className="min-w-0 text-body break-words text-text">
                     {line.description ?? t('lineKind', { kind: line.kind })}
-                    {line.quantity === 1 ? null : <span className="figures block text-small text-ink-muted">{t('lineQuantity', { quantity: line.quantity, price: formatVnd(line.unitPriceVnd, locale) })}</span>}
+                    {line.quantity === 1 ? null : <span className="num block text-body-sm text-text-muted">{t('lineQuantity', { quantity: line.quantity, price: formatVnd(line.unitPriceVnd, locale) })}</span>}
                   </span>
-                  <MoneyDisplay amount={line.amountVnd} className="text-body font-medium text-ink" />
+                  <MoneyDisplay amount={line.amountVnd} className="text-body font-medium text-text" />
                 </li>
               ))}
             </ul>
@@ -133,12 +133,12 @@ export async function InvoiceView({
         <Card testId="invoice-qr" className="order-first lg:order-none print:order-none">
           {qr.kind === 'shown' ? (
             <div className="flex flex-col gap-3">
-              <h2 className="text-lead font-semibold text-ink">{t('qrTitle')}</h2>
+              <h2 className="text-headline font-semibold text-text">{t('qrTitle')}</h2>
               <QrPanel qr={qr.qr} matrix={qr.matrix} labels={qr.labels} />
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <p data-testid="invoice-no-qr" data-reason={qr.kind} className="text-body text-ink-2">
+              <p data-testid="invoice-no-qr" data-reason={qr.kind} className="text-body text-text-secondary">
                 {noQrText[qr.kind]()}
               </p>
               {noQrAction === undefined ? null : <div className="flex flex-col print:hidden">{noQrAction}</div>}

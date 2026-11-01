@@ -56,8 +56,8 @@ export function PropertySearch({ label, placeholder }: { label: string; placehol
         .map(([key, entry]) => (
           <input key={key} type="hidden" name={key} value={entry} />
         ))}
-      <label className="flex min-h-touch items-center gap-2.5 rounded-md border border-field bg-surface px-3.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
-        <Search className="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+      <label className="flex min-h-touch items-center gap-2.5 rounded-md border border-border-field bg-surface px-3.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring">
+        <Search className="size-5 shrink-0 text-text-muted" aria-hidden="true" />
         <span className="sr-only">{label}</span>
         <input
           ref={input}
@@ -68,7 +68,7 @@ export function PropertySearch({ label, placeholder }: { label: string; placehol
           placeholder={placeholder}
           autoComplete="off"
           enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent py-2 text-body text-ink outline-none placeholder:text-ink-muted"
+          className="min-w-0 flex-1 bg-transparent py-2 text-body text-text outline-none placeholder:text-text-muted"
         />
       </label>
     </form>

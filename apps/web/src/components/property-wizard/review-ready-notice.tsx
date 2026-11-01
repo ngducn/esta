@@ -37,7 +37,7 @@ export function ReviewReadyNotice({ documentId, statuses, reviewHref }: { docume
     return (
       <Notice tone="accent" icon={<ReadyIcon ready={ready} />} state={ready ? 'ready' : 'failed'}>
         {ready ? t('ready') : t('readFailed')}{' '}
-        <Link href={reviewHref} data-testid="review-ready-link" className="font-medium text-accent underline underline-offset-4 hover:text-ink">
+        <Link href={reviewHref} data-testid="review-ready-link" className="font-medium text-accent-text underline underline-offset-4 hover:text-text">
           {ready ? t('readyLink') : t('readFailedLink')}
         </Link>
       </Notice>
@@ -45,7 +45,7 @@ export function ReviewReadyNotice({ documentId, statuses, reviewHref }: { docume
   }
   if (status === 'accepted') {
     return (
-      <Notice tone="quiet" icon={<CircleCheck className="mt-0.5 size-5 shrink-0 text-paid" strokeWidth={2} aria-hidden="true" />} state="accepted">
+      <Notice tone="quiet" icon={<CircleCheck className="mt-0.5 size-5 shrink-0 text-success-text" strokeWidth={2} aria-hidden="true" />} state="accepted">
         {t('accepted')}
       </Notice>
     );
@@ -66,9 +66,9 @@ function Notice({ tone, icon, state, children }: { tone: 'quiet' | 'due' | 'acce
       data-state={state}
       className={cn(
         'flex max-w-3xl items-start gap-3 rounded-md px-4 py-3 text-body',
-        tone === 'quiet' && 'bg-surface-2 text-ink-2',
-        tone === 'due' && 'bg-due-fill font-medium text-due',
-        tone === 'accent' && 'border border-accent bg-accent-tint text-ink',
+        tone === 'quiet' && 'bg-bg-subtle text-text-secondary',
+        tone === 'due' && 'bg-warning-bg font-medium text-warning-text',
+        tone === 'accent' && 'border border-accent bg-accent-subtle text-text',
       )}
     >
       {icon}

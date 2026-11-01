@@ -34,7 +34,7 @@ export function VietQrScan({ id, payload, labels }: { id: string; payload: strin
   return (
     <figure className="flex flex-col items-start gap-2">
       <canvas ref={canvasRef} data-testid={`${id}-canvas`} className="max-w-full rounded border bg-white" />
-      <figcaption data-testid={`${id}-scan`} data-match={state} className="text-small">
+      <figcaption data-testid={`${id}-scan`} data-match={state} className="text-body-sm">
         {labels.scan}: {labels[state]}
       </figcaption>
     </figure>

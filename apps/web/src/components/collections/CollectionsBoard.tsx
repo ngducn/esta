@@ -48,13 +48,13 @@ function StatusCell({ item, month, asOf, locale }: { item: CollectionItem<Collec
     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {state.group === 'overdue' ? <StatusMark status="overdue" days={state.days} /> : <StatusMark status={GROUP_MARKS[state.group]} />}
       {carriedFrom === null ? null : (
-        <span data-testid="carried-from" className="text-small font-medium text-ink-2">
+        <span data-testid="carried-from" className="text-body-sm font-medium text-text-secondary">
           {t('carriedFrom', { month: formatMonthWithin(carriedFrom, month, locale) })}
         </span>
       )}
-      {state.group === 'notDue' ? <span className="text-small text-ink-muted">{formatRelativeDue(item.row.dueDate, asOf, locale)}</span> : null}
+      {state.group === 'notDue' ? <span className="text-body-sm text-text-muted">{formatRelativeDue(item.row.dueDate, asOf, locale)}</span> : null}
       {item.row.paymentStatus === 'partial' ? (
-        <span data-testid="row-partial" className="text-small font-medium text-ink-2">
+        <span data-testid="row-partial" className="text-body-sm font-medium text-text-secondary">
           {t('partial')}
         </span>
       ) : null}
@@ -89,25 +89,25 @@ function CollectionsRow({
     <TableRow
       data-testid="collections-row"
       data-group={item.state.group}
-      className="max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-1.5 max-sm:border-b max-sm:border-rule max-sm:px-4 max-sm:py-3.5 max-sm:last:border-b-0"
+      className="max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-1.5 max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-3.5 max-sm:last:border-b-0"
     >
       <TableCell className={cn('lg:min-w-60 max-sm:border-0 max-sm:p-0', cell.place)}>
-        <span data-testid="row-place" className="block min-w-0 text-body font-medium break-words text-ink">
+        <span data-testid="row-place" className="block min-w-0 text-body font-medium break-words text-text">
           {place}
         </span>
         {row.propertyArchived ? (
-          <span data-testid="row-archived" className="text-small font-medium text-ink-2">
+          <span data-testid="row-archived" className="text-body-sm font-medium text-text-secondary">
             {t('propertyArchived')}
           </span>
         ) : null}
       </TableCell>
-      <TableCell className={cn('text-body text-ink-2 max-sm:border-0 max-sm:p-0', cell.tenant)}>
+      <TableCell className={cn('text-body text-text-secondary max-sm:border-0 max-sm:p-0', cell.tenant)}>
         <span data-testid="row-tenant" className="break-words">
           {row.tenantName ?? t('noTenant')}
         </span>
       </TableCell>
-      <TableCell className={cn('text-body whitespace-nowrap text-ink-2 max-sm:border-0 max-sm:p-0', cell.due)}>
-        <span data-testid="row-due" className="figures">
+      <TableCell className={cn('text-body whitespace-nowrap text-text-secondary max-sm:border-0 max-sm:p-0', cell.due)}>
+        <span data-testid="row-due" className="num">
           <span className="sm:sr-only">{t('dueOn', { date: formatDate(row.dueDate, locale) })}</span>
           <span aria-hidden="true" className="max-sm:hidden">
             {formatDate(row.dueDate, locale)}
@@ -118,7 +118,7 @@ function CollectionsRow({
         <StatusCell item={item} month={month} asOf={asOf} locale={locale} />
       </TableCell>
       <TableCell className={cn('text-end max-sm:border-0 max-sm:p-0', cell.amount)}>
-        <MoneyDisplay amount={item.amountVnd} className="text-body font-medium text-ink" />
+        <MoneyDisplay amount={item.amountVnd} className="text-body font-medium text-text" />
       </TableCell>
       {/* Wide enough for Nhắc qua Zalo and Xem hợp đồng on one line, so a row's actions take two lines, not three. */}
       <TableCell className={cn('text-end lg:min-w-[19.5rem] max-sm:border-0 max-sm:p-0 max-sm:text-start', cell.actions)}>
@@ -127,7 +127,7 @@ function CollectionsRow({
             switch (action.kind) {
               case 'link':
                 return (
-                  <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'quiet', className: 'max-sm:first:-ml-2' })}>
+                  <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'ghost', className: 'max-sm:first:-ml-2' })}>
                     {t(action.label)}
                   </Link>
                 );
@@ -173,22 +173,22 @@ function GroupHeader({ group }: { group: CollectionGroup<CollectionRow> }) {
   const t = useTranslations('collections');
   const id = `collections-${group.key}`;
   return (
-    <TableRow className="max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:border-b max-sm:border-rule max-sm:bg-surface-2 max-sm:px-4 max-sm:py-3">
-      <TableHead id={id} scope="rowgroup" colSpan={4} className="bg-surface-2 py-3 max-sm:border-0 max-sm:p-0">
+    <TableRow className="max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:border-b max-sm:border-border max-sm:bg-bg-subtle max-sm:px-4 max-sm:py-3">
+      <TableHead id={id} scope="rowgroup" colSpan={4} className="bg-bg-subtle py-3 max-sm:border-0 max-sm:p-0">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 whitespace-normal">
           <StatusShape status={GROUP_MARKS[group.key]} />
-          <span data-testid="group-title" className="text-lead font-semibold text-ink">
+          <span data-testid="group-title" className="text-headline font-semibold text-text">
             {t('group', { group: group.key })}
           </span>
-          <span data-testid="group-count" className="text-body font-medium text-ink-muted">
+          <span data-testid="group-count" className="text-body font-medium text-text-muted">
             {t('groupCount', { count: group.items.length })}
           </span>
         </span>
       </TableHead>
-      <TableCell className="bg-surface-2 py-3 text-end max-sm:border-0 max-sm:p-0">
-        {group.items.length === 0 ? null : <MoneyDisplay amount={group.totalVnd} className="text-lead font-medium text-ink" />}
+      <TableCell className="bg-bg-subtle py-3 text-end max-sm:border-0 max-sm:p-0">
+        {group.items.length === 0 ? null : <MoneyDisplay amount={group.totalVnd} className="text-headline font-medium text-text" />}
       </TableCell>
-      <TableCell aria-hidden="true" className="bg-surface-2 py-3 max-sm:hidden" />
+      <TableCell aria-hidden="true" className="bg-bg-subtle py-3 max-sm:hidden" />
     </TableRow>
   );
 }
@@ -215,7 +215,7 @@ export function CollectionsBoard({
 }) {
   const t = useTranslations('collections');
   return (
-    <div data-testid="collections-board" className="rounded-lg border border-rule bg-surface shadow-card">
+    <div data-testid="collections-board" className="rounded-lg border border-border bg-surface shadow-xs">
       <Table className="max-sm:block">
         <caption className="sr-only">{t('caption', { month: monthLabel })}</caption>
         <TableHeader className="max-sm:sr-only">
@@ -224,7 +224,7 @@ export function CollectionsBoard({
               <TableHead
                 key={key}
                 scope="col"
-                className={cn('sticky top-0 z-10 bg-surface-2', index === 0 && 'rounded-tl-lg', index === 5 && 'rounded-tr-lg', (key === 'colAmount' || key === 'colActions') && 'text-end')}
+                className={cn('sticky top-0 z-10 bg-bg-subtle', index === 0 && 'rounded-tl-lg', index === 5 && 'rounded-tr-lg', (key === 'colAmount' || key === 'colActions') && 'text-end')}
               >
                 {key === 'colActions' ? <span className="sr-only">{t(key)}</span> : t(key)}
               </TableHead>
@@ -236,7 +236,7 @@ export function CollectionsBoard({
             <GroupHeader group={group} />
             {group.items.length === 0 ? (
               <TableRow className="max-sm:block">
-                <TableCell colSpan={6} className="text-body text-ink-muted max-sm:block max-sm:border-b max-sm:border-rule max-sm:px-4">
+                <TableCell colSpan={6} className="text-body text-text-muted max-sm:block max-sm:border-b max-sm:border-border max-sm:px-4">
                   {t('groupEmpty', { group: group.key })}
                 </TableCell>
               </TableRow>

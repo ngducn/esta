@@ -46,9 +46,9 @@ export default async function SignUpPage() {
   };
   return (
     <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
-      <h1 className="text-h2 lg:text-h1">{t('title')}</h1>
+      <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
       <SignUpForm copy={copy} />
-      <p className="flex flex-wrap items-center justify-center gap-x-2 border-t border-rule pt-4 text-ink-2">
+      <p className="flex flex-wrap items-center justify-center gap-x-2 border-t border-border pt-4 text-text-secondary">
         {t('haveAccount')}
         <Link href="/sign-in" className={linkClass}>
           {t('signIn')}

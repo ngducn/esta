@@ -25,7 +25,7 @@ export default function ConfirmDialogPopup({ open, onOpenChange, finalFocus, tit
           {description === undefined ? null : <AlertDialogDescription>{description}</AlertDialogDescription>}
         </div>
         <FormActions>
-          <AlertDialogClose render={<Button variant="outline" />}>{cancelLabel}</AlertDialogClose>
+          <AlertDialogClose render={<Button variant="secondary" />}>{cancelLabel}</AlertDialogClose>
           <AlertDialogClose render={<Button variant="primary" />} onClick={onConfirm}>
             {confirmLabel}
           </AlertDialogClose>

@@ -30,41 +30,41 @@ export async function ReceivingAccounts({ member }: { member: Member }) {
   return (
     <section aria-labelledby="accounts-heading" data-testid="receiving-accounts" className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 id="accounts-heading" className="text-h3">
+        <h2 id="accounts-heading" className="text-title-3">
           {t('accounts')}
         </h2>
-        <p className="text-ink-muted">{t('accountsIntro')}</p>
-        {admin ? null : <p className="text-ink-muted">{t('accountsReadOnly')}</p>}
+        <p className="text-text-muted">{t('accountsIntro')}</p>
+        {admin ? null : <p className="text-text-muted">{t('accountsReadOnly')}</p>}
       </div>
       {accounts.length === 0 ? (
         <Card>
-          <p data-testid="accounts-empty" className="text-body text-ink-2">
+          <p data-testid="accounts-empty" className="text-body text-text-secondary">
             {t(admin ? 'accountsEmpty' : 'accountsEmptyReadOnly')}
           </p>
         </Card>
       ) : (
         <Card className="p-0 sm:p-0">
-          <ul className="flex flex-col divide-y divide-rule">
+          <ul className="flex flex-col divide-y divide-border">
             {accounts.map((account) => {
               const headingId = `account-${account.id}`;
               return (
                 <li key={account.id} data-testid="receiving-account" data-default={account.isDefault} className="flex flex-col gap-3 p-5 sm:p-6">
                   <div className="flex flex-col gap-0.5">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h3 id={headingId} className="text-lead font-semibold break-words">
+                      <h3 id={headingId} className="text-headline font-semibold break-words">
                         {account.bankName}
                       </h3>
                       {account.isDefault ? (
-                        <span data-testid="account-default" className="inline-flex items-center gap-1 rounded-full border border-rule bg-surface-2 px-2.5 py-0.5 text-small font-medium text-ink">
+                        <span data-testid="account-default" className="inline-flex items-center gap-1 rounded-full border border-border bg-bg-subtle px-2.5 py-0.5 text-body-sm font-medium text-text">
                           <Check className="size-4" strokeWidth={2.2} aria-hidden="true" />
                           {t('accountDefault')}
                         </span>
                       ) : null}
                     </div>
-                    <p data-testid="account-number" className="figures text-body font-medium break-all text-ink">
+                    <p data-testid="account-number" className="num text-body font-medium break-all text-text">
                       {account.accountNo}
                     </p>
-                    <p data-testid="account-holder" className="text-small break-words text-ink-2">
+                    <p data-testid="account-holder" className="text-body-sm break-words text-text-secondary">
                       {account.accountName}
                     </p>
                   </div>

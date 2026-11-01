@@ -39,7 +39,7 @@ async function qrState(invoice: InvoiceDetail, householdId: string, locale: Loca
 /** Adding the account is an admin's call; anyone else is told to ask one. */
 async function noAccountAction(role: Member['role']) {
   const t = await getTranslations('invoices');
-  if (role !== 'admin') return <p className="text-body text-ink-2">{t('noAccountAsk')}</p>;
+  if (role !== 'admin') return <p className="text-body text-text-secondary">{t('noAccountAsk')}</p>;
   const { banks, labels } = await loadAccountSheet();
   return <ReceivingAccountButton label={t('addAccount')} banks={banks} labels={labels} mode={{ kind: 'add', becomesDefault: true }} />;
 }
@@ -50,7 +50,7 @@ async function billActions(invoice: InvoiceDetail) {
   const t = await getTranslations('invoices');
   if (invoice.status === 'issued' && invoice.allocatedVnd > 0) {
     return (
-      <p data-testid="invoice-void-paid" className="text-body text-ink-2">
+      <p data-testid="invoice-void-paid" className="text-body text-text-secondary">
         {t('voidPaidNote')}
       </p>
     );
@@ -84,7 +84,7 @@ export default async function InvoicePage({ params }: { params: Params }) {
           <ReceiptLinks invoiceId={invoice.id} labels={{ pdf: t('receiptPdf', { kind: receiptKind(invoice.totalVnd, invoice.allocatedVnd) }), png: t('receiptPng') }} />
         ) : null}
         {invoice.propertyArchived ? null : (
-          <IntentLink href={`/properties/${invoice.propertyId}/rental/leases/${invoice.leaseId}`} className={buttonVariants({ variant: 'outline' })}>
+          <IntentLink href={`/properties/${invoice.propertyId}/rental/leases/${invoice.leaseId}`} className={buttonVariants({ variant: 'secondary' })}>
             {t('openLease')}
           </IntentLink>
         )}

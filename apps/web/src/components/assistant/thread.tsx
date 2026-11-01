@@ -105,9 +105,9 @@ function actionsFor(note: InboxNote, canDecide: boolean, context: ProposalContex
 function SettledNote({ note, time, canRestore, t }: { note: InboxNote; time: string; canRestore: boolean; t: Translate }) {
   const hidden = note.status === 'dismissed';
   return (
-    <div data-testid="note-settled" data-status={note.status} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border border-rule px-4 py-1.5">
-      <p className="min-w-0 flex-1 text-small break-words text-ink-muted">
-        <time dateTime={note.createdAt} className="figures">
+    <div data-testid="note-settled" data-status={note.status} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border border-border px-4 py-1.5">
+      <p className="min-w-0 flex-1 text-body-sm break-words text-text-muted">
+        <time dateTime={note.createdAt} className="num">
           {time}
         </time>{' '}
         {t(hidden ? 'hiddenNote' : 'handledNote', { title: note.title })}
@@ -126,19 +126,19 @@ function Question({ message, time, t, ask }: { message: ConversationMessage; tim
   const topic = message.topic;
   return (
     <div data-testid="question" className="ml-10 flex flex-col items-end gap-1 sm:ml-24">
-      <p className="text-small text-ink-muted figures">
+      <p className="text-body-sm text-text-muted num">
         <time dateTime={message.createdAt}>{t('sentAt', { time })}</time>
       </p>
       {topic === null ? null : topic.href === null ? (
-        <p data-testid="question-topic" className="max-w-prose text-small break-words text-ink-2">
+        <p data-testid="question-topic" className="max-w-prose text-body-sm break-words text-text-secondary">
           {topicLine(topic, ask)}
         </p>
       ) : (
-        <Link href={topic.href} data-testid="question-topic" className="max-w-prose text-small font-medium break-words text-ink-2 underline underline-offset-4 hover:text-ink">
+        <Link href={topic.href} data-testid="question-topic" className="max-w-prose text-body-sm font-medium break-words text-text-secondary underline underline-offset-4 hover:text-text">
           {topicLine(topic, ask)}
         </Link>
       )}
-      <p className="max-w-prose rounded-lg bg-accent-tint px-4 py-3 text-body break-words whitespace-pre-line text-ink">{message.content}</p>
+      <p className="max-w-prose rounded-lg bg-accent-subtle px-4 py-3 text-body break-words whitespace-pre-line text-text">{message.content}</p>
     </div>
   );
 }
@@ -156,11 +156,11 @@ function Answer({ message, time, t, ask }: { message: ConversationMessage; time:
       </AnswerView>
     );
   return (
-    <article className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <AssistantMonogram />
-        <span className="text-small font-medium text-ink">{t('author')}</span>
-        <time dateTime={message.createdAt} className="text-small text-ink-muted figures">
+        <span className="text-body-sm font-medium text-text">{t('author')}</span>
+        <time dateTime={message.createdAt} className="text-body-sm text-text-muted num">
           {time}
         </time>
       </header>
@@ -223,12 +223,12 @@ export async function ThreadView({
         {t('thread')}
       </h2>
       {thread.before === null ? null : (
-        <Link href={`/assistant?before=${thread.before}`} data-testid="thread-older" className={buttonVariants({ variant: 'outline', className: 'self-center' })}>
+        <Link href={`/assistant?before=${thread.before}`} data-testid="thread-older" className={buttonVariants({ variant: 'secondary', className: 'self-center' })}>
           {t('threadOlder')}
         </Link>
       )}
       {thread.entries.length === 0 ? (
-        <p data-testid="thread-empty" className="rounded-lg border border-rule bg-surface p-5 text-body text-pretty text-ink-2 shadow-card sm:p-6">
+        <p data-testid="thread-empty" className="rounded-lg border border-border bg-surface p-5 text-body text-pretty text-text-secondary shadow-xs sm:p-6">
           {t('threadEmpty')}
         </p>
       ) : (
@@ -241,7 +241,7 @@ export async function ThreadView({
         </ol>
       )}
       {thread.newer ? (
-        <Link href="/assistant" data-testid="thread-newest" className={buttonVariants({ variant: 'outline', className: 'w-full sm:w-fit sm:self-center' })}>
+        <Link href="/assistant" data-testid="thread-newest" className={buttonVariants({ variant: 'secondary', className: 'w-full sm:w-fit sm:self-center' })}>
           {t('threadNewest')}
         </Link>
       ) : (

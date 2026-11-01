@@ -23,7 +23,7 @@ export type TodayPayment = {
   readonly account: PaymentAccount | null;
 };
 
-const iconClass = 'size-5 shrink-0 text-ink-muted';
+const iconClass = 'size-5 shrink-0 text-text-muted';
 const leasePath = (item: Extract<Item, { rule: 'lease_ending' }>) => `/properties/${item.lease.propertyId}/rental/leases/${item.lease.leaseId}`;
 
 function itemKey(item: Item): string {
@@ -44,7 +44,7 @@ function itemKey(item: Item): string {
 
 function ActionLink({ href, label, describedBy }: { href: string; label: string; describedBy: string }) {
   return (
-    <Link href={href} prefetch={false} aria-describedby={describedBy} data-testid="today-action" className={buttonVariants({ variant: 'outline' })}>
+    <Link href={href} prefetch={false} aria-describedby={describedBy} data-testid="today-action" className={buttonVariants({ variant: 'secondary' })}>
       {label}
     </Link>
   );
@@ -71,7 +71,7 @@ function useRow(item: Item, titleId: string, asOf: IsoDate, payment: TodayPaymen
         detail: (
           <>
             {item.rule === 'overdue_invoice' ? <StatusMark status="overdue" days={item.days} /> : <StatusMark status="due" />}
-            <MoneyDisplay amount={bill.outstandingVnd} className="text-body font-medium text-ink" />
+            <MoneyDisplay amount={bill.outstandingVnd} className="text-body font-medium text-text" />
             <span className="break-words">{bill.tenantName ?? tc('noTenant')}</span>
           </>
         ),
@@ -114,8 +114,8 @@ function useRow(item: Item, titleId: string, asOf: IsoDate, payment: TodayPaymen
         title: item.document.title,
         detail: (
           <>
-            <span className="font-medium text-ink">{td('expiry', { days: item.days })}</span>
-            <span className="figures">{formatDate(item.date, locale)}</span>
+            <span className="font-medium text-text">{td('expiry', { days: item.days })}</span>
+            <span className="num">{formatDate(item.date, locale)}</span>
           </>
         ),
         action: <ActionLink href={`/documents/${item.document.documentId}`} label={t('openDocument')} describedBy={titleId} />,
@@ -138,7 +138,7 @@ function useRow(item: Item, titleId: string, asOf: IsoDate, payment: TodayPaymen
         title: item.task.title,
         detail: (
           <>
-            {item.date < asOf ? <span className="font-medium text-ink">{t('taskLate', { date: formatDate(item.date, locale) })}</span> : <span>{t('taskToday')}</span>}
+            {item.date < asOf ? <span className="font-medium text-text">{t('taskLate', { date: formatDate(item.date, locale) })}</span> : <span>{t('taskToday')}</span>}
             {item.task.propertyName === null ? null : <span className="break-words">{item.task.propertyName}</span>}
           </>
         ),
@@ -157,10 +157,10 @@ function TodayRow({ item, titleId, asOf, payment }: { item: Item; titleId: strin
     >
       <span className="self-start pt-0.5">{icon}</span>
       <div className="flex min-w-0 flex-col gap-1.5">
-        <p id={titleId} data-testid="today-title" className="text-body font-medium break-words text-ink">
+        <p id={titleId} data-testid="today-title" className="text-body font-medium break-words text-text">
           {title}
         </p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ink-2">{detail}</div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-text-secondary">{detail}</div>
       </div>
       <div className="col-start-2 sm:col-start-3">{action}</div>
     </li>
@@ -171,30 +171,30 @@ function TodayRow({ item, titleId, asOf, payment }: { item: Item; titleId: strin
 export function TodayList({ today, asOf, payment }: { today: TodayListData<HomeSnapshot>; asOf: IsoDate; payment: TodayPayment | null }) {
   const t = useTranslations('home');
   return (
-    <section aria-labelledby="today-title" data-testid="today" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <section aria-labelledby="today-title" data-testid="today" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="today-title" className="text-h3 text-ink">
+        <h2 id="today-title" className="text-title-3 text-text">
           {t('todayTitle')}
         </h2>
         {today.total === 0 ? null : (
-          <p data-testid="today-count" className="text-body font-medium text-ink-muted">
+          <p data-testid="today-count" className="text-body font-medium text-text-muted">
             {t('todayCount', { count: today.total })}
           </p>
         )}
       </div>
       {today.items.length === 0 ? (
-        <p data-testid="today-empty" className="text-body text-ink-2">
+        <p data-testid="today-empty" className="text-body text-text-secondary">
           {t('todayEmpty')}
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-rule">
+        <ul className="flex flex-col divide-y divide-border">
           {today.items.map((item, index) => (
             <TodayRow key={itemKey(item)} item={item} titleId={`today-item-${index}`} asOf={asOf} payment={payment} />
           ))}
         </ul>
       )}
       {today.total > today.items.length ? (
-        <Link href="/collections" data-testid="today-more" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
+        <Link href="/collections" data-testid="today-more" className={cn(buttonVariants({ variant: 'ghost' }), 'self-start px-0')}>
           {t('todayMore')}
         </Link>
       ) : null}

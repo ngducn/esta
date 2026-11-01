@@ -23,10 +23,10 @@ export async function AssistantHeader({ householdId, now, status, active }: { ho
   const [nav, t, brief] = await Promise.all([getTranslations('nav'), getTranslations('assistant'), latestBrief(householdId, now)]);
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-h2 break-words lg:text-h1">{nav('assistant')}</h1>
+      <h1 className="text-title-2 break-words lg:text-title-1">{nav('assistant')}</h1>
       {status.kind === 'offline' || status.kind === 'paused' ? null : <WorkerStatusLine status={status} />}
       {brief === null ? null : (
-        <p data-testid="worker-ran" className="text-small text-ink-muted figures">
+        <p data-testid="worker-ran" className="text-body-sm text-text-muted num">
           {t('ranAt', { time: stampLabel(wallClockStamp(brief.createdAt, now, env.ESTA_TIMEZONE)) })}
         </p>
       )}

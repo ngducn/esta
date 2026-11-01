@@ -67,8 +67,8 @@ export function DataTable<Row>({
   return (
     <div className="flex flex-col">
       {selectable ? (
-        <div className="flex min-h-touch flex-wrap items-center justify-between gap-x-4 border-b border-rule">
-          <label className="-ml-2.5 inline-flex cursor-pointer items-center pr-2 text-body text-ink">
+        <div className="flex min-h-touch flex-wrap items-center justify-between gap-x-4 border-b border-border">
+          <label className="-ml-2.5 inline-flex cursor-pointer items-center pr-2 text-body text-text">
             <Checkbox
               checked={allSelected}
               indeterminate={someSelected}
@@ -77,7 +77,7 @@ export function DataTable<Row>({
             />
             <span id={selectAllId}>{t('selectAll')}</span>
           </label>
-          <p aria-live="polite" data-testid="selection-count" className="text-body font-medium text-ink">
+          <p aria-live="polite" data-testid="selection-count" className="text-body font-medium text-text">
             {selected.size > 0 ? t('selected', { count: selected.size }) : null}
           </p>
         </div>
@@ -108,8 +108,8 @@ export function DataTable<Row>({
                   key={id}
                   data-selected={isSelected || undefined}
                   className={cn(
-                    'data-selected:bg-rule/50',
-                    'max-sm:grid max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-0.5 max-sm:border-b max-sm:border-rule max-sm:py-2',
+                    'data-selected:bg-border/50',
+                    'max-sm:grid max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-0.5 max-sm:border-b max-sm:border-border max-sm:py-2',
                     selectable ? 'max-sm:grid-cols-[auto_1fr_auto]' : 'max-sm:grid-cols-[1fr_auto]',
                   )}
                 >
@@ -135,9 +135,9 @@ export function DataTable<Row>({
                         className={cn(
                           'max-sm:border-0 max-sm:p-0',
                           stacked[placement](selectable),
-                          placement === 'amount' && 'text-end whitespace-nowrap figures',
+                          placement === 'amount' && 'text-end whitespace-nowrap num',
                           placement === 'primary' && 'max-sm:font-medium',
-                          placement === 'detail' && 'max-sm:text-small max-sm:text-ink-muted',
+                          placement === 'detail' && 'max-sm:text-body-sm max-sm:text-text-muted',
                         )}
                       >
                         {placement === 'detail' ? <span className="sm:hidden">{column.header}: </span> : null}

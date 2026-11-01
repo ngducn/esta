@@ -25,14 +25,14 @@ export function ReportDownloads({ downloads, failedLabel }: { downloads: readonl
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-3">
         {downloads.map((download) => (
-          <a key={download.testId} href={download.href} download={download.file} data-testid={download.testId} onClick={(event) => void fetchThenSave(event, download)} className={buttonVariants({ variant: 'outline' })}>
+          <a key={download.testId} href={download.href} download={download.file} data-testid={download.testId} onClick={(event) => void fetchThenSave(event, download)} className={buttonVariants({ variant: 'secondary' })}>
             <Download aria-hidden="true" />
             {download.label}
           </a>
         ))}
       </div>
       {failed ? (
-        <p role="alert" data-testid="report-download-failed" className="text-small text-overdue">
+        <p role="alert" data-testid="report-download-failed" className="text-body-sm text-danger-text">
           {failedLabel}
         </p>
       ) : null}

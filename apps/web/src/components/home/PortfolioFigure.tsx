@@ -11,26 +11,26 @@ export function PortfolioFigure({ portfolio }: { portfolio: Portfolio | null }) 
   const locale = useLocale();
   if (portfolio === null) return null;
   return (
-    <section aria-labelledby="portfolio-title" data-testid="portfolio-figure" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <section aria-labelledby="portfolio-title" data-testid="portfolio-figure" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 id="portfolio-title" className="text-h3 text-ink">
+        <h2 id="portfolio-title" className="text-title-3 text-text">
           {t('portfolioTitle')}
         </h2>
-        <Link href="/properties" className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
+        <Link href="/properties" className={cn(buttonVariants({ variant: 'ghost' }), 'px-0')}>
           {t('portfolioOpen')}
         </Link>
       </div>
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span data-testid="portfolio-total" data-total-vnd={portfolio.totalVnd} className="figures text-hero font-semibold tracking-tight whitespace-nowrap text-ink">
+        <span data-testid="portfolio-total" data-total-vnd={portfolio.totalVnd} className="num text-figure-lg font-semibold tracking-tight whitespace-nowrap text-text">
           {formatVndCompact(portfolio.totalVnd, locale)}
         </span>
         <EstimatePill label={t('estimate')} />
       </p>
-      <p data-testid="portfolio-basis" className="text-body text-ink-2">
+      <p data-testid="portfolio-basis" className="text-body text-text-secondary">
         {t('portfolioBasis', { date: formatDate(portfolio.oldestAsOf, locale) })}
       </p>
       {portfolio.unvaluedCount === 0 ? null : (
-        <p data-testid="portfolio-missing" data-count={portfolio.unvaluedCount} className="text-body text-ink">
+        <p data-testid="portfolio-missing" data-count={portfolio.unvaluedCount} className="text-body text-text">
           {t('portfolioMissing', { count: portfolio.unvaluedCount })}
         </p>
       )}

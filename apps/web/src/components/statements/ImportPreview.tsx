@@ -53,7 +53,7 @@ function LineTarget({ line }: { line: StatementLine }) {
   else if (line.bills.length > 1) text = t('reasonAmbiguous', { bills: new Intl.ListFormat(locale, { type: 'disjunction' }).format(line.bills.map(billText)) });
   else text = t('reasonNone');
   return (
-    <span data-testid="statement-target" className="min-w-0 text-small break-words text-ink-2">
+    <span data-testid="statement-target" className="min-w-0 text-body-sm break-words text-text-secondary">
       {text}
     </span>
   );
@@ -75,7 +75,7 @@ function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, disabl
   const locale = useLocale() as Locale;
   const mark = LINE_MARKS[line.status];
   return (
-    <li data-testid="statement-line" data-line={line.index} data-status={line.status} className={cn('flex gap-2 border-b border-rule px-4 py-4 last:border-b-0 sm:gap-3 sm:px-6', reserve && 'sm:pl-3')}>
+    <li data-testid="statement-line" data-line={line.index} data-status={line.status} className={cn('flex gap-2 border-b border-border px-4 py-4 last:border-b-0 sm:gap-3 sm:px-6', reserve && 'sm:pl-3')}>
       {TICKABLE.has(line.status) ? (
         <Checkbox
           checked={checked}
@@ -89,17 +89,17 @@ function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, disabl
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="figures min-w-0 text-small text-ink-muted">
+          <p className="num min-w-0 text-body-sm text-text-muted">
             {formatDate(line.date, locale)} · {t('lineMeta', { line: line.index })}
             {line.bankRef === '' ? null : <span className="max-sm:hidden"> · {t('bankRef', { ref: line.bankRef })}</span>}
           </p>
-          <p data-testid="statement-amount" className={cn('figures shrink-0 text-body font-medium whitespace-nowrap', line.amount < 0 ? 'text-ink-muted' : 'text-ink')}>
+          <p data-testid="statement-amount" className={cn('num shrink-0 text-body font-medium whitespace-nowrap', line.amount < 0 ? 'text-text-muted' : 'text-text')}>
             {formatVnd(line.amount, locale)}
           </p>
         </div>
-        <p className="text-body break-words text-ink">{line.description}</p>
+        <p className="text-body break-words text-text">{line.description}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span data-testid="statement-status" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[mark].pill)}>
+          <span data-testid="statement-status" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[mark].pill)}>
             <StatusShape status={mark} className="size-4" />
             {t('status', { status: line.status })}
           </span>
@@ -174,8 +174,8 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
       data-testid={`statement-filter-${value}`}
       onClick={() => setFilter(value)}
       className={cn(
-        'figures min-h-touch rounded-full border px-4 text-small font-medium transition-colors duration-(--duration-fast) ease-standard',
-        filter === value ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:border-field',
+        'num min-h-touch rounded-full border px-4 text-body-sm font-medium transition-colors duration-(--duration-fast) ease-standard',
+        filter === value ? 'border-accent-border bg-accent-subtle text-accent-text' : 'border-border-strong bg-surface text-text hover:border-border-field',
       )}
     >
       {label}
@@ -189,18 +189,18 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
         {LINE_STATUSES.map((status) => pick(status, t('filterStatus', { status, count: lines.filter((line) => line.status === status).length })))}
       </div>
 
-      <section aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+      <section aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         {committed && posting.length === 0 && !open ? (
-          <p data-testid="statement-committed" className="text-body font-medium text-ink">
+          <p data-testid="statement-committed" className="text-body font-medium text-text">
             {t('committedNote')}
           </p>
         ) : (
-          <p data-testid="statement-summary" className="figures text-body text-ink">
+          <p data-testid="statement-summary" className="num text-body text-text">
             {posting.length === 0 ? t('summaryNone') : t('summary', { count: posting.length, amount: formatVnd(total, locale) })}
           </p>
         )}
         {result === null ? null : (
-          <p data-testid="statement-result" className="flex items-start gap-2 text-body text-ink">
+          <p data-testid="statement-result" className="flex items-start gap-2 text-body text-text">
             <StatusShape status="paid" className="mt-0.5 size-5" />
             {result}
           </p>
@@ -215,9 +215,9 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
         )}
       </section>
 
-      <section className="rounded-lg border border-rule bg-surface shadow-card">
+      <section className="rounded-lg border border-border bg-surface shadow-xs">
         {suggestions.length === 0 ? null : (
-          <label className="flex items-center gap-2 border-b border-rule px-4 py-2 text-body font-medium text-ink sm:px-3">
+          <label className="flex items-center gap-2 border-b border-border px-4 py-2 text-body font-medium text-text sm:px-3">
             <Checkbox
               data-testid="statement-select-all"
               checked={ticked === suggestions.length}
@@ -229,7 +229,7 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
           </label>
         )}
         {shown.length === 0 ? (
-          <p className="px-4 py-5 text-body text-ink-muted sm:px-6">{t('empty')}</p>
+          <p className="px-4 py-5 text-body text-text-muted sm:px-6">{t('empty')}</p>
         ) : (
           <ol>
             {shown.map((line) => (
@@ -250,11 +250,11 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
       </section>
 
       {refused.length === 0 ? null : (
-        <section data-testid="statement-refused" className="flex flex-col gap-2 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-          <h2 className="text-lead font-semibold text-ink">{t('refusedTitle', { count: refused.length })}</h2>
+        <section data-testid="statement-refused" className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+          <h2 className="text-headline font-semibold text-text">{t('refusedTitle', { count: refused.length })}</h2>
           <ul className="flex flex-col gap-1">
             {refused.map((line) => (
-              <li key={`${line.index}-${line.field}`} className="flex items-start gap-2 text-body text-ink">
+              <li key={`${line.index}-${line.field}`} className="flex items-start gap-2 text-body text-text">
                 <StatusShape status="overdue" className="mt-1 size-4" />
                 {t('refusedLine', { line: line.index, reason: KNOWN_REFUSALS.has(line.reason) ? t('refusedReason', { reason: line.reason }) : t('refusedField', { field: line.field }) })}
               </li>

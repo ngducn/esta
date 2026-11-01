@@ -11,7 +11,7 @@ import type { MapStatus, MapSurfaceProps } from './map-surface';
 function MapLoading() {
   const t = useTranslations('map');
   return (
-    <div role="status" className="flex size-full items-center justify-center text-body text-ink-muted">
+    <div role="status" className="flex size-full items-center justify-center text-body text-text-muted">
       {t('loading')}
     </div>
   );
@@ -37,12 +37,12 @@ export function MapCanvas(props: Omit<MapSurfaceProps, 'onStatus'>) {
   const notice = !online ? t('offline') : status === 'tiles_failed' ? t('tilesFailed') : null;
 
   return (
-    <div className="relative size-full bg-surface-2">
+    <div className="relative size-full bg-bg-subtle">
       <MapErrorBoundary
         fallback={
           <div role="alert" className="flex size-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <p className="max-w-sm text-body text-ink">{t('loadFailed')}</p>
-            <button type="button" onClick={() => window.location.reload()} className={buttonVariants({ variant: 'outline' })}>
+            <p className="max-w-sm text-body text-text">{t('loadFailed')}</p>
+            <button type="button" onClick={() => window.location.reload()} className={buttonVariants({ variant: 'secondary' })}>
               <RotateCw aria-hidden="true" />
               {t('retry')}
             </button>
@@ -54,9 +54,9 @@ export function MapCanvas(props: Omit<MapSurfaceProps, 'onStatus'>) {
       {notice === null ? null : (
         <p
           role="status"
-          className="absolute top-3 left-3 right-16 flex items-start gap-2 rounded-md border border-rule bg-surface px-3 py-2 text-small text-ink shadow-card"
+          className="absolute top-3 left-3 right-16 flex items-start gap-2 rounded-md border border-border bg-surface px-3 py-2 text-body-sm text-text shadow-xs"
         >
-          <CloudOff className="mt-0.5 size-4 shrink-0 text-ink-muted" aria-hidden="true" />
+          <CloudOff className="mt-0.5 size-4 shrink-0 text-text-muted" aria-hidden="true" />
           {notice}
         </p>
       )}

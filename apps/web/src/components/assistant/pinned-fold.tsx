@@ -39,11 +39,11 @@ export function PinnedFold({ summary, children }: { summary: ReactNode; children
   }, []);
 
   return (
-    <div ref={band} data-testid="pinned" className="sticky top-0 z-10 max-w-3xl bg-ground py-2">
+    <div ref={band} data-testid="pinned" className="sticky top-0 z-10 max-w-3xl bg-bg py-2">
       <section
         ref={panel}
         aria-labelledby="pinned-heading"
-        className="max-h-[calc(100dvh/3-(--spacing(4)))] overflow-y-auto rounded-lg border border-rule bg-surface shadow-card"
+        className="max-h-[calc(100dvh/3-(--spacing(4)))] overflow-y-auto rounded-lg border border-border bg-surface shadow-xs"
       >
         <details ref={fold} open className="group">
           {summary}

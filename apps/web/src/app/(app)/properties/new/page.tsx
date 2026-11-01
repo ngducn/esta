@@ -108,14 +108,14 @@ export default async function NewPropertyPage({ searchParams }: { searchParams: 
     <div className="flex flex-col gap-5" data-testid="property-wizard" data-step={state.step}>
       <BackLink href="/properties" label={nav('properties')} />
       <header className="flex max-w-3xl flex-col gap-3">
-        <h1 className="text-h2 break-words lg:text-h1">{property === null ? t('pageTitle') : property.nickname}</h1>
+        <h1 className="text-title-2 break-words lg:text-title-1">{property === null ? t('pageTitle') : property.nickname}</h1>
         <div className="flex flex-col gap-2">
-          <p data-testid="wizard-progress" className="text-body font-medium text-ink-2 figures">
+          <p data-testid="wizard-progress" className="text-body font-medium text-text-secondary num">
             {t('progress', { n: position + 1, total: path.length, step: state.step })}
           </p>
           <ol aria-hidden="true" className="flex gap-1.5">
             {path.map((name, index) => (
-              <li key={name} className={cn('h-1.5 flex-1 rounded-full', index <= position ? 'bg-accent' : 'bg-rule')} />
+              <li key={name} className={cn('h-1.5 flex-1 rounded-full', index <= position ? 'bg-accent' : 'bg-border')} />
             ))}
           </ol>
         </div>

@@ -15,8 +15,8 @@ export function ChoiceLinks({ label, choices, testId }: { label: string; choices
               href={choice.href}
               aria-current={choice.current ? 'page' : undefined}
               className={cn(
-                'inline-flex min-h-touch max-w-full items-center rounded-full border px-4 text-small font-medium wrap-anywhere figures transition-colors duration-(--duration-fast) ease-standard',
-                choice.current ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:border-field',
+                'inline-flex min-h-touch max-w-full items-center rounded-full border px-4 text-body-sm font-medium wrap-anywhere num transition-colors duration-(--duration-fast) ease-standard',
+                choice.current ? 'border-accent-border bg-accent-subtle text-accent-text' : 'border-border-strong bg-surface text-text hover:border-border-field',
               )}
             >
               {choice.label}

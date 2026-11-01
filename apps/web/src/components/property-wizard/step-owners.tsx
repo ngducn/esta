@@ -72,15 +72,15 @@ export async function StepOwners({ propertyId, documentId, next, back }: { prope
         ? t('ownersLater')
         : null;
   return (
-    <section aria-labelledby="wizard-owners-title" data-testid="wizard-owners" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <section aria-labelledby="wizard-owners-title" data-testid="wizard-owners" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <div className="flex flex-col gap-1">
-        <h2 id="wizard-owners-title" className="text-lead font-semibold text-ink">
+        <h2 id="wizard-owners-title" className="text-headline font-semibold text-text">
           {t('ownersTitle')}
         </h2>
-        <p className="max-w-prose text-body text-pretty text-ink-2">{t('ownersHelp')}</p>
+        <p className="max-w-prose text-body text-pretty text-text-secondary">{t('ownersHelp')}</p>
       </div>
       {note === null ? null : (
-        <p data-testid="owners-note" className="rounded-md bg-surface-2 px-4 py-3 text-body text-ink-2">
+        <p data-testid="owners-note" className="rounded-md bg-bg-subtle px-4 py-3 text-body text-text-secondary">
           {note}
         </p>
       )}
@@ -94,12 +94,12 @@ export async function StepOwners({ propertyId, documentId, next, back }: { prope
         savedHref={next}
         saveLabel={t('saveAndContinue')}
         cancel={
-          <Link href={back} className={buttonVariants({ variant: 'outline' })}>
+          <Link href={back} className={buttonVariants({ variant: 'secondary' })}>
             {t('back')}
           </Link>
         }
       />
-      <Link href={next} data-testid="skip-step" className="self-start text-body font-medium text-ink-2 underline underline-offset-4 hover:text-ink">
+      <Link href={next} data-testid="skip-step" className="self-start text-body font-medium text-text-secondary underline underline-offset-4 hover:text-text">
         {t('later')}
       </Link>
     </section>

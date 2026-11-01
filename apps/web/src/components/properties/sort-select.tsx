@@ -19,13 +19,13 @@ export function SortSelect({ label, value, options }: { label: string; value: st
   }
 
   return (
-    <label className="relative flex min-h-touch items-center gap-2 rounded-sm lg:ml-auto border border-rule-strong bg-surface pr-9 pl-3.5 text-small font-medium text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
-      <span className="text-ink-muted">{label}</span>
+    <label className="relative flex min-h-touch items-center gap-2 rounded-md lg:ml-auto border border-border-strong bg-surface pr-9 pl-3.5 text-body-sm font-medium text-text focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring">
+      <span className="text-text-muted">{label}</span>
       <span aria-hidden="true">{current?.label}</span>
       <select
         value={value}
         onChange={(event) => choose(event.target.value)}
-        className="absolute -inset-px cursor-pointer appearance-none rounded-sm opacity-0"
+        className="absolute -inset-px cursor-pointer appearance-none rounded-md opacity-0"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -33,7 +33,7 @@ export function SortSelect({ label, value, options }: { label: string; value: st
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-3 size-4 text-ink-muted" aria-hidden="true" />
+      <ChevronDown className="pointer-events-none absolute right-3 size-4 text-text-muted" aria-hidden="true" />
     </label>
   );
 }

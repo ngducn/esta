@@ -28,7 +28,7 @@ export function LandUseCodePicker({
   const name = (option: LandUseCode) => (locale === 'vi' ? option.nameVi : option.nameEn);
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {label}
       </label>
       <Input
@@ -43,7 +43,7 @@ export function LandUseCodePicker({
         aria-describedby={`${id}-name`}
         data-testid="purpose-code"
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 uppercase figures"
+        className="mt-1 uppercase num"
       />
       <datalist id={`${id}-codes`}>
         {codes.map((option) => (
@@ -52,7 +52,7 @@ export function LandUseCodePicker({
           </option>
         ))}
       </datalist>
-      <p id={`${id}-name`} data-testid="purpose-code-name" className={known === undefined ? 'text-small text-ink-muted italic' : 'text-small text-ink-2'}>
+      <p id={`${id}-name`} data-testid="purpose-code-name" className={known === undefined ? 'text-body-sm text-text-muted italic' : 'text-body-sm text-text-secondary'}>
         {code === '' ? t('purposeCodeHint') : known === undefined ? t('unknownCode') : name(known)}
       </p>
     </div>

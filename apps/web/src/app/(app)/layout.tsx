@@ -54,21 +54,21 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         header={
           <>
             <BrandMark name={app('name')} className="px-2 pt-1" />
-            <p className="rounded-md border border-rule bg-surface-2 px-3 py-2.5 font-medium break-words text-ink">{member.household.name}</p>
+            <p className="rounded-md border border-border bg-bg-subtle px-3 py-2.5 font-medium break-words text-text">{member.household.name}</p>
           </>
         }
         footer={<AccountTrigger initial={initial} label={name} detail={role} accessibleName={shell('accountOf', { name })} className="w-full" />}
       />
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-4 px-4 pt-3 lg:px-8 lg:pt-6">
-          <p data-testid="date-line" className="text-small font-medium text-ink-muted">
+          <p data-testid="date-line" className="text-body-sm font-medium text-text-muted">
             {formatDateLong(clock.today(), locale)}
           </p>
           <div className="lg:hidden">
             <AccountTrigger initial={initial} label={shell('account')} accessibleName={shell('account')} compact />
           </div>
         </header>
-        <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
+        <main className="w-full max-w-dashboard flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
           {worker.kind === 'offline' || worker.kind === 'paused' ? (
             <div className="mb-5">
               <WorkerStatusLine status={worker} />

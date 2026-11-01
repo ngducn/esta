@@ -34,23 +34,23 @@ export type ExpiringItem = { readonly id: string; readonly title: string; readon
 function ExpiringSoon({ items }: { items: readonly ExpiringItem[] }) {
   const t = useTranslations('documents');
   return (
-    <section aria-labelledby="expiring-title" data-testid="expiring-soon" className="flex flex-col gap-2 rounded-lg border border-rule bg-surface p-4 shadow-card sm:p-5">
-      <h2 id="expiring-title" className="text-lead font-semibold text-ink">
+    <section aria-labelledby="expiring-title" data-testid="expiring-soon" className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 shadow-xs sm:p-5">
+      <h2 id="expiring-title" className="text-headline font-semibold text-text">
         {t('expiringTitle')}
       </h2>
       {items.length === 0 ? (
-        <p className="text-body text-ink-2">{t('expiringNone')}</p>
+        <p className="text-body text-text-secondary">{t('expiringNone')}</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-rule">
+        <ul className="flex flex-col divide-y divide-border">
           {items.map((item) => (
             <li key={item.id} data-testid="expiring-item" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 first:pt-0 last:pb-0">
               <div className="flex min-w-0 flex-col">
-                <Link href={`/documents/${item.id}`} prefetch={false} className="text-body font-medium break-words text-ink underline-offset-4 hover:underline">
+                <Link href={`/documents/${item.id}`} prefetch={false} className="text-body font-medium break-words text-text underline-offset-4 hover:underline">
                   {item.title}
                 </Link>
-                {item.propertyName === null ? null : <span className="text-small break-words text-ink-muted">{item.propertyName}</span>}
+                {item.propertyName === null ? null : <span className="text-body-sm break-words text-text-muted">{item.propertyName}</span>}
               </div>
-              <span data-testid="expiring-days" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks.due.pill)}>
+              <span data-testid="expiring-days" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks.due.pill)}>
                 <StatusShape status="due" className="size-4" />
                 {item.text}
               </span>
@@ -69,28 +69,28 @@ function SearchResults({ state, render }: { state: SearchState; render: (tile: V
       return null;
     case 'searching':
       return (
-        <p role="status" data-testid="search-status" className="text-body text-ink-muted">
+        <p role="status" data-testid="search-status" className="text-body text-text-muted">
           {t('searching')}
         </p>
       );
     case 'failed':
       return (
-        <p role="alert" data-testid="search-error" className="rounded-lg border border-rule bg-surface p-4 text-body font-medium text-overdue shadow-card">
+        <p role="alert" data-testid="search-error" className="rounded-lg border border-border bg-surface p-4 text-body font-medium text-danger-text shadow-xs">
           {t('loadFailed')}
         </p>
       );
     case 'done':
       return state.tiles.length === 0 ? (
-        <p role="status" data-testid="search-empty" className="rounded-lg border border-rule bg-surface p-4 text-body break-words text-ink-2 shadow-card">
+        <p role="status" data-testid="search-empty" className="rounded-lg border border-border bg-surface p-4 text-body break-words text-text-secondary shadow-xs">
           {t('noMatch', { query: state.query })}
         </p>
       ) : (
         <section aria-labelledby="results-title" data-testid="vault-results" className="flex flex-col gap-3">
-          <h2 id="results-title" aria-live="polite" className="text-lead font-semibold text-ink">
+          <h2 id="results-title" aria-live="polite" className="text-headline font-semibold text-text">
             {t('results', { count: state.tiles.length })}
           </h2>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{state.tiles.map(render)}</ul>
-          {state.capped ? <p className="text-small text-ink-muted">{t('capped', { count: state.tiles.length })}</p> : null}
+          {state.capped ? <p className="text-body-sm text-text-muted">{t('capped', { count: state.tiles.length })}</p> : null}
         </section>
       );
   }
@@ -164,7 +164,7 @@ export function DocumentVault({
     <section aria-labelledby={scope.kind === 'property' ? 'documents-title' : undefined} data-testid="documents" className="flex flex-col gap-5">
       {scope.kind === 'property' ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="documents-title" className="text-h3 text-ink">
+          <h2 id="documents-title" className="text-title-3 text-text">
             {t('tabTitle')}
           </h2>
           {uploads ? (
@@ -195,17 +195,17 @@ export function DocumentVault({
           onDrop={drop}
           className={cn(
             'hidden min-h-24 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-4 text-center lg:flex',
-            dragging ? 'border-accent bg-accent/5' : 'border-rule-strong',
+            dragging ? 'border-accent bg-accent/5' : 'border-border-strong',
           )}
         >
-          <Upload className="size-6 text-ink-muted" aria-hidden="true" />
-          <p className="text-body font-medium text-ink">{t('dropZone')}</p>
-          <p className="text-small text-ink-muted">{t('fileRule')}</p>
+          <Upload className="size-6 text-text-muted" aria-hidden="true" />
+          <p className="text-body font-medium text-text">{t('dropZone')}</p>
+          <p className="text-body-sm text-text-muted">{t('fileRule')}</p>
         </div>
       ) : null}
       {tiles.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card">
-          <p data-testid="documents-empty" className="text-body text-ink-2">
+        <div className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs">
+          <p data-testid="documents-empty" className="text-body text-text-secondary">
             {t('empty')}
           </p>
           {scope.kind === 'household' && canEdit ? (

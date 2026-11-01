@@ -14,7 +14,7 @@ export function ReminderAction({ label, title, target, labels, initialOpen = fal
   const dialog = useDeferredDialog(loadSheet, initialOpen);
   return (
     <>
-      <button type="button" data-testid="row-action-remind" {...dialog.triggerProps} className={buttonVariants({ variant: 'outline' })}>
+      <button type="button" data-testid="row-action-remind" {...dialog.triggerProps} className={buttonVariants({ variant: 'secondary' })}>
         <MessageCircle aria-hidden="true" />
         {label}
       </button>

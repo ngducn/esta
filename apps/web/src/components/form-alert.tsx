@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 export function FormAlert({ message, className, ...rest }: { message: string | null } & Omit<ComponentProps<'p'>, 'children' | 'role'>) {
   if (message === null) return null;
   return (
-    <p role="alert" className={cn('flex items-start gap-2 text-body text-overdue', className)} {...rest}>
+    <p role="alert" className={cn('flex items-start gap-2 text-body text-danger-text', className)} {...rest}>
       <StatusShape status="overdue" className="mt-1 size-4" />
       <span className="min-w-0 wrap-anywhere">{message}</span>
     </p>

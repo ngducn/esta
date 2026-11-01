@@ -12,13 +12,13 @@ type ErrorLabels = { title: string; body: string; retry: string };
  */
 export const SectionErrorBoundary = catchError<{ labels: ErrorLabels }>(function SectionError({ labels }, { retry }) {
   return (
-    <section role="alert" className="flex max-w-3xl flex-col items-start gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h1 className="flex items-center gap-3 text-lead font-semibold text-ink">
-        <TriangleAlert className="size-6 shrink-0 text-overdue" aria-hidden="true" />
+    <section role="alert" className="flex max-w-3xl flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <h1 className="flex items-center gap-3 text-headline font-semibold text-text">
+        <TriangleAlert className="size-6 shrink-0 text-danger-text" aria-hidden="true" />
         {labels.title}
       </h1>
-      <p className="text-body text-ink-2">{labels.body}</p>
-      <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={retry}>
+      <p className="text-body text-text-secondary">{labels.body}</p>
+      <button type="button" className={buttonVariants({ variant: 'secondary' })} onClick={retry}>
         <RotateCw aria-hidden="true" />
         {labels.retry}
       </button>

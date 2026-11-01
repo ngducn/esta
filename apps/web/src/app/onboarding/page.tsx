@@ -42,15 +42,15 @@ export default async function OnboardingPage() {
         {member === null ? (
           <>
             <div className="flex flex-col gap-2">
-              <h1 className="text-h2 lg:text-h1">{t('title')}</h1>
-              <p className="text-ink-2">{t('intro')}</p>
+              <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
+              <p className="text-text-secondary">{t('intro')}</p>
             </div>
             <CreateHouseholdForm />
-            <div className="flex flex-col gap-2 border-t border-rule pt-5 text-small text-ink-muted">
+            <div className="flex flex-col gap-2 border-t border-border pt-5 text-body-sm text-text-muted">
               {user?.email && <p className="break-all">{t('signedInEmail', { email: user.email })}</p>}
               <p>{t('invitedElsewhere')}</p>
               <form action={signOut}>
-                <button type="submit" className="min-h-touch font-medium text-ink underline decoration-ink-muted underline-offset-4">
+                <button type="submit" className="min-h-touch font-medium text-text underline decoration-text-muted underline-offset-4">
                   {shell('signOut')}
                 </button>
               </form>
@@ -59,15 +59,15 @@ export default async function OnboardingPage() {
         ) : (
           <>
             <div className="flex flex-col gap-2">
-              <p className="flex items-center gap-2 font-medium text-ink-muted">
-                <UserPlus className="size-5 text-accent" strokeWidth={1.8} aria-hidden="true" />
+              <p className="flex items-center gap-2 font-medium text-text-muted">
+                <UserPlus className="size-5 text-accent-text" strokeWidth={1.8} aria-hidden="true" />
                 {member.household.name}
               </p>
-              <h1 className="text-h2 lg:text-h1">{t('inviteTitle')}</h1>
-              <p className="text-ink-2">{t('inviteIntro', { household: member.household.name })}</p>
+              <h1 className="text-title-2 lg:text-title-1">{t('inviteTitle')}</h1>
+              <p className="text-text-secondary">{t('inviteIntro', { household: member.household.name })}</p>
             </div>
             <InviteForm />
-            <Link href="/" className={buttonVariants({ variant: 'outline', className: 'w-full' })}>
+            <Link href="/" className={buttonVariants({ variant: 'secondary', className: 'w-full' })}>
               {t('done')}
             </Link>
           </>

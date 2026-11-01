@@ -26,7 +26,7 @@ export default function OwnershipSheetPopup({
           {...props}
           inSheet
           onSaved={() => onOpenChange(false)}
-          cancel={<SheetClose render={<Button type="button" variant="outline" />}>{t('cancel')}</SheetClose>}
+          cancel={<SheetClose render={<Button type="button" variant="secondary" />}>{t('cancel')}</SheetClose>}
         />
       </SheetContent>
     </Sheet>

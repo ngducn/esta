@@ -38,7 +38,7 @@ export function RecordPaymentAction({ label, target, intl, describedBy }: { labe
   useEffect(() => warmOnFirstIntent(load), [load]);
   return (
     <>
-      <button type="button" data-testid="row-action-record-payment" aria-describedby={describedBy} {...dialog.triggerProps} className={buttonVariants({ variant: 'outline' })}>
+      <button type="button" data-testid="row-action-record-payment" aria-describedby={describedBy} {...dialog.triggerProps} className={buttonVariants({ variant: 'secondary' })}>
         <Banknote aria-hidden="true" />
         {label}
       </button>

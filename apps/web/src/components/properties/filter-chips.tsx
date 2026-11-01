@@ -29,7 +29,7 @@ export function hasChoice(group: FilterGroup, selected: string | null): boolean 
 const SHEET_ID = 'property-filters';
 
 const chip =
-  'inline-flex min-h-touch items-center gap-2 rounded-full border px-4 text-small font-medium transition-colors duration-(--duration-fast) ease-standard';
+  'inline-flex min-h-touch items-center gap-2 rounded-full border px-4 text-body-sm font-medium transition-colors duration-(--duration-fast) ease-standard';
 
 export function FilterChips({
   groups,
@@ -43,25 +43,25 @@ export function FilterChips({
   const active = PROPERTY_FILTER_KEYS.filter((key) => filters[key] !== null).length;
   return (
     <>
-      <button type="button" popoverTarget={SHEET_ID} className={buttonVariants({ variant: 'outline', className: 'lg:hidden' })}>
+      <button type="button" popoverTarget={SHEET_ID} className={buttonVariants({ variant: 'secondary', className: 'lg:hidden' })}>
         <SlidersHorizontal aria-hidden="true" />
         {labels.open}
-        {active > 0 ? <span className="rounded-full bg-ink px-2 text-small text-surface">{active}</span> : null}
+        {active > 0 ? <span className="rounded-full bg-neutral-solid px-2 text-body-sm text-on-neutral">{active}</span> : null}
       </button>
       <div
         id={SHEET_ID}
         popover="auto"
         aria-label={labels.title}
         className={cn(
-          'fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-lg border-t border-rule bg-surface p-5 pb-[max(--spacing(5),env(safe-area-inset-bottom))] text-ink shadow-sheet backdrop:bg-ground/85',
+          'fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-lg border-t border-border bg-surface p-5 pb-[max(--spacing(5),env(safe-area-inset-bottom))] text-text shadow-lg backdrop:bg-bg/85',
           'lg:static lg:order-last lg:block lg:basis-full lg:max-h-none lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none',
         )}
       >
-        <h2 className="mb-4 text-lead font-semibold lg:sr-only">{labels.title}</h2>
+        <h2 className="mb-4 text-headline font-semibold lg:sr-only">{labels.title}</h2>
         <div className="flex flex-col gap-4 lg:gap-3">
           {groups.map((group) => (
             <section key={group.key} aria-label={group.label} className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
-              <h3 className="text-small font-medium text-ink-muted lg:w-28 lg:shrink-0">{group.label}</h3>
+              <h3 className="text-body-sm font-medium text-text-muted lg:w-28 lg:shrink-0">{group.label}</h3>
               <ul className="flex flex-wrap gap-2">
                 {group.chips.map((option) => {
                   const current = filters[group.key] === option.value;
@@ -73,10 +73,10 @@ export function FilterChips({
                         scroll={false}
                         aria-current={current ? 'true' : undefined}
                         data-filter={group.key}
-                        className={cn(chip, current ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:border-field')}
+                        className={cn(chip, current ? 'border-accent-border bg-accent-subtle text-accent-text' : 'border-border-strong bg-surface text-text hover:border-border-field')}
                       >
                         {option.label}
-                        <span className={cn('font-medium tabular-nums', !current && 'text-ink-muted')}>{option.count}</span>
+                        <span className={cn('font-medium tabular-nums', !current && 'text-text-muted')}>{option.count}</span>
                       </Link>
                     </li>
                   );
@@ -89,7 +89,7 @@ export function FilterChips({
           type="button"
           popoverTarget={SHEET_ID}
           popoverTargetAction="hide"
-          className={buttonVariants({ variant: 'primary', className: 'sticky bottom-0 mt-6 w-full shadow-sheet lg:hidden' })}
+          className={buttonVariants({ variant: 'primary', className: 'sticky bottom-0 mt-6 w-full shadow-lg lg:hidden' })}
         >
           {labels.done}
         </button>

@@ -41,32 +41,32 @@ export function AddressConfirm({
   };
 
   return (
-    <section data-testid="address-confirm" aria-labelledby="address-confirm-title" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <section data-testid="address-confirm" aria-labelledby="address-confirm-title" className="flex max-w-3xl flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <div className="flex flex-col gap-1">
-        <h2 id="address-confirm-title" className="flex items-center gap-2 text-lead font-semibold text-ink">
-          <MapPinned className="size-5 shrink-0 text-ink-2" strokeWidth={1.8} aria-hidden="true" />
+        <h2 id="address-confirm-title" className="flex items-center gap-2 text-headline font-semibold text-text">
+          <MapPinned className="size-5 shrink-0 text-text-secondary" strokeWidth={1.8} aria-hidden="true" />
           {t('addressTitle')}
         </h2>
-        <p className="max-w-prose text-body text-pretty text-ink-2">{t('addressBody')}</p>
+        <p className="max-w-prose text-body text-pretty text-text-secondary">{t('addressBody')}</p>
       </div>
-      <div className="flex flex-col gap-1 rounded-md bg-surface-2 px-4 py-3">
-        <p className="text-small font-medium text-ink-2">{t('addressOnCertificate')}</p>
-        <p data-testid="certificate-address-text" className="text-body break-words text-ink">
+      <div className="flex flex-col gap-1 rounded-md bg-bg-subtle px-4 py-3">
+        <p className="text-body-sm font-medium text-text-secondary">{t('addressOnCertificate')}</p>
+        <p data-testid="certificate-address-text" className="text-body break-words text-text">
           {certificateAddress}
         </p>
       </div>
       {suggestions.length === 0 ? (
-        <p className="text-body text-ink-2">{t('addressNone')}</p>
+        <p className="text-body text-text-secondary">{t('addressNone')}</p>
       ) : (
         <SuggestionList suggestions={suggestions} pickedCommune={current} onPick={pick} disabled={saving} />
       )}
       {saved === undefined ? null : (
-        <p role="status" data-testid="address-saved" className="text-body text-ink-2">
+        <p role="status" data-testid="address-saved" className="text-body text-text-secondary">
           {t('addressSaved', { commune: saved.communeName })}
         </p>
       )}
       <FormAlert message={failed ? t('addressFailed') : null} />
-      <Link href={continueHref} data-testid="review-continue" className={`${buttonVariants({ variant: saved === undefined ? 'outline' : 'primary' })} self-start`}>
+      <Link href={continueHref} data-testid="review-continue" className={`${buttonVariants({ variant: saved === undefined ? 'secondary' : 'primary' })} self-start`}>
         {saved === undefined ? t('later') : t('continue')}
       </Link>
     </section>

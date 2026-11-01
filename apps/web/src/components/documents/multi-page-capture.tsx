@@ -18,7 +18,7 @@ type Move = Extract<CaptureAction, { url: string }>['type'];
 
 const PHOTO_TYPES = 'image/jpeg,image/png,image/webp';
 const pickerClass =
-  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-rule has-[:disabled]:text-ink-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
+  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-border has-[:disabled]:text-text-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring';
 
 /**
  * Asks inside the sheet, as the duplicate warning does, so the sheet's focus trap never holds the answer out of reach.
@@ -37,16 +37,16 @@ export function LeaveConfirm({ count, onKeep, onDiscard }: { count: number; onKe
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-body`}
       data-testid="leave-confirm"
-      className="flex flex-col gap-3 rounded-md border border-due bg-due-fill p-4"
+      className="flex flex-col gap-3 rounded-md border border-warning-text bg-warning-bg p-4"
     >
-      <h3 id={`${id}-title`} className="text-body font-semibold text-ink">
+      <h3 id={`${id}-title`} className="text-body font-semibold text-text">
         {t('leaveTitle', { count })}
       </h3>
-      <p id={`${id}-body`} className="text-body text-ink-2">
+      <p id={`${id}-body`} className="text-body text-text-secondary">
         {t('leaveBody')}
       </p>
       <FormActions>
-        <Button ref={keep} type="button" variant="outline" data-testid="keep-pages" onClick={onKeep}>
+        <Button ref={keep} type="button" variant="secondary" data-testid="keep-pages" onClick={onKeep}>
           {t('keepPages')}
         </Button>
         <Button type="button" variant="primary" data-testid="discard-pages" onClick={onDiscard}>
@@ -161,7 +161,7 @@ export function MultiPageCapture({
     <div data-testid="multi-page-capture" className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className={cn(pickerClass, 'bg-ink text-surface')}>
+          <label className={cn(pickerClass, 'bg-accent text-on-accent')}>
             <Camera className="size-5 shrink-0" aria-hidden="true" />
             {t('nextPage')}
             <input
@@ -175,7 +175,7 @@ export function MultiPageCapture({
               onChange={(event) => choose(event.target)}
             />
           </label>
-          <label className={cn(pickerClass, 'border border-rule-strong bg-surface text-ink')}>
+          <label className={cn(pickerClass, 'border border-border-strong bg-surface text-text')}>
             <Images className="size-5 shrink-0" aria-hidden="true" />
             {t('chooseImages')}
             <input
@@ -189,7 +189,7 @@ export function MultiPageCapture({
             />
           </label>
         </div>
-        <p role="status" data-testid="capture-status" className={cn('text-small', full ? 'font-medium text-ink' : 'text-ink-muted')}>
+        <p role="status" data-testid="capture-status" className={cn('text-body-sm', full ? 'font-medium text-text' : 'text-text-muted')}>
           {full ? t('pageLimit') : pending > 0 ? t('processingPhoto') : t('pagesCaptured', { count: pages.length })}
         </p>
       </div>
@@ -198,11 +198,11 @@ export function MultiPageCapture({
           {pages.map((page, index) => {
             const label = t('pageNumber', { number: index + 1 });
             return (
-              <li key={page.url} data-url={page.url} data-testid="capture-page" className="flex items-center gap-3 rounded-md border border-rule bg-surface-2 p-2">
+              <li key={page.url} data-url={page.url} data-testid="capture-page" className="flex items-center gap-3 rounded-md border border-border bg-bg-subtle p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element -- a local blob URL of a photo taken in this tab */}
-                <img src={page.url} alt={t('pageAlt', { number: index + 1 })} className="h-20 w-16 shrink-0 rounded-xs border border-rule bg-surface object-contain" />
+                <img src={page.url} alt={t('pageAlt', { number: index + 1 })} className="h-20 w-16 shrink-0 rounded-xs border border-border bg-surface object-contain" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <p data-testid="capture-page-number" className="text-body font-medium text-ink">
+                  <p data-testid="capture-page-number" className="text-body font-medium text-text">
                     {label}
                   </p>
                   <div role="group" aria-label={label} className="flex flex-wrap gap-2">
@@ -210,7 +210,7 @@ export function MultiPageCapture({
                       <Button
                         key={action}
                         type="button"
-                        variant="outline"
+                        variant="secondary"
                         data-action={action}
                         disabled={combining || (action === 'moveUp' && index === 0) || (action === 'moveDown' && index === pages.length - 1)}
                         focusableWhenDisabled
@@ -228,18 +228,18 @@ export function MultiPageCapture({
         </ol>
       )}
       {problem === null ? null : (
-        <p role="alert" data-testid="capture-error" className="text-body font-medium text-overdue">
+        <p role="alert" data-testid="capture-error" className="text-body font-medium text-danger-text">
           {t(problem)}
         </p>
       )}
       {combining ? (
-        <p role="status" className="text-body text-ink-2">
+        <p role="status" className="text-body text-text-secondary">
           {t('combining', { count: pages.length })}
         </p>
       ) : null}
       {confirming ? null : (
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-          <Button type="button" variant="outline" data-testid="capture-back" disabled={combining} onClick={onBack}>
+          <Button type="button" variant="secondary" data-testid="capture-back" disabled={combining} onClick={onBack}>
             <ChevronLeft aria-hidden="true" />
             {t('captureBack')}
           </Button>

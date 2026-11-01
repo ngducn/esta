@@ -46,7 +46,7 @@ const components: Components = {
     const inApp = estaPath(href);
     if (inApp !== null) {
       return (
-        <Link href={inApp} className="font-medium text-ink underline underline-offset-4">
+        <Link href={inApp} className="font-medium text-text underline underline-offset-4">
           {children}
         </Link>
       );
@@ -55,11 +55,11 @@ const components: Components = {
   },
   table: ({ children }) => (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-small">{children}</table>
+      <table className="w-full border-collapse text-left text-body-sm">{children}</table>
     </div>
   ),
-  th: ({ children }) => <th className="border-b border-rule px-2 py-2 align-bottom font-medium text-ink">{children}</th>,
-  td: ({ children }) => <td className="border-b border-rule px-2 py-2 align-top text-ink-2 figures">{glueUnits(children)}</td>,
+  th: ({ children }) => <th className="border-b border-border px-2 py-2 align-bottom font-medium text-text">{children}</th>,
+  td: ({ children }) => <td className="border-b border-border px-2 py-2 align-top text-text-secondary num">{glueUnits(children)}</td>,
 };
 
 /**
@@ -69,7 +69,7 @@ const components: Components = {
  */
 export function SafeMarkdown({ children, className, refs }: { children: string; className?: string; refs?: readonly string[] }) {
   return (
-    <div data-slot="safe-markdown" className={cn('flex flex-col gap-2 text-body break-words text-ink-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6', className)}>
+    <div data-slot="safe-markdown" className={cn('flex flex-col gap-2 text-body break-words text-text-secondary [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6', className)}>
       <Markdown
         urlTransform={refs === undefined ? keepSafeUrl : keepListed(refs)}
         components={components}

@@ -85,10 +85,10 @@ export function PasteMapsLink({
         }}
       >
         <div className="flex flex-col gap-1">
-          <h3 id={`${id}-title`} className="text-body font-medium text-ink">
+          <h3 id={`${id}-title`} className="text-body font-medium text-text">
             {t('pasteTitle')}
           </h3>
-          <p id={`${id}-help`} className="text-small text-ink-muted">
+          <p id={`${id}-help`} className="text-body-sm text-text-muted">
             {t('pasteHelp')}
           </p>
         </div>
@@ -107,7 +107,7 @@ export function PasteMapsLink({
           onChange={() => setFailure(null)}
           onPaste={(event) => read(event.clipboardData.getData('text'))}
         />
-        <button type="submit" disabled={reading || !hydrated} className={buttonVariants({ variant: 'outline' })}>
+        <button type="submit" disabled={reading || !hydrated} className={buttonVariants({ variant: 'secondary' })}>
           <ClipboardPaste aria-hidden="true" />
           {reading ? t('reading') : t('preview')}
         </button>
@@ -116,9 +116,9 @@ export function PasteMapsLink({
       <FieldMessage id={`${id}-message`} error={message}>
         {preview === null ? null : (
           <span data-testid="link-preview" className="flex flex-col gap-3">
-            <span className="figures text-ink">{t('previewPoint', { point: formatPoint(preview.point) })}</span>
+            <span className="num text-text">{t('previewPoint', { point: formatPoint(preview.point) })}</span>
             {preview.outsideVietnam ? (
-              <span role="alert" className="flex items-start gap-2 rounded-md border border-due bg-due-fill p-3 text-due">
+              <span role="alert" className="flex items-start gap-2 rounded-md border border-warning-text bg-warning-bg p-3 text-warning-text">
                 <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
                 {t('outsideVietnam')}
               </span>
@@ -137,7 +137,7 @@ export function PasteMapsLink({
             onSave(preview.point);
             form.current?.reset();
           }}
-          className={buttonVariants({ variant: preview.outsideVietnam ? 'outline' : 'primary', className: 'scroll-mb-24 lg:scroll-mb-6' })}
+          className={buttonVariants({ variant: preview.outsideVietnam ? 'secondary' : 'primary', className: 'scroll-mb-24 lg:scroll-mb-6' })}
         >
           <Check aria-hidden="true" />
           {preview.outsideVietnam ? t('saveAnyway') : t('useThisLocation')}

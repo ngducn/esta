@@ -82,15 +82,15 @@ export function ThreadComposer({
 
   const hint = error === null && state !== 'ready' ? labels[state] : null;
   return (
-    <form onSubmit={submit} data-testid="composer" data-state={state} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card sm:p-5">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+    <form onSubmit={submit} data-testid="composer" data-state={state} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs sm:p-5">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {labels.message}
       </label>
       {suggestions === null || suggestions.items.length === 0 || topic !== null ? null : (
         <ul aria-label={suggestions.label} data-testid="composer-suggestions" className="flex flex-wrap gap-2">
           {suggestions.items.map((item) => (
             <li key={item.text} className="max-w-full">
-              <button type="button" onClick={() => send(item.text, item.topic, false)} disabled={disabled} data-testid="composer-suggestion" className={buttonVariants({ variant: 'outline', className: 'h-auto max-w-full text-left whitespace-normal' })}>
+              <button type="button" onClick={() => send(item.text, item.topic, false)} disabled={disabled} data-testid="composer-suggestion" className={buttonVariants({ variant: 'secondary', className: 'h-auto max-w-full text-left whitespace-normal' })}>
                 {item.text}
               </button>
             </li>
@@ -98,9 +98,9 @@ export function ThreadComposer({
         </ul>
       )}
       {topic === null ? null : (
-        <div data-testid="composer-topic" className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-surface-2 py-1 pl-3">
-          <p className="min-w-0 text-small font-medium break-words text-ink-2">{topic.label}</p>
-          <button type="button" onClick={dropTopic} disabled={pending} aria-label={topic.clearLabel} data-testid="composer-topic-clear" className={buttonVariants({ variant: 'quiet', className: 'shrink-0' })}>
+        <div data-testid="composer-topic" className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-bg-subtle py-1 pl-3">
+          <p className="min-w-0 text-body-sm font-medium break-words text-text-secondary">{topic.label}</p>
+          <button type="button" onClick={dropTopic} disabled={pending} aria-label={topic.clearLabel} data-testid="composer-topic-clear" className={buttonVariants({ variant: 'ghost', className: 'shrink-0' })}>
             <X aria-hidden="true" />
             {topic.clear}
           </button>
@@ -118,10 +118,10 @@ export function ThreadComposer({
         aria-invalid={error === null ? undefined : true}
         aria-describedby={error !== null ? `${id}-error` : hint !== null ? `${id}-hint` : undefined}
         onChange={(event) => setMessage(event.target.value)}
-        className="field-sizing-content max-h-[6.5lh] min-h-touch w-full resize-none overflow-y-auto rounded-md border border-field bg-surface px-3.5 py-2.5 text-body break-words text-ink placeholder:text-ink-muted hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
+        className="field-sizing-content max-h-[6.5lh] min-h-touch w-full resize-none overflow-y-auto rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body break-words text-text placeholder:text-text-muted hover:border-border-field disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-muted"
       />
       {hint === null ? null : (
-        <p id={`${id}-hint`} role="status" data-testid="composer-hint" className="text-small text-pretty text-ink-2">
+        <p id={`${id}-hint`} role="status" data-testid="composer-hint" className="text-body-sm text-pretty text-text-secondary">
           {hint}
         </p>
       )}
@@ -129,10 +129,10 @@ export function ThreadComposer({
         <div className="flex items-start gap-1">
           <Checkbox id={`${id}-deep`} data-testid="composer-deep" checked={deep} disabled={disabled} onCheckedChange={setDeep} aria-describedby={`${id}-deep-hint`} className="-ml-2.5" />
           <div className="flex flex-col gap-0.5 pt-2.5">
-            <label htmlFor={`${id}-deep`} className="text-body font-medium text-ink">
+            <label htmlFor={`${id}-deep`} className="text-body font-medium text-text">
               {thinkHarder.label}
             </label>
-            <p id={`${id}-deep-hint`} className="text-small text-pretty text-ink-muted">
+            <p id={`${id}-deep-hint`} className="text-body-sm text-pretty text-text-muted">
               {thinkHarder.hint}
             </p>
           </div>

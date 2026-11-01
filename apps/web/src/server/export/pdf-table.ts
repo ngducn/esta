@@ -65,7 +65,7 @@ export async function toPdfTable(table: ExportTable, header: PdfHeader): Promise
   );
   const drawColumnHeader = () => {
     drawRow(columnHeader, bold, 'ink-2');
-    rule('ink', 1);
+    rule('text', 1);
   };
   const row = (line: ExportRow, font: PDFFont) => {
     const cells = wrapped(
@@ -86,7 +86,7 @@ export async function toPdfTable(table: ExportTable, header: PdfHeader): Promise
   drawColumnHeader();
   for (const line of table.rows) {
     row(line, regular);
-    rule('rule-strong', 0.5);
+    rule('border-strong', 0.5);
   }
   row(table.totals, bold);
   return pdf.save({ useObjectStreams: true });

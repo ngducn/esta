@@ -49,7 +49,7 @@ export default async function ForgotPasswordPage() {
   };
   return (
     <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
-      <h1 className="text-h2 lg:text-h1">{t('title')}</h1>
+      <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
       <ResetForm copy={copy} />
     </AuthFrame>
   );

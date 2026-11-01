@@ -57,14 +57,14 @@ function OwnerRow({
   const t = useTranslations('propertyOwners');
   const namedId = useId();
   return (
-    <li data-testid="owner-draft" data-party={draft.partyId} className="border-t border-rule pt-4 first:border-t-0 first:pt-0">
+    <li data-testid="owner-draft" data-party={draft.partyId} className="border-t border-border pt-4 first:border-t-0 first:pt-0">
       <fieldset className="flex min-w-0 flex-col gap-3">
         <legend className="sr-only">{name}</legend>
         <div className="flex items-start justify-between gap-3">
-          <p aria-hidden="true" className="min-w-0 pt-2.5 text-lead font-semibold break-words text-ink">
+          <p aria-hidden="true" className="min-w-0 pt-2.5 text-headline font-semibold break-words text-text">
             {name}
           </p>
-          <Button type="button" variant="quiet" aria-label={t('removeLabel', { name })} onClick={onRemove} data-testid="owner-remove">
+          <Button type="button" variant="ghost" aria-label={t('removeLabel', { name })} onClick={onRemove} data-testid="owner-remove">
             <X aria-hidden="true" />
             {t('remove')}
           </Button>
@@ -76,7 +76,7 @@ function OwnerRow({
             value={draft.percent}
             maxLength={8}
             inputMode="decimal"
-            className="figures w-32"
+            className="num w-32"
             error={error}
             onChange={(percent) => onChange({ ...draft, percent })}
           />
@@ -87,7 +87,7 @@ function OwnerRow({
               onCheckedChange={(named) => onChange({ ...draft, named })}
               data-testid="owner-named"
             />
-            <label htmlFor={namedId} className="text-body text-ink">
+            <label htmlFor={namedId} className="text-body text-text">
               {t('named')}
             </label>
           </div>
@@ -182,7 +182,7 @@ export function OwnershipForm({
   return (
     <form noValidate onSubmit={submit} className="flex flex-col gap-5" data-testid="ownership-form">
       {drafts.length === 0 ? (
-        <p className="text-body text-ink-muted">{t('noRows')}</p>
+        <p className="text-body text-text-muted">{t('noRows')}</p>
       ) : (
         <ul className="flex flex-col gap-4">
           {drafts.map((draft, index) => {
@@ -201,7 +201,7 @@ export function OwnershipForm({
           })}
         </ul>
       )}
-      <div className="flex flex-col gap-3 border-t border-rule pt-4">
+      <div className="flex flex-col gap-3 border-t border-border pt-4">
         <PartyAdder
           parties={available}
           labels={{ choose: t('choose'), add: t('addPerson') }}
@@ -211,14 +211,14 @@ export function OwnershipForm({
       </div>
       <div
         className={cn(
-          'flex flex-col gap-3 border-t border-rule bg-surface pt-4',
+          'flex flex-col gap-3 border-t border-border bg-surface pt-4',
           inSheet && 'sticky -bottom-[max(--spacing(6),env(safe-area-inset-bottom))] -mx-6 -mb-6 px-6 pb-[max(--spacing(6),env(safe-area-inset-bottom))]',
         )}
       >
-        <p data-testid="ownership-running-total" className="flex flex-wrap items-center gap-x-2 rounded-md bg-surface-2 px-3 py-2 text-body text-ink">
+        <p data-testid="ownership-running-total" className="flex flex-wrap items-center gap-x-2 rounded-md bg-bg-subtle px-3 py-2 text-body text-text">
           {running === null ? <StatusShape status="paid" className="size-4" /> : <StatusShape status="due" className="size-4" />}
-          <span className="figures font-medium">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
-          {running === null ? null : <span className="figures text-ink-2">{running}</span>}
+          <span className="num font-medium">{t('runningTotal', { total: formatShareBp(total.totalBp, locale) })}</span>
+          {running === null ? null : <span className="num text-text-secondary">{running}</span>}
         </p>
         <FormAlert message={failed ? t('failed') : showErrors ? t('invalid') : null} data-testid="ownership-error" />
         <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">

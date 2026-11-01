@@ -28,7 +28,7 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const current = options.find((option) => option.value === value);
-  const step = cn(buttonVariants({ variant: 'outline' }), 'px-3');
+  const step = cn(buttonVariants({ variant: 'secondary' }), 'px-3');
   const go = (href: string) => startTransition(() => router.push(href, { scroll: false }));
   const follow = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -45,16 +45,16 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
             <ChevronLeft aria-hidden="true" />
             {previous.label}
           </Link>
-          <label className="relative flex min-h-touch items-center gap-2 rounded-sm border border-rule-strong bg-surface pr-10 pl-4 text-body font-medium text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent max-sm:order-first max-sm:basis-full">
+          <label className="relative flex min-h-touch items-center gap-2 rounded-md border border-border-strong bg-surface pr-10 pl-4 text-body font-medium text-text focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring max-sm:order-first max-sm:basis-full">
             <span className="sr-only">{label}</span>
-            <span aria-hidden="true" className="figures">
+            <span aria-hidden="true" className="num">
               {current?.label}
             </span>
             <select
               data-testid="month-select"
               value={value}
               onChange={(event) => go(`/collections?month=${event.target.value}`)}
-              className="absolute -inset-px cursor-pointer appearance-none rounded-sm opacity-0"
+              className="absolute -inset-px cursor-pointer appearance-none rounded-md opacity-0"
             >
               {options.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -62,7 +62,7 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-3 size-5 text-ink-muted" aria-hidden="true" />
+            <ChevronDown className="pointer-events-none absolute right-3 size-5 text-text-muted" aria-hidden="true" />
           </label>
           <Link href={next.href} onClick={(event) => follow(event, next.href)} className={cn(step, 'max-sm:ml-auto')} data-testid="month-next">
             {next.label}
@@ -70,7 +70,7 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
           </Link>
         </nav>
         {thisMonth === null ? null : (
-          <Link href={thisMonth.href} onClick={(event) => follow(event, thisMonth.href)} data-testid="month-this" className={buttonVariants({ variant: 'quiet' })}>
+          <Link href={thisMonth.href} onClick={(event) => follow(event, thisMonth.href)} data-testid="month-this" className={buttonVariants({ variant: 'ghost' })}>
             {thisMonth.label}
           </Link>
         )}

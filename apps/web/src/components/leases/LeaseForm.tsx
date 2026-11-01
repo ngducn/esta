@@ -133,12 +133,12 @@ export function LeaseForm({
     <form noValidate onSubmit={submit} className="flex max-w-3xl flex-col gap-5" data-testid="lease-form">
       <fieldset disabled={!hydrated} className="flex min-w-0 flex-col gap-5">
         {hydrated ? null : (
-          <p role="status" data-testid="form-loading" className="text-body text-ink-muted">
+          <p role="status" data-testid="form-loading" className="text-body text-text-muted">
             {t('formLoading')}
           </p>
         )}
         {contract === null ? null : (
-          <p data-testid="from-contract-intro" className="flex items-start gap-3 rounded-md bg-surface-2 px-4 py-3 text-body text-ink-2">
+          <p data-testid="from-contract-intro" className="flex items-start gap-3 rounded-md bg-bg-subtle px-4 py-3 text-body text-text-secondary">
             <ScanText className="mt-0.5 size-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
             <span className="min-w-0 break-words">{t('fromContractIntro')}</span>
           </p>
@@ -181,9 +181,9 @@ export function LeaseForm({
             <div className="flex flex-col gap-1">
               <DateInput label={t('endField')} {...asDefault(initial.endText)} onTextChange={(text) => set('endText', text)} />
               {contractMark('endText')}
-              <p className="text-small text-ink-muted">{invalid === 'endBeforeStart' ? null : t('endHint')}</p>
+              <p className="text-body-sm text-text-muted">{invalid === 'endBeforeStart' ? null : t('endHint')}</p>
               {invalid === 'endBeforeStart' ? (
-                <p role="alert" className="text-small text-overdue">
+                <p role="alert" className="text-body-sm text-danger-text">
                   {t('endBeforeStart')}
                 </p>
               ) : null}
@@ -196,7 +196,7 @@ export function LeaseForm({
               <MoneyInput key={`rent-${values.unitId}`} label={t('rentField')} defaultText={values.rentText} onTextChange={(text) => set('rentText', text)} />
               {contractMark('rentText')}
               {invalid === 'rentZero' ? (
-                <p role="alert" data-testid="rent-zero" className="text-small text-overdue">
+                <p role="alert" data-testid="rent-zero" className="text-body-sm text-danger-text">
                   {t('rentZero')}
                 </p>
               ) : null}
@@ -230,14 +230,14 @@ export function LeaseForm({
           data-testid="lease-more"
           open={more || invalid === 'escalationValue' || invalid === 'escalationEvery' || invalid === 'notice'}
           onToggle={(event) => setMore(event.currentTarget.open)}
-          className="group rounded-lg border border-rule bg-surface shadow-card"
+          className="group rounded-lg border border-border bg-surface shadow-xs"
         >
           <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between gap-4 p-5 sm:px-6">
             <span className="flex flex-col gap-0.5">
-              <span className="text-lead font-semibold text-ink">{t('groupMore')}</span>
-              <span className="text-small text-ink-muted">{t('groupMoreHint')}</span>
+              <span className="text-headline font-semibold text-text">{t('groupMore')}</span>
+              <span className="text-body-sm text-text-muted">{t('groupMoreHint')}</span>
             </span>
-            <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-ink-muted transition-transform duration-(--duration-fast) group-open:rotate-180" />
+            <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-text-muted transition-transform duration-(--duration-fast) group-open:rotate-180" />
           </summary>
           <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 sm:px-6 sm:pb-6">
             <FormSelect
@@ -271,7 +271,7 @@ export function LeaseForm({
                     inputId="lease-escalation-value"
                     value={values.escalationValueText}
                     inputMode="decimal"
-                    className="figures"
+                    className="num"
                     maxLength={8}
                     error={invalid === 'escalationValue' ? t('invalidPercent') : null}
                     onChange={(text) => set('escalationValueText', text)}
@@ -284,7 +284,7 @@ export function LeaseForm({
                   inputId="lease-escalation-every"
                   value={values.escalationEveryText}
                   inputMode="numeric"
-                  className="figures"
+                  className="num"
                   maxLength={3}
                   error={invalid === 'escalationEvery' ? t('invalidNumber') : null}
                   onChange={(text) => set('escalationEveryText', text)}
@@ -303,7 +303,7 @@ export function LeaseForm({
               inputId="lease-notice"
               value={values.noticeText}
               inputMode="numeric"
-              className="figures"
+              className="num"
               maxLength={3}
               error={invalid === 'notice' ? t('invalidNumber') : null}
               onChange={(text) => set('noticeText', text)}
@@ -315,10 +315,10 @@ export function LeaseForm({
           data-testid="form-error"
         />
         <FormActions>
-          <Link href={rentalHref} className={buttonVariants({ variant: 'quiet' })}>
+          <Link href={rentalHref} className={buttonVariants({ variant: 'ghost' })}>
             {t('cancel')}
           </Link>
-          <Button type="submit" variant="outline" disabled={pending} data-testid="save-lease">
+          <Button type="submit" variant="secondary" disabled={pending} data-testid="save-lease">
             {pending ? t('saving') : t('saveDraft')}
           </Button>
           <Button type="button" disabled={pending} data-testid="activate-lease" onPointerEnter={() => void loadDialog()} onClick={() => save('activate')}>

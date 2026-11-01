@@ -34,7 +34,7 @@ export function FormSelect({
   const id = selectId ?? generated;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {label}
       </label>
       <div className="relative mt-1">
@@ -44,7 +44,7 @@ export function FormSelect({
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="min-h-touch w-full appearance-none rounded-md border border-field bg-surface pr-10 pl-3.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
+          className="min-h-touch w-full appearance-none rounded-md border border-border-field bg-surface pr-10 pl-3.5 text-body text-text hover:border-border-field disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-muted"
         >
           {placeholder === undefined ? null : (
             <option value="" disabled>
@@ -57,7 +57,7 @@ export function FormSelect({
             </option>
           ))}
         </select>
-        <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+        <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-text-muted" aria-hidden="true" />
       </div>
     </div>
   );
@@ -109,10 +109,10 @@ function CommuneCombobox({
   const hint = disabled ? t('communeNeedsProvince') : loading ? t('communeLoading') : t('communeHint');
   return (
     <div className="relative flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {t('commune')}
       </label>
-      <p id={`${id}-hint`} className="text-small text-ink-muted">
+      <p id={`${id}-hint`} className="text-body-sm text-text-muted">
         {hint}
       </p>
       <Input
@@ -144,10 +144,10 @@ function CommuneCombobox({
           id={`${id}-list`}
           role="listbox"
           aria-label={t('commune')}
-          className="absolute top-full z-10 mt-1 max-h-72 w-full overflow-y-auto overscroll-contain rounded-md border border-rule bg-surface py-1 shadow-sheet"
+          className="absolute top-full z-10 mt-1 max-h-72 w-full overflow-y-auto overscroll-contain rounded-md border border-border bg-surface py-1 shadow-lg"
         >
           {matches.length === 0 ? (
-            <li className="px-3.5 py-2.5 text-body text-ink-muted">{t('communeNone')}</li>
+            <li className="px-3.5 py-2.5 text-body text-text-muted">{t('communeNone')}</li>
           ) : (
             matches.map((option, index) => (
               <li
@@ -158,12 +158,12 @@ function CommuneCombobox({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => pick(option)}
                 className={cn(
-                  'flex min-h-touch cursor-pointer items-center justify-between gap-2 px-3.5 text-body text-ink',
-                  index === active ? 'bg-surface-2' : 'hover:bg-surface-2',
+                  'flex min-h-touch cursor-pointer items-center justify-between gap-2 px-3.5 text-body text-text',
+                  index === active ? 'bg-bg-subtle' : 'hover:bg-fill-hover',
                 )}
               >
                 <span className="min-w-0 wrap-anywhere">{option.name}</span>
-                {option.code === value.communeCode ? <Check className="size-5 shrink-0 text-accent" aria-hidden="true" /> : null}
+                {option.code === value.communeCode ? <Check className="size-5 shrink-0 text-accent-text" aria-hidden="true" /> : null}
               </li>
             ))
           )}
@@ -214,13 +214,13 @@ export function AddressPicker({
       />
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="flex flex-col gap-1">
-          <label htmlFor={houseId} className="text-body font-medium text-ink">
+          <label htmlFor={houseId} className="text-body font-medium text-text">
             {t('houseNo')}
           </label>
           <Input id={houseId} value={value.houseNo} autoComplete="off" onChange={(event) => onChange({ ...value, houseNo: event.target.value })} className="mt-1" />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor={streetId} className="text-body font-medium text-ink">
+          <label htmlFor={streetId} className="text-body font-medium text-text">
             {t('street')}
           </label>
           <Input id={streetId} value={value.street} autoComplete="off" onChange={(event) => onChange({ ...value, street: event.target.value })} className="mt-1" />

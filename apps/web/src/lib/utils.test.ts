@@ -3,13 +3,13 @@ import { cn } from './utils';
 
 describe('cn', () => {
   it('keeps a token font size beside a token color', () => {
-    expect(cn('text-small text-ink')).toBe('text-small text-ink');
-    expect(cn('text-hero-xl', 'text-overdue')).toBe('text-hero-xl text-overdue');
+    expect(cn('text-body-sm text-text')).toBe('text-body-sm text-text');
+    expect(cn('text-figure-xl', 'text-danger-text')).toBe('text-figure-xl text-danger-text');
   });
 
   it('lets a later token font size or color win', () => {
-    expect(cn('text-small text-ink', 'text-body')).toBe('text-ink text-body');
-    expect(cn('text-ink', 'text-surface')).toBe('text-surface');
+    expect(cn('text-body-sm text-text', 'text-body')).toBe('text-text text-body');
+    expect(cn('text-text', 'text-text-inverse')).toBe('text-text-inverse');
   });
 
   it('merges the touch spacing token with other sizes', () => {

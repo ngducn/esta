@@ -81,8 +81,8 @@ export function CertificateForm({
           onChange={setForm}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label={t('serialNo')} inputId="serial-no" value={serialNo} maxLength={40} className="figures" error={null} onChange={setSerialNo} />
-          <TextField label={t('bookEntryNo')} value={bookEntryNo} maxLength={40} className="figures" error={null} onChange={setBookEntryNo} />
+          <TextField label={t('serialNo')} inputId="serial-no" value={serialNo} maxLength={40} className="num" error={null} onChange={setSerialNo} />
+          <TextField label={t('bookEntryNo')} value={bookEntryNo} maxLength={40} className="num" error={null} onChange={setBookEntryNo} />
           <DateInput label={t('issuedOn')} {...(issuedOn === null ? {} : { defaultValue: issuedOn })} onValueChange={setIssuedOn} />
           <TextField label={t('issuedByLabel')} value={issuedBy} maxLength={300} error={null} onChange={setIssuedBy} />
         </div>
@@ -101,13 +101,13 @@ export function CertificateForm({
         {status === 'mortgaged' || showMortgage ? (
           <MortgageFields status={status} draft={mortgage} onChange={setMortgage} parties={parties} onParty={addParty} invalid={invalid} />
         ) : (
-          <Button type="button" variant="outline" className="self-start" onClick={() => setShowMortgage(true)}>
+          <Button type="button" variant="secondary" className="self-start" onClick={() => setShowMortgage(true)}>
             {t('addMortgage')}
           </Button>
         )}
       </Group>
       <Group title={t('groupAnnotations')}>
-        <p className="text-small text-ink-muted">{t('annotationsHint')}</p>
+        <p className="text-body-sm text-text-muted">{t('annotationsHint')}</p>
         <AnnotationList
           drafts={annotations}
           onChange={setAnnotations}

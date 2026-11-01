@@ -56,7 +56,7 @@ export default async function LegalItemPage({ params }: { params: Params }) {
   return (
     <div className="flex flex-col gap-5">
       <BackLink href={`/properties/${id}/legal`} label={property.nickname} />
-      <h1 className="text-h2 break-words text-balance lg:text-h1">{title}</h1>
+      <h1 className="text-title-2 break-words text-balance lg:text-title-1">{title}</h1>
       <PropertyIntl locale={locale} messages={{ propertyLegal: messages.propertyLegal, components: { money, date, toast } }}>
         {loaded.kind === 'parcels' ? (
           <ParcelForm propertyId={id} itemId={editing} initial={loaded.item} codes={codes} certificates={certificates} />

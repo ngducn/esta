@@ -16,7 +16,7 @@ type JobView = Pick<PingCheck, 'status' | 'error' | 'requestedAt'>;
 
 async function LatestJob({ job, testId, empty, children }: { job: JobView | null; testId: 'ping' | 'watch'; empty: string; children?: ReactNode }) {
   const t = await getTranslations('assistant');
-  if (job === null) return <p className="text-ink-muted">{empty}</p>;
+  if (job === null) return <p className="text-text-muted">{empty}</p>;
   const mark = jobMarks[job.status];
   return (
     <div className="flex flex-col gap-3">
@@ -24,16 +24,16 @@ async function LatestJob({ job, testId, empty, children }: { job: JobView | null
         <span
           data-testid={`${testId}-status`}
           data-status={job.status}
-          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[mark].pill)}
+          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[mark].pill)}
         >
           <StatusShape status={mark} className="size-4" />
           <span>{t(`jobStatus.${job.status}`)}</span>
         </span>
-        <span className="text-small text-ink-muted">{t('latestCheck', { time: operatorTime(job.requestedAt) })}</span>
+        <span className="text-body-sm text-text-muted">{t('latestCheck', { time: operatorTime(job.requestedAt) })}</span>
       </div>
       {children}
       {job.error !== null && job.status !== 'done' ? (
-        <p data-testid={`${testId}-error`} className="text-small wrap-anywhere text-ink-2">
+        <p data-testid={`${testId}-error`} className="text-body-sm wrap-anywhere text-text-secondary">
           {job.error}
         </p>
       ) : null}
@@ -55,13 +55,13 @@ type JobCardProps = {
 
 function JobCard({ id, icon, title, intro, action, runLabel, pending, failedText, children }: JobCardProps) {
   return (
-    <section aria-labelledby={`${id}-heading`} data-testid={id} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <section aria-labelledby={`${id}-heading`} data-testid={id} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-prose min-w-0 flex-col gap-2">
           <CardHeading id={`${id}-heading`} icon={icon}>
             {title}
           </CardHeading>
-          <p className="text-body text-pretty text-ink-2">{intro}</p>
+          <p className="text-body text-pretty text-text-secondary">{intro}</p>
         </div>
         <form action={action}>
           <button type="submit" disabled={pending} className={buttonVariants({ variant: 'primary' })}>
@@ -71,11 +71,11 @@ function JobCard({ id, icon, title, intro, action, runLabel, pending, failedText
         </form>
       </div>
       {failedText === null ? null : (
-        <p role="alert" className="font-medium text-overdue">
+        <p role="alert" className="font-medium text-danger-text">
           {failedText}
         </p>
       )}
-      <div className="border-t border-rule pt-4">{children}</div>
+      <div className="border-t border-border pt-4">{children}</div>
     </section>
   );
 }
@@ -117,7 +117,7 @@ export async function OperatorTools({ householdId, failed, workerOnline }: { hou
       >
         <LatestJob job={watch} testId="watch" empty={t('noWatch')}>
           {watch?.status === 'done' && watch.notesAdded !== null ? (
-            <p data-testid="watch-notes" className="text-body text-ink-2">
+            <p data-testid="watch-notes" className="text-body text-text-secondary">
               {t('watchNotes', { count: watch.notesAdded })}
             </p>
           ) : null}

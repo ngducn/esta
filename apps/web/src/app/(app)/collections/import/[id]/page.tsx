@@ -31,13 +31,13 @@ export default async function StatementPreviewPage({ params, searchParams }: { p
     <div className="flex flex-col gap-5">
       <BackLink href="/collections/import" label={t('title')} />
       <div className="flex flex-col gap-1">
-        <h1 className="text-h2 break-words lg:text-h1">{t('previewTitle')}</h1>
-        <p data-testid="statement-file-line" className="text-body break-words text-ink-2">
+        <h1 className="text-title-2 break-words lg:text-title-1">{t('previewTitle')}</h1>
+        <p data-testid="statement-file-line" className="text-body break-words text-text-secondary">
           {t('fileLine', { file: view.fileName, account: account === undefined ? '' : t('accountOption', { bank: account.bankName, number: account.accountNo }) })}
         </p>
       </div>
       {known === 0 ? null : (
-        <p data-testid="statement-known" className="max-w-prose rounded-md border border-rule bg-surface-2 px-4 py-3 text-body text-ink">
+        <p data-testid="statement-known" className="max-w-prose rounded-md border border-border bg-bg-subtle px-4 py-3 text-body text-text">
           {t('known', { count: known })}
         </p>
       )}

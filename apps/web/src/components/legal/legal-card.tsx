@@ -23,9 +23,9 @@ export async function LegalCard({
 }) {
   const labels = canEdit ? await itemActionLabels(kind, name) : null;
   return (
-    <li data-testid={`${kind}-card`} data-id={itemId} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card sm:p-5">
+    <li data-testid={`${kind}-card`} data-id={itemId} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="min-w-0 text-lead font-semibold break-words text-ink">{title}</h3>
+        <h3 className="min-w-0 text-headline font-semibold break-words text-text">{title}</h3>
         {labels === null ? null : (
           <ItemActions
             editHref={`/properties/${propertyId}/legal/${kind}/${itemId}`}

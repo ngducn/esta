@@ -27,8 +27,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-h2 break-words lg:text-h1">{nav('settings')}</h1>
-        <p className="max-w-prose text-ink-2">{sections('settings')}</p>
+        <h1 className="text-title-2 break-words lg:text-title-1">{nav('settings')}</h1>
+        <p className="max-w-prose text-text-secondary">{sections('settings')}</p>
       </div>
       <ReceivingAccounts member={member} />
       <DisplaySettingsForm
@@ -39,16 +39,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <IntentLink
           href="/settings/history"
           data-testid="history-link"
-          className="flex max-w-3xl items-center gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card hover:bg-surface-2 sm:px-5"
+          className="flex max-w-3xl items-center gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs hover:bg-fill-hover sm:px-5"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-bg-subtle text-text-secondary">
             <History className="size-5" strokeWidth={1.8} aria-hidden="true" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-lead font-semibold">{history('settingsLink')}</span>
-            <span className="text-small text-ink-muted">{history('settingsLinkHint')}</span>
+            <span className="text-headline font-semibold">{history('settingsLink')}</span>
+            <span className="text-body-sm text-text-muted">{history('settingsLinkHint')}</span>
           </span>
-          <ChevronRight className="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+          <ChevronRight className="size-5 shrink-0 text-text-muted" aria-hidden="true" />
         </IntentLink>
       ) : null}
     </div>

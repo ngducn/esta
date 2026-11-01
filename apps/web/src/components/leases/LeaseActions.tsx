@@ -56,10 +56,10 @@ export function LeaseActions({
       )}
       {active ? (
         <>
-          <Button type="button" variant="outline" data-testid="lease-amend" {...amend.triggerProps}>
+          <Button type="button" variant="secondary" data-testid="lease-amend" {...amend.triggerProps}>
             {t('actionAmend')}
           </Button>
-          <Button type="button" variant="outline" data-testid="lease-terminate" {...terminate.triggerProps}>
+          <Button type="button" variant="secondary" data-testid="lease-terminate" {...terminate.triggerProps}>
             {t('actionTerminate')}
           </Button>
         </>

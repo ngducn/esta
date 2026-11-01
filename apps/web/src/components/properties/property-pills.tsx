@@ -22,12 +22,12 @@ const legalMarks = {
   unknown: 'draft',
 } as const satisfies Record<LegalStatus, MarkStatus>;
 
-const pill = 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium';
+const pill = 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium';
 
 export function UsePill({ useMode, label }: { useMode: UseMode; label: string }) {
   const Icon = useIcons[useMode];
   return (
-    <span data-use={useMode} className={cn(pill, 'border border-rule bg-surface-2 text-ink-2')}>
+    <span data-use={useMode} className={cn(pill, 'border border-border bg-bg-subtle text-text-secondary')}>
       <Icon className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
       {label}
     </span>

@@ -12,11 +12,11 @@ export function PaidThroughField({ refusal, onTextChange }: { refusal: PaidThrou
     <div className="flex flex-col gap-1">
       <DateInput label={t('paidThroughField')} onTextChange={onTextChange} />
       {refusal === null ? (
-        <p data-testid="paid-through-hint" className="text-small text-ink-muted">
+        <p data-testid="paid-through-hint" className="text-body-sm text-text-muted">
           {t('paidThroughHint')}
         </p>
       ) : (
-        <p role="alert" data-testid="paid-through-refused" className="flex items-start gap-2 text-small text-overdue">
+        <p role="alert" data-testid="paid-through-refused" className="flex items-start gap-2 text-body-sm text-danger-text">
           <StatusShape status="overdue" className="mt-0.5 size-4" />
           <span>{t('refusal', { reason: refusal })}</span>
         </p>

@@ -41,31 +41,31 @@ export async function CertificateCard({
       <p
         data-testid="certificate-status"
         data-status={certificate.status}
-        className={cn('inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[mark].pill)}
+        className={cn('inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-body-sm font-medium', statusMarks[mark].pill)}
       >
         <StatusShape status={mark} className="size-4" />
         {t('status', { status: certificate.status })}
       </p>
       {mortgage === null ? null : (
-        <div data-testid="certificate-mortgage" className="flex flex-col gap-0.5 rounded-md bg-surface-2 px-3 py-2">
-          <p className="text-body font-medium break-words text-ink">{t('mortgagedTo', { bank: parties.get(mortgage.bank_party_id)?.fullName ?? '' })}</p>
-          <p className="figures text-lead text-ink">{formatVnd(mortgage.amount_vnd, locale)}</p>
+        <div data-testid="certificate-mortgage" className="flex flex-col gap-0.5 rounded-md bg-bg-subtle px-3 py-2">
+          <p className="text-body font-medium break-words text-text">{t('mortgagedTo', { bank: parties.get(mortgage.bank_party_id)?.fullName ?? '' })}</p>
+          <p className="num text-headline text-text">{formatVnd(mortgage.amount_vnd, locale)}</p>
           {mortgage.released_on === undefined ? null : (
-            <p className="text-small text-ink-muted">{t('mortgageReleased', { date: formatDate(mortgage.released_on, locale) })}</p>
+            <p className="text-body-sm text-text-muted">{t('mortgageReleased', { date: formatDate(mortgage.released_on, locale) })}</p>
           )}
           {mortgage.released_on !== undefined || mortgage.registered_on === undefined ? null : (
-            <p className="text-small text-ink-muted">{t('registeredOn', { date: formatDate(mortgage.registered_on, locale) })}</p>
+            <p className="text-body-sm text-text-muted">{t('registeredOn', { date: formatDate(mortgage.registered_on, locale) })}</p>
           )}
         </div>
       )}
       <div className="flex flex-col gap-1">
-        <p className="text-small text-ink-muted">{t('holders')}</p>
-        <p data-testid="certificate-holders" className="text-body break-words text-ink">
+        <p className="text-body-sm text-text-muted">{t('holders')}</p>
+        <p data-testid="certificate-holders" className="text-body break-words text-text">
           {holders.length === 0 ? t('noHolders') : holders.join(', ')}
         </p>
       </div>
       {facts.length === 0 ? null : (
-        <ul className="flex flex-col gap-0.5 text-small text-ink-2">
+        <ul className="flex flex-col gap-0.5 text-body-sm text-text-secondary">
           {facts.map((fact) => (
             <li key={fact} className="break-words">
               {fact}
@@ -74,7 +74,7 @@ export async function CertificateCard({
         </ul>
       )}
       {certificate.annotations.length === 0 ? null : (
-        <p className="text-small text-ink-muted">{t('annotationCount', { count: certificate.annotations.length })}</p>
+        <p className="text-body-sm text-text-muted">{t('annotationCount', { count: certificate.annotations.length })}</p>
       )}
     </LegalCard>
   );

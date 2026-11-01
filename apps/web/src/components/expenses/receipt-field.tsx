@@ -56,7 +56,7 @@ export function useReceipt({ propertyId, filed, initialFile }: { propertyId: str
 export type Receipt = ReturnType<typeof useReceipt>;
 
 const pickerClass =
-  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-medium text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
+  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-md border border-border-strong bg-surface px-4 text-body font-medium text-text has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring';
 
 export function ReceiptField({ receipt, disabled, onPick }: { receipt: Receipt; disabled: boolean; onPick: () => void }) {
   const t = useTranslations('expenses');
@@ -73,26 +73,26 @@ export function ReceiptField({ receipt, disabled, onPick }: { receipt: Receipt; 
 
   return (
     <section aria-labelledby={`${fieldId}-title`} className="flex flex-col gap-3" data-testid="expense-receipt">
-      <h3 id={`${fieldId}-title`} className="text-body font-medium text-ink">
-        {t('receiptTitle')} <span className="font-normal text-ink-muted">({t('optional')})</span>
+      <h3 id={`${fieldId}-title`} className="text-body font-medium text-text">
+        {t('receiptTitle')} <span className="font-normal text-text-muted">({t('optional')})</span>
       </h3>
       {kept === null ? null : (
-        <Link href={`/documents/${kept}`} data-testid="expense-saved-receipt" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
+        <Link href={`/documents/${kept}`} data-testid="expense-saved-receipt" className={cn(buttonVariants({ variant: 'ghost' }), 'self-start px-0')}>
           <FileText aria-hidden="true" />
           {t('receiptSaved')}
         </Link>
       )}
-      {upload.step === 'preparing' || upload.step === 'ready' || upload.step === 'signing' ? <p className="text-small text-ink-muted">{t('receiptPreparing')}</p> : null}
+      {upload.step === 'preparing' || upload.step === 'ready' || upload.step === 'signing' ? <p className="text-body-sm text-text-muted">{t('receiptPreparing')}</p> : null}
       {upload.step === 'uploading' ? (
         <div className="flex flex-col gap-1" data-testid="receipt-uploading">
-          <p className="text-small text-ink-2">{t('receiptUploading')}</p>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={t('receiptUploading')} className="h-1.5 overflow-hidden rounded-full bg-rule">
-            <div className="h-full rounded-full bg-ink transition-[width] duration-(--duration-fast) ease-standard" style={{ width: `${percent}%` }} />
+          <p className="text-body-sm text-text-secondary">{t('receiptUploading')}</p>
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={t('receiptUploading')} className="h-1.5 overflow-hidden rounded-full bg-border">
+            <div className="h-full rounded-full bg-accent transition-[width] duration-(--duration-fast) ease-standard" style={{ width: `${percent}%` }} />
           </div>
         </div>
       ) : null}
       {upload.step === 'sent' ? (
-        <p data-testid="receipt-uploaded" className="flex items-center gap-2 text-small text-ink-2">
+        <p data-testid="receipt-uploaded" className="flex items-center gap-2 text-body-sm text-text-secondary">
           <StatusShape status="paid" className="size-4" />
           {t('receiptUploaded')}
         </p>
@@ -101,7 +101,7 @@ export function ReceiptField({ receipt, disabled, onPick }: { receipt: Receipt; 
         <div className="flex flex-col items-start gap-2">
           <FieldMessage id={`${fieldId}-error`} error={t(upload.step === 'refused' ? upload.problem : 'receiptFailed')} />
           {upload.step === 'failed' ? (
-            <button type="button" data-testid="receipt-retry" onClick={receipt.retry} className={buttonVariants({ variant: 'outline' })}>
+            <button type="button" data-testid="receipt-retry" onClick={receipt.retry} className={buttonVariants({ variant: 'secondary' })}>
               <RotateCw aria-hidden="true" />
               {t('receiptRetry')}
             </button>
@@ -136,7 +136,7 @@ export function ReceiptField({ receipt, disabled, onPick }: { receipt: Receipt; 
         </label>
       </div>
       {kept === null && upload.step === 'empty' ? null : (
-        <button type="button" data-testid="receipt-remove" onClick={receipt.drop} disabled={disabled} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
+        <button type="button" data-testid="receipt-remove" onClick={receipt.drop} disabled={disabled} className={cn(buttonVariants({ variant: 'ghost' }), 'self-start px-0')}>
           <X aria-hidden="true" />
           {t('receiptRemove')}
         </button>

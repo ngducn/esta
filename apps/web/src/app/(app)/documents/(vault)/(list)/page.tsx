@@ -14,8 +14,8 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1">
-        <h1 className="text-h2 break-words lg:text-h1">{nav('documents')}</h1>
-        <p data-testid="document-count" className="text-small text-ink-muted">
+        <h1 className="text-title-2 break-words lg:text-title-1">{nav('documents')}</h1>
+        <p data-testid="document-count" className="text-body-sm text-text-muted">
           {t('groupCount', { count: vault.tiles.length })}
         </p>
       </header>

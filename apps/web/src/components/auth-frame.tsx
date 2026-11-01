@@ -16,10 +16,10 @@ export function AuthFrame({ brand, photoAlt, aside, children }: { brand: string;
           <BrandMark name={brand} />
           {aside}
         </header>
-        <div className="flex flex-col gap-6 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-7">{children}</div>
+        <div className="flex flex-col gap-6 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-7">{children}</div>
       </main>
       <div className="relative hidden p-4 lg:block">
-        <div className="relative h-full overflow-hidden rounded-lg bg-surface-2">
+        <div className="relative h-full overflow-hidden rounded-lg bg-bg-subtle">
           <Photo src={hero} alt={photoAlt} sizes="50vw" eagerFrom="64rem" className="object-cover" />
         </div>
       </div>

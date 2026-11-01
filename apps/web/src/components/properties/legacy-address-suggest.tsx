@@ -48,10 +48,10 @@ export function LegacyAddressSuggest({
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {t('certificateAddress')}
       </label>
-      <p id={`${id}-hint`} className="text-small text-ink-muted">
+      <p id={`${id}-hint`} className="text-body-sm text-text-muted">
         {t('certificateHint')}
       </p>
       <textarea
@@ -65,7 +65,7 @@ export function LegacyAddressSuggest({
           setTyped(true);
           onChange(event.target.value);
         }}
-        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
+        className="mt-1 min-h-touch w-full rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body text-text hover:border-border-field disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-muted"
       />
       {typed && suggestions.length > 0 ? <SuggestionList suggestions={suggestions} pickedCommune={pickedCommune} onPick={onPick} /> : null}
     </div>
@@ -89,10 +89,10 @@ export function SuggestionList({
   return (
     <section aria-labelledby={`${id}-suggest`} className="mt-2 flex flex-col gap-2">
       <div className="flex flex-col">
-        <h3 id={`${id}-suggest`} className="text-body font-medium text-ink">
+        <h3 id={`${id}-suggest`} className="text-body font-medium text-text">
           {t('suggestTitle')}
         </h3>
-        <p className="text-small text-ink-muted">{t('suggestHelp')}</p>
+        <p className="text-body-sm text-text-muted">{t('suggestHelp')}</p>
       </div>
       <ul data-testid="legacy-suggestions" className="flex flex-col gap-2">
         {suggestions.map((suggestion) => {
@@ -107,16 +107,16 @@ export function SuggestionList({
                 onClick={() => onPick(suggestion)}
                 className={cn(
                   'flex min-h-touch w-full items-start gap-3 rounded-md border px-3.5 py-2.5 text-left transition-colors duration-(--duration-fast) ease-standard disabled:cursor-wait',
-                  picked ? 'border-accent bg-surface' : 'border-rule-strong bg-surface hover:border-field hover:bg-surface-2',
+                  picked ? 'border-accent bg-surface' : 'border-border-strong bg-surface hover:border-border-field hover:bg-fill-hover',
                 )}
               >
-                <MapPin className="mt-0.5 size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+                <MapPin className="mt-0.5 size-5 shrink-0 text-text-muted" aria-hidden="true" />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-body font-medium text-ink wrap-anywhere">{suggestion.communeName}</span>
-                  <span className="text-small text-ink-muted wrap-anywhere">{shortProvinceName(suggestion.provinceName)}</span>
+                  <span className="text-body font-medium text-text wrap-anywhere">{suggestion.communeName}</span>
+                  <span className="text-body-sm text-text-muted wrap-anywhere">{shortProvinceName(suggestion.provinceName)}</span>
                 </span>
-                {suggestion.partial ? <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-small font-medium text-ink-2">{t('partial')}</span> : null}
-                {picked ? <Check className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden="true" /> : null}
+                {suggestion.partial ? <span className="shrink-0 rounded-full bg-bg-subtle px-2 py-0.5 text-body-sm font-medium text-text-secondary">{t('partial')}</span> : null}
+                {picked ? <Check className="mt-0.5 size-5 shrink-0 text-accent-text" aria-hidden="true" /> : null}
               </button>
             </li>
           );

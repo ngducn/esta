@@ -36,34 +36,34 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
   return (
     <header
       data-testid="property-header"
-      className="overflow-hidden rounded-lg border border-rule bg-surface shadow-card md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
+      className="overflow-hidden rounded-lg border border-border bg-surface shadow-xs md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
     >
-      <div data-testid="property-cover" className="relative aspect-[16/10] bg-surface-2 md:aspect-auto md:min-h-60">
+      <div data-testid="property-cover" className="relative aspect-[16/10] bg-bg-subtle md:aspect-auto md:min-h-60">
         <CoverPhoto
           src={property.photoUrl}
           alt={property.nickname}
           priority="high"
           fallback={
-            <div data-testid="property-icon-tile" data-kind={property.kind} className="flex size-full items-center justify-center text-ink-muted">
+            <div data-testid="property-icon-tile" data-kind={property.kind} className="flex size-full items-center justify-center text-text-muted">
               <KindIcon className="size-16" strokeWidth={1.25} aria-hidden="true" />
             </div>
           }
         />
-        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-small font-medium text-ink shadow-card">
+        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-body-sm font-medium text-text shadow-xs">
           {property.kindLabel}
         </span>
       </div>
       <div className="flex min-w-0 flex-col gap-4 p-5 lg:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="min-w-0 text-h2 break-words text-balance text-ink lg:text-h1">{property.nickname}</h1>
+          <h1 className="min-w-0 text-title-2 break-words text-balance text-text lg:text-title-1">{property.nickname}</h1>
           <div className="flex flex-wrap gap-2">
             {property.edit === null ? null : (
-              <Link href={property.edit.href} data-testid="edit-property" className={buttonVariants({ variant: 'outline' })}>
+              <Link href={property.edit.href} data-testid="edit-property" className={buttonVariants({ variant: 'secondary' })}>
                 <Pencil aria-hidden="true" />
                 {property.edit.label}
               </Link>
             )}
-            <Link href={property.ask.href} aria-label={property.ask.name} data-testid="ask-about-property" className={buttonVariants({ variant: 'outline' })}>
+            <Link href={property.ask.href} aria-label={property.ask.name} data-testid="ask-about-property" className={buttonVariants({ variant: 'secondary' })}>
               <NotebookPen aria-hidden="true" />
               {property.ask.label}
             </Link>
@@ -75,7 +75,7 @@ export function PropertyHeader({ property }: { property: PropertyHeaderData }) {
           {property.statuses.map((pill) => (
             <StatusPill key={pill.label} status={pill.status} label={pill.label} />
           ))}
-          <p data-testid="property-completeness" className="flex items-center gap-2 px-1 text-small text-ink-2">
+          <p data-testid="property-completeness" className="flex items-center gap-2 px-1 text-body-sm text-text-secondary">
             <span className="sr-only sm:not-sr-only">{property.completeness.title}</span>
             <CompletenessRingView percent={property.completeness.percent} label={property.completeness.score} />
           </p>

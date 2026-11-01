@@ -100,13 +100,13 @@ export default async function LeasePage({ params, searchParams }: { params: Para
       <div className="flex flex-col gap-5">
         <BackLink href={backHref} label={property.nickname} />
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="text-h2 break-words text-balance lg:text-h1">{title}</h1>
+          <h1 className="text-title-2 break-words text-balance lg:text-title-1">{title}</h1>
           {lease === null ? null : <StatusMark status="draft" />}
         </div>
         {lease === null || lease.renewal_of_lease_id === null ? null : (
-          <p className="flex flex-wrap gap-x-2 text-body text-ink-2">
+          <p className="flex flex-wrap gap-x-2 text-body text-text-secondary">
             <span>{t('renewalOfLabel')}</span>
-            <Link href={`${backHref}/leases/${lease.renewal_of_lease_id}`} data-testid="lease-renewal-of" className="font-medium text-accent underline underline-offset-4">
+            <Link href={`${backHref}/leases/${lease.renewal_of_lease_id}`} data-testid="lease-renewal-of" className="font-medium text-accent-text underline underline-offset-4">
               {t('renewalOf')}
             </Link>
           </p>
@@ -149,11 +149,11 @@ export default async function LeasePage({ params, searchParams }: { params: Para
       <BackLink href={backHref} label={property.nickname} />
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="text-h2 break-words text-balance lg:text-h1">{title}</h1>
+          <h1 className="text-title-2 break-words text-balance lg:text-title-1">{title}</h1>
           <span
             data-testid="lease-status"
             data-status={summary.status}
-            className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-surface-2 px-3 py-1 text-small font-medium text-ink-2"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-bg-subtle px-3 py-1 text-body-sm font-medium text-text-secondary"
           >
             {ended ? <StatusShape status="ended" className="size-4" /> : null}
             <span>{t('status', { status: summary.status })}</span>
@@ -172,7 +172,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
           />
         </PropertyIntl>
       </div>
-      {canEdit ? null : <p className="text-body text-ink-2">{t('viewerNote')}</p>}
+      {canEdit ? null : <p className="text-body text-text-secondary">{t('viewerNote')}</p>}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex flex-col gap-6">
           <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} schedule={schedule} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} />

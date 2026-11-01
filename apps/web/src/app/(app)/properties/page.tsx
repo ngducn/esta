@@ -112,8 +112,8 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-h2 break-words lg:text-h1">{nav('properties')}</h1>
-          <p data-testid="property-count" className="text-small text-ink-muted">
+          <h1 className="text-title-2 break-words lg:text-title-1">{nav('properties')}</h1>
+          <p data-testid="property-count" className="text-body-sm text-text-muted">
             {count}
           </p>
           <HeldDepositTotal householdId={member.household.id} />
@@ -156,9 +156,9 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
             />
           </div>
           {list.rows.length === 0 ? (
-            <section className="flex flex-col items-start gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card">
-              <p className="text-body text-ink">{filters.q === '' ? t('noMatchFilters') : t('noMatch', { query: filters.q })}</p>
-              <Link href="/properties" className={buttonVariants({ variant: 'outline' })}>
+            <section className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs">
+              <p className="text-body text-text">{filters.q === '' ? t('noMatchFilters') : t('noMatch', { query: filters.q })}</p>
+              <Link href="/properties" className={buttonVariants({ variant: 'secondary' })}>
                 {t('clearFilters')}
               </Link>
             </section>
@@ -175,7 +175,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           )}
         </>
       )}
-      <Link href="/properties/archived" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start')}>
+      <Link href="/properties/archived" className={cn(buttonVariants({ variant: 'ghost' }), 'self-start')}>
         <Archive aria-hidden="true" />
         {t('archivedLink')}
       </Link>

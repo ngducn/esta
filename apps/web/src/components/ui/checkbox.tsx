@@ -9,7 +9,7 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        'group/checkbox inline-flex size-touch shrink-0 items-center justify-center rounded-sm outline-offset-0',
+        'group/checkbox inline-flex size-touch shrink-0 items-center justify-center rounded-md outline-offset-0',
         'data-disabled:cursor-not-allowed',
         className,
       )}
@@ -18,10 +18,10 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
       <span
         aria-hidden="true"
         className={cn(
-          'flex size-6 items-center justify-center rounded-xs border-2 border-field bg-surface transition-colors duration-(--duration-fast) ease-standard',
-          'group-hover/checkbox:border-ink-muted group-data-checked/checkbox:border-ink group-data-checked/checkbox:bg-ink group-data-checked/checkbox:text-surface',
-          'group-data-indeterminate/checkbox:border-ink group-data-indeterminate/checkbox:bg-ink group-data-indeterminate/checkbox:text-surface',
-          'group-data-disabled/checkbox:border-rule group-data-disabled/checkbox:bg-surface-2',
+          'flex size-6 items-center justify-center rounded-xs border-2 border-border-field bg-surface transition-colors duration-(--duration-fast) ease-standard',
+          'group-hover/checkbox:border-border-field group-data-checked/checkbox:border-accent group-data-checked/checkbox:bg-surface-inverse group-data-checked/checkbox:text-text-inverse',
+          'group-data-indeterminate/checkbox:border-accent group-data-indeterminate/checkbox:bg-surface-inverse group-data-indeterminate/checkbox:text-text-inverse',
+          'group-data-disabled/checkbox:border-border group-data-disabled/checkbox:bg-fill-disabled',
         )}
       >
         <CheckboxPrimitive.Indicator

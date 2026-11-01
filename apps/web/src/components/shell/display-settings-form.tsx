@@ -13,7 +13,7 @@ export type DisplaySettings = { locale: Locale; textScale: TextScale; density: D
 export type SaveStatus = 'saved' | 'failed' | null;
 
 const optionClass =
-  'flex min-h-touch cursor-pointer items-start gap-3 rounded-md border border-rule bg-surface px-3 py-2.5 transition-colors duration-(--duration-fast) ease-standard hover:border-field has-checked:border-ink has-checked:bg-surface-2';
+  'flex min-h-touch cursor-pointer items-start gap-3 rounded-md border border-border bg-surface px-3 py-2.5 transition-colors duration-(--duration-fast) ease-standard hover:border-border-field has-checked:border-accent has-checked:bg-accent-subtle';
 
 function Choice({
   legend,
@@ -31,13 +31,13 @@ function Choice({
   return (
     <Card>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 flex items-center gap-3 text-lead font-semibold">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
+        <legend className="mb-1 flex items-center gap-3 text-headline font-semibold">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-bg-subtle text-text-secondary">
             <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
           </span>
           {legend}
         </legend>
-        {hint && <p className="text-small text-ink-muted">{hint}</p>}
+        {hint && <p className="text-body-sm text-text-muted">{hint}</p>}
         <div className={wide ? 'grid gap-2 sm:grid-cols-2' : 'grid gap-2 sm:grid-cols-3'}>{children}</div>
       </fieldset>
     </Card>
@@ -50,7 +50,7 @@ function Option({ name, value, checked, label, hint }: { name: string; value: st
       <input type="radio" name={name} value={value} defaultChecked={checked} className="mt-0.5 size-5 shrink-0 accent-accent" />
       <span className="flex min-w-0 flex-col">
         <span className="font-medium break-words">{label}</span>
-        {hint && <span className="text-small text-ink-muted break-words">{hint}</span>}
+        {hint && <span className="text-body-sm text-text-muted break-words">{hint}</span>}
       </span>
     </label>
   );
@@ -61,18 +61,18 @@ export async function DisplaySettingsForm({ settings, status }: { settings: Disp
   return (
     <form action={saveDisplaySettings} aria-labelledby="display-heading" className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 id="display-heading" className="text-h3">
+        <h2 id="display-heading" className="text-title-3">
           {t('display')}
         </h2>
-        <p className="text-ink-muted">{t('displayIntro')}</p>
+        <p className="text-text-muted">{t('displayIntro')}</p>
         {status === 'saved' && (
-          <p role="status" className="flex items-center gap-2 font-medium text-paid">
+          <p role="status" className="flex items-center gap-2 font-medium text-success-text">
             <Check className="size-5" strokeWidth={2.2} aria-hidden="true" />
             {t('saved')}
           </p>
         )}
         {status === 'failed' && (
-          <p role="alert" className="font-medium text-overdue">
+          <p role="alert" className="font-medium text-danger-text">
             {t('saveFailed')}
           </p>
         )}

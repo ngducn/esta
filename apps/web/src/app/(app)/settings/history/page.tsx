@@ -45,33 +45,33 @@ export default async function ChangeHistoryPage() {
     <div className="flex flex-col gap-5">
       <BackLink href="/settings" label={nav('settings')} />
       <div className="flex flex-col gap-2">
-        <h1 className="text-h2 break-words lg:text-h1">{t('title')}</h1>
-        <p className="max-w-prose text-ink-2">{t('intro')}</p>
+        <h1 className="text-title-2 break-words lg:text-title-1">{t('title')}</h1>
+        <p className="max-w-prose text-text-secondary">{t('intro')}</p>
       </div>
       {batches.length === 0 ? (
-        <p className="max-w-3xl rounded-lg border border-rule bg-surface p-5 text-body text-ink-2 shadow-card">{t('empty')}</p>
+        <p className="max-w-3xl rounded-lg border border-border bg-surface p-5 text-body text-text-secondary shadow-xs">{t('empty')}</p>
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
-          <ul data-testid="batch-list" className="flex max-w-3xl flex-col divide-y divide-rule rounded-lg border border-rule bg-surface shadow-card">
+          <ul data-testid="batch-list" className="flex max-w-3xl flex-col divide-y divide-border rounded-lg border border-border bg-surface shadow-xs">
             {batches.map((batch) => {
               const { time, date } = activityTime(batch.applied_at ?? batch.planned_at, env.ESTA_TIMEZONE);
               const bills = batch.issued_bills.map((bill) => t('bill', { number: bill.number, month: formatMonthYear(bill.period_start, intl.locale) })).join('; ');
               const lines = (
                 <>
-                  <p className="text-body font-medium text-ink wrap-anywhere">{batch.summary}</p>
-                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-ink-muted">
-                    <span className="rounded-full bg-surface-2 px-2 font-medium text-ink-2">{t('via')}</span>
+                  <p className="text-body font-medium text-text wrap-anywhere">{batch.summary}</p>
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-text-muted">
+                    <span className="rounded-full bg-bg-subtle px-2 font-medium text-text-secondary">{t('via')}</span>
                     <span>{t('entry', { name: batch.planner_name ?? t('someone'), time, date })}</span>
-                    <span data-testid="batch-status" className={batch.status === 'undone' ? 'font-medium text-ink-2' : undefined}>
+                    <span data-testid="batch-status" className={batch.status === 'undone' ? 'font-medium text-text-secondary' : undefined}>
                       {t('status', { status: batch.status })}
                     </span>
                   </p>
                   {batch.archived_properties > 0 ? (
-                    <p className="text-small text-ink-2">
+                    <p className="text-body-sm text-text-secondary">
                       {t.rich('archived', {
                         count: batch.archived_properties,
                         link: (chunks) => (
-                          <Link href="/properties/archived" className="font-medium text-ink underline underline-offset-4 hover:decoration-2">
+                          <Link href="/properties/archived" className="font-medium text-text underline underline-offset-4 hover:decoration-2">
                             {chunks}
                           </Link>
                         ),

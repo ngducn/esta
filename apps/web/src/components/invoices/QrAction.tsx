@@ -28,7 +28,7 @@ export function QrAction({
   const dialog = useDeferredDialog(loadSheet);
   return (
     <>
-      <button type="button" data-testid="row-action-qr" {...dialog.triggerProps} className={buttonVariants({ variant: 'outline' })}>
+      <button type="button" data-testid="row-action-qr" {...dialog.triggerProps} className={buttonVariants({ variant: 'secondary' })}>
         <QrCode aria-hidden="true" />
         {label}
       </button>

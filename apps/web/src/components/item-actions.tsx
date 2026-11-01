@@ -29,7 +29,7 @@ type ItemActionsProps<Deleted> = {
   readonly compact?: boolean;
 };
 
-const compactButton = 'min-h-touch px-3 text-small';
+const compactButton = 'min-h-touch px-3 text-body-sm';
 
 /**
  * `Sửa` and `Xóa` on one item. Delete needs no confirm step: the toast's `Hoàn tác` puts the row back for 6 s, and a second
@@ -38,7 +38,7 @@ const compactButton = 'min-h-touch px-3 text-small';
 export function ItemActions<Deleted>({ editHref, remove, restore, labels, compact = false }: ItemActionsProps<Deleted>) {
   const hydrated = useHydrated();
   const { pending, error, perform } = useUndoableAction({ failed: labels.deleteFailed, restoreFailed: labels.restoreFailed });
-  const button = cn(buttonVariants({ variant: 'outline' }), compact && compactButton);
+  const button = cn(buttonVariants({ variant: 'secondary' }), compact && compactButton);
   const onDelete = () => perform(remove, { message: labels.deleted, restore });
 
   return (

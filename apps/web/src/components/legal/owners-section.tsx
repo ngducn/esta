@@ -20,14 +20,14 @@ export async function OwnersSection({
   const [t, locale] = await Promise.all([getTranslations('propertyOwners'), getLocale()]);
   if (shares.length === 0) {
     return (
-      <div data-testid="owners-empty" className="flex flex-col items-start gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-        <p className="flex items-center gap-3 text-lead font-semibold text-ink">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
+      <div data-testid="owners-empty" className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+        <p className="flex items-center gap-3 text-headline font-semibold text-text">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-accent-text">
             <Users className="size-5" strokeWidth={1.8} aria-hidden="true" />
           </span>
           {t('empty')}
         </p>
-        <p className="max-w-prose text-body text-pretty text-ink-2">{t('emptyBody')}</p>
+        <p className="max-w-prose text-body text-pretty text-text-secondary">{t('emptyBody')}</p>
         {editor}
       </div>
     );
@@ -37,22 +37,22 @@ export async function OwnersSection({
   return (
     <div className="flex flex-col gap-3">
       <OwnershipWarning status={ownershipStatus(shares)} />
-      <ul className="flex flex-col divide-y divide-rule rounded-lg border border-rule bg-surface shadow-card">
+      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-surface shadow-xs">
         {rows.map((share) => (
           <li key={share.party_id} data-testid="owner-row" data-party={share.party_id} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3 sm:px-5">
-            <p className="min-w-0 flex-1 text-lead font-semibold break-words text-ink">{name(share)}</p>
-            <p data-testid="owner-share-value" className="figures text-lead font-medium text-ink">
+            <p className="min-w-0 flex-1 text-headline font-semibold break-words text-text">{name(share)}</p>
+            <p data-testid="owner-share-value" className="num text-headline font-medium text-text">
               {formatShareBp(share.share_bp, locale)}
             </p>
             {share.named_on_certificate || share.since !== null ? (
-              <div className="flex w-full flex-wrap gap-x-4 gap-y-1 text-small text-ink-2">
+              <div className="flex w-full flex-wrap gap-x-4 gap-y-1 text-body-sm text-text-secondary">
                 {share.named_on_certificate ? (
                   <span data-testid="owner-named-mark" className="inline-flex items-center gap-1.5">
-                    <Check className="size-4 text-paid" strokeWidth={2.25} aria-hidden="true" />
+                    <Check className="size-4 text-success-text" strokeWidth={2.25} aria-hidden="true" />
                     {t('named')}
                   </span>
                 ) : null}
-                {share.since === null ? null : <span className="figures">{t('since', { date: formatDate(share.since, locale) })}</span>}
+                {share.since === null ? null : <span className="num">{t('since', { date: formatDate(share.since, locale) })}</span>}
               </div>
             ) : null}
           </li>

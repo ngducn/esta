@@ -26,11 +26,11 @@ export function AccountActions({ id, removeTitle, describedBy, labels }: { id: s
   const confirm = useDeferredDialog(loadConfirm);
   return (
     <>
-      <Button type="button" variant="outline" data-testid="make-default" aria-describedby={describedBy} disabled={pending} onClick={() => run(() => setDefaultReceivingAccount({ id }))}>
+      <Button type="button" variant="secondary" data-testid="make-default" aria-describedby={describedBy} disabled={pending} onClick={() => run(() => setDefaultReceivingAccount({ id }))}>
         <BadgeCheck aria-hidden="true" />
         {labels.makeDefault}
       </Button>
-      <Button type="button" variant="outline" data-testid="remove-account" aria-describedby={describedBy} disabled={pending} {...confirm.triggerProps}>
+      <Button type="button" variant="secondary" data-testid="remove-account" aria-describedby={describedBy} disabled={pending} {...confirm.triggerProps}>
         <Trash2 aria-hidden="true" />
         {labels.remove}
       </Button>

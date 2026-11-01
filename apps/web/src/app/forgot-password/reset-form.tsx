@@ -57,8 +57,8 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
   if (state.step === 'done') {
     return (
       <div className="flex flex-col gap-4" role="status">
-        <h2 className="text-h3 font-semibold">{copy.doneTitle}</h2>
-        <p className="text-ink-2">{copy.doneBody}</p>
+        <h2 className="text-title-3 font-semibold">{copy.doneTitle}</h2>
+        <p className="text-text-secondary">{copy.doneBody}</p>
         <Link href={state.next} className={primaryClass}>
           {copy.continue}
         </Link>
@@ -67,7 +67,7 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
   }
 
   const backToSignIn = (
-    <p className="flex justify-center border-t border-rule pt-4">
+    <p className="flex justify-center border-t border-border pt-4">
       <Link href="/sign-in" className={linkClass}>
         {copy.backToSignIn}
       </Link>
@@ -103,10 +103,10 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
               invalid={passwordError !== null}
               describedBy={passwordError === null ? ['password-hint'] : ['password-hint', 'password-error']}
             />
-            <p id="password-hint" className="text-small text-ink-muted">
+            <p id="password-hint" className="text-body-sm text-text-muted">
               {copy.passwordHint}
             </p>
-            <p id="password-error" role="alert" className="min-h-6 font-medium text-overdue">
+            <p id="password-error" role="alert" className="min-h-6 font-medium text-danger-text">
               {passwordError}
             </p>
           </div>
@@ -119,7 +119,7 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
   return (
     <>
       <form action={action} className="flex flex-col gap-4" noValidate>
-        <p className="text-ink-2">{copy.intro}</p>
+        <p className="text-text-secondary">{copy.intro}</p>
         <div className="flex flex-col gap-2">
           <label htmlFor="email" className="font-medium">
             {copy.emailLabel}
@@ -139,7 +139,7 @@ export function ResetForm({ copy }: { copy: ResetCopy }) {
             aria-describedby={message === null ? undefined : 'email-error'}
             className={fieldClass}
           />
-          <p id="email-error" role="alert" className="min-h-6 font-medium text-overdue">
+          <p id="email-error" role="alert" className="min-h-6 font-medium text-danger-text">
             {message}
           </p>
         </div>

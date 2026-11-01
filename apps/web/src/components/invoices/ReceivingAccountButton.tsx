@@ -30,7 +30,7 @@ export function ReceivingAccountButton({
     <>
       <Button
         type="button"
-        variant={adding ? 'primary' : 'outline'}
+        variant={adding ? 'primary' : 'secondary'}
         data-testid={adding ? 'add-account' : 'edit-account'}
         aria-describedby={describedBy}
         className="self-start"

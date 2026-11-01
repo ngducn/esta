@@ -15,8 +15,8 @@ export async function generateMetadata() {
   return { title: t('title') };
 }
 
-const chip = 'inline-flex min-h-touch items-center gap-2 rounded-full border px-4 text-small font-medium transition-colors duration-(--duration-fast) ease-standard';
-const card = 'rounded-lg border border-rule bg-surface p-5 text-body text-pretty text-ink-2 shadow-card sm:p-6';
+const chip = 'inline-flex min-h-touch items-center gap-2 rounded-full border px-4 text-body-sm font-medium transition-colors duration-(--duration-fast) ease-standard';
+const card = 'rounded-lg border border-border bg-surface p-5 text-body text-pretty text-text-secondary shadow-xs sm:p-6';
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ property?: string }> }) {
   const clock = await getClock();
@@ -35,10 +35,10 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <section aria-labelledby="market-heading" data-testid="market" className="flex max-w-3xl min-w-0 flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 id="market-heading" className="text-h3 font-semibold text-ink">
+            <h2 id="market-heading" className="text-title-3 font-semibold text-text">
               {t('heading')}
             </h2>
-            <p data-testid="market-count" className="text-small text-ink-muted">
+            <p data-testid="market-count" className="text-body-sm text-text-muted">
               {t('count', { count: shown.length })}
             </p>
           </div>
@@ -53,10 +53,10 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                       scroll={false}
                       aria-current={choice.current ? 'true' : undefined}
                       data-filter="property"
-                      className={cn(chip, choice.current ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:border-field')}
+                      className={cn(chip, choice.current ? 'border-accent-border bg-accent-subtle text-accent-text' : 'border-border-strong bg-surface text-text hover:border-border-field')}
                     >
                       <span className="break-words">{choice.label}</span>
-                      <span aria-hidden="true" className={cn('font-medium tabular-nums', !choice.current && 'text-ink-muted')}>
+                      <span aria-hidden="true" className={cn('font-medium tabular-nums', !choice.current && 'text-text-muted')}>
                         {choice.count}
                       </span>
                       <span className="sr-only">{t('count', { count: choice.count })}</span>
@@ -85,17 +85,17 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
             </p>
           )}
         </section>
-        <aside aria-labelledby="topics-heading" data-testid="topics" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-          <h2 id="topics-heading" className="text-lead font-semibold text-ink">
+        <aside aria-labelledby="topics-heading" data-testid="topics" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+          <h2 id="topics-heading" className="text-headline font-semibold text-text">
             {t('topics')}
           </h2>
-          <p className="text-body text-pretty text-ink-2">{t('topicsIntro')}</p>
+          <p className="text-body text-pretty text-text-secondary">{t('topicsIntro')}</p>
           {market.topics.length === 0 ? (
-            <p className="text-body text-ink-muted">{t('noTopics')}</p>
+            <p className="text-body text-text-muted">{t('noTopics')}</p>
           ) : (
             <ul className="flex flex-col">
               {market.topics.map((topic) => (
-                <li key={topic} data-testid="topic" className="border-t border-rule py-2 text-body break-words text-ink first:border-t-0 first:pt-0">
+                <li key={topic} data-testid="topic" className="border-t border-border py-2 text-body break-words text-text first:border-t-0 first:pt-0">
                   {topic}
                 </li>
               ))}

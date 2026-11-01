@@ -39,7 +39,7 @@ export function LocationMap({ pin, ...props }: LocationMapProps) {
   }, []);
 
   return (
-    <div ref={frame} data-testid="location-map" className="relative h-64 overflow-hidden rounded-md border border-rule bg-surface-2 lg:h-80">
+    <div ref={frame} data-testid="location-map" className="relative h-64 overflow-hidden rounded-md border border-border bg-bg-subtle lg:h-80">
       {near ? <MapIsland {...props} pins={[pin]} /> : null}
     </div>
   );

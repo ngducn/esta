@@ -67,22 +67,22 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
 
   return (
     <div data-testid="document-detail" className="flex flex-col gap-5">
-      <Link href="/documents" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-medium text-ink-2 hover:text-ink">
+      <Link href="/documents" className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-md px-2 text-body font-medium text-text-secondary hover:text-text">
         <ChevronLeft className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
         {t('back')}
       </Link>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <header className="flex flex-col gap-3 lg:order-2 lg:rounded-lg lg:border lg:border-rule lg:bg-surface lg:p-5 lg:shadow-card">
-          <h1 className="text-h2 break-words text-balance lg:text-h3">{document.title}</h1>
-          <p data-testid="document-meta" className="text-body break-words text-ink-2">
+        <header className="flex flex-col gap-3 lg:order-2 lg:rounded-lg lg:border lg:border-border lg:bg-surface lg:p-5 lg:shadow-xs">
+          <h1 className="text-title-2 break-words text-balance lg:text-title-3">{document.title}</h1>
+          <p data-testid="document-meta" className="text-body break-words text-text-secondary">
             {meta.join(' · ')}
           </p>
           {document.expiryText === null ? null : (
-            <p data-testid="document-expiry" className={cn('text-body font-medium', document.expiringSoon ? 'text-due' : 'text-ink-2')}>
+            <p data-testid="document-expiry" className={cn('text-body font-medium', document.expiringSoon ? 'text-warning-text' : 'text-text-secondary')}>
               {document.expiryText}
             </p>
           )}
-          {document.tags.length === 0 ? null : <p className="text-small break-words text-ink-muted">{t('tags', { tags: document.tags.join(', ') })}</p>}
+          {document.tags.length === 0 ? null : <p className="text-body-sm break-words text-text-muted">{t('tags', { tags: document.tags.join(', ') })}</p>}
           <ExtractionPill documentId={document.id} status={extraction.statuses[document.id] ?? 'none'} workerOffline={extraction.workerOffline} showAccepted />
           <div className="flex flex-wrap gap-2 pt-1">
             <Button type="button" data-testid="download-document" disabled={!hydrated || downloading} onClick={download}>
@@ -90,7 +90,7 @@ export function DocumentPage({ data }: { data: DocumentPageData }) {
               {t('download')}
             </Button>
             {data.canEdit ? (
-              <Button type="button" variant="outline" data-testid="edit-document" disabled={!hydrated} {...edit.triggerProps}>
+              <Button type="button" variant="secondary" data-testid="edit-document" disabled={!hydrated} {...edit.triggerProps}>
                 <PencilLine aria-hidden="true" />
                 {t('edit')}
               </Button>

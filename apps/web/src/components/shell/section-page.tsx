@@ -16,7 +16,7 @@ export async function SectionPage({ section, action }: { section: LaterSection; 
   const [nav, sections] = await Promise.all([getTranslations('nav'), getTranslations('sections')]);
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-h2 break-words lg:text-h1">{nav(section)}</h1>
+      <h1 className="text-title-2 break-words lg:text-title-1">{nav(section)}</h1>
       <EmptyState icon={sectionIcons[section]} title={sections('soonTitle')} body={sections(section)} {...(action === undefined ? {} : { action })} className="max-w-3xl" />
     </div>
   );

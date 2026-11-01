@@ -78,7 +78,7 @@ export function ParcelForm({
     <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit}>
       <Group title={t('groupParcel')}>
         {invalid === 'identity' ? (
-          <p data-testid="parcel-unidentified" role="alert" className="flex items-start gap-2 text-body text-overdue">
+          <p data-testid="parcel-unidentified" role="alert" className="flex items-start gap-2 text-body text-danger-text">
             <StatusShape status="overdue" className="mt-1 size-4" />
             <span>{t('parcelUnidentified')}</span>
           </p>
@@ -94,7 +94,7 @@ export function ParcelForm({
           value={area}
           maxLength={20}
           inputMode="decimal"
-          className="max-w-60 figures"
+          className="max-w-60 num"
           error={invalid === 'area' && parsedArea !== null && !parsedArea.ok ? t('areaInvalid', { reason: parsedArea.reason }) : null}
           onChange={setArea}
         />
@@ -127,11 +127,11 @@ export function ParcelForm({
           invalid={typeof invalid === 'object' ? invalid : null}
         />
         {mismatch === null ? null : (
-          <p data-testid="purposes-mismatch" role="status" className="flex items-start gap-2 text-body text-ink">
+          <p data-testid="purposes-mismatch" role="status" className="flex items-start gap-2 text-body text-text">
             <StatusShape status="due" className="mt-0.5 size-4" />
             <span>
               {t('mismatch')}{' '}
-              <span className="figures">{t('mismatchTotals', { purposes: formatArea(mismatch.purposes, locale), parcel: formatArea(mismatch.parcel, locale) })}</span>
+              <span className="num">{t('mismatchTotals', { purposes: formatArea(mismatch.purposes, locale), parcel: formatArea(mismatch.parcel, locale) })}</span>
             </span>
           </p>
         )}

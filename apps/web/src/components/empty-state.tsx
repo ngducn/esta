@@ -24,18 +24,18 @@ export function EmptyState({
 }) {
   const ActionIcon = action?.icon;
   return (
-    <section data-slot="empty-state" className={cn('overflow-hidden rounded-lg border border-rule bg-surface shadow-card', className)}>
+    <section data-slot="empty-state" className={cn('overflow-hidden rounded-lg border border-border bg-surface shadow-xs', className)}>
       {media}
       <div className="flex flex-col items-start gap-3 p-5 sm:p-6">
-        <h2 className="flex items-center gap-3 text-lead font-semibold text-ink">
+        <h2 className="flex items-center gap-3 text-headline font-semibold text-text">
           {Icon ? (
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-accent-text">
               <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
             </span>
           ) : null}
           <span className="min-w-0 break-words">{title}</span>
         </h2>
-        <p className="max-w-prose text-body text-pretty text-ink-2">{body}</p>
+        <p className="max-w-prose text-body text-pretty text-text-secondary">{body}</p>
         {action ? (
           <Link href={action.href} className={buttonVariants({ variant: 'primary', className: 'mt-2' })}>
             {ActionIcon ? <ActionIcon aria-hidden="true" /> : null}

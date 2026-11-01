@@ -21,7 +21,7 @@ export function AddValuation({ label, scope }: { label: string; scope: Valuation
     <>
       <Button
         type="button"
-        variant="outline"
+        variant="secondary"
         data-testid="add-valuation"
         className="self-start"
         {...sheet.triggerProps}
@@ -70,7 +70,7 @@ export function RemoveValuation({ valuation, labels }: { valuation: Valuation; l
       null,
     );
   return (
-    <Button type="button" variant="quiet" data-testid="remove-valuation" aria-label={labels.deleteLabel} disabled={pending} onClick={remove} className="px-2 text-overdue">
+    <Button type="button" variant="ghost" data-testid="remove-valuation" aria-label={labels.deleteLabel} disabled={pending} onClick={remove} className="px-2 text-danger-text">
       <Trash2 aria-hidden="true" />
       {labels.delete}
     </Button>

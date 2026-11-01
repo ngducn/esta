@@ -7,7 +7,7 @@ export async function HeldDepositTotal({ householdId }: { householdId: string })
   const [held, t, locale] = await Promise.all([loadHeldDepositTotal(householdId), getTranslations('deposits'), getLocale()]);
   if (held === 0) return null;
   return (
-    <p data-testid="deposit-held-total" className="text-small text-ink-2 figures">
+    <p data-testid="deposit-held-total" className="text-body-sm text-text-secondary num">
       {t('heldTotal', { amount: formatVnd(held, locale) })}
     </p>
   );

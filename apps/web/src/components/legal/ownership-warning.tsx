@@ -8,9 +8,9 @@ export async function OwnershipWarning({ status }: { status: OwnershipStatus }) 
   const [t, locale] = await Promise.all([getTranslations('propertyOwners'), getLocale()]);
   const total = formatShareBp(status.totalBp, locale);
   return (
-    <p role="status" data-testid="ownership-warning" data-state={status.state} className="flex items-start gap-2 rounded-md bg-due-fill px-3 py-2.5 text-body text-due">
+    <p role="status" data-testid="ownership-warning" data-state={status.state} className="flex items-start gap-2 rounded-md bg-warning-bg px-3 py-2.5 text-body text-warning-text">
       <StatusShape status="due" className="mt-0.5" />
-      <span className="figures font-medium">{status.state === 'under' ? t('warningUnder', { total }) : t('warningOver', { total })}</span>
+      <span className="num font-medium">{status.state === 'under' ? t('warningUnder', { total }) : t('warningOver', { total })}</span>
     </p>
   );
 }

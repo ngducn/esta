@@ -109,10 +109,10 @@ export default function RenewLeaseSheet({
         inputMode="decimal"
         maxLength={8}
       />
-      <section aria-live="polite" data-testid="renew-preview" className="flex flex-col gap-1 rounded-md border border-rule bg-surface-2 p-4">
-        <span className="text-small text-ink-muted">{t('renewPreview')}</span>
-        {rent === null ? <span className="text-body text-ink-2">{t('invalidPercent')}</span> : <MoneyDisplay amount={rent} variant="large" className="text-start text-ink" />}
-        <span className="text-small text-ink-2">{t('renewPreviewFrom', { rent: formatVnd(lastRentVnd, locale) })}</span>
+      <section aria-live="polite" data-testid="renew-preview" className="flex flex-col gap-1 rounded-md border border-border bg-bg-subtle p-4">
+        <span className="text-body-sm text-text-muted">{t('renewPreview')}</span>
+        {rent === null ? <span className="text-body text-text-secondary">{t('invalidPercent')}</span> : <MoneyDisplay amount={rent} variant="large" className="text-start text-text" />}
+        <span className="text-body-sm text-text-secondary">{t('renewPreviewFrom', { rent: formatVnd(lastRentVnd, locale) })}</span>
       </section>
       <DateInput
         label={t('renewEndField')}
@@ -122,7 +122,7 @@ export default function RenewLeaseSheet({
           setRefusal(null);
         }}
       />
-      <p className="-mt-2 text-small text-ink-muted">{t('endHint')}</p>
+      <p className="-mt-2 text-body-sm text-text-muted">{t('endHint')}</p>
       {startsBeforeToday ? (
         <PaidThroughField
           refusal={paidThroughRefusal}

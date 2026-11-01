@@ -12,13 +12,13 @@ export function UploadProgress({ loaded, total }: { loaded: number; total: numbe
   const megabytes = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   return (
     <div data-testid="upload-progress" className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-body text-ink">
-        <span className="figures">{t('progress', { done: megabytes.format(loaded / MB), total: megabytes.format(total / MB) })}</span>
-        <span data-testid="upload-percent" className="figures font-medium">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-body text-text">
+        <span className="num">{t('progress', { done: megabytes.format(loaded / MB), total: megabytes.format(total / MB) })}</span>
+        <span data-testid="upload-percent" className="num font-medium">
           {t('percent', { percent })}
         </span>
       </div>
-      <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={t('percent', { percent })} className="h-2 overflow-hidden rounded-full bg-surface-2">
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={t('percent', { percent })} className="h-2 overflow-hidden rounded-full bg-bg-subtle">
         <div className="h-full rounded-full bg-accent transition-[width] duration-(--duration-fast) ease-standard" style={{ width: `${percent}%` }} />
       </div>
     </div>

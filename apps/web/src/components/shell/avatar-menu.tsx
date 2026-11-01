@@ -13,7 +13,7 @@ import { sectionIcons } from './section-icons';
 const menuId = 'account-menu';
 
 const itemClass =
-  'flex min-h-touch w-full items-center gap-3 rounded-sm px-3 text-left text-body text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-ink-muted';
+  'flex min-h-touch w-full items-center gap-3 rounded-md px-3 text-left text-body text-text transition-colors duration-(--duration-fast) ease-standard hover:bg-fill-hover [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-text-muted';
 
 export type AccountMenuProps = {
   name: string;
@@ -43,12 +43,12 @@ export function AvatarMenu({ name, household, role, links, switchLanguage: langu
       ref={menu}
       id={menuId}
       popover="auto"
-      className="inset-auto inset-x-0 bottom-0 m-0 w-auto max-w-none translate-y-8 flex-col gap-2 rounded-t-lg border-t border-rule bg-surface p-4 pb-[max(--spacing(4),env(safe-area-inset-bottom))] text-ink opacity-0 shadow-sheet transition-[translate,opacity,display,overlay] transition-discrete duration-(--duration-slow) ease-standard open:flex open:translate-y-0 open:opacity-100 starting:open:translate-y-8 starting:open:opacity-0 backdrop:bg-ground/85 lg:right-auto lg:bottom-3 lg:left-sidebar lg:w-sidebar lg:translate-y-0 lg:rounded-lg lg:border lg:backdrop:bg-transparent"
+      className="inset-auto inset-x-0 bottom-0 m-0 w-auto max-w-none translate-y-8 flex-col gap-2 rounded-t-lg border-t border-border bg-surface p-4 pb-[max(--spacing(4),env(safe-area-inset-bottom))] text-text opacity-0 shadow-lg transition-[translate,opacity,display,overlay] transition-discrete duration-(--duration-slow) ease-standard open:flex open:translate-y-0 open:opacity-100 starting:open:translate-y-8 starting:open:opacity-0 backdrop:bg-bg/85 lg:right-auto lg:bottom-3 lg:left-sidebar lg:w-sidebar lg:translate-y-0 lg:rounded-lg lg:border lg:backdrop:bg-transparent"
     >
-      <div className="flex flex-col gap-1 border-b border-rule px-3 pb-3">
-        <p className="text-lead font-semibold break-words">{name}</p>
-        <p className="text-small text-ink-muted break-words">{household}</p>
-        <p className="text-small text-ink-muted">{role}</p>
+      <div className="flex flex-col gap-1 border-b border-border px-3 pb-3">
+        <p className="text-headline font-semibold break-words">{name}</p>
+        <p className="text-body-sm text-text-muted break-words">{household}</p>
+        <p className="text-body-sm text-text-muted">{role}</p>
       </div>
       <ul className="flex flex-col">
         {links.map((link) => {
@@ -72,7 +72,7 @@ export function AvatarMenu({ name, household, role, links, switchLanguage: langu
           </form>
         </li>
       </ul>
-      <form action={signOut} className="mt-4 border-t border-rule pt-4">
+      <form action={signOut} className="mt-4 border-t border-border pt-4">
         <button type="submit" className={itemClass}>
           <LogOut strokeWidth={1.8} aria-hidden="true" />
           {signOutLabel}
@@ -103,16 +103,16 @@ export function AccountTrigger({
       type="button"
       popoverTarget={menuId}
       aria-label={accessibleName}
-      className={`flex min-h-touch max-w-full min-w-touch items-center rounded-sm py-1.5 text-left text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 ${compact ? 'shrink-0 gap-2 px-1' : 'gap-3 px-2'} ${className ?? ''}`}
+      className={`flex min-h-touch max-w-full min-w-touch items-center rounded-md py-1.5 text-left text-text transition-colors duration-(--duration-fast) ease-standard hover:bg-fill-hover ${compact ? 'shrink-0 gap-2 px-1' : 'gap-3 px-2'} ${className ?? ''}`}
     >
       {initial !== null && (
-        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-body font-medium text-surface">
+        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-inverse text-body font-medium text-text-inverse">
           {initial}
         </span>
       )}
       <span className="flex min-w-0 flex-col">
         <span className={compact ? 'font-medium whitespace-nowrap' : 'font-medium break-words'}>{label}</span>
-        {detail && <span className="text-small text-ink-muted break-words">{detail}</span>}
+        {detail && <span className="text-body-sm text-text-muted break-words">{detail}</span>}
       </span>
     </button>
   );

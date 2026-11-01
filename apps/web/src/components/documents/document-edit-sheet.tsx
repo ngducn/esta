@@ -110,7 +110,7 @@ export default function DocumentEditSheet({
           onChange={(next) => (isDocumentCategory(next) ? setCategory(next) : undefined)}
         />
         {wrongCategory ? (
-          <p role="alert" className="text-small text-overdue">
+          <p role="alert" className="text-body-sm text-danger-text">
             {t('categoryMismatch')}
           </p>
         ) : null}

@@ -14,7 +14,7 @@ export function ExpenseRowButton({ expense, label, children }: { expense: Expens
       data-testid="expense-row-edit"
       onPointerDown={warmExpenseSheet}
       onClick={() => open({ kind: 'edit', expense })}
-      className="-mx-2 flex min-h-touch min-w-0 flex-1 items-start gap-3 rounded-sm px-2 py-3 text-left outline-none hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="-mx-2 flex min-h-touch min-w-0 flex-1 items-start gap-3 rounded-md px-2 py-3 text-left outline-none hover:bg-fill-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
     >
       {children}
     </button>

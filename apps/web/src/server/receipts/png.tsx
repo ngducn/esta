@@ -16,7 +16,7 @@ export function qrImage(payload: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
-const muted: CSSProperties = { color: hex('ink-muted') };
+const muted: CSSProperties = { color: hex('text-muted') };
 const note: CSSProperties = { ...muted, fontSize: 26, marginTop: 8 };
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -29,7 +29,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function Amount({ label, amount, strong = false, size = 30, ruled = false }: { label: string; amount: string; strong?: boolean; size?: number; ruled?: boolean }) {
-  const rule: CSSProperties = ruled ? { borderBottom: `1px solid ${hex('rule-strong')}` } : {};
+  const rule: CSSProperties = ruled ? { borderBottom: `1px solid ${hex('border-strong')}` } : {};
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 24, padding: '7px 0', fontWeight: strong ? 600 : 400, fontSize: size, ...rule }}>
       <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>{label}</div>
@@ -39,7 +39,7 @@ function Amount({ label, amount, strong = false, size = 30, ruled = false }: { l
 }
 
 function Payment({ receipt }: { receipt: Receipt }) {
-  if (receipt.paid) return <div style={{ display: 'flex', color: hex('paid'), fontWeight: 600, fontSize: 36 }}>{receipt.labels.paidInFull}</div>;
+  if (receipt.paid) return <div style={{ display: 'flex', color: hex('success-text'), fontWeight: 600, fontSize: 36 }}>{receipt.labels.paidInFull}</div>;
   if (receipt.qr === null) return null;
   return (
     <div style={{ display: 'flex', flex: 1, gap: 36, alignItems: 'center' }}>
@@ -62,9 +62,9 @@ function Payment({ receipt }: { receipt: Receipt }) {
 /** A5's shape at least; a bill with many lines makes the picture taller, so the code is never cut off or squeezed. */
 function ReceiptPicture({ receipt }: { receipt: Receipt }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minHeight: PNG_PX.height, padding: 80, background: hex('surface'), color: hex('ink'), fontFamily: FAMILY, fontSize: 30, lineHeight: 1.45 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minHeight: PNG_PX.height, padding: 80, background: hex('surface'), color: hex('text'), fontFamily: FAMILY, fontSize: 30, lineHeight: 1.45 }}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 24, paddingBottom: 16, borderBottom: `3px solid ${hex('ink')}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 24, paddingBottom: 16, borderBottom: `3px solid ${hex('text')}` }}>
           <div style={{ display: 'flex', flex: 1, minWidth: 0, fontWeight: 600, fontSize: 34 }}>{receipt.header}</div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0, fontSize: 26, ...muted }}>
             <span>{receipt.labels.number}</span>
@@ -87,10 +87,10 @@ function ReceiptPicture({ receipt }: { receipt: Receipt }) {
             <Amount key={index} label={line.label} amount={line.amount} ruled />
           ))}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', borderTop: `3px solid ${hex('ink')}`, marginTop: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', borderTop: `3px solid ${hex('text')}`, marginTop: 4 }}>
           <Amount label={receipt.labels.total} amount={receipt.total} strong size={40} />
           {receipt.totalWords === null ? null : (
-            <div style={{ display: 'flex', gap: 10, color: hex('ink-2') }}>
+            <div style={{ display: 'flex', gap: 10, color: hex('text-secondary') }}>
               <span style={{ flexShrink: 0 }}>{receipt.labels.words}</span>
               <span>{receipt.totalWords}</span>
             </div>

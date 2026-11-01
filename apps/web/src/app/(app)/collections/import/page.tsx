@@ -24,14 +24,14 @@ export default async function StatementImportPage() {
   const heading = (
     <>
       <BackLink href="/collections" label={t('back')} />
-      <h1 className="text-h2 break-words lg:text-h1">{t('title')}</h1>
+      <h1 className="text-title-2 break-words lg:text-title-1">{t('title')}</h1>
     </>
   );
   if (member.role !== 'admin') {
     return (
       <div className="flex flex-col gap-5">
         {heading}
-        <p data-testid="statement-admin-only" className="max-w-prose text-body text-ink-2">
+        <p data-testid="statement-admin-only" className="max-w-prose text-body text-text-secondary">
           {t('adminOnly')}
         </p>
       </div>

@@ -70,7 +70,7 @@ export function SignUpForm({ copy }: { copy: SignUpCopy }) {
 
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
-      <p className="text-ink-2">{copy.intro}</p>
+      <p className="text-text-secondary">{copy.intro}</p>
       <div className="flex flex-col gap-2">
         <label htmlFor="email" className="font-medium">
           {copy.emailLabel}
@@ -103,11 +103,11 @@ export function SignUpForm({ copy }: { copy: SignUpCopy }) {
           invalid={error?.field === 'password'}
           describedBy={error?.field === 'password' ? ['password-hint', 'sign-up-error'] : ['password-hint']}
         />
-        <p id="password-hint" className="text-small text-ink-muted">
+        <p id="password-hint" className="text-body-sm text-text-muted">
           {copy.passwordHint}
         </p>
       </div>
-      <p id="sign-up-error" role="alert" className="min-h-6 font-medium text-overdue">
+      <p id="sign-up-error" role="alert" className="min-h-6 font-medium text-danger-text">
         {message}
       </p>
       <button type="submit" name="intent" value="send" disabled={pending} className={primaryClass}>

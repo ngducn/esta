@@ -31,7 +31,7 @@ export function AnnotationList({ drafts, onChange, onAdd }: { drafts: readonly A
     <div className="flex flex-col gap-3">
       <ol className="flex flex-col gap-3">
         {drafts.map((draft, index) => (
-          <li key={draft.key} aria-label={t('annotationRow', { index: index + 1 })} className="flex flex-col gap-3 rounded-md border border-rule p-3 sm:p-4">
+          <li key={draft.key} aria-label={t('annotationRow', { index: index + 1 })} className="flex flex-col gap-3 rounded-md border border-border p-3 sm:p-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <DateInput label={t('annotationDate')} {...(draft.date === null ? {} : { defaultValue: draft.date })} onValueChange={(date) => update(draft.key, { date })} />
               <FormSelect
@@ -42,14 +42,14 @@ export function AnnotationList({ drafts, onChange, onAdd }: { drafts: readonly A
               />
             </div>
             <TextField label={t('annotationText')} value={draft.text} maxLength={2000} error={null} onChange={(text) => update(draft.key, { text })} />
-            <Button type="button" variant="quiet" className="self-start" onClick={() => onChange(drafts.filter((other) => other.key !== draft.key))}>
+            <Button type="button" variant="ghost" className="self-start" onClick={() => onChange(drafts.filter((other) => other.key !== draft.key))}>
               <X aria-hidden="true" />
               {t('removeAnnotation', { index: index + 1 })}
             </Button>
           </li>
         ))}
       </ol>
-      <Button type="button" variant="outline" className="self-start" onClick={onAdd}>
+      <Button type="button" variant="secondary" className="self-start" onClick={onAdd}>
         <Plus aria-hidden="true" />
         {t('addAnnotation')}
       </Button>

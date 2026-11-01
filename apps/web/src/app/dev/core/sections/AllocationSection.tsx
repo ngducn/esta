@@ -217,10 +217,10 @@ export async function AllocationSection() {
 
   return (
     <section aria-labelledby="allocation-heading" data-section="allocation" className="flex flex-col gap-4">
-      <h2 id="allocation-heading" className="text-lead font-semibold">
+      <h2 id="allocation-heading" className="text-headline font-semibold">
         {t('title')}
       </h2>
-      <p className="text-small text-ink-muted">{t('intro')}</p>
+      <p className="text-body-sm text-text-muted">{t('intro')}</p>
 
       <h3 className="font-medium">{t('payments')}</h3>
       <DevTable
@@ -270,7 +270,7 @@ type DevRow = { key: string; attributes: Record<`data-${string}`, string>; cells
 
 function DevTable({ columns, rows }: { columns: readonly string[]; rows: readonly DevRow[] }) {
   return (
-    <table className="w-full text-left text-small max-sm:block">
+    <table className="w-full text-left text-body-sm max-sm:block">
       <thead className="max-sm:sr-only">
         <tr className="border-b">
           {columns.map((column) => (
@@ -285,7 +285,7 @@ function DevTable({ columns, rows }: { columns: readonly string[]; rows: readonl
           <tr key={row.key} {...row.attributes} className="border-b align-top max-sm:grid max-sm:grid-cols-[auto_1fr] max-sm:gap-x-3 max-sm:py-2">
             {row.cells.map(([cell, value], i) => (
               <td key={cell} className={`py-1 pr-4 wrap-anywhere ${value === '' ? 'max-sm:hidden' : 'max-sm:contents'}`}>
-                <span aria-hidden="true" className="font-sans font-normal text-meta sm:hidden">
+                <span aria-hidden="true" className="font-sans font-normal text-caption sm:hidden">
                   {columns[i]}
                 </span>
                 <span data-cell={cell}>{value}</span>

@@ -93,7 +93,7 @@ function MapView({ properties, theme, canEdit, locate, query }: Props) {
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] lg:items-start lg:gap-5">
       <div
-        className={`relative overflow-hidden rounded-lg border border-rule shadow-card lg:sticky lg:top-6 lg:h-[calc(100dvh-13rem)] lg:min-h-[30rem] ${target === null ? 'h-[60dvh] min-h-80' : 'h-[45dvh] min-h-72'}`}
+        className={`relative overflow-hidden rounded-lg border border-border shadow-xs lg:sticky lg:top-6 lg:h-[calc(100dvh-13rem)] lg:min-h-[30rem] ${target === null ? 'h-[60dvh] min-h-80' : 'h-[45dvh] min-h-72'}`}
       >
         <MapCanvas
           theme={theme}

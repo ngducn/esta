@@ -16,7 +16,7 @@ export function TaskDone({ id, labels }: { id: string; labels: TaskDoneLabels })
   const done = () => perform(() => setTaskStatus({ id, status: 'done' }), { message: labels.toast, restore: () => setTaskStatus({ id, status: 'open' }) });
   return (
     <div className="flex flex-col items-start gap-2">
-      <button type="button" onClick={done} disabled={pending || !hydrated} aria-label={labels.doneLabel} data-testid="task-done" className={buttonVariants({ variant: 'quiet' })}>
+      <button type="button" onClick={done} disabled={pending || !hydrated} aria-label={labels.doneLabel} data-testid="task-done" className={buttonVariants({ variant: 'ghost' })}>
         <Check aria-hidden="true" />
         {labels.done}
       </button>

@@ -7,7 +7,7 @@ import { isActive, type NavItem } from './nav';
 import { sectionIcons } from './section-icons';
 
 const linkClass =
-  'flex min-h-touch items-center gap-3 rounded-sm px-3 text-body font-medium text-ink-2 transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent-tint aria-[current=page]:font-medium aria-[current=page]:text-accent';
+  'flex min-h-touch items-center gap-3 rounded-md px-3 text-body font-medium text-text-secondary transition-colors duration-(--duration-fast) ease-standard hover:bg-fill-hover hover:text-text aria-[current=page]:bg-accent-subtle aria-[current=page]:font-medium aria-[current=page]:text-accent-text';
 
 function NavList({ items, pathname }: { items: readonly NavItem[]; pathname: string }) {
   return (
@@ -44,18 +44,18 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   return (
-    <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col gap-5 overflow-y-auto border-r border-rule bg-surface px-4 py-5 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col gap-5 overflow-y-auto border-r border-border bg-surface px-4 py-5 lg:flex">
       {header}
       <nav aria-label={label}>
         <NavList items={items} pathname={pathname} />
       </nav>
       <nav aria-labelledby="sidebar-more" className="flex flex-col gap-1">
-        <p id="sidebar-more" className="px-3 pb-1 text-small font-medium text-ink-muted">
+        <p id="sidebar-more" className="px-3 pb-1 text-body-sm font-medium text-text-muted">
           {moreLabel}
         </p>
         <NavList items={more} pathname={pathname} />
       </nav>
-      <div className="mt-auto border-t border-rule pt-3">{footer}</div>
+      <div className="mt-auto border-t border-border pt-3">{footer}</div>
     </aside>
   );
 }

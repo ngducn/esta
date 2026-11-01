@@ -174,12 +174,12 @@ export function ReviewPanel({
   const notice =
     mode === 'waiting' ? (
       polled.workerOffline && polled.offlineSince != null ? (
-        <p data-testid="review-offline" role="status" className="flex items-start gap-3 rounded-md bg-due-fill px-4 py-3 text-body font-medium text-due">
+        <p data-testid="review-offline" role="status" className="flex items-start gap-3 rounded-md bg-warning-bg px-4 py-3 text-body font-medium text-warning-text">
           <CloudOff className="mt-0.5 size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
           <span className="min-w-0 break-words">{t('offline', { time: polled.offlineSince })}</span>
         </p>
       ) : (
-        <p data-testid="review-reading" role="status" className="flex items-start gap-3 rounded-md bg-surface-2 px-4 py-3 text-body text-ink-2">
+        <p data-testid="review-reading" role="status" className="flex items-start gap-3 rounded-md bg-bg-subtle px-4 py-3 text-body text-text-secondary">
           <FileSearch className="mt-0.5 size-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
           <span className="min-w-0 break-words">{t('reading')}</span>
         </p>
@@ -193,14 +193,14 @@ export function ReviewPanel({
       <section
         ref={pager}
         aria-label={t('documentPanel')}
-        className="flex scroll-mt-4 flex-col gap-3 rounded-lg border border-rule bg-surface p-4 shadow-card lg:sticky lg:top-6"
+        className="flex scroll-mt-4 flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs lg:sticky lg:top-6"
       >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 text-lead font-semibold text-ink">
-            <Images className="size-5 shrink-0 text-ink-2" strokeWidth={1.8} aria-hidden="true" />
+          <h2 className="flex items-center gap-2 text-headline font-semibold text-text">
+            <Images className="size-5 shrink-0 text-text-secondary" strokeWidth={1.8} aria-hidden="true" />
             <span className="min-w-0 break-words">{t('documentPanel')}</span>
           </h2>
-          <Button type="button" variant="quiet" className="lg:hidden" aria-expanded={showDocument} data-testid="toggle-document" onClick={() => setShowDocument((shown) => !shown)}>
+          <Button type="button" variant="ghost" className="lg:hidden" aria-expanded={showDocument} data-testid="toggle-document" onClick={() => setShowDocument((shown) => !shown)}>
             {showDocument ? t('hideDocument') : t('showDocument')}
           </Button>
         </div>
@@ -212,26 +212,26 @@ export function ReviewPanel({
       <div className="flex min-w-0 flex-col gap-4">
         {notice}
         {mode === 'accepted' ? (
-          <section data-testid="review-accepted" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card">
-            <h2 className="flex items-center gap-2 text-lead font-semibold text-ink">
-              <CircleCheck className="size-5 shrink-0 text-paid" strokeWidth={2} aria-hidden="true" />
+          <section data-testid="review-accepted" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs">
+            <h2 className="flex items-center gap-2 text-headline font-semibold text-text">
+              <CircleCheck className="size-5 shrink-0 text-success-text" strokeWidth={2} aria-hidden="true" />
               {t(leaseToCreate ? 'acceptedLeaseTitle' : 'acceptedTitle')}
             </h2>
-            <p className="text-body text-ink-2">{t(leaseToCreate ? 'acceptedLeaseBody' : 'acceptedBody')}</p>
+            <p className="text-body text-text-secondary">{t(leaseToCreate ? 'acceptedLeaseBody' : 'acceptedBody')}</p>
             {propertyId === null ? null : <AcceptedLink {...nextStep(schemaName, propertyId, documentId)} leaseHref={leaseId === null ? null : `/properties/${propertyId}/rental/leases/${leaseId}`} canEdit={canEdit} />}
           </section>
         ) : null}
         {mode === 'rejected' || mode === 'none' ? (
-          <p data-testid="review-closed" className="rounded-lg border border-rule bg-surface p-5 text-body text-ink-2 shadow-card">
+          <p data-testid="review-closed" className="rounded-lg border border-border bg-surface p-5 text-body text-text-secondary shadow-xs">
             {mode === 'rejected' ? t('rejected') : t('notExtractable')}
           </p>
         ) : null}
         {reviewing ? (
           <>
-            <p data-testid="review-intro" className="text-body text-pretty text-ink-2">
+            <p data-testid="review-intro" className="text-body text-pretty text-text-secondary">
               {mode === 'manual' ? t('manualIntro') : t('intro')}
             </p>
-            {canEdit ? null : <p className="text-body font-medium text-ink-2">{t('viewerNote')}</p>}
+            {canEdit ? null : <p className="text-body font-medium text-text-secondary">{t('viewerNote')}</p>}
             {sections.map((section) => {
               const mismatch =
                 section.list === 'parcels'
@@ -244,18 +244,18 @@ export function ReviewPanel({
                   : null;
               const heading = `${section.key || 'root'}-heading`;
               return (
-                <section key={section.key || 'root'} aria-labelledby={heading} data-testid="review-section" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card">
-                  <h2 id={heading} className="text-lead font-semibold break-words text-ink">
+                <section key={section.key || 'root'} aria-labelledby={heading} data-testid="review-section" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs">
+                  <h2 id={heading} className="text-headline font-semibold break-words text-text">
                     {t('section', { list: section.list, n: section.number })}
                   </h2>
                   {mismatch === null ? null : (
-                    <p data-testid="area-mismatch" role="note" className="flex items-start gap-3 rounded-md bg-due-fill px-4 py-3 text-body font-medium text-due">
+                    <p data-testid="area-mismatch" role="note" className="flex items-start gap-3 rounded-md bg-warning-bg px-4 py-3 text-body font-medium text-warning-text">
                       <span className="min-w-0 break-words">
                         {t('areaMismatch', { parcel: formatArea(mismatch.parcel, locale), purposes: formatArea(mismatch.purposes, locale) })}
                       </span>
                     </p>
                   )}
-                  <ul className="flex flex-col divide-y divide-rule">
+                  <ul className="flex flex-col divide-y divide-border">
                     {section.fields.map((field) => (
                       <ExtractionFieldRow
                         key={field.path}
@@ -275,15 +275,15 @@ export function ReviewPanel({
               );
             })}
             {canEdit ? (
-              <section aria-label={t('save')} data-testid="review-save" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card">
+              <section aria-label={t('save')} data-testid="review-save" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs">
                 {propertyId === null ? (
                   <label className="flex flex-col gap-1">
-                    <span className="text-body font-medium text-ink">{t('propertyLabel')}</span>
+                    <span className="text-body font-medium text-text">{t('propertyLabel')}</span>
                     <select
                       data-testid="review-property"
                       value={chosenProperty}
                       onChange={(event) => setChosenProperty(event.target.value)}
-                      className="min-h-touch rounded-md border border-field bg-surface px-3 text-body text-ink"
+                      className="min-h-touch rounded-md border border-border-field bg-surface px-3 text-body text-text"
                     >
                       <option value="">{t('propertyPlaceholder')}</option>
                       {properties.map((property) => (
@@ -294,7 +294,7 @@ export function ReviewPanel({
                     </select>
                   </label>
                 ) : null}
-                <p data-testid="review-progress" className="text-body text-ink-2 figures">
+                <p data-testid="review-progress" className="text-body text-text-secondary num">
                   {t('progress', { done: decided, total: fields.length })}
                 </p>
                 <FormAlert message={saveMessage} data-testid="review-error" />
@@ -324,7 +324,7 @@ export function ReviewPanel({
 
 function AcceptedLink({ href, tab, leaseHref, canEdit }: { href: string; tab: 'legal' | 'rental' | null; leaseHref: string | null; canEdit: boolean }) {
   const t = useTranslations('extraction');
-  const className = cn(buttonVariants({ variant: 'outline' }), 'self-start');
+  const className = cn(buttonVariants({ variant: 'secondary' }), 'self-start');
   if (tab !== null) {
     return (
       <a className={className} href={href}>

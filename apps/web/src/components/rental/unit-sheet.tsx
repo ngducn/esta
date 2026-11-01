@@ -93,10 +93,10 @@ export default function UnitSheet({
         unit === null || onDelete === null ? null : (
           <Button
             type="button"
-            variant="quiet"
+            variant="ghost"
             data-testid="delete-unit"
             aria-label={t('deleteLabel', { label: unit.label })}
-            className="text-overdue sm:mr-auto"
+            className="text-danger-text sm:mr-auto"
             onClick={() => {
               onDelete(unit);
               onOpenChange(false);
@@ -122,7 +122,7 @@ export default function UnitSheet({
         value={area}
         maxLength={20}
         inputMode="decimal"
-        className="figures"
+        className="num"
         error={invalid === 'area' ? t('areaInvalid') : null}
         onChange={setArea}
       />

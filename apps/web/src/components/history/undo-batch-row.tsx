@@ -22,16 +22,16 @@ export function UndoBatchRow({ batchId, summary, body, children }: { batchId: st
         />
       </div>
       <div role="status" aria-live="polite" data-testid="undo-status" className="text-body">
-        {pending ? <p className="text-ink-muted">{t('undoing')}</p> : null}
+        {pending ? <p className="text-text-muted">{t('undoing')}</p> : null}
         {!pending && state !== null && state.status !== 'undone' ? (
           <div className="flex items-start gap-2">
             <StatusShape status="overdue" className="mt-1 size-4 shrink-0" />
             {state.status === 'failed' || state.status === 'already_undone' ? (
-              <p className="text-overdue">{t(state.status === 'failed' ? 'failed' : 'alreadyUndone')}</p>
+              <p className="text-danger-text">{t(state.status === 'failed' ? 'failed' : 'alreadyUndone')}</p>
             ) : (
               <div className="flex max-w-prose flex-col gap-1">
-                <p className="font-medium text-overdue">{t('refused')}</p>
-                <ul className="flex flex-col gap-1 text-ink-2">
+                <p className="font-medium text-danger-text">{t('refused')}</p>
+                <ul className="flex flex-col gap-1 text-text-secondary">
                   {state.blockers.map(({ reason, flow }) => (
                     <li key={reason}>
                       {t('reason', { reason })} {t('flow', { flow })}

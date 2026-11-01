@@ -13,8 +13,8 @@ export function WorkerStatusLine({ status }: { status: WorkerStatus }) {
   const t = useTranslations('assistant');
   if (status.kind === 'online') {
     return (
-      <p data-testid="worker-status" data-status="online" className="flex items-start gap-2 text-body text-ink-2">
-        <CircleCheck className="mt-0.5 size-5 shrink-0 text-paid" strokeWidth={2} aria-hidden="true" />
+      <p data-testid="worker-status" data-status="online" className="flex items-start gap-2 text-body text-text-secondary">
+        <CircleCheck className="mt-0.5 size-5 shrink-0 text-success-text" strokeWidth={2} aria-hidden="true" />
         <span className="min-w-0 break-words">{t('statusOnline', { time: stampLabel(status) })}</span>
       </p>
     );
@@ -23,7 +23,7 @@ export function WorkerStatusLine({ status }: { status: WorkerStatus }) {
     <p
       data-testid="worker-status"
       data-status={status.kind}
-      className="flex items-start gap-3 rounded-md bg-due-fill px-4 py-3 text-body font-medium text-due"
+      className="flex items-start gap-3 rounded-md bg-warning-bg px-4 py-3 text-body font-medium text-warning-text"
     >
       {status.kind === 'paused' ? (
         <CirclePause className="mt-0.5 size-5 shrink-0" strokeWidth={2} aria-hidden="true" />

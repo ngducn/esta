@@ -41,10 +41,10 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {label}
       </label>
-      <p id={`${id}-hint`} className="text-small text-ink-muted">
+      <p id={`${id}-hint`} className="text-body-sm text-text-muted">
         {t('examples')}
       </p>
       <div className="mt-1 flex gap-2">
@@ -59,12 +59,12 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
           spellCheck={false}
           aria-invalid={error !== null}
           aria-describedby={`${id}-hint ${id}-message`}
-          className="max-w-48 figures"
+          className="max-w-48 num"
         />
         <span className="relative">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             disabled={disabled}
             onClick={() => {
               const input = picker.current;
@@ -93,7 +93,7 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
       {name === undefined ? null : <input type="hidden" name={name} value={result.ok ? result.value : ''} />}
       <FieldMessage id={`${id}-message`} error={error}>
         {result.ok ? (
-          <time dateTime={result.value} data-testid="date-preview" className="text-ink">
+          <time dateTime={result.value} data-testid="date-preview" className="text-text">
             {formatDateLong(result.value, locale)}
           </time>
         ) : null}

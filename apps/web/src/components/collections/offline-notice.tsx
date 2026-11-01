@@ -7,8 +7,8 @@ import { useOnline } from '@/lib/use-online';
 export function OfflineNotice({ message, testId = 'collections-offline' }: { message: string; testId?: string }) {
   if (useOnline()) return null;
   return (
-    <p role="status" data-testid={testId} className="flex items-start gap-3 rounded-md border border-rule bg-surface-2 px-4 py-3 text-body text-ink">
-      <WifiOff className="mt-0.5 size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+    <p role="status" data-testid={testId} className="flex items-start gap-3 rounded-md border border-border bg-bg-subtle px-4 py-3 text-body text-text">
+      <WifiOff className="mt-0.5 size-5 shrink-0 text-text-muted" aria-hidden="true" />
       {message}
     </p>
   );

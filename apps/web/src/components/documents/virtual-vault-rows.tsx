@@ -76,9 +76,9 @@ export function VirtualVaultRows({
             style={{ transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)` }}
           >
             {row.kind === 'group' ? (
-              <h3 data-testid="vault-group" data-group={row.key} className="flex flex-wrap items-baseline gap-x-2 pt-2 text-lead font-semibold break-words text-ink">
+              <h3 data-testid="vault-group" data-group={row.key} className="flex flex-wrap items-baseline gap-x-2 pt-2 text-headline font-semibold break-words text-text">
                 <span data-testid="group-label">{row.label}</span>
-                <span data-testid="group-count" className="text-small font-normal text-ink-muted">
+                <span data-testid="group-count" className="text-body-sm font-normal text-text-muted">
                   {countLabel(row.count)}
                 </span>
               </h3>

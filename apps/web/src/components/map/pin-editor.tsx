@@ -42,13 +42,13 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
       }}
     >
       <div className="flex flex-col gap-1">
-        <h3 id={`${id}-title`} className="text-body font-medium text-ink">
+        <h3 id={`${id}-title`} className="text-body font-medium text-text">
           {t('pinTitle')}
         </h3>
-        <p className="text-small text-ink-muted">{pin === null ? t('pinHelpEmpty') : t('pinHelpPlaced')}</p>
+        <p className="text-body-sm text-text-muted">{pin === null ? t('pinHelpEmpty') : t('pinHelpPlaced')}</p>
       </div>
       <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
-        <label className="flex flex-col gap-1.5 text-small font-medium text-ink">
+        <label className="flex flex-col gap-1.5 text-body-sm font-medium text-text">
           {t('latitude')}
           <Input
             name="lat"
@@ -57,10 +57,10 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
             defaultValue={show(pin?.lat)}
             aria-invalid={invalid}
             aria-describedby={invalid ? `${id}-error` : undefined}
-            className="figures font-normal"
+            className="num font-normal"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-small font-medium text-ink">
+        <label className="flex flex-col gap-1.5 text-body-sm font-medium text-text">
           {t('longitude')}
           <Input
             name="lng"
@@ -69,12 +69,12 @@ export function PinEditor({ pin, saving, onSave }: { pin: GeoPoint | null; savin
             defaultValue={show(pin?.lng)}
             aria-invalid={invalid}
             aria-describedby={invalid ? `${id}-error` : undefined}
-            className="figures font-normal"
+            className="num font-normal"
           />
         </label>
       </div>
       {invalid ? <FieldMessage id={`${id}-error`} error={t('coordinateInvalid')} /> : null}
-      <button type="submit" disabled={saving || !hydrated} className={buttonVariants({ variant: 'outline' })}>
+      <button type="submit" disabled={saving || !hydrated} className={buttonVariants({ variant: 'secondary' })}>
         <Save aria-hidden="true" />
         {t('savePin')}
       </button>
