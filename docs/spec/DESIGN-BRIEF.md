@@ -44,75 +44,79 @@ No exclamation marks in UI copy. No emoji in UI. Numbers always formatted (DOMAI
 - Every document shows clear, sensitive ones included (Ryan's ruling of 2026-10-19, DOC-5).
 - Full Vietnamese glyph coverage in every font at every weight used (spike S2).
 
-## 5. Visual direction: bright and calm
+## 5. Visual direction: the calm blue workbench
 
-Approved by the operator on 2026-10-16 from the canvas mock (`docs/design/redesign-2026-10/`). The references are a well-run banking app and a clean property listing: a cool light-gray ground, white cards, one lacquer-red accent, one sans typeface, line icons beside every label, and real photos of the places. Bright, because Mẹ reads Esta on a phone in daylight and the operator asked for a light app.
+Ryan redesigned Esta on 2026-11-01. His design system artifact (https://claude.ai/artifact/8USdYGBumJc9AuaMsQfZKg) is the source of truth, copied to `docs/design/redesign-2026-11/`, and `DESIGN.md` records how the code carries it. It replaces the 2026-10-16 direction (lacquer red, house mark). The feel is a mature, well-funded money product: calm, exact, trustworthy and conventional on purpose, so Esta sits comfortably beside a bank app on Mẹ's phone.
 
 Principles:
 
 1. The daily question comes first. Each screen opens on what `docs/plan/trail/ux-daily-use.md` ranks highest: who has paid this month, what is due today, where a document is.
-2. Cards on a gray ground. A card is a white surface with a 1 px `rule` border, a 16 px radius and one soft shadow. Inside a card, structure comes from rule lines and spacing. No card inside a card.
-3. One accent, lacquer red `#B83A26`, for the primary action, the active navigation item and the brand mark. It is never a status color.
-4. Icons sit beside labels. Esta uses lucide line icons (named imports from `lucide-react`) at a 1.75 to 2 stroke. An icon never replaces a label on mobile.
-5. Photos for places. Every property shows its photo first, because Mẹ recognizes a house before its nickname. Tenants show initials, never photos.
-6. Status is shape plus word plus color, in that order of importance, set as a pill: a tinted fill, the status color for the word, and the shape in the same color.
-7. Summary figures use the compact money form ("29 tr"); tables, forms, receipts and QR sheets use the exact amount.
-8. Calm motion that confirms, never decorates.
+2. The app is a workbench. Every working screen follows one pattern: page head, summary strip, filter bar, data with its total (the redesign's later slices apply it screen by screen).
+3. Cards on a grey ground. A card is a white `surface` with a 1 px `border` hairline, a 12 px radius and `shadow-xs`. Inside a card, structure comes from hairlines and spacing. No card inside a card.
+4. One accent, Esta blue `#1b5bda`, the same fill in both themes, for the one primary action, checked controls, the current page and the brand mark. It is never a status, a money series or decoration. Danger keeps red.
+5. Icons sit beside labels. Lucide line icons at a 1.75 stroke, sized by the text beside them. An icon never replaces a label on a phone.
+6. Photos for places. Every property shows its photo first, because Mẹ recognizes a house before its nickname. People show initials.
+7. Status is an icon, a word and a colour, set as a badge on the tone's tinted ground. The word carries the meaning; the colour confirms it.
+8. Summary figures use the compact money form (`42,5 tr`); tables, forms, receipts and QR sheets use the exact amount.
+9. Calm motion that confirms, never decorates.
 
-Light is the default whatever the device setting says. Dark applies only when the member chooses it in Cài đặt.
+Light is the default whatever the device setting says. Dark applies only when the member chooses it.
 
 ### 5.1 Typography
 
-- One face: **Inter** (OFL, variable, weights 400 to 600 and optical size 14 to 32; Ryan's decision of 2026-10-24, replacing Plus Jakarta Sans at 700 because the bold weights made every screen heavy), self-hosted from `apps/web/src/fonts/` and subset to Vietnamese and basic Latin by `pnpm fonts:build`. It covers every code point of the glyph test string at every weight used, and its `tnum` feature gives uniform-width digits; its default digits are already lining, and it has ₫. `pnpm glyphs:check` guards the shipped file.
-- Amounts use the `figures` utility (tabular figures) and sit right-aligned in tables.
-- Source Sans 3 and Source Serif 4 (spike S2) are retired. Geist was tried first and has no ₫; Be Vietnam Pro still fails the tabular figures check (DESIGN.md, "Why this face").
+- One face in the app: **Inter** (OFL, variable, weights 400 to 600 and optical size 14 to 32), self-hosted from `apps/web/src/fonts/` and subset to Vietnamese and basic Latin by `pnpm fonts:build`. It covers every code point of the glyph test string at every weight used, its `tnum` feature gives uniform-width digits, and it has ₫. `pnpm glyphs:check` guards the shipped file. Inter Display is for the brand layer only (RD-6).
+- Amounts use the `num` utility (tabular figures, never wrapping) and sit right-aligned in tables.
 - Never Arial, Roboto or system defaults as the identity face.
 - Glyph test string for `/dev/glyphs` and the coverage script:
   `Đặng Thị Hường, Nguyễn Văn Ước, Phường Dĩ An, Thửa đất số 1234, tờ bản đồ số 56. ẫ ặ ữ ỡ ự ể ộ ổ ỗ ờ ở ợ ụ ủ ứ ừ ử ữ ỳ ỷ ỹ Ỵ. 0123456789 ₫ m² ½`
-- Scale: 13 meta (captions only), 15 small, 16 body, 18 lead and card titles, 20 h3, 24 h2 and phone page titles, 30 h1, 34 and 44 for summary figures. Weights: body 400, labels, buttons and list amounts 500, headings and summary figures 600, nothing heavier. Headings keep -0.02em tracking.
+- Type styles by name: `display` 40, `title-1` 30, `title-2` 24, `title-3` 20, `headline` 18, `body` and `body-strong` 16, `label` and `body-sm` 15, `caption` 14, and for money `figure-xl` 40, `figure-lg` 32, `figure-md` 24, `amount` 16. Weights 400 for reading, 500 for labels and amounts, 600 for titles and summary figures, nothing heavier. Line height never below 1.3. The design system's 14 px caption is accepted.
 
 ### 5.2 Color
 
-Tokens are OKLCH with light and dark sets in `apps/web/src/design/tokens.ts`; `DESIGN.md` lists the hex each light value renders as.
+Role tokens with light and dark sets in `apps/web/src/design/tokens.ts`, holding the exact hex of the design system's `tokens.json`. Neutrals are cool and quiet; dark mode has its own steps rather than an inversion.
 
 | Token | Light | Use |
 | --- | --- | --- |
-| `ground` | `#F5F6F8` | Page background, cool light gray |
-| `surface` | `#FDFDFF` | Cards, sheets, the sidebar |
-| `surface-2` | `#F8F9FB` | Table headers, quiet blocks inside a card |
-| `ink` | `#16181D` | Text, secondary (dark) buttons |
-| `ink-2` | `#2A2F3A` | Running text in notes |
-| `ink-muted` | `#5B6170` | Secondary text, never on a colored fill |
-| `rule` | `#E7E9EE` | Card borders and dividers |
-| `rule-strong` | `#DCDFE5` | Outline button borders |
-| `field` | `#808694` | Input and checkbox borders, 3:1 against every ground |
-| `accent` | `#B83A26` | Primary action, active navigation, brand mark |
-| `accent-tint` | `#F8EBE9` | Active navigation fill |
-| `paid` on `paid-fill` | `#146C3B` on `#ECF8F1` | Check shape |
-| `due` on `due-fill` | `#8A4B06` on `#FEF5E6` | Clock shape |
-| `overdue` on `overdue-fill` | `#A82A1D` on `#FDEEEC` | Filled diamond with the day count |
-| `vacant` on `vacant-fill` | `#475066` on `#F0F2F5` | Open square |
+| `bg` | `#f5f7f9` | Page ground, cool light grey |
+| `surface` | `#ffffff` | Cards, inputs, the sidebar, the bottom nav |
+| `surface-raised` | `#ffffff` | Menus, sheets, modals (one step lighter in dark) |
+| `bg-subtle` | `#fafafc` | Table headers, quiet blocks inside a card |
+| `text` | `#15191f` | Reading text, ≥ 7:1 everywhere |
+| `text-secondary` | `#454c57` | Second lines, ≥ 7:1 |
+| `text-muted` | `#5e6570` | Counts and timestamps, never on a coloured fill |
+| `border` | `#e3e6eb` | Card borders and dividers |
+| `border-field` | `#757c88` | Input and checkbox edges, 3:1 against every ground |
+| `accent` | `#1b5bda` | The one primary action, checked controls, brand mark |
+| `accent-text` | `#144bb7` | Links and the current nav item |
+| `accent-subtle` | `#f1f6fe` | Where you are: current nav item, pressed chip |
+| `success-text` on `success-bg` | `#1b6c3a` on `#ebfbee` | Paid, `circle-check` |
+| `warning-text` on `warning-bg` | `#975215` on `#fff6e4` | Due soon, `clock` |
+| `danger-text` on `danger-bg` | `#a82522` on `#fff2f0` | Overdue, failed, destructive, `triangle-alert` |
+| `info-text` on `info-bg` | `#144bb7` on `#f1f6fe` | Draft, tips, `pencil-line` |
+| `neutral-text` on `neutral-bg` | `#454c57` on `#eceff3` | Empty or ended, `circle-dashed` or `archive` |
 
-Each status color reaches 4.5:1 on its fill and on every ground, so one token draws both the shape and the word. Never pure black or pure white; the mock's white surface ships as `#FDFDFF`. No gradients.
+Never pure black; white is for cards and inputs only. No gradients.
 
 ### 5.3 Layout and density
 
-- Desktop: a white left sidebar (240 px) with the brand mark, the household, the five sections with icons, a "Khác" group with Báo cáo and Cài đặt, and the member block at the bottom. Content max width 1200 px on the gray ground. Tables are first-class.
-- Mobile: a header with the date and the account button, and a bottom tab bar with five icon-and-label items: Tổng quan, Tài sản, Thu tiền, Tài liệu, Trợ lý. Reports and settings live under the account menu. Tables become stacked rows with the amount on the right.
-- Radii: 10 px for buttons, 12 px for fields and icon tiles, 16 px for cards, full for pills and avatars.
-- Density: comfortable by default; Ryan can switch to compact (row height and padding tighten, type size does not shrink below 15 px).
-- Sheets slide up for quick actions on mobile (record payment, show QR); full pages for anything with more than five fields.
+- Phone (under 840 px): a header with the date and the account button, and a bottom tab bar with five icon-over-word items: Tổng quan, Tài sản, Thu tiền, Tài liệu, Trợ lý. The current tab has an `accent-subtle` pill behind its icon; labels wrap at 130% and never hide. Tables become stacked rows with the amount on the right.
+- Tablet (840 px): the sidebar collapses to an icon rail.
+- Desktop (1080 px): a 256 px sidebar with the ESTA wordmark, the five sections, Báo cáo and Cài đặt, and the member block. Content widths per page type: forms 640, reading 720, lists 1120, dashboards 1280.
+- The account menu (member block, or the phone header's avatar as a bottom sheet) holds Cỡ chữ, Giao diện, Mật độ and Ngôn ngữ as segmented controls that apply on tap, then Báo cáo, Cài đặt and Đăng xuất.
+- Radii: 8 px for buttons, inputs and nav items, 12 px for cards, menus and toasts, 16 px for modals, 24 px for the top of a phone sheet, full for badges, chips and avatars.
+- Density: Thoáng by default; Gọn for Ryan at a desk tightens control height (48 to 40), row height (64 to 44) and card padding (24 to 16). Gọn never shrinks type or a touch target under 44 px.
+- Sheets slide up for quick actions on a phone (record payment, show QR); modals on desktop; full pages for anything with more than five fields.
 - A section that has no feature yet says in one sentence what it will do and offers the one action that works today. It never shows a button, search field or bell for a feature that does not exist.
 
 ### 5.4 Motion
 
-150 to 220 ms, standard ease-out. Used for sheet entry, list insertions, the undo toast, and number changes after a payment is recorded. No bounce, no elastic, no parallax, no confetti. Respect reduced-motion.
+120, 180, 240 and 300 ms on a standard ease for change in place, an entering ease with a long calm settle for arrivals and a shorter exiting ease for departures. Sheets, modals, toasts, menus, row inserts and the switch thumb move. Money never counts up, tables never animate on sort, skeletons hold still. No bounce, no elastic, no parallax, no confetti. Reduced motion removes every transform.
 
 ### 5.5 How the assistant looks
 
 The assistant is "Trợ lý", a quiet colleague who leaves notes and answers when written to. Trợ lý is one thread per person, read like a messaging app with the newest at the bottom (Ryan's direction of 2026-10-25). Its notes arrive in the thread: the morning brief, alerts, proposals and the weekly review. Mẹ writes back in the same place, about her houses or anything else.
 
-- Each Trợ lý message is a note card: a small monogram ring in the accent, a time stamp, short sentences, every number linked to the record it came from or carrying its source. A web figure carries a small numbered citation chip that opens the page, and a calculated figure carries a `Cách tính` line with its working.
+- Each Trợ lý message is a note card: a small TL monogram ring, a time stamp, short sentences, every number linked to the record it came from or carrying its source. A web figure carries a small numbered citation chip that opens the page, and a calculated figure carries a `Cách tính` line with its working.
 - Her own messages sit on the right as plain tinted blocks with no tail and no avatar. A reply to a note shows the note's title above her text.
 - Proposals are compact blocks inside the note with two text buttons, "Đồng ý" and "Bỏ qua". A hidden note collapses to one muted line, so the thread keeps its order.
 - A reply box is always at the bottom, above the tab bar on a phone, with a text `Gửi` button. Up to three suggested replies drawn from today's notes sit above it as text chips.
@@ -148,7 +152,7 @@ Build these in Phase 0 and show every state on `/dev/components`, light and dark
 - Money display (full, compact, signed, large figure).
 - Money input that accepts Vietnamese shorthand through `parseVndInput`: "3tr5" → 3,500,000; "3,5tr" → 3,500,000; "3.500.000" → 3,500,000; "1ty2" → 1,200,000,000; "850k" → 850,000; "15 triệu" → 15,000,000. Shows the parsed full amount live under the field.
 - Date input that accepts typing `dd/mm/yyyy` and a picker; optional lunar line (P2).
-- Status mark (shape + word + color) for paid, due, overdue, vacant, draft, ended.
+- Status badge (icon + word + colour) for paid, due, overdue, empty, draft, ended.
 - Completeness ring with the count of missing items.
 - Address block showing "Theo sổ" and "Hiện nay".
 - Document tile (thumbnail, category, expiry).
@@ -162,7 +166,7 @@ Build these in Phase 0 and show every state on `/dev/components`, light and dark
 
 ## 8. Anti-patterns
 
-Reject in review and let the Impeccable detector catch what it can: gradient washes; glassmorphism; neon; cards nested in cards; icon tiles above headings; gray text on colored backgrounds; pure black or white; emoji in UI; sparkle or magic-wand icons for AI; chat-bubble home screens; uppercase letter-spaced labels everywhere; centered body text; more than one accent; charts with more than three colors; tiles that do not answer a daily question in `docs/plan/trail/ux-daily-use.md`; a button, search field or bell for a feature that does not exist yet; hover-only actions; icon-only buttons on mobile.
+Reject in review and let the Impeccable detector catch what it can: gradient washes; glassmorphism; neon; cards nested in cards; icon tiles above headings; muted text on coloured backgrounds; pure black; emoji in UI; sparkle or magic-wand icons for AI; chat-bubble home screens; uppercase letter-spaced labels everywhere; centered body text; the accent as a status or decoration; charts with more than three colors; tiles that do not answer a daily question in `docs/plan/trail/ux-daily-use.md`; a button, search field or bell for a feature that does not exist yet; hover-only actions; icon-only buttons on mobile.
 
 ## 9. Design QA per surface
 

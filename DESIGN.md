@@ -1,102 +1,152 @@
 ---
 name: Esta
-description: A private, bright app for a Vietnamese family's land, houses and rent.
+description: A private, calm app for a Vietnamese family's land, houses and rent.
 colors:
-  ground: "oklch(97.3% 0.003 265)"
-  surface: "oklch(99.5% 0.002 265)"
-  surface-2: "oklch(98.2% 0.003 265)"
-  ink: "oklch(20.9% 0.01 268)"
-  ink-2: "oklch(30.5% 0.021 266)"
-  ink-muted: "oklch(49.3% 0.025 268)"
-  rule: "oklch(93.4% 0.007 269)"
-  rule-strong: "oklch(90.3% 0.009 265)"
-  field: "oklch(62% 0.022 265)"
-  accent: "oklch(53% 0.166 32)"
-  accent-pressed: "oklch(47% 0.166 32)"
-  accent-tint: "oklch(95% 0.014 28)"
-  on-accent: "oklch(99% 0.004 32)"
-  paid: "oklch(46.9% 0.112 153)"
-  due: "oklch(47.9% 0.111 59)"
-  overdue: "oklch(48.5% 0.165 30)"
-  vacant: "oklch(43.2% 0.038 267)"
-  paid-fill: "oklch(96.8% 0.016 161)"
-  due-fill: "oklch(97.2% 0.022 80)"
-  overdue-fill: "oklch(96% 0.017 27)"
-  vacant-fill: "oklch(96% 0.005 258)"
-  ground-dark: "oklch(16% 0.008 265)"
-  surface-dark: "oklch(20.5% 0.01 265)"
-  surface-2-dark: "oklch(23.5% 0.011 265)"
-  ink-dark: "oklch(94% 0.006 265)"
-  ink-2-dark: "oklch(87% 0.01 265)"
-  ink-muted-dark: "oklch(74% 0.018 265)"
-  rule-dark: "oklch(29% 0.012 265)"
-  rule-strong-dark: "oklch(36% 0.014 265)"
-  field-dark: "oklch(56% 0.02 265)"
-  accent-dark: "oklch(72% 0.14 32)"
-  accent-pressed-dark: "oklch(66% 0.14 32)"
-  accent-tint-dark: "oklch(27% 0.04 30)"
-  on-accent-dark: "oklch(18% 0.02 30)"
-  paid-dark: "oklch(80% 0.12 155)"
-  due-dark: "oklch(83% 0.12 75)"
-  overdue-dark: "oklch(78% 0.12 28)"
-  vacant-dark: "oklch(81% 0.025 265)"
-  paid-fill-dark: "oklch(27% 0.04 155)"
-  due-fill-dark: "oklch(28% 0.04 70)"
-  overdue-fill-dark: "oklch(27% 0.05 28)"
-  vacant-fill-dark: "oklch(27% 0.012 265)"
+  bg: "#f5f7f9"
+  bg-subtle: "#fafafc"
+  surface: "#ffffff"
+  surface-raised: "#ffffff"
+  surface-inverse: "#15191f"
+  text: "#15191f"
+  text-secondary: "#454c57"
+  text-muted: "#5e6570"
+  text-inverse: "#fafafc"
+  border: "#e3e6eb"
+  border-strong: "#d5d9e0"
+  border-field: "#757c88"
+  accent: "#1b5bda"
+  accent-hover: "#144bb7"
+  accent-pressed: "#103c92"
+  on-accent: "#ffffff"
+  accent-text: "#144bb7"
+  accent-subtle: "#f1f6fe"
+  focus-ring: "#1b5bda"
+  success-text: "#1b6c3a"
+  success-bg: "#ebfbee"
+  warning-text: "#975215"
+  warning-bg: "#fff6e4"
+  danger-text: "#a82522"
+  danger-bg: "#fff2f0"
+  info-text: "#144bb7"
+  info-bg: "#f1f6fe"
+  neutral-text: "#454c57"
+  neutral-bg: "#eceff3"
+  bg-dark: "#0f1217"
+  bg-subtle-dark: "#1d2128"
+  surface-dark: "#15191f"
+  surface-raised-dark: "#1d2128"
+  surface-inverse-dark: "#eceff3"
+  text-dark: "#f5f7f9"
+  text-secondary-dark: "#b9bfc8"
+  text-muted-dark: "#9299a4"
+  text-inverse-dark: "#15191f"
+  border-dark: "#252a32"
+  border-strong-dark: "#30353e"
+  border-field-dark: "#757c88"
+  accent-dark: "#1b5bda"
+  accent-hover-dark: "#144bb7"
+  accent-pressed-dark: "#103c92"
+  on-accent-dark: "#ffffff"
+  accent-text-dark: "#9bbefe"
+  accent-subtle-dark: "#0b1e44"
+  focus-ring-dark: "#689cfe"
+  success-text-dark: "#85d99d"
+  success-bg-dark: "#0f2a18"
+  warning-text-dark: "#fdc061"
+  warning-bg-dark: "#3a1f0c"
+  danger-text-dark: "#fda79d"
+  danger-bg-dark: "#411310"
+  info-text-dark: "#9bbefe"
+  info-bg-dark: "#0b1e44"
+  neutral-text-dark: "#b9bfc8"
+  neutral-bg-dark: "#252a32"
 typography:
-  hero-xl:
+  display:
     fontFamily: "Inter"
-    fontSize: "2.75rem"
+    fontSize: "2.5rem"
     fontWeight: 600
-    lineHeight: 1.3
-    fontFeature: "'tnum'"
-  hero:
-    fontFamily: "Inter"
-    fontSize: "2.125rem"
-    fontWeight: 600
-    lineHeight: 1.3
-    fontFeature: "'tnum'"
-  h1:
+    lineHeight: "3.25rem"
+    letterSpacing: "-0.022em"
+  title-1:
     fontFamily: "Inter"
     fontSize: "1.875rem"
     fontWeight: 600
-    lineHeight: 1.3
-  h2:
+    lineHeight: "2.5rem"
+    letterSpacing: "-0.02em"
+  title-2:
     fontFamily: "Inter"
     fontSize: "1.5rem"
     fontWeight: 600
-    lineHeight: 1.3
-  h3:
+    lineHeight: "2rem"
+    letterSpacing: "-0.016em"
+  title-3:
     fontFamily: "Inter"
     fontSize: "1.25rem"
     fontWeight: 600
-    lineHeight: 1.35
-  lead:
+    lineHeight: "1.75rem"
+    letterSpacing: "-0.01em"
+  headline:
     fontFamily: "Inter"
     fontSize: "1.125rem"
     fontWeight: 600
-    lineHeight: 1.45
+    lineHeight: "1.625rem"
+    letterSpacing: "-0.006em"
   body:
     fontFamily: "Inter"
     fontSize: "1rem"
     fontWeight: 400
-    lineHeight: 1.5
-  small:
+    lineHeight: "1.5rem"
+  body-strong:
+    fontFamily: "Inter"
+    fontSize: "1rem"
+    fontWeight: 500
+    lineHeight: "1.5rem"
+  label:
+    fontFamily: "Inter"
+    fontSize: "0.9375rem"
+    fontWeight: 500
+    lineHeight: "1.25rem"
+  body-sm:
     fontFamily: "Inter"
     fontSize: "0.9375rem"
     fontWeight: 400
-    lineHeight: 1.45
-  meta:
+    lineHeight: "1.375rem"
+  caption:
     fontFamily: "Inter"
-    fontSize: "0.8125rem"
+    fontSize: "0.875rem"
     fontWeight: 400
-    lineHeight: 1.45
+    lineHeight: "1.25rem"
+    letterSpacing: "0.004em"
+  figure-xl:
+    fontFamily: "Inter"
+    fontSize: "2.5rem"
+    fontWeight: 600
+    lineHeight: "3.25rem"
+    letterSpacing: "-0.022em"
+  figure-lg:
+    fontFamily: "Inter"
+    fontSize: "2rem"
+    fontWeight: 600
+    lineHeight: "2.625rem"
+    letterSpacing: "-0.02em"
+  figure-md:
+    fontFamily: "Inter"
+    fontSize: "1.5rem"
+    fontWeight: 600
+    lineHeight: "2rem"
+    letterSpacing: "-0.012em"
+  amount:
+    fontFamily: "Inter"
+    fontSize: "1rem"
+    fontWeight: 500
+    lineHeight: "1.5rem"
 rounded:
-  xs: "0.375rem"
-  sm: "0.625rem"
-  md: "0.75rem"
-  lg: "1rem"
+  "xs": "4px"
+  "sm": "6px"
+  "md": "8px"
+  "lg": "12px"
+  "xl": "16px"
+  "2xl": "24px"
 spacing:
   unit: "0.25rem"
   touch: "2.75rem"
@@ -106,121 +156,142 @@ spacing:
 
 ## Overview
 
-**Creative North Star: "Bright and Calm"**
+**Creative North Star: "The calm blue workbench"**
 
-Esta looks like a well-run banking app crossed with a clean property listing. A cool light-gray ground, white cards with a hairline border and one soft shadow, one lacquer-red accent, one sans typeface, line icons beside every label, and real photos of the places. The operator approved this direction on 2026-10-16; the mock lives in `docs/design/redesign-2026-10/`.
+Esta looks like a mature, well-run money product that sits comfortably beside a bank app on Mẹ's phone. A cool light-grey ground, white cards with a hairline and a soft shadow, one family (Inter), and Esta blue `#1b5bda` only for the one primary action, selection and the current page. Warmth comes from the words and the family's own photos, not from the palette. Ryan designed it on 2026-11-01; the source of truth is his design system artifact (https://claude.ai/artifact/8USdYGBumJc9AuaMsQfZKg), copied for offline reading to `docs/design/redesign-2026-11/`. Its `tokens.json` holds every exact value, `components/bundle.css` the CSS of every `es-*` class, and each component folder its anatomy and states.
 
-The primary reader is an older, non-technical owner on her phone in daylight, in Vietnamese, often at text scale 115 or 130%. Every token is chosen for her first: 16 px body at the smallest, 44 px touch targets, status as shape plus word plus color, and contrast proven by script. Each screen opens on the question she asks most often (`docs/plan/trail/ux-daily-use.md`).
+The primary reader is a parent in her 50s or 60s on a mid-range Android phone at 115 to 130% text size, in Vietnamese, often outdoors. Every token is chosen for her first: 16 px body at the smallest reading size, 44 px touch targets, status as icon plus word plus colour, and contrast proven by script.
 
-**Key Characteristics:**
+**Key characteristics:**
 
-- White cards on a gray ground. No card inside a card.
-- One accent for the primary action, the active navigation item and the brand mark.
-- Icons beside labels, never instead of them on mobile.
+- White cards on a grey ground, structure from hairlines. No card inside a card.
+- One primary per view; everything else is secondary or ghost. Red appears only on the confirming step of something that ends.
+- Icons beside words, never instead of them on a phone.
 - Photos for places, initials for people.
 - Light by default whatever the device says; dark only when the member chooses it.
 
+The brand layer (Inter Display Light, split headlines, pill buttons) belongs to sign-in, onboarding and printed covers, and arrives in RD-6. None of it appears inside the app.
+
 ## Colors
 
-Cool neutrals at hue 265, one lacquer red, and four status pairs. Every value is OKLCH. The source of truth is `apps/web/src/design/tokens.ts`, and `pnpm tokens:build` writes `apps/web/src/styles/tokens.css` from it. The `-dark` keys above are the same tokens under `[data-theme="dark"]`, which the server sets from the `esta_theme` cookie. No `prefers-color-scheme` rule exists, so a phone set to dark still opens Esta light.
+Role tokens only; the `slate`, `blue`, `green`, `amber` and `red` ramps in `tokens.json` are reference. The source of truth in code is `apps/web/src/design/tokens.ts`, which holds the exact hex of `tokens.json` per theme, and `pnpm tokens:build` writes `apps/web/src/styles/tokens.css` from it. The `-dark` keys above are the same tokens under `[data-theme="dark"]`, which the server sets from the `esta_theme` cookie. No `prefers-color-scheme` rule exists, so a phone set to dark still opens Esta light.
 
-### Primary
+Tailwind utilities carry the role name after the utility: `bg-bg`, `bg-surface`, `bg-surface-raised`, `text-text`, `text-text-secondary`, `text-text-muted`, `border-border`, `border-border-field`, `text-accent-text`, `bg-danger-bg`. The words read twice, but code and design speak one vocabulary.
 
-- **Accent** (`accent`, `#B83A26` in light): the primary button fill, the active navigation item (on `accent-tint`), the brand mark, the focus ring and the text caret. Text on an accent fill uses `on-accent`. Pressed, the fill turns to `accent-pressed` (`#A3250F` in light), because a translucent press state would drop `on-accent` below 4.5:1. Never a status color.
-
-### Neutral
-
-- **Ground** (`ground`, `#F5F6F8`): the page background.
-- **Surface** (`surface`, `#FDFDFF`): cards, sheets, the sidebar, inputs. The mock's pure white ships one step off white, because pure white is banned.
-- **Surface 2** (`surface-2`, `#F8F9FB`): table headers and quiet blocks inside a card.
-- **Ink** (`ink`, `#16181D`): text and the secondary (dark) button. **Ink 2** (`ink-2`) sets running text in notes.
-- **Ink Muted** (`ink-muted`, `#5B6170`): secondary text on a ground, never on a colored fill.
-- **Rule** (`rule`, `#E7E9EE`): card borders and dividers. **Rule Strong** (`rule-strong`, `#DCDFE5`): outline button borders. Both are decorative; the button's text label carries it.
-- **Field** (`field`, `#808694`): input and checkbox borders, darker than the mock's rule so a field edge reaches 3:1 (WCAG 1.4.11).
-
-### Status
-
-- **Paid** (`paid` on `paid-fill`, check shape), **Due** (`due` on `due-fill`, clock shape), **Overdue** (`overdue` on `overdue-fill`, filled diamond with the day count), **Vacant** (`vacant` on `vacant-fill`, open square). Each status color reaches 4.5:1 on its fill and on every ground, so one token draws both the shape and the word.
+- **Ground and surfaces.** `bg` (`#f5f7f9`) is the page; `surface` (white) is cards, inputs, the sidebar and the bottom nav; `surface-raised` is menus, sheets and modals; `bg-subtle` is a quiet block inside a card, such as a table header. `surface-inverse` with `text-inverse` is the toast.
+- **Text.** `text` (≥ 7:1 everywhere it sits) for reading, `text-secondary` for second lines (also ≥ 7:1), `text-muted` for counts and timestamps (≥ 4.5:1, never on a coloured fill).
+- **Lines.** `border` is decorative (cards, dividers); `border-strong` edges a secondary button; `border-field` (≥ 3:1) is the edge of anything you type into or tick.
+- **The accent.** `accent` fills the one primary button, checked controls and the brand mark, the same hex in both themes, with `on-accent` ≥ 5.9:1 on it and darker `accent-hover` and `accent-pressed`. `accent-text` is for links and the current nav item; `accent-subtle` marks where you are (current nav item, a pressed chip, a selected segment). The accent fill is never a status and never decoration.
+- **Status tones.** `success` (paid), `warning` (due soon), `danger` (overdue, failed, destructive), `info` (draft, tips), `neutral` (empty, ended), each with `-text`, `-bg`, `-border`, `-solid` and `on-`. Amounts stay `text`-coloured even when overdue: the badge says overdue.
+- **Focus.** `focus-ring`, blue in light and a lighter blue in dark, ≥ 3:1 on every surface.
 
 ### Named Rules
 
-**The Proven Pair Rule.** Every foreground and background pair the UI draws is listed in `apps/web/src/design/text-pairs.ts`. `pnpm contrast:check` (part of `pnpm check`) measures each in both themes, text at 4.5:1 and field borders at 3:1, and fails on any miss, on any token outside sRGB, on any token that renders as pure black or pure white, and on any `text-*` and `bg-*` pair the source draws that the list leaves out.
+**The Proven Pair Rule.** Every pair the UI draws is listed in `apps/web/src/design/text-pairs.ts`: the contrast table of `01-foundations.md`, widened to every ground. `pnpm contrast:check` (part of `pnpm check`) measures each in both themes, body text at 7:1, other text at 4.5:1, focus rings and field edges at 3:1. It fails on any miss, on a token that is pure black or not a `#rrggbb` hex, on any `text-*` and `bg-*` pair the source draws that the list leaves out, and on any class still spelled in the retired 2026-10 vocabulary (`text-ink`, `bg-ground`, `border-rule`, `text-small`, `figures`, `shadow-card` and the rest).
 
-**The One Accent Rule.** The accent marks the one primary action on a screen and where you are. Secondary actions are ink or outline.
+**The One Primary Rule.** One primary button per view, last in its row. A screen of blue and outline buttons reads as calm.
 
 ## Typography
 
 **Font:** Inter (variable, weights 400 to 600, optical size 14 to 32), with a metric-matched Arial fallback.
 
-SIL OFL 1.1, self-hosted from `apps/web/src/fonts/` through `next/font/local` and built by `pnpm fonts:build` from google/fonts commit `7085eb89`. The subset keeps basic Latin, the Latin-1 letters Vietnamese uses, the Vietnamese block, ₫ and common punctuation, plus the text layout features and `tnum`. The file is 39 KB (the optical size axis doubles it) and preloaded. A letter outside the subset, such as ü in a foreign name, falls back glyph by glyph. The browser's automatic optical sizing draws the tighter display cut at heading sizes.
+SIL OFL 1.1, self-hosted from `apps/web/src/fonts/` through `next/font/local` and built by `pnpm fonts:build` from google/fonts commit `7085eb89`. The subset keeps basic Latin, the Latin-1 letters Vietnamese uses, the Vietnamese block, ₫ and common punctuation, plus the text layout features and `tnum`. The design system measured Inter against Be Vietnam Pro and Plus Jakarta Sans (`01-foundations.md`): only Inter clears Ỗ over ặ at a 1.3 leading and keeps working tabular figures.
 
-### Why this face
+### Type styles
 
-Ryan's decision, 2026-10-24: "make it a bit cleaner with Geist font or something, the bold nature typography kinda makes the whole thing heavy to look at." Plus Jakarta Sans at 700 is retired. Geist was tried first and fails the Full Coverage Rule: it has no ₫ (U+20AB), so every amount would draw its currency sign from the fallback font. Inter is the closest clean neo-grotesk that passes. `pnpm glyphs:check` reads all 176 code points of the glyph test string and the Vietnamese letters at 400, 500 and 600, each at optical size 14 and 32, with a `tnum` feature and uniform digit widths. Candidates checked on 2026-10-24 against the same pinned commit: Geist (no ₫), Be Vietnam Pro (no `tnum`, no arrows), Public Sans (no arrow glyph), Onest (no ₫), DM Sans, Albert Sans, Figtree, Instrument Sans and Schibsted Grotesk (no Vietnamese horn letters), Manrope (passes, but geometric and wide). Source Sans 3 and Source Serif 4 from spike S2 stay retired.
+Use the styles by name; each is a Tailwind `text-*` utility with its size, line height, tracking and (above 400) weight. Sizes are rem, so the member's text size scales them.
 
-### Hierarchy
+| Style | Size / line | Weight | Use |
+| --- | --- | --- | --- |
+| `display` | 40 / 52 | 600 | One per screen at most |
+| `title-1` | 30 / 40 | 600 | Page title on desktop |
+| `title-2` | 24 / 32 | 600 | Page title on phones, section title on desktop |
+| `title-3` | 20 / 28 | 600 | Card group, modal and sheet titles |
+| `headline` | 18 / 26 | 600 | Card title, property name, first line of a phone row |
+| `body` | 16 / 24 | 400 | All running text |
+| `body-strong` | 16 / 24 | 500 | Primary cell of a row, names inside text |
+| `label` | 15 / 20 | 500 | Buttons, field labels, nav items |
+| `body-sm` | 15 / 22 | 400 | Second lines, helper and error text |
+| `caption` | 14 / 20 | 400 | Timestamps, counts, badge words |
+| `figure-xl` | 40 / 52 | 600 | The one summary figure of a hero card |
+| `figure-lg` | 32 / 42 | 600 | Stat card value, the amount in the payment sheet |
+| `figure-md` | 24 / 32 | 600 | Secondary stat, property rent, a total |
+| `amount` | 16 / 24 | 500 | Amounts in tables and lists |
 
-- **Summary figures** (600, 2.125rem `hero` and 2.75rem `hero-xl`, 1.3, `figures`): the one figure a card exists to show, in the compact money form.
-- **Page title** (600, 1.875rem `h1` on desktop and 1.5rem `h2` on phones, -0.02em tracking).
-- **Group title** (600, 1.25rem `h3`), **card title** (600, 1.125rem `lead`).
-- **Labels, buttons and list amounts** (500, at `small`, `body` or `lead` size): the one step above body, so a label reads without shouting.
-- **Body** (400, 1rem, 1.5): all running text. 16 px at text scale 1, never smaller.
-- **Small** (400, 0.9375rem, 1.45): secondary lines, labels, dense tables. The floor for any visible text, in either density.
-- **Meta** (400, 0.8125rem, 1.45): reserved for developer pages; the app keeps text at 15 px or more.
+A 400 style sets no weight, so a body-sized line inside a semibold heading keeps the heading's weight.
 
 ### Named Rules
 
-**The Figures Rule.** Amounts use the `figures` utility (`font-variant-numeric: lining-nums tabular-nums` with `tnum`) and sit right-aligned in tables. `1.111.111 ₫` and `8.888.888 ₫` render at the same width, and `e2e/dev-glyphs.spec.ts` asserts it. Summary cards show `formatVndCompact` ("29 tr"); tables, forms, receipts and QR sheets show the exact amount.
+**The Figures Rule.** Amounts use the `num` utility (tabular lining figures, `tnum`, never wrapping) and sit right-aligned in tables; `body` already sets tabular figures. A known zero shows `0 ₫` in `text-muted`; an unknown amount shows `—` in `text-muted` with an accessible name, never a false zero. Summary cards show `formatVndCompact` (`42,5 tr`); tables, forms, receipts and QR sheets show the exact amount (`02-money-and-data.md`).
 
 **The Full Coverage Rule.** `pnpm glyphs:check` (part of `pnpm check`) reads every shipped font file at every weight in `typefaces`. It fails on a missing code point, on a missing `tnum`, and on a font file the tokens do not name.
 
-**The Leading Rule.** Line height stays at 1.3 or more, so Vietnamese stacked marks (ặ, ữ, ỡ, Ướ) clear the line above, and `pnpm check` fails on any token below 1.3.
+**The Leading Rule.** Line height stays at 1.3 or more, so Vietnamese stacked marks clear the line above; `pnpm check` fails on any type style below 1.3.
 
-**The Weight Ceiling Rule.** Nothing is heavier than 600. The Tailwind weights are `font-normal`, `font-medium` and `font-semibold`; there is no `font-bold`, and `apps/web/src/app/globals-css.test.ts` fails if one comes back. Body is 400, labels, buttons and list amounts 500, headings and the one summary figure of a card 600.
+**The Weight Ceiling Rule.** Weights 400, 500 and 600 only. There is no `font-bold`, and `apps/web/src/app/globals-css.test.ts` fails if one comes back. Never letter-space Vietnamese body text; never uppercase labels in the app.
 
-**The Self-Hosted Rule.** Never Arial, Roboto or a system face as the identity face, and never a font CDN. Inter is self-hosted and chosen by Ryan (2026-10-24).
+**The Accepted Deviations Rule.** The design system states two deviations from its own brief, and Esta accepts both: `caption` is 14 px (the brief said 13), and the money input's parsed preview reads `= 3.500.000 ₫`, because `≈` is reserved for estimates.
 
-## Layout
+## Layout and density
 
-Spacing steps are multiples of a 4 px unit (`p-4` is 16 px), and `min-h-touch` is the 44 px minimum target. All sizes are in rem off a root of `100% × --text-scale`, so the member's 115 and 130 percent text scale grows type and spacing together.
+Spacing steps are multiples of 4 px (`p-4` is 16 px) and never change with density. `min-h-touch` is the 44 px minimum target. All sizes are in rem off a root of `100% × --text-scale`, so the member's 115 and 130% text size grows type and spacing together. Breakpoints follow the design system: `sm` 600, `md` 840, `lg` 1080, `xl` 1440.
 
-Desktop has a 240 px white sidebar (brand mark, household, the five sections with icons, a "Khác" group with Báo cáo and Cài đặt, the member block) and content up to 1200 px on the ground. Mobile has a header with the date and the account button and a bottom tab bar of five icon-and-label items. Comfortable density is the default; compact tightens rows and padding without taking type below 15 px.
+**Density.** Thoáng is the default; Gọn is for Ryan at a desk. Both set component variables on `:root[data-density]`, and the utilities read them:
 
-A section with no feature yet shows one card: an icon beside the title, one sentence on what the section will do, and the one action that works today. Never a button, search field or bell for a feature that does not exist.
+| Variable | Utility | Thoáng | Gọn |
+| --- | --- | --- | --- |
+| `--control-h` | `min-h-control-h` | 48 | 40 (44 on touch) |
+| `--row-h` | `h-row-h` | 64 | 44 |
+| `--list-row-h` | `min-h-list-row-h` | 72 | 56 |
+| `--card-pad` | `p-card-pad` | 24 (16 on phones) | 16 |
+| `--cell-x` | `px-cell-x` | 16 | 12 |
+| `--stack` | `gap-stack` | 24 | 16 |
+| `--field-gap` | `gap-field-gap` | 20 | 12 |
 
-## Elevation & Depth
+Gọn never shrinks type and never takes a touch target under 44 px. The stored setting keeps its values `comfortable` and `compact`; the labels read Thoáng and Gọn.
 
-Cards are `surface` on `ground` with a 1 px `rule` border and `shadow-card` (two soft offset layers at 4 to 5% of a cool ink). Sheets and the account menu use `shadow-sheet`. Shadows use a fixed cool ink, so they stay soft in dark mode.
+**Shell.** Under 840 px a bottom tab bar of five icon-over-word tabs (Tổng quan, Tài sản, Thu tiền, Tài liệu, Trợ lý), the current one marked by an `accent-subtle` pill behind its icon, above the safe-area inset. From 840 px an icon rail; from 1080 px the 256 px sidebar with the ESTA wordmark, nav items (current: `accent-subtle` fill, `accent-text`, weight 600) and the member block. The member block, and the phone header's avatar, open the account menu: Cỡ chữ, Giao diện, Mật độ and Ngôn ngữ as segmented controls that apply on tap, then Báo cáo, Cài đặt and Đăng xuất. Content widths: forms 640, reading 720, lists 1120, dashboards 1280.
 
-Motion uses 150, 180 and 220 ms (`--duration-fast`, `--duration-base`, `--duration-slow`) on `cubic-bezier(0.2, 0, 0, 1)`, for sheet entry, list insertions, the undo toast and a number changing after a payment. Reduced motion turns every transition off.
+A section with no feature yet shows one card: what the section will do and the one action that works today. Never a button, search field or bell for a feature that does not exist.
 
-## Shapes
+## Elevation, shape and motion
 
-Radii: `rounded-xs` 6 px (checkbox box), `rounded-sm` 10 px (buttons, nav items), `rounded-md` 12 px (inputs, icon tiles), `rounded-lg` 16 px (cards, sheets), `rounded-full` (pills, avatars).
+Hairline first, shadow second: `shadow-xs` for cards at rest, `shadow-sm` for a hovered clickable card and the bottom nav, `shadow-md` for menus, popovers and toasts, `shadow-lg` for modals and sheets over the `scrim`. Dark keeps the same layers with darker values. No coloured or inner shadows, no glow.
 
-Icons come from `lucide-react` (ISC), imported by name, at 20 px in navigation and buttons with a 1.75 to 2 stroke. Status shapes are drawn SVG at a 2.25 stroke on a 24 unit grid: a check for paid, a clock for due, a filled diamond for overdue, an open square for vacant. Never Unicode glyphs or emoji.
+Radii: `rounded-xs` 4 (checkbox), `rounded-sm` 6 (tooltip, citation chip), `rounded-md` 8 (buttons, inputs, nav items), `rounded-lg` 12 (cards, menus, toasts), `rounded-xl` 16 (modals, property cards), `rounded-2xl` 24 (top of a phone sheet), `rounded-full` (badges, avatars, switches, chips).
 
-## Imagery
+Focus is `outline: 2px solid var(--focus-ring); outline-offset: 2px` on `:focus-visible`, an outline so nothing moves.
 
-Photos are brand and demo imagery only, in `apps/web/src/photos/` with `ATTRIBUTION.md` beside them (all Pexels License). They render through `next/image` from static imports with explicit `sizes`. The sign-in hero shows on desktop only. Its img is lazy and `ReactDOM.preload` requests it at high priority under `(min-width: 64rem)`, so a desktop fetches it early and a phone never fetches it, which keeps the form the LCP element there. Property photos as data arrive with properties in P1-04 and P1-05. The app icon is the brand mark (a white house on a lacquer-red rounded square). `pnpm icons:build` draws `icon.svg`, the 180 px apple-touch icon and the 192, 512 and maskable 512 px manifest icons from the one path in `apps/web/src/design/brand.ts`.
+Motion uses 120, 180, 240 and 300 ms (`--duration-fast`, `-base`, `-slow`, `-sheet`) on `ease-standard` for change in place, `ease-enter` for arrivals and `ease-exit` for departures, exits shorter than entries. Sheets, modals, toasts, menus, row inserts and the switch thumb move. Money never counts up, tables never animate on sort, skeletons hold still, nothing bounces. Reduced motion removes every transform and transition.
+
+## Status and icons
+
+Icons come from `lucide-react` (ISC) at a 1.75 stroke (2 at 14 px), sized by the text beside them: 14 with `caption`, 16 with `label` and `body-sm`, 20 with `body` and `headline`, 24 in the bottom nav and empty states.
+
+Every status is a badge with an icon, a word and its tone, on its `-bg`: paid `circle-check` (success), due soon `clock` (warning), overdue `triangle-alert` (danger), empty `circle-dashed` (neutral), draft `pencil-line` (info), ended `archive` (neutral). Esta's extra status, not yet due, takes `calendar` in neutral so its silhouette differs from due. The silhouettes differ, so status reads in grayscale and sunlight.
+
+## Imagery and brand
+
+Photos are brand and demo imagery only, in `apps/web/src/photos/` with `ATTRIBUTION.md` beside them (all Pexels License), rendered through `next/image` with explicit `sizes`.
+
+The logo is the ESTA wordmark with a small blue square at the top right of the A, like the seal stamped on a land document; the app icon is the E with the same square on a blue tile. The marks are the outlined files in `docs/design/redesign-2026-11/brand/`, used exactly and never redrawn. `pnpm icons:build` draws `icon.svg`, the 180 px apple-touch icon and the 192, 512 and maskable 512 px manifest icons from `esta-app-icon.svg`.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** set every color from a token (`bg-surface`, `text-ink`, `var(--due)`), and add a new pairing to `text-pairs.ts` before it ships.
-- **Do** wrap content in a card on the ground, with structure inside from rules and spacing.
-- **Do** put an icon beside every navigation item and primary action, with its text label.
-- **Do** show status as shape, word, then color, in a pill on its `-fill`.
+- **Do** set every colour from a role token, and add a new pairing to `text-pairs.ts` before it ships.
+- **Do** keep one primary button per view, last in its row.
+- **Do** show status as icon, word and tone, in a badge on its `-bg`.
 - **Do** read the theme from the `esta_theme` cookie on the server, so the first byte is already in the right theme.
 - **Do** run `pnpm tokens:build` after editing `tokens.ts` and commit the generated `tokens.css`.
 
 ### Don't:
 
-- **Don't** use pure black, pure white, gradient washes, glass or neon.
+- **Don't** use pure black, gradient washes, glass or neon. White is for cards and inputs only.
 - **Don't** nest cards or put icon tiles above headings.
-- **Don't** set gray text on a colored background.
-- **Don't** use more than one accent, or the accent as a status.
+- **Don't** set muted text on a coloured fill.
+- **Don't** use the accent as a status, a chart series for money, or decoration.
 - **Don't** show a button, search field or bell for a feature that does not exist yet.
-- **Don't** use uppercase letter-spaced labels, centered body text, hover-only actions, or icon-only buttons on mobile.
+- **Don't** use uppercase letter-spaced labels, centred body text, hover-only actions, or icon-only buttons on a phone.
 - **Don't** use emoji, sparkle or magic-wand icons for the assistant.

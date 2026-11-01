@@ -16,7 +16,7 @@ Locked in `docs/spec/SPEC.md` §3. Next.js App Router, React, TypeScript strict,
 - **Ryan (operator).** Engineer, admin and operator of the system. Uses a laptop and phone, reads Vietnamese and English. Runs weekly reviews, statement imports, configuration and the assistant. He fears wrong numbers, data loss and silent agent mistakes.
 - **Viewer (later).** A relative or accountant with read-only access. The role exists in v1 with no dedicated screens.
 
-When Mẹ's needs and Ryan's conflict, Mẹ's experience wins. Ryan's power features (compact density, shortcuts, bulk actions, diagnostics) layer on without changing what she sees.
+When Mẹ's needs and Ryan's conflict, Mẹ's experience wins. Ryan's power features (Gọn density, shortcuts, bulk actions, diagnostics) layer on without changing what she sees.
 
 ## Product Purpose
 
@@ -49,7 +49,8 @@ v1 serves one household. Other families are a confirmed future audience, so the 
 
 ## Brand Commitments
 
-- Name: Esta. No logo, mark or name story exists yet. Visual identity comes later from the design brief.
+- Name: Esta. The logo is the ESTA wordmark in spaced capitals with a small blue square at the top right of the A, like the seal stamped on a land document; the app icon is the E with the same square on a blue tile (Ryan's design system, 2026-11-01, `docs/design/redesign-2026-11/`).
+- Look: a calm blue workbench. Esta blue for the one primary action, cool greys, white cards, Inter only, status as icon plus word plus colour (`DESIGN.md`).
 - The assistant is called "Trợ lý" and behaves like a quiet colleague who leaves notes.
 - Voice: neutral, polite Vietnamese, like a careful family accountant. Short sentences, plain words, legal terms only as printed on the certificate. No exclamation marks and no emoji in UI copy. Full voice table in `docs/spec/DESIGN-BRIEF.md` §3.
 
@@ -57,7 +58,7 @@ v1 serves one household. Other families are a confirmed future audience, so the 
 
 - Product truth and acceptance checks: `docs/spec/SPEC.md`, `docs/spec/DOMAIN-VN.md`, `docs/spec/DESIGN-BRIEF.md`, `docs/spec/AGENT.md`.
 - Synthetic seed household "Gia đình Demo" with seven properties (`SPEC.md` §9.3).
-- No testimonials, customers, usage metrics or brand assets exist. Do not fabricate them.
+- Brand assets: the wordmark and app icons in `docs/design/redesign-2026-11/brand/`. No testimonials, customers or usage metrics exist. Do not fabricate them.
 
 ## Product Principles
 
