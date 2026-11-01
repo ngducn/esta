@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { signOut } from '@/app/home-actions';
 import { switchLanguage } from '@/app/language-actions';
 import type { Locale } from '@/i18n/locale';
+import { Avatar } from '@/components/ui/avatar';
 import { IntentLink } from './intent-link';
 import type { SectionKey } from './nav';
 import { sectionIcons } from './section-icons';
@@ -105,11 +106,7 @@ export function AccountTrigger({
       aria-label={accessibleName}
       className={`flex min-h-touch max-w-full min-w-touch items-center rounded-md py-1.5 text-left text-text transition-colors duration-(--duration-fast) ease-standard hover:bg-fill-hover ${compact ? 'shrink-0 gap-2 px-1' : 'gap-3 px-2'} ${className ?? ''}`}
     >
-      {initial !== null && (
-        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-inverse text-body font-medium text-text-inverse">
-          {initial}
-        </span>
-      )}
+      <Avatar initial={initial} />
       <span className="flex min-w-0 flex-col">
         <span className={compact ? 'font-medium whitespace-nowrap' : 'font-medium break-words'}>{label}</span>
         {detail && <span className="text-body-sm text-text-muted break-words">{detail}</span>}

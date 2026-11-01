@@ -20,6 +20,7 @@ import {
 import { StatusMark } from '@/components/status-mark';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialogDemo, DateInputDemo, MoneyInputDemo, RentTableDemo, SheetDemo, UndoToastDemo } from './demos';
@@ -257,6 +258,14 @@ export const registry: readonly RegistryEntry[] = [
       },
       { state: 'long', render: () => <StatusMark status="overdue" days={1_250} /> },
       { state: 'loading', render: () => <SkeletonStatus /> },
+    ],
+  },
+  {
+    component: 'avatar',
+    states: [
+      { state: 'default', render: (t) => <Avatar initial="H" label={t('samples.memberName')} /> },
+      { state: 'empty', render: () => <Avatar initial={null} /> },
+      { state: 'assistant', render: () => <Avatar initial="TL" assistant /> },
     ],
   },
   {

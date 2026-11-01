@@ -215,7 +215,8 @@
       "confirmDialog": "Hộp xác nhận",
       "sheet": "Bảng trượt",
       "emptyState": "Khi chưa có gì",
-      "card": "Thẻ"
+      "card": "Thẻ",
+      "avatar": "Ảnh đại diện"
     },
     "states": {
       "default": "Mặc định",
@@ -231,7 +232,8 @@
       "signed": "Có dấu",
       "large": "Số lớn",
       "same": "Hai địa chỉ trùng nhau",
-      "complete": "Đủ thông tin"
+      "complete": "Đủ thông tin",
+      "assistant": "Trợ lý"
     },
     "samples": {
       "record": "Ghi nhận thanh toán",
@@ -284,7 +286,8 @@
       "emptyAction": "Thêm tài sản",
       "longEmptyTitle": "Chưa có giấy tờ nào cho Nhà phố Demo số 128/45/12 Hẻm Nguyễn Văn Ước.",
       "longEmptyBody": "Chụp sổ hồng, hợp đồng thuê hoặc biên lai thuế bằng điện thoại. Esta đọc giấy tờ và đề xuất thông tin để bạn kiểm tra lại.",
-      "longEmptyAction": "Chụp giấy tờ đầu tiên"
+      "longEmptyAction": "Chụp giấy tờ đầu tiên",
+      "memberName": "Nguyễn Demo Hường"
     }
   },
   "devVietqr": {

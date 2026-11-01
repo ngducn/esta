@@ -4,6 +4,7 @@ import { workerStatus } from '@esta/core/agent';
 import { formatDateLong } from '@esta/core/format';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { BrandMark } from '@/components/brand-mark';
+import { givenInitial } from '@/components/ui/avatar';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
 import { accountSections, operatorSections, primarySections, type NavItem } from '@/components/shell/nav';
 import { PrefetchTabs } from '@/components/shell/prefetch-tabs';
@@ -13,12 +14,6 @@ import { getWorkerHeartbeat } from '@/server/assistant';
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
-
-/** Vietnamese names put the given name last, so the monogram takes its first letter. */
-function monogram(displayName: string | null): string | null {
-  const given = displayName?.trim().split(/\s+/).at(-1);
-  return given ? given.charAt(0).toLocaleUpperCase('vi') : null;
-}
 
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
   const [member, clock, heartbeat, locale, nav, shell, language, onboarding, app] = await Promise.all([
@@ -41,7 +36,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   const more = accountSections.map(toItem);
   const menu = member.isOperator ? [...more, ...operatorSections.map(toItem)] : more;
   const name = member.displayName ?? shell('account');
-  const initial = monogram(member.displayName);
+  const initial = givenInitial(member.displayName);
   const role = onboarding(`roles.${member.role}`);
 
   return (

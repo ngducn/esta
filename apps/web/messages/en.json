@@ -215,7 +215,8 @@
       "confirmDialog": "Confirm dialog",
       "sheet": "Sheet",
       "emptyState": "Empty state",
-      "card": "Card"
+      "card": "Card",
+      "avatar": "Avatar"
     },
     "states": {
       "default": "Default",
@@ -231,7 +232,8 @@
       "signed": "Signed",
       "large": "Large",
       "same": "Both addresses match",
-      "complete": "Complete"
+      "complete": "Complete",
+      "assistant": "Assistant"
     },
     "samples": {
       "record": "Record payment",
@@ -284,7 +286,8 @@
       "emptyAction": "Add a property",
       "longEmptyTitle": "No documents yet for Nhà phố Demo số 128/45/12 Hẻm Nguyễn Văn Ước.",
       "longEmptyBody": "Photograph a certificate, a lease or a tax receipt with your phone. Esta reads it and suggests details for you to check.",
-      "longEmptyAction": "Photograph the first document"
+      "longEmptyAction": "Photograph the first document",
+      "memberName": "Nguyen Demo Huong"
     }
   },
   "devVietqr": {
