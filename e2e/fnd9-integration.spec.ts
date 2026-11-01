@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -7,6 +6,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
+import { seriousAxeViolations } from './helpers/wizard';
 
 // FND-9: one test clock, one web server and one worker per slot, moved a day without restarting either.
 test.describe.configure({ mode: 'serial' });
@@ -51,12 +51,6 @@ async function open(page: Page, email: string, path: string, { viewport, theme }
   await page.goto(path);
 }
 
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  await expect(page).not.toHaveTitle('');
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-}
-
 const dateLine = (page: Page) => page.getByTestId('date-line');
 const fitsWidth = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
 
@@ -93,11 +87,13 @@ test('rule 4: after the advance the worker reports online at 09:00 on its next h
 test('rule 1: the Home header moves from Wednesday to Thursday on reload', async ({ page, request }) => {
   await open(page, 'me.lane1@demo.esta.test', '/', { viewport: [390, 844], theme: 'light' });
   await expect(dateLine(page)).toHaveText('Thứ Tư, 07/10/2026');
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await setClock(request, OCT_8);
   await page.reload();
   await expect(dateLine(page)).toHaveText('Thứ Năm, 08/10/2026');
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
   expectNoRestart();
 });
@@ -138,6 +134,7 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
 
   await ping();
   expect((await runTimes())[0]).toMatch(/^0[78]\/10\/2026 09:00$/);
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await setClock(request, OCT_8);
@@ -146,6 +143,7 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
   const times = await runTimes();
   expect(times[0], 'the newest run started on the advanced clock').toBe('08/10/2026 09:00');
   expect(times, 'the run before it started on the first clock').toContain('07/10/2026 09:00');
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   const token = await accessToken(page);

@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
@@ -6,6 +5,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -38,11 +38,6 @@ async function rest(page: Page, method: 'POST' | 'PATCH' | 'DELETE', path: strin
     ...(data === undefined ? {} : { data }),
   });
   expect(response.ok(), await response.text()).toBe(true);
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 const parcels = (page: Page) => page.getByTestId('parcels-card');

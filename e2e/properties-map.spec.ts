@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Page, type Request } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -7,6 +6,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { stubTiles, TILE_HOST } from './helpers/map-tiles';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -93,13 +93,6 @@ async function paste(page: Page, text: string) {
   }, text);
 }
 
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).exclude('.maplibregl-canvas').analyze();
-  return violations
-    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-}
-
 /** The dev server runs the toaster's effect twice, so a first toast can still be leaving when the real one lands. */
 const liveToast = (page: Page) => page.locator('[data-slot="toast"]:not([data-ending-style])');
 
@@ -149,7 +142,7 @@ test('rule 1: the map shows six pins, the unpinned line names Đất vườn Lon
   await restore(page, propertyId(1, 'long-an'), null);
   await openMap(page, 'light');
   await expectRule1(page, { unpinned: /^1 tài sản chưa có vị trí$/, edit: 'Sửa vị trí' });
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 });
 
 test('rule 2: a pasted place link saves the !3d!4d point, offers Hoàn tác, and the unpinned line goes away', async ({ page }) => {
@@ -166,7 +159,7 @@ test('rule 2: a pasted place link saves the !3d!4d point, offers Hoàn tác, and
   await paste(page, PLACE_LINK);
   await expect(page.getByTestId('link-preview')).toContainText('10.5331, 106.4052');
   await expect(page.getByTestId('preview-pin')).toBeVisible();
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
   await panel(page).getByRole('button', { name: 'Dùng vị trí này' }).click();
 
   const toast = liveToast(page);
@@ -288,7 +281,7 @@ test('rule 4: a 4-corner boundary saves with an estimate, a crossing ring is ref
   await expect.poll(async () => (await stored(page, id)).has_boundary).toBe(false);
   await page.reload();
   await expect(panel(page).getByText('Chưa có ranh giới.')).toBeVisible();
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 });
 
 test('rule 5: a point outside Vietnam warns and waits for Vẫn lưu, and a userinfo short link is refused in the browser', async ({ page }) => {
@@ -362,7 +355,7 @@ test('rule 7: in English at 130% and dark, the map, card and warning translate a
     notMaps: /This is not a Google Maps link\./,
   });
   expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth), 'no horizontal page scroll').toBe(true);
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 });
 
 async function inviteViewer(page: Page, browser: Browser) {

@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -9,6 +8,7 @@ import { signIn } from './helpers/inbucket';
 import { stubTiles } from './helpers/map-tiles';
 import { setClock } from './helpers/test-clock';
 import { accessToken } from './helpers/session';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -28,13 +28,6 @@ async function setLocation(page: Page, id: string, location: { lat: number; lng:
     data: { p_property_id: id, ...(location === null ? {} : { p_lat: location.lat, p_lng: location.lng }) },
   });
   expect(response.ok()).toBe(true);
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).exclude('.maplibregl-canvas').analyze();
-  return violations
-    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 async function open(page: Page, email: string, theme: 'light' | 'dark') {
@@ -87,13 +80,13 @@ test('rule 1: Mẹ taps Dãy trọ Dĩ An on Tài sản and the detail page lead
   await page.getByTestId('location-card').scrollIntoViewIfNeeded();
   await expect(page.getByTestId('location-card').getByTestId('map-canvas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
   await expect.poll(() => mapChunks.length).toBeGreaterThan(0);
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 
   await tabs(page).filter({ hasText: 'Hoạt động' }).click();
   await expect(page).toHaveURL(/\/activity$/);
   await expect(tabs(page).last()).toHaveAttribute('aria-current', 'page');
   await expect(page.getByTestId('activity-entry').last()).toContainText('Dữ liệu mẫu đã thêm tài sản');
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 });
 
 test('rule 2: Ryan opens Kho Biên Hòa, sees the warehouse tile and the pin, and Sửa vị trí opens its panel', async ({ page }) => {
@@ -107,7 +100,7 @@ test('rule 2: Ryan opens Kho Biên Hòa, sees the warehouse tile and the pin, an
   await card.scrollIntoViewIfNeeded();
   await expect(card.getByTestId('map-canvas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
   await expect(card.getByTestId('property-pin')).toHaveAccessibleName('Kho Biên Hòa');
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 
   await card.getByRole('link', { name: 'Sửa vị trí' }).click();
   await expect(page).toHaveURL(new RegExp(`view=map&locate=${propertyId(2, 'bien-hoa')}`));
@@ -143,7 +136,7 @@ test('rule 3: Mẹ sets the Đất vườn Long An pin from its card and Hoạt 
     await tabs(page).filter({ hasText: 'Hoạt động' }).click();
     await expect(page.getByTestId('activity-entry').first()).toHaveText('Nguyễn Thị Demo đã cập nhật vị trí lúc 09:00, 07/10/2026');
     await expect(page.getByTestId('activity-entry').first()).toHaveAttribute('data-event', 'location');
-    expect(await seriousAxeViolations(page)).toEqual([]);
+    expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
   } finally {
     await setClock(request, null);
     await setLocation(page, id, null);
@@ -169,7 +162,7 @@ test('rule 4: another household’s property id renders the not-found page with 
   expect(activity?.status()).toBe(404);
   await expect(page.getByTestId('property-not-found')).toBeVisible();
   await expect(page.getByTestId('activity-entry')).toHaveCount(0);
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 });
 
 test('rule 5: in English at 130% and dark the labels and tabs translate, the addresses stay Vietnamese and nothing scrolls sideways', async ({ page }) => {
@@ -188,7 +181,7 @@ test('rule 5: in English at 130% and dark the labels and tabs translate, the add
   await expectDiAn(page, { current: 'Current', legal: 'On the certificate', tabs: ['Overview', 'Legal', 'Rental', 'Money', 'Documents', 'Activity'] });
   await expect(page.getByTestId('overview-facts')).toContainText('Rooms');
   expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth), 'no horizontal page scroll').toBe(true);
-  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 
   await tabs(page).filter({ hasText: 'Activity' }).click();
   await expect(page.getByTestId('activity-entry').last()).toContainText('Sample data added the property');

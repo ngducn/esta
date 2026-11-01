@@ -1,9 +1,9 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { signIn } from './helpers/inbucket';
+import { seriousAxeViolations } from './helpers/wizard';
 
 function authorization(): { authorization: string } {
   const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false });
@@ -30,8 +30,7 @@ test('the date line follows the test clock across a day without a restart', asyn
     await page.reload();
     await expect(page.getByTestId('date-line')).toHaveText('Thứ Năm, 08/10/2026');
 
-    const { violations } = await new AxeBuilder({ page }).analyze();
-    expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
+    expect(await seriousAxeViolations(page)).toEqual([]);
   } finally {
     await request.delete('/api/test/clock', { headers: authorization() });
   }

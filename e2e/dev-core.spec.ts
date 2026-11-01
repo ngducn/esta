@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { signIn } from './helpers/inbucket';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const NBSP = String.fromCharCode(160);
 const SECTIONS = ['money', 'format', 'parse', 'statement', 'phone', 'names', 'search', 'address', 'vietqr', 'schedule', 'allocation', 'tax'];
@@ -26,8 +26,7 @@ test('/dev/core shows every core section with zero MISMATCH rows', async ({ page
   await expect(results.filter({ hasText: 'MISMATCH' })).toHaveCount(0);
   await expect(page.getByTestId('core-summary')).toContainText(', 0 mismatches');
 
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+  expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
 test('formatVnd separates the amount from ₫ with a no-break space', async ({ page }) => {
@@ -114,8 +113,7 @@ test('the VietQR section shows the invoice QR, reads it back from the canvas and
   await expect(section.locator('tr[data-example="crc-pad"] [data-cell="reencoded"]')).toHaveText('khớp');
   await expect(section.locator('tr[data-example="long-purpose"] [data-cell="decoded"]')).toContainText('1..25');
 
-  const { violations } = await new AxeBuilder({ page }).include('section[data-section="vietqr"]').analyze();
-  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+  expect(await seriousAxeViolations(page, { include: ['section[data-section="vietqr"]'] })).toEqual([]);
 });
 
 test('the allocation section pays the oldest invoice first and matches every expected row', async ({ page }) => {
@@ -138,8 +136,7 @@ test('the allocation section pays the oldest invoice first and matches every exp
   );
   await expect(section.locator('tr[data-example="bien-hoa"]').last().locator('[data-cell="held"]')).toHaveText(`0${NBSP}₫`);
 
-  const { violations } = await new AxeBuilder({ page }).include('section[data-section="allocation"]').analyze();
-  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+  expect(await seriousAxeViolations(page, { include: ['section[data-section="allocation"]'] })).toEqual([]);
 });
 
 test('the schedule section shows LSE-3 billed from October, the 25th anchor, an increase and a one-day last period', async ({ page }) => {
@@ -166,8 +163,7 @@ test('the schedule section shows LSE-3 billed from October, the 25th anchor, an 
   await expect(thuDuc.locator('[data-cell="period"]')).toHaveText('01/11/2026 – 01/11/2026');
   await expect(thuDuc.locator('[data-cell="amount"]')).toHaveText(`300.000${NBSP}₫`);
 
-  const { violations } = await new AxeBuilder({ page }).include('section[data-section="schedule"]').analyze();
-  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+  expect(await seriousAxeViolations(page, { include: ['section[data-section="schedule"]'] })).toEqual([]);
 });
 
 test('the live address box lists current wards for an old address', async ({ page }) => {
@@ -202,8 +198,7 @@ test('the live address box lists current wards for an old address', async ({ pag
   await lookUp('Phường 2, Thành phố Tân An, Tỉnh Long An');
   await expect(suggestions.first()).toHaveAttribute('data-code', '27694');
   await expect(suggestions.first().getByTestId('address-suggestion-source')).toContainText('curated');
-  const { violations } = await new AxeBuilder({ page }).include('[data-testid="address-lookup"]').analyze();
-  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+  expect(await seriousAxeViolations(page, { include: ['[data-testid="address-lookup"]'] })).toEqual([]);
 
   await lookUp('Phường 1');
   await expect(output).toHaveText('No match');

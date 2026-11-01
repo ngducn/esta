@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const themes = ['light', 'dark'] as const;
 
@@ -25,8 +25,7 @@ for (const theme of themes) {
     expect(size).toBeGreaterThan(40);
     await expect(page.locator('[data-state-card]')).toHaveCount(size);
 
-    const { violations } = await new AxeBuilder({ page }).analyze();
-    expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+    expect(await seriousAxeViolations(page)).toEqual([]);
   });
 
   test(`every enabled control's border reaches 3:1 against its fill and the page, ${theme}`, async ({ page }) => {

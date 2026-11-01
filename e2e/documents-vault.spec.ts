@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,6 +7,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { setClock } from './helpers/test-clock';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -39,11 +39,6 @@ async function serviceGet<T>(page: Page, path: string): Promise<T> {
 async function serviceWrite(page: Page, method: 'POST' | 'PATCH' | 'DELETE', path: string, data?: unknown) {
   const response = await page.request.fetch(`${rest}/${path}`, { method, headers: { ...service, 'content-type': 'application/json' }, ...(data === undefined ? {} : { data }) });
   expect(response.ok(), await response.text()).toBe(true);
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 /** What the vault's search returns for a lane's household now; other specs upload to the same lanes. */
