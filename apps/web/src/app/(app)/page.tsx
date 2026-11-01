@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/page-header';
 import { getTranslations } from 'next-intl/server';
 import { businessDate } from '@esta/core';
 import { wallClockStamp } from '@esta/core/agent';
@@ -43,7 +44,7 @@ async function Home() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-title-2 break-words lg:text-title-1">{member.household.name}</h1>
+      <PageHeader title={member.household.name} />
       <OfflineNotice message={t('offline')} testId="home-offline" />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
         <div className="flex flex-col gap-5">

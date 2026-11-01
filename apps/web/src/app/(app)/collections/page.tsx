@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/page-header';
 import { boardMonthParam, groupCollections, parseBoardMonth } from '@esta/core/collections';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { formatMonthWithin, formatMonthYear } from '@esta/core/format';
@@ -61,15 +62,17 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
 
   const page = (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="text-title-2 break-words lg:text-title-1">{nav('collections')}</h1>
-        {member.role === 'admin' ? (
-          <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'secondary' })}>
-            <FileSpreadsheet aria-hidden="true" />
-            {t('importStatement')}
-          </Link>
-        ) : null}
-      </div>
+      <PageHeader
+        title={nav('collections')}
+        actions={
+          member.role === 'admin' ? (
+            <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'secondary' })}>
+              <FileSpreadsheet aria-hidden="true" />
+              {t('importStatement')}
+            </Link>
+          ) : undefined
+        }
+      />
       <OfflineNotice message={t('offline')} />
       <MonthSelector
         label={t('monthPicker')}

@@ -16,9 +16,9 @@ const displaySettings = z.object({
   theme: z.enum(themePreferences),
 });
 
-export async function saveDisplaySettings(formData: FormData): Promise<void> {
+async function storeDisplaySettings(formData: FormData): Promise<boolean> {
   const parsed = displaySettings.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) redirect('/settings?status=failed');
+  if (!parsed.success) return false;
   const { locale, textScale, density, theme } = parsed.data;
 
   const supabase = await createSessionClient();
@@ -27,9 +27,18 @@ export async function saveDisplaySettings(formData: FormData): Promise<void> {
     p_text_scale: textScale,
     p_density: density,
   });
-  if (error) redirect('/settings?status=failed');
+  if (error) return false;
 
   await Promise.all([rememberLocale(locale), setThemePreference(theme)]);
   revalidatePath('/', 'layout');
-  redirect('/settings?status=saved');
+  return true;
+}
+
+export async function saveDisplaySettings(formData: FormData): Promise<void> {
+  redirect((await storeDisplaySettings(formData)) ? '/settings?status=saved' : '/settings?status=failed');
+}
+
+/** The account menu applies a setting the moment it is tapped, so it stays on the page and reports only whether it saved. */
+export async function applyDisplaySettings(formData: FormData): Promise<boolean> {
+  return storeDisplaySettings(formData);
 }
