@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth-frame';
 import { env } from '@/server/env';
-import { LanguageSwitch } from '../language-switch';
 import { signInWithGoogle } from './actions';
 import { linkClass, outlineClass } from './auth-fields';
 import { passwordCopy } from './copy';
@@ -32,13 +31,9 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   const google = env.ESTA_GOOGLE_AUTH === 'on';
   return (
     <AuthFrame
-      brand={app('name')}
-      photoAlt={app('heroAlt')}
-      caption={app('heroCaption')}
       eyebrow={app('tagline')}
       title={t('title')}
       titleEnd={t('titleEnd')}
-      aside={<LanguageSwitch />}
     >
       {google && error === 'google' && (
         <p role="alert" className="font-medium text-danger-text">

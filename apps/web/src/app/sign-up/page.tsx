@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth-frame';
-import { LanguageSwitch } from '../language-switch';
 import { linkClass } from '../sign-in/auth-fields';
 import { around, passwordCopy } from '../sign-in/copy';
 import { SignUpForm, type SignUpCopy } from './sign-up-form';
@@ -13,10 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SignUpPage() {
-  const [t, signIn, app, password] = await Promise.all([
+  const [t, signIn, password] = await Promise.all([
     getTranslations('signUp'),
     getTranslations('signIn'),
-    getTranslations('app'),
     passwordCopy(),
   ]);
   const copy: SignUpCopy = {
@@ -46,13 +44,9 @@ export default async function SignUpPage() {
   };
   return (
     <AuthFrame
-      brand={app('name')}
-      photoAlt={app('heroAlt')}
-      caption={app('heroCaption')}
       eyebrow={t('eyebrow')}
       title={t('title')}
       titleEnd={t('titleEnd')}
-      aside={<LanguageSwitch />}
     >
       <SignUpForm copy={copy} />
       <p className="flex flex-wrap items-center justify-center gap-x-2 border-t border-border pt-4 text-text-secondary">

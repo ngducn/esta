@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth-frame';
-import { LanguageSwitch } from '../../language-switch';
 import { linkClass } from '../auth-fields';
 import { around } from '../copy';
 import { SignInForm, type SignInCopy } from '../sign-in-form';
@@ -34,13 +33,9 @@ export default async function CodeSignInPage() {
   };
   return (
     <AuthFrame
-      brand={app('name')}
-      photoAlt={app('heroAlt')}
-      caption={app('heroCaption')}
       eyebrow={app('tagline')}
       title={t('codeTitle')}
       titleEnd={t('codeTitleEnd')}
-      aside={<LanguageSwitch />}
     >
       <SignInForm copy={copy} />
       <p className="flex justify-center border-t border-border pt-4">

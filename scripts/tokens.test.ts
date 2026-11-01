@@ -15,7 +15,9 @@ describe('leading', () => {
 
 describe('fonts.ts', () => {
   // next/font only accepts literal options, so fonts.ts restates what `typefaces` declares.
-  const source = readFileSync(new URL('../apps/web/src/app/fonts.ts', import.meta.url), 'utf8');
+  const source = ['fonts.ts', 'display-font.ts']
+    .map((file) => readFileSync(new URL(`../apps/web/src/app/${file}`, import.meta.url), 'utf8'))
+    .join('\n');
   const loaded = [...source.matchAll(/src: '\.\.\/fonts\/([^']+)',\s*weight: '(\d+) (\d+)'/g)].map((m) => ({
     file: m[1],
     weights: [Number(m[2]), Number(m[3])],
@@ -31,6 +33,6 @@ describe('fonts.ts', () => {
 
   it('gives each face a generic fallback, so Android never lands on an unadjusted browser default', () => {
     const fallbacks = [...source.matchAll(/localFont\(\{[^}]*?fallback: \[([^\]]*)\]/g)].map((m) => m[1]);
-    expect(fallbacks).toEqual(["'sans-serif'"]);
+    expect(fallbacks).toEqual(["'sans-serif'", "'sans-serif'"]);
   });
 });

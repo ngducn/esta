@@ -8,7 +8,6 @@ import { buttonVariants } from '@/components/ui/button';
 import { getCurrentMember, getSessionUser } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { signOut } from '../home-actions';
-import { LanguageSwitch } from '../language-switch';
 import { CreateHouseholdForm, InviteForm } from './forms';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,10 +23,9 @@ async function claimLateInvites(): Promise<boolean> {
 }
 
 export default async function OnboardingPage() {
-  const [t, shell, app, messages, member, user] = await Promise.all([
+  const [t, shell, messages, member, user] = await Promise.all([
     getTranslations('onboarding'),
     getTranslations('shell'),
-    getTranslations('app'),
     getMessages(),
     getCurrentMember(),
     getSessionUser(),
@@ -38,13 +36,9 @@ export default async function OnboardingPage() {
   const creating = member === null;
   return (
     <AuthFrame
-      brand={app('name')}
-      photoAlt={app('heroAlt')}
-      caption={app('heroCaption')}
       eyebrow={creating ? t('eyebrow') : member.household.name}
       title={creating ? t('title') : t('inviteTitle')}
       titleEnd={creating ? t('titleEnd') : t('inviteTitleEnd')}
-      aside={<LanguageSwitch />}
     >
       <NextIntlClientProvider messages={{ onboarding: messages.onboarding }}>
         {creating ? (
