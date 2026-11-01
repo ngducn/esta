@@ -20,14 +20,12 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Open items (updated 2026-11-02 00:40 +07)
 
-- **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
+- **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #375 (a19892e9), the brand layer; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
 - **#374 merged** as 2bbf8891: the new shell (tab bar, rail, sidebar, account menu, page header).
 - **#381, RD-2 Tài sản as a workbench, head 2f81c2d6, ci green, rigorous** (status, filters and totals moved into packages/core). Running: Opus audit `briefs/pr381-audit.md` (`/tmp/review-381/audit.md`) and Sonnet lane slot 14 `briefs/pr381-lane.md` (`/tmp/review-381/lane/`).
   - Ryan decisions (defaults apply): "Cần chú ý" counts rent overdue or due today, not missing papers; the filter chip rows stay open on desktop (the owner suggests folding them behind "Bộ lọc").
   - Next: one Sonnet fix round with the audit's blocking findings, a scoped reader, then merge.
-- **#375, RD-6 sign-in and onboarding on the brand layer, head 3466ec25, rigorous.** Sonnet lane CLEAN; Opus audit ISSUES: B1 the eyebrow's `text-xs` has no theme token, so it renders 16/16 instead of 12/16. Running: Sonnet fix round, slot 2, `briefs/rd-6-ff1.md` (B1 with a red test, brand type and colour tokens, /deslop, /no-comments, merge main, Lighthouse 5 runs per side). Lows #378, #379, #380.
-  - Ryan decisions: accept the ~150 ms LCP on /sign-in (default; the audit calls it mostly lab noise) or set the headline in Inter; the logo shows twice on desktop (default: keep, #379).
-  - Next: a scoped Sonnet reader of the fix round against B1, then merge on CLEAN plus green ci.
+- **#375 merged** as a19892e9: sign-in, sign-up, forgot password and onboarding on the brand layer. Ryan decisions with defaults: keep Inter Display despite ~150 ms LCP on /sign-in; logo twice on desktop (#379).
 - **Then:** RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire set** at 23:30 on 2026-11-01: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`). Clear it with `rm` after a quiet stretch with no overlap failures, and record that in decisions.tsv.
 
@@ -41,6 +39,8 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 6. The redesign defaults in `docs/plan/redesign-2026-11.md`: Esta blue, role-name codemod, Thoáng/Gọn, wordmark, icon-and-word status, the new shell. Ryan can overrule any in a sentence.
 
 ## Rules added this session
+
+- Briefs say "Spawn no subagents, except the comment-sicko that /no-comments runs". Three owners skipped or hand-ran /no-comments because the blanket ban covered the skill's own subagent.
 
 - The root merges on a clean independent verdict plus green ci at the exact head. Call `gh pr merge` directly. At most 2 reviewed PRs wait above main.
 - Prototype first, live checks for each assistant slice, and Mẹ's session before more assistant features. Repeat findings become checks (owner-brief "Known defect classes"). The redesign's prototype is Ryan's artifact.
