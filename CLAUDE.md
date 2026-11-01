@@ -102,7 +102,7 @@ Spend effort on the plan's critical path first, and keep everything else small.
 - Build the next plan item. Do not build ahead of a dependency or add side work unless Ryan asks for it.
 - The one fix-forward carries only findings that block the current PR. Anything else is a low, a nit, polish, or a defect `main` already has: file it as a GitHub issue with `[low]` at the start of its title, and do not open a PR for it now.
 - Fix `[low]` issues in batches, one cleanup PR per round. A heavy audit and tech-debt round runs at a phase boundary when results and budget allow, decided with Ryan.
-- Run heavy jobs (Playwright suites, Lighthouse, production builds) one at a time on this machine. Parallel heavy jobs cause flaky failures that cost more to investigate than they save.
+- Heavy jobs go through `heavy.sh`'s machine-wide lock. Two Playwright runs narrowed to named spec files may share the machine; full suites, Lighthouse and production builds run alone. Run the full suite locally only when CI is down. A test that fails beside another run and passes alone sends everything back to one at a time (`touch /tmp/ci-local/one-at-a-time`): flaky failures cost more to investigate than parallel runs save.
 
 ## Writing issues and PRs
 

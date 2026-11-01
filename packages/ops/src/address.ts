@@ -39,6 +39,15 @@ export async function suggestCurrentUnits(db: Db, text: string): Promise<Current
   return z.array(suggestionSchema).parse(data);
 }
 
+const provinceSchema = z.object({ province_code: z.string() });
+
+/** Every province the current units of an address lie in, uncapped, so a check sees an ambiguity the suggestions cut off. */
+export async function currentProvinces(db: Db, text: string): Promise<string[]> {
+  const { data, error } = await db.rpc('suggest_current_unit', { p_text: text }).select('province_code');
+  if (error) throw new Error(`Reading the provinces of an address failed: ${error.message}`);
+  return z.array(provinceSchema).parse(data).map((row) => row.province_code);
+}
+
 export async function isCommuneOf(db: Db, communeCode: string, provinceCode: string): Promise<boolean> {
   const { data, error } = await db.from('admin_units').select('code').eq('code', communeCode).eq('parent_code', provinceCode).maybeSingle();
   if (error) throw new Error(`Reading the ward failed: ${error.message}`);

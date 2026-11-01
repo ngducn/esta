@@ -42,9 +42,9 @@
         "e2e/leases.spec.ts": 2,
         "e2e/properties-list.spec.ts": 3,
         "e2e/properties-map.spec.ts": 5,
-        "e2e/property-completeness.spec.ts": 5,
+        "e2e/property-completeness.spec.ts": 6,
         "e2e/property-form.spec.ts": 1,
-        "e2e/property-legal.spec.ts": 5,
+        "e2e/property-legal.spec.ts": 4,
         "e2e/property-owners.spec.ts": 1,
         "e2e/property-units.spec.ts": 1,
         "packages/core/src/agent-schemas/certificate_v1.test.ts": 1,
@@ -58,7 +58,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1231,
+      "value": 1226,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -99,9 +99,9 @@
         "e2e/leases.spec.ts": 18,
         "e2e/properties-list.spec.ts": 30,
         "e2e/properties-map.spec.ts": 48,
-        "e2e/property-completeness.spec.ts": 58,
+        "e2e/property-completeness.spec.ts": 69,
         "e2e/property-form.spec.ts": 6,
-        "e2e/property-legal.spec.ts": 70,
+        "e2e/property-legal.spec.ts": 54,
         "e2e/property-owners.spec.ts": 22,
         "e2e/property-units.spec.ts": 7,
         "packages/core/src/agent-schemas/certificate_v1.test.ts": 7,

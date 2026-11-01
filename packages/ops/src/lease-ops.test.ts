@@ -25,6 +25,13 @@ describe('leaseCreate', () => {
     expect(leaseCreate.input.safeParse({ id: LEASE, lease: { ...demoDraft, status: 'active' } }).success).toBe(false);
   });
 
+  it('refuses a draft with neither a tenant nor a start date, and takes one with either (#356)', () => {
+    const blank = { ...demoDraft, tenant_party_id: null, start_date: null };
+    expect(leaseCreate.input.safeParse({ id: LEASE, lease: blank }).success).toBe(false);
+    expect(leaseCreate.input.safeParse({ id: LEASE, lease: { ...blank, tenant_party_id: TENANT } }).success).toBe(true);
+    expect(leaseCreate.input.safeParse({ id: LEASE, lease: { ...blank, start_date: '2026-03-01' } }).success).toBe(true);
+  });
+
   it('plans a draft on a room and tenant planned earlier in the batch, spelling out what the database defaults', async () => {
     const input = parsed(leaseCreate.input, { id: LEASE, lease: demoDraft });
     const planned = await leaseCreate.plan(context(fakeDb().db, roomAndTenant), input);
