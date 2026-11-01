@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
@@ -8,6 +7,7 @@ import { signedIn } from './helpers/auth-api';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
 import { setClock } from './helpers/test-clock';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -62,11 +62,6 @@ async function undoRecorded(page: Page) {
 type Allocation = { amount_vnd: number; payments: { amount_vnd: number; method: string; received_on: string } };
 const allocationsOf = (page: Page, invoice: string) =>
   rest<Allocation[]>(page, 'GET', `payment_allocations?invoice_id=eq.${invoice}&select=amount_vnd,payments!inner(amount_vnd,method,received_on,idempotency_key)&payments.idempotency_key=not.is.null`);
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-}
 
 const group = (page: Page, key: 'overdue' | 'due' | 'notDue' | 'paid') => page.getByTestId(`group-${key}`);
 const row = (scope: Locator, place: string) => scope.getByTestId('collections-row').filter({ has: scope.page().getByTestId('row-place').getByText(place, { exact: true }) });

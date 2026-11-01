@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
@@ -9,6 +8,7 @@ import { ageSessions, markCodeJustSent } from './helpers/auth-db';
 import { clearMail, latestCode, latestMail, signIn } from './helpers/inbucket';
 import { createAccount, DEMO_PASSWORD, signInWithPassword } from './helpers/password';
 import { accessToken } from './helpers/session';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const WRONG_PASSWORD = 'Email hoặc mật khẩu chưa đúng. Kiểm tra lại rồi thử lại.';
 const SHORT_PASSWORD = 'Mật khẩu cần ít nhất 8 ký tự.';
@@ -19,12 +19,6 @@ const SEND_SPACING_MS = 1_200;
 
 function uniqueEmail(prefix: string): string {
   return `${prefix}.${randomUUID().slice(0, 8)}@demo.esta.test`;
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
 }
 
 async function sessionCookies(page: Page) {
@@ -47,6 +41,7 @@ test('FND-1: a new email creates an account with a password, confirms it by code
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tạo tài khoản');
   await expect(page.getByLabel('Email')).toHaveAttribute('autocomplete', 'email');
   await expect(page.getByLabel('Mật khẩu', { exact: true })).toHaveAttribute('autocomplete', 'new-password');
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await page.getByLabel('Email').fill(email);
@@ -55,6 +50,7 @@ test('FND-1: a new email creates an account with a password, confirms it by code
   await expect(page.getByLabel('Mã 6 chữ số')).toBeFocused();
   await expect(page.locator('#code-sent')).toContainText(email);
   expect(await sessionCookies(page), 'an account is not signed in before its email is confirmed').toEqual([]);
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   const message = await latestMail(email);
@@ -111,6 +107,7 @@ test('a wrong password gets one plain error, whether or not the email has an acc
     await expect(page).toHaveURL(/\/sign-in$/);
     expect(await sessionCookies(page)).toEqual([]);
   }
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -163,11 +160,13 @@ test('a forgotten password is reset through the emailed code', async ({ page, re
   await page.getByRole('link', { name: 'Quên mật khẩu?' }).click();
   await expect(page).toHaveURL(/\/forgot-password$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đặt lại mật khẩu');
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.getByLabel('Email').fill(email);
   await page.getByRole('button', { name: 'Gửi mã' }).click();
   await expect(page.locator('#code-sent')).toContainText(email);
   await expect(page.getByLabel('Mật khẩu mới')).toHaveAttribute('autocomplete', 'new-password');
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   const message = await latestMail(email);
@@ -182,6 +181,7 @@ test('a forgotten password is reset through the emailed code', async ({ page, re
   await page.getByLabel('Mật khẩu mới').fill(newPassword);
   await page.getByRole('button', { name: 'Đổi mật khẩu' }).click();
   await expect(page.getByRole('heading', { name: 'Đã đổi mật khẩu' }), 'a short password does not use up the code').toBeVisible();
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.getByRole('link', { name: 'Vào Esta' }).click();
   await expect(page).toHaveURL(/\/onboarding$/);

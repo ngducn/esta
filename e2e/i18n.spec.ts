@@ -1,10 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
-}
+import { seriousAxeViolations } from './helpers/wizard';
 
 async function setLocaleCookie(page: Page, baseURL: string | undefined, value: string) {
   await page.context().addCookies([{ name: 'NEXT_LOCALE', value, url: baseURL ?? '' }]);

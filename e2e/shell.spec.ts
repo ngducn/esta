@@ -1,27 +1,9 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { signIn } from './helpers/inbucket';
 import { newHousehold, onlyOn, openAccountMenu, sections, tabBar, uniqueEmail } from './helpers/shell';
 import { clippedText } from './helpers/text-scale';
-
-async function analyzeSerious(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-}
-
-/**
- * A client navigation streams its title in after the body and can drop it for a moment while it settles,
- * so axe reruns until the page passes or the expect timeout ends; a lasting violation still fails.
- */
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  await expect(page).not.toHaveTitle('');
-  let violations = await analyzeSerious(page);
-  if (violations.length > 0) {
-    await expect.poll(async () => (violations = await analyzeSerious(page))).toEqual([]).catch(() => undefined);
-  }
-  return violations;
-}
+import { seriousAxeViolations } from './helpers/wizard';
 
 async function setTheme(page: Page, baseURL: string | undefined, theme: 'light' | 'dark') {
   await page.context().addCookies([{ name: 'esta_theme', value: theme, url: baseURL ?? '' }]);
@@ -68,6 +50,7 @@ test('lane 1: at 390 px the tab bar lists the five sections in order with Tổng
   await expect(links.first()).toHaveAttribute('aria-current', 'page');
   await expect(tabBar(page).locator('[aria-current="page"]')).toHaveCount(1);
   await expect(page.getByTestId('date-line')).toHaveText(/^(Thứ (Hai|Ba|Tư|Năm|Sáu|Bảy)|Chủ Nhật), \d{2}\/\d{2}\/\d{4}$/);
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -123,6 +106,7 @@ test('lane 2: at 1440 px the sidebar is 256 px, content at most 1200 px, and no 
   await expect(sidebar.getByRole('navigation', { name: 'Khác' }).getByRole('link')).toHaveText(['Báo cáo', 'Cài đặt']);
   await expect(sidebar.locator('[aria-current="page"]')).toHaveText('Tổng quan');
   await expect(sidebar.getByRole('button', { name: /^Tài khoản: / }), 'the member block names the member and the role').toContainText('Quản trị');
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -188,6 +172,7 @@ test('lane 6 and #28: compact density keeps the 32 px gutter and keeps every tex
       .map((element) => element.textContent),
   );
   expect(smallText).toEqual([]);
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -245,6 +230,7 @@ test('lane 10: English, 130% and dark on Collections keep every tab label inside
   expect(await clippedText(page), 'no word breaks in two and no box overlaps another').toEqual([]);
   expect(await pageOverflows(page)).toBe(false);
   await expect(page.getByTestId('date-line')).toHaveText(/^(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day, \d{2}\/\d{2}\/\d{4}$/);
+  await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 

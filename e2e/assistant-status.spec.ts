@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { hostname, tmpdir } from 'node:os';
@@ -10,6 +9,7 @@ import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/age
 import { signIn } from './helpers/inbucket';
 import { readReportTable } from './helpers/report-table';
 import { accessToken } from './helpers/session';
+import { seriousAxeViolations } from './helpers/wizard';
 
 // The worker, the heartbeat table and the test clock are one per slot, so the rules run in order in the `clock` project.
 test.describe.configure({ mode: 'serial' });
@@ -61,11 +61,6 @@ async function expectStatusLine(page: Page, text: string, timeout = 10_000) {
     await page.reload();
     await expect(statusLine(page)).toHaveText(text, { timeout: 500 });
   }).toPass({ timeout });
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 const asUser = (token: string) => ({ apikey: anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' });

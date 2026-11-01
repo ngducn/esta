@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { needsCheck } from '../packages/core/src/extraction/confidence.ts';
@@ -11,6 +10,7 @@ import { CRAFTED, extractionFixtures, type UploadFile } from '../fixtures/certif
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
 import { setClock } from './helpers/test-clock';
+import { seriousAxeViolations } from './helpers/wizard';
 
 // One worker and one test clock per slot, so the rules run in order in the `clock` project.
 test.describe.configure({ mode: 'serial' });
@@ -65,11 +65,6 @@ async function serviceGet<T>(page: Page, path: string): Promise<T> {
   const response = await page.request.get(`${rest}/${path}`, { headers: service });
   expect(response.ok(), await response.text()).toBe(true);
   return (await response.json()) as T;
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 async function shot(page: Page, name: string) {

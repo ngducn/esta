@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -7,6 +6,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -44,18 +44,6 @@ async function listPhotos(page: Page, lane: number, id: string): Promise<{ name:
   });
   expect(listed.ok()).toBe(true);
   return (await listed.json()) as { name: string; metadata: { size: number } }[];
-}
-
-/** Waits for hydration, which enables the save button, turns transitions off and parks the pointer, so axe never reads a hover state or a color mid-fade. */
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.mouse.move(0, 0);
-  const save = page.getByTestId('save-property');
-  if ((await save.count()) > 0) await expect(save).toBeEnabled();
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations
-    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 const kindSelect = (page: Page) => page.getByTestId('kind-select');
@@ -109,6 +97,10 @@ test('rule 1: Mẹ adds a townhouse, picks the ward the Dĩ An, Bình Dương su
   await setTheme(page, 'light');
   await newHousehold(page);
   await openNewForm(page, 'Nhà phố Demo Dĩ An', 'Nhà phố');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.mouse.move(0, 0);
+  const saveButton = page.getByTestId('save-property');
+  if ((await saveButton.count()) > 0) await expect(saveButton).toBeEnabled();
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await page.getByTestId('nickname').fill('Nhà phố Demo Dĩ An');
@@ -148,6 +140,10 @@ test('rule 2: an apartment shows its own fields, previews 1tr2 as 1.200.000 ₫ 
 
   await page.getByTestId('edit-property').click();
   await expect(page.getByTestId('money-preview').first()).toHaveText(FEE);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.mouse.move(0, 0);
+  const saveButton = page.getByTestId('save-property');
+  if ((await saveButton.count()) > 0) await expect(saveButton).toBeEnabled();
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -164,6 +160,10 @@ test('rule 3: Ryan uploads a cover for Kho Biên Hòa in one PUT to Storage, and
   const id = propertyId(3, 'bien-hoa');
   await page.goto(`/properties/${id}/edit`);
   await expect(page.locator('#cover-photo')).toBeVisible();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.mouse.move(0, 0);
+  const saveButton = page.getByTestId('save-property');
+  if ((await saveButton.count()) > 0) await expect(saveButton).toBeEnabled();
   expect(await seriousAxeViolations(page)).toEqual([]);
   const uploaded = page.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes(UPLOAD_URL));
   await expect(page.getByTestId('cover-photo-pick')).toBeEnabled();

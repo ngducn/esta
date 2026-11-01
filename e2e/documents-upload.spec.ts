@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -13,6 +12,7 @@ import { signIn } from './helpers/inbucket';
 import { makeLargeImage } from './helpers/make-large-image';
 import { accessToken } from './helpers/session';
 import { setClock } from './helpers/test-clock';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -67,11 +67,6 @@ const archiveNewDocuments = async (page: Page, lane: number, key: string) => {
   }
 };
 const accessCount = async (page: Page, filter: string) => (await serviceGet<unknown[]>(page, `document_access_log?select=id&${filter}`)).length;
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-}
 
 const documentsPage = (page: Page, lane: number, key: string) => page.goto(`/properties/${propertyId(lane, key)}/documents`);
 const tile = (page: Page, title: string) => page.getByTestId('document-tile').filter({ has: page.getByTestId('document-link').filter({ hasText: title }) });

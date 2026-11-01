@@ -99,9 +99,32 @@ export async function serviceUpsert(page: Page, table: string, row: Record<strin
   expect(response.ok(), await response.text()).toBe(true);
 }
 
-export async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
+type AxeScope = { include?: string[]; exclude?: string[] };
+
+async function seriousAxeRun(page: Page, scope: AxeScope): Promise<string[]> {
+  const builder = new AxeBuilder({ page });
+  for (const selector of scope.include ?? []) builder.include(selector);
+  for (const selector of scope.exclude ?? []) builder.exclude(selector);
+  const { violations } = await builder.analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+}
+
+async function settleFiniteAnimations(page: Page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+}
+
+export async function seriousAxeViolations(page: Page, scope: AxeScope = {}): Promise<string[]> {
+  const first = await seriousAxeRun(page, scope);
+  if (first.length === 0) return first;
+  await settleFiniteAnimations(page);
+  return seriousAxeRun(page, scope);
 }
 
 /** A full-page screenshot into `ESTA_EVIDENCE_DIR`, once the document page has drawn when one shows. */

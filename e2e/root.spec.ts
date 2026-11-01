@@ -1,10 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
-}
+import { expect, test } from '@playwright/test';
+import { seriousAxeViolations } from './helpers/wizard';
 
 test('/ lands a signed-out visitor on the Vietnamese sign-in page', async ({ page }) => {
   const response = await page.goto('/');
