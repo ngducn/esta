@@ -1,0 +1,148 @@
+<!-- @dsCard group="Foundations" page height=3960 width=1200 subtitle="Cool slate neutrals, one Esta blue accent, five semantic sets, every contrast pair measured live" -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Color</title>
+</head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Blue, because it is the colour people already trust with money.</b> Mẹ sees it in her bank app and on every VietQR sheet, so Esta looks like it belongs beside them. Neutrals are cool slate with white cards. Blue sits far from overdue red and due-soon amber, so the one primary button never reads as a warning; the status words and icons carry meaning, colour only confirms.</p>
+  <div class="ds-brand-demo">
+    <div class="ds-col">
+      <span class="ds-cap">The primary action beside every status it must never be mistaken for</span>
+      <div class="ds-brand-demo__row">
+        <button class="es-btn es-btn--primary" type="button">Ghi nhận tiền</button>
+        <span class="es-badge es-badge--paid"><i data-icon="circle-check"></i>Đã thu</span>
+        <span class="es-badge es-badge--due"><i data-icon="clock"></i>Đến hạn</span>
+        <span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 12 ngày</span>
+        <span class="es-badge es-badge--draft"><i data-icon="pencil-line"></i>Nháp</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Surfaces</h3>
+    <p class="ds-why"><b>White cards on a cool light grey; dark is its own slate palette, not an inversion.</b> In dark, raised surfaces get lighter instead of casting shadows.</p>
+    <div class="ds-swgrid" data-sw="bg bg-subtle surface surface-raised surface-inverse fill-hover fill-pressed fill-disabled skeleton scrim qr-paper qr-ink"></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Text on every ground</h3>
+    <p class="ds-why"><b>Body and second lines meet AAA (7:1); muted and links meet AA (4.5:1).</b> Disabled text is exempt and always comes with a reason in words.</p>
+    <div class="ds-cmatrix" data-matrix="text:7:Body text|text-secondary:7:Second lines|text-muted:4.5:Meta, hints|accent-text:4.5:Links, active nav|text-disabled:0:Disabled"></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Borders and focus</h3>
+    <p class="ds-why"><b>Anything you type into or tick has a 3:1 edge; cards only need a hairline.</b> The focus ring is brand blue in light and a lighter blue in dark, at least 3:1 on every ground.</p>
+    <div class="ds-cmatrix" data-matrix="border:0:Cards, dividers:hair|border-strong:0:Table head rule:hair|border-field:3:Field edge:hair|focus-ring:3:Focus ring"></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Accent</h3>
+    <p class="ds-why"><b>One accent, same fill in both themes.</b> Hover and pressed step darker in both, so the label stays well above 4.5:1.</p>
+    <div class="ds-swgrid" data-sw="accent accent-hover accent-pressed on-accent accent-text accent-subtle accent-subtle-hover accent-border text-inverse text-inverse-accent"></div>
+    <div class="ds-tiles ds-tiles--3" data-tiles="on-accent/accent/4.5/Ghi nhận|on-accent/accent-hover/4.5/Hover|on-accent/accent-pressed/4.5/Pressed|accent-text/accent-subtle/4.5/Đang chọn|text-inverse/surface-inverse/7/Đã lưu|text-inverse-accent/surface-inverse/4.5/Hoàn tác"></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Semantic sets</h3>
+    <p class="ds-why"><b>Each status has text, bg, border, solid and on-, tuned separately per theme.</b> Light uses step 700 on 50, dark 300 on 950. Info borrows the brand blue as a tint because it never asks for attention. Colour never works alone: every status carries an icon and a word.</p>
+    <div data-sets></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Ramps</h3>
+    <p class="ds-why"><b>Five OKLCH ramps; components never use them directly.</b> Slate has extra steps at both ends for white cards and dark grounds.</p>
+    <div class="ds-col" data-ramps></div>
+  </div>
+</div>
+<script>
+(function () {
+  var SETS = [
+    ['success', 'Paid', 'circle-check', 'Đã thu'],
+    ['warning', 'Due soon', 'clock', 'Đến hạn'],
+    ['danger', 'Overdue, failed, destroy', 'triangle-alert', 'Quá hạn'],
+    ['info', 'Draft, tips', 'pencil-line', 'Nháp'],
+    ['neutral', 'Empty, ended', 'circle-dashed', 'Trống'],
+  ];
+  var GROUNDS = ['bg', 'bg-subtle', 'surface', 'surface-raised'];
+  var RAMPS = [
+    ['slate', [0, 25, 50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 850, 900, 925, 950, 975]],
+    ['blue', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]],
+    ['green', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]],
+    ['amber', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]],
+    ['red', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]],
+  ];
+  function tile(fg, bg, min, label, extra) {
+    return '<div class="ds-ct" data-fg="' + fg + '" data-bg="' + bg + '" data-min="' + min + '"><div class="ds-ct__sample" style="background: var(--' + bg + '); color: var(--' + fg + ')' + (extra || '') + '">' + label + '</div><span class="ds-grade" data-ratio></span></div>';
+  }
+  function q(sel) { return document.querySelector(sel); }
+
+  document.querySelectorAll('[data-sw]').forEach(function (el) {
+    el.innerHTML = el.getAttribute('data-sw').split(' ').map(function (n) {
+      return '<div class="ds-sw"><span class="ds-sw__chip" style="background: var(--' + n + ')"></span><span class="ds-sw__text"><span class="ds-sw__name">' + n + '</span><span class="ds-meta" data-hex="' + n + '"></span></span></div>';
+    }).join('');
+  });
+  document.querySelectorAll('[data-matrix]').forEach(function (el) {
+    var html = '<span></span>' + GROUNDS.map(function (g) { return '<span class="ds-cap">' + g + '</span>'; }).join('');
+    el.getAttribute('data-matrix').split('|').forEach(function (row) {
+      var r = row.split(':'), mark = r[3] === 'hair' ? '<span class="ds-ring ds-ring--hair"></span>' : (r[0] === 'focus-ring' ? '<span class="ds-ring"></span>' : 'Aa');
+      html += '<div class="ds-cmatrix__rowhead"><span class="ds-sw__name">' + r[0] + '</span><span class="ds-meta">' + r[2] + '</span></div>' +
+        GROUNDS.map(function (g) { return tile(r[0], g, r[1], mark).replace('ds-ct__sample"', 'ds-ct__sample ds-ct__sample--big"'); }).join('');
+    });
+    el.innerHTML = html;
+  });
+  document.querySelectorAll('[data-tiles]').forEach(function (el) {
+    el.innerHTML = el.getAttribute('data-tiles').split('|').map(function (t) { var p = t.split('/'); return tile(p[0], p[1], p[2], p[3]); }).join('');
+  });
+  q('[data-sets]').innerHTML = SETS.map(function (s) {
+    var k = s[0], icon = '<i data-icon="' + s[2] + '" data-size="16"></i>';
+    return '<div class="ds-set"><div class="ds-set__head"><span class="ds-sub">' + k + '</span><span class="ds-meta">' + s[1] + '</span></div>' +
+      '<div class="ds-minis">' + [k + '-text', k + '-bg', k + '-border', k + '-solid', 'on-' + k].map(function (n) {
+        return '<div class="ds-mini"><span class="ds-mini__chip" style="background: var(--' + n + ')"></span><span>' + n.replace(k + '-', '').replace('on-' + k, 'on-') + ' <b data-hex="' + n + '"></b></span></div>';
+      }).join('') + '</div>' +
+      '<div class="ds-tiles">' +
+        tile(k + '-text', k + '-bg', 4.5, icon + s[3], '; border-color: var(--' + k + '-border)') +
+        tile(k + '-text', 'surface', 4.5, icon + s[3]) +
+        tile(k + '-text', 'bg', 4.5, icon + s[3]) +
+        tile('on-' + k, k + '-solid', 4.5, icon + s[3], '; border-color: var(--' + k + '-solid)') +
+      '</div><div class="ds-tiles"><span class="ds-meta">Badge</span><span class="ds-meta">On a card</span><span class="ds-meta">On the ground</span><span class="ds-meta">Solid</span></div></div>';
+  }).join('');
+  q('[data-ramps]').innerHTML = RAMPS.map(function (r) {
+    return '<div class="ds-ramp-row"><span class="ds-sw__name">' + r[0] + '</span><div class="ds-ramp">' + r[1].map(function (s) {
+      return '<div class="ds-ramp__step" style="background: var(--' + r[0] + '-' + s + ')" data-step="' + r[0] + '-' + s + '">' + s + '</div>';
+    }).join('') + '</div></div>';
+  }).join('');
+
+  var wrap = Esta.themes('#src');
+
+  function rgb(css) { return (css.match(/[\d.]+/g) || []).slice(0, 3).map(Number); }
+  function hex(css) { return '#' + rgb(css).map(function (v) { return Math.round(v).toString(16).padStart(2, '0'); }).join(''); }
+
+  wrap.querySelectorAll('.ds-theme').forEach(function (panel) {
+    var tc = function (n) { return Esta.tokenColor(n, panel); };
+    panel.querySelectorAll('[data-hex]').forEach(function (el) {
+      var c = tc(el.getAttribute('data-hex'));
+      var alpha = (c.match(/[\d.]+/g) || [])[3];
+      el.textContent = hex(c) + (alpha !== undefined ? ' · ' + Math.round(alpha * 100) + '%' : '');
+    });
+    panel.querySelectorAll('[data-fg]').forEach(function (el) {
+      var r = Esta.contrast(tc(el.getAttribute('data-fg')), tc(el.getAttribute('data-bg'))), min = +el.getAttribute('data-min');
+      var out = el.querySelector('[data-ratio]'), level = r >= 7 ? 'AAA' : r >= 4.5 ? 'AA' : r >= 3 ? '3:1' : 'below 3:1';
+      if (!min) { out.className = 'ds-meta'; out.textContent = r.toFixed(2) + ' · no minimum'; return; }
+      var ok = r >= min;
+      out.className = 'ds-grade ds-grade--' + (ok ? 'pass' : 'fail');
+      out.innerHTML = Esta.icon(ok ? 'circle-check' : 'triangle-alert', { size: 14 }) + r.toFixed(2) + ' ' + level;
+    });
+    panel.querySelectorAll('[data-step]').forEach(function (el) {
+      var bg = tc(el.getAttribute('data-step'));
+      el.style.color = Esta.contrast(bg, tc('slate-0')) > Esta.contrast(bg, tc('slate-950')) ? 'var(--slate-0)' : 'var(--slate-950)';
+    });
+
+  });
+})();
+</script>
+</body>
+</html>

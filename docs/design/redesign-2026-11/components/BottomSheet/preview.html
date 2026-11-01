@@ -1,0 +1,90 @@
+<!-- @dsCard group="Feedback" height=3640 width=1200 subtitle="Record a payment from the list without leaving it: default, keyboard up, saving, couldn't save" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Bottom sheet</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>The phone's way to do a quick task without losing her place.</b> The list stays visible above, the amount is the biggest thing on screen, and the one button sits where the thumb already is, above the home indicator. Closing is a word, <i>Đóng</i>, never a bare ×.</p>
+  <div class="ds-matrix" style="--ds-cell: 390px">
+
+    <div class="ds-cell"><span class="ds-cap">Default · prefilled with the room's rent</span>
+      <div class="ds-phone" style="height: 780px">
+        <div class="ds-appbar"><span class="ds-appbar__title">Thu tiền tháng 10</span></div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 4</span><span class="ds-listrow__sub">Lê Demo Bình</span></div></div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 5</span><span class="ds-listrow__sub">Trần Demo An</span></div></div>
+        <div class="es-scrim" aria-hidden="true"></div>
+        <section class="es-sheet" role="dialog" aria-modal="true" aria-labelledby="s1" style="--sheet-safe: var(--space-8)">
+          <span class="es-sheet__grabber" aria-hidden="true"></span>
+          <div class="es-sheet__head"><h2 class="es-sheet__title" id="s1">Ghi nhận tiền</h2><button class="es-btn es-btn--ghost es-btn--sm" type="button">Đóng</button></div>
+          <div class="es-sheet__body">
+            <div class="es-sheet__context"><b>Phòng 5 · Trần Demo An</b><span>Tiền thuê tháng 10 · Hạn 05/10/2026</span></div>
+            <div class="es-field es-money es-money--lg"><label class="es-field__label" for="a1">Số tiền đã nhận</label><div class="es-input-group"><input class="es-input" id="a1" inputmode="decimal" data-es-money value="3.500.000" aria-describedby="a1o"><span class="es-affix">₫</span></div><p class="es-money__out" id="a1o"><i data-icon="circle-alert"></i><span data-es-money-out></span></p><p class="es-money__words" data-es-money-words></p></div>
+            <div class="es-field"><span class="es-field__label" id="m1">Cách nhận</span><div class="es-segmented" role="radiogroup" aria-labelledby="m1"><label class="es-segmented__opt"><input type="radio" name="pm1" checked><span>Tiền mặt</span></label><label class="es-segmented__opt"><input type="radio" name="pm1"><span>Chuyển khoản</span></label></div></div>
+            <div class="es-sheet__row"><span class="es-sheet__row-label">Ngày nhận</span><span class="es-sheet__row-value">Hôm nay, 07/10/2026</span><button class="es-btn es-btn--ghost es-btn--sm" type="button">Đổi</button></div>
+          </div>
+          <div class="es-sheet__foot"><button class="es-btn es-btn--primary es-btn--lg es-btn--block" type="button">Lưu khoản thu</button></div>
+        </section>
+        <span class="ds-home"></span>
+      </div>
+    </div>
+
+    <div class="ds-cell"><span class="ds-cap">Keyboard up · the sheet rides on the keyboard; amount and save stay in view</span>
+      <div class="ds-phone" style="height: 780px">
+        <div class="ds-appbar"><span class="ds-appbar__title">Thu tiền tháng 10</span></div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 4</span><span class="ds-listrow__sub">Lê Demo Bình</span></div></div>
+        <div class="es-scrim" aria-hidden="true"></div>
+        <section class="es-sheet es-sheet--compact" role="dialog" aria-modal="true" aria-labelledby="s2" style="bottom: 300px; --sheet-safe: 0px; border-radius: var(--radius-2xl) var(--radius-2xl) 0 0">
+          <div class="es-sheet__head"><h2 class="es-sheet__title" id="s2">Ghi nhận tiền · Phòng 5</h2><button class="es-btn es-btn--ghost es-btn--sm" type="button">Đóng</button></div>
+          <div class="es-sheet__body">
+            <div class="es-field es-money es-money--lg"><label class="es-field__label" for="a2">Số tiền đã nhận</label><div class="es-input-group is-focus"><input class="es-input" id="a2" inputmode="decimal" data-es-money value="3tr5" aria-describedby="a2o"><span class="es-affix">₫</span></div><p class="es-money__out" id="a2o"><i data-icon="circle-alert"></i><span data-es-money-out></span></p><p class="es-money__words" data-es-money-words></p></div>
+          </div>
+          <div class="es-sheet__foot"><button class="es-btn es-btn--primary es-btn--lg es-btn--block" type="button">Lưu khoản thu</button></div>
+        </section>
+        <div class="ds-keyboard" aria-hidden="true" style="height: 300px; z-index: calc(var(--z-overlay) + 1)"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div class="ds-cell"><span class="ds-cap">Saving · fields lock, the button keeps its width and says what it is doing</span>
+      <div class="ds-phone" style="height: 780px">
+        <div class="ds-appbar"><span class="ds-appbar__title">Thu tiền tháng 10</span></div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 4</span><span class="ds-listrow__sub">Lê Demo Bình</span></div></div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 5</span><span class="ds-listrow__sub">Trần Demo An</span></div></div>
+        <div class="es-scrim" aria-hidden="true"></div>
+        <section class="es-sheet" role="dialog" aria-modal="true" aria-labelledby="s3" aria-busy="true" style="--sheet-safe: var(--space-8)">
+          <span class="es-sheet__grabber" aria-hidden="true"></span>
+          <div class="es-sheet__head"><h2 class="es-sheet__title" id="s3">Ghi nhận tiền</h2><button class="es-btn es-btn--ghost es-btn--sm" type="button" disabled>Đóng</button></div>
+          <div class="es-sheet__body">
+            <div class="es-sheet__context"><b>Phòng 5 · Trần Demo An</b><span>Tiền thuê tháng 10 · Hạn 05/10/2026</span></div>
+            <div class="es-field es-money es-money--lg"><label class="es-field__label" for="a3">Số tiền đã nhận</label><div class="es-input-group is-readonly"><input class="es-input" id="a3" data-es-money value="3.500.000" readonly><span class="es-affix">₫</span></div><p class="es-money__out"><i data-icon="circle-alert"></i><span data-es-money-out></span></p><p class="es-money__words" data-es-money-words></p></div>
+            <div class="es-field"><span class="es-field__label" id="m3">Cách nhận</span><div class="es-segmented" role="radiogroup" aria-labelledby="m3"><label class="es-segmented__opt"><input type="radio" name="pm3" disabled><span>Tiền mặt</span></label><label class="es-segmented__opt"><input type="radio" name="pm3" checked disabled><span>Chuyển khoản</span></label></div></div>
+            <div class="es-sheet__row"><span class="es-sheet__row-label">Ngày nhận</span><span class="es-sheet__row-value">Hôm nay, 07/10/2026</span></div>
+          </div>
+          <div class="es-sheet__foot"><button class="es-btn es-btn--primary es-btn--lg es-btn--block is-loading" type="button" aria-busy="true"><i data-icon="loader-circle" class="es-spinner"></i>Đang lưu</button></div>
+        </section>
+        <span class="ds-home"></span>
+      </div>
+    </div>
+
+    <div class="ds-cell"><span class="ds-cap">Couldn't save · nothing typed is lost; the reason sits above the button</span>
+      <div class="ds-phone" style="height: 780px">
+        <div class="ds-appbar"><span class="ds-appbar__title">Thu tiền tháng 10</span></div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 4</span><span class="ds-listrow__sub">Lê Demo Bình</span></div></div>
+        <div class="es-scrim" aria-hidden="true"></div>
+        <section class="es-sheet" role="dialog" aria-modal="true" aria-labelledby="s4" style="--sheet-safe: var(--space-8)">
+          <span class="es-sheet__grabber" aria-hidden="true"></span>
+          <div class="es-sheet__head"><h2 class="es-sheet__title" id="s4">Ghi nhận tiền</h2><button class="es-btn es-btn--ghost es-btn--sm" type="button">Đóng</button></div>
+          <div class="es-sheet__body">
+            <div class="es-sheet__context"><b>Phòng 5 · Trần Demo An</b><span>Tiền thuê tháng 10 · Hạn 05/10/2026</span></div>
+            <div class="es-field es-money es-money--lg"><label class="es-field__label" for="a4">Số tiền đã nhận</label><div class="es-input-group"><input class="es-input" id="a4" inputmode="decimal" data-es-money value="3.500.000"><span class="es-affix">₫</span></div><p class="es-money__out"><i data-icon="circle-alert"></i><span data-es-money-out></span></p><p class="es-money__words" data-es-money-words></p></div>
+            <div class="es-field"><span class="es-field__label" id="m4">Cách nhận</span><div class="es-segmented" role="radiogroup" aria-labelledby="m4"><label class="es-segmented__opt"><input type="radio" name="pm4" checked><span>Tiền mặt</span></label><label class="es-segmented__opt"><input type="radio" name="pm4"><span>Chuyển khoản</span></label></div></div>
+          </div>
+          <div class="es-sheet__foot"><p class="es-sheet__error" role="alert"><i data-icon="circle-alert"></i>Chưa lưu được. Kiểm tra mạng rồi thử lại.</p><button class="es-btn es-btn--primary es-btn--lg es-btn--block" type="button"><i data-icon="refresh-cw"></i>Thử lại</button></div>
+        </section>
+        <span class="ds-home"></span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src', { stack: true });</script>
+</body>
+</html>

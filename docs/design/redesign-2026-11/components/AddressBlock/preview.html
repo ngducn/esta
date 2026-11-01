@@ -1,0 +1,60 @@
+<!-- @dsCard group="Data display" height=1180 width=1200 subtitle="Today's address first, the address printed on the sổ second, never merged" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Address block</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Two addresses, kept apart.</b> Since the 2025 reorganisation of wards and provinces, the address on the sổ often names units that no longer exist. Mẹ needs today's address to find the house and the printed one to match the paper, so both show, labelled, in that order.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 250px">
+    <div class="ds-cell"><span class="ds-cap">Default: both differ</span>
+      <div class="es-address">
+        <div class="es-address__row es-address__row--current"><i data-icon="map-pin"></i><div class="es-address__text"><span class="es-address__label">Hiện nay</span><span class="es-address__value">12 đường Demo Số 7, phường Bến Thành, Thành phố Hồ Chí Minh</span></div></div>
+        <div class="es-address__row es-address__row--title"><i data-icon="scroll-text"></i><div class="es-address__text"><span class="es-address__label">Theo sổ</span><span class="es-address__value">Số 12 đường Demo Số 7, phường Bến Thành, quận 1, Thành phố Hồ Chí Minh</span><span class="es-address__note"><i data-icon="info"></i>Tên đơn vị trước sắp xếp năm 2025</span></div></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Same on both</span>
+      <div class="es-address">
+        <div class="es-address__row es-address__row--current"><i data-icon="map-pin"></i><div class="es-address__text"><span class="es-address__label">Hiện nay</span><span class="es-address__value">8 đường Demo Hoa Lan, phường Phú Nhuận, Thành phố Hồ Chí Minh</span></div></div>
+        <div class="es-address__row es-address__row--title"><i data-icon="scroll-text"></i><div class="es-address__text"><span class="es-address__label">Theo sổ</span><span class="es-address__value">Giống địa chỉ hiện nay</span></div></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Sổ address not entered</span>
+      <div class="es-address">
+        <div class="es-address__row es-address__row--current"><i data-icon="map-pin"></i><div class="es-address__text"><span class="es-address__label">Hiện nay</span><span class="es-address__value">Lô Demo 14, phường Dĩ An, Thành phố Hồ Chí Minh</span></div></div>
+        <div class="es-address__row es-address__row--title"><i data-icon="scroll-text"></i><div class="es-address__text"><span class="es-address__label">Theo sổ</span><span class="es-address__value es-address__missing">Chưa có</span><a class="es-link es-address__action" href="#">Thêm từ ảnh sổ</a></div></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Loading</span>
+      <div class="es-address" aria-busy="true">
+        <div class="es-address__row"><i data-icon="map-pin"></i><div class="es-address__text" style="flex: 1"><span class="es-address__label">Hiện nay</span><span class="es-skel es-skel--text" style="width: 90%"></span><span class="es-skel es-skel--text" style="width: 60%"></span></div></div>
+        <div class="es-address__row es-address__row--title"><i data-icon="scroll-text"></i><div class="es-address__text" style="flex: 1"><span class="es-address__label">Theo sổ</span><span class="es-skel es-skel--text" style="width: 80%"></span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-matrix" style="--ds-cell: 250px">
+    <div class="ds-cell" style="max-width: 17.5rem"><span class="ds-cap">Long address at 280px: wraps in full, never truncated on a detail screen</span>
+      <div class="es-address">
+        <div class="es-address__row es-address__row--current"><i data-icon="map-pin"></i><div class="es-address__text"><span class="es-address__label">Hiện nay</span><span class="es-address__value">Thửa Demo 245, tờ bản đồ số 18, ấp Demo Bình Hoà Thượng, xã Demo Tân Thạnh Đông, Thành phố Hồ Chí Minh</span></div></div>
+        <div class="es-address__row es-address__row--title"><i data-icon="scroll-text"></i><div class="es-address__text"><span class="es-address__label">Theo sổ</span><span class="es-address__value">Thửa đất số 245, tờ bản đồ số 18, ấp Demo Bình Hoà Thượng, xã Tân Thạnh Đông, huyện Củ Chi, Thành phố Hồ Chí Minh</span><span class="es-address__note"><i data-icon="info"></i>Tên đơn vị trước sắp xếp năm 2025</span></div></div>
+      </div>
+    </div>
+    <div class="ds-cell" style="max-width: 20rem"><span class="ds-cap">Compact, inside a card: two lines each, word prefix for the sổ</span>
+      <div class="es-card">
+        <div class="es-address es-address--compact">
+          <div class="es-address__row es-address__row--current"><i data-icon="map-pin"></i><div class="es-address__text"><span class="es-address__label">Hiện nay</span><span class="es-address__value" title="Thửa Demo 245, tờ bản đồ số 18, ấp Demo Bình Hoà Thượng, xã Demo Tân Thạnh Đông, Thành phố Hồ Chí Minh">Thửa Demo 245, tờ bản đồ số 18, ấp Demo Bình Hoà Thượng, xã Demo Tân Thạnh Đông, Thành phố Hồ Chí Minh</span></div></div>
+          <div class="es-address__row es-address__row--title"><i data-icon="scroll-text"></i><div class="es-address__text"><span class="es-address__label">Theo sổ</span><span class="es-address__value" title="Thửa đất số 245, tờ bản đồ số 18, xã Tân Thạnh Đông, huyện Củ Chi"><span class="es-address__prefix">Theo sổ: </span>Thửa đất số 245, tờ bản đồ số 18, xã Tân Thạnh Đông, huyện Củ Chi</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-cell" style="grid-column: 1 / -1"><span class="ds-cap">Detail screen: the address is text to copy, with a way to the map</span>
+      <div class="es-address">
+        <div class="es-address__row es-address__row--current"><i data-icon="map-pin"></i><div class="es-address__text"><span class="es-address__label">Hiện nay</span><span class="es-address__value">8 đường Demo Hoa Lan, phường Phú Nhuận, Thành phố Hồ Chí Minh</span><div class="ds-row" style="margin-top: var(--space-2)"><button class="es-btn es-btn--ghost es-btn--sm" type="button"><i data-icon="copy"></i>Chép địa chỉ</button><a class="es-btn es-btn--ghost es-btn--sm" href="#"><i data-icon="external-link"></i>Mở bản đồ</a></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

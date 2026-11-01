@@ -1,0 +1,70 @@
+<!-- @dsCard group="Foundations" page height=1820 width=1200 subtitle="4px spacing, tight radii, hairline borders, four quiet shadows and one focus ring" -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Spacing</title>
+</head>
+<body>
+<div id="src">
+  <div class="ds-sec">
+    <h3 class="ds-h">Spacing</h3>
+    <p class="ds-why"><b>A 4px base, with 2 and 6 for the inside of small controls.</b> Inside a component use 2–16, between components 16–32, between sections 32–48.</p>
+    <div class="ds-bars" data-bars></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Radius</h3>
+    <p class="ds-why"><b>Tighter than the prototype's 10/12/16.</b> Small corners read as precise; the warmth comes from photos and copy, not pillowy shapes.</p>
+    <div class="ds-matrix" style="--ds-cell: 7rem" data-radius></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Borders</h3>
+    <p class="ds-why"><b>Every border is a 1px hairline.</b> <code class="ds-code">border</code> decorates; <code class="ds-code">border-field</code> (3:1) edges anything you type into or tick; 1.5px only for checkbox, radio and the completeness ring.</p>
+    <div class="ds-grid3">
+      <div class="ds-cell"><span class="ds-cap">stroke-hairline 1px · border</span><div class="ds-stroke" style="border: var(--stroke-hairline) solid var(--border)"></div></div>
+      <div class="ds-cell"><span class="ds-cap">stroke-hairline 1px · border-field</span><div class="ds-stroke" style="border: var(--stroke-hairline) solid var(--border-field)"></div></div>
+      <div class="ds-cell"><span class="ds-cap">stroke-strong 1.5px · checkbox</span><div class="ds-row"><span class="ds-radius" style="width: var(--icon-md); height: var(--icon-md); background: var(--surface); border: var(--stroke-strong) solid var(--border-field); border-radius: var(--radius-xs)"></span><span class="ds-meta">Đã nhận cọc</span></div></div>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Elevation</h3>
+    <p class="ds-why"><b>Hairline first, shadow second.</b> Shadows mark what floats: menus, toasts, sheets. No coloured shadows, no glow. In dark, lighter surfaces do the lifting and shadows barely read.</p>
+    <div class="ds-ground" style="background: var(--bg)">
+      <div class="ds-grid2">
+        <div class="ds-elev" style="box-shadow: var(--shadow-xs)"><b class="ds-sub">shadow-xs</b>Cards at rest</div>
+        <div class="ds-elev" style="box-shadow: var(--shadow-sm)"><b class="ds-sub">shadow-sm</b>Hovered card, bottom nav</div>
+        <div class="ds-elev" style="box-shadow: var(--shadow-md)"><b class="ds-sub">shadow-md</b>Menus, toasts</div>
+        <div class="ds-elev" style="box-shadow: var(--shadow-lg); background: var(--surface-raised)"><b class="ds-sub">shadow-lg</b>Modals, sheets</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Focus ring</h3>
+    <p class="ds-why"><b>A 2px blue outline, 2px out, on <code class="ds-code">:focus-visible</code>.</b> It is an outline, so nothing moves when it appears; at least 3:1 on every ground in both themes.</p>
+    <div class="ds-grid3">
+      <div class="ds-ground ds-col" style="background: var(--bg)"><span class="ds-cap">on bg</span><span class="ds-focus-demo">Lưu</span></div>
+      <div class="ds-ground ds-col" style="background: var(--surface)"><span class="ds-cap">on surface</span><span class="ds-focus-demo">Lưu</span></div>
+      <div class="ds-ground ds-col" style="background: var(--surface-raised)"><span class="ds-cap">on surface-raised</span><span class="ds-focus-demo">Lưu</span></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var SPACE = [['0.5', 2, 'Icon to badge edge'], ['1', 4, 'Label to hint'], ['1.5', 6, 'Icon gap at 14px'], ['2', 8, 'Icon gap at 16–24px'], ['3', 12, 'Inside a list row'], ['4', 16, 'Card padding on phones, page gutter'], ['5', 20, 'Between fields (Thoáng)'], ['6', 24, 'Card padding (Thoáng)'], ['8', 32, 'Between sections'], ['10', 40, 'Above a page title'], ['12', 48, 'Between page regions'], ['16', 64, 'Empty state top'], ['20', 80, 'Page foot']];
+  var RADIUS = [['xs', 4, 'Checkbox'], ['sm', 6, 'Tooltip, chip'], ['md', 8, 'Button, input'], ['lg', 12, 'Card, table, toast'], ['xl', 16, 'Modal, property card'], ['2xl', 24, 'Phone sheet top'], ['full', '∞', 'Badge, avatar, switch']];
+  document.querySelector('[data-bars]').innerHTML = SPACE.map(function (s) {
+    var v = 'var(--space-' + s[0].replace('.', '\\.') + ')';
+    return '<div class="ds-bar-row"><span class="ds-sw__name">space-' + s[0] + '</span><span class="ds-meta">' + s[1] + 'px</span><div class="ds-row" style="gap: var(--space-3); flex-wrap: nowrap"><span class="ds-bar" style="width: ' + v + '; flex: none"></span><span class="ds-meta">' + s[2] + '</span></div></div>';
+  }).join('');
+  document.querySelector('[data-radius]').innerHTML = RADIUS.map(function (r) {
+    return '<div class="ds-cell"><span class="ds-radius" style="border-radius: var(--radius-' + r[0] + ')"></span><span class="ds-sw__name">radius-' + r[0] + '</span><span class="ds-meta">' + r[1] + (r[1] === '∞' ? '' : 'px') + ' · ' + r[2] + '</span></div>';
+  }).join('');
+  Esta.themes('#src');
+})();
+</script>
+</body>
+</html>

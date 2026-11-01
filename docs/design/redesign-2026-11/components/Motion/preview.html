@@ -1,0 +1,87 @@
+<!-- @dsCard group="Foundations" page height=1560 width=1200 subtitle="Four durations, three easings, live replays, and a short list of things that never move" -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Motion</title>
+</head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Motion says where something came from, then gets out of the way.</b> Short, calm, no overshoot. Exits are always shorter than entries, and nothing moves that Mẹ has to wait for.</p>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Durations</h3>
+    <div class="ds-durs">
+      <div class="ds-cmatrix__rowhead"><span class="ds-sw__name">duration-fast</span><span class="ds-meta">Hover, press, colour, focus ring</span></div><span class="ds-meta">120ms</span><div class="ds-width-track" style="height: var(--space-2)"><span class="ds-dur" style="display: block; width: 40%"></span></div>
+      <div class="ds-cmatrix__rowhead"><span class="ds-sw__name">duration-base</span><span class="ds-meta">Switch, menu, toast enter, exits</span></div><span class="ds-meta">180ms</span><div class="ds-width-track" style="height: var(--space-2)"><span class="ds-dur" style="display: block; width: 60%"></span></div>
+      <div class="ds-cmatrix__rowhead"><span class="ds-sw__name">duration-slow</span><span class="ds-meta">Modal enter, row insert</span></div><span class="ds-meta">240ms</span><div class="ds-width-track" style="height: var(--space-2)"><span class="ds-dur" style="display: block; width: 80%"></span></div>
+      <div class="ds-cmatrix__rowhead"><span class="ds-sw__name">duration-sheet</span><span class="ds-meta">Phone bottom sheet slide-up</span></div><span class="ds-meta">300ms</span><div class="ds-width-track" style="height: var(--space-2)"><span class="ds-dur" style="display: block; width: 100%"></span></div>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Easing</h3>
+    <div class="ds-grid3">
+      <div class="ds-cell ds-curve"><span class="ds-sw__name">ease-standard</span><span data-curve="0.2,0,0,1"></span><span class="ds-meta">In-place change: switch, colour</span></div>
+      <div class="ds-cell ds-curve"><span class="ds-sw__name">ease-enter</span><span data-curve="0.16,1,0.3,1"></span><span class="ds-meta">Arrivals: fast start, long calm settle</span></div>
+      <div class="ds-cell ds-curve"><span class="ds-sw__name">ease-exit</span><span data-curve="0.4,0,1,1"></span><span class="ds-meta">Departures: gentle start, quick finish</span></div>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Live</h3>
+    <p class="ds-why"><b>Press Phát lại to watch each one leave and arrive.</b> Tick Giảm chuyển động to see the reduced-motion version: no transforms, a 120ms fade.</p>
+    <label class="ds-check"><input type="checkbox" data-reduce>Giảm chuyển động</label>
+    <div class="ds-grid2">
+      <div class="ds-demo">
+        <div class="ds-demo__bar"><span class="ds-cap">Toast · base, enter</span><button class="es-btn es-btn--secondary es-btn--sm" type="button" data-replay>Phát lại</button></div>
+        <div class="ds-mstage is-in"><div class="ds-mtoast"><i data-icon="circle-check" data-size="20"></i><span>Đã ghi nhận tiền</span><b>Hoàn tác</b></div></div>
+      </div>
+      <div class="ds-demo">
+        <div class="ds-demo__bar"><span class="ds-cap">Sheet · sheet, enter</span><button class="es-btn es-btn--secondary es-btn--sm" type="button" data-replay>Phát lại</button></div>
+        <div class="ds-mstage is-in"><div class="ds-mscrim"></div><div class="ds-msheet"><p class="title-3">Ghi nhận tiền</p><p class="body-sm ds-c2">Phòng 5 · 3.500.000 ₫</p></div></div>
+      </div>
+    </div>
+    <div class="ds-demo">
+      <div class="ds-demo__bar"><span class="ds-cap">Switch · base, standard</span><button class="es-btn es-btn--secondary es-btn--sm" type="button" data-replay>Phát lại</button></div>
+      <div class="ds-mstage ds-mstage--short is-in"><span class="ds-mswitch"></span><span>Nhắc tiền thuê qua Zalo</span></div>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Never animate</h3>
+    <ul class="ds-list">
+      <li><b>Money.</b> No counting up; a changed amount cross-fades once.</li>
+      <li><b>Table rows on sort or filter.</b> They reorder in place.</li>
+      <li><b>Page transitions.</b> The new page is simply there.</li>
+      <li><b>Skeleton shimmer.</b> Skeletons hold still or pulse opacity once a second.</li>
+      <li><b>Loops other than a spinner</b>, parallax, bounce, confetti, and typing dots for Trợ lý.</li>
+    </ul>
+  </div>
+</div>
+<script>
+(function () {
+  document.querySelectorAll('[data-curve]').forEach(function (el) {
+    var p = el.getAttribute('data-curve').split(',').map(Number);
+    function X(v) { return (12 + 96 * v).toFixed(1); }
+    function Y(v) { return (108 - 96 * v).toFixed(1); }
+    el.innerHTML = '<svg viewBox="0 0 120 120" aria-hidden="true"><path class="ds-curve__axis" d="M12 12 V108 H108"/>' +
+      '<line class="ds-curve__ctl" x1="12" y1="108" x2="' + X(p[0]) + '" y2="' + Y(p[1]) + '"/><line class="ds-curve__ctl" x1="108" y1="12" x2="' + X(p[2]) + '" y2="' + Y(p[3]) + '"/>' +
+      '<path class="ds-curve__line" d="M12 108 C' + X(p[0]) + ' ' + Y(p[1]) + ' ' + X(p[2]) + ' ' + Y(p[3]) + ' 108 12"/></svg>';
+  });
+  var wrap = Esta.themes('#src');
+  wrap.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-replay]');
+    if (!btn) return;
+    var stage = btn.closest('.ds-demo').querySelector('.ds-mstage');
+    stage.classList.remove('is-in');
+    setTimeout(function () { stage.classList.add('is-in'); }, 450);
+  });
+  wrap.addEventListener('change', function (e) {
+    if (!e.target.matches('[data-reduce]')) return;
+    e.target.closest('.ds-theme').querySelectorAll('.ds-mstage').forEach(function (s) { s.classList.toggle('ds-reduce', e.target.checked); });
+  });
+})();
+</script>
+</body>
+</html>

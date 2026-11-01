@@ -1,0 +1,91 @@
+<!-- @dsCard group="Voice" page height=2600 width=1200 subtitle="How Esta talks: a capable niece explaining things to her aunt" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Voice</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Natural, warm, concise.</b> Say what happened, then what to do next, in words a parent uses at the market. No developer words, no roadmap promises, no exclamation marks, no emoji.</p>
+
+  <ul class="ds-voice-principles">
+    <li><b>Say what happened, then what to do</b><q>Chưa lưu được. Kiểm tra mạng rồi thử lại.</q></li>
+    <li><b>Name the thing</b><q>Kết thúc hợp đồng Phòng 3 từ 31/10/2026?</q><span>not “Bạn có chắc không?”</span></li>
+    <li><b>Plain words</b><span>thông tin, giấy tờ, ghi, lưu — not dữ liệu, hệ thống, thao tác, ngoại tuyến</span></li>
+    <li><b>Today, not someday</b><span>Show what works now. Never “Sắp có”, “bản cập nhật tới”.</span></li>
+    <li><b>Calm about problems</b><q>Quá hạn 12 ngày</q><span>not “Lỗi”, “Cảnh báo”, or an exclamation mark</span></li>
+    <li><b>Short, no pronoun when Vietnamese allows</b><q>Kiểm tra lại số tiền.</q><span>not “Bạn hãy kiểm tra lại số tiền.”</span></li>
+  </ul>
+
+  <h2 class="ds-h">Words to swap</h2>
+  <div class="ds-voice-words">
+    <span class="ds-voice-word"><s>dữ liệu</s> → thông tin</span>
+    <span class="ds-voice-word"><s>thao tác</s> → (no column label)</span>
+    <span class="ds-voice-word"><s>ngoại tuyến</s> → đang nghỉ</span>
+    <span class="ds-voice-word"><s>Lỗi</s> → Chưa xong</span>
+    <span class="ds-voice-word"><s>Không thể</s> → say why and the way through</span>
+    <span class="ds-voice-word"><s>Thành công!</s> → Đã ghi nhận …</span>
+    <span class="ds-voice-word"><s>người dùng</s> → (leave out)</span>
+    <span class="ds-voice-word"><s>ngàn · tỉ</s> → nghìn · tỷ</span>
+  </div>
+
+  <h2 class="ds-h">Five rewrites from the current app</h2>
+
+  <div class="ds-rewrite">
+    <p class="ds-rewrite__where">A section that is not built yet <span>· sections.soonTitle</span></p>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag"><i data-icon="x"></i>Now</span>
+      <div class="ds-rewrite__frame ds-rewrite__frame--before"><p class="ds-voice-title">Sắp có trong bản cập nhật tới</p></div></div>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag ds-rewrite__tag--after"><i data-icon="check"></i>Rewrite</span>
+      <div class="ds-rewrite__frame"><p class="ds-voice-title">Tài khoản nhận tiền</p><p class="ds-voice-body">Thêm tài khoản để hóa đơn có mã QR chuyển khoản.</p><div><button class="es-btn es-btn--secondary" type="button"><i data-icon="plus"></i>Thêm tài khoản</button></div></div></div>
+    <p class="ds-rewrite__why">A promise the screen cannot keep. Show what works today, with its action, or leave the section out.</p>
+  </div>
+
+  <div class="ds-rewrite">
+    <p class="ds-rewrite__where">Settings intro <span>· sections.settings</span></p>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag"><i data-icon="x"></i>Now</span>
+      <div class="ds-rewrite__frame ds-rewrite__frame--before"><p class="ds-voice-body">Tài khoản nhận tiền và cài đặt hiển thị. Gia đình và thành viên sẽ có ở đây trong bản cập nhật tới.</p></div></div>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag ds-rewrite__tag--after"><i data-icon="check"></i>Rewrite</span>
+      <div class="ds-rewrite__frame"><p class="ds-voice-body">Tài khoản nhận tiền, cỡ chữ và giao diện.</p></div></div>
+    <p class="ds-rewrite__why">Describe the page; drop the roadmap sentence.</p>
+  </div>
+
+  <div class="ds-rewrite">
+    <p class="ds-rewrite__where">Splitting a house that is leased whole <span>· propertyRental.errorWholeLeased</span></p>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag"><i data-icon="x"></i>Now</span>
+      <div class="ds-rewrite__frame ds-rewrite__frame--before"><p class="ds-voice-body">Không thể chia nhỏ tài sản khi đang cho thuê nguyên căn.</p></div></div>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag ds-rewrite__tag--after"><i data-icon="check"></i>Rewrite</span>
+      <div class="ds-rewrite__frame"><p class="ds-voice-body">Nhà này đang cho thuê nguyên căn. Kết thúc hợp đồng hiện tại rồi chia thành từng phòng.</p><div><button class="es-btn es-btn--secondary es-btn--sm" type="button">Xem hợp đồng</button></div></div></div>
+    <p class="ds-rewrite__why">“Không thể” is a wall. Say why, then the way through.</p>
+  </div>
+
+  <div class="ds-rewrite">
+    <p class="ds-rewrite__where">A Trợ lý job that failed <span>· assistant.jobStatus.failed</span></p>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag"><i data-icon="x"></i>Now</span>
+      <div class="ds-rewrite__frame ds-rewrite__frame--before"><p class="ds-voice-line">Đọc ảnh sổ Đất Long An Demo · <span class="ds-voice-bad">Lỗi</span></p></div></div>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag ds-rewrite__tag--after"><i data-icon="check"></i>Rewrite</span>
+      <div class="ds-rewrite__frame"><p class="ds-voice-line">Đọc ảnh sổ Đất Long An Demo · Chưa xong</p><div class="ds-row"><button class="es-btn es-btn--secondary es-btn--sm" type="button"><i data-icon="refresh-cw"></i>Thử lại</button><button class="es-btn es-btn--ghost es-btn--sm" type="button">Nhập tay</button></div></div></div>
+    <p class="ds-rewrite__why">A bare red “Lỗi” alarms and explains nothing. Pair the state with what to do.</p>
+  </div>
+
+  <div class="ds-rewrite">
+    <p class="ds-rewrite__where">Trợ lý is not running <span>· assistant.statusOffline</span></p>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag"><i data-icon="x"></i>Now</span>
+      <div class="ds-rewrite__frame ds-rewrite__frame--before"><p class="ds-voice-line"><span class="ds-voice-dot"></span>Trợ lý ngoại tuyến từ 07:00. Việc mới sẽ chạy khi máy hoạt động lại.</p></div></div>
+    <div class="ds-rewrite__side"><span class="ds-rewrite__tag ds-rewrite__tag--after"><i data-icon="check"></i>Rewrite</span>
+      <div class="ds-rewrite__frame"><p class="ds-voice-line"><span class="ds-voice-dot"></span>Trợ lý nghỉ từ 07:00. Việc mới sẽ được làm khi Trợ lý chạy lại; mọi thứ khác vẫn dùng bình thường.</p></div></div>
+    <p class="ds-rewrite__why">“Ngoại tuyến” and “máy” are engineer words. Reassure that the app still works.</p>
+  </div>
+
+  <h2 class="ds-h">Patterns</h2>
+  <div class="ds-voice-patterns">
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Saved, reversible</span><span class="ds-voice-pattern__v">Đã ghi nhận 3.500.000 ₫ từ Phòng 5. <a class="es-link" href="#">Hoàn tác</a></span></div>
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Couldn’t save</span><span class="ds-voice-pattern__v">Chưa lưu được. Kiểm tra mạng rồi thử lại.</span></div>
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Field error</span><span class="ds-voice-pattern__v">Chưa hiểu số này. Thử 3tr5, 850k hoặc 3.500.000.</span></div>
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Empty, first time</span><span class="ds-voice-pattern__v">Chưa có tài sản nào. Chụp ảnh sổ để Trợ lý điền sẵn, hoặc nhập tay.</span></div>
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Empty, filtered</span><span class="ds-voice-pattern__v">Tháng 10 không có phòng nào quá hạn. <a class="es-link" href="#">Xem tất cả</a></span></div>
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Destructive confirm</span><span class="ds-voice-pattern__v">Kết thúc hợp đồng Phòng 3 từ 31/10/2026? Tiền cọc vẫn được giữ cho đến khi trả lại.</span></div>
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Trợ lý note</span><span class="ds-voice-pattern__v">Tháng 10 thu chậm hơn tháng 9 khoảng 4 tr, chủ yếu do 2 phòng ở Dĩ An.</span></div>
+    <div class="ds-voice-pattern"><span class="ds-voice-pattern__k">Waiting on Trợ lý</span><span class="ds-voice-pattern__v">Trợ lý đang đọc ảnh sổ. Cứ làm tiếp, xong sẽ báo.</span></div>
+  </div>
+</div>
+<script>Esta.themes('#src', { stack: true });</script>
+</body>
+</html>

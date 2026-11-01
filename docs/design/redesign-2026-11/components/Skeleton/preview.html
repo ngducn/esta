@@ -1,0 +1,79 @@
+<!-- @dsCard group="Feedback" height=1310 width=1200 subtitle="Loading in the final shape: stat card, table rows, property card, list row; a slow pulse, still under reduced motion" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Skeleton</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>The shape of what is coming, holding still.</b> Each skeleton matches its loaded layout bar for bar, so nothing jumps when the numbers arrive. A slow 1.6&nbsp;s opacity pulse says "loading"; no shimmer, and no motion at all when reduced motion is on. A figure's bar is as wide as the figure will be, never <span class="es-num">0&nbsp;₫</span>.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Stat card · loading</span>
+      <div class="es-card" aria-busy="true"><span class="es-sr-only">Đang tải</span>
+        <span class="es-skel es-skel--text" style="width: 55%"></span>
+        <span class="es-skel es-skel--figure"></span>
+        <span class="es-skel es-skel--text" style="width: 75%"></span>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Stat card · loaded</span>
+      <div class="es-card">
+        <div style="font-size: 0.9375rem; line-height: 1.5rem; color: var(--text-secondary); font-weight: 500">Đã thu tháng 10</div>
+        <div class="es-num" style="font-size: 2rem; line-height: 2.5rem; font-weight: 600; letter-spacing: -0.02em" title="42.500.000 ₫">42,5 tr</div>
+        <div style="font-size: 0.9375rem; line-height: 1.5rem; color: var(--text-secondary)">8 trên 10 phòng</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-col">
+    <div class="ds-cell"><span class="ds-cap">Table rows · loading (columns keep their widths)</span>
+      <div class="es-card" style="padding: 0" aria-busy="true"><span class="es-sr-only">Đang tải</span>
+        <div class="ds-listrow" style="background: transparent"><span class="es-skel es-skel--text" style="flex: 1"></span><span class="es-skel es-skel--badge"></span><span class="es-skel es-skel--text" style="width: 6.5rem"></span></div>
+        <div class="ds-listrow" style="background: transparent"><span class="es-skel es-skel--text" style="flex: 1"></span><span class="es-skel es-skel--badge"></span><span class="es-skel es-skel--text" style="width: 6.5rem"></span></div>
+        <div class="ds-listrow" style="background: transparent; border: 0"><span class="es-skel es-skel--text" style="flex: 1"></span><span class="es-skel es-skel--badge"></span><span class="es-skel es-skel--text" style="width: 6.5rem"></span></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Table rows · loaded</span>
+      <div class="es-card" style="padding: 0">
+        <div class="ds-listrow" style="background: transparent"><span style="flex: 1">Phòng 3</span><span class="es-badge es-badge--paid"><i data-icon="circle-check"></i>Đã thu</span><span class="es-num" style="width: 6.5rem; text-align: right">3.500.000&nbsp;₫</span></div>
+        <div class="ds-listrow" style="background: transparent"><span style="flex: 1">Phòng 4</span><span class="es-badge es-badge--due"><i data-icon="clock"></i>Còn 3 ngày</span><span class="es-num" style="width: 6.5rem; text-align: right">3.200.000&nbsp;₫</span></div>
+        <div class="ds-listrow" style="background: transparent; border: 0"><span style="flex: 1">Phòng 5</span><span class="es-badge es-badge--overdue"><i data-icon="circle-alert"></i>Quá hạn</span><span class="es-num" style="width: 6.5rem; text-align: right">3.500.000&nbsp;₫</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Property card · loading (photo first)</span>
+      <div class="es-card" style="padding: 0; overflow: hidden" aria-busy="true"><span class="es-sr-only">Đang tải</span>
+        <span class="es-skel es-skel--photo"></span>
+        <div style="padding: var(--card-pad)"><span class="es-skel es-skel--title" style="width: 65%"></span><span class="es-skel es-skel--text"></span><span class="es-skel es-skel--text" style="width: 80%"></span><span class="es-skel es-skel--text" style="width: 55%; margin-top: var(--space-3)"></span></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Property card · loaded</span>
+      <div class="es-card" style="padding: 0; overflow: hidden">
+        <div style="aspect-ratio: 16 / 10; background: var(--neutral-bg); display: grid; place-items: center; color: var(--neutral-text)"><i data-icon="image"></i></div>
+        <div style="padding: var(--card-pad)">
+          <div style="font-size: 1.125rem; line-height: 1.625rem; font-weight: 600">Nhà Dĩ An Demo</div>
+          <div style="font-size: 0.9375rem; line-height: 1.375rem; color: var(--text-secondary)">12 đường số 7, phường Dĩ An, Bình Dương</div>
+          <div style="margin-top: var(--space-3); font-size: 0.9375rem; line-height: 1.375rem"><span class="es-num">14.000.000&nbsp;₫</span>/tháng</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">List row with avatar · loading</span>
+      <div class="es-card" aria-busy="true" style="display: flex; gap: var(--space-3); align-items: center"><span class="es-sr-only">Đang tải</span>
+        <span class="es-skel es-skel--avatar"></span>
+        <div style="flex: 1"><span class="es-skel es-skel--text" style="width: 60%"></span><span class="es-skel es-skel--text" style="width: 85%"></span></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">List row with avatar · loaded</span>
+      <div class="es-card" style="display: flex; gap: var(--space-3); align-items: center">
+        <span class="es-avatar" aria-hidden="true">A</span>
+        <div style="flex: 1; min-width: 0"><div style="font-weight: 500">Trần Demo An</div><div style="font-size: 0.9375rem; line-height: 1.375rem; color: var(--text-secondary)">Phòng 5 · Đã thu</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

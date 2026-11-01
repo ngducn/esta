@@ -1,0 +1,61 @@
+<!-- @dsCard group="Feedback" height=1420 width=1200 subtitle="Saved with undo, couldn't save with retry, long text; where it appears on phone and desktop" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Toast</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>A toast confirms what just happened and offers the way back.</b> It sits on the inverse surface so it reads as a passing note, not part of the page; anything reversible carries <i>Hoàn tác</i> for 8 seconds, and errors stay until closed.</p>
+  <div class="ds-col">
+    <div class="ds-cell"><span class="ds-cap">Saved, reversible · desktop (close button) · role="status"</span>
+      <div class="es-toast es-toast--success" role="status"><i class="es-toast__icon" data-icon="circle-check"></i><p class="es-toast__msg">Đã ghi nhận <span class="es-num">3.500.000&nbsp;₫</span> từ Phòng 5.</p><div class="es-toast__actions"><button class="es-toast__action" type="button">Hoàn tác</button><button class="es-toast__action es-toast__close" type="button" aria-label="Đóng thông báo"><i data-icon="x"></i></button></div></div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Couldn't save · role="alert" · stays until closed</span>
+      <div class="es-toast es-toast--error" role="alert"><i class="es-toast__icon" data-icon="circle-alert"></i><p class="es-toast__msg">Chưa lưu được. Kiểm tra mạng rồi thử lại.</p><div class="es-toast__actions"><button class="es-toast__action" type="button"><i data-icon="refresh-cw"></i>Thử lại</button><button class="es-toast__action es-toast__close" type="button" aria-label="Đóng thông báo"><i data-icon="x"></i></button></div></div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Long message: wraps, the action stays on the first line</span>
+      <div class="es-toast es-toast--success" role="status"><i class="es-toast__icon" data-icon="circle-check"></i><p class="es-toast__msg">Đã gửi lời nhắc cho 2 phòng quá hạn ở Dãy trọ Dĩ An Demo. Trợ lý sẽ báo khi có người chuyển khoản.</p><div class="es-toast__actions"><button class="es-toast__action" type="button">Hoàn tác</button></div></div>
+    </div>
+    <div class="ds-matrix" style="--ds-cell: 200px">
+      <div class="ds-cell"><span class="ds-cap">Action hover</span>
+        <div class="es-toast es-toast--success" style="width: auto"><i class="es-toast__icon" data-icon="circle-check"></i><p class="es-toast__msg">Đã lưu.</p><div class="es-toast__actions"><button class="es-toast__action is-hover" type="button">Hoàn tác</button></div></div>
+      </div>
+      <div class="ds-cell"><span class="ds-cap">Action focus-visible</span>
+        <div class="es-toast es-toast--success" style="width: auto"><i class="es-toast__icon" data-icon="circle-check"></i><p class="es-toast__msg">Đã lưu.</p><div class="es-toast__actions"><button class="es-toast__action is-focus" type="button">Hoàn tác</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="ds-h">Where it appears</h3>
+  <div class="ds-col">
+    <div class="ds-cell"><span class="ds-cap">Phone: above the bottom nav and the safe area, full width minus the gutter</span>
+      <div class="ds-phone" style="height: 340px">
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 4</span><span class="ds-listrow__sub">Lê Demo Bình · Hạn 05/11</span></div></div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 5</span><span class="ds-listrow__sub">Trần Demo An · Đã thu</span></div></div>
+        <div style="position: absolute; left: var(--gutter-phone); right: var(--gutter-phone); bottom: calc(var(--bottom-nav-height) + var(--space-8) + var(--space-3)); display: flex; justify-content: center">
+          <div class="es-toast es-toast--success" role="status"><i class="es-toast__icon" data-icon="circle-check"></i><p class="es-toast__msg">Đã ghi nhận <span class="es-num">3.500.000&nbsp;₫</span> từ Phòng 5.</p><div class="es-toast__actions"><button class="es-toast__action" type="button" style="min-height: var(--touch-min)">Hoàn tác</button></div></div>
+        </div>
+        <nav class="es-tabbar" style="position: absolute; left: 0; right: 0; bottom: 0; --tabbar-safe: var(--space-8)" aria-label="Điều hướng chính">
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="house"></i></span>Tổng quan</a>
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="building-2"></i></span>Tài sản</a>
+          <a class="es-tab" href="#" aria-current="page"><span class="es-tab__icon"><i data-icon="banknote"></i></span>Thu tiền</a>
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="file-text"></i></span>Tài liệu</a>
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="message-square-text"></i></span>Trợ lý</a>
+        </nav>
+        <span class="ds-home"></span>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Desktop: bottom-left of the content, clear of the sidebar; newest on top, three at most</span>
+      <div class="ds-stage" style="min-height: 300px; display: flex">
+        <div style="width: 22%; border-right: var(--stroke-hairline) solid var(--border); background: var(--surface); padding: var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2)">
+          <span class="es-skel es-skel--title" style="width: 70%; animation: none"></span><span class="es-skel es-skel--text" style="animation: none"></span><span class="es-skel es-skel--text" style="width: 80%; animation: none"></span><span class="es-skel es-skel--text" style="width: 60%; animation: none"></span>
+        </div>
+        <div style="flex: 1; position: relative">
+          <div style="position: absolute; left: var(--space-5); bottom: var(--space-5); zoom: 0.8"><div class="es-toast es-toast--success" role="status"><i class="es-toast__icon" data-icon="circle-check"></i><p class="es-toast__msg">Đã ghi nhận <span class="es-num">3.500.000&nbsp;₫</span> từ Phòng 5.</p><div class="es-toast__actions"><button class="es-toast__action" type="button">Hoàn tác</button><button class="es-toast__action es-toast__close" type="button" aria-label="Đóng thông báo"><i data-icon="x"></i></button></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

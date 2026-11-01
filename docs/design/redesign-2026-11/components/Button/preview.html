@@ -1,0 +1,58 @@
+<!-- @dsCard group="Actions" height=1280 width=1200 subtitle="Primary, secondary, ghost, destructive, icon-only; three sizes; every state" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Button</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>One primary per view.</b> The blue fill marks the single thing the screen is for; everything else is secondary or ghost, so a page of actions never reads as an alarm.</p>
+  <div class="ds-matrix" style="--ds-cell: 150px">
+    <div class="ds-cell"><span class="ds-cap">Primary</span><button class="es-btn es-btn--primary" type="button"><i data-icon="plus"></i>Ghi nhận tiền</button></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span><button class="es-btn es-btn--primary is-hover" type="button"><i data-icon="plus"></i>Ghi nhận tiền</button></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span><button class="es-btn es-btn--primary is-focus" type="button"><i data-icon="plus"></i>Ghi nhận tiền</button></div>
+    <div class="ds-cell"><span class="ds-cap">Active</span><button class="es-btn es-btn--primary is-active" type="button"><i data-icon="plus"></i>Ghi nhận tiền</button></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span><button class="es-btn es-btn--primary" type="button" disabled><i data-icon="plus"></i>Ghi nhận tiền</button></div>
+    <div class="ds-cell"><span class="ds-cap">Loading</span><button class="es-btn es-btn--primary is-loading" type="button" aria-busy="true"><i data-icon="loader-circle" class="es-spinner"></i>Đang lưu</button></div>
+  </div>
+  <div class="ds-matrix" style="--ds-cell: 150px">
+    <div class="ds-cell"><span class="ds-cap">Secondary</span><button class="es-btn es-btn--secondary" type="button"><i data-icon="qr-code"></i>Mã QR</button></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span><button class="es-btn es-btn--secondary is-hover" type="button"><i data-icon="qr-code"></i>Mã QR</button></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span><button class="es-btn es-btn--secondary is-focus" type="button"><i data-icon="qr-code"></i>Mã QR</button></div>
+    <div class="ds-cell"><span class="ds-cap">Active</span><button class="es-btn es-btn--secondary is-active" type="button"><i data-icon="qr-code"></i>Mã QR</button></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span><button class="es-btn es-btn--secondary" type="button" disabled><i data-icon="qr-code"></i>Mã QR</button></div>
+    <div class="ds-cell"><span class="ds-cap">Loading</span><button class="es-btn es-btn--secondary is-loading" type="button" aria-busy="true"><i data-icon="loader-circle" class="es-spinner"></i>Đang tạo mã</button></div>
+  </div>
+  <div class="ds-matrix" style="--ds-cell: 150px">
+    <div class="ds-cell"><span class="ds-cap">Ghost</span><button class="es-btn es-btn--ghost" type="button">Bỏ qua</button></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span><button class="es-btn es-btn--ghost is-hover" type="button">Bỏ qua</button></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span><button class="es-btn es-btn--ghost is-focus" type="button">Bỏ qua</button></div>
+    <div class="ds-cell"><span class="ds-cap">Active</span><button class="es-btn es-btn--ghost is-active" type="button">Bỏ qua</button></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span><button class="es-btn es-btn--ghost" type="button" disabled>Bỏ qua</button></div>
+    <div class="ds-cell"><span class="ds-cap">Error (retry)</span><button class="es-btn es-btn--secondary" type="button"><i data-icon="refresh-cw"></i>Thử lại</button></div>
+  </div>
+  <div class="ds-matrix" style="--ds-cell: 150px">
+    <div class="ds-cell"><span class="ds-cap">Destructive</span><button class="es-btn es-btn--danger" type="button">Kết thúc hợp đồng</button></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span><button class="es-btn es-btn--danger is-hover" type="button">Kết thúc hợp đồng</button></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span><button class="es-btn es-btn--danger is-focus" type="button">Kết thúc hợp đồng</button></div>
+    <div class="ds-cell"><span class="ds-cap">Active</span><button class="es-btn es-btn--danger is-active" type="button">Kết thúc hợp đồng</button></div>
+    <div class="ds-cell"><span class="ds-cap">Quiet (first step)</span><button class="es-btn es-btn--danger-quiet" type="button"><i data-icon="trash-2"></i>Xoá ảnh</button></div>
+    <div class="ds-cell"><span class="ds-cap">Loading</span><button class="es-btn es-btn--danger is-loading" type="button" aria-busy="true"><i data-icon="loader-circle" class="es-spinner"></i>Đang kết thúc</button></div>
+  </div>
+  <div class="ds-matrix" style="--ds-cell: 150px">
+    <div class="ds-cell"><span class="ds-cap">Icon-only (desktop)</span><div class="ds-row"><button class="es-btn es-btn--secondary es-btn--icon" type="button" aria-label="Thông báo"><i data-icon="bell"></i></button><button class="es-btn es-btn--ghost es-btn--icon" type="button" aria-label="Thêm thao tác cho Phòng 5"><i data-icon="ellipsis"></i></button></div></div>
+    <div class="ds-cell"><span class="ds-cap">Icon-only hover + tooltip</span><span class="es-tip-wrap" style="margin-top: var(--space-10)"><button class="es-btn es-btn--secondary es-btn--icon is-hover" type="button" aria-label="Xuất Excel"><i data-icon="download"></i></button><span class="es-tooltip" role="tooltip">Xuất Excel</span></span></div>
+    <div class="ds-cell"><span class="ds-cap">Icon-only focus</span><button class="es-btn es-btn--ghost es-btn--icon is-focus" type="button" aria-label="Đóng"><i data-icon="x"></i></button></div>
+  </div>
+  <div class="ds-cell"><span class="ds-cap">Sizes: sm 36 · md (density) · lg 56</span>
+    <div class="ds-row">
+      <button class="es-btn es-btn--secondary es-btn--sm" type="button">Ghi nhận</button>
+      <button class="es-btn es-btn--primary" type="button">Ghi nhận tiền</button>
+      <button class="es-btn es-btn--primary es-btn--lg" type="button">Lưu khoản thu</button>
+    </div>
+  </div>
+  <div class="ds-cell" style="max-width: 280px"><span class="ds-cap">Long label at 280px: wraps and balances, never truncates</span>
+    <button class="es-btn es-btn--primary es-btn--block" type="button">Gửi lời nhắc cho 2 phòng quá hạn ở Dãy trọ Dĩ An Demo</button>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

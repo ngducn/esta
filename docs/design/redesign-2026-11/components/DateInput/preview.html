@@ -1,0 +1,83 @@
+<!-- @dsCard group="Forms" height=1800 width=1200 subtitle="Type dd/mm/yyyy, see the weekday; the calendar is a second way in" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Date input</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Typing first, calendar second.</b> Dates on a sổ or a hợp đồng are copied, not browsed for, so the box takes <span class="ds-code">07/10/2026</span> or <span class="ds-code">7/10/26</span> and answers with the weekday. That one line catches a swapped day and month. The calendar starts on Monday (T2), marks today with a ring and the chosen day in blue. Every field on this page is live.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Empty</span>
+      <div class="es-field es-date"><label class="es-field__label" for="di-1">Ngày nhận tiền</label>
+        <div class="es-input-group"><input class="es-input" id="di-1" data-es-date inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" aria-describedby="di-1o"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-date__out"><i data-icon="triangle-alert" data-size="16"></i><span id="di-1o" data-es-date-out data-empty="Ví dụ 07/10/2026" aria-live="polite"></span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">07/10/2026</span>
+      <div class="es-field es-date"><label class="es-field__label" for="di-2">Ngày nhận tiền</label>
+        <div class="es-input-group"><input class="es-input" id="di-2" data-es-date inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" value="07/10/2026" aria-describedby="di-2o"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-date__out"><i data-icon="triangle-alert" data-size="16"></i><span id="di-2o" data-es-date-out data-empty="Ví dụ 07/10/2026" aria-live="polite"></span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">1/9/26 (short form) · hover</span>
+      <div class="es-field es-date"><label class="es-field__label" for="di-3">Ngày ký hợp đồng</label>
+        <div class="es-input-group is-hover"><input class="es-input" id="di-3" data-es-date inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" value="1/9/26" aria-describedby="di-3o"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-date__out"><i data-icon="triangle-alert" data-size="16"></i><span id="di-3o" data-es-date-out data-empty="Ví dụ 07/10/2026" aria-live="polite"></span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <div class="es-field es-date"><label class="es-field__label" for="di-4">Ngày ký hợp đồng</label>
+        <div class="es-input-group is-focus"><input class="es-input" id="di-4" data-es-date inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" value="15/08/2026" aria-describedby="di-4o"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-date__out"><i data-icon="triangle-alert" data-size="16"></i><span id="di-4o" data-es-date-out data-empty="Ví dụ 07/10/2026" aria-live="polite"></span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">31/02/2026 · no such day</span>
+      <div class="es-field es-date"><label class="es-field__label" for="di-5">Ngày hết hạn</label>
+        <div class="es-input-group"><input class="es-input" id="di-5" data-es-date inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" value="31/02/2026" aria-describedby="di-5o"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-date__out"><i data-icon="triangle-alert" data-size="16"></i><span id="di-5o" data-es-date-out data-empty="Ví dụ 07/10/2026" aria-live="polite"></span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Not a date</span>
+      <div class="es-field es-date"><label class="es-field__label" for="di-6">Ngày hết hạn</label>
+        <div class="es-input-group"><input class="es-input" id="di-6" data-es-date inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" value="tháng 10" aria-describedby="di-6o"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-date__out"><i data-icon="triangle-alert" data-size="16"></i><span id="di-6o" data-es-date-out data-empty="Ví dụ 07/10/2026" aria-live="polite"></span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Business rule (from the server)</span>
+      <div class="es-field es-date is-error"><label class="es-field__label" for="di-7">Ngày nhận tiền</label>
+        <div class="es-input-group"><input class="es-input" id="di-7" inputmode="numeric" autocomplete="off" value="12/10/2026" aria-invalid="true" aria-describedby="di-7m"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-field__msg" id="di-7m"><i data-icon="triangle-alert" data-size="16"></i><span>Ngày nhận không được sau hôm nay.</span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Required, left empty</span>
+      <div class="es-field es-date is-error"><label class="es-field__label" for="di-8">Ngày nhận tiền</label>
+        <div class="es-input-group"><input class="es-input" id="di-8" inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" aria-invalid="true" aria-describedby="di-8m"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Mở lịch"><i data-icon="calendar"></i></button></div>
+        <p class="es-field__msg" id="di-8m"><i data-icon="triangle-alert" data-size="16"></i><span>Nhập ngày nhận tiền.</span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span>
+      <div class="es-field es-date is-disabled"><label class="es-field__label" for="di-9">Ngày bắt đầu</label>
+        <div class="es-input-group is-disabled"><input class="es-input" id="di-9" value="01/06/2025" disabled aria-describedby="di-9h"><i data-icon="calendar"></i></div>
+        <p class="es-field__hint" id="di-9h">Hợp đồng đã kết thúc.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Read-only</span>
+      <div class="es-field es-date"><label class="es-field__label" for="di-10">Ngày cấp sổ</label>
+        <div class="es-input-group is-readonly"><input class="es-input" id="di-10" value="14/03/2019" readonly aria-describedby="di-10h"></div>
+        <p class="es-field__hint" id="di-10h">Thứ Năm, 14/03/2019</p></div></div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Open: calendar popover, Tháng 10/2026, today 07/10, chosen 10/10</span>
+    <div class="es-popover-anchor" style="max-width: 360px">
+      <div class="es-field es-date"><label class="es-field__label" for="di-cal">Ngày bắt đầu</label>
+        <div class="es-input-group is-focus"><input class="es-input" id="di-cal" data-es-date inputmode="numeric" autocomplete="off" placeholder="dd/mm/yyyy" value="10/10/2026" aria-describedby="di-calo"><button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm is-active" aria-label="Đóng lịch" aria-expanded="true" aria-controls="di-pop"><i data-icon="calendar"></i></button></div>
+        <p class="es-date__out"><i data-icon="triangle-alert" data-size="16"></i><span id="di-calo" data-es-date-out data-empty="Ví dụ 07/10/2026" aria-live="polite"></span></p></div>
+      <div class="es-calendar" id="di-pop" role="dialog" aria-labelledby="di-popt">
+        <div class="es-calendar__head">
+          <span class="es-calendar__title" id="di-popt">Tháng 10/2026</span>
+          <div class="es-calendar__nav">
+            <button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Tháng 9/2026"><i data-icon="chevron-left"></i></button>
+            <button type="button" class="es-btn es-btn--ghost es-btn--icon es-btn--sm" aria-label="Tháng 11/2026"><i data-icon="chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="es-calendar__grid">
+          <abbr class="es-calendar__wd" title="Thứ Hai">T2</abbr><abbr class="es-calendar__wd" title="Thứ Ba">T3</abbr><abbr class="es-calendar__wd" title="Thứ Tư">T4</abbr><abbr class="es-calendar__wd" title="Thứ Năm">T5</abbr><abbr class="es-calendar__wd" title="Thứ Sáu">T6</abbr><abbr class="es-calendar__wd" title="Thứ Bảy">T7</abbr><abbr class="es-calendar__wd" title="Chủ Nhật">CN</abbr>
+          <button type="button" class="es-calendar__day is-outside" aria-label="28/09/2026">28</button><button type="button" class="es-calendar__day is-outside" aria-label="29/09/2026">29</button><button type="button" class="es-calendar__day is-outside" aria-label="30/09/2026">30</button><button type="button" class="es-calendar__day" aria-label="01/10/2026">1</button><button type="button" class="es-calendar__day" aria-label="02/10/2026">2</button><button type="button" class="es-calendar__day" aria-label="03/10/2026">3</button><button type="button" class="es-calendar__day" aria-label="04/10/2026">4</button>
+          <button type="button" class="es-calendar__day" aria-label="05/10/2026">5</button><button type="button" class="es-calendar__day is-hover" aria-label="06/10/2026">6</button><button type="button" class="es-calendar__day" aria-current="date" aria-label="Hôm nay, 07/10/2026">7</button><button type="button" class="es-calendar__day" aria-label="08/10/2026">8</button><button type="button" class="es-calendar__day" aria-label="09/10/2026">9</button><button type="button" class="es-calendar__day" aria-selected="true" aria-label="10/10/2026, đang chọn">10</button><button type="button" class="es-calendar__day" aria-label="11/10/2026">11</button>
+          <button type="button" class="es-calendar__day" aria-label="12/10/2026">12</button><button type="button" class="es-calendar__day" aria-label="13/10/2026">13</button><button type="button" class="es-calendar__day" aria-label="14/10/2026">14</button><button type="button" class="es-calendar__day is-focus" aria-label="15/10/2026">15</button><button type="button" class="es-calendar__day" aria-label="16/10/2026">16</button><button type="button" class="es-calendar__day" aria-label="17/10/2026">17</button><button type="button" class="es-calendar__day" aria-label="18/10/2026">18</button>
+          <button type="button" class="es-calendar__day" aria-label="19/10/2026">19</button><button type="button" class="es-calendar__day" aria-label="20/10/2026">20</button><button type="button" class="es-calendar__day" aria-label="21/10/2026">21</button><button type="button" class="es-calendar__day" aria-label="22/10/2026">22</button><button type="button" class="es-calendar__day" aria-label="23/10/2026">23</button><button type="button" class="es-calendar__day" aria-label="24/10/2026">24</button><button type="button" class="es-calendar__day" aria-label="25/10/2026">25</button>
+          <button type="button" class="es-calendar__day" aria-label="26/10/2026">26</button><button type="button" class="es-calendar__day" aria-label="27/10/2026">27</button><button type="button" class="es-calendar__day" aria-label="28/10/2026">28</button><button type="button" class="es-calendar__day" aria-label="29/10/2026">29</button><button type="button" class="es-calendar__day" aria-label="30/10/2026">30</button><button type="button" class="es-calendar__day" aria-label="31/10/2026">31</button><button type="button" class="es-calendar__day is-outside" aria-label="01/11/2026">1</button>
+        </div>
+        <div class="es-calendar__foot">
+          <span class="es-calendar__legend">Hôm nay: Thứ Tư, 07/10/2026</span>
+          <button type="button" class="es-btn es-btn--ghost es-btn--sm">Chọn hôm nay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

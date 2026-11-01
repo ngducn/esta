@@ -1,0 +1,33 @@
+<!-- @dsCard group="Data display" height=520 width=1200 subtitle="Narrow one list by status, with counts; one option is always pressed" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Filter tabs</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Counts before you press.</b> Each option says how many rows it will show, so Mẹ knows there are two overdue rooms without opening the filter. The pressed option is raised out of a recessed track: a shape change, not a colour.</p>
+  <div class="ds-col" style="gap: var(--space-5)">
+    <div class="es-filter" role="group" aria-label="Lọc theo trạng thái">
+        <button class="es-filter__opt" type="button" aria-pressed="true">Tất cả <span class="es-filter__n">14</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Quá hạn <span class="es-filter__n">2</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Đến hạn <span class="es-filter__n">1</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Đã thu <span class="es-filter__n">10</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Trống <span class="es-filter__n">1</span></button>
+      </div>
+    <div class="es-filter" role="group" aria-label="Lọc theo trạng thái">
+      <button class="es-filter__opt" type="button" aria-pressed="false">Tất cả <span class="es-filter__n">14</span></button>
+      <button class="es-filter__opt is-hover" type="button" aria-pressed="false">Quá hạn <span class="es-filter__n">2</span></button>
+      <button class="es-filter__opt is-focus" type="button" aria-pressed="true">Đến hạn <span class="es-filter__n">1</span></button>
+      <button class="es-filter__opt" type="button" aria-pressed="false">Đã thu <span class="es-filter__n">10</span></button>
+    </div>
+    <div style="max-width: 20rem"><div class="es-filter" role="group" aria-label="Lọc theo trạng thái">
+        <button class="es-filter__opt" type="button" aria-pressed="true">Tất cả <span class="es-filter__n">14</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Quá hạn <span class="es-filter__n">2</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Đến hạn <span class="es-filter__n">1</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Đã thu <span class="es-filter__n">10</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Trống <span class="es-filter__n">1</span></button>
+      </div></div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

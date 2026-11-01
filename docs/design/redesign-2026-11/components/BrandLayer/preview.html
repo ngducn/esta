@@ -1,0 +1,60 @@
+<!-- @dsCard group="Brand" page height=2900 width=1200 subtitle="Website, onboarding, sign-in and report covers only: Inter Display Light, split headlines, spaced capitals, double frames, wayfinding rows, line patterns" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Brand layer</title>
+<style>
+  .bl { display: flex; flex-direction: column; gap: var(--space-10); }
+  .bl-hero { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--space-12); align-items: end; }
+  .bl-hero p { margin: 0 0 var(--space-5); font-size: 1.125rem; line-height: 1.75rem; color: var(--text-secondary); }
+  .bl-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); padding-right: 7px; }
+  .bl-nav { display: flex; align-items: center; gap: var(--space-8); padding-bottom: var(--space-5); border-bottom: var(--stroke-hairline) solid var(--border); }
+  .bl-nav__links { display: flex; gap: var(--space-8); margin: 0 auto; font-size: 0.9375rem; color: var(--text-secondary); }
+  @media (max-width: 760px) { .bl-hero, .bl-trio { grid-template-columns: minmax(0, 1fr); } .bl-nav__links { display: none; } }
+</style></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Expression outside, workbench inside.</b> Where Esta is introduced (the website, onboarding, sign-in, a printed report cover) it speaks with more voice: Inter Display Light at large sizes, split headlines with ruled lines, spaced capitals, double-ruled frames and fine line patterns, borrowed in spirit from Vietnamese hospitality brands. None of it appears inside the app, where the same colours and Inter do quiet work.</p>
+  <div class="bl">
+    <nav class="bl-nav" aria-label="Esta">
+      <a class="es-brand" href="#" aria-label="Esta" style="padding: 0"><svg class="es-brand__word" viewBox="136 -1514 6762.7 1538" fill="currentColor" role="img" aria-label="Esta"><path d="M136 0V-1490H1138V-1295H358V-856H1080V-663H358V-195H1138V0ZM2308.6 24Q2129.6 24 2000.6 -37Q1871.6 -98 1801.6 -212Q1731.6 -326 1731.6 -483H1953.6Q1954.6 -385 1996.6 -314.5Q2038.6 -244 2118.1 -207Q2197.6 -170 2308.6 -170Q2410.6 -170 2485.1 -199Q2559.6 -228 2601.6 -281.5Q2643.6 -335 2643.6 -408Q2643.6 -465 2615.1 -507.5Q2586.6 -550 2524.1 -582Q2461.6 -614 2357.6 -638L2194.6 -677Q1968.6 -730 1865.1 -827Q1761.6 -924 1761.6 -1079Q1761.6 -1210 1827.6 -1307.5Q1893.6 -1405 2013.6 -1459.5Q2133.6 -1514 2292.6 -1514Q2453.6 -1514 2571.6 -1457Q2689.6 -1400 2755.1 -1295Q2820.6 -1190 2825.6 -1044H2610.6Q2602.6 -1173 2516.6 -1246.5Q2430.6 -1320 2289.6 -1320Q2200.6 -1320 2131.1 -1290.5Q2061.6 -1261 2022.1 -1209.5Q1982.6 -1158 1982.6 -1090Q1982.6 -1036 2011.6 -996Q2040.6 -956 2103.1 -926Q2165.6 -896 2267.6 -871L2428.6 -833Q2540.6 -806 2623.1 -768Q2705.6 -730 2759.1 -679.5Q2812.6 -629 2839.1 -564.5Q2865.6 -500 2865.6 -420Q2865.6 -286 2796.6 -186Q2727.6 -86 2602.6 -31Q2477.6 24 2308.6 24ZM3407.1 -1295V-1490H4578.1V-1295H4105.1V0H3882.1V-1295ZM5092.7 0 5633.7 -1490H5901.7L6438.7 0H6197.7L5910.7 -840Q5875.7 -947 5834.7 -1074Q5793.7 -1201 5736.7 -1389H5799.7Q5742.7 -1201 5701.7 -1074Q5660.7 -947 5624.7 -840L5328.7 0ZM5392.7 -387V-576H6139.7V-387Z"/><rect class="es-brand__seal" x="6540.7" y="-1514" width="358" height="358"/></svg></a>
+      <span class="bl-nav__links"><span>Tài sản</span><span>Thu tiền</span><span>Giấy tờ</span><span>Trợ lý</span></span>
+      <a class="es-btn es-btn--secondary es-btn--pill" href="#">Đăng nhập</a>
+      <a class="es-btn es-btn--primary es-btn--pill" href="#">Bắt đầu<i data-icon="arrow-right"></i></a>
+    </nav>
+    <div class="bl-hero">
+      <div>
+        <span class="es-mk-eyebrow">Sổ cái nhà đất của gia đình</span>
+        <h1 class="es-mk-hero">
+          <span class="es-mk-hero__line">Giữ nhà<span class="es-mk-hero__rule" aria-hidden="true"></span></span>
+          <span class="es-mk-hero__line es-mk-hero__line--end"><span class="es-mk-hero__rule" aria-hidden="true"></span>cho cả nhà.</span>
+        </h1>
+      </div>
+      <div><p>Nhà, sổ đỏ, tiền thuê từng phòng và hợp đồng, ở một nơi. Rõ ràng đến từng đồng, để bố mẹ yên tâm và con cháu dễ tiếp quản.</p><a class="es-btn es-btn--primary es-btn--pill es-btn--lg" href="#">Tạo sổ cái miễn phí<i data-icon="arrow-right"></i></a></div>
+    </div>
+    <figure class="es-mk-photo" style="height: 26rem; margin: 0"><img src="/_blob/65c8bbf54acdea9ded34d3fb4228a7bf" alt="Một căn nhà phố ở Sài Gòn"><span class="es-mk-lines" style="inset: 0 0 0 auto; width: 18rem; color: #ffffff"></span><figcaption class="es-mk-photo__cap">Ngôi nhà đầu tiên<br>của bố mẹ.</figcaption></figure>
+    <div class="bl-trio">
+      <article class="es-mk-frame">
+        <span class="es-mk-eyebrow">Nhà phố · Gò Vấp</span>
+        <p class="es-mk-title" style="font-size: 2.5rem">12 Demo Số 7</p>
+        <p class="es-mk-figure">84<span class="es-mk-unit">m²</span></p>
+        <a class="es-mk-way" href="#"><span>4 phòng</span><i data-icon="arrow-right"></i></a>
+        <a class="es-mk-way es-mk-way--quiet" href="#"><span>Sổ đỏ · đủ</span><i data-icon="arrow-right"></i></a>
+      </article>
+      <article class="es-mk-frame" style="justify-content: space-between">
+        <span class="es-mk-eyebrow">Đang cho thuê</span>
+        <p class="es-mk-figure" style="font-size: 7rem; line-height: 1">14<span class="es-mk-unit" style="font-size: 0.28em">phòng</span></p>
+        <a class="es-mk-way" href="#"><span>3 nhà · 2 quận</span><i data-icon="arrow-right"></i></a>
+      </article>
+      <article class="es-mk-panel">
+        <span class="es-mk-eyebrow">Tháng 10 · đã thu</span>
+        <p class="es-mk-figure">42,5 tr</p>
+        <p style="margin: 0; font-size: 0.9375rem; line-height: 1.375rem; opacity: 0.85">88% của 48.300.000 ₫ dự kiến</p>
+        <span class="es-mk-lines es-mk-lines--rows" style="inset: auto 0 0 0; height: 7.5rem"></span>
+      </article>
+    </div>
+    <p class="es-mk-title">Rõ ràng đến từng đồng.</p>
+  </div>
+</div>
+<script>Esta.themes('#src', { stack: true });</script>
+</body>
+</html>

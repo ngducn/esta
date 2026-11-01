@@ -1,0 +1,53 @@
+<!-- @dsCard group="Feedback" height=1200 width=1200 subtitle="Before and after in a lease row, on a phone row, focus, loading and couldn't-finish" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Inline confirmation</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>The question appears where the action was.</b> Mẹ's eyes are already on the row, so the confirmation replaces its action area and names the room, the date and what happens to the deposit. No dialog, no <i>Bạn có chắc không?</i></p>
+  <div class="ds-col">
+    <div class="ds-cell"><span class="ds-cap">Before: the quiet destructive action sits with the row's other actions</span>
+      <div class="ds-listrow" style="border: var(--stroke-hairline) solid var(--border); border-radius: var(--radius-md)">
+        <div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 3 · Trần Demo An</span><span class="ds-listrow__sub"><span class="es-num">3.500.000&nbsp;₫</span>/tháng · Hết hạn 31/10/2026</span></div>
+        <div class="ds-listrow__actions"><button class="es-btn es-btn--secondary es-btn--sm" type="button">Gia hạn</button><button class="es-btn es-btn--danger-quiet es-btn--sm" type="button">Kết thúc</button></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">After: the row stays, its actions become the question; focus lands on Giữ lại</span>
+      <div class="ds-listrow" style="border: var(--stroke-hairline) solid var(--border); border-radius: var(--radius-md)">
+        <div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 3 · Trần Demo An</span><span class="ds-listrow__sub"><span class="es-num">3.500.000&nbsp;₫</span>/tháng · Hết hạn 31/10/2026</span></div>
+        <div class="es-confirm" role="group" aria-labelledby="q1" style="flex-basis: 100%">
+          <p class="es-confirm__q" id="q1">Kết thúc hợp đồng Phòng 3 từ 31/10/2026?<span class="es-confirm__note">Tiền cọc vẫn được giữ cho đến khi trả lại.</span></p>
+          <div class="es-confirm__actions"><button class="es-btn es-btn--secondary is-focus" type="button">Giữ lại</button><button class="es-btn es-btn--danger" type="button">Kết thúc hợp đồng</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Loading: the label says what is happening, Giữ lại waits</span>
+      <div class="es-confirm" role="group" aria-busy="true">
+        <p class="es-confirm__q">Kết thúc hợp đồng Phòng 3 từ 31/10/2026?</p>
+        <div class="es-confirm__actions"><button class="es-btn es-btn--secondary" type="button" disabled>Giữ lại</button><button class="es-btn es-btn--danger is-loading" type="button" aria-busy="true"><i data-icon="loader-circle" class="es-spinner"></i>Đang kết thúc</button></div>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Couldn't finish: the question stays, the reason and the way through appear under it</span>
+      <div class="es-confirm" role="group">
+        <p class="es-confirm__q">Kết thúc hợp đồng Phòng 3 từ 31/10/2026?</p>
+        <div class="es-confirm__actions"><button class="es-btn es-btn--secondary" type="button">Giữ lại</button><button class="es-btn es-btn--danger" type="button"><i data-icon="refresh-cw"></i>Thử lại</button></div>
+        <p class="es-confirm__msg" role="alert"><i data-icon="circle-alert"></i>Chưa kết thúc được. Kiểm tra mạng rồi thử lại.</p>
+      </div>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Phone row (390): buttons share the width, 44px tall, safe choice first</span>
+      <div class="ds-phone">
+        <div class="ds-listrow">
+          <div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 3 · Trần Demo An</span><span class="ds-listrow__sub">Hết hạn 31/10/2026</span></div>
+          <div class="es-confirm es-confirm--phone" role="group" style="flex-basis: 100%">
+            <p class="es-confirm__q">Kết thúc hợp đồng Phòng 3 từ 31/10/2026?<span class="es-confirm__note">Tiền cọc vẫn được giữ cho đến khi trả lại.</span></p>
+            <div class="es-confirm__actions"><button class="es-btn es-btn--secondary" type="button">Giữ lại</button><button class="es-btn es-btn--danger" type="button">Kết thúc hợp đồng</button></div>
+          </div>
+        </div>
+        <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 4 · Lê Demo Bình</span><span class="ds-listrow__sub">Hết hạn 05/02/2027</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

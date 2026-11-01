@@ -1,0 +1,125 @@
+<!-- @dsCard group="Money & data" page height=5140 width=1200 subtitle="Exact or silent: full đồng where Mẹ checks against cash, compact where a total is read as a size" -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Money format</title>
+</head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Exact or silent.</b> Mẹ checks rent to the last nghìn, so anything she confirms is the full amount: <code class="ds-code">3.500.000 ₫</code>. A home-screen total is read as a size, so it is compact the way people say it: <code class="ds-code">42,5 tr</code>, with the exact amount one tap away. Every value below comes from the same formatters the app uses.</p>
+
+  <table class="ds-xtable">
+    <thead><tr><th>Stored (integer đồng)</th><th class="n">formatVnd</th><th class="n">formatVndCompact</th><th class="n">formatVndSigned</th><th>vndInWords</th></tr></thead>
+    <tbody data-live></tbody>
+  </table>
+  <p class="ds-why"><b><code class="ds-code">.</code> groups thousands, <code class="ds-code">,</code> is the decimal mark, and <code class="ds-code">₫</code> follows a no-break space.</b> Compact has no ₫ (tr and tỷ already say đồng), keeps one decimal for tr and two for tỷ, and picks its unit after rounding. Never <code class="ds-code">,00</code>, never <code class="ds-code">ngàn</code> or <code class="ds-code">tỉ</code>.</p>
+
+  <div class="ds-grid2">
+    <div class="ds-col">
+      <span class="ds-cap">Compact on a stat card, exact on hover and in the accessible name</span>
+      <div class="ds-specimen">
+        <p class="body-sm ds-c2">Thu tháng 10</p>
+        <p class="figure-lg es-num" data-compact="42500000"></p>
+        <p class="caption ds-c3" data-sub></p>
+        <span class="ds-hint" data-hint></span>
+      </div>
+    </div>
+    <div class="ds-col">
+      <span class="ds-cap">Full in a row, where it is checked against cash</span>
+      <table class="ds-mini-table">
+        <tr><td><div class="ds-trunc">Phòng 5 · Trần Thị Mai Demo</div><div class="body-sm ds-c2 ds-trunc">Tiền thuê tháng 10</div></td><td class="n" data-full="3500000"></td></tr>
+        <tr><td><div class="ds-trunc">Phòng 6 · Phạm Quốc Huy Demo</div><div class="body-sm ds-c2 ds-trunc">Tiền thuê tháng 10</div></td><td class="n" data-full="4200000"></td></tr>
+        <tr><td><div class="ds-trunc">Tiền điện tháng 9</div><div class="body-sm ds-c2 ds-trunc">Phòng 5 · 182 số</div></td><td class="n" data-full="637000"></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Signs, zero, unknown, estimate, loading</h3>
+    <p class="ds-why"><b>A dash means unknown and only unknown; zero is a real zero.</b> Colour on a number only marks direction (+ in success). Overdue amounts stay in text colour; the badge beside them says overdue.</p>
+    <div class="ds-col" style="gap: 0" data-states></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Long amounts and long names, at 130% text</h3>
+    <p class="ds-why"><b>Numbers never truncate and never wrap; the words beside them give way.</b> Every money column is designed for <code class="ds-code">12.500.000.000 ₫</code> at 130% text. Names clamp to two lines in cards and truncate to one line in table cells, with the full text in <code class="ds-code">title</code>.</p>
+    <div class="ds-grid2">
+      <div class="ds-col">
+        <span class="ds-do"><i data-icon="check" data-size="14"></i>Do · the label truncates, the number holds</span>
+        <div class="ds-narrow ds-narrow--wide">
+          <div class="ds-narrow__row"><span class="ds-narrow__label" title="Giá trị ước tính Nhà phố Nguyễn Thị Minh Khai Demo">Giá trị ước tính Nhà phố Nguyễn Thị Minh Khai Demo</span><span class="ds-narrow__num" data-full="12500000000"></span></div>
+          <div class="ds-narrow__row"><span class="ds-narrow__label" title="Tiền cọc">Tiền cọc</span><span class="ds-narrow__num" data-full="7000000"></span></div>
+        </div>
+      </div>
+      <div class="ds-col">
+        <span class="ds-dont"><i data-icon="x" data-size="14"></i>Don't · the number breaks across lines</span>
+        <div class="ds-narrow ds-narrow--wide">
+          <div class="ds-narrow__row"><span style="flex: 1 1 auto; min-width: 0">Giá trị ước tính Nhà phố Nguyễn Thị Minh Khai Demo</span><span class="ds-narrow__num--bad" style="flex: 0 1 6em" data-full="12500000000"></span></div>
+          <div class="ds-narrow__row"><span style="flex: 1 1 auto">Tiền cọc</span><span class="ds-narrow__num--bad" data-full="7000000"></span></div>
+        </div>
+      </div>
+      <div class="ds-col">
+        <span class="ds-cap">Card: the name clamps to two lines, then …</span>
+        <div class="ds-specimen" style="max-width: 18rem">
+          <p class="headline ds-clamp2">Nhà phố Nguyễn Thị Minh Khai Demo, căn góc hai mặt tiền, Phường Đa Kao, Quận 1</p>
+          <p class="body-sm ds-c2">Cho thuê nguyên căn</p>
+          <p class="figure-md es-num" data-full="85000000"></p>
+        </div>
+      </div>
+      <div class="ds-col">
+        <span class="ds-cap">Table cell: one line, full text in title</span>
+        <table class="ds-mini-table" style="max-width: 22rem">
+          <tr><td><div class="ds-trunc" title="Nhà phố Nguyễn Thị Minh Khai Demo, căn góc hai mặt tiền">Nhà phố Nguyễn Thị Minh Khai Demo, căn góc hai mặt tiền</div></td><td class="n" data-full="85000000"></td></tr>
+          <tr><td><div class="ds-trunc" title="Dãy trọ Dĩ An Demo">Dãy trọ Dĩ An Demo</div></td><td class="n" data-full="18000000"></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Typing money</h3>
+    <p class="ds-why"><b>The input takes what people type and confirms the exact amount with <code class="ds-code">=</code>.</b> <code class="ds-code">≈</code> is kept for estimates, so a parsed amount, which is exact, never uses it.</p>
+    <table class="ds-xtable">
+      <thead><tr><th>Typed</th><th>Reads as</th><th>In words, or the message under the field</th></tr></thead>
+      <tbody data-parse></tbody>
+    </table>
+  </div>
+</div>
+<script>
+(function () {
+  var VALUES = [0, 850000, 3500000, 18000000, 42500000, 999999999, 1200000000, 12500000000, 1000000000000, -1200000];
+  document.querySelector('[data-live]').innerHTML = VALUES.map(function (v) {
+    return '<tr><td class="ds-mono">' + v + '</td><td class="n">' + Esta.formatVnd(v) + '</td><td class="n">' + Esta.formatVndCompact(v) + '</td><td class="n">' + Esta.formatVndSigned(v) + '</td><td class="w">' + (v < 0 ? '<span class="ds-c3">— (receipts never print a negative)</span>' : Esta.vndInWords(v)) + '</td></tr>';
+  }).join('');
+
+  document.querySelectorAll('[data-full]').forEach(function (el) { el.textContent = Esta.formatVnd(+el.getAttribute('data-full')); });
+  var c = document.querySelector('[data-compact]'), full = Esta.formatVnd(42500000);
+  c.textContent = Esta.formatVndCompact(42500000); c.title = full; c.setAttribute('aria-label', 'Thu tháng 10: ' + full);
+  document.querySelector('[data-sub]').textContent = 'Đã thu ' + Esta.formatVndCompact(38000000) + ' · còn ' + Esta.formatVndCompact(4500000);
+  document.querySelector('[data-hint]').textContent = full;
+
+  var STATES = [
+    ['Positive, in a ledger', '<span class="amount es-num es-num--pos">' + Esta.formatVndSigned(3500000) + '</span>', 'Direction is the point; only here does a number get colour'],
+    ['Negative', '<span class="amount es-num">' + Esta.formatVndSigned(-1200000) + '</span>', 'Real minus U+2212, text colour. Never red, brackets or a hyphen'],
+    ['Zero, known', '<span class="amount es-num es-num--zero">' + Esta.formatVnd(0) + '</span>', 'Muted. Never a dash, which would mean unknown'],
+    ['Unknown', '<span class="amount es-num es-num--unknown" aria-label="Chưa có số liệu">—</span>', 'Muted dash with aria-label “Chưa có số liệu”. Never a false 0 ₫'],
+    ['Unknown, on a stat card', '<span class="ds-col" style="gap: var(--space-1)"><span class="body ds-c2">Chưa có số liệu</span><a class="es-link label" href="#">Nhập giá trị ước tính</a></span>', 'The words and the action that fills it'],
+    ['Estimate', '<span class="ds-col" style="gap: 0"><span class="amount">Ước tính ' + Esta.formatVndCompact(3200000000) + '</span><span class="caption ds-c3">Theo giá 09/2026</span></span>', '“≈ 3,2 tỷ” where space is short; always with its date'],
+    ['Loading', '<span class="amount ds-skeltext" aria-hidden="true">00.000.000 ₫</span>', 'A still bar the width of the expected figure. Never 0 ₫, … or a spinner'],
+  ];
+  document.querySelector('[data-states]').innerHTML = STATES.map(function (s) {
+    return '<div class="ds-treat"><span class="ds-sw__name">' + s[0] + '</span><span>' + s[1] + '</span><span class="ds-meta">' + s[2] + '</span></div>';
+  }).join('');
+
+  var WHY = { fractional: 'Refused: đồng have no decimals', ambiguous_separators: 'Refused: mixed separators', ambiguous_shorthand: 'Refused: two shorthands', invalid: 'Not a number', too_large: 'Above 1.000 tỷ' };
+  document.querySelector('[data-parse]').innerHTML = ['3tr5', '3,5tr', '3.500.000', '850k', '15 triệu', '1ty2', '2tr rưỡi', '3,5', '1.500,000'].map(function (t) {
+    var r = Esta.parseVnd(t);
+    return '<tr><td class="ds-mono">' + t + '</td><td class="es-num">' + (r.ok ? '= ' + Esta.formatVnd(r.value) : '<span class="ds-grade ds-grade--fail">' + Esta.icon('circle-alert', { size: 14 }) + WHY[r.reason] + '</span>') + '</td><td class="w">' + (r.ok ? Esta.vndInWords(r.value) : '<span class="ds-c2">' + Esta.moneyErrors[r.reason] + '</span>') + '</td></tr>';
+  }).join('');
+
+  Esta.themes('#src', { stack: true });
+})();
+</script>
+</body>
+</html>

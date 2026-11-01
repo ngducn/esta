@@ -1,0 +1,59 @@
+<!-- @dsCard group="App shell" height=1440 width=1200 subtitle="Every state of a nav item, the icon rail at 840–1079px, and the full 256px sidebar" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Sidebar nav item</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Icon and word, current marked by fill and weight.</b> The current page gets a blue tint, blue text and semibold, three signals that survive colour blindness and a dim screen; the rest stay quiet in secondary text so the content wins.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Default</span><a class="es-nav-item" href="#"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span><a class="es-nav-item is-hover" href="#"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a></div>
+    <div class="ds-cell"><span class="ds-cap">Current · aria-current="page"</span><a class="es-nav-item" href="#" aria-current="page"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a></div>
+    <div class="ds-cell"><span class="ds-cap">Current + hover</span><a class="es-nav-item is-hover" href="#" aria-current="page"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span><a class="es-nav-item is-focus" href="#"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a></div>
+    <div class="ds-cell"><span class="ds-cap">Pressed</span><a class="es-nav-item is-active" href="#"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a></div>
+    <div class="ds-cell"><span class="ds-cap">Count: overdue items, digits only</span><a class="es-nav-item" href="#"><i data-icon="banknote"></i><span class="es-nav-item__label">Thu tiền</span><span class="es-count" aria-label="2 phòng quá hạn">2</span></a></div>
+    <div class="ds-cell"><span class="ds-cap">Long label: wraps and balances</span><a class="es-nav-item" href="#"><i data-icon="scroll-text"></i><span class="es-nav-item__label">Hợp đồng và giấy tờ pháp lý</span></a></div>
+    <div class="ds-cell" data-density="gon"><span class="ds-cap">Gọn: 40px with a mouse, 44px on touch</span><a class="es-nav-item" href="#"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a></div>
+  </div>
+
+  <div class="ds-row" style="align-items: flex-start; gap: var(--space-6)">
+    <div class="ds-cell"><span class="ds-cap">Full sidebar · 256px</span>
+      <aside class="es-sidebar" style="height: 760px; border: var(--stroke-hairline) solid var(--border); border-radius: var(--radius-lg)">
+        <a class="es-brand" href="#" aria-label="Esta, Tổng quan"><svg class="es-brand__word" viewBox="136 -1514 6762.7 1538" fill="currentColor" role="img" aria-label="Esta"><path d="M136 0V-1490H1138V-1295H358V-856H1080V-663H358V-195H1138V0ZM2308.6 24Q2129.6 24 2000.6 -37Q1871.6 -98 1801.6 -212Q1731.6 -326 1731.6 -483H1953.6Q1954.6 -385 1996.6 -314.5Q2038.6 -244 2118.1 -207Q2197.6 -170 2308.6 -170Q2410.6 -170 2485.1 -199Q2559.6 -228 2601.6 -281.5Q2643.6 -335 2643.6 -408Q2643.6 -465 2615.1 -507.5Q2586.6 -550 2524.1 -582Q2461.6 -614 2357.6 -638L2194.6 -677Q1968.6 -730 1865.1 -827Q1761.6 -924 1761.6 -1079Q1761.6 -1210 1827.6 -1307.5Q1893.6 -1405 2013.6 -1459.5Q2133.6 -1514 2292.6 -1514Q2453.6 -1514 2571.6 -1457Q2689.6 -1400 2755.1 -1295Q2820.6 -1190 2825.6 -1044H2610.6Q2602.6 -1173 2516.6 -1246.5Q2430.6 -1320 2289.6 -1320Q2200.6 -1320 2131.1 -1290.5Q2061.6 -1261 2022.1 -1209.5Q1982.6 -1158 1982.6 -1090Q1982.6 -1036 2011.6 -996Q2040.6 -956 2103.1 -926Q2165.6 -896 2267.6 -871L2428.6 -833Q2540.6 -806 2623.1 -768Q2705.6 -730 2759.1 -679.5Q2812.6 -629 2839.1 -564.5Q2865.6 -500 2865.6 -420Q2865.6 -286 2796.6 -186Q2727.6 -86 2602.6 -31Q2477.6 24 2308.6 24ZM3407.1 -1295V-1490H4578.1V-1295H4105.1V0H3882.1V-1295ZM5092.7 0 5633.7 -1490H5901.7L6438.7 0H6197.7L5910.7 -840Q5875.7 -947 5834.7 -1074Q5793.7 -1201 5736.7 -1389H5799.7Q5742.7 -1201 5701.7 -1074Q5660.7 -947 5624.7 -840L5328.7 0ZM5392.7 -387V-576H6139.7V-387Z"/><rect class="es-brand__seal" x="6540.7" y="-1514" width="358" height="358"/></svg></a>
+        <button class="es-switcher" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-switcher__mark"><i data-icon="house"></i></span><span class="es-switcher__text"><span class="es-switcher__name">Nhà Demo</span><span class="es-switcher__sub">5 tài sản · 10 phòng</span></span><i class="es-switcher__chev" data-icon="chevrons-up-down"></i></button>
+        <nav class="es-nav" aria-label="Điều hướng chính">
+          <a class="es-nav-item" href="#"><i data-icon="house"></i><span class="es-nav-item__label">Tổng quan</span></a>
+          <a class="es-nav-item" href="#" aria-current="page"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a>
+          <a class="es-nav-item" href="#"><i data-icon="banknote"></i><span class="es-nav-item__label">Thu tiền</span><span class="es-count" aria-label="2 phòng quá hạn">2</span></a>
+          <a class="es-nav-item" href="#"><i data-icon="file-text"></i><span class="es-nav-item__label">Tài liệu</span></a>
+          <a class="es-nav-item" href="#"><i data-icon="message-square-text"></i><span class="es-nav-item__label">Trợ lý</span></a>
+          <p class="es-nav__label">Khác</p>
+          <a class="es-nav-item" href="#"><i data-icon="chart-column"></i><span class="es-nav-item__label">Báo cáo</span></a>
+          <a class="es-nav-item" href="#"><i data-icon="settings"></i><span class="es-nav-item__label">Cài đặt</span></a>
+        </nav>
+        <button class="es-member" type="button" aria-haspopup="menu" style="margin-top: auto"><span class="es-avatar" aria-hidden="true">H</span><span class="es-member__text"><span class="es-member__name">Nguyễn Demo Hường</span><span class="es-member__role">Quản trị</span></span><i data-icon="chevrons-up-down" style="color: var(--text-muted); width: var(--icon-sm); height: var(--icon-sm)"></i></button>
+      </aside>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Rail · 840–1079px</span>
+      <aside class="es-sidebar es-sidebar--rail" style="height: 760px; border: var(--stroke-hairline) solid var(--border); border-radius: var(--radius-lg)">
+        <span class="es-brand__mark"><svg class="es-icon" viewBox="-334.6 -1946.6 2403.2 2403.2" fill="currentColor" aria-hidden="true"><path d="M136 0V-1490H1138V-1295H358V-856H1080V-663H358V-195H1138V0Z"/><rect class="es-brand__seal" x="1240" y="-1490" width="358" height="358"/></svg></span>
+        <nav class="es-nav" aria-label="Điều hướng chính">
+          <a class="es-nav-item" href="#"><i data-icon="house"></i><span class="es-nav-item__label">Tổng quan</span></a>
+          <a class="es-nav-item" href="#" aria-current="page"><i data-icon="building-2"></i><span class="es-nav-item__label">Tài sản</span></a>
+          <span class="es-tip-wrap"><a class="es-nav-item is-hover" href="#"><i data-icon="banknote"></i><span class="es-nav-item__label">Thu tiền</span><span class="es-count" aria-label="2 phòng quá hạn">2</span></a><span class="es-tooltip" role="tooltip">Thu tiền · 2 quá hạn</span></span>
+          <a class="es-nav-item is-focus" href="#"><i data-icon="file-text"></i><span class="es-nav-item__label">Tài liệu</span></a>
+          <a class="es-nav-item" href="#"><i data-icon="message-square-text"></i><span class="es-nav-item__label">Trợ lý</span></a>
+          <p class="es-nav__label"><span class="es-sr-only">Khác</span></p>
+          <a class="es-nav-item" href="#"><i data-icon="chart-column"></i><span class="es-nav-item__label">Báo cáo</span></a>
+          <a class="es-nav-item" href="#"><i data-icon="settings"></i><span class="es-nav-item__label">Cài đặt</span></a>
+        </nav>
+        <button class="es-avatar" type="button" aria-label="Nguyễn Demo Hường, tài khoản" style="margin-top: auto">H</button>
+      </aside>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>
