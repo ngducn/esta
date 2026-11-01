@@ -4,7 +4,7 @@ import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import wawoff2 from 'wawoff2';
 import { vietnameseLetters } from '../apps/web/src/design/glyph-test-string.ts';
-import { typeScale, typefaces } from '../apps/web/src/design/tokens.ts';
+import { typeStyles as typeScale, typefaces } from '../apps/web/src/design/tokens.ts';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const fontDir = join(repo, 'apps/web/src/fonts');

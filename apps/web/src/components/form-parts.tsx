@@ -47,8 +47,8 @@ export function TextField({
   const generated = useId();
   const id = inputId ?? generated;
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-text">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label text-text">
         {label}
       </label>
       {hint === undefined ? null : (
@@ -91,8 +91,8 @@ export function NoteField({
 }) {
   const id = useId();
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-text">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label text-text">
         {labels.note} <span className="font-normal text-text-muted">({labels.optional})</span>
       </label>
       <textarea
@@ -103,7 +103,7 @@ export function NoteField({
         maxLength={maxLength}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 min-h-touch w-full rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body text-text hover:border-border-field disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-muted"
+        className="mt-1 min-h-control-h w-full rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body text-text hover:border-text-muted disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-disabled"
       />
     </div>
   );

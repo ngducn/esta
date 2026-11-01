@@ -4,12 +4,12 @@ import { StatusShape } from './status-shape';
 /** The line under a field: the parsed preview, or the error with the overdue diamond so it never relies on color. */
 export function FieldMessage({ id, error, children }: { id: string; error: string | null; children?: ReactNode }) {
   return (
-    <p id={id} aria-live="polite" className="flex min-h-7 items-start gap-2 text-body">
+    <p id={id} aria-live="polite" className="flex min-h-7 items-start gap-2 text-body-sm">
       {error === null ? (
         children
       ) : (
         <>
-          <StatusShape status="overdue" className="mt-1 size-4" />
+          <StatusShape status="overdue" className="mt-0.5 size-icon-sm" />
           <span className="min-w-0 text-danger-text wrap-anywhere">{error}</span>
         </>
       )}
