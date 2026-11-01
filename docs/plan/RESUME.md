@@ -56,5 +56,5 @@ No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, 
 - zsh reads `$var:r` in a refspec as a modifier. Use `${var}:` or literal SHAs.
 - A PR with a merge conflict gets no `pull_request` CI run. When "no checks" appears, look at `mergeStateStatus`.
 - Owners in git-excluded worktrees keep their `decisions.tsv` rows locally. The root merges those rows into main.
-- Slot 6 is Ryan's, slot 5 holds his test app, and slot 4 is never used.
+- Slot 6 is Ryan's and slot 4 is never used. Ryan had his slot 5 test app and slot 6 stack stopped on 2026-11-01 (data kept in docker volumes).
 - Artifact brand SVGs are uploads: read them one at a time with `path` set to the asset id; `paths` refuses ids.

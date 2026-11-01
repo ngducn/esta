@@ -332,3 +332,14 @@ Ryan asked for a retro of the run so far and then for the run to change where it
    - Opus: rigorous owners, adversarial audits and hard design.
    - Sonnet: standard and lean owners, second opinions, scoped fix readers, live lanes and docs.
    - Why: an Opus owner costs about 10 points an hour, and the weekly limit stopped the run on 2026-10-27.
+
+## Update 2026-11-01 (Ryan: loosen the one-heavy-job rule)
+
+Ryan asked whether the one-at-a-time rule for heavy jobs should have more leeway and approved the proposal ("Yes, loosen it"). These rules replace the one-at-a-time rule in owner-brief.md, lane-brief.md and CLAUDE.md.
+
+1. **Narrowed runs share the machine.** `heavy.sh` now has two lock slots. A Playwright run narrowed to named spec files takes one, so two can run at once. A full suite, `e2e:northstar`, a production build, Lighthouse, a wrapper script and root CI take both and run alone. The queue stays first come, first served.
+2. **The full suite runs in CI.** Owners and lanes run the specs their change touches locally. CI runs the whole suite on every push and stays the merge gate. A local full suite runs only when GitHub Actions is down.
+3. **Tripwire.** A test that fails beside another run and passes alone is reported to the root, and `touch /tmp/ci-local/one-at-a-time` sends every job back to running alone.
+4. **Executing agents run on Sonnet** where the 2026-10-30 rule 6 allows it. Building a design that is already specified is a standard owner's job, not hard design.
+
+Why: on 2026-11-01 two owners spent long stretches queued behind each other's local full suites, which CI repeats anyway. The machine has 12 cores and 18 GB, and Docker now holds three local stacks instead of five.
