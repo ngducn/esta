@@ -23,7 +23,7 @@ function saved(decisions: Decisions = acceptAll) {
 const HCMC = '79';
 const LONG_AN = '80';
 const read = 'phường An Phú, thành phố Thủ Đức, Thành phố Hồ Chí Minh';
-const matchingProperty: PropertyFacts = { provinceCode: HCMC, owners: [{ fullName: 'Đặng Quốc Demo', idLast4: '1776' }] };
+const matchingProperty: PropertyFacts = { provinceCode: HCMC, owners: [{ fullName: 'Đặng Quốc Demo' }] };
 
 describe('what saving a certificate review writes over (#356)', () => {
   it('takes the first parcel address the review decided, as the save writes it', () => {
@@ -51,7 +51,7 @@ describe('what saving a certificate review writes over (#356)', () => {
 describe('the signs a certificate is another property’s (#356)', () => {
   it('finds none when the province and a holder match the property', () => {
     expect(certificateMismatches(saved(), matchingProperty, HCMC)).toEqual([]);
-    expect(certificateMismatches(saved(), { provinceCode: HCMC, owners: [{ fullName: 'ĐẶNG QUỐC  demo', idLast4: null }] }, HCMC)).toEqual([]);
+    expect(certificateMismatches(saved(), { provinceCode: HCMC, owners: [{ fullName: 'ĐẶNG QUỐC  demo' }] }, HCMC)).toEqual([]);
   });
 
   it('marks the address when it lies in another province than the property', () => {
@@ -59,17 +59,31 @@ describe('the signs a certificate is another property’s (#356)', () => {
   });
 
   it('marks every holder when none of them owns the property', () => {
-    const owners = [{ fullName: 'Trần Minh Demo', idLast4: null }];
+    const owners = [{ fullName: 'Trần Minh Demo' }];
     expect(certificateMismatches(saved(), { provinceCode: HCMC, owners }, HCMC)).toEqual([{ kind: 'holders', paths: ['holders[0].full_name', 'holders[1].full_name'] }]);
   });
 
-  it('counts an owner of the same name with other ID digits as someone else', () => {
-    const owners = [{ fullName: 'Đặng Quốc Demo', idLast4: '0000' }];
+  it('finds Mẹ among the holders of Dãy trọ Dĩ An when her record holds her CCCD digits and the certificate her CMND', () => {
+    const decisions: Decisions = { ...acceptAll, 'holders[0].full_name': { kind: 'edited', value: 'Nguyễn Thị Demo' }, 'holders[0].id_last4': { kind: 'edited', value: '4567' } };
+    expect(certificateMismatches(saved(decisions), { provinceCode: HCMC, owners: [{ fullName: 'Nguyễn Thị Demo' }] }, HCMC)).toEqual([]);
+  });
+
+  it.each([
+    ['old tone placement', 'Lê Thị Hoà Demo', 'Lê Thị Hòa Demo'],
+    ['no diacritics', 'Nguyen Thi Lan', 'NGUYỄN THỊ LAN'],
+    ['a title', 'Hộ bà Nguyễn Thị Demo', 'Nguyễn Thị Demo'],
+  ])('finds the owner when the holder is written with %s', (_case, holder, owner) => {
+    const decisions: Decisions = { ...acceptAll, 'holders[0].full_name': { kind: 'edited', value: holder } };
+    expect(certificateMismatches(saved(decisions), { provinceCode: HCMC, owners: [{ fullName: owner }] }, HCMC)).toEqual([]);
+  });
+
+  it('still stops on a truly different person', () => {
+    const owners = [{ fullName: 'Trần Văn Demo' }];
     expect(certificateMismatches(saved(), { provinceCode: HCMC, owners }, HCMC)).toEqual([{ kind: 'holders', paths: ['holders[0].full_name', 'holders[1].full_name'] }]);
   });
 
   it('names both on the gcn_2024 photo saved onto Đất vườn Long An', () => {
-    expect(certificateMismatches(saved(), { provinceCode: LONG_AN, owners: [{ fullName: 'Trần Minh Demo', idLast4: null }] }, HCMC)).toEqual([
+    expect(certificateMismatches(saved(), { provinceCode: LONG_AN, owners: [{ fullName: 'Trần Minh Demo' }] }, HCMC)).toEqual([
       { kind: 'province', paths: ['parcels[0].address_text'] },
       { kind: 'holders', paths: ['holders[0].full_name', 'holders[1].full_name'] },
     ]);
@@ -79,7 +93,7 @@ describe('the signs a certificate is another property’s (#356)', () => {
     expect(certificateMismatches(saved(), { provinceCode: null, owners: [] }, HCMC)).toEqual([]);
     expect(certificateMismatches(saved(), { ...matchingProperty, provinceCode: LONG_AN }, null)).toEqual([]);
     const withoutHolders = Object.fromEntries(Object.entries(acceptAll).filter(([path]) => !path.startsWith('holders[')));
-    expect(certificateMismatches(saved(withoutHolders), { provinceCode: HCMC, owners: [{ fullName: 'Trần Minh Demo', idLast4: null }] }, HCMC)).toEqual([]);
+    expect(certificateMismatches(saved(withoutHolders), { provinceCode: HCMC, owners: [{ fullName: 'Trần Minh Demo' }] }, HCMC)).toEqual([]);
   });
 
   it('reads an address’s province only when every current unit it maps to lies in one', () => {
