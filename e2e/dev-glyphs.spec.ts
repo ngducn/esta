@@ -1,9 +1,9 @@
 /// <reference lib="dom" />
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { hexToRgb } from '../apps/web/src/design/contrast.ts';
 import { colors } from '../apps/web/src/design/tokens.ts';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const GLYPHS = readFileSync(new URL('../fixtures/glyph-test-string.txt', import.meta.url), 'utf8').trim();
 const FACES = [
@@ -49,8 +49,7 @@ test('/dev/glyphs renders the glyph string in each self-hosted face with no fall
     expect(result.check).toBe(true);
   }
 
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+  expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
 test('the figure column sets 1.111.111 ₫ and 8.888.888 ₫ at equal widths', async ({ page }) => {

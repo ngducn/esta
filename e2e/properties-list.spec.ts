@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -6,6 +5,7 @@ import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const slot = parseSlot(process.env.ESTA_SLOT);
@@ -37,13 +37,6 @@ const search = (page: Page) => page.getByRole('searchbox');
 async function typeSearch(page: Page, query: string) {
   await search(page).fill(query);
   await expect(page).toHaveURL(new RegExp(`[?&]q=${encodeURIComponent(query).replaceAll('%20', '(\\+|%20)')}`), { timeout: 15_000 });
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations
-    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 async function accessToken(page: Page): Promise<string> {

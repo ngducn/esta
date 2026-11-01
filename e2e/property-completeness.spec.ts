@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
@@ -6,6 +5,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
 const env = slotEnv(repoRoot, parseSlot(process.env.ESTA_SLOT));
@@ -43,11 +43,6 @@ const blankLongAnParcel = (page: Page, lane: number) =>
 async function resetFiftyFifty(page: Page, lane: number) {
   const share = (person: 'me' | 'ryan') => ({ party_id: party(person, lane), share_bp: 5000, named_on_certificate: true, since: '2019-11-20' });
   await rest(page, 'POST', 'rpc/set_ownership_shares', { p_property_id: propertyId(lane, 'thu-duc'), p_shares: [share('me'), share('ryan')] });
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 const block = (page: Page) => page.getByTestId('property-header').getByTestId('property-completeness');

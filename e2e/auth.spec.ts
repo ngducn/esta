@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
@@ -7,6 +6,7 @@ import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { authApi, restUrl } from './helpers/auth-api';
 import { latestMail, requestCode, signIn } from './helpers/inbucket';
 import { createAccount, startAccount } from './helpers/password';
+import { seriousAxeViolations } from './helpers/wizard';
 
 const WRONG_PASSWORD = 'Email hoặc mật khẩu chưa đúng. Kiểm tra lại rồi thử lại.';
 /** Auth refuses a second send to one address within its 1 s max_frequency. */
@@ -14,12 +14,6 @@ const SEND_SPACING_MS = 1_200;
 const SLOWER_THAN_AN_ASSERTION_WAITS_MS = (config.expect?.timeout ?? 5_000) + 1_000;
 /** Above the slow-answer test's delay, so only a POST that never answers runs out. */
 const CREATE_ANSWER_TIMEOUT_MS = SLOWER_THAN_AN_ASSERTION_WAITS_MS + 10_000;
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
-}
 
 function uniqueEmail(prefix: string): string {
   return `${prefix}.${randomUUID().slice(0, 8)}@demo.esta.test`;
@@ -54,6 +48,7 @@ test('/ sends a signed-out visitor to /sign-in, which asks for an email and a pa
   await expect(page.getByRole('link', { name: 'Tạo tài khoản' })).toHaveAttribute('href', '/sign-up');
   await expect(page.getByRole('link', { name: 'Đăng nhập bằng mã gửi qua email' })).toHaveAttribute('href', '/sign-in/code');
   await expect(page.getByRole('button', { name: 'Đăng nhập bằng Google' })).toHaveCount(0);
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -63,6 +58,7 @@ test('the code sign-in is one tap away from /sign-in and still signs in', async 
   await expect(page).toHaveURL(/\/sign-in\/code$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đăng nhập bằng mã');
   await expect(page.getByRole('button', { name: 'Gửi mã' })).toBeVisible();
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await signIn(page, uniqueEmail('code'));
   await expect(page).toHaveURL(/\/onboarding$/);
@@ -82,6 +78,7 @@ test('FND-1: a new email reads its code from Inbucket, signs in and creates a ho
 
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tạo gia đình');
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await page.getByRole('button', { name: 'Tạo gia đình' }).click();
@@ -89,6 +86,7 @@ test('FND-1: a new email reads its code from Inbucket, signs in and creates a ho
   await expect(page.getByLabel('Tên gia đình'), 'a blank submit moves focus to the first error').toBeFocused();
 
   await createHousehold(page, 'Gia đình Mới Demo', 'Demo Mới');
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await page.getByRole('link', { name: 'Xong' }).click();
 
@@ -96,6 +94,7 @@ test('FND-1: a new email reads its code from Inbucket, signs in and creates a ho
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gia đình Mới Demo');
   await expect(page.getByText('Bạn đang đăng nhập với tên Demo Mới.')).toBeVisible();
   await expect(page.getByText('Quyền: Quản trị')).toBeVisible();
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -213,6 +212,7 @@ test('a wrong code shows the error and creates no session', async ({ page }) => 
   await expect(page.getByRole('button', { name: /^Gửi lại mã sau \d+ giây$/ })).toBeDisabled();
   const cookies = await page.context().cookies();
   expect(cookies.filter((cookie) => cookie.name.startsWith('sb-'))).toEqual([]);
+  await expect(page, 'Next streams the title in after the body on a client navigation').not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 

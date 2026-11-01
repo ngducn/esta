@@ -1,4 +1,3 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -13,6 +12,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
 import { setClock } from './helpers/test-clock';
+import { seriousAxeViolations } from './helpers/wizard';
 
 // Rule 4 runs this slot's one replay worker, so the rules run in order in the `clock` project.
 test.describe.configure({ mode: 'serial' });
@@ -73,11 +73,6 @@ async function cleanUp(page: Page, property: string, seeded: ReadonlySet<string>
   for (const row of await liveDocuments(page, property)) {
     if (!seeded.has(row.id)) await rest(page, 'PATCH', `documents?id=eq.${row.id}`, { deleted_at: '2026-10-07T09:00:00+07:00' });
   }
-}
-
-async function seriousAxeViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
 async function shot(page: Page, name: string) {
