@@ -22,9 +22,9 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 - **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #375 (a19892e9), the brand layer; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
 - **#374 merged** as 2bbf8891: the new shell (tab bar, rail, sidebar, account menu, page header).
-- **#381, RD-2 Tài sản as a workbench, head 2f81c2d6, ci green, rigorous** (status, filters and totals moved into packages/core). Running: Opus audit `briefs/pr381-audit.md` (`/tmp/review-381/audit.md`) and Sonnet lane slot 14 `briefs/pr381-lane.md` (`/tmp/review-381/lane/`).
-  - Ryan decisions (defaults apply): "Cần chú ý" counts rent overdue or due today, not missing papers; the filter chip rows stay open on desktop (the owner suggests folding them behind "Bộ lọc").
-  - Next: one Sonnet fix round with the audit's blocking findings, a scoped reader, then merge.
+- **#381, RD-2 Tài sản as a workbench, rigorous.** Lane and Opus audit ISSUES: B1 the summary strip totals the filtered rows, B2 a failed collections read shows a false zero, B3 Cần chú ý takes overdue only from rental use. Root merged main at b2ce2f99 (baseline only fell). Running: Sonnet fix round, slot 3, `briefs/rd-2-ff1.md` (red tests first). Lows #382.
+  - Ryan decisions (defaults apply): "Cần chú ý" = rent overdue or due today on any property (the audit's option a; b = Tổng quan's list, c = the design's set with expiring contracts and overdue tax); the filter chip rows stay open on desktop.
+  - Next: a scoped reader of the fix round (Opus or Sonnet against B1-B3), then merge. RD-3 starts after this merges, because it reuses SummaryStrip and FilterTabs.
 - **#375 merged** as a19892e9: sign-in, sign-up, forgot password and onboarding on the brand layer. Ryan decisions with defaults: keep Inter Display despite ~150 ms LCP on /sign-in; logo twice on desktop (#379).
 - **Then:** RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire set** at 23:30 on 2026-11-01: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`). Clear it with `rm` after a quiet stretch with no overlap failures, and record that in decisions.tsv.
