@@ -18,16 +18,16 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items
+## Open items (updated 2026-11-01 23:20 +07)
 
-- **#365, data trust A, branch esta/data-trust-a, head 3941658a on GitHub, ci green there.**
-  - Fix round 1 owner: Opus, slot 2, brief `briefs/data-trust-a-ff1.md` with its 2026-11-01 addendum, worktree `/tmp/owner-data-trust-a/wt`. Items: holder check flags her own certificates, blank records through review and edit, refusal out of sight, suggestCurrentUnits throw, the 6-candidate cap probe.
-  - Next: on its report, a scoped Sonnet reader of 3941658a..head (rigorous tier), then merge with `gh pr merge 365 --squash --match-head-commit <head>` and a plain-words summary.
-- **RD-1, redesign foundation, branch esta/rd-1-design-foundation (opens as a new PR).**
-  - Owner: Sonnet (took over from Opus at 2e19735f, handover `/tmp/owner-rd-1/handover.md`), slot 3, brief `briefs/rd-1.md`, worktree `/tmp/owner-rd-1/wt`. Tokens with the design system's role names (codemod), Thoáng/Gọn density, ESTA wordmark and icons, restyled primitives, tab bar, rail, sidebar and account menu. May split the shell into RD-1b past about 800 product lines.
-  - Next: on its report, the review round for its tier (standard at least: one Sonnet verifier lane with live screenshots; add an Opus audit if verify:tier says rigorous), then merge. Whichever of #365 and RD-1 lands second merges main and re-runs the codemod.
-- **After RD-1:** RD-2 (Tài sản) and RD-6 (sign-in and onboarding) side by side, then RD-3 (Thu tiền and the payment sheet), RD-4 (Tổng quan and Trợ lý), RD-5 (the remaining screens). Write each brief from the plan and `briefs/rd-1.md`.
-- **Then the earlier order:** Mẹ's session (Ryan's step; she should see the new look), P5-09, P5-14 and P5-15, P5-16b (#313, #314, #338, #346), P5-10 (live run), Phase 6. #356's remaining items can go between them.
+- **#365, data trust A, head 2de309c8.** Fix round 1 done by the Opus owner: all five items with mutation-checked tests; item 5 was real (18 of 11,507 addresses got a false "another province" stop). ci passed in full at eaf36727; 2de309c8 adds one scroll line to a spec and its ci was pending. Lows filed: #369 (refusal pushes Lưu under the tab bar, a redesign fix), skipped specs added to #122.
+  - Running: scoped Sonnet reader, brief `briefs/pr365-ff1-reader.md`, report `/tmp/review-365/ff1-reader.md`.
+  - Next: on CLEAN and green ci at 2de309c8, `gh pr merge 365 --squash --match-head-commit 2de309c8` and a plain-words summary.
+- **#368, RD-1 redesign foundation, head a78c8c86.** Opus owner then Sonnet owner (handover `/tmp/owner-rd-1/handover.md`). Done: record, docs, tokens, codemod with retired-name check, density, wordmark and icons, primitives. The shell split out to RD-1b. Not run by the owner: /deslop, /no-comments, Lighthouse. verify:tier says rigorous (the codemod touched sign-in and onboarding files).
+  - Running: Opus audit (`briefs/pr368-audit.md`, `/tmp/review-368/audit.md`) and Sonnet live lane on slot 14 (`briefs/pr368-lane.md`, `/tmp/review-368/lane/`).
+  - Next: one fix-forward by a fresh Sonnet owner if they find blocking issues, then merge on clean verdicts and green ci.
+- **RD-1b, the shell, branch esta/rd-1b-shell stacked on RD-1.** Sonnet owner, slot 3, brief `briefs/rd-1b.md`, worktree `/tmp/owner-rd-1b/wt`. Rail, sidebar, tab bar, account menu with Mật độ, page header. Next: its review round after RD-1 merges; retarget to main then.
+- **After RD-1 and RD-1b:** RD-2 and RD-6 side by side, then RD-3, RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 
 ## Waiting for Ryan (defaults apply)
 
