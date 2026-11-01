@@ -225,8 +225,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     asMember();
     const { documentId, extractionId } = await waitingExtraction('failed');
     const form = { form: { kind: 'edited', value: 'paper_only' } };
-    const unidentified = { ok: false, reason: 'unidentified', paths: ['serial_no', 'book_entry_no', 'issued_on', 'holders[0].full_name'] };
-    expect(await saveConfirmed(extractionId, form)).toEqual(unidentified);
+    expect(await saveConfirmed(extractionId, form)).toEqual({ ok: false, reason: 'unidentified', paths: ['serial_no', 'book_entry_no', 'issued_on', 'holders[0].full_name'] });
     expect(await rest(`document_extractions?document_id=eq.${documentId}&select=id`)).toEqual([{ id: extractionId }]);
     const decisions = { ...form, serial_no: { kind: 'edited', value: 'AB 123456' }, 'parcels[0].parcel_no': { kind: 'edited', value: '12' }, 'parcels[0].area_m2': { kind: 'edited', value: '300,5' } };
     expect(await saveConfirmed(extractionId, decisions)).toEqual({ ok: true, propertyId });
@@ -374,7 +373,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(await rest(`documents?id=eq.${documentId}&select=property_id`)).toEqual([{ property_id: propertyId }]);
   });
 
-  test('an address lookup that fails before the mismatch check answers failed and writes nothing', async () => {
+  test('the address lookup in the mismatch check: an error answers failed and writes nothing, and a district five provinces share reads as no province though its first six units lie in Tây Ninh', async () => {
     asMember();
     const { extractionId } = await waitingExtraction();
     const parties = await count(`parties?household_id=eq.${household}&select=id`);
@@ -382,6 +381,9 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(await saveExtractionReview(extractionId, acceptAll)).toEqual({ ok: false, reason: 'failed' });
     expect(await written(extractionId)).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
+    session.client = member;
+    const decisions = { ...acceptAll, 'parcels[0].address_text': { kind: 'edited', value: 'Thửa đất số 12, ấp 3, huyện Châu Thành' }, 'holders[0].full_name': { kind: 'edited', value: 'Nguyễn Thị Demo' } };
+    expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: true, propertyId });
   });
 
   test('a viewer and a member of another household write nothing', async () => {
