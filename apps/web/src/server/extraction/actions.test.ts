@@ -140,6 +140,17 @@ function cutOnce(client: SupabaseClient, table: string): SupabaseClient {
   });
 }
 
+/** The member's session, except the address lookup answers with an error, as a dropped connection would leave it. */
+function addressLookupFails(client: SupabaseClient): SupabaseClient {
+  return new Proxy(client, {
+    get(target, property, receiver) {
+      if (property !== 'rpc') return Reflect.get(target, property, receiver);
+      return (name: string, args: unknown) =>
+        name === 'suggest_current_unit' ? { limit: async () => ({ data: null, error: { message: 'connection cut' } }) } : target.rpc(name, args as never);
+    },
+  });
+}
+
 describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   let member: SupabaseClient;
   let outsider: SupabaseClient;
@@ -389,6 +400,16 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(await saveExtractionReview(extractionId, acceptAll, propertyId, true)).toEqual({ ok: true, propertyId });
     expect(await rest(`properties?id=eq.${propertyId}&select=certificate_address_text`)).toEqual([{ certificate_address_text: truthFile.certificate.parcels[0]?.address_text.value }]);
     expect(await rest(`documents?id=eq.${documentId}&select=property_id`)).toEqual([{ property_id: propertyId }]);
+  });
+
+  test('an address lookup that fails before the mismatch check answers failed and writes nothing', async () => {
+    asMember();
+    const { extractionId } = await waitingExtraction();
+    const parties = await count(`parties?household_id=eq.${household}&select=id`);
+    session.client = addressLookupFails(member);
+    expect(await saveExtractionReview(extractionId, acceptAll)).toEqual({ ok: false, reason: 'failed' });
+    expect(await written(extractionId)).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
+    expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
   });
 
   test('a viewer and a member of another household write nothing', async () => {
