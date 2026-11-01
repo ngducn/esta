@@ -18,15 +18,15 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (updated 2026-11-01 23:20 +07)
+## Open items (updated 2026-11-02 00:20 +07)
 
 - **#365 merged** as 72a1fa7d on 2026-11-01. Lows in #370; the portfolio-watch e2e failing locally on main is #371.
-- **#368, RD-1 redesign foundation, head a78c8c86.** Opus owner then Sonnet owner (handover `/tmp/owner-rd-1/handover.md`). Done: record, docs, tokens, codemod with retired-name check, density, wordmark and icons, primitives. The shell split out to RD-1b. Not run by the owner: /deslop, /no-comments, Lighthouse. verify:tier says rigorous (the codemod touched sign-in and onboarding files).
-  - Running: Opus audit (`briefs/pr368-audit.md`, `/tmp/review-368/audit.md`) and Sonnet live lane on slot 14 (`briefs/pr368-lane.md`, `/tmp/review-368/lane/`).
-  - Sonnet lane CLEAN at a78c8c86 (ci green). It now conflicts with main after #365: Sonnet fix-forward owner, slot 2, `briefs/rd-1-ff1.md`, merges main and re-runs the codemod (job 1), then fixes the Opus audit's blocking findings and runs /deslop and /no-comments (job 2, sent by the root).
-  - Next: merge on the audit's clean verdict (or after job 2) and green ci.
-- **RD-1b, the shell, branch esta/rd-1b-shell stacked on RD-1.** Sonnet owner, slot 3, brief `briefs/rd-1b.md`, worktree `/tmp/owner-rd-1b/wt`. Rail, sidebar, tab bar, account menu with Mật độ, page header. Next: its review round after RD-1 merges; retarget to main then.
-- **After RD-1 and RD-1b:** RD-2 and RD-6 side by side, then RD-3, RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **#368, RD-1 redesign foundation, head a78c8c86 on origin (CONFLICTING with main).** Sonnet lane CLEAN at a78c8c86. Opus audit ISSUES (`/tmp/review-368/audit.md`): B1 the dark-theme bill prints near-white (print.css overrides retired names), B2 the retired-name check skips .css files and definitions, B3 the codemod source is missing from the PR body. Lows filed as #372.
+  - Running: Sonnet fix-forward owner, slot 2, `briefs/rd-1-ff1.md`. Job 1 (merge main, rerun the codemod on #365's files, narrowed specs) is merged locally at ab6e7155 and testing; job 2 (B1-B3, /deslop, /no-comments, a "Fix round 1" section) was sent by message.
+  - Next: a scoped Sonnet reader of the fix round against B1-B3, then merge on CLEAN plus green ci with `--match-head-commit`.
+- **RD-1b, the shell, branch esta/rd-1b-shell pushed at bcaa334f (on a78c8c86), no PR yet.** The first owner built rail, sidebar, tab bar, account menu and PageHeader, and passed e2e:prod 11/11. Running: Sonnet finisher, slot 3, `briefs/rd-1b-finish.md`: merge RD-1's new head when it moves, close the assistant-thread question, dark and 130% shots, northstar, Lighthouse, /deslop, /no-comments, PR with base esta/rd-1-design-foundation.
+  - Next: its review round (standard tier unless verify:tier says more) after #368 merges; retarget the PR to main then.
+- **After RD-1 and RD-1b:** RD-2 and RD-6 side by side, then RD-3 (include the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -48,7 +48,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Budget
 
-No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 21:40 the window stood at 9% and the week at 5%. On a 429, resume the owner with SendMessage after the reset.
+No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 00:20 on 2026-11-02 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.
 
 ## Gotchas
 
