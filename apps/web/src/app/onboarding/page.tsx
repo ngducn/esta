@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
-import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AuthFrame } from '@/components/auth-frame';
@@ -9,7 +8,6 @@ import { buttonVariants } from '@/components/ui/button';
 import { getCurrentMember, getSessionUser } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { signOut } from '../home-actions';
-import { LanguageSwitch } from '../language-switch';
 import { CreateHouseholdForm, InviteForm } from './forms';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,10 +23,9 @@ async function claimLateInvites(): Promise<boolean> {
 }
 
 export default async function OnboardingPage() {
-  const [t, shell, app, messages, member, user] = await Promise.all([
+  const [t, shell, messages, member, user] = await Promise.all([
     getTranslations('onboarding'),
     getTranslations('shell'),
-    getTranslations('app'),
     getMessages(),
     getCurrentMember(),
     getSessionUser(),
@@ -36,15 +33,17 @@ export default async function OnboardingPage() {
   if (member === null && (await claimLateInvites())) redirect('/');
   if (member !== null && member.role !== 'admin') redirect('/');
 
+  const creating = member === null;
   return (
-    <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
+    <AuthFrame
+      eyebrow={creating ? t('eyebrow') : member.household.name}
+      title={creating ? t('title') : t('inviteTitle')}
+      titleEnd={creating ? t('titleEnd') : t('inviteTitleEnd')}
+    >
       <NextIntlClientProvider messages={{ onboarding: messages.onboarding }}>
-        {member === null ? (
+        {creating ? (
           <>
-            <div className="flex flex-col gap-2">
-              <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
-              <p className="text-text-secondary">{t('intro')}</p>
-            </div>
+            <p className="text-text-secondary">{t('intro')}</p>
             <CreateHouseholdForm />
             <div className="flex flex-col gap-2 border-t border-border pt-5 text-body-sm text-text-muted">
               {user?.email && <p className="break-all">{t('signedInEmail', { email: user.email })}</p>}
@@ -58,16 +57,9 @@ export default async function OnboardingPage() {
           </>
         ) : (
           <>
-            <div className="flex flex-col gap-2">
-              <p className="flex items-center gap-2 font-medium text-text-muted">
-                <UserPlus className="size-5 text-accent-text" strokeWidth={1.8} aria-hidden="true" />
-                {member.household.name}
-              </p>
-              <h1 className="text-title-2 lg:text-title-1">{t('inviteTitle')}</h1>
-              <p className="text-text-secondary">{t('inviteIntro', { household: member.household.name })}</p>
-            </div>
+            <p className="text-text-secondary">{t('inviteIntro', { household: member.household.name })}</p>
             <InviteForm />
-            <Link href="/" className={buttonVariants({ variant: 'secondary', className: 'w-full' })}>
+            <Link href="/" className={buttonVariants({ variant: 'secondary', className: 'w-full rounded-full' })}>
               {t('done')}
             </Link>
           </>

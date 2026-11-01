@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth-frame';
-import { LanguageSwitch } from '../language-switch';
 import { around, passwordCopy } from '../sign-in/copy';
 import { ResetForm, type ResetCopy } from './reset-form';
 
@@ -11,11 +10,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ForgotPasswordPage() {
-  const [t, signIn, signUp, app, password] = await Promise.all([
+  const [t, signIn, signUp, password] = await Promise.all([
     getTranslations('resetPassword'),
     getTranslations('signIn'),
     getTranslations('signUp'),
-    getTranslations('app'),
     passwordCopy(),
   ]);
   const copy: ResetCopy = {
@@ -48,8 +46,11 @@ export default async function ForgotPasswordPage() {
     backToSignIn: t('backToSignIn'),
   };
   return (
-    <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
-      <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
+    <AuthFrame
+      eyebrow={t('eyebrow')}
+      title={t('title')}
+      titleEnd={t('titleEnd')}
+    >
       <ResetForm copy={copy} />
     </AuthFrame>
   );

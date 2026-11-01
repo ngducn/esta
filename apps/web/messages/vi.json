@@ -2,7 +2,8 @@
   "app": {
     "name": "Esta",
     "tagline": "Sổ cái nhà đất của gia đình",
-    "heroAlt": "Mái nhà phố cổ Hà Nội nhìn về cầu Long Biên"
+    "heroAlt": "Mái nhà phố cổ Hà Nội nhìn về cầu Long Biên",
+    "heroCaption": "Giữ nhà\ncho cả nhà."
   },
   "language": {
     "label": "Ngôn ngữ",
@@ -45,7 +46,9 @@
     "useCode": "Đăng nhập bằng mã gửi qua email",
     "usePassword": "Đăng nhập bằng mật khẩu",
     "noAccount": "Chưa có tài khoản?",
-    "createAccount": "Tạo tài khoản"
+    "createAccount": "Tạo tài khoản",
+    "titleEnd": "vào Esta.",
+    "codeTitleEnd": "gửi qua email."
   },
   "signUp": {
     "title": "Tạo tài khoản",
@@ -59,7 +62,9 @@
     "confirming": "Đang xác nhận…",
     "failed": "Chưa tạo được tài khoản. Thử lại.",
     "haveAccount": "Đã có tài khoản?",
-    "signIn": "Đăng nhập"
+    "signIn": "Đăng nhập",
+    "eyebrow": "Tài khoản mới",
+    "titleEnd": "cho cả nhà."
   },
   "resetPassword": {
     "title": "Đặt lại mật khẩu",
@@ -72,7 +77,9 @@
     "doneTitle": "Đã đổi mật khẩu",
     "doneBody": "Từ nay hãy đăng nhập bằng mật khẩu mới. Bạn đang đăng nhập trên thiết bị này.",
     "continue": "Vào Esta",
-    "backToSignIn": "Quay lại đăng nhập"
+    "backToSignIn": "Quay lại đăng nhập",
+    "eyebrow": "Quên mật khẩu",
+    "titleEnd": "qua email."
   },
   "onboarding": {
     "title": "Tạo gia đình",
@@ -109,7 +116,10 @@
     "inviteFailed": "Chưa mời được. Kiểm tra kết nối mạng rồi thử lại.",
     "done": "Xong",
     "invitedElsewhere": "Nếu bạn được mời vào một gia đình, hãy đăng xuất và đăng nhập bằng đúng email đã được mời.",
-    "signedInEmail": "Bạn đang dùng {email}."
+    "signedInEmail": "Bạn đang dùng {email}.",
+    "eyebrow": "Bước đầu tiên",
+    "titleEnd": "để bắt đầu.",
+    "inviteTitleEnd": "vào cùng Esta."
   },
   "home": {
     "role": "Quyền: {role}",

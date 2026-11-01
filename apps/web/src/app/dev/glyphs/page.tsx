@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
+import { interDisplay } from '@/app/display-font';
 import { contrastRatio } from '@/design/contrast';
 import { glyphTestString } from '@/design/glyph-test-string';
 import { colorPairs, minimumRatio, type ColorPair } from '@/design/text-pairs';
@@ -11,11 +12,12 @@ export const metadata: Metadata = {
 };
 
 const WEIGHT_CLASS: Record<number, string> = {
+  300: 'font-[300]',
   400: 'font-normal',
   500: 'font-medium',
   600: 'font-semibold',
 };
-const FACE_CLASS = { sans: 'font-sans' } as const;
+const FACE_CLASS = { sans: 'font-sans', display: 'font-display' } as const;
 const SPECIMEN_SIZES = [
   { px: 16, rem: '1rem' },
   { px: 32, rem: '2rem' },
@@ -56,7 +58,7 @@ export default function DevGlyphsPage() {
   const checks = colorPairs.flatMap((pair) => THEMES.map((theme) => ratio(pair, theme) >= minimumRatio[pair.kind]));
   const passing = checks.filter(Boolean).length;
   return (
-    <main lang="en" className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8">
+    <main lang="en" className={`${interDisplay.variable} mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8`}>
       <header className="flex flex-col gap-2">
         <h1 className="text-title-1">Glyphs and tokens</h1>
         <p className="max-w-prose text-text-muted">

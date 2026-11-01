@@ -20,12 +20,12 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Open items (updated 2026-11-02 00:40 +07)
 
-- **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
+- **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #375 (a19892e9), the brand layer; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
 - **#374 merged** as 2bbf8891: the new shell (tab bar, rail, sidebar, account menu, page header).
-- **RD-2, Tài sản as a workbench.** Running: Sonnet owner, slot 3, `briefs/rd-2.md`, worktree `/tmp/owner-rd-2/wt`, branch esta/rd-2-properties-workbench. Next: its review at verify:tier, then merge.
-- **#375, RD-6 sign-in and onboarding on the brand layer, head 3466ec25, ci green, rigorous.** Running: Opus audit `briefs/pr375-audit.md` (`/tmp/review-375/audit.md`) and Sonnet lane slot 14 `briefs/pr375-lane.md` (`/tmp/review-375/lane/`). The owner skipped /deslop and /no-comments; the fix round runs them.
-  - Ryan decision in the PR body: /sign-in LCP rose about 150 ms (2047 vs 1897 ms) with Inter Display. Default: accept it (still under 2.5 s), unless the audit finds a cheap font-loading fix.
-  - Next: one Sonnet fix round with the audit's blocking findings and the cleanup, a scoped reader, then merge.
+- **#381, RD-2 Tài sản as a workbench, head 2f81c2d6, ci green, rigorous** (status, filters and totals moved into packages/core). Running: Opus audit `briefs/pr381-audit.md` (`/tmp/review-381/audit.md`) and Sonnet lane slot 14 `briefs/pr381-lane.md` (`/tmp/review-381/lane/`).
+  - Ryan decisions (defaults apply): "Cần chú ý" counts rent overdue or due today, not missing papers; the filter chip rows stay open on desktop (the owner suggests folding them behind "Bộ lọc").
+  - Next: one Sonnet fix round with the audit's blocking findings, a scoped reader, then merge.
+- **#375 merged** as a19892e9: sign-in, sign-up, forgot password and onboarding on the brand layer. Ryan decisions with defaults: keep Inter Display despite ~150 ms LCP on /sign-in; logo twice on desktop (#379).
 - **Then:** RD-3 (include #377 and the desktop badge wrapping), RD-4, RD-5, all on Sonnet owners. Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire set** at 23:30 on 2026-11-01: heavy.sh runs everything one at a time (`/tmp/ci-local/one-at-a-time`). Clear it with `rm` after a quiet stretch with no overlap failures, and record that in decisions.tsv.
 
@@ -40,6 +40,8 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Rules added this session
 
+- Briefs say "Spawn no subagents, except the comment-sicko that /no-comments runs". Three owners skipped or hand-ran /no-comments because the blanket ban covered the skill's own subagent.
+
 - The root merges on a clean independent verdict plus green ci at the exact head. Call `gh pr merge` directly. At most 2 reviewed PRs wait above main.
 - Prototype first, live checks for each assistant slice, and Mẹ's session before more assistant features. Repeat findings become checks (owner-brief "Known defect classes"). The redesign's prototype is Ryan's artifact.
 - Fix rounds are capped at 2. A language-rule change needs live English and Vietnamese probes that name real seed records.
@@ -49,7 +51,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Budget
 
-Week at 17% at 00:57 on 2026-11-02 (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
+Week at 18% at 01:40 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
 
 
 No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 23:25 on 2026-11-01 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.

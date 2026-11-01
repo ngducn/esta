@@ -1,26 +1,38 @@
+import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { LanguageSwitch } from '@/app/language-switch';
+import { interDisplay } from '@/app/display-font';
 import { BrandMark } from '@/components/brand-mark';
+import { BrandFrame, Eyebrow, PhotoLines, ReversedLogo, SplitHeadline } from '@/components/brand-layer';
 import { Photo } from '@/components/photo';
 import hero from '@/photos/sign-in-hero.webp';
 
-/**
- * Sign-in and onboarding: the form in a card on the left, the photo on the right on desktop. The photo is the
- * largest paint on a desktop, so from `lg` (64rem) up it loads at once and at high priority. A phone never
- * requests it, so the form stays the LCP element there.
- */
-export function AuthFrame({ brand, photoAlt, aside, children }: { brand: string; photoAlt: string; aside: ReactNode; children: ReactNode }) {
+type AuthFrameProps = { eyebrow: string; title: string; titleEnd: string; children: ReactNode };
+
+/** Inter Display loads here and nowhere in the app. The photo loads at once from `lg` up; a phone never requests it. */
+export async function AuthFrame({ eyebrow, title, titleEnd, children }: AuthFrameProps) {
+  const app = await getTranslations('app');
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6 sm:py-10 lg:justify-center">
+    <div className={`${interDisplay.variable} min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]`}>
+      <main className="mx-auto flex w-full max-w-md flex-col gap-8 px-4 py-6 sm:py-10 lg:max-w-lg lg:justify-center">
         <header className="flex items-center justify-between gap-4">
-          <BrandMark name={brand} />
-          {aside}
+          <BrandMark name={app('name')} />
+          <LanguageSwitch />
         </header>
-        <div className="flex flex-col gap-6 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-7">{children}</div>
+        <div className="flex flex-col gap-3">
+          <Eyebrow>{eyebrow}</Eyebrow>
+          <SplitHeadline title={title} end={titleEnd} />
+        </div>
+        <BrandFrame>{children}</BrandFrame>
       </main>
       <div className="relative hidden p-4 lg:block">
-        <div className="relative h-full overflow-hidden rounded-lg bg-bg-subtle">
-          <Photo src={hero} alt={photoAlt} sizes="50vw" eagerFrom="64rem" className="object-cover" />
+        <div className="es-mk-photo relative h-full overflow-hidden rounded-2xl bg-skeleton">
+          <Photo src={hero} alt={app('heroAlt')} sizes="50vw" eagerFrom="64rem" className="object-cover" />
+          <PhotoLines />
+          <ReversedLogo className="absolute top-8 left-8 z-10 h-7" />
+          <p className="absolute bottom-8 left-8 z-10 max-w-[16ch] font-display text-brand-caption whitespace-pre-line">
+            {app('heroCaption')}
+          </p>
         </div>
       </div>
     </div>

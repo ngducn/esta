@@ -6,7 +6,10 @@ import { hexToRgb } from '../apps/web/src/design/contrast.ts';
 import { colors } from '../apps/web/src/design/tokens.ts';
 
 const GLYPHS = readFileSync(new URL('../fixtures/glyph-test-string.txt', import.meta.url), 'utf8').trim();
-const FACES = [{ face: 'sans', variable: '--font-inter' }] as const;
+const FACES = [
+  { face: 'sans', variable: '--font-inter' },
+  { face: 'display', variable: '--font-inter-display' },
+] as const;
 
 /** The rendered sRGB of a CSS color, read back through a canvas so oklch, lab and rgb serializations compare alike. */
 function srgbOf(page: Page, cssColor: string): Promise<number[]> {
@@ -29,8 +32,9 @@ test('/dev/glyphs renders the glyph string in each self-hosted face with no fall
     expect(await shown.first().textContent()).toBe(GLYPHS);
 
     const result = await page.evaluate(
-      async ({ variable, text }) => {
-        const family = getComputedStyle(document.documentElement).getPropertyValue(variable).split(',')[0]?.trim() ?? '';
+      async ({ variable, text, face }) => {
+        const specimen = document.querySelector(`[data-face="${face}"]`) ?? document.documentElement;
+        const family = getComputedStyle(specimen).getPropertyValue(variable).split(',')[0]?.trim() ?? '';
         const loaded = await document.fonts.load(`16px ${family}`, text);
         return {
           family,
@@ -38,7 +42,7 @@ test('/dev/glyphs renders the glyph string in each self-hosted face with no fall
           check: document.fonts.check(`16px ${family}`, text),
         };
       },
-      { variable, text: GLYPHS },
+      { variable, text: GLYPHS, face },
     );
     // document.fonts.check is also true for a family no @font-face declares, so the load result proves the face exists.
     expect(result.loadedFamilies, result.family).toContain(result.family.replaceAll('"', ''));
