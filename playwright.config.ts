@@ -10,6 +10,12 @@ const baseURL = `http://localhost:${port}`;
 const servers = ['build', 'dev'] as const;
 const server = process.env.ESTA_E2E_SERVER ?? (process.env.CI ? 'build' : 'dev');
 if (!servers.some((name) => name === server)) throw new Error(`ESTA_E2E_SERVER must be one of ${servers.join(', ')}, got "${server}"`);
+
+// The seed holds one fixed day's state, so the app under test must not read the wall clock: on 2026-11-02 the
+// Thủ Đức lease (to 2026-11-01) stopped counting as active and the rent sort failed. 2026-11-01 is the last day the
+// whole suite passed on the real clock. slotEnv passes this to the server and the agent worker; a test_clock row still wins.
+process.env.ESTA_FROZEN_NOW ||= '2026-11-01T10:00:00+07:00';
+
 const sharedClock = [
   'clock.spec.ts',
   'assistant-status.spec.ts',
