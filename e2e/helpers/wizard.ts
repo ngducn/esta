@@ -99,9 +99,27 @@ export async function serviceUpsert(page: Page, table: string, row: Record<strin
   expect(response.ok(), await response.text()).toBe(true);
 }
 
-export async function seriousAxeViolations(page: Page): Promise<string[]> {
+async function seriousAxeRun(page: Page): Promise<string[]> {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+}
+
+/**
+ * Axe judges resting colours. A button that hydrates while axe runs is caught mid-fade (#373), so a run with
+ * violations is repeated once its finite animations end; a real violation shows in both runs.
+ */
+export async function seriousAxeViolations(page: Page): Promise<string[]> {
+  const first = await seriousAxeRun(page);
+  if (first.length === 0) return first;
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+  return seriousAxeRun(page);
 }
 
 /** A full-page screenshot into `ESTA_EVIDENCE_DIR`, once the document page has drawn when one shows. */
