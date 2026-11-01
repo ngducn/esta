@@ -3,11 +3,10 @@ import { describe, expect, test, vi } from 'vitest';
 const PROPERTY = '00000000-0000-4000-8000-0000000000b0';
 const CERTIFICATE = '00000000-0000-4000-8000-0000000000c1';
 
-const db = vi.hoisted(() => ({ writes: [] as string[] }));
+const db = vi.hoisted(() => ({ writes: [] as string[], member: { role: 'member', household: { id: '00000000-0000-4000-8000-0000000000a0' } } }));
 
-vi.mock('server-only', () => ({}));
+vi.mock('@/server/member', () => ({ requireMember: async () => db.member }));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/member', () => ({ requireMember: async () => ({ role: 'member', household: { id: '0943e55d-b0a6-5aef-839d-07c8693c520e' } }) }));
 vi.mock('@/server/supabase/server', () => ({
   createSessionClient: async () => {
     const saved = Promise.resolve({ data: { id: CERTIFICATE }, error: null });
