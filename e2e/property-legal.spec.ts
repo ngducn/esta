@@ -254,6 +254,7 @@ test('tapping Lưu on an empty certificate form says beside Lưu what to fill an
   );
   await expect(page.getByTestId('form-error')).toBeInViewport();
   await expect(page.getByTestId('save-legal-item')).toBeInViewport();
+  await page.getByTestId('save-legal-item').evaluate((button) => button.scrollIntoView({ block: 'center' }));
   await page.screenshot({ path: test.info().outputPath('certificate-unidentified-beside-save-390-light.png') });
   await expect(page).toHaveURL(/\/certificates\/new$/);
 
