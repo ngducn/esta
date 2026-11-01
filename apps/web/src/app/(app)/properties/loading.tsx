@@ -1,5 +1,5 @@
-import { SkeletonCards } from '@/components/skeleton';
+import { SkeletonProperties } from '@/components/properties/property-skeleton';
 
 export default function PropertiesLoading() {
-  return <SkeletonCards />;
+  return <SkeletonProperties />;
 }

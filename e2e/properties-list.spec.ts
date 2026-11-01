@@ -222,7 +222,7 @@ test('no match names the query and offers Xóa bộ lọc', async ({ page }) => 
   onlyOn('mobile');
   await open(page, 'me.lane1@demo.esta.test', 'light');
   await typeSearch(page, 'khong co dau');
-  await expect(page.getByText('Không có tài sản nào khớp với “khong co dau”.')).toBeVisible();
+  await expect(page.getByText('Không có kết quả cho “khong co dau”')).toBeVisible();
   await page.getByRole('link', { name: 'Xóa bộ lọc' }).click();
   await expect(nicknames(page)).toHaveCount(7);
   await expect(search(page)).toHaveValue('');
@@ -247,4 +247,56 @@ test('sort offers name, area, rent and completeness in a 44 px control, and the 
   await sort.selectOption({ label: 'Tên' });
   await expect(page).toHaveURL(/\/properties$/);
   await expect(nicknames(page)).toHaveText(LANE_SEVEN);
+});
+
+test('Cần chú ý is one tap, counts what it shows, and the URL keeps the tab on reload', async ({ page }) => {
+  onlyOn('mobile');
+  await open(page, 'me.lane1@demo.esta.test', 'light');
+  const tabs = page.getByRole('navigation', { name: 'Lọc theo tình trạng' });
+  const tab = (name: string) => tabs.getByRole('link', { name: new RegExp(`^${name}\\s*\\d+$`) });
+  await expect(tab('Tất cả')).toHaveText('Tất cả 7');
+  await expect(tab('Cần chú ý')).toHaveText('Cần chú ý 1');
+  await expect(tab('Còn trống')).toHaveText('Còn trống 2');
+
+  await tab('Cần chú ý').click();
+  await expect(page).toHaveURL(/[?&]status=attention/);
+  await expect(nicknames(page)).toHaveText(['Dãy trọ Dĩ An']);
+  await expect(card(page, 'Dãy trọ Dĩ An').getByText(/^Quá hạn \d+ ngày$/)).toBeVisible();
+  await page.reload();
+  await expect(tab('Cần chú ý')).toHaveAttribute('aria-current', 'true');
+  await expect(nicknames(page)).toHaveText(['Dãy trọ Dĩ An']);
+  await expect(page.getByTestId('property-count')).toHaveText('1 trong 7 tài sản');
+
+  await tab('Còn trống').click();
+  await expect(nicknames(page)).toHaveText(['Dãy trọ Dĩ An', 'Kho Biên Hòa']);
+  await tab('Tất cả').click();
+  await expect(page).toHaveURL(/\/properties$/);
+  await expect(nicknames(page)).toHaveText(LANE_SEVEN);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('a tab or search with no result names itself and offers Xóa bộ lọc', async ({ page }) => {
+  onlyOn('mobile');
+  await open(page, 'me.lane1@demo.esta.test', 'light');
+  await page.goto('/properties?status=attention&kind=warehouse');
+  await expect(page.getByText('Không có tài sản nào khớp với bộ lọc này')).toBeVisible();
+  await page.goto('/properties?status=attention&q=bao+loc');
+  await expect(page.getByText('Không có kết quả cho “bao loc”')).toBeVisible();
+  await page.getByRole('link', { name: 'Xóa bộ lọc' }).click();
+  await expect(nicknames(page)).toHaveCount(7);
+});
+
+test('the summary strip describes the whole household whatever the tab, chip or search', async ({ page }) => {
+  onlyOn('mobile');
+  await open(page, 'me.lane1@demo.esta.test', 'light');
+  const strip = page.getByRole('region', { name: 'Tóm tắt tài sản' });
+  await expect(strip).toContainText(/\d+\/14/);
+  await expect(strip).toContainText(/\d\.\d{3}\.\d{3}/);
+  await expect(strip).toContainText('1 tài sản');
+  const household = await strip.innerText();
+  for (const url of ['/properties?q=zzzqq', '/properties?status=attention&kind=warehouse', '/properties?status=attention', '/properties?q=bao+loc']) {
+    await page.goto(url);
+    await expect(strip, url).toBeVisible();
+    expect(await strip.innerText(), url).toBe(household);
+  }
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
-import { propertyStatus, type PropertyStatusFacts } from './status';
+import { byUrgency, propertyStatus, statusFilterValues, type PropertyStatusFacts, type PropertyStatusMark } from './status';
 
 const asOf = isoDate('2026-10-07');
 const rental = (facts: Partial<PropertyStatusFacts>): PropertyStatusFacts => ({ useMode: 'rental', vacantSince: null, leasedUnitCount: 0, unitCount: 1, collection: null, ...facts });
@@ -53,5 +53,26 @@ describe('propertyStatus', () => {
     [{ group: 'notDue' }, []],
   ] as const)('maps a %o month to %o', (collection, marks) => {
     expect(propertyStatus(rental({ collection }), asOf)).toEqual(marks);
+  });
+});
+
+describe('statusFilterValues', () => {
+  it('puts a payment owed under attention and a free unit under vacant', () => {
+    const keys = (facts: PropertyStatusFacts) => statusFilterValues(facts, propertyStatus(facts, asOf));
+    expect(keys(rental({ collection: { group: 'overdue', days: 3 }, vacantSince: isoDate('2026-08-01') }))).toEqual(['attention', 'vacant']);
+    expect(keys(rental({ collection: { group: 'due' } }))).toEqual(['attention']);
+    expect(keys(rental({ collection: { group: 'paid' }, leasedUnitCount: 2, unitCount: 2 }))).toEqual([]);
+  });
+
+  it('orders overdue before due before vacant before paid', () => {
+    const marks: PropertyStatusMark[] = [{ kind: 'leased', leased: 1, total: 2 }, { kind: 'vacant', since: isoDate('2026-08-01') }, { kind: 'due' }, { kind: 'overdue', days: 1 }];
+    expect(marks.toSorted(byUrgency).map((mark) => mark.kind)).toEqual(['overdue', 'due', 'vacant', 'leased']);
+  });
+});
+
+describe('statusFilterValues follows the bill state for every use mode', () => {
+  it.each(['rental', 'owner_occupied', 'family_use', 'own_business', 'held', 'under_renovation'] as const)('flags %s attention on an overdue bill', (useMode) => {
+    const facts: PropertyStatusFacts = { useMode, vacantSince: null, leasedUnitCount: 1, unitCount: 2, collection: { group: 'overdue', days: 12 } };
+    expect(statusFilterValues(facts, propertyStatus(facts, asOf))).toContain('attention');
   });
 });

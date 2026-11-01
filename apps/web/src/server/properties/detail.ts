@@ -32,7 +32,7 @@ export const loadPropertyDetail = cache(async (id: string): Promise<PropertyDeta
   ]);
   if (detail === null) return null;
   const property = { ...detail, ...leaseFacts(id, holding, clock.today()) };
-  return { ...property, statuses: propertyStatus({ ...property, collection: collections.get(id) ?? null }, clock.today()) };
+  return { ...property, statuses: propertyStatus({ ...property, collection: collections?.get(id) ?? null }, clock.today()) };
 });
 
 const activitySchema = z

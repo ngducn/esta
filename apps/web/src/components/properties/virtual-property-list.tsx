@@ -1,35 +1,33 @@
 'use client';
 
 import { useWindowVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
-import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { PropertyCard, photoPriority, type PropertyCardData } from './property-card';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { PropertyCard, photoPriority, propertyGrid, type PropertyCardData } from './property-card';
 
-/** The grid's breakpoints: one column below md (48rem), two below xl (80rem), three from there. */
-const COLUMN_QUERIES = [
-  ['(min-width: 80rem)', 3],
-  ['(min-width: 48rem)', 2],
-] as const;
+const MIN_COLUMN_REM = 19;
+const GAP_REM = 1.5;
 
-function readColumns(): number {
-  return COLUMN_QUERIES.find(([query]) => window.matchMedia(query).matches)?.[1] ?? 1;
-}
-
-function subscribeColumns(onChange: () => void): () => void {
-  const lists = COLUMN_QUERIES.map(([query]) => window.matchMedia(query));
-  for (const list of lists) list.addEventListener('change', onChange);
-  return () => {
-    for (const list of lists) list.removeEventListener('change', onChange);
-  };
+export function columnsFor(widthPx: number, remPx: number): number {
+  return Math.max(1, Math.floor((widthPx / remPx + GAP_REM) / (MIN_COLUMN_REM + GAP_REM)));
 }
 
 const ESTIMATED_ROW_PX = 440;
 
 export function VirtualPropertyList({ cards }: { cards: readonly PropertyCardData[] }) {
-  const columns = useSyncExternalStore(subscribeColumns, readColumns, () => 1);
   const list = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState<number | null>(null);
+  const [columns, setColumns] = useState(1);
   useLayoutEffect(() => {
-    setScrollMargin(list.current?.offsetTop ?? 0);
+    const element = list.current;
+    if (element === null) return;
+    const measure = () => {
+      setScrollMargin(element.offsetTop);
+      setColumns(columnsFor(element.clientWidth, Number.parseFloat(getComputedStyle(document.documentElement).fontSize)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
   const rows = Math.ceil(cards.length / columns);
@@ -51,7 +49,7 @@ export function VirtualPropertyList({ cards }: { cards: readonly PropertyCardDat
           key={row.key}
           data-index={row.index}
           ref={virtualizer.measureElement}
-          className="absolute inset-x-0 top-0 grid gap-4 pb-4 md:grid-cols-2 lg:gap-5 lg:pb-5 xl:grid-cols-3"
+          className={`${propertyGrid} absolute inset-x-0 top-0 pb-stack`}
           style={{ transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)` }}
         >
           {cards.slice(row.index * columns, (row.index + 1) * columns).map((card, column) => (

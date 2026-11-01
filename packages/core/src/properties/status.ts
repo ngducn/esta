@@ -24,9 +24,24 @@ export type PropertyStatusMark =
   | { readonly kind: 'leased'; readonly leased: number; readonly total: number }
   | { readonly kind: 'vacant'; readonly since: IsoDate };
 
+export const PROPERTY_STATUS_FILTERS = ['attention', 'vacant'] as const;
+export type PropertyStatusFilter = (typeof PROPERTY_STATUS_FILTERS)[number];
+
+export function statusFilterValues({ collection }: Pick<PropertyStatusFacts, 'collection'>, marks: readonly PropertyStatusMark[]): readonly PropertyStatusFilter[] {
+  return [
+    ...(collection?.group === 'overdue' || collection?.group === 'due' ? (['attention'] as const) : []),
+    ...(marks.some((mark) => mark.kind === 'vacant') ? (['vacant'] as const) : []),
+  ];
+}
+
+const URGENCY: Record<PropertyStatusMark['kind'], number> = { overdue: 0, due: 1, vacant: 2, paid: 3, leased: 4 };
+
+export function byUrgency(a: PropertyStatusMark, b: PropertyStatusMark): number {
+  return URGENCY[a.kind] - URGENCY[b.kind];
+}
+
 type StatusRule = (facts: PropertyStatusFacts, asOf: IsoDate) => readonly PropertyStatusMark[];
 
-/** Every use mode but `rental` shows no mark, because the card already shows its use mode pill. */
 const none: StatusRule = () => [];
 
 /**

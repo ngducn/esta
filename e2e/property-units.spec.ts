@@ -133,7 +133,7 @@ test('tapping Lưu on an empty account form says what is missing and adds no acc
   expect(blank).toEqual([]);
 });
 
-test('rule 4: Tài sản sorted by Giá thuê leads with Dãy trọ Dĩ An at 15,6 tr and leaves the land without rent last (PRP-8)', async ({ page }) => {
+test('rule 4: Tài sản sorted by Giá thuê leads with Dãy trọ Dĩ An at 15.600.000 ₫ and leaves the land without rent last (PRP-8)', async ({ page }) => {
   await open(page, 'ryan.lane4@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/properties');
   await page.getByRole('combobox', { name: /^Sắp xếp/ }).selectOption({ label: 'Giá thuê' });
@@ -149,8 +149,7 @@ test('rule 4: Tài sản sorted by Giá thuê leads with Dãy trọ Dĩ An at 15
     'Kho Biên Hòa',
   ]);
   // Since P3-07 the card shows the rent of active leases; Kho Biên Hòa's last lease ended on 2026-07-29.
-  const rent = 'Tiền thuê mỗi tháng';
-  await expect(cards.getByTestId('property-rent')).toHaveText([`${rent}15,6 tr`, `${rent}15 tr`, `${rent}9 tr`, `${rent}2,5 tr`]);
+  await expect(cards.getByTestId('property-rent')).toHaveText(['15.600.000 ₫/tháng', '15.000.000 ₫/tháng', '9.000.000 ₫/tháng', '2.500.000 ₫/tháng']);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
