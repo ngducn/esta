@@ -84,7 +84,7 @@ const currentProvinceSchema = z.object({ province_code: z.string() });
 async function mismatchedPaths(supabase: Session, householdId: string, propertyId: string, saved: Saved): Promise<readonly string[] | null> {
   const [property, shares] = await Promise.all([
     supabase.from('properties').select('current_address').eq('household_id', householdId).eq('id', propertyId).maybeSingle(),
-    supabase.from('ownership_shares').select('parties(full_name, id_last4)').eq('household_id', householdId).eq('property_id', propertyId),
+    supabase.from('ownership_shares').select('parties(full_name)').eq('household_id', householdId).eq('property_id', propertyId),
   ]);
   if (property.error || shares.error) return null;
   const address = savedAddress(saved);
@@ -92,7 +92,7 @@ async function mismatchedPaths(supabase: Session, householdId: string, propertyI
   const current = currentProvinceSchema.safeParse(property.data?.current_address);
   const facts = {
     provinceCode: current.success ? current.data.province_code : null,
-    owners: shares.data.map(({ parties }) => ({ fullName: parties.full_name, idLast4: parties.id_last4 })),
+    owners: shares.data.map(({ parties }) => ({ fullName: parties.full_name })),
   };
   return certificateMismatches(saved, facts, soleProvince(units.map((unit) => unit.provinceCode))).flatMap((mismatch) => mismatch.paths);
 }
